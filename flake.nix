@@ -61,13 +61,23 @@
     {
       # NixOS system configurations for different machines
       nixosConfigurations = {
+        # Desktop configuration
+        desktop = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [ ./hosts/desktop ];                # Desktop-specific configuration
+          specialArgs = {
+            host = "desktop";
+            inherit self inputs username;                # Pass common variables
+          };
+        };
+
         # Laptop configuration
         laptop = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [ ./hosts/laptop ];                 # Laptop-specific configuration
           specialArgs = {
             host = "laptop";
-            inherit self inputs username;                # Pass common variables
+            inherit self inputs username;
           };
         };
 
