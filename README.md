@@ -1,23 +1,23 @@
 <h1 align="center">
-   <img src="./.github/assets/logo/nixos-logo.png  " width="100px" /> 
+   <img src="./.github/assets/logo/nixos-logo.png" width="100px" /> 
    <br>
-      Frost-Phoenix's Flakes 
+      Kenan's NixOS Configuration 
    <br>
       <img src="./.github/assets/pallet/pallet-0.png" width="600px" /> <br>
 
    <div align="center">
       <p></p>
       <div align="center">
-         <a href="https://github.com/Frost-Phoenix/nixos-config/stargazers">
-            <img src="https://img.shields.io/github/stars/Frost-Phoenix/nixos-config?color=FABD2F&labelColor=282828&style=for-the-badge&logo=starship&logoColor=FABD2F">
+         <a href="https://github.com/kenanpelit/nixosc/stargazers">
+            <img src="https://img.shields.io/github/stars/kenanpelit/nixosc?color=FABD2F&labelColor=282828&style=for-the-badge&logo=starship&logoColor=FABD2F">
          </a>
-         <a href="https://github.com/Frost-Phoenix/nixos-config/">
-            <img src="https://img.shields.io/github/repo-size/Frost-Phoenix/nixos-config?color=B16286&labelColor=282828&style=for-the-badge&logo=github&logoColor=B16286">
+         <a href="https://github.com/kenanpelit/nixosc/">
+            <img src="https://img.shields.io/github/repo-size/kenanpelit/nixosc?color=B16286&labelColor=282828&style=for-the-badge&logo=github&logoColor=B16286">
          </a>
          <a = href="https://nixos.org">
             <img src="https://img.shields.io/badge/NixOS-unstable-blue.svg?style=for-the-badge&labelColor=282828&logo=NixOS&logoColor=458588&color=458588">
          </a>
-         <a href="https://github.com/Frost-Phoenix/nixos-config/blob/main/LICENSE">
+         <a href="https://github.com/kenanpelit/nixosc/blob/main/LICENSE">
             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&colorA=282828&colorB=98971A&logo=unlicense&logoColor=98971A&"/>
          </a>
       </div>
@@ -44,7 +44,7 @@ Hyprlock (EXPAND)
 </p>
 </details>
 
-Here is my previous Catppuccin rice. You can find it [here](https://github.com/Frost-Phoenix/nixos-config/tree/catppuccin)
+Here is my previous Catppuccin rice. You can find it [here](https://github.com/kenanpelit/nixosc/tree/catppuccin)
 <details>
 <summary>
 Catppuccin (EXPAND)
@@ -107,7 +107,6 @@ Catppuccin (EXPAND)
 | **Clipboard**               | [wl-clip-persist][wl-clip-persist] |
 | **Color Picker**            | [hyprpicker][hyprpicker] |
 
-
 ## 📝 Shell aliases
 
 <details>
@@ -139,7 +138,7 @@ Utils (EXPAND)
 Nixos (EXPAND)
 </summary>
 
-- ```cdnix```      $\rightarrow$ ```cd ~/nixos-config && codium ~/nixos-config```
+- ```cdnix```      $\rightarrow$ ```cd ~/nixosc && codium ~/nixosc```
 - ```ns```         $\rightarrow$ ```nom-shell --run zsh```
 - ```nix-test```   $\rightarrow$ ```nh os test```
 - ```nix-switch``` $\rightarrow$ ```nh os switch```
@@ -229,7 +228,7 @@ toggle_oppacity.sh
 maxfetch.sh 
 </summary>
 
-**Description:** This script is a modified version of the [jobcmax/maxfetch][maxfetch] script.
+**Description:** This script is a modified version of the [maxfetch][maxfetch] script.
 
 **Usage:** ```maxfetch```
 </details>
@@ -314,17 +313,17 @@ Keybindings
 - ```$mainMod, 0, workspace, 10```
 
 ##### same as above, but switch to the workspace
-- ```$mainMod SHIFT, 1, movetoworkspacesilent, 1" # movetoworkspacesilent```
-- ```$mainMod SHIFT, 2, movetoworkspacesilent, 2"```
-- ```$mainMod SHIFT, 3, movetoworkspacesilent, 3"```
-- ```$mainMod SHIFT, 4, movetoworkspacesilent, 4"```
-- ```$mainMod SHIFT, 5, movetoworkspacesilent, 5"```
-- ```$mainMod SHIFT, 6, movetoworkspacesilent, 6"```
-- ```$mainMod SHIFT, 7, movetoworkspacesilent, 7"```
-- ```$mainMod SHIFT, 8, movetoworkspacesilent, 8"```
-- ```$mainMod SHIFT, 9, movetoworkspacesilent, 9"```
-- ```$mainMod SHIFT, 0, movetoworkspacesilent, 10"```
-- ```$mainMod CTRL, c, movetoworkspace, empty"```
+- ```$mainMod SHIFT, 1, movetoworkspacesilent, 1```
+- ```$mainMod SHIFT, 2, movetoworkspacesilent, 2```
+- ```$mainMod SHIFT, 3, movetoworkspacesilent, 3```
+- ```$mainMod SHIFT, 4, movetoworkspacesilent, 4```
+- ```$mainMod SHIFT, 5, movetoworkspacesilent, 5```
+- ```$mainMod SHIFT, 6, movetoworkspacesilent, 6```
+- ```$mainMod SHIFT, 7, movetoworkspacesilent, 7```
+- ```$mainMod SHIFT, 8, movetoworkspacesilent, 8```
+- ```$mainMod SHIFT, 9, movetoworkspacesilent, 9```
+- ```$mainMod SHIFT, 0, movetoworkspacesilent, 10```
+- ```$mainMod CTRL, c, movetoworkspace, empty```
 
 ##### window control
 - ```$mainMod SHIFT, left, movewindow, l```
@@ -380,77 +379,57 @@ First install nixos using any [graphical ISO image](https://nixos.org/download.h
 
 ```bash
 nix-shell -p git
-git clone https://github.com/Frost-Phoenix/nixos-config
-cd nixos-config
+git clone https://github.com/kenanpelit/nixosc
+cd nixosc
 ```
-#### 3. **Install script**
-> [!CAUTION]
-> For some computers, the default rebuild command might get stuck due to CPU cores running out of RAM. To fix that modify the install script line: ```sudo nixos-rebuild switch --flake .#${HOST}``` to ```sudo nixos-rebuild switch --cores <less than your max number of cores> --flake .#${HOST}```
 
-> [!TIP]
-> As it is better to know what a script does before running it, you are advised to read it or at least see the [Install script walkthrough](#Install-script-walkthrough) section before execution.
+#### 3. **Install script configuration**
+
+Before running the install script, you might need to adjust the `BUILD_CORES` value based on your system's specifications:
+
+- Open `install.sh` and locate the configuration section at the top
+- Find or add the `BUILD_CORES` variable:
+  ```bash
+  BUILD_CORES=4  # Adjust this number based on your system
+  ```
+  
+Recommended values based on RAM:
+- 8GB RAM: Use 2-3 cores
+- 16GB RAM: Use 4-6 cores
+- 32GB+ RAM: Use more cores as needed
+
+> [!IMPORTANT]
+> Using too many cores during build can cause the system to run out of RAM and freeze. Adjust this value according to your system's capabilities.
    
-Execute and follow the installation script :
+Execute and follow the installation script:
 ```bash
 ./install.sh
 ```
   
-#### 4. **Reboot**
+#### 4. **Configure Git**
 
-After rebooting, the config should be applied, you'll be greeted by hyprlock prompting for your password.
-
-#### 5. **Manual config**
-
-Even though I use home manager, there is still a little bit of manual configuration to do:
-- Set Aseprite theme (they are in the folder `./nixos-config/modules/home/aseprite/themes`).
-- Enable Discord theme (in Discord settings under VENCORD > Themes).
-- Configure the browser (for now, all browser configuration is done manually).
-- Change the git account information in `./modules/home/git.nix`
+Before proceeding, update your git configuration in `./modules/home/git.nix`:
 ```nix
 programs.git = {
    ...
-   userName = "Frost-Phoenix";
-   userEmail = "67cyril6767@gmail.com";
+   userName = "Kenan Pelit";
+   userEmail = "kenanpelit@gmail.com";
    ...
 };
 ```
+  
+#### 5. **Reboot**
 
-## Install script walkthrough
+After rebooting, the config should be applied, you'll be greeted by hyprlock prompting for your password.
 
-A brief walkthrough of what the install script does.
+#### 6. **Manual config**
 
-#### 1. **Get username**
+Even though I use home manager, there is still a little bit of manual configuration to do:
+- Set Aseprite theme (they are in the folder `./nixosc/modules/home/aseprite/themes`).
+- Enable Discord theme (in Discord settings under VENCORD > Themes).
+- Configure the browser (for now, all browser configuration is done manually).
 
-You will receive a prompt to enter your username, with a confirmation check.
-
-#### 2. **Set username**
-
-The script will replace all occurancies of the default usename ```CURRENT_USERNAME``` by the given one stored in ```$username```
-
-#### 3. Create basic directories
-
-The following directories will be created:
-- ```~/Music```
-- ```~/Documents```
-- ```~/Pictures/wallpapers/others```
-
-#### 4. Copy the wallpapers
-
-Then the wallpapers will be copied into ```~/Pictures/wallpapers/others``` which is the folder in which the ```wallpaper-picker.sh``` script will be looking for them.
-
-#### 5. Get the hardware configuration
-
-It will also automatically copy the hardware configuration from ```/etc/nixos/hardware-configuration.nix``` to ```./hosts/${host}/hardware-configuration.nix``` so that the hardware configuration used is yours and not the default one.
-
-#### 6. Choose a host (desktop / laptop)
-
-Now you will need to choose the host you want. It depend on whether you are using a desktop or laptop (or a VM altho it can be realy buggy).
-
-#### 7. Build the system
-
-Lastly, it will build the system, which includes both the flake config and home-manager config.
-
-# 👥 Credits
+## 👥 Credits
 
 Other dotfiles that I learned / copy from:
 
@@ -468,11 +447,6 @@ Other dotfiles that I learned / copy from:
   - [NotAShelf/nyx](https://github.com/NotAShelf/nyx)
   - [sioodmy/dotfiles](https://github.com/sioodmy/dotfiles)
   - [Ruixi-rebirth/flakes](https://github.com/Ruixi-rebirth/flakes)
-
-
-<!-- # ✨ Stars History -->
-
-<!-- <p align="center"><img src="https://api.star-history.com/svg?repos=frost-phoenix/nixos-config&type=Timeline&theme=dark" /></p> -->
 
 <p align="center"><img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/footers/gray0_ctp_on_line.svg?sanitize=true" /></p>
 
