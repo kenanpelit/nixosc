@@ -9,6 +9,7 @@
     ./fastfetch.nix                   # fetch tool
     ./fzf.nix                         # fuzzy finder
     #./gaming.nix                      # packages related to gaming
+    ./gammastep/gammastep.nix
     ./ghostty.nix                     # terminal
     ./git.nix                         # version control
     ./gnome.nix                       # gnome apps
