@@ -12,20 +12,24 @@
 #   -v, --version  Show script version
 #   -s, --silent   Run in silent mode (no confirmations)
 #   -d, --debug    Run in debug mode
+#   -a, --auto     Run with default settings (username: kenan, host: hay)
 # ==============================================================================
 
 VERSION="1.0.0"
 SCRIPT_NAME=$(basename "$0")
 DEBUG=false
 SILENT=false
+AUTO=false
 
 # ==============================================================================
 # Configuration Variables
 # ==============================================================================
 CURRENT_USERNAME='kenan'
+DEFAULT_USERNAME='kenan'
+DEFAULT_HOST='hay'
 CONFIG_DIR="$HOME/.config/nixos"
 WALLPAPER_DIR="$HOME/Pictures/wallpapers"
-BUILD_CORES=2 # Number of CPU cores to use during build
+BUILD_CORES=4 # Increased from 2 to 4 for better performance
 
 # ==============================================================================
 # Color Definitions
@@ -88,11 +92,13 @@ ${BRIGHT}Options:${NORMAL}
     -v, --version  Show script version
     -s, --silent   Run in silent mode (no confirmations)
     -d, --debug    Run in debug mode
+    -a, --auto     Run with default settings (username: kenan, host: hay)
 
 ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME              # Run normally with all confirmations
     $SCRIPT_NAME --silent     # Run without confirmations
     $SCRIPT_NAME --debug      # Run with debug information
+    $SCRIPT_NAME --auto       # Run with default settings
 
 ${BRIGHT}Note:${NORMAL}
     This script should NOT be run as root!
@@ -124,7 +130,7 @@ print_header() {
 }
 
 confirm() {
-  [[ $SILENT == true ]] && return 0
+  [[ $SILENT == true || $AUTO == true ]] && return 0
 
   echo -en "[${GREEN}y${NORMAL}/${RED}n${NORMAL}]: "
   read -n 1 -r
@@ -143,6 +149,12 @@ check_root() {
 # Core Functions
 # ==============================================================================
 get_username() {
+  if [[ $AUTO == true ]]; then
+    username=$DEFAULT_USERNAME
+    log "INFO" "Using default username: $username"
+    return 0
+  fi
+
   log "INFO" "Setting up username"
   echo -en "Enter your${GREEN} username${NORMAL}: ${YELLOW}"
   read -r username
@@ -160,25 +172,29 @@ get_username() {
 
 set_username() {
   log "INFO" "Updating configuration files with new username"
-  sed -i -e "s/${CURRENT_USERNAME}/${username}/g" ./flake.nix
-  sed -i -e "s/${CURRENT_USERNAME}/${username}/g" ./modules/home/audacious.nix
+  find . -type f -exec sed -i "s/${CURRENT_USERNAME}/${username}/g" {} +
   log "DEBUG" "Username updated in configuration files"
 }
 
 get_host() {
+  if [[ $AUTO == true ]]; then
+    HOST=$DEFAULT_HOST
+    log "INFO" "Using default host: $HOST"
+    return 0
+  fi
+
   log "INFO" "Selecting host type"
-  echo -en "Choose a ${GREEN}host${NORMAL} - [${YELLOW}D${NORMAL}]esktop, [${YELLOW}L${NORMAL}]aptop or [${YELLOW}V${NORMAL}]irtual machine: "
+  echo -en "Choose a ${GREEN}host${NORMAL} - [${YELLOW}H${NORMAL}]ay or [${YELLOW}V${NORMAL}]hay machine: "
   read -n 1 -r
   echo
 
   case ${REPLY,,} in
-  d) HOST='desktop' ;;
-  l) HOST='laptop' ;;
-  v) HOST='vm' ;;
-  *)
-    log "ERROR" "Invalid host type selected"
-    exit 1
-    ;;
+    h) HOST='hay' ;;
+    v) HOST='vhay' ;;
+    *)
+      log "ERROR" "Invalid host type selected"
+      exit 1
+      ;;
   esac
 
   echo -en "Use the${YELLOW} $HOST${NORMAL} ${GREEN}host${NORMAL}? "
@@ -224,7 +240,7 @@ build_system() {
   echo -en "You are about to start the system build, do you want to proceed? "
   if confirm; then
     log "INFO" "Building the system..."
-    if sudo nixos-rebuild switch --cores 4 --flake ".#${HOST}"; then
+    if sudo nixos-rebuild switch --cores $BUILD_CORES --flake ".#${HOST}"; then
       log "INFO" "System built successfully"
       return 0
     else
@@ -269,6 +285,11 @@ process_args() {
       DEBUG=true
       shift
       ;;
+    -a | --auto)
+      AUTO=true
+      SILENT=true
+      shift
+      ;;
     *)
       log "ERROR" "Unknown option: $1"
       print_help
@@ -285,7 +306,9 @@ main() {
   init_colors
   process_args "$@"
   check_root
-  print_header
+  if [[ $AUTO == false ]]; then
+    print_header
+  fi
   get_username
   set_username
   get_host

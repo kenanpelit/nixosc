@@ -9,40 +9,42 @@
   # Input sources - where we get our packages and modules from
   inputs = {
     # Core inputs
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";  # Main nixpkgs repository (unstable channel)
-    nur.url = "github:nix-community/NUR";                 # Nix User Repository - community packages
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";  # Main nixpkgs repository
+    nur.url = "github:nix-community/NUR";                 # Nix User Repository
     home-manager = {                                      # User environment management
       url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";                # Use the same nixpkgs as above
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Hyprland-related inputs
-    hyprland = {                                         # Hyprland Wayland compositor
+    # Hyprland and related packages
+    hyprland = {
       type = "git";
       url = "https://github.com/hyprwm/Hyprland";
-      submodules = true;                                 # Include all submodules
+      submodules = true;
     };
     hypr-contrib.url = "github:hyprwm/contrib";          # Additional Hyprland utilities
-    hyprpicker.url = "github:hyprwm/hyprpicker";        # Color picker for Hyprland
-    hyprmag.url = "github:SIMULATAN/hyprmag";           # Hyprland magnifier
+    hyprpicker.url = "github:hyprwm/hyprpicker";        # Color picker
+    hyprmag.url = "github:SIMULATAN/hyprmag";           # Magnifier
 
-    # Additional tools and utilities
-    alejandra.url = "github:kamadorueda/alejandra/3.0.0"; # Nix code formatter
-    nix-gaming.url = "github:fufexan/nix-gaming";        # Gaming-related packages
+    # Development and utilities
+    alejandra.url = "github:kamadorueda/alejandra/3.0.0"; # Nix formatter
+    nix-gaming.url = "github:fufexan/nix-gaming";        # Gaming packages
     spicetify-nix = {                                    # Spotify customization
       url = "github:gerg-l/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-flatpak.url = "github:gmodena/nix-flatpak";     # Flatpak integration
-    zen-browser.url = "github:0xc000022070/zen-browser-flake"; # Browser configuration
+
+    # System integration
+    nix-flatpak.url = "github:gmodena/nix-flatpak";     # Flatpak support
+    zen-browser.url = "github:0xc000022070/zen-browser-flake"; # Browser config
 
     # Terminal and file management
-    ghostty = {                                          # Terminal emulator
+    ghostty = {
       url = "github:ghostty-org/ghostty";
     };
-    yazi-plugins = {                                     # Yazi file manager plugins
+    yazi-plugins = {
       url = "github:yazi-rs/plugins";
-      flake = false;                                     # Not a flake, just source files
+      flake = false;
     };
   };
 
@@ -50,43 +52,33 @@
   outputs = { nixpkgs, self, ... }@inputs:
     let
       # Common configuration variables
-      username = "kenan";                                # Main user username
-      system = "x86_64-linux";                          # System architecture
+      username = "kenan";
+      system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        config.allowUnfree = true;                      # Allow proprietary software
+        config.allowUnfree = true;  # Allow proprietary software
       };
-      lib = nixpkgs.lib;                                # Nixpkgs library functions
+      lib = nixpkgs.lib;
     in
     {
       # NixOS system configurations for different machines
       nixosConfigurations = {
-        # Desktop configuration
-        desktop = nixpkgs.lib.nixosSystem {
+        # Laptop/Main configuration (hay)
+        hay = nixpkgs.lib.nixosSystem {
           inherit system;
-          modules = [ ./hosts/desktop ];                # Desktop-specific configuration
+          modules = [ ./hosts/hay ];
           specialArgs = {
-            host = "desktop";
-            inherit self inputs username;                # Pass common variables
-          };
-        };
-
-        # Laptop configuration
-        laptop = nixpkgs.lib.nixosSystem {
-          inherit system;
-          modules = [ ./hosts/laptop ];                 # Laptop-specific configuration
-          specialArgs = {
-            host = "laptop";
+            host = "hay";
             inherit self inputs username;
           };
         };
 
-        # Virtual Machine configuration
-        vm = nixpkgs.lib.nixosSystem {
+        # Virtual Machine configuration (vhay)
+        vhay = nixpkgs.lib.nixosSystem {
           inherit system;
-          modules = [ ./hosts/vm ];                     # VM-specific configuration
+          modules = [ ./hosts/vhay ];
           specialArgs = {
-            host = "vm";
+            host = "vhay";
             inherit self inputs username;
           };
         };

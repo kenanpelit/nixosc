@@ -6,9 +6,11 @@
   host,
   ...
 }:
+
 {
   imports = [
     ./bootloader.nix
+    ./fonts.nix
     ./hardware.nix
     ./xserver.nix
     ./network.nix

@@ -7,16 +7,19 @@
   # GRUB bootloader yapılandırması
   boot.loader.grub = {
     enable = true;
-    version = 2;
     device = "nodev";     # EFI için "nodev" kullanılır
     efiSupport = true;
-    useOSProber = false;  # Diğer işletim sistemlerini tarama
+    useOSProber = true;  # Diğer işletim sistemlerini tarama
     configurationLimit = 10;
   };
-  
+
   # EFI değişkenlerini düzenleme izni
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi = {
+    canTouchEfiVariables = true;
+    efiSysMountPoint = "/boot/efi";   # Eksik olan mount point'i ekledik
+  };
 
   # En son kernel paketlerini kullan
   boot.kernelPackages = pkgs.linuxPackages_latest;
 }
+
