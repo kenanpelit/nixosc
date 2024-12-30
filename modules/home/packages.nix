@@ -27,7 +27,7 @@ in
     killall
     lazygit
     libnotify
-	  man-pages                         # extra man pages
+    man-pages                         # extra man pages
     mimeo
     mpv                               # video player
     ncdu                              # disk space
@@ -52,6 +52,7 @@ in
     unzip
     valgrind                          # c memory analyzer
     wl-clipboard                      # clipboard utils for wayland (wl-copy, wl-paste)
+    wezterm                           # wezterm
     wget
     yt-dlp-light
     xdg-utils
@@ -65,7 +66,6 @@ in
     tty-clock                         # cli clock
 
     ## GUI Apps
-    audacity
     bleachbit                         # cache cleaner
     gimp
     libreoffice
@@ -76,10 +76,7 @@ in
     qalculate-gtk                     # calculator
     resources                         # GUI resources monitor
     soundwireserver
-    thunderbird
     vlc
-    winetricks
-    wineWowPackages.wayland
     zenity
 
     # C / C++
