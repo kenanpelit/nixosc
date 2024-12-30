@@ -32,6 +32,9 @@
   #boot.loader.systemd-boot.enable = true;
   #boot.loader.efi.canTouchEfiVariables = true;
 
+  ## https://nixos.wiki/wiki/Flakes
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   networking.hostName = "hay"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
