@@ -13,6 +13,7 @@
 #   -s, --silent        Run in silent mode (no confirmations)
 #   -d, --debug         Run in debug mode
 #   -a, --auto HOST     Run with default settings and specified host (hay or vhay)
+#   -u, --update-flake  Update flake.lock and create nix.conf if needed
 # ==============================================================================
 
 VERSION="1.0.0"
@@ -20,6 +21,7 @@ SCRIPT_NAME=$(basename "$0")
 DEBUG=false
 SILENT=false
 AUTO=false
+UPDATE_FLAKE=false
 
 # ==============================================================================
 # Configuration Variables
@@ -29,6 +31,8 @@ DEFAULT_USERNAME='kenan'
 CONFIG_DIR="$HOME/.config/nixos"
 WALLPAPER_DIR="$HOME/Pictures/wallpapers"
 BUILD_CORES=4
+NIX_CONF_DIR="$HOME/.config/nix"
+NIX_CONF_FILE="$NIX_CONF_DIR/nix.conf"
 
 # ==============================================================================
 # Color Definitions
@@ -92,6 +96,7 @@ ${BRIGHT}Options:${NORMAL}
     -s, --silent        Run in silent mode (no confirmations)
     -d, --debug         Run in debug mode
     -a, --auto HOST     Run with default settings and specified host (hay or vhay)
+    -u, --update-flake  Update flake.lock and create nix.conf if needed
 
 ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME              # Run normally with all confirmations
@@ -99,6 +104,7 @@ ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME --debug      # Run with debug information
     $SCRIPT_NAME --auto hay   # Run with default settings for hay
     $SCRIPT_NAME --auto vhay  # Run with default settings for vhay
+    $SCRIPT_NAME --update-flake # Update flake.lock and create nix.conf if needed
 
 ${BRIGHT}Note:${NORMAL}
     This script should NOT be run as root!
@@ -154,6 +160,44 @@ check_disk_space() {
     exit 1
   fi
   log "DEBUG" "Disk space check passed"
+}
+
+# ==============================================================================
+# Flake Management Functions
+# ==============================================================================
+backup_flake_lock() {
+  if [[ -f flake.lock ]]; then
+    local backup_file="flake.lock.backup.$(date +%Y%m%d_%H%M%S)"
+    cp flake.lock "$backup_file"
+    log "INFO" "Created backup of flake.lock: $backup_file"
+  else
+    log "WARN" "No flake.lock found to backup"
+  fi
+}
+
+setup_nix_conf() {
+  if [[ ! -f "$NIX_CONF_FILE" ]]; then
+    mkdir -p "$NIX_CONF_DIR"
+    echo "experimental-features = nix-command flakes" >"$NIX_CONF_FILE"
+    log "INFO" "Created nix.conf with flakes support"
+  else
+    if ! grep -q "experimental-features.*=.*flakes" "$NIX_CONF_FILE"; then
+      echo "experimental-features = nix-command flakes" >>"$NIX_CONF_FILE"
+      log "INFO" "Added flakes support to existing nix.conf"
+    else
+      log "DEBUG" "Flakes support already configured in nix.conf"
+    fi
+  fi
+}
+
+update_flake() {
+  if [[ $UPDATE_FLAKE == true ]]; then
+    log "INFO" "Updating flake configuration"
+    backup_flake_lock
+    setup_nix_conf
+    nix flake update
+    log "INFO" "Flake update completed"
+  fi
 }
 
 # ==============================================================================
@@ -288,6 +332,7 @@ install() {
   setup_directories
   copy_wallpapers
   copy_hardware_config
+  update_flake
   build_system
 }
 
@@ -311,6 +356,10 @@ process_args() {
       ;;
     -d | --debug)
       DEBUG=true
+      shift
+      ;;
+    -u | --update-flake)
+      UPDATE_FLAKE=true
       shift
       ;;
     -a | --auto)
