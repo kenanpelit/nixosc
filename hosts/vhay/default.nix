@@ -9,14 +9,11 @@
     ./hardware-configuration.nix
     ./../../modules/core
   ];
-
+  
   # BIOS/GRUB configuration 
   boot.loader.systemd-boot.enable = lib.mkForce false;
-  boot.loader.grub = {
-    enable = true;
-    device = "/dev/vda";
-    useOSProber = false;
-  };
+  # GRUB ayarlarını bootloader.nix'e taşıyalım
+  # boot.loader.grub bölümünü kaldırıyoruz
 
   # SSH configuration
   services.openssh = {

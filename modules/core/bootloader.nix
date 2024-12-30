@@ -5,7 +5,7 @@ in
 {
   boot.loader.grub = {
     enable = true;
-    device = lib.mkForce (if hostname == "hay" then "nodev" else "/dev/sda");
+    device = lib.mkForce (if hostname == "hay" then "nodev" else "/dev/vda");  # vda olarak düzelttik
     efiSupport = if hostname == "hay" then true else false;
     useOSProber = true;
     configurationLimit = 10;

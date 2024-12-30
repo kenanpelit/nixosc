@@ -1,9 +1,7 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
-{ config, pkgs, ... }:
-
+# and in the NixOS manual (accessible by running 'nixos-help').
+{ config, pkgs, lib, ... }:
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -11,13 +9,11 @@
     ];
 
   # GRUB bootloader yapılandırması
-  # GRUB bootloader yapılandırması
   boot.loader = {
     grub = {
       enable = true;
-      device = "/dev/sda";     # Legacy BIOS için disk aygıtı
-      efiSupport = false;      # Legacy BIOS kullanıldığı için EFI desteği kapalı
-      useOSProber = true;      # Diğer işletim sistemlerini tarama
+      device = "/dev/vda";     # VM/QEMU için disk aygıtı
+      efiSupport = false;      # Legacy BIOS kullanıldığı için kapalı
       configurationLimit = 10;
     };
   };
