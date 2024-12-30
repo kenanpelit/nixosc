@@ -3,7 +3,9 @@
   services = {
     xserver = {
       enable = true;
-      xkb.layout = "us,fr";
+      xkb.layout = "tr";
+      xkb.variant = "f";
+      xkb.options = "ctrl:nocaps";
     };
 
     displayManager.autoLogin = {

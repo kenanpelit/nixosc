@@ -28,7 +28,7 @@
 
  # Temel sistem paketleri
  environment.systemPackages = with pkgs; [
-   wget
+   htop
    git
  ];
 
