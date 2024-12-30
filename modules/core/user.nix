@@ -7,6 +7,7 @@
 }:
 {
   imports = [ inputs.home-manager.nixosModules.home-manager ];
+  
   home-manager = {
     useUserPackages = true;
     useGlobalPkgs = true;
@@ -19,7 +20,7 @@
           [ ./../home ];
       home.username = "${username}";
       home.homeDirectory = "/home/${username}";
-      home.stateVersion = "24.05";
+      home.stateVersion = "24.11";
       programs.home-manager.enable = true;
     };
   };

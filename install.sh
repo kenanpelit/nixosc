@@ -118,8 +118,8 @@ print_header() {
  ═══════════════════════════════════════
 
  $BLUE https://github.com/kenanpelit$RED
- ! To make sure everything runs correctly DONT run as root !$GREEN
-          → $SCRIPT_NAME $NORMAL
+  ! To make sure everything runs correctly DONT run as root !$GREEN
+  → $SCRIPT_NAME $NORMAL
     "
 }
 

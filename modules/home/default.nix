@@ -1,6 +1,6 @@
 {inputs, username, host, ...}: {
   imports = [
-    ./aseprite/aseprite.nix           # pixel art editor
+    #./aseprite/aseprite.nix           # pixel art editor
     ./audacious.nix                   # music player
     ./bat.nix                         # better cat command
     ./browser.nix                     # firefox based browser
@@ -9,7 +9,7 @@
     ./discord/discord.nix             # discord with gruvbox
     ./fastfetch.nix                   # fetch tool
     ./fzf.nix                         # fuzzy finder
-    ./gaming.nix                      # packages related to gaming
+    #./gaming.nix                      # packages related to gaming
     ./ghostty.nix                     # terminal
     ./git.nix                         # version control
     ./gnome.nix                       # gnome apps
@@ -31,7 +31,7 @@
     ./swayosd.nix                     # brightness / volume wiget
     ./swaync/swaync.nix               # notification deamon
     # ./viewnior.nix                    # image viewer
-    ./vscodium.nix                    # vscode forck
+    #./vscodium.nix                    # vscode forck
     ./waybar                          # status bar
     ./waypaper.nix                    # GUI wallpaper picker
     ./xdg-mimes.nix                   # xdg config

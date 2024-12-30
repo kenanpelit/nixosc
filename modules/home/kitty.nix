@@ -24,6 +24,7 @@
       enable_audio_bell = false;
       mouse_hide_wait = 60;
       window_padding_width = if (host == "laptop") then 5 else 10;
+      term = "xterm-256color";  # SSH için eklendi
 
       ## Tabs
       tab_title_template = "{index}";
