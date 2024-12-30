@@ -25,16 +25,24 @@
       ];
 
       input = {
-        kb_layout = "us,fr";
-        kb_options = "grp:alt_caps_toggle";
-        numlock_by_default = true;
-        follow_mouse = 0;
-        float_switch_override_focus = 0;
-        mouse_refocus = 0;
-        sensitivity = 0;
+        kb_layout = "tr";
+        kb_variant = "f";
+        kb_options = "ctrl:nocaps";
+        repeat_rate = "25";
+        repeat_delay = "300";
+        sensitivity = "0.50";
+        accel_profile = "adaptive";
         touchpad = {
-          natural_scroll = true;
+          natural_scroll = "false";
+          disable_while_typing = "true";
+          tap-to-click = "true";
+          drag_lock = "true";
+          scroll_factor = "0.50";
         };
+        numlock_by_default = "0";
+        left_handed = "0";
+        follow_mouse = "0";
+        float_switch_override_focus = "0";
       };
 
       general = {
@@ -373,7 +381,8 @@
     };
 
     extraConfig = "
-      monitor=,preferred,auto,auto
+      monitor=desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1
+      monitor=desc:AU Optronics 0x2036,2560x1440@60,0x1440,1
 
       xwayland {
         force_zero_scaling = true
