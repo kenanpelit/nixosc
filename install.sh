@@ -8,11 +8,11 @@
 #
 # Usage: ./install.sh [options]
 # Options:
-#   -h, --help     Show this help message
-#   -v, --version  Show script version
-#   -s, --silent   Run in silent mode (no confirmations)
-#   -d, --debug    Run in debug mode
-#   -a, --auto     Run with default settings (username: kenan, host: hay)
+#   -h, --help          Show this help message
+#   -v, --version       Show script version
+#   -s, --silent        Run in silent mode (no confirmations)
+#   -d, --debug         Run in debug mode
+#   -a, --auto HOST     Run with default settings and specified host (hay or vhay)
 # ==============================================================================
 
 VERSION="1.0.0"
@@ -26,10 +26,9 @@ AUTO=false
 # ==============================================================================
 CURRENT_USERNAME='kenan'
 DEFAULT_USERNAME='kenan'
-DEFAULT_HOST='hay'
 CONFIG_DIR="$HOME/.config/nixos"
 WALLPAPER_DIR="$HOME/Pictures/wallpapers"
-BUILD_CORES=4 # Increased from 2 to 4 for better performance
+BUILD_CORES=4
 
 # ==============================================================================
 # Color Definitions
@@ -88,17 +87,18 @@ ${BRIGHT}Usage:${NORMAL}
     $SCRIPT_NAME [options]
 
 ${BRIGHT}Options:${NORMAL}
-    -h, --help     Show this help message
-    -v, --version  Show script version
-    -s, --silent   Run in silent mode (no confirmations)
-    -d, --debug    Run in debug mode
-    -a, --auto     Run with default settings (username: kenan, host: hay)
+    -h, --help          Show this help message
+    -v, --version       Show script version
+    -s, --silent        Run in silent mode (no confirmations)
+    -d, --debug         Run in debug mode
+    -a, --auto HOST     Run with default settings and specified host (hay or vhay)
 
 ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME              # Run normally with all confirmations
     $SCRIPT_NAME --silent     # Run without confirmations
     $SCRIPT_NAME --debug      # Run with debug information
-    $SCRIPT_NAME --auto       # Run with default settings
+    $SCRIPT_NAME --auto hay   # Run with default settings for hay
+    $SCRIPT_NAME --auto vhay  # Run with default settings for vhay
 
 ${BRIGHT}Note:${NORMAL}
     This script should NOT be run as root!
@@ -145,6 +145,17 @@ check_root() {
   fi
 }
 
+check_disk_space() {
+  local required_space=10000000 # 10GB in KB
+  local available_space=$(df -k "$HOME" | awk 'NR==2 {print $4}')
+
+  if [[ $available_space -lt $required_space ]]; then
+    log "ERROR" "Not enough disk space. Required: 10GB, Available: $((available_space / 1024 / 1024))GB"
+    exit 1
+  fi
+  log "DEBUG" "Disk space check passed"
+}
+
 # ==============================================================================
 # Core Functions
 # ==============================================================================
@@ -178,8 +189,7 @@ set_username() {
 
 get_host() {
   if [[ $AUTO == true ]]; then
-    HOST=$DEFAULT_HOST
-    log "INFO" "Using default host: $HOST"
+    log "INFO" "Using specified host: $HOST"
     return 0
   fi
 
@@ -189,12 +199,12 @@ get_host() {
   echo
 
   case ${REPLY,,} in
-    h) HOST='hay' ;;
-    v) HOST='vhay' ;;
-    *)
-      log "ERROR" "Invalid host type selected"
-      exit 1
-      ;;
+  h) HOST='hay' ;;
+  v) HOST='vhay' ;;
+  *)
+    log "ERROR" "Invalid host type selected"
+    exit 1
+    ;;
   esac
 
   echo -en "Use the${YELLOW} $HOST${NORMAL} ${GREEN}host${NORMAL}? "
@@ -230,8 +240,16 @@ copy_wallpapers() {
 }
 
 copy_hardware_config() {
+  local source="/etc/nixos/hardware-configuration.nix"
+  local target="hosts/${HOST}/hardware-configuration.nix"
+
+  if [[ ! -f "$source" ]]; then
+    log "ERROR" "Hardware configuration not found at $source"
+    exit 1
+  fi
+
   log "INFO" "Copying hardware configuration"
-  cp /etc/nixos/hardware-configuration.nix "hosts/${HOST}/hardware-configuration.nix"
+  cp "$source" "$target"
   log "DEBUG" "Hardware configuration copied for host: $HOST"
 }
 
@@ -251,6 +269,16 @@ build_system() {
     log "ERROR" "System build cancelled"
     exit 1
   fi
+}
+
+show_summary() {
+  log "INFO" "Installation Summary"
+  echo -e "${GREEN}✓${NORMAL} Username: ${YELLOW}$username${NORMAL}"
+  echo -e "${GREEN}✓${NORMAL} Host: ${YELLOW}$HOST${NORMAL}"
+  echo -e "${GREEN}✓${NORMAL} Configuration: ${YELLOW}/etc/nixos${NORMAL}"
+  echo -e "${GREEN}✓${NORMAL} Home Directory: ${YELLOW}$HOME${NORMAL}"
+  echo
+  log "INFO" "Installation completed successfully!"
 }
 
 # ==============================================================================
@@ -289,6 +317,13 @@ process_args() {
       AUTO=true
       SILENT=true
       shift
+      if [[ -n "$1" && "$1" =~ ^(hay|vhay)$ ]]; then
+        HOST="$1"
+        shift
+      else
+        log "ERROR" "Invalid or missing host for auto mode. Use 'hay' or 'vhay'"
+        exit 1
+      fi
       ;;
     *)
       log "ERROR" "Unknown option: $1"
@@ -306,6 +341,7 @@ main() {
   init_colors
   process_args "$@"
   check_root
+  check_disk_space
   if [[ $AUTO == false ]]; then
     print_header
   fi
@@ -313,6 +349,7 @@ main() {
   set_username
   get_host
   install
+  show_summary
 }
 
 # Start the script

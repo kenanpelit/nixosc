@@ -10,7 +10,7 @@
     ./fzf.nix                         # fuzzy finder
     #./gaming.nix                      # packages related to gaming
     ./gammastep/gammastep.nix
-    ./ghostty.nix                     # terminal
+    #./ghostty.nix                     # terminal
     ./git.nix                         # version control
     ./gnome.nix                       # gnome apps
     ./gtk.nix                         # gtk theme
@@ -33,7 +33,7 @@
     ./waybar                          # status bar
     ./waypaper.nix                    # GUI wallpaper picker
     #./viewnior.nix                    # image viewer
-    ./wezterm.nix                     # GUI wallpaper picker
+    #./wezterm.nix                     # GUI wallpaper picker
     ./xdg-mimes.nix                   # xdg config
     ./yazi.nix                        # terminal file manager
     ./zsh                             # shell
