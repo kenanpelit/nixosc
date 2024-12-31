@@ -1,28 +1,50 @@
+{ pkgs, config, lib, inputs, username, ... }:
 {
-  pkgs,
-  config,
-  lib,
-  ...
-}:
-{
+  # -------------------------------------------------------
+  # Configuration Files
+  # -------------------------------------------------------
   imports = [
     ./hardware-configuration.nix
     ./../../modules/core
   ];
-  
-  # BIOS/GRUB configuration 
-  boot.loader.systemd-boot.enable = lib.mkForce false;
-  # GRUB ayarlarını bootloader.nix'e taşıyalım
-  # boot.loader.grub bölümünü kaldırıyoruz
 
-  # SSH configuration
+  # -------------------------------------------------------
+  # Bootloader Configuration
+  # -------------------------------------------------------
+  boot.loader = {
+    systemd-boot.enable = lib.mkForce false;
+    grub = {
+      enable = true;
+      version = 2;
+      devices = [ "/dev/vda" ];
+      useOSProber = false;
+    };
+  };
+
+  # -------------------------------------------------------
+  # SSH Service
+  # -------------------------------------------------------
   services.openssh = {
     enable = true;
     ports = [ 22 ];
     settings = {
       PasswordAuthentication = true;
-      AllowUsers = null;
       PermitRootLogin = "yes";
     };
   };
+
+  # -------------------------------------------------------
+  # Home Manager Configuration
+  # -------------------------------------------------------
+  home-manager.users.${username} = {
+    home.stateVersion = "24.11";
+    home.packages = with pkgs; [
+      git
+      neovim
+      zsh
+      ripgrep
+      fd
+    ];
+  };
 }
+

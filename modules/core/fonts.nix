@@ -1,54 +1,67 @@
+{ config, pkgs, lib, username, ... }:
 {
-  config,
-  pkgs,
-  lib,
-  ...
-}:
-
-let
-  mainFont = "Hack Nerd Font";
-  termFont = "Maple Mono";
-in
-{
+  # -------------------------------------------------------
+  # Font Konfigürasyonu
+  # -------------------------------------------------------
   fonts = {
+    # Hack Nerd Fonts'u sisteme ekliyoruz
     packages = with pkgs; [
-      (nerdfonts.override {
-        fonts = [
-          "Hack"
-          "Maple"
-        ];
-      })
+      pkgs.nerd-fonts.hack  # Hack Nerd Font paketi
     ];
 
     fontconfig = {
       defaultFonts = {
-        monospace = [ "${termFont}" "${mainFont} Mono" ];
-        sansSerif = [ "${mainFont}" ];
-        serif = [ "${mainFont}" ];
+        monospace = [ "Hack Nerd Font" ];  # Hack Nerd Font varsayılan monospace font
+        sansSerif = [ "Hack Nerd Font" ];
+        serif = [ "Hack Nerd Font" ];
       };
 
       subpixel = {
         rgba = "rgb";
-        lcdfilter = "light";
+        lcdfilter = "default";
       };
+
+      hinting = {
+        enable = true;
+        autohint = true;
+      };
+
+      antialias = true;
+
+      localConf = ''
+        <?xml version="1.0"?>
+        <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+        <fontconfig>
+          <match target="font">
+            <test name="family" compare="contains">
+              <string>Hack Nerd Font</string>
+            </test>
+          </match>
+        </fontconfig>
+      '';
     };
 
     enableDefaultPackages = true;
   };
 
-  home-manager.users.${config.user} = {
-    # Terminal ayarları
-    programs.kitty.font = {
-      name = termFont;
-      size = 13;
-    };
+  # -------------------------------------------------------
+  # Çevre Değişkenleri
+  # -------------------------------------------------------
+  environment.variables = {
+    FONTCONFIG_PATH = "/etc/fonts"; # Varsayılan sistem font dizini
+  };
 
-    # Dunst bildirim ayarları
+  # -------------------------------------------------------
+  # Home Manager Konfigürasyonu
+  # -------------------------------------------------------
+  home-manager.users.${username} = {
+    home.stateVersion = "24.11";
+
     services.dunst.settings.global = {
-      font = "${mainFont} 12";
+      font = "Hack Nerd Font 13";  # Bildirimler için font
     };
 
-    # Rofi uygulama başlatıcı
-    programs.rofi.font = "${mainFont} 12";
+    programs.rofi.font = "Hack Nerd Font 13";  # Rofi için font
   };
 }
+

@@ -1,30 +1,8 @@
-{
-  pkgs,
-  inputs,
-  username,
-  host,
-  ...
-}:
+{ pkgs, inputs, username, host, ... }:
 {
   imports = [ inputs.home-manager.nixosModules.home-manager ];
-  
-  home-manager = {
-    useUserPackages = true;
-    useGlobalPkgs = true;
-    extraSpecialArgs = { inherit inputs username host; };
-    users.${username} = {
-      imports =
-        if (host == "desktop") then
-          [ ./../home/default.desktop.nix ]
-        else
-          [ ./../home ];
-      home.username = "${username}";
-      home.homeDirectory = "/home/${username}";
-      home.stateVersion = "24.11";
-      programs.home-manager.enable = true;
-    };
-  };
 
+  # Temel kullanıcı ayarları
   users.users.${username} = {
     isNormalUser = true;
     description = "${username}";
@@ -32,7 +10,25 @@
       "networkmanager"
       "wheel"
     ];
-    shell = pkgs.zsh;
+    shell = pkgs.zsh;  # Burada tanımlı
   };
+
+  # Home Manager konfigürasyonu
+  home-manager = {
+    useUserPackages = true;
+    useGlobalPkgs = true;
+    extraSpecialArgs = { inherit inputs username host; };
+    users.${username} = {
+      imports = [ ./../home ];
+      home = {
+        username = "${username}";
+        homeDirectory = "/home/${username}";
+        stateVersion = "24.11";
+      };
+    };
+  };
+
+  # Nix ayarları
   nix.settings.allowed-users = [ "${username}" ];
 }
+

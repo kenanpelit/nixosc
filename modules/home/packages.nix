@@ -10,6 +10,7 @@ in
     ani-cli
     binsider
     bitwise                           # cli tool for bit / hex manipulation
+    byobu
     caligula                          # User-friendly, lightweight TUI for disk imaging
     dconf-editor
     docfd                             # TUI multiline fuzzy document finder
@@ -49,8 +50,8 @@ in
     todo                              # cli todo list
     toipe                             # typing test in the terminal
     ttyper                            # cli typing test
+    tmux
     unzip
-    valgrind                          # c memory analyzer
     wl-clipboard                      # clipboard utils for wayland (wl-copy, wl-paste)
     wezterm                           # wezterm
     wget
@@ -67,12 +68,10 @@ in
 
     ## GUI Apps
     bleachbit                         # cache cleaner
-    gimp
+    discord
     libreoffice
     nix-prefetch-github
-    obs-studio
     pavucontrol                       # pulseaudio volume controle (GUI)
-    pitivi                            # video editing
     qalculate-gtk                     # calculator
     resources                         # GUI resources monitor
     soundwireserver
@@ -84,7 +83,7 @@ in
     gdb
     gnumake
 
-    # Python
+    ## Python
     python3
     python312Packages.ipython
 

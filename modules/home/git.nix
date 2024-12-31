@@ -8,7 +8,7 @@
 
     extraConfig = {
       init.defaultBranch = "main";
-      credential.helper = "store";
+      credential.helper = "store"; # Kimlik bilgilerini saklamak için
       merge.conflictstyle = "diff3";
       diff.colorMoved = "default";
     };
@@ -24,7 +24,8 @@
     };
   };
 
-  home.packages = [ pkgs.gh ]; # pkgs.git-lfs
+  home.packages = [ pkgs.gh ]; # GitHub CLI desteği
+  # home.packages = [ pkgs.gh pkgs.git-lfs ]; # Gerekirse Git-LFS desteği
 
   programs.zsh.shellAliases = {
     g = "lazygit";
@@ -53,3 +54,4 @@
     glols = "git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset' --stat";
   };
 }
+

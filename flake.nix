@@ -5,14 +5,20 @@
 # ==============================================================================
 {
   description = "Kenan's nixos configuration";
-
   # Input sources - where we get our packages and modules from
   inputs = {
     # Core inputs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";  # Main nixpkgs repository
-    nur.url = "github:nix-community/NUR";                 # Nix User Repository
-    home-manager = {                                      # User environment management
+    
+    # Home Manager
+    home-manager = {
       url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Nix User Repository
+    nur = {
+      url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -38,6 +44,9 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak";     # Flatpak support
     zen-browser.url = "github:0xc000022070/zen-browser-flake"; # Browser config
 
+    # Cachix support
+    cachix-pkgs.url = "github:cachix/cachix";
+
     # Terminal and file management
     ghostty = {
       url = "github:ghostty-org/ghostty";
@@ -49,7 +58,7 @@
   };
 
   # System configuration and outputs
-  outputs = { nixpkgs, self, ... }@inputs:
+  outputs = { nixpkgs, self, home-manager, ... }@inputs:
     let
       # Common configuration variables
       username = "kenan";
@@ -59,29 +68,44 @@
         config.allowUnfree = true;  # Allow proprietary software
       };
       lib = nixpkgs.lib;
+
+      # Helper function to create system configurations
+      mkSystem = { system, host, modules }: 
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            # Base home-manager configuration
+            inputs.home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                extraSpecialArgs = { inherit inputs username host; };
+              };
+            }
+          ] ++ modules;
+          specialArgs = {
+            inherit self inputs username host;
+          };
+        };
     in
     {
       # NixOS system configurations for different machines
       nixosConfigurations = {
-        # Laptop/Main configuration (hay)
-        hay = nixpkgs.lib.nixosSystem {
+        # Laptop configuration (hay)
+        hay = mkSystem {
           inherit system;
+          host = "hay";
           modules = [ ./hosts/hay ];
-          specialArgs = {
-            host = "hay";
-            inherit self inputs username;
-          };
         };
 
         # Virtual Machine configuration (vhay)
-        vhay = nixpkgs.lib.nixosSystem {
+        vhay = mkSystem {
           inherit system;
+          host = "vhay";
           modules = [ ./hosts/vhay ];
-          specialArgs = {
-            host = "vhay";
-            inherit self inputs username;
-          };
         };
       };
     };
 }
+

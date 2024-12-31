@@ -370,6 +370,12 @@
         "opaque,class:^()$,title:^()$"
         "noshadow,class:^()$,title:^()$"
         "noblur,class:^()$,title:^()$"
+
+        # Terminal pencereleri için tam opaklık
+        "opacity 1.0 override 1.0 override, class:^(kitty)$"
+        "opacity 1.0 override 1.0 override, class:^(foot)$"
+        "opacity 1.0 override 1.0 override, class:^(Alacritty)$"
+
       ];
 
       # No gaps when only

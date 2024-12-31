@@ -1,32 +1,65 @@
 { pkgs, lib, ... }: {
-  programs.dconf.enable = true;
-  programs.zsh.enable = true;
-  programs.gnupg.agent = {
-    enable = true;
-    enableSSHSupport = true;
+  programs = {
+    # dconf ve zsh ayarları
+    dconf.enable = true;
+    zsh.enable = true;
+
+    # GnuPG ayarı - SSH desteğini devre dışı bırakıyoruz
+    gnupg.agent = {
+      enable = true;
+      enableSSHSupport = false;
+    };
+
+    # Vim ve nano'yu devre dışı bırak
+    vim.enable = false;
+    nano.enable = false;
+
+    # nix-ld yapılandırması
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [];
+    };
+
+    # SSH yapılandırması
+    ssh = {
+      startAgent = true;
+      enableAskPassword = false;
+      extraConfig = ''
+        Host *
+          ServerAliveInterval 60
+          ServerAliveCountMax 2
+          ControlMaster auto
+          ControlPath ~/.ssh/controlmasters/%r@%h:%p
+          ControlPersist 5m
+          ProxyCommand /run/current-system/sw/bin/assh connect --port=%p %h
+      '';
+    };
   };
 
-  # Vim'i kapatıyoruz
-  programs.vim = {
-    enable = false;
-  };
-
-  # nano'yu da kapatıyoruz
-  programs.nano.enable = false;
-
-  programs.nix-ld.enable = true;
-  programs.nix-ld.libraries = with pkgs; [ ];
-
-  # Sistem genelinde varsayılan editörü ayarlama
+  # Çevre değişkenleri
   environment.variables = {
-    EDITOR = "nvim";
-    VISUAL = "nvim";
+    EDITOR = "nvim";           # Varsayılan editör
+    VISUAL = "nvim";           # Varsayılan görsel editör
+    ASSH_CONFIG = "~/.ssh/assh.yml"; # ASSH yapılandırma dosyası
   };
 
+  # Sistem genelindeki paketler
   environment.systemPackages = with pkgs; [
-    assh
-    xclip
-    wl-clipboard
-    neovim  # sistem genelinde neovim'i yüklüyoruz
+    assh                      # Advanced SSH
+    openssh                   # SSH istemcisi
   ];
+
+  # Shell aliases
+  environment.shellAliases = {
+    assh = "/run/current-system/sw/bin/assh"; # ssh komutunu assh ile sarmala
+  };
+
+  # SSH dizinlerini oluşturma scripti
+  system.activationScripts.sshDirectories = ''
+    mkdir -p /home/kenan/.ssh/controlmasters
+    chmod 700 /home/kenan/.ssh/controlmasters
+    chown kenan:users /home/kenan/.ssh/controlmasters
+  '';
 }
+
+
