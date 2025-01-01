@@ -38,8 +38,6 @@
 
   # Çevre değişkenleri
   environment.variables = {
-    EDITOR = "nvim";           # Varsayılan editör
-    VISUAL = "nvim";           # Varsayılan görsel editör
     ASSH_CONFIG = "~/.ssh/assh.yml"; # ASSH yapılandırma dosyası
   };
 

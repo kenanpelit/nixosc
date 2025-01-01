@@ -413,7 +413,7 @@ Before proceeding, update your git configuration in `./modules/home/git.nix`:
 programs.git = {
    ...
    userName = "Kenan Pelit";
-   userEmail = "kenanpelit@gmail.com";
+   userEmail = "foo@bar.com";
    ...
 };
 ```

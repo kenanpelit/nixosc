@@ -39,9 +39,7 @@
         home.stateVersion = "24.11";    # Home Manager sürümü
         home.packages = with pkgs; [
           git                        # Git sürüm kontrol sistemi
-          vim                        # Vim metin editörü
           htop                       # Sistem monitörü
-          zsh                        # ZSH shell
         ];
       };
     };
