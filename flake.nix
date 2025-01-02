@@ -35,9 +35,8 @@
     # === Desktop Environment - Hyprland Ecosystem ===
     # Core Hyprland compositor
     hyprland = {
-      type = "git";
       url = "github:hyprwm/Hyprland";
-      submodules = true;  # Required for complete functionality
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     
     # Essential Hyprland plugins and extensions
