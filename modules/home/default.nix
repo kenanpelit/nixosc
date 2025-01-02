@@ -31,10 +31,11 @@
     ./swaylock.nix                    # lock screen
     ./swayosd.nix                     # brightness / volume wiget
     ./swaync/swaync.nix               # notification deamon
+    ./tmux.nix                        # tmux
     ./waybar                          # status bar
     ./waypaper.nix                    # GUI wallpaper picker
     #./viewnior.nix                    # image viewer
-    #./wezterm.nix                     # GUI wallpaper picker
+    ./wezterm.nix                     # GUI wallpaper picker
     ./xdg-mimes.nix                   # xdg config
     ./yazi.nix                        # terminal file manager
     ./zsh                             # shell
