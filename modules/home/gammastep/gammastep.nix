@@ -6,7 +6,7 @@
     latitude = 41.0;  # İstanbul için
     longitude = 28.9; # İstanbul için
     temperature = {
-      day = 5500;
+      day = 4500;
       night = 3700;
     };
     settings = {

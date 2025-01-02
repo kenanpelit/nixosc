@@ -17,7 +17,7 @@
         "hyprctl setcursor Bibata-Modern-Ice 24 &"
         "swww-daemon &"
 
-        "hyprlock"
+        #"hyprlock"
 
         ## App auto start
         # "[workspace 1 silent] zen"

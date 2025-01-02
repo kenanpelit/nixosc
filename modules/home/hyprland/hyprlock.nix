@@ -26,7 +26,7 @@ in
     general {
       no_fade_in = false
       grace = 0
-      disable_loading_bar = false
+      disable_loading_bar = true
     }
 
     label {
@@ -64,7 +64,6 @@ in
 
     image {
       monitor =
-      path = ${../../../wallpapers/otherWallpaper/avatar-image.png}
       border_size = 3
       border_color = rgba(255, 255, 255, .75)
       size = 120

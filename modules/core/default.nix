@@ -25,6 +25,7 @@
     ./program.nix        # Core programs
     ./security.nix       # Security settings
     ./services.nix       # System services
+    ./ssh.nix            # SSH system config
     ./steam.nix          # Gaming setup
     ./system.nix         # Core system config
     ./flatpak.nix        # Flatpak support

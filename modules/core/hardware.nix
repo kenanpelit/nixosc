@@ -8,8 +8,10 @@
         (vaapiIntel.override { enableHybridCodec = true; })
         vaapiVdpau
         libvdpau-va-gl
+        mesa
       ];
     };
   };
+
   hardware.enableRedistributableFirmware = true;
 }
