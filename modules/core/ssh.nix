@@ -25,5 +25,6 @@
   # SSH ile ilgili alias'lar
   environment.shellAliases = {
     assh = "${pkgs.assh}/bin/assh";
+    sshconfig = "assh config build > ~/.ssh/config"; # ASSH config'ini SSH config'ine dönüştür
   };
 }

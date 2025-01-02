@@ -2,6 +2,7 @@
   imports = [
     ./audacious.nix                   # music player
     ./bat.nix                         # better cat command
+    ./bin/bin.nix
     ./browser.nix                     # firefox based browser
     ./btop.nix                        # resouces monitor 
     ./cava.nix                        # audio visualizer
