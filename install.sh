@@ -2,30 +2,20 @@
 
 # ==============================================================================
 # NixOS Installation Script
-# Author: kenanpelit
-# Description: This script helps to setup a new NixOS installation with custom
-#              configurations including home-manager setup.
-#
-# Usage: ./install.sh [options]
-# Options:
-#   -h, --help          Show this help message
-#   -v, --version       Show script version
-#   -s, --silent        Run in silent mode (no confirmations)
-#   -d, --debug         Run in debug mode
-#   -a, --auto HOST     Run with default settings and specified host (hay or vhay)
-#   -u, --update-flake  Update flake.lock and create nix.conf if needed
+# Author: kenanpelit (Enhanced version)
+# Description: Complete script for NixOS installation and management
 # ==============================================================================
 
-VERSION="1.0.0"
+VERSION="2.0.0"
 SCRIPT_NAME=$(basename "$0")
 DEBUG=false
 SILENT=false
 AUTO=false
 UPDATE_FLAKE=false
+UPDATE_MODULE=""
+BACKUP_ONLY=false
 
-# ==============================================================================
 # Configuration Variables
-# ==============================================================================
 CURRENT_USERNAME='kenan'
 DEFAULT_USERNAME='kenan'
 CONFIG_DIR="$HOME/.config/nixos"
@@ -33,10 +23,11 @@ WALLPAPER_DIR="$HOME/Pictures/wallpapers"
 BUILD_CORES=4
 NIX_CONF_DIR="$HOME/.config/nix"
 NIX_CONF_FILE="$NIX_CONF_DIR/nix.conf"
+BACKUP_DIR="$HOME/.nixos-backups"
+FLAKE_LOCK="flake.lock"
+LOG_FILE="$HOME/.nixos-install.log"
 
-# ==============================================================================
 # Color Definitions
-# ==============================================================================
 init_colors() {
   if [[ -t 1 ]]; then
     NORMAL=$(tput sgr0)
@@ -65,9 +56,12 @@ init_colors() {
   fi
 }
 
-# ==============================================================================
-# Helper Functions
-# ==============================================================================
+# Logging Functions
+setup_logging() {
+  mkdir -p "$(dirname "$LOG_FILE")"
+  touch "$LOG_FILE"
+}
+
 log() {
   local level=$1
   shift
@@ -80,34 +74,42 @@ log() {
   "ERROR") echo -e "${RED}[ERROR]${NORMAL} ${timestamp} - $message" ;;
   "DEBUG") [[ $DEBUG == true ]] && echo -e "${BLUE}[DEBUG]${NORMAL} ${timestamp} - $message" ;;
   esac
+
+  echo "[$level] $timestamp - $message" >>"$LOG_FILE"
 }
 
+# Helper Functions
 print_help() {
   cat <<EOF
-${BRIGHT}${GREEN}NixOS Installation Script${NORMAL}
-This script helps you set up a new NixOS installation with custom configurations.
+${BRIGHT}${GREEN}NixOS Installation and Management Script${NORMAL}
+Version: $VERSION
 
 ${BRIGHT}Usage:${NORMAL}
     $SCRIPT_NAME [options]
 
 ${BRIGHT}Options:${NORMAL}
-    -h, --help          Show this help message
-    -v, --version       Show script version
-    -s, --silent        Run in silent mode (no confirmations)
-    -d, --debug         Run in debug mode
-    -a, --auto HOST     Run with default settings and specified host (hay or vhay)
-    -u, --update-flake  Update flake.lock and create nix.conf if needed
+    -h, --help              Show this help message
+    -v, --version           Show script version
+    -s, --silent           Run in silent mode (no confirmations)
+    -d, --debug            Run in debug mode
+    -a, --auto HOST        Run with default settings for specified host (hay/vhay)
+    -u, --update-flake     Update flake.lock
+    -m, --update-module    Update specific module
+    -b, --backup           Only backup flake.lock
+    -r, --restore          Restore from latest backup
+    -l, --list-modules     List available modules
+    -hc, --health-check    Perform system health check (disabled by default)
+
+${BRIGHT}Host Types:${NORMAL}
+    hay                    Laptop configuration (HAY)
+    vhay                   QEMU Virtual Machine configuration (VHAY)
 
 ${BRIGHT}Examples:${NORMAL}
-    $SCRIPT_NAME              # Run normally with all confirmations
-    $SCRIPT_NAME --silent     # Run without confirmations
-    $SCRIPT_NAME --debug      # Run with debug information
-    $SCRIPT_NAME --auto hay   # Run with default settings for hay
-    $SCRIPT_NAME --auto vhay  # Run with default settings for vhay
-    $SCRIPT_NAME --update-flake # Update flake.lock and create nix.conf if needed
-
-${BRIGHT}Note:${NORMAL}
-    This script should NOT be run as root!
+    $SCRIPT_NAME                      # Normal installation
+    $SCRIPT_NAME --silent             # Silent installation
+    $SCRIPT_NAME -a hay              # Automatic laptop setup
+    $SCRIPT_NAME -m home-manager      # Update home-manager module
+    $SCRIPT_NAME -hc                  # Check system health
 EOF
 }
 
@@ -118,18 +120,15 @@ print_version() {
 print_header() {
   echo -E "$CYAN
  ═══════════════════════════════════════
-   ██ ▄█▀▓█████  ███▄    █  ██▓███  
-   ██▄█▒ ▓█   ▀  ██ ▀█   █ ▓██░  ██▒
-   ▓███▄░ ▒███   ▓██  ▀█ ██▒▓██░ ██▓▒
-   ▓██ █▄ ▒▓█  ▄ ▓██▒  ▐▌██▒▒██▄█▓▒ ▒
-   ▒██▒ █▄░▒████▒▒██░   ▓██░▒██▒ ░  ░
-   ▒ ▒▒ ▓▒░░ ▒░ ░░ ▒░   ▒ ▒ ▒▓▒░ ░  ░
-   ░ ░▒ ▒░ ░ ░  ░░ ░░   ░ ▒░░▒ ░     
-   ░ ░░ ░    ░      ░   ░ ░ ░░       
-   ░  ░      ░  ░         ░          
+   ███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗
+   ████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝
+   ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗
+   ██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║
+   ██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║
+   ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
  ═══════════════════════════════════════
 
- $BLUE https://github.com/kenanpelit$RED
+ $BLUE Enhanced Installation Script v$VERSION $RED
   ! To make sure everything runs correctly DONT run as root !$GREEN
   → $SCRIPT_NAME $NORMAL
     "
@@ -144,6 +143,7 @@ confirm() {
   [[ $REPLY =~ ^[Yy]$ ]]
 }
 
+# System Check Functions
 check_root() {
   if [[ $EUID -eq 0 ]]; then
     log "ERROR" "This script should NOT be run as root!"
@@ -162,16 +162,91 @@ check_disk_space() {
   log "DEBUG" "Disk space check passed"
 }
 
-# ==============================================================================
+check_system_health() {
+  log "INFO" "Performing system health check..."
+
+  # Check disk space
+  check_disk_space
+
+  # Check memory
+  local available_mem=$(free -m | awk 'NR==2 {print $7}')
+  if [[ $available_mem -lt 1024 ]]; then
+    log "WARN" "Low memory available: ${available_mem}MB"
+  fi
+
+  # Check CPU load
+  local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1)
+  if [ "$(printf "%.0f" "${cpu_load}")" -gt 2 ]; then
+    log "WARN" "High CPU load: $cpu_load"
+  fi
+
+  # Check Nix store
+  if ! nix-store --verify --check-contents >/dev/null 2>&1; then
+    log "WARN" "Nix store integrity check failed"
+  fi
+
+  # Check if nix-channel is up to date
+  if ! nix-channel --update >/dev/null 2>&1; then
+    log "WARN" "Unable to update nix-channel"
+  fi
+
+  log "INFO" "System health check completed"
+}
+
 # Flake Management Functions
-# ==============================================================================
-backup_flake_lock() {
-  if [[ -f flake.lock ]]; then
-    local backup_file="flake.lock.backup.$(date +%Y%m%d_%H%M%S)"
-    cp flake.lock "$backup_file"
+backup_flake() {
+  local backup_file="$BACKUP_DIR/flake.lock.$(date +%Y%m%d_%H%M%S)"
+  mkdir -p "$BACKUP_DIR"
+
+  if [[ -f $FLAKE_LOCK ]]; then
+    cp "$FLAKE_LOCK" "$backup_file"
     log "INFO" "Created backup of flake.lock: $backup_file"
+
+    # Keep only last 5 backups
+    ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | tail -n +6 | xargs -r rm
+    return 0
   else
-    log "WARN" "No flake.lock found to backup"
+    log "ERROR" "flake.lock not found"
+    return 1
+  fi
+}
+
+update_single_module() {
+  if [[ -z "$UPDATE_MODULE" ]]; then
+    log "ERROR" "No module specified for update"
+    return 1
+  fi
+
+  log "INFO" "Updating module: $UPDATE_MODULE"
+  backup_flake
+
+  if nix flake lock --update-input "$UPDATE_MODULE"; then
+    log "INFO" "Successfully updated module: $UPDATE_MODULE"
+    return 0
+  else
+    log "ERROR" "Failed to update module: $UPDATE_MODULE"
+    return 1
+  fi
+}
+
+list_available_modules() {
+  log "INFO" "Available modules in flake:"
+  if ! nix flake metadata 2>/dev/null | grep -A 100 "Inputs:" | grep -v "Inputs:" | awk '{print $1}' | grep -v "^$" | sort; then
+    log "ERROR" "Failed to list modules. Make sure you're in a directory with a valid flake.nix"
+    exit 1
+  fi
+}
+
+restore_flake_backup() {
+  local latest_backup=$(ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | head -n1)
+
+  if [[ -n "$latest_backup" ]]; then
+    cp "$latest_backup" "$FLAKE_LOCK"
+    log "INFO" "Restored flake.lock from backup: $latest_backup"
+    return 0
+  else
+    log "ERROR" "No backup found to restore"
+    return 1
   fi
 }
 
@@ -193,16 +268,19 @@ setup_nix_conf() {
 update_flake() {
   if [[ $UPDATE_FLAKE == true ]]; then
     log "INFO" "Updating flake configuration"
-    backup_flake_lock
+    backup_flake
     setup_nix_conf
-    nix flake update
-    log "INFO" "Flake update completed"
+    if nix flake update; then
+      log "INFO" "Flake update completed successfully"
+      return 0
+    else
+      log "ERROR" "Flake update failed"
+      return 1
+    fi
   fi
 }
 
-# ==============================================================================
-# Core Functions
-# ==============================================================================
+# User and Host Management Functions
 get_username() {
   if [[ $AUTO == true ]]; then
     username=$DEFAULT_USERNAME
@@ -238,7 +316,7 @@ get_host() {
   fi
 
   log "INFO" "Selecting host type"
-  echo -en "Choose a ${GREEN}host${NORMAL} - [${YELLOW}H${NORMAL}]ay or [${YELLOW}V${NORMAL}]hay machine: "
+  echo -en "Choose a ${GREEN}host${NORMAL} - [${YELLOW}H${NORMAL}]ay (Laptop) or [${YELLOW}V${NORMAL}]hay (Virtual Machine): "
   read -n 1 -r
   echo
 
@@ -261,12 +339,14 @@ get_host() {
   fi
 }
 
+# Installation Functions
 setup_directories() {
   log "INFO" "Creating required directories"
   local dirs=(
     "$HOME/Music"
     "$HOME/Documents"
     "$HOME/Pictures/wallpapers/others"
+    "$CONFIG_DIR"
   )
 
   for dir in "${dirs[@]}"; do
@@ -315,30 +395,46 @@ build_system() {
   fi
 }
 
+# Main Installation Process
+install() {
+  if [[ $BACKUP_ONLY == true ]]; then
+    backup_flake
+    exit $?
+  fi
+
+  if [[ -n "$UPDATE_MODULE" ]]; then
+    update_single_module
+    exit $?
+  fi
+
+  setup_directories
+  copy_wallpapers
+  copy_hardware_config
+
+  if [[ $UPDATE_FLAKE == true ]]; then
+    update_flake
+  fi
+
+  build_system
+}
+
 show_summary() {
   log "INFO" "Installation Summary"
   echo -e "${GREEN}✓${NORMAL} Username: ${YELLOW}$username${NORMAL}"
   echo -e "${GREEN}✓${NORMAL} Host: ${YELLOW}$HOST${NORMAL}"
   echo -e "${GREEN}✓${NORMAL} Configuration: ${YELLOW}/etc/nixos${NORMAL}"
   echo -e "${GREEN}✓${NORMAL} Home Directory: ${YELLOW}$HOME${NORMAL}"
+  if [[ $UPDATE_FLAKE == true ]]; then
+    echo -e "${GREEN}✓${NORMAL} Flake Status: ${YELLOW}Updated${NORMAL}"
+  fi
+  if [[ -n "$UPDATE_MODULE" ]]; then
+    echo -e "${GREEN}✓${NORMAL} Updated Module: ${YELLOW}$UPDATE_MODULE${NORMAL}"
+  fi
   echo
   log "INFO" "Installation completed successfully!"
 }
 
-# ==============================================================================
-# Main Installation Process
-# ==============================================================================
-install() {
-  setup_directories
-  copy_wallpapers
-  copy_hardware_config
-  update_flake
-  build_system
-}
-
-# ==============================================================================
 # Command Line Arguments Processing
-# ==============================================================================
 process_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
@@ -362,6 +458,27 @@ process_args() {
       UPDATE_FLAKE=true
       shift
       ;;
+    -m | --update-module)
+      shift
+      UPDATE_MODULE="$1"
+      shift
+      ;;
+    -b | --backup)
+      BACKUP_ONLY=true
+      shift
+      ;;
+    -r | --restore)
+      restore_flake_backup
+      exit $?
+      ;;
+    -l | --list-modules)
+      list_available_modules
+      exit 0
+      ;;
+    -hc | --health-check)
+      check_system_health
+      exit 0
+      ;;
     -a | --auto)
       AUTO=true
       SILENT=true
@@ -383,17 +500,18 @@ process_args() {
   done
 }
 
-# ==============================================================================
 # Main Function
-# ==============================================================================
 main() {
   init_colors
+  setup_logging
   process_args "$@"
   check_root
   check_disk_space
+
   if [[ $AUTO == false ]]; then
     print_header
   fi
+
   get_username
   set_username
   get_host

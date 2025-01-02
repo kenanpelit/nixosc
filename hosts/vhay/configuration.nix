@@ -1,29 +1,19 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running 'nixos-help').
-{ config, pkgs, lib, ... }:
+# and in the NixOS manual (accessible by running ‘nixos-help’).
+
+{ config, pkgs, ... }:
+
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
 
-  # GRUB bootloader yapılandırması
-  boot.loader = {
-    grub = {
-      enable = true;
-      device = "/dev/vda";     # VM/QEMU için disk aygıtı
-      efiSupport = false;      # Legacy BIOS kullanıldığı için kapalı
-      configurationLimit = 10;
-    };
-  };
- 
-  # En son kernel paketlerini kullan
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-
-  ## Bootloader.
-  #boot.loader.systemd-boot.enable = true;
-  #boot.loader.efi.canTouchEfiVariables = true;
+  # Bootloader.
+  boot.loader.grub.enable = true;
+  boot.loader.grub.device = "/dev/vda";
+  boot.loader.grub.useOSProber = true;
 
   networking.hostName = "vhay"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -69,7 +59,7 @@
     description = "Kenan Pelit";
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [];
-    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPXTOGB+8R7VW3WXiBJwCikHblt7GIce7SgFHcaq2mjm kenan@hay" ];
+    openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPXTOGB+8R7VW3WXiBJwCikHblt7GIce7SgFHcaq2mjm kenan@hay" ]; 
   };
 
   # Allow unfree packages
@@ -80,14 +70,11 @@
   environment.systemPackages = with pkgs; [
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
+    vim
     git
     byobu
-    tmux
-    sops
-    age
-    assh
-    vim
     htop
+    tmux
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
