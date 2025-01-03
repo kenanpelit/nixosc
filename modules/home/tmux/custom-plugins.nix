@@ -1,5 +1,5 @@
+# custom-plugins.nix
 { pkgs, lib }:
-
 let
   inherit (pkgs) fetchFromGitHub;
   inherit (pkgs.tmuxPlugins) mkTmuxPlugin;
@@ -21,7 +21,6 @@ in
       platforms = platforms.unix;
     };
   };
-
   tmux-ssh-status = mkTmuxPlugin {
     pluginName = "ssh-status";
     version = "unstable-2023";
@@ -38,7 +37,6 @@ in
       platforms = platforms.unix;
     };
   };
-
   tmux-online-status = mkTmuxPlugin {
     pluginName = "online-status";
     version = "unstable-2023";
@@ -55,7 +53,6 @@ in
       platforms = platforms.unix;
     };
   };
-
   tmux-tokyo-night = mkTmuxPlugin {
     pluginName = "tokyo-night";
     rtpFilePath = "tokyo-night.tmux";

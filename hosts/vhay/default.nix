@@ -22,6 +22,8 @@
       git
       zsh
       zoxide
+      ncurses
+      terminfo
     ];
   };
 }

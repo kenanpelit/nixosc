@@ -1,3 +1,4 @@
+# default.nix
 {
   config,
   pkgs,
@@ -18,25 +19,21 @@ in
     mouse = true;
     keyMode = "vi";
     sensibleOnTop = true;
-
     extraConfig = ''
       # Tmux Settings
       ${tmuxConf}
     '';
-
     plugins = with pkgs.tmuxPlugins; [
       ## Custom Plugins
       customPlugins.tmux-window-name
       customPlugins.tmux-ssh-status
       customPlugins.tmux-online-status
       customPlugins.tmux-tokyo-night
-
       ## Built-in and Standard Plugins
       sensible
       open
       vim-tmux-navigator
       prefix-highlight
-
       ## FZF Plugins
       {
         plugin = fzf-tmux-url;
@@ -64,7 +61,6 @@ in
           set -g @fuzzback-fzf-bind 'ctrl-y:execute-silent(echo -n {3..} | xsel -ib)+abort'
         '';
       }
-
       ## Session and Continuity Plugins
       {
         plugin = resurrect;
@@ -80,7 +76,6 @@ in
           set -g @continuum-save-interval '15'
         '';
       }
-
       ## Additional Plugins
       sessionist
       tilish
@@ -91,15 +86,16 @@ in
       t-smart-tmux-session-manager
     ];
   };
-
   ## Additional Home Packages
   home.packages = with pkgs; [
-    jq        # Hava durumu için JSON işleme
+    jq        # JSON processing for weather
     wl-clipboard
     fzf
     sesh
     playerctl
-    bat       # Önizleme ve renkli çıktılar için
+    bat       # For preview and colored output
     xsel
   ];
 }
+
+

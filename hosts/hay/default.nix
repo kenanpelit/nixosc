@@ -41,6 +41,8 @@
           git                        # Git sürüm kontrol sistemi
           htop                       # Sistem monitörü
           zoxide
+          ncurses
+          terminfo
         ];
       };
     };
