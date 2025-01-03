@@ -101,6 +101,8 @@ ${BRIGHT}Options:${NORMAL}
     -l, --list-modules     List available modules
     -p, --profile NAME     Specify profile name for nixos-rebuild
     -hc, --health-check    Perform system health check (disabled by default)
+    --list-profiles        List all NixOS profiles
+    --delete-profile ID    Delete a specific profile by ID
 
 ${BRIGHT}Host Types:${NORMAL}
     hay                    Laptop configuration (HAY)
@@ -393,19 +395,19 @@ build_system() {
   echo -en "You are about to start the system build, do you want to proceed? "
   if confirm; then
     log "INFO" "Building the system..."
-
+    
     # Base command with cores and flake specification
     local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\" --option warn-dirty false"
-
+    
     # If profile name is set, use --profile-name parameter
     if [[ -n "$PROFILE_NAME" ]]; then
       build_command+=" --profile-name \"$PROFILE_NAME\""
       log "INFO" "Using profile name: $PROFILE_NAME"
       log "DEBUG" "Final build command: $build_command"
     fi
-
+    
     echo -e "${BLUE}Executing:${NORMAL} $build_command"
-
+    
     if eval "$build_command"; then
       log "INFO" "System built successfully"
       if [[ -n "$PROFILE_NAME" ]]; then
@@ -437,7 +439,7 @@ install() {
   setup_directories
   copy_wallpapers
   copy_hardware_config
-  get_profile_name # Ask for profile name if not provided
+  get_profile_name  # Ask for profile name if not provided
 
   if [[ $UPDATE_FLAKE == true ]]; then
     update_flake
@@ -465,10 +467,44 @@ show_summary() {
   log "INFO" "Installation completed successfully!"
 }
 
+# Profile Management Functions
+list_profiles() {
+  log "INFO" "Listing all NixOS profiles:"
+  nix profile list
+  local num_profiles=$(nix profile list | wc -l)
+  log "INFO" "Found $num_profiles profiles"
+}
+
+delete_profile() {
+  local profile_id=$1
+  if [[ -z "$profile_id" ]]; then
+    log "ERROR" "No profile ID specified for deletion"
+    return 1
+  fi
+
+  log "INFO" "Attempting to delete profile ID: $profile_id"
+  if nix profile remove "$profile_id"; then
+    log "INFO" "Successfully deleted profile ID: $profile_id"
+    return 0
+  else
+    log "ERROR" "Failed to delete profile ID: $profile_id"
+    return 1
+  fi
+}
+
 # Command Line Arguments Processing
 process_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
+    --list-profiles)
+      list_profiles
+      exit 0
+      ;;
+    --delete-profile)
+      shift
+      delete_profile "$1"
+      exit $?
+      ;;
     -h | --help)
       print_help
       exit 0
@@ -558,4 +594,3 @@ main() {
 # Start the script
 main "$@"
 exit 0
-
