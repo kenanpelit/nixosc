@@ -6,8 +6,8 @@
 }:
 let
   inherit (pkgs) fetchFromGitHub;
-  customPlugins = import ./custom-plugins.nix { inherit pkgs; };
-  tmux-conf = builtins.readFile ./tmux.conf;
+  customPlugins = import ./custom-plugins.nix { inherit pkgs lib; };
+  tmuxConf = builtins.readFile ./tmux.conf;
 in
 {
   programs.tmux = {
@@ -21,19 +21,24 @@ in
     sensibleOnTop = true;
     
     extraConfig = ''
-      # Settings
-      ${tmux-conf}
+      # Tmux Settings
+      ${tmuxConf}
     '';
     
     plugins = with pkgs.tmuxPlugins; [
+      ## Custom Plugins
       customPlugins.tmux-window-name
       customPlugins.tmux-ssh-status
       customPlugins.tmux-online-status
       customPlugins.tmux-tokyo-night
-      
+
+      ## Built-in and Standard Plugins
       sensible
       open
       vim-tmux-navigator
+      prefix-highlight
+
+      ## FZF Plugins
       {
         plugin = fzf-tmux-url;
         extraConfig = ''
@@ -43,7 +48,6 @@ in
           set -g @fzf-url-open "zen-browser"
         '';
       }
-      prefix-highlight
       {
         plugin = tmux-fzf;
         extraConfig = ''
@@ -61,6 +65,8 @@ in
           set -g @fuzzback-fzf-bind 'ctrl-y:execute-silent(echo -n {3..} | xsel -ib)+abort'
         '';
       }
+
+      ## Session and Continuity Plugins
       {
         plugin = resurrect;
         extraConfig = ''
@@ -75,6 +81,8 @@ in
           set -g @continuum-save-interval '15'
         '';
       }
+
+      ## Additional Plugins
       sessionist
       tilish
       copycat
@@ -85,6 +93,7 @@ in
     ];
   };
   
+  ## Additional Home Packages
   home.packages = with pkgs; [
     wl-clipboard
     fzf

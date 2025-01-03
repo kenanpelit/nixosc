@@ -22,7 +22,6 @@
    ./nemo.nix                        # File manager
    ./nvim.nix                        # Neovim editor 
    ./obsidian.nix                    # Note-taking application
-   ./p10k/p10k.nix                   # Powerlevel10k shell theme
    ./packages.nix                    # Other miscellaneous packages
    ./retroarch.nix                   # Emulator frontend
    ./rofi.nix                        # Application launcher

@@ -1,92 +1,88 @@
 { inputs, pkgs, ... }: 
-let 
-  _2048 = pkgs.callPackage ../../pkgs/2048/default.nix {}; 
-in
 {
   home.packages = (with pkgs; [
-    _2048
+    ## CLI Utility (Temel Komut Satırı Araçları)
+    ani-cli                           # Anime izlemek için TUI aracı
+    binsider                          # İkili dosyalar için inceleme ve analiz aracı
+    bitwise                           # Bit/hex manipülasyonları için CLI aracı
+    byobu                             # Gelişmiş tmux wrapper
+    caligula                          # Disk imajlama için hafif ve kullanıcı dostu TUI
+    dconf-editor                      # GNOME dconf yapılandırma düzenleyicisi
+    docfd                             # Çok satırlı fuzzy metin arama TUI'si
+    eza                               # Modern bir ls alternatifi
+    entr                              # Dosya değişiminde komut çalıştırma aracı
+    fd                                # Hızlı ve kullanıcı dostu bir find alternatifi
+    ffmpeg                            # Video ve ses işleme aracı
+    file                              # Dosya bilgisi gösterici
+    gtt                               # Google Translate TUI aracı
+    gifsicle                          # GIF düzenleme ve sıkıştırma aracı
+    gtrash                            # Dosyaları çöp kutusuna taşıyan bir rm alternatifi
+    hexdump                           # İkili dosyaların hex dökümü
+    imv                               # Basit ve hızlı bir görsel görüntüleyici
+    jq                                # JSON veri işlemcisi
+    killall                           # Süreçleri topluca sonlandırma aracı
+    lazygit                           # Git için kullanıcı dostu TUI
+    libnotify                         # Bildirim sistemi
+    man-pages                         # Ekstra manuel sayfalar
+    mimeo                             # MIME türü temelli komut çalıştırma
+    mpv                               # Hafif ve güçlü medya oynatıcı
+    ncdu                              # Disk kullanımını analiz eden TUI
+    nitch                             # Sistem bilgisi gösteren fetch aracı
+    nixd                              # Nix için dil sunucusu
+    nixfmt-rfc-style                  # Nix kodu formatlayıcı
+    openssl                           # Kriptografi araçları ve kütüphanesi
+    onefetch                          # Git depoları için fetch aracı
+    pamixer                           # PulseAudio CLI mikser
+    playerctl                         # Medya oynatıcı kontrol aracı
+    poweralertd                       # Güç uyarıları için daemon
+    programmer-calculator             # Geliştirici dostu hesap makinesi
+    ripgrep                           # Hızlı bir grep alternatifi
+    shfmt                             # Shell scriptleri için formatlayıcı
+    swappy                            # Ekran görüntüsü düzenleme aracı
+    tdf                               # Terminalde PDF görüntüleme
+    treefmt2                          # Proje formatlayıcı
+    tldr                              # Özet manuel sayfalar
+    todo                              # Komut satırı yapılacaklar listesi
+    toipe                             # Terminalde yazma testi aracı
+    ttyper                            # CLI yazma testi
+    tmux                              # Terminal çoklayıcı
+    unzip                             # ZIP dosyalarını açma
+    wl-clipboard                      # Wayland kopyala-yapıştır araçları (wl-copy, wl-paste)
+    wezterm                           # Modern ve hızlı terminal emülatörü
+    wget                              # Dosya indirme aracı
+    yt-dlp-light                      # YouTube ve benzeri sitelerden video indirme
+    xdg-utils                         # XDG standart araçları
+    xxd                               # Hex dump aracı
 
-    ## CLI utility
-    ani-cli
-    binsider
-    bitwise                           # cli tool for bit / hex manipulation
-    byobu
-    caligula                          # User-friendly, lightweight TUI for disk imaging
-    dconf-editor
-    docfd                             # TUI multiline fuzzy document finder
-    eza                               # ls replacement
-    entr                              # perform action when file change
-    fd                                # find replacement
-    ffmpeg
-    file                              # Show file information 
-    gtt                               # google translate TUI
-    gifsicle                          # gif utility
-    gtrash                            # rm replacement, put deleted files in system trash
-    hexdump
-    imv                               # image viewer
-    jq                                # JSON processor
-    killall
-    lazygit
-    libnotify
-    man-pages                         # extra man pages
-    mimeo
-    mpv                               # video player
-    ncdu                              # disk space
-    nitch                             # systhem fetch util
-    nixd                              # nix lsp
-    nixfmt-rfc-style                  # nix formatter
-    openssl
-    onefetch                          # fetch utility for git repo
-    pamixer                           # pulseaudio command line mixer
-    playerctl                         # controller for media players
-    poweralertd
-    programmer-calculator
-    ripgrep                           # grep replacement
-    shfmt                             # bash formatter
-    swappy                            # snapshot editing tool
-    tdf                               # cli pdf viewer
-    treefmt2                          # project formatter
-    tldr
-    todo                              # cli todo list
-    toipe                             # typing test in the terminal
-    ttyper                            # cli typing test
-    tmux
-    unzip
-    wl-clipboard                      # clipboard utils for wayland (wl-copy, wl-paste)
-    wezterm                           # wezterm
-    wget
-    yt-dlp-light
-    xdg-utils
-    xxd
+    ## Eğlenceli CLI Araçları
+    cbonsai                           # Terminalde bonsai ağaçları
+    cmatrix                           # Matrix temalı terminal efekti
+    pipes                             # Terminalde boru animasyonları
+    sl                                # "ls" yazım hatasını eğlenceli bir animasyona çevirir
+    tty-clock                         # Terminalde basit saat
 
-    ## CLI 
-    cbonsai                           # terminal screensaver
-    cmatrix
-    pipes                             # terminal screensaver
-    sl
-    tty-clock                         # cli clock
+    ## Grafiksel Uygulamalar (GUI)
+    bleachbit                         # Sistem önbelleği temizleyici
+    discord                           # Sohbet ve topluluk uygulaması
+    libreoffice                       # Ofis uygulamaları paketi
+    nix-prefetch-github               # GitHub projeleri için prefetch aracı
+    pavucontrol                       # PulseAudio ses kontrol arayüzü
+    qalculate-gtk                     # Gelişmiş hesap makinesi (GUI)
+    resources                         # Sistem kaynaklarını izlemek için GUI uygulaması
+    soundwireserver                   # Ses akışı sunucusu
+    vlc                               # Gelişmiş medya oynatıcı
+    zenity                            # Grafiksel komut kutuları oluşturma aracı
 
-    ## GUI Apps
-    bleachbit                         # cache cleaner
-    discord
-    libreoffice
-    nix-prefetch-github
-    pavucontrol                       # pulseaudio volume controle (GUI)
-    qalculate-gtk                     # calculator
-    resources                         # GUI resources monitor
-    soundwireserver
-    vlc
-    zenity
+    ## C / C++ Araçları
+    gcc                               # GNU C Compiler
+    gdb                               # GNU Hata Ayıklayıcı
+    gnumake                           # Makefile desteği
 
-    # C / C++
-    gcc
-    gdb
-    gnumake
+    ## Python Araçları
+    python3                           # Python 3
+    python312Packages.ipython         # Gelişmiş Python konsolu
 
-    ## Python
-    python3
-    python312Packages.ipython
-
-    inputs.alejandra.defaultPackage.${system}
+    ## Diğer
+    inputs.alejandra.defaultPackage.${system} # Alejandra için varsayılan paket
   ]);
 }
