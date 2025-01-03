@@ -11,7 +11,6 @@
    ./fzf.nix                         # Fuzzy finder
    # ./gaming.nix                     # Gaming-related packages
    ./gammastep                       # Screen color temperature adjuster
-   # ./ghostty.nix                    # Terminal (alternative)
    ./git.nix                         # Version control system
    ./gnome.nix                       # GNOME applications
    ./gtk.nix                         # GTK theme configuration

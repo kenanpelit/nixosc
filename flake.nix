@@ -67,11 +67,6 @@
     cachix-pkgs.url = "github:cachix/cachix";            # Binary cache management
     
     # === Terminal and File Management ===
-    # Modern GPU-accelerated terminal emulator
-    ghostty = {
-      url = "github:ghostty-org/ghostty";
-    };
-    
     # Terminal file manager plugins
     yazi-plugins = {
       url = "github:yazi-rs/plugins";
