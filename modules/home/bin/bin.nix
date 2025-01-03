@@ -85,6 +85,18 @@ let
   tm = pkgs.writeShellScriptBin "tm" (
     builtins.readFile ./bin/tm
   );
+  anote = pkgs.writeShellScriptBin "anote" (
+    builtins.readFile ./bin/anote.sh
+  );
+  snippetp = pkgs.writeShellScriptBin "snippetp" (
+    builtins.readFile ./bin/snippetp.sh
+  );
+  tmux-copy = pkgs.writeShellScriptBin "tmux-copy" (
+    builtins.readFile ./bin/tmux-copy.sh
+  );
+  tmux-fspeed = pkgs.writeShellScriptBin "tmux-fspeed" (
+    builtins.readFile ./bin/fspeed
+  );
 
   # Utility Scripts
   publicip = pkgs.writeShellScriptBin "publicip" (
@@ -123,12 +135,20 @@ in {
     wofi-wifi
     wofi-search
 
-    # TMux Scripts
-    tmux-plugins
-    tmux-startup
-
     # Utility Scripts
     publicip
     turbo-boost
+
+    # TMux Scripts
+    tmux-plugins
+    tmux-startup
+    t1
+    t3
+    t4
+    tm
+    anote
+    snippetp
+    tmux-copy
+    tmux-fspeed
   ];
 }

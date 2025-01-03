@@ -32,7 +32,7 @@
     ./swaylock.nix                    # Screen locker
     ./swayosd.nix                     # Brightness/volume widget
     ./swaync/swaync.nix               # Notification daemon
-    ./tmux.nix                        # Tmux configuration
+    ./tmux                            # Tmux configuration
     ./waybar                          # Status bar configuration
     ./waypaper.nix                    # GUI wallpaper picker
     # ./viewnior.nix                   # Image viewer

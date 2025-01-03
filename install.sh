@@ -91,16 +91,16 @@ ${BRIGHT}Usage:${NORMAL}
 ${BRIGHT}Options:${NORMAL}
     -h, --help              Show this help message
     -v, --version           Show script version
-    -s, --silent            Run in silent mode (no confirmations)
-    -d, --debug             Run in debug mode
-    -a, --auto HOST         Run with default settings for specified host (hay/vhay)
-    -u, --update-flake      Update flake.lock
-    -m, --update-module     Update specific module
-    -b, --backup            Only backup flake.lock
-    -r, --restore           Restore from latest backup
-    -l, --list-modules      List available modules
-    -p, --profile NAME      Specify profile name for nixos-rebuild
-    -hc, --health-check     Perform system health check (disabled by default)
+    -s, --silent           Run in silent mode (no confirmations)
+    -d, --debug            Run in debug mode
+    -a, --auto HOST        Run with default settings for specified host (hay/vhay)
+    -u, --update-flake     Update flake.lock
+    -m, --update-module    Update specific module
+    -b, --backup           Only backup flake.lock
+    -r, --restore          Restore from latest backup
+    -l, --list-modules     List available modules
+    -p, --profile NAME     Specify profile name for nixos-rebuild
+    -hc, --health-check    Perform system health check (disabled by default)
 
 ${BRIGHT}Host Types:${NORMAL}
     hay                    Laptop configuration (HAY)
@@ -109,9 +109,9 @@ ${BRIGHT}Host Types:${NORMAL}
 ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME                      # Normal installation
     $SCRIPT_NAME --silent             # Silent installation
-    $SCRIPT_NAME -a hay               # Automatic laptop setup
+    $SCRIPT_NAME -a hay              # Automatic laptop setup
     $SCRIPT_NAME -m home-manager      # Update home-manager module
-    $SCRIPT_NAME -p myprofile         # Build with specific profile name
+    $SCRIPT_NAME -p myprofile        # Build with specific profile name
     $SCRIPT_NAME -hc                  # Check system health
 EOF
 }
@@ -123,12 +123,12 @@ print_version() {
 print_header() {
   echo -E "$CYAN
  ═══════════════════════════════════════
-  ███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗
-  ████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝
-  ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗
-  ██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║
-  ██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║
-  ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+   ███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗
+   ████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝
+   ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗
+   ██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║
+   ██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║
+   ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
  ═══════════════════════════════════════
 
  $BLUE Enhanced Installation Script v$VERSION $RED
@@ -181,27 +181,22 @@ check_disk_space() {
 check_system_health() {
   log "INFO" "Performing system health check..."
 
-  # Check disk space
   check_disk_space
 
-  # Check memory
   local available_mem=$(free -m | awk 'NR==2 {print $7}')
   if [[ $available_mem -lt 1024 ]]; then
     log "WARN" "Low memory available: ${available_mem}MB"
   fi
 
-  # Check CPU load
   local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1)
   if [ "$(printf "%.0f" "${cpu_load}")" -gt 2 ]; then
     log "WARN" "High CPU load: $cpu_load"
   fi
 
-  # Check Nix store
   if ! nix-store --verify --check-contents >/dev/null 2>&1; then
     log "WARN" "Nix store integrity check failed"
   fi
 
-  # Check if nix-channel is up to date
   if ! nix-channel --update >/dev/null 2>&1; then
     log "WARN" "Unable to update nix-channel"
   fi
@@ -399,15 +394,23 @@ build_system() {
   if confirm; then
     log "INFO" "Building the system..."
 
-    local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\""
+    # Base command with cores and flake specification
+    local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\" --option warn-dirty false"
 
+    # If profile name is set, use --profile-name parameter
     if [[ -n "$PROFILE_NAME" ]]; then
       build_command+=" --profile-name \"$PROFILE_NAME\""
       log "INFO" "Using profile name: $PROFILE_NAME"
+      log "DEBUG" "Final build command: $build_command"
     fi
+
+    echo -e "${BLUE}Executing:${NORMAL} $build_command"
 
     if eval "$build_command"; then
       log "INFO" "System built successfully"
+      if [[ -n "$PROFILE_NAME" ]]; then
+        log "INFO" "System profile created with name: $PROFILE_NAME"
+      fi
       return 0
     else
       log "ERROR" "System build failed"
@@ -434,7 +437,7 @@ install() {
   setup_directories
   copy_wallpapers
   copy_hardware_config
-  get_profile_name # Profile name sorgusu
+  get_profile_name # Ask for profile name if not provided
 
   if [[ $UPDATE_FLAKE == true ]]; then
     update_flake
@@ -555,3 +558,4 @@ main() {
 # Start the script
 main "$@"
 exit 0
+
