@@ -14,6 +14,7 @@ AUTO=false
 UPDATE_FLAKE=false
 UPDATE_MODULE=""
 BACKUP_ONLY=false
+PROFILE_NAME=""
 
 # Configuration Variables
 CURRENT_USERNAME='kenan'
@@ -90,15 +91,16 @@ ${BRIGHT}Usage:${NORMAL}
 ${BRIGHT}Options:${NORMAL}
     -h, --help              Show this help message
     -v, --version           Show script version
-    -s, --silent           Run in silent mode (no confirmations)
-    -d, --debug            Run in debug mode
-    -a, --auto HOST        Run with default settings for specified host (hay/vhay)
-    -u, --update-flake     Update flake.lock
-    -m, --update-module    Update specific module
-    -b, --backup           Only backup flake.lock
-    -r, --restore          Restore from latest backup
-    -l, --list-modules     List available modules
-    -hc, --health-check    Perform system health check (disabled by default)
+    -s, --silent            Run in silent mode (no confirmations)
+    -d, --debug             Run in debug mode
+    -a, --auto HOST         Run with default settings for specified host (hay/vhay)
+    -u, --update-flake      Update flake.lock
+    -m, --update-module     Update specific module
+    -b, --backup            Only backup flake.lock
+    -r, --restore           Restore from latest backup
+    -l, --list-modules      List available modules
+    -p, --profile NAME      Specify profile name for nixos-rebuild
+    -hc, --health-check     Perform system health check (disabled by default)
 
 ${BRIGHT}Host Types:${NORMAL}
     hay                    Laptop configuration (HAY)
@@ -107,8 +109,9 @@ ${BRIGHT}Host Types:${NORMAL}
 ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME                      # Normal installation
     $SCRIPT_NAME --silent             # Silent installation
-    $SCRIPT_NAME -a hay              # Automatic laptop setup
+    $SCRIPT_NAME -a hay               # Automatic laptop setup
     $SCRIPT_NAME -m home-manager      # Update home-manager module
+    $SCRIPT_NAME -p myprofile         # Build with specific profile name
     $SCRIPT_NAME -hc                  # Check system health
 EOF
 }
@@ -120,12 +123,12 @@ print_version() {
 print_header() {
   echo -E "$CYAN
  ═══════════════════════════════════════
-   ███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗
-   ████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝
-   ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗
-   ██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║
-   ██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║
-   ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+  ███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗
+  ████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝
+  ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗
+  ██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║
+  ██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║
+  ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
  ═══════════════════════════════════════
 
  $BLUE Enhanced Installation Script v$VERSION $RED
@@ -141,6 +144,19 @@ confirm() {
   read -n 1 -r
   echo
   [[ $REPLY =~ ^[Yy]$ ]]
+}
+
+# Get profile name if not specified via command line
+get_profile_name() {
+  if [[ -z "$PROFILE_NAME" && $SILENT == false ]]; then
+    echo -en "Would you like to specify a profile name? "
+    if confirm; then
+      echo -en "Enter profile name: ${YELLOW}"
+      read -r PROFILE_NAME
+      echo -en "$NORMAL"
+      log "DEBUG" "Profile name set to: $PROFILE_NAME"
+    fi
+  fi
 }
 
 # System Check Functions
@@ -382,7 +398,15 @@ build_system() {
   echo -en "You are about to start the system build, do you want to proceed? "
   if confirm; then
     log "INFO" "Building the system..."
-    if sudo nixos-rebuild switch --cores $BUILD_CORES --flake ".#${HOST}"; then
+
+    local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\""
+
+    if [[ -n "$PROFILE_NAME" ]]; then
+      build_command+=" --profile-name \"$PROFILE_NAME\""
+      log "INFO" "Using profile name: $PROFILE_NAME"
+    fi
+
+    if eval "$build_command"; then
       log "INFO" "System built successfully"
       return 0
     else
@@ -410,6 +434,7 @@ install() {
   setup_directories
   copy_wallpapers
   copy_hardware_config
+  get_profile_name # Profile name sorgusu
 
   if [[ $UPDATE_FLAKE == true ]]; then
     update_flake
@@ -422,6 +447,9 @@ show_summary() {
   log "INFO" "Installation Summary"
   echo -e "${GREEN}✓${NORMAL} Username: ${YELLOW}$username${NORMAL}"
   echo -e "${GREEN}✓${NORMAL} Host: ${YELLOW}$HOST${NORMAL}"
+  if [[ -n "$PROFILE_NAME" ]]; then
+    echo -e "${GREEN}✓${NORMAL} Profile Name: ${YELLOW}$PROFILE_NAME${NORMAL}"
+  fi
   echo -e "${GREEN}✓${NORMAL} Configuration: ${YELLOW}/etc/nixos${NORMAL}"
   echo -e "${GREEN}✓${NORMAL} Home Directory: ${YELLOW}$HOME${NORMAL}"
   if [[ $UPDATE_FLAKE == true ]]; then
@@ -452,6 +480,11 @@ process_args() {
       ;;
     -d | --debug)
       DEBUG=true
+      shift
+      ;;
+    -p | --profile)
+      shift
+      PROFILE_NAME="$1"
       shift
       ;;
     -u | --update-flake)
