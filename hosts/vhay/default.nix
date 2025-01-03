@@ -23,7 +23,6 @@
       zsh
       zoxide
       ncurses
-      terminfo
     ];
   };
 }

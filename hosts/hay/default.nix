@@ -42,7 +42,6 @@
           htop                       # Sistem monitörü
           zoxide
           ncurses
-          terminfo
         ];
       };
     };
