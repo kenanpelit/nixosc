@@ -1,3 +1,4 @@
+# tmux.nix
 {...}: {
   # Tmux terminal multiplexer configuration
   programs.tmux = {
@@ -9,7 +10,6 @@
     mouse = true;
     sensibleOnTop = false;
     terminal = "screen-256color";
-
     extraConfig = ''
       # Set the prefix to `ctrl + q` instead of `ctrl + b`
       set -g prefix C-q
@@ -54,33 +54,24 @@
       bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j'  'select-pane -D'
       bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k'  'select-pane -U'
       bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l'  'select-pane -R'
-
       bind-key -T copy-mode-vi 'C-h' select-pane -L
       bind-key -T copy-mode-vi 'C-j' select-pane -D
       bind-key -T copy-mode-vi 'C-k' select-pane -U
       bind-key -T copy-mode-vi 'C-l' select-pane -R
+
+      # Catppuccin theme configuration
+      set -g @catppuccin_flavor "macchiato"
+      set -g @catppuccin_status_background "none"
+      set -g @catppuccin_window_current_number_color "#{@thm_peach}"
+      set -g @catppuccin_window_current_text " #W"
+      set -g @catppuccin_window_current_text_color "#{@thm_bg}"
+      set -g @catppuccin_window_number_color "#{@thm_blue}"
+      set -g @catppuccin_window_text " #W"
+      set -g @catppuccin_window_text_color "#{@thm_surface_0}"
+      set -g @catppuccin_status_left_separator "█"
+      set -g status-right "#{E:@catppuccin_status_host}#{E:@catppuccin_status_date_time}"
+      set -g status-left ""
     '';
   };
-
-  # Enable catppuccin theming for tmux.
-  catppuccin = {
-    tmux = {
-      enable = true;
-      extraConfig = ''
-        set -g @catppuccin_flavor "macchiato"
-        set -g @catppuccin_status_background "none"
-
-        set -g @catppuccin_window_current_number_color "#{@thm_peach}"
-        set -g @catppuccin_window_current_text " #W"
-        set -g @catppuccin_window_current_text_color "#{@thm_bg}"
-        set -g @catppuccin_window_number_color "#{@thm_blue}"
-        set -g @catppuccin_window_text " #W"
-        set -g @catppuccin_window_text_color "#{@thm_surface_0}"
-        set -g @catppuccin_status_left_separator "█"
-
-        set -g status-right "#{E:@catppuccin_status_host}#{E:@catppuccin_status_date_time}"
-        set -g status-left ""
-      '';
-    };
-  };
 }
+

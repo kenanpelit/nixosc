@@ -39,11 +39,19 @@ in
     window-decoration = false
 
     gtk-titlebar = false
-    gtk-single-instance = true
+    gtk-single-instance = false
     gtk-tabs-location = bottom
     gtk-wide-tabs = false
 
     auto-update = off
+    term = ghostty
+    clipboard-paste-protection = false
+
+    keybind = shift+end=unbind
+    keybind = shift+home=unbind
+    keybind = ctrl+shift+left=unbind
+    keybind = ctrl+shift+right=unbind
+    keybind = shift+enter=text:\n
   '';
   xdg.configFile."ghostty/themes/gruvbox".text = ''
     background = #151718

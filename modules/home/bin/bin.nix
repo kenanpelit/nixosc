@@ -73,6 +73,18 @@ let
   tmux-startup = pkgs.writeShellScriptBin "tmux-startup" (
     builtins.readFile ./bin/tmux-startup.sh
   );
+  t1 = pkgs.writeShellScriptBin "t1" (
+    builtins.readFile ./bin/t1
+  );
+  t3 = pkgs.writeShellScriptBin "t3" (
+    builtins.readFile ./bin/t3
+  );
+  t4 = pkgs.writeShellScriptBin "t4" (
+    builtins.readFile ./bin/t4
+  );
+  tm = pkgs.writeShellScriptBin "tm" (
+    builtins.readFile ./bin/tm
+  );
 
   # Utility Scripts
   publicip = pkgs.writeShellScriptBin "publicip" (
