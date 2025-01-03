@@ -30,14 +30,14 @@
         kb_options = "ctrl:nocaps";
         repeat_rate = "25";
         repeat_delay = "300";
-        sensitivity = "0.50";
+        sensitivity = "0.70";
         accel_profile = "adaptive";
         touchpad = {
           natural_scroll = "false";
           disable_while_typing = "true";
           tap-to-click = "true";
           drag_lock = "true";
-          scroll_factor = "0.50";
+          scroll_factor = "0.70";
         };
         numlock_by_default = "0";
         left_handed = "0";

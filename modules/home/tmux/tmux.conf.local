@@ -298,16 +298,16 @@ bind b choose-buffer    # choose which buffer to paste from
 # https://github.com/joshmedeski/sesh
 #---------------------------------------------------------------------
 # Sesh integration
-bind -r C-t run-shell "/usr/bin/sesh connect \"\$(/usr/bin/sesh list --icons | fzf-tmux -p 55%,60% \
+bind -r C-t run-shell "sesh connect \"\$(sesh list --icons | fzf-tmux -p 55%,60% \
     --no-sort \
     --ansi \
     --border-label ' sesh ' \
     --prompt '⚡  ' \
-    --bind 'ctrl-a:change-prompt(⚡  )+reload(/usr/bin/sesh list --icons)' \
-    --bind 'ctrl-t:change-prompt(🪟  )+reload(/usr/bin/sesh list -t --icons)' \
-    --bind 'ctrl-g:change-prompt(⚙️  )+reload(/usr/bin/sesh list -c --icons)' \
-    --bind 'ctrl-x:change-prompt(📁  )+reload(/usr/bin/sesh list -z --icons)' \
-    --bind 'ctrl-d:execute(tmux kill-session -t {2..})+reload(/usr/bin/sesh list --icons)'\
+    --bind 'ctrl-a:change-prompt(⚡  )+reload(sesh list --icons)' \
+    --bind 'ctrl-t:change-prompt(🪟  )+reload(sesh list -t --icons)' \
+    --bind 'ctrl-g:change-prompt(⚙️  )+reload(/esh list -c --icons)' \
+    --bind 'ctrl-x:change-prompt(📁  )+reload(sesh list -z --icons)' \
+    --bind 'ctrl-d:execute(tmux kill-session -t {2..})+reload(sesh list --icons)'\
 )\""
 
 # Last session binding

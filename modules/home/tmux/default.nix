@@ -4,18 +4,17 @@
   lib,
   ...
 }:
-
 let
   inherit (pkgs) fetchFromGitHub;
   
   # Import custom plugins
   customPlugins = import ./custom-plugins.nix { inherit pkgs; };
-
+  
   # Oh-my-tmux plugin
   oh-my-tmux = fetchFromGitHub {
     owner = "gpakosz";
     repo = ".tmux";
-    rev = "065da52c67c2c9021957f8a3164003695740418d";  # January 3, 2024
+    rev = "065da52c67c2c9021957f8a3164003695740418d";
     sha256 = "sha256-Os0L8NFss+V+YQkEPYaew3bm+vyzVU/mOfa7OE47KRc=";
   };
 
@@ -53,11 +52,9 @@ in
       open
       {
         plugin = power-theme;
-        extraConfig = "";
       }
       {
         plugin = vim-tmux-navigator;
-        extraConfig = "";
       }
       {
         plugin = fzf-tmux-url;
@@ -68,16 +65,13 @@ in
           set -g @fzf-url-open "zen-browser"
         '';
       }
-      {
-        plugin = prefix-highlight;
-        extraConfig = "";
-      }
+      prefix-highlight
       {
         plugin = tmux-fzf;
         extraConfig = ''
-          TMUX_FZF_LAUNCH_KEY="C-f"
-          TMUX_FZF_ORDER="session|window|pane|command|keybinding|clipboard|process"
-          TMUX_FZF_OPTIONS="-p -w 50% -h 30% -m"
+          set -g @tmux-fzf-launch-key 'C-f'
+          set -g @tmux-fzf-order 'session|window|pane|command|keybinding|clipboard|process'
+          set -g @tmux-fzf-options '-p -w 50% -h 30% -m'
         '';
       }
       {
@@ -103,43 +97,22 @@ in
           set -g @continuum-save-interval '15'
         '';
       }
-      {
-        plugin = sessionist;
-        extraConfig = "";
-      }
-      {
-        plugin = tilish;
-        extraConfig = "";
-      }
-      {
-        plugin = copycat;
-        extraConfig = "";
-      }
-      {
-        plugin = yank;
-        extraConfig = "";
-      }
-      {
-        plugin = extrakto;
-        extraConfig = "";
-      }
-      {
-        plugin = mode-indicator;
-        extraConfig = "";
-      }
-      {
-        plugin = t-smart-tmux-session-manager;
-        extraConfig = "";
-      }
+      sessionist
+      tilish
+      copycat
+      yank
+      extrakto
+      mode-indicator
+      t-smart-tmux-session-manager
     ];
   };
 
   # Required packages
   home.packages = with pkgs; [
-    wl-clipboard  # Wayland clipboard support
-    fzf           # Fuzzy finder
-    sesh          # Session manager
-    playerctl     # Media player control
-    xsel          # For tmux yank and other plugins
+    wl-clipboard
+    fzf
+    sesh
+    playerctl
+    xsel
   ];
 }
