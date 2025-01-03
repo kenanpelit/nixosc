@@ -14,33 +14,58 @@
     keyMode = "vi";
     sensibleOnTop = true;
 
-    # TPM ve oh-my-tmux konfigürasyonu
+    # Oh-my-tmux konfigürasyonu
     extraConfig = let
+      # Oh-my-tmux eklentisi
       oh-my-tmux = pkgs.fetchFromGitHub {
         owner = "gpakosz";
         repo = ".tmux";
         rev = "065da52c67c2c9021957f8a3164003695740418d";  # 3 Ocak 2024
         sha256 = "sha256-Os0L8NFss+V+YQkEPYaew3bm+vyzVU/mOfa7OE47KRc=";
       };
+
+      # Yerel tmux.conf ayarları
       tmux-conf-local = builtins.readFile ./tmux.conf.local;
+
+      # Eklenti: tmux-window-name
+      tmux-window-name = pkgs.fetchFromGitHub {
+        owner = "ofirgall";
+        repo = "tmux-window-name";
+        rev = "dc97a79ac35a9db67af558bb66b3a7ad41c924e7"; 
+        sha256 = "sha256-048j942jgplqvqx65ljfc278fn7qrhqx4bzmgzcvmg9kgjap7dm3"; 
+      };
+
+      # Eklenti: tmux-ssh-status
+      tmux-ssh-status = pkgs.fetchFromGitHub {
+        owner = "kenanpelit";
+        repo = "tmux-ssh-status";
+        rev = "5d786c676f1bad6bdc1d9be5074859ba7e00427d"; 
+        sha256 = "sha256-0jnfa3n8lfmmnkn0lgjfmkkcx5gwfy3fcc0z797f9ayqy8vjmq9g"; 
+      };
+
+      # Eklenti: tmux-online-status
+      tmux-online-status = pkgs.fetchFromGitHub {
+        owner = "kenanpelit";
+        repo = "tmux-online-status";
+        rev = "82f4fbcaee7ece775f37cf7ed201f9d4beab76b8"; 
+        sha256 = "sha256-062qwxi46j7mjkk7d0mijx3rn4aznx5md7arw45ncaqpywwpzi5y"; 
+      };
     in ''
       # Oh-my-tmux ana konfigürasyonu
       source-file ${oh-my-tmux}/.tmux.conf
 
-      # TPM plugin yönetimi için gerekli ayarlar
-      tmux_conf_update_plugins_on_launch=false
-      tmux_conf_update_plugins_on_reload=false
-      tmux_conf_uninstall_plugins_on_reload=false
-
-      # Local ayarlar
+      # Yerel ayarlar
       ${tmux-conf-local}
     '';
 
     # TMux eklentileri (NixOS paket yöneticisi üzerinden)
     plugins = with pkgs.tmuxPlugins; [
-      {
-        plugin = tmux-window-name;
-      }
+      # Yukarıda tanımlanan eklentiler
+      tmux-window-name
+      tmux-ssh-status
+      tmux-online-status
+
+      # Diğer eklentiler
       {
         plugin = sensible;
       }
@@ -71,13 +96,6 @@
           TMUX_FZF_LAUNCH_KEY="C-f"
           TMUX_FZF_ORDER="session|window|pane|command|keybinding|clipboard|process"
           TMUX_FZF_OPTIONS="-p -w 50% -h 30% -m"
-        '';
-      }
-      {
-        plugin = tmux-ssh-status;
-        extraConfig = ''
-          set -g status-right '#{ssh_status} | %a %h-%d %H:%M '
-          set -g @ssh_auto_rename_window off
         '';
       }
       {
@@ -145,9 +163,9 @@
   # Gerekli paketlerin yüklenmesi
   home.packages = with pkgs; [
     wl-clipboard  # Wayland clipboard desteği için
-    fzf          # Fuzzy finder
-    sesh         # Session manager
-    #xsel         # X11 clipboard tool
-    playerctl    # Media player control
+    fzf           # Fuzzy finder
+    sesh          # Session manager
+    playerctl     # Media player control
   ];
 }
+
