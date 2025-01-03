@@ -57,21 +57,20 @@ in
   };
 
   tmux-tokyo-night = mkTmuxPlugin {
-    pluginName = "tokyo-night-tmux";
+    pluginName = "tokyo-night";
     rtpFilePath = "tokyo-night.tmux";
-    version = "1.5.3";
+    version = "1.0.0";
     src = fetchFromGitHub {
-      owner = "janoamaral";
-      repo = "tokyo-night-tmux";
-      rev = "d34f1487b4a644b13d8b2e9a2ee854ae62cc8d0e";
-      hash = "sha256-3rMYYzzSS2jaAMLjcQoKreE0oo4VWF9dZgDtABCUOtY=";
+      owner = "kenanpelit";
+      repo = "tmux-tokyo-night";
+      rev = "5ce373040f893c3a0d1cb93dc1e8b2a25c94d3da";
+      hash = "sha256-9nDgiJptXIP+Hn9UY+QFMgoghw4HfTJ5TZq0f9KVOFg=";
     };
     meta = with lib; {
-      homepage = "https://github.com/janoamaral/tokyo-night-tmux";
-      description = "A clean, dark Tmux theme that celebrates the lights of Downtown Tokyo at night.";
+      homepage = "https://github.com/kenanpelit/tmux-tokyo-night";
+      description = "A clean, dark Tmux theme.";
       license = licenses.mit;
       platforms = platforms.unix;
-      maintainers = with maintainers; [ redyf ];
     };
   };
 }

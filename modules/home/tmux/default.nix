@@ -5,7 +5,6 @@
   ...
 }:
 let
-  inherit (pkgs) fetchFromGitHub;
   customPlugins = import ./custom-plugins.nix { inherit pkgs lib; };
   tmuxConf = builtins.readFile ./tmux.conf;
 in
@@ -19,12 +18,12 @@ in
     mouse = true;
     keyMode = "vi";
     sensibleOnTop = true;
-    
+
     extraConfig = ''
       # Tmux Settings
       ${tmuxConf}
     '';
-    
+
     plugins = with pkgs.tmuxPlugins; [
       ## Custom Plugins
       customPlugins.tmux-window-name
@@ -92,13 +91,15 @@ in
       t-smart-tmux-session-manager
     ];
   };
-  
+
   ## Additional Home Packages
   home.packages = with pkgs; [
+    jq        # Hava durumu için JSON işleme
     wl-clipboard
     fzf
     sesh
     playerctl
+    bat       # Önizleme ve renkli çıktılar için
     xsel
   ];
 }

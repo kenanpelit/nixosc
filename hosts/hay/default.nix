@@ -40,6 +40,7 @@
         home.packages = with pkgs; [
           git                        # Git sürüm kontrol sistemi
           htop                       # Sistem monitörü
+          zoxide
         ];
       };
     };
