@@ -22,7 +22,8 @@
       config.check_for_updates = false
 
       -- Her zaman yeni pencere aç
-      config.default_gui_startup_args = { "--always-new-process" }
+      -- config.default_gui_startup_args = { "--always-new-process" }
+      config.default_new_window_action = "SpawnNewWindow"
 
       -- Font Configuration
       config.font = wezterm.font_with_fallback({

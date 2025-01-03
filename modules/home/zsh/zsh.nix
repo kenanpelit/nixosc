@@ -1,174 +1,128 @@
+{ hostname, config, pkgs, host, ... }:
 {
-  hostname,
-  config,
-  pkgs,
-  host,
-  ...
-}:
-{
-  programs.zsh = {
-    enable = true;
-    # enableCompletion = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
+ programs.zsh = {
+   enable = true;
+   autosuggestion.enable = true;
+   syntaxHighlighting.enable = true;
+   enableCompletion = true;
+   defaultKeymap = "viins";
 
-    plugins = [
-      {
-        # Must be before plugins that wrap widgets, such as zsh-autosuggestions or fast-syntax-highlighting
-        name = "fzf-tab";
-        src = "${pkgs.zsh-fzf-tab}/share/fzf-tab";
-      }
-      {
-        name = "powerlevel10k";
-        src = pkgs.zsh-powerlevel10k;
-        file = "share/zsh-powerlevel10k/powerlevel10k.zsh-theme";
-      }
-    ];
+   history = {
+     size = 50000;
+     save = 50000;
+     path = "$XDG_CONFIG_HOME/zsh/history";
+     ignoreDups = true;
+     share = true;
+     extended = true;
+   };
 
-    completionInit = ''
-      # Load Zsh modules
-      # zmodload zsh/zle
-      # zmodload zsh/zpty
-      # zmodload zsh/complist
+   plugins = [
+     {
+       name = "fzf-tab";
+       src = "${pkgs.zsh-fzf-tab}/share/fzf-tab";
+     }
+     {
+       name = "fast-syntax-highlighting";
+       src = pkgs.zsh-fast-syntax-highlighting;
+     }
+     {
+       name = "zsh-completions";
+       src = pkgs.zsh-completions;
+     }
+   ];
 
-      # Initialize colors
-      autoload -Uz colors
-      colors
+   completionInit = ''
+     autoload -Uz colors && colors
+     _comp_options+=(globdots)
 
-      # Initialize completion system
-      # autoload -U compinit
-      # compinit
-      _comp_options+=(globdots)
+     autoload -Uz edit-command-line
+     zle -N edit-command-line
+     bindkey "^e" edit-command-line
 
-      # Load edit-command-line for ZLE
-      autoload -Uz edit-command-line
-      zle -N edit-command-line
-      bindkey "^e" edit-command-line
+     zstyle ':completion:*' completer _extensions _complete _approximate
+     zstyle ':completion:*' use-cache on
+     zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/.zcompcache"
+     zstyle ':completion:*' complete true
+     zstyle ':completion:*' complete-options true
+     zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+     zstyle ':completion:*' keep-prefix true
+     zstyle ':completion:*' menu select
+     zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
+     zstyle ':completion:*' special-dirs true
+     zstyle ':completion:*' squeeze-slashes true
+     zstyle ':completion:*' sort false
+     zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
+     
+     # fzf-tab configuration
+     zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath'
+     zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
+     zstyle ':fzf-tab:*' fzf-command fzf
+     zstyle ':fzf-tab:*' fzf-min-height 100
+     zstyle ':fzf-tab:*' switch-group ',' '.'
+   '';
 
-      # General completion behavior
-      zstyle ':completion:*' completer _extensions _complete _approximate
+   initExtraFirst = ''
+     export XDG_CONFIG_HOME="$HOME/.config"
+     export XDG_CACHE_HOME="$HOME/.cache"
+     export XDG_DATA_HOME="$HOME/.local/share"
+     export EDITOR='nvim'
+     export VISUAL='nvim'
+     export PAGER='most'
+     export TERM=xterm-256color
+     
+     # Vi mode
+     bindkey -v
+     export KEYTIMEOUT=1
+     
+     # Change cursor shape for different vi modes
+     function zle-keymap-select {
+       if [[ ''${KEYMAP} == vicmd ]] || [[ $1 = 'block' ]]; then
+         echo -ne '\e[1 q'
+       elif [[ ''${KEYMAP} == main ]] || [[ ''${KEYMAP} == viins ]] || [[ ''${KEYMAP} = ''' ]] || [[ $1 = 'beam' ]]; then
+         echo -ne '\e[5 q'
+       fi
+     }
+     zle -N zle-keymap-select
+     
+     # FZF settings
+     export FZF_DEFAULT_OPTS="--height 80% --layout=reverse --border --cycle --marker='✓' --pointer='▶'"
+     export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
+     export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
+     
+     # History settings
+     setopt sharehistory
+     setopt hist_ignore_all_dups
+     setopt hist_save_no_dups
+     setopt hist_ignore_space
+     setopt hist_verify
+     setopt hist_reduce_blanks
+     
+     _fzf_compgen_path() { fd --hidden --exclude .git . "$1" }
+     _fzf_compgen_dir() { fd --type=d --hidden --exclude .git . "$1" }
+     
+     # Vi mode bindings
+     bindkey -M vicmd 'k' up-line-or-beginning-search
+     bindkey -M vicmd 'j' down-line-or-beginning-search
+     bindkey -M vicmd 'H' beginning-of-line
+     bindkey -M vicmd 'L' end-of-line
+     bindkey -M vicmd '?' history-incremental-search-backward
+     bindkey -M vicmd '/' history-incremental-search-forward
+     bindkey -M viins '^?' backward-delete-char
+     bindkey -M viins '^h' backward-delete-char
+     bindkey -M viins '^w' backward-kill-word
+     bindkey -M vicmd '^w' backward-kill-word
+     bindkey -M viins '^u' backward-kill-line
+     bindkey -M viins '^k' kill-line
+   '';
+ };
 
-      # Use cache
-      zstyle ':completion:*' use-cache on
-      zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/.zcompcache"
+ programs.zoxide = {
+   enable = true;
+   enableZshIntegration = true;
+   options = ["--cmd cd"];
+ };
 
-      # Complete the alias
-      zstyle ':completion:*' complete true
-
-      # Autocomplete options
-      zstyle ':completion:*' complete-options true
-
-      # Completion matching control
-      zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-      zstyle ':completion:*' keep-prefix true
-
-      # Group matches and describe
-      zstyle ':completion:*' menu select
-      zstyle ':completion:*' list-grouped false
-      zstyle ':completion:*' list-separator '''
-      zstyle ':completion:*' group-name '''
-      zstyle ':completion:*' verbose yes
-      zstyle ':completion:*:matches' group 'yes'
-      zstyle ':completion:*:warnings' format '%F{red}%B-- No match for: %d --%b%f'
-      zstyle ':completion:*:messages' format '%d'
-      zstyle ':completion:*:corrections' format '%B%d (errors: %e)%b'
-      zstyle ':completion:*:descriptions' format '[%d]'
-
-      # Colors
-      zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
-
-      # Directories
-      zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
-      zstyle ':completion:*:*:cd:*:directory-stack' menu yes select
-      zstyle ':completion:*:-tilde-:*' group-order 'named-directories' 'path-directories' 'users' 'expand'
-      zstyle ':completion:*:*:-command-:*:*' group-order aliases builtins functions commands
-      zstyle ':completion:*' special-dirs true
-      zstyle ':completion:*' squeeze-slashes true
-
-      # Sort
-      zstyle ':completion:*' sort false
-      zstyle ":completion:*:git-checkout:*" sort false
-      zstyle ':completion:*' file-sort modification
-      zstyle ':completion:*:eza' sort false
-      zstyle ':completion:complete:*:options' sort false
-      zstyle ':completion:files' sort false
-
-      # fzf-tab
-      zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons  -a --group-directories-first -1 --color=always $realpath'
-      zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
-      zstyle ':fzf-tab:complete:kill:argument-rest' fzf-flags '--preview-window=down:3:wrap'
-      zstyle ':fzf-tab:*' fzf-command fzf
-      zstyle ':fzf-tab:*' fzf-pad 4
-      zstyle ':fzf-tab:*' fzf-min-height 100
-      zstyle ':fzf-tab:*' switch-group ',' '.'
-    '';
-
-    initExtraFirst = ''
-      # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-      # Initialization code that may require console input (password prompts, [y/n]
-      # confirmations, etc.) must go above this block; everything else may go below.
-      if [[ -r "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-        source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
-      fi
-
-      DISABLE_AUTO_UPDATE=true
-      DISABLE_MAGIC_FUNCTIONS=true
-      export "MICRO_TRUECOLOR=1"
-
-      setopt sharehistory
-      setopt hist_ignore_space
-      setopt hist_ignore_all_dups
-      setopt hist_save_no_dups
-      setopt hist_ignore_dups
-      setopt hist_find_no_dups
-      setopt hist_expire_dups_first
-      setopt hist_verify
-
-      source ~/.p10k.zsh
-
-      # Use fd (https://github.com/sharkdp/fd) for listing path candidates.
-      # - The first argument to the function ($1) is the base path to start traversal
-      # - See the source code (completion.{bash,zsh}) for the details.
-      _fzf_compgen_path() {
-        fd --hidden --exclude .git . "$1"
-      }
-
-      # Use fd to generate the list for directory completion
-      _fzf_compgen_dir() {
-        fd --type=d --hidden --exclude .git . "$1"
-      }
-
-      # Advanced customization of fzf options via _fzf_comprun function
-      # - The first argument to the function is the name of the command.
-      # - You should make sure to pass the rest of the arguments to fzf.
-      _fzf_comprun() {
-        local command=$1
-        shift
-
-        case "$command" in
-          cd)           fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
-          ssh)          fzf --preview 'dig {}'                   "$@" ;;
-          *)            fzf --preview "$show_file_or_dir_preview" "$@" ;;
-        esac
-      }
-
-      # Make sure that the terminal is in application mode when zle is active, since
-      # only then values from $terminfo are valid
-      if (( ''${+terminfo[smkx]} )) && (( ''${+terminfo[rmkx]} )); then
-        function zle-line-init() {
-          echoti smkx
-        }
-        function zle-line-finish() {
-          echoti rmkx
-        }
-        zle -N zle-line-init
-        zle -N zle-line-finish
-      fi
-    '';
-  };
-
-  programs.zoxide = {
-    enable = true;
-    enableZshIntegration = true;
-  };
+ home.packages = with pkgs; [
+   fd fzf bat eza tree most dig
+ ];
 }

@@ -1,4 +1,4 @@
-{ ... }:
+{ hostname, config, pkgs, host, ... }:
 {
   imports = [
     ./zsh.nix

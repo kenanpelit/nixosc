@@ -6,20 +6,8 @@
 }:
 let
   inherit (pkgs) fetchFromGitHub;
-  
-  # Import custom plugins
   customPlugins = import ./custom-plugins.nix { inherit pkgs; };
-  
-  # Oh-my-tmux plugin
-  oh-my-tmux = fetchFromGitHub {
-    owner = "gpakosz";
-    repo = ".tmux";
-    rev = "065da52c67c2c9021957f8a3164003695740418d";
-    sha256 = "sha256-Os0L8NFss+V+YQkEPYaew3bm+vyzVU/mOfa7OE47KRc=";
-  };
-
-  # Local tmux.conf settings
-  tmux-conf-local = builtins.readFile ./tmux.conf.local;
+  tmux-conf = builtins.readFile ./tmux.conf;
 in
 {
   programs.tmux = {
@@ -31,31 +19,21 @@ in
     mouse = true;
     keyMode = "vi";
     sensibleOnTop = true;
-
-    # Oh-my-tmux configuration
+    
     extraConfig = ''
-      # Oh-my-tmux main configuration
-      source-file ${oh-my-tmux}/.tmux.conf
-
-      # Local settings
-      ${tmux-conf-local}
+      # Settings
+      ${tmux-conf}
     '';
-
+    
     plugins = with pkgs.tmuxPlugins; [
-      # Custom plugins
       customPlugins.tmux-window-name
       customPlugins.tmux-ssh-status
       customPlugins.tmux-online-status
+      customPlugins.tmux-tokyo-night
       
-      # Standard plugins
       sensible
       open
-      {
-        plugin = power-theme;
-      }
-      {
-        plugin = vim-tmux-navigator;
-      }
+      vim-tmux-navigator
       {
         plugin = fzf-tmux-url;
         extraConfig = ''
@@ -106,8 +84,7 @@ in
       t-smart-tmux-session-manager
     ];
   };
-
-  # Required packages
+  
   home.packages = with pkgs; [
     wl-clipboard
     fzf
