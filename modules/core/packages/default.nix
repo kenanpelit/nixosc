@@ -11,6 +11,7 @@ in
   # Sistem genelinde kurulu olacak paketler listesi
   environment.systemPackages = with pkgs; [
     # Temel Sistem Araçları
+    home-manager     # Kullanıcı ortamı yönetimi için home-manager CLI aracı
     catppuccin-grub
     blueman          # Bluetooth yönetimi için Blueman
     dconf            # Gnome yapılandırmalarını yönetmek için dconf
