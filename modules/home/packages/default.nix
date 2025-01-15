@@ -123,12 +123,13 @@
     gparted            # Disk bölümlendirme aracı
 
     # Terminal Eğlence Araçları
-    cbonsai     # ASCII bonsai ağacı oluşturucu
-    cmatrix     # Terminalde Matrix efekti
-    pipes       # ASCII boru animasyonu
-    sl          # Steam lokomotif animasyonu
-    tty-clock   # Terminal tabanlı saat
-    transmission_4
+    cbonsai        # ASCII bonsai ağacı oluşturucu
+    cmatrix        # Terminalde Matrix efekti
+    pipes          # ASCII boru animasyonu
+    sl             # Steam lokomotif animasyonu
+    tty-clock      # Terminal tabanlı saat
+    transmission_4 # Unlike some BitTorrent clients
+    pirate-get     # Command line interface for TPB
 
     # Sistem Araçları
     gnome-keyring       # Şifre ve anahtar yönetimi
