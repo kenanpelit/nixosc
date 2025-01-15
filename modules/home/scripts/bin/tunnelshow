@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Değişkenleri tanımlayın
+REMOTE_USER="kenan"
+REMOTE_HOST="terminal"
+REMOTE_PORT="36499"
+COMMAND="~/tunnelman/tunnels.py -l"
+
+## SSH bağlantısı yaparak renkleri koruyarak komut çıktısını almak için
+ssh -p "${REMOTE_PORT}" -t "${REMOTE_USER}@${REMOTE_HOST}" "${COMMAND}"
