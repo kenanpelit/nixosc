@@ -133,7 +133,11 @@ mount_virtual_filesystems() {
 setup_dns() {
 	local target=$1
 	if [[ -e /etc/resolv.conf ]]; then
+		if [ -L "$target/etc/resolv.conf" ] || [ -f "$target/etc/resolv.conf" ]; then
+			rm -f "$target/etc/resolv.conf"
+		fi
 		cp -L /etc/resolv.conf "$target/etc/resolv.conf"
+		chmod 644 "$target/etc/resolv.conf"
 		info "DNS yapılandırması chroot ortamına kopyalandı."
 	else
 		error "/etc/resolv.conf bulunamadı!"
@@ -259,6 +263,17 @@ setup_nixos() {
 	if [ -n "$HOME_PART" ]; then
 		mount_if_not_mounted "$HOME_PART" "$TARGET_DIR/home" ""
 	fi
+
+	# Gerekli dizinlerin varlığını kontrol et
+	mkdir -p "$TARGET_DIR/etc/static"
+
+	# Resolv.conf için özel işlem
+	if [ -L "$TARGET_DIR/etc/resolv.conf" ]; then
+		rm -f "$TARGET_DIR/etc/resolv.conf"
+	fi
+
+	# Sanal dosya sistemleri için izinleri ayarla
+	chmod 755 "$TARGET_DIR"/{dev,sys,proc}
 }
 
 # Ana program başlangıcı
