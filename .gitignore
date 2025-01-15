@@ -1,0 +1,40 @@
+# Secrets and security files
+secrets/home-secrets.yaml
+secrets/nix.conf
+**/*.key
+**/*.pem
+**/*.key.*
+.env
+.env.*
+
+# Assets and configuration
+#modules/home/scripts/bin
+#modules/home/scripts/bin.nix
+assets/mpv
+assets/oh-my-tmux
+assets/tmux
+assets/grub
+hosts/hay/configuration.nix
+hosts/vhay/configuration.nix
+*.tar.gz
+!*.enc.tar.gz
+assets/dot.enc.tar.gz
+
+# IDE and editor files
+*.swp
+*~
+
+# Environment and local settings
+.direnv
+.devenv
+.pre-commit-config.yaml
+.envrc
+
+# Build and output directories
+/build/
+/dist/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
