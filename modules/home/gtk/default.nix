@@ -1,6 +1,15 @@
 # modules/home/gtk/default.nix
+# ==============================================================================
+# GTK Theme and Configuration
+# ==============================================================================
 { config, lib, pkgs, ... }: {
+  # =============================================================================
+  # DConf Settings
+  # =============================================================================
   dconf.settings = with lib.hm.gvariant; {
+    # ---------------------------------------------------------------------------
+    # Desktop Interface Settings
+    # ---------------------------------------------------------------------------
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
       cursor-size = 24;
@@ -14,20 +23,32 @@
       overlay-scrolling = true;
     };
     
+    # ---------------------------------------------------------------------------
+    # Window Manager Preferences
+    # ---------------------------------------------------------------------------
     "org/gnome/desktop/wm/preferences" = {
       button-layout = "appmenu";
       theme = "catppuccin-mocha-blue-standard";
     };
   };
 
+  # =============================================================================
+  # GTK Configuration
+  # =============================================================================
   gtk = {
     enable = true;
     
+    # ---------------------------------------------------------------------------
+    # Font Settings
+    # ---------------------------------------------------------------------------
     font = {
       name = "Maple Mono";
       size = 12;
     };
     
+    # ---------------------------------------------------------------------------
+    # Theme Settings
+    # ---------------------------------------------------------------------------
     theme = {
       name = "catppuccin-mocha-blue-standard";
       package = pkgs.catppuccin-gtk.override {
@@ -37,6 +58,9 @@
       };
     };
     
+    # ---------------------------------------------------------------------------
+    # Icon Theme Settings
+    # ---------------------------------------------------------------------------
     iconTheme = {
       name = "a-candy-beauty-icon-theme";
       package = pkgs.catppuccin-papirus-folders.override {
@@ -45,12 +69,18 @@
       };
     };
     
+    # ---------------------------------------------------------------------------
+    # Cursor Theme Settings
+    # ---------------------------------------------------------------------------
     cursorTheme = {
       name = "catppuccin-mocha-blue-cursors";
       package = pkgs.catppuccin-cursors.mochaBlue;
       size = 24;
     };
 
+    # ---------------------------------------------------------------------------
+    # GTK2 Specific Settings
+    # ---------------------------------------------------------------------------
     gtk2 = {
       configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
       extraConfig = ''
@@ -73,6 +103,9 @@
       '';
     };
     
+    # ---------------------------------------------------------------------------
+    # GTK3 Specific Settings
+    # ---------------------------------------------------------------------------
     gtk3.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
@@ -91,6 +124,9 @@
       gtk-decoration-layout = "appmenu";
     };
     
+    # ---------------------------------------------------------------------------
+    # GTK4 Specific Settings
+    # ---------------------------------------------------------------------------
     gtk4.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
@@ -110,7 +146,13 @@
     };
   };
 
+  # =============================================================================
+  # Home Manager Configuration
+  # =============================================================================
   home = {
+    # ---------------------------------------------------------------------------
+    # Environment Variables
+    # ---------------------------------------------------------------------------
     sessionVariables = {
       GTK_THEME = "catppuccin-mocha-blue-standard";
       GTK_USE_PORTAL = "1";
@@ -119,6 +161,9 @@
       XCURSOR_SIZE = "24";
     };
 
+    # ---------------------------------------------------------------------------
+    # Package Installation
+    # ---------------------------------------------------------------------------
     packages = with pkgs; [
       papirus-folders
       nerd-fonts.jetbrains-mono
@@ -132,6 +177,9 @@
       font-awesome
     ];
     
+    # ---------------------------------------------------------------------------
+    # Pointer Cursor Configuration
+    # ---------------------------------------------------------------------------
     pointerCursor = {
       name = "catppuccin-mocha-blue-cursors";
       package = pkgs.catppuccin-cursors.mochaBlue;

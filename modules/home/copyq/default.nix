@@ -1,11 +1,20 @@
 # modules/home/copyq/default.nix
+# ==============================================================================
+# CopyQ Clipboard Manager Configuration
+# ==============================================================================
 {
   config,
   pkgs,
   lib,
   ...
 }: {
+  # =============================================================================
+  # Configuration File
+  # =============================================================================
   xdg.configFile."copyq/copyq.conf".text = ''
+    # ============================================================================
+    # General Settings
+    # ============================================================================
     [General]
     plugin_priority=itemimage, itemencrypted, itemfakevim, itemnotes, itempinned, itemsync, itemtags, itemtext
 

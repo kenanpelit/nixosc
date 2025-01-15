@@ -1,10 +1,19 @@
+# modules/home/fastfetch/default.nix
+# ==============================================================================
+# Fastfetch System Information Tool Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
+  # =============================================================================
+  # Package Installation
+  # =============================================================================
   home.packages = (with pkgs; [ fastfetch ]);
 
+  # =============================================================================
+  # Configuration File
+  # =============================================================================
   xdg.configFile."fastfetch/config.jsonc".text = ''
     {
-      "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
       "logo": {
         "source": "${./../../../wallpapers/nixos/nixoslogo.png}",
         "type": "kitty-direct",

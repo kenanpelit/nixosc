@@ -1,3 +1,4 @@
+# modules/home/gammastep/default.nix
 { ... }:
 {
   imports = [
