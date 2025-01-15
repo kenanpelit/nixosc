@@ -44,6 +44,7 @@
     ./tmux                          # Tmux configuration assets
     ./swaylock                      # Screen locker for sway
     ./swayosd                       # Brightness/volume widget for sway
+    ./transmission
     ./touchegg                      # Touch gestures for Linux
     ./waypaper                      # GUI wallpaper picker
     ./wezterm                       # WezTerm terminal emulator
