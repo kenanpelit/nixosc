@@ -1,11 +1,23 @@
+# modules/home/nemo/default.nix
+# ==============================================================================
+# Nemo File Manager Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
+  # =============================================================================
+  # Package Installation
+  # =============================================================================
   home.packages = (with pkgs; [ nemo ]);
 
+  # =============================================================================
+  # DConf Settings
+  # =============================================================================
   dconf.settings = {
+    # ---------------------------------------------------------------------------
+    # General Preferences
+    # ---------------------------------------------------------------------------
     "org/nemo/preferences" = {
       always-use-browser = true;
-      # click-double-parent-folder = true;
       close-device-view-on-device-eject = true;
       date-font-choice = "auto-mono";
       date-format = "iso";
@@ -21,16 +33,28 @@
       show-show-thumbnails-toolbar = false;
       thumbnail-limit = 10485760;
     };
+
+    # ---------------------------------------------------------------------------
+    # Menu Configuration
+    # ---------------------------------------------------------------------------
     "org/nemo/preferences/menu-config" = {
       background-menu-open-as-root = false;
       selection-menu-open-as-root = false;
       selection-menu-open-in-terminal = false;
       selection-menu-scripts = false;
     };
+
+    # ---------------------------------------------------------------------------
+    # Search Settings
+    # ---------------------------------------------------------------------------
     "org/nemo/search" = {
       search-reverse-sort = false;
       search-sort-column = "name";
     };
+
+    # ---------------------------------------------------------------------------
+    # Window State
+    # ---------------------------------------------------------------------------
     "org/nemo/window-state" = {
       maximized = true;
       network-expanded = true;
@@ -41,3 +65,4 @@
     };
   };
 }
+

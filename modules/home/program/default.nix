@@ -1,11 +1,19 @@
+# modules/home/program/default.nix
+# ==============================================================================
+# Core Programs Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
-  # Terminal emulators
   programs = {
-    wezterm.enable = false;  # Geçici olarak devre dışı
+    # =============================================================================
+    # Terminal Emulators
+    # =============================================================================
+    wezterm.enable = true;
     kitty.enable = true;
 
-    # Shell ve araçları
+    # =============================================================================
+    # Shell Configuration
+    # =============================================================================
     zsh = {
       enable = true;
       enableAutosuggestions = true;
@@ -13,18 +21,22 @@
       syntaxHighlighting.enable = true;
     };
 
-    # Temel araçlar
-    bat.enable = true;
-    fzf.enable = true;
-    htop.enable = true;
-    ripgrep.enable = true;
-    tmux.enable = true;
+    # =============================================================================
+    # Core Utilities
+    # =============================================================================
+    bat.enable = true;      # Better cat
+    fzf.enable = true;      # Fuzzy finder
+    htop.enable = true;     # Process viewer
+    ripgrep.enable = true;  # Better grep
+    tmux.enable = true;     # Terminal multiplexer
 
-    # Git yapılandırması
+    # =============================================================================
+    # Git Configuration
+    # =============================================================================
     git = {
       enable = true;
-      delta.enable = true;
-      lfs.enable = true;
+      delta.enable = true;  # Better diff viewer
+      lfs.enable = true;    # Large file storage
     };
   };
 }

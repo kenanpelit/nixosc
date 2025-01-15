@@ -1,17 +1,30 @@
 # modules/home/hyprland/default.nix
+# ==============================================================================
+# Hyprland Window Manager Configuration Root
+# ==============================================================================
 { inputs, ... }:
 {
-  imports = [
-    # 1. Önce Hyprland'in kendi home-manager modülü
-    inputs.hyprland.homeManagerModules.default
-
-    # 2. Temel yapılandırma ve değişkenler
-    ./hyprland.nix                # Ana Hyprland yapılandırması
-    ./config.nix                  # Genel yapılandırma ayarları
-
-    # 3. Ek bileşenler ve uzantılar
-    ./hyprlock.nix                # Ekran kilidi
-    ./hypridle.nix                # Boşta kalma yönetimi
-    ./pyprland.nix                # Python eklentileri
-  ];
+ # =============================================================================
+ # Module Imports
+ # =============================================================================
+ imports = [
+   # ---------------------------------------------------------------------------
+   # Core Modules
+   # ---------------------------------------------------------------------------
+   # Base Hyprland home-manager module
+   inputs.hyprland.homeManagerModules.default
+   
+   # ---------------------------------------------------------------------------
+   # Basic Configuration
+   # ---------------------------------------------------------------------------
+   ./hyprland.nix   # Main Hyprland configuration
+   ./config.nix     # General settings
+   
+   # ---------------------------------------------------------------------------
+   # Extensions & Components 
+   # ---------------------------------------------------------------------------
+   ./hyprlock.nix   # Screen locker
+   ./hypridle.nix   # Idle management
+   ./pyprland.nix   # Python plugins
+ ];
 }

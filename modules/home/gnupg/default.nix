@@ -1,7 +1,10 @@
 # modules/home/gnupg/default.nix
+# ==============================================================================
+# GnuPG Configuration Root
+# ==============================================================================
 {
- imports = [
-   ./gnupg.nix
-   ./gpgunlock.nix
- ];
+  imports = [
+    ./gnupg.nix
+    ./gpgunlock.nix
+  ];
 }

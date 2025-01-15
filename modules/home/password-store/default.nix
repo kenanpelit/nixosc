@@ -1,13 +1,23 @@
-# home.nix ya da benzeri konfigürasyon dosyasında:
+# modules/home/password-store/default.nix
+# ==============================================================================
+# Password Store Configuration
+# ==============================================================================
 { config, lib, pkgs, ... }:
 {
+  # =============================================================================
+  # Pass CLI Configuration
+  # =============================================================================
   programs.password-store = {
     enable = true;
     package = pkgs.pass.withExtensions (exts: [
-      exts.pass-otp
-      exts.pass-audit
-      exts.pass-update
+      exts.pass-otp    # OTP support
+      exts.pass-audit  # Password auditing
+      exts.pass-update # Password updating
     ]);
+
+    # ---------------------------------------------------------------------------
+    # Core Settings
+    # ---------------------------------------------------------------------------
     settings = {
       PASSWORD_STORE_DIR = "${config.home.homeDirectory}/.pass";
       PASSWORD_STORE_CLIP_TIME = "45";
@@ -15,6 +25,9 @@
     };
   };
 
+  # =============================================================================
+  # Secret Service Integration
+  # =============================================================================
   services.pass-secret-service = {
     enable = true;
     storePath = "${config.home.homeDirectory}/.pass";

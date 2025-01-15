@@ -1,125 +1,162 @@
 # modules/home/rofi/config.nix
+# ==============================================================================
+# Rofi Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
-  xdg.configFile."rofi/config.rasi".text = ''
-    /* Config dosyası */
-    configuration {
-      modi: "run,drun,window";
-      lines: 5;
-      cycle: false;
-      font: "Hack Bold 13";
-      show-icons: true;
-      icon-theme: "a-candy-beauty-icon-theme";
-      terminal: "kitty";
-      drun-display-format: "{icon} {name}";
-      location: 0;
-      hide-scrollbar: true;
-      display-drun: " Apps ";
-      display-run: " Run ";
-      display-window: " Window ";
-      sidebar-mode: true;
-      sorting-method: "fzf";
-      cache-dir: "~/.cache/rofi";
-      drun-use-desktop-cache: true;
-      drun-reload-desktop-cache: true;
-      drun-cache-file: "~/.cache/rofi/drun.cache";
-      history: true;
-      history-size: 50;
-      disable-history: false;
-      levenshtein-sort: true;
-      normalize-match: true;
-      window-command: "wmctrl -i -R {window}";
-      drun-match-fields: "name,generic,exec,categories";
-    }
+ # =============================================================================
+ # Main Configuration File
+ # =============================================================================
+ xdg.configFile."rofi/config.rasi".text = ''
+   /* ==========================================================================
+      Core Configuration
+      ========================================================================== */
+   configuration {
+     # Basic Settings
+     modi: "run,drun,window";
+     lines: 5;
+     cycle: false;
+     font: "Hack Bold 13";
 
-    @theme "theme"
+     # Display Settings
+     show-icons: true;
+     icon-theme: "a-candy-beauty-icon-theme";
+     terminal: "kitty";
+     drun-display-format: "{icon} {name}";
+     location: 0;
+     hide-scrollbar: true;
 
-    element-text, element-icon, mode-switcher {
-      background-color: inherit;
-      text-color: inherit;
-    }
+     # Mode Display Labels
+     display-drun: " Apps ";
+     display-run: " Run ";
+     display-window: " Window ";
+     sidebar-mode: true;
 
-    window {
-      height: 600px;
-      width: 900px;
-      border: 2px;
-      border-color: @border-col;
-      background-color: @bg-col;
-    }
+     # Search and Cache Settings
+     sorting-method: "fzf";
+     cache-dir: "~/.cache/rofi";
+     drun-use-desktop-cache: true;
+     drun-reload-desktop-cache: true;
+     drun-cache-file: "~/.cache/rofi/drun.cache";
+     
+     # History Settings
+     history: true;
+     history-size: 50;
+     disable-history: false;
+     
+     # Match Settings
+     levenshtein-sort: true;
+     normalize-match: true;
+     window-command: "wmctrl -i -R {window}";
+     drun-match-fields: "name,generic,exec,categories";
+   }
 
-    mainbox {
-      background-color: @bg-col;
-    }
+   /* ==========================================================================
+      Theme Configuration
+      ========================================================================== */
+   @theme "theme"
 
-    inputbar {
-      children: [prompt,entry];
-      background-color: @bg-col-light;
-      border-radius: 5px;
-      padding: 0px;
-    }
+   /* ==========================================================================
+      Element Styles
+      ========================================================================== */
+   element-text, element-icon, mode-switcher {
+     background-color: inherit;
+     text-color: inherit;
+   }
 
-    prompt {
-      background-color: @green;
-      padding: 4px;
-      text-color: @bg-col-light;
-      border-radius: 3px;
-      margin: 10px 0px 10px 10px;
-    }
+   /* ==========================================================================
+      Window Layout
+      ========================================================================== */
+   window {
+     height: 600px;
+     width: 900px;
+     border: 2px;
+     border-color: @border-col;
+     background-color: @bg-col;
+   }
 
-    textbox-prompt-colon {
-      expand: false;
-      str: ":";
-    }
+   mainbox {
+     background-color: @bg-col;
+   }
 
-    entry {
-      padding: 6px;
-      margin: 10px 10px 10px 5px;
-      text-color: @fg-col;
-      background-color: @bg-col;
-      border-radius: 3px;
-    }
+   /* ==========================================================================
+      Input Bar Styling
+      ========================================================================== */
+   inputbar {
+     children: [prompt,entry];
+     background-color: @bg-col-light;
+     border-radius: 5px;
+     padding: 0px;
+   }
 
-    listview {
-      border: 0px 0px 0px;
-      padding: 6px 0px 0px;
-      margin: 10px 0px 0px 6px;
-      columns: 3;
-      background-color: @bg-col;
-      cycle: true;
-    }
+   prompt {
+     background-color: @green;
+     padding: 4px;
+     text-color: @bg-col-light;
+     border-radius: 3px;
+     margin: 10px 0px 10px 10px;
+   }
 
-    element {
-      padding: 8px;
-      margin: 0px 10px 4px 4px;
-      background-color: @bg-col;
-      text-color: @fg-col;
-    }
+   textbox-prompt-colon {
+     expand: false;
+     str: ":";
+   }
 
-    element-icon {
-      size: 28px;
-    }
+   entry {
+     padding: 6px;
+     margin: 10px 10px 10px 5px;
+     text-color: @fg-col;
+     background-color: @bg-col;
+     border-radius: 3px;
+   }
 
-    element selected {
-      background-color: @selected-col;
-      text-color: @fg-col2;
-      border-radius: 3px;
-    }
+   /* ==========================================================================
+      List View Styling
+      ========================================================================== */
+   listview {
+     border: 0px 0px 0px;
+     padding: 6px 0px 0px;
+     margin: 10px 0px 0px 6px;
+     columns: 3;
+     background-color: @bg-col;
+     cycle: true;
+   }
 
-    mode-switcher {
-      spacing: 0;
-    }
+   element {
+     padding: 8px;
+     margin: 0px 10px 4px 4px;
+     background-color: @bg-col;
+     text-color: @fg-col;
+   }
 
-    button {
-      padding: 10px;
-      background-color: @bg-col-light;
-      text-color: @grey;
-      vertical-align: 0.5;
-      horizontal-align: 0.5;
-    }
+   element-icon {
+     size: 28px;
+   }
 
-    button selected {
-      background-color: @bg-col;
-      text-color: @green;
-    }
-  '';
+   element selected {
+     background-color: @selected-col;
+     text-color: @fg-col2;
+     border-radius: 3px;
+   }
+
+   /* ==========================================================================
+      Mode Switcher Styling
+      ========================================================================== */
+   mode-switcher {
+     spacing: 0;
+   }
+
+   button {
+     padding: 10px;
+     background-color: @bg-col-light;
+     text-color: @grey;
+     vertical-align: 0.5;
+     horizontal-align: 0.5;
+   }
+
+   button selected {
+     background-color: @bg-col;
+     text-color: @green;
+   }
+ '';
 }
