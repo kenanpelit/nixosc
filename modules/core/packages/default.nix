@@ -1,116 +1,148 @@
 # modules/core/packages/default.nix
+# ==============================================================================
+# System-wide Package Configuration
+# ==============================================================================
 { pkgs, ... }:
 let
-  # Python ortamı, ipython ve libtmux paketlerini içeren bir Python ortamı tanımlanıyor
-  pythonWithLibtmux = pkgs.python3.withPackages (ps: with ps; [
-    ipython
-    libtmux
-  ]);
+ # =============================================================================
+ # Custom Python Environment
+ # =============================================================================
+ pythonWithLibtmux = pkgs.python3.withPackages (ps: with ps; [
+   ipython
+   libtmux
+ ]);
 in
 {
-  # Sistem genelinde kurulu olacak paketler listesi
-  environment.systemPackages = with pkgs; [
-    # Temel Sistem Araçları
-    home-manager     # Kullanıcı ortamı yönetimi için home-manager CLI aracı
-    catppuccin-grub
-    blueman          # Bluetooth yönetimi için Blueman
-    dconf            # Gnome yapılandırmalarını yönetmek için dconf
-    dconf-editor     # Dconf editörü
-    libnotify        # Bildirim desteği
-    poweralertd      # Güç yönetimi araçları
-    xdg-utils        # X11 masaüstü ortamı için araçlar
-    gzip             # Veri sıkıştırma aracı
-    gcc              # C derleyicisi
-    gnumake          # Make komut dosyası aracı
-    coreutils        # Temel sistem yardımcı programları
-    libinput         # Giriş cihazları için kütüphane
-    fusuma           # Dokunmatik hareket yönetimi
-    touchegg         # Multi-touch hareket desteği
+ # =============================================================================
+ # System Packages Configuration
+ # =============================================================================
+ environment.systemPackages = with pkgs; [
+   # ---------------------------------------------------------------------------
+   # Core System Utilities
+   # ---------------------------------------------------------------------------
+   home-manager      # User environment management
+   catppuccin-grub  # Grub theme
+   blueman          # Bluetooth management
+   dconf            # GNOME configuration
+   dconf-editor     # DConf GUI editor
+   libnotify        # Desktop notifications
+   poweralertd      # Power management
+   xdg-utils        # Desktop integration
+   gzip             # Compression utility
+   gcc              # C compiler
+   gnumake          # Build system
+   coreutils        # Essential utilities
+   libinput         # Input device handling
+   fusuma           # Touchpad gestures
+   touchegg         # Multi-touch support
 
-    # Terminal ve Shell Araçları
-    curl             # URL verisi almak için kullanılan araç
-    wget             # Dosya indirme aracı
-    tmux             # Terminal çoklu oturum yöneticisi
-    man-pages        # Manuel sayfalar
-    socat            # Veri aktarımı için kullanılan araç
+   # ---------------------------------------------------------------------------
+   # Terminal and Shell Tools
+   # ---------------------------------------------------------------------------
+   curl             # Data transfer tool
+   wget             # File downloader
+   tmux             # Terminal multiplexer
+   man-pages        # System documentation
+   socat            # Multipurpose relay
 
-    # Python Ekosistemi
-    pythonWithLibtmux # Özelleştirilmiş Python ortamı (ipython ve libtmux)
+   # ---------------------------------------------------------------------------
+   # Python Environment
+   # ---------------------------------------------------------------------------
+   pythonWithLibtmux # Custom Python with iPython and libtmux
 
-    # Sistem İzleme Araçları
-    htop             # Sistemdeki kaynak kullanımını gösterir
-    powertop         # Güç tüketimi izleme aracı
-    sysstat          # Sistem istatistikleri
-    procps           # Proses yönetim araçları
+   # ---------------------------------------------------------------------------
+   # System Monitoring
+   # ---------------------------------------------------------------------------
+   htop             # Process viewer
+   powertop         # Power consumption
+   sysstat          # System statistics
+   procps           # Process utilities
 
-    # Ağ Yönetimi İçin Gerekli Paketler
-    iptables         # Güvenlik duvarı yönetimi
-    tcpdump          # Ağ trafiği analizi
-    nethogs          # Ağ trafiği monitörü
-    bind             # DNS araçları
-    iwd              # Kablosuz ağ yönetimi
-    impala           # TUI for managing wifi
-    iwgtk            # iwgtk is a wireless networking GUI
-    libnotify        # Masaüstü bildirimleri
-    gawk             # Metin işleme
-    iw               # Kablosuz araçları
-    iftop            # Ağ bant genişliği monitörü
-    mtr              # Ağ tanılama aracı
-    nmap             # Ağ tarama aracı
-    speedtest-cli    # İnternet hız testi
-    iperf            # Ağ performans testi
-    rsync            # Dosya senkronizasyon aracı
+   # ---------------------------------------------------------------------------
+   # Networking Tools
+   # ---------------------------------------------------------------------------
+   iptables         # Firewall management
+   tcpdump          # Network analyzer
+   nethogs          # Network monitor
+   bind             # DNS tools
+   iwd              # Wireless daemon
+   impala           # Wireless TUI
+   iwgtk            # Wireless GUI
+   libnotify        # Desktop notifications
+   gawk             # Text processing
+   iw               # Wireless tools
+   iftop            # Bandwidth monitor
+   mtr              # Network diagnostics
+   nmap             # Network scanner
+   speedtest-cli    # Internet speed test
+   iperf            # Network performance
+   rsync            # File synchronization
 
-    # Güvenlik Araçları
-    age              # Modern şifreleme aracı
-    openssl          # Güvenli iletişim için SSL araçları
-    sops             # Şifreli dosya yönetimi aracı
+   # ---------------------------------------------------------------------------
+   # Security Tools
+   # ---------------------------------------------------------------------------
+   age              # Encryption tool
+   openssl          # SSL/TLS toolkit
+   sops             # Secrets management
+   hblock           # Ad blocker
+   gnupg            # GNU Privacy Guard
+   gcr              # GNOME crypto
+   gnome-keyring    # Password management
+   pinentry-gnome3  # PIN entry dialog
 
-    # Geliştirme Araçları
-    git              # Git sürüm kontrol aracı
-    gdb              # Debugging aracı
-    nvd              # Nix sürüm farklarını karşılaştırma aracı
-    ncdu             # Disk kullanım analizi
-    du-dust          # Modern disk kullanım analizi
-    cachix           # Binary cache yönetimi
-    nix-output-monitor # Nix derleme çıktılarının daha iyi izlenmesi
+   # ---------------------------------------------------------------------------
+   # Development Tools
+   # ---------------------------------------------------------------------------
+   git              # Version control
+   gdb              # Debugger
+   nvd              # Nix version diff
+   ncdu             # Disk usage analyzer
+   du-dust          # Disk usage utility
+   cachix           # Binary cache
+   nix-output-monitor # Build monitor
 
-    # SSH ile İlgili Araçlar
-    assh             # SSH anahtarlarını yönetme aracı
-    openssh          # SSH istemcisi ve sunucusu
+   # ---------------------------------------------------------------------------
+   # SSH Tools
+   # ---------------------------------------------------------------------------
+   assh             # SSH config manager
+   openssh          # SSH client/server
 
-    # Sanallaştırma Araçları
-    virt-manager     # Sanal makineleri yönetme aracı
-    virt-viewer      # Sanal makineleri görsel olarak izleme aracı
-    qemu             # Sanal makineler için donanım emülasyonu
-    spice-gtk        # SPICE protokolü için GTK istemcisi
-    win-virtio       # Windows için sanal cihaz sürücüler
-    win-spice        # Windows için SPICE istemcisi
-    swtpm            # Yazılım TPM (Trusted Platform Module) sanallaştırması
-    podman           # Container yönetimi aracı
+   # ---------------------------------------------------------------------------
+   # Virtualization
+   # ---------------------------------------------------------------------------
+   virt-manager     # VM manager
+   virt-viewer      # VM viewer
+   qemu             # Hardware emulator
+   spice-gtk        # Remote display
+   win-virtio       # Windows drivers
+   win-spice        # Windows client
+   swtpm            # TPM emulator
+   podman           # Container engine
 
-    # Güç Yönetimi Araçları
-    upower           # Güç yönetimi CLI aracı
-    acpi             # ACPI bilgilerini okuma aracı
-    powertop         # Güç tüketimi izleme aracı
+   # ---------------------------------------------------------------------------
+   # Power Management
+   # ---------------------------------------------------------------------------
+   upower           # Power management
+   acpi             # ACPI tools
+   powertop         # Power monitoring
 
-    # Masaüstü ve Portal Destek Paketleri
-    flatpak          # Uygulama dağıtım aracı
-    xdg-desktop-portal # Masaüstü portal desteği
-    xdg-desktop-portal-gtk # GTK masaüstü portal desteği
+   # ---------------------------------------------------------------------------
+   # Desktop Integration
+   # ---------------------------------------------------------------------------
+   flatpak          # App distribution
+   xdg-desktop-portal # Desktop portal
+   xdg-desktop-portal-gtk # GTK portal
 
-    # MPD ile Alakalı Araçlar
-    mpc-cli
-    rmpc
-    acl
+   # ---------------------------------------------------------------------------
+   # Media Tools
+   # ---------------------------------------------------------------------------
+   mpc-cli          # MPD client
+   rmpc             # Remote MPD
+   acl              # Access control
 
-    # Remote Desktop Araçları
-    tigervnc
-
-    gnupg 
-    gcr
-    gnome-keyring
-    pinentry-gnome3
-  ];
+   # ---------------------------------------------------------------------------
+   # Remote Access
+   # ---------------------------------------------------------------------------
+   tigervnc         # VNC client/server
+ ];
 }
-
