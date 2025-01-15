@@ -26,7 +26,7 @@
     watch-dir-enabled = true;
   };
 
-  # User servisi olarak transmission
+  # User servisi güncellemesi
   systemd.user.services.transmission = {
     Unit = {
       Description = "Transmission BitTorrent Daemon";
@@ -34,7 +34,7 @@
     };
     Service = {
       Type = "notify";
-      ExecStart = "${pkgs.transmission}/bin/transmission-daemon -f --log-error";
+      ExecStart = "${pkgs.transmission_4}/bin/transmission-daemon -f --log-error";
       ExecReload = "${pkgs.coreutils}/bin/kill -s HUP $MAINPID";
     };
     Install = {
