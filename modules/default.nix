@@ -1,6 +1,6 @@
 # ==============================================================================
 # Core - Home System Configuration
-# Author: kenanpelit
+# Author: Kenan Pelit
 # Description: Main imports for core system configuration
 # ==============================================================================
 

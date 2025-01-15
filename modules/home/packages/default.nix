@@ -1,149 +1,178 @@
 # modules/home/packages/default.nix
+# ==============================================================================
+# Home Environment Package Configuration
+# ==============================================================================
 { inputs, pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    # Dosya Yönetimi ve Gezgin Araçları
-    caligula       # Gelişmiş dosya yöneticisi
-    duf            # Disk kullanım analiz aracı
-    eza            # Modern ls alternatifi
-    fd             # Hızlı ve etkili dosya arama aracı
-    file           # Dosya türü belirleme aracı
-    gtrash         # GNOME çöp kutusu yönetimi
-    lsd            # Renkli ve modern ls alternatifi
-    ncdu           # Disk kullanım analizi için terminal aracı
-    tree           # Dizin ağacını görselleştirme
-    trash-cli      # Çöp kutusu CLI aracı
-    unzip          # Zip dosyalarını açma aracı
+ home.packages = with pkgs; [
+   # =============================================================================
+   # File Management and Navigation
+   # =============================================================================
+   caligula       # Advanced file manager
+   duf            # Disk usage analyzer
+   eza            # Modern ls alternative
+   fd             # Fast file finder
+   file           # File type identifier
+   gtrash         # GNOME trash manager
+   lsd            # Modern ls with colors
+   ncdu           # NCurses disk usage
+   tree           # Directory tree viewer
+   trash-cli      # Trash management CLI
+   unzip          # Archive extractor
+   
+   # =============================================================================
+   # Development Tools
+   # =============================================================================
+   binsider               # Binary analysis
+   bitwise                # Bit manipulation
+   hexdump                # Hex viewer
+   lazygit                # Git TUI
+   lua-language-server    # Lua LSP
+   nixd                   # Nix language server
+   nixfmt-rfc-style       # Nix formatter
+   nil                    # Nix tooling
+   programmer-calculator  # Dev calculator
+   shellcheck            # Shell linter
+   shfmt                 # Shell formatter
+   stylua                # Lua formatter
+   tree-sitter           # Parser generator
+   treefmt2              # Multi-language formatter
+   xxd                   # Hex editor
+   inputs.alejandra.defaultPackage.${pkgs.system} # Nix formatter
 
-    # Geliştirici Araçları
-    binsider               # İkili dosya analizi aracı
-    bitwise                # Bit manipülasyon hesaplayıcı
-    hexdump                # Hex görüntüleyici
-    lazygit                # Terminal tabanlı Git kullanıcı arayüzü
-    lua-language-server    # Lua için dil sunucusu
-    nixd                   # Nix dil sunucusu
-    nixfmt-rfc-style       # Nix kod formatlayıcı
-    nil                    # Nix araç koleksiyonu
-    programmer-calculator  # Gelişmiş programcı hesap makinesi
-    shellcheck             # Shell script analizi
-    shfmt                  # Shell script formatlayıcı
-    stylua                 # Lua kod formatlayıcı
-    tree-sitter            # Kod ayrıştırma aracı
-    treefmt2               # Çoklu dil formatlayıcı
-    xxd                    # Hex editör ve analiz aracı
-    inputs.alejandra.defaultPackage.${pkgs.system} # Nix kod formatlayıcı
+   # =============================================================================
+   # Terminal Utilities
+   # =============================================================================
+   bc             # Calculator
+   docfd          # Doc searcher
+   entr           # File watcher
+   jq             # JSON processor
+   killall        # Process killer
+   mimeo          # MIME handler
+   most           # Pager
+   ripgrep        # Fast grep
+   sesh           # Session manager
+   tldr           # Simplified man
+   wezterm        # Terminal emulator
+   zoxide         # Smart cd
+   wl-clipboard   # Wayland clipboard
+   bat            # Cat clone
+   detox          # Filename cleaner
 
-    # Terminal Yardımcı Araçları
-    bc             # Komut satırı hesap makinesi
-    docfd          # Belgelerde arama aracı
-    entr           # Dosya değişiklik izleme aracı
-    jq             # JSON işleme aracı
-    killall        # Süreç sonlandırma aracı
-    mimeo          # MIME tip yöneticisi
-    most           # Gelişmiş metin görüntüleyici
-    ripgrep        # Hızlı ve etkili metin arama aracı
-    sesh           # Oturum yöneticisi
-    tldr           # Basitleştirilmiş man sayfaları
-    wezterm        # Güçlü ve modern terminal emülatörü
-    zoxide         # Akıllı dizin gezgini
-    wl-clipboard   # Wayland pano yöneticisi
-    bat            # Modern ve renkli dosya görüntüleyici
-    detox          # Dosya adı temizleme aracı
+   # =============================================================================
+   # Media Tools
+   # =============================================================================
+   ani-cli         # Anime streaming
+   ffmpeg          # Media converter
+   gifsicle        # GIF editor
+   imv             # Image viewer
+   mpv             # Media player
+   pamixer         # Audio mixer
+   pavucontrol     # Audio control
+   playerctl       # Media controller
+   satty           # Screenshot tool
+   soundwireserver # Audio streaming
+   swappy          # Screenshot editor
+   tdf             # Terminal file manager
+   vlc             # Media player
+   yt-dlp          # Video downloader
 
-    # Medya Oynatıcılar ve Düzenleyiciler
-    ani-cli         # CLI tabanlı anime izleme aracı
-    ffmpeg          # Medya dönüştürücü ve düzenleyici
-    gifsicle        # GIF düzenleme aracı
-    imv             # Resim görüntüleyici
-    mpv             # Çok yönlü medya oynatıcı
-    pamixer         # PulseAudio mikser aracı
-    pavucontrol     # PulseAudio kontrol paneli
-    playerctl       # Medya oynatıcı kontrol aracı
-    satty           # Ekran görüntüsü alma aracı
-    soundwireserver # Ses yayın sunucusu
-    swappy          # Wayland için ekran görüntüsü düzenleyici
-    tdf             # Terminal dosya yöneticisi
-    vlc             # Çok formatlı medya oynatıcı
-    yt-dlp          # Video indirme aracı
+   # =============================================================================
+   # System Monitoring and Diagnostics
+   # =============================================================================
+   atop           # System monitor
+   cpulimit       # CPU limiter
+   dstat          # Stats collector
+   glances        # System monitor
+   iotop          # I/O monitor
+   lshw           # Hardware lister
+   lsof           # Open files lister
+   nmon           # Performance monitor
+   pciutils       # PCI utilities
+   strace         # System call tracer
+   inxi           # System info
+   neofetch       # System fetch
+   nitch          # Minimal fetch
+   onefetch       # Git repo fetch
+   resources      # Resource monitor
 
-    # Sistem İzleme ve Tanılama Araçları
-    atop        # Gerçek zamanlı sistem kaynak monitörü
-    cpulimit    # CPU kullanım sınırlandırma aracı
-    dstat       # Sistem istatistikleri toplama aracı
-    glances     # Çok yönlü sistem monitörü
-    iotop       # I/O izleme aracı
-    lshw        # Donanım bilgisi listeleme
-    lsof        # Açık dosyaları listeleme aracı
-    nmon        # Performans monitörü
-    pciutils    # PCI cihazları yönetim aracı
-    strace      # Sistem çağrı izleyici
-    inxi        # Sistem bilgi görüntüleyici
-    neofetch    # Sistem bilgisi görselleştirme
-    nitch       # Sistem bilgisi için minimalist araç
-    onefetch    # Git depo bilgisi görselleştirme
-    resources   # Sistem kaynak monitörü
+   # =============================================================================
+   # Network Tools
+   # =============================================================================
+   aria2          # Download manager
+   bmon           # Bandwidth monitor
+   ethtool        # Ethernet tool
+   fping          # Fast ping
+   iptraf-ng      # IP traffic monitor
+   pssh           # Parallel SSH
+   traceroute     # Network tracer
+   vnstat         # Network monitor
+   dig            # DNS tool
 
-    # Ağ Araçları
-    aria2         # Hızlı ve çok protokollü indirme yöneticisi
-    bmon          # Bant genişliği monitörü
-    ethtool       # Ethernet bağlantı yönetim aracı
-    fping         # Daha hızlı ping aracı
-    iptraf-ng     # IP trafik monitörü
-    pssh          # Paralel SSH komut çalıştırıcı
-    traceroute    # Ağ yol izleme aracı
-    vnstat        # Ağ trafiği izleme aracı
-    dig           # DNS sorgulama aracı
+   # =============================================================================
+   # Desktop and Productivity
+   # =============================================================================
+   bleachbit       # System cleaner
+   discord         # Chat platform
+   ente-auth       # Auth tool
+   hyprsunset      # Color temperature
+   hypridle        # Idle manager
+   brightnessctl   # Brightness control
+   libreoffice     # Office suite
+   pyprland        # Hyprland tools
+   qalculate-gtk   # Calculator
+   woomer          # Window manager
+   zenity          # GUI dialogs
+   copyq           # Clipboard manager
+   keepassxc       # Password manager
+   gopass          # Pass CLI
+   pdftk           # PDF toolkit
+   zathura         # PDF viewer
+   candy-icons     # Icon theme
+   beauty-line-icon-theme # Icon theme
 
-    # Masaüstü ve Verimlilik Araçları
-    bleachbit       # Sistem temizleme aracı
-    discord         # Mesajlaşma ve topluluk uygulaması
-    ente-auth       # Kimlik doğrulama aracı
-    hyprsunset      # Hyprland renk sıcaklığı ayarı
-    hypridle        # Hyprland boşta kalma yönetimi
-    brightnessctl   # Ekran parlaklık kontrolü
-    libreoffice     # Ofis uygulamaları paketi
-    pyprland        # Hyprland Python araçları
-    qalculate-gtk   # Bilimsel hesap makinesi
-    woomer          # Wayland pencere yöneticisi
-    zenity          # GUI tabanlı dialog oluşturucu
-    copyq           # Gelişmiş pano yöneticisi
-    keepassxc       # Şifre yöneticisi
-    gopass          # Şifre yöneticisi CLI
-    pdftk           # PDF düzenleyici
-    zathura         # Hafif ve hızlı PDF görüntüleyici
-    candy-icons
-    beauty-line-icon-theme
+   # =============================================================================
+   # Productivity Tools
+   # =============================================================================
+   gtt                # Time tracker
+   nix-prefetch-github # GitHub prefetch
+   todo               # Task manager
+   toipe              # Typing practice
+   ttyper             # Terminal typing
+   gparted            # Partition editor
 
-    # Verimlilik Araçları
-    gtt                # Zaman takip aracı
-    nix-prefetch-github # GitHub indirme optimizasyonu
-    todo               # Görev yönetim aracı
-    toipe              # Yazma pratiği yapma aracı
-    ttyper             # Terminal tabanlı yazma eğitimi
-    gparted            # Disk bölümlendirme aracı
+   # =============================================================================
+   # Terminal Entertainment
+   # =============================================================================
+   cbonsai        # ASCII bonsai
+   cmatrix        # Matrix effect
+   pipes          # Pipe animation
+   sl             # Steam locomotive
+   tty-clock      # Terminal clock
+   transmission_4 # Torrent client
+   pirate-get     # TPB interface
 
-    # Terminal Eğlence Araçları
-    cbonsai        # ASCII bonsai ağacı oluşturucu
-    cmatrix        # Terminalde Matrix efekti
-    pipes          # ASCII boru animasyonu
-    sl             # Steam lokomotif animasyonu
-    tty-clock      # Terminal tabanlı saat
-    transmission_4 # Unlike some BitTorrent clients
-    pirate-get     # Command line interface for TPB
+   # =============================================================================
+   # System Integration
+   # =============================================================================
+   gnome-keyring      # Password manager
+   polkit_gnome       # Auth framework
+   blueman            # Bluetooth manager
+   seahorse           # Key manager
 
-    # Sistem Araçları
-    gnome-keyring       # Şifre ve anahtar yönetimi
-    polkit_gnome        # Yetkilendirme aracı
-    blueman             # Bluetooth cihaz yönetimi
-    seahorse            # GNOME şifre yöneticisi
+   # =============================================================================
+   # Remote Desktop
+   # =============================================================================
+   anydesk         # Remote desktop
 
-    # Uzaktan Masaüstü Araçları
-    anydesk        # Uzak masaüstü bağlantı yazılımı
+   # =============================================================================
+   # Waybar Extensions
+   # =============================================================================
+   waybar-mpris    # Media controls
 
-    # Waybar Araçları
-    waybar-mpris  # Waybar için medya denetim modülü
-    
-    # NixOS
-    nix-prefetch-git
-  ];
+   # =============================================================================
+   # NixOS Tools
+   # =============================================================================
+   nix-prefetch-git # Git prefetcher
+ ];
 }
