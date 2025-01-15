@@ -58,7 +58,7 @@
 | **Terminal Emulator**       | [Kitty][Kitty] + [Wezterm][Wezterm] + [Foot][Foot] |
 | **Shell**                   | [zsh][zsh] + [oh-my-zsh][oh-my-zsh] + [p10k][p10k] |
 | **Text Editor**             | [Neovim][Neovim] |
-| **network management tool** | [iwd][iwd] |
+| **Network Management Tool** | [iwd][iwd] | [iwgtk][iwgtk] |
 | **System resource monitor** | [Btop][Btop] |
 | **File Manager**            | [nemo][nemo] + [yazi][yazi] |
 | **Fonts**                   | [Hack Nerd Font][Nerd fonts] + [Maple Mono][Maple Mono] |
@@ -400,6 +400,7 @@ Special thanks to [Frost-Phoenix/nixos-config](https://github.com/Frost-Phoenix/
 [Nerd fonts]: https://github.com/ryanoasis/nerd-fonts
 [Maple Mono]: https://github.com/subframe7536/maple-font
 [iwd]: https://git.kernel.org/pub/scm/network/wireless/iwd.git/
+[iwgtk]: https://github.com/J-Lentz/iwgtk
 [wl-clip-persist]: https://github.com/Linus789/wl-clip-persist
 [CopyQ]: https://hluk.github.io/CopyQ/
 [wf-recorder]: https://github.com/ammen99/wf-recorder
