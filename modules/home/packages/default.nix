@@ -129,6 +129,7 @@
     sl             # Steam lokomotif animasyonu
     tty-clock      # Terminal tabanlı saat
     transmission_4 # Unlike some BitTorrent clients
+    pirate-get     # Command line interface for TPB
 
     # Sistem Araçları
     gnome-keyring       # Şifre ve anahtar yönetimi
