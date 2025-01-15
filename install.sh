@@ -432,6 +432,7 @@ setup_directories() {
 	local dirs=(
 		"$HOME/Music"
 		"$HOME/Documents"
+		"$HOME/Tmp"
 		"$HOME/Pictures/wallpapers/others"
 		"$HOME/Pictures/wallpapers/nixos"
 		"$CONFIG_DIR"
