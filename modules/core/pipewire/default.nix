@@ -1,12 +1,36 @@
+# modules/core/pipewire/default.nix
+# ==============================================================================
+# PipeWire Audio Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
+  # =============================================================================
+  # Service Configuration
+  # =============================================================================
+  # Disable PulseAudio
   services.pulseaudio.enable = false;
+
+  # PipeWire Configuration
   services.pipewire = {
     enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
+    
+    # ALSA Configuration
+    alsa = {
+      enable = true;
+      support32Bit = true;
+    };
+    
+    # PulseAudio Compatibility
     pulse.enable = true;
+    
+    # Low Latency Mode (currently disabled)
     # lowLatency.enable = true;
   };
-  environment.systemPackages = with pkgs; [ pulseaudioFull ];
+
+  # =============================================================================
+  # Required Packages
+  # =============================================================================
+  environment.systemPackages = with pkgs; [
+    pulseaudioFull  # Full PulseAudio suite for compatibility
+  ];
 }

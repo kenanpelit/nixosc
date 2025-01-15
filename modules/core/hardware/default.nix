@@ -1,40 +1,45 @@
+# modules/core/hardware/default.nix
+# ==============================================================================
+# Hardware Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
   hardware = {
+    # Grafik Sürücüleri ve Donanım Hızlandırma
     graphics = {
       enable = true;
       extraPackages = with pkgs; [
-        intel-media-driver  # Yeni nesil Intel grafik sürücüsü
-        vaapiVdpau
-        libvdpau-va-gl
-        mesa
-        intel-compute-runtime
-        intel-ocl
+        intel-media-driver    # Modern Intel grafik sürücüsü
+        vaapiVdpau           # VA-API to VDPAU köprüsü
+        libvdpau-va-gl       # VDPAU için OpenGL desteği
+        mesa                 # OpenGL implementasyonu
+        intel-compute-runtime # Intel GPU hesaplama desteği
+        intel-ocl            # Intel OpenCL desteği
       ];
     };
 
-    # Firmware desteği
+    # Firmware Yapılandırması
     enableRedistributableFirmware = true;
     enableAllFirmware = true;
-
-    # CPU mikrokod güncellemeleri
+    
+    # CPU Yapılandırması
     cpu.intel.updateMicrocode = true;
-
-    # Bluetooth desteği
+    
+    # Bluetooth Yapılandırması
     bluetooth = {
       enable = true;
       powerOnBoot = true;
     };
   };
 
-  # PulseAudio ayarı services altına taşındı
-  services.pulseaudio.enable = false; 
+  # Ses Sistemi
+  services.pulseaudio.enable = false;  # PipeWire lehine devre dışı
 
-  # Firmware ve ilgili paketler
+  # Donanım İzleme ve Yönetim Paketleri
   environment.systemPackages = with pkgs; [
-    linux-firmware
-    wireless-regdb
-    firmware-updater
-    lm_sensors
+    linux-firmware    # Linux firmware koleksiyonu
+    wireless-regdb    # Kablosuz düzenleme veritabanı
+    firmware-updater  # Firmware güncelleme aracı
+    lm_sensors       # Donanım sensör araçları
   ];
 }

@@ -1,42 +1,58 @@
-# modules/core/power.nix
+# modules/core/power/default.nix
+# ==============================================================================
+# Power Management Configuration
+# ==============================================================================
 { config, lib, pkgs, ... }:
-
 {
- # UPower servisi ve yapılandırması
- services.upower = {
-   enable = true;
-   criticalPowerAction = "Hibernate"; # Kritik pil seviyesinde yapılacak eylem
- };
+  # =============================================================================
+  # UPower Service Configuration
+  # =============================================================================
+  services.upower = {
+    enable = true;
+    criticalPowerAction = "Hibernate";  # Action on critical battery level
+  };
 
- # systemd-logind güç yönetimi ayarları
- services.logind = {
-   lidSwitch = "suspend";          # Laptop kapağı kapatıldığında
-   lidSwitchDocked = "ignore";     # Harici ekran bağlıyken kapak kapatıldığında
-   lidSwitchExternalPower = "suspend"; # Şarjdayken kapak kapatıldığında
-   extraConfig = ''
-     HandlePowerKey=suspend        # Güç düğmesine basıldığında
-     HandleSuspendKey=suspend      # Uyku tuşuna basıldığında
-     HandleHibernateKey=hibernate  # Hazırda beklet tuşuna basıldığında
-     IdleAction=suspend           # Boşta kalma eyleminde
-     IdleActionSec=30min          # Boşta kalma süresi
-   '';
- };
+  # =============================================================================
+  # Logind Power Management
+  # =============================================================================
+  services.logind = {
+    # Lid Switch Actions
+    lidSwitch = "suspend";               # When lid is closed
+    lidSwitchDocked = "ignore";          # When docked with external display
+    lidSwitchExternalPower = "suspend";  # When on external power
 
- # TLP güç yönetimi (laptop için optimize edilmiş)
- services.tlp = {
-   enable = true;
-   settings = {
-     CPU_SCALING_GOVERNOR_ON_AC = "performance";
-     CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
-     CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
-     CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-     CPU_MIN_PERF_ON_AC = 0;
-     CPU_MAX_PERF_ON_AC = 100;
-     CPU_MIN_PERF_ON_BAT = 0;
-     CPU_MAX_PERF_ON_BAT = 80;
-   };
- };
+    # Power Management Settings
+    extraConfig = ''
+      HandlePowerKey=suspend         # Power button action
+      HandleSuspendKey=suspend       # Suspend key action
+      HandleHibernateKey=hibernate   # Hibernate key action
+      IdleAction=suspend             # Action when idle
+      IdleActionSec=30min            # Idle timeout
+    '';
+  };
 
- # thermald - Intel CPU termal yönetimi
- services.thermald.enable = true;
+  # =============================================================================
+  # TLP Power Management (Laptop Optimized)
+  # =============================================================================
+  services.tlp = {
+    enable = true;
+    settings = {
+      # CPU Power Management
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+
+      # CPU Performance Limits
+      CPU_MIN_PERF_ON_AC = 0;
+      CPU_MAX_PERF_ON_AC = 100;
+      CPU_MIN_PERF_ON_BAT = 0;
+      CPU_MAX_PERF_ON_BAT = 80;
+    };
+  };
+
+  # =============================================================================
+  # Thermal Management
+  # =============================================================================
+  services.thermald.enable = true;  # Intel CPU thermal management
 }

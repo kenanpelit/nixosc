@@ -1,17 +1,28 @@
+# modules/core/program/default.nix
+# ==============================================================================
+# Core Program Configuration
+# ==============================================================================
 { pkgs, lib, ... }: {
   programs = {
-    # dconf ve zsh ayarları
+    # =============================================================================
+    # System Programs
+    # =============================================================================
+    # Desktop Configuration Database
     dconf.enable = true;
+
+    # Z Shell
     zsh.enable = true;
     
-    # Vim ve nano'yu devre dışı bırak
-    vim.enable = false;
-    nano.enable = false;
+    # Disabled Editors
+    vim.enable = false;    # Disable vim as system editor
+    nano.enable = false;   # Disable nano as system editor
     
-    # nix-ld yapılandırması
+    # =============================================================================
+    # Dynamic Linker Configuration
+    # =============================================================================
     nix-ld = {
       enable = true;
-      libraries = with pkgs; [];
+      libraries = with pkgs; [];  # Additional libraries for dynamic linking
     };
   };
 }
