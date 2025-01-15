@@ -1,7 +1,16 @@
 # modules/home/gnupg/gpgunlock.nix
+# ==============================================================================
+# GPG Auto-Unlock Service
+# ==============================================================================
 { config, lib, pkgs, ... }:
 {
+  # =============================================================================
+  # Systemd Service Configuration
+  # =============================================================================
   systemd.user.services.gpg-unlock = {
+    # ---------------------------------------------------------------------------
+    # Unit Configuration
+    # ---------------------------------------------------------------------------
     Unit = {
       Description = "Unlock GPG key on login";
       After = [ "graphical-session.target" "gpg-agent.service" ];
@@ -9,6 +18,9 @@
       Requires = [ "gpg-agent.service" ];
     };
 
+    # ---------------------------------------------------------------------------
+    # Service Configuration
+    # ---------------------------------------------------------------------------
     Service = {
       Type = "oneshot";
       Environment = [
@@ -19,31 +31,31 @@
       
       ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
       ExecStart = toString (pkgs.writeShellScript "gpg-unlock" ''
-        # GPG ayarlarını yapılandır
+        # Configure GPG settings
         ${pkgs.gnupg}/bin/gpg-connect-agent updatestartuptty /bye
-
-        # Test mesajı oluştur ve şifrele
+        # Create and encrypt test message
         echo "test" | ${pkgs.gnupg}/bin/gpg \
           --batch \
           --yes \
           --quiet \
           -se -r kenanpelit@gmail.com \
           > /tmp/test.gpg
-
-        # Şifreyi çöz
+        # Decrypt test message
         ${pkgs.gnupg}/bin/gpg \
           --batch \
           --yes \
           --quiet \
           -d /tmp/test.gpg
-
-        # Temizle
+        # Cleanup
         rm -f /tmp/test.gpg
       '');
       RemainAfterExit = true;
       TimeoutSec = "1min";
     };
 
+    # ---------------------------------------------------------------------------
+    # Installation Configuration
+    # ---------------------------------------------------------------------------
     Install = {
       WantedBy = [ "graphical-session.target" ];
     };

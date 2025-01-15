@@ -1,23 +1,33 @@
+# modules/home/nvim/defaults.nix
 # ==============================================================================
-# Neovim Konfigürasyonu - LazyVim Edition
+# Neovim Configuration - LazyVim Edition
 # ==============================================================================
 { config, pkgs, ... }:
 {
   programs.neovim = {
+    # =============================================================================
+    # Basic Configuration
+    # =============================================================================
     enable = true;
     viAlias = true;
     vimAlias = true;
     defaultEditor = true;
 
-    # LSP sunucuları ve gerekli araçlar için
+    # =============================================================================
+    # Required Packages
+    # =============================================================================
     extraPackages = with pkgs; [
-      # LSP Sunucuları
+      # ---------------------------------------------------------------------------
+      # LSP Servers
+      # ---------------------------------------------------------------------------
       nodePackages.typescript-language-server
       nodePackages.vscode-json-languageserver
       lua-language-server
       nil # Nix LSP
 
-      # Gerekli araçlar
+      # ---------------------------------------------------------------------------
+      # Core Tools
+      # ---------------------------------------------------------------------------
       ripgrep
       fd
       git
@@ -25,10 +35,16 @@
       tree-sitter
     ];
 
+    # =============================================================================
+    # Extended Configuration
+    # =============================================================================
     extraConfig = ''
-      " Sistem panosu ile entegrasyon
+      # ---------------------------------------------------------------------------
+      # Clipboard Integration
+      # ---------------------------------------------------------------------------
       set clipboard+=unnamedplus
-      " Wayland pano entegrasyonu
+      
+      # Wayland Clipboard Support
       if executable('wl-copy')
         let g:clipboard = {
               \   'name': 'wl-clipboard',
@@ -43,7 +59,10 @@
               \   'cache_enabled': 0,
               \ }
       endif
-      " LazyVim bootstrap
+
+      # ---------------------------------------------------------------------------
+      # LazyVim Setup
+      # ---------------------------------------------------------------------------
       lua << EOF
       local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
       if not vim.loop.fs_stat(lazypath) then
@@ -58,6 +77,9 @@
       end
       vim.opt.rtp:prepend(lazypath)
 
+      # ---------------------------------------------------------------------------
+      # Plugin Configuration
+      # ---------------------------------------------------------------------------
       require("lazy").setup({
         spec = {
           { "LazyVim/LazyVim", import = "lazyvim.plugins" },
@@ -87,7 +109,9 @@
         },
       })
       
-      -- Mason kurulumu
+      # ---------------------------------------------------------------------------
+      # Mason Configuration
+      # ---------------------------------------------------------------------------
       require("mason").setup()
       require("mason-lspconfig").setup({
         ensure_installed = {
@@ -99,7 +123,9 @@
         automatic_installation = true,
       })
 
-      -- LazyVim ayarları
+      # ---------------------------------------------------------------------------
+      # LazyVim Settings
+      # ---------------------------------------------------------------------------
       require("lazyvim.config").init({
         colorscheme = "tokyonight",
         defaults = {
@@ -123,6 +149,10 @@
       EOF
     '';
   };
+
+  # =============================================================================
+  # Environment Variables
+  # =============================================================================
   home.sessionVariables = {
     EDITOR = "nvim";
     VISUAL = "nvim";

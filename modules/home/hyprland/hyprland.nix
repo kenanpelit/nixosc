@@ -1,42 +1,54 @@
 # modules/home/hyprland/hyprland.nix
+# ==============================================================================
+# Hyprland Main Configuration
+# ==============================================================================
 { inputs, pkgs, ... }:
 {
-  # Kullanılacak paketlerin listesi
+  # =============================================================================
+  # Required Packages
+  # =============================================================================
   home.packages = with pkgs; [
-    swww                                # Dinamik duvar kağıdı ayarları için araç
-    inputs.hypr-contrib.packages.${pkgs.system}.grimblast # Ekran görüntüsü almak için geliştirilmiş araç
-    hyprpicker                          # Renk seçici araç
-    inputs.hyprmag.packages.${pkgs.system}.hyprmag # Ekran büyüteci aracı
-    grim                                # Standart ekran görüntüsü aracı
-    slurp                               # Ekran seçme aracı (örneğin ekran görüntüsü için)
-    wl-clip-persist                     # Wayland için pano yönetimi
-    cliphist                            # Pano geçmişi yönetimi
-    wf-recorder                         # Wayland için ekran kaydedici
-    glib                                # GLib yardımcı kütüphaneleri
-    wayland                             # Wayland oturumları için temel destek
-    direnv                              # Ortam değişkenleri yönetimi
+    # ---------------------------------------------------------------------------
+    # Core Utilities
+    # ---------------------------------------------------------------------------
+    swww               # Dynamic wallpaper tool
+    hyprpicker         # Color picker
+    grim               # Screenshot utility
+    slurp              # Screen area selector
+    glib               # GLib utilities
+    wayland            # Wayland core
+    direnv             # Environment manager
+
+    # ---------------------------------------------------------------------------
+    # Screenshot and Recording
+    # ---------------------------------------------------------------------------
+    inputs.hypr-contrib.packages.${pkgs.system}.grimblast # Enhanced screenshot
+    wf-recorder        # Screen recorder
+
+    # ---------------------------------------------------------------------------
+    # Enhancement Tools
+    # ---------------------------------------------------------------------------
+    inputs.hyprmag.packages.${pkgs.system}.hyprmag # Screen magnifier
+    wl-clip-persist    # Clipboard manager
+    cliphist           # Clipboard history
   ];
 
-  # Hyprland oturumu için systemd kullanıcı hedefi
+  # =============================================================================
+  # Systemd Integration
+  # =============================================================================
   systemd.user.targets.hyprland-session.Unit.Wants = [
-    "xdg-desktop-autostart.target"    # Masaüstü uygulamalarının otomatik başlatılması
+    "xdg-desktop-autostart.target"
   ];
 
-  # Hyprland pencere yöneticisi ayarları
+  # =============================================================================
+  # Window Manager Configuration
+  # =============================================================================
   wayland.windowManager.hyprland = {
-    enable = true;                    # Hyprland'ı etkinleştir
-
-    # XWayland ayarları (X11 uygulamalarını çalıştırmak için gereklidir)
+    enable = true;
     xwayland = {
-      enable = true;                  # XWayland desteğini etkinleştir
-      #hidpi = true;                  # Yüksek çözünürlük desteği (isteğe bağlı)
+      enable = true;
+      #hidpi = true;
     };
-
-    # NVIDIA sürücüleri için yamaları etkinleştirme (isteğe bağlı)
-    # enableNvidiaPatches = false;
-
-    systemd.enable = true;            # Hyprland için gerekli systemd entegrasyonunu etkinleştir
+    systemd.enable = true;
   };
 }
-
-
