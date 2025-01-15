@@ -1,28 +1,42 @@
 # modules/core/services/default.nix
+# ==============================================================================
+# Core System Services Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
-  # Temel sistem servisleri
+  # =============================================================================
+  # Base System Services
+  # =============================================================================
   services = {
-    gvfs.enable = true;                # Sanal dosya sistemi desteği
-    fstrim.enable = true;              # SSD optimizasyonu
+    gvfs.enable = true;       # Virtual filesystem support
+    fstrim.enable = true;     # SSD optimization service
+    
+    # D-Bus Configuration
     dbus = {
       enable = true;
-      packages = [ pkgs.gcr ];         # GPG ve şifreleme altyapısı için
+      packages = [ pkgs.gcr ];  # GPG and encryption infrastructure
     };
-    touchegg.enable = false;           # Touchégg hizmeti
+
+    # Input Device Services
+    touchegg.enable = false;    # Touchscreen gesture service
     
-    # systemd-logind yapılandırması
+    # Power Management
     logind.extraConfig = ''
-      HandlePowerKey=ignore
+      HandlePowerKey=ignore    # Ignore power button events
     '';
   };
 
-  # Sistem güvenliği
-  security.polkit.enable = true;
+  # =============================================================================
+  # Security Configuration
+  # =============================================================================
+  security.polkit.enable = true;  # PolicyKit authorization manager
 
-  # Transmission için güvenlik duvarı kuralları
+  # =============================================================================
+  # Firewall Configuration
+  # =============================================================================
   networking.firewall = {
-    allowedTCPPorts = [ 9091 ];       # Transmission web arayüzü
+    # Transmission Service Ports
+    allowedTCPPorts = [ 9091 ];         # Web interface
     allowedTCPPortRanges = [{ 
       from = 51413; 
       to = 51413; 

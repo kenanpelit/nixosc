@@ -1,83 +1,87 @@
-# network.nix
+# modules/core/network/default.nix
+# ==============================================================================
+# Network Configuration
+# Author: Kenan Pelit
+# Description: Advanced network settings, firewall rules and wireless configuration
+# ==============================================================================
 { config, pkgs, host, lib, ... }:
 
 {
-  # TCP/IP Stack ve BBR optimizasyonları
+  # =============================================================================
+  # TCP/IP Stack Optimizations
+  # =============================================================================
   boot.kernel.sysctl = {
-    # BBR congestion control algoritmasını etkinleştir
+    # TCP BBR and Performance
     "net.core.default_qdisc" = "fq";
     "net.ipv4.tcp_congestion_control" = "bbr";
-    
-    # TCP SYN flood koruması
-    "net.ipv4.tcp_syncookies" = 1;
-    
-    # Kaynak rota doğrulaması
-    "net.ipv4.conf.all.rp_filter" = 1;
-    "net.ipv4.conf.default.rp_filter" = 1;
-    
-    # TCP performans optimizasyonları
-    "net.ipv4.tcp_fastopen" = 3;              
-    "net.ipv4.tcp_slow_start_after_idle" = 0; 
-    
-    # TCP bellek parametreleri
+    "net.ipv4.tcp_fastopen" = 3;
+    "net.ipv4.tcp_slow_start_after_idle" = 0;
+
+    # TCP Memory Settings
     "net.ipv4.tcp_rmem" = "4096 87380 6291456";
     "net.ipv4.tcp_wmem" = "4096 87380 6291456";
-    
-    # Ek güvenlik parametreleri
-    "net.ipv4.conf.all.accept_redirects" = 0;  
+
+    # Security Settings
+    "net.ipv4.tcp_syncookies" = 1;
+    "net.ipv4.conf.all.rp_filter" = 1;
+    "net.ipv4.conf.default.rp_filter" = 1;
+    "net.ipv4.conf.all.accept_redirects" = 0;
     "net.ipv4.conf.all.accept_source_route" = 0;
-    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;  
+    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
   };
 
+  # =============================================================================
+  # Networking Configuration
+  # =============================================================================
   networking = {
-    # Sistem host adı
     hostName = "${host}";
+    enableIPv6 = false;
     
-    # DNS yapılandırması
+    # DNS Configuration
     nameservers = [
-      "1.1.1.1"  
-      "1.0.0.1"  
-      "9.9.9.9"  
+      "1.1.1.1"  # Cloudflare Primary
+      "1.0.0.1"  # Cloudflare Secondary
+      "9.9.9.9"  # Quad9
     ];
 
-    # Güvenlik duvarı yapılandırması
+    # =============================================================================
+    # Firewall Configuration
+    # =============================================================================
     firewall = {
-      enable = true;                    
-      allowPing = false;               
-      rejectPackets = true;            
-      logReversePathDrops = true;      
-      checkReversePath = "strict";     
+      enable = true;
+      allowPing = false;
+      rejectPackets = true;
+      logReversePathDrops = true;
+      checkReversePath = "strict";
       
-      # Özel iptables kuralları
       extraCommands = ''
-        # Varsayılan politikalar
+        # Default Policies
         iptables -P INPUT DROP
         iptables -P FORWARD DROP
         iptables -P OUTPUT ACCEPT
 
-        # Temel izinler
+        # Basic Permissions
         iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
         iptables -A INPUT -i lo -j ACCEPT
         
-        # SYN flood koruması
+        # Security Measures
         iptables -A INPUT -p tcp --syn -m limit --limit 1/s --limit-burst 3 -j ACCEPT
         iptables -A INPUT -p tcp --syn -m connlimit --connlimit-above 15 -j REJECT
         
-        # Port tarama koruması
+        # Port Scan Protection
         iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
         iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
         iptables -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP
         iptables -A INPUT -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j DROP
         
-        # ICMP rate limiting
+        # ICMP Rate Limiting
         iptables -A INPUT -p icmp -m limit --limit 1/s --limit-burst 1 -j ACCEPT
       '';
     };
 
-    # IPv6'yı devre dışı bırak
-    enableIPv6 = false;
-
-    # IWD yapılandırması
+    # =============================================================================
+    # Wireless Configuration (IWD)
+    # =============================================================================
     wireless.iwd = {
       enable = true;
       settings = {
@@ -99,7 +103,7 @@
           EnableAutoConnect = "true";
         };
 
-        # Ken_5 ağı yapılandırması
+        # Network Profiles
         "Network.Ken_5" = {
           Address = "192.168.1.100/24";
           Gateway = "192.168.1.1";
@@ -109,7 +113,6 @@
           PowerSave = "false";
         };
 
-        # Ken_2_4 ağı yapılandırması
         "Network.Ken_2_4" = {
           Address = "192.168.1.101/24";
           Gateway = "192.168.1.1";
@@ -122,13 +125,17 @@
     };
   };
 
-  # Systemd resolved servisi
+  # =============================================================================
+  # DNS Resolution Service
+  # =============================================================================
   services.resolved = {
     enable = true;
     fallbackDns = [ "1.1.1.1" "1.0.0.1" ];
   };
 
-  # WiFi güç tasarrufu bildirimi servisi
+  # =============================================================================
+  # WiFi Power Management Services
+  # =============================================================================
   systemd.user.services.wifi-power-save-notify = {
     description = "Notify WiFi power save status";
     after = [ "graphical-session.target" "disable-wifi-power-save.service" ];
@@ -156,7 +163,6 @@
     };
   };
 
-  # WiFi güç yönetimi devre dışı bırakma servisi
   systemd.services.disable-wifi-power-save = {
     description = "Disable WiFi power save";
     after = [ "iwd.service" ];
@@ -178,6 +184,8 @@
     };
   };
 
-  # NetworkManager-wait-online servisini devre dışı bırak
+  # =============================================================================
+  # Service Disablement
+  # =============================================================================
   systemd.services."NetworkManager-wait-online".enable = false;
 }

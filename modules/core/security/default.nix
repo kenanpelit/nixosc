@@ -1,22 +1,29 @@
-#modules/core/security/default.nix
+# modules/core/security/default.nix
+# ==============================================================================
+# System Security Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
+  # =============================================================================
+  # Core Security Settings
+  # =============================================================================
   security = {
-    rtkit.enable = true;
-    sudo.enable = true;
+    rtkit.enable = true;     # Realtime Kit for audio
+    sudo.enable = true;      # Superuser permissions
+
+    # PAM Service Configuration
     pam.services = {
-      swaylock = {
-        enableGnomeKeyring = true;
-      };
-      hyprlock = {
-        enableGnomeKeyring = true;
-      };
+      # Screen Locker Integration
+      swaylock.enableGnomeKeyring = true;
+      hyprlock.enableGnomeKeyring = true;
       login.enableGnomeKeyring = true;
     };
   };
 
-  # GNOME Keyring servisi
+  # =============================================================================
+  # GNOME Keyring Service
+  # =============================================================================
   services.gnome = {
-    gnome-keyring.enable = true;
+    gnome-keyring.enable = true;  # Secure credential storage
   };
 }

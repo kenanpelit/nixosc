@@ -1,14 +1,18 @@
+# modules/core/system/default.nix
+# ==============================================================================
+# Base System Configuration
+# ==============================================================================
+{ self, pkgs, lib, inputs, ... }:
 {
-  self,
-  pkgs,
-  lib,
-  inputs,
-  ...
-}:
-{
-  imports = [ ];  # Home-manager importu buradan kaldırıldı
+  imports = [ ];  # Home-manager import removed
 
+  # =============================================================================
+  # Localization Settings
+  # =============================================================================
+  # Time Zone
   time.timeZone = "Europe/Istanbul";
+
+  # Locale Configuration
   i18n = {
     defaultLocale = "en_US.UTF-8";
     extraLocaleSettings = {
@@ -24,13 +28,20 @@
     };
   };
 
+  # =============================================================================
+  # Keyboard Configuration
+  # =============================================================================
   services.xserver.xkb = {
     layout = "tr";
     variant = "f";
-    options = "ctrl:nocaps";
+    options = "ctrl:nocaps";  # Caps Lock as Ctrl
   };
+
+  # Console Keymap
   console.keyMap = "trf";
 
-  system.stateVersion = "24.11";
+  # =============================================================================
+  # System Version
+  # =============================================================================
+  system.stateVersion = "24.11";  # Do not change this value
 }
-

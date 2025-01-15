@@ -1,36 +1,67 @@
+# modules/core/default.nix
 # ==============================================================================
 # Core System Configuration
-# Author: kenanpelit
-# Description: Main imports for core system configuration
+# Author: Kenan Pelit
+# Description: Centralized imports for all core system modules
 # ==============================================================================
-
 { inputs, nixpkgs, self, username, host, lib, ... }:
 {
-  imports = [
-    ./audio          # Audio
-    ./bluetooth      # Bluetooth
-    ./bootloader     # Boot-Grub and EFI settings
-    ./flatpak        # Flatpak support
-    ./fonts          # Font management
-    ./gnupg          # GnuGP
-    ./hardware       # Hardware configuration
-    ./mullvad        # Mullvad management
-    ./network        # Network management
-    ./nh             # Nix helper tools
-    ./nixconf        # Nix helper tools
-    ./packages
-    ./pipewire       # Audio system
-    ./podman         # Rootless Podman
-    ./power          # Power settings
-    ./program        # Core programs
-    ./security       # Security settings
-    ./services       # System services
-    ./ssh            # SSH system config
-    ./steam          # Gaming setup
-    ./system         # Core system config
-    ./user           # User management
-    ./virtualization # VM support
-    ./wayland        # Wayland config
-    ./xserver        # X server settings
-  ];
+ imports = [
+   # =============================================================================
+   # Audio and Media
+   # =============================================================================
+   ./audio          # Audio subsystem configuration
+   ./pipewire       # Modern audio/video framework
+   
+   # =============================================================================
+   # System Services
+   # =============================================================================
+   ./bootloader     # Boot loader and EFI configuration
+   ./services       # Core system services
+   ./xserver        # X server configuration
+   ./wayland        # Wayland display server
+   
+   # =============================================================================
+   # Hardware Management
+   # =============================================================================
+   ./hardware       # Hardware detection and support
+   ./bluetooth      # Bluetooth subsystem
+   ./power          # Power management and TLP
+
+   # =============================================================================
+   # Network and Security
+   # =============================================================================
+   ./network        # Network stack configuration
+   ./mullvad        # VPN client and configuration
+   ./security       # System security settings
+   ./ssh            # SSH configuration
+   ./gnupg          # GPG key management
+
+   # =============================================================================
+   # Package Management
+   # =============================================================================
+   ./flatpak        # Flatpak application support
+   ./packages       # System package management
+   ./nh             # Nix helper utilities
+   ./nixconf        # Nix configuration settings
+
+   # =============================================================================
+   # User Environment
+   # =============================================================================
+   ./fonts          # Font configuration
+   ./program        # Core system programs
+   ./user           # User account management
+   
+   # =============================================================================
+   # Virtualization and Gaming
+   # =============================================================================
+   ./podman         # Container runtime
+   ./virtualization # Virtual machine support
+   ./steam          # Gaming platform support
+
+   # =============================================================================
+   # Core Configuration
+   # =============================================================================
+   ./system         # Base system settings
+ ];
 }

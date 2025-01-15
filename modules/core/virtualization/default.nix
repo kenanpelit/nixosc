@@ -1,41 +1,52 @@
-# virtualization.nix
-{ config
-, pkgs
-, username
-, ...
-}:
+# modules/core/virtualization/default.nix
+# ==============================================================================
+# Virtualization Configuration
+# ==============================================================================
+{ config, pkgs, username, ... }:
 {
-  # Kullanıcı grupları
+  # =============================================================================
+  # User Group Configuration
+  # =============================================================================
   users.users.${username}.extraGroups = [ 
-    "libvirtd"
-    "kvm"
+    "libvirtd"  # Virtual machine management
+    "kvm"       # KVM access
   ];
 
-  # Sanallaştırma servisleri
+  # =============================================================================
+  # Virtualization Services
+  # =============================================================================
   virtualisation = {
     libvirtd = {
       enable = true;
       qemu = {
-        swtpm.enable = true;
+        swtpm.enable = true;  # TPM emulation
         ovmf = {
           enable = true;
-          packages = [ pkgs.OVMFFull.fd ];
+          packages = [ pkgs.OVMFFull.fd ];  # UEFI firmware
         };
       };
     };
-    spiceUSBRedirection.enable = true;
+    spiceUSBRedirection.enable = true;  # USB device passthrough
   };
 
-  # SPICE agent servisi
+  # =============================================================================
+  # SPICE Configuration
+  # =============================================================================
+  # SPICE agent for guest integration
   services.spice-vdagentd.enable = true;
 
-  # USB ve SPICE için udev kuralları
+  # =============================================================================
+  # Device Rules
+  # =============================================================================
+  # USB and SPICE udev rules
   services.udev.extraRules = ''
     SUBSYSTEM=="usb", ATTR{idVendor}=="*", ATTR{idProduct}=="*", GROUP="libvirtd"
     SUBSYSTEM=="vfio", GROUP="libvirtd"
   '';
 
-  # Güvenlik ayarları
+  # =============================================================================
+  # Security Configuration
+  # =============================================================================
   security.wrappers.spice-client-glib-usb-acl-helper.source = 
     "${pkgs.spice-gtk}/bin/spice-client-glib-usb-acl-helper";
 }

@@ -1,15 +1,21 @@
+# modules/core/user/default.nix
+# ==============================================================================
+# User Configuration and Home Manager Integration
+# ==============================================================================
 { pkgs, inputs, username, host, lib, config, ... }:
 let
   inherit (lib) mkOption types;
 in
 {
+  # =============================================================================
+  # User Options
+  # =============================================================================
   options.my.user = {
     name = mkOption {
       type = types.str;
       default = username;
       description = "The name of the primary user account";
     };
-
     uid = mkOption {
       type = types.int;
       default = 1000;
@@ -18,12 +24,15 @@ in
   };
 
   config = {
-    # Home Manager konfigürasyonu
+    # =============================================================================
+    # Home Manager Configuration
+    # =============================================================================
     home-manager = {
       useUserPackages = true;
       useGlobalPkgs = true;
       backupFileExtension = "backup";
       extraSpecialArgs = { inherit inputs username host; };
+      
       users.${username} = {
         imports = [ ./../../home ];
         home = {
@@ -34,20 +43,24 @@ in
       };
     };
     
-    # Temel kullanıcı ayarları
+    # =============================================================================
+    # User Account Configuration
+    # =============================================================================
     users.users.${username} = {
       isNormalUser = true;
       description = "${username}";
       extraGroups = [
-        "networkmanager"
-        "wheel"
-        "input"
+        "networkmanager"  # Network management
+        "wheel"          # Sudo access
+        "input"          # Input devices
       ];
       shell = pkgs.zsh;
       uid = 1000;
     };
 
-    # Nix ayarları
+    # =============================================================================
+    # Nix Permissions
+    # =============================================================================
     nix.settings.allowed-users = [ "${username}" ];
   };
 }

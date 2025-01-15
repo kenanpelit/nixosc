@@ -1,21 +1,40 @@
+# modules/core/xserver/default.nix
+# ==============================================================================
+# X Server Configuration
+# ==============================================================================
 { pkgs, username, ... }:
 {
   services = {
+    # =============================================================================
+    # X Server Settings
+    # =============================================================================
     xserver = {
       enable = true;
-      xkb.layout = "tr";
-      xkb.variant = "f";
-      xkb.options = "ctrl:nocaps";
+      # Keyboard Configuration
+      xkb = {
+        layout = "tr";
+        variant = "f";
+        options = "ctrl:nocaps";  # Caps Lock as Ctrl
+      };
     };
 
+    # =============================================================================
+    # Display Manager Settings
+    # =============================================================================
     displayManager.autoLogin = {
       enable = true;
       user = "${username}";
     };
-    libinput = {
-      enable = true;
-    };
+
+    # =============================================================================
+    # Input Device Settings
+    # =============================================================================
+    libinput.enable = true;  # Enable libinput for input devices
   };
-  # To prevent getting stuck at shutdown
+
+  # =============================================================================
+  # Systemd Configuration
+  # =============================================================================
+  # Prevent shutdown hanging
   systemd.extraConfig = "DefaultTimeoutStopSec=10s";
 }
