@@ -31,21 +31,21 @@ set -e
 
 # Kullanım bilgisi fonksiyonu
 usage() {
-  echo "Kullanım: $0 <hedef_dizin>"
-  echo "Not: Script $HOME dizinini yedekler."
-  echo
-  echo "Örnek:"
-  echo "  $0 /mnt/archto/home    # /mnt/archto/home dizinine yedekle"
-  echo "  $0 /hay                # /hay dizinine yedekle"
-  echo "  $0 /kenp               # /kenp dizinine yedekle"
-  echo "  $0 /arch/root/home     # /arch/root/home dizinine yedekle"
-  exit 1
+	echo "Kullanım: $0 <hedef_dizin>"
+	echo "Not: Script $HOME dizinini yedekler."
+	echo
+	echo "Örnek:"
+	echo "  $0 /mnt/archto/home    # /mnt/archto/home dizinine yedekle"
+	echo "  $0 /hay                # /hay dizinine yedekle"
+	echo "  $0 /kenp               # /kenp dizinine yedekle"
+	echo "  $0 /arch/root/home     # /arch/root/home dizinine yedekle"
+	exit 1
 }
 
 # Parametreleri kontrol et
 if [ $# -ne 1 ]; then
-  echo "Hata: Hedef dizin belirtilmedi!"
-  usage
+	echo "Hata: Hedef dizin belirtilmedi!"
+	usage
 fi
 
 # Değişkenleri tanımla
@@ -57,20 +57,20 @@ LOG_FILE="$LOG_DIR/rsync_backup.log"
 
 # Log dizininin varlığını kontrol et ve gerekirse oluştur
 if [ ! -d "$LOG_DIR" ]; then
-  mkdir -p "$LOG_DIR"
+	mkdir -p "$LOG_DIR"
 fi
 
 # Hedef dizinin varlığını kontrol et
 if [ ! -d "$TARGET_DIR" ]; then
-  echo "Hata: Hedef dizin ($TARGET_DIR) bulunamadı!"
-  echo "Hedef dizinin mevcut ve bağlı olduğundan emin olun."
-  exit 1
+	echo "Hata: Hedef dizin ($TARGET_DIR) bulunamadı!"
+	echo "Hedef dizinin mevcut ve bağlı olduğundan emin olun."
+	exit 1
 fi
 
 # Exclude dosyasının varlığını kontrol et
 if [ ! -f "$EXCLUDE_FILE" ]; then
-  echo "Uyarı: Dışlama listesi ($EXCLUDE_FILE) bulunamadı!"
-  echo "Yedekleme tüm dosyaları içerecek şekilde devam edecek."
+	echo "Uyarı: Dışlama listesi ($EXCLUDE_FILE) bulunamadı!"
+	echo "Yedekleme tüm dosyaları içerecek şekilde devam edecek."
 fi
 
 # Yedekleme başlangıç zamanı
@@ -81,16 +81,16 @@ notify-send "Yedekleme Başlatıldı" "Yedekleme işlemi başlatılıyor: $SOURC
 echo "[${START_TIME}] Yedekleme başlatıldı: $SOURCE_DIR -> $TARGET_DIR" | tee -a "$LOG_FILE"
 
 # rsync komutu
-/usr/bin/rsync -avzhPr \
-  --del \
-  --stats \
-  --partial \
-  --append \
-  --append-verify \
-  --info=progress2 \
-  ${EXCLUDE_FILE:+--exclude-from="$EXCLUDE_FILE"} \
-  "$SOURCE_DIR" \
-  "$TARGET_DIR" 2>&1 | tee -a "$LOG_FILE"
+rsync -avzhPr \
+	--del \
+	--stats \
+	--partial \
+	--append \
+	--append-verify \
+	--info=progress2 \
+	${EXCLUDE_FILE:+--exclude-from="$EXCLUDE_FILE"} \
+	"$SOURCE_DIR" \
+	"$TARGET_DIR" 2>&1 | tee -a "$LOG_FILE"
 
 # Yedekleme bitiş zamanı
 END_TIME=$(date '+%Y-%m-%d %H:%M:%S')
