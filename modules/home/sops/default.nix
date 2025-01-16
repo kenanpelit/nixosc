@@ -32,6 +32,11 @@
         mode = "0600";
       };
       
+      "gist_token" = {
+        path = "/home/${username}/.gist";
+        mode = "0600";
+      };
+   
       "tmux_backup_archive" = {
         path = "/home/${username}/.backup/tmux.tar.gz";
         mode = "0600";
