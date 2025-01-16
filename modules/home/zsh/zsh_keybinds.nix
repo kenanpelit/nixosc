@@ -5,15 +5,16 @@
 {
   programs.zsh = {
     defaultKeymap = "viins";  # Vi mode as default
-
+    
     # =============================================================================
     # Key Binding Configuration
     # =============================================================================
     initExtra = ''
       # ---------------------------------------------------------------------------
-      # Vi Mode Setup
+      # Vi Mode Setup and Configuration
       # ---------------------------------------------------------------------------
       bindkey -v
+      export KEYTIMEOUT=1
       WORDCHARS='~!#$%^&*(){}[]<>?.+;-'
       ""{back,for}ward-word() WORDCHARS=$MOTION_WORDCHARS zle .$WIDGET
       zle -N backward-word
@@ -24,9 +25,9 @@
       # ---------------------------------------------------------------------------
       function zle-keymap-select {
         if [[ ''${KEYMAP} == vicmd ]] || [[ $1 = 'block' ]]; then
-          echo -ne '\e[1 q'
+          echo -ne '\e[1 q'  # Block cursor for normal mode
         elif [[ ''${KEYMAP} == main ]] || [[ ''${KEYMAP} == viins ]] || [[ ''${KEYMAP} = ''' ]] || [[ $1 = 'beam' ]]; then
-          echo -ne '\e[5 q'
+          echo -ne '\e[5 q'  # Beam cursor for insert mode
         fi
       }
       zle -N zle-keymap-select
@@ -48,6 +49,12 @@
       bindkey -M vicmd "j" down-line-or-beginning-search
       bindkey -M viins "^[[A" up-line-or-beginning-search
       bindkey -M viins "^[[B" down-line-or-beginning-search
+      bindkey -M vicmd '?' history-incremental-search-backward
+      bindkey -M vicmd '/' history-incremental-search-forward
+
+      # Line Navigation
+      bindkey -M vicmd 'H' beginning-of-line
+      bindkey -M vicmd 'L' end-of-line
 
       # Word Navigation
       bindkey -M vicmd '^[[1;5C' forward-word
@@ -63,9 +70,12 @@
       bindkey -M vicmd 'Y' vi-yank-eol
       bindkey -M vicmd 'v' edit-command-line
       bindkey -M viins '^?' backward-delete-char
-      bindkey -M viins '^H' backward-delete-char
-      bindkey -M viins '^W' backward-kill-word
-      bindkey -M vicmd '^W' backward-kill-word
+      bindkey -M viins '^h' backward-delete-char
+      bindkey -M viins '^w' backward-kill-word
+      bindkey -M vicmd '^w' backward-kill-word
+      bindkey -M viins '^u' backward-kill-line
+      bindkey -M viins '^k' kill-line
+      bindkey -M viins '^f' autosuggest-accept
 
       # ---------------------------------------------------------------------------
       # Custom Word Deletion
