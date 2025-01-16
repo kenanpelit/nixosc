@@ -62,28 +62,73 @@ log() {
 	echo -e "$message" | tee -a "$LOG_FILE"
 }
 
-# Help mesajı
-show_help() {
-	echo "Dotfiles Yedekleme Aracı"
-	echo "------------------------"
-	echo "Bu script, dot dosyalarınızı ve önemli asset'lerinizi yedeklemenize ve şifrelemenize yardımcı olur."
-	echo
-	echo "Temel Özellikler:"
-	echo "  - Çoklu şifreleme desteği (GPG, Age, OpenSSL)"
-	echo "  - Asset yönetimi (mpv, tmux, oh-my-tmux)"
-	echo "  - İlerleme çubuğu gösterimi"
-	echo "  - Otomatik yedekleme (cronjob)"
-	echo "  - Detaylı loglama sistemi"
-	echo
-	echo "Kullanım Örnekleri:"
-	echo "  $0 -e backup         : GPG ile şifreli yedek al"
-	echo "  $0 -a backup         : Age ile şifreli yedek al"
-	echo "  $0 -o backup         : OpenSSL ile şifreli yedek al"
-	echo "  $0 asset mpv        : mpv asset'ini yedekle"
-	echo "  $0 asset            : Tüm asset'leri listele"
-	echo "  $0 manual           : Manuel komutları göster"
-	echo
-	echo "Not: Şifreleme yöntemi seçilmeden yedekleme yapılamaz."
+# Asset yönetimi
+manage_assets() {
+	local command=$1
+
+	# "list" veya parametre yoksa liste göster
+	if [ -z "$command" ] || [ "$command" = "list" ]; then
+		echo -e "${BLUE}Mevcut Asset'ler:${NC}"
+		echo "------------------------"
+		for asset in "${ASSET_DIRS[@]}"; do
+			echo -ne "${GREEN}$asset${NC}\t"
+			if [ -f "$BACKUP_DIR/$asset.enc.tar.gz" ]; then
+				local timestamp=$(date -r "$BACKUP_DIR/$asset.enc.tar.gz" "+%Y-%m-%d %H:%M")
+				local size=$(du -h "$BACKUP_DIR/$asset.enc.tar.gz" | cut -f1)
+				echo -e "${GREEN}[Yedek var: $timestamp - $size]${NC}"
+			else
+				echo -e "${YELLOW}[Yedeklenmemiş]${NC}"
+			fi
+		done
+		return
+	fi
+
+	# Geçerli asset kontrolü
+	if [[ ! " ${ASSET_DIRS[@]} " =~ " ${command} " ]]; then
+		error "Geçersiz asset: $command"
+	fi
+
+	if [ ! -d "$BACKUP_DIR/$command" ]; then
+		error "Asset dizini bulunamadı: $BACKUP_DIR/$command"
+	fi
+
+	local backup_name="${command}.tar.gz"
+	local encrypted_name="${command}.enc.tar.gz"
+
+	success "$command asset'i yedekleniyor..."
+
+	cd "$BACKUP_DIR" || error "Backup dizinine geçilemedi"
+
+	# Önceki dosyaları temizle
+	rm -f "$backup_name" "$encrypted_name"
+
+	# Tar oluştur ve şifrele
+	success "Tar arşivi oluşturuluyor ve şifreleniyor..."
+	tar czf "$backup_name" "$command" || error "Tar oluşturulamadı"
+	sops -e "$backup_name" >"$encrypted_name" || error "Şifreleme başarısız"
+	rm -f "$backup_name"
+
+	local size=$(du -h "$encrypted_name" | cut -f1)
+	success "Asset başarıyla yedeklendi: $encrypted_name (Boyut: $size)"
+}
+
+# Hata mesajı fonksiyonu
+error() {
+	log "ERROR" "$1"
+	echo -e "${RED}ERROR: $1${NC}" >&2
+	exit 1
+}
+
+# Başarı mesajı fonksiyonu
+success() {
+	log "INFO" "$1"
+	echo -e "${GREEN}==> $1${NC}"
+}
+
+# Uyarı mesajı fonksiyonu
+warn() {
+	log "WARN" "$1"
+	echo -e "${YELLOW}UYARI: $1${NC}"
 }
 
 # Manuel açma komutlarını göster
@@ -92,8 +137,8 @@ show_manual_commands() {
 	echo "Not: Önce dosya tipini kontrol edin:"
 	echo -e "${GREEN}file dot.enc.tar.gz${NC}"
 	echo
-	echo "Age ile şifrelenmiş dosyayı açmak için:"
-	echo -e "${GREEN}age -d -i ~/.config/sops/age/keys.txt -o - dot.enc.tar.gz | tar xzf -${NC}"
+	echo "SOPS ile şifrelenmiş dosyayı açmak için:"
+	echo -e "${GREEN}sops -d file.enc.tar.gz | tar xzf -${NC}"
 	echo
 	echo "GPG ile şifrelenmiş dosyayı açmak için:"
 	echo -e "${GREEN}gpg --decrypt dot.enc.tar.gz | tar xzf -${NC}"
@@ -102,7 +147,7 @@ show_manual_commands() {
 	echo -e "${GREEN}openssl enc -d -aes-256-cbc -salt -pbkdf2 -in dot.enc.tar.gz | tar xzf -${NC}"
 	echo
 	echo "İlerleme çubuğu görmek için komutların ortasına pv ekleyin:"
-	echo -e "${GREEN}gpg --decrypt dot.enc.tar.gz | pv | tar xzf -${NC}"
+	echo -e "${GREEN}sops -d file.enc.tar.gz | pv | tar xzf -${NC}"
 }
 
 # Yardım mesajı
@@ -127,23 +172,28 @@ usage() {
 	exit 1
 }
 
-# Hata mesajı fonksiyonu
-error() {
-	log "ERROR" "$1"
-	echo -e "${RED}ERROR: $1${NC}" >&2
-	exit 1
-}
-
-# Başarı mesajı fonksiyonu
-success() {
-	log "INFO" "$1"
-	echo -e "${GREEN}==> $1${NC}"
-}
-
-# Uyarı mesajı fonksiyonu
-warn() {
-	log "WARN" "$1"
-	echo -e "${YELLOW}UYARI: $1${NC}"
+# Help mesajı
+show_help() {
+	echo "Dotfiles Yedekleme Aracı"
+	echo "------------------------"
+	echo "Bu script, dot dosyalarınızı ve önemli asset'lerinizi yedeklemenize ve şifrelemenize yardımcı olur."
+	echo
+	echo "Temel Özellikler:"
+	echo "  - Çoklu şifreleme desteği (GPG, Age, OpenSSL)"
+	echo "  - Asset yönetimi (mpv, tmux, oh-my-tmux)"
+	echo "  - İlerleme çubuğu gösterimi"
+	echo "  - Otomatik yedekleme (cronjob)"
+	echo "  - Detaylı loglama sistemi"
+	echo
+	echo "Kullanım Örnekleri:"
+	echo "  $0 -e backup         : GPG ile şifreli yedek al"
+	echo "  $0 -a backup         : Age ile şifreli yedek al"
+	echo "  $0 -o backup         : OpenSSL ile şifreli yedek al"
+	echo "  $0 asset mpv        : mpv asset'ini yedekle"
+	echo "  $0 asset            : Tüm asset'leri listele"
+	echo "  $0 manual           : Manuel komutları göster"
+	echo
+	echo "Not: Şifreleme yöntemi seçilmeden yedekleme yapılamaz."
 }
 
 # Disk alanı kontrolü
@@ -156,116 +206,23 @@ check_disk_space() {
 	fi
 }
 
-# Asset yönetimi
-manage_assets() {
-	local command=$1
-	local backup_name
-	local asset_dir
-
-	# "list" veya parametre yoksa liste göster
-	if [ -z "$command" ] || [ "$command" = "list" ]; then
-		echo -e "${BLUE}Mevcut Asset'ler:${NC}"
-		echo "------------------------"
-		for asset in "${ASSET_DIRS[@]}"; do
-			echo -ne "${GREEN}$asset${NC}\t"
-			if [ -f "$BACKUP_DIR/$asset.enc.tar.gz" ]; then
-				local timestamp=$(date -r "$BACKUP_DIR/$asset.enc.tar.gz" "+%Y-%m-%d %H:%M")
-				local size=$(du -h "$BACKUP_DIR/$asset.enc.tar.gz" | cut -f1)
-				echo -e "${GREEN}[Yedek var: $timestamp - $size]${NC}"
-			else
-				echo -e "${YELLOW}[Yedeklenmemiş]${NC}"
-			fi
-		done
-		return
-	fi
-
-	# Geçerli asset kontrolü
-	if [[ ! " ${ASSET_DIRS[@]} " =~ " ${command} " ]]; then
-		error "Geçersiz asset: $command"
-	fi
-
-	asset_dir="$BACKUP_DIR/$command"
-	if [ ! -d "$asset_dir" ]; then
-		error "Asset dizini bulunamadı: $asset_dir"
-	fi
-
-	backup_name="${command}.tar.gz"
-	encrypted_name="${command}.enc.tar.gz"
-
-	success "$command asset'i yedekleniyor..."
-
-	# Ana dizine git
-	cd "$BACKUP_DIR" || error "Backup dizinine geçilemedi"
-
-	# Eğer önceki dosyalar varsa temizle
-	rm -f "$backup_name" "$encrypted_name.tmp"
-
-	# Tar oluştur
-	success "Tar arşivi oluşturuluyor..."
-	tar czf "$backup_name" "$command" || error "Tar oluşturulamadı"
-
-	# Age ile şifrele
-	local age_key="$HOME/.config/sops/age/keys.txt"
-	local age_public_key
-
-	if [ ! -f "$age_key" ]; then
-		rm -f "$backup_name"
-		error "Age key dosyası bulunamadı: $age_key"
-	fi
-
-	# SOPS age public key'i çıkar
-	age_public_key=$(sops --age "$(cat $age_key | grep -v '^#' | grep 'public key:' | cut -d: -f2- | tr -d ' ')" 2>/dev/null)
-	if [ $? -ne 0 ]; then
-		rm -f "$backup_name"
-		error "Age public key okunamadı. SOPS kurulu olduğundan ve key'in doğru formatta olduğundan emin olun."
-	fi
-
-	success "Age ile şifreleniyor..."
-	cat "$backup_name" | pv | sops --encrypt --age "$age_public_key" /dev/stdin >"$encrypted_name.tmp" || {
-		rm -f "$backup_name" "$encrypted_name.tmp"
-		error "Age şifreleme başarısız"
-	}
-
-	# Başarılı şifrelemeden sonra dosyaları düzenle
-	mv "$encrypted_name.tmp" "$encrypted_name"
-	rm -f "$backup_name"
-
-	# Yedek boyutu ve tarihini göster
-	local size=$(du -h "$encrypted_name" | cut -f1)
-	local timestamp=$(date "+%Y-%m-%d %H:%M")
-	success "Asset başarıyla yedeklendi: $encrypted_name"
-	success "Boyut: $size, Tarih: $timestamp"
-}
-
 # Progress bar ile şifreli tar oluşturma
 create_encrypted_tar() {
 	local source_files=("$@")
 	local total_size=$(du -bc "${source_files[@]}" 2>/dev/null | tail -n1 | cut -f1)
 	local password
-	local age_key="$HOME/.config/sops/age/keys.txt"
 
+	# Tar oluştur
+	tar czf "$BACKUP_DIR/$BACKUP_FILE" "${source_files[@]}" || error "Tar oluşturulamadı"
+
+	cd "$BACKUP_DIR" || error "Backup dizinine geçilemedi"
+
+	# Şifreleme yöntemine göre işlem yap
 	if [ "$USE_GPG" = "true" ]; then
-		# GPG ile şifreli tar oluşturma
-		echo "GPG şifreleme için parola girin:"
-		tar czf - "${source_files[@]}" 2>/dev/null |
-			pv -s "$total_size" |
-			gpg --symmetric --cipher-algo AES256 --output "$BACKUP_DIR/$ENCRYPTED_FILE" -
+		gpg --symmetric --cipher-algo AES256 --output "$ENCRYPTED_FILE" "$BACKUP_FILE"
 	elif [ "$USE_AGE" = "true" ]; then
-		# Age ile şifreli tar oluşturma
-		if [ -f "$age_key" ]; then
-			local age_public_key
-			age_public_key=$(sops --age "$(cat $age_key | grep -v '^#' | grep 'public key:' | cut -d: -f2- | tr -d ' ')" 2>/dev/null)
-			if [ $? -ne 0 ]; then
-				error "Age public key okunamadı"
-			fi
-			tar czf - "${source_files[@]}" 2>/dev/null |
-				pv -s "$total_size" |
-				sops --encrypt --age "$age_public_key" /dev/stdin >"$BACKUP_DIR/$ENCRYPTED_FILE"
-		else
-			error "Age public key bulunamadı: $age_key"
-		fi
+		sops -e "$BACKUP_FILE" >"$ENCRYPTED_FILE" || error "Şifreleme başarısız"
 	elif [ "$USE_OPENSSL" = "true" ]; then
-		# OpenSSL ile şifreli tar oluşturma
 		echo "Arşiv için şifre girin:"
 		read -s password
 		echo
@@ -277,12 +234,11 @@ create_encrypted_tar() {
 			error "Şifreler eşleşmiyor!"
 		fi
 
-		tar czf - "${source_files[@]}" 2>/dev/null |
-			pv -s "$total_size" |
-			openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:"$password" -out "$BACKUP_DIR/$ENCRYPTED_FILE"
-	else
-		error "Şifreleme yöntemi seçilmedi (-e, -a veya -o kullanın)"
+		openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:"$password" -in "$BACKUP_FILE" -out "$ENCRYPTED_FILE"
 	fi
+
+	# Yedek dosyayı sil
+	rm -f "$BACKUP_FILE"
 }
 
 # Yolları kontrol et
@@ -377,23 +333,14 @@ restore_backup() {
 	log "INFO" "Geri yükleme başlatıldı"
 
 	cd "$BACKUP_DIR" || error "Backup dizinine geçilemedi"
-	local age_key="$HOME/.config/sops/age/keys.txt"
 
 	# Şifre çözme ve arşiv içeriğini görüntüleme
 	if file "$ENCRYPTED_FILE" | grep -q "GPG"; then
 		success "GPG şifresi çözülüyor..."
 		gpg --decrypt "$ENCRYPTED_FILE" | tar tvf - || error "GPG şifre çözme başarısız"
-	elif file "$ENCRYPTED_FILE" | grep -q "age"; then
-		success "Age şifresi çözülüyor..."
-		if [ -f "$age_key" ]; then
-			sops --decrypt "$ENCRYPTED_FILE" | tar tvf - || error "Age şifre çözme başarısız"
-		else
-			error "Age private key bulunamadı: $age_key"
-		fi
 	else
-		success "OpenSSL şifresi çözülüyor..."
-		echo "Arşiv şifresini girin:"
-		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in "$ENCRYPTED_FILE" | tar tvf - || error "OpenSSL şifre çözme başarısız"
+		success "Sops şifresi çözülüyor..."
+		sops -d "$ENCRYPTED_FILE" | tar tvf - || error "Sops şifre çözme başarısız"
 	fi
 
 	echo
@@ -408,11 +355,8 @@ restore_backup() {
 
 	if file "$BACKUP_DIR/$ENCRYPTED_FILE" | grep -q "GPG"; then
 		gpg --decrypt "$BACKUP_DIR/$ENCRYPTED_FILE" | pv | tar xzf - || error "GPG ile geri yükleme başarısız"
-	elif file "$BACKUP_DIR/$ENCRYPTED_FILE" | grep -q "age"; then
-		sops --decrypt "$BACKUP_DIR/$ENCRYPTED_FILE" | pv | tar xzf - || error "Age ile geri yükleme başarısız"
 	else
-		echo "Arşiv şifresini girin:"
-		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in "$BACKUP_DIR/$ENCRYPTED_FILE" | pv | tar xzf - || error "OpenSSL ile geri yükleme başarısız"
+		sops -d "$BACKUP_DIR/$ENCRYPTED_FILE" | pv | tar xzf - || error "Sops ile geri yükleme başarısız"
 	fi
 
 	# Özel izinleri ayarla
