@@ -1,16 +1,26 @@
+# modules/home/sem/default.nix
+# ==============================================================================
+# Session Manager Configuration
+# ==============================================================================
 { config, pkgs, ... }:
 {
+ # =============================================================================
+ # Directory Structure
+ # =============================================================================
  home.file = {
-   # Dizinlerin oluşturulması
+   # Backup Directory
    ".config/sem/backups/.keep" = {
      text = "";
    };
-   
+
+   # Logs Directory  
    ".config/sem/logs/.keep" = {
      text = "";
    };
 
-   # config.json dosyası
+   # =============================================================================
+   # Main Configuration
+   # =============================================================================
    ".config/sem/config.json" = {
      text = ''
 {
@@ -25,6 +35,11 @@
      "args": ["-a", "TmuxCta", "-T", "Tmux", "-e", "tmux_cta"],
      "vpn_mode": "always"
    },
+   "foot": {
+     "command": "foot",
+     "args": ["-a", "foot", "-T", "foot"],
+     "vpn_mode": "default"
+   },
    "kkenp": {
      "command": "kitty",
      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
@@ -34,6 +49,11 @@
      "command": "kitty",
      "args": ["--class", "TmuxCta", "-T", "Tmux", "-e", "tmux_cta"],
      "vpn_mode": "always"
+   },
+   "kitty-single": {
+     "command": "kitty",
+     "args": ["--class", "kitty", "-T", "kitty", "--single-instance"],
+     "vpn_mode": "default" 
    },
    "wkenp": {
      "command": "wezterm",
@@ -45,6 +65,11 @@
      "args": ["start", "--class", "TmuxCta", "-e", "tmux_cta"],
      "vpn_mode": "always"
    },
+   "wezterm": {
+     "command": "wezterm",
+     "args": ["start", "--class", "wezterm"],
+     "vpn_mode": "default"
+   },
    "akenp": {
      "command": "alacritty",
      "args": ["--class", "TmuxKenp", "--title", "Tmux", "-e", "tmux_kenp"],
@@ -54,21 +79,6 @@
      "command": "alacritty",
      "args": ["--class", "TmuxCta", "--title", "Tmux", "-e", "tmux_cta"],
      "vpn_mode": "always"
-   },
-   "foot": {
-     "command": "foot",
-     "args": ["-a", "foot", "-T", "foot"],
-     "vpn_mode": "default"
-   },
-   "wezterm": {
-     "command": "wezterm",
-     "args": ["start", "--class", "wezterm"],
-     "vpn_mode": "default"
-   },
-   "kitty-single": {
-     "command": "kitty",
-     "args": ["--class", "kitty", "-T", "kitty", "--single-instance"],
-     "vpn_mode": "default" 
    },
    "alacritty-ncmpcpp": {
      "command": "alacritty",
@@ -130,13 +140,13 @@
      "args": ["--class", "Spotify", "-T", "Spotify"],
      "vpn_mode": "never"
    },
-   "transmission-gtk": {
-     "command": "transmission-gtk",
+   "mpv": {
+     "command": "mpv",
      "args": [],
      "vpn_mode": "never"
    },
-   "mpv": {
-     "command": "mpv",
+   "transmission-gtk": {
+     "command": "transmission-gtk",
      "args": [],
      "vpn_mode": "never"
    }

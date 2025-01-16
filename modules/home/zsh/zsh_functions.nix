@@ -1,10 +1,16 @@
+# modules/home/zsh_functions.nix
+# ==============================================================================
+# ZSH Custom Functions Configuration
+# ==============================================================================
 { lib, config, pkgs, host, ... }:
-
 {
   programs.zsh = {
     enable = true;
     initExtra = ''
-      # Yazi file manager wrapper
+      # =============================================================================
+      # File Manager Functions
+      # =============================================================================
+      # Yazi wrapper
       function y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
         yazi "$@" --cwd-file="$tmp"
@@ -24,7 +30,10 @@
         rm -f -- "$tmp"
       }
 
-      # External IP check function
+      # =============================================================================
+      # Network Functions
+      # =============================================================================
+      # External IP checker
       function wanip() {
         local ip
         ip=$(curl -s https://am.i.mullvad.net/ip 2>/dev/null) && echo "Mullvad IP: $ip" && return 0
@@ -34,7 +43,7 @@
         return 1
       }
 
-      # File transfer via transfer.sh
+      # File transfer function
       function transfer() {  
         if [ -z "$1" ]; then
           echo "usage: transfer FILE_TO_TRANSFER"
@@ -46,7 +55,10 @@
         rm -f $tmpfile
       }
 
-      # Quick file edit/create
+      # =============================================================================
+      # File Editing Functions
+      # =============================================================================
+      # Quick file editor
       function v() {
         local file="$1"
         if [[ -z "$file" ]]; then
@@ -74,7 +86,10 @@
         fi
       }
 
-      # NixOS package dependencies (simple version)
+      # =============================================================================
+      # Nix Package Management Functions
+      # =============================================================================
+      # Simple dependencies viewer
       function nix_depends() {
         if [ -z "$1" ]; then
           echo "Usage: nix_depends <package-name>"
@@ -83,7 +98,7 @@
         nix-store --query --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
       }
 
-      # NixOS package dependencies (detailed version)
+      # Detailed dependencies viewer
       function nix_deps() {
         if [ -z "$1" ]; then
           echo "Usage: nix_deps <package-name>"
@@ -100,6 +115,9 @@
         nix-store -q --requisites $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
       }
 
+      # =============================================================================
+      # Archive Management Functions
+      # =============================================================================
       # Universal archive extractor
       function ex() {
         if [ -f $1 ] ; then
@@ -125,14 +143,17 @@
         fi
       }
 
-      # FZF enhanced file search
+      # =============================================================================
+      # FZF Enhanced Functions
+      # =============================================================================
+      # File content search
       function fif() {
         if [ ! "$#" -gt 0 ]; then echo "Search term required"; return 1; fi
         fd --type f --hidden --follow --exclude .git \
         | fzf -m --preview="bat --style=numbers --color=always {} 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
       }
 
-      # FZF directory history search
+      # Directory history search
       function fcd() {
         local dir
         dir=$(dirs -v | fzf --height 40% --reverse | cut -f2-)
@@ -141,7 +162,7 @@
         fi
       }
 
-      # FZF git commit search
+      # Git commit search
       function fgco() {
         local commits commit
         commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&

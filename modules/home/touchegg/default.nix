@@ -1,5 +1,12 @@
+# modules/home/touchegg/default.nix
+# ==============================================================================
+# Touchégg Gesture Configuration
+# ==============================================================================
 { config, pkgs, lib, ... }:
 {
+  # =============================================================================
+  # Systemd Service Configuration
+  # =============================================================================
   systemd.user.services.touchegg = {
     Unit = {
       Description = "Touchégg Daemon (User)";
@@ -7,6 +14,7 @@
       PartOf = [ "graphical-session.target" ];
       Requires = [ "dbus.service" ];
     };
+
     Service = {
       ExecStart = "${pkgs.touchegg}/bin/touchegg --daemon";
       ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
@@ -18,21 +26,33 @@
         "WAYLAND_DISPLAY=${if config.wayland.windowManager.hyprland.enable then "wayland-1" else ""}"
       ];
     };
+
     Install = {
       WantedBy = [ "graphical-session.target" ];
     };
   };
 
+  # =============================================================================
+  # Gesture Configuration
+  # =============================================================================
   xdg.configFile."touchegg/touchegg.conf" = {
     text = ''
       <touchégg>
+        # ---------------------------------------------------------------------------
+        # Global Settings
+        # ---------------------------------------------------------------------------
         <settings>
           <property name="animation_delay">150</property>
           <property name="action_execute_threshold">10</property>
           <property name="color">auto</property>
           <property name="borderColor">auto</property>
         </settings>
+
+        # ---------------------------------------------------------------------------
+        # Application-wide Gestures
+        # ---------------------------------------------------------------------------
         <application name="All">
+          # Three Finger Gestures
           <gesture type="SWIPE" fingers="3" direction="UP">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
@@ -40,6 +60,7 @@
               <on>begin</on>
             </action>
           </gesture>
+
           <gesture type="SWIPE" fingers="3" direction="DOWN">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
@@ -47,6 +68,8 @@
               <on>begin</on>
             </action>
           </gesture>
+
+          # Four Finger Gestures
           <gesture type="SWIPE" fingers="4" direction="UP">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
@@ -54,6 +77,7 @@
               <on>begin</on>
             </action>
           </gesture>
+
           <gesture type="SWIPE" fingers="4" direction="DOWN">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
@@ -61,6 +85,7 @@
               <on>begin</on>
             </action>
           </gesture>
+
           <gesture type="SWIPE" fingers="4" direction="RIGHT">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
@@ -68,6 +93,7 @@
               <on>begin</on>
             </action>
           </gesture>
+
           <gesture type="SWIPE" fingers="4" direction="LEFT">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
