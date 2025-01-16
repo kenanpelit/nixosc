@@ -58,6 +58,8 @@
    wl-clipboard   # Wayland clipboard
    bat            # Cat clone
    detox          # Filename cleaner
+   pv             # Pipe viewer
+   gist           # Upload code
 
    # =============================================================================
    # Media Tools
