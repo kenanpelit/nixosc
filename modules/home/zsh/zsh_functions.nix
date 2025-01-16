@@ -1,6 +1,6 @@
 # modules/home/zsh_functions.nix
 # ==============================================================================
-# ZSH Custom Functions Configuration
+# ZSH Özel Fonksiyonları Yapılandırması
 # ==============================================================================
 { lib, config, pkgs, host, ... }:
 {
@@ -8,9 +8,9 @@
     enable = true;
     initExtra = ''
       # =============================================================================
-      # File Manager Functions
+      # Dosya Yöneticisi Fonksiyonları
       # =============================================================================
-      # Yazi wrapper
+      # Yazi sarmalayıcı fonksiyonu
       function y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
         yazi "$@" --cwd-file="$tmp"
@@ -20,7 +20,7 @@
         rm -f -- "$tmp"
       }
 
-      # Alternative Yazi function
+      # Alternatif Yazi fonksiyonu (k komutu ile)
       function k() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
         yazi "$@" --cwd-file="$tmp"
@@ -31,22 +31,22 @@
       }
 
       # =============================================================================
-      # Network Functions
+      # Ağ Fonksiyonları
       # =============================================================================
-      # External IP checker
+      # Dış IP kontrol fonksiyonu
       function wanip() {
         local ip
         ip=$(curl -s https://am.i.mullvad.net/ip 2>/dev/null) && echo "Mullvad IP: $ip" && return 0
         ip=$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null) && echo "OpenDNS IP: $ip" && return 0
         ip=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"') && echo "Google DNS IP: $ip" && return 0
-        echo "Error: Could not determine IP address"
+        echo "Hata: IP adresi belirlenemedi"
         return 1
       }
 
-      # File transfer function
+      # Dosya transfer fonksiyonu
       function transfer() {  
         if [ -z "$1" ]; then
-          echo "usage: transfer FILE_TO_TRANSFER"
+          echo "Kullanım: transfer TRANSFER_EDILECEK_DOSYA"
           return 1
         fi
         tmpfile=$(mktemp -t transferXXX)
@@ -56,13 +56,13 @@
       }
 
       # =============================================================================
-      # File Editing Functions
+      # Dosya Düzenleme Fonksiyonları
       # =============================================================================
-      # Quick file editor
+      # Hızlı dosya düzenleyici
       function v() {
         local file="$1"
         if [[ -z "$file" ]]; then
-          echo "Error: File name required."
+          echo "Hata: Dosya adı gerekli."
           return 1
         fi
         [[ ! -f "$file" ]] && touch "$file"
@@ -70,55 +70,26 @@
         vim -c "set paste" "$file"
       }
 
-      # Edit command path
+      # Komut yolu düzenleme
       function vw() {
         local file
         if [[ -n "$1" ]]; then
           file=$(which "$1" 2>/dev/null)
           if [[ -n "$file" ]]; then
-            echo "File found: $file"
+            echo "Dosya bulundu: $file"
             vim "$file"
           else
-            echo "File not found: $1"
+            echo "Dosya bulunamadı: $1"
           fi
         else
-          echo "Usage: vwhich <filename>"
+          echo "Kullanım: vwhich <dosya-adı>"
         fi
       }
 
       # =============================================================================
-      # Nix Package Management Functions
+      # Arşiv Yönetimi Fonksiyonları
       # =============================================================================
-      # Simple dependencies viewer
-      function nix_depends() {
-        if [ -z "$1" ]; then
-          echo "Usage: nix_depends <package-name>"
-          return 1
-        fi
-        nix-store --query --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
-      }
-
-      # Detailed dependencies viewer
-      function nix_deps() {
-        if [ -z "$1" ]; then
-          echo "Usage: nix_deps <package-name>"
-          return 1
-        fi
-        
-        echo "Direct dependencies:"
-        nix-store -q --references $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
-        
-        echo -e "\nReverse dependencies (packages that depend on this):"
-        nix-store -q --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
-        
-        echo -e "\nRuntime dependencies:"
-        nix-store -q --requisites $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
-      }
-
-      # =============================================================================
-      # Archive Management Functions
-      # =============================================================================
-      # Universal archive extractor
+      # Evrensel arşiv çıkarıcı
       function ex() {
         if [ -f $1 ] ; then
           case $1 in
@@ -136,24 +107,24 @@
             *.deb)       ar x $1      ;;
             *.tar.xz)    tar xf $1    ;;
             *.tar.zst)   tar xf $1    ;;
-            *)           echo "'$1' cannot be extracted via ex()" ;;
+            *)           echo "'$1' ex() ile çıkarılamıyor" ;;
           esac
         else
-          echo "'$1' is not a valid file"
+          echo "'$1' geçerli bir dosya değil"
         fi
       }
 
       # =============================================================================
-      # FZF Enhanced Functions
+      # FZF Gelişmiş Fonksiyonları
       # =============================================================================
-      # File content search
+      # Dosya içeriği arama
       function fif() {
-        if [ ! "$#" -gt 0 ]; then echo "Search term required"; return 1; fi
+        if [ ! "$#" -gt 0 ]; then echo "Arama terimi gerekli"; return 1; fi
         fd --type f --hidden --follow --exclude .git \
         | fzf -m --preview="bat --style=numbers --color=always {} 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
       }
 
-      # Directory history search
+      # Dizin geçmişi arama
       function fcd() {
         local dir
         dir=$(dirs -v | fzf --height 40% --reverse | cut -f2-)
@@ -162,12 +133,66 @@
         fi
       }
 
-      # Git commit search
+      # Git commit arama
       function fgco() {
         local commits commit
         commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
         commit=$(echo "$commits" | fzf --tac +s +m -e) &&
         git checkout $(echo "$commit" | sed "s/ .*//")
+      }
+
+      # =============================================================================
+      # Nix Paket Yönetimi Fonksiyonları
+      # =============================================================================
+      # Basit bağımlılık görüntüleyici
+      function nix_depends() {
+        if [ -z "$1" ]; then
+          echo "Kullanım: nix_depends <paket-adı>"
+          return 1
+        fi
+        nix-store --query --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
+      }
+
+      # Detaylı bağımlılık görüntüleyici
+      function nix_deps() {
+        if [ -z "$1" ]; then
+          echo "Kullanım: nix_deps <paket-adı>"
+          return 1
+        fi
+        
+        echo "Doğrudan bağımlılıklar:"
+        nix-store -q --references $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
+        
+        echo -e "\nTers bağımlılıklar (bu pakete bağımlı paketler):"
+        nix-store -q --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
+        
+        echo -e "\nÇalışma zamanı bağımlılıkları:"
+        nix-store -q --requisites $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
+      }
+
+      # =============================================================================
+      # NixOS Flake Gelişmiş Fonksiyonları
+      # =============================================================================
+      nixtest() {
+        local scope=$1            # home veya core
+        local module=$2           # modül adı
+        local flake=''${3:-hay}   # Flake adı, varsayılan olarak 'hay'
+
+        if [[ -z $scope || -z $module ]]; then
+          echo "Kullanım: nix-test <kapsam> <modül> [flake]"
+          echo "Örnek: nix-test home rofi hay"
+          return 1
+        fi
+
+        local config_dir="$HOME/.nixosc/modules/$scope/$module/default.nix"
+      
+        if [[ ! -f $config_dir ]]; then
+          echo "Hata: '$config_dir' yapılandırma dosyası bulunamadı!"
+          return 1
+        fi
+
+        cd "$HOME/.nixosc" || return 1
+        sudo nixos-rebuild test --flake .#"$flake" -I nixos-config="$config_dir"
       }
     '';
   };
