@@ -42,8 +42,8 @@ let
   dotfiles-manager = pkgs.writeShellScriptBin "dotfiles-manager" (
     builtins.readFile ./bin/dotfiles-manager.sh
   );
-  dotfiles = pkgs.writeShellScriptBin "dotfiles" (
-    builtins.readFile ./bin/dotfiles.sh
+  dotsync = pkgs.writeShellScriptBin "dotsync" (
+    builtins.readFile ./bin/dotsync.sh
   );
   extract = pkgs.writeShellScriptBin "extract" (
     builtins.readFile ./bin/extract.sh
@@ -554,7 +554,7 @@ in {
     crypto-manager
     desktop-files-ranger-yazi
     dotfiles-manager
-    dotfiles
+    dotsync
     extract
     generate_nix_bin
     generate_nix_start

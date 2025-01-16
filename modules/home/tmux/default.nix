@@ -32,7 +32,7 @@ with lib;
    # ---------------------------------------------------------------------------
    systemd.user.services.extract-tmux-config = {
      Unit = {
-       Description = "Extract tmux configuration";
+       Description = "Extract tmux and oh-my-tmux configurations";
        Requires = [ "sops-nix.service" ];
        After = [ "sops-nix.service" ];
      };
@@ -42,20 +42,23 @@ with lib;
        RemainAfterExit = true;
        ExecStart = let
          extractScript = pkgs.writeShellScript "extract-tmux-config" ''
-           # Check for backup file
-           if [ ! -f "/home/${config.home.username}/.backup/tmux.tar.gz" ]; then
-             echo "Tar dosyası henüz hazır değil..."
+           # Check for backup files
+           if [ ! -f "/home/${config.home.username}/.backup/tmux.tar.gz" ] || [ ! -f "/home/${config.home.username}/.backup/oh-my-tmux.tar.gz" ]; then
+             echo "Required tar files are not ready yet..."
              exit 1
            fi
            
-           echo "Temizleniyor..."
+           echo "Cleaning up old configurations..."
            rm -rf $HOME/.config/tmux $HOME/.config/oh-my-tmux
            
-           echo "Dizinler oluşturuluyor..."
+           echo "Creating directories..."
            mkdir -p $HOME/.config/tmux $HOME/.config/oh-my-tmux
            
-           echo "Tar dosyası açılıyor..."
+           echo "Extracting tmux configuration..."
            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/tmux.tar.gz -C $HOME/.config/
+
+           echo "Extracting oh-my-tmux configuration..."
+           ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/oh-my-tmux.tar.gz -C $HOME/.config/
          '';
        in "${extractScript}";
      };
@@ -66,3 +69,4 @@ with lib;
    };
  };
 }
+
