@@ -1,6 +1,13 @@
+# modules/home/xdg-mimes/default.nix
+# ==============================================================================
+# XDG MIME Type Configuration
+# ==============================================================================
 { pkgs, lib, ... }:
 with lib;
 let
+  # =============================================================================
+  # Default Applications Map
+  # =============================================================================
   defaultApps = {
     browser = [ "zen.desktop" ];
     text = [ "org.gnome.TextEditor.desktop" ];
@@ -15,8 +22,14 @@ let
     discord = [ "webcord.desktop" ];
   };
 
+  # =============================================================================
+  # MIME Type Mapping
+  # =============================================================================
   mimeMap = {
+    # Text Types
     text = [ "text/plain" ];
+
+    # Image Types
     image = [
       "image/bmp"
       "image/gif"
@@ -28,6 +41,8 @@ let
       "image/vnd.microsoft.icon"
       "image/webp"
     ];
+
+    # Audio Types
     audio = [
       "audio/aac"
       "audio/mpeg"
@@ -37,6 +52,8 @@ let
       "audio/webm"
       "audio/x-matroska"
     ];
+
+    # Video Types
     video = [
       "video/mp2t"
       "video/mp4"
@@ -47,6 +64,8 @@ let
       "video/x-matroska"
       "video/x-msvideo"
     ];
+
+    # Special Types
     directory = [ "inode/directory" ];
     browser = [
       "text/html"
@@ -55,6 +74,8 @@ let
       "x-scheme-handler/https"
       "x-scheme-handler/unknown"
     ];
+
+    # Office Types
     office = [
       "application/vnd.oasis.opendocument.text"
       "application/vnd.oasis.opendocument.spreadsheet"
@@ -67,6 +88,8 @@ let
       "application/vnd.ms-powerpoint"
       "application/rtf"
     ];
+
+    # Other Types
     pdf = [ "application/pdf" ];
     terminal = [ "terminal" ];
     archive = [
@@ -78,6 +101,9 @@ let
     discord = [ "x-scheme-handler/discord" ];
   };
 
+  # =============================================================================
+  # Association Generation
+  # =============================================================================
   associations =
     with lists;
     listToAttrs (
@@ -89,15 +115,19 @@ let
     );
 in
 {
+  # =============================================================================
+  # XDG Configuration
+  # =============================================================================
   xdg.configFile."mimeapps.list".force = true;
   xdg.mimeApps.enable = true;
   xdg.mimeApps.associations.added = associations;
   xdg.mimeApps.defaultApplications = associations;
 
+  # =============================================================================
+  # Package Installation and Environment
+  # =============================================================================
   home.packages = with pkgs; [ junction ];
-
   home.sessionVariables = {
-    # prevent wine from creating file associations
-    WINEDLLOVERRIDES = "winemenubuilder.exe=d";
+    WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
   };
 }

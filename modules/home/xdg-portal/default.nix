@@ -1,19 +1,33 @@
 # modules/home/xdg-portal/default.nix
+# ==============================================================================
+# XDG Portal Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
-  xdg = {
-    portal = {
-      enable = true;
-      extraPortals = with pkgs; [
-        xdg-desktop-portal-gtk
-        xdg-desktop-portal-hyprland
-      ];
-      config = {
-        common = {
-          default = [ "gtk" ];
-          "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
-        };
-      };
-    };
-  };
+ xdg = {
+   portal = {
+     # =============================================================================
+     # Base Configuration
+     # =============================================================================
+     enable = true;
+
+     # =============================================================================
+     # Portal Implementation
+     # =============================================================================
+     extraPortals = with pkgs; [
+       xdg-desktop-portal-gtk
+       xdg-desktop-portal-hyprland
+     ];
+
+     # =============================================================================
+     # Portal Settings
+     # =============================================================================
+     config = {
+       common = {
+         default = [ "gtk" ];
+         "org.freedesktop.impl.portal.Settings" = [ "gtk" ];
+       };
+     };
+   };
+ };
 }

@@ -1,23 +1,36 @@
 # modules/home/rofi/config.nix
+# ==============================================================================
+# Rofi Appearance and Behavior Configuration
+# ==============================================================================
 { pkgs, ... }:
 {
+  # =============================================================================
+  # Main Configuration File
+  # =============================================================================
   xdg.configFile."rofi/config.rasi".text = ''
-    /* Config dosyası */
+    /* Core Configuration */
     configuration {
+      /* Basic Settings */
       modi: "run,drun,window";
       lines: 5;
       cycle: false;
       font: "Hack Bold 13";
+
+      /* Display Settings */
       show-icons: true;
       icon-theme: "a-candy-beauty-icon-theme";
       terminal: "kitty";
       drun-display-format: "{icon} {name}";
       location: 0;
       hide-scrollbar: true;
+      sidebar-mode: true;
+
+      /* Mode Display Labels */
       display-drun: " Apps ";
       display-run: " Run ";
       display-window: " Window ";
-      sidebar-mode: true;
+
+      /* Search and Cache Settings */
       sorting-method: "fzf";
       cache-dir: "~/.cache/rofi";
       drun-use-desktop-cache: true;
@@ -26,19 +39,24 @@
       history: true;
       history-size: 50;
       disable-history: false;
+
+      /* Match Settings */
       levenshtein-sort: true;
       normalize-match: true;
       window-command: "wmctrl -i -R {window}";
       drun-match-fields: "name,generic,exec,categories";
     }
 
+    /* Theme Import */
     @theme "theme"
 
+    /* Element Styles */
     element-text, element-icon, mode-switcher {
       background-color: inherit;
       text-color: inherit;
     }
 
+    /* Window Layout */
     window {
       height: 600px;
       width: 900px;
@@ -51,6 +69,7 @@
       background-color: @bg-col;
     }
 
+    /* Input Bar */
     inputbar {
       children: [prompt,entry];
       background-color: @bg-col-light;
@@ -79,6 +98,7 @@
       border-radius: 3px;
     }
 
+    /* List View */
     listview {
       border: 0px 0px 0px;
       padding: 6px 0px 0px;
@@ -105,6 +125,7 @@
       border-radius: 3px;
     }
 
+    /* Mode Switcher */
     mode-switcher {
       spacing: 0;
     }

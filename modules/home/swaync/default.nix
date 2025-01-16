@@ -1,3 +1,7 @@
+# modules/home/swaync/default.nix
+# ==============================================================================
+# SwayNC Notification Center Configuration
+# ==============================================================================
 { pkgs, ... }:
 let
   colors = import ./../../../themes/colors.nix;
@@ -6,7 +10,14 @@ let
   };
 in
 {
+  # =============================================================================
+  # Package Installation
+  # =============================================================================
   home.packages = (with pkgs; [ swaynotificationcenter ]);
+
+  # =============================================================================
+  # Configuration Files
+  # =============================================================================
   xdg.configFile."swaync/config.json".source = ./config.json;
   xdg.configFile."swaync/style.css".text = ''
     ${theme.swaync.style}
