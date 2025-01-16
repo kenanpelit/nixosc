@@ -1,105 +1,86 @@
 # modules/home/rsync/default.nix
 { config, lib, pkgs, ... }:
 
-with lib;
+{
+  home.file.".rsync-homedir-excludes".text = ''
+    # .rsync-homedir-excludes
+    # This file contains patterns for excluding specific files and directories 
+    # when backing up home directory using rsync
 
-let
-  cfg = config.services.rsync-excludes;
-in {
-  options.services.rsync-excludes = {
-    enable = mkEnableOption "rsync excludes configuration";
-    
-    user = mkOption {
-      type = types.str;
-      default = "kenan";
-      description = "The user to install rsync excludes for";
-    };
-  };
+    # Temporary Files and Caches
+    .cache/
+    */.cache/
+    .tmp/
+    .temp/
+    .thumbnails/
 
-  config = mkIf cfg.enable {
-    home-manager.users.${cfg.user} = { pkgs, ... }: {
-      home.file.".rsync-homedir-excludes".text = ''
-        # .rsync-homedir-excludes
-        # This file contains patterns for excluding specific files and directories 
-        # when backing up home directory using rsync
+    # Browser Caches
+    .config/google-chrome/Default/Cache/
+    .config/chromium/Default/Cache/
+    .config/Mozilla/Firefox/Profiles/*.default*/cache2/
+    .config/Mozilla/Firefox/Profiles/*.default*/startupCache/
+    .config/opera/Cache/
 
-        # Temporary Files and Caches
-        .cache/
-        */.cache/
-        .tmp/
-        .temp/
-        .thumbnails/
+    # Package Manager Caches
+    .npm/
+    .yarn/cache/
+    .gradle/
+    .maven/
 
-        # Browser Caches
-        .config/google-chrome/Default/Cache/
-        .config/chromium/Default/Cache/
-        .config/Mozilla/Firefox/Profiles/*.default*/cache2/
-        .config/Mozilla/Firefox/Profiles/*.default*/startupCache/
-        .config/opera/Cache/
+    # Development
+    .venv/
+    */__pycache__/
+    *.pyc
+    *.pyo
+    *.pyd
+    *.so
+    *.o
+    *.lo
+    *.la
+    node_modules/
+    #.git/
+    .svn/
+    .hg/
 
-        # Package Manager Caches
-        .npm/
-        .yarn/cache/
-        .gradle/
-        .maven/
+    # Logs and Temporary Files
+    *.log
+    *.swp
+    *~
+    .bash_history
+    .zsh_history
+    .python_history
 
-        # Development
-        .venv/
-        */__pycache__/
-        *.pyc
-        *.pyo
-        *.pyd
-        *.so
-        *.o
-        *.lo
-        *.la
-        node_modules/
-        .git/
-        .svn/
-        .hg/
+    # Downloads and Large Media (optional)
+    Downloads/
+    #Documents/
+    Pictures/
+    Music/
+    Videos/
 
-        # Logs and Temporary Files
-        *.log
-        *.swp
-        *~
-        .bash_history
-        .zsh_history
-        .python_history
+    # Application Data
+    .steam/
+    .wine/
+    .local/share/Trash/
 
-        # Downloads and Large Media (optional)
-        Downloads/
-        Documents/
-        Pictures/
-        Music/
-        Videos/
+    # IDE and Editor Files
+    .vscode/
+    .idea/
+    *.sublime-workspace
+    *.sublime-project
 
-        # Application Data
-        .steam/
-        .wine/
-        .local/share/Trash/
+    # Project Specific (customize as needed)
+    Projects/temp/
+    Projects/backup/
+    Projects/*.bak
 
-        # IDE and Editor Files
-        .vscode/
-        .idea/
-        *.sublime-workspace
-        *.sublime-project
+    # System Files
+    .Trash/
+    .Trash-*/
+    .DS_Store
+    Thumbs.db
+  '';
 
-        # Project Specific (customize as needed)
-        Projects/temp/
-        Projects/backup/
-        Projects/*.bak
-
-        # System Files
-        .Trash/
-        .Trash-*/
-        .DS_Store
-        Thumbs.db
-      '';
-    };
-
-    # Make sure rsync is installed
-    environment.systemPackages = with pkgs; [
-      rsync
-    ];
-  };
+  home.packages = with pkgs; [
+    rsync
+  ];
 }
