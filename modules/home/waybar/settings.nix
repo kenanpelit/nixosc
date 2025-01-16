@@ -383,7 +383,7 @@
       };
 
       "custom/power" = {
-        format = "󰐥";
+        format = "⏻";
         on-click = "power-menu";
         tooltip = false;
       };
