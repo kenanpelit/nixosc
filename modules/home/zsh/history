@@ -1,296 +1,293 @@
-sudo nixos-rebuild switch --flake .#hay    # NixOS sistemini belirtilen flake konfigürasyonu ile yeniden derler ve uygular
-nix shell nixpkgs#neofetch    # Belirtilen paketi geçici bir kabukta kullanıma sunar, kalıcı kurulum yapmaz
-sudo nix-collect-garbage -d    # Kullanılmayan paketleri ve eski nesilleri silerek disk alanı temizler
-nix-env --query    # Kullanıcı seviyesinde yüklenmiş tüm paketleri listeler
-sudo systemctl status nixos-rebuild    # NixOS sistem derleme servisinin mevcut durumunu ve loglarını gösterir
-git add flake.nix flake.lock    # NixOS flake yapılandırma dosyalarını git izleme alanına ekler
-git commit -m "feat: update system packages"    # Yapılan değişiklikleri anlamlı bir mesaj ile kayıt altına alır
-nix flake update    # Tüm flake bağımlılıklarını en son kararlı sürümlerine günceller
-nix search nixpkgs neovim    # Nixpkgs deposunda neovim ile ilgili paketleri arar ve listeler
-home-manager switch    # Kullanıcı ortam yapılandırmalarını en son değişikliklere göre uygular
-rsync -avzP --delete ~/Documents/ backup:/mnt/data/    # Dosyaları arşiv modunda, sıkıştırarak ve ilerlemeyi göstererek senkronize eder
-rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} / /mnt/backup    # Sistem genelinde yedekleme yapar, özel sistem dizinlerini hariç tutar
-sudo rsync -aAXv --delete --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} / /mnt/backup    # Root yetkisiyle tam sistem yedeklemesi yapar
-sudo nmap -sS -sV -O -p- 192.168.1.0/24    # Ağdaki tüm cihazların tüm portlarını TCP SYN taraması ile kontrol eder, servis ve işletim sistemi tespiti yapar
-nmap -p 22,80,443 scanme.nmap.org    # Belirtilen hedefin sadece SSH, HTTP ve HTTPS portlarını tarar
-sudo tcpdump -i any port 443    # Tüm ağ arayüzlerindeki HTTPS trafiğini yakalar ve gösterir
-sudo tcpdump -i wlan0 'port 80 or port 443'    # Kablosuz arayüzdeki HTTP ve HTTPS trafiğini izler
-wireshark -k -i wlan0    # Kablosuz ağ trafiğini gerçek zamanlı olarak Wireshark ile analiz eder
-sudo netstat -tuln    # Sistemdeki tüm TCP ve UDP bağlantı noktalarını listeler
-ss -tuln    # Modern netstat alternatifi, açık port ve soketleri gösterir
-curl -I https://nixos.org    # Sadece HTTP başlık bilgilerini getirir
-curl -v -k https://localhost    # SSL doğrulaması olmadan detaylı bağlantı bilgilerini gösterir
-wget -r --no-parent http://example.com    # Belirtilen web sitesini alt dizinleriyle birlikte indirir
-htop    # İnteraktif sistem kaynak kullanımı monitörü
-btop    # Modern ve gelişmiş sistem monitörü
-nethogs    # Prosesler bazında ağ kullanımını izler
-iotop    # Disk I/O kullanımını prosesler bazında gösterir
-nvtop    # NVIDIA GPU kullanımını izler
-docker ps    # Çalışan konteynerleri listeler
-docker-compose up -d    # Docker-compose ile tanımlı servisleri arka planda başlatır
-docker logs -f container_name    # Konteyner loglarını canlı olarak takip eder
-kubectl get pods    # Kubernetes cluster'ındaki podları listeler
-kubectl describe pod mypod    # Pod detaylarını ve durumunu gösterir
-kubectl logs -f deployment/myapp    # Deployment loglarını canlı izler
-virsh list --all    # Tüm sanal makineleri durumlarıyla birlikte listeler
-virsh start vm_name    # Belirtilen sanal makineyi başlatır
-virt-install --name=test-vm --vcpus=2 --memory=2048    # Yeni bir sanal makine oluşturur
-git clone git@github.com:username/repo.git    # Uzak depoyu yerel makineye kopyalar
-git checkout -b feature/new-module    # Yeni bir özellik dalı oluşturur ve ona geçer
-git push origin main    # Yerel değişiklikleri uzak ana dala gönderir
-git rebase -i HEAD~3    # Son üç commit'i interaktif olarak düzenler
-git stash save "wip: current changes"    # Çalışma alanındaki değişiklikleri geçici olarak kaydeder
-git stash pop    # En son stash'lenen değişiklikleri geri getirir
-git log --oneline --graph    # Commit geçmişini grafik formatında gösterir
-git diff master..feature    # İki dal arasındaki farkları gösterir
-nvim ~/.config/nixos/configuration.nix    # NixOS yapılandırma dosyasını Neovim ile düzenler
-nvim flake.nix    # Flake yapılandırmasını düzenler
-nvim ~/Projects/nixos-config/hosts/hay/default.nix    # Host-spesifik yapılandırmayı düzenler
-code .    # Mevcut dizini VS Code ile açar
-vim .gitignore    # Git yoksayma dosyasını düzenler
-nano /etc/hosts    # Host dosyasını basit editör ile düzenler
-journalctl -xe    # Sistem günlüklerinin sonunu detaylı açıklamalarla gösterir
-journalctl -fu nginx    # Nginx servis loglarını canlı takip eder
-tail -f /var/log/nginx/access.log    # Nginx erişim loglarını canlı izler
-grep -r "error" /var/log/    # Tüm log dizininde "error" kelimesini arar
-find / -name "*.nix" -type f    # Sistemdeki tüm .nix dosyalarını bulur
-find . -type f -mtime -7    # Son 7 günde değiştirilmiş dosyaları bulur
-fd -t f -e nix    # Modern find alternatifi ile .nix uzantılı dosyaları bulur
-rg "nixpkgs" --type nix    # .nix dosyalarında "nixpkgs" kelimesini hızlıca arar
-fzf --preview 'bat --style=numbers --color=always {}'    # Bulanık arama ile dosya önizleme
-systemctl status nginx    # Nginx servisinin durumunu kontrol eder
-systemctl restart postgresql    # PostgreSQL veritabanını yeniden başlatır
-systemctl enable --now docker    # Docker servisini etkinleştirir ve başlatır
-useradd -m -G wheel newuser    # Yeni bir kullanıcı oluşturur ve wheel grubuna ekler
-usermod -aG docker username    # Kullanıcıyı docker grubuna ekler
-passwd username    # Kullanıcı şifresini değiştirir
-chown -R user:group /path/to/dir    # Dizin sahipliğini recursif olarak değiştirir
-chmod -R 755 /path/to/dir    # Dizin izinlerini recursif olarak ayarlar
-tar -czvf archive.tar.gz directory/    # Dizini tar.gz formatında arşivler
-tar -xzvf archive.tar.gz    # tar.gz arşivini açar
-zip -r backup.zip directory/    # Dizini zip formatında arşivler
-unzip archive.zip    # Zip arşivini açar
-scp file.txt user@remote:/path/    # Dosyayı uzak sunucuya kopyalar
-ssh-keygen -t ed25519 -C "email@example.com"    # ED25519 SSH anahtarı oluşturur
-ssh-copy-id user@remote    # SSH anahtarını uzak sunucuya kopyalar
-ssh -L 8080:localhost:80 user@remote    # Yerel port yönlendirmesi ile SSH tüneli oluşturur
-tmux new -s dev    # Yeni bir tmux oturumu başlatır
-tmux attach -t dev    # Var olan tmux oturumuna bağlanır
-screen -S mysession    # Yeni bir screen oturumu başlatır
-screen -r mysession    # Var olan screen oturumuna bağlanır
-ps aux | grep nginx    # Nginx ile ilgili çalışan süreçleri listeler
-kill -9 1234    # Belirtilen PID'e sahip süreci zorla sonlandırır
-pkill -f process_name    # İsme göre süreç sonlandırır
-top -u username    # Belirli kullanıcının süreçlerini gösterir
-free -h    # Bellek kullanımını insan okunabilir formatta gösterir
-df -h    # Disk kullanımını insan okunabilir formatta gösterir
-du -sh *    # Her dosya ve dizinin boyutunu gösterir
-lsblk    # Blok cihazlarını listeler
-fdisk -l    # Disk bölümlerini listeler
-mount /dev/sdb1 /mnt    # Disk bölümünü monte eder
-umount /mnt    # Disk bölümünü ayırır
-mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1    # RAID1 dizisi oluşturur
-cryptsetup luksFormat /dev/sda1    # Disk bölümünü şifreler
-cryptsetup luksOpen /dev/sda1 cryptroot    # Şifreli disk bölümünü açar
-iptables -L    # Güvenlik duvarı kurallarını listeler
-iptables -A INPUT -p tcp --dport 80 -j ACCEPT    # HTTP trafiğine izin verir
-ufw status    # UFW güvenlik duvarı durumunu gösterir
-ufw allow 22    # SSH portuna izin verir
-fail2ban-client status    # Fail2ban durumunu gösterir
-docker build -t myapp .    # Dockerfile'dan imaj oluşturur
-docker run -d -p 80:80 nginx    # Nginx konteynerini arkaplanda çalıştırır
-docker exec -it container_name bash    # Çalışan konteynere bağlanır
-podman run -it ubuntu bash    # Ubuntu konteynerini interaktif modda çalıştırır
-distrobox enter dev    # Geliştirme konteynerine girer
-flatpak list    # Yüklü Flatpak uygulamalarını listeler
-flatpak update    # Flatpak uygulamalarını günceller
-pip install --user package    # Python paketini kullanıcı dizinine kurar
-npm install -g package    # Global npm paketi kurar
-yarn global add package    # Global yarn paketi kurar
-cargo install ripgrep    # Rust paketi kurar
-rustup update    # Rust toolchain'i günceller
-go get github.com/user/repo    # Go paketi indirir
-python -m venv venv    # Python sanal ortamı oluşturur
-source venv/bin/activate    # Python sanal ortamını aktifleştirir
-deactivate    # Python sanal ortamından çıkar
-postgresql_setup initdb    # PostgreSQL veritabanını başlatır
-createdb mydb    # Yeni PostgreSQL veritabanı oluşturur
-psql -U postgres    # PostgreSQL komut satırına bağlanır
-mysql -u root -p    # MySQL'e root olarak bağlanır
-redis-cli    # Redis komut satırı arayüzü
-mongodb    # MongoDB kabuğunu başlatır
-nix develop    # Geliştirme ortamını başlatır
-direnv allow    # Direnv konfigürasyonunu kabul eder
-lorri daemon    # Lorri arka plan servisini başlatır
-nix profile install nixpkgs#package  
-nix-shell -p python3    # Python3 içeren geçici kabuk başlatır
-man nixos-rebuild    # NixOS rebuild kılavuzunu gösterir
-info nix-env    # Nix-env detaylı bilgilerini gösterir
-tldr rsync    # Rsync için hızlı kullanım kılavuzu
-cheat tar    # Tar komutları için ipuçları
-nixos-option services.nginx.enable    # Nginx servis seçeneğini sorgular
-nix repl    # Nix interaktif kabuğunu başlatır
-nix-instantiate --eval    # Nix ifadesini değerlendirir
-nix build    # Nix paketi derler
-nix run nixpkgs#hello    # Hello paketini çalıştırır
-sudo nixos-rebuild test --flake .#hay    # Flake konfigürasyonunu test eder
-sudo nixos-rebuild build --flake .#hay    # Flake konfigürasyonunu derler
-nix flake init    # Yeni flake projesi başlatır
-nix edit nixpkgs.nginx    # Nginx paket tanımını düzenler
-nix-shell -p nix-info --run "nix-info -m"    # Sistem Nix bilgilerini gösterir
-home-manager generations    # Home-manager nesillerini listeler
-nix-env --list-generations    # Nix paket nesillerini listeler
-nix-collect-garbage --delete-older-than 30d    # 30 günden eski nesilleri siler
-nixos-rebuild switch --upgrade    # Sistemi yükseltir ve yeni konfigürasyona geçer
-sudo nix-channel --update    # Nix kanallarını günceller
-nix-env -qaP | grep -i neovim    # Neovim paketlerini arar
-which nvim    # Nvim çalıştırılabilir dosya konumunu gösterir
-type -a ls    # ls komutunun tüm versiyonlarını gösterir
-whereis python    # Python ile ilgili tüm dosya konumlarını bulur
-file /usr/bin/python    # Python dosya türünü belirler
-ldd $(which bash)    # Bash'in bağımlı olduğu kütüphaneleri gösterir
-strace ls    # ls komutunun sistem çağrılarını gösterir
-ltrace cat /etc/hostname    # cat komutunun kütüphane çağrılarını gösterir
-date -u +"%Y-%m-%d %H:%M:%S"    # UTC zamanını formatlar
-timedatectl set-timezone UTC    # Sistem saat dilimini UTC'ye ayarlar
-hwclock --systohc    # Sistem saatini donanım saatine senkronize eder
-uptime    # Sistemin ne kadar süredir çalıştığını gösterir
-w    # Oturum açmış kullanıcıları ve aktivitelerini gösterir
-who    # Oturum açmış kullanıcıları listeler
-last    # Son oturum açma kayıtlarını gösterir
-lastlog    # Tüm kullanıcıların son oturum açma bilgilerini gösterir
-ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis status    # Şasi durumunu gösterir
-ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power status    # Güç durumunu gösterir
-ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power on    # Sistemi açar
-ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power off    # Sistemi kapatır
-ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power reset    # Sistemi resetler
-ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power cycle    # Güç döngüsü yapar
-ipmitool user list 1    # Kullanıcıları listeler
-ipmitool user summary 1    # Kullanıcı özetini gösterir
-ipmitool user set name 2 operator    # Kullanıcı 2'nin adını değiştirir
-ipmitool user set password 2 newpassword    # Kullanıcı 2'nin şifresini değiştirir
-ipmitool user priv 2 4 1    # Kullanıcı 2'ye yönetici yetkisi verir
-ipmitool user enable 2    # Kullanıcı 2'yi aktifleştirir
-ipmitool user disable 2    # Kullanıcı 2'yi devre dışı bırakır
-ipmitool channel getaccess 1 2    # Kanal 1'de kullanıcı 2'nin yetkilerini gösterir
-ipmitool lan print 1    # Kanal 1'in ağ ayarlarını gösterir
-ipmitool lan set 1 ipaddr 192.168.1.101    # IP adresini ayarlar
-ipmitool lan set 1 netmask 255.255.255.0    # Alt ağ maskesini ayarlar
-ipmitool lan set 1 gateway 192.168.1.1    # Ağ geçidini ayarlar
-ipmitool lan set 1 ipsrc static    # Statik IP kullanımını ayarlar
-ipmitool lan set 1 ipsrc dhcp    # DHCP kullanımını ayarlar
-ipmitool lan set 1 access on    # LAN erişimini açar
-ipmitool lan set 1 auth ADMIN MD5    # Admin için MD5 kimlik doğrulaması ayarlar
-for i in {1..10}; do echo $i; done    # 1'den 10'a kadar sayıları yazdırır
-for f in *.txt; do mv "$f" "${f%.txt}.md"; done    # Tüm .txt dosyalarını .md yapar
-for d in */; do (cd "$d" && git pull); done    # Her alt dizinde git pull çalıştırır
-for p in $(ps aux | grep 'nginx' | awk '{print $2}'); do kill -9 $p; done    # Tüm nginx proseslerini sonlandırır
-for ip in 192.168.1.{1..254}; do ping -c 1 $ip | grep "64 bytes" & done    # Ağ taraması yapar
-for u in $(cat users.txt); do useradd $u && echo "User $u created"; done    # Toplu kullanıcı oluşturur
-for f in *; do echo "${f%%.*}"; done    # Tüm dosyaların uzantısız isimlerini listeler
-for i in {1..5}; do mkdir "dir$i" && touch "dir$i/file$i"; done    # Dizinler ve dosyalar oluşturur
-for pid in /proc/[0-9]*; do echo $(basename $pid); done    # Çalışan tüm proseslerin PID'lerini listeler
-for f in *.log; do gzip "$f"; done    # Tüm log dosyalarını sıkıştırır
-for s in $(systemctl list-units --type=service --state=active --plain --no-legend | awk '{print $1}'); do echo $s; done    # Aktif servisleri listeler
-for h in $(cat hosts.txt); do ssh $h 'uptime'; done    # Birden çok sunucuda uptime çalıştırır
-for f in $(find . -type f -name "*.bak"); do rm "$f"; done    # Tüm .bak dosyalarını siler
-for u in $(getent passwd | cut -d: -f1); do groups $u; done    # Tüm kullanıcıların gruplarını listeler
-for proc in $(find /proc -maxdepth 1 -type d | grep "[0-9]"); do echo $proc: $(cat $proc/cmdline 2>/dev/null); done    # Çalışan süreçlerin komut satırlarını gösterir
-for pkg in $(nix-env -q); do nix-store -q --references $(which $pkg); done    # Yüklü paketlerin bağımlılıklarını listeler
-for service in $(systemctl list-units --type=service --state=failed --plain --no-legend | awk '{print $1}'); do journalctl -u $service -n 50; done    # Başarısız servislerin son loglarını gösterir
-for disk in $(lsblk -no name | grep "sd"); do smartctl -a /dev/$disk; done    # Tüm disklerin SMART bilgilerini gösterir
-for port in {20..80}; do nc -zvw1 localhost $port 2>&1; done    # Port taraması yapar
-for ip in $(netstat -tn 2>/dev/null | grep ':80 ' | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | head); do whois $ip; done    # 80 portuna bağlanan IP'leri analiz eder
-for host in $(cat hosts.txt); do ssh -n $host "uname -a; uptime; df -h" 2>/dev/null; done    # Çoklu sunucu durumu kontrolü
-for iface in $(ip -o -4 addr show | awk '{print $2}'); do ethtool $iface 2>/dev/null; done    # Tüm ağ arayüzlerinin durumunu kontrol eder
-for dir in */; do du -sh "$dir" 2>/dev/null; done | sort -hr    # Alt dizinlerin boyutlarını büyükten küçüğe sıralar
-for file in $(find . -type f -mtime -1); do cp --parents "$file" /backup/$(date +%Y%m%d)/; done    # Son 24 saatte değişen dosyaları yedekler
-for ext in jpg png gif; do find . -type f -name "*.$ext" -exec convert {} -resize 800x600 {}.resized \;; done    # Tüm resimleri yeniden boyutlandırır
-for f in $(find . -type f -name "*.log"); do tail -n 100 "$f" > "$f.last100"; done    # Tüm log dosyalarının son 100 satırını alır
-for derivation in $(nix-store -q --references /run/current-system/sw); do nix-store -q --referrers $derivation; done    # Sistem paketlerinin bağımlılık ağacını gösterir
-for pkg in $(nix-env -q); do nix why-depends /run/current-system $pkg; done    # Paketlerin neden gerekli olduğunu açıklar
-for channel in $(nix-channel --list | cut -d' ' -f1); do nix-channel --update $channel; done    # Tüm kanalları günceller
-for gen in $(home-manager generations | cut -d' ' -f7); do nix-store -q --referrers $gen; done    # Home-manager nesillerinin bağımlılıklarını gösterir
-for container in $(docker ps -q); do docker stats --no-stream $container; done    # Çalışan konteynerlerin kaynak kullanımını gösterir
-for image in $(docker images -q); do docker history $image --no-trunc; done    # Tüm imajların katman geçmişini gösterir
-for volume in $(docker volume ls -q); do docker volume inspect $volume; done    # Tüm volumelerin detaylarını gösterir
-for network in $(docker network ls -q); do docker network inspect $network; done    # Tüm ağların yapılandırmasını gösterir
-for branch in $(git branch -r | grep -v HEAD); do echo -e "\n$branch:" && git log --pretty=format:"%ai - %s" $branch | head -n 5; done    # Uzak dalların son commitlerini gösterir
-for repo in */; do (cd "$repo" && git status -s && echo); done    # Tüm alt dizinlerdeki git durumunu kontrol eder
-for tag in $(git tag); do echo "Tag: $tag" && git show $tag --quiet --pretty="format:%ai %s"; done    # Tüm etiketlerin tarih ve mesajlarını gösterir
-for commit in $(git log --pretty=format:"%h" -n 10); do git show --stat $commit; done    # Son 10 commitin değişiklik istatistiklerini gösterir
-for sensor in $(ipmitool sensor list | cut -d'|' -f1); do ipmitool sensor get "$sensor"; done    # Tüm sensör detaylarını gösterir
-for user in $(ipmitool user list | awk '{print $1}' | grep -v "^ID"); do ipmitool user summary $user; done    # Tüm IPMI kullanıcılarının özetini gösterir
-for channel in {1..15}; do ipmitool lan print $channel 2>/dev/null; done    # Tüm LAN kanallarının konfigürasyonunu kontrol eder
-for fru in $(ipmitool fru list | cut -d' ' -f1); do ipmitool fru print $fru; done    # Tüm FRU bilgilerini listeler
-for db in $(psql -lt | cut -d'|' -f1 | grep -v template); do pg_dump -C $db > "${db}_$(date +%Y%m%d).sql"; done    # Tüm PostgreSQL veritabanlarını yedekler
-for table in $(mysql -N -e 'show tables' mydb); do mysql -e "select count(*) from $table" mydb; done    # MySQL'de tüm tabloların satır sayısını gösterir
-for db in $(mongo --quiet --eval "db.getMongo().getDBNames()"); do mongodump --db=$db; done    # Tüm MongoDB veritabanlarını yedekler
-for index in $(redis-cli keys "*"); do redis-cli type $index; done    # Redis'teki tüm anahtarların tipini gösterir
-for user in $(cut -d: -f1 /etc/passwd); do last $user | head -n 1; done    # Tüm kullanıcıların son oturum açma zamanlarını gösterir
-for pid in $(ps -ef | grep defunct | awk '{print $2}'); do kill -9 $pid; done    # Zombi prosesleri temizler
-for job in $(atq | cut -f1); do at -c $job; done    # Zamanlanmış görevlerin içeriğini gösterir
-for service in $(systemctl list-units --type=service --all --no-legend | awk '{print $1}'); do systemctl status $service; done    # Tüm servislerin durumunu kontrol eder
-for f in *.py; do python -m py_compile $f; done    # Tüm Python dosyalarını derler
-for module in $(pip freeze); do pip show $module; done    # Yüklü Python paketlerinin detaylarını gösterir
-for venv in ~/.virtualenvs/*; do source $venv/bin/activate && pip list && deactivate; done    # Tüm sanal ortamların paket listesini gösterir
-for script in $(find . -name "*.py"); do pylint $script; done    # Tüm Python dosyalarını lintler
-for key in ~/.ssh/id_*; do ssh-keygen -l -f $key; done    # Tüm SSH anahtarlarının özetini gösterir
-for host in $(cat ~/.ssh/config | grep "Host " | cut -d' ' -f2); do ssh -q $host "uptime"; done    # SSH yapılandırmasındaki tüm hostların uptime'ını kontrol eder
-for port in $(netstat -tuln | grep LISTEN | awk '{print $4}' | cut -d: -f2); do echo "Port $port is open"; done    # Açık portları listeler
-for cert in $(find /etc/ssl -name "*.crt"); do openssl x509 -noout -subject -dates -in $cert; done    # SSL sertifikalarının detaylarını gösterir
-nmap -sn 192.168.1.0/24    # Ping taraması yaparak aktif hostları bulur
-nmap -PS22,80,443 192.168.1.0/24    # TCP SYN ping ile belirli portları tarar
-nmap -PA22,80,443 192.168.1.0/24    # TCP ACK ping taraması yapar
-nmap -PU53,161,162 192.168.1.0/24    # UDP ping taraması yapar
-nmap -PE -PP -PS443 192.168.1.0/24    # ICMP, timestamp ve TCP-SYN kombinasyonu
-nmap -sS -p- --min-rate 5000 192.168.1.0/24    # Hızlı SYN taraması
-nmap -sT -p- -Pn 192.168.1.100    # Tam TCP bağlantı taraması
-nmap -sU -p 53,161,162 --min-rate 1000 192.168.1.0/24    # Hızlı UDP taraması
-nmap -sV -sC -p- -T4 192.168.1.100    # Versiyon ve script taraması
-nmap -sS -sV -O -p- --version-intensity 9 192.168.1.100    # Detaylı versiyon tespiti
-nmap -A -T4 -v -Pn 192.168.1.0/24    # Agresif tarama, tüm detaylar
-nmap -O --osscan-guess 192.168.1.100    # İşletim sistemi tahmini
-nmap -sV --version-all 192.168.1.100    # Tüm versiyon testlerini çalıştırır
-nmap -p- -sV --version-intensity 5 192.168.1.100    # Orta seviye versiyon tespiti
-nmap --script vuln 192.168.1.100    # Güvenlik açığı taraması
-nmap --script ssl-enum-ciphers -p 443 192.168.1.100    # SSL/TLS şifreleme analizi
-nmap --script http-* -p 80,443 192.168.1.100    # Tüm HTTP scriptlerini çalıştırır
-nmap --script smb-* -p 445 192.168.1.100    # SMB güvenlik kontrolleri
-nmap --script dns-* -p 53 192.168.1.100    # DNS tarama ve enumeration
-nmap --script mysql-* -p 3306 192.168.1.100    # MySQL güvenlik kontrolleri
-nmap -sS -oA scan_results 192.168.1.0/24    # Tüm formatlarda çıktı alır
-nmap -sS -oX scan.xml 192.168.1.0/24    # XML formatında çıktı
-nmap -sS -oG scan.grep 192.168.1.0/24    # Grep formatında çıktı
-nmap -sS -oN scan.nmap 192.168.1.0/24    # Normal formatta çıktı
-nmap --stylesheet https://svn.nmap.org/nmap/docs/nmap.xsl -sS -oX scan.xml 192.168.1.0/24    # HTML rapor
-nmap -f -sS -sV 192.168.1.100    # Parçalanmış paketlerle tarama
-nmap -D RND:10 192.168.1.100    # Rastgele 10 IP ile decoy tarama
-nmap --spoof-mac Apple 192.168.1.100    # MAC adresi spoofing
-nmap --data-length 25 192.168.1.100    # Paket boyutunu değiştirir
-nmap -sS --randomize-hosts 192.168.1.0/24    # Host sırasını rastgele yapar
-nmap -T0 192.168.1.100    # En yavaş zamanlama
-nmap -T5 --min-parallelism 50 192.168.1.0/24    # En hızlı agresif tarama
-nmap --max-retries 2 192.168.1.0/24    # Yeniden deneme sayısını sınırlar
-nmap --min-rate 300 --max-rate 500 192.168.1.0/24    # Paket hızını kontrol eder
-nmap --scan-delay 1s 192.168.1.100    # Tarama gecikmesi ekler
-nmap -p http* 192.168.1.100    # HTTP ile ilgili tüm portları tarar
-nmap -p T:21-25,80,443 192.168.1.100    # Belirli TCP portlarını tarar
-nmap -p U:53,161,162 192.168.1.100    # Belirli UDP portlarını tarar
-nmap -p- --top-ports 20 192.168.1.100    # En popüler 20 portu tarar
-nmap -r -p1-1024 192.168.1.100    # Sıralı port taraması
-nmap -sV --allports 192.168.1.100    # Tüm portlarda versiyon tespiti
-nmap -sV --version-intensity 9 192.168.1.100    # Maksimum versiyon detayı
-nmap -sV --version-light 192.168.1.100    # Hızlı versiyon taraması
-nmap -sV --version-trace 192.168.1.100    # Versiyon tarama detaylarını gösterir
-nmap -A --reason 192.168.1.100    # Port durumlarının nedenlerini gösterir
-nmap -sS -sV -O -T4 --traceroute 192.168.1.100    # Tam kapsamlı sistem analizi
-nmap -p- -sV -sC --script=vuln -T4 192.168.1.100    # Güvenlik odaklı tarama
-nmap -Pn -sS -sV -O --osscan-limit 192.168.1.100    # Stealth sistem tespiti
-nmap -sS -sV --script=default,safe,auth 192.168.1.100    # Güvenli script taraması
-nmap -A -v --script=http-enum,http-headers 192.168.1.100    # Web sunucu analizi
-for ip in $(seq 1 254); do nmap -sS -p 80 -T4 192.168.1.$ip; done    # Tüm subnet'te web sunucu arar
-for port in {20..90}; do nmap -p$port -sS -T4 192.168.1.100; done    # Port aralığı taraması
-for host in $(cat hosts.txt); do nmap -sS -sV -T4 $host; done    # Liste üzerinde tarama
-for subnet in {0..255}; do nmap -sn 192.168.$subnet.0/24; done    # Geniş ağ keşfi
-for ip in $(nmap -sn 192.168.1.0/24 -oG - | grep "Up" | cut -d" " -f2); do nmap -sV -T4 $ip; done    # İki aşamalı tarama
+sudo nixos-rebuild switch --flake .#hay    # Rebuilds and applies the NixOS system with the specified flake configuration
+nix shell nixpkgs#neofetch    # Provides temporary shell access to the specified package without permanent installation
+sudo nix-collect-garbage -d    # Cleans disk space by removing unused packages and old generations
+nix-env --query    # Lists all user-level installed packages
+sudo systemctl status nixos-rebuild    # Shows current status and logs of the NixOS rebuild service
+git add flake.nix flake.lock    # Adds NixOS flake configuration files to git staging area
+git commit -m "feat: update system packages"    # Records changes with a meaningful message
+nix flake update    # Updates all flake dependencies to their latest stable versions
+nix search nixpkgs neovim    # Searches for neovim-related packages in nixpkgs repository
+home-manager switch    # Applies the latest user environment configuration changes
+rsync -avzP --delete ~/Documents/ backup:/mnt/data/    # Synchronizes files with archive mode, compression, and progress display
+rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} / /mnt/backup    # Creates system backup excluding special system directories
+rsync -aAXv --delete --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} / /mnt/backup    # Creates full system backup with root privileges
+sudo nmap -sS -sV -O -p- 192.168.1.0/24    # Full network scan with service detection and OS identification
+nmap -p 22,80,443 scanme.nmap.org    # Scans specific ports (SSH, HTTP, HTTPS) on target
+sudo tcpdump -i any port 443    # Captures HTTPS traffic on all network interfaces
+sudo tcpdump -i wlan0 'port 80 or port 443'    # Monitors HTTP and HTTPS traffic on wireless interface
+wireshark -k -i wlan0    # Analyzes wireless network traffic in real-time with Wireshark
+sudo netstat -tuln    # Lists all TCP and UDP ports and connections
+ss -tuln    # Modern alternative to netstat, shows open ports and sockets
+curl -I https://nixos.org    # Retrieves only HTTP headers
+curl -v -k https://localhost    # Detailed connection information without SSL verification
+wget -r --no-parent http://example.com    # Downloads website recursively without parent directories
+htop    # Interactive system resource monitor
+btop    # Modern system resource monitor with additional features
+nethogs    # Monitors network usage per process
+iotop    # Monitors disk I/O usage per process
+nvtop    # Monitors NVIDIA GPU usage
+docker ps    # Lists running containers
+docker-compose up -d    # Starts services defined in docker-compose in background
+docker logs -f container_name    # Follows container logs in real-time
+kubectl get pods    # Lists pods in Kubernetes cluster
+kubectl describe pod mypod    # Shows detailed pod information and status
+kubectl logs -f deployment/myapp    # Follows deployment logs in real-time
+virsh list --all    # Lists all virtual machines with their status
+virsh start vm_name    # Starts specified virtual machine
+virt-install --name=test-vm --vcpus=2 --memory=2048    # Creates new virtual machine with specified resources
+git clone git@github.com:username/repo.git    # Clones remote repository to local machine
+git checkout -b feature/new-module    # Creates and switches to new feature branch
+git push origin main    # Pushes local changes to remote main branch
+git rebase -i HEAD~3    # Interactive rebase of last three commits
+git stash save "wip: current changes"    # Temporarily saves working directory changes
+git stash pop    # Restores most recently stashed changes
+git log --oneline --graph    # Shows commit history in graph format
+git diff master..feature    # Shows differences between two branches
+nvim ~/.config/nixos/configuration.nix    # Edits NixOS configuration file with Neovim
+nvim flake.nix    # Edits flake configuration
+nvim ~/Projects/nixos-config/hosts/hay/default.nix    # Edits host-specific configuration
+code .    # Opens current directory in VS Code
+vim .gitignore    # Edits git ignore file
+nano /etc/hosts    # Edits hosts file with simple editor
+journalctl -xe    # Shows system journal entries with explanations
+journalctl -fu nginx    # Follows Nginx service logs
+tail -f /var/log/nginx/access.log    # Follows Nginx access logs in real-time
+grep -r "error" /var/log/    # Recursively searches for "error" in log directory
+find / -name "*.nix" -type f    # Finds all .nix files in system
+find . -type f -mtime -7    # Finds files modified in last 7 days
+fd -t f -e nix    # Modern find alternative for .nix files
+rg "nixpkgs" --type nix    # Quickly searches for "nixpkgs" in .nix files
+fzf --preview 'bat --style=numbers --color=always {}'    # Fuzzy finder with file preview
+systemctl status nginx    # Checks Nginx service status
+systemctl restart postgresql    # Restarts PostgreSQL database
+systemctl enable --now docker    # Enables and starts Docker service
+useradd -m -G wheel newuser    # Creates new user and adds to wheel group
+usermod -aG docker username    # Adds user to docker group
+passwd username    # Changes user password
+chown -R user:group /path/to/dir    # Changes directory ownership recursively
+chmod -R 755 /path/to/dir    # Sets directory permissions recursively
+tar -czvf archive.tar.gz directory/    # Creates compressed tar archive
+tar -xzvf archive.tar.gz    # Extracts tar.gz archive
+zip -r backup.zip directory/    # Creates zip archive
+unzip archive.zip    # Extracts zip archive
+scp file.txt user@remote:/path/    # Copies file to remote server
+ssh-keygen -t ed25519 -C "email@example.com"    # Generates ED25519 SSH key
+ssh-copy-id user@remote    # Copies SSH key to remote server
+ssh -L 8080:localhost:80 user@remote    # Creates SSH tunnel with local port forwarding
+tmux new -s dev    # Starts new tmux session
+tmux attach -t dev    # Attaches to existing tmux session
+screen -S mysession    # Creates new screen session
+screen -r mysession    # Reconnects to existing screen session
+ps aux | grep nginx    # Lists processes related to nginx
+kill -9 1234    # Forces process termination by PID
+pkill -f process_name    # Terminates process by name
+top -u username    # Shows processes for specific user
+free -h    # Shows memory usage in human-readable format
+df -h    # Shows disk usage in human-readable format
+du -sh *    # Shows size of each file and directory
+lsblk    # Lists block devices
+fdisk -l    # Lists disk partitions
+mount /dev/sdb1 /mnt    # Mounts disk partition
+umount /mnt    # Unmounts disk partition
+mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1    # Creates RAID1 array
+cryptsetup luksFormat /dev/sda1    # Encrypts disk partition
+cryptsetup luksOpen /dev/sda1 cryptroot    # Opens encrypted partition
+iptables -L    # Lists firewall rules
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT    # Allows HTTP traffic
+ufw status    # Shows UFW firewall status
+ufw allow 22    # Allows SSH port
+fail2ban-client status    # Shows Fail2ban status
+docker build -t myapp .    # Builds image from Dockerfile
+docker run -d -p 80:80 nginx    # Runs Nginx container in background
+docker exec -it container_name bash    # Connects to running container
+podman run -it ubuntu bash    # Runs Ubuntu container interactively
+distrobox enter dev    # Enters development container
+flatpak list    # Lists installed Flatpak applications
+flatpak update    # Updates Flatpak applications
+pip install --user package    # Installs Python package for user
+npm install -g package    # Installs global npm package
+yarn global add package    # Installs global yarn package
+cargo install ripgrep    # Installs Rust package
+rustup update    # Updates Rust toolchain
+go get github.com/user/repo    # Downloads Go package
+python -m venv venv    # Creates Python virtual environment
+source venv/bin/activate    # Activates Python virtual environment
+deactivate    # Exits Python virtual environment
+postgresql_setup initdb    # Initializes PostgreSQL database
+createdb mydb    # Creates new PostgreSQL database
+psql -U postgres    # Connects to PostgreSQL as postgres user
+mysql -u root -p    # Connects to MySQL as root
+redis-cli    # Launches Redis command line interface
+mongodb    # Starts MongoDB shell
+nix develop    # Starts development environment
+direnv allow    # Accepts direnv configuration
+lorri daemon    # Starts Lorri background service
+nix profile install nixpkgs#package    # Installs package to user profile
+nix-shell -p python3    # Starts temporary shell with Python3
+man nixos-rebuild    # Shows NixOS rebuild manual
+info nix-env    # Shows detailed nix-env information
+tldr rsync    # Shows quick rsync guide
+cheat tar    # Shows tar command tips
+nixos-option services.nginx.enable    # Queries Nginx service option
+nix repl    # Starts Nix interactive shell
+nix-instantiate --eval    # Evaluates Nix expression
+nix build    # Builds Nix package
+nix run nixpkgs#hello    # Runs hello package
+sudo nixos-rebuild test --flake .#hay    # Tests flake configuration
+sudo nixos-rebuild build --flake .#hay    # Builds flake configuration
+nix flake init    # Initializes new flake project
+nix edit nixpkgs.nginx    # Edits Nginx package definition
+nix-shell -p nix-info --run "nix-info -m"    # Shows system Nix information
+home-manager generations    # Lists home-manager generations
+nix-env --list-generations    # Lists Nix package generations
+nix-collect-garbage --delete-older-than 30d    # Deletes generations older than 30 days
+nixos-rebuild switch --upgrade    # Upgrades system and switches to new configuration
+sudo nix-channel --update    # Updates Nix channels
+nix-env -qaP | grep -i neovim    # Searches for Neovim packages
+which nvim    # Shows nvim executable location
+type -a ls    # Shows all versions of ls command
+whereis python    # Finds all Python-related file locations
+file /usr/bin/python    # Determines Python file type
+ldd $(which bash)    # Shows bash library dependencies
+strace ls    # Shows ls command system calls
+ltrace cat /etc/hostname    # Shows cat command library calls
+date -u +"%Y-%m-%d %H:%M:%S"    # Formats UTC time
+timedatectl set-timezone UTC    # Sets system timezone to UTC
+hwclock --systohc    # Synchronizes system time to hardware clock
+uptime    # Shows system uptime
+w    # Shows logged-in users and their activities
+who    # Lists logged-in users
+last    # Shows last login records
+lastlog    # Shows last login information for all users
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis status    # Shows chassis status
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power status    # Shows power status
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power on    # Powers on system
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power off    # Powers off system
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power reset    # Resets system
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power cycle    # Power cycles system
+ipmitool user list 1    # Lists users
+ipmitool user summary 1    # Shows user summary
+ipmitool user set name 2 operator    # Changes user 2's name
+ipmitool user set password 2 newpassword    # Changes user 2's password
+ipmitool user priv 2 4 1    # Grants administrator privileges to user 2
+ipmitool user enable 2    # Enables user 2
+ipmitool user disable 2    # Disables user 2
+ipmitool channel getaccess 1 2    # Shows user 2's channel 1 access
+ipmitool lan print 1    # Shows channel 1 network settings
+ipmitool lan set 1 ipaddr 192.168.1.101    # Sets IP address
+ipmitool lan set 1 netmask 255.255.255.0    # Sets subnet mask
+ipmitool lan set 1 gateway 192.168.1.1    # Sets gateway
+ipmitool lan set 1 ipsrc static    # Sets static IP configuration
+ipmitool lan set 1 ipsrc dhcp    # Sets DHCP configuration
+ipmitool lan set 1 access on    # Enables LAN access
+ipmitool lan set 1 auth ADMIN MD5    # Sets MD5 authentication for admin
+for i in {1..10}; do echo $i; done    # Prints numbers from 1 to 10
+for f in *.txt; do mv "$f" "${f%.txt}.md"; done    # Converts all .txt files to .md
+for d in */; do (cd "$d" && git pull); done    # Executes git pull in each subdirectory
+for p in $(ps aux | grep 'nginx' | awk '{print $2}'); do kill -9 $p; done    # Terminates all nginx processes
+for ip in 192.168.1.{1..254}; do ping -c 1 $ip | grep "64 bytes" & done    # Performs network scan
+for u in $(cat users.txt); do useradd $u && echo "User $u created"; done    # Bulk user creation
+for f in *; do echo "${f%%.*}"; done    # Lists all filenames without extensions
+for i in {1..5}; do mkdir "dir$i" && touch "dir$i/file$i"; done    # Creates directories and files
+for pid in /proc/[0-9]*; do echo $(basename $pid); done    # Lists PIDs of all running processes
+for f in *.log; do gzip "$f"; done    # Compresses all log files
+for s in $(systemctl list-units --type=service --state=active --plain --no-legend | awk '{print $1}'); do echo $s; done    # Lists active services
+for h in $(cat hosts.txt); do ssh $h 'uptime'; done    # Checks uptime on multiple servers
+for f in $(find . -type f -name "*.bak"); do rm "$f"; done    # Removes all backup files
+for u in $(getent passwd | cut -d: -f1); do groups $u; done    # Lists groups for all users
+for proc in $(find /proc -maxdepth 1 -type d | grep "[0-9]"); do echo $proc: $(cat $proc/cmdline 2>/dev/null); done    # Shows command lines of running processes
+for pkg in $(nix-env -q); do nix-store -q --references $(which $pkg); done    # Lists package dependencies
+for service in $(systemctl list-units --type=service --state=failed --plain --no-legend | awk '{print $1}'); do journalctl -u $service -n 50; done    # Shows logs of failed services
+for disk in $(lsblk -no name | grep "sd"); do smartctl -a /dev/$disk; done    # Shows SMART information for all disks
+for port in {20..80}; do nc -zvw1 localhost $port 2>&1; done    # Performs port scan
+for ip in $(netstat -tn 2>/dev/null | grep ':80 ' | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | head); do whois $ip; done    # Analyzes IPs connecting to port 80
+for host in $(cat hosts.txt); do ssh -n $host "uname -a; uptime; df -h" 2>/dev/null; done    # Checks multiple server status
+for iface in $(ip -o -4 addr show | awk '{print $2}'); do ethtool $iface 2>/dev/null; done    # Checks all network interface status
+for dir in */; do du -sh "$dir" 2>/dev/null; done | sort -hr    # Lists subdirectory sizes in descending order
+for file in $(find . -type f -mtime -1); do cp --parents "$file" /backup/$(date +%Y%m%d)/; done    # Backs up files modified in last 24 hours
+for ext in jpg png gif; do find . -type f -name "*.$ext" -exec convert {} -resize 800x600 {}.resized \;; done    # Resizes all images
+for f in $(find . -type f -name "*.log"); do tail -n 100 "$f" > "$f.last100"; done    # Gets last 100 lines of all log files
+for derivation in $(nix-store -q --references /run/current-system/sw); do nix-store -q --referrers $derivation; done    # Shows system package dependency tree
+for pkg in $(nix-env -q); do nix why-depends /run/current-system $pkg; done    # Explains package dependencies
+for channel in $(nix-channel --list | cut -d' ' -f1); do nix-channel --update $channel; done    # Updates all channels
+for gen in $(home-manager generations | cut -d' ' -f7); do nix-store -q --referrers $gen; done    # Shows home-manager generation dependencies
+for container in $(docker ps -q); do docker stats --no-stream $container; done    # Shows resource usage of running containers
+for image in $(docker images -q); do docker history $image --no-trunc; done    # Shows layer history of all images
+for volume in $(docker volume ls -q); do docker volume inspect $volume; done    # Shows details of all volumes
+for network in $(docker network ls -q); do docker network inspect $network; done    # Shows network configuration
+for branch in $(git branch -r | grep -v HEAD); do echo -e "\n$branch:" && git log --pretty=format:"%ai - %s" $branch | head -n 5; done    # Shows recent commits of remote branches
+for repo in */; do (cd "$repo" && git status -s && echo); done    # Checks git status in all subdirectories
+for tag in $(git tag); do echo "Tag: $tag" && git show $tag --quiet --pretty="format:%ai %s"; done    # Shows date and message for all tags
+for commit in $(git log --pretty=format:"%h" -n 10); do git show --stat $commit; done    # Shows change statistics for last 10 commits
+for sensor in $(ipmitool sensor list | cut -d'|' -f1); do ipmitool sensor get "$sensor"; done    # Shows all sensor details
+for user in $(ipmitool user list | awk '{print $1}' | grep -v "^ID"); do ipmitool user summary $user; done    # Shows summary for all IPMI users
+for channel in {1..15}; do ipmitool lan print $channel 2>/dev/null; done    # Checks all LAN channel configurations
+for fru in $(ipmitool fru list | cut -d' ' -f1); do ipmitool fru print $fru; done    # Lists all FRU information
+for db in $(psql -lt | cut -d'|' -f1 | grep -v template); do pg_dump -C $db > "${db}_$(date +%Y%m%d).sql"; done    # Backs up all PostgreSQL databases
+for table in $(mysql -N -e 'show tables' mydb); do mysql -e "select count(*) from $table" mydb; done    # Shows row count for all MySQL tables
+for db in $(mongo --quiet --eval "db.getMongo().getDBNames()"); do mongodump --db=$db; done    # Backs up all MongoDB databases
+for index in $(redis-cli keys "*"); do redis-cli type $index; done    # Shows type of all Redis keys
+for user in $(cut -d: -f1 /etc/passwd); do last $user | head -n 1; done    # Shows last login time for all users
+for pid in $(ps -ef | grep defunct | awk '{print $2}'); do kill -9 $pid; done    # Cleans up zombie processes
+for job in $(atq | cut -f1); do at -c $job; done    # Shows content of scheduled jobs
+for service in $(systemctl list-units --type=service --all --no-legend | awk '{print $1}'); do systemctl status $service; done    # Checks status of all services
+for f in *.py; do python -m py_compile $f; done    # Compiles all Python files
+for module in $(pip freeze); do pip show $module; done    # Shows details of installed Python packages
+for venv in ~/.virtualenvs/*; do source $venv/bin/activate && pip list && deactivate; done    # Lists packages in all virtual environments
+for script in $(find . -name "*.py"); do pylint $script; done    # Lints all Python files
+for key in ~/.ssh/id_*; do ssh-keygen -l -f $key; done    # Shows summary of all SSH keys
+for host in $(cat ~/.ssh/config | grep "Host " | cut -d' ' -f2); do ssh -q $host "uptime"; done    # Checks uptime of SSH configured hosts
+for port in $(netstat -tuln | grep LISTEN | awk '{print $4}' | cut -d: -f2); do echo "Port $port is open"; done    # Lists open ports
+for cert in $(find /etc/ssl -name "*.crt"); do openssl x509 -noout -subject -dates -in $cert; done    # Shows SSL certificate details
+
+# Network scanning commands
+nmap -sn 192.168.1.0/24    # Performs ping scan to find active hosts
+nmap -PS22,80,443 192.168.1.0/24    # TCP SYN ping scan of specific ports
+nmap -PA22,80,443 192.168.1.0/24    # TCP ACK ping scan
+nmap -PU53,161,162 192.168.1.0/24    # UDP ping scan
+nmap -PE -PP -PS443 192.168.1.0/24    # Combination of ICMP, timestamp, and TCP-SYN
+nmap -sS -p- --min-rate 5000 192.168.1.0/24    # Fast SYN scan
+nmap -sT -p- -Pn 192.168.1.100    # Full TCP connect scan
+nmap -sU -p 53,161,162 --min-rate 1000 192.168.1.0/24    # Fast UDP scan
+nmap -sV -sC -p- -T4 192.168.1.100    # Version and script scan
+nmap -sS -sV -O -p- --version-intensity 9 192.168.1.100    # Detailed version detection
+nmap -A -T4 -v -Pn 192.168.1.0/24    # Aggressive scan with all details
+nmap -O --osscan-guess 192.168.1.100    # OS detection with guessing
+nmap -sV --version-all 192.168.1.100    # Runs all version detection tests
+nmap -p- -sV --version-intensity 5 192.168.1.100    # Medium level version detection
+nmap --script vuln 192.168.1.100    # Vulnerability scan
+nmap --script ssl-enum-ciphers -p 443 192.168.1.100    # SSL/TLS cipher analysis
+nmap --script http-* -p 80,443 192.168.1.100    # All HTTP scripts
+nmap --script smb-* -p 445 192.168.1.100    # SMB security checks
+nmap --script dns-* -p 53 192.168.1.100    # DNS scanning and enumeration
+nmap --script mysql-* -p 3306 192.168.1.100    # MySQL security checks
+nmap -sS -oA scan_results 192.168.1.0/24    # Output in all formats
+nmap -sS -oX scan.xml 192.168.1.0/24    # XML format output
+nmap -sS -oG scan.grep 192.168.1.0/24    # Grepable format output
+nmap -sS -oN scan.nmap 192.168.1.0/24    # Normal format output
+nmap --stylesheet https://svn.nmap.org/nmap/docs/nmap.xsl -sS -oX scan.xml 192.168.1.0/24    # HTML report generation
+nmap -f -sS -sV 192.168.1.100    # Fragmented packet scan
+nmap -D RND:10 192.168.1.100    # Decoy scan with 10 random IPs
+nmap --spoof-mac Apple 192.168.1.100    # MAC address spoofing
+nmap --data-length 25 192.168.1.100    # Custom packet length
+nmap --randomize-hosts 192.168.1.0/24    # Random host order
+nmap -T0 192.168.1.100    # Paranoid timing
+nmap -T5 --min-parallelism 50 192.168.1.0/24    # Insane timing
+nmap --max-retries 2 192.168.1.0/24    # Limited retry attempts
+nmap --min-rate 300 --max-rate 500 192.168.1.0/24    # Rate limiting
+nmap --scan-delay 1s 192.168.1.100    # Adds delay between probes
+nmap -p http* 192.168.1.100    # HTTP-related ports only
+nmap -p T:21-25,80,443 192.168.1.100    # Specific TCP ports
+nmap -p U:53,161,162 192.168.1.100    # Specific UDP ports
+nmap -p- --top-ports 20 192.168.1.100    # Top 20 ports only
+nmap -r -p1-1024 192.168.1.100    # Sequential port scan
+nmap -sV --allports 192.168.1.100    # Version detection on all ports
+nmap -sV --version-intensity 9 192.168.1.100    # Maximum version detection
+nmap -sV --version-light 192.168.1.100    # Light version detection
+nmap -sV --version-trace 192.168.1.100    # Version detection details
+nmap -A --reason 192.168.1.100    # Shows port state reasons
+nmap -sS -sV -O -T4 --traceroute 192.168.1.100    # Comprehensive system analysis
+nmap -p- -sV -sC --script=vuln -T4 192.168.1.100    # Security-focused scan
+nmap -Pn -sS -sV -O --osscan-limit 192.168.1.100    # Stealth system detection
+nmap -sS -sV --script=default,safe,auth 192.168.1.100    # Safe script scan
+nmap -A -v --script=http-enum,http-headers 192.168.1.100    # Web server analysis
