@@ -32,34 +32,34 @@
    nixfmt-rfc-style       # Nix formatter
    nil                    # Nix tooling
    programmer-calculator  # Dev calculator
-   shellcheck            # Shell linter
-   shfmt                 # Shell formatter
-   stylua                # Lua formatter
-   tree-sitter           # Parser generator
-   treefmt2              # Multi-language formatter
-   xxd                   # Hex editor
+   shellcheck             # Shell linter
+   shfmt                  # Shell formatter
+   stylua                 # Lua formatter
+   tree-sitter            # Parser generator
+   treefmt2               # Multi-language formatter
+   xxd                    # Hex editor
    inputs.alejandra.defaultPackage.${pkgs.system} # Nix formatter
 
    # =============================================================================
    # Terminal Utilities
    # =============================================================================
-   bc             # Calculator
-   docfd          # Doc searcher
-   entr           # File watcher
-   jq             # JSON processor
-   killall        # Process killer
-   mimeo          # MIME handler
-   most           # Pager
-   ripgrep        # Fast grep
-   sesh           # Session manager
-   tldr           # Simplified man
-   wezterm        # Terminal emulator
-   zoxide         # Smart cd
-   wl-clipboard   # Wayland clipboard
-   bat            # Cat clone
-   detox          # Filename cleaner
-   pv             # Pipe viewer
-   gist           # Upload code
+   bc              # Calculator
+   docfd           # Doc searcher
+   entr            # File watcher
+   jq              # JSON processor
+   killall         # Process killer
+   mimeo           # MIME handler
+   most            # Pager
+   ripgrep         # Fast grep
+   sesh            # Session manager
+   tldr            # Simplified man
+   wezterm         # Terminal emulator
+   zoxide          # Smart cd
+   wl-clipboard    # Wayland clipboard
+   bat             # Cat clone
+   detox           # Filename cleaner
+   pv              # Pipe viewer
+   gist            # Upload code
 
    # =============================================================================
    # Media Tools
@@ -68,6 +68,7 @@
    ffmpeg          # Media converter
    gifsicle        # GIF editor
    imv             # Image viewer
+   qview           # Image viewer
    mpv             # Media player
    pamixer         # Audio mixer
    pavucontrol     # Audio control
@@ -82,55 +83,55 @@
    # =============================================================================
    # System Monitoring and Diagnostics
    # =============================================================================
-   atop           # System monitor
-   cpulimit       # CPU limiter
-   dstat          # Stats collector
-   glances        # System monitor
-   iotop          # I/O monitor
-   lshw           # Hardware lister
-   lsof           # Open files lister
-   nmon           # Performance monitor
-   pciutils       # PCI utilities
-   strace         # System call tracer
-   inxi           # System info
-   neofetch       # System fetch
-   nitch          # Minimal fetch
-   onefetch       # Git repo fetch
-   resources      # Resource monitor
+   atop            # System monitor
+   cpulimit        # CPU limiter
+   dstat           # Stats collector
+   glances         # System monitor
+   iotop           # I/O monitor
+   lshw            # Hardware lister
+   lsof            # Open files lister
+   nmon            # Performance monitor
+   pciutils        # PCI utilities
+   strace          # System call tracer
+   inxi            # System info
+   neofetch        # System fetch
+   nitch           # Minimal fetch
+   onefetch        # Git repo fetch
+   resources       # Resource monitor
 
    # =============================================================================
    # Network Tools
    # =============================================================================
-   aria2          # Download manager
-   bmon           # Bandwidth monitor
-   ethtool        # Ethernet tool
-   fping          # Fast ping
-   iptraf-ng      # IP traffic monitor
-   pssh           # Parallel SSH
-   traceroute     # Network tracer
-   vnstat         # Network monitor
-   dig            # DNS tool
+   aria2           # Download manager
+   bmon            # Bandwidth monitor
+   ethtool         # Ethernet tool
+   fping           # Fast ping
+   iptraf-ng       # IP traffic monitor
+   pssh            # Parallel SSH
+   traceroute      # Network tracer
+   vnstat          # Network monitor
+   dig             # DNS tool
 
    # =============================================================================
    # Desktop and Productivity
    # =============================================================================
-   bleachbit       # System cleaner
-   discord         # Chat platform
-   ente-auth       # Auth tool
-   hyprsunset      # Color temperature
-   hypridle        # Idle manager
-   brightnessctl   # Brightness control
-   libreoffice     # Office suite
-   pyprland        # Hyprland tools
-   qalculate-gtk   # Calculator
-   woomer          # Window manager
-   zenity          # GUI dialogs
-   copyq           # Clipboard manager
-   keepassxc       # Password manager
-   gopass          # Pass CLI
-   pdftk           # PDF toolkit
-   zathura         # PDF viewer
-   candy-icons     # Icon theme
+   bleachbit        # System cleaner
+   discord          # Chat platform
+   ente-auth        # Auth tool
+   hyprsunset       # Color temperature
+   hypridle         # Idle manager
+   brightnessctl    # Brightness control
+   libreoffice      # Office suite
+   pyprland         # Hyprland tools
+   qalculate-gtk    # Calculator
+   woomer           # Window manager
+   zenity           # GUI dialogs
+   copyq            # Clipboard manager
+   keepassxc        # Password manager
+   gopass           # Pass CLI
+   pdftk            # PDF toolkit
+   zathura          # PDF viewer
+   candy-icons      # Icon theme
    beauty-line-icon-theme # Icon theme
 
    # =============================================================================
