@@ -1,3 +1,4 @@
+# modules/home/zsh/zsh_plugins.nix
 # ==============================================================================
 # ZSH Plugin Configuration
 # Description: Plugin management and configuration for ZSH
