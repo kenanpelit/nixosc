@@ -13,6 +13,7 @@
    ./zsh_functions.nix # Custom functions
    ./zsh_keybinds.nix  # Key bindings
    ./zsh_plugins.nix   # Plugins
+   ./zsh_history.nix   # History
    ./completions       # Tab completion settings
  ];
 }

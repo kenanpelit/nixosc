@@ -1,0 +1,308 @@
+# modules/home/zsh/zsh_history.nix
+{ config, lib, pkgs, ... }:
+
+{
+  home.file.".config/zsh/history" = {
+    text = ''
+     : 1704720016:0;sudo nixos-rebuild switch --flake .#hay    # NixOS sistemini belirtilen flake konfigürasyonu ile yeniden derler ve uygular
+     : 1704720031:0;nix shell nixpkgs#neofetch    # Belirtilen paketi geçici bir kabukta kullanıma sunar, kalıcı kurulum yapmaz
+     : 1704720046:0;sudo nix-collect-garbage -d    # Kullanılmayan paketleri ve eski nesilleri silerek disk alanı temizler
+     : 1704720061:0;nix-env --query    # Kullanıcı seviyesinde yüklenmiş tüm paketleri listeler
+     : 1704720076:0;sudo systemctl status nixos-rebuild    # NixOS sistem derleme servisinin mevcut durumunu ve loglarını gösterir
+     : 1704720091:0;git add flake.nix flake.lock    # NixOS flake yapılandırma dosyalarını git izleme alanına ekler
+     : 1704720106:0;git commit -m "feat: update system packages"    # Yapılan değişiklikleri anlamlı bir mesaj ile kayıt altına alır
+     : 1704720121:0;nix flake update    # Tüm flake bağımlılıklarını en son kararlı sürümlerine günceller
+     : 1704720136:0;nix search nixpkgs neovim    # Nixpkgs deposunda neovim ile ilgili paketleri arar ve listeler
+     : 1704720151:0;home-manager switch    # Kullanıcı ortam yapılandırmalarını en son değişikliklere göre uygular
+     : 1704720166:0;rsync -avzP --delete ~/Documents/ backup:/mnt/data/    # Dosyaları arşiv modunda, sıkıştırarak ve ilerlemeyi göstererek senkronize eder
+     : 1704720181:0;rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} / /mnt/backup    # Sistem genelinde yedekleme yapar, özel sistem dizinlerini hariç tutar
+     : 1704720196:0;sudo rsync -aAXv --delete --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} / /mnt/backup    # Root yetkisiyle tam sistem yedeklemesi yapar
+     : 1704720211:0;sudo nmap -sS -sV -O -p- 192.168.1.0/24    # Ağdaki tüm cihazların tüm portlarını TCP SYN taraması ile kontrol eder, servis ve işletim sistemi tespiti yapar
+     : 1704720226:0;nmap -p 22,80,443 scanme.nmap.org    # Belirtilen hedefin sadece SSH, HTTP ve HTTPS portlarını tarar
+     : 1704720241:0;sudo tcpdump -i any port 443    # Tüm ağ arayüzlerindeki HTTPS trafiğini yakalar ve gösterir
+     : 1704720256:0;sudo tcpdump -i wlan0 'port 80 or port 443'    # Kablosuz arayüzdeki HTTP ve HTTPS trafiğini izler
+     : 1704720271:0;wireshark -k -i wlan0    # Kablosuz ağ trafiğini gerçek zamanlı olarak Wireshark ile analiz eder
+     : 1704720286:0;sudo netstat -tuln    # Sistemdeki tüm TCP ve UDP bağlantı noktalarını listeler
+     : 1704720301:0;ss -tuln    # Modern netstat alternatifi, açık port ve soketleri gösterir
+     : 1704720316:0;curl -I https://nixos.org    # Sadece HTTP başlık bilgilerini getirir
+     : 1704720331:0;curl -v -k https://localhost    # SSL doğrulaması olmadan detaylı bağlantı bilgilerini gösterir
+     : 1704720346:0;wget -r --no-parent http://example.com    # Belirtilen web sitesini alt dizinleriyle birlikte indirir
+     : 1704720361:0;htop    # İnteraktif sistem kaynak kullanımı monitörü
+     : 1704720376:0;btop    # Modern ve gelişmiş sistem monitörü
+     : 1704720391:0;nethogs    # Prosesler bazında ağ kullanımını izler
+     : 1704720406:0;iotop    # Disk I/O kullanımını prosesler bazında gösterir
+     : 1704720421:0;nvtop    # NVIDIA GPU kullanımını izler
+     : 1704720436:0;docker ps    # Çalışan konteynerleri listeler
+     : 1704720451:0;docker-compose up -d    # Docker-compose ile tanımlı servisleri arka planda başlatır
+     : 1704720466:0;docker logs -f container_name    # Konteyner loglarını canlı olarak takip eder
+     : 1704720481:0;kubectl get pods    # Kubernetes cluster'ındaki podları listeler
+     : 1704720496:0;kubectl describe pod mypod    # Pod detaylarını ve durumunu gösterir
+     : 1704720511:0;kubectl logs -f deployment/myapp    # Deployment loglarını canlı izler
+     : 1704720526:0;virsh list --all    # Tüm sanal makineleri durumlarıyla birlikte listeler
+     : 1704720541:0;virsh start vm_name    # Belirtilen sanal makineyi başlatır
+     : 1704720556:0;virt-install --name=test-vm --vcpus=2 --memory=2048    # Yeni bir sanal makine oluşturur
+     : 1704720571:0;git clone git@github.com:username/repo.git    # Uzak depoyu yerel makineye kopyalar
+     : 1704720586:0;git checkout -b feature/new-module    # Yeni bir özellik dalı oluşturur ve ona geçer
+     : 1704720601:0;git push origin main    # Yerel değişiklikleri uzak ana dala gönderir
+     : 1704720616:0;git rebase -i HEAD~3    # Son üç commit'i interaktif olarak düzenler
+     : 1704720631:0;git stash save "wip: current changes"    # Çalışma alanındaki değişiklikleri geçici olarak kaydeder
+     : 1704720646:0;git stash pop    # En son stash'lenen değişiklikleri geri getirir
+     : 1704720661:0;git log --oneline --graph    # Commit geçmişini grafik formatında gösterir
+     : 1704720676:0;git diff master..feature    # İki dal arasındaki farkları gösterir
+     : 1704720691:0;nvim ~/.config/nixos/configuration.nix    # NixOS yapılandırma dosyasını Neovim ile düzenler
+     : 1704720706:0;nvim flake.nix    # Flake yapılandırmasını düzenler
+     : 1704720721:0;nvim ~/Projects/nixos-config/hosts/hay/default.nix    # Host-spesifik yapılandırmayı düzenler
+     : 1704720736:0;code .    # Mevcut dizini VS Code ile açar
+     : 1704720751:0;vim .gitignore    # Git yoksayma dosyasını düzenler
+     : 1704720766:0;nano /etc/hosts    # Host dosyasını basit editör ile düzenler
+     : 1704720781:0;journalctl -xe    # Sistem günlüklerinin sonunu detaylı açıklamalarla gösterir
+     : 1704720796:0;journalctl -fu nginx    # Nginx servis loglarını canlı takip eder
+     : 1704720811:0;tail -f /var/log/nginx/access.log    # Nginx erişim loglarını canlı izler
+     : 1704720826:0;grep -r "error" /var/log/    # Tüm log dizininde "error" kelimesini arar
+     : 1704720841:0;find / -name "*.nix" -type f    # Sistemdeki tüm .nix dosyalarını bulur
+     : 1704720856:0;find . -type f -mtime -7    # Son 7 günde değiştirilmiş dosyaları bulur
+     : 1704720871:0;fd -t f -e nix    # Modern find alternatifi ile .nix uzantılı dosyaları bulur
+     : 1704720886:0;rg "nixpkgs" --type nix    # .nix dosyalarında "nixpkgs" kelimesini hızlıca arar
+     : 1704720901:0;fzf --preview 'bat --style=numbers --color=always {}'    # Bulanık arama ile dosya önizleme
+     : 1704720916:0;systemctl status nginx    # Nginx servisinin durumunu kontrol eder
+     : 1704720931:0;systemctl restart postgresql    # PostgreSQL veritabanını yeniden başlatır
+     : 1704720946:0;systemctl enable --now docker    # Docker servisini etkinleştirir ve başlatır
+     : 1704720961:0;useradd -m -G wheel newuser    # Yeni bir kullanıcı oluşturur ve wheel grubuna ekler
+     : 1704720976:0;usermod -aG docker username    # Kullanıcıyı docker grubuna ekler
+     : 1704720991:0;passwd username    # Kullanıcı şifresini değiştirir
+     : 1704721006:0;chown -R user:group /path/to/dir    # Dizin sahipliğini recursif olarak değiştirir
+     : 1704721021:0;chmod -R 755 /path/to/dir    # Dizin izinlerini recursif olarak ayarlar
+     : 1704721036:0;tar -czvf archive.tar.gz directory/    # Dizini tar.gz formatında arşivler
+     : 1704721051:0;tar -xzvf archive.tar.gz    # tar.gz arşivini açar
+     : 1704721066:0;zip -r backup.zip directory/    # Dizini zip formatında arşivler
+     : 1704721081:0;unzip archive.zip    # Zip arşivini açar
+     : 1704721096:0;scp file.txt user@remote:/path/    # Dosyayı uzak sunucuya kopyalar
+     : 1704721111:0;ssh-keygen -t ed25519 -C "email@example.com"    # ED25519 SSH anahtarı oluşturur
+     : 1704721126:0;ssh-copy-id user@remote    # SSH anahtarını uzak sunucuya kopyalar
+     : 1704721141:0;ssh -L 8080:localhost:80 user@remote    # Yerel port yönlendirmesi ile SSH tüneli oluşturur
+     : 1704721156:0;tmux new -s dev    # Yeni bir tmux oturumu başlatır
+     : 1704721171:0;tmux attach -t dev    # Var olan tmux oturumuna bağlanır
+     : 1704721186:0;screen -S mysession    # Yeni bir screen oturumu başlatır
+     : 1704721201:0;screen -r mysession    # Var olan screen oturumuna bağlanır
+     : 1704721216:0;ps aux | grep nginx    # Nginx ile ilgili çalışan süreçleri listeler
+     : 1704721231:0;kill -9 1234    # Belirtilen PID'e sahip süreci zorla sonlandırır
+     : 1704721246:0;pkill -f process_name    # İsme göre süreç sonlandırır
+     : 1704721261:0;top -u username    # Belirli kullanıcının süreçlerini gösterir
+     : 1704721276:0;free -h    # Bellek kullanımını insan okunabilir formatta gösterir
+     : 1704721291:0;df -h    # Disk kullanımını insan okunabilir formatta gösterir
+     : 1704721306:0;du -sh *    # Her dosya ve dizinin boyutunu gösterir
+     : 1704721321:0;lsblk    # Blok cihazlarını listeler
+     : 1704721336:0;fdisk -l    # Disk bölümlerini listeler
+     : 1704721351:0;mount /dev/sdb1 /mnt    # Disk bölümünü monte eder
+     : 1704721366:0;umount /mnt    # Disk bölümünü ayırır
+     : 1704721381:0;mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sda1 /dev/sdb1    # RAID1 dizisi oluşturur
+     : 1704721396:0;cryptsetup luksFormat /dev/sda1    # Disk bölümünü şifreler
+     : 1704721411:0;cryptsetup luksOpen /dev/sda1 cryptroot    # Şifreli disk bölümünü açar
+     : 1704721426:0;iptables -L    # Güvenlik duvarı kurallarını listeler
+     : 1704721441:0;iptables -A INPUT -p tcp --dport 80 -j ACCEPT    # HTTP trafiğine izin verir
+     : 1704721456:0;ufw status    # UFW güvenlik duvarı durumunu gösterir
+     : 1704721471:0;ufw allow 22    # SSH portuna izin verir
+     : 1704721486:0;fail2ban-client status    # Fail2ban durumunu gösterir
+     : 1704721501:0;docker build -t myapp .    # Dockerfile'dan imaj oluşturur
+     : 1704721516:0;docker run -d -p 80:80 nginx    # Nginx konteynerini arkaplanda çalıştırır
+     : 1704721531:0;docker exec -it container_name bash    # Çalışan konteynere bağlanır
+     : 1704721546:0;podman run -it ubuntu bash    # Ubuntu konteynerini interaktif modda çalıştırır
+     : 1704721561:0;distrobox enter dev    # Geliştirme konteynerine girer
+     : 1704721576:0;flatpak list    # Yüklü Flatpak uygulamalarını listeler
+     : 1704721591:0;flatpak update    # Flatpak uygulamalarını günceller
+     : 1704721606:0;pip install --user package    # Python paketini kullanıcı dizinine kurar
+     : 1704721621:0;npm install -g package    # Global npm paketi kurar
+     : 1704721636:0;yarn global add package    # Global yarn paketi kurar
+     : 1704721651:0;cargo install ripgrep    # Rust paketi kurar
+     : 1704721666:0;rustup update    # Rust toolchain'i günceller
+     : 1704721681:0;go get github.com/user/repo    # Go paketi indirir
+     : 1704721696:0;python -m venv venv    # Python sanal ortamı oluşturur
+     : 1704721711:0;source venv/bin/activate    # Python sanal ortamını aktifleştirir
+     : 1704721726:0;deactivate    # Python sanal ortamından çıkar
+     : 1704721741:0;postgresql_setup initdb    # PostgreSQL veritabanını başlatır
+     : 1704721756:0;createdb mydb    # Yeni PostgreSQL veritabanı oluşturur
+     : 1704721771:0;psql -U postgres    # PostgreSQL komut satırına bağlanır
+     : 1704721786:0;mysql -u root -p    # MySQL'e root olarak bağlanır
+     : 1704721801:0;redis-cli    # Redis komut satırı arayüzü
+     : 1704721816:0;mongodb    # MongoDB kabuğunu başlatır
+     : 1704721831:0;nix develop    # Geliştirme ortamını başlatır
+     : 1704721846:0;direnv allow    # Direnv konfigürasyonunu kabul eder
+     : 1704721861:0;lorri daemon    # Lorri arka plan servisini başlatır
+     : 1704721876:0;nix profile install nixpkgs#package  
+     : 1704721891:0;nix-shell -p python3    # Python3 içeren geçici kabuk başlatır
+     : 1704721906:0;man nixos-rebuild    # NixOS rebuild kılavuzunu gösterir
+     : 1704721921:0;info nix-env    # Nix-env detaylı bilgilerini gösterir
+     : 1704721936:0;tldr rsync    # Rsync için hızlı kullanım kılavuzu
+     : 1704721951:0;cheat tar    # Tar komutları için ipuçları
+     : 1704721966:0;nixos-option services.nginx.enable    # Nginx servis seçeneğini sorgular
+     : 1704721981:0;nix repl    # Nix interaktif kabuğunu başlatır
+     : 1704721996:0;nix-instantiate --eval    # Nix ifadesini değerlendirir
+     : 1704722011:0;nix build    # Nix paketi derler
+     : 1704722026:0;nix run nixpkgs#hello    # Hello paketini çalıştırır
+     : 1704722041:0;sudo nixos-rebuild test --flake .#hay    # Flake konfigürasyonunu test eder
+     : 1704722056:0;sudo nixos-rebuild build --flake .#hay    # Flake konfigürasyonunu derler
+     : 1704722071:0;nix flake init    # Yeni flake projesi başlatır
+     : 1704722086:0;nix edit nixpkgs.nginx    # Nginx paket tanımını düzenler
+     : 1704722101:0;nix-shell -p nix-info --run "nix-info -m"    # Sistem Nix bilgilerini gösterir
+     : 1704722116:0;home-manager generations    # Home-manager nesillerini listeler
+     : 1704722131:0;nix-env --list-generations    # Nix paket nesillerini listeler
+     : 1704722146:0;nix-collect-garbage --delete-older-than 30d    # 30 günden eski nesilleri siler
+     : 1704722161:0;nixos-rebuild switch --upgrade    # Sistemi yükseltir ve yeni konfigürasyona geçer
+     : 1704722176:0;sudo nix-channel --update    # Nix kanallarını günceller
+     : 1704722191:0;nix-env -qaP | grep -i neovim    # Neovim paketlerini arar
+     : 1704722206:0;which nvim    # Nvim çalıştırılabilir dosya konumunu gösterir
+     : 1704722221:0;type -a ls    # ls komutunun tüm versiyonlarını gösterir
+     : 1704722236:0;whereis python    # Python ile ilgili tüm dosya konumlarını bulur
+     : 1704722251:0;file /usr/bin/python    # Python dosya türünü belirler
+     : 1704722266:0;ldd $(which bash)    # Bash'in bağımlı olduğu kütüphaneleri gösterir
+     : 1704722281:0;strace ls    # ls komutunun sistem çağrılarını gösterir
+     : 1704722296:0;ltrace cat /etc/hostname    # cat komutunun kütüphane çağrılarını gösterir
+     : 1704722311:0;date -u +"%Y-%m-%d %H:%M:%S"    # UTC zamanını formatlar
+     : 1704722326:0;timedatectl set-timezone UTC    # Sistem saat dilimini UTC'ye ayarlar
+     : 1704722341:0;hwclock --systohc    # Sistem saatini donanım saatine senkronize eder
+     : 1704722356:0;uptime    # Sistemin ne kadar süredir çalıştığını gösterir
+     : 1704722371:0;w    # Oturum açmış kullanıcıları ve aktivitelerini gösterir
+     : 1704722386:0;who    # Oturum açmış kullanıcıları listeler
+     : 1704722401:0;last    # Son oturum açma kayıtlarını gösterir
+     : 1704722416:0;lastlog    # Tüm kullanıcıların son oturum açma bilgilerini gösterir
+     : 1704722431:0;ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis status    # Şasi durumunu gösterir
+     : 1704722446:0;ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power status    # Güç durumunu gösterir
+     : 1704722461:0;ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power on    # Sistemi açar
+     : 1704722476:0;ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power off    # Sistemi kapatır
+     : 1704722491:0;ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power reset    # Sistemi resetler
+     : 1704722506:0;ipmitool -I lanplus -H 192.168.1.100 -U admin -P password chassis power cycle    # Güç döngüsü yapar
+     : 1704722521:0;ipmitool user list 1    # Kullanıcıları listeler
+     : 1704722536:0;ipmitool user summary 1    # Kullanıcı özetini gösterir
+     : 1704722551:0;ipmitool user set name 2 operator    # Kullanıcı 2'nin adını değiştirir
+     : 1704722566:0;ipmitool user set password 2 newpassword    # Kullanıcı 2'nin şifresini değiştirir
+     : 1704722581:0;ipmitool user priv 2 4 1    # Kullanıcı 2'ye yönetici yetkisi verir
+     : 1704722596:0;ipmitool user enable 2    # Kullanıcı 2'yi aktifleştirir
+     : 1704722611:0;ipmitool user disable 2    # Kullanıcı 2'yi devre dışı bırakır
+     : 1704722626:0;ipmitool channel getaccess 1 2    # Kanal 1'de kullanıcı 2'nin yetkilerini gösterir
+     : 1704722641:0;ipmitool lan print 1    # Kanal 1'in ağ ayarlarını gösterir
+     : 1704722656:0;ipmitool lan set 1 ipaddr 192.168.1.101    # IP adresini ayarlar
+     : 1704722671:0;ipmitool lan set 1 netmask 255.255.255.0    # Alt ağ maskesini ayarlar
+     : 1704722686:0;ipmitool lan set 1 gateway 192.168.1.1    # Ağ geçidini ayarlar
+     : 1704722701:0;ipmitool lan set 1 ipsrc static    # Statik IP kullanımını ayarlar
+     : 1704722716:0;ipmitool lan set 1 ipsrc dhcp    # DHCP kullanımını ayarlar
+     : 1704722731:0;ipmitool lan set 1 access on    # LAN erişimini açar
+     : 1704722746:0;ipmitool lan set 1 auth ADMIN MD5    # Admin için MD5 kimlik doğrulaması ayarlar
+     : 1704722761:0;for i in {1..10}; do echo $i; done    # 1'den 10'a kadar sayıları yazdırır
+     : 1704722776:0;for f in *.txt; do mv "$f" "${f%.txt}.md"; done    # Tüm .txt dosyalarını .md yapar
+     : 1704722791:0;for d in */; do (cd "$d" && git pull); done    # Her alt dizinde git pull çalıştırır
+     : 1704722806:0;for p in $(ps aux | grep 'nginx' | awk '{print $2}'); do kill -9 $p; done    # Tüm nginx proseslerini sonlandırır
+     : 1704722821:0;for ip in 192.168.1.{1..254}; do ping -c 1 $ip | grep "64 bytes" & done    # Ağ taraması yapar
+     : 1704722836:0;for u in $(cat users.txt); do useradd $u && echo "User $u created"; done    # Toplu kullanıcı oluşturur
+     : 1704722851:0;for f in *; do echo "${f%%.*}"; done    # Tüm dosyaların uzantısız isimlerini listeler
+     : 1704722866:0;for i in {1..5}; do mkdir "dir$i" && touch "dir$i/file$i"; done    # Dizinler ve dosyalar oluşturur
+     : 1704722881:0;for pid in /proc/[0-9]*; do echo $(basename $pid); done    # Çalışan tüm proseslerin PID'lerini listeler
+     : 1704722896:0;for f in *.log; do gzip "$f"; done    # Tüm log dosyalarını sıkıştırır
+     : 1704722911:0;for s in $(systemctl list-units --type=service --state=active --plain --no-legend | awk '{print $1}'); do echo $s; done    # Aktif servisleri listeler
+     : 1704722926:0;for h in $(cat hosts.txt); do ssh $h 'uptime'; done    # Birden çok sunucuda uptime çalıştırır
+     : 1704722941:0;for f in $(find . -type f -name "*.bak"); do rm "$f"; done    # Tüm .bak dosyalarını siler
+     : 1704722956:0;for u in $(getent passwd | cut -d: -f1); do groups $u; done    # Tüm kullanıcıların gruplarını listeler
+     : 1704722971:0;for proc in $(find /proc -maxdepth 1 -type d | grep "[0-9]"); do echo $proc: $(cat $proc/cmdline 2>/dev/null); done    # Çalışan süreçlerin komut satırlarını gösterir
+     : 1704722986:0;for pkg in $(nix-env -q); do nix-store -q --references $(which $pkg); done    # Yüklü paketlerin bağımlılıklarını listeler
+     : 1704723001:0;for service in $(systemctl list-units --type=service --state=failed --plain --no-legend | awk '{print $1}'); do journalctl -u $service -n 50; done    # Başarısız servislerin son loglarını gösterir
+     : 1704723016:0;for disk in $(lsblk -no name | grep "sd"); do smartctl -a /dev/$disk; done    # Tüm disklerin SMART bilgilerini gösterir
+     : 1704723031:0;for port in {20..80}; do nc -zvw1 localhost $port 2>&1; done    # Port taraması yapar
+     : 1704723046:0;for ip in $(netstat -tn 2>/dev/null | grep ':80 ' | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | head); do whois $ip; done    # 80 portuna bağlanan IP'leri analiz eder
+     : 1704723061:0;for host in $(cat hosts.txt); do ssh -n $host "uname -a; uptime; df -h" 2>/dev/null; done    # Çoklu sunucu durumu kontrolü
+     : 1704723076:0;for iface in $(ip -o -4 addr show | awk '{print $2}'); do ethtool $iface 2>/dev/null; done    # Tüm ağ arayüzlerinin durumunu kontrol eder
+     : 1704723091:0;for dir in */; do du -sh "$dir" 2>/dev/null; done | sort -hr    # Alt dizinlerin boyutlarını büyükten küçüğe sıralar
+     : 1704723106:0;for file in $(find . -type f -mtime -1); do cp --parents "$file" /backup/$(date +%Y%m%d)/; done    # Son 24 saatte değişen dosyaları yedekler
+     : 1704723121:0;for ext in jpg png gif; do find . -type f -name "*.$ext" -exec convert {} -resize 800x600 {}.resized \;; done    # Tüm resimleri yeniden boyutlandırır
+     : 1704723136:0;for f in $(find . -type f -name "*.log"); do tail -n 100 "$f" > "$f.last100"; done    # Tüm log dosyalarının son 100 satırını alır
+     : 1704723151:0;for derivation in $(nix-store -q --references /run/current-system/sw); do nix-store -q --referrers $derivation; done    # Sistem paketlerinin bağımlılık ağacını gösterir
+     : 1704723166:0;for pkg in $(nix-env -q); do nix why-depends /run/current-system $pkg; done    # Paketlerin neden gerekli olduğunu açıklar
+     : 1704723181:0;for channel in $(nix-channel --list | cut -d' ' -f1); do nix-channel --update $channel; done    # Tüm kanalları günceller
+     : 1704723196:0;for gen in $(home-manager generations | cut -d' ' -f7); do nix-store -q --referrers $gen; done    # Home-manager nesillerinin bağımlılıklarını gösterir
+     : 1704723211:0;for container in $(docker ps -q); do docker stats --no-stream $container; done    # Çalışan konteynerlerin kaynak kullanımını gösterir
+     : 1704723226:0;for image in $(docker images -q); do docker history $image --no-trunc; done    # Tüm imajların katman geçmişini gösterir
+     : 1704723241:0;for volume in $(docker volume ls -q); do docker volume inspect $volume; done    # Tüm volumelerin detaylarını gösterir
+     : 1704723256:0;for network in $(docker network ls -q); do docker network inspect $network; done    # Tüm ağların yapılandırmasını gösterir
+     : 1704723271:0;for branch in $(git branch -r | grep -v HEAD); do echo -e "\n$branch:" && git log --pretty=format:"%ai - %s" $branch | head -n 5; done    # Uzak dalların son commitlerini gösterir
+     : 1704723286:0;for repo in */; do (cd "$repo" && git status -s && echo); done    # Tüm alt dizinlerdeki git durumunu kontrol eder
+     : 1704723301:0;for tag in $(git tag); do echo "Tag: $tag" && git show $tag --quiet --pretty="format:%ai %s"; done    # Tüm etiketlerin tarih ve mesajlarını gösterir
+     : 1704723316:0;for commit in $(git log --pretty=format:"%h" -n 10); do git show --stat $commit; done    # Son 10 commitin değişiklik istatistiklerini gösterir
+     : 1704723331:0;for sensor in $(ipmitool sensor list | cut -d'|' -f1); do ipmitool sensor get "$sensor"; done    # Tüm sensör detaylarını gösterir
+     : 1704723346:0;for user in $(ipmitool user list | awk '{print $1}' | grep -v "^ID"); do ipmitool user summary $user; done    # Tüm IPMI kullanıcılarının özetini gösterir
+     : 1704723361:0;for channel in {1..15}; do ipmitool lan print $channel 2>/dev/null; done    # Tüm LAN kanallarının konfigürasyonunu kontrol eder
+     : 1704723376:0;for fru in $(ipmitool fru list | cut -d' ' -f1); do ipmitool fru print $fru; done    # Tüm FRU bilgilerini listeler
+     : 1704723391:0;for db in $(psql -lt | cut -d'|' -f1 | grep -v template); do pg_dump -C $db > "${db}_$(date +%Y%m%d).sql"; done    # Tüm PostgreSQL veritabanlarını yedekler
+     : 1704723406:0;for table in $(mysql -N -e 'show tables' mydb); do mysql -e "select count(*) from $table" mydb; done    # MySQL'de tüm tabloların satır sayısını gösterir
+     : 1704723421:0;for db in $(mongo --quiet --eval "db.getMongo().getDBNames()"); do mongodump --db=$db; done    # Tüm MongoDB veritabanlarını yedekler
+     : 1704723436:0;for index in $(redis-cli keys "*"); do redis-cli type $index; done    # Redis'teki tüm anahtarların tipini gösterir
+     : 1704723451:0;for user in $(cut -d: -f1 /etc/passwd); do last $user | head -n 1; done    # Tüm kullanıcıların son oturum açma zamanlarını gösterir
+     : 1704723466:0;for pid in $(ps -ef | grep defunct | awk '{print $2}'); do kill -9 $pid; done    # Zombi prosesleri temizler
+     : 1704723481:0;for job in $(atq | cut -f1); do at -c $job; done    # Zamanlanmış görevlerin içeriğini gösterir
+     : 1704723496:0;for service in $(systemctl list-units --type=service --all --no-legend | awk '{print $1}'); do systemctl status $service; done    # Tüm servislerin durumunu kontrol eder
+     : 1704723511:0;for f in *.py; do python -m py_compile $f; done    # Tüm Python dosyalarını derler
+     : 1704723526:0;for module in $(pip freeze); do pip show $module; done    # Yüklü Python paketlerinin detaylarını gösterir
+     : 1704723541:0;for venv in ~/.virtualenvs/*; do source $venv/bin/activate && pip list && deactivate; done    # Tüm sanal ortamların paket listesini gösterir
+     : 1704723556:0;for script in $(find . -name "*.py"); do pylint $script; done    # Tüm Python dosyalarını lintler
+     : 1704723571:0;for key in ~/.ssh/id_*; do ssh-keygen -l -f $key; done    # Tüm SSH anahtarlarının özetini gösterir
+     : 1704723586:0;for host in $(cat ~/.ssh/config | grep "Host " | cut -d' ' -f2); do ssh -q $host "uptime"; done    # SSH yapılandırmasındaki tüm hostların uptime'ını kontrol eder
+     : 1704723601:0;for port in $(netstat -tuln | grep LISTEN | awk '{print $4}' | cut -d: -f2); do echo "Port $port is open"; done    # Açık portları listeler
+     : 1704723616:0;for cert in $(find /etc/ssl -name "*.crt"); do openssl x509 -noout -subject -dates -in $cert; done    # SSL sertifikalarının detaylarını gösterir
+     : 1704723631:0;nmap -sn 192.168.1.0/24    # Ping taraması yaparak aktif hostları bulur
+     : 1704723646:0;nmap -PS22,80,443 192.168.1.0/24    # TCP SYN ping ile belirli portları tarar
+     : 1704723661:0;nmap -PA22,80,443 192.168.1.0/24    # TCP ACK ping taraması yapar
+     : 1704723676:0;nmap -PU53,161,162 192.168.1.0/24    # UDP ping taraması yapar
+     : 1704723691:0;nmap -PE -PP -PS443 192.168.1.0/24    # ICMP, timestamp ve TCP-SYN kombinasyonu
+     : 1704723706:0;nmap -sS -p- --min-rate 5000 192.168.1.0/24    # Hızlı SYN taraması
+     : 1704723721:0;nmap -sT -p- -Pn 192.168.1.100    # Tam TCP bağlantı taraması
+     : 1704723736:0;nmap -sU -p 53,161,162 --min-rate 1000 192.168.1.0/24    # Hızlı UDP taraması
+     : 1704723751:0;nmap -sV -sC -p- -T4 192.168.1.100    # Versiyon ve script taraması
+     : 1704723766:0;nmap -sS -sV -O -p- --version-intensity 9 192.168.1.100    # Detaylı versiyon tespiti
+     : 1704723781:0;nmap -A -T4 -v -Pn 192.168.1.0/24    # Agresif tarama, tüm detaylar
+     : 1704723796:0;nmap -O --osscan-guess 192.168.1.100    # İşletim sistemi tahmini
+     : 1704723811:0;nmap -sV --version-all 192.168.1.100    # Tüm versiyon testlerini çalıştırır
+     : 1704723826:0;nmap -p- -sV --version-intensity 5 192.168.1.100    # Orta seviye versiyon tespiti
+     : 1704723841:0;nmap --script vuln 192.168.1.100    # Güvenlik açığı taraması
+     : 1704723856:0;nmap --script ssl-enum-ciphers -p 443 192.168.1.100    # SSL/TLS şifreleme analizi
+     : 1704723871:0;nmap --script http-* -p 80,443 192.168.1.100    # Tüm HTTP scriptlerini çalıştırır
+     : 1704723886:0;nmap --script smb-* -p 445 192.168.1.100    # SMB güvenlik kontrolleri
+     : 1704723901:0;nmap --script dns-* -p 53 192.168.1.100    # DNS tarama ve enumeration
+     : 1704723916:0;nmap --script mysql-* -p 3306 192.168.1.100    # MySQL güvenlik kontrolleri
+     : 1704723931:0;nmap -sS -oA scan_results 192.168.1.0/24    # Tüm formatlarda çıktı alır
+     : 1704723946:0;nmap -sS -oX scan.xml 192.168.1.0/24    # XML formatında çıktı
+     : 1704723961:0;nmap -sS -oG scan.grep 192.168.1.0/24    # Grep formatında çıktı
+     : 1704723976:0;nmap -sS -oN scan.nmap 192.168.1.0/24    # Normal formatta çıktı
+     : 1704723991:0;nmap --stylesheet https://svn.nmap.org/nmap/docs/nmap.xsl -sS -oX scan.xml 192.168.1.0/24    # HTML rapor
+     : 1704724006:0;nmap -f -sS -sV 192.168.1.100    # Parçalanmış paketlerle tarama
+     : 1704724021:0;nmap -D RND:10 192.168.1.100    # Rastgele 10 IP ile decoy tarama
+     : 1704724036:0;nmap --spoof-mac Apple 192.168.1.100    # MAC adresi spoofing
+     : 1704724051:0;nmap --data-length 25 192.168.1.100    # Paket boyutunu değiştirir
+     : 1704724066:0;nmap -sS --randomize-hosts 192.168.1.0/24    # Host sırasını rastgele yapar
+     : 1704724081:0;nmap -T0 192.168.1.100    # En yavaş zamanlama
+     : 1704724096:0;nmap -T5 --min-parallelism 50 192.168.1.0/24    # En hızlı agresif tarama
+     : 1704724111:0;nmap --max-retries 2 192.168.1.0/24    # Yeniden deneme sayısını sınırlar
+     : 1704724126:0;nmap --min-rate 300 --max-rate 500 192.168.1.0/24    # Paket hızını kontrol eder
+     : 1704724141:0;nmap --scan-delay 1s 192.168.1.100    # Tarama gecikmesi ekler
+     : 1704724156:0;nmap -p http* 192.168.1.100    # HTTP ile ilgili tüm portları tarar
+     : 1704724171:0;nmap -p T:21-25,80,443 192.168.1.100    # Belirli TCP portlarını tarar
+     : 1704724186:0;nmap -p U:53,161,162 192.168.1.100    # Belirli UDP portlarını tarar
+     : 1704724201:0;nmap -p- --top-ports 20 192.168.1.100    # En popüler 20 portu tarar
+     : 1704724216:0;nmap -r -p1-1024 192.168.1.100    # Sıralı port taraması
+     : 1704724231:0;nmap -sV --allports 192.168.1.100    # Tüm portlarda versiyon tespiti
+     : 1704724246:0;nmap -sV --version-intensity 9 192.168.1.100    # Maksimum versiyon detayı
+     : 1704724261:0;nmap -sV --version-light 192.168.1.100    # Hızlı versiyon taraması
+     : 1704724276:0;nmap -sV --version-trace 192.168.1.100    # Versiyon tarama detaylarını gösterir
+     : 1704724291:0;nmap -A --reason 192.168.1.100    # Port durumlarının nedenlerini gösterir
+     : 1704724306:0;nmap -sS -sV -O -T4 --traceroute 192.168.1.100    # Tam kapsamlı sistem analizi
+     : 1704724321:0;nmap -p- -sV -sC --script=vuln -T4 192.168.1.100    # Güvenlik odaklı tarama
+     : 1704724336:0;nmap -Pn -sS -sV -O --osscan-limit 192.168.1.100    # Stealth sistem tespiti
+     : 1704724351:0;nmap -sS -sV --script=default,safe,auth 192.168.1.100    # Güvenli script taraması
+     : 1704724366:0;nmap -A -v --script=http-enum,http-headers 192.168.1.100    # Web sunucu analizi
+     : 1704724381:0;for ip in $(seq 1 254); do nmap -sS -p 80 -T4 192.168.1.$ip; done    # Tüm subnet'te web sunucu arar
+     : 1704724396:0;for port in {20..90}; do nmap -p$port -sS -T4 192.168.1.100; done    # Port aralığı taraması
+     : 1704724411:0;for host in $(cat hosts.txt); do nmap -sS -sV -T4 $host; done    # Liste üzerinde tarama
+     : 1704724426:0;for subnet in {0..255}; do nmap -sn 192.168.$subnet.0/24; done    # Geniş ağ keşfi
+     : 1704724441:0;for ip in $(nmap -sn 192.168.1.0/24 -oG - | grep "Up" | cut -d" " -f2); do nmap -sV -T4 $ip; done    # İki aşamalı tarama
+      '';
+    onChange = ''
+      chmod 644 ~/.config/zsh/history
+    '';
+  };
+}
