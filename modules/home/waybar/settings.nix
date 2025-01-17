@@ -202,7 +202,7 @@
         "custom/notification"
         "custom/blank"
         "custom/firewall"
-        #"custom/power"
+        "custom/power"
       ];
 
       "custom/launcher" = {
@@ -345,7 +345,7 @@
       };
 
       "hyprland/language" = {
-        format = "⌨ {}";
+        format = "󰌌 {}";
         format-tr = "TR";
         format-en = "US";
       };
