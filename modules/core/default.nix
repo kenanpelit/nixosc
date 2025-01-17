@@ -64,5 +64,6 @@
    # Core Configuration
    # =============================================================================
    ./system         # Base system settings
+   ./journald       # System service that collects and stores logging data
  ];
 }
