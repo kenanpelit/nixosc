@@ -29,7 +29,6 @@
         "network"
         "battery"
         "tray"
-        #"custom/firewall"
       ];
 
       "custom/blank" = {
@@ -95,17 +94,6 @@
       "hyprland/window" = {
         format = "󱂬 {}";
         max-length = "10";
-      };
-
-      "custom/firewall" = {
-        format = "{}";
-        exec = "sh -c 'if systemctl is-active ufw >/dev/null 2>&1; then echo \"<span foreground=\\\"#98c379\\\"> 󰕥 </span>\"; else echo \"<span foreground=\\\"#e06c75\\\"> 󰕥 </span>\"; fi'";
-        on-click = "pkexec systemctl start ufw && notify-send 'Güvenlik Duvarı' 'UFW başlatıldı' -i security-high";
-        on-click-right = "pkexec systemctl restart ufw && notify-send 'Güvenlik Duvarı' 'UFW yeniden başlatıldı' -i security-high";
-        on-click-middle = "pkexec systemctl stop ufw && notify-send 'Güvenlik Duvarı' 'UFW durduruldu' -i security-low";
-        interval = 5;
-        tooltip = true;
-        tooltip-format = "Güvenlik Duvarı Durumu\n\n󱎫 Sol tık: Başlat\n󰦝 Orta tık: Durdur\n󰑐 Sağ tık: Yeniden başlat\n\n<span foreground='#98c379'>Aktif olduğunda sisteminiz korunur</span>";
       };
 
       "custom/vpnstatus" = {
@@ -213,7 +201,8 @@
         "hyprland/language"
         "custom/notification"
         "custom/blank"
-        "custom/power"
+        "custom/firewall"
+        #"custom/power"
       ];
 
       "custom/launcher" = {
@@ -380,6 +369,17 @@
         on-click = "swaync-client -t -sw";
         on-click-right = "swaync-client -d -sw";
         escape = true;
+      };
+
+      "custom/firewall" = {
+        format = "{}";
+        exec = "sh -c 'if systemctl is-active firewall >/dev/null 2>&1; then echo \"<span foreground=\\\"#98c379\\\"> 󰕥 </span>\"; else echo \"<span foreground=\\\"#e06c75\\\"> 󰕥 </span>\"; fi'";
+        on-click = "pkexec systemctl start firewall && notify-send 'Güvenlik Duvarı' 'Firewall başlatıldı' -i security-high";
+        on-click-right = "pkexec systemctl restart firewall && notify-send 'Güvenlik Duvarı' 'Firewall yeniden başlatıldı' -i security-high";
+        on-click-middle = "pkexec systemctl stop Firewall && notify-send 'Güvenlik Duvarı' 'Firewall durduruldu' -i security-low";
+        interval = 5;
+        tooltip = true;
+        tooltip-format = "Güvenlik Duvarı Durumu\n\n󱎫 Sol tık: Başlat\n󰦝 Orta tık: Durdur\n󰑐 Sağ tık: Yeniden başlat\n\n<span foreground='#98c379'>Aktif olduğunda sisteminiz korunur</span>";
       };
 
       "custom/power" = {
