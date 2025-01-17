@@ -6,16 +6,14 @@
       ./hardware-configuration.nix
     ];
 
-  # Bootloader configuration for VM
+  # Bootloader for VM
   boot = {
-    loader = {
-      grub = {
-        enable = true;
-        device = "/dev/vda";  # VM'de direkt diski kullanıyoruz
-        useOSProber = true;
-      };
+    loader.grub = {
+      enable = true;
+      device = "/dev/vda";
+      useOSProber = true;
     };
-    # En son kernel paketlerini kullan (hay'dan alındı)
+    # Latest kernel packages
     kernelPackages = pkgs.linuxPackages_latest;
   };
 
@@ -65,8 +63,6 @@
   # Program configurations
   programs = {
     tmux.enable = true;
-    byobu.enable = false;
-    # hay'dan alınan GnuPG agent konfigürasyonu
     gnupg.agent = {
       enable = true;
       enableSSHSupport = true;
@@ -75,6 +71,7 @@
 
   # Base system packages for VM
   environment.systemPackages = with pkgs; [
+    # System tools
     wget
     vim
     git
@@ -84,15 +81,15 @@
     age
     assh
     ncurses
+    pv
+
+    # Security and encryption
+    gnupg
+    openssl
   ];
 
   # Enable OpenSSH server
-  services.openssh = {
-    enable = true;
-    # Güvenlik için şifre ile girişi kapatıp sadece SSH key ile giriş yapılmasını sağlayabiliriz
-    # passwordAuthentication = false;
-    # permitRootLogin = "no";
-  };
+  services.openssh.enable = true;
 
   system.stateVersion = "24.11";
 }
