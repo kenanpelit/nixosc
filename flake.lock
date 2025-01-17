@@ -1132,11 +1132,11 @@
     "yazi-plugins": {
       "flake": false,
       "locked": {
-        "lastModified": 1737118878,
-        "narHash": "sha256-8DLAacQiJOhdiJCL/D9SEWdwUFdHht71g+zPkoNoO1c=",
+        "lastModified": 1737126401,
+        "narHash": "sha256-dIj2YgLN04nFxmw7I/sdbJY2QCs+Nmb4eUtfLlPL53E=",
         "owner": "yazi-rs",
         "repo": "plugins",
-        "rev": "ed77c543ddbe672d1f9f3987ac74d17c0d1bf1fd",
+        "rev": "e4aaf430ad7f81d2e358e3a60525c8ef3fa259fc",
         "type": "github"
       },
       "original": {
