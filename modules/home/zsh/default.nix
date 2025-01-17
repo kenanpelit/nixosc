@@ -12,6 +12,7 @@
    ./zsh_aliases.nix   # Shell aliases
    ./zsh_functions.nix # Custom functions
    ./zsh_keybinds.nix  # Key bindings
+   ./zsh_plugins.nix   # Plugins
    ./completions       # Tab completion settings
  ];
 }
