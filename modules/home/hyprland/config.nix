@@ -429,9 +429,8 @@
 
       # No gaps workspace rules
       workspace = [
-        "w[t1], gapsout:0, gapsin:0"
-        "w[tg1], gapsout:0, gapsin:0"
-        "f[1], gapsout:0, gapsin:0"
+        "w[1], gapsout:0, gapsin:0"
+        "w[2], gapsout:0, gapsin:0"
       ];
 
       # Key Bindings
