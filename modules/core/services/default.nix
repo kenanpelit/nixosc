@@ -1,7 +1,4 @@
 # modules/core/services/default.nix
-# ==============================================================================
-# Core System Services Configuration
-# ==============================================================================
 { pkgs, ... }:
 {
   # =============================================================================
@@ -16,7 +13,6 @@
       enable = true;
       packages = [ pkgs.gcr ];  # GPG and encryption infrastructure
     };
-
     # Input Device Services
     touchegg.enable = false;    # Touchscreen gesture service
     
@@ -24,13 +20,22 @@
     logind.extraConfig = ''
       HandlePowerKey=ignore    # Ignore power button events
     '';
+
+    hblock = {
+      enable = true;
+      updateInterval = "weekly";  # Haftalık
+      # veya
+      # updateInterval = "*-*-* 03:00:00";  # Her gün saat 3'te
+      # updateInterval = "Mon *-*-* 00:00:00";  # Her Pazartesi
+      # updateInterval = "*-*-1 00:00:00";  # Her ayın 1'inde
+    };
   };
 
   # =============================================================================
   # Security Configuration
   # =============================================================================
   security.polkit.enable = true;  # PolicyKit authorization manager
-
+  
   # =============================================================================
   # Firewall Configuration
   # =============================================================================
@@ -47,3 +52,4 @@
     }];
   };
 }
+
