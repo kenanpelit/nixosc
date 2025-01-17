@@ -82,6 +82,9 @@
         export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
         export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git --exclude node_modules --exclude .cache'
       fi
+      
+      #https://github.com/kenanpelit/nixosc/blob/main/modules/core/hblock/default.nix
+      export HOSTALIASES="$HOME/.hosts"
 
       # Zoxide Integration
       eval "$(zoxide init zsh)"
