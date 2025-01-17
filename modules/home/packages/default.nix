@@ -133,6 +133,7 @@
    zathura          # PDF viewer
    candy-icons      # Icon theme
    wpaperd          # Modern wallpaper daemon
+   sway             # Window manager
    beauty-line-icon-theme # Icon theme
 
    # =============================================================================
