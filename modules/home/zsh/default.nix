@@ -14,7 +14,7 @@
     ./zsh.nix              # Base ZSH settings and environment
 
     # Data and History (load early for availability)
-    ./zsh_history.nix      # History configuration
+    #./zsh_history.nix      # History configuration
     ./zsh_completions      # Completion system settings
 
     # Interactive Shell Features
