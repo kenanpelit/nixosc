@@ -654,11 +654,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1735584197,
-        "narHash": "sha256-B1PqiHp/jmDVXVrvyh/eu2KP3LCyi1JL0h3vuy/wVnM=",
+        "lastModified": 1737129788,
+        "narHash": "sha256-CWmzXhsdk+c1d7Ub7TXQ2BVYla1HSJ9jbgOilbVl1so=",
         "owner": "hyprwm",
         "repo": "hyprpicker",
-        "rev": "444c40e5e3dc4058a6a762ba5e73ada6d6469055",
+        "rev": "0b044884d9298bb5fac164101eb880b499d8a5df",
         "type": "github"
       },
       "original": {
