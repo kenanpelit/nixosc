@@ -1,59 +1,26 @@
 # modules/home/waybar/style.nix
 { custom, ... }:
+
 {
-  programs.waybar.style = with custom; ''
+  programs.waybar.style = ''
     * {
       border: none;
       border-radius: 0;
-      font-family: ${font};
-      font-weight: ${font_weight};
-      font-size: ${font_size};
+      font-family: Maple Mono;
+      font-weight: bold;
+      font-size: 16px;
       min-height: 0;
       transition: 0.3s;
     }
 
     window#waybar {
-      background: ${background_0};
-      color: ${text_color};
-      border-top: 1px solid ${border_color};
+      background: #1a1b26;
+      color: #c0caf5;
+      border-top: 1px solid #414868;
     }
 
-    #workspaces {
-      background: ${background_1};
-      margin: 4px 4px;
-      padding: 0 6px;
-      border-radius: 8px;
-    }
-
-    #workspaces button {
-      color: ${text_color};
-      padding: 0 4px;
-      transition: all 0.3s;
-    }
-
-    #workspaces button:hover {
-      color: ${text_color};
-      background: ${background_0};
-      border-radius: 4px;
-    }
-
-    #workspaces button:not(.empty) {
-      color: #7aa2f7;
-    }
-
-    #workspaces button.active:not(.empty) {
-      color: #bb9af7;
-    }
-
-    #workspaces button.active.empty {
-      color: #bb9af7;
-    }
-
-    #workspaces button.urgent {
-      color: #f7768e;
-    }
-
-    /* Common module styles */
+    /* Common style for all modules */
+    #workspaces,
     #bluetooth,
     #custom-vpnstatus,
     #custom-todo,
@@ -71,16 +38,54 @@
     #clock,
     #language,
     #tray,
-    #custom-notification {
-      background: ${background_1};
-      padding: 0 10px;
-      margin: 4px 2px;
-      border-radius: 8px;
-      color: ${text_color};
-      transition: background 0.3s;
+    #mpris {
+      background-color: #24283b;
+      padding: 1px 6px;
+      margin: 2px 2px;
+      border: 1px solid #414868;
+      border-radius: 6px;
+      transition: all 0.2s ease;
     }
 
-    /* Module-specific colors */
+    /* Workspace specific styles */
+    #workspaces {
+      margin: 2px 2px;
+      padding: 0;
+      background: transparent;
+    }
+
+    #workspaces button {
+      min-height: 20px;
+      min-width: 20px;
+      padding: 1px 6px;
+      margin: 0 2px;
+      border-radius: 6px;
+      color: #7aa2f7;
+      background-color: #24283b;
+      transition: all 0.2s ease;
+      border: 1px solid #414868;
+    }
+
+    #workspaces button.active {
+      color: #bb9af7;
+      background-color: rgba(122, 162, 247, 0.2);
+      border-color: #7aa2f7;
+    }
+
+    #workspaces button.empty {
+      color: #c0caf5;
+      background-color: #24283b;
+      opacity: 0.8;
+    }
+
+    #workspaces button.urgent {
+      color: #f7768e;
+      background-color: rgba(247, 118, 142, 0.2);
+      border-color: #f7768e;
+      animation: workspace_urgent 1s ease-in-out infinite;
+    }
+
+    /* Module specific colors */
     #bluetooth { color: #7dcfff; }
     #bluetooth.connected { color: #2ac3de; }
     
@@ -120,10 +125,7 @@
     #custom-vpnother.disconnected { color: #f7768e; }
 
     #mpris {
-      background: ${background_1};
-      padding: 0 10px;
-      margin: 4px 2px;
-      border-radius: 8px;
+      background-color: #24283b;
     }
 
     #mpris.playing { color: #9ece6a; }
@@ -135,53 +137,56 @@
       font-size: 20px;
       padding: 0 10px;
       margin: 4px 8px 4px 4px;
-      background: ${background_1};
-      border-radius: 8px;
+      background: #24283b;
+      border: 1px solid #414868;
+      border-radius: 6px;
     }
 
     #custom-launcher:hover {
-      background: ${background_0};
+      background-color: rgba(125, 207, 255, 0.1);
+      border-color: #7dcfff;
     }
 
-    #custom-firewall {
-      color: #f7768e;
-      margin: 4px 8px 4px 4px;
-      padding: 0 8px;
-      background: ${background_1};
-      border-radius: 8px;
-    }
-
+    /* System icons with adjusted sizes */
+    #custom-notification,
+    #custom-firewall,
     #custom-power {
-      color: #f7768e;
-      margin: 4px 8px 4px 4px;
+      background-color: #24283b;
       padding: 0 8px;
-      background: ${background_1};
-      border-radius: 8px;
-    }
-
-    #custom-power:hover {
-      background: ${background_0};
-      color: #ff9e64;
-    }
-
-    #tray {
-      background: ${background_1};
-      margin: 4px 4px;
-      padding: 0 8px;
-      border-radius: 8px;
-    }
-
-    #tray menu {
-      background: ${background_1};
-      border: 1px solid ${border_color};
+      margin: 4px 2px;
+      border: 1px solid #414868;
+      border-radius: 6px;
+      min-width: 24px;
+      font-size: 16px;
     }
 
     #custom-notification {
-      background: ${background_1};
-      margin: 4px 8px 4px 0;
-      padding: 0 10px;
-      border-radius: 8px;
+      padding: 0 6px;
+      font-size: 15px;
+      margin-right: 4px;
       color: #e0af68;
+    }
+
+    #custom-firewall {
+      padding: 0 6px;
+      font-size: 15px;
+      margin: 4px 2px;
+    }
+
+    #custom-power {
+      padding: 0 7px;
+      font-size: 17px;
+      margin: 4px 4px 4px 2px;
+      color: #f7768e;
+    }
+
+    #tray {
+      margin: 4px 4px;
+    }
+
+    #tray menu {
+      background: #24283b;
+      border: 1px solid #414868;
     }
 
     #clock {
@@ -192,22 +197,72 @@
       color: #bb9af7;
     }
 
+    /* Hover effects */
+    #bluetooth:hover,
+    #custom-vpnstatus:hover,
+    #custom-todo:hover,
+    #custom-vpnmullvad:hover,
+    #custom-vpnother:hover,
+    #custom-waybar-mpris:hover,
+    #pulseaudio:hover,
+    #pulseaudio#source:hover,
+    #pulseaudio#sink:hover,
+    #network:hover,
+    #cpu:hover,
+    #memory:hover,
+    #disk:hover,
+    #battery:hover,
+    #clock:hover,
+    #language:hover,
+    #mpris:hover {
+      background-color: rgba(122, 162, 247, 0.1);
+      border-color: #7aa2f7;
+    }
+
+    #custom-notification:hover {
+      background-color: rgba(224, 175, 104, 0.1);
+      border-color: #e0af68;
+    }
+
+    #custom-firewall:hover {
+      background-color: rgba(247, 118, 142, 0.1);
+      border-color: #f7768e;
+    }
+
+    #custom-power:hover {
+      background-color: rgba(247, 118, 142, 0.1);
+      border-color: #f7768e;
+    }
+
     tooltip {
-      background: ${background_1};
-      border: 1px solid ${border_color};
-      border-radius: 8px;
+      background: #24283b;
+      border: 1px solid #414868;
+      border-radius: 6px;
     }
 
     tooltip label {
-      color: ${text_color};
+      color: #c0caf5;
       padding: 6px;
     }
 
     @keyframes blink-critical {
       to {
-        color: ${text_color};
         background-color: #f7768e;
+        color: #24283b;
+      }
+    }
+
+    @keyframes workspace_urgent {
+      0% {
+        box-shadow: 0 0 5px rgba(247, 118, 142, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 10px rgba(247, 118, 142, 0.6);
+      }
+      100% {
+        box-shadow: 0 0 5px rgba(247, 118, 142, 0.3);
       }
     }
   '';
 }
+
