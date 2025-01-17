@@ -6,7 +6,7 @@
 # Description: Complete script for NixOS installation and management
 # ==============================================================================
 
-VERSION="2.0.0"
+VERSION="2.1.0"
 SCRIPT_NAME=$(basename "$0")
 DEBUG=false
 SILENT=false
@@ -15,6 +15,7 @@ UPDATE_FLAKE=false
 UPDATE_MODULE=""
 BACKUP_ONLY=false
 PROFILE_NAME=""
+PRE_INSTALL=false # Yeni eklenen parametre
 
 # Configuration Variables
 CURRENT_USERNAME='kenan'
@@ -100,6 +101,7 @@ ${BRIGHT}Options:${NORMAL}
     -r, --restore          Restore from latest backup
     -l, --list-modules     List available modules
     -p, --profile NAME     Specify profile name for nixos-rebuild
+    --pre-install          Perform initial system setup before main installation
     -hc, --health-check    Perform system health check (disabled by default)
     --list-profiles        List all NixOS profiles
     --delete-profile ID    Delete a specific profile by ID
@@ -112,6 +114,7 @@ ${BRIGHT}Examples:${NORMAL}
     $SCRIPT_NAME                      # Normal installation
     $SCRIPT_NAME --silent             # Silent installation
     $SCRIPT_NAME -a hay              # Automatic laptop setup
+    $SCRIPT_NAME -a hay --pre-install # Initial system setup for laptop
     $SCRIPT_NAME -m home-manager      # Update home-manager module
     $SCRIPT_NAME -p myprofile        # Build with specific profile name
     $SCRIPT_NAME -hc                  # Check system health
@@ -182,7 +185,6 @@ check_disk_space() {
 
 check_system_health() {
 	log "INFO" "Performing system health check..."
-
 	check_disk_space
 
 	local available_mem=$(free -m | awk 'NR==2 {print $7}')
@@ -204,6 +206,67 @@ check_system_health() {
 	fi
 
 	log "INFO" "System health check completed"
+}
+
+# Pre-install Functions
+setup_initial_config() {
+	local host_type=$1
+	local config_file="/etc/nixos/configuration.nix"
+
+	log "INFO" "Setting up initial configuration for $host_type"
+
+	# Template dosyasını hedef hosta göre seç
+	local template_file="hosts/${host_type}/templates/initial-configuration.nix"
+
+	if [[ ! -f "$template_file" ]]; then
+		log "ERROR" "Initial configuration template not found for $host_type"
+		return 1
+	fi
+
+	# Sudo yetkisi kontrolü
+	if [[ ! -w "/etc/nixos" ]]; then
+		log "ERROR" "Need sudo privileges to write to /etc/nixos"
+		return 1
+	fi
+
+	# Mevcut configuration.nix'i yedekle
+	if [[ -f "$config_file" ]]; then
+		local backup_file="${config_file}.backup-$(date +%Y%m%d_%H%M%S)"
+		log "INFO" "Backing up existing configuration to $backup_file"
+		sudo cp "$config_file" "$backup_file"
+	fi
+
+	# Yeni konfigürasyonu kopyala ve yetkilerini ayarla
+	sudo cp "$template_file" "$config_file"
+	sudo chown root:root "$config_file"
+	sudo chmod 644 "$config_file"
+
+	log "INFO" "Initial configuration setup completed"
+	return 0
+}
+
+pre_install() {
+	local host_type=$1
+	log "INFO" "Starting pre-installation process for $host_type"
+
+	# İlk konfigürasyonu ayarla
+	if ! setup_initial_config "$host_type"; then
+		log "ERROR" "Failed to setup initial configuration"
+		return 1
+	fi
+
+	# Sistemi yeniden yapılandır
+	log "INFO" "Rebuilding system with initial configuration"
+	if sudo nixos-rebuild switch --profile-name start; then
+		log "INFO" "Pre-installation completed successfully"
+		echo -e "\n${GREEN}Initial system configuration complete.${NORMAL}"
+		echo -e "Please ${YELLOW}reboot${NORMAL} your system and then run:"
+		echo -e "${BLUE}./install.sh${NORMAL} for the main installation."
+		return 0
+	else
+		log "ERROR" "System rebuild failed"
+		return 1
+	fi
 }
 
 # Flake Management Functions
@@ -345,13 +408,12 @@ set_username() {
 	if [[ -z "$CURRENT_USERNAME" ]]; then
 		log "ERROR" "Mevcut kullanıcı adı (CURRENT_USERNAME) tanımlanmamış"
 		return 1
-	fi # Buradaki kapanış parantezi düzeltildi
+	fi
 
 	# Değiştirilecek dosyaları önce listele
 	local files_to_change=()
 	for ext in "${safe_files[@]}"; do
 		while IFS= read -r -d $'\0' file; do
-			# Dosya içinde CURRENT_USERNAME'in geçtiğini kontrol et
 			if grep -q "$CURRENT_USERNAME" "$file"; then
 				files_to_change+=("$file")
 			fi
@@ -360,34 +422,26 @@ set_username() {
 			-print0)
 	done
 
-	# Hiç dosya bulunamadıysa uyar
 	if [ ${#files_to_change[@]} -eq 0 ]; then
 		log "WARN" "Değiştirilecek dosya bulunamadı"
 		return 0
 	fi
 
-	# Bulunan dosyaları göster
 	echo -e "\nDeğiştirilecek dosyalar:"
 	printf '%s\n' "${files_to_change[@]}"
 
-	# Onay al
 	echo -en "\nBu dosyalarda '${CURRENT_USERNAME}' -> '${username}' değişikliği yapılacak. Onaylıyor musunuz? "
 	if ! confirm; then
 		log "INFO" "İşlem kullanıcı tarafından iptal edildi"
 		return 1
 	fi
 
-	# Değişiklikleri yap ve yedekle
 	for file in "${files_to_change[@]}"; do
-		# Önce yedek al
 		cp "$file" "${file}.bak"
-
-		# Değişikliği yap
 		if sed -i "s/${CURRENT_USERNAME}/${username}/g" "$file"; then
 			log "DEBUG" "$file dosyası güncellendi (yedek: ${file}.bak)"
 		else
 			log "ERROR" "$file dosyası güncellenemedi"
-			# Hata durumunda yedeği geri yükle
 			mv "${file}.bak" "$file"
 		fi
 	done
@@ -472,10 +526,8 @@ build_system() {
 	if confirm; then
 		log "INFO" "Building the system..."
 
-		# Base command with cores and flake specification
 		local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\" --option warn-dirty false"
 
-		# If profile name is set, use --profile-name parameter
 		if [[ -n "$PROFILE_NAME" ]]; then
 			build_command+=" --profile-name \"$PROFILE_NAME\""
 			log "INFO" "Using profile name: $PROFILE_NAME"
@@ -512,10 +564,15 @@ install() {
 		exit $?
 	fi
 
+	if [[ $PRE_INSTALL == true ]]; then
+		pre_install "$HOST"
+		exit $?
+	fi
+
 	setup_directories
 	copy_wallpapers
 	copy_hardware_config
-	get_profile_name # Ask for profile name if not provided
+	get_profile_name
 
 	if [[ $UPDATE_FLAKE == true ]]; then
 		update_flake
@@ -572,6 +629,10 @@ delete_profile() {
 process_args() {
 	while [[ $# -gt 0 ]]; do
 		case $1 in
+		--pre-install)
+			PRE_INSTALL=true
+			shift
+			;;
 		--list-profiles)
 			list_profiles
 			exit 0
