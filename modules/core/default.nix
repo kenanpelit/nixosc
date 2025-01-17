@@ -36,6 +36,7 @@
    ./security       # System security settings
    ./ssh            # SSH configuration
    ./gnupg          # GPG key management
+   ./hblock         # Blocking ads, tracking and malware
 
    # =============================================================================
    # Package Management
