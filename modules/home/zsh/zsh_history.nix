@@ -1,23 +1,48 @@
-# modules/home/zsh/zsh_history.nix
+# modules/home/zsh/zsh_history
+# ==============================================================================
+# ZSH History Management
+# Author: Kenan Pelit
+# Description: History file configuration and example command management
+# ==============================================================================
 { config, lib, pkgs, ... }:
 
+let
+  # History file paths
+  historyFile = "${config.home.homeDirectory}/.config/zsh/history";
+  exampleHistory = ./history;
+
+  # User info
+  user = config.home.username;
+  group = "users";
+in
 {
   home.activation = {
+    # =============================================================================
+    # History File Management
+    # =============================================================================
     appendZshHistory = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      HISTORY_FILE="${config.home.homeDirectory}/.config/zsh/history"
-      EXAMPLE_HISTORY=${./history}
-
-      # İzinleri ayarla
-      $DRY_RUN_CMD chmod 644 "$HISTORY_FILE"
-      $DRY_RUN_CMD chown ${config.home.username}:users "$HISTORY_FILE"
-
-      # Örnek history içeriğini mevcut history'ye ekle
-      # grep ile aynı komutları tekrar eklememek için kontrol ediyoruz
-      while IFS= read -r line; do
-        if ! grep -Fxq "$line" "$HISTORY_FILE" 2>/dev/null; then
-          echo "$line" >> "$HISTORY_FILE"
+      # Ensure proper file permissions
+      $DRY_RUN_CMD install -m 644 -o ${user} -g ${group} /dev/null "${historyFile}" 2>/dev/null || true
+      
+      # Ensure directory exists with correct permissions
+      $DRY_RUN_CMD mkdir -p "$(dirname "${historyFile}")"
+      $DRY_RUN_CMD chmod 755 "$(dirname "${historyFile}")"
+      
+      # Append new commands from example history
+      while IFS= read -r cmd; do
+        # Skip empty lines and comments
+        [[ -z "$cmd" || "$cmd" =~ ^[[:space:]]*# ]] && continue
+        
+        # Check if command already exists in history
+        if ! grep -Fxq "$cmd" "${historyFile}" 2>/dev/null; then
+          # Append non-duplicate command
+          echo "$cmd" >> "${historyFile}"
         fi
-      done < "$EXAMPLE_HISTORY"
+      done < "${exampleHistory}"
+      
+      # Final permission check
+      $DRY_RUN_CMD chmod 644 "${historyFile}"
+      $DRY_RUN_CMD chown ${user}:${group} "${historyFile}"
     '';
   };
 }
