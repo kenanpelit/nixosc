@@ -309,6 +309,9 @@ let
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
   );
+  svmnixos = pkgs.writeShellScriptBin "svmnixos" (
+    builtins.readFile ./bin/svmnixos.sh
+  );
   tkenp = pkgs.writeShellScriptBin "tkenp" (
     builtins.readFile ./bin/tkenp.sh
   );
@@ -643,6 +646,7 @@ in {
     start-foot-server
     startup-manager
     st
+    svmnixos
     tkenp
     tmo
     tmux-backup
