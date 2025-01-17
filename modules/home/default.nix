@@ -26,6 +26,7 @@
     # =============================================================================
     ./hyprland                      # Window manager
     ./hyprsunset                    # Color temperature adjuster
+    ./sway                          # Window manager
     ./swaync                        # Notification daemon
     ./swaylock                      # Screen locker
     ./swayosd                       # OSD notifications
