@@ -1,3 +1,4 @@
+# modules/home/waybar/default.nix
 { pkgs, config, ... }:
 let
   colors = import ./colors.nix { inherit config; };

@@ -1,3 +1,4 @@
+# modules/home/waybar/colors.nix
 { config, ... }:
 let
   colors = import ./../../../themes/colors.nix;

@@ -1,3 +1,4 @@
+# modules/home/waybar/style.nix
 { custom, ... }:
 {
   programs.waybar.style = with custom; ''
@@ -142,9 +143,17 @@
       background: ${background_0};
     }
 
+    #custom-firewall {
+      color: #f7768e;
+      margin: 4px 8px 4px 4px;
+      padding: 0 8px;
+      background: ${background_1};
+      border-radius: 8px;
+    }
+
     #custom-power {
       color: #f7768e;
-      margin: 4px 8px 4px 0;
+      margin: 4px 8px 4px 4px;
       padding: 0 8px;
       background: ${background_1};
       border-radius: 8px;
