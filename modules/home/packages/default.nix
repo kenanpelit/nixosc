@@ -132,6 +132,7 @@
    pdftk            # PDF toolkit
    zathura          # PDF viewer
    candy-icons      # Icon theme
+   wpaperd          # Modern wallpaper daemon
    beauty-line-icon-theme # Icon theme
 
    # =============================================================================

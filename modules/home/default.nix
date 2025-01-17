@@ -31,12 +31,11 @@
     ./swaylock                      # Screen locker
     ./swayosd                       # OSD notifications
     ./waybar                        # Status bar
-    ./waypaper                      # Wallpaper manager
+    #./waypaper                      # Wallpaper manager
     ./wpaperd                       # Wallpaper daemon
     ./xdg-portal                    # Desktop integration
     ./xserver                       # X server configuration
 
-    
     # =============================================================================
     # Applications and Utilities
     # =============================================================================
