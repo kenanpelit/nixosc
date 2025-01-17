@@ -84,7 +84,7 @@
       fi
       
       #https://github.com/kenanpelit/nixosc/blob/main/modules/core/hblock/default.nix
-      export HOSTALIASES="$HOME/.hosts"
+      export HOSTALIASES="$XDG_CONFIG_HOME/hblock/hosts"
 
       # Zoxide Integration
       eval "$(zoxide init zsh)"
