@@ -20,6 +20,7 @@
     # Interactive Shell Features
     ./zsh_keybinds.nix     # Key bindings and input handling
     ./zsh_plugins.nix      # Plugin management and settings
+    ./zsh_profile.nix
     
     # User Interface and Functionality
     ./zsh_functions.nix    # Custom shell functions
