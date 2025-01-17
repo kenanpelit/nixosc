@@ -10,5 +10,14 @@
       '';
       executable = true;
     };
+
+    "sway/qemu_vmarch" = {
+      text = ''
+        exec svmarch
+        for_window [app_id="qemu"] fullscreen enable
+      '';
+      executable = true;
+    };
   };
 }
+

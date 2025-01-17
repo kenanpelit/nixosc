@@ -309,6 +309,9 @@ let
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
   );
+  svmarch = pkgs.writeShellScriptBin "svmarch" (
+    builtins.readFile ./bin/svmarch.sh
+  );
   svmnixos = pkgs.writeShellScriptBin "svmnixos" (
     builtins.readFile ./bin/svmnixos.sh
   );
@@ -646,6 +649,7 @@ in {
     start-foot-server
     startup-manager
     st
+    svmarch
     svmnixos
     tkenp
     tmo
