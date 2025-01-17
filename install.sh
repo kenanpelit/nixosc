@@ -223,9 +223,9 @@ setup_initial_config() {
 		return 1
 	fi
 
-	# Sudo yetkisi kontrolü
-	if [[ ! -w "/etc/nixos" ]]; then
-		log "ERROR" "Need sudo privileges to write to /etc/nixos"
+	# Wheel grubunda olup olmadığını kontrol et
+	if ! groups | grep -q '\bwheel\b'; then
+		log "ERROR" "Current user must be in the wheel group"
 		return 1
 	fi
 
@@ -233,16 +233,19 @@ setup_initial_config() {
 	if [[ -f "$config_file" ]]; then
 		local backup_file="${config_file}.backup-$(date +%Y%m%d_%H%M%S)"
 		log "INFO" "Backing up existing configuration to $backup_file"
-		sudo cp "$config_file" "$backup_file"
+		command sudo cp "$config_file" "$backup_file"
 	fi
 
 	# Yeni konfigürasyonu kopyala ve yetkilerini ayarla
-	sudo cp "$template_file" "$config_file"
-	sudo chown root:root "$config_file"
-	sudo chmod 644 "$config_file"
-
-	log "INFO" "Initial configuration setup completed"
-	return 0
+	if command sudo cp "$template_file" "$config_file" &&
+		command sudo chown root:root "$config_file" &&
+		command sudo chmod 644 "$config_file"; then
+		log "INFO" "Initial configuration setup completed"
+		return 0
+	else
+		log "ERROR" "Failed to copy or set permissions on configuration file"
+		return 1
+	fi
 }
 
 pre_install() {
