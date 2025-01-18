@@ -15,7 +15,7 @@ set -x
 
 # Yapılandırma Değişkenleri
 readonly SCRIPTS_DIR="/etc/profiles/per-user/kenan/bin"
-readonly LOG_DIR="$HOME/.log"
+readonly LOG_DIR="$HOME/.logs"
 readonly LOG_FILE="$LOG_DIR/session-launcher.log"
 
 # Log dizinini oluştur
