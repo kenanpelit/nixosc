@@ -2,7 +2,7 @@
 # HAY - Ana Bilgisayar Konfigürasyonu
 # Açıklama: Birincil sistemin temel yapılandırma dosyası
 # ==============================================================================
-{ pkgs, config, lib, inputs, ... }:
+{ pkgs, config, lib, inputs, username, ... }:
 {
   # -------------------------------------------------------
   # Temel Sistem İmportları
