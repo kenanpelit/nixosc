@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Geçici dizin ayarı
-export TMPDIR="/tmp/sem/sem"
-# Hata yönetimi
-set -e
+# Generated script for Zen-Discord in never mode
 
+# Error handling
+set -euo pipefail
+
+# Set temporary directory
+export TMPDIR="/tmp/sem"
+
+# Start session
 semsumo start Zen-Discord never

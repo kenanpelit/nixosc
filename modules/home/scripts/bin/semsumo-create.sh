@@ -1,58 +1,108 @@
 #!/usr/bin/env bash
 
 #######################################
-# ... (mevcut yorum başlığı aynen kalacak)
+# Script Generator for Session Management
+#
+# Description:
+#   Generates session management scripts based on profiles
+#   defined in the configuration file.
+#
+# Usage:
+#   ./generate-scripts.sh
+#
+# Requirements:
+#   - jq: for JSON parsing
+#   - semsumo: session management tool
 #######################################
 
-# Hata yönetimi
-set -e
+# Strict error handling
+set -euo pipefail
+IFS=$'\n\t'
 
-# Yapılandırma
-config_file="${XDG_CONFIG_HOME:-$HOME/.config}/sem/config.json"
-scripts_dir="$HOME/.nixosc/modules/home/scripts/start"
-SEMSUMO_PATH="semsumo"
+# Base configuration
+readonly CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/sem/config.json"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
+readonly SEMSUMO="semsumo"
+readonly TMP_DIR="/tmp/sem"
 
-# Geçici dizin yönetimi
-TMP_BASE="${TMPDIR:-/tmp}/sem"
-mkdir -p "$TMP_BASE"
-chmod 700 "$TMP_BASE"
+# Color definitions
+readonly GREEN='\033[0;32m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m' # No Color
 
-# Dizin kontrol
-if [[ ! -f "$config_file" ]]; then
-	echo "Config dosyası bulunamadı: $config_file"
-	exit 1
-fi
+# Helper functions
+log_info() {
+	echo -e "${BLUE}INFO:${NC} $1"
+}
 
-# Scripts dizinini oluştur
-mkdir -p "$scripts_dir"
-echo "Script oluşturma başlıyor..."
-echo "--------------------------"
+log_success() {
+	echo -e "${GREEN}✓${NC} $1"
+}
 
-# Her profil için scriptleri oluştur
-jq -r '.sessions | keys[]' "$config_file" | while read -r profile; do
-	echo "Profil işleniyor: $profile"
+create_script() {
+	local profile=$1
+	local mode=$2
+	local script_path="$SCRIPTS_DIR/start-${profile,,}-${mode}.sh"
 
-	# Her mod için ayrı script
-	for mode in always never default; do
-		script_file="$scripts_dir/start-${profile,,}-${mode}.sh"
-		cat >"$script_file" <<EOF
+	# Create script content
+	cat >"$script_path" <<EOF
 #!/usr/bin/env bash
-# Geçici dizin ayarı
-export TMPDIR="$TMP_BASE"
-# Hata yönetimi
-set -e
+# Generated script for $profile in $mode mode
 
-$SEMSUMO_PATH start $profile $mode
+# Error handling
+set -euo pipefail
+
+# Set temporary directory
+export TMPDIR="$TMP_DIR"
+
+# Start session
+$SEMSUMO start $profile $mode
 EOF
-		chmod +x "$script_file"
-		echo "  ✓ Oluşturuldu: start-${profile,,}-${mode}.sh"
-	done
-	echo ""
-done
 
-echo "--------------------------"
-echo "Script oluşturma tamamlandı!"
-echo "Kullanım örnekleri:"
-echo "  $scripts_dir/start-zen-kenp-always.sh"
-echo "  $scripts_dir/start-zen-kenp-never.sh"
-echo "  $scripts_dir/start-zen-kenp-default.sh"
+	# Make script executable
+	chmod +x "$script_path"
+	log_success "Created: start-${profile,,}-${mode}.sh"
+}
+
+main() {
+	# Check requirements
+	if ! command -v jq >/dev/null 2>&1; then
+		echo "Error: jq is required but not installed."
+		exit 1
+	fi
+
+	if [[ ! -f "$CONFIG_FILE" ]]; then
+		echo "Error: Configuration file not found at: $CONFIG_FILE"
+		exit 1
+	fi
+
+	# Create necessary directories
+	mkdir -p "$SCRIPTS_DIR"
+	mkdir -p "$TMP_DIR"
+	chmod 700 "$TMP_DIR"
+
+	log_info "Starting script generation..."
+	echo "----------------------------------------"
+
+	# Generate scripts for each profile
+	jq -r '.sessions | keys[]' "$CONFIG_FILE" | while read -r profile; do
+		log_info "Processing profile: $profile"
+
+		# Generate scripts for each mode
+		for mode in always never default; do
+			create_script "$profile" "$mode"
+		done
+		echo ""
+	done
+
+	echo "----------------------------------------"
+	log_info "Script generation complete!"
+	echo ""
+	log_info "Usage examples:"
+	echo "  $SCRIPTS_DIR/start-zen-kenp-always.sh"
+	echo "  $SCRIPTS_DIR/start-zen-kenp-never.sh"
+	echo "  $SCRIPTS_DIR/start-zen-kenp-default.sh"
+}
+
+# Execute main function
+main
