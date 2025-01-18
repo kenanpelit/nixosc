@@ -53,6 +53,15 @@
           sha256 = "035hwnv1qik35lmy3wy8821jf6y3qvc0hqd18ks5a7nqq6l5ffcl";
         };
       }
+      {
+        name = "zsh-hist";
+        src = pkgs.fetchFromGitHub {
+          owner = "marlonrichert";
+          repo = "zsh-hist";
+          rev = "0ef87bdb5847ae0df8536111f2b9888048e2e35c";
+          sha256 = "04bwkbc1sm8486vi9mmn3f42d1ka4igfydqcddczznj9jhkka3p8";
+        };
+      }
     ];
   };
 }
