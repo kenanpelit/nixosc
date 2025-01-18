@@ -66,7 +66,7 @@
 | **File Manager**            | [nemo][nemo] + [yazi][yazi] |
 | **Fonts**                   | [Hack Nerd Font][Nerd fonts] + [Maple Mono][Maple Mono] |
 | **Color Scheme**            | [Catppuccin Mocha][Catppuccin] |
-| **Cursor**                  | [catppuccin-mocha-blue-cursors][catppuccin-cursors] |
+| **Cursor**                  | [catppuccin-mocha-lavender-cursors][catppuccin-cursors] |
 | **Icons**                   | [Papirus-Dark][Papirus-Dark] |
 | **Lockscreen**             | [Hyprlock][Hyprlock] + [Swaylock-effects][Swaylock-effects] |
 | **Image Viewer**            | [qview][qview] |
