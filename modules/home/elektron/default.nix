@@ -10,7 +10,7 @@ in {
     
     package = mkOption {
       type = types.package;
-      default = pkgs.electron_24;
+      default = pkgs.electron;  # En son kararlı sürüm (33.3.1)
       description = "Electron paketi";
     };
     
@@ -21,6 +21,11 @@ in {
           package = mkOption {
             type = types.package;
             description = "Electron uygulaması paketi";
+          };
+          useWayland = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Wayland desteğini etkinleştir";
           };
         };
       });
@@ -34,11 +39,11 @@ in {
       ++ (mapAttrsToList (name: app: app.package) 
           (filterAttrs (name: app: app.enable) cfg.apps));
     
-    # Electron tabanlı uygulamalar için özel yapılandırmalar
+    # Electron uygulamaları için Wayland desteği
     xdg.configFile = mkMerge (mapAttrsToList (name: app:
-      mkIf app.enable {
+      mkIf (app.enable && app.useWayland) {
         "${name}/electron-flags.conf".text = ''
-          --enable-features=UseOzonePlatform
+          --enable-features=UseOzonePlatform,WaylandWindowDecorations
           --ozone-platform=wayland
         '';
       }

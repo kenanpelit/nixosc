@@ -122,21 +122,34 @@
      username = "kenan";        # Primary user account
      system = "x86_64-linux";   # System architecture
      
-     # Configure nixpkgs with system-wide settings
+     # Configure nixpkgs with system-wide settings and overlays
      pkgs = import nixpkgs {
        inherit system;
        config = {
          allowUnfree = true;  # Enable proprietary software
-         permittedInsecurePackages = [
-           # Add any required insecure packages here
-           # "example-package-1.0.0"
-         ];
+         permittedInsecurePackages = [];
        };
+       overlays = [
+         # Electron overlay for system-wide electron version management
+         (final: prev: {
+           electron = prev.electron;  # En son kararlı sürüm (33.3.1)
+           electronPackages = prev.electronPackages // {
+             default = prev.electron;
+           };
+           # Electron kullanan paketleri güncelle
+           vscode = prev.vscode.override {
+             electronVersion = prev.electron;
+           };
+           discord = prev.discord.override {
+             electronVersion = prev.electron;
+           };
+         })
+       ];
      };
      
      # Import nixpkgs library for helper functions
      lib = nixpkgs.lib;
-     
+
      # === System Configuration Helper ===
      # Function to create a complete NixOS system configuration
      mkSystem = { system, host, modules }: 
