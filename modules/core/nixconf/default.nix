@@ -15,7 +15,7 @@
 
       # System Users
       allowed-users = [ "${username}" ];
-      trusted-users = [ "root" "${username}" ];
+      trusted-users = [ "${username}" ];
 
       # Store Configuration
       auto-optimise-store = true;
