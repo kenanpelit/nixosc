@@ -108,13 +108,31 @@ git clone https://github.com/kenanpelit/nixosc ~/.nixosc
 cd ~/.nixosc
 ```
 
-!IMPORTANT]
-After cloning, before proceeding with the installation, make sure to customize the localization settings in hosts/hay/templates/initial-configuration.nix (or hosts/vhay/templates/initial-configuration.nix for VM):
+</td>
+<td width="50%">
 
-Time Zone: Currently set to "Europe/Istanbul"
-System Language: Currently set to "en_US.UTF-8"
-Regional Settings: Currently configured for Turkish (tr_TR.UTF-8)
-Keyboard Layout: Currently set to Turkish-F layout
+[!IMPORTANT]
+Before proceeding with the installation, customize your localization settings in:
+
+hosts/hay/templates/initial-configuration.nix (for laptop)
+hosts/vhay/templates/initial-configuration.nix (for VM)
+
+Current defaults:
+
+⏰ Time Zone: "Europe/Istanbul"
+🌐 System Language: "en_US.UTF-8"
+🌍 Regional Settings: Turkish (tr_TR.UTF-8)
+⌨️  Keyboard Layout: Turkish-F
+
+References:
+
+Timezones: tz database
+
+
+</td>
+</tr>
+</table>
+```
 
 #### 3. **Initial System Setup**
 
