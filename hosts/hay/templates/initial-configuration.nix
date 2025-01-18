@@ -69,22 +69,28 @@
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [];
   };
-  
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
-  
-  # Base system packages
+
   environment.systemPackages = with pkgs; [
+    # System tools
     wget
+    vim
     git
+    htop
     tmux
     sops
     age
     assh
-    vim
     ncurses
+    pv
+
+    # Security and encryption
+    gnupg
+    openssl
   ];
-  
+
   # Enable GnuPG agent
   programs.gnupg.agent = {
     enable = true;
