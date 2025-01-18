@@ -1,3 +1,4 @@
+# hosts/hay/default.nix
 # ==============================================================================
 # HAY - Ana Bilgisayar Konfigürasyonu
 # Açıklama: Birincil sistemin temel yapılandırma dosyası
@@ -19,7 +20,7 @@
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
-    extraSpecialArgs = { inherit inputs; };
+    extraSpecialArgs = { inherit inputs username; };
     backupFileExtension = "backup";  # Bu satırı ekleyin
   };
 
