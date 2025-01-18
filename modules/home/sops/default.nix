@@ -37,16 +37,6 @@
         mode = "0600";
       };
    
-      "git_user_name" = {
-        path = "/home/${username}/.config/git/user_name";
-        mode = "0600";
-      };
-    
-      "git_user_email" = {
-        path = "/home/${username}/.config/git/user_email";
-        mode = "0600";
-      };
-
       "tmux_backup_archive" = {
         path = "/home/${username}/.backup/tmux.tar.gz";
         mode = "0600";
