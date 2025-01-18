@@ -43,7 +43,7 @@
     ./audacious                     # Music player
     ./browser                       # Web browser
     ./discord                       # Chat client
-    ./eletron
+    ./elektron
     ./mpv                           # Media player
     ./nemo                          # File manager
     ./nvim                          # Text editor
