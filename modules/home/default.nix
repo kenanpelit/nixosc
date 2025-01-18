@@ -42,8 +42,8 @@
     ./anydesk                       # Remote desktop
     ./audacious                     # Music player
     ./browser                       # Web browser
-    ./discord                       # Chat client
-    ./elektron
+    #./discord                       # Chat client
+    #./elektron
     ./mpv                           # Media player
     ./nemo                          # File manager
     ./nvim                          # Text editor
