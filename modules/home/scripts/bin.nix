@@ -183,8 +183,8 @@ let
   network-reset = pkgs.writeShellScriptBin "network-reset" (
     builtins.readFile ./bin/network-reset.sh
   );
-  nixos-profiles = pkgs.writeShellScriptBin "nixos-profiles" (
-    builtins.readFile ./bin/nixos-profiles.sh
+  nix-profiles = pkgs.writeShellScriptBin "nix-profiles" (
+    builtins.readFile ./bin/nix-profiles.sh
   );
   pass-clip-both = pkgs.writeShellScriptBin "pass-clip-both" (
     builtins.readFile ./bin/pass-clip-both.sh
@@ -607,7 +607,7 @@ in {
     music
     network-reset-all
     network-reset
-    nixos-profiles
+    nix-profiles
     pass-clip-both
     pass_tool
     pdfkes
