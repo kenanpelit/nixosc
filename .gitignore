@@ -1,4 +1,6 @@
 # Secrets and security files
+hay
+hay/*
 secrets/home-secrets.yaml
 secrets/nix.conf
 **/*.key
