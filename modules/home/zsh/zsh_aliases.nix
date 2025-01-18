@@ -35,7 +35,7 @@
       # =============================================================================
       # NixOS Management
       # =============================================================================
-      cdni = "cd ~/.nixosc";
+      osc = "cd ~/.nixosc";
       ns = "nom-shell --run zsh";
       nix-switch = "nh os switch";
       nix-update = "nh os switch --update";
