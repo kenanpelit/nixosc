@@ -91,9 +91,9 @@
      "vpn_mode": "default"
    },
    "discord": {
-     "command": "spotify",
-     "args": ["--class", "Spotify", "-m"],
-     "vpn_mode": "always"
+     "command": "discord",
+     "args": ["-m", "--class=discord", "--title=discord"],
+     "vpn_mode": "never"
    },
    "webcord": {
      "command": "webcord",
