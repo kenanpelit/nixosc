@@ -22,7 +22,7 @@
         "copyq &"                                # Advanced clipboard manager
         
         # 4. Theme and Visual Setup
-        "hyprctl setcursor catppuccin-mocha-blue-cursors 24 &" # Cursor theme
+        "hyprctl setcursor catppuccin-mocha-lavender-cursors 24 &" # Cursor theme
         "swww-daemon &"                          # Wallpaper daemon
         
         # 5. Workspace and Security

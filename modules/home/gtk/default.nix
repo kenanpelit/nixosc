@@ -13,7 +13,7 @@
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
       cursor-size = 24;
-      cursor-theme = "catppuccin-mocha-blue-cursors";
+      cursor-theme = "catppuccin-mocha-lavender-cursors";
       gtk-theme = "catppuccin-mocha-blue-standard";
       icon-theme = "a-candy-beauty-icon-theme";
       font-name = "Maple Mono 12";
@@ -73,8 +73,8 @@
     # Cursor Theme Settings
     # ---------------------------------------------------------------------------
     cursorTheme = {
-      name = "catppuccin-mocha-blue-cursors";
-      package = pkgs.catppuccin-cursors.mochaBlue;
+      name = "catppuccin-mocha-lavender-cursors";
+      package = pkgs.catppuccin-cursors.mochaLavender;
       size = 24;
     };
 
@@ -87,7 +87,7 @@
         gtk-theme-name = "catppuccin-mocha-blue-standard"
         gtk-icon-theme-name = "a-candy-beauty-icon-theme"
         gtk-font-name = "Maple Mono 12"
-        gtk-cursor-theme-name = "catppuccin-mocha-blue-cursors"
+        gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors"
         gtk-cursor-theme-size = 24
         gtk-application-prefer-dark-theme = 1
         gtk-button-images = 1
@@ -110,7 +110,7 @@
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "Maple Mono 12";
-      gtk-cursor-theme-name = "catppuccin-mocha-blue-cursors";
+      gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -131,7 +131,7 @@
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "Maple Mono 12";
-      gtk-cursor-theme-name = "catppuccin-mocha-blue-cursors";
+      gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -157,7 +157,7 @@
       GTK_THEME = "catppuccin-mocha-blue-standard";
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
-      XCURSOR_THEME = "catppuccin-mocha-blue-cursors";
+      XCURSOR_THEME = "catppuccin-mocha-lavender-cursors";
       XCURSOR_SIZE = "24";
     };
 
@@ -181,8 +181,8 @@
     # Pointer Cursor Configuration
     # ---------------------------------------------------------------------------
     pointerCursor = {
-      name = "catppuccin-mocha-blue-cursors";
-      package = pkgs.catppuccin-cursors.mochaBlue;
+      name = "catppuccin-mocha-lavender-cursors";
+      package = pkgs.catppuccin-cursors.mochaLavender;
       size = 24;
       gtk.enable = true;
       x11.enable = true;
