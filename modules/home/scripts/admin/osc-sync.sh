@@ -12,7 +12,7 @@ SCRIPT_NAME=$(basename "$0")
 SCRIPT_DIR="$HOME/.nixosc"
 BACKUP_DIR="$SCRIPT_DIR/hay" # Değiştirildi
 ASSET_DIR="$SCRIPT_DIR/assets"
-LOG_DIR="$SCRIPT_DIR/logs"
+LOG_DIR="$HOME/.logs/oscsync"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOG_FILE="$LOG_DIR/sync_${TIMESTAMP}.log"
 
