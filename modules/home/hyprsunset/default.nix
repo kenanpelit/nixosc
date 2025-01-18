@@ -30,9 +30,9 @@
       # ---------------------------------------------------------------------------
       Service = {
         Type = "forking";
-        Environment = "PATH=/etc/profiles/per-user/kenan/bin:$PATH";
-        ExecStart = "/etc/profiles/per-user/kenan/bin/hypr-blue-hyprsunset-manager start";
-        ExecStop = "/etc/profiles/per-user/kenan/bin/hypr-blue-hyprsunset-manager stop";
+        Environment = "PATH=/etc/profiles/per-user/${username}/bin:$PATH";
+        ExecStart = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager start";
+        ExecStop = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager stop";
         Restart = "on-failure";
         RestartSec = 3;
       };

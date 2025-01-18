@@ -47,9 +47,10 @@
     enable = true;                    # SSH servisini etkinleştir
     ports = [ 22 ];                   # Standart SSH portu
     settings = {
-      PasswordAuthentication = true;  # Şifre ile kimlik doğrulama
-      AllowUsers = null;             # Tüm kullanıcılara izin ver
-      PermitRootLogin = "yes";       # Root girişine izin ver
+      PasswordAuthentication = true;   # Şifre ile kimlik doğrulama
+      AllowUsers = [ "${username}" ];  # Sadece belirlenen kullanıcıya izin ver
+      #AllowUsers = null;              # Tüm kullanıcılara izin ver
+      PermitRootLogin = "yes";         # Root girişine izin ver
       # NOT: Üretim ortamında bu ayarlar gözden geçirilmeli
     };
   };
@@ -57,7 +58,7 @@
   # -------------------------------------------------------
   # Home Manager Kullanıcı Yapılandırması
   # -------------------------------------------------------
-  home-manager.users.kenan = { ... }: {
+  home-manager.users.${username} = { ... }: {
     imports = [
       ../../modules/home      # Tüm home modüllerini import eder
     ];

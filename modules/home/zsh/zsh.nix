@@ -83,7 +83,7 @@
         export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git --exclude node_modules --exclude .cache'
       fi
       
-      #https://github.com/kenanpelit/nixosc/blob/main/modules/core/hblock/default.nix
+      # modules/core/hblock/default.nix
       export HOSTALIASES="$XDG_CONFIG_HOME/hblock/hosts"
 
       # Zoxide Integration
