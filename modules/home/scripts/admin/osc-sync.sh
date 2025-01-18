@@ -43,6 +43,7 @@ DOT_PATHS=(
 	".config/sops"
 	".config/nix"
 	".config/github"
+	".config/hblock"
 	".config/zsh/history"
 	".back"
 	".gnupg"

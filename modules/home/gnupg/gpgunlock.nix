@@ -8,54 +8,37 @@
   # Systemd Service Configuration
   # =============================================================================
   systemd.user.services.gpg-unlock = {
-    # ---------------------------------------------------------------------------
-    # Unit Configuration
-    # ---------------------------------------------------------------------------
     Unit = {
-      Description = "Unlock GPG key on login";
+      Description = "GPG Key Unlock Service";
       After = [ "graphical-session.target" "gpg-agent.service" ];
       PartOf = [ "graphical-session.target" ];
       Requires = [ "gpg-agent.service" ];
     };
 
-    # ---------------------------------------------------------------------------
-    # Service Configuration
-    # ---------------------------------------------------------------------------
     Service = {
-      Type = "oneshot";
-      Environment = [
-        "DISPLAY=:0"
-        "WAYLAND_DISPLAY=wayland-1"
-        "XDG_RUNTIME_DIR=/run/user/1000"
-      ];
+      Type = "simple";
+      Environment = "GNUPGHOME=%h/.gnupg";
       
       ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
-      ExecStart = toString (pkgs.writeShellScript "gpg-unlock" ''
-        # Configure GPG settings
+      
+      ExecStart = toString (pkgs.writeShellScript "gpg-agent-restart" ''
+        # Mevcut agent'ı temizle ve yeniden başlat
+        ${pkgs.gnupg}/bin/gpgconf --kill gpg-agent
+        ${pkgs.gnupg}/bin/gpg-connect-agent /bye
+        
+        # Terminal ayarlarını güncelle
         ${pkgs.gnupg}/bin/gpg-connect-agent updatestartuptty /bye
-        # Create and encrypt test message
-        echo "test" | ${pkgs.gnupg}/bin/gpg \
-          --batch \
-          --yes \
-          --quiet \
-          -se -r kenanpelit@gmail.com \
-          > /tmp/test.gpg
-        # Decrypt test message
-        ${pkgs.gnupg}/bin/gpg \
-          --batch \
-          --yes \
-          --quiet \
-          -d /tmp/test.gpg
-        # Cleanup
-        rm -f /tmp/test.gpg
+        
+        # Agent'ın hazır olduğunu kontrol et
+        ${pkgs.gnupg}/bin/gpg-connect-agent "KILLAGENT" /bye
+        ${pkgs.gnupg}/bin/gpg-connect-agent /bye
       '');
-      RemainAfterExit = true;
-      TimeoutSec = "1min";
+
+      # Hata durumunda yeniden başlatma ayarları
+      Restart = "on-failure";
+      RestartSec = "10s";
     };
 
-    # ---------------------------------------------------------------------------
-    # Installation Configuration
-    # ---------------------------------------------------------------------------
     Install = {
       WantedBy = [ "graphical-session.target" ];
     };

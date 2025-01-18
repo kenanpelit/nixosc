@@ -60,6 +60,6 @@
     # ---------------------------------------------------------------------------
     # Browser Integration
     # ---------------------------------------------------------------------------
-    --cookies-from-browser firefox:/home/kenan/.zen/Kenp
+    --cookies-from-browser firefox:/home/${username}/.zen/Kenp
   '';
 }

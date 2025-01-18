@@ -9,9 +9,9 @@
   # =============================================================================
   programs.git = {
     enable = true;
-    userName = "kenanpelit";
-    userEmail = "kenanpelit@gmail.com";
-    
+    userName = config.sops.secrets.git_user_name.path;
+    userEmail = config.sops.secrets.git_user_email.path;
+  
     # ---------------------------------------------------------------------------
     # Basic Settings
     # ---------------------------------------------------------------------------
