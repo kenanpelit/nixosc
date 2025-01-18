@@ -142,6 +142,15 @@
       }
 
       # =============================================================================
+      # History temizleme fonksiyonu
+      # =============================================================================
+      function cleanhistory() {
+        print -z $( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +m --height 50% --reverse --border --header="DEL tuşu ile seçili komutu sil, ESC ile çık" \
+        --bind="del:execute(sed -i '/{}/d' $HISTFILE)+reload(fc -R; ([ -n "$ZSH_NAME" ] && fc -l 1 || history))" \
+        --preview="echo {}" --preview-window=up:3:hidden:wrap --bind="?:toggle-preview")
+      }
+
+      # =============================================================================
       # Nix Paket Yönetimi Fonksiyonları
       # =============================================================================
       # Basit bağımlılık görüntüleyici
