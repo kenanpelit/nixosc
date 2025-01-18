@@ -412,13 +412,15 @@
         # ente
         "float, class:^(io.ente.auth)$"
         "size 360 440, class:^(io.ente.auth)$"
-        #"move 2180 93, ^(io.ente.auth)$"
         "center, class:^(io.ente.auth)$"
 
         # org.twosheds.iwgtk
         "float, class:^(org.twosheds.iwgtk)$"
         "size 1536 864, class:^(org.twosheds.iwgtk)$"
         "center, class:^(org.twosheds.iwgtk)$"
+        "float, class:^(iwgtk)$"
+        "size 360 440, class:^(iwgtk)$"
+        "center, class:^(iwgtk)$"
 
         "float, class:^(gcr-prompter)$"
         "center, class:^(gcr-prompter)$"
