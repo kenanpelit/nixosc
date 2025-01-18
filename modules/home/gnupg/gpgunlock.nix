@@ -2,7 +2,7 @@
 # ==============================================================================
 # GPG Auto-Unlock Service
 # ==============================================================================
-{ config, lib, pkgs, username, ... }:  # username'i ekledik
+{ config, lib, pkgs, username, ... }:
 {
   systemd.user.services.gpg-unlock = {
     Unit = {
@@ -18,33 +18,26 @@
         "DISPLAY=:0"
         "WAYLAND_DISPLAY=wayland-1"
         "XDG_RUNTIME_DIR=/run/user/1000"
+        "GNUPGHOME=%h/.gnupg"
+        "GPG_TTY=$(tty)"
       ];
       
-      ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
-      ExecStart = toString (pkgs.writeShellScript "gpg-unlock" ''
-        # Configure GPG settings
+      ExecStartPre = toString (pkgs.writeShellScript "gpg-unlock-pre" ''
+        ${pkgs.coreutils}/bin/sleep 2
+        ${pkgs.gnupg}/bin/gpgconf --kill gpg-agent
         ${pkgs.gnupg}/bin/gpg-connect-agent updatestartuptty /bye
-        
-        # Create and encrypt test message
-        echo "test" | ${pkgs.gnupg}/bin/gpg \
-          --batch \
-          --yes \
-          --quiet \
-          -se -r ${username}pelit@gmail.com \
-          > /tmp/test.gpg
-          
-        # Decrypt test message (bu adımda parola soracak)
-        ${pkgs.gnupg}/bin/gpg \
-          --batch \
-          --no-default-keyring \
-          -d /tmp/test.gpg
-          
-        # Cleanup
-        rm -f /tmp/test.gpg
       '');
 
+      ExecStart = toString (pkgs.writeShellScript "gpg-unlock" ''
+        # Daha basit bir test işlemi
+        ${pkgs.gnupg}/bin/gpg -K --with-keygrip
+        echo "test" | ${pkgs.gnupg}/bin/gpg --clearsign
+      '');
+
+      StandardOutput = "journal";
+      StandardError = "journal";
       RemainAfterExit = true;
-      TimeoutSec = "1min";
+      TimeoutSec = "60s";
     };
 
     Install = {

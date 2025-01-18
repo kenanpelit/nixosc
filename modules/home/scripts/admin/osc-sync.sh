@@ -45,7 +45,7 @@ DOT_PATHS=(
 	".config/github"
 	".config/hblock"
 	".config/zsh/history"
-	".back"
+	".backups"
 	".gnupg"
 	".ssh"
 	".vpn"
