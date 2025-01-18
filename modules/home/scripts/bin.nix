@@ -6,15 +6,6 @@ let
   ascii = pkgs.writeShellScriptBin "ascii" (
     builtins.readFile ./bin/ascii.sh
   );
-  assh-manager = pkgs.writeShellScriptBin "assh-manager" (
-    builtins.readFile ./bin/assh-manager.sh
-  );
-  backup_config = pkgs.writeShellScriptBin "backup_config" (
-    builtins.readFile ./bin/backup_config.sh
-  );
-  blocklist = pkgs.writeShellScriptBin "blocklist" (
-    builtins.readFile ./bin/blocklist.sh
-  );
   bulk_rename = pkgs.writeShellScriptBin "bulk_rename" (
     builtins.readFile ./bin/bulk_rename.sh
   );
@@ -33,32 +24,11 @@ let
   container-monitor = pkgs.writeShellScriptBin "container-monitor" (
     builtins.readFile ./bin/container-monitor.sh
   );
-  crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
-    builtins.readFile ./bin/crypto-manager.sh
-  );
   desktop-files-ranger-yazi = pkgs.writeShellScriptBin "desktop-files-ranger-yazi" (
     builtins.readFile ./bin/desktop-files-ranger-yazi.sh
   );
-  dotfiles-manager = pkgs.writeShellScriptBin "dotfiles-manager" (
-    builtins.readFile ./bin/dotfiles-manager.sh
-  );
-  dotsync = pkgs.writeShellScriptBin "dotsync" (
-    builtins.readFile ./bin/dotsync.sh
-  );
   extract = pkgs.writeShellScriptBin "extract" (
     builtins.readFile ./bin/extract.sh
-  );
-  generate_nix_bin = pkgs.writeShellScriptBin "generate_nix_bin" (
-    builtins.readFile ./bin/generate_nix_bin.sh
-  );
-  generate_nix_start = pkgs.writeShellScriptBin "generate_nix_start" (
-    builtins.readFile ./bin/generate_nix_start.sh
-  );
-  gitgo = pkgs.writeShellScriptBin "gitgo" (
-    builtins.readFile ./bin/gitgo.sh
-  );
-  gitsumo = pkgs.writeShellScriptBin "gitsumo" (
-    builtins.readFile ./bin/gitsumo.sh
   );
   gnome-start-all = pkgs.writeShellScriptBin "gnome-start-all" (
     builtins.readFile ./bin/gnome-start-all.sh
@@ -183,14 +153,8 @@ let
   network-reset = pkgs.writeShellScriptBin "network-reset" (
     builtins.readFile ./bin/network-reset.sh
   );
-  nix-profiles = pkgs.writeShellScriptBin "nix-profiles" (
-    builtins.readFile ./bin/nix-profiles.sh
-  );
   pass-clip-both = pkgs.writeShellScriptBin "pass-clip-both" (
     builtins.readFile ./bin/pass-clip-both.sh
-  );
-  pass_tool = pkgs.writeShellScriptBin "pass_tool" (
-    builtins.readFile ./bin/pass_tool.sh
   );
   pdfkes = pkgs.writeShellScriptBin "pdfkes" (
     builtins.readFile ./bin/pdfkes.sh
@@ -258,12 +222,6 @@ let
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
   );
-  semsumo-create = pkgs.writeShellScriptBin "semsumo-create" (
-    builtins.readFile ./bin/semsumo-create.sh
-  );
-  semsumo = pkgs.writeShellScriptBin "semsumo" (
-    builtins.readFile ./bin/semsumo.sh
-  );
   semsumo-wofi-start = pkgs.writeShellScriptBin "semsumo-wofi-start" (
     builtins.readFile ./bin/semsumo-wofi-start.sh
   );
@@ -308,12 +266,6 @@ let
   );
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
-  );
-  svmarch = pkgs.writeShellScriptBin "svmarch" (
-    builtins.readFile ./bin/svmarch.sh
-  );
-  svmnixos = pkgs.writeShellScriptBin "svmnixos" (
-    builtins.readFile ./bin/svmnixos.sh
   );
   tkenp = pkgs.writeShellScriptBin "tkenp" (
     builtins.readFile ./bin/tkenp.sh
@@ -375,29 +327,8 @@ let
   video_info = pkgs.writeShellScriptBin "video_info" (
     builtins.readFile ./bin/video_info.sh
   );
-  vmarchq = pkgs.writeShellScriptBin "vmarchq" (
-    builtins.readFile ./bin/vmarchq.sh
-  );
-  vmarch = pkgs.writeShellScriptBin "vmarch" (
-    builtins.readFile ./bin/vmarch.sh
-  );
-  vmbuntu = pkgs.writeShellScriptBin "vmbuntu" (
-    builtins.readFile ./bin/vmbuntu.sh
-  );
-  vmnixosq = pkgs.writeShellScriptBin "vmnixosq" (
-    builtins.readFile ./bin/vmnixosq.sh
-  );
-  vmnixos = pkgs.writeShellScriptBin "vmnixos" (
-    builtins.readFile ./bin/vmnixos.sh
-  );
-  vmnixos_uefi = pkgs.writeShellScriptBin "vmnixos_uefi" (
-    builtins.readFile ./bin/vmnixos_uefi.sh
-  );
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
-  );
-  vvmnixos = pkgs.writeShellScriptBin "vvmnixos" (
-    builtins.readFile ./bin/vvmnixos.sh
   );
   wall-change = pkgs.writeShellScriptBin "wall-change" (
     builtins.readFile ./bin/wall-change.sh
@@ -449,9 +380,6 @@ let
   );
   waybar-wofi-wifi = pkgs.writeShellScriptBin "waybar-wofi-wifi" (
     builtins.readFile ./bin/waybar-wofi-wifi.sh
-  );
-  wmarch = pkgs.writeShellScriptBin "wmarch" (
-    builtins.readFile ./bin/wmarch.sh
   );
   wofi-bluetooth = pkgs.writeShellScriptBin "wofi-bluetooth" (
     builtins.readFile ./bin/wofi-bluetooth.sh
@@ -525,12 +453,6 @@ let
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
-  zen_profile_launcher = pkgs.writeShellScriptBin "zen_profile_launcher" (
-    builtins.readFile ./bin/zen_profile_launcher.sh
-  );
-  zen_terminate_sessions = pkgs.writeShellScriptBin "zen_terminate_sessions" (
-    builtins.readFile ./bin/zen_terminate_sessions.sh
-  );
   t1 = pkgs.writeShellScriptBin "t1" (
     builtins.readFile ./bin/t1
   );
@@ -548,24 +470,14 @@ in {
   home.packages = with pkgs; [
     anote
     ascii
-    assh-manager
-    backup_config
-    blocklist
     bulk_rename
     clearam
     clustergit-bash
     compress
     container-engine-manager
     container-monitor
-    crypto-manager
     desktop-files-ranger-yazi
-    dotfiles-manager
-    dotsync
     extract
-    generate_nix_bin
-    generate_nix_start
-    gitgo
-    gitsumo
     gnome-start-all
     hypr-airplane_mode
     hypr-audio_switcher
@@ -607,9 +519,7 @@ in {
     music
     network-reset-all
     network-reset
-    nix-profiles
     pass-clip-both
-    pass_tool
     pdfkes
     playlist
     pop-shell-install
@@ -632,8 +542,6 @@ in {
     ScrcpyUSB
     ScrcpyWiFi
     screenshot
-    semsumo-create
-    semsumo
     semsumo-wofi-start
     set-defaults-mimetype
     set-default-terminal
@@ -649,8 +557,6 @@ in {
     start-foot-server
     startup-manager
     st
-    svmarch
-    svmnixos
     tkenp
     tmo
     tmux-backup
@@ -671,14 +577,7 @@ in {
     turbo-boost-setup
     ulauncher_ext
     video_info
-    vmarchq
-    vmarch
-    vmbuntu
-    vmnixosq
-    vmnixos
-    vmnixos_uefi
     vm-start
-    vvmnixos
     wall-change
     wallpaper-picker
     waybar-bluelightfilter-monitor
@@ -696,7 +595,6 @@ in {
     waybar-wofi-cliphist
     waybar-wofi-powerprofiles
     waybar-wofi-wifi
-    wmarch
     wofi-bluetooth
     wofi-browser
     wofi-cliphist
@@ -721,8 +619,6 @@ in {
     wofi-zenall
     wofi-zen
     wrename
-    zen_profile_launcher
-    zen_terminate_sessions
     t1
     t3
     t4
