@@ -1,4 +1,17 @@
 # hosts/hay/templates/initial-configuration.nix
+# ==============================================================================
+# !!! IMPORTANT - PLEASE READ BEFORE PROCEEDING !!!
+# Before building your system, make sure to adjust the following settings
+# according to your preferences and location:
+#
+# 1. Time Zone: Currently set to "Europe/Istanbul"
+# 2. System Language: Currently set to "en_US.UTF-8"
+# 3. Regional Settings: Currently configured for Turkish (tr_TR.UTF-8)
+# 4. Keyboard Layout: Currently set to Turkish-F layout
+#
+# You can find your timezone from: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+# For keyboard layouts: run 'localectl list-x11-keymap-layouts' for available options
+# ==============================================================================
 { config, pkgs, ... }:
 {
   imports =
@@ -40,15 +53,15 @@
     LC_TELEPHONE = "tr_TR.UTF-8";
     LC_TIME = "tr_TR.UTF-8";
   };
-  
+
   # Keyboard layouts
   services.xserver.xkb = {
-    layout = "tr";
-    variant = "f";
-    options = "ctrl:nocaps";
+    layout = "tr";    # Change this to your preferred keyboard layout (e.g., "us", "de", "fr")
+    variant = "f";    # Change or remove this line based on your keyboard variant
+    options = "ctrl:nocaps";  # Optional: Makes Caps Lock an additional Ctrl key
   };
-  console.keyMap = "trf";
-  
+  console.keyMap = "trf";  # Change this to match your keyboard layout
+ 
   # User account
   users.users.kenan = {
     isNormalUser = true;

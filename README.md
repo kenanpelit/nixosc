@@ -103,10 +103,18 @@ First, install NixOS using the [official graphical ISO](https://nixos.org/downlo
 After the base NixOS installation, open a terminal and run:
 
 ```bash
-nix-shell -p git
-git clone https://github.com/kenanpelit/nixosc
-cd nixosc
+nix-shell -p git pv vim
+git clone https://github.com/kenanpelit/nixosc ~/.nixosc
+cd ~/.nixosc
 ```
+
+!IMPORTANT]
+After cloning, before proceeding with the installation, make sure to customize the localization settings in hosts/hay/templates/initial-configuration.nix (or hosts/vhay/templates/initial-configuration.nix for VM):
+
+Time Zone: Currently set to "Europe/Istanbul"
+System Language: Currently set to "en_US.UTF-8"
+Regional Settings: Currently configured for Turkish (tr_TR.UTF-8)
+Keyboard Layout: Currently set to Turkish-F layout
 
 #### 3. **Initial System Setup**
 
