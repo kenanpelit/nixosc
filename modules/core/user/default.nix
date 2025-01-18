@@ -55,12 +55,7 @@ in
         "input"          # Input devices
       ];
       shell = pkgs.zsh;
-      uid = 1000;
+      uid = config.my.user.uid;
     };
-
-    # =============================================================================
-    # Nix Permissions
-    # =============================================================================
-    nix.settings.allowed-users = [ "${username}" ];
   };
 }
