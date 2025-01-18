@@ -100,10 +100,6 @@ First, install NixOS using the [official graphical ISO](https://nixos.org/downlo
 
 #### 2. **Get the Configuration**
 
-<table>
-<tr>
-<td width="50%">
-
 After the base NixOS installation, open a terminal and run:
 
 ```bash
@@ -111,13 +107,16 @@ nix-shell -p git pv vim
 git clone https://github.com/kenanpelit/nixosc ~/.nixosc
 cd ~/.nixosc
 ```
-</td>
-<td width="50%">
 
 > [!IMPORTANT]  
 > Before proceeding with the installation, customize your localization settings in:
-> - `hosts/hay/templates/initial-configuration.nix` (for laptop)
-> - `hosts/vhay/templates/initial-configuration.nix` (for VM)
+> ```
+> # For laptop:
+> hosts/hay/templates/initial-configuration.nix
+> 
+> # For VM:
+> hosts/vhay/templates/initial-configuration.nix
+> ```
 >
 > Current defaults:
 > - ⏰ Time Zone: "Europe/Istanbul"
@@ -125,17 +124,15 @@ cd ~/.nixosc
 > - 🌍 Regional Settings: Turkish (tr_TR.UTF-8)
 > - ⌨️ Keyboard Layout: Turkish-F
 >
-
-</td>
-</tr>
-</table>
+> **References:**  
+> - Timezones: [tz database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+> - Keyboard layouts: `localectl list-x11-keymap-layouts`
 
 #### 3. **Initial System Setup**
 
 Choose one of these methods:
 
 ##### A) Automatic Setup (Recommended)
-
 ```bash
 # For laptop installation:
 ./install.sh -a hay --pre-install
