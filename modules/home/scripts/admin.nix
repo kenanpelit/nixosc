@@ -21,6 +21,9 @@ let
   gitsumo = pkgs.writeShellScriptBin "gitsumo" (
     builtins.readFile ./admin/gitsumo.sh
   );
+  mrelay = pkgs.writeShellScriptBin "mrelay" (
+    builtins.readFile ./admin/mrelay.sh
+  );
   osc-backup = pkgs.writeShellScriptBin "osc-backup" (
     builtins.readFile ./admin/osc-backup.sh
   );
@@ -76,6 +79,7 @@ in {
     dotfiles-manager
     gitgo
     gitsumo
+    mrelay
     osc-backup
     osc-generate_nix_admin
     osc-generate_nix_bin

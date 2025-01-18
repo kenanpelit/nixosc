@@ -135,15 +135,6 @@ let
   mpc-control = pkgs.writeShellScriptBin "mpc-control" (
     builtins.readFile ./bin/mpc-control.sh
   );
-  mrelay = pkgs.writeShellScriptBin "mrelay" (
-    builtins.readFile ./bin/mrelay.sh
-  );
-  mullvad-dns-setup = pkgs.writeShellScriptBin "mullvad-dns-setup" (
-    builtins.readFile ./bin/mullvad-dns-setup.sh
-  );
-  mullvad_toggle = pkgs.writeShellScriptBin "mullvad_toggle" (
-    builtins.readFile ./bin/mullvad_toggle.sh
-  );
   music = pkgs.writeShellScriptBin "music" (
     builtins.readFile ./bin/music.sh
   );
@@ -513,9 +504,6 @@ in {
     monitor_brightness
     move_media_files
     mpc-control
-    mrelay
-    mullvad-dns-setup
-    mullvad_toggle
     music
     network-reset-all
     network-reset
