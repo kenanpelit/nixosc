@@ -147,13 +147,13 @@
       "vpn_mode": "default"
     },
     "discord": {
-      "command": "spotify",
+      "command": "discord",
       "args": [
-        "--class",
-        "Spotify",
-        "-m"
+        "-m",
+        "--class=discord",
+        "--title=discord"
       ],
-      "vpn_mode": "always"
+      "vpn_mode": "never"
     },
     "webcord": {
       "command": "webcord",
@@ -252,6 +252,16 @@
         "--name",
         "Zen-Whats",
         "--restore-session"
+      ],
+      "vpn_mode": "always"
+    },
+    "spotify": {
+      "command": "spotify",
+      "args": [
+        "--class",
+        "Spotify",
+        "-T",
+        "Spotify"
       ],
       "vpn_mode": "always"
     },
