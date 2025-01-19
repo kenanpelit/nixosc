@@ -5,7 +5,7 @@
 {
   imports = [
     ./config.nix
-    ./search.nix
+    #./search.nix
   ];
 }
 
