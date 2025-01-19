@@ -5,7 +5,6 @@
 { config, lib, pkgs, username, ... }:
 
 let
-  # Firefox eklentileri
   extensions = with pkgs.nur.repos.rycee.firefox-addons; [
     ublock-origin
     sponsorblock
@@ -18,7 +17,6 @@ let
     canvasblocker
   ];
 
-  # Arama motorları yapılandırması
   searchConfig = let
     nix-icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
   in {
@@ -89,27 +87,9 @@ let
     };
   };
 in {
-  hm.xdg.mimeApps = let
-    defaultApplications = {
-      "default-web-browser" = ["firefox.desktop"];
-      "text/html" = ["firefox.desktop"];
-      "x-scheme-handler/http" = ["firefox.desktop"];
-      "x-scheme-handler/https" = ["firefox.desktop"];
-      "x-scheme-handler/about" = ["firefox.desktop"];
-      "x-scheme-handler/unknown" = ["firefox.desktop"];
-      "application/xhtml+xml" = ["firefox.desktop"];
-      "text/xml" = ["firefox.desktop"];
-    };
-  in
-    lib.mkIf (config.variables.defaultBrowser == "firefox") {
-      enable = true;
-      inherit defaultApplications;
-      associations.added = defaultApplications;
-    };
-
-# Firefox'u sadece bir alternatif olarak yükle, varsayılan olarak ayarlama
-  hm.programs.firefox = {
+  programs.firefox = {
     enable = true;
+    package = pkgs.firefox;
     nativeMessagingHosts = with pkgs; [fx-cast-bridge];
     
     profiles."${username}" = {
@@ -120,19 +100,30 @@ in {
         engines = searchConfig;
       };
       settings = {
+        # File Picker Settings
         "widget.use-xdg-desktop-portal.file-picker" = 1;
+        
+        # Browser Behavior
         "browser.disableResetPrompt" = true;
         "browser.download.panel.shown" = true;
         "browser.download.useDownloadDir" = true;
-        "browser.shell.checkDefaultBrowser" = false;  # Varsayılan tarayıcı kontrolünü devre dışı bırak
+        "browser.shell.checkDefaultBrowser" = false;
         "browser.shell.defaultBrowserCheckCount" = 0;
         "browser.startup.homepage" = "https://google.com";
         "browser.bookmarks.showMobileBookmarks" = true;
+        
+        # Privacy & Security
         "dom.security.https_only_mode" = true;
         "privacy.trackingprotection.enabled" = true;
         "signon.rememberSignons" = false;
+        
+        # Sponsored Content
         "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
+        
+        # Account Integration
         "identity.fxaccounts.enabled" = true;
+        
+        # Pinned Sites
         "browser.newtabpage.pinned" = lib.singleton {
           title = "NixOS";
           url = "https://nixos.org";

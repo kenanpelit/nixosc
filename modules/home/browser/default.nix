@@ -16,5 +16,6 @@
  imports = [
    ./firefox
    ./zen
+   ./chrome
  ];
 }
