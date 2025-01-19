@@ -1,13 +1,15 @@
-# modules/home/services/default.nix
+# modules/home/file/default.nix
 # ==============================================================================
-# Services Configuration
+# File Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages file management configurations including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - File Managers:
+#   - Nemo: Graphical file manager
+#   - Yazi: Terminal file manager
+# - Document Viewers:
+#   - Zathura: PDF viewer
 #
 # Author: Kenan Pelit
 # ==============================================================================

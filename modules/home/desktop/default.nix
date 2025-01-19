@@ -1,13 +1,23 @@
-# modules/home/services/default.nix
+# modules/home/desktop/default.nix
 # ==============================================================================
-# Services Configuration
+# Desktop Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages desktop environment configurations including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Window Managers:
+#   - Hyprland: Wayland compositor
+#   - Sway: i3-compatible Wayland compositor
+# - UI Elements:
+#   - Waybar: Status bar
+#   - Mako/SwayNC: Notifications
+#   - Rofi/Wofi/Ulauncher: Application launchers
+# - Display:
+#   - GTK/Qt: Theming and styling
+#   - Waypaper/Wpaperd: Wallpaper management
+# - System Integration:
+#   - Swaylock: Screen locking
+#   - SwayOSD: On-screen display
 #
 # Author: Kenan Pelit
 # ==============================================================================

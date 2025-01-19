@@ -1,13 +1,18 @@
-# modules/home/services/default.nix
+# modules/home/system/default.nix
 # ==============================================================================
-# Services Configuration
+# System Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages system utilities including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Monitoring:
+#   - Btop: System monitor
+#   - Command-not-found: Command suggestions
+#   - Fastfetch: System information
+# - Scripts:
+#   - Custom admin scripts
+#   - System management tools
+#   - Automation utilities
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,3 +29,4 @@
              else null)
       (builtins.attrNames (builtins.readDir ./.)));
 }
+

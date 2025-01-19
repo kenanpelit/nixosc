@@ -19,8 +19,8 @@
     # =============================================================================
     # Media and Desktop
     # =============================================================================
-    ./media          # Audio, PipeWire, and Bluetooth configuration
     ./desktop        # Wayland, X11, and font configuration
+    ./media          # Audio, PipeWire, and Bluetooth configuration
     
     # =============================================================================
     # System Core
