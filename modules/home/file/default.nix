@@ -8,8 +8,6 @@
 # - File Managers:
 #   - Nemo: Graphical file manager
 #   - Yazi: Terminal file manager
-# - Document Viewers:
-#   - Zathura: PDF viewer
 #
 # Author: Kenan Pelit
 # ==============================================================================
