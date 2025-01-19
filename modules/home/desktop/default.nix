@@ -21,16 +21,29 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ config, lib, pkgs, ... }:
+# Author: Kenan Pelit
+# ==============================================================================
+{ inputs, nixpkgs, self, username, host, lib, ... }:
 
 {
-  imports = builtins.filter
-    (x: x != null)
-    (map
-      (name: if (builtins.match ".*\\.nix" name != null && name != "default.nix")
-             then ./${name}
-             else if (builtins.pathExists (./. + "/${name}/default.nix"))
-             then ./${name}
-             else null)
-      (builtins.attrNames (builtins.readDir ./.)));
+ imports = [
+   ./gtk
+   ./hyprland
+   ./hyprsunset
+   ./qt
+   ./rofi
+   ./sway
+   ./swaylock
+   ./swaync
+   ./swayosd
+   ./ulauncher
+   ./waybar
+   ./waypaper
+   ./wofi
+   ./wpaperd
+   ./xserver
+ ];
 }
+
+
+

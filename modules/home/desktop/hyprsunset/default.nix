@@ -2,7 +2,16 @@
 # ==============================================================================
 # HyprSunset Service Configuration
 # ==============================================================================
+# Manages automatic color temperature adjustment for Hyprland
+# Similar to Redshift/Gammastep but specifically for Hyprland
+#
+# Author: Kenan Pelit
+# ==============================================================================
 { config, lib, pkgs, username, ... }:
+
+let
+  cfg = config.services.hyprsunset;
+in
 {
   # =============================================================================
   # Service Options
@@ -14,20 +23,14 @@
   # =============================================================================
   # Service Implementation
   # =============================================================================
-  config = lib.mkIf config.services.hyprsunset.enable {
+  config = lib.mkIf cfg.enable {  # cfg.enable kullanımı
     systemd.user.services.hyprsunset = {
-      # ---------------------------------------------------------------------------
-      # Unit Configuration
-      # ---------------------------------------------------------------------------
       Unit = {
         Description = "HyprSunset color temperature manager";
         After = ["hyprland-session.target"];
         PartOf = ["hyprland-session.target"];
       };
 
-      # ---------------------------------------------------------------------------
-      # Service Configuration
-      # ---------------------------------------------------------------------------
       Service = {
         Type = "forking";
         Environment = "PATH=/etc/profiles/per-user/${username}/bin:$PATH";
@@ -37,9 +40,6 @@
         RestartSec = 3;
       };
 
-      # ---------------------------------------------------------------------------
-      # Installation Settings
-      # ---------------------------------------------------------------------------
       Install = {
         WantedBy = ["hyprland-session.target"];
       };

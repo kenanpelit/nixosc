@@ -159,6 +159,15 @@
    pirate-get     # TPB interface
 
    # =============================================================================
+   # Tmux Dependencies
+   # =============================================================================
+   gnutar        # Archive handling
+   gzip          # Compression
+   coreutils     # Core utilities
+   yq-go         # YAML processor
+   gawk          # Text processing
+
+   # =============================================================================
    # System Integration
    # =============================================================================
    gnome-keyring      # Password manager
