@@ -15,7 +15,7 @@
   # SOPS Configuration
   # =============================================================================
   sops = {
-    defaultSopsFile = ./../../../secrets/home-secrets.enc.yaml;
+    defaultSopsFile = ./../../../../secrets/home-secrets.enc.yaml;
     age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
     validateSopsFiles = false;
 
@@ -41,21 +41,21 @@
         path = "/home/${username}/.backup/tmux.tar.gz";
         mode = "0600";
         format = "binary";
-        sopsFile = ./../../../assets/tmux.enc.tar.gz;
+        sopsFile = ./../../../../assets/tmux.enc.tar.gz;
       };
 
       "oh-my-tmux_backup_archive" = {
         path = "/home/${username}/.backup/oh-my-tmux.tar.gz";
         mode = "0600";
         format = "binary";
-        sopsFile = ./../../../assets/oh-my-tmux.enc.tar.gz;
+        sopsFile = ./../../../../assets/oh-my-tmux.enc.tar.gz;
       };
 
       "mpv_backup_archive" = {
         path = "/home/${username}/.backup/mpv.tar.gz";
         mode = "0600";
         format = "binary";
-        sopsFile = ./../../../assets/mpv.enc.tar.gz;
+        sopsFile = ./../../../../assets/mpv.enc.tar.gz;
 
 #     };
 #     "dot_backup_archive" = {
