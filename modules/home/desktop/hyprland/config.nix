@@ -28,7 +28,6 @@
         # 5. Workspace and Security
         "pypr &"                                 # Python script runner
         "hyprctl dispatch workspace 1"           # Set initial workspace
-        "osc-gpg_unlock.sh"                      # GPG unlock
         "hyprlock"                               # Screen locker
       ];
 
