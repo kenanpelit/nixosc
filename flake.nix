@@ -101,6 +101,12 @@
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
+   # Chrome
+   browser-previews = {
+     url = "github:nix-community/browser-previews";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
+
    # Binary cache management
    cachix-pkgs = {
      url = "github:cachix/cachix";
