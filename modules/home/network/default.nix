@@ -1,13 +1,16 @@
-# modules/home/services/default.nix
+# modules/home/network/default.nix
 # ==============================================================================
-# Services Configuration
+# Network Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages network tools including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Remote Access:
+#   - AnyDesk: Remote desktop client
+# - File Transfer:
+#   - Rsync: File synchronization
+# - Download:
+#   - Transmission: Torrent client
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,3 +27,4 @@
              else null)
       (builtins.attrNames (builtins.readDir ./.)));
 }
+

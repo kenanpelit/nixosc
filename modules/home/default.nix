@@ -1,106 +1,62 @@
+# modules/home/default.nix
 # ==============================================================================
-# Home Environment Configuration
+# Home Manager Configuration
+# ==============================================================================
+# This configuration manages the import of all home-manager modules including:
+# - Desktop environments and window managers
+# - Application configurations and settings
+# - Development tools and utilities
+# - System customization and theming
+#
+# Note: Modules have been consolidated for better organization and maintenance
+#
 # Author: Kenan Pelit
-# Description: Centralized imports for all home environment modules
 # ==============================================================================
-{ inputs, username, host, ... }: {
+
+{ config, lib, pkgs, ... }:
+
+{
   imports = [
     # =============================================================================
-    # Terminal and Shell Environment
+    # Desktop and UI
     # =============================================================================
-    ./bat                           # Better 'cat' command
-    ./btop                          # Resource monitor
-    ./foot                          # Foot terminal emulator
-    ./fzf                           # Fuzzy finder
-    ./kitty                         # Kitty terminal emulator
-    ./p10k                          # Powerlevel10k theme for Zsh
-    ./sem                           # Terminal session manager
-    ./sesh                          # Terminal session manager
-    ./tmux                          # Terminal multiplexer
-    ./wezterm                       # WezTerm terminal emulator
-    ./yazi                          # Terminal file manager
-    ./zsh                           # Z shell configuration
-
-    # =============================================================================
-    # Desktop Environment and Window Management
-    # =============================================================================
-    ./hyprland                      # Window manager
-    ./hyprsunset                    # Color temperature adjuster
-    ./sway                          # Window manager
-    ./swaync                        # Notification daemon
-    ./swaylock                      # Screen locker
-    ./swayosd                       # OSD notifications
-    ./waybar                        # Status bar
-    #./waypaper                      # Wallpaper manager
-    ./wpaperd                       # Wallpaper daemon
-    ./xdg-portal                    # Desktop integration
-    ./xserver                       # X server configuration
-
-    # =============================================================================
-    # Applications and Utilities
-    # =============================================================================
-    ./anydesk                       # Remote desktop
-    ./audacious                     # Music player
-    ./browser                       # Web browser
-    #./discord                       # Chat client
-    #./elektron
-    ./mpv                           # Media player
-    ./nemo                          # File manager
-    ./nvim                          # Text editor
-    ./obsidian                      # Note-taking
-    ./transmission                  # Torrent client
-    ./ulauncher                     # Application launcher
+    ./desktop       # Window managers, bars, notifications, launchers
+    ./media         # Audio, video players, and media tools
+    ./gnome         # GNOME Desktop Environment Configuration  
     
     # =============================================================================
-    # System Integration and Theming
+    # Applications
     # =============================================================================
-    ./gtk                          # GTK theming
-    ./qt                           # Qt theming
-    ./candy                        # Theme components
-    ./gammastep                    # Color temperature
+    ./apps          # Discord, Electron apps, document viewers
+    ./browser       # Web browser configurations
     
     # =============================================================================
-    # Audio and Media
+    # Development and Files
     # =============================================================================
-    ./cava                         # Audio visualizer
-    ./mpd                          # Music player daemon
-    ./spicetify                    # Spotify customization
-    ./ytdlp                        # Media downloader
+    ./development   # Git, Neovim, development tools
+    ./file          # File managers and document viewers
     
     # =============================================================================
-    # Security and Privacy
+    # System and Security
     # =============================================================================
-    ./gnupg                        # GPG configuration
-    ./password-store               # Password manager
-    ./sops                         # Secrets management
+    ./system        # Scripts, monitoring, and system utilities
+    ./security      # GnuPG, password management, encryption
     
     # =============================================================================
-    # Development Tools
+    # Network and Services
     # =============================================================================
-    ./git                          # Version control
-    ./lazygit                      # Git interface
+    ./network       # Remote desktop, file sync, torrent client
+    ./services      # System services and daemons
     
     # =============================================================================
-    # Input and Gesture Control
+    # Terminal Environment
     # =============================================================================
-    ./fusuma                       # Multitouch gestures
-    ./iwmenu                       # Network menu
-    ./rofi                         # Application launcher
-    ./touchegg                     # Touch gestures
+    ./terminal      # Terminal emulators, shell, multiplexer
+    ./utility       # CLI tools and utilities
     
     # =============================================================================
-    # System Components
+    # System Integration
     # =============================================================================
-    ./command-not-found            # Command handler
-    ./copyq                        # Clipboard manager
-    ./fastfetch                    # System info
-    ./packages                     # Additional packages
-    ./rsync                        # File sync
-    ./scripts                      # Custom scripts
-    ./services                     # User services
-    ./xdg-mimes                    # MIME handling
-    
-    # Disabled modules
-    #./zotfiles                    # File management
+    ./xdg           # XDG specifications and portals
   ];
 }

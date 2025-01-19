@@ -1,13 +1,15 @@
-# modules/home/services/default.nix
+# modules/home/security/default.nix
 # ==============================================================================
-# Services Configuration
+# Security Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages security tools including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Encryption:
+#   - GnuPG: OpenPGP implementation
+#   - SOPS: Secrets management
+# - Password Management:
+#   - Password Store: Command line password manager
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,3 +26,5 @@
              else null)
       (builtins.attrNames (builtins.readDir ./.)));
 }
+
+

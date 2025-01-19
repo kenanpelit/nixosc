@@ -1,13 +1,15 @@
-# modules/home/services/default.nix
+# modules/home/development/default.nix
 # ==============================================================================
-# Services Configuration
+# Development Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages development tool configurations including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Version Control:
+#   - Git: Source control management
+#   - Lazygit: Terminal UI for git
+# - Editors:
+#   - Neovim: Terminal-based editor
 #
 # Author: Kenan Pelit
 # ==============================================================================

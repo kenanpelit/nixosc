@@ -1,13 +1,15 @@
-# modules/home/services/default.nix
+# modules/home/apps/default.nix
 # ==============================================================================
-# Services Configuration
+# Apps Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages application configurations including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Discord: Chat and communication platform
+# - Electron: Cross-platform desktop applications
+# - Obsidian: Knowledge management system
+# - Youtube-dl: Video downloader tool
+# - Zotero: Reference management
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,3 +26,5 @@
              else null)
       (builtins.attrNames (builtins.readDir ./.)));
 }
+
+

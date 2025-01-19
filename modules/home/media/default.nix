@@ -1,13 +1,18 @@
-# modules/home/services/default.nix
+# modules/home/media/default.nix
 # ==============================================================================
-# Services Configuration
+# Media Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages media applications including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - Audio:
+#   - Audacious: Audio player
+#   - MPD: Music Player Daemon
+#   - Spicetify: Spotify customization
+# - Video:
+#   - MPV: Media player
+# - Visualization:
+#   - Cava: Audio visualizer
 #
 # Author: Kenan Pelit
 # ==============================================================================

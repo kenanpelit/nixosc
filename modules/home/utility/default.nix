@@ -1,13 +1,18 @@
-# modules/home/services/default.nix
+# modules/home/utility/default.nix
 # ==============================================================================
-# Services Configuration
+# Utility Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages utility applications including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - CLI Tools:
+#   - Bat: Cat clone with syntax highlighting
+#   - FZF: Fuzzy finder
+# - Clipboard:
+#   - CopyQ: Clipboard manager
+# - System Tools:
+#   - Iwmenu: Network management
+#   - Sem/Sesh: Session management
 #
 # Author: Kenan Pelit
 # ==============================================================================

@@ -1,13 +1,13 @@
-# modules/home/services/default.nix
+# modules/home/xdg/default.nix
 # ==============================================================================
-# Services Configuration
+# XDG Configuration
 # ==============================================================================
-# This module manages system services including:
+# This module manages XDG specifications including:
 #
 # Components:
-# - Input Management:
-#   - Fusuma: Multi-touch gestures
-#   - Touchegg: Touchscreen gestures
+# - XDG Integration:
+#   - MIME types: File type associations
+#   - Portals: Desktop integration
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,3 +24,4 @@
              else null)
       (builtins.attrNames (builtins.readDir ./.)));
 }
+
