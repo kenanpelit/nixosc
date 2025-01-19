@@ -55,7 +55,7 @@
       [default]
       path = "/home/${username}/Pictures/wallpapers/others"
       mode = "center"
-      duration = "5m"
+      duration = "3m"
       sorting = "ascending"
 
       # Generic Monitor Settings
