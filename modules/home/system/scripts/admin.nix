@@ -6,6 +6,9 @@ let
   blocklist = pkgs.writeShellScriptBin "blocklist" (
     builtins.readFile ./admin/blocklist.sh
   );
+  check_images = pkgs.writeShellScriptBin "check_images" (
+    builtins.readFile ./admin/check_images.sh
+  );
   chroot_manager = pkgs.writeShellScriptBin "chroot_manager" (
     builtins.readFile ./admin/chroot_manager.sh
   );
@@ -86,6 +89,7 @@ in {
   home.packages = with pkgs; [
     assh-manager
     blocklist
+    check_images
     chroot_manager
     crypto-manager
     dotfiles-manager
