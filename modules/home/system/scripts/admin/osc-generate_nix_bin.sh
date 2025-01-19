@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$HOME/.nixosc/modules/home/scripts/bin"
-OUTPUT_FILE="$HOME/.nixosc/modules/home/scripts/bin.nix"
+SCRIPT_DIR="$HOME/.nixosc/modules/home/system/scripts/bin"
+OUTPUT_FILE="$HOME/.nixosc/modules/home/system/scripts/bin.nix"
 
 # Header
 cat >"$OUTPUT_FILE" <<'EOF'
