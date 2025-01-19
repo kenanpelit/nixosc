@@ -487,11 +487,10 @@ get_host() {
 setup_directories() {
 	log "INFO" "Creating required directories"
 	local dirs=(
-		"$HOME/Music"
-		"$HOME/Documents"
-		"$HOME/Tmp"
-		"$HOME/Pictures/wallpapers/others"
-		"$HOME/Pictures/wallpapers/nixos"
+		"$HOME/music"
+		"$HOME/videos"
+		"$HOME/pictures/wallpapers/others"
+		"$HOME/pictures/wallpapers/nixos"
 		"$CONFIG_DIR"
 	)
 
