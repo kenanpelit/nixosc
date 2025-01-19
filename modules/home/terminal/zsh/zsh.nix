@@ -164,7 +164,6 @@
         "copypath"         # Copy PWD to clipboard
         "dirhistory"       # Directory navigation
         "colored-man-pages" # Colored man pages
-        "ssh-agent"        # SSH agent management
         "extract"          # Archive extraction
         "aliases"          # Alias management
       ];
