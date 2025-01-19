@@ -1,0 +1,12 @@
+# ==============================================================================
+# Firefox Configuration Root
+# ==============================================================================
+# modules/home/browser/firefox/default.nix
+{
+  imports = [
+    ./config.nix
+    ./extensions.nix
+    ./search.nix
+  ];
+}
+
