@@ -55,6 +55,7 @@ DOT_PATHS=(
 	".podman"
 	".todo"
 	".zen"
+	".wall"
 )
 
 # Log fonksiyonu
