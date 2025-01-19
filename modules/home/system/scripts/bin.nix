@@ -237,17 +237,8 @@ let
   snippets = pkgs.writeShellScriptBin "snippets" (
     builtins.readFile ./bin/snippets.sh
   );
-  ssh-hosts-backup-script = pkgs.writeShellScriptBin "ssh-hosts-backup-script" (
-    builtins.readFile ./bin/ssh-hosts-backup-script.sh
-  );
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
-  );
-  ssh-passwordless = pkgs.writeShellScriptBin "ssh-passwordless" (
-    builtins.readFile ./bin/ssh-passwordless.sh
-  );
-  ssh-session-manager = pkgs.writeShellScriptBin "ssh-session-manager" (
-    builtins.readFile ./bin/ssh-session-manager.sh
   );
   start-foot-server = pkgs.writeShellScriptBin "start-foot-server" (
     builtins.readFile ./bin/start-foot-server.sh
@@ -538,10 +529,7 @@ in {
     smart-suspend
     snippetp
     snippets
-    ssh-hosts-backup-script
     ssh-launcher
-    ssh-passwordless
-    ssh-session-manager
     start-foot-server
     startup-manager
     st

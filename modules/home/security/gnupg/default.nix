@@ -36,34 +36,29 @@
       no-comments = true;
       keyserver = "hkps://keys.openpgp.org";
     };
-    scdaemonSettings = {
-      disable-ccid = true;
-      reader-port = "Disabled";
-    };
   };
   
   services.gpg-agent = {
     enable = true;
     enableSshSupport = true;
-    enableScDaemon = false;
-    defaultCacheTtl = 864000;
-    maxCacheTtl = 864000;
-    defaultCacheTtlSsh = 864000;
-    maxCacheTtlSsh = 864000;
+    defaultCacheTtl = 60;  # 1 dakika
+    maxCacheTtl = 120;     # 2 dakika
+    defaultCacheTtlSsh = 60;
+    maxCacheTtlSsh = 120;
     pinentryPackage = pkgs.pinentry-gnome3;
     enableExtraSocket = true;
     extraConfig = ''
-      no-allow-external-cache
-      ignore-cache-for-signing
-      grab
       enable-ssh-support
-      write-env-file
       use-standard-socket
+      grab
     '';
   };
 
-  # SSH için GPG agent'ı kullanmayı zorla
+  # SSH için GPG agent'ı zorunlu kıl
   home.sessionVariables = {
-    SSH_AUTH_SOCK = "$(gpgconf --list-dirs agent-ssh-socket)";
+    SSH_AUTH_SOCK = "$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket)";
   };
+
+  # Sistem SSH agent'ını devre dışı bırak
+  services.ssh-agent.enable = false;
 }

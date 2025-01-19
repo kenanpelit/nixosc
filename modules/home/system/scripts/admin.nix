@@ -45,6 +45,15 @@ let
   osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
     builtins.readFile ./admin/osc-profiles.sh
   );
+  osc-ssh-hosts-backup-script = pkgs.writeShellScriptBin "osc-ssh-hosts-backup-script" (
+    builtins.readFile ./admin/osc-ssh-hosts-backup-script.sh
+  );
+  osc-ssh-passwordless = pkgs.writeShellScriptBin "osc-ssh-passwordless" (
+    builtins.readFile ./admin/osc-ssh-passwordless.sh
+  );
+  osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
+    builtins.readFile ./admin/osc-ssh-session-manager.sh
+  );
   osc-sync = pkgs.writeShellScriptBin "osc-sync" (
     builtins.readFile ./admin/osc-sync.sh
   );
@@ -90,6 +99,9 @@ in {
     osc-gpg_unlock
     osc-pass-tool
     osc-profiles
+    osc-ssh-hosts-backup-script
+    osc-ssh-passwordless
+    osc-ssh-session-manager
     osc-sync
     semsumo-create
     semsumo
