@@ -5,8 +5,6 @@
 {
   imports = [
     ./config.nix
-    ./extensions.nix
-    ./search.nix
   ];
 }
 
