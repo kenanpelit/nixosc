@@ -41,10 +41,10 @@
   services.gpg-agent = {
     enable = true;
     enableSshSupport = true;
-    defaultCacheTtl = 864000;     # 10 gün
-    maxCacheTtl = 864000;
-    defaultCacheTtlSsh = 864000;  # SSH için de 10 gün
-    maxCacheTtlSsh = 864000;
+    defaultCacheTtl = 60;  # 1 dakika
+    maxCacheTtl = 120;     # 2 dakika
+    defaultCacheTtlSsh = 60;
+    maxCacheTtlSsh = 120;
     pinentryPackage = pkgs.pinentry-gnome3;
     enableExtraSocket = true;
     extraConfig = ''
@@ -54,16 +54,11 @@
     '';
   };
 
-  # SSH için GPG agent'ı kullan
+  # SSH için GPG agent'ı zorunlu kıl
   home.sessionVariables = {
     SSH_AUTH_SOCK = "$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket)";
   };
 
-  # GPG agent'ı yeniden başlat
-  home.activation = {
-    setupGpgSsh = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ${pkgs.gnupg}/bin/gpgconf --kill gpg-agent
-      ${pkgs.gnupg}/bin/gpg-connect-agent updatestartuptty /bye
-    '';
-  };
+  # Sistem SSH agent'ını devre dışı bırak
+  services.ssh-agent.enable = false;
 }
