@@ -171,14 +171,14 @@
   # SSH Configuration
   # =============================================================================
   programs.ssh = {
-    startAgent = false;         # GPG agent kullanacağız
-    enableAskPassword = false;  # GUI parola sorgusunu devre dışı bırak
+    startAgent = false;         # Using GPG agent instead
+    enableAskPassword = false;  # Disable GUI password prompt
     
+    # Connection Settings
     extraConfig = ''
       Host *
         ServerAliveInterval 60
         ServerAliveCountMax 2
-        AddKeysToAgent yes
     '';
   };
 
