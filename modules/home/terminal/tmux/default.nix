@@ -1,4 +1,3 @@
-# modules/home/tmux/default.nix
 # ==============================================================================
 # Tmux Terminal Multiplexer Configuration
 # ==============================================================================
@@ -48,12 +47,17 @@ with lib;
              exit 1
            fi
            
-           echo "Cleaning up old configurations..."
-           rm -rf $HOME/.config/tmux $HOME/.config/oh-my-tmux
+           # Backup existing configurations
+           echo "Backing up existing configurations if any..."
+           [ -d "$HOME/.config/tmux" ] && mv "$HOME/.config/tmux" "$HOME/.config/tmux.bak.$(date +%s)"
+           [ -d "$HOME/.config/oh-my-tmux" ] && mv "$HOME/.config/oh-my-tmux" "$HOME/.config/oh-my-tmux.bak.$(date +%s)"
+           [ -f "$HOME/.config/tmux/tmux.conf" ] && mv "$HOME/.config/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf.bak.$(date +%s)"
            
+           # Create required directories
            echo "Creating directories..."
            mkdir -p $HOME/.config/tmux $HOME/.config/oh-my-tmux
            
+           # Extract configurations
            echo "Extracting tmux configuration..."
            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/tmux.tar.gz -C $HOME/.config/
 
@@ -69,4 +73,3 @@ with lib;
    };
  };
 }
-
