@@ -497,13 +497,10 @@
         "$mainMod, M, exec, hypr-start-manager anote"
         "$mainMod, B, exec, hypr-start-manager tcopyb"
 
-        #"$mainMod, V, exec, copyq toggle"
-
         # screenshot
         ",Print, exec, screenshot --swappy"
         "$mainMod, Print, exec, screenshot --save"
         "$mainMod SHIFT ,Print, exec, screenshot --copy"
-
 
         # switch focus
         "$mainMod, left, movefocus, l"
