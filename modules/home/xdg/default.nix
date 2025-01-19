@@ -15,6 +15,7 @@
 
 {
  imports = [
+   ./xdg-dirs
    ./xdg-mimes
    ./xdg-portal
  ];
