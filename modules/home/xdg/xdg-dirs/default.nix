@@ -3,7 +3,6 @@
 # XDG User Directories Configuration
 # ==============================================================================
 { config, lib, pkgs, ... }:
-
 {
   # XDG Base Directory kullanımını etkinleştir
   xdg.enable = true;
@@ -11,7 +10,7 @@
   # XDG kullanıcı dizinlerini yapılandır
   xdg.userDirs = {
     enable = true;
-    createDirectories = true;  # Dizinleri otomatik oluştur
+    createDirectories = true;
     
     # Temel dizinler
     desktop = "$HOME/desktop";
@@ -20,15 +19,14 @@
     music = "$HOME/music";
     pictures = "$HOME/pictures";
     videos = "$HOME/videos";
-    
-    # Ek dizinler
-    tmp = "$HOME/tmp";
+    templates = "$HOME/templates";
     publicShare = "$HOME/public";
     
     # Özel dizinler
     extraConfig = {
       XDG_BACKUP_DIR = "$HOME/.backup";
       XDG_PROJECTS_DIR = "$HOME/.projects";
+      XDG_TMP_DIR = "$HOME/tmp";
       XDG_CONFIG_DIR = "$HOME/.config";
       XDG_CACHE_DIR = "$HOME/.cache";
       XDG_DATA_DIR = "$HOME/.local/share";
