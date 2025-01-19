@@ -131,6 +131,7 @@
    gopass           # Pass CLI
    pdftk            # PDF toolkit
    zathura          # PDF viewer
+   evince           # PDF viewer
    candy-icons      # Icon theme
    wpaperd          # Modern wallpaper daemon
    sway             # Window manager
