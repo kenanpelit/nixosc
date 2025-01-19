@@ -179,7 +179,6 @@
         ServerAliveInterval 60
         ServerAliveCountMax 2
         AddKeysToAgent yes
-        UseKeychain yes
     '';
   };
 
