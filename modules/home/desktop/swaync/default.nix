@@ -4,7 +4,7 @@
 # ==============================================================================
 { pkgs, ... }:
 let
-  colors = import ./../../../themes/colors.nix;
+  colors = import ./../../../../themes/colors.nix;
   theme = colors.mkTheme {
     inherit (colors) mocha effects fonts;
   };

@@ -25,7 +25,7 @@ in
     # ---------------------------------------------------------------------------
     background {
       monitor =
-      path = ${./../../../wallpapers/nixos/nixos.png}
+      path = ${./../../../../wallpapers/nixos/nixos.png}
       blur_passes = 2
       contrast = 0.89
       brightness = 0.82
@@ -77,7 +77,7 @@ in
     }
     image {
       monitor =
-      path = ${./../../../wallpapers/nixos/avatar.png}
+      path = ${./../../../../wallpapers/nixos/avatar.png}
       border_size = 3
       border_color = rgba(255, 255, 255, .75)
       size = 120
