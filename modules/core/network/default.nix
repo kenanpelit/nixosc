@@ -1,9 +1,24 @@
 # modules/core/network/default.nix
 # ==============================================================================
 # Network Configuration
-# Author: Kenan Pelit
-# Description: Advanced network settings, firewall rules and wireless configuration
 # ==============================================================================
+# This configuration file manages all network-related settings including:
+# - Core network configuration and TCP/IP optimizations
+# - Firewall rules and security settings
+# - Wireless (IWD) configuration
+# - Mullvad VPN integration
+# - SSH client settings
+#
+# Key components:
+# - TCP/IP stack optimizations for better performance
+# - Advanced firewall rules and security measures
+# - Wireless network management with IWD
+# - Mullvad VPN configuration and security
+# - SSH client configuration with GPG agent integration
+#
+# Author: Kenan Pelit
+# ==============================================================================
+
 { config, pkgs, host, lib, ... }:
 
 {
@@ -31,17 +46,23 @@
   };
 
   # =============================================================================
-  # Networking Configuration
+  # Base Networking Configuration
   # =============================================================================
   networking = {
     hostName = "${host}";
     enableIPv6 = false;
     
     # DNS Configuration
-    nameservers = [
+    nameservers = lib.mkIf (!config.services.mullvad-vpn.enable) [
       "1.1.1.1"  # Cloudflare Primary
       "1.0.0.1"  # Cloudflare Secondary
       "9.9.9.9"  # Quad9
+    ];
+
+    # Mullvad DNS Configuration
+    nameservers = lib.mkIf config.services.mullvad-vpn.enable [
+      "193.138.218.74"  # Mullvad DNS
+      "1.1.1.1"         # Cloudflare DNS (fallback)
     ];
 
     # =============================================================================
@@ -53,6 +74,11 @@
       rejectPackets = true;
       logReversePathDrops = true;
       checkReversePath = "strict";
+      
+      # Mullvad VPN Ports
+      allowedTCPPorts = [ 53 1401 ];
+      allowedUDPPorts = [ 53 1401 51820 ];
+      trustedInterfaces = [ "mullvad-" ];
       
       extraCommands = ''
         # Default Policies
@@ -76,6 +102,14 @@
         
         # ICMP Rate Limiting
         iptables -A INPUT -p icmp -m limit --limit 1/s --limit-burst 1 -j ACCEPT
+
+        # Mullvad VPN Rules
+        if systemctl is-active mullvad-daemon; then
+          ip46tables -A OUTPUT -o mullvad-* -j ACCEPT
+          ip46tables -A INPUT -i mullvad-* -j ACCEPT
+          ip46tables -A OUTPUT -p udp --dport 53 -j ACCEPT
+          ip46tables -A INPUT -p udp --sport 53 -j ACCEPT
+        fi
       '';
     };
 
@@ -123,6 +157,29 @@
         };
       };
     };
+  };
+
+  # =============================================================================
+  # Mullvad VPN Configuration
+  # =============================================================================
+  services.mullvad-vpn = {
+    enable = true;
+    package = pkgs.mullvad-vpn;
+  };
+
+  # =============================================================================
+  # SSH Configuration
+  # =============================================================================
+  programs.ssh = {
+    startAgent = false;         # Using GPG agent instead
+    enableAskPassword = false;  # Disable GUI password prompt
+    
+    # Connection Settings
+    extraConfig = ''
+      Host *
+        ServerAliveInterval 60
+        ServerAliveCountMax 2
+    '';
   };
 
   # =============================================================================
@@ -182,6 +239,25 @@
       RemainAfterExit = "yes";
       User = "root";
     };
+  };
+
+  # =============================================================================
+  # Environment Configuration
+  # =============================================================================
+  environment = {
+    # Variables
+    variables = {
+      ASSH_CONFIG = "$HOME/.ssh/assh.yml";
+    };
+    # Shell Aliases
+    shellAliases = {
+      assh = "${pkgs.assh}/bin/assh";
+      sshconfig = "${pkgs.assh}/bin/assh config build > ~/.ssh/config";
+    };
+    # System Packages
+    systemPackages = with pkgs; [
+      mullvad-vpn
+    ];
   };
 
   # =============================================================================
