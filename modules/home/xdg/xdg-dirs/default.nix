@@ -4,13 +4,10 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
-  # XDG Base Directory kullanımını etkinleştir
-  xdg.enable = true;
-
   # XDG kullanıcı dizinlerini yapılandır
   xdg.userDirs = {
     enable = true;
-    createDirectories = true;
+    createDirectories = true;  # Olmayan dizinleri oluştur
     
     # Temel dizinler
     desktop = "$HOME/desktop";
@@ -28,17 +25,8 @@
       XDG_PROJECTS_DIR = "$HOME/.projects";
       XDG_TMP_DIR = "$HOME/tmp";
       XDG_CONFIG_DIR = "$HOME/.config";
-      XDG_CACHE_DIR = "$HOME/.cache";
       XDG_DATA_DIR = "$HOME/.local/share";
       XDG_STATE_DIR = "$HOME/.local/state";
     };
-  };
-
-  # XDG_CONFIG_HOME ortam değişkenini ayarla
-  home.sessionVariables = {
-    XDG_CONFIG_HOME = "$HOME/.config";
-    XDG_CACHE_HOME = "$HOME/.cache";
-    XDG_DATA_HOME = "$HOME/.local/share";
-    XDG_STATE_HOME = "$HOME/.local/state";
   };
 }
