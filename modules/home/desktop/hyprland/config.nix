@@ -27,7 +27,8 @@
         
         # 5. Workspace and Security
         "pypr &"                                 # Python script runner
-        "hyprctl dispatch workspace 1"           # Set initial workspace
+        #"hyprctl dispatch workspace 2"           # Set initial workspace
+        "m2w2"                                   # Set initial workspace
         "hyprlock"                               # Screen locker
       ];
 
