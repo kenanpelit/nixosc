@@ -66,6 +66,9 @@ let
   osc-sync = pkgs.writeShellScriptBin "osc-sync" (
     builtins.readFile ./admin/osc-sync.sh
   );
+  osc-test = pkgs.writeShellScriptBin "osc-test" (
+    builtins.readFile ./admin/osc-test.sh
+  );
   semsumo-create = pkgs.writeShellScriptBin "semsumo-create" (
     builtins.readFile ./admin/semsumo-create.sh
   );
@@ -115,6 +118,7 @@ in {
     osc-start-semsumo-all
     osc-symlink_manager
     osc-sync
+    osc-test
     semsumo-create
     semsumo
     svmarch

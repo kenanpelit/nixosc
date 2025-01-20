@@ -178,31 +178,6 @@
         echo -e "\nÇalışma zamanı bağımlılıkları:"
         nix-store -q --requisites $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
       }
-
-      # =============================================================================
-      # NixOS Flake Gelişmiş Fonksiyonları
-      # =============================================================================
-      nixtest() {
-        local scope=$1            # home veya core
-        local module=$2           # modül adı
-        local flake=''${3:-hay}   # Flake adı, varsayılan olarak 'hay'
-
-        if [[ -z $scope || -z $module ]]; then
-          echo "Kullanım: nix-test <kapsam> <modül> [flake]"
-          echo "Örnek: nix-test home rofi hay"
-          return 1
-        fi
-
-        local config_dir="$HOME/.nixosc/modules/$scope/$module/default.nix"
-      
-        if [[ ! -f $config_dir ]]; then
-          echo "Hata: '$config_dir' yapılandırma dosyası bulunamadı!"
-          return 1
-        fi
-
-        cd "$HOME/.nixosc" || return 1
-        sudo nixos-rebuild test --flake .#"$flake" -I nixos-config="$config_dir"
-      }
     '';
   };
 }
