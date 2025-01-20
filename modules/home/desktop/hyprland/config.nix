@@ -121,14 +121,29 @@
       # =====================================================
       general = {
         "$mainMod" = "SUPER";              # Ana modifikatör tuşu
-        layout = "dwindle";                # Yerleşim düzeni
-        gaps_in = 5;                       # İç boşluklar
-        gaps_out = 10;                     # Dış boşluklar
-        border_size = 2;                   # Kenarlık kalınlığı
-        "col.active_border" = "rgb(98971A) rgb(CC241D) 45deg";   # Aktif pencere kenarlık rengi
-        "col.inactive_border" = "0x00000000";                     # Pasif pencere kenarlık rengi
-        border_part_of_window = false;     # Kenarlık pencere parçası mı
-        no_border_on_floating = false;     # Yüzen pencerelerde kenarlık
+        gaps_in = 5;
+        gaps_out = 10;
+        border_size = 2;
+        "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
+        "col.inactive_border" = "rgba(595959aa)";
+        layout = "master";
+        allow_tearing = false;
+      };
+
+      group = {
+        "col.border_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
+        "col.border_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
+        "col.border_locked_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
+        "col.border_locked_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
+        groupbar = {
+          render_titles = false;
+          gradients = false;
+          font_size = 10;
+          "col.active" = "rgba(a855f7ee)";
+          "col.inactive" = "rgba(6c7086aa)";
+          "col.locked_active" = "rgba(9333eaee)";
+          "col.locked_inactive" = "rgba(7aa2f7aa)";
+        };
       };
 
       # =====================================================
