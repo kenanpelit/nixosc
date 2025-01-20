@@ -455,62 +455,77 @@
         # show keybinds list
         "$mainMod, F1, exec, hypr-keybinds"
 
-        # keybindings
-        "$mainMod, Return, exec, kitty"
-        "ALT, Return, exec, [float; center; size 950 650] kitty"
-        "$mainMod SHIFT, Return, exec, [fullscreen] kitty"
+        # Terminal Emülatörleri
+        "$mainMod, Return, exec, kitty"                                                  # Normal mod
+        "ALT, Return, exec, [float; center; size 950 650] kitty"                        # Yüzen mod
+        "$mainMod SHIFT, Return, exec, [fullscreen] kitty"                              # Tam ekran mod
         #"$mainMod, Return, exec, wezterm"
         #"ALT, Return, exec, [float; center; size 950 650] wezterm"
         #"$mainMod SHIFT, Return, exec, [fullscreen] wezterm"
-        #"$mainMod, B, exec, hyprctl dispatch exec '[workspace 1 silent] zen'"
-        "$mainMod, Q, killactive,"
-        # Temel Pencere Kontrolleri
-        "$mainMod SHIFT, F, fullscreen, 1"        # Sahte tam ekran modu
-        "$mainMod CTRL, F, fullscreen, 0"         # Gerçek tam ekran modu
-        #"$mainMod, F, togglefloating"             # Yüzen pencere modunu aç/kapat
-        "$mainMod, F, exec, toggle_float"         # Yüzen pencere modunu aç/kapat
-        "$mainMod, G, togglegroup"                # Pencere gruplama
-        "$mainMod, Q, killactive"                 # Aktif pencereyi kapat
-        "ALT, F4, killactive"                     # Alternatif pencere kapatma
-        "$mainMod, Space, exec, rofi-launcher || pkill rofi"
-        "ALT, Space, exec, ulauncher-toggle"
+
+        # Temel Pencere Yönetimi
+        "$mainMod, Q, killactive"                                                     # Pencere kapat
+        "ALT, F4, killactive"                                                         # Alternatif kapat
+        "$mainMod SHIFT, F, fullscreen, 1"                                            # Sahte tam ekran
+        "$mainMod CTRL, F, fullscreen, 0"                                             # Gerçek tam ekran
+        "$mainMod, F, exec, toggle_float"                                             # Yüzen mod toggle
+        "$mainMod, P, pseudo,"                                                        # Pseudo mod
+        "$mainMod, X, togglesplit,"                                                   # Bölme toggle
+        "$mainMod, G, togglegroup"                                                    # Grup toggle
+        "$mainMod, T, exec, toggle_oppacity"                                          # Opaklık toggle
+
+        # Uygulama Başlatıcılar
+        "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
+        "ALT, Space, exec, ulauncher-toggle"                                          # Ulauncher
+        "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
+        "ALT SHIFT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'" # Terminal dosya yönetici
+
+        # Medya ve Ses Kontrolü
+        "ALT, A, exec, hypr-audio_switcher"                                           # Ses değiştirici
+        "ALT, E, exec, hypr-spotify_toggle"                                           # Spotify toggle
+        "ALT CTRL, E, exec, mpc-control toggle"                                       # MPC kontrolü
+
+        # MPV Yönetimi
+        "CTRL ALT, 1, exec, hypr-mpv-manager start"                                   # MPV başlat
+        "ALT, 1, exec, hypr-mpv-manager playback"                                     # Oynatma kontrolü
+        "ALT, 2, exec, hypr-mpv-manager play-yt"                                      # YouTube oynat
+        "ALT, 3, exec, hypr-mpv-manager stick"                                        # Yapıştır
+        "ALT, 4, exec, hypr-mpv-manager move"                                         # Taşı
+        "ALT, 5, exec, hypr-mpv-manager save-yt"                                      # YouTube kaydet
+        "ALT, 6, exec, hypr-mpv-manager wallpaper"                                    # Duvar kağıdı yap
+
+        # Duvar Kağıdı Yönetimi
+        "$mainMod, W, exec, wallpaper-picker"                                         # Duvar kağıdı seç
+        "ALT, 0, exec, random-wallpaper"                                              # Rastgele duvar kağıdı
+        "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'" # Waypaper
+
+        # Sistem Araçları
+        "ALT, L, exec, hyprlock"                                                     # Ekran kilidi
+        "$mainMod, backspace, exec, power-menu"                                      # Güç menüsü
+        "$mainMod, C, exec, hyprpicker -a"                                           # Renk seçici
+        "$mainMod, N, exec, swaync-client -t -sw"                                    # Bildirim merkezi
+        "CTRL SHIFT, Escape, exec, hyprctl dispatch exec '[workspace 11] resources'" # Sistem monitörü
+
+        # Monitör ve Ekran Yönetimi
+        "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"    # Monitör değiştir
+        "$mainMod, A, exec, hypr-ctl_focusmonitor"                                   # Monitör odakla
+        "$mainMod, E, exec, pypr shift_monitors +1"                                  # Monitör kaydır
+        "$mainMod SHIFT, B, exec, toggle_waybar"                                     # Waybar toggle
+
+        # Özel Uygulamalar
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 5 silent] SoundWireServer'"
-        "ALT, L, exec, hyprlock"
-        "$mainMod, P, pseudo,"
-        "$mainMod, X, togglesplit,"
-        "$mainMod, T, exec, toggle_oppacity"
-        "ALT, A, exec, hypr-audio_switcher"
-        "ALT, E, exec, hypr-spotify_toggle"
-        "ALT CTRL, E, exec, mpc-control toggle"
-        "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"
-        "ALT SHIFT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
-        "$mainMod SHIFT, B, exec, toggle_waybar"
-        "$mainMod, C ,exec, hyprpicker -a"
-        "$mainMod, W,exec, wallpaper-picker"
-        "$mainMod SHIFT, W,exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'"
-        "$mainMod, N, exec, swaync-client -t -sw"
-        "CTRL SHIFT, Escape, exec, hyprctl dispatch exec '[workspace 11] resources'"
-        "ALT, F12, exec, hypr-mullvad_toggle toggle"
-        "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"
-        "$mainMod, A, exec, hypr-ctl_focusmonitor"
-        "$mainMod, E, exec, pypr shift_monitors +1"
-        "CTRL ALT, 1, exec, hypr-mpv-manager start"
-        "ALT, 1, exec, hypr-mpv-manager playback"
-        "ALT, 2, exec, hypr-mpv-manager play-yt"
-        "ALT, 3, exec, hypr-mpv-manager stick"
-        "ALT, 4, exec, hypr-mpv-manager move"
-        "ALT, 5, exec, hypr-mpv-manager save-yt"
-        "ALT, 6, exec, hypr-mpv-manager wallpaper"
         "ALT, T, exec, semsumo start kkenp always"
         "ALT CTRL, C, exec, semsumo start wcta always"
-        ",F10, exec, hypr-bluetooth_toggle"
         "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
-        "$mainMod, backspace, exec, power-menu"
-        "ALT, F9, exec, hypr-blue-gammastep-manager toggle" 
-        ",F9, exec, hypr-blue-hyprsunset-manager toggle"
-        "$mainMod, M, exec, hypr-start-manager anote"
-        "$mainMod, B, exec, hypr-start-manager tcopyb"
+
+        # Sistem Fonksiyonları
+        ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle
+        "ALT, F12, exec, hypr-mullvad_toggle toggle"                                # VPN toggle
+        "ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
+        ",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
+        "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
+        "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
         # screenshot
         ",Print, exec, screenshot --swappy"
@@ -591,12 +606,6 @@
         "$mainMod, V, exec, copyq toggle"
         "$mainMod CTRL, V, exec, cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy"
 
-        # Duvar Kağıdı Gezinme Kontrolleri
-        "$mainMod ALT, right, exec, wpaperctl next"      # Bir sonraki duvar kağıdına geç
-        "$mainMod ALT, left, exec, wpaperctl previous"   # Bir önceki duvar kağıdına geç
-        "$mainMod ALT, down, exec, wpaperctl pause"      # Duvar kağıdı geçişlerini duraklat
-        "$mainMod ALT, up, exec, wpaperctl toggle-pause" # Duvar kağıdı geçişlerini başlat/duraklat
-
         # Ana Pencere Yönetimi
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
 
@@ -615,8 +624,8 @@
         "$mainMod, Tab, changegroupactive"         # Pencere grubu içinde aktif pencereyi değiştir
 
         # Pencere Bölme ve Boyutlandırma
-        "$mainMod ALT, left, exec, hyprctl dispatch splitratio -0.2"   # Sol bölme oranını azalt
-        "$mainMod ALT, right, exec, hyprctl dispatch splitratio +0.2"  # Sağ bölme oranını artır
+        "$mainMod ALT, right, exec, hyprctl dispatch splitratio -0.2"   # Sol bölme oranını azalt
+        "$mainMod ALT, left, exec, hyprctl dispatch splitratio +0.2"  # Sağ bölme oranını artır
       ];
 
       bindm = [

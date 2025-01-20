@@ -40,7 +40,7 @@
    ./waybar
    ./waypaper
    ./wofi
-   ./wpaperd
+   #./wpaperd
    ./xserver
  ];
 }
