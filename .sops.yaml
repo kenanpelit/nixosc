@@ -18,3 +18,7 @@ creation_rules:
       - age:
           - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
 
+  - path_regex: .*\.enc\.tar\.gz$
+    key_groups:
+      - age:
+          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
