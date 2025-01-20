@@ -4,36 +4,6 @@
 # ==============================================================================
 # modules/home/fzf/default.nix
 { pkgs, inputs, lib, ... }:
-
-let
-  previewDeps = with pkgs; [
-    # Temel araçlar
-    file
-    jq
-    bat
-    glow
-    w3m
-    eza
-    openssl
-    
-    # Arşiv araçları
-    atool
-    p7zip
-    libcdio
-    
-    # Doküman araçları
-    odt2txt
-    catdoc
-    gnumeric
-    
-    # Medya araçları
-    exiftool
-    chafa
-    mediainfo
-    ffmpegthumbnailer
-    poppler_utils
-  ];
-in
 {
   programs.fzf = {
     enable = true;
