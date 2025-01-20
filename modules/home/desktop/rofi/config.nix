@@ -46,6 +46,23 @@
       history-size: 50;
       disable-history: false;
 
+      /* ... diğer ayarlar ... */
+      sort: true;
+      sorting-method: "fzf";
+      drun-use-desktop-cache: true;
+      drun-reload-desktop-cache: true;
+      disable-history: false;
+      show-icons: true;
+      window-format: "{w} · {c} · {t}";
+      drun-display-format: "{name} [<span weight='light' size='small'><i>({generic})</i></span>]";
+      sort-method: "normal";
+      pid: "/run/user/1000/rofi.pid";
+      preselect-on-match: true;
+      drun-match-fields: "name,generic,exec,categories,keywords";
+      window-match-fields: "title,class,name,desktop";
+      matching: "fuzzy";
+      matching-negate-char: '!';
+
       /* Match Settings */
       levenshtein-sort: true;
       normalize-match: true;
