@@ -490,7 +490,7 @@
         "ALT, T, exec, semsumo start kkenp always"
         "ALT CTRL, C, exec, semsumo start wcta always"
         ",F10, exec, hypr-bluetooth_toggle"
-        "$mainMod ALT, RETURN, exec, hypr-start-semsumo-all"
+        "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
         "$mainMod, backspace, exec, power-menu"
         "ALT, F9, exec, hypr-blue-gammastep-manager toggle" 
         ",F9, exec, hypr-blue-hyprsunset-manager toggle"

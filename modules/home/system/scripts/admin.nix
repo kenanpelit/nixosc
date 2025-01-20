@@ -57,6 +57,9 @@ let
   osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
     builtins.readFile ./admin/osc-ssh-session-manager.sh
   );
+  osc-start-semsumo-all = pkgs.writeShellScriptBin "osc-start-semsumo-all" (
+    builtins.readFile ./admin/osc-start-semsumo-all.sh
+  );
   osc-sync = pkgs.writeShellScriptBin "osc-sync" (
     builtins.readFile ./admin/osc-sync.sh
   );
@@ -106,6 +109,7 @@ in {
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
     osc-ssh-session-manager
+    osc-start-semsumo-all
     osc-sync
     semsumo-create
     semsumo
