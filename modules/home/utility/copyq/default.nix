@@ -162,7 +162,7 @@
     num_margin=2
     search_bar="\n    ;background: ''${edit_bg}\n    ;color: ''${edit_fg}\n    ;border: 1px solid ''${alt_bg}\n    ;margin: 2px"
     search_bar_focused="\n    ;border: 1px solid ''${sel_bg}"
-    sel_bg=#89b4fa
+    sel_bg=#b4befe
     sel_fg=#1e1e2e
     sel_item_css=
     show_number=false
