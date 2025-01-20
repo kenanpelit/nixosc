@@ -438,7 +438,7 @@
       # Key Bindings
       bind = [
         # show keybinds list
-        "$mainMod, F1, exec, keybinds"
+        "$mainMod, F1, exec, hypr-keybinds"
 
         # keybindings
         "$mainMod, Return, exec, kitty"
@@ -457,7 +457,6 @@
         "$mainMod, G, togglegroup"                # Pencere gruplama
         "$mainMod, Q, killactive"                 # Aktif pencereyi kapat
         "ALT, F4, killactive"                     # Alternatif pencere kapatma
-        #"$mainMod, Space, exec, rofi -show drun || pkill rofi"
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"
         "ALT, Space, exec, ulauncher-toggle"
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
