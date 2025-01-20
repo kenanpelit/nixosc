@@ -20,6 +20,9 @@ in
       # Tema renkleri
       theme.kitty.colors //
       {
+        # TERM değişkeni ayarı
+        term = "xterm-256color";
+
         # Font rendering ayarları
         adjust_line_height = "2";
         adjust_column_width = "0";
