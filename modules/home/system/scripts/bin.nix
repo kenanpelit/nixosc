@@ -66,6 +66,9 @@ let
   hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
     builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
   );
+  hypr-keybinds = pkgs.writeShellScriptBin "hypr-keybinds" (
+    builtins.readFile ./bin/hypr-keybinds.sh
+  );
   hypr-monitor_toggle = pkgs.writeShellScriptBin "hypr-monitor_toggle" (
     builtins.readFile ./bin/hypr-monitor_toggle.sh
   );
@@ -110,9 +113,6 @@ let
   );
   hypr-workspace-monitor = pkgs.writeShellScriptBin "hypr-workspace-monitor" (
     builtins.readFile ./bin/hypr-workspace-monitor.sh
-  );
-  keybinds = pkgs.writeShellScriptBin "keybinds" (
-    builtins.readFile ./bin/keybinds.sh
   );
   kitty-toggle-font = pkgs.writeShellScriptBin "kitty-toggle-font" (
     builtins.readFile ./bin/kitty-toggle-font.sh
@@ -177,8 +177,8 @@ let
   rofi-iwmenu = pkgs.writeShellScriptBin "rofi-iwmenu" (
     builtins.readFile ./bin/rofi-iwmenu.sh
   );
-  rofi-launch = pkgs.writeShellScriptBin "rofi-launch" (
-    builtins.readFile ./bin/rofi-launch.sh
+  rofi-launcher = pkgs.writeShellScriptBin "rofi-launcher" (
+    builtins.readFile ./bin/rofi-launcher.sh
   );
   rofi-power-menu = pkgs.writeShellScriptBin "rofi-power-menu" (
     builtins.readFile ./bin/rofi-power-menu.sh
@@ -472,6 +472,7 @@ in {
     hypr-colorpicker
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
+    hypr-keybinds
     hypr-monitor_toggle
     hypr-mpv-manager
     hypr-mullvad_toggle
@@ -487,7 +488,6 @@ in {
     hypr-status-check
     hypr-vlc_toggle
     hypr-workspace-monitor
-    keybinds
     kitty-toggle-font
     lofi
     maxfetch
@@ -509,7 +509,7 @@ in {
     record
     renew_env
     rofi-iwmenu
-    rofi-launch
+    rofi-launcher
     rofi-power-menu
     rofi-power
     rofi-wifi
