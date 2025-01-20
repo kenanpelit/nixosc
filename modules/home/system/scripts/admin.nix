@@ -60,6 +60,9 @@ let
   osc-start-semsumo-all = pkgs.writeShellScriptBin "osc-start-semsumo-all" (
     builtins.readFile ./admin/osc-start-semsumo-all.sh
   );
+  osc-symlink_manager = pkgs.writeShellScriptBin "osc-symlink_manager" (
+    builtins.readFile ./admin/osc-symlink_manager.sh
+  );
   osc-sync = pkgs.writeShellScriptBin "osc-sync" (
     builtins.readFile ./admin/osc-sync.sh
   );
@@ -110,6 +113,7 @@ in {
     osc-ssh-passwordless
     osc-ssh-session-manager
     osc-start-semsumo-all
+    osc-symlink_manager
     osc-sync
     semsumo-create
     semsumo
