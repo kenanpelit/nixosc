@@ -138,23 +138,26 @@ setup_encryption() {
 		;;
 	age)
 		encrypt_file() {
-			# SOPS_CONFIG_FILE'ı kontrol et ve ayarla
-			local sops_config="${HOME}/.nixosc/.sops.yml"
+			local sops_config="${HOME}/.nixosc/.sops.yaml"
 			if [[ ! -f "$sops_config" ]]; then
 				error "SOPS yapılandırma dosyası bulunamadı: $sops_config"
 			fi
 			export SOPS_CONFIG_FILE="$sops_config"
 
-			# Age key'in varlığını kontrol et
-			if [[ ! -f "${HOME}/.config/sops/age/keys.txt" ]]; then
+			local age_key_file="${HOME}/.config/sops/age/keys.txt"
+			if [[ ! -f "$age_key_file" ]]; then
 				error "Age key dosyası bulunamadı"
 			fi
 
-			# Şifrelemeyi gerçekleştir
-			sops --encrypt --age "$(cat ${HOME}/.config/sops/age/keys.txt)" "$1" >"$2" || return 1
+			local age_public_key=$(grep "^# public key: " "$age_key_file" | cut -d: -f2 | tr -d ' ')
+			if [[ -z "$age_public_key" ]]; then
+				error "Public key bulunamadı"
+			fi
+
+			sops --encrypt --age "$age_public_key" "$1" >"$2" || return 1
 		}
 		decrypt_file() {
-			export SOPS_CONFIG_FILE="${HOME}/.nixosc/.sops.yml"
+			export SOPS_CONFIG_FILE="${HOME}/.nixosc/.sops.yaml"
 			sops --decrypt "$1" || return 1
 		}
 		;;
