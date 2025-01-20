@@ -24,10 +24,11 @@
         # 4. Theme and Visual Setup
         "hyprctl setcursor catppuccin-mocha-lavender-cursors 24 &" # Cursor theme
         "swww-daemon &"                          # Wallpaper daemon
+        "random-wallpaper-change"
+
         
         # 5. Workspace and Security
         "pypr &"                                 # Python script runner
-        #"hyprctl dispatch workspace 2"           # Set initial workspace
         "m2w2"                                   # Set initial workspace
         "hyprlock"                               # Screen locker
       ];

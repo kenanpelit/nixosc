@@ -165,6 +165,9 @@ let
   publicip = pkgs.writeShellScriptBin "publicip" (
     builtins.readFile ./bin/publicip.sh
   );
+  random-wallpaper-change = pkgs.writeShellScriptBin "random-wallpaper-change" (
+    builtins.readFile ./bin/random-wallpaper-change.sh
+  );
   random-wallpaper = pkgs.writeShellScriptBin "random-wallpaper" (
     builtins.readFile ./bin/random-wallpaper.sh
   );
@@ -173,6 +176,9 @@ let
   );
   renew_env = pkgs.writeShellScriptBin "renew_env" (
     builtins.readFile ./bin/renew_env.sh
+  );
+  rofi-frecency = pkgs.writeShellScriptBin "rofi-frecency" (
+    builtins.readFile ./bin/rofi-frecency.sh
   );
   rofi-iwmenu = pkgs.writeShellScriptBin "rofi-iwmenu" (
     builtins.readFile ./bin/rofi-iwmenu.sh
@@ -505,9 +511,11 @@ in {
     ports
     power-menu
     publicip
+    random-wallpaper-change
     random-wallpaper
     record
     renew_env
+    rofi-frecency
     rofi-iwmenu
     rofi-launcher
     rofi-power-menu
