@@ -193,6 +193,7 @@
       ];
       modules-right = [
         "cpu"
+        "temperature"
         "memory"
         "disk"
         "bluetooth"
@@ -211,6 +212,24 @@
         on-click-right = "rofi -show drun";
         tooltip = true;
         tooltip-format = "Random Wallpaper";
+      };
+
+      temperature = {
+        interval = 2;
+        format = "{icon} {temperatureC}°C";
+        format-critical = "{icon} {temperatureC}°C";
+        max-length = 10;
+        critical-threshold = 85;
+        on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
+        format-icons = [
+          "󱃃"
+          "󱃃"
+          "󱃂"
+          "󱃅"
+        ];
+        # CoreTemp için doğru path konfigürasyonu
+        hwmon-path-abs = "/sys/devices/platform/coretemp.0/hwmon";
+        input-filename = "temp1_input";
       };
 
       cpu = {

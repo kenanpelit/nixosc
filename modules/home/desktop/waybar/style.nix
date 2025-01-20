@@ -32,6 +32,7 @@
     #pulseaudio#sink,
     #network,
     #cpu,
+    #temperature,
     #memory,
     #disk,
     #battery,
@@ -209,12 +210,27 @@
     #pulseaudio#sink:hover,
     #network:hover,
     #cpu:hover,
+    #temperature:hover,
     #memory:hover,
     #disk:hover,
     #battery:hover,
     #clock:hover,
     #language:hover,
     #mpris:hover {
+      background-color: rgba(122, 162, 247, 0.1);
+      border-color: #7aa2f7;
+    }
+
+    #temperature {
+      color: #9ece6a;  /* Normal durum rengi - yeşil */
+    }
+
+    #temperature.critical {
+      color: #f7768e;  /* Kritik sıcaklık rengi - kırmızı */
+      animation: blink-critical 1s infinite;
+    }
+
+    #temperature:hover {
       background-color: rgba(122, 162, 247, 0.1);
       border-color: #7aa2f7;
     }
