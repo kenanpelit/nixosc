@@ -951,11 +951,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1737396057,
-        "narHash": "sha256-YvstCm/kxwjqPbAUJNGeWy+wIiiOinYL5ZIKBmvvGNw=",
+        "lastModified": 1737402055,
+        "narHash": "sha256-UyZwQnYepCrZswAKy7SFlx5ReqZV02rRxdygvRnkIuQ=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "bc0cdc7e9a3103acafaf74482774487b203c05d9",
+        "rev": "5f0ae5807c408d912a8fd5140290df1945af5329",
         "type": "github"
       },
       "original": {
