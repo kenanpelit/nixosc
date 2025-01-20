@@ -61,8 +61,8 @@
     }
     /* Window Layout */
     window {
-      height: 800px;
-      width: 1200px;
+      height: 712px;
+      width: 1152px;
       border: 2px;
       border-color: @border-col;
       background-color: @bg-col;
