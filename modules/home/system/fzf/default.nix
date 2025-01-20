@@ -63,9 +63,6 @@
     ];
   };
 
-  # Önizleme için gerekli bağımlılıkları yükle
-  home.packages = previewDeps;
-
   # Önizleme için ortam değişkenleri
   home.sessionVariables = {
     FZF_PREVIEW_IMAGE_HANDLER = "chafa";  # veya "sixel" için terminalde sixel desteği varsa
