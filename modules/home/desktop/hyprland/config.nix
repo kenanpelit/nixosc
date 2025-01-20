@@ -457,7 +457,8 @@
         "$mainMod, G, togglegroup"                # Pencere gruplama
         "$mainMod, Q, killactive"                 # Aktif pencereyi kapat
         "ALT, F4, killactive"                     # Alternatif pencere kapatma
-        "$mainMod, Space, exec, rofi -show drun || pkill rofi"
+        #"$mainMod, Space, exec, rofi -show drun || pkill rofi"
+        "$mainMod, Space, exec, rofi-launch || pkill rofi"
         "ALT, Space, exec, ulauncher-toggle"
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 5 silent] SoundWireServer'"
