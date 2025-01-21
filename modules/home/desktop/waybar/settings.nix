@@ -187,9 +187,10 @@
       modules-left = [
         "custom/launcher"
         "hyprland/workspaces"
+        "custom/blank"
+        "mpris"
       ];
       modules-center = [
-        "mpris"
       ];
       modules-right = [
         "cpu"
