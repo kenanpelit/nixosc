@@ -454,7 +454,7 @@
       # Key Bindings
       bind = [
         # show keybinds list
-        "$mainMod, F1, exec, hypr-keybinds"
+        "$mainMod, F1, exec, rofi-hypr-keybinds"
 
         # Terminal Emülatörleri
         "$mainMod, Return, exec, kitty"                                                  # Normal mod
