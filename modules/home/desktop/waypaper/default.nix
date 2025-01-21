@@ -9,6 +9,5 @@
   # =============================================================================
   imports = [
     ./config.nix    # Config settings
-    ./random.nix    # Service configuration
   ];
 }

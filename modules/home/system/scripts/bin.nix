@@ -114,6 +114,9 @@ let
   hypr-workspace-monitor = pkgs.writeShellScriptBin "hypr-workspace-monitor" (
     builtins.readFile ./bin/hypr-workspace-monitor.sh
   );
+  image-deduplicator = pkgs.writeShellScriptBin "image-deduplicator" (
+    builtins.readFile ./bin/image-deduplicator.sh
+  );
   kitty-toggle-font = pkgs.writeShellScriptBin "kitty-toggle-font" (
     builtins.readFile ./bin/kitty-toggle-font.sh
   );
@@ -164,12 +167,6 @@ let
   );
   publicip = pkgs.writeShellScriptBin "publicip" (
     builtins.readFile ./bin/publicip.sh
-  );
-  random-wallpaper-change = pkgs.writeShellScriptBin "random-wallpaper-change" (
-    builtins.readFile ./bin/random-wallpaper-change.sh
-  );
-  random-wallpaper = pkgs.writeShellScriptBin "random-wallpaper" (
-    builtins.readFile ./bin/random-wallpaper.sh
   );
   record = pkgs.writeShellScriptBin "record" (
     builtins.readFile ./bin/record.sh
@@ -230,9 +227,6 @@ let
   );
   sil_ayni_mp4 = pkgs.writeShellScriptBin "sil_ayni_mp4" (
     builtins.readFile ./bin/sil_ayni_mp4.sh
-  );
-  sil_ayni_wall = pkgs.writeShellScriptBin "sil_ayni_wall" (
-    builtins.readFile ./bin/sil_ayni_wall.sh
   );
   smart-suspend = pkgs.writeShellScriptBin "smart-suspend" (
     builtins.readFile ./bin/smart-suspend.sh
@@ -318,11 +312,8 @@ let
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
   );
-  wall-change = pkgs.writeShellScriptBin "wall-change" (
-    builtins.readFile ./bin/wall-change.sh
-  );
-  wallpaper-picker = pkgs.writeShellScriptBin "wallpaper-picker" (
-    builtins.readFile ./bin/wallpaper-picker.sh
+  wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
+    builtins.readFile ./bin/wallpaper-manager.sh
   );
   waybar-bluelightfilter-monitor = pkgs.writeShellScriptBin "waybar-bluelightfilter-monitor" (
     builtins.readFile ./bin/waybar-bluelightfilter-monitor.sh
@@ -494,6 +485,7 @@ in {
     hypr-status-check
     hypr-vlc_toggle
     hypr-workspace-monitor
+    image-deduplicator
     kitty-toggle-font
     lofi
     maxfetch
@@ -511,8 +503,6 @@ in {
     ports
     power-menu
     publicip
-    random-wallpaper-change
-    random-wallpaper
     record
     renew_env
     rofi-frecency
@@ -533,7 +523,6 @@ in {
     set-defaults-mimetype
     set-default-terminal
     sil_ayni_mp4
-    sil_ayni_wall
     smart-suspend
     snippetp
     snippets
@@ -562,8 +551,7 @@ in {
     ulauncher_ext
     video_info
     vm-start
-    wall-change
-    wallpaper-picker
+    wallpaper-manager
     waybar-bluelightfilter-monitor
     waybar-bluelightfilter-toggle
     waybar-bluetooth-menu

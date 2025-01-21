@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Varsayılan değer (saniye)
-INTERVAL=300 # 3 dakika
+INTERVAL=300 # 5 dakika
 
 # Yapılandırma
 WALLPAPER_PATH="$HOME/Pictures/wallpapers"
@@ -15,15 +15,32 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# SWWW animasyonları
+animations=("outer" "center" "any" "wipe")
+
 # Kullanım bilgisi
 show_usage() {
 	echo "Kullanım: $(basename "$0") [komut] [süre]"
 	echo "Komutlar:"
-	echo "  start [süre]  : Servisi başlatır (süre saniye cinsinden, varsayılan: 180)"
+	echo "  start [süre]  : Servisi başlatır (süre saniye cinsinden, varsayılan: 300)"
 	echo "  stop          : Servisi durdurur"
 	echo "  status        : Servis durumunu gösterir"
+	echo "  select        : Rofi ile duvar kağıdı seç"
+	echo "  Boş          : Tek seferlik rastgele duvar kağıdı değiştirir"
 	echo "Örnek: $(basename "$0") start 300  # 5 dakikada bir değiştirir"
 	exit 1
+}
+
+# Duvar kağıdını ayarla
+set_wallpaper() {
+	local wallpaper="$1"
+	local random_animation=${animations[RANDOM % ${#animations[@]}]}
+
+	if [[ "$random_animation" == "wipe" ]]; then
+		swww img --transition-type="wipe" --transition-angle=135 "$wallpaper"
+	else
+		swww img --transition-type="$random_animation" "$wallpaper"
+	fi
 }
 
 # Servis durumunu kontrol et
@@ -75,7 +92,7 @@ change_wallpaper() {
 
 	# Duvar kağıdını değiştir
 	ln -sf "$selected_wallpaper" "$WALLPAPER_LINK"
-	wall-change "$WALLPAPER_LINK"
+	set_wallpaper "$selected_wallpaper"
 	echo -e "${GREEN}Duvar kağıdı değiştirildi: $selected_name${NC}"
 }
 
@@ -134,6 +151,19 @@ stop_service() {
 	fi
 }
 
+# Rofi ile duvar kağıdı seç
+select_wallpaper() {
+	wallpaper_name="$(ls $WALLPAPERS_FOLDER | rofi -dmenu -p "Select wallpaper" || pkill rofi)"
+	if [[ -f "$WALLPAPERS_FOLDER/$wallpaper_name" ]]; then
+		ln -sf "$WALLPAPERS_FOLDER/$wallpaper_name" "$WALLPAPER_LINK"
+		set_wallpaper "$WALLPAPERS_FOLDER/$wallpaper_name"
+		echo -e "${GREEN}Duvar kağıdı değiştirildi: $wallpaper_name${NC}"
+	else
+		echo -e "${RED}Geçersiz seçim veya iptal edildi${NC}"
+		exit 1
+	fi
+}
+
 # Ana komut kontrolü
 case "$1" in
 start)
@@ -150,7 +180,15 @@ stop)
 status)
 	check_status
 	;;
+select)
+	select_wallpaper
+	;;
 *)
-	show_usage
+	# Parametre verilmemişse tek seferlik değişim yap
+	if [ -z "$1" ]; then
+		change_wallpaper
+	else
+		show_usage
+	fi
 	;;
 esac

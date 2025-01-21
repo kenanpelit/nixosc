@@ -1,5 +1,5 @@
 # Hyprland Window Manager Configuration
-# modules/home/hyprland/config.nix
+# modules/home/desktop/hyprland/config.nix
 { config, lib, pkgs, ... }:
 {
   wayland.windowManager.hyprland = {
@@ -11,22 +11,21 @@
         # 1. System Integration Services
         "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
-        
+
         # 2. Core System Services
         "poweralertd &"                          # Power management notifications
         "swaync &"                               # Notification center
-        
+
         # 3. Clipboard Management Chain
         "wl-clip-persist --clipboard both &"     # Clipboard persistence
         "wl-paste --watch cliphist store &"      # Clipboard history
         "copyq &"                                # Advanced clipboard manager
-        
+
         # 4. Theme and Visual Setup
         "hyprctl setcursor catppuccin-mocha-lavender-cursors 24 &" # Cursor theme
         "swww-daemon &"                          # Wallpaper daemon
-        "random-wallpaper-change start"
+        "wallpaper-manager start"                 # Another wallpaper daemon
 
-        
         # 5. Workspace and Security
         "pypr &"                                 # Python script runner
         "m2w2"                                   # Set initial workspace
@@ -101,7 +100,7 @@
         repeat_delay = "300";                # Tuş tekrar gecikmesi
         sensitivity = "0.70";                # Fare hassasiyeti
         accel_profile = "adaptive";          # İvmelenme profili
- 
+
         # Touchpad ayarları
         touchpad = {
           natural_scroll = "false";          # Doğal kaydırma
@@ -110,7 +109,7 @@
           drag_lock = "true";               # Sürükleme kilidi
           scroll_factor = "0.70";           # Kaydırma faktörü
         };
- 
+
         # Diğer giriş ayarları
         numlock_by_default = "0";           # NumLock varsayılan durumu
         left_handed = "0";                  # Sol el modu
@@ -155,12 +154,12 @@
         # Görünüm ayarları
         disable_hyprland_logo = true;      # Logo gösterimini kapat
         disable_splash_rendering = true;    # Açılış ekranını kapat
-        
+
         # Güç yönetimi
         mouse_move_enables_dpms = true;    # Fare hareketi ekranı açar
         key_press_enables_dpms = true;     # Tuş basımı ekranı açar
         vrr = 0;                           # VRR/Adaptive sync
-        
+
         # Pencere davranışları
         focus_on_activate = true;          # Aktif pencereye odaklan
         always_follow_on_dnd = true;       # Sürükle-bırak takibi
@@ -203,16 +202,16 @@
       decoration = {
         # Temel görünüm
         rounding = 10;                    # Köşe yuvarlaklığı
-        
+
         # Opaklık ayarları
         active_opacity = 2.0;             # Aktif pencere opaklığı
         inactive_opacity = 1.0;           # Pasif pencere opaklığı
         fullscreen_opacity = 1.0;         # Tam ekran opaklığı
-        
+
         # Karartma ayarları
         dim_inactive = true;              # Pasif pencere karartma
         dim_strength = 0.1;               # Karartma şiddeti
-        
+
         # Bulanıklık ayarları
         blur = {
           enabled = true;                 # Bulanıklık efekti
@@ -222,7 +221,7 @@
           new_optimizations = true;       # Yeni optimizasyonlar
           xray = false;                   # X-ray efekti
         };
-        
+
         # Gölge ayarları
         shadow = {
           enabled = true;                 # Gölge efekti
@@ -239,7 +238,7 @@
       # =====================================================
       animations = {
         enabled = true;                   # Animasyonları etkinleştir
-        
+
         # Bezier eğrileri
         bezier = [
           "slow, 0, 0.85, 0.3, 1"
@@ -247,7 +246,7 @@
           "wind, 0.05, 0.9, 0.1, 1.05"
           "linear, 0.0, 0.0, 1.0, 1.0"
         ];
-        
+
         # Animasyon tanımları
         animation = [
           "windowsIn, 1, 4, slow, popin"
@@ -264,7 +263,7 @@
         "float,mpv"
         "size 19%,mpv"
         "move 1% 77%,mpv"
-        "opacity 1.0,mpv" 
+        "opacity 1.0,mpv"
         "pin,mpv"
         "float,Vncviewer"
         "center,Vncviewer"
@@ -497,8 +496,8 @@
         "ALT, 6, exec, hypr-mpv-manager wallpaper"                                    # Duvar kağıdı yap
 
         # Duvar Kağıdı Yönetimi
-        "$mainMod, W, exec, wallpaper-picker"                                         # Duvar kağıdı seç
-        "ALT, 0, exec, random-wallpaper"                                              # Rastgele duvar kağıdı
+        "$mainMod, W, exec, wallpaper-manager select"                                 # Duvar kağıdı seç
+        "ALT, 0, exec, wallpaper-manager"                                             # Rastgele duvar kağıdı
         "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'" # Waypaper
 
         # Sistem Araçları
@@ -645,7 +644,7 @@
       monitor=desc:AU Optronics 0x2036,1920x1080@60,320x1440,1
 
       # Çalışma alanı atamaları
-      workspace = 1, monitor:DELL UP2716D KRXTR88N909L,1, default:true 
+      workspace = 1, monitor:DELL UP2716D KRXTR88N909L,1, default:true
       workspace = 2, monitor:DELL UP2716D KRXTR88N909L,2
       workspace = 3, monitor:DELL UP2716D KRXTR88N909L,3
       workspace = 4, monitor:DELL UP2716D KRXTR88N909L,4
