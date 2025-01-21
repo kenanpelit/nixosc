@@ -96,11 +96,10 @@
     initExtra = ''
       # Load P10k Theme
       [[ ! -f "$ZDOTDIR/p10k.zsh" ]] || source "$ZDOTDIR/p10k.zsh"
-
       # Add completions to fpath
-      fpath=("$ZDOTDIR/plugins/zsh-completions/src" $fpath)
+      fpath=("$ZDOTDIR/plugins/zsh-completions/src" "$ZDOTDIR/completions" $fpath)
     '';
-
+   
     # -----------------------------------------------------------------------------
     # History Configuration
     # -----------------------------------------------------------------------------
