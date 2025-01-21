@@ -39,6 +39,7 @@ let
     nixfmt-rfc-style       # Nix kod formatlayıcı
     nil                    # Nix dil araçları
     programmer-calculator  # Programcı hesap makinesi
+    psmisc                 # A package of small utilities
     shellcheck            # Kabuk betik analizi
     shfmt                 # Kabuk betik formatlayıcı
     stylua                # Lua kod formatlayıcı

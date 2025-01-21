@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 # Varsayılan değer (saniye)
-INTERVAL=180 # 3 dakika
+INTERVAL=300 # 3 dakika
 
 # Yapılandırma
 WALLPAPER_PATH="$HOME/Pictures/wallpapers"
 WALLPAPERS_FOLDER="$HOME/Pictures/wallpapers/others"
 WALLPAPER_LINK="$WALLPAPER_PATH/wallpaper"
+PID_FILE="/tmp/wallpaper-changer.pid"
 
 # Renk tanımlamaları
 RED='\033[0;31m'
@@ -16,34 +17,37 @@ NC='\033[0m'
 
 # Kullanım bilgisi
 show_usage() {
-	echo "Kullanım: $(basename "$0") [süre]"
-	echo "süre: Duvar kağıdı değişim süresi (saniye), varsayılan: 180"
-	echo "Örnek: $(basename "$0") 300  # 5 dakikada bir değiştirir"
+	echo "Kullanım: $(basename "$0") [komut] [süre]"
+	echo "Komutlar:"
+	echo "  start [süre]  : Servisi başlatır (süre saniye cinsinden, varsayılan: 180)"
+	echo "  stop          : Servisi durdurur"
+	echo "  status        : Servis durumunu gösterir"
+	echo "Örnek: $(basename "$0") start 300  # 5 dakikada bir değiştirir"
 	exit 1
 }
 
-# Parametreleri kontrol et
-if [[ "$1" =~ ^[0-9]+$ ]]; then
-	INTERVAL=$1
-elif [[ -n "$1" ]]; then
-	show_usage
-fi
+# Servis durumunu kontrol et
+check_status() {
+	if [ -f "$PID_FILE" ]; then
+		pid=$(cat "$PID_FILE")
+		if ps -p "$pid" >/dev/null 2>&1; then
+			# Process tree'yi kontrol et
+			if pgrep -P "$pid" >/dev/null 2>&1; then
+				echo -e "${GREEN}Servis çalışıyor (PID: $pid)${NC}"
+				return 0
+			fi
+		fi
+		rm -f "$PID_FILE"
+		echo -e "${YELLOW}Servis çalışmıyor (eski PID dosyası temizlendi)${NC}"
+		return 1
+	else
+		echo -e "${YELLOW}Servis çalışmıyor${NC}"
+		return 1
+	fi
+}
 
-# Dizin kontrolü
-if [ ! -d "$WALLPAPERS_FOLDER" ]; then
-	echo -e "${RED}HATA: Duvar kağıdı dizini bulunamadı: $WALLPAPERS_FOLDER${NC}" >&2
-	exit 1
-fi
-
-# Ana dizini oluştur
-mkdir -p "$WALLPAPER_PATH"
-
-# CTRL+C ile temiz çıkış
-trap 'echo -e "\n${YELLOW}Duvar kağıdı döngüsü durduruldu${NC}"; exit 0' INT TERM
-
-# Ana döngü
-echo -e "${GREEN}Duvar kağıdı değişimi başlatıldı (${INTERVAL} saniye aralıkla)${NC}"
-while true; do
+# Duvar kağıdı değiştirme fonksiyonu
+change_wallpaper() {
 	# Mevcut duvar kağıdını al
 	current_wallpaper=$(readlink "$WALLPAPER_LINK" 2>/dev/null)
 	current_wallpaper_name=$(basename "$current_wallpaper" 2>/dev/null)
@@ -54,7 +58,7 @@ while true; do
 
 	if [ $wallpaper_count -eq 0 ]; then
 		echo -e "${RED}HATA: Duvar kağıdı bulunamadı: $WALLPAPERS_FOLDER${NC}" >&2
-		exit 1
+		return 1
 	fi
 
 	# Yeni duvar kağıdı seç
@@ -63,7 +67,6 @@ while true; do
 	while [ $attempt -lt $max_attempts ]; do
 		selected_wallpaper="${wallpaper_list[RANDOM % wallpaper_count]}"
 		selected_name=$(basename "$selected_wallpaper")
-
 		if [[ "$selected_name" != "$current_wallpaper_name" ]]; then
 			break
 		fi
@@ -74,7 +77,80 @@ while true; do
 	ln -sf "$selected_wallpaper" "$WALLPAPER_LINK"
 	wall-change "$WALLPAPER_LINK"
 	echo -e "${GREEN}Duvar kağıdı değiştirildi: $selected_name${NC}"
+}
 
-	# Sonraki değişim için bekle
-	sleep $INTERVAL
-done
+# Servisi başlat
+start_service() {
+	if check_status >/dev/null; then
+		echo -e "${YELLOW}Servis zaten çalışıyor${NC}"
+		exit 1
+	fi
+
+	# Dizin kontrolü
+	if [ ! -d "$WALLPAPERS_FOLDER" ]; then
+		echo -e "${RED}HATA: Duvar kağıdı dizini bulunamadı: $WALLPAPERS_FOLDER${NC}" >&2
+		exit 1
+	fi
+
+	# Ana dizini oluştur
+	mkdir -p "$WALLPAPER_PATH"
+
+	# Ana süreç
+	(
+		while true; do
+			change_wallpaper
+			sleep $INTERVAL
+		done
+	) >>/tmp/wallpaper-changer.log 2>&1 &
+
+	# Ana sürecin PID'ini kaydet
+	echo $! >"$PID_FILE"
+
+	# PID'in yazılmasını bekle
+	sleep 1
+	if [ -f "$PID_FILE" ] && ps -p $(cat "$PID_FILE") >/dev/null 2>&1; then
+		echo -e "${GREEN}Servis başlatıldı${NC}"
+	else
+		echo -e "${RED}Servis başlatılamadı${NC}"
+		rm -f "$PID_FILE"
+		exit 1
+	fi
+}
+
+# Servisi durdur
+stop_service() {
+	if [ -f "$PID_FILE" ]; then
+		pid=$(cat "$PID_FILE")
+		if ps -p "$pid" >/dev/null 2>&1; then
+			kill -TERM "$pid"
+			rm -f "$PID_FILE"
+			echo -e "${GREEN}Servis durduruldu${NC}"
+		else
+			rm -f "$PID_FILE"
+			echo -e "${YELLOW}Servis zaten durmuş (eski PID dosyası temizlendi)${NC}"
+		fi
+	else
+		echo -e "${YELLOW}Servis zaten çalışmıyor${NC}"
+	fi
+}
+
+# Ana komut kontrolü
+case "$1" in
+start)
+	if [[ "$2" =~ ^[0-9]+$ ]]; then
+		INTERVAL=$2
+	elif [[ -n "$2" ]]; then
+		show_usage
+	fi
+	start_service
+	;;
+stop)
+	stop_service
+	;;
+status)
+	check_status
+	;;
+*)
+	show_usage
+	;;
+esac

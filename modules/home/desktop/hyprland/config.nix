@@ -24,7 +24,7 @@
         # 4. Theme and Visual Setup
         "hyprctl setcursor catppuccin-mocha-lavender-cursors 24 &" # Cursor theme
         "swww-daemon &"                          # Wallpaper daemon
-        "random-wallpaper-change"
+        "random-wallpaper-change start"
 
         
         # 5. Workspace and Security
