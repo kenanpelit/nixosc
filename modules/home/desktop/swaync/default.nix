@@ -10,12 +10,11 @@ let
   };
 in
 {
-
   # =============================================================================
   # Package Installation
   # =============================================================================
   home.packages = (with pkgs; [ swaynotificationcenter ]);
-  
+
   # =============================================================================
   # Configuration Files
   # =============================================================================
@@ -23,10 +22,5 @@ in
   xdg.configFile."swaync/style.css".text = ''
     ${theme.swaync.style}
     ${builtins.readFile ./style.css}
-    
-    /* Yeni özelleştirmeler */
-    * {
-      transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
   '';
 }
