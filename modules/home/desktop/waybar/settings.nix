@@ -206,6 +206,14 @@
         "custom/power"
       ];
 
+      "custom/launcher" = {
+        format = "󱄅";
+        on-click = "wallpaper-manager";
+        on-click-right = "rofi -show drun";
+        tooltip = true;
+        tooltip-format = "Random Wallpaper";
+      };
+
       temperature = {
         interval = 2;
         format = "{icon} {temperatureC}°C";
