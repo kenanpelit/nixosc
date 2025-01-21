@@ -8,6 +8,22 @@
  # Package Installation
  # =============================================================================
  home.packages = (with pkgs; [ nemo ]);
+
+ # =============================================================================
+ # Custom Actions
+ # =============================================================================
+ home.file.".local/share/nemo/actions/kitty.nemo_action".text = ''
+   [Nemo Action]
+   Active=true
+   Name=Open in Kitty
+   Comment=Open current directory in Kitty terminal
+   Exec=kitty --working-directory %P
+   Selection=none
+   Extensions=any;
+   Conditions=local;
+   Icon-Name=utilities-terminal
+ '';
+
  # =============================================================================
  # DConf Settings
  # =============================================================================
