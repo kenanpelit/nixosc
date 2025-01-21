@@ -1,126 +1,107 @@
-/* Bildirim Kartı Tasarımı */
+/* Ana Konteyner Stilleri */
 .notification-row {
     outline: none;
-    margin: 12px 8px;
-    background: @base;
-    border: 1px solid @surface1;
+    margin: 8px 6px;
+    background: alpha(@base, 0.95);
+    border: 1px solid @surface0;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: all 200ms ease;
+    padding: 8px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15);
 }
 
 .notification-row:hover {
+    border-color: @surface1;
     transform: translateY(-1px);
-    border-color: @surface2;
-}
-
-/* Yazı Tipleri ve Metin Düzeni */
-.summary {
-    color: @text;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    padding: 0;
-    margin-bottom: 4px;
-}
-
-.body {
-    font-size: 14px;
-    line-height: 1.5;
-    font-weight: 400;
-    color: @subtext1;
-    margin: 4px 0;
-}
-
-.time {
-    color: @subtext0;
-    font-size: 11px;
-    margin: 0;
-    padding: 2px 0;
 }
 
 /* Kontrol Merkezi */
 .control-center {
-    background: @mantle;
-    border: 2px solid @surface1;
+    background: alpha(@crust, 0.95);
+    border: 1px solid @surface0;
     border-radius: 12px;
-    padding: 8px;
-    margin: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.control-center-list {
+    background: transparent;
+    padding: 6px;
+}
+
+/* Başlık ve Metin Stilleri */
+.summary {
+    font-size: 18px;
+    font-weight: 600;
+    color: @text;
+    margin: 0;
+}
+
+.time {
+    color: alpha(@subtext0, 0.9);
+    font-size: 14px;
+    margin: 0;
+    padding: 2px 0;
+}
+
+.body {
+    font-size: 16px;
+    font-weight: normal;
+    color: @subtext1;
+    margin: 4px 0;
+}
+
+/* Başlık Widget'ı */
 .widget-title {
-    background: inherit;
-    border-radius: 8px 8px 0 0;
-    padding: 16px;
-    margin: 0 0 8px 0;
+    background: transparent;
+    padding: 12px;
+    margin: 0;
 }
 
 .widget-title > label {
     font-size: 18px;
     font-weight: 600;
-    margin: 0;
-}
-
-/* Buton Stilleri */
-.notification-action {
-    background: @surface0;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-    margin: 4px;
     color: @text;
-    transition: background 0.2s ease;
-}
-
-.notification-action:hover {
-    background: @surface1;
-}
-
-.notification-default-action {
-    border-radius: 8px;
-    margin: 0;
-    padding: 0;
 }
 
 /* MPRIS Medya Kontrolü */
 .widget-mpris {
-    background: @base;
+    background: @mantle;
+    border: 1px solid @surface0;
     border-radius: 8px;
-    margin: 8px;
-    padding: 12px;
+    margin: 6px;
+    padding: 10px;
+}
+
+.widget-mpris-player {
+    padding: 8px;
+    margin: 4px;
 }
 
 .widget-mpris-title {
-    color: @text;
-    font-weight: 600;
     font-size: 14px;
-    margin-top: 8px;
+    font-weight: 600;
+    color: @text;
     text-shadow: none;
 }
 
 .widget-mpris-subtitle {
-    color: @subtext1;
     font-size: 12px;
-    margin-top: 4px;
+    color: @subtext1;
     text-shadow: none;
 }
 
-/* Ses ve Ekran Parlaklığı Kontrolleri */
+/* Ses ve Parlaklık Kontrolleri */
 .widget-volume > box,
 .widget-backlight > scale {
     background: @surface0;
     border-radius: 8px;
     padding: 8px;
-    margin: 8px;
-    min-height: 50px;
+    margin: 6px;
 }
 
 scale trough {
     background: @surface1;
     border-radius: 4px;
     min-height: 6px;
-    margin: 0 8px;
 }
 
 scale highlight {
@@ -131,29 +112,29 @@ scale highlight {
 scale slider {
     background: @text;
     border-radius: 50%;
-    margin: -8px;
-    min-width: 16px;
-    min-height: 16px;
+    min-width: 14px;
+    min-height: 14px;
+    margin: -7px;
 }
 
-/* Rahatsız Etme Modu Düğmesi */
+/* Rahatsız Etme Modu */
 .widget-dnd {
-    margin: 12px;
-    padding: 12px;
+    margin: 6px;
+    padding: 8px;
     background: @surface0;
     border-radius: 8px;
-    font-size: 1.1rem;
 }
 
 .widget-dnd > switch {
     background: @surface1;
-    border: 2px solid @green;
+    border: 1px solid @surface1;
     border-radius: 12px;
     box-shadow: none;
 }
 
 .widget-dnd > switch:checked {
     background: @green;
+    border-color: @green;
 }
 
 .widget-dnd > switch slider {
@@ -163,8 +144,8 @@ scale slider {
 
 /* Menü Çubuğu */
 .widget-menubar {
-    background: inherit;
-    padding: 8px;
+    background: transparent;
+    padding: 6px;
 }
 
 .widget-menubar > box > box {
@@ -180,8 +161,8 @@ scale slider {
     padding: 8px;
     margin: 0;
     color: @text;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: 42px;
+    min-height: 42px;
 }
 
 .widget-menubar > box > box > button:hover {
@@ -189,30 +170,27 @@ scale slider {
     border-radius: 6px;
 }
 
-/* Bildirim Listesi */
-.control-center-list {
-    background: @crust;
-    padding: 8px;
-    margin: 0;
-    border-radius: 0 0 8px 8px;
+/* Bildirim Eylemleri */
+.notification-action {
+    background: @surface0;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin: 4px;
+    color: @text;
 }
 
-.control-center-list-placeholder {
-    color: @subtext0;
-    padding: 16px;
-    text-align: center;
+.notification-action:hover {
+    background: @surface1;
 }
 
-/* Notifications Group */
-.notification-group {
-    margin: 8px 0;
-    padding: 0;
+/* Özel Efektler */
+.blank-window {
+    background: alpha(@crust, 0.8);
 }
 
-.notification-group > box {
-    background: @mantle;
-    border-radius: 8px;
-    padding: 8px;
-    margin: 0;
+/* Genel Geçişler */
+* {
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
