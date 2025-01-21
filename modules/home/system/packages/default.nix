@@ -159,6 +159,7 @@ let
     wpaperd         # Modern duvar kağıdı yöneticisi
     sway            # i3 uyumlu Wayland pencere yöneticisi
     beauty-line-icon-theme # Modern simge teması
+    gnomeExtensions.gsconnect # Connect implementation
   ];
 
   # ==============================================================================
