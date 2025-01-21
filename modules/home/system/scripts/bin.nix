@@ -66,9 +66,6 @@ let
   hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
     builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
   );
-  hypr-keybinds = pkgs.writeShellScriptBin "hypr-keybinds" (
-    builtins.readFile ./bin/hypr-keybinds.sh
-  );
   hypr-monitor_toggle = pkgs.writeShellScriptBin "hypr-monitor_toggle" (
     builtins.readFile ./bin/hypr-monitor_toggle.sh
   );
@@ -117,14 +114,8 @@ let
   image-deduplicator = pkgs.writeShellScriptBin "image-deduplicator" (
     builtins.readFile ./bin/image-deduplicator.sh
   );
-  kitty-toggle-font = pkgs.writeShellScriptBin "kitty-toggle-font" (
-    builtins.readFile ./bin/kitty-toggle-font.sh
-  );
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
-  );
-  maxfetch = pkgs.writeShellScriptBin "maxfetch" (
-    builtins.readFile ./bin/maxfetch.sh
   );
   mkv2mp4 = pkgs.writeShellScriptBin "mkv2mp4" (
     builtins.readFile ./bin/mkv2mp4.sh
@@ -141,12 +132,6 @@ let
   music = pkgs.writeShellScriptBin "music" (
     builtins.readFile ./bin/music.sh
   );
-  network-reset-all = pkgs.writeShellScriptBin "network-reset-all" (
-    builtins.readFile ./bin/network-reset-all.sh
-  );
-  network-reset = pkgs.writeShellScriptBin "network-reset" (
-    builtins.readFile ./bin/network-reset.sh
-  );
   pass-clip-both = pkgs.writeShellScriptBin "pass-clip-both" (
     builtins.readFile ./bin/pass-clip-both.sh
   );
@@ -155,9 +140,6 @@ let
   );
   playlist = pkgs.writeShellScriptBin "playlist" (
     builtins.readFile ./bin/playlist.sh
-  );
-  pop-shell-install = pkgs.writeShellScriptBin "pop-shell-install" (
-    builtins.readFile ./bin/pop-shell-install.sh
   );
   ports = pkgs.writeShellScriptBin "ports" (
     builtins.readFile ./bin/ports.sh
@@ -176,6 +158,9 @@ let
   );
   rofi-frecency = pkgs.writeShellScriptBin "rofi-frecency" (
     builtins.readFile ./bin/rofi-frecency.sh
+  );
+  rofi-hypr-keybinds = pkgs.writeShellScriptBin "rofi-hypr-keybinds" (
+    builtins.readFile ./bin/rofi-hypr-keybinds.sh
   );
   rofi-iwmenu = pkgs.writeShellScriptBin "rofi-iwmenu" (
     builtins.readFile ./bin/rofi-iwmenu.sh
@@ -215,15 +200,6 @@ let
   );
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
-  );
-  semsumo-wofi-start = pkgs.writeShellScriptBin "semsumo-wofi-start" (
-    builtins.readFile ./bin/semsumo-wofi-start.sh
-  );
-  set-defaults-mimetype = pkgs.writeShellScriptBin "set-defaults-mimetype" (
-    builtins.readFile ./bin/set-defaults-mimetype.sh
-  );
-  set-default-terminal = pkgs.writeShellScriptBin "set-default-terminal" (
-    builtins.readFile ./bin/set-default-terminal.sh
   );
   sil_ayni_mp4 = pkgs.writeShellScriptBin "sil_ayni_mp4" (
     builtins.readFile ./bin/sil_ayni_mp4.sh
@@ -288,9 +264,6 @@ let
   toggle_waybar = pkgs.writeShellScriptBin "toggle_waybar" (
     builtins.readFile ./bin/toggle_waybar.sh
   );
-  transmission-install = pkgs.writeShellScriptBin "transmission-install" (
-    builtins.readFile ./bin/transmission-install.sh
-  );
   tsm = pkgs.writeShellScriptBin "tsm" (
     builtins.readFile ./bin/tsm.sh
   );
@@ -305,9 +278,6 @@ let
   );
   ulauncher_ext = pkgs.writeShellScriptBin "ulauncher_ext" (
     builtins.readFile ./bin/ulauncher_ext.sh
-  );
-  video_info = pkgs.writeShellScriptBin "video_info" (
-    builtins.readFile ./bin/video_info.sh
   );
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
@@ -351,84 +321,6 @@ let
   waybar-wf-recorder = pkgs.writeShellScriptBin "waybar-wf-recorder" (
     builtins.readFile ./bin/waybar-wf-recorder.sh
   );
-  waybar-wofi-cliphist = pkgs.writeShellScriptBin "waybar-wofi-cliphist" (
-    builtins.readFile ./bin/waybar-wofi-cliphist.sh
-  );
-  waybar-wofi-powerprofiles = pkgs.writeShellScriptBin "waybar-wofi-powerprofiles" (
-    builtins.readFile ./bin/waybar-wofi-powerprofiles.sh
-  );
-  waybar-wofi-wifi = pkgs.writeShellScriptBin "waybar-wofi-wifi" (
-    builtins.readFile ./bin/waybar-wofi-wifi.sh
-  );
-  wofi-bluetooth = pkgs.writeShellScriptBin "wofi-bluetooth" (
-    builtins.readFile ./bin/wofi-bluetooth.sh
-  );
-  wofi-browser = pkgs.writeShellScriptBin "wofi-browser" (
-    builtins.readFile ./bin/wofi-browser.sh
-  );
-  wofi-cliphist = pkgs.writeShellScriptBin "wofi-cliphist" (
-    builtins.readFile ./bin/wofi-cliphist.sh
-  );
-  wofi-firefox = pkgs.writeShellScriptBin "wofi-firefox" (
-    builtins.readFile ./bin/wofi-firefox.sh
-  );
-  wofi-font-manager = pkgs.writeShellScriptBin "wofi-font-manager" (
-    builtins.readFile ./bin/wofi-font-manager.sh
-  );
-  wofi-keybinds = pkgs.writeShellScriptBin "wofi-keybinds" (
-    builtins.readFile ./bin/wofi-keybinds.sh
-  );
-  wofi-launch-zen = pkgs.writeShellScriptBin "wofi-launch-zen" (
-    builtins.readFile ./bin/wofi-launch-zen.sh
-  );
-  wofi-main = pkgs.writeShellScriptBin "wofi-main" (
-    builtins.readFile ./bin/wofi-main.sh
-  );
-  wofi-manager = pkgs.writeShellScriptBin "wofi-manager" (
-    builtins.readFile ./bin/wofi-manager.sh
-  );
-  wofi-media = pkgs.writeShellScriptBin "wofi-media" (
-    builtins.readFile ./bin/wofi-media.sh
-  );
-  wofi-powerprofiles = pkgs.writeShellScriptBin "wofi-powerprofiles" (
-    builtins.readFile ./bin/wofi-powerprofiles.sh
-  );
-  wofi-power = pkgs.writeShellScriptBin "wofi-power" (
-    builtins.readFile ./bin/wofi-power.sh
-  );
-  wofi-run = pkgs.writeShellScriptBin "wofi-run" (
-    builtins.readFile ./bin/wofi-run.sh
-  );
-  wofi-search = pkgs.writeShellScriptBin "wofi-search" (
-    builtins.readFile ./bin/wofi-search.sh
-  );
-  wofi-ssh = pkgs.writeShellScriptBin "wofi-ssh" (
-    builtins.readFile ./bin/wofi-ssh.sh
-  );
-  wofi-system = pkgs.writeShellScriptBin "wofi-system" (
-    builtins.readFile ./bin/wofi-system.sh
-  );
-  wofi-themehypr = pkgs.writeShellScriptBin "wofi-themehypr" (
-    builtins.readFile ./bin/wofi-themehypr.sh
-  );
-  wofi-themewofi = pkgs.writeShellScriptBin "wofi-themewofi" (
-    builtins.readFile ./bin/wofi-themewofi.sh
-  );
-  wofi-tools = pkgs.writeShellScriptBin "wofi-tools" (
-    builtins.readFile ./bin/wofi-tools.sh
-  );
-  wofi-wifi = pkgs.writeShellScriptBin "wofi-wifi" (
-    builtins.readFile ./bin/wofi-wifi.sh
-  );
-  wofi-window-switcher = pkgs.writeShellScriptBin "wofi-window-switcher" (
-    builtins.readFile ./bin/wofi-window-switcher.sh
-  );
-  wofi-zenall = pkgs.writeShellScriptBin "wofi-zenall" (
-    builtins.readFile ./bin/wofi-zenall.sh
-  );
-  wofi-zen = pkgs.writeShellScriptBin "wofi-zen" (
-    builtins.readFile ./bin/wofi-zen.sh
-  );
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
@@ -469,7 +361,6 @@ in {
     hypr-colorpicker
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
-    hypr-keybinds
     hypr-monitor_toggle
     hypr-mpv-manager
     hypr-mullvad_toggle
@@ -486,26 +377,22 @@ in {
     hypr-vlc_toggle
     hypr-workspace-monitor
     image-deduplicator
-    kitty-toggle-font
     lofi
-    maxfetch
     mkv2mp4
     monitor_brightness
     move_media_files
     mpc-control
     music
-    network-reset-all
-    network-reset
     pass-clip-both
     pdfkes
     playlist
-    pop-shell-install
     ports
     power-menu
     publicip
     record
     renew_env
     rofi-frecency
+    rofi-hypr-keybinds
     rofi-iwmenu
     rofi-launcher
     rofi-power-menu
@@ -519,9 +406,6 @@ in {
     ScrcpyUSB
     ScrcpyWiFi
     screenshot
-    semsumo-wofi-start
-    set-defaults-mimetype
-    set-default-terminal
     sil_ayni_mp4
     smart-suspend
     snippetp
@@ -543,13 +427,11 @@ in {
     toggle_float
     toggle_oppacity
     toggle_waybar
-    transmission-install
     tsm
     tsms
     tty_config
     turbo-boost-setup
     ulauncher_ext
-    video_info
     vm-start
     wallpaper-manager
     waybar-bluelightfilter-monitor
@@ -564,32 +446,6 @@ in {
     waybar-weather-full
     waybar-weather-update
     waybar-wf-recorder
-    waybar-wofi-cliphist
-    waybar-wofi-powerprofiles
-    waybar-wofi-wifi
-    wofi-bluetooth
-    wofi-browser
-    wofi-cliphist
-    wofi-firefox
-    wofi-font-manager
-    wofi-keybinds
-    wofi-launch-zen
-    wofi-main
-    wofi-manager
-    wofi-media
-    wofi-powerprofiles
-    wofi-power
-    wofi-run
-    wofi-search
-    wofi-ssh
-    wofi-system
-    wofi-themehypr
-    wofi-themewofi
-    wofi-tools
-    wofi-wifi
-    wofi-window-switcher
-    wofi-zenall
-    wofi-zen
     wrename
     t1
     t3
