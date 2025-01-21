@@ -12,7 +12,6 @@
       margin-right = 0;
       modules-left = [
         "custom/launcher"
-        "custom/blank"
         "hyprland/workspaces"
         "custom/blank"
         "hyprland/window"
@@ -28,6 +27,7 @@
         "custom/vpnother"
         "network"
         "battery"
+        "custom/blank"
         "tray"
       ];
 
@@ -201,8 +201,8 @@
         "pulseaudio#source"
         "hyprland/language"
         "custom/notification"
-        "custom/blank"
         "custom/firewall"
+        "custom/blank"
         "custom/power"
       ];
 
