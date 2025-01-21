@@ -2,7 +2,7 @@
 .notification-row {
     outline: none;
     margin: 8px 6px;
-    background: alpha(@base, 0.95);
+    background: #24283b;  /* Tokyo Night background */
     border: 1px solid @surface0;
     border-radius: 8px;
     padding: 8px;
@@ -16,7 +16,7 @@
 
 /* Kontrol Merkezi */
 .control-center {
-    background: alpha(@crust, 0.95);
+    background: #24283b;  /* Tokyo Night background */
     border: 1px solid @surface0;
     border-radius: 12px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -64,7 +64,7 @@
 
 /* MPRIS Medya Kontrolü */
 .widget-mpris {
-    background: @mantle;
+    background: #1f2335;  /* Tokyo Night mantle */
     border: 1px solid @surface0;
     border-radius: 8px;
     margin: 6px;
@@ -92,14 +92,14 @@
 /* Ses ve Parlaklık Kontrolleri */
 .widget-volume > box,
 .widget-backlight > scale {
-    background: @surface0;
+    background: #1f2335;  /* Tokyo Night mantle */
     border-radius: 8px;
     padding: 8px;
     margin: 6px;
 }
 
 scale trough {
-    background: @surface1;
+    background: #414868;  /* Tokyo Night surface1 */
     border-radius: 4px;
     min-height: 6px;
 }
@@ -121,13 +121,13 @@ scale slider {
 .widget-dnd {
     margin: 6px;
     padding: 8px;
-    background: @surface0;
+    background: #1f2335;  /* Tokyo Night mantle */
     border-radius: 8px;
 }
 
 .widget-dnd > switch {
-    background: @surface1;
-    border: 1px solid @surface1;
+    background: #414868;  /* Tokyo Night surface1 */
+    border: 1px solid #414868;
     border-radius: 12px;
     box-shadow: none;
 }
@@ -152,7 +152,7 @@ scale slider {
     margin: 4px;
     padding: 4px;
     border-radius: 8px;
-    background: @surface0;
+    background: #1f2335;  /* Tokyo Night mantle */
 }
 
 .widget-menubar > box > box > button {
@@ -166,13 +166,13 @@ scale slider {
 }
 
 .widget-menubar > box > box > button:hover {
-    background: @surface1;
+    background: #414868;  /* Tokyo Night surface1 */
     border-radius: 6px;
 }
 
 /* Bildirim Eylemleri */
 .notification-action {
-    background: @surface0;
+    background: #1f2335;  /* Tokyo Night mantle */
     border: none;
     border-radius: 6px;
     padding: 6px 12px;
@@ -181,12 +181,12 @@ scale slider {
 }
 
 .notification-action:hover {
-    background: @surface1;
+    background: #414868;  /* Tokyo Night surface1 */
 }
 
 /* Özel Efektler */
 .blank-window {
-    background: alpha(@crust, 0.8);
+    background: alpha(#24283b, 0.8);  /* Tokyo Night background with alpha */
 }
 
 /* Genel Geçişler */
