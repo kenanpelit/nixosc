@@ -369,8 +369,8 @@
         "float, title:^(Picture-in-Picture)$"
 
         # Size and Position Rules
+        "size 1920 1080, class:^(yazi)$"
         "size 1536 864, class:^(clipb)$"
-        "size 1536 864, class:^(yazi)$"
         "size 850 500, class:^(zenity)$"
         "size 850 500, class:^(org.gnome.FileRoller)$"
         "size 850 500, title:^(File Upload)$"
@@ -479,7 +479,7 @@
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
         "ALT, Space, exec, ulauncher-toggle"                                          # Ulauncher
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
-        "ALT SHIFT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'" # Terminal dosya yönetici
+        "ALT SHIFT, F, exec, hyprctl dispatch exec '[float; center; size 1920 1080] kitty yazi'" # Terminal dosya yönetici
 
         # Medya ve Ses Kontrolü
         "ALT, A, exec, hypr-audio_switcher"                                           # Ses değiştirici
