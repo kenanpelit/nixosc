@@ -53,7 +53,7 @@
     ];
 
     # Temel Ayarlar
-    home.stateVersion = "24.11";
+    home.stateVersion = "25.05";
     
     # Tmux Modülü Aktivasyonu
     modules.tmux = {
