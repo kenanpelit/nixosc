@@ -1,466 +1,218 @@
-label {
-    color: @text;
+/* Bildirim Kartı Tasarımı */
+.notification-row {
+    outline: none;
+    margin: 12px 8px;
+    background: @base;
+    border: 1px solid @surface1;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 200ms ease;
 }
 
-.notification {
-    border: @green;
-    box-shadow: none;
-    border-radius: 4px;
-    background: inherit;
+.notification-row:hover {
+    transform: translateY(-1px);
+    border-color: @surface2;
 }
 
-.notification button {
-    background: transparent;
-    border-radius: 0px;
-    border: none;
-    margin: 0px;
-    padding: 0px;
-}
-
-.notification button:hover {
-    background: @surface0;
-}
-
-.notification-content {
-    min-height: 64px;
-    margin: 10px;
-    padding: 0px;
-    border-radius: 0px;
-}
-
-.close-button {
-    background: @crust;
-    color: @surface2;
-}
-
-.notification-default-action,
-.notification-action {
-    background: transparent;
-    border: none;
-}
-
-.notification-default-action {
-    border-radius: 4px;
-}
-
-.notification-default-action:not(:only-child) {
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-}
-
-.notification-action {
-    border-radius: 0px;
-    padding: 2px;
-    color: @text;
-}
-
-.notification-action:first-child {
-    border-bottom-left-radius: 4px;
-}
-
-.notification-action:last-child {
-    border-bottom-right-radius: 4px;
-}
-
+/* Yazı Tipleri ve Metin Düzeni */
 .summary {
     color: @text;
-    font-size: 18px;
-    padding: 0px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 0;
+    margin-bottom: 4px;
+}
+
+.body {
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 400;
+    color: @subtext1;
+    margin: 4px 0;
 }
 
 .time {
     color: @subtext0;
-    font-size: 12px;
-    text-shadow: none;
-    margin: 0px;
-    padding: 2px 0px;
+    font-size: 11px;
+    margin: 0;
+    padding: 2px 0;
 }
 
-.body {
-    font-size: 16px;
-    font-weight: 500;
-    color: @subtext1;
-    text-shadow: none;
-    margin: 0px;
-}
-
-.body-image {
-    border-radius: 4px;
-}
-
-.top-action-title {
-    color: @text;
-    text-shadow: none;
-}
-
+/* Kontrol Merkezi */
 .control-center {
-    background: @crust;
-    border: 2px solid @surface1;
-    border-radius: 0px;
-    box-shadow: 0px 0px 2px black;
-}
-
-.blank-window {
-    background: alpha(black, 0.2);
-}
-
-.control-center-list {
-    background: @crust;
-    min-height: 5px;
-    border-radius: 0px 0px 4px 4px;
-}
-
-.control-center-list-placeholder,
-.notification-group-icon,
-.notification-group {
-    color: alpha(@text, 0.5);
-}
-
-.notification-group {
-    all: unset;
-    border: none;
-    opacity: 0;
-    padding: 0px;
-    box-shadow: none;
-}
-
-.notification-group>box {
-    all: unset;
     background: @mantle;
+    border: 2px solid @surface1;
+    border-radius: 12px;
     padding: 8px;
-    margin: 0px;
-    border: none;
-    border-radius: 4px;
-    box-shadow: none;
-}
-
-.notification-row {
-    outline: none;
-    transition: all 1s ease;
-    background: @base;
-    border: 1px solid @crust;
-    margin: 10px 5px 0px 5px;
-    border-radius: 4px;
-}
-
-.notification-row:focus,
-.notification-row:hover {
-    box-shadow: none;
-}
-
-.control-center-list>row,
-.control-center-list>row:focus,
-.control-center-list>row:hover {
-    background: transparent;
-    border: none;
-    margin: 0px;
-    padding: 5px 10px 5px 10px;
-    box-shadow: none;
-}
-
-.control-center-list>row:last-child {
-    padding: 5px 10px 10px 10px;
-}
-
-.blank-window {
-    background: transparent;
+    margin: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .widget-title {
-    margin: 0px;
     background: inherit;
-    border-radius: 4px 4px 0px 0px;
-    padding-bottom: 20px;
+    border-radius: 8px 8px 0 0;
+    padding: 16px;
+    margin: 0 0 8px 0;
 }
 
-.widget-title>label {
-    margin: 18px 10px;
-    font-size: 20px;
-    font-weight: 500;
+.widget-title > label {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
 }
 
-.widget-title>button {
-    font-weight: 700;
-    padding: 7px 3px;
-    margin-right: 10px;
-    background: @mantle;
-    color: @text;
-    border-radius: 4px;
-}
-
-.widget-title>button:hover {
-    background: @base;
-}
-
-.widget-label {
-    margin: 0px;
-    padding: 0px;
-    min-height: 5px;
-    background: @mantle;
-    border-radius: 0px 0px 4px 4px;
-}
-
-.widget-label>label {
-    font-size: 0px;
-    font-weight: 400;
-}
-
-.widget-menubar {
-    background: inherit;
-}
-
-.widget-menubar>box>box {
-    margin: 5px 10px 5px 10px;
-    min-height: 40px;
-    border-radius: 4px;
-    background: transparent;
-}
-
-.widget-menubar>box>box>button {
-    background: @mantle;
-    min-width: 85px;
-    min-height: 50px;
-    margin-right: 13px;
-    font-size: 17px;
-    padding: 0px;
-}
-
-.widget-menubar>box>box>button:nth-child(4) {
-    margin-right: 0px;
-}
-
-.widget-menubar button:focus {
-    box-shadow: none;
-}
-
-.widget-menubar button:focus:hover {
-    background: @base;
-    box-shadow: none;
-}
-
-.widget-menubar>box>revealer>box {
-    margin: 5px 10px 5px 10px;
-    background: @mantle;
-    border-radius: 4px;
-}
-
-.widget-menubar>box>revealer>box>button {
-    background: transparent;
-    min-height: 50px;
-    padding: 0px;
-    margin: 5px;
-}
-
-.widget-buttons-grid {
-    background-color: @mantle;
-    font-size: 14px;
-    font-weight: 500;
-    margin: 0px;
-    padding: 5px;
-    border-radius: 0px;
-}
-
-.widget-buttons-grid>flowbox>flowboxchild {
-    background: @mantle;
-    border-radius: 4px;
-    min-height: 50px;
-    min-width: 85px;
-    margin: 5px;
-    padding: 0px;
-}
-
-.widget-buttons-grid>flowbox>flowboxchild>button {
-    background: transparent;
-    border-radius: 4px;
-    margin: 0px;
+/* Buton Stilleri */
+.notification-action {
+    background: @surface0;
     border: none;
-    box-shadow: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin: 4px;
+    color: @text;
+    transition: background 0.2s ease;
 }
 
-.widget-buttons-grid>flowbox>flowboxchild>button:hover {
-    background: @mantle;
+.notification-action:hover {
+    background: @surface1;
 }
 
+.notification-default-action {
+    border-radius: 8px;
+    margin: 0;
+    padding: 0;
+}
+
+/* MPRIS Medya Kontrolü */
 .widget-mpris {
-    padding: 10px 10px 35px;
-    margin-bottom: -33px;
-}
-
-.widget-mpris>box {
-    padding: 0px;
-    margin: -5px 0px -10px 0px;
-    border-radius: 4px;
-    background: @mantle;
-}
-
-.widget-mpris>box>button:nth-child(1),
-.widget-mpris>box>button:nth-child(3) {
-    margin: 0px -25px;
-    opacity: 0;
-}
-
-.widget-mpris-player>box>image {
-    margin: 0px 0px -48px 0px;
+    background: @base;
+    border-radius: 8px;
+    margin: 8px;
+    padding: 12px;
 }
 
 .widget-mpris-title {
     color: @text;
-    font-weight: bold;
-    font-size: 1.25rem;
-    text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 8px;
+    text-shadow: none;
 }
 
 .widget-mpris-subtitle {
     color: @subtext1;
-    font-size: 1rem;
-    text-shadow: 0px 0px 3px rgba(0, 0, 0, 1);
+    font-size: 12px;
+    margin-top: 4px;
+    text-shadow: none;
 }
 
-.widget-mpris>box>carousel>widget>box>box:nth-child(2) {
-    margin: 5px 0px -5px 90px;
-}
-
-.widget-mpris>box>carousel>widget>box>box:nth-child(2)>button {
-    border-radius: 4px;
-}
-
-.widget-mpris>box>carousel>widget>box>box:nth-child(2)>button:hover {
-    background: alpha(currentColor, 0.1);
-}
-
-carouselindicatordots {
-    opacity: 0;
-}
-
-.notification-group>box.vertical {
-    margin-top: 3px;
-}
-
-.widget-backlight,
-.widget-volume {
-    background-color: @crust;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 0px;
-    margin: 0px;
-    padding: 0px;
-}
-
-.widget-volume>box {
-    background: @mantle;
-    border-radius: 4px;
-    margin: 5px 10px;
-    min-height: 50px;
-}
-
-.widget-volume>box>label {
-    min-width: 50px;
-    padding: 0px;
-}
-
-.widget-volume>box>button {
-    min-width: 50px;
-    box-shadow: none;
-    padding: 0px;
-}
-
-.widget-volume>box>button:hover {
+/* Ses ve Ekran Parlaklığı Kontrolleri */
+.widget-volume > box,
+.widget-backlight > scale {
     background: @surface0;
-}
-
-.widget-volume>revealer>list {
-    background: @mantle;
-    border-radius: 4px;
-    margin-top: 5px;
-    padding: 0px;
-}
-
-.widget-volume>revealer>list>row {
-    padding-left: 10px;
-    min-height: 40px;
-    background: transparent;
-}
-
-.widget-volume>revealer>list>row:hover {
-    background: transparent;
-    box-shadow: none;
-    border-radius: 4px;
-}
-
-.widget-backlight>scale {
-    background: @mantle;
-    border-radius: 0px 4px 4px 0px;
-    margin: 5px 10px 5px 0px;
-    padding: 0px 10px 0px 0px;
-    min-height: 50px;
-}
-
-.widget-backlight>label {
-    background: @surface0;
-    margin: 5px 0px 5px 10px;
-    border-radius: 4px 0px 0px 4px;
-    padding: 0px;
-    min-height: 50px;
-    min-width: 50px;
-}
-
-.widget-dnd {
+    border-radius: 8px;
+    padding: 8px;
     margin: 8px;
-    font-size: 1.1rem;
-    padding-top: 20px;
-}
-
-.widget-dnd>switch {
-    font-size: initial;
-    border-radius: 12px;
-    background: @surface0;
-    border: 1px solid @green;
-    box-shadow: none;
-}
-
-.widget-dnd>switch:checked {
-    background: @surface2;
-}
-
-.widget-dnd>switch slider {
-    background: @green;
-    border-radius: 12px;
-}
-
-.toggle:checked {
-    background: @surface1;
-}
-
-.toggle:checked:hover {
-    background: @surface2;
-}
-
-scale {
-    padding: 0px;
-    margin: 0px 10px;
+    min-height: 50px;
 }
 
 scale trough {
+    background: @surface1;
     border-radius: 4px;
-    background: @surface0;
+    min-height: 6px;
+    margin: 0 8px;
 }
 
 scale highlight {
-    border-radius: 5px;
-    min-height: 10px;
-    margin-right: -5px;
-    background: @surface2;
+    background: @green;
+    border-radius: 4px;
 }
 
 scale slider {
-    margin: -10px;
-    min-width: 10px;
-    min-height: 10px;
-    background: transparent;
-    box-shadow: none;
-    padding: 0px;
+    background: @text;
+    border-radius: 50%;
+    margin: -8px;
+    min-width: 16px;
+    min-height: 16px;
 }
 
-.right.overlay-indicator {
-    all: unset;
+/* Rahatsız Etme Modu Düğmesi */
+.widget-dnd {
+    margin: 12px;
+    padding: 12px;
+    background: @surface0;
+    border-radius: 8px;
+    font-size: 1.1rem;
 }
+
+.widget-dnd > switch {
+    background: @surface1;
+    border: 2px solid @green;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.widget-dnd > switch:checked {
+    background: @green;
+}
+
+.widget-dnd > switch slider {
+    background: @text;
+    border-radius: 50%;
+}
+
+/* Menü Çubuğu */
+.widget-menubar {
+    background: inherit;
+    padding: 8px;
+}
+
+.widget-menubar > box > box {
+    margin: 4px;
+    padding: 4px;
+    border-radius: 8px;
+    background: @surface0;
+}
+
+.widget-menubar > box > box > button {
+    background: transparent;
+    border: none;
+    padding: 8px;
+    margin: 0;
+    color: @text;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+.widget-menubar > box > box > button:hover {
+    background: @surface1;
+    border-radius: 6px;
+}
+
+/* Bildirim Listesi */
+.control-center-list {
+    background: @crust;
+    padding: 8px;
+    margin: 0;
+    border-radius: 0 0 8px 8px;
+}
+
+.control-center-list-placeholder {
+    color: @subtext0;
+    padding: 16px;
+    text-align: center;
+}
+
+/* Notifications Group */
+.notification-group {
+    margin: 8px 0;
+    padding: 0;
+}
+
+.notification-group > box {
+    background: @mantle;
+    border-radius: 8px;
+    padding: 8px;
+    margin: 0;
+}
+
