@@ -30,7 +30,6 @@
    ./gtk
    ./hyprland
    ./hyprsunset
-   ./hyprpanel
    ./qt
    ./rofi
    ./sway
