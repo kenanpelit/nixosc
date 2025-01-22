@@ -52,6 +52,23 @@
         # Application-wide Gestures
         # ---------------------------------------------------------------------------
         <application name="All">
+          # Two Finger Gestures
+          <gesture type="SWIPE" fingers="2" direction="RIGHT">
+            <action type="RUN_COMMAND">
+              <repeat>false</repeat>
+              <command>hypr-workspace-monitor -vn</command>
+              <on>begin</on>
+            </action>
+          </gesture>
+
+          <gesture type="SWIPE" fingers="2" direction="LEFT">
+            <action type="RUN_COMMAND">
+              <repeat>false</repeat>
+              <command>hypr-workspace-monitor -vp</command>
+              <on>begin</on>
+            </action>
+          </gesture>
+
           # Three Finger Gestures
           <gesture type="SWIPE" fingers="3" direction="RIGHT">
             <action type="RUN_COMMAND">
