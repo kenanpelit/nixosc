@@ -1,9 +1,8 @@
-# modules/home/browser/zen/default.nix
 # ==============================================================================
 # Browser Configuration
 # ==============================================================================
+# modules/home/browser/zen/config.nix
 { inputs, pkgs, host, lib, ... }:
-
 let
   system = pkgs.system;
 in
@@ -15,7 +14,9 @@ in
     inputs.zen-browser.packages.${system}.default
   ];
 
-  # Zen Browser'ı varsayılan tarayıcı olarak ayarla
+  # =============================================================================
+  # Browser Configuration
+  # =============================================================================
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
@@ -29,4 +30,9 @@ in
       "text/xml" = ["zen-browser.desktop"];
     };
   };
+
+  # =============================================================================
+  # Ana dizin altına .zen dizini oluştur
+  # =============================================================================
+  home.file.".zen/.keep".text = "";
 }

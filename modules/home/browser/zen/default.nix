@@ -5,7 +5,6 @@
 {
   imports = [
     ./config.nix
-    #./search.nix
+    ./search.nix  # Yorum satırından çıkarıldı
   ];
 }
-
