@@ -53,6 +53,22 @@
         # ---------------------------------------------------------------------------
         <application name="All">
           # Three Finger Gestures
+          <gesture type="SWIPE" fingers="3" direction="RIGHT">
+            <action type="RUN_COMMAND">
+              <repeat>false</repeat>
+              <command>hypr-workspace-monitor -tn</command>
+              <on>begin</on>
+            </action>
+          </gesture>
+
+          <gesture type="SWIPE" fingers="3" direction="LEFT">
+            <action type="RUN_COMMAND">
+              <repeat>false</repeat>
+              <command>hypr-workspace-monitor -tp</command>
+              <on>begin</on>
+            </action>
+          </gesture>
+
           <gesture type="SWIPE" fingers="3" direction="UP">
             <action type="RUN_COMMAND">
               <repeat>false</repeat>
