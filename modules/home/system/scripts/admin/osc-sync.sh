@@ -291,7 +291,7 @@ restore_dots() {
 
 	# Önce içeriği göster
 	echo "Arşiv içeriği:"
-	decrypt_file "$encrypted_file" | tar tvf - || error "Arşiv içeriği okunamadı"
+	decrypt_file "$encrypted_file" | tar tzvf - || error "Arşiv içeriği okunamadı"
 
 	echo
 	read -p "Bu dosyaları geri yüklemek istiyor musunuz? (e/H) " response
