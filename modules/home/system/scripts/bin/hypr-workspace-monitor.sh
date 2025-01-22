@@ -13,7 +13,7 @@
 #
 #######################################
 
-# This script provides comprehensive control for the Hyprland
+# This script provides monitor and workspace control for the Hyprland
 # window manager. It manages operations such as:
 # - Monitor switching and focus control
 # - Workspace navigation and management
@@ -24,7 +24,7 @@
 #   - hyprctl: Hyprland control tool
 #   - pypr: Hyprland Python tool
 #   - jq: JSON processing tool
-#   - wtype: Wayland typing tool (for browser control)
+#   - ydotool: Wayland automation tool
 #
 # Installation:
 #   The above tools must be installed on your system
@@ -168,8 +168,8 @@ if [ $# -eq 0 ]; then
 fi
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
-	case "$1" in
+for arg in "$@"; do
+	case $arg in
 	-h)
 		show_help
 		;;
@@ -209,7 +209,6 @@ while [[ $# -gt 0 ]]; do
 	-tp)
 		tab_prev=true
 		;;
-	# Continue after -tp to avoid fall-through
 	*)
 		echo "Invalid option: $arg"
 		show_help
@@ -288,12 +287,19 @@ if $move_focus_right; then
 	hyprctl dispatch movefocus r
 fi
 
-# Browser tab operations
+# Browser tab operations (using wtype for Wayland)
 if $tab_next; then
-	wtype -M ctrl -k TAB
+	# Using Page_Down instead of tab due to application conflicts
+	# Alternative commands if needed:
+	# wtype -M ctrl -k tab
+	# ydotool key ctrl+tab
+	wtype -M ctrl -k Page_Down
 fi
 
 if $tab_prev; then
-	# Fix: Previous tab command was triggering workspace change
-	wtype -M ctrl -M shift -k TAB
+	# Using Page_Up instead of tab due to application conflicts
+	# Alternative commands if needed:
+	# wtype -M ctrl -M shift -k tab
+	# ydotool key ctrl+shift+tab
+	wtype -M ctrl -k Page_Up
 fi
