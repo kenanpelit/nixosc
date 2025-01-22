@@ -15,7 +15,7 @@
 
 {
  imports = [
-   ./fusuma
+   #./fusuma
    ./touchegg
  ];
 }
