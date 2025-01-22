@@ -75,6 +75,11 @@
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
+   hyprpanel = {
+     url = "github:hyprland-community/hyprpanel";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
+
    # === Development Tools ===
    # Nix code formatter and linter
    alejandra = {
