@@ -291,15 +291,15 @@ fi
 if $tab_next; then
 	# Using Page_Down instead of tab due to application conflicts
 	# Alternative commands if needed:
-	# wtype -M ctrl -k tab
+	wtype -M ctrl -k tab
 	# ydotool key ctrl+tab
-	wtype -M ctrl -k Page_Down
+	#wtype -M ctrl -k Page_Down
 fi
 
 if $tab_prev; then
 	# Using Page_Up instead of tab due to application conflicts
 	# Alternative commands if needed:
-	# wtype -M ctrl -M shift -k tab
+	wtype -M ctrl -M shift -k tab
 	# ydotool key ctrl+shift+tab
-	wtype -M ctrl -k Page_Up
+	#wtype -M ctrl -k Page_Up
 fi
