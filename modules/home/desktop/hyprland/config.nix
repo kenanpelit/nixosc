@@ -505,7 +505,7 @@
         "$mainMod, backspace, exec, power-menu"                                      # Güç menüsü
         "$mainMod, C, exec, hyprpicker -a"                                           # Renk seçici
         "$mainMod, N, exec, swaync-client -t -sw"                                    # Bildirim merkezi
-        "CTRL SHIFT, Escape, exec, hyprctl dispatch exec '[workspace 11] resources'" # Sistem monitörü
+        "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 11] resources'" # Sistem monitörü
 
         # Monitör ve Ekran Yönetimi
         "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"    # Monitör değiştir
