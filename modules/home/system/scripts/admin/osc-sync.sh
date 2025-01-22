@@ -5,12 +5,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Temel yapılandırma
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_DIR="$HOME/.nixosc"
-BACKUP_DIR="$SCRIPT_DIR/hay" # Değiştirildi
+BACKUP_DIR="$SCRIPT_DIR/hay"
 ASSET_DIR="$SCRIPT_DIR/assets"
 LOG_DIR="$HOME/.logs/oscsync"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -22,13 +22,13 @@ DOT_ENCRYPTED="dotfiles.enc.tar.gz"
 ASSET_BACKUP="asset.tar.gz"
 ASSET_ENCRYPTED="enc.tar.gz"
 
-# Gerekli paketlerin kontrolü
+# Gerekli paketler
 REQUIRED_PACKAGES=(
-	"pv"      # Progress viewer
-	"gpg"     # GPG encryption
-	"sops"    # Mozilla SOPS
-	"age"     # Age encryption
-	"openssl" # OpenSSL
+	"pv"
+	"gpg"
+	"sops"
+	"age"
+	"openssl"
 )
 
 # Asset listesi
@@ -38,7 +38,7 @@ ASSET_DIRS=(
 	"tmux"
 )
 
-# Dot dizinleri (relative paths)
+# Dot dizinleri
 DOT_PATHS=(
 	".config/sops"
 	".config/nix"
@@ -58,7 +58,7 @@ DOT_PATHS=(
 	".wall"
 )
 
-# Log fonksiyonu
+# Log fonksiyonları
 log() {
 	local level=$1
 	shift
@@ -67,93 +67,74 @@ log() {
 	echo -e "$message" | tee -a "$LOG_FILE"
 }
 
-# Hata yönetimi
 error() {
 	log "ERROR" "$1"
 	echo -e "${RED}HATA: $1${NC}" >&2
 	exit 1
 }
 
-# Başarı mesajı
 success() {
 	log "INFO" "$1"
 	echo -e "${GREEN}==> $1${NC}"
 }
 
-# Uyarı mesajı
 warn() {
 	log "WARN" "$1"
 	echo -e "${YELLOW}UYARI: $1${NC}"
 }
 
-# Gerekli paketlerin kontrolü
+# Temel kontroller
 check_dependencies() {
 	local missing_packages=()
-
 	for package in "${REQUIRED_PACKAGES[@]}"; do
 		if ! command -v "$package" >/dev/null 2>&1; then
 			missing_packages+=("$package")
 		fi
 	done
-
-	if [ ${#missing_packages[@]} -ne 0 ]; then
-		error "Aşağıdaki paketler eksik: ${missing_packages[*]}"
-	fi
+	[[ ${#missing_packages[@]} -ne 0 ]] && error "Eksik paketler: ${missing_packages[*]}"
 }
 
-# Dizin yapısını hazırla
 prepare_directories() {
-	local dirs=(
-		"$SCRIPT_DIR"
-		"$BACKUP_DIR"
-		"$ASSET_DIR"
-		"$LOG_DIR"
-	)
-
+	local dirs=("$SCRIPT_DIR" "$BACKUP_DIR" "$ASSET_DIR" "$LOG_DIR")
 	for dir in "${dirs[@]}"; do
 		mkdir -p "$dir" || error "Dizin oluşturulamadı: $dir"
 	done
 }
 
-# Disk alanı kontrolü
 check_disk_space() {
-	local required_space=$((1024 * 1024 * 100)) # 100MB minimum
+	local required_space=$((1024 * 1024 * 100))
 	local available_space=$(df -B1 "$BACKUP_DIR" | awk 'NR==2 {print $4}')
-
-	if [ "$available_space" -lt "$required_space" ]; then
-		error "Yetersiz disk alanı. En az 100MB gerekli."
-	fi
+	[[ "$available_space" -lt "$required_space" ]] && error "Yetersiz disk alanı (min. 100MB)"
 }
 
-# Şifreleme tipi kontrolü ve ayarlanması
+check_file_type() {
+	local file="$1"
+	local file_type=$(file "$file")
+	case "$file_type" in
+	*"GPG"*) echo "gpg" ;;
+	*"openssl"*) echo "openssl" ;;
+	*) echo "age" ;;
+	esac
+}
+
+# Şifreleme fonksiyonları
 setup_encryption() {
 	case "$ENCRYPTION_TYPE" in
 	gpg)
-		encrypt_file() {
-			gpg --symmetric --cipher-algo AES256 --output "$2" "$1"
-		}
-		decrypt_file() {
-			gpg --decrypt "$1"
-		}
+		encrypt_file() { gpg --symmetric --cipher-algo AES256 --output "$2" "$1"; }
+		decrypt_file() { gpg --decrypt "$1"; }
 		;;
 	age)
 		encrypt_file() {
 			local sops_config="${HOME}/.nixosc/.sops.yaml"
-			if [[ ! -f "$sops_config" ]]; then
-				error "SOPS yapılandırma dosyası bulunamadı: $sops_config"
-			fi
-			export SOPS_CONFIG_FILE="$sops_config"
-
 			local age_key_file="${HOME}/.config/sops/age/keys.txt"
-			if [[ ! -f "$age_key_file" ]]; then
-				error "Age key dosyası bulunamadı"
-			fi
+			[[ ! -f "$sops_config" ]] && error "SOPS yapılandırma dosyası yok: $sops_config"
+			[[ ! -f "$age_key_file" ]] && error "Age key dosyası yok"
 
 			local age_public_key=$(grep "^# public key: " "$age_key_file" | cut -d: -f2 | tr -d ' ')
-			if [[ -z "$age_public_key" ]]; then
-				error "Public key bulunamadı"
-			fi
+			[[ -z "$age_public_key" ]] && error "Public key bulunamadı"
 
+			export SOPS_CONFIG_FILE="$sops_config"
 			sops --encrypt --age "$age_public_key" "$1" >"$2" || return 1
 		}
 		decrypt_file() {
@@ -165,141 +146,81 @@ setup_encryption() {
 		encrypt_file() {
 			local password
 			echo "Şifre girin:"
-			read -s password
+			read -rs password
 			echo
 			echo "Şifreyi tekrar girin:"
-			read -s password2
+			read -rs password2
 			echo
-
-			if [ "$password" != "$password2" ]; then
-				error "Şifreler eşleşmiyor!"
-			fi
-
+			[[ "$password" != "$password2" ]] && error "Şifreler eşleşmiyor!"
 			openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:"$password" -in "$1" -out "$2"
 		}
 		decrypt_file() {
 			openssl enc -d -aes-256-cbc -salt -pbkdf2 -in "$1"
 		}
 		;;
-	*)
-		error "Geçersiz şifreleme tipi: $ENCRYPTION_TYPE"
-		;;
+	*) error "Geçersiz şifreleme tipi: $ENCRYPTION_TYPE" ;;
 	esac
 }
 
-# Dosya tipini kontrol et
-check_file_type() {
-	local file="$1"
-	local file_type=$(file "$file")
-
-	case "$file_type" in
-	*"GPG"*)
-		echo "gpg"
-		;;
-	*"openssl"*)
-		echo "openssl"
-		;;
-	*)
-		echo "age"
-		;;
-	esac
-}
-
-# Dot dosyaları yedekle
+# Yedekleme fonksiyonları
 backup_dots() {
 	success "Dot dosyaları yedekleniyor..."
-
-	# Mevcut yolları kontrol et
 	local existing_paths=()
+
 	for path in "${DOT_PATHS[@]}"; do
 		if [[ -e "$HOME/$path" ]]; then
 			existing_paths+=("$path")
 		else
-			warn "Dosya/dizin mevcut değil: $HOME/$path"
+			warn "Mevcut değil: $HOME/$path"
 		fi
 	done
 
-	if [ ${#existing_paths[@]} -eq 0 ]; then
-		error "Yedeklenecek dot dosyası bulunamadı"
-	fi
+	[[ ${#existing_paths[@]} -eq 0 ]] && error "Yedeklenecek dot dosyası yok"
 
-	# Yedekleme dizinini oluştur
 	mkdir -p "$BACKUP_DIR" || error "Yedekleme dizini oluşturulamadı"
-
-	# Ana dizine git
 	cd "$HOME" || error "Home dizinine geçilemedi"
 
-	# Tar oluştur
 	success "Tar arşivi oluşturuluyor..."
 	tar czf "$BACKUP_DIR/$DOT_BACKUP" "${existing_paths[@]}" || error "Tar oluşturulamadı"
 
-	# Şifrele
 	success "Arşiv şifreleniyor..."
-	encrypt_file "$BACKUP_DIR/$DOT_BACKUP" "$BACKUP_DIR/$DOT_ENCRYPTED" || error "Şifreleme başarısız"
-
-	# Geçici dosyayı temizle
-	rm -f "$BACKUP_DIR/$DOT_BACKUP"
-
-	success "Dot dosyaları yedeklendi: $BACKUP_DIR/$DOT_ENCRYPTED"
+	if encrypt_file "$BACKUP_DIR/$DOT_BACKUP" "$BACKUP_DIR/$DOT_ENCRYPTED"; then
+		rm -f "$BACKUP_DIR/$DOT_BACKUP"
+		success "Dot dosyaları yedeklendi: $BACKUP_DIR/$DOT_ENCRYPTED"
+	else
+		rm -f "$BACKUP_DIR/$DOT_BACKUP" "$BACKUP_DIR/$DOT_ENCRYPTED"
+		error "Şifreleme başarısız"
+	fi
 }
 
-# Asset yedekle
-backup_asset() {
-	local asset_name="$1"
-
-	# Asset kontrolü
-	if [[ ! " ${ASSET_DIRS[@]} " =~ " ${asset_name} " ]]; then
-		error "Geçersiz asset: $asset_name"
-	fi
-
-	if [ ! -d "$ASSET_DIR/$asset_name" ]; then
-		error "Asset dizini bulunamadı: $ASSET_DIR/$asset_name"
-	fi
-
-	success "$asset_name yedekleniyor..."
-
-	cd "$ASSET_DIR" || error "Asset dizinine geçilemedi"
-
-	# Tar oluştur
-	tar czf "$ASSET_BACKUP" "$asset_name" || error "Tar oluşturulamadı"
-
-	# Şifrele
-	encrypt_file "$ASSET_BACKUP" "${asset_name}.enc.tar.gz" || error "Şifreleme başarısız"
-
-	# Geçici dosyayı temizle
-	rm -f "$ASSET_BACKUP"
-
-	success "Asset yedeklendi: ${asset_name}.${ASSET_ENCRYPTED}"
-}
-
-# Dot dosyalarını geri yükle
 restore_dots() {
 	local encrypted_file="$BACKUP_DIR/$DOT_ENCRYPTED"
-
-	if [[ ! -f "$encrypted_file" ]]; then
-		error "Şifrelenmiş yedek dosyası bulunamadı: $encrypted_file"
-	fi
+	[[ ! -f "$encrypted_file" ]] && error "Şifrelenmiş yedek dosyası bulunamadı: $encrypted_file"
 
 	success "Dot dosyaları geri yükleniyor..."
-
-	# Her zaman $HOME dizinine geri yükleme yapılacak
 	local restore_dir="$HOME"
+	local temp_file="/tmp/dotfiles_${TIMESTAMP}.tar.gz"
 
-	# Şifreleme tipini belirle
 	ENCRYPTION_TYPE=$(check_file_type "$encrypted_file")
 	setup_encryption
 
-	# Önce içeriği göster
-	echo "Arşiv içeriği:"
-	decrypt_file "$encrypted_file" | tar tzvf - || error "Arşiv içeriği okunamadı"
-
-	echo
-	read -p "Bu dosyaları geri yüklemek istiyor musunuz? (e/H) " response
-	if [[ ! "$response" =~ ^[Ee]$ ]]; then
-		error "İşlem iptal edildi"
+	# Şifreyi çöz
+	if [[ "$ENCRYPTION_TYPE" == "openssl" ]]; then
+		openssl enc -d -aes-256-cbc -salt -pbkdf2 -in "$encrypted_file" -out "$temp_file" || error "Şifre çözme başarısız"
+	else
+		decrypt_file "$encrypted_file" >"$temp_file" || error "Şifre çözme başarısız"
 	fi
 
-	# Mevcut dosyaları yedekle
+	# İçerik göster
+	tar tvf "$temp_file" || error "Arşiv içeriği okunamadı"
+
+	read -rp "Bu dosyaları geri yüklemek istiyor musunuz? (e/H) " response
+	[[ ! "$response" =~ ^[Ee]$ ]] && {
+		rm -f "$temp_file"
+		error "İşlem iptal edildi"
+	}
+
+	# Yedekle
 	local backup_suffix="backup_$TIMESTAMP"
 	for path in "${DOT_PATHS[@]}"; do
 		if [[ -e "$HOME/$path" ]]; then
@@ -308,59 +229,71 @@ restore_dots() {
 		fi
 	done
 
-	# Geri yükle
 	cd "$restore_dir" || error "Home dizinine geçilemedi"
-	decrypt_file "$encrypted_file" | pv | tar xzf - || error "Geri yükleme başarısız"
-	success "Dosyalar $restore_dir dizinine geri yüklendi"
+	pv "$temp_file" | tar xzf - || error "Geri yükleme başarısız"
+	rm -f "$temp_file"
 
-	# İzinleri ayarla
 	chmod 700 "$HOME/.ssh" "$HOME/.gnupg" 2>/dev/null || true
-
 	success "Dot dosyaları geri yüklendi"
 }
 
-# Asset geri yükle
+backup_asset() {
+	local asset_name="$1"
+	[[ ! " ${ASSET_DIRS[@]} " =~ " ${asset_name} " ]] && error "Geçersiz asset: $asset_name"
+	[[ ! -d "$ASSET_DIR/$asset_name" ]] && error "Asset dizini bulunamadı: $ASSET_DIR/$asset_name"
+
+	success "$asset_name yedekleniyor..."
+	cd "$ASSET_DIR" || error "Asset dizinine geçilemedi"
+
+	tar czf "$ASSET_BACKUP" "$asset_name" || error "Tar oluşturulamadı"
+	if encrypt_file "$ASSET_BACKUP" "${asset_name}.enc.tar.gz"; then
+		rm -f "$ASSET_BACKUP"
+		success "Asset yedeklendi: ${asset_name}.${ASSET_ENCRYPTED}"
+	else
+		rm -f "$ASSET_BACKUP" "${asset_name}.enc.tar.gz"
+		error "Şifreleme başarısız"
+	fi
+}
+
 restore_asset() {
 	local asset_name="$1"
 	local encrypted_file="$ASSET_DIR/${asset_name}.${ASSET_ENCRYPTED}"
-
-	if [[ ! -f "$encrypted_file" ]]; then
-		error "Şifrelenmiş asset dosyası bulunamadı: $encrypted_file"
-	fi
+	[[ ! -f "$encrypted_file" ]] && error "Şifrelenmiş asset dosyası bulunamadı: $encrypted_file"
 
 	success "$asset_name geri yükleniyor..."
+	local temp_file="/tmp/asset_${TIMESTAMP}.tar.gz"
 
-	# Şifreleme tipini belirle
 	ENCRYPTION_TYPE=$(check_file_type "$encrypted_file")
 	setup_encryption
 
-	# Önce içeriği göster
-	echo "Arşiv içeriği:"
-	decrypt_file "$encrypted_file" | tar tvf - || error "Arşiv içeriği okunamadı"
-
-	echo
-	read -p "Bu asset'i geri yüklemek istiyor musunuz? (e/H) " response
-	if [[ ! "$response" =~ ^[Ee]$ ]]; then
-		error "İşlem iptal edildi"
+	if [[ "$ENCRYPTION_TYPE" == "openssl" ]]; then
+		openssl enc -d -aes-256-cbc -salt -pbkdf2 -in "$encrypted_file" -out "$temp_file" || error "Şifre çözme başarısız"
+	else
+		decrypt_file "$encrypted_file" >"$temp_file" || error "Şifre çözme başarısız"
 	fi
 
-	# Mevcut asset'i yedekle
-	if [ -d "$ASSET_DIR/$asset_name" ]; then
+	tar tvf "$temp_file" || error "Arşiv içeriği okunamadı"
+
+	read -rp "Bu asset'i geri yüklemek istiyor musunuz? (e/H) " response
+	[[ ! "$response" =~ ^[Ee]$ ]] && {
+		rm -f "$temp_file"
+		error "İşlem iptal edildi"
+	}
+
+	[[ -d "$ASSET_DIR/$asset_name" ]] && {
 		mv "$ASSET_DIR/$asset_name" "$ASSET_DIR/$asset_name.backup_$TIMESTAMP"
 		success "Mevcut asset yedeklendi"
-	fi
+	}
 
-	# Geri yükle
 	cd "$ASSET_DIR" || error "Asset dizinine geçilemedi"
-	decrypt_file "$encrypted_file" | pv | tar xzf - || error "Geri yükleme başarısız"
+	pv "$temp_file" | tar xzf - || error "Geri yükleme başarısız"
+	rm -f "$temp_file"
 
 	success "$asset_name geri yüklendi"
 }
 
-# Asset'leri listele
 list_assets() {
-	local mode="${1:-simple}" # simple veya detailed
-
+	local mode="${1:-simple}"
 	case "$mode" in
 	"simple")
 		echo "Mevcut Asset'ler:"
@@ -371,14 +304,12 @@ list_assets() {
 		echo "------------------------"
 		for asset in "${ASSET_DIRS[@]}"; do
 			echo -ne "${GREEN}$asset${NC}\t"
-			# Asset dizin boyutu
-			if [ -d "$ASSET_DIR/$asset" ]; then
+			if [[ -d "$ASSET_DIR/$asset" ]]; then
 				local dir_size=$(du -sh "$ASSET_DIR/$asset" 2>/dev/null | cut -f1)
 				local file_count=$(find "$ASSET_DIR/$asset" -type f | wc -l)
 				echo -ne "${GREEN}[Dizin: $dir_size, Dosya sayısı: $file_count]${NC}"
 			fi
-			# Yedek dosyası kontrolü
-			if [ -f "$ASSET_DIR/$asset.enc.tar.gz" ]; then
+			if [[ -f "$ASSET_DIR/$asset.enc.tar.gz" ]]; then
 				local timestamp=$(date -r "$ASSET_DIR/$asset.enc.tar.gz" "+%Y-%m-%d %H:%M")
 				local backup_size=$(du -h "$ASSET_DIR/$asset.enc.tar.gz" | cut -f1)
 				echo -e " ${BLUE}[Son yedek: $timestamp - $backup_size]${NC}"
@@ -387,13 +318,10 @@ list_assets() {
 			fi
 		done
 		;;
-	*)
-		error "Geçersiz listeleme modu: $mode"
-		;;
+	*) error "Geçersiz listeleme modu: $mode" ;;
 	esac
 }
 
-# Yardım mesajı
 show_help() {
 	cat <<EOF
 OSC Sync - Dot Dosyaları ve Asset Yedekleme Aracı
@@ -402,8 +330,8 @@ Kullanım: $SCRIPT_NAME [seçenekler] KOMUT [argümanlar]
 Komutlar:
     dots backup              : Dot dosyalarını yedekle
     dots restore            : Dot dosyalarını geri yükle
-    dots list [-d|--detailed]: Dot dosyalarını listele (basit veya detaylı)
-    
+    dots list [-d|--detailed]: Dot dosyalarını listele
+
     asset backup ASSET      : Belirtilen asset'i yedekle
     asset restore ASSET     : Belirtilen asset'i geri yükle
     asset list             : Tüm asset'leri listele
@@ -422,17 +350,13 @@ Seçenekler:
 EOF
 }
 
-# Ana program
 main() {
-	# Varsayılan değerler
 	ENCRYPTION_TYPE="gpg"
 
-	# Gerekli kontroller
 	check_dependencies
 	prepare_directories
 	check_disk_space
 
-	# Parametre analizi
 	while getopts "eaoh" opt; do
 		case $opt in
 		e) ENCRYPTION_TYPE="gpg" ;;
@@ -450,19 +374,13 @@ main() {
 	done
 	shift $((OPTIND - 1))
 
-	# Şifreleme ayarlarını yap
 	setup_encryption
 
-	# Komut analizi
 	case "${1:-}" in
 	"dots")
 		case "${2:-}" in
-		"backup")
-			backup_dots
-			;;
-		"restore")
-			restore_dots
-			;;
+		"backup") backup_dots ;;
+		"restore") restore_dots ;;
 		"list")
 			if [ "${3:-}" = "-d" ] || [ "${3:-}" = "--detailed" ]; then
 				echo "Yedeklenecek dot dosyaları (detaylı):"
@@ -492,38 +410,26 @@ main() {
 				printf '%s\n' "${DOT_PATHS[@]}"
 			fi
 			;;
-		*)
-			error "Geçersiz dots komutu. Kullanım: dots {backup|restore|list}"
-			;;
+		*) error "Geçersiz dots komutu. Kullanım: dots {backup|restore|list}" ;;
 		esac
 		;;
 	"asset")
 		case "${2:-}" in
 		"backup")
-			if [ -z "${3:-}" ]; then
-				error "Asset adı belirtilmedi. Kullanım: asset backup ASSET_ADI"
-			fi
+			[ -z "${3:-}" ] && error "Asset adı belirtilmedi"
 			backup_asset "$3"
 			;;
 		"restore")
-			if [ -z "${3:-}" ]; then
-				error "Asset adı belirtilmedi. Kullanım: asset restore ASSET_ADI"
-			fi
+			[ -z "${3:-}" ] && error "Asset adı belirtilmedi"
 			restore_asset "$3"
 			;;
 		"list")
 			case "${3:-}" in
-			"-d" | "--detailed")
-				list_assets "detailed"
-				;;
-			*)
-				list_assets "simple"
-				;;
+			"-d" | "--detailed") list_assets "detailed" ;;
+			*) list_assets "simple" ;;
 			esac
 			;;
-		*)
-			error "Geçersiz asset komutu. Kullanım: asset {backup|restore|list} [ASSET_ADI]"
-			;;
+		*) error "Geçersiz asset komutu" ;;
 		esac
 		;;
 	*)
@@ -533,8 +439,6 @@ main() {
 	esac
 }
 
-# Trap sinyalleri yakala
 trap 'error "İşlem kullanıcı tarafından iptal edildi"' INT TERM
 
-# Programı çalıştır
 main "$@"
