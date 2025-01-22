@@ -168,8 +168,8 @@ if [ $# -eq 0 ]; then
 fi
 
 # Parse command line arguments
-for arg in "$@"; do
-	case $arg in
+while [[ $# -gt 0 ]]; do
+	case "$1" in
 	-h)
 		show_help
 		;;
@@ -209,6 +209,7 @@ for arg in "$@"; do
 	-tp)
 		tab_prev=true
 		;;
+	# Continue after -tp to avoid fall-through
 	*)
 		echo "Invalid option: $arg"
 		show_help
@@ -293,5 +294,6 @@ if $tab_next; then
 fi
 
 if $tab_prev; then
+	# Fix: Previous tab command was triggering workspace change
 	wtype -M ctrl -M shift -k TAB
 fi
