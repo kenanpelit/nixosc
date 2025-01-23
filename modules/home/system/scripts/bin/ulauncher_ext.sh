@@ -113,6 +113,8 @@ clean_extensions() {
 
 # Array of extension repositories
 declare -a repos=(
+	"kenanpelit/ulauncher-zen-profiles"
+	"kenanpelit/ulauncher-ssh"
 	"abhishekmj303/ulauncher-playerctl"
 	"adamtillou/ulauncher-aurman-plugin"
 	"ahaasler/ulauncher-tmux"
@@ -123,7 +125,6 @@ declare -a repos=(
 	"dhelmr/ulauncher-tldr"
 	"floydjohn/ulauncher-chrome-profiles"
 	"iboyperson/ulauncher-system"
-	"kenanpelit/ulauncher-ssh"
 	"kleber-swf/ulauncher-firefox-profiles"
 	"lighttigerxiv/ulauncher-terminal-runner-extension"
 	"manahter/ulauncher-doviz"
@@ -140,7 +141,6 @@ declare -a repos=(
 	"ulauncher/ulauncher-emoji"
 	"ulauncher/ulauncher-kill"
 	"yetanothersimon/ulauncher-pulsecontrol"
-	"kenanpelit/ulauncher-zen-profiles"
 )
 
 # Main function
