@@ -63,6 +63,9 @@ let
   osc-start-semsumo-all = pkgs.writeShellScriptBin "osc-start-semsumo-all" (
     builtins.readFile ./admin/osc-start-semsumo-all.sh
   );
+  osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
+    builtins.readFile ./admin/osc-subliminal.sh
+  );
   osc-symlink_manager = pkgs.writeShellScriptBin "osc-symlink_manager" (
     builtins.readFile ./admin/osc-symlink_manager.sh
   );
@@ -120,6 +123,7 @@ in {
     osc-ssh-passwordless
     osc-ssh-session-manager
     osc-start-semsumo-all
+    osc-subliminal
     osc-symlink_manager
     osc-sync
     osc-test

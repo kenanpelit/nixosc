@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
-
+#===============================================================================
+#
+#   Script: NixOS Configuration Backup Tool
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: NixOS configuration backup utility that creates timestamped
+#                backups either as tar archives or direct copies
+#
+#   Features:
+#   - Creates timestamped backups of NixOS configurations
+#   - Supports both tar.gz archives and direct copies
+#   - Automatically manages backup directory structure
+#   - Simple command-line interface
+#
+#   License: MIT
+#
+#===============================================================================
 # Yedekleme dizini
 BACKUP_DIR="$HOME/.nixoscb"
 
