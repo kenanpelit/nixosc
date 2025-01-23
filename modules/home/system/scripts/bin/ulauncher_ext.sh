@@ -140,6 +140,7 @@ declare -a repos=(
 	"ulauncher/ulauncher-emoji"
 	"ulauncher/ulauncher-kill"
 	"yetanothersimon/ulauncher-pulsecontrol"
+	"kenanpelit/ulauncher-zen-profiles"
 )
 
 # Main function
