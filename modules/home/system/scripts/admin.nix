@@ -1,11 +1,5 @@
 { pkgs, ... }:
 let
-  assh-manager = pkgs.writeShellScriptBin "assh-manager" (
-    builtins.readFile ./admin/assh-manager.sh
-  );
-  blocklist = pkgs.writeShellScriptBin "blocklist" (
-    builtins.readFile ./admin/blocklist.sh
-  );
   check_images = pkgs.writeShellScriptBin "check_images" (
     builtins.readFile ./admin/check_images.sh
   );
@@ -27,11 +21,14 @@ let
   m2w2 = pkgs.writeShellScriptBin "m2w2" (
     builtins.readFile ./admin/m2w2.sh
   );
-  mrelay = pkgs.writeShellScriptBin "mrelay" (
-    builtins.readFile ./admin/mrelay.sh
+  osc-assh-manager = pkgs.writeShellScriptBin "osc-assh-manager" (
+    builtins.readFile ./admin/osc-assh-manager.sh
   );
   osc-backup = pkgs.writeShellScriptBin "osc-backup" (
     builtins.readFile ./admin/osc-backup.sh
+  );
+  osc-blocklist = pkgs.writeShellScriptBin "osc-blocklist" (
+    builtins.readFile ./admin/osc-blocklist.sh
   );
   osc-generate_nix_admin = pkgs.writeShellScriptBin "osc-generate_nix_admin" (
     builtins.readFile ./admin/osc-generate_nix_admin.sh
@@ -45,11 +42,17 @@ let
   osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
     builtins.readFile ./admin/osc-gpg_unlock.sh
   );
+  osc-mrelay = pkgs.writeShellScriptBin "osc-mrelay" (
+    builtins.readFile ./admin/osc-mrelay.sh
+  );
   osc-pass-tool = pkgs.writeShellScriptBin "osc-pass-tool" (
     builtins.readFile ./admin/osc-pass-tool.sh
   );
   osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
     builtins.readFile ./admin/osc-profiles.sh
+  );
+  osc-semsumo-create = pkgs.writeShellScriptBin "osc-semsumo-create" (
+    builtins.readFile ./admin/osc-semsumo-create.sh
   );
   osc-ssh-hosts-backup-script = pkgs.writeShellScriptBin "osc-ssh-hosts-backup-script" (
     builtins.readFile ./admin/osc-ssh-hosts-backup-script.sh
@@ -75,9 +78,6 @@ let
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./admin/osc-test.sh
   );
-  semsumo-create = pkgs.writeShellScriptBin "semsumo-create" (
-    builtins.readFile ./admin/semsumo-create.sh
-  );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./admin/semsumo.sh
   );
@@ -102,8 +102,6 @@ let
 
 in {
   home.packages = with pkgs; [
-    assh-manager
-    blocklist
     check_images
     chroot_manager
     crypto-manager
@@ -111,14 +109,17 @@ in {
     gitgo
     gitsumo
     m2w2
-    mrelay
+    osc-assh-manager
     osc-backup
+    osc-blocklist
     osc-generate_nix_admin
     osc-generate_nix_bin
     osc-generate_nix_start
     osc-gpg_unlock
+    osc-mrelay
     osc-pass-tool
     osc-profiles
+    osc-semsumo-create
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
     osc-ssh-session-manager
@@ -127,7 +128,6 @@ in {
     osc-symlink_manager
     osc-sync
     osc-test
-    semsumo-create
     semsumo
     svmarch
     svmnixos
