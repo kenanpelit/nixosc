@@ -97,22 +97,22 @@
     },
     "Chrome-Kenp": {
       "command": "profile_chrome",
-      "args": ["Kenp", "--class", "Kenp", "--title", "Kenp"],
+      "args": ["Kenp", "--class", "Kenp"],
       "vpn_mode": "default"
     },
     "Chrome-CompectTA": {
       "command": "profile_chrome",
-      "args": ["CompecTA", "--class", "CompecTA", "--title", "CompecTA"],
+      "args": ["CompecTA", "--class", "CompecTA"],
       "vpn_mode": "default"
     },
     "Chrome-AI": {
       "command": "profile_chrome",
-      "args": ["AI", "--class", "AI", "--title", "AI"],
+      "args": ["AI", "--class", "AI"],
       "vpn_mode": "default"
     },
     "Chrome-Whats": {
       "command": "profile_chrome",
-      "args": ["Whats", "--class", "Whats", "--title", "Whats"],
+      "args": ["Whats", "--class", "Whats"],
       "vpn_mode": "default"
     },
     "Zen-Kenp": {
