@@ -147,6 +147,9 @@ let
   power-menu = pkgs.writeShellScriptBin "power-menu" (
     builtins.readFile ./bin/power-menu.sh
   );
+  profile_chrome = pkgs.writeShellScriptBin "profile_chrome" (
+    builtins.readFile ./bin/profile_chrome.sh
+  );
   publicip = pkgs.writeShellScriptBin "publicip" (
     builtins.readFile ./bin/publicip.sh
   );
@@ -388,6 +391,7 @@ in {
     playlist
     ports
     power-menu
+    profile_chrome
     publicip
     record
     renew_env
