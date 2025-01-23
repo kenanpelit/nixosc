@@ -1,4 +1,26 @@
 #!/usr/bin/env bash
+#===============================================================================
+#
+#   Script: OSC Chrome Profile Launcher
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Google Chrome profile launcher utility with window management
+#                and configuration support
+#
+#   Features:
+#   - Profile-based Chrome launching
+#   - Custom window class and title setting
+#   - Profile discovery and validation
+#   - Command-line argument passthrough
+#   - Chrome state file integration
+#   - Profile listing capabilities
+#
+#   License: MIT
+#
+#===============================================================================
+
 set -euo pipefail
 
 usage() {
