@@ -21,7 +21,7 @@ IFS=$'\n\t'
 
 # Base configuration
 readonly CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/sem/config.json"
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
 readonly SEMSUMO="semsumo"
 readonly TMP_DIR="/tmp/sem"
 
