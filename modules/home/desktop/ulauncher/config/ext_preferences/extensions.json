@@ -1,198 +1,198 @@
 {
+    "com.github.kenanpelit.ulauncher-zen-profiles": {
+        "id": "com.github.kenanpelit.ulauncher-zen-profiles",
+        "url": "https://github.com/kenanpelit/ulauncher-zen-profiles",
+        "updated_at": "2025-01-23T22:41:43.802864",
+        "last_commit": "7c234fa9df301344c33d761ff5b40a16873ab989",
+        "last_commit_time": "2025-01-23T22:23:04+03:00"
+    },
+    "com.github.kenanpelit.ulauncher-ssh": {
+        "id": "com.github.kenanpelit.ulauncher-ssh",
+        "url": "https://github.com/kenanpelit/ulauncher-ssh",
+        "updated_at": "2025-01-23T22:41:45.603429",
+        "last_commit": "aca707da02e047ffde72f2c9bc14c35aa10a08d5",
+        "last_commit_time": "2024-12-20T02:30:33+03:00"
+    },
     "com.github.abhishekmj303.ulauncher-playerctl": {
         "id": "com.github.abhishekmj303.ulauncher-playerctl",
         "url": "https://github.com/abhishekmj303/ulauncher-playerctl",
-        "updated_at": "2025-01-23T22:23:31.126181",
+        "updated_at": "2025-01-23T22:41:47.598764",
         "last_commit": "5f52e6c949ee9793ba60b5385df4744b134c3369",
         "last_commit_time": "2023-06-23T20:43:13+05:30"
     },
     "com.github.adamtillou.ulauncher-aurman-plugin": {
         "id": "com.github.adamtillou.ulauncher-aurman-plugin",
         "url": "https://github.com/adamtillou/ulauncher-aurman-plugin",
-        "updated_at": "2025-01-23T22:23:33.088063",
+        "updated_at": "2025-01-23T22:41:49.571127",
         "last_commit": "af11b33cb6ed6ec055859482bdde0353013d1378",
         "last_commit_time": "2021-07-16T15:51:05-06:00"
     },
     "com.github.ahaasler.ulauncher-tmux": {
         "id": "com.github.ahaasler.ulauncher-tmux",
         "url": "https://github.com/ahaasler/ulauncher-tmux",
-        "updated_at": "2025-01-23T22:23:34.991449",
+        "updated_at": "2025-01-23T22:41:51.490226",
         "last_commit": "dd631a2e5a1d8bf2ab21095b43afe068443f02b9",
         "last_commit_time": "2021-06-05T18:42:59+02:00"
     },
     "com.github.alexnabokikh.ulauncher-power-manager": {
         "id": "com.github.alexnabokikh.ulauncher-power-manager",
         "url": "https://github.com/alexnabokikh/ulauncher-power-manager",
-        "updated_at": "2025-01-23T22:23:39.169776",
+        "updated_at": "2025-01-23T22:41:58.394300",
         "last_commit": "8593156ef8f0fb63a0b0577b2fc5e79be48d82ab",
         "last_commit_time": "2024-11-08T20:34:38+01:00"
     },
     "com.github.brpaz.ulauncher-pwgen": {
         "id": "com.github.brpaz.ulauncher-pwgen",
         "url": "https://github.com/brpaz/ulauncher-pwgen",
-        "updated_at": "2025-01-23T22:23:42.714357",
+        "updated_at": "2025-01-23T22:42:01.108934",
         "last_commit": "96880bb135720cae1ad039b6635062a9e285ca71",
         "last_commit_time": "2021-12-12T15:47:59Z"
     },
     "com.github.dankni95.ulauncher-playerctl": {
         "id": "com.github.dankni95.ulauncher-playerctl",
         "url": "https://github.com/dankni95/ulauncher-playerctl",
-        "updated_at": "2025-01-23T22:23:44.729810",
+        "updated_at": "2025-01-23T22:42:03.191237",
         "last_commit": "c2efafd66c3d60445a545f9f202b82202f93cd70",
         "last_commit_time": "2022-03-23T22:18:25+01:00"
     },
     "com.github.devkleber.ulauncher-open-link": {
         "id": "com.github.devkleber.ulauncher-open-link",
         "url": "https://github.com/devkleber/ulauncher-open-link",
-        "updated_at": "2025-01-23T22:23:47.448298",
+        "updated_at": "2025-01-23T22:42:06.393288",
         "last_commit": "de9b7e6144d974c06a7f218596a2db80b667fd5b",
         "last_commit_time": "2023-12-29T14:33:50-03:00"
     },
     "com.github.dhelmr.ulauncher-tldr": {
         "id": "com.github.dhelmr.ulauncher-tldr",
         "url": "https://github.com/dhelmr/ulauncher-tldr",
-        "updated_at": "2025-01-23T22:23:49.432553",
+        "updated_at": "2025-01-23T22:42:08.364518",
         "last_commit": "2e5904451bf89dfa155280dfb6fa3d45ed4cab4c",
         "last_commit_time": "2023-07-29T13:06:30+02:00"
     },
     "com.github.floydjohn.ulauncher-chrome-profiles": {
         "id": "com.github.floydjohn.ulauncher-chrome-profiles",
         "url": "https://github.com/floydjohn/ulauncher-chrome-profiles",
-        "updated_at": "2025-01-23T22:23:51.411436",
+        "updated_at": "2025-01-23T22:42:10.471329",
         "last_commit": "486fead44fcd195abdc62d60569a5facfb433d70",
         "last_commit_time": "2019-06-30T19:00:43+02:00"
     },
     "com.github.iboyperson.ulauncher-system": {
         "id": "com.github.iboyperson.ulauncher-system",
         "url": "https://github.com/iboyperson/ulauncher-system",
-        "updated_at": "2025-01-23T22:23:53.299936",
+        "updated_at": "2025-01-23T22:42:12.440078",
         "last_commit": "7dedd992709fa2297735cddf852404144d4da47c",
         "last_commit_time": "2023-11-14T11:53:20-05:00"
-    },
-    "com.github.kenanpelit.ulauncher-ssh": {
-        "id": "com.github.kenanpelit.ulauncher-ssh",
-        "url": "https://github.com/kenanpelit/ulauncher-ssh",
-        "updated_at": "2025-01-23T22:23:55.085568",
-        "last_commit": "aca707da02e047ffde72f2c9bc14c35aa10a08d5",
-        "last_commit_time": "2024-12-20T02:30:33+03:00"
     },
     "com.github.kleber-swf.ulauncher-firefox-profiles": {
         "id": "com.github.kleber-swf.ulauncher-firefox-profiles",
         "url": "https://github.com/kleber-swf/ulauncher-firefox-profiles",
-        "updated_at": "2025-01-23T22:23:57.029918",
+        "updated_at": "2025-01-23T22:42:14.458502",
         "last_commit": "8c56e7ef9f48b10554bdca7fa3f2a067b186e1e3",
         "last_commit_time": "2024-08-09T10:37:14-03:00"
     },
     "com.github.lighttigerxiv.ulauncher-terminal-runner-extension": {
         "id": "com.github.lighttigerxiv.ulauncher-terminal-runner-extension",
         "url": "https://github.com/lighttigerxiv/ulauncher-terminal-runner-extension",
-        "updated_at": "2025-01-23T22:23:58.818390",
+        "updated_at": "2025-01-23T22:42:16.398845",
         "last_commit": "d6bc2157e5c0ef2f812e3051ddde334c7b485c2e",
         "last_commit_time": "2023-05-02T23:50:12+01:00"
     },
     "com.github.manahter.ulauncher-doviz": {
         "id": "com.github.manahter.ulauncher-doviz",
         "url": "https://github.com/manahter/ulauncher-doviz",
-        "updated_at": "2025-01-23T22:24:03.161619",
+        "updated_at": "2025-01-23T22:42:20.565064",
         "last_commit": "23eea7926ad20cdff70e2140a6057eabf64d985e",
         "last_commit_time": "2021-01-29T01:31:55+03:00"
     },
     "com.github.manahter.ulauncher-ip-analysis": {
         "id": "com.github.manahter.ulauncher-ip-analysis",
         "url": "https://github.com/manahter/ulauncher-ip-analysis",
-        "updated_at": "2025-01-23T22:24:07.543272",
+        "updated_at": "2025-01-23T22:42:26.534822",
         "last_commit": "ea408404cd5c860664e770bd49c03fcaa3681116",
         "last_commit_time": "2021-12-29T19:25:34+03:00"
     },
     "com.github.manahter.ulauncher-translate": {
         "id": "com.github.manahter.ulauncher-translate",
         "url": "https://github.com/manahter/ulauncher-translate",
-        "updated_at": "2025-01-23T22:24:11.865439",
+        "updated_at": "2025-01-23T22:42:32.331699",
         "last_commit": "f81d32c583c7e3542bdba655e991a56e6d9a2c28",
         "last_commit_time": "2021-04-09T21:12:40+03:00"
     },
     "com.github.melianmiko.ulauncher-bluetoothd": {
         "id": "com.github.melianmiko.ulauncher-bluetoothd",
         "url": "https://github.com/melianmiko/ulauncher-bluetoothd",
-        "updated_at": "2025-01-23T22:24:13.774398",
+        "updated_at": "2025-01-23T22:42:34.210302",
         "last_commit": "880e439c8df6d72f530b64a9025d9c8a6087e53f",
         "last_commit_time": "2023-05-08T17:34:47+07:00"
     },
     "com.github.nastuzzisamy.ulauncher-custom-scripts": {
         "id": "com.github.nastuzzisamy.ulauncher-custom-scripts",
         "url": "https://github.com/nastuzzisamy/ulauncher-custom-scripts",
-        "updated_at": "2025-01-23T22:24:15.661365",
+        "updated_at": "2025-01-23T22:42:36.125357",
         "last_commit": "7a68cbafb4acc01fed340d0d2ae99a6701724b31",
         "last_commit_time": "2022-11-21T22:19:31+01:00"
     },
     "com.github.nastuzzisamy.ulauncher-google-search": {
         "id": "com.github.nastuzzisamy.ulauncher-google-search",
         "url": "https://github.com/nastuzzisamy/ulauncher-google-search",
-        "updated_at": "2025-01-23T22:24:17.674931",
+        "updated_at": "2025-01-23T22:42:38.048261",
         "last_commit": "a649258c57369451cc96a44e382779c301b32943",
         "last_commit_time": "2021-03-27T13:04:51+01:00"
     },
     "com.github.nastuzzisamy.ulauncher-translate": {
         "id": "com.github.nastuzzisamy.ulauncher-translate",
         "url": "https://github.com/nastuzzisamy/ulauncher-translate",
-        "updated_at": "2025-01-23T22:24:19.658441",
+        "updated_at": "2025-01-23T22:42:39.990528",
         "last_commit": "f16b6eed05923e604bacafefdc40b7b7290e21da",
         "last_commit_time": "2021-03-27T12:43:48+01:00"
     },
     "com.github.nastuzzisamy.ulauncher-youtube-search": {
         "id": "com.github.nastuzzisamy.ulauncher-youtube-search",
         "url": "https://github.com/nastuzzisamy/ulauncher-youtube-search",
-        "updated_at": "2025-01-23T22:24:21.676387",
+        "updated_at": "2025-01-23T22:42:41.981151",
         "last_commit": "fe855811358b2f15ec6ed69ca18e20639874fa28",
         "last_commit_time": "2021-03-27T12:29:18+01:00"
     },
     "com.github.nortmas.chrome-bookmarks": {
         "id": "com.github.nortmas.chrome-bookmarks",
         "url": "https://github.com/nortmas/chrome-bookmarks",
-        "updated_at": "2025-01-23T22:24:23.692015",
+        "updated_at": "2025-01-23T22:42:44.084574",
         "last_commit": "b4598ea1e208cd6feb49574e998721dcc771157f",
         "last_commit_time": "2021-01-09T22:04:28+07:00"
     },
     "com.github.seofernando25.ulauncher-gpt": {
         "id": "com.github.seofernando25.ulauncher-gpt",
         "url": "https://github.com/seofernando25/ulauncher-gpt",
-        "updated_at": "2025-01-23T22:24:25.656575",
+        "updated_at": "2025-01-23T22:42:46.055030",
         "last_commit": "2d51ff40fcbd501e64034f3c7be1cd35abc47d6b",
         "last_commit_time": "2023-04-14T18:57:18-04:00"
     },
     "com.github.seon22break.bitcoin-exchange": {
         "id": "com.github.seon22break.bitcoin-exchange",
         "url": "https://github.com/seon22break/bitcoin-exchange",
-        "updated_at": "2025-01-23T22:24:29.260228",
+        "updated_at": "2025-01-23T22:42:50.959008",
         "last_commit": "da4425869906be31401b55157f3f31792c45a72e",
         "last_commit_time": "2021-04-12T17:23:11+02:00"
     },
     "com.github.ulauncher.ulauncher-emoji": {
         "id": "com.github.ulauncher.ulauncher-emoji",
         "url": "https://github.com/ulauncher/ulauncher-emoji",
-        "updated_at": "2025-01-23T22:25:05.088168",
+        "updated_at": "2025-01-23T22:43:28.898476",
         "last_commit": "827cfe5e1d2f89f742f811f981759787b0654fa9",
         "last_commit_time": "2023-11-04T20:37:13+02:00"
     },
     "com.github.ulauncher.ulauncher-kill": {
         "id": "com.github.ulauncher.ulauncher-kill",
         "url": "https://github.com/ulauncher/ulauncher-kill",
-        "updated_at": "2025-01-23T22:25:07.061447",
+        "updated_at": "2025-01-23T22:43:30.853937",
         "last_commit": "00ffe8266dbb6c2aea7d86a6363e51cec4b1981f",
         "last_commit_time": "2022-11-26T18:15:05+02:00"
     },
     "com.github.yetanothersimon.ulauncher-pulsecontrol": {
         "id": "com.github.yetanothersimon.ulauncher-pulsecontrol",
         "url": "https://github.com/yetanothersimon/ulauncher-pulsecontrol",
-        "updated_at": "2025-01-23T22:25:09.154371",
+        "updated_at": "2025-01-23T22:43:32.954404",
         "last_commit": "241dae0ca39b857a0da2b8ede201ff6d33523849",
         "last_commit_time": "2024-03-15T15:30:05+01:00"
-    },
-    "com.github.kenanpelit.ulauncher-zen-profiles": {
-        "id": "com.github.kenanpelit.ulauncher-zen-profiles",
-        "url": "https://github.com/kenanpelit/ulauncher-zen-profiles",
-        "updated_at": "2025-01-23T22:25:11.121411",
-        "last_commit": "7c234fa9df301344c33d761ff5b40a16873ab989",
-        "last_commit_time": "2025-01-23T22:23:04+03:00"
     }
 }
