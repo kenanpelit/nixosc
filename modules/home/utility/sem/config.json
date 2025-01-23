@@ -178,7 +178,7 @@
     "Chrome-CompectTA": {
       "command": "profile_chrome",
       "args": [
-        "CompectTA",
+        "CompecTA",
         "--class",
         "CompecTA",
         "--title",
@@ -197,7 +197,7 @@
       ],
       "vpn_mode": "default"
     },
-    "Chrome-Kenp": {
+    "Chrome-Whats": {
       "command": "profile_chrome",
       "args": [
         "Whats",
@@ -296,16 +296,6 @@
         "--name",
         "Whats",
         "--restore-session"
-      ],
-      "vpn_mode": "always"
-    },
-    "spotify": {
-      "command": "spotify",
-      "args": [
-        "--class",
-        "Spotify",
-        "-T",
-        "Spotify"
       ],
       "vpn_mode": "always"
     },
