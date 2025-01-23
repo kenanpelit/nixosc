@@ -1,18 +1,38 @@
 #!/usr/bin/env bash
+#===============================================================================
+#
+#   Script: OSC SSH Hosts Backup Tool
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Remote host /etc/hosts file backup utility that creates
+#                organized backups with connection details and timestamps
+#
+#   Features:
+#   - Backs up remote /etc/hosts files via SSH
+#   - Adds connection metadata and timestamps
+#   - Automatically organizes backups by connection name
+#   - Simple command-line interface
+#   - Built-in error handling and validation
+#
+#   License: MIT
+#
+#===============================================================================
 
 # Script adını al
 SCRIPT_NAME=$(basename "$0")
 
 # Kullanım bilgisini göster
 usage() {
-  echo "Kullanım: $SCRIPT_NAME <ssh_bağlantı_adı>"
-  echo "Örnek: $SCRIPT_NAME sunucu_adi"
-  exit 1
+	echo "Kullanım: $SCRIPT_NAME <ssh_bağlantı_adı>"
+	echo "Örnek: $SCRIPT_NAME sunucu_adi"
+	exit 1
 }
 
 # Parametre kontrolü
 if [ $# -ne 1 ]; then
-  usage
+	usage
 fi
 
 # SSH bağlantı bilgisini al
@@ -27,8 +47,8 @@ echo "Uzak makineden bilgiler alınıyor..."
 # Hostname bilgisini al
 HOSTNAME=$(ssh "$SSH_CONNECTION" 'hostname' 2>/dev/null)
 if [ $? -ne 0 ]; then
-  echo "Hata: Hostname bilgisi alınamadı!"
-  exit 1
+	echo "Hata: Hostname bilgisi alınamadı!"
+	exit 1
 fi
 
 echo "Hostname: $HOSTNAME"
@@ -39,9 +59,9 @@ TEMP_FILE=$(mktemp)
 # Hosts dosyasını geçici dosyaya kopyala
 scp "$SSH_CONNECTION:/etc/hosts" "$TEMP_FILE" 2>/dev/null
 if [ $? -ne 0 ]; then
-  echo "Hata: Hosts dosyası kopyalanamadı!"
-  rm -f "$TEMP_FILE"
-  exit 1
+	echo "Hata: Hosts dosyası kopyalanamadı!"
+	rm -f "$TEMP_FILE"
+	exit 1
 fi
 
 # Yeni hosts dosyası oluştur

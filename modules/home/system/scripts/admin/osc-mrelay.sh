@@ -1,8 +1,25 @@
 #!/usr/bin/env bash
-
-# Mullvad VPN Relay Toggle Script
-# Toggles between OpenVPN and WireGuard protocols
-# Can switch to random relays or specific country relays
+#===============================================================================
+#
+#   Script: OSC Mullvad VPN Relay Manager
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Advanced Mullvad VPN relay management utility for switching
+#                between protocols and locations with smart relay selection
+#
+#   Features:
+#   - Protocol toggle between OpenVPN and WireGuard
+#   - Random relay selection from global pool
+#   - Country-specific relay selection
+#   - Smart protocol switching for current location
+#   - Supports multiple European and Asian locations
+#   - Simple command-line interface
+#
+#   License: MIT
+#
+#===============================================================================
 
 function show_help() {
 	cat <<EOF

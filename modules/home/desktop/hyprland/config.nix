@@ -477,8 +477,8 @@
         # Uygulama Başlatıcılar
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
         "ALT, Space, exec, ulauncher-toggle"                                          # Ulauncher
-        "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
-        "ALT SHIFT, F, exec, hyprctl dispatch exec '[float; center; size 1920 1080] kitty yazi'" # Terminal dosya yönetici
+        "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'" # Terminal dosya yönetici
+        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
 
         # Medya ve Ses Kontrolü
         "ALT, A, exec, hypr-audio_switcher"                                           # Ses değiştirici

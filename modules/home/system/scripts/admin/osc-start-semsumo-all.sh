@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
-set -x
-
 #===============================================================================
 #
-#   Script: Hybrid Workspace Session Launcher
+#   Script: OSC Hybrid Workspace Launcher
 #   Version: 2.0.0
-#   Date: 2024-12-12
+#   Date: 2024-01-23
 #   Author: Kenan Pelit
-#   Description: VPN-aware workspace session launcher with hybrid launch strategy
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Advanced workspace session launcher with VPN-awareness and hybrid
+#                launch strategies for optimal startup performance
+#
+#   Features:
+#   - Smart VPN detection and validation (OpenVPN & Mullvad)
+#   - Hybrid launch strategy (parallel & sequential)
+#   - Workspace management with Hyprland integration
+#   - Advanced logging with rotation
+#   - Application grouping and dependencies
+#   - CPU frequency management
+#   - Configurable launch delays and behaviors
 #
 #   License: MIT
 #

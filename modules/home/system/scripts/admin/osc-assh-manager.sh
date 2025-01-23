@@ -1,12 +1,27 @@
 #!/usr/bin/env bash
+#===============================================================================
+#
+#   Script: OSC ASSH Manager
+#   Version: 1.0.2
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Advanced SSH/SCP completion management utility with ASSH integration
+#                for enhanced SSH host management and shell completion support
+#
+#   Features:
+#   - Auto installation and update of ASSH tool
+#   - Multi-shell completion support (Bash, Zsh, Fish)
+#   - Smart host caching and indexing
+#   - XDG Base Directory compliance
+#   - Interactive installation process
+#   - Robust error handling
+#
+#   License: MIT
+#
+#===============================================================================
 
-#######################################
-# ASSH Manager Script v1.0.2
-# Author: Kenan Pelit
-# License: MIT
-#######################################
-
-set -e
+#set -e
 
 # Colors for messages
 RED='\033[0;31m'
