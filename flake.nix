@@ -1,13 +1,33 @@
 # ==============================================================================
-# NixOS System Configuration Flake
-# Author: Kenan Pelit
-# Description: Main configuration file for NixOS system setup
 #
-# This flake defines the complete NixOS system configuration, including:
-# - Package management and overlays
-# - User environment (via home-manager) 
-# - System services and settings
-# - Hardware-specific configurations
+#   NixOS System Configuration Flake
+#   Project: NixOS Configuration Suite (nixosc)
+#   Version: 2.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#
+#   Description: Comprehensive NixOS system configuration management suite
+#   This flake defines the complete NixOS system configuration, including:
+#   - Package management and overlays
+#   - User environment (via home-manager) 
+#   - System services and settings
+#   - Hardware-specific configurations
+#   - VPN-aware workspace session management
+#   - Automated backup and restoration tools
+#   - Dynamic admin script generation
+#
+#   Features:
+#   - Modular configuration structure
+#   - Hybrid workspace session management
+#   - Automated backup systems
+#   - VPN-aware application launching
+#   - Custom admin tooling generation
+#   - Home-manager integration
+#   - Hardware-specific optimizations
+#
+#   License: MIT
+#
 # ==============================================================================
 {
  description = "Kenan's nixos configuration";

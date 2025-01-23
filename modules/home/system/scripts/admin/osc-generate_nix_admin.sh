@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
-
+#===============================================================================
+#
+#   Script: NixOS Admin Script Generator
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Automated Nix expression generator for admin scripts that
+#                creates a modular home-manager configuration
+#
+#   Features:
+#   - Automatically generates Nix expressions for shell scripts
+#   - Handles special filename patterns (t1-9, tm)
+#   - Ignores underscore-prefixed files
+#   - Creates modular home-manager packages
+#   - Maintains consistent naming conventions
+#
+#   License: MIT
+#
+#===============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$HOME/.nixosc/modules/home/system/scripts/admin"

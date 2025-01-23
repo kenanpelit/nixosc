@@ -1,5 +1,30 @@
 #!/usr/bin/env bash
-
+#===============================================================================
+#
+#   Project: NixOS Configuration Suite (nixosc)
+#   Version: 2.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Comprehensive NixOS configuration management suite with
+#                VPN-aware workspace session handling and automated tooling
+#
+#   Components:
+#   - Hybrid Workspace Session Launcher
+#   - Configuration Backup System
+#   - Admin Script Generator
+#   - VPN-aware Session Management
+#
+#   Features:
+#   - Automated configuration backup and restoration
+#   - Dynamic session management with VPN awareness
+#   - Modular admin script integration
+#   - Home-manager integration
+#   - Extensible plugin architecture
+#
+#   License: MIT
+#
+#===============================================================================
 # Renkli çıktı için ANSI renk kodları
 RED='\033[0;31m'
 GREEN='\033[0;32m'
