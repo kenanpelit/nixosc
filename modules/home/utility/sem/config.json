@@ -164,15 +164,59 @@
       ],
       "vpn_mode": "never"
     },
+    "Chrome-Kenp": {
+      "command": "profile_chrome",
+      "args": [
+        "Kenp",
+        "--class",
+        "Kenp",
+        "--title",
+        "Kenp"
+      ],
+      "vpn_mode": "default"
+    },
+    "Chrome-CompectTA": {
+      "command": "profile_chrome",
+      "args": [
+        "CompectTA",
+        "--class",
+        "CompecTA",
+        "--title",
+        "CompecTA"
+      ],
+      "vpn_mode": "default"
+    },
+    "Chrome-AI": {
+      "command": "profile_chrome",
+      "args": [
+        "AI",
+        "--class",
+        "AI",
+        "--title",
+        "AI"
+      ],
+      "vpn_mode": "default"
+    },
+    "Chrome-Kenp": {
+      "command": "profile_chrome",
+      "args": [
+        "Whats",
+        "--class",
+        "Whats",
+        "--title",
+        "Whats"
+      ],
+      "vpn_mode": "default"
+    },
     "Zen-Kenp": {
       "command": "zen",
       "args": [
         "-P",
         "Kenp",
         "--class",
-        "Zen-Kenp",
+        "Kenp",
         "--name",
-        "Zen-Kenp",
+        "Kenp",
         "--restore-session"
       ],
       "vpn_mode": "default"
@@ -183,9 +227,9 @@
         "-P",
         "CompecTA",
         "--class",
-        "Zen-CompecTA",
+        "CompecTA",
         "--name",
-        "Zen-CompecTA",
+        "CompecTA",
         "--restore-session"
       ],
       "vpn_mode": "always"
@@ -196,9 +240,9 @@
         "-P",
         "Discord",
         "--class",
-        "Zen-Discord",
+        "Discord",
         "--name",
-        "Zen-Discord",
+        "Discord",
         "--restore-session"
       ],
       "vpn_mode": "always"
@@ -209,9 +253,9 @@
         "-P",
         "NoVpn",
         "--class",
-        "Zen-NoVpn",
+        "AI",
         "--name",
-        "Zen-NoVpn",
+        "AI",
         "--restore-session"
       ],
       "vpn_mode": "never"
@@ -222,9 +266,9 @@
         "-P",
         "Proxy",
         "--class",
-        "Zen-Proxy",
+        "Proxy",
         "--name",
-        "Zen-Proxy",
+        "Proxy",
         "--restore-session"
       ],
       "vpn_mode": "never"
@@ -235,9 +279,9 @@
         "-P",
         "Spotify",
         "--class",
-        "Zen-Spotify",
+        "Spotify",
         "--name",
-        "Zen-Spotify",
+        "Spotify",
         "--restore-session"
       ],
       "vpn_mode": "never"
@@ -248,9 +292,9 @@
         "-P",
         "Whats",
         "--class",
-        "Zen-Whats",
+        "Whats",
         "--name",
-        "Zen-Whats",
+        "Whats",
         "--restore-session"
       ],
       "vpn_mode": "always"

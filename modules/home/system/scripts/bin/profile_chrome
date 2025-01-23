@@ -1,27 +1,63 @@
 #!/usr/bin/env bash
-#-eua
+set -euo pipefail
 
-# Eğer parametre verilmediyse profilleri listele
-if [ $# -eq 0 ]; then
-  echo "Mevcut profiller:"
-  jq -r '.profile.info_cache | to_entries | map(.key + ": " + .value.name) | .[]' <~/.config/google-chrome/Local\ State | sort -k1,1 -k2,2n
-  echo -e "\nKullanım: $0 <profil_ismi> [chrome_parametreleri]"
-  exit 0
-fi
+usage() {
+	echo "Kullanım: $0 <profil_ismi> [--class=SINIF] [--title=BASLIK] [chrome_parametreleri]"
+	echo "Mevcut profiller:"
+	jq -r '.profile.info_cache | to_entries | map(.key + ": " + .value.name) | .[]' <"${HOME}/.config/google-chrome/Local State" 2>/dev/null | sort -k1,1 -k2,2n || echo "Chrome profil bilgisi okunamadı!"
+	exit 1
+}
+
+# Parametre kontrolü
+[ $# -eq 0 ] && usage
 
 profile_name=$1
 shift
-local_state=~/.config/google-chrome/Local\ State
+
+# Varsayılan değerler
+window_class=""
+window_title=""
+chrome_args=()
+
+# Parametreleri işle
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--class=*)
+		window_class="${1#*=}"
+		;;
+	--title=*)
+		window_title="${1#*=}"
+		;;
+	*)
+		chrome_args+=("$1")
+		;;
+	esac
+	shift
+done
+
+local_state="${HOME}/.config/google-chrome/Local State"
 
 # Profil anahtarını bul
-profile_key=$(jq <"$local_state" -r '
-    .profile.info_cache | to_entries | .[] |
-    select(.value.name == env.profile_name) | .key')
+profile_key=$(jq -r --arg name "$profile_name" \
+	'.profile.info_cache | to_entries | .[] | 
+    select(.value.name == $name) | .key' <"$local_state")
 
-# Profil anahtarı boş değilse Chrome'u başlat
-if [ -n "$profile_key" ]; then
-  google-chrome-stable --profile-directory="$profile_key" "$@"
-else
-  echo "Hata: '$profile_name' isimli profil bulunamadı."
-  exit 1
+if [ -z "$profile_key" ]; then
+	echo "Hata: '$profile_name' isimli profil bulunamadı."
+	echo "Mevcut profiller:"
+	jq -r '.profile.info_cache | to_entries | map(.key + ": " + .value.name) | .[]' <"$local_state" | sort -k1,1 -k2,2n
+	exit 1
 fi
+
+# Chrome komut satırı argümanlarını oluştur
+cmd=(google-chrome-stable --profile-directory="$profile_key")
+
+# Class ve title parametrelerini ekle
+[ -n "$window_class" ] && cmd+=(--class="$window_class")
+[ -n "$window_title" ] && cmd+=("--window-name=$window_title")
+
+# Diğer Chrome parametrelerini ekle
+[ ${#chrome_args[@]} -gt 0 ] && cmd+=("${chrome_args[@]}")
+
+# Chrome'u başlat
+"${cmd[@]}"
