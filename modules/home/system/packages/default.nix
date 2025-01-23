@@ -71,6 +71,7 @@ let
     detox           # Dosya adı temizleyici
     pv              # Pipe görselleştirici
     gist            # GitHub gist yükleme
+    python312Packages.subliminal  # Search and download subtitles
   ];
 
   # ==============================================================================
