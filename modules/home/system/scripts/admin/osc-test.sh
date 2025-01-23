@@ -1,4 +1,25 @@
 #!/usr/bin/env bash
+#===============================================================================
+#
+#   Script: OSC Symlink Manager
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Manages symbolic links for configured directories between a
+#                source repository and target location with backup functionality
+#
+#   Features:
+#   - Creates symbolic links from source to target directories
+#   - Automatic backup of existing directories
+#   - Configurable directory list
+#   - Dry-run mode for testing
+#   - Color-coded status output
+#   - Safety checks and confirmations
+#
+#   License: MIT
+#
+#===============================================================================
 
 # Renk tanımlamaları
 RED='\033[0;31m'

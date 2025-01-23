@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
-
+#===============================================================================
+#
+#   Script: OSC Semsumo Session Script Generator
+#   Version: 1.0.0
+#   Date: 2024-01-23
+#   Author: Kenan Pelit
+#   Repository: https://github.com/kenanpelit/nixosc
+#   Description: Generates session management scripts for different profiles using Semsumo.
+#                Creates executable scripts for each profile in always/never/default modes
+#                based on profiles defined in sem/config.json.
+#
+#   Features:
+#   - Generates profile-specific session management scripts
+#   - Supports multiple session modes (always/never/default)
+#   - Automatic script generation based on config.json
+#   - Creates organized script directory structure
+#   - Built-in validation and error handling
+#
+#   License: MIT
+#
 #######################################
-# Script Generator for Session Management
-#
-# Description:
-#   Generates session management scripts based on profiles
-#   defined in the configuration file.
-#
-# Usage:
-#   ./generate-scripts.sh
-#
-# Requirements:
-#   - jq: for JSON parsing
-#   - semsumo: session management tool
-#######################################
 
-# Strict error handling
+error handling
 set -euo pipefail
 IFS=$'\n\t'
 
