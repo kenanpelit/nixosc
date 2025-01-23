@@ -114,7 +114,6 @@ clean_extensions() {
 # Array of extension repositories
 declare -a repos=(
 	"kenanpelit/ulauncher-zen-profiles"
-	"kenanpelit/ulauncher-ssh"
 	"abhishekmj303/ulauncher-playerctl"
 	"adamtillou/ulauncher-aurman-plugin"
 	"ahaasler/ulauncher-tmux"
