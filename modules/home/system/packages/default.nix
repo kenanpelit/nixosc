@@ -72,6 +72,7 @@ let
     pv              # Pipe görselleştirici
     gist            # GitHub gist yükleme
     python312Packages.subliminal  # Search and download subtitles
+    python312Packages.googletrans # Googletrans
   ];
 
   # ==============================================================================
