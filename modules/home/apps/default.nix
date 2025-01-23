@@ -17,8 +17,8 @@
 
 {
  imports = [
-   #./discord
-   #./elektron
+   ./webcord
+   ./elektron
    ./obsidian
    ./ytdlp
    ./zotfiles
