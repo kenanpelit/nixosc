@@ -18,23 +18,41 @@ let
   start-akenp-never = pkgs.writeShellScriptBin "start-akenp-never" (
     builtins.readFile ./start/start-akenp-never.sh
   );
-  start-alacritty-always = pkgs.writeShellScriptBin "start-alacritty-always" (
-    builtins.readFile ./start/start-alacritty-always.sh
+  start-chrome-ai-always = pkgs.writeShellScriptBin "start-chrome-ai-always" (
+    builtins.readFile ./start/start-chrome-ai-always.sh
   );
-  start-alacritty-default = pkgs.writeShellScriptBin "start-alacritty-default" (
-    builtins.readFile ./start/start-alacritty-default.sh
+  start-chrome-ai-default = pkgs.writeShellScriptBin "start-chrome-ai-default" (
+    builtins.readFile ./start/start-chrome-ai-default.sh
   );
-  start-alacritty-ncmpcpp-always = pkgs.writeShellScriptBin "start-alacritty-ncmpcpp-always" (
-    builtins.readFile ./start/start-alacritty-ncmpcpp-always.sh
+  start-chrome-ai-never = pkgs.writeShellScriptBin "start-chrome-ai-never" (
+    builtins.readFile ./start/start-chrome-ai-never.sh
   );
-  start-alacritty-ncmpcpp-default = pkgs.writeShellScriptBin "start-alacritty-ncmpcpp-default" (
-    builtins.readFile ./start/start-alacritty-ncmpcpp-default.sh
+  start-chrome-compectta-always = pkgs.writeShellScriptBin "start-chrome-compectta-always" (
+    builtins.readFile ./start/start-chrome-compectta-always.sh
   );
-  start-alacritty-ncmpcpp-never = pkgs.writeShellScriptBin "start-alacritty-ncmpcpp-never" (
-    builtins.readFile ./start/start-alacritty-ncmpcpp-never.sh
+  start-chrome-compectta-default = pkgs.writeShellScriptBin "start-chrome-compectta-default" (
+    builtins.readFile ./start/start-chrome-compectta-default.sh
   );
-  start-alacritty-never = pkgs.writeShellScriptBin "start-alacritty-never" (
-    builtins.readFile ./start/start-alacritty-never.sh
+  start-chrome-compectta-never = pkgs.writeShellScriptBin "start-chrome-compectta-never" (
+    builtins.readFile ./start/start-chrome-compectta-never.sh
+  );
+  start-chrome-kenp-always = pkgs.writeShellScriptBin "start-chrome-kenp-always" (
+    builtins.readFile ./start/start-chrome-kenp-always.sh
+  );
+  start-chrome-kenp-default = pkgs.writeShellScriptBin "start-chrome-kenp-default" (
+    builtins.readFile ./start/start-chrome-kenp-default.sh
+  );
+  start-chrome-kenp-never = pkgs.writeShellScriptBin "start-chrome-kenp-never" (
+    builtins.readFile ./start/start-chrome-kenp-never.sh
+  );
+  start-chrome-whats-always = pkgs.writeShellScriptBin "start-chrome-whats-always" (
+    builtins.readFile ./start/start-chrome-whats-always.sh
+  );
+  start-chrome-whats-default = pkgs.writeShellScriptBin "start-chrome-whats-default" (
+    builtins.readFile ./start/start-chrome-whats-default.sh
+  );
+  start-chrome-whats-never = pkgs.writeShellScriptBin "start-chrome-whats-never" (
+    builtins.readFile ./start/start-chrome-whats-never.sh
   );
   start-discord-always = pkgs.writeShellScriptBin "start-discord-always" (
     builtins.readFile ./start/start-discord-always.sh
@@ -153,6 +171,15 @@ let
   start-wezterm-never = pkgs.writeShellScriptBin "start-wezterm-never" (
     builtins.readFile ./start/start-wezterm-never.sh
   );
+  start-wezterm-rmpc-always = pkgs.writeShellScriptBin "start-wezterm-rmpc-always" (
+    builtins.readFile ./start/start-wezterm-rmpc-always.sh
+  );
+  start-wezterm-rmpc-default = pkgs.writeShellScriptBin "start-wezterm-rmpc-default" (
+    builtins.readFile ./start/start-wezterm-rmpc-default.sh
+  );
+  start-wezterm-rmpc-never = pkgs.writeShellScriptBin "start-wezterm-rmpc-never" (
+    builtins.readFile ./start/start-wezterm-rmpc-never.sh
+  );
   start-wkenp-always = pkgs.writeShellScriptBin "start-wkenp-always" (
     builtins.readFile ./start/start-wkenp-always.sh
   );
@@ -234,12 +261,18 @@ in {
     start-akenp-always
     start-akenp-default
     start-akenp-never
-    start-alacritty-always
-    start-alacritty-default
-    start-alacritty-ncmpcpp-always
-    start-alacritty-ncmpcpp-default
-    start-alacritty-ncmpcpp-never
-    start-alacritty-never
+    start-chrome-ai-always
+    start-chrome-ai-default
+    start-chrome-ai-never
+    start-chrome-compectta-always
+    start-chrome-compectta-default
+    start-chrome-compectta-never
+    start-chrome-kenp-always
+    start-chrome-kenp-default
+    start-chrome-kenp-never
+    start-chrome-whats-always
+    start-chrome-whats-default
+    start-chrome-whats-never
     start-discord-always
     start-discord-default
     start-discord-never
@@ -279,6 +312,9 @@ in {
     start-wezterm-always
     start-wezterm-default
     start-wezterm-never
+    start-wezterm-rmpc-always
+    start-wezterm-rmpc-default
+    start-wezterm-rmpc-never
     start-wkenp-always
     start-wkenp-default
     start-wkenp-never
