@@ -163,8 +163,8 @@ let
     beauty-line-icon-theme # Modern simge teması
     gnomeExtensions.gsconnect # Connect implementation
     wtype           # Xdotool type for wayland
-    wasistlos
     whatsie
+    whatsapp-for-linux
   ];
 
   # ==============================================================================
