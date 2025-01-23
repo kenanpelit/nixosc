@@ -12,20 +12,14 @@ let
   clearam = pkgs.writeShellScriptBin "clearam" (
     builtins.readFile ./bin/clearam.sh
   );
-  clustergit-bash = pkgs.writeShellScriptBin "clustergit-bash" (
-    builtins.readFile ./bin/clustergit-bash.sh
+  clustergit = pkgs.writeShellScriptBin "clustergit" (
+    builtins.readFile ./bin/clustergit.sh
   );
   compress = pkgs.writeShellScriptBin "compress" (
     builtins.readFile ./bin/compress.sh
   );
   container-engine-manager = pkgs.writeShellScriptBin "container-engine-manager" (
     builtins.readFile ./bin/container-engine-manager.sh
-  );
-  container-monitor = pkgs.writeShellScriptBin "container-monitor" (
-    builtins.readFile ./bin/container-monitor.sh
-  );
-  desktop-files-ranger-yazi = pkgs.writeShellScriptBin "desktop-files-ranger-yazi" (
-    builtins.readFile ./bin/desktop-files-ranger-yazi.sh
   );
   extract = pkgs.writeShellScriptBin "extract" (
     builtins.readFile ./bin/extract.sh
@@ -346,11 +340,9 @@ in {
     ascii
     bulk_rename
     clearam
-    clustergit-bash
+    clustergit
     compress
     container-engine-manager
-    container-monitor
-    desktop-files-ranger-yazi
     extract
     gnome-start-all
     hypr-airplane_mode
