@@ -69,6 +69,7 @@ DOT_PATHS=(
 	".config/nix"
 	".config/github"
 	".config/hblock"
+	".config/subliminal"
 	".config/zsh/history"
 	".backups"
 	".gnupg"
