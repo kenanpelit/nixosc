@@ -2,10 +2,26 @@
 # ==============================================================================
 # Ulauncher Application Launcher Configuration
 # ==============================================================================
-{ pkgs, lib, ... }: 
+{ pkgs, lib, config, ... }: 
 let
   ulauncher_config = ./config;
   
+  # =============================================================================
+  # Extensions Directory Preparation Script
+  # =============================================================================
+  prepareExtensionsScript = pkgs.writeScriptBin "prepare-ulauncher-extensions" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    # Create required directories
+    mkdir -p "$HOME/.local/share/ulauncher/extensions"
+    mkdir -p "$HOME/.config/ulauncher"
+    
+    # Set correct permissions
+    chmod -R u+w "$HOME/.config/ulauncher"
+    chmod -R u+w "$HOME/.local/share/ulauncher"
+  '';
+
   # =============================================================================
   # Shortcuts Management Script
   # =============================================================================
@@ -14,8 +30,10 @@ let
     set -euo pipefail
     configDir="$HOME/.config/ulauncher"
     shortcutsFile="$configDir/shortcuts.json"
+    
     # Ensure config directory exists
     mkdir -p "$configDir"
+    
     # Define shortcuts configuration
     cat > "$shortcutsFile" << 'EOF'
     {
@@ -51,14 +69,27 @@ let
       }
     }
     EOF
-    # Adjust file paths
+    
+    # Adjust file paths and set permissions
     sed -i "s|\\\$HOME|$HOME|g" "$shortcutsFile"
+    chmod 644 "$shortcutsFile"
   '';
 in {
   # =============================================================================
   # Package Installation
   # =============================================================================
   home.packages = with pkgs; [ ulauncher ];
+
+  # =============================================================================
+  # Directory Configuration
+  # =============================================================================
+  home.file.".config/ulauncher" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/ulauncher";
+  };
+
+  home.file.".local/share/ulauncher" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.local/share/ulauncher";
+  };
 
   # =============================================================================
   # Service Configuration
@@ -75,6 +106,9 @@ in {
       ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.ulauncher}/bin/ulauncher --hide-window'";
       Restart = "on-failure";
       RestartSec = 3;
+      Environment = [
+        "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+      ];
     };
     Install = {
       WantedBy = ["graphical-session.target"];
@@ -92,9 +126,15 @@ in {
   };
 
   # =============================================================================
-  # Activation Script
+  # Activation Scripts
   # =============================================================================
-  home.activation.manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
-  '';
+  home.activation = {
+    prepareExtensions = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      ${prepareExtensionsScript}/bin/prepare-ulauncher-extensions
+    '';
+
+    manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
+    '';
+  };
 }
