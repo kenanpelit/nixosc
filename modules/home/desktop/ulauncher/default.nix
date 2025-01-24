@@ -13,12 +13,10 @@ let
     #!/usr/bin/env bash
     set -euo pipefail
     
-    # Create required directories
+    # Create extensions directory
     mkdir -p "$HOME/.local/share/ulauncher/extensions"
-    mkdir -p "$HOME/.config/ulauncher"
     
     # Set correct permissions
-    chmod -R u+w "$HOME/.config/ulauncher"
     chmod -R u+w "$HOME/.local/share/ulauncher"
   '';
 
@@ -83,10 +81,6 @@ in {
   # =============================================================================
   # Directory Configuration
   # =============================================================================
-  home.file.".config/ulauncher" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/ulauncher";
-  };
-
   home.file.".local/share/ulauncher" = {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.local/share/ulauncher";
   };
@@ -122,6 +116,9 @@ in {
     "ulauncher" = {
       recursive = true;
       source = "${ulauncher_config}";
+      onChange = ''
+        chmod -R u+w "$HOME/.config/ulauncher"
+      '';
     };
   };
 
