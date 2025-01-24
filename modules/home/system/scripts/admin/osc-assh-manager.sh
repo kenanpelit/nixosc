@@ -145,7 +145,7 @@ install_bash() {
 	cat >"$BASH_COMPLETION_DIR/assh" <<'EOF'
 #!/bin/bash
 
-_assh_hosts_completion() {
+_assh_completion() {
     local cache_file="$HOME/.cache/assh/hosts"
     local index_file="$HOME/.cache/assh/hosts.idx"
     local prefix=${COMP_WORDS[COMP_CWORD]:0:1}
@@ -157,8 +157,8 @@ _assh_hosts_completion() {
     fi
 }
 
-complete -F _assh_hosts_completion ssh
-complete -F _assh_hosts_completion scp
+complete -F _assh_completion ssh
+complete -F _assh_completion scp
 EOF
 
 	if ! grep -q "source ~/.bash_completion.d/assh" "$HOME/.bashrc"; then
@@ -172,7 +172,7 @@ install_zsh() {
 	cat >"$ZSH_COMPLETION_DIR/_assh" <<\EOF
 #compdef ssh scp
 
-_assh_hosts() {
+_assh() {
     local cache_file="$HOME/.cache/assh/hosts"
     local index_file="$HOME/.cache/assh/hosts.idx"
     local prefix=${words[CURRENT]:0:1}
@@ -186,8 +186,8 @@ _assh_hosts() {
     _describe 'hosts' hosts
 }
 
-compdef _assh_hosts ssh
-compdef _assh_hosts scp
+compdef _assh ssh
+compdef _assh scp
 EOF
 
 	warn_msg "Önemli: Zsh completion'ın çalışması için fpath'e completion dizinini eklemeniz gerekiyor."
