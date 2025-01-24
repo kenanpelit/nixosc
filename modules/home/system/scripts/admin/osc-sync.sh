@@ -81,6 +81,7 @@ DOT_PATHS=(
 	".vpn"
 	".keys"
 	".kenp"
+	".keep"
 	".pass"
 	".mozilla"
 	".podman"
