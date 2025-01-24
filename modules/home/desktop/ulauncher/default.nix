@@ -1,7 +1,8 @@
+# modules/home/ulauncher/default.nix
 # ==============================================================================
 # Ulauncher Application Launcher Configuration
 # ==============================================================================
-{ pkgs, lib, config, ... }: 
+{ pkgs, lib, ... }: 
 let
   ulauncher_config = ./config;
   
@@ -11,17 +12,13 @@ let
   manageShortcutsScript = pkgs.writeScriptBin "manage-ulauncher-shortcuts" ''
     #!/usr/bin/env bash
     set -euo pipefail
-    
-    # Only create directories if they don't exist
-    [ ! -d "$HOME/.config/ulauncher" ] && mkdir -p "$HOME/.config/ulauncher"
-    [ ! -d "$HOME/.local/share/ulauncher/extensions" ] && mkdir -p "$HOME/.local/share/ulauncher/extensions"
-    
-    # Only update permissions if needed
-    [ ! -w "$HOME/.config/ulauncher" ] && chmod -R u+w "$HOME/.config/ulauncher"
-    [ ! -w "$HOME/.local/share/ulauncher" ] && chmod -R u+w "$HOME/.local/share/ulauncher"
-    
+    configDir="$HOME/.config/ulauncher"
+    shortcutsFile="$configDir/shortcuts.json"
+    # Ensure config directory exists
+    mkdir -p "$configDir"
     # Define shortcuts configuration
-    SHORTCUTS_CONTENT='{
+    cat > "$shortcutsFile" << 'EOF'
+    {
       "e3da2cba-0674-4f5f-9fc1-4095343b22e5": {
           "id": "e3da2cba-0674-4f5f-9fc1-4095343b22e5",
           "name": "Google Search",
@@ -52,23 +49,10 @@ let
           "run_without_argument": false,
           "added": 1737661428.8378263
       }
-    }'
-    
-    # Only write shortcuts if file doesn't exist or content is different
-    SHORTCUTS_FILE="$HOME/.config/ulauncher/shortcuts.json"
-    if [ ! -f "$SHORTCUTS_FILE" ] || [ "$(cat $SHORTCUTS_FILE)" != "$SHORTCUTS_CONTENT" ]; then
-      echo "$SHORTCUTS_CONTENT" > "$SHORTCUTS_FILE"
-      chmod 644 "$SHORTCUTS_FILE"
-    fi
-
-    # Only copy config files if they don't exist or are different
-    for file in ${ulauncher_config}/*; do
-      base_name=$(basename "$file")
-      target="$HOME/.config/ulauncher/$base_name"
-      if [ ! -f "$target" ] || ! cmp -s "$file" "$target"; then
-        cp -f "$file" "$target"
-      fi
-    done
+    }
+    EOF
+    # Adjust file paths
+    sed -i "s|\\\$HOME|$HOME|g" "$shortcutsFile"
   '';
 in {
   # =============================================================================
@@ -91,12 +75,19 @@ in {
       ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.ulauncher}/bin/ulauncher --hide-window'";
       Restart = "on-failure";
       RestartSec = 3;
-      Environment = [
-        "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
-      ];
     };
     Install = {
       WantedBy = ["graphical-session.target"];
+    };
+  };
+
+  # =============================================================================
+  # Configuration Files
+  # =============================================================================
+  xdg.configFile = {
+    "ulauncher" = {
+      recursive = true;
+      source = "${ulauncher_config}";
     };
   };
 
@@ -107,4 +98,3 @@ in {
     ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
   '';
 }
-
