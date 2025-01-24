@@ -25,16 +25,6 @@
       text = ''
 {
   "sessions": {
-    "fkenp": {
-      "command": "foot",
-      "args": ["-a", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
-      "vpn_mode": "never"
-    },
-    "fcta": {
-      "command": "foot", 
-      "args": ["-a", "TmuxCta", "-T", "Tmux", "-e", "tmux_cta"],
-      "vpn_mode": "always"
-    },
     "kkenp": {
       "command": "kitty",
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
@@ -55,21 +45,6 @@
       "args": ["start", "--class", "TmuxCta", "-e", "tmux_cta"],
       "vpn_mode": "always"
     },
-    "akenp": {
-      "command": "alacritty",
-      "args": ["--class", "TmuxKenp", "--title", "Tmux", "-e", "tmux_kenp"],
-      "vpn_mode": "never"
-    },
-    "acta": {
-      "command": "alacritty",
-      "args": ["--class", "TmuxCta", "--title", "Tmux", "-e", "tmux_cta"],
-      "vpn_mode": "always"
-    },
-    "foot": {
-      "command": "foot",
-      "args": ["-a", "foot", "-T", "foot"],
-      "vpn_mode": "default"
-    },
     "wezterm": {
       "command": "wezterm",
       "args": ["start", "--class", "wezterm"],
@@ -81,8 +56,8 @@
       "vpn_mode": "default"
     },
     "wezterm-rmpc": {
-      "command": "alacritty",
-      "args": ["--class", "rmpc", "-e", "rmpc"],
+      "command": "wezterm",
+      "args": ["start", "--class", "rmpc", "-e", "rmpc"],
       "vpn_mode": "default"
     },
     "discord": {
