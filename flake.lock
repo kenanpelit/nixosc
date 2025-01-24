@@ -951,11 +951,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1737719148,
-        "narHash": "sha256-ycZZghpy+/Hpnzaw252ovAelilVo8/Kz6ah/l9DfdIQ=",
+        "lastModified": 1737727230,
+        "narHash": "sha256-139LDeAMEUiTsOLaLbfxsVU7hX0r4Ax81cSMf0hcaj0=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "44b2880e3f1b5a877b74c3a893dfa03dc1caf238",
+        "rev": "83b1a35cf87bc8d478fe026b9062e73468800cc3",
         "type": "github"
       },
       "original": {
@@ -1191,11 +1191,11 @@
     "yazi-plugins": {
       "flake": false,
       "locked": {
-        "lastModified": 1737716931,
-        "narHash": "sha256-teuyuAMgabs1Wn6uB30NrHTQpLtk/PzrfWjcqE9vZtg=",
+        "lastModified": 1737725721,
+        "narHash": "sha256-xY2yVCLLcXRyFfnmyP6h5Fw+4kwOZhEOCWVZrRwXnTA=",
         "owner": "yazi-rs",
         "repo": "plugins",
-        "rev": "117975b88b2d20f10037a3443271237fca8fd1b5",
+        "rev": "8ed253716c60f3279518ce34c74ca053530039d8",
         "type": "github"
       },
       "original": {
