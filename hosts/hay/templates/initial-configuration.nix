@@ -85,6 +85,7 @@
     assh
     ncurses
     pv
+    file
 
     # Security and encryption
     gnupg
