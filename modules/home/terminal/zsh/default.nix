@@ -15,7 +15,7 @@
 
     # Data and History (load early for availability)
     #./zsh_history.nix      # History configuration
-    ./zsh_completions      # Completion system settings
+    #./zsh_completions      # Completion system settings
 
     # Interactive Shell Features
     ./zsh_keybinds.nix     # Key bindings and input handling
