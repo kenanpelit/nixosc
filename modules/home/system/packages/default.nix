@@ -105,7 +105,7 @@ let
   systemTools = with pkgs; [
     atop            # Gelişmiş sistem monitörü - süreç ve sistem kaynakları izleme
     cpulimit        # CPU kullanım sınırlayıcı
-    dstat           # Çok yönlü sistem istatistikleri toplayıcı
+    dool            # Çok yönlü sistem istatistikleri toplayıcı
     glances         # Python tabanlı sistem monitörü
     iotop           # I/O kullanımı monitörü
     lshw            # Detaylı donanım listesi
