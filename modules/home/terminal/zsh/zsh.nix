@@ -33,6 +33,9 @@
     # Early Initialization
     # -----------------------------------------------------------------------------
     initExtraFirst = ''
+      # Nix store is secure, disable unnecessary compfix checks
+      export ZSH_DISABLE_COMPFIX="true"
+
       # XDG Base Directory Specification
       export XDG_CONFIG_HOME="$HOME/.config"
       export XDG_CACHE_HOME="$HOME/.cache"
