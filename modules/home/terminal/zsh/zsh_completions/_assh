@@ -1,6 +1,6 @@
 #compdef ssh scp
 
-_assh_hosts() {
+_assh() {
     local cache_file="$HOME/.cache/assh/hosts"
     local index_file="$HOME/.cache/assh/hosts.idx"
     local prefix=${words[CURRENT]:0:1}
@@ -14,5 +14,5 @@ _assh_hosts() {
     _describe 'hosts' hosts
 }
 
-compdef _assh_hosts ssh
-compdef _assh_hosts scp
+compdef _assh ssh
+compdef _assh scp
