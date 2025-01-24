@@ -1,23 +1,5 @@
 { pkgs, ... }:
 let
-  start-acta-always = pkgs.writeShellScriptBin "start-acta-always" (
-    builtins.readFile ./start/start-acta-always.sh
-  );
-  start-acta-default = pkgs.writeShellScriptBin "start-acta-default" (
-    builtins.readFile ./start/start-acta-default.sh
-  );
-  start-acta-never = pkgs.writeShellScriptBin "start-acta-never" (
-    builtins.readFile ./start/start-acta-never.sh
-  );
-  start-akenp-always = pkgs.writeShellScriptBin "start-akenp-always" (
-    builtins.readFile ./start/start-akenp-always.sh
-  );
-  start-akenp-default = pkgs.writeShellScriptBin "start-akenp-default" (
-    builtins.readFile ./start/start-akenp-default.sh
-  );
-  start-akenp-never = pkgs.writeShellScriptBin "start-akenp-never" (
-    builtins.readFile ./start/start-akenp-never.sh
-  );
   start-chrome-ai-always = pkgs.writeShellScriptBin "start-chrome-ai-always" (
     builtins.readFile ./start/start-chrome-ai-always.sh
   );
@@ -62,33 +44,6 @@ let
   );
   start-discord-never = pkgs.writeShellScriptBin "start-discord-never" (
     builtins.readFile ./start/start-discord-never.sh
-  );
-  start-fcta-always = pkgs.writeShellScriptBin "start-fcta-always" (
-    builtins.readFile ./start/start-fcta-always.sh
-  );
-  start-fcta-default = pkgs.writeShellScriptBin "start-fcta-default" (
-    builtins.readFile ./start/start-fcta-default.sh
-  );
-  start-fcta-never = pkgs.writeShellScriptBin "start-fcta-never" (
-    builtins.readFile ./start/start-fcta-never.sh
-  );
-  start-fkenp-always = pkgs.writeShellScriptBin "start-fkenp-always" (
-    builtins.readFile ./start/start-fkenp-always.sh
-  );
-  start-fkenp-default = pkgs.writeShellScriptBin "start-fkenp-default" (
-    builtins.readFile ./start/start-fkenp-default.sh
-  );
-  start-fkenp-never = pkgs.writeShellScriptBin "start-fkenp-never" (
-    builtins.readFile ./start/start-fkenp-never.sh
-  );
-  start-foot-always = pkgs.writeShellScriptBin "start-foot-always" (
-    builtins.readFile ./start/start-foot-always.sh
-  );
-  start-foot-default = pkgs.writeShellScriptBin "start-foot-default" (
-    builtins.readFile ./start/start-foot-default.sh
-  );
-  start-foot-never = pkgs.writeShellScriptBin "start-foot-never" (
-    builtins.readFile ./start/start-foot-never.sh
   );
   start-kcta-always = pkgs.writeShellScriptBin "start-kcta-always" (
     builtins.readFile ./start/start-kcta-always.sh
@@ -255,12 +210,6 @@ let
 
 in {
   home.packages = with pkgs; [
-    start-acta-always
-    start-acta-default
-    start-acta-never
-    start-akenp-always
-    start-akenp-default
-    start-akenp-never
     start-chrome-ai-always
     start-chrome-ai-default
     start-chrome-ai-never
@@ -276,15 +225,6 @@ in {
     start-discord-always
     start-discord-default
     start-discord-never
-    start-fcta-always
-    start-fcta-default
-    start-fcta-never
-    start-fkenp-always
-    start-fkenp-default
-    start-fkenp-never
-    start-foot-always
-    start-foot-default
-    start-foot-never
     start-kcta-always
     start-kcta-default
     start-kcta-never
