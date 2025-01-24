@@ -273,9 +273,6 @@ let
   turbo-boost-setup = pkgs.writeShellScriptBin "turbo-boost-setup" (
     builtins.readFile ./bin/turbo-boost-setup.sh
   );
-  ulauncher_ext = pkgs.writeShellScriptBin "ulauncher_ext" (
-    builtins.readFile ./bin/ulauncher_ext.sh
-  );
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
   );
@@ -427,7 +424,6 @@ in {
     tsms
     tty_config
     turbo-boost-setup
-    ulauncher_ext
     vm-start
     wallpaper-manager
     waybar-bluelightfilter-monitor

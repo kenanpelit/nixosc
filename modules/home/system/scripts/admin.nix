@@ -78,6 +78,9 @@ let
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./admin/osc-test.sh
   );
+  osc-ulauncher_ext = pkgs.writeShellScriptBin "osc-ulauncher_ext" (
+    builtins.readFile ./admin/osc-ulauncher_ext.sh
+  );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./admin/semsumo.sh
   );
@@ -128,6 +131,7 @@ in {
     osc-symlink_manager
     osc-sync
     osc-test
+    osc-ulauncher_ext
     semsumo
     svmarch
     svmnixos
