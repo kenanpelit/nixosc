@@ -1191,11 +1191,11 @@
     "yazi-plugins": {
       "flake": false,
       "locked": {
-        "lastModified": 1737560496,
-        "narHash": "sha256-hMJtZvL87tq8SP6N6DfYmV9BguunzFl0CtMDKkIZHCY=",
+        "lastModified": 1737716164,
+        "narHash": "sha256-j2syl6RyDsoKo77XAjYRZtz1V3PNCZ8zo4FVMYWmM34=",
         "owner": "yazi-rs",
         "repo": "plugins",
-        "rev": "64186980182fc3041e8c8bc281381e38e61a003a",
+        "rev": "767cf1720040e6781b4e975f9f127a9a58847f6d",
         "type": "github"
       },
       "original": {
