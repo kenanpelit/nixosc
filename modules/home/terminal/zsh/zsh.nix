@@ -46,7 +46,6 @@
       # Explicitly set ZCompdump location
       export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST"
       export ZSH_CACHE_DIR="$XDG_CACHE_HOME/zsh"
-      skip_global_compinit=1
 
       # URL and Quote Magic Configuration
       autoload -U url-quote-magic bracketed-paste-magic
@@ -119,37 +118,40 @@
     # Completion System Configuration
     # -----------------------------------------------------------------------------
     completionInit = ''
-      # Basic Settings
-      autoload -Uz colors && colors
-      _comp_options+=(globdots)
+     # Initialize completion system
+     autoload -Uz compinit && compinit
+ 
+     # Basic Settings
+     autoload -Uz colors && colors
+     _comp_options+=(globdots)
 
-      # Command Line Editor
-      autoload -Uz edit-command-line
-      zle -N edit-command-line
+     # Command Line Editor
+     autoload -Uz edit-command-line
+     zle -N edit-command-line
 
-      # Completion System Style and Behavior
-      zstyle ':completion:*' completer _extensions _complete _approximate
-      zstyle ':completion:*' use-cache on
-      zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/.zcompcache"
-      zstyle ':completion:*' complete true
-      zstyle ':completion:*' complete-options true
-      zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-      zstyle ':completion:*' keep-prefix true
-      zstyle ':completion:*' menu select
-      zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
-      zstyle ':completion:*' special-dirs true
-      zstyle ':completion:*' squeeze-slashes true
-      zstyle ':completion:*' sort false
-      zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
+     # Completion System Style and Behavior
+     zstyle ':completion:*' completer _extensions _complete _approximate
+     zstyle ':completion:*' use-cache on
+     zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/.zcompcache"
+     zstyle ':completion:*' complete true
+     zstyle ':completion:*' complete-options true
+     zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+     zstyle ':completion:*' keep-prefix true
+     zstyle ':completion:*' menu select
+     zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
+     zstyle ':completion:*' special-dirs true
+     zstyle ':completion:*' squeeze-slashes true
+     zstyle ':completion:*' sort false
+     zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
 
-      # FZF-Tab Configuration
-      zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath'
-      zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
-      zstyle ':fzf-tab:*' fzf-command fzf
-      zstyle ':fzf-tab:*' fzf-min-height 100
-      zstyle ':fzf-tab:*' switch-group ',' '.'
+     # FZF-Tab Configuration
+     zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath'
+     zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
+     zstyle ':fzf-tab:*' fzf-command fzf
+     zstyle ':fzf-tab:*' fzf-min-height 100
+     zstyle ':fzf-tab:*' switch-group ',' '.'
     '';
-
+    
     # -----------------------------------------------------------------------------
     # Oh-My-Zsh Configuration
     # -----------------------------------------------------------------------------
