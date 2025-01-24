@@ -179,6 +179,7 @@
       Host *
         ServerAliveInterval 60
         ServerAliveCountMax 2
+        ProxyCommand ${pkgs.assh}/bin/.assh-wrapped connect --port=%p %h
     '';
   };
 
