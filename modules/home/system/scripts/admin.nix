@@ -57,6 +57,9 @@ let
   osc-semsumo-create = pkgs.writeShellScriptBin "osc-semsumo-create" (
     builtins.readFile ./admin/osc-semsumo-create.sh
   );
+  osc-soundctl = pkgs.writeShellScriptBin "osc-soundctl" (
+    builtins.readFile ./admin/osc-soundctl.sh
+  );
   osc-ssh-hosts-backup-script = pkgs.writeShellScriptBin "osc-ssh-hosts-backup-script" (
     builtins.readFile ./admin/osc-ssh-hosts-backup-script.sh
   );
@@ -127,6 +130,7 @@ in {
     osc-profiles
     osc-rsync_backup
     osc-semsumo-create
+    osc-soundctl
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
     osc-ssh-session-manager
