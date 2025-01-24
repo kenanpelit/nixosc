@@ -8,28 +8,35 @@
       # Startup Applications and System Services
       # =====================================================
       exec-once = [
-        # 1. System Integration Services
-        "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
-        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
-
-        # 2. Core System Services
-        "poweralertd &"                          # Power management notifications
-        "swaync &"                               # Notification center
-
-        # 3. Clipboard Management Chain
-        "wl-clip-persist --clipboard both &"     # Clipboard persistence
-        "wl-paste --watch cliphist store &"      # Clipboard history
-        "copyq &"                                # Advanced clipboard manager
-
-        # 4. Theme and Visual Setup
-        "hyprctl setcursor catppuccin-mocha-lavender-cursors 24 &" # Cursor theme
-        "swww-daemon &"                          # Wallpaper daemon
-        "wallpaper-manager start"                 # Another wallpaper daemon
-
-        # 5. Workspace and Security
-        "pypr &"                                 # Python script runner
-        "m2w2"                                   # Set initial workspace
-        "hyprlock"                               # Screen locker
+        # Initialize Wayland environment variables for proper system integration
+        "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP",
+        # Update DBus environment for Wayland session
+        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE",
+        # Power management notifications (battery, lid, etc.)
+        "poweralertd",
+        # Notification center for system-wide notifications
+        "swaync",
+        # Keep clipboard content persistent across program restarts
+        "wl-clip-persist --clipboard both",
+        # Store clipboard history using cliphist
+        "wl-paste --watch cliphist store",
+        # Advanced clipboard manager with searchable history
+        "copyq",
+        # Set system cursor theme and size
+        "hyprctl setcursor catppuccin-mocha-lavender-cursors 24",
+        # Initialize wallpaper daemon for dynamic wallpapers
+        "swww-daemon",
+        # Start wallpaper rotation/management service
+        "wallpaper-manager start",
+        # Python script runner for custom workspace management
+        "pypr",
+        # Initialize workspace layout
+        "m2w2",
+        # Set initial audio levels
+        "osc-soundctl mic set 5",       # Set microphone to 5%
+        "osc-soundctl volume set 15",   # Set speaker volume to 15%
+        # Initialize screen locker for security
+        "hyprlock"
       ];
 
       # =====================================================
@@ -105,23 +112,23 @@
         touchpad = {
           natural_scroll = "false";          # Doğal kaydırma
           disable_while_typing = "true";     # Yazarken devre dışı bırak
-          tap-to-click = "true";            # Dokunmatik tıklama
-          drag_lock = "true";               # Sürükleme kilidi
-          scroll_factor = "0.70";           # Kaydırma faktörü
+          tap-to-click = "true";             # Dokunmatik tıklama
+          drag_lock = "true";                # Sürükleme kilidi
+          scroll_factor = "0.70";            # Kaydırma faktörü
         };
 
         # Diğer giriş ayarları
-        numlock_by_default = "0";           # NumLock varsayılan durumu
-        left_handed = "0";                  # Sol el modu
-        follow_mouse = "0";                 # Fare odak davranışı
-        float_switch_override_focus = "0";  # Yüzen pencere odak geçişi
+        numlock_by_default = "0";            # NumLock varsayılan durumu
+        left_handed = "0";                   # Sol el modu
+        follow_mouse = "0";                  # Fare odak davranışı
+        float_switch_override_focus = "0";   # Yüzen pencere odak geçişi
       };
 
       # =====================================================
       # Genel Pencere Yöneticisi Ayarları
       # =====================================================
       general = {
-        "$mainMod" = "SUPER";              # Ana modifikatör tuşu
+        "$mainMod" = "SUPER";                # Ana modifikatör tuşu
         gaps_in = 5;
         gaps_out = 10;
         border_size = 2;
@@ -153,7 +160,7 @@
       misc = {
         # Görünüm ayarları
         disable_hyprland_logo = true;      # Logo gösterimini kapat
-        disable_splash_rendering = true;    # Açılış ekranını kapat
+        disable_splash_rendering = true;   # Açılış ekranını kapat
 
         # Güç yönetimi
         mouse_move_enables_dpms = true;    # Fare hareketi ekranı açar
@@ -164,7 +171,7 @@
         focus_on_activate = true;          # Aktif pencereye odaklan
         always_follow_on_dnd = true;       # Sürükle-bırak takibi
         enable_swallow = true;             # Pencere yutma özelliği
-        mouse_move_focuses_monitor = true;  # Fare monitör odağı
+        mouse_move_focuses_monitor = true; # Fare monitör odağı
         swallow_regex = "^(kitty)$";       # Yutulacak pencereler
       };
 
@@ -481,7 +488,7 @@
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
 
         # Medya ve Ses Kontrolü
-        "ALT, A, exec, hypr-audio_switcher"                                           # Ses değiştirici
+        "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
         "ALT, E, exec, hypr-spotify_toggle"                                           # Spotify toggle
         "ALT CTRL, E, exec, mpc-control toggle"                                       # MPC kontrolü
 

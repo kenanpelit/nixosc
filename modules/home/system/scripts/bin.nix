@@ -30,9 +30,6 @@ let
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
   );
-  hypr-audio_switcher = pkgs.writeShellScriptBin "hypr-audio_switcher" (
-    builtins.readFile ./bin/hypr-audio_switcher.sh
-  );
   hypr-blue-gammastep-manager = pkgs.writeShellScriptBin "hypr-blue-gammastep-manager" (
     builtins.readFile ./bin/hypr-blue-gammastep-manager.sh
   );
@@ -352,7 +349,6 @@ in {
     extract
     gnome-start-all
     hypr-airplane_mode
-    hypr-audio_switcher
     hypr-blue-gammastep-manager
     hypr-blue-hyprshade-manager
     hypr-blue-hyprsunset-manager
