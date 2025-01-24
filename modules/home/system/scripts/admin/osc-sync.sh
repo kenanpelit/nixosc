@@ -71,6 +71,8 @@ DOT_PATHS=(
 	".config/hblock"
 	".config/subliminal"
 	".config/zsh/history"
+	".config/ulauncher"
+	".local/share/ulauncher"
 	".backups"
 	".gnupg"
 	".ssh"
