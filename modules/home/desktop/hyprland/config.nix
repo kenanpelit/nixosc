@@ -32,9 +32,8 @@
         "pypr"
         # Initialize workspace layout
         "m2w2"
-        # Set initial audio levels
-        "osc-soundctl mic set 5"       # Set microphone to 5%
-        "osc-soundctl volume set 15"   # Set speaker volume to 15%
+        # Set initial audio levels - microphone to 5% - speaker volume to 15%
+        "osc-audio-init"
         # Initialize screen locker for security
         "hyprlock"
       ];
