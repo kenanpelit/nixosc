@@ -126,6 +126,9 @@ let
   music = pkgs.writeShellScriptBin "music" (
     builtins.readFile ./bin/music.sh
   );
+  ntodo = pkgs.writeShellScriptBin "ntodo" (
+    builtins.readFile ./bin/ntodo.sh
+  );
   pass-clip-both = pkgs.writeShellScriptBin "pass-clip-both" (
     builtins.readFile ./bin/pass-clip-both.sh
   );
@@ -185,6 +188,9 @@ let
   );
   runbg = pkgs.writeShellScriptBin "runbg" (
     builtins.readFile ./bin/runbg.sh
+  );
+  rvim = pkgs.writeShellScriptBin "rvim" (
+    builtins.readFile ./bin/rvim.sh
   );
   satty-screenshot = pkgs.writeShellScriptBin "satty-screenshot" (
     builtins.readFile ./bin/satty-screenshot.sh
@@ -269,6 +275,9 @@ let
   );
   tty_config = pkgs.writeShellScriptBin "tty_config" (
     builtins.readFile ./bin/tty_config.sh
+  );
+  tunnelshow = pkgs.writeShellScriptBin "tunnelshow" (
+    builtins.readFile ./bin/tunnelshow.sh
   );
   turbo-boost-setup = pkgs.writeShellScriptBin "turbo-boost-setup" (
     builtins.readFile ./bin/turbo-boost-setup.sh
@@ -375,6 +384,7 @@ in {
     move_media_files
     mpc-control
     music
+    ntodo
     pass-clip-both
     pdfkes
     playlist
@@ -395,6 +405,7 @@ in {
     rsync-retry
     rsync-tool
     runbg
+    rvim
     satty-screenshot
     ScrcpyUSB
     ScrcpyWiFi
@@ -423,6 +434,7 @@ in {
     tsm
     tsms
     tty_config
+    tunnelshow
     turbo-boost-setup
     vm-start
     wallpaper-manager
