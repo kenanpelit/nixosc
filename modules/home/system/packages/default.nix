@@ -118,6 +118,7 @@ let
     nitch           # Minimal sistem bilgi görüntüleyici
     onefetch        # Git deposu bilgi görüntüleyici
     resources       # Kaynak monitörü
+    mlocate         # locate/updatedb implementation
   ];
 
   # ==============================================================================
