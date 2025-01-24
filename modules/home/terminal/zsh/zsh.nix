@@ -9,6 +9,7 @@
   # Base Directory Structure
   # ==============================================================================
   home.file = {
+    # Create empty .ssh directory
     ".ssh/.keep".text = "";
 
     # Powerlevel10k theme configuration
@@ -43,8 +44,8 @@
       mkdir -p "$XDG_CACHE_HOME/zsh"
       mkdir -p "$ZDOTDIR"
       
-      # Explicitly set ZCompdump location
-      export ZSHCOMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST"
+      # Completion Cache Configuration
+      export ZCOMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST"
       export ZSH_CACHE_DIR="$XDG_CACHE_HOME/zsh"
 
       # URL and Quote Magic Configuration
@@ -82,11 +83,15 @@
         export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git --exclude node_modules --exclude .cache'
       fi
       
-      # modules/core/hblock/default.nix
+      # Host Aliases Configuration
       export HOSTALIASES="$XDG_CONFIG_HOME/hblock/hosts"
 
       # Zoxide Integration
       eval "$(zoxide init zsh)"
+      
+      # Initialize completion early
+      autoload -Uz compinit
+      compinit -d "$ZCOMPDUMP"
     '';
 
     # -----------------------------------------------------------------------------
@@ -95,6 +100,7 @@
     initExtra = ''
       # Load P10k Theme
       [[ ! -f "$ZDOTDIR/p10k.zsh" ]] || source "$ZDOTDIR/p10k.zsh"
+      
       # Add completions to fpath
       fpath=("$ZDOTDIR/plugins/zsh-completions/src" "$ZDOTDIR/completions" $fpath)
     '';
@@ -103,53 +109,50 @@
     # History Configuration
     # -----------------------------------------------------------------------------
     history = {
-      size = 50000;
-      save = 50000;
-      path = "$ZDOTDIR/history";  # ~/.config/zsh/history
-      ignoreDups = true;
-      share = true;
-      extended = true;
-      expireDuplicatesFirst = true;
-      ignoreSpace = true;
-      ignoreAllDups = true;
+      size = 50000;                  # Maximum events in memory
+      save = 50000;                  # Maximum events in history file
+      path = "$ZDOTDIR/history";     # History file location
+      ignoreDups = true;             # Ignore duplicate commands
+      share = true;                  # Share history between sessions
+      extended = true;               # Use extended history format
+      expireDuplicatesFirst = true;  # Expire duplicates first when trimming
+      ignoreSpace = true;            # Ignore commands starting with space
+      ignoreAllDups = true;          # Remove older duplicate entries
     };
 
     # -----------------------------------------------------------------------------
     # Completion System Configuration
     # -----------------------------------------------------------------------------
     completionInit = ''
-     # Initialize completion system
-     autoload -Uz compinit && compinit
- 
-     # Basic Settings
-     autoload -Uz colors && colors
-     _comp_options+=(globdots)
+      # Basic Settings
+      autoload -Uz colors && colors
+      _comp_options+=(globdots)
 
-     # Command Line Editor
-     autoload -Uz edit-command-line
-     zle -N edit-command-line
+      # Command Line Editor
+      autoload -Uz edit-command-line
+      zle -N edit-command-line
 
-     # Completion System Style and Behavior
-     zstyle ':completion:*' completer _extensions _complete _approximate
-     zstyle ':completion:*' use-cache on
-     zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/.zcompcache"
-     zstyle ':completion:*' complete true
-     zstyle ':completion:*' complete-options true
-     zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-     zstyle ':completion:*' keep-prefix true
-     zstyle ':completion:*' menu select
-     zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
-     zstyle ':completion:*' special-dirs true
-     zstyle ':completion:*' squeeze-slashes true
-     zstyle ':completion:*' sort false
-     zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
+      # Completion System Style and Behavior
+      zstyle ':completion:*' completer _extensions _complete _approximate
+      zstyle ':completion:*' use-cache on
+      zstyle ':completion:*' cache-path "$ZSH_CACHE_DIR/.zcompcache"
+      zstyle ':completion:*' complete true
+      zstyle ':completion:*' complete-options true
+      zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+      zstyle ':completion:*' keep-prefix true
+      zstyle ':completion:*' menu select
+      zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
+      zstyle ':completion:*' special-dirs true
+      zstyle ':completion:*' squeeze-slashes true
+      zstyle ':completion:*' sort false
+      zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
 
-     # FZF-Tab Configuration
-     zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath'
-     zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
-     zstyle ':fzf-tab:*' fzf-command fzf
-     zstyle ':fzf-tab:*' fzf-min-height 100
-     zstyle ':fzf-tab:*' switch-group ',' '.'
+      # FZF-Tab Configuration
+      zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath'
+      zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
+      zstyle ':fzf-tab:*' fzf-command fzf
+      zstyle ':fzf-tab:*' fzf-min-height 100
+      zstyle ':fzf-tab:*' switch-group ',' '.'
     '';
     
     # -----------------------------------------------------------------------------
@@ -158,15 +161,15 @@
     oh-my-zsh = {
       enable = true;
       plugins = [
-        "git"              # Git integration
-        "sudo"             # ESC twice to add sudo
-        "command-not-found" # Package suggestions
-        "history"          # History management
-        "copypath"         # Copy PWD to clipboard
-        "dirhistory"       # Directory navigation
-        "colored-man-pages" # Colored man pages
-        "extract"          # Archive extraction
-        "aliases"          # Alias management
+        "git"               # Git integration and aliases
+        "sudo"              # Press ESC twice to add sudo
+        "command-not-found" # Suggest packages for unknown commands
+        "history"           # Enhanced history management
+        "copypath"          # Copy current directory path
+        "dirhistory"        # Directory navigation shortcuts
+        "colored-man-pages" # Colorized man pages
+        "extract"           # Universal archive extractor
+        "aliases"           # Alias management and overview
       ];
     };
   };
