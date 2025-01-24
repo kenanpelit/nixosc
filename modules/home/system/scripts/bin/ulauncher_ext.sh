@@ -118,7 +118,6 @@ declare -a repos=(
 	"cardoprimo/ulauncher-recent-files"
 	"IkorJefocur/ulauncher-commandrunner"
 	"E1Bos/ulauncher-media-controller"
-	"friday/ulauncher-clipboard"
 	"hillaryychan/ulauncher-fzf"
 	"brpaz/ulauncher-file-search"
 	"abhishekmj303/ulauncher-playerctl"
