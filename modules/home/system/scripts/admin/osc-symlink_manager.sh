@@ -39,6 +39,7 @@ TARGET_ROOT="$HOME"
 DIRS=(
 	"Documents"
 	"Music"
+	"Work"
 	"Tmp"
 	# Buraya yeni dizinler eklenebilir
 )

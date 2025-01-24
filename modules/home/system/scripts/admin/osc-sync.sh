@@ -65,6 +65,7 @@ ASSET_DIRS=(
 
 # Dot dizinleri
 DOT_PATHS=(
+	".config/google-chrome"
 	".config/sops"
 	".config/nix"
 	".config/github"
@@ -73,6 +74,7 @@ DOT_PATHS=(
 	".config/zsh/history"
 	".config/ulauncher"
 	".local/share/ulauncher"
+	".anote"
 	".backups"
 	".gnupg"
 	".ssh"
@@ -80,6 +82,7 @@ DOT_PATHS=(
 	".keys"
 	".kenp"
 	".pass"
+	".mozilla"
 	".podman"
 	".todo"
 	".zen"
