@@ -1,4 +1,3 @@
-# modules/home/ulauncher/default.nix
 # ==============================================================================
 # Ulauncher Application Launcher Configuration
 # ==============================================================================
@@ -7,34 +6,22 @@ let
   ulauncher_config = ./config;
   
   # =============================================================================
-  # Extensions Directory Preparation Script
-  # =============================================================================
-  prepareExtensionsScript = pkgs.writeScriptBin "prepare-ulauncher-extensions" ''
-    #!/usr/bin/env bash
-    set -euo pipefail
-    
-    # Create extensions directory
-    mkdir -p "$HOME/.local/share/ulauncher/extensions"
-    
-    # Set correct permissions
-    chmod -R u+w "$HOME/.local/share/ulauncher"
-  '';
-
-  # =============================================================================
   # Shortcuts Management Script
   # =============================================================================
   manageShortcutsScript = pkgs.writeScriptBin "manage-ulauncher-shortcuts" ''
     #!/usr/bin/env bash
     set -euo pipefail
-    configDir="$HOME/.config/ulauncher"
-    shortcutsFile="$configDir/shortcuts.json"
     
-    # Ensure config directory exists
-    mkdir -p "$configDir"
+    # Only create directories if they don't exist
+    [ ! -d "$HOME/.config/ulauncher" ] && mkdir -p "$HOME/.config/ulauncher"
+    [ ! -d "$HOME/.local/share/ulauncher/extensions" ] && mkdir -p "$HOME/.local/share/ulauncher/extensions"
+    
+    # Only update permissions if needed
+    [ ! -w "$HOME/.config/ulauncher" ] && chmod -R u+w "$HOME/.config/ulauncher"
+    [ ! -w "$HOME/.local/share/ulauncher" ] && chmod -R u+w "$HOME/.local/share/ulauncher"
     
     # Define shortcuts configuration
-    cat > "$shortcutsFile" << 'EOF'
-    {
+    SHORTCUTS_CONTENT='{
       "e3da2cba-0674-4f5f-9fc1-4095343b22e5": {
           "id": "e3da2cba-0674-4f5f-9fc1-4095343b22e5",
           "name": "Google Search",
@@ -65,25 +52,29 @@ let
           "run_without_argument": false,
           "added": 1737661428.8378263
       }
-    }
-    EOF
+    }'
     
-    # Adjust file paths and set permissions
-    sed -i "s|\\\$HOME|$HOME|g" "$shortcutsFile"
-    chmod 644 "$shortcutsFile"
+    # Only write shortcuts if file doesn't exist or content is different
+    SHORTCUTS_FILE="$HOME/.config/ulauncher/shortcuts.json"
+    if [ ! -f "$SHORTCUTS_FILE" ] || [ "$(cat $SHORTCUTS_FILE)" != "$SHORTCUTS_CONTENT" ]; then
+      echo "$SHORTCUTS_CONTENT" > "$SHORTCUTS_FILE"
+      chmod 644 "$SHORTCUTS_FILE"
+    fi
+
+    # Only copy config files if they don't exist or are different
+    for file in ${ulauncher_config}/*; do
+      base_name=$(basename "$file")
+      target="$HOME/.config/ulauncher/$base_name"
+      if [ ! -f "$target" ] || ! cmp -s "$file" "$target"; then
+        cp -f "$file" "$target"
+      fi
+    done
   '';
 in {
   # =============================================================================
   # Package Installation
   # =============================================================================
   home.packages = with pkgs; [ ulauncher ];
-
-  # =============================================================================
-  # Directory Configuration
-  # =============================================================================
-  home.file.".local/share/ulauncher" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.local/share/ulauncher";
-  };
 
   # =============================================================================
   # Service Configuration
@@ -110,28 +101,10 @@ in {
   };
 
   # =============================================================================
-  # Configuration Files
+  # Activation Script
   # =============================================================================
-  xdg.configFile = {
-    "ulauncher" = {
-      recursive = true;
-      source = "${ulauncher_config}";
-      onChange = ''
-        chmod -R u+w "$HOME/.config/ulauncher"
-      '';
-    };
-  };
-
-  # =============================================================================
-  # Activation Scripts
-  # =============================================================================
-  home.activation = {
-    prepareExtensions = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ${prepareExtensionsScript}/bin/prepare-ulauncher-extensions
-    '';
-
-    manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
-    '';
-  };
+  home.activation.manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
+  '';
 }
+
