@@ -44,7 +44,7 @@
       mkdir -p "$ZDOTDIR"
       
       # Explicitly set ZCompdump location
-      export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST"
+      export ZSHCOMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST"
       export ZSH_CACHE_DIR="$XDG_CACHE_HOME/zsh"
 
       # URL and Quote Magic Configuration
