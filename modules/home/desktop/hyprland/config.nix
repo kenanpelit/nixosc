@@ -9,32 +9,32 @@
       # =====================================================
       exec-once = [
         # Initialize Wayland environment variables for proper system integration
-        "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP",
+        "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
         # Update DBus environment for Wayland session
-        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE",
+        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
         # Power management notifications (battery, lid, etc.)
-        "poweralertd",
+        "poweralertd"
         # Notification center for system-wide notifications
-        "swaync",
+        "swaync"
         # Keep clipboard content persistent across program restarts
-        "wl-clip-persist --clipboard both",
+        "wl-clip-persist --clipboard both"
         # Store clipboard history using cliphist
-        "wl-paste --watch cliphist store",
+        "wl-paste --watch cliphist store"
         # Advanced clipboard manager with searchable history
-        "copyq",
+        "copyq"
         # Set system cursor theme and size
-        "hyprctl setcursor catppuccin-mocha-lavender-cursors 24",
+        "hyprctl setcursor catppuccin-mocha-lavender-cursors 24"
         # Initialize wallpaper daemon for dynamic wallpapers
-        "swww-daemon",
+        "swww-daemon"
         # Start wallpaper rotation/management service
-        "wallpaper-manager start",
+        "wallpaper-manager start"
         # Python script runner for custom workspace management
-        "pypr",
+        "pypr"
         # Initialize workspace layout
-        "m2w2",
+        "m2w2"
         # Set initial audio levels
-        "osc-soundctl mic set 5",       # Set microphone to 5%
-        "osc-soundctl volume set 15",   # Set speaker volume to 15%
+        "osc-soundctl mic set 5"       # Set microphone to 5%
+        "osc-soundctl volume set 15"   # Set speaker volume to 15%
         # Initialize screen locker for security
         "hyprlock"
       ];
