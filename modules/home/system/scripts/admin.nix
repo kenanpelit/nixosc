@@ -51,6 +51,9 @@ let
   osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
     builtins.readFile ./admin/osc-profiles.sh
   );
+  osc-rsync_backup = pkgs.writeShellScriptBin "osc-rsync_backup" (
+    builtins.readFile ./admin/osc-rsync_backup.sh
+  );
   osc-semsumo-create = pkgs.writeShellScriptBin "osc-semsumo-create" (
     builtins.readFile ./admin/osc-semsumo-create.sh
   );
@@ -122,6 +125,7 @@ in {
     osc-mrelay
     osc-pass-tool
     osc-profiles
+    osc-rsync_backup
     osc-semsumo-create
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
