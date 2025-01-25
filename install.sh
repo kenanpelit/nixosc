@@ -477,8 +477,6 @@ build_system() {
 	fi
 }
 
-Claude can make mistakes. Please double-check responses.
-
 # ==============================================================================
 # Installation Functions
 # ==============================================================================
