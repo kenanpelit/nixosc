@@ -38,7 +38,7 @@ trap 'echo "Hata oluştu. Satır: $LINENO, Komut: $BASH_COMMAND"' ERR
 declare -A APP_GROUPS
 APP_GROUPS["core"]="start-kkenp"                                           # Terminal & Dev
 APP_GROUPS["browsers"]="start-zen-kenp start-zen-novpn start-zen-compecta" # Ana browserlar
-APP_GROUPS["communication"]="start-discord start-zen-whats"                # İletişim
+APP_GROUPS["communication"]="start-webcord start-zen-whats"                # İletişim
 APP_GROUPS["media"]="start-spotify"                                        # Medya
 
 # Uygulama Yapılandırması - workspace:fullscreen:togglegroup:vpn:sleep
@@ -51,7 +51,7 @@ APP_CONFIGS["start-zen-novpn"]="3:no:no:always:2"    # No VPN browser
 APP_CONFIGS["start-zen-compecta"]="4:no:no:always:2" # Work browser
 # Communication
 #APP_CONFIGS["start-zen-discord"]="5:no:yes:always:2" # Discord browser
-APP_CONFIGS["start-discord"]="5:no:yes:always:2"   # Webcord
+APP_CONFIGS["start-webcord"]="5:no:yes:always:2"   # Webcord
 APP_CONFIGS["start-zen-whats"]="9:no:yes:always:2" # WhatsApp
 # Media
 APP_CONFIGS["start-spotify"]="8:no:no:always:2" # Spotify
