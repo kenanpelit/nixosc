@@ -21,7 +21,7 @@
    ./elektron
    ./obsidian
    ./ytdlp
-   ./zotfiles
+   #./zotfiles
  ];
 }
 

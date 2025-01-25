@@ -15,51 +15,10 @@
 # Author: Kenan Pelit
 # ==============================================================================
 
-{ config, lib, pkgs, ... }:
+{ ... }:
 {
- # =============================================================================
- # Audio & PipeWire Configuration
- # =============================================================================
- # Real-time Kit - Audio Latency Management
- security.rtkit.enable = true;
-
- # Disable PulseAudio in favor of PipeWire
- services.pulseaudio.enable = false;
-
- # PipeWire Configuration
- services.pipewire = {
-   enable = true;
-   
-   # ALSA Support
-   alsa = {
-     enable = true;
-     support32Bit = true;    # Enable 32-bit application support
-   };
-   
-   # PulseAudio Compatibility Layer
-   pulse.enable = true;
-   
-   # WirePlumber Session Manager
-   wireplumber.enable = true;
-   
-   # Low Latency Mode (currently disabled)
-   # lowLatency.enable = true;
- };
-
- # =============================================================================
- # Bluetooth Configuration
- # =============================================================================
- hardware.bluetooth = {
-   enable = true;        # Enable Bluetooth support
-   powerOnBoot = true;   # Auto-start on boot
- };
- 
- services.blueman.enable = true;  # Bluetooth management interface
-
- # =============================================================================
- # Required Packages
- # =============================================================================
- environment.systemPackages = with pkgs; [
-   pulseaudioFull  # Full PulseAudio suite for compatibility
- ];
+  imports = [
+    ./audio
+    ./bluetooth
+  ];
 }
