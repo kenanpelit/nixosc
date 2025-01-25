@@ -1,131 +1,167 @@
 #!/usr/bin/env bash
+
+# ==============================================================================
+# Secret Management Script for NixOS
+# Description: SOPS ve AGE tabanlı gizli bilgi yönetimi
+# Author: kenanpelit
+# ==============================================================================
+
 set -euo pipefail
 
 # Renk tanımlamaları
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# Fonksiyonlar
-log_info() {
-  local message="${1:-}"
-  echo -e "${BLUE}INFO:${NC} ${message}"
+# Log fonksiyonları
+log_info() { echo -e "${BLUE}INFO:${NC} ${1:-}"; }
+log_success() { echo -e "${GREEN}SUCCESS:${NC} ${1:-}"; }
+log_error() { echo -e "${RED}ERROR:${NC} ${1:-}" >&2; }
+log_warn() { echo -e "${YELLOW}WARN:${NC} ${1:-}"; }
+
+# Yardım mesajı
+show_help() {
+	cat <<EOF
+Kullanım: $(basename "$0") [SEÇENEK] <komut>
+
+Secret yönetim aracı - SOPS ve AGE kullanarak gizli bilgileri şifreler
+
+Komutlar:
+   init        AGE ve SOPS yapılandırmasını oluştur
+   create      Yeni secret dosyaları oluştur
+   check       Mevcut yapılandırmayı kontrol et
+
+Seçenekler:
+   -h, --help  Bu mesajı göster
+   -f, --force Mevcut dosyaların üzerine yaz
+
+Örnekler:
+   $(basename "$0") init              # Temel yapılandırmayı oluştur
+   $(basename "$0") create home       # Home secrets oluştur
+   $(basename "$0") check             # Yapılandırmayı kontrol et
+
+Not: Dosya isimlendirme kuralı: <type>-secrets.[enc.]yaml
+    örn: home-secrets.yaml, system-secrets.enc.yaml
+EOF
 }
 
-log_success() {
-  local message="${1:-}"
-  echo -e "${GREEN}SUCCESS:${NC} ${message}"
-}
-
-log_error() {
-  local message="${1:-}"
-  echo -e "${RED}ERROR:${NC} ${message}" >&2
-}
-
-# Gerekli dizinlerin oluşturulması
+# Dizin yapısı
 setup_directories() {
-  log_info "Gerekli dizinler oluşturuluyor..."
-  mkdir -p ~/.config/sops/age
-  mkdir -p secrets
+	log_info "Gerekli dizinler oluşturuluyor..."
+	mkdir -p ~/.config/sops/age
+	mkdir -p secrets
 }
 
-# Age key kontrolü ve oluşturulması
+# AGE key yönetimi
 setup_age_key() {
-  if [[ ! -f ~/.config/sops/age/keys.txt ]]; then
-    log_info "Age key oluşturuluyor..."
-    age-keygen -o ~/.config/sops/age/keys.txt
-    log_success "Age key oluşturuldu: ~/.config/sops/age/keys.txt"
-  else
-    log_info "Age key zaten mevcut: ~/.config/sops/age/keys.txt"
-  fi
+	if [[ ! -f ~/.config/sops/age/keys.txt ]]; then
+		log_info "AGE key oluşturuluyor..."
+		age-keygen -o ~/.config/sops/age/keys.txt
+		log_success "AGE key oluşturuldu: ~/.config/sops/age/keys.txt"
+	else
+		log_info "AGE key mevcut: ~/.config/sops/age/keys.txt"
+	fi
 }
 
-# .sops.yaml dosyasının oluşturulması
+# SOPS yapılandırması
 create_sops_config() {
-  log_info ".sops.yaml dosyası oluşturuluyor..."
+	log_info ".sops.yaml dosyası oluşturuluyor..."
+	PUBLIC_KEY=$(age-keygen -y ~/.config/sops/age/keys.txt)
 
-  # Public key'i al
-  PUBLIC_KEY=$(age-keygen -y ~/.config/sops/age/keys.txt)
-
-  # .sops.yaml dosyasını oluştur
-  cat >.sops.yaml <<EOF
+	cat >.sops.yaml <<EOF
+---
 creation_rules:
-    - path_regex: '.*\.yaml$'
-      age: >-
-        ${PUBLIC_KEY}
-EOF
+ - path_regex: ^(secrets|assets)/.*$
+   encrypted_regex: '^(.*)$'
+   key_groups:
+     - age:
+         - "${PUBLIC_KEY}"
 
-  log_success ".sops.yaml dosyası oluşturuldu"
+ - path_regex: ^config/.*\.secret\.yaml$
+   key_groups:
+     - age:
+         - "${PUBLIC_KEY}"
+
+ - path_regex: .*\.(secret|encrypted|enc)\..*$
+   key_groups:
+     - age:
+         - "${PUBLIC_KEY}"
+EOF
+	log_success ".sops.yaml oluşturuldu"
 }
 
-# SSH host key oluşturma ve şifreleme
-create_ssh_keys() {
-  local host="${1:-}"
-  local WORK_DIR
+# Secret oluşturma
+create_secrets() {
+	local type="${1:-home}"
+	local yaml_file="secrets/${type}-secrets.yaml"
+	local enc_file="secrets/${type}-secrets.enc.yaml"
 
-  # Cleanup fonksiyonu
-  cleanup() {
-    [[ -n "${WORK_DIR:-}" ]] && [[ -d "${WORK_DIR}" ]] && rm -rf "${WORK_DIR}"
-  }
+	# Mevcut dosya kontrolü
+	if [[ -f "$enc_file" ]]; then
+		log_warn "$enc_file zaten mevcut"
+		return 0
+	fi
 
-  # Geçici dizin oluştur
-  WORK_DIR=$(mktemp -d)
-  trap cleanup EXIT
+	# Template oluştur
+	cat >"$yaml_file" <<EOF
+# ${type^} Secrets Configuration
+# Oluşturulma: $(date +%Y-%m-%d)
 
-  log_info "SSH host key oluşturuluyor..."
-
-  # SSH key oluştur
-  ssh-keygen -o -a 100 -t ed25519 -f "${WORK_DIR}/ssh_host_ed25519_key" -N "" -C "root@${host}"
-
-  log_info "secrets.yaml dosyası hazırlanıyor..."
-
-  # Geçici YAML dosyası oluştur
-  cat >"${WORK_DIR}/temp.yaml" <<EOF
-${host}_ssh_host_ed25519_key: |
-$(sed 's/^/    /' "${WORK_DIR}/ssh_host_ed25519_key")
+secrets:
+   example_key: "example_value"
 EOF
 
-  # SOPS ile şifrele
-  SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops -e "${WORK_DIR}/temp.yaml" >secrets/secrets.yaml
+	# SOPS ile şifrele
+	SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops -e "$yaml_file" >"$enc_file"
+	rm "$yaml_file"
 
-  # Public key'i kopyala
-  cp "${WORK_DIR}/ssh_host_ed25519_key.pub" "secrets/${host}_ssh_host_ed25519_key.pub"
-
-  log_success "SSH keyleri oluşturuldu ve şifrelendi"
+	log_success "${type^} secrets oluşturuldu: $enc_file"
 }
 
 # Ana fonksiyon
 main() {
-  # Gerekli bağımlılıkları kontrol et
-  if ! command -v sops &>/dev/null || ! command -v age &>/dev/null; then
-    log_error "sops ve age kurulu değil. Lütfen önce şu komutu çalıştırın:"
-    echo "nix-shell -p sops age"
-    exit 1
-  fi
+	# Bağımlılık kontrolü
+	if ! command -v sops &>/dev/null || ! command -v age &>/dev/null; then
+		log_error "sops ve age kurulu değil. Kurulum için:"
+		echo "nix-shell -p sops age"
+		exit 1
+	fi
 
-  # Host parametresini kontrol et
-  if [[ "$#" -ne 1 ]]; then
-    log_error "Kullanım: $0 <host_name>"
-    exit 1
-  fi
+	# Parametre kontrolü
+	[[ "$#" -eq 0 ]] && {
+		show_help
+		exit 1
+	}
 
-  local host="${1:-}"
+	# Komut işleme
+	case "${1:-}" in
+	-h | --help) show_help ;;
+	init)
+		setup_directories
+		setup_age_key
+		create_sops_config
+		;;
+	create)
+		[[ -z "${2:-}" ]] && {
+			log_error "Secret tipi belirtilmedi"
+			exit 1
+		}
+		create_secrets "$2"
+		;;
+	check)
+		[[ -f ~/.config/sops/age/keys.txt ]] && log_success "AGE key OK" || log_error "AGE key yok"
+		[[ -f .sops.yaml ]] && log_success "SOPS config OK" || log_error "SOPS config yok"
+		;;
+	*)
+		log_error "Geçersiz komut: ${1:-}"
+		show_help
+		exit 1
+		;;
+	esac
 
-  # Ana işlemleri gerçekleştir
-  setup_directories
-  setup_age_key
-  create_sops_config
-  create_ssh_keys "$host"
-
-  # Sonuç bilgisi
-  log_success "Tüm işlemler tamamlandı!"
-  log_info "Oluşturulan dosyalar:"
-  echo "  - ~/.config/sops/age/keys.txt"
-  echo "  - .sops.yaml"
-  echo "  - secrets/secrets.yaml"
-  echo "  - secrets/${host}_ssh_host_ed25519_key.pub"
+	log_success "İşlem tamamlandı!"
 }
 
-# Scripti çalıştır
 main "$@"
