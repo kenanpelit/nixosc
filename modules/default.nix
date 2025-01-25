@@ -1,75 +1,136 @@
 # modules/default.nix
 # ==============================================================================
-# NixOS System Configuration
-# ==============================================================================
-# This is the root configuration file that manages both system-level (core) and 
-# user-level (home) configurations.
-#
-# Core (/modules/core):
-# - System: Core settings, bootloader, drivers
-# - Desktop: Display servers, fonts
-# - Gaming: Gaming-related configs and tools
-# - Media: Audio and bluetooth services
-# - Network: Networking, VPN, firewall
-# - Nix: Package manager configuration
-# - Security: System security, encryption
-# - Services: System-wide services
-# - System: Hardware and base settings
-# - User: User accounts management
-# - Virtualization: VM and container support
-#
-# Home (/modules/home):
-# - Apps: General user applications
-# - Browser: Web browsers and extensions
-# - Desktop: DE/WM, bars, notifications
-# - Development: Programming tools and IDEs
-# - File: File managers and tools
-# - Gnome: GNOME-specific configurations
-# - Media: Audio/video applications
-# - Network: Network tools and VPN clients
-# - Security: User-level security tools
-# - Services: User services
-# - System: System utilities
-# - Terminal: Shell and terminal emulators
-# - Utility: General utility programs
-# - XDG: XDG base directory compliance
-#
-# Structure:
-# /modules
-# ├── core/              # System-level configuration
-# │   ├── desktop       # Display and UI
-# │   ├── gaming        # Gaming support
-# │   ├── media         # Audio/video
-# │   ├── network       # Network stack
-# │   ├── nix          # Package management
-# │   ├── security     # System security
-# │   ├── services     # System services
-# │   ├── system       # Core settings
-# │   ├── user         # User management
-# │   └── virtualization# VM support
-# │
-# └── home/             # User-level configuration
-#     ├── apps         # User applications
-#     ├── browser      # Web browsers
-#     ├── desktop      # DE/WM config
-#     ├── development  # Dev tools
-#     ├── file         # File management
-#     ├── gnome        # GNOME settings
-#     ├── media        # Media tools
-#     ├── network      # Network utils
-#     ├── security     # User security
-#     ├── services     # User services
-#     ├── system       # System tools
-#     ├── terminal     # Shell environment
-#     ├── utility      # General utils
-#     └── xdg          # XDG compliance
-#
+# NixOS System Configuration - Root Configuration
 # Author: Kenan Pelit
 # ==============================================================================
+
+# This is the root configuration file that manages both system-level and 
+# user-level configurations through a modular directory structure.
+
 { inputs, nixpkgs, self, username, host, lib, ... }:
 {
  imports = [
-   ./core           # System-level configuration (NixOS)
-   ./home           # User-level configuration (Home Manager)
+   # Core System Configuration (NixOS)
+   # Manages system-level settings, services and functionality
+   ./core         
+
+   # Home User Configuration (Home Manager)
+   # Handles user-specific configurations and applications
+   ./home         
  ];
 }
+
+# ==============================================================================
+# Directory Structure Overview
+# ==============================================================================
+#
+# /modules/core - System Level Configuration
+# ├── desktop/          # Display servers and UI foundations
+# │   ├── fonts        # Font configurations and packages
+# │   ├── wayland      # Wayland display server setup
+# │   ├── x11          # X11 display server configuration
+# │   └── xdg          # XDG base directory specification
+# │
+# ├── gaming/          # Gaming support and optimization
+# │   ├── gamescope    # Game-specific display server
+# │   ├── performance  # Gaming performance tweaks
+# │   └── steam        # Steam gaming platform setup
+# │
+# ├── media/           # System media capabilities
+# │   ├── audio        # Audio subsystem configuration
+# │   └── bluetooth    # Bluetooth connectivity
+# │
+# ├── network/         # Network infrastructure
+# │   ├── base         # Basic networking setup
+# │   ├── dns          # DNS configuration
+# │   ├── firewall     # System firewall rules
+# │   ├── powersave    # Network power management
+# │   ├── ssh          # SSH server configuration
+# │   ├── tcp          # TCP stack optimization
+# │   ├── vpn          # VPN service integration
+# │   └── wireless     # Wireless networking
+# │
+# ├── nix/            # Package management 
+# │   ├── cache       # Binary cache configuration
+# │   ├── config      # Nix package manager settings
+# │   ├── nh          # Nix helper utilities
+# │   └── settings    # Advanced Nix configurations
+# │
+# ├── security/       # System security framework
+# │   ├── hblock      # Ad/tracker blocking
+# │   ├── keyring     # System keyring management
+# │   └── pam         # PAM authentication setup
+# │
+# ├── services/       # System services
+# │   ├── base        # Essential system services
+# │   ├── flatpak     # Flatpak application support
+# │   ├── network     # Network-related services
+# │   └── security    # Security services
+# │
+# ├── system/         # Core system setup
+# │   ├── base        # Base system configuration
+# │   ├── boot        # Boot loader and kernel
+# │   ├── hardware    # Hardware support/drivers
+# │   └── power       # Power management
+# │
+# ├── user/           # User management
+# │   ├── account     # User account settings
+# │   ├── home        # User home directory setup
+# │   ├── packages    # User-specific packages
+# │   └── programs    # User program configurations
+# │
+# └── virtualization/ # Virtualization support
+#     ├── container   # Container runtime setup
+#     ├── podman      # Podman container support
+#     ├── spice       # SPICE protocol support
+#     └── vm          # Virtual machine configuration
+#
+# /modules/home - User Level Configuration
+# ├── apps/           # User applications
+# │   ├── elektron    # Elektron audio tools
+# │   ├── obsidian    # Note-taking application
+# │   ├── webcord     # Discord client
+# │   └── ytdlp       # Video downloader
+# │
+# ├── browser/        # Web browsers
+# │   ├── chrome      # Chrome configuration
+# │   ├── firefox     # Firefox setup
+# │   └── zen         # Browser extensions
+# │
+# ├── desktop/        # Desktop environment
+# │   ├── hyprland    # Hyprland compositor
+# │   ├── waybar      # Status bar
+# │   ├── waypaper    # Wallpaper manager
+# │   └── various WMs # Other window managers
+# │
+# ├── development/    # Development tools
+# │   ├── git         # Version control
+# │   ├── lazygit     # Git TUI
+# │   └── nvim        # Neovim editor
+# │
+# ├── media/          # Media applications
+# │   ├── mpv         # Media player
+# │   ├── mpd         # Music player daemon
+# │   └── spicetify   # Spotify customization
+# │
+# ├── security/       # User security
+# │   ├── gnupg       # GPG encryption
+# │   ├── pass        # Password manager
+# │   └── sops        # Secrets management
+# │
+# ├── system/         # System utilities
+# │   ├── btop        # System monitor
+# │   ├── fastfetch   # System information
+# │   └── scripts     # User scripts
+# │
+# ├── terminal/       # Terminal environment
+# │   ├── foot        # Terminal emulator
+# │   ├── tmux        # Terminal multiplexer
+# │   └── zsh         # Shell configuration
+# │
+# └── xdg/            # XDG compliance
+#     ├── xdg-dirs    # Directory structure
+#     └── xdg-portal  # Desktop integration
+#
+# Note: Each directory contains a default.nix that manages its specific domain
+# ==============================================================================
