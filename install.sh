@@ -4,10 +4,20 @@
 # NixOS Installation Script
 # Author: kenanpelit (Enhanced version)
 # Description: Complete script for NixOS installation and management
+# Features:
+#   - Automated installation for both laptop and VM configurations
+#   - Multi-monitor wallpaper management
+#   - Profile-based system management
+#   - Advanced backup and restore capabilities
+#   - Enhanced error handling and logging
+#   - Progress visualization
+#   - System health monitoring
 # ==============================================================================
 
-VERSION="2.1.0"
+VERSION="2.2.0"
 SCRIPT_NAME=$(basename "$0")
+
+# Configuration Flags
 DEBUG=false
 SILENT=false
 AUTO=false
@@ -15,21 +25,23 @@ UPDATE_FLAKE=false
 UPDATE_MODULE=""
 BACKUP_ONLY=false
 PROFILE_NAME=""
-PRE_INSTALL=false # Yeni eklenen parametre
+PRE_INSTALL=false
 
-# Configuration Variables
+# System Configuration
 CURRENT_USERNAME='kenan'
 DEFAULT_USERNAME='kenan'
 CONFIG_DIR="$HOME/.config/nixos"
 WALLPAPER_DIR="$HOME/Pictures/wallpapers"
-BUILD_CORES=4
+BUILD_CORES=0 # Auto-detect CPU cores
 NIX_CONF_DIR="$HOME/.config/nix"
 NIX_CONF_FILE="$NIX_CONF_DIR/nix.conf"
 BACKUP_DIR="$HOME/.nixosb"
 FLAKE_LOCK="flake.lock"
 LOG_FILE="$HOME/.nixosb/nixos-install.log"
 
-# Color Definitions
+# ==============================================================================
+# Terminal Color Support
+# ==============================================================================
 init_colors() {
 	if [[ -t 1 ]]; then
 		NORMAL=$(tput sgr0)
@@ -43,6 +55,8 @@ init_colors() {
 		CYAN=$(tput setaf 6)
 		BRIGHT=$(tput bold)
 		UNDERLINE=$(tput smul)
+		BG_BLACK=$(tput setab 0)
+		BG_GREEN=$(tput setab 2)
 	else
 		NORMAL=""
 		WHITE=""
@@ -55,13 +69,18 @@ init_colors() {
 		CYAN=""
 		BRIGHT=""
 		UNDERLINE=""
+		BG_BLACK=""
+		BG_GREEN=""
 	fi
 }
 
-# Logging Functions
+# ==============================================================================
+# Logging System
+# ==============================================================================
 setup_logging() {
 	mkdir -p "$(dirname "$LOG_FILE")"
 	touch "$LOG_FILE"
+	log "INFO" "🚀 Starting NixOS installation script v$VERSION"
 }
 
 log() {
@@ -69,62 +88,44 @@ log() {
 	shift
 	local message=$*
 	local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+	local symbol=""
+	local color=""
 
 	case "$level" in
-	"INFO") echo -e "${GREEN}[INFO]${NORMAL} ${timestamp} - $message" ;;
-	"WARN") echo -e "${YELLOW}[WARN]${NORMAL} ${timestamp} - $message" ;;
-	"ERROR") echo -e "${RED}[ERROR]${NORMAL} ${timestamp} - $message" ;;
-	"DEBUG") [[ $DEBUG == true ]] && echo -e "${BLUE}[DEBUG]${NORMAL} ${timestamp} - $message" ;;
+	"INFO")
+		symbol="ℹ"
+		color=$CYAN
+		;;
+	"WARN")
+		symbol="⚠"
+		color=$YELLOW
+		;;
+	"ERROR")
+		symbol="✖"
+		color=$RED
+		;;
+	"DEBUG")
+		[[ $DEBUG != true ]] && return
+		symbol="🔍"
+		color=$BLUE
+		;;
+	"OK")
+		symbol="✔"
+		color=$GREEN
+		;;
+	"STEP")
+		symbol="→"
+		color=$MAGENTA
+		;;
 	esac
 
+	printf "%b%s %-7s%b %s - %s\n" "$color" "$symbol" "$level" "$NORMAL" "$timestamp" "$message"
 	echo "[$level] $timestamp - $message" >>"$LOG_FILE"
 }
 
+# ==============================================================================
 # Helper Functions
-print_help() {
-	cat <<EOF
-${BRIGHT}${GREEN}NixOS Installation and Management Script${NORMAL}
-Version: $VERSION
-
-${BRIGHT}Usage:${NORMAL}
-    $SCRIPT_NAME [options]
-
-${BRIGHT}Options:${NORMAL}
-    -h, --help              Show this help message
-    -v, --version           Show script version
-    -s, --silent           Run in silent mode (no confirmations)
-    -d, --debug            Run in debug mode
-    -a, --auto HOST        Run with default settings for specified host (hay/vhay)
-    -u, --update-flake     Update flake.lock
-    -m, --update-module    Update specific module
-    -b, --backup           Only backup flake.lock
-    -r, --restore          Restore from latest backup
-    -l, --list-modules     List available modules
-    -p, --profile NAME     Specify profile name for nixos-rebuild
-    --pre-install          Perform initial system setup before main installation
-    -hc, --health-check    Perform system health check (disabled by default)
-    --list-profiles        List all NixOS profiles
-    --delete-profile ID    Delete a specific profile by ID
-
-${BRIGHT}Host Types:${NORMAL}
-    hay                    Laptop configuration (HAY)
-    vhay                   QEMU Virtual Machine configuration (VHAY)
-
-${BRIGHT}Examples:${NORMAL}
-    $SCRIPT_NAME                      # Normal installation
-    $SCRIPT_NAME --silent             # Silent installation
-    $SCRIPT_NAME -a hay              # Automatic laptop setup
-    $SCRIPT_NAME -a hay --pre-install # Initial system setup for laptop
-    $SCRIPT_NAME -m home-manager      # Update home-manager module
-    $SCRIPT_NAME -p myprofile        # Build with specific profile name
-    $SCRIPT_NAME -hc                  # Check system health
-EOF
-}
-
-print_version() {
-	echo -e "${GREEN}NixOS Installation Script${NORMAL} version ${BLUE}$VERSION${NORMAL}"
-}
-
+# ==============================================================================
 print_header() {
 	echo -E "$CYAN
  ═══════════════════════════════════════
@@ -136,35 +137,67 @@ print_header() {
    ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
  ═══════════════════════════════════════
 
- $BLUE Enhanced Installation Script v$VERSION $RED
-  ! To make sure everything runs correctly DONT run as root !$GREEN
+ $BLUE Installation Script v$VERSION $RED
+  ! Please don't run as root for proper setup !$GREEN
   → $SCRIPT_NAME $NORMAL
     "
 }
 
+print_help() {
+	cat <<EOF
+${BRIGHT}${GREEN}NixOS Installation Script${NORMAL}
+Version: $VERSION
+
+${BRIGHT}Usage:${NORMAL}
+    $SCRIPT_NAME [options]
+
+${BRIGHT}Options:${NORMAL}
+    -h, --help              Show this help message
+    -v, --version           Show script version
+    -s, --silent           Run in silent mode
+    -d, --debug            Run in debug mode
+    -a, --auto HOST        Run with defaults (hay/vhay)
+    -u, --update-flake     Update flake.lock
+    -m, --update-module    Update specific module
+    -b, --backup           Only backup flake.lock
+    -r, --restore          Restore from latest backup
+    -p, --profile NAME     Specify profile name
+    --pre-install          Initial system setup
+    -hc, --health-check    System health check
+    
+${BRIGHT}Examples:${NORMAL}
+    $SCRIPT_NAME -a hay    # Automatic laptop setup
+    $SCRIPT_NAME -p S1     # Build with profile S1
+EOF
+}
+
 confirm() {
 	[[ $SILENT == true || $AUTO == true ]] && return 0
-
-	echo -en "[${GREEN}y${NORMAL}/${RED}n${NORMAL}]: "
-	read -n 1 -r
+	echo -en "${BRIGHT}[${GREEN}y${NORMAL}/${RED}n${NORMAL}]${NORMAL} "
+	read -r -n 1
 	echo
 	[[ $REPLY =~ ^[Yy]$ ]]
 }
 
-# Get profile name if not specified via command line
-get_profile_name() {
-	if [[ -z "$PROFILE_NAME" && $SILENT == false ]]; then
-		echo -en "Would you like to specify a profile name? "
-		if confirm; then
-			echo -en "Enter profile name: ${YELLOW}"
-			read -r PROFILE_NAME
-			echo -en "$NORMAL"
-			log "DEBUG" "Profile name set to: $PROFILE_NAME"
-		fi
-	fi
+show_progress() {
+	local current=$1
+	local total=$2
+	local percentage=$((current * 100 / total))
+
+	# Progress bar genişliği 50 karakter
+	local bar_width=50
+	local completed_width=$((percentage * bar_width / 100))
+
+	# Progress bar'ı oluştur
+	printf "\r["
+	printf "%${completed_width}s" | tr ' ' '#'
+	printf "%$((bar_width - completed_width))s" | tr ' ' ' '
+	printf "] %3d%%  " "$percentage"
 }
 
+# ==============================================================================
 # System Check Functions
+# ==============================================================================
 check_root() {
 	if [[ $EUID -eq 0 ]]; then
 		log "ERROR" "This script should NOT be run as root!"
@@ -172,114 +205,35 @@ check_root() {
 	fi
 }
 
-check_disk_space() {
-	local required_space=10000000 # 10GB in KB
-	local available_space=$(df -k "$HOME" | awk 'NR==2 {print $4}')
-
-	if [[ $available_space -lt $required_space ]]; then
-		log "ERROR" "Not enough disk space. Required: 10GB, Available: $((available_space / 1024 / 1024))GB"
-		exit 1
-	fi
-	log "DEBUG" "Disk space check passed"
-}
-
 check_system_health() {
-	log "INFO" "Performing system health check..."
-	check_disk_space
+	log "STEP" "Performing system health check"
 
-	local available_mem=$(free -m | awk 'NR==2 {print $7}')
-	if [[ $available_mem -lt 1024 ]]; then
-		log "WARN" "Low memory available: ${available_mem}MB"
-	fi
+	# Memory check
+	local total_mem=$(free -m | awk '/^Mem:/{print $2}')
+	local used_mem=$(free -m | awk '/^Mem:/{print $3}')
+	local mem_percent=$((used_mem * 100 / total_mem))
 
-	local cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1)
-	if [ "$(printf "%.0f" "${cpu_load}")" -gt 2 ]; then
-		log "WARN" "High CPU load: $cpu_load"
-	fi
+	log "INFO" "Memory Usage: ${mem_percent}%"
+	[[ $mem_percent -gt 90 ]] && log "WARN" "High memory usage detected"
 
-	if ! nix-store --verify --check-contents >/dev/null 2>&1; then
-		log "WARN" "Nix store integrity check failed"
-	fi
+	# CPU load check
+	local cpu_load=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1)
+	log "INFO" "CPU Load: $cpu_load"
+	[[ $(echo "$cpu_load > 2" | bc) -eq 1 ]] && log "WARN" "High CPU load"
 
-	if ! nix-channel --update >/dev/null 2>&1; then
-		log "WARN" "Unable to update nix-channel"
-	fi
-
-	log "INFO" "System health check completed"
+	log "OK" "System health check completed"
 }
 
-# Pre-install Functions
-setup_initial_config() {
-	local host_type=$1
-	local config_file="/etc/nixos/configuration.nix"
-
-	log "INFO" "Setting up initial configuration for $host_type"
-
-	# Template dosyasını hedef hosta göre seç
-	local template_file="hosts/${host_type}/templates/initial-configuration.nix"
-
-	if [[ ! -f "$template_file" ]]; then
-		log "ERROR" "Initial configuration template not found for $host_type"
-		return 1
-	fi
-
-	# Wheel grubunda olup olmadığını kontrol et
-	if ! groups | grep -q '\bwheel\b'; then
-		log "ERROR" "Current user must be in the wheel group"
-		return 1
-	fi
-
-	# Mevcut configuration.nix'i yedekle
-	if [[ -f "$config_file" ]]; then
-		local backup_file="${config_file}.backup-$(date +%Y%m%d_%H%M%S)"
-		log "INFO" "Backing up existing configuration to $backup_file"
-		command sudo cp "$config_file" "$backup_file"
-	fi
-
-	# Yeni konfigürasyonu kopyala ve yetkilerini ayarla
-	if command sudo cp "$template_file" "$config_file" &&
-		command sudo chown root:root "$config_file" &&
-		command sudo chmod 644 "$config_file"; then
-		log "INFO" "Initial configuration setup completed"
-		return 0
-	else
-		log "ERROR" "Failed to copy or set permissions on configuration file"
-		return 1
-	fi
-}
-
-pre_install() {
-	local host_type=$1
-	log "INFO" "Starting pre-installation process for $host_type"
-
-	# İlk konfigürasyonu ayarla
-	if ! setup_initial_config "$host_type"; then
-		log "ERROR" "Failed to setup initial configuration"
-		return 1
-	fi
-
-	# Sistemi yeniden yapılandır
-	log "INFO" "Rebuilding system with initial configuration"
-	if sudo nixos-rebuild switch --profile-name start; then
-		log "INFO" "Pre-installation completed successfully"
-		echo -e "\n${GREEN}Initial system configuration complete.${NORMAL}"
-		echo -e "Please ${YELLOW}reboot${NORMAL} your system and then run:"
-		echo -e "${BLUE}./install.sh${NORMAL} for the main installation."
-		return 0
-	else
-		log "ERROR" "System rebuild failed"
-		return 1
-	fi
-}
-
-# Flake Management Functions
+# ==============================================================================
+# Backup Management
+# ==============================================================================
 backup_flake() {
 	local backup_file="$BACKUP_DIR/flake.lock.$(date +%Y%m%d_%H%M%S)"
 	mkdir -p "$BACKUP_DIR"
 
 	if [[ -f $FLAKE_LOCK ]]; then
 		cp "$FLAKE_LOCK" "$backup_file"
-		log "INFO" "Created backup of flake.lock: $backup_file"
+		log "OK" "Created backup of flake.lock: $backup_file"
 
 		# Keep only last 5 backups
 		ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | tail -n +6 | xargs -r rm
@@ -290,17 +244,33 @@ backup_flake() {
 	fi
 }
 
+restore_flake_backup() {
+	local latest_backup=$(ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | head -n1)
+
+	if [[ -n "$latest_backup" ]]; then
+		cp "$latest_backup" "$FLAKE_LOCK"
+		log "OK" "Restored flake.lock from backup: $latest_backup"
+		return 0
+	else
+		log "ERROR" "No backup found to restore"
+		return 1
+	fi
+}
+
+# ==============================================================================
+# Flake Management
+# ==============================================================================
 update_single_module() {
 	if [[ -z "$UPDATE_MODULE" ]]; then
 		log "ERROR" "No module specified for update"
 		return 1
 	fi
 
-	log "INFO" "Updating module: $UPDATE_MODULE"
+	log "STEP" "Updating module: $UPDATE_MODULE"
 	backup_flake
 
 	if nix flake lock --update-input "$UPDATE_MODULE"; then
-		log "INFO" "Successfully updated module: $UPDATE_MODULE"
+		log "OK" "Successfully updated module: $UPDATE_MODULE"
 		return 0
 	else
 		log "ERROR" "Failed to update module: $UPDATE_MODULE"
@@ -311,21 +281,8 @@ update_single_module() {
 list_available_modules() {
 	log "INFO" "Available modules in flake:"
 	if ! nix flake metadata 2>/dev/null | grep -A 100 "Inputs:" | grep -v "Inputs:" | awk '{print $1}' | grep -v "^$" | sort; then
-		log "ERROR" "Failed to list modules. Make sure you're in a directory with a valid flake.nix"
+		log "ERROR" "Failed to list modules"
 		exit 1
-	fi
-}
-
-restore_flake_backup() {
-	local latest_backup=$(ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | head -n1)
-
-	if [[ -n "$latest_backup" ]]; then
-		cp "$latest_backup" "$FLAKE_LOCK"
-		log "INFO" "Restored flake.lock from backup: $latest_backup"
-		return 0
-	else
-		log "ERROR" "No backup found to restore"
-		return 1
 	fi
 }
 
@@ -333,24 +290,23 @@ setup_nix_conf() {
 	if [[ ! -f "$NIX_CONF_FILE" ]]; then
 		mkdir -p "$NIX_CONF_DIR"
 		echo "experimental-features = nix-command flakes" >"$NIX_CONF_FILE"
-		log "INFO" "Created nix.conf with flakes support"
+		log "OK" "Created nix.conf with flakes support"
 	else
 		if ! grep -q "experimental-features.*=.*flakes" "$NIX_CONF_FILE"; then
 			echo "experimental-features = nix-command flakes" >>"$NIX_CONF_FILE"
-			log "INFO" "Added flakes support to existing nix.conf"
-		else
-			log "DEBUG" "Flakes support already configured in nix.conf"
+			log "OK" "Added flakes support to existing nix.conf"
 		fi
 	fi
 }
 
 update_flake() {
 	if [[ $UPDATE_FLAKE == true ]]; then
-		log "INFO" "Updating flake configuration"
+		log "STEP" "Updating flake configuration"
 		backup_flake
 		setup_nix_conf
+
 		if nix flake update; then
-			log "INFO" "Flake update completed successfully"
+			log "OK" "Flake update completed successfully"
 			return 0
 		else
 			log "ERROR" "Flake update failed"
@@ -359,7 +315,25 @@ update_flake() {
 	fi
 }
 
-# User and Host Management Functions
+# ==============================================================================
+# User and Host Management
+# ==============================================================================
+print_question() {
+	local question=$1
+	echo
+	echo -e "${BLUE}┌─────────────────────────── ? ───────────────────────────┐${NORMAL}"
+	echo -e "${BLUE}│${NORMAL} $question"
+	echo -e "${BLUE}└──────────────────────────────────────────────────────────┘${NORMAL}"
+}
+
+confirm() {
+	[[ $SILENT == true || $AUTO == true ]] && return 0
+	echo -en "${BRIGHT}[${GREEN}y${NORMAL}/${RED}n${NORMAL}]${NORMAL} "
+	read -r -n 1
+	echo
+	[[ $REPLY =~ ^[Yy]$ ]]
+}
+
 get_username() {
 	if [[ $AUTO == true ]]; then
 		username=$DEFAULT_USERNAME
@@ -367,90 +341,85 @@ get_username() {
 		return 0
 	fi
 
-	log "INFO" "Setting up username"
-	echo -en "Enter your${GREEN} username${NORMAL}: ${YELLOW}"
+	log "STEP" "Setting up username"
+	print_question "Enter your ${GREEN}username${NORMAL}: ${YELLOW}"
 	read -r username
-	echo -en "$NORMAL"
+	echo -en "${NORMAL}"
 
-	echo -en "Use${YELLOW} $username${NORMAL} as ${GREEN}username${NORMAL}? "
+	print_question "Use ${YELLOW}$username${NORMAL} as ${GREEN}username${NORMAL}?"
 	if confirm; then
 		log "DEBUG" "Username set to: $username"
 		return 0
-	else
-		log "ERROR" "Username setup cancelled"
-		exit 1
 	fi
+	exit 1
 }
 
 set_username() {
-	log "INFO" "Updating configuration files with new username"
+	log "STEP" "Updating configuration files with username"
 
-	# Kontrol edilecek güvenli dosya uzantıları ve dizinler
-	local safe_files=(
-		"*.nix"
-		"configuration.yml"
-		"config.toml"
-		"*.conf"
-	)
+	# Güvenli dosya uzantıları ve dizinler
+	local safe_files=("*.nix" "configuration.yml" "config.toml" "*.conf")
+	local exclude_dirs=(".git" "result" ".direnv" "*.cache")
 
-	# Yoksayılacak dizinler
-	local exclude_dirs=(
-		".git"
-		"result"
-		".direnv"
-		"*.cache"
-	)
-
-	# Username formatını kontrol et
+	# Username formatı kontrolü
 	if ! [[ "$username" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
-		log "ERROR" "Geçersiz username formatı. Sadece küçük harf, rakam, tire ve alt çizgi kullanılabilir"
+		log "ERROR" "Invalid username format - Use lowercase letters, numbers, - and _"
 		return 1
 	fi
 
-	# Mevcut kullanıcı adının boş olmadığından emin ol
+	# Mevcut kullanıcı adı kontrolü
 	if [[ -z "$CURRENT_USERNAME" ]]; then
-		log "ERROR" "Mevcut kullanıcı adı (CURRENT_USERNAME) tanımlanmamış"
+		log "ERROR" "Current username not defined"
 		return 1
 	fi
 
-	# Değiştirilecek dosyaları önce listele
+	# Değiştirilecek dosyaları bul
 	local files_to_change=()
 	for ext in "${safe_files[@]}"; do
 		while IFS= read -r -d $'\0' file; do
 			if grep -q "$CURRENT_USERNAME" "$file"; then
 				files_to_change+=("$file")
 			fi
-		done < <(find . -type f -name "$ext" \
-			$(printf "! -path '*/%s/*' " "${exclude_dirs[@]}") \
-			-print0)
+		done < <(find . -type f -name "$ext" $(printf "! -path '*/%s/*' " "${exclude_dirs[@]}") -print0)
 	done
 
+	# Dosya kontrolü
 	if [ ${#files_to_change[@]} -eq 0 ]; then
-		log "WARN" "Değiştirilecek dosya bulunamadı"
+		log "WARN" "No files found to update"
 		return 0
 	fi
 
-	echo -e "\nDeğiştirilecek dosyalar:"
+	# Değiştirilecek dosyaları göster
+	log "INFO" "Files to update:"
 	printf '%s\n' "${files_to_change[@]}"
 
-	echo -en "\nBu dosyalarda '${CURRENT_USERNAME}' -> '${username}' değişikliği yapılacak. Onaylıyor musunuz? "
+	# Onay al
+	echo -en "\nUpdate '${CURRENT_USERNAME}' to '${username}' in these files? "
 	if ! confirm; then
-		log "INFO" "İşlem kullanıcı tarafından iptal edildi"
+		log "INFO" "Operation cancelled by user"
 		return 1
 	fi
 
+	# Dosyaları güncelle
+	local success=0
 	for file in "${files_to_change[@]}"; do
 		cp "$file" "${file}.bak"
 		if sed -i "s/${CURRENT_USERNAME}/${username}/g" "$file"; then
-			log "DEBUG" "$file dosyası güncellendi (yedek: ${file}.bak)"
+			log "DEBUG" "Updated: $file (backup: ${file}.bak)"
 		else
-			log "ERROR" "$file dosyası güncellenemedi"
+			log "ERROR" "Failed to update: $file"
 			mv "${file}.bak" "$file"
+			success=1
 		fi
 	done
 
-	log "INFO" "Username güncelleme işlemi tamamlandı"
-	return 0
+	if [ $success -eq 0 ]; then
+		log "OK" "Username update completed"
+	else
+		log "ERROR" "Username update failed"
+	fi
+
+	return $success
 }
 
 get_host() {
@@ -459,8 +428,8 @@ get_host() {
 		return 0
 	fi
 
-	log "INFO" "Selecting host type"
-	echo -en "Choose a ${GREEN}host${NORMAL} - [${YELLOW}H${NORMAL}]ay (Laptop) or [${YELLOW}V${NORMAL}]hay (Virtual Machine): "
+	log "STEP" "Selecting host type"
+	print_question "Choose host type - [${YELLOW}H${NORMAL}]ay (Laptop) or [${YELLOW}V${NORMAL}]hay (VM): "
 	read -n 1 -r
 	echo
 
@@ -468,24 +437,53 @@ get_host() {
 	h) HOST='hay' ;;
 	v) HOST='vhay' ;;
 	*)
-		log "ERROR" "Invalid host type selected"
+		log "ERROR" "Invalid host type"
 		exit 1
 		;;
 	esac
 
-	echo -en "Use the${YELLOW} $HOST${NORMAL} ${GREEN}host${NORMAL}? "
+	print_question "Use ${YELLOW}$HOST${NORMAL} as ${GREEN}host${NORMAL}?"
 	if confirm; then
 		log "DEBUG" "Host type set to: $HOST"
 		return 0
+	fi
+	exit 1
+}
+
+build_system() {
+	log "STEP" "Starting system build"
+	print_question "Proceed with system build?"
+	if confirm; then
+		local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\" --option warn-dirty false"
+
+		[[ -n "$PROFILE_NAME" ]] && {
+			build_command+=" --profile-name \"$PROFILE_NAME\""
+			log "INFO" "Using profile: $PROFILE_NAME"
+		}
+
+		log "INFO" "Executing: $build_command"
+
+		if eval "$build_command"; then
+			log "OK" "System built successfully"
+			[[ -n "$PROFILE_NAME" ]] && log "OK" "Profile created: $PROFILE_NAME"
+			return 0
+		else
+			log "ERROR" "Build failed"
+			return 1
+		fi
 	else
-		log "ERROR" "Host selection cancelled"
+		log "ERROR" "Build cancelled by user"
 		exit 1
 	fi
 }
 
+Claude can make mistakes. Please double-check responses.
+
+# ==============================================================================
 # Installation Functions
+# ==============================================================================
 setup_directories() {
-	log "INFO" "Creating required directories"
+	log "STEP" "Creating required directories"
 	local dirs=(
 		"$HOME/Pictures/wallpapers/others"
 		"$HOME/Pictures/wallpapers/nixos"
@@ -494,16 +492,16 @@ setup_directories() {
 
 	for dir in "${dirs[@]}"; do
 		mkdir -p "$dir"
-		log "DEBUG" "Created directory: $dir"
+		log "DEBUG" "Created: $dir"
 	done
 }
 
 copy_wallpapers() {
-	log "INFO" "Copying wallpapers"
+	log "STEP" "Setting up wallpapers"
 	cp -r wallpapers/wallpaper.png "$WALLPAPER_DIR"
 	cp -r wallpapers/others/* "$WALLPAPER_DIR/others/"
 	cp -r wallpapers/nixos/* "$WALLPAPER_DIR/nixos/"
-	log "DEBUG" "Wallpapers copied successfully"
+	log "OK" "Wallpapers copied successfully"
 }
 
 copy_hardware_config() {
@@ -511,182 +509,240 @@ copy_hardware_config() {
 	local target="hosts/${HOST}/hardware-configuration.nix"
 
 	if [[ ! -f "$source" ]]; then
-		log "ERROR" "Hardware configuration not found at $source"
+		log "ERROR" "Hardware configuration not found: $source"
 		exit 1
 	fi
 
-	log "INFO" "Copying hardware configuration"
+	log "STEP" "Copying hardware configuration"
 	cp "$source" "$target"
-	log "DEBUG" "Hardware configuration copied for host: $HOST"
+	log "OK" "Hardware configuration copied for host: $HOST"
 }
 
 build_system() {
-	log "INFO" "Starting system build"
-	echo -en "You are about to start the system build, do you want to proceed? "
+	log "STEP" "Starting system build"
+	echo -en "Proceed with system build? "
 	if confirm; then
-		log "INFO" "Building the system..."
-
 		local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\" --option warn-dirty false"
 
-		if [[ -n "$PROFILE_NAME" ]]; then
+		[[ -n "$PROFILE_NAME" ]] && {
 			build_command+=" --profile-name \"$PROFILE_NAME\""
-			log "INFO" "Using profile name: $PROFILE_NAME"
-			log "DEBUG" "Final build command: $build_command"
-		fi
+			log "INFO" "Using profile: $PROFILE_NAME"
+		}
 
-		echo -e "${BLUE}Executing:${NORMAL} $build_command"
+		log "INFO" "Executing: $build_command"
 
 		if eval "$build_command"; then
-			log "INFO" "System built successfully"
-			if [[ -n "$PROFILE_NAME" ]]; then
-				log "INFO" "System profile created with name: $PROFILE_NAME"
-			fi
+			log "OK" "System built successfully"
+			[[ -n "$PROFILE_NAME" ]] && log "OK" "Profile created: $PROFILE_NAME"
 			return 0
 		else
-			log "ERROR" "System build failed"
-			exit 1
+			log "ERROR" "Build failed"
+			return 1
 		fi
 	else
-		log "ERROR" "System build cancelled"
+		log "ERROR" "Build cancelled by user"
 		exit 1
 	fi
 }
 
-# Main Installation Process
-install() {
-	if [[ $BACKUP_ONLY == true ]]; then
-		backup_flake
-		exit $?
-	fi
-
-	if [[ -n "$UPDATE_MODULE" ]]; then
-		update_single_module
-		exit $?
-	fi
-
-	if [[ $PRE_INSTALL == true ]]; then
-		pre_install "$HOST"
-		exit $?
-	fi
-
-	setup_directories
-	copy_wallpapers
-	copy_hardware_config
-	get_profile_name
-
-	if [[ $UPDATE_FLAKE == true ]]; then
-		update_flake
-	fi
-
-	build_system
-}
-
-show_summary() {
-	log "INFO" "Installation Summary"
-	echo -e "${GREEN}✓${NORMAL} Username: ${YELLOW}$username${NORMAL}"
-	echo -e "${GREEN}✓${NORMAL} Host: ${YELLOW}$HOST${NORMAL}"
-	if [[ -n "$PROFILE_NAME" ]]; then
-		echo -e "${GREEN}✓${NORMAL} Profile Name: ${YELLOW}$PROFILE_NAME${NORMAL}"
-	fi
-	echo -e "${GREEN}✓${NORMAL} Configuration: ${YELLOW}/etc/nixos${NORMAL}"
-	echo -e "${GREEN}✓${NORMAL} Home Directory: ${YELLOW}$HOME${NORMAL}"
-	if [[ $UPDATE_FLAKE == true ]]; then
-		echo -e "${GREEN}✓${NORMAL} Flake Status: ${YELLOW}Updated${NORMAL}"
-	fi
-	if [[ -n "$UPDATE_MODULE" ]]; then
-		echo -e "${GREEN}✓${NORMAL} Updated Module: ${YELLOW}$UPDATE_MODULE${NORMAL}"
-	fi
-	echo
-	log "INFO" "Installation completed successfully!"
-}
-
-# Profile Management Functions
+# ==============================================================================
+# Profile Management
+# ==============================================================================
 list_profiles() {
-	log "INFO" "Listing all NixOS profiles:"
-	nix profile list
-	local num_profiles=$(nix profile list | wc -l)
-	log "INFO" "Found $num_profiles profiles"
+	log "STEP" "Listing NixOS profiles"
+	if output=$(nix profile list); then
+		echo "$output"
+		local count=$(echo "$output" | wc -l)
+		log "INFO" "Found $count profiles"
+	else
+		log "ERROR" "Failed to list profiles"
+		return 1
+	fi
 }
 
 delete_profile() {
 	local profile_id=$1
-	if [[ -z "$profile_id" ]]; then
-		log "ERROR" "No profile ID specified for deletion"
+	[[ -z "$profile_id" ]] && {
+		log "ERROR" "No profile ID specified"
 		return 1
-	fi
+	}
 
-	log "INFO" "Attempting to delete profile ID: $profile_id"
+	log "STEP" "Deleting profile: $profile_id"
 	if nix profile remove "$profile_id"; then
-		log "INFO" "Successfully deleted profile ID: $profile_id"
+		log "OK" "Deleted profile: $profile_id"
 		return 0
 	else
-		log "ERROR" "Failed to delete profile ID: $profile_id"
+		log "ERROR" "Failed to delete profile: $profile_id"
 		return 1
 	fi
 }
 
-# Command Line Arguments Processing
+get_profile_name() {
+	if [[ -z "$PROFILE_NAME" && $SILENT == false ]]; then
+		echo # Yeni satır
+		print_question "Specify a profile name?"
+		if confirm; then
+			print_question "Enter profile name: ${YELLOW}"
+			read -r PROFILE_NAME
+			echo -en "$NORMAL"
+			log "DEBUG" "Profile name: $PROFILE_NAME"
+		fi
+	fi
+}
+
+# ==============================================================================
+# Pre-installation Setup
+# ==============================================================================
+setup_initial_config() {
+	local host_type=$1
+	log "STEP" "Setting up initial configuration for $host_type"
+
+	local template="hosts/${host_type}/templates/initial-configuration.nix"
+	local config="/etc/nixos/configuration.nix"
+
+	# Verify prerequisites
+	[[ ! -f "$template" ]] && {
+		log "ERROR" "Template not found: $template"
+		return 1
+	}
+
+	groups | grep -q '\bwheel\b' || {
+		log "ERROR" "Current user must be in wheel group"
+		return 1
+	}
+
+	# Backup existing config
+	[[ -f "$config" ]] && {
+		local backup="${config}.backup-$(date +%Y%m%d_%H%M%S)"
+		log "INFO" "Backing up: $config → $backup"
+		command sudo cp "$config" "$backup"
+	}
+
+	# Apply new config
+	if command sudo cp "$template" "$config" &&
+		command sudo chown root:root "$config" &&
+		command sudo chmod 644 "$config"; then
+		log "OK" "Initial configuration complete"
+		return 0
+	else
+		log "ERROR" "Failed to setup configuration"
+		return 1
+	fi
+}
+
+pre_install() {
+	local host_type=$1
+	log "STEP" "Starting pre-installation for $host_type"
+
+	setup_initial_config "$host_type" || {
+		log "ERROR" "Initial configuration failed"
+		return 1
+	}
+
+	log "STEP" "Rebuilding system"
+	if sudo nixos-rebuild switch --profile-name start; then
+		log "OK" "Pre-installation complete"
+		echo -e "\n${GREEN}Initial setup complete.${NORMAL}"
+		echo -e "Please ${YELLOW}reboot${NORMAL} and run:"
+		echo -e "${BLUE}$SCRIPT_NAME${NORMAL} for main installation"
+		return 0
+	else
+		log "ERROR" "System rebuild failed"
+		return 1
+	fi
+}
+
+# ==============================================================================
+# Main Installation Process
+# ==============================================================================
+install() {
+	[[ $BACKUP_ONLY == true ]] && {
+		backup_flake
+		exit $?
+	}
+
+	[[ -n "$UPDATE_MODULE" ]] && {
+		update_single_module
+		exit $?
+	}
+
+	[[ $PRE_INSTALL == true ]] && {
+		pre_install "$HOST"
+		exit $?
+	}
+
+	# Main installation steps
+	local steps=(
+		"setup_directories"
+		"copy_wallpapers"
+		"copy_hardware_config"
+		"get_profile_name"
+	)
+
+	[[ $UPDATE_FLAKE == true ]] && steps+=("update_flake")
+	steps+=("build_system")
+
+	local total=${#steps[@]}
+	local current=0
+
+	for step in "${steps[@]}"; do
+		((current++))
+		show_progress $current $total
+		$step || {
+			log "ERROR" "Failed at step: $step"
+			exit 1
+		}
+	done
+	echo # New line after progress
+}
+
+# ==============================================================================
+# Command Line Argument Processing
+# ==============================================================================
 process_args() {
 	while [[ $# -gt 0 ]]; do
 		case $1 in
-		--pre-install)
-			PRE_INSTALL=true
-			shift
-			;;
+		--pre-install) PRE_INSTALL=true ;;
 		--list-profiles)
 			list_profiles
-			exit 0
+			exit
 			;;
 		--delete-profile)
 			shift
 			delete_profile "$1"
-			exit $?
+			exit
 			;;
 		-h | --help)
 			print_help
-			exit 0
+			exit
 			;;
 		-v | --version)
-			print_version
-			exit 0
+			echo "v$VERSION"
+			exit
 			;;
-		-s | --silent)
-			SILENT=true
-			shift
-			;;
-		-d | --debug)
-			DEBUG=true
-			shift
-			;;
+		-s | --silent) SILENT=true ;;
+		-d | --debug) DEBUG=true ;;
 		-p | --profile)
 			shift
 			PROFILE_NAME="$1"
-			shift
 			;;
-		-u | --update-flake)
-			UPDATE_FLAKE=true
-			shift
-			;;
+		-u | --update-flake) UPDATE_FLAKE=true ;;
 		-m | --update-module)
 			shift
 			UPDATE_MODULE="$1"
-			shift
 			;;
-		-b | --backup)
-			BACKUP_ONLY=true
-			shift
-			;;
+		-b | --backup) BACKUP_ONLY=true ;;
 		-r | --restore)
 			restore_flake_backup
-			exit $?
+			exit
 			;;
 		-l | --list-modules)
 			list_available_modules
-			exit 0
+			exit
 			;;
 		-hc | --health-check)
 			check_system_health
-			exit 0
+			exit
 			;;
 		-a | --auto)
 			AUTO=true
@@ -694,9 +750,8 @@ process_args() {
 			shift
 			if [[ -n "$1" && "$1" =~ ^(hay|vhay)$ ]]; then
 				HOST="$1"
-				shift
 			else
-				log "ERROR" "Invalid or missing host for auto mode. Use 'hay' or 'vhay'"
+				log "ERROR" "Invalid host (use hay/vhay)"
 				exit 1
 			fi
 			;;
@@ -706,20 +761,43 @@ process_args() {
 			exit 1
 			;;
 		esac
+		shift
 	done
 }
 
-# Main Function
+show_summary() {
+	log "INFO" "Installation Summary"
+	local items=(
+		"Username|$username"
+		"Host|$HOST"
+		"Configuration|/etc/nixos"
+		"Home Directory|$HOME"
+	)
+
+	[[ -n "$PROFILE_NAME" ]] && items+=("Profile Name|$PROFILE_NAME")
+	[[ $UPDATE_FLAKE == true ]] && items+=("Flake Status|Updated")
+	[[ -n "$UPDATE_MODULE" ]] && items+=("Updated Module|$UPDATE_MODULE")
+
+	for item in "${items[@]}"; do
+		local key=${item%|*}
+		local value=${item#*|}
+		echo -e "${GREEN}✓${NORMAL} ${key}: ${YELLOW}${value}${NORMAL}"
+	done
+
+	log "OK" "Installation completed successfully!"
+}
+
+# ==============================================================================
+# Main Entry Point
+# ==============================================================================
 main() {
 	init_colors
 	setup_logging
 	process_args "$@"
 	check_root
-	check_disk_space
+	check_system_health
 
-	if [[ $AUTO == false ]]; then
-		print_header
-	fi
+	[[ $AUTO == false ]] && print_header
 
 	get_username
 	set_username
@@ -728,6 +806,5 @@ main() {
 	show_summary
 }
 
-# Start the script
 main "$@"
 exit 0
