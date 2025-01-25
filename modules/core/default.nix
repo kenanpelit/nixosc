@@ -3,12 +3,31 @@
 # Core System Configuration
 # ==============================================================================
 # This configuration manages the import of all core system modules including:
-# - System services and hardware management
+# - System core and hardware management
+# - Desktop environment and multimedia support
 # - Network and security configurations
-# - User environment and desktop settings
-# - Virtualization and gaming support
+# - User environment and services
 #
-# Note: Modules have been consolidated for better organization and maintenance
+# Module Structure:
+# 1. System Foundation
+#    - system/     → {base, boot, hardware, power}
+#    - nix/        → {cache, config, nh, settings}
+# 
+# 2. User Interface
+#    - desktop/    → {fonts, wayland, x11, xdg}
+#    - media/      → {audio, bluetooth}
+#
+# 3. Network & Security
+#    - network/    → {base, dns, firewall, powersave, ssh, tcp, vpn, wireless}
+#    - security/   → {hblock, keyring, pam}
+#
+# 4. System Services
+#    - services/   → {base, flatpak, network, security}
+#    - user/       → {account, home, packages, programs}
+#
+# 5. Virtualization & Gaming
+#    - virtualization/ → {container, podman, spice, vm}
+#    - gaming/        → {gamescope, performance, steam}
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -17,41 +36,33 @@
 {
   imports = [
     # =============================================================================
-    # Media and Desktop
+    # System Foundation
     # =============================================================================
-    ./desktop        # Wayland, X11, and font configuration
-    ./media          # Audio, PipeWire, and Bluetooth configuration
+    ./system         # Core system, boot, hardware, and power management
+    ./nix           # Nix package manager and cache configuration
     
     # =============================================================================
-    # System Core
+    # User Interface
     # =============================================================================
-    ./system         # System settings, bootloader, hardware, and power management
+    ./desktop       # Display servers, fonts, and desktop integration
+    ./media         # Audio and Bluetooth configuration
     
     # =============================================================================
-    # Network and Security
+    # Network & Security
     # =============================================================================
-    ./network        # Network, VPN, and SSH configuration
-    ./security       # Security, GPG, and host blocking
+    ./network       # Network stack, VPN, SSH, and wireless
+    ./security      # System security, keyring, and PAM
     
     # =============================================================================
-    # Services and Applications
+    # System Services
     # =============================================================================
-    ./services       # System services and Flatpak integration
+    ./services      # System services and Flatpak integration
+    ./user          # User accounts and package management
     
     # =============================================================================
-    # User Environment
+    # Virtualization & Gaming
     # =============================================================================
-    ./user           # User configuration, packages, and programs
-    
-    # =============================================================================
-    # Virtualization and Gaming
-    # =============================================================================
-    ./virtualization # Container and VM support
-    ./gaming         # Gaming platform support
-    
-    # =============================================================================
-    # Nix Configuration
-    # =============================================================================
-    ./nix            # Nix settings and helper utilities
+    ./virtualization # Container and VM configuration
+    ./gaming         # Steam and gaming performance
   ];
 }
