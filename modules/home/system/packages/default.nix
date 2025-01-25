@@ -40,12 +40,12 @@ let
     nil                    # Nix dil araçları
     programmer-calculator  # Programcı hesap makinesi
     psmisc                 # A package of small utilities
-    shellcheck            # Kabuk betik analizi
-    shfmt                 # Kabuk betik formatlayıcı
-    stylua                # Lua kod formatlayıcı
-    tree-sitter           # Evrensel parser
-    treefmt2              # Çoklu dil formatlayıcı
-    xxd                   # Hex düzenleyici
+    shellcheck             # Kabuk betik analizi
+    shfmt                  # Kabuk betik formatlayıcı
+    stylua                 # Lua kod formatlayıcı
+    tree-sitter            # Evrensel parser
+    treefmt2               # Çoklu dil formatlayıcı
+    xxd                    # Hex düzenleyici
     inputs.alejandra.defaultPackage.${pkgs.system} # Modern Nix formatlayıcı
   ];
 
@@ -59,7 +59,7 @@ let
     entr            # Dosya değişikliği izleme
     jq              # JSON işleme
     killall         # Süreç sonlandırma
-    mimeo          # MIME işleme
+    mimeo           # MIME işleme
     most            # Gelişmiş sayfalayıcı
     ripgrep         # Hızlı metin arama - grep alternatifi
     sesh            # Oturum yöneticisi
@@ -83,7 +83,7 @@ let
   mediaTools = with pkgs; [
     ani-cli         # Anime izleme CLI
     ffmpeg          # Çoklu medya dönüştürücü
-    gifsicle       # GIF düzenleyici
+    gifsicle        # GIF düzenleyici
     imv             # Hafif resim görüntüleyici
     qview           # Hızlı resim görüntüleyici
     mpv             # Modern medya oynatıcı
@@ -158,13 +158,13 @@ let
     gopass           # Terminal şifre yöneticisi
     pdftk            # PDF araç seti
     zathura          # Minimal PDF görüntüleyici
-    evince          # GNOME PDF görüntüleyici
-    candy-icons     # Simge teması
-    wpaperd         # Modern duvar kağıdı yöneticisi
-    sway            # i3 uyumlu Wayland pencere yöneticisi
+    evince           # GNOME PDF görüntüleyici
+    candy-icons      # Simge teması
+    wpaperd          # Modern duvar kağıdı yöneticisi
+    sway             # Wayland pencere yöneticisi
     beauty-line-icon-theme # Modern simge teması
     gnomeExtensions.gsconnect # Connect implementation
-    wtype           # Xdotool type for wayland
+    wtype            # Xdotool type for wayland
     whatsie
     whatsapp-for-linux
   ];
@@ -211,9 +211,8 @@ let
   # NixOS-spesifik yönetim ve geliştirme araçları
   # ==============================================================================
   nixTools = with pkgs; [
-    nix-prefetch-git # Git kaynak kodu önbelleği
+    nix-prefetch-git    # Git kaynak kodu önbelleği
     nix-prefetch-github # GitHub kaynak kodu önbelleği
-
   ];
 
   # ==============================================================================
@@ -273,7 +272,7 @@ let
   # Sıkıştırılmış dosya ve arşivler için önizleme araçları
   # ==============================================================================
   archivePreviewTools = with pkgs; [
-    atool           # Arşiv yönetim aracı
+    atool          # Arşiv yönetim aracı
     p7zip          # 7-Zip sıkıştırma aracı
     libcdio        # CD-ROM ve ISO görüntüleme
   ];
@@ -293,7 +292,7 @@ let
   # Görsel ve medya dosyalarının önizlemesi için araçlar
   # ==============================================================================
   mediaPreviewTools = with pkgs; [
-    exiftool            # Medya meta veri görüntüleyici
+    exiftool           # Medya meta veri görüntüleyici
     chafa              # Terminal görsel görüntüleyici
     mediainfo          # Medya bilgi görüntüleyici
     ffmpegthumbnailer  # Video küçük resim oluşturucu
@@ -304,12 +303,12 @@ let
   # VPN bağlantıları ve uzak ağ erişimi için araçlar
   # ==============================================================================
    vpnTools = with pkgs; [
-   gpclient                  # GlobalProtect CLI istemcisi
+   #gpclient                  # GlobalProtect CLI istemcisi
    gpauth                    # GlobalProtect kimlik doğrulama
    globalprotect-openconnect # GlobalProtect OpenConnect entegrasyonu
    openvpn                   # VPN istemcisi
-   openconnect              # SSL VPN istemcisi
-   openfortivpn             # Fortinet VPN istemcisi
+   openconnect               # SSL VPN istemcisi
+   openfortivpn              # Fortinet VPN istemcisi
   ];
 in
 {
