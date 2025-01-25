@@ -18,7 +18,7 @@
     extraSpecialArgs = { inherit inputs username host; };
     
     users.${username} = {
-      imports = [ ./../../home ];
+      imports = [ ./../../../home ];  # Path düzeltildi
       home = {
         username = "${username}";
         homeDirectory = "/home/${username}";
@@ -27,3 +27,4 @@
     };
   };
 }
+
