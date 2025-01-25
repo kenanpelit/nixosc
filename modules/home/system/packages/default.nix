@@ -299,6 +299,18 @@ let
     ffmpegthumbnailer  # Video küçük resim oluşturucu
     poppler_utils      # PDF işleme araçları
   ];
+  # ==============================================================================
+  # VPN ve Uzak Bağlantı Araçları
+  # VPN bağlantıları ve uzak ağ erişimi için araçlar
+  # ==============================================================================
+   vpnTools = with pkgs; [
+   gpclient                  # GlobalProtect CLI istemcisi
+   gpauth                    # GlobalProtect kimlik doğrulama
+   globalprotect-openconnect # GlobalProtect OpenConnect entegrasyonu
+   openvpn                   # VPN istemcisi
+   openconnect              # SSL VPN istemcisi
+   openfortivpn             # Fortinet VPN istemcisi
+  ];
 in
 {
   # Tüm paketleri merkezi olarak yönet ve birleştir
@@ -321,5 +333,6 @@ in
     basicPreviewTools ++
     archivePreviewTools ++
     documentPreviewTools ++
-    mediaPreviewTools;
+    mediaPreviewTools ++
+    vpnTools;
 }
