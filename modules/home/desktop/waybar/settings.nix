@@ -69,12 +69,15 @@
           "4" = "4";
           "5" = "5";
           "6" = "6";
+          "7" = "7";
+          "8" = "8";
+          "9" = "9";
           sort-by-number = true;
-          urgent = "󰀨";
-          focused = "";
-          default = "";
-          special = "󰣇";
-          empty = "󰝦";
+          urgent = "";  # Ünlem işareti
+          focused = "";  # İçi dolu daire
+          default = "";  # Boş daire
+          special = "";  # Yıldız simgesi
+          empty = "";    # Kare simgesi
         };
         on-scroll-up = "hyprctl dispatch workspace e+1";
         on-scroll-down = "hyprctl dispatch workspace e-1";
@@ -324,15 +327,21 @@
         format = "{icon}";
         on-click = "activate";
         format-icons = {
+          "1" = "1";
+          "2" = "2";
+          "3" = "3";
+          "4" = "4";
+          "5" = "5";
+          "6" = "6";
           "7" = "7";
           "8" = "8";
           "9" = "9";
           sort-by-number = true;
-          urgent = "󰀨";
-          focused = "";
-          default = "";
-          special = "󰣇";
-          empty = "󰝦";
+          urgent = "";  # Ünlem işareti
+          focused = "";  # İçi dolu daire
+          default = "";  # Boş daire
+          special = "";  # Yıldız simgesi
+          empty = "";    # Kare simgesi
         };
         on-scroll-up = "hyprctl dispatch workspace e+1";
         on-scroll-down = "hyprctl dispatch workspace e-1";
