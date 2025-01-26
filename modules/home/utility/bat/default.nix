@@ -19,7 +19,7 @@
     # =============================================================================
     themes = {
       Catppuccin-mocha = {
-        src = ./../../../../themes/bat;  # Tema dosyasının bulunduğu dizin
+        src = ./theme;  # Tema dosyasının bulunduğu dizin
         file = "Catppuccin-mocha.tmTheme";  # Tema dosyasının adı
       };
     };
