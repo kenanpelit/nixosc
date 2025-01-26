@@ -70,7 +70,7 @@
    # Core Hyprland compositor
    hyprland = {
      #url = "github:hyprwm/hyprland/e66eab7b6a90514251439f661454c536afa3e5c8";
-     url = "github:hyprwm/hyprland/45c3787e75323999d2f43b6f83972f4cb11a81f9"; # 0125 - 5728
+     url = "github:hyprwm/hyprland/bb5b09def0645838456eb7eb1f52b471441acba1"; # 0126 - 5738
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
