@@ -1,7 +1,7 @@
 # themes/colors.nix
 {
-   # Tokyo Night colors
-   tokyonight = {
+   # Base Tokyo Night colors
+   kenp = {
        # Base colors
        base = "#24283b";     # Background
        mantle = "#1f2335";   # Darker background
@@ -53,25 +53,25 @@
    };
 
    # Theme generator
-   mkTheme = { tokyonight, effects, fonts }: {
+   mkTheme = { kenp, effects, fonts }: {
        # Waybar theme
        waybar = {
            custom = {
                font = fonts.main.family;
                font_size = fonts.main.size;
                font_weight = fonts.main.weight;
-               text_color = tokyonight.text;
-               background_0 = tokyonight.crust;
-               background_1 = tokyonight.base;
-               border_color = tokyonight.surface1;
-               red = tokyonight.red;
-               green = tokyonight.green;
-               yellow = tokyonight.yellow;
-               blue = tokyonight.blue;
-               magenta = tokyonight.mauve;
-               cyan = tokyonight.sky;
-               orange = tokyonight.peach;
-               orange_bright = tokyonight.peach;
+               text_color = kenp.text;
+               background_0 = kenp.crust;
+               background_1 = kenp.base;
+               border_color = kenp.surface1;
+               red = kenp.red;
+               green = kenp.green;
+               yellow = kenp.yellow;
+               blue = kenp.blue;
+               magenta = kenp.mauve;
+               cyan = kenp.sky;
+               orange = kenp.peach;
+               orange_bright = kenp.peach;
                opacity = effects.opacity;
                indicator_height = "2px";
            };
@@ -81,16 +81,16 @@
        swaync = {
            style = ''
                @define-color shadow ${effects.shadow};
-               @define-color base ${tokyonight.base};
-               @define-color mantle ${tokyonight.mantle};
-               @define-color crust ${tokyonight.crust};
-               @define-color text ${tokyonight.text};
-               @define-color subtext0 ${tokyonight.subtext0};
-               @define-color subtext1 ${tokyonight.subtext1};
-               @define-color surface0 ${tokyonight.surface0};
-               @define-color surface1 ${tokyonight.surface1};
-               @define-color surface2 ${tokyonight.surface2};
-               @define-color blue ${tokyonight.blue};
+               @define-color base ${kenp.base};
+               @define-color mantle ${kenp.mantle};
+               @define-color crust ${kenp.crust};
+               @define-color text ${kenp.text};
+               @define-color subtext0 ${kenp.subtext0};
+               @define-color subtext1 ${kenp.subtext1};
+               @define-color surface0 ${kenp.surface0};
+               @define-color surface1 ${kenp.surface1};
+               @define-color surface2 ${kenp.surface2};
+               @define-color blue ${kenp.blue};
                * {
                    font-family: "${fonts.notifications.family}";
                    background-clip: border-box;
@@ -164,52 +164,52 @@
        # Kitty terminal theme
        kitty = {
            colors = {
-               background = tokyonight.base;
-               foreground = tokyonight.text;
-               selection_foreground = tokyonight.crust;
-               selection_background = tokyonight.mauve;
+               background = kenp.base;
+               foreground = kenp.text;
+               selection_foreground = kenp.crust;
+               selection_background = kenp.mauve;
                
-               cursor = tokyonight.mauve;
-               cursor_text_color = tokyonight.crust;
+               cursor = kenp.mauve;
+               cursor_text_color = kenp.crust;
                
-               url_color = tokyonight.sky;
+               url_color = kenp.sky;
                
                # Window borders
-               active_border_color = tokyonight.mauve;
-               inactive_border_color = tokyonight.surface1;
-               bell_border_color = tokyonight.yellow;
+               active_border_color = kenp.mauve;
+               inactive_border_color = kenp.surface1;
+               bell_border_color = kenp.yellow;
                
                # Tab bar
-               active_tab_foreground = tokyonight.crust;
-               active_tab_background = tokyonight.mauve;
-               inactive_tab_foreground = tokyonight.text;
-               inactive_tab_background = tokyonight.crust;
-               tab_bar_background = tokyonight.mantle;
+               active_tab_foreground = kenp.crust;
+               active_tab_background = kenp.mauve;
+               inactive_tab_foreground = kenp.text;
+               inactive_tab_background = kenp.crust;
+               tab_bar_background = kenp.mantle;
                
                # Marks
-               mark1_foreground = tokyonight.crust;
-               mark1_background = tokyonight.mauve;
-               mark2_foreground = tokyonight.crust;
-               mark2_background = tokyonight.pink;
-               mark3_foreground = tokyonight.crust;
-               mark3_background = tokyonight.sky;
+               mark1_foreground = kenp.crust;
+               mark1_background = kenp.mauve;
+               mark2_foreground = kenp.crust;
+               mark2_background = kenp.pink;
+               mark3_foreground = kenp.crust;
+               mark3_background = kenp.sky;
                
                # Standard colors
-               color0 = tokyonight.surface1;   # Black
-               color8 = tokyonight.surface2;   # Bright Black
-               color1 = tokyonight.red;        # Red
-               color9 = tokyonight.red;        # Bright Red
-               color2 = tokyonight.green;      # Green
-               color10 = tokyonight.green;     # Bright Green
-               color3 = tokyonight.yellow;     # Yellow
-               color11 = tokyonight.yellow;    # Bright Yellow
-               color4 = tokyonight.blue;       # Blue
-               color12 = tokyonight.blue;      # Bright Blue
-               color5 = tokyonight.pink;       # Magenta
-               color13 = tokyonight.pink;      # Bright Magenta
-               color6 = tokyonight.sky;        # Cyan
-               color14 = tokyonight.sky;       # Bright Cyan
-               color7 = tokyonight.text;       # White
+               color0 = kenp.surface1;   # Black
+               color8 = kenp.surface2;   # Bright Black
+               color1 = kenp.red;        # Red
+               color9 = kenp.red;        # Bright Red
+               color2 = kenp.green;      # Green
+               color10 = kenp.green;     # Bright Green
+               color3 = kenp.yellow;     # Yellow
+               color11 = kenp.yellow;    # Bright Yellow
+               color4 = kenp.blue;       # Blue
+               color12 = kenp.blue;      # Bright Blue
+               color5 = kenp.pink;       # Magenta
+               color13 = kenp.pink;      # Bright Magenta
+               color6 = kenp.sky;        # Cyan
+               color14 = kenp.sky;       # Bright Cyan
+               color7 = kenp.text;       # White
                color15 = "#ffffff";            # Bright White
            };
        };
@@ -224,33 +224,33 @@
                 * @description Discord theme using TokyoNight colors
                 */
                :root {
-                   --interactive-normal: ${tokyonight.text};
-                   --text-normal: ${tokyonight.text}; 
-                   --background-primary: ${tokyonight.base};
-                   --background-secondary: ${tokyonight.mantle};
-                   --background-tertiary: ${tokyonight.crust};
-                   --channels-default: ${tokyonight.blue};
-                   --deprecated-panel-background: ${tokyonight.crust};
-                   --channeltextarea-background: ${tokyonight.surface0};
-                   --background-floating: ${tokyonight.base};
-                   --background-mobile-primary: ${tokyonight.base};
-                   --background-mobile-secondary: ${tokyonight.mantle};
-                   --background-accent: ${tokyonight.sapphire};
-                   --background-message-hover: ${tokyonight.surface0};
-                   --text-muted: ${tokyonight.subtext0};
-                   --text-link: ${tokyonight.blue};
-                   --button-background: ${tokyonight.surface0};
-                   --brand-experiment: ${tokyonight.blue};
+                   --interactive-normal: ${kenp.text};
+                   --text-normal: ${kenp.text}; 
+                   --background-primary: ${kenp.base};
+                   --background-secondary: ${kenp.mantle};
+                   --background-tertiary: ${kenp.crust};
+                   --channels-default: ${kenp.blue};
+                   --deprecated-panel-background: ${kenp.crust};
+                   --channeltextarea-background: ${kenp.surface0};
+                   --background-floating: ${kenp.base};
+                   --background-mobile-primary: ${kenp.base};
+                   --background-mobile-secondary: ${kenp.mantle};
+                   --background-accent: ${kenp.sapphire};
+                   --background-message-hover: ${kenp.surface0};
+                   --text-muted: ${kenp.subtext0};
+                   --text-link: ${kenp.blue};
+                   --button-background: ${kenp.surface0};
+                   --brand-experiment: ${kenp.blue};
                }
 
                /* App Elements */
                .theme-dark {
-                   --header-primary: ${tokyonight.text};
-                   --header-secondary: ${tokyonight.subtext0};
-                   --background-primary: ${tokyonight.base};
-                   --background-secondary: ${tokyonight.mantle};
-                   --background-secondary-alt: ${tokyonight.crust};
-                   --channeltextarea-background: ${tokyonight.surface0};
+                   --header-primary: ${kenp.text};
+                   --header-secondary: ${kenp.subtext0};
+                   --background-primary: ${kenp.base};
+                   --background-secondary: ${kenp.mantle};
+                   --background-secondary-alt: ${kenp.crust};
+                   --channeltextarea-background: ${kenp.surface0};
                }
 
                /* Message Area */
@@ -273,31 +273,31 @@
 
                /* Code Blocks */
                .hljs {
-                   background-color: ${tokyonight.mantle} !important;
-                   color: ${tokyonight.text};
+                   background-color: ${kenp.mantle} !important;
+                   color: ${kenp.text};
                }
 
                /* Syntax Highlighting */
-               .hljs-keyword { color: ${tokyonight.red}; }
-               .hljs-built_in { color: ${tokyonight.blue}; }
-               .hljs-type { color: ${tokyonight.yellow}; }
-               .hljs-literal { color: ${tokyonight.mauve}; }
-               .hljs-number { color: ${tokyonight.peach}; }
-               .hljs-string { color: ${tokyonight.green}; }
-               .hljs-function { color: ${tokyonight.teal}; }
-               .hljs-comment { color: ${tokyonight.surface2}; font-style: italic; }
-               .hljs-deletion { color: ${tokyonight.red}; }
-               .hljs-addition { color: ${tokyonight.green}; }
+               .hljs-keyword { color: ${kenp.red}; }
+               .hljs-built_in { color: ${kenp.blue}; }
+               .hljs-type { color: ${kenp.yellow}; }
+               .hljs-literal { color: ${kenp.mauve}; }
+               .hljs-number { color: ${kenp.peach}; }
+               .hljs-string { color: ${kenp.green}; }
+               .hljs-function { color: ${kenp.teal}; }
+               .hljs-comment { color: ${kenp.surface2}; font-style: italic; }
+               .hljs-deletion { color: ${kenp.red}; }
+               .hljs-addition { color: ${kenp.green}; }
                .hljs-emphasis { font-style: italic; }
                .hljs-strong { font-weight: bold; }
 
                /* UI Elements */
                .scroller::-webkit-scrollbar-thumb { 
-                   background-color: ${tokyonight.surface0} !important;
+                   background-color: ${kenp.surface0} !important;
                    border-radius: 4px;
                }
                .scroller::-webkit-scrollbar-track {
-                   background-color: ${tokyonight.crust} !important;
+                   background-color: ${kenp.crust} !important;
                }
            '';
        };
@@ -306,14 +306,14 @@
        rofi = {
            theme = ''
                * {
-                   bg-col: ${tokyonight.crust};
-                   bg-col-light: ${tokyonight.base};
-                   border-col: ${tokyonight.surface1};
-                   selected-col: ${tokyonight.surface0};
-                   blue: ${tokyonight.blue};
-                   fg-col: ${tokyonight.text};
-                   fg-col2: ${tokyonight.subtext1};
-                   grey: ${tokyonight.surface2};
+                   bg-col: ${kenp.crust};
+                   bg-col-light: ${kenp.base};
+                   border-col: ${kenp.surface1};
+                   selected-col: ${kenp.surface0};
+                   blue: ${kenp.blue};
+                   fg-col: ${kenp.text};
+                   fg-col2: ${kenp.subtext1};
+                   grey: ${kenp.surface2};
                }
            '';
 
