@@ -1,7 +1,8 @@
 # themes/colors.nix
 {
+   # Base Tokyo Night colors
    kenp = {
-       # Base Tokyo Night colors
+       # Base colors
        base = "#24283b";     # Background
        mantle = "#1f2335";   # Darker background
        crust = "#1a1b26";    # Darkest background
