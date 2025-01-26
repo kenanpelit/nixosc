@@ -1,36 +1,36 @@
 # themes/colors.nix
 {
    kenp = {
-       # Base Tokyo Night colors
-       base = "#24283b";     # Background
-       mantle = "#1f2335";   # Darker background
-       crust = "#1a1b26";    # Darkest background
+       # Base Dracula colors
+       base = "#282a36";      # Background
+       mantle = "#1e1f29";    # Darker background
+       crust = "#191a21";     # Darkest background
        
        # Text colors
-       text = "#c0caf5";     # Primary text
-       subtext0 = "#9aa5ce"; # Secondary text
-       subtext1 = "#a9b1d6"; # Tertiary text
+       text = "#f8f8f2";      # Primary text
+       subtext0 = "#6272a4";  # Secondary text (Comment)
+       subtext1 = "#bd93f9";  # Tertiary text (Purple)
        
        # Surface colors
-       surface0 = "#292e42"; # Light surface
-       surface1 = "#414868"; # Medium surface
-       surface2 = "#565f89"; # Dark surface
+       surface0 = "#44475a";  # Light surface (Current Line)
+       surface1 = "#343746";  # Medium surface
+       surface2 = "#313442";  # Dark surface
        
        # Accent colors
-       rosewater = "#f7768e"; # Light Red
-       flamingo = "#ff9e64";  # Orange
-       pink = "#ff75a0";      # Pink
-       mauve = "#bb9af7";     # Purple
-       red = "#f7768e";       # Red
-       maroon = "#e0af68";    # Yellow
-       peach = "#ff9e64";     # Light Orange
-       yellow = "#e0af68";    # Yellow
-       green = "#9ece6a";     # Green
-       teal = "#73daca";      # Teal
-       sky = "#7dcfff";       # Light Blue
-       sapphire = "#2ac3de";  # Cyan
-       blue = "#7aa2f7";      # Blue
-       lavender = "#b4f9f8";  # Terminal Cyan
+       rosewater = "#ff5555";  # Red
+       flamingo = "#ffb86c";   # Orange
+       pink = "#ff79c6";       # Pink
+       mauve = "#bd93f9";      # Purple
+       red = "#ff5555";        # Red
+       maroon = "#ffb86c";     # Orange/Yellow
+       peach = "#ffb86c";      # Orange
+       yellow = "#f1fa8c";     # Yellow
+       green = "#50fa7b";      # Green
+       teal = "#8be9fd";       # Cyan
+       sky = "#6272a4";        # Comment Blue
+       sapphire = "#8be9fd";   # Cyan
+       blue = "#6272a4";       # Blue (Comment)
+       lavender = "#8be9fd";   # Cyan
    };
 
    # Effects
