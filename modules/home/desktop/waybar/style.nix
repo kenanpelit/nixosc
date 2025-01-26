@@ -1,22 +1,21 @@
-# modules/home/waybar/style.nix
+# modules/home/desktop/waybar/style.nix
 { custom, ... }:
-
 {
   programs.waybar.style = ''
     * {
       border: none;
       border-radius: 0;
-      font-family: Maple Mono;
-      font-weight: bold;
-      font-size: 16px;
+      font-family: ${custom.font};
+      font-weight: ${custom.font_weight};
+      font-size: ${custom.font_size};
       min-height: 0;
       transition: 0.3s;
     }
 
     window#waybar {
-      background: #1a1b26;
-      color: #c0caf5;
-      border-top: 1px solid #414868;
+      background: ${custom.background_0};
+      color: ${custom.text_color};
+      border-top: 1px solid ${custom.border_color};
     }
 
     /* Common style for all modules */
@@ -40,10 +39,10 @@
     #language,
     #tray,
     #mpris {
-      background-color: #24283b;
+      background-color: ${custom.background_1};
       padding: 1px 6px;
       margin: 2px 2px;
-      border: 1px solid #414868;
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
       transition: all 0.2s ease;
     }
@@ -61,101 +60,101 @@
       padding: 1px 6px;
       margin: 0 2px;
       border-radius: 6px;
-      color: #7aa2f7;
-      background-color: #24283b;
+      color: ${custom.blue};
+      background-color: ${custom.background_1};
       transition: all 0.2s ease;
-      border: 1px solid #414868;
+      border: 1px solid ${custom.border_color};
     }
 
     #workspaces button.active {
-      color: #bb9af7;
+      color: ${custom.magenta};
       background-color: rgba(122, 162, 247, 0.2);
-      border-color: #7aa2f7;
+      border-color: ${custom.blue};
     }
 
     #workspaces button.empty {
-      color: #c0caf5;
-      background-color: #24283b;
+      color: ${custom.text_color};
+      background-color: ${custom.background_1};
       opacity: 0.8;
     }
 
     #workspaces button.urgent {
-      color: #f7768e;
+      color: ${custom.red};
       background-color: rgba(247, 118, 142, 0.2);
-      border-color: #f7768e;
+      border-color: ${custom.red};
       animation: workspace_urgent 1s ease-in-out infinite;
     }
 
     /* Module specific colors */
-    #bluetooth { color: #7dcfff; }
-    #bluetooth.connected { color: #2ac3de; }
+    #bluetooth { color: ${custom.cyan}; }
+    #bluetooth.connected { color: ${custom.blue}; }
     
-    #network { color: #7aa2f7; }
-    #network.disconnected { color: #f7768e; }
+    #network { color: ${custom.blue}; }
+    #network.disconnected { color: ${custom.red}; }
     #network.ethernet,
-    #network.wifi { color: #7aa2f7; }
+    #network.wifi { color: ${custom.blue}; }
 
-    #battery { color: #bb9af7; }
-    #battery.charging { color: #73daca; }
-    #battery.full { color: #9ece6a; }
-    #battery.warning:not(.charging) { color: #ff9e64; }
+    #battery { color: ${custom.magenta}; }
+    #battery.charging { color: ${custom.cyan}; }
+    #battery.full { color: ${custom.green}; }
+    #battery.warning:not(.charging) { color: ${custom.orange}; }
     #battery.critical:not(.charging) { 
-      color: #f7768e;
+      color: ${custom.red};
       animation: blink-critical 1s infinite;
     }
 
-    #pulseaudio { color: #bb9af7; }
-    #pulseaudio.muted { color: #f7768e; }
+    #pulseaudio { color: ${custom.magenta}; }
+    #pulseaudio.muted { color: ${custom.red}; }
     
-    #pulseaudio#sink { color: #bb9af7; }
-    #pulseaudio#sink.muted { color: #f7768e; }
+    #pulseaudio#sink { color: ${custom.magenta}; }
+    #pulseaudio#sink.muted { color: ${custom.red}; }
     
-    #pulseaudio#source { color: #7dcfff; }
-    #pulseaudio#source.muted { color: #f7768e; }
+    #pulseaudio#source { color: ${custom.cyan}; }
+    #pulseaudio#source.muted { color: ${custom.red}; }
     
-    #cpu { color: #9ece6a; }
-    #memory { color: #bb9af7; }
-    #disk { color: #e0af68; }
+    #cpu { color: ${custom.green}; }
+    #memory { color: ${custom.magenta}; }
+    #disk { color: ${custom.orange}; }
     
     #custom-vpnstatus.connected,
     #custom-vpnmullvad.connected,
-    #custom-vpnother.connected { color: #9ece6a; }
+    #custom-vpnother.connected { color: ${custom.green}; }
     
     #custom-vpnstatus.disconnected,
     #custom-vpnmullvad.disconnected,
-    #custom-vpnother.disconnected { color: #f7768e; }
+    #custom-vpnother.disconnected { color: ${custom.red}; }
 
     #mpris {
-      background-color: #24283b;
+      background-color: ${custom.background_1};
     }
 
-    #mpris.playing { color: #9ece6a; }
-    #mpris.paused { color: #7aa2f7; }
-    #mpris.stopped { color: #f7768e; }
+    #mpris.playing { color: ${custom.green}; }
+    #mpris.paused { color: ${custom.blue}; }
+    #mpris.stopped { color: ${custom.red}; }
 
     #custom-launcher {
-      color: #7dcfff;
+      color: ${custom.cyan};
       font-size: 20px;
       padding: 0 10px;
       margin: 4px 8px 4px 4px;
-      background: #24283b;
-      border: 1px solid #414868;
+      background: ${custom.background_1};
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
     }
 
     #custom-launcher:hover {
       background-color: rgba(125, 207, 255, 0.1);
-      border-color: #7dcfff;
+      border-color: ${custom.cyan};
     }
 
     /* System icons with adjusted sizes */
     #custom-notification,
     #custom-firewall,
     #custom-power {
-      background-color: #24283b;
+      background-color: ${custom.background_1};
       padding: 0 8px;
       margin: 4px 2px;
-      border: 1px solid #414868;
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
       min-width: 24px;
       font-size: 16px;
@@ -165,7 +164,7 @@
       padding: 0 6px;
       font-size: 15px;
       margin-right: 4px;
-      color: #e0af68;
+      color: ${custom.orange};
     }
 
     #custom-firewall {
@@ -178,7 +177,7 @@
       padding: 0 7px;
       font-size: 17px;
       margin: 4px 4px 4px 2px;
-      color: #f7768e;
+      color: ${custom.red};
     }
 
     #tray {
@@ -186,16 +185,16 @@
     }
 
     #tray menu {
-      background: #24283b;
-      border: 1px solid #414868;
+      background: ${custom.background_1};
+      border: 1px solid ${custom.border_color};
     }
 
     #clock {
-      color: #7dcfff;
+      color: ${custom.cyan};
     }
 
     #language {
-      color: #bb9af7;
+      color: ${custom.magenta};
     }
 
     /* Hover effects */
@@ -218,53 +217,53 @@
     #language:hover,
     #mpris:hover {
       background-color: rgba(122, 162, 247, 0.1);
-      border-color: #7aa2f7;
+      border-color: ${custom.blue};
     }
 
     #temperature {
-      color: #9ece6a;  /* Normal durum rengi - yeşil */
+      color: ${custom.green};
     }
 
     #temperature.critical {
-      color: #f7768e;  /* Kritik sıcaklık rengi - kırmızı */
+      color: ${custom.red};
       animation: blink-critical 1s infinite;
     }
 
     #temperature:hover {
       background-color: rgba(122, 162, 247, 0.1);
-      border-color: #7aa2f7;
+      border-color: ${custom.blue};
     }
 
     #custom-notification:hover {
       background-color: rgba(224, 175, 104, 0.1);
-      border-color: #e0af68;
+      border-color: ${custom.orange};
     }
 
     #custom-firewall:hover {
       background-color: rgba(247, 118, 142, 0.1);
-      border-color: #f7768e;
+      border-color: ${custom.red};
     }
 
     #custom-power:hover {
       background-color: rgba(247, 118, 142, 0.1);
-      border-color: #f7768e;
+      border-color: ${custom.red};
     }
 
     tooltip {
-      background: #24283b;
-      border: 1px solid #414868;
+      background: ${custom.background_1};
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
     }
 
     tooltip label {
-      color: #c0caf5;
+      color: ${custom.text_color};
       padding: 6px;
     }
 
     @keyframes blink-critical {
       to {
-        background-color: #f7768e;
-        color: #24283b;
+        background-color: ${custom.red};
+        color: ${custom.background_1};
       }
     }
 
@@ -281,4 +280,3 @@
     }
   '';
 }
-

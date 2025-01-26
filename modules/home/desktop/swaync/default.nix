@@ -4,23 +4,22 @@
 # ==============================================================================
 { pkgs, ... }:
 let
-  colors = import ./../../../../themes/colors.nix;
-  theme = colors.mkTheme {
-    inherit (colors) mocha effects fonts;
-  };
+ colors = import ./../../../../themes/colors.nix;
+ theme = colors.mkTheme {
+   inherit (colors) tokyonight effects fonts;
+ };
 in
 {
-  # =============================================================================
-  # Package Installation
-  # =============================================================================
-  home.packages = (with pkgs; [ swaynotificationcenter ]);
-
-  # =============================================================================
-  # Configuration Files
-  # =============================================================================
-  xdg.configFile."swaync/config.json".source = ./config.json;
-  xdg.configFile."swaync/style.css".text = ''
-    ${theme.swaync.style}
-    ${builtins.readFile ./style.css}
-  '';
+ # =============================================================================
+ # Package Installation
+ # =============================================================================
+ home.packages = (with pkgs; [ swaynotificationcenter ]);
+ # =============================================================================
+ # Configuration Files
+ # =============================================================================
+ xdg.configFile."swaync/config.json".source = ./config.json;
+ xdg.configFile."swaync/style.css".text = ''
+   ${theme.swaync.style}
+   ${builtins.readFile ./style.css}
+ '';
 }
