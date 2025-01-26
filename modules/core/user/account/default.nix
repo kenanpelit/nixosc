@@ -3,42 +3,49 @@
 # User Account Configuration
 # ==============================================================================
 # This configuration manages user account settings including:
-# - User options and definitions
+# - User account options and privileges 
 # - Group memberships
 # - Shell configuration
+# - Sudo access rules
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
-{ pkgs, lib, username, config, ... }:
-let
-  inherit (lib) mkOption types;
-in
-{
-  options.my.user = {
-    name = mkOption {
-      type = types.str;
-      default = username;
-      description = "The name of the primary user account";
-    };
-    uid = mkOption {
-      type = types.int;
-      default = 1000;
-      description = "The user's UID";
-    };
-  };
-
-  config = {
-    users.users.${username} = {
-      isNormalUser = true;
-      description = "${username}";
-      extraGroups = [
-        "networkmanager"  # Network management
-        "wheel"           # Sudo access
-        "input"           # Input devices
-      ];
-      shell = pkgs.zsh;
-      uid = config.my.user.uid;
-    };
-  };
+{ pkgs, lib, username, config, ... }: {
+ options.my.user = {
+   name = lib.mkOption {
+     type = lib.types.str;
+     default = username;
+     description = "The name of the primary user account";
+   };
+   uid = lib.mkOption {
+     type = lib.types.int;
+     default = 1000;
+     description = "The user's UID";
+   };
+ };
+ 
+ config = {
+   # Primary user account configuration
+   users.users.${username} = {
+     isNormalUser = true;
+     description = "${username}";
+     extraGroups = [
+       "networkmanager"  # Network management permissions
+       "wheel"           # Sudo access
+       "input"           # Input device access
+     ];
+     shell = pkgs.zsh;
+     uid = config.my.user.uid;
+   };
+   
+   # Passwordless sudo configuration
+   security.sudo.extraRules = [{
+     users = [ username ];
+     commands = [{
+       command = "ALL";     # Allow all commands
+       options = [ "NOPASSWD" ];  # No password required
+     }];
+   }];
+ };
 }
+
