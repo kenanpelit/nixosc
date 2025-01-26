@@ -9,7 +9,7 @@ let
  # =============================================================================
  colors = import ./../../../../themes/colors.nix;
  theme = colors.mkTheme {
-   inherit (colors) tokyonight effects fonts;
+   inherit (colors) kenp effects fonts;
  };
 in
 {
@@ -19,15 +19,15 @@ in
  xdg.configFile."rofi/theme.rasi".text = ''
    * {
      /* Base Colors */
-     bg-col: ${colors.tokyonight.crust};
-     bg-col-light: ${colors.tokyonight.base};
-     border-col: ${colors.tokyonight.surface1};
-     selected-col: ${colors.tokyonight.surface0};
+     bg-col: ${colors.kenp.crust};
+     bg-col-light: ${colors.kenp.base};
+     border-col: ${colors.kenp.surface1};
+     selected-col: ${colors.kenp.surface0};
      /* Accent Colors */
-     green: ${colors.tokyonight.green};
-     fg-col: ${colors.tokyonight.text};
-     fg-col2: ${colors.tokyonight.subtext1};
-     grey: ${colors.tokyonight.surface2};
+     green: ${colors.kenp.green};
+     fg-col: ${colors.kenp.text};
+     fg-col2: ${colors.kenp.subtext1};
+     grey: ${colors.kenp.surface2};
      highlight: @green;
    }
  '';

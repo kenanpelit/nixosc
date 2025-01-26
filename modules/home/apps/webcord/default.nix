@@ -3,7 +3,7 @@
 let
   colors = import ./../../../../themes/colors.nix;
   theme = colors.mkTheme {
-    inherit (colors) tokyonight effects fonts;
+    inherit (colors) kenp effects fonts;
   };
 in {
   # =============================================================================
@@ -15,6 +15,6 @@ in {
   # =============================================================================
   # Theme Configuration
   # =============================================================================
-  xdg.configFile."Vencord/themes/tokyonight.theme.css".text = theme.discord.css;
+  xdg.configFile."Vencord/themes/kenp.theme.css".text = theme.discord.css;
 }
 

@@ -6,7 +6,7 @@
 let
  colors = import ./../../../../themes/colors.nix;
  theme = colors.mkTheme {
-   inherit (colors) tokyonight effects fonts;
+   inherit (colors) kenp effects fonts;
  };
 in
 {
