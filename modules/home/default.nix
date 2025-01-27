@@ -8,55 +8,69 @@
 # - Development tools and utilities
 # - System customization and theming
 #
-# Note: Modules have been consolidated for better organization and maintenance
+# Module Structure:
+# 1. Desktop Environment
+#    - desktop/    → {hyprland, sway, waybar, rofi, ...}
+#    - gnome/      → GNOME specific configurations
+#    - xdg/        → {xdg-dirs, xdg-mimes, xdg-portal}
+#
+# 2. Applications & Media
+#    - apps/       → {elektron, obsidian, webcord, ...}
+#    - browser/    → {chrome, firefox, zen}
+#    - media/      → {audacious, mpv, spicetify, ...}
+#
+# 3. Development & Files
+#    - development/→ {git, lazygit, nvim}
+#    - file/       → {nemo, yazi}
+#
+# 4. System & Security
+#    - system/     → {btop, fastfetch, scripts, ...}
+#    - security/   → {gnupg, password-store, sops}
+#    - services/   → {fusuma, touchegg}
+#
+# 5. Terminal & Utilities
+#    - terminal/   → {foot, kitty, tmux, zsh, ...}
+#    - utility/    → {bat, copyq, iwmenu, ...}
+#    - network/    → {anydesk, rsync, transmission}
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { config, lib, pkgs, ... }:
-
 {
   imports = [
     # =============================================================================
-    # Desktop and UI
+    # Desktop Environment
     # =============================================================================
     ./desktop       # Window managers, bars, notifications, launchers
-    ./media         # Audio, video players, and media tools
-    ./gnome         # GNOME Desktop Environment Configuration  
+    ./gnome         # GNOME Desktop Environment Configuration
+    ./xdg           # XDG specifications and portals
     
     # =============================================================================
-    # Applications
+    # Applications & Media
     # =============================================================================
     ./apps          # Discord, Electron apps, document viewers
     ./browser       # Web browser configurations
+    ./media         # Audio, video players, and media tools
     
     # =============================================================================
-    # Development and Files
+    # Development & Files
     # =============================================================================
     ./development   # Git, Neovim, development tools
     ./file          # File managers and document viewers
     
     # =============================================================================
-    # System and Security
+    # System & Security
     # =============================================================================
     ./system        # Scripts, monitoring, and system utilities
     ./security      # GnuPG, password management, encryption
-    
-    # =============================================================================
-    # Network and Services
-    # =============================================================================
-    ./network       # Remote desktop, file sync, torrent client
     ./services      # System services and daemons
     
     # =============================================================================
-    # Terminal Environment
+    # Terminal & Utilities
     # =============================================================================
     ./terminal      # Terminal emulators, shell, multiplexer
     ./utility       # CLI tools and utilities
-    
-    # =============================================================================
-    # System Integration
-    # =============================================================================
-    ./xdg           # XDG specifications and portals
+    ./network       # Remote desktop, file sync, torrent client
   ];
 }
+
