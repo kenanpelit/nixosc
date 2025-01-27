@@ -4,7 +4,7 @@
 # ==============================================================================
 { pkgs, ... }:
 let
-  colors = import ./../../../themes/default.nix;
+  colors = import ./../../themes/default.nix;
 in
 {
   # =============================================================================
@@ -18,7 +18,6 @@ in
       gnome-text-editor # gedit
     ]
   );
-
   # =============================================================================
   # DConf Settings
   # =============================================================================
@@ -27,7 +26,7 @@ in
     # Text Editor Configuration
     # ---------------------------------------------------------------------------
     "org/gnome/TextEditor" = {
-      custom-font = "${colors.fonts.editor.family} ${colors.fonts.sizes.xl}";
+      custom-font = "${colors.fonts.editor.family} ${toString colors.fonts.sizes.xl}";
       highlight-current-line = true;
       indent-style = "space";
       restore-session = false;
@@ -40,14 +39,14 @@ in
       use-system-font = false;
       wrap-text = false;
     };
-
+    
     # ---------------------------------------------------------------------------
     # Interface Configuration
     # ---------------------------------------------------------------------------
     "org/gnome/desktop/interface" = {
-      font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.lg}";
-      document-font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.lg}";
-      monospace-font-name = "${colors.fonts.terminal.family} ${colors.fonts.sizes.md}";
+      font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
+      document-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
+      monospace-font-name = "${colors.fonts.terminal.family} ${toString colors.fonts.sizes.sm}";
     };
   };
 }

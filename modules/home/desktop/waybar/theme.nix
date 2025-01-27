@@ -3,7 +3,7 @@
 {
   custom = {
     font = fonts.main.family;
-    font_size = fonts.main.size;
+    font_size = "${toString fonts.sizes."2xl"}px";
     font_weight = fonts.main.weight;
     text_color = kenp.text;
     background_0 = kenp.crust;

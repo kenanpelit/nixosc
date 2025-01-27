@@ -2,10 +2,12 @@
 # ==============================================================================
 # Foot Terminal Emulator Configuration
 # ==============================================================================
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 let
   colors = import ./../../../themes/default.nix;
   inherit (colors) kenp;
+  # Renk kodlarından # karakterini kaldıran yardımcı fonksiyon
+  stripHash = color: builtins.substring 1 6 color;
 in
 {
   # =============================================================================
@@ -18,10 +20,10 @@ in
       # Main Settings
       # ===========================================================================
       main = {
-        font = "${colors.fonts.notifications.family}:size=${lib.strings.removeSuffix "px" colors.fonts.sizes.sm}";
-        font-bold = "${colors.fonts.notifications.family}:weight=Bold:size=${lib.strings.removeSuffix "px" colors.fonts.sizes.sm}";
-        font-italic = "${colors.fonts.notifications.family}:slant=italic:size=${lib.strings.removeSuffix "px" colors.fonts.sizes.sm}";
-        font-bold-italic = "${colors.fonts.notifications.family}:weight=Bold:slant=italic:size=${lib.strings.removeSuffix "px" colors.fonts.sizes.sm}";
+        font = "${colors.fonts.notifications.family}:size=${toString colors.fonts.sizes.sm}";
+        font-bold = "${colors.fonts.notifications.family}:weight=Bold:size=${toString colors.fonts.sizes.sm}";
+        font-italic = "${colors.fonts.notifications.family}:slant=italic:size=${toString colors.fonts.sizes.sm}";
+        font-bold-italic = "${colors.fonts.notifications.family}:weight=Bold:slant=italic:size=${toString colors.fonts.sizes.sm}";
         letter-spacing = "0.5";
         horizontal-letter-offset = "0.5";
         vertical-letter-offset = "0";

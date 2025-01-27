@@ -20,7 +20,7 @@ in
       cursor-theme = "catppuccin-mocha-lavender-cursors";
       gtk-theme = "catppuccin-mocha-blue-standard";
       icon-theme = "a-candy-beauty-icon-theme";
-      font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.sm}";
+      font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
       text-scaling-factor = 1.0;
       enable-animations = true;
       gtk-enable-primary-paste = true;
@@ -47,7 +47,7 @@ in
     # ---------------------------------------------------------------------------
     font = {
       name = colors.fonts.main.family;
-      size = lib.strings.removeSuffix "px" colors.fonts.sizes.sm;
+      size = colors.fonts.sizes.sm;
     };
     
     # ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ in
       extraConfig = ''
         gtk-theme-name = "catppuccin-mocha-blue-standard"
         gtk-icon-theme-name = "a-candy-beauty-icon-theme"
-        gtk-font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.sm}"
+        gtk-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}"
         gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors"
         gtk-cursor-theme-size = 24
         gtk-application-prefer-dark-theme = 1
@@ -113,7 +113,7 @@ in
     gtk3.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
-      gtk-font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.sm}";
+      gtk-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
       gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
@@ -134,7 +134,7 @@ in
     gtk4.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
-      gtk-font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.sm}";
+      gtk-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
       gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;

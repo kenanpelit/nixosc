@@ -7,15 +7,15 @@
   programs.kitty = {
     font = {
       name = colors.fonts.terminal.family;
-      size = lib.strings.removeSuffix "px" colors.fonts.terminal.size;
     };
-    
+
     # =============================================================================
     # Genel Ayarlar ve Renk Teması 
     # =============================================================================
     settings = 
       kittyTheme.colors //
       {
+        font_size = "13.3";  # Direkt string olarak veriyoruz
         term = "xterm-256color";
         adjust_line_height = "2";
         adjust_column_width = "0";

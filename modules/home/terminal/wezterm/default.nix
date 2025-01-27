@@ -38,7 +38,7 @@ in
         { family = "${colors.fonts.terminal.family} Italic", italic = true },
         { family = "${colors.fonts.terminal.family} Bold Italic", weight = "Bold", italic = true },
       })
-      config.font_size = ${lib.strings.removeSuffix "px" colors.fonts.terminal.size}
+      config.font_size = tonumber("13.3")
       config.line_height = 1.0
       config.harfbuzz_features = {
         "kern",
