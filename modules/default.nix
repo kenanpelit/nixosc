@@ -12,11 +12,11 @@
  imports = [
    # Core System Configuration (NixOS)
    # Manages system-level settings, services and functionality
-   ./core         
+   ./core
 
    # Home User Configuration (Home Manager)
    # Handles user-specific configurations and applications
-   ./home         
+   ./home
  ];
 }
 

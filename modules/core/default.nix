@@ -12,8 +12,9 @@
 # 1. System Foundation
 #    - system/     → {base, boot, hardware, power}
 #    - nix/        → {cache, config, nh, settings}
+#    - user/       → {account, home, packages, programs}
 # 
-# 2. User Interface
+# 2. Desktop & Media
 #    - desktop/    → {fonts, wayland, x11, xdg}
 #    - media/      → {audio, bluetooth}
 #
@@ -21,17 +22,15 @@
 #    - network/    → {base, dns, firewall, powersave, ssh, tcp, vpn, wireless}
 #    - security/   → {hblock, keyring, pam}
 #
-# 4. System Services
+# 4. Services & Virtualization
 #    - services/   → {base, flatpak, network, security}
-#    - user/       → {account, home, packages, programs}
-#
-# 5. Virtualization & Gaming
 #    - virtualization/ → {container, podman, spice, vm}
-#    - gaming/        → {gamescope, performance, steam}
+#
+# 5. Gaming & Performance
+#    - gaming/     → {gamescope, performance, steam}
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { inputs, nixpkgs, self, username, host, lib, ... }:
 {
   imports = [
@@ -40,9 +39,10 @@
     # =============================================================================
     ./system         # Core system, boot, hardware, and power management
     ./nix           # Nix package manager and cache configuration
+    ./user          # User accounts and package management
     
     # =============================================================================
-    # User Interface
+    # Desktop & Media
     # =============================================================================
     ./desktop       # Display servers, fonts, and desktop integration
     ./media         # Audio and Bluetooth configuration
@@ -54,15 +54,14 @@
     ./security      # System security, keyring, and PAM
     
     # =============================================================================
-    # System Services
+    # Services & Virtualization
     # =============================================================================
     ./services      # System services and Flatpak integration
-    ./user          # User accounts and package management
+    ./virtualization # Container and VM configuration
     
     # =============================================================================
-    # Virtualization & Gaming
+    # Gaming & Performance
     # =============================================================================
-    ./virtualization # Container and VM configuration
-    ./gaming         # Steam and gaming performance
+    ./gaming        # Steam and gaming performance optimization
   ];
 }

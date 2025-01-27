@@ -19,7 +19,7 @@
 #
 #===============================================================================
 # Yedekleme dizini
-BACKUP_DIR="$HOME/.nixoscb"
+BACKUP_DIR="$HOME/.nixosb"
 
 # Yedekleme dizini yoksa oluştur
 mkdir -p "$BACKUP_DIR"
