@@ -1041,11 +1041,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1737981140,
-        "narHash": "sha256-8FB6RfgVzHLXDNAZ09+3Fdhul6N9jIaCI58jhK7ggEw=",
+        "lastModified": 1737996188,
+        "narHash": "sha256-V1Gs7DceIdunKu241j219bFHhJ+0v8jx91QcXkO7GCc=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "3f261af20f127f5694a897d57861edf3dcde20e4",
+        "rev": "00a146622f62994410d598b6f37bcc53be994b90",
         "type": "github"
       },
       "original": {
