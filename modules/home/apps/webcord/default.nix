@@ -1,8 +1,8 @@
-# modules/home/apps/discord/default.nix
+# modules/home/apps/webcord/default.nix
 { pkgs, ... }:
 let
-  colors = import ./../../../themes/colors.nix;
-  theme = colors.mkTheme {
+  colors = import ./../../../themes/default.nix;
+  discordTheme = import ./theme.nix {
     inherit (colors) kenp effects fonts;
   };
 in {
@@ -15,6 +15,5 @@ in {
   # =============================================================================
   # Theme Configuration
   # =============================================================================
-  xdg.configFile."Vencord/themes/kenp.theme.css".text = theme.discord.css;
+  xdg.configFile."Vencord/themes/kenp.theme.css".text = discordTheme.css;
 }
-
