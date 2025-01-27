@@ -38,11 +38,11 @@
     packages = with pkgs; [
       nerd-fonts.hack        # Primary system font with icon support
       noto-fonts             # Universal font coverage
-      noto-fonts-cjk        # Chinese, Japanese, and Korean characters
-      noto-fonts-emoji      # Full emoji support
-      liberation_ttf        # Metric-compatible alternatives
-      fira-code            # Programming font with ligatures
-      fira-code-symbols    # Additional programming symbols
+      noto-fonts-cjk-sans    # Chinese, Japanese, and Korean characters
+      noto-fonts-emoji       # Full emoji support
+      liberation_ttf         # Metric-compatible alternatives
+      fira-code              # Programming font with ligatures
+      fira-code-symbols      # Additional programming symbols
     ];
 
     # ==============================================================================
