@@ -30,21 +30,21 @@ in
       # ---------------------------------------------------------------------------
       effect-blur = "8x5";
       effect-vignette = "0.4:0.4";
-      effect-pixelate = 5;
+      effect-pixelate = "5";
       
       # ---------------------------------------------------------------------------
       # Indicator Configuration
       # ---------------------------------------------------------------------------
       indicator = true;
-      indicator-radius = 100;
-      indicator-thickness = 10;
+      indicator-radius = "100";
+      indicator-thickness = "10";
       indicator-caps-lock = true;
       
       # ---------------------------------------------------------------------------
       # Font Settings
       # ---------------------------------------------------------------------------
       font = colors.fonts.notifications.family;
-      font-size = lib.strings.removeSuffix "px" colors.fonts.sizes.xl;
+      font-size = toString colors.fonts.sizes.xl;
       
       # ---------------------------------------------------------------------------
       # Color Theme
@@ -54,7 +54,7 @@ in
       bs-hl-color = "${kenp.red}ff";            # Red
       
       # Ring Colors
-      ring-color = "${kenp.crust}aa";           # Dark background
+      ring-color = "${kenp.crust}aa";            # Dark background
       ring-clear-color = "${kenp.yellow}ff";     # Orange
       ring-caps-lock-color = "${kenp.mauve}ff";  # Purple
       ring-ver-color = "${kenp.green}ff";        # Green
@@ -68,7 +68,7 @@ in
       inside-wrong-color = "${kenp.crust}dd";
       
       # Text Colors
-      text-color = "${kenp.text}ff";             # Light gray
+      text-color = "${kenp.text}ff";              # Light gray
       text-clear-color = "${kenp.yellow}ff";      # Orange
       text-caps-lock-color = "${kenp.mauve}ff";   # Purple
       text-ver-color = "${kenp.green}ff";         # Green
@@ -86,6 +86,10 @@ in
       layout-bg-color = "${kenp.crust}cc";        # Darkest shade
       layout-text-color = "${kenp.text}ff";       # Light blue
     };
+    
+    # ---------------------------------------------------------------------------
+    # Extra Settings (Varsa eklemek için yer bırakıldı)
+    # ---------------------------------------------------------------------------
+    # Özel eklemeler buraya yapılabilir.
   };
 }
-

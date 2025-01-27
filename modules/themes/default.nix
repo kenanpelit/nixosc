@@ -38,41 +38,48 @@
     opacity = "1.0";
   };
 
-  fonts = {
+  fonts = let
     sizes = {
-      xs = "11px";
-      sm = "12px";
-      md = "13px";
-      base = "13.3px";
-      lg = "14px";
-      xl = "15px";
-      "2xl" = "16px";
+      xs = 11;
+      sm = 12;
+      md = 13;
+      base = 13.3;
+      lg = 14;
+      xl = 15;
+      "2xl" = 16;
     };
-
+    sizesStr = {
+      xs = "11";
+      sm = "12";
+      md = "13";
+      base = "13.3";
+      lg = "14";
+      xl = "15";
+      "2xl" = "16";
+    };
+  in {
+    sizes = sizes;
+    sizesStr = sizesStr;
     main = {
       family = "Maple Mono";
-      size = "2xl";
+      size = sizes."2xl";
       weight = "bold";
     };
-
     editor = {
       family = "Maple Mono";
-      size = "xl";
+      size = sizes.xl;
     };
-
     terminal = {
       family = "Hack Nerd Font";
-      size = "base";
+      size = sizes.base;
     };
-
     mono = {
       family = "Hack Nerd Font";
-      size = "sm";
+      size = sizes.sm;
     };
-
     notifications = {
       family = "Hack Nerd Font";
-      size = "md";
+      size = sizes.md;
     };
   };
 }

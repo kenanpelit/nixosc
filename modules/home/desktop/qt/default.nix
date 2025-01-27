@@ -83,8 +83,8 @@ in
         };
         # Font Configuration
         Fonts = {
-          fixed = "${colors.fonts.main.family},${lib.strings.removeSuffix "px" colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
-          general = "${colors.fonts.main.family},${lib.strings.removeSuffix "px" colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          fixed = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          general = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
         };
         # Interface Behavior
         Interface = {
@@ -119,8 +119,8 @@ in
         };
         # Font Configuration
         Fonts = {
-          fixed = "${colors.fonts.main.family},${lib.strings.removeSuffix "px" colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
-          general = "${colors.fonts.main.family},${lib.strings.removeSuffix "px" colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          fixed = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          general = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
         };
         # Interface Behavior
         Interface = {
@@ -141,4 +141,3 @@ in
     };
   };
 }
-
