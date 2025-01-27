@@ -37,7 +37,6 @@
    ./ulauncher
    ./waybar
    ./waypaper
-   ./wofi
    #./wpaperd
    ./xserver
  ];
