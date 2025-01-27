@@ -3,6 +3,9 @@
 # GNOME Desktop Environment Configuration
 # ==============================================================================
 { pkgs, ... }:
+let
+  colors = import ./../../../themes/default.nix;
+in
 {
   # =============================================================================
   # Package Installation
@@ -24,7 +27,7 @@
     # Text Editor Configuration
     # ---------------------------------------------------------------------------
     "org/gnome/TextEditor" = {
-      custom-font = "Maple Mono 15";
+      custom-font = "${colors.fonts.editor.family} ${colors.fonts.sizes.xl}";
       highlight-current-line = true;
       indent-style = "space";
       restore-session = false;
@@ -36,6 +39,15 @@
       tab-width = "uint32 4";
       use-system-font = false;
       wrap-text = false;
+    };
+
+    # ---------------------------------------------------------------------------
+    # Interface Configuration
+    # ---------------------------------------------------------------------------
+    "org/gnome/desktop/interface" = {
+      font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.lg}";
+      document-font-name = "${colors.fonts.main.family} ${colors.fonts.sizes.lg}";
+      monospace-font-name = "${colors.fonts.terminal.family} ${colors.fonts.sizes.md}";
     };
   };
 }

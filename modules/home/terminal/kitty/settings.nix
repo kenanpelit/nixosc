@@ -2,12 +2,12 @@
 # ==============================================================================
 # Kitty Terminal Ayarları
 # ==============================================================================
-{ kittyTheme }:
+{ kittyTheme, colors, lib }:
 {
   programs.kitty = {
     font = {
-      name = "Hack Nerd Font";
-      size = 13.3;
+      name = colors.fonts.terminal.family;
+      size = lib.strings.removeSuffix "px" colors.fonts.terminal.size;
     };
     
     # =============================================================================
@@ -68,10 +68,10 @@
     # Ek Font Konfigürasyonu
     # =============================================================================
     extraConfig = ''
-      bold_font        Hack Nerd Font Bold
-      italic_font      Hack Nerd Font Italic
-      bold_italic_font Hack Nerd Font Bold Italic
-      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 Hack Nerd Font
+      bold_font        ${colors.fonts.terminal.family} Bold
+      italic_font      ${colors.fonts.terminal.family} Italic
+      bold_italic_font ${colors.fonts.terminal.family} Bold Italic
+      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${colors.fonts.terminal.family}
       font_features +liga,+calt
     '';
     
@@ -89,4 +89,3 @@
     };
   };
 }
-
