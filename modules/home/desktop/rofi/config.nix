@@ -1,4 +1,4 @@
-# modules/home/rofi/config.nix
+# modules/home/desktop/rofi/config.nix
 # ==============================================================================
 # Rofi Appearance and Behavior Configuration
 # ==============================================================================
