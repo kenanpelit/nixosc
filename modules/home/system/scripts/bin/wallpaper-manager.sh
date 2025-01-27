@@ -8,6 +8,9 @@ WALLPAPER_PATH="$HOME/Pictures/wallpapers"
 WALLPAPERS_FOLDER="$HOME/Pictures/wallpapers/others"
 WALLPAPER_LINK="$WALLPAPER_PATH/wallpaper"
 PID_FILE="/tmp/wallpaper-changer.pid"
+HISTORY_DIR="$HOME/.cache/wallpapers"
+HISTORY_FILE="$HISTORY_DIR/history.txt"
+TOTAL_FILE="$HISTORY_DIR/total_wallpapers.txt"
 
 # Renk tanımlamaları
 RED='\033[0;31m'
@@ -43,12 +46,27 @@ set_wallpaper() {
 	fi
 }
 
+# Geçmiş dizinini ve dosyalarını oluştur
+init_history() {
+	mkdir -p "$HISTORY_DIR"
+	touch "$HISTORY_FILE"
+	touch "$TOTAL_FILE"
+}
+
+# Duvar kağıdı sayısını güncelle
+update_total_wallpapers() {
+	local total=$(find "$WALLPAPERS_FOLDER" -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) | wc -l)
+	echo "$total" >"$TOTAL_FILE"
+
+	# Wallpaper listesini de kaydet
+	find "$WALLPAPERS_FOLDER" -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) -exec basename {} \; >"$HISTORY_DIR/available_wallpapers.txt"
+}
+
 # Servis durumunu kontrol et
 check_status() {
 	if [ -f "$PID_FILE" ]; then
 		pid=$(cat "$PID_FILE")
 		if ps -p "$pid" >/dev/null 2>&1; then
-			# Process tree'yi kontrol et
 			if pgrep -P "$pid" >/dev/null 2>&1; then
 				echo -e "${GREEN}Servis çalışıyor (PID: $pid)${NC}"
 				return 0
@@ -65,6 +83,9 @@ check_status() {
 
 # Duvar kağıdı değiştirme fonksiyonu
 change_wallpaper() {
+	# Geçmiş dizinini kontrol et
+	init_history
+
 	# Mevcut duvar kağıdını al
 	current_wallpaper=$(readlink "$WALLPAPER_LINK" 2>/dev/null)
 	current_wallpaper_name=$(basename "$current_wallpaper" 2>/dev/null)
@@ -73,18 +94,26 @@ change_wallpaper() {
 	mapfile -t wallpaper_list < <(find "$WALLPAPERS_FOLDER" -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \))
 	wallpaper_count=${#wallpaper_list[@]}
 
+	# Toplam duvar kağıdı sayısını güncelle
+	update_total_wallpapers
+
 	if [ $wallpaper_count -eq 0 ]; then
 		echo -e "${RED}HATA: Duvar kağıdı bulunamadı: $WALLPAPERS_FOLDER${NC}" >&2
 		return 1
 	fi
 
-	# Yeni duvar kağıdı seç
-	max_attempts=10
+	# Son kullanılan duvar kağıtlarını oku (son 10 adet)
+	mapfile -t recent_wallpapers < <(tail -n 10 "$HISTORY_FILE" 2>/dev/null)
+
+	# Yeni duvar kağıdı seç (son kullanılanları hariç tut)
+	max_attempts=20
 	attempt=0
 	while [ $attempt -lt $max_attempts ]; do
 		selected_wallpaper="${wallpaper_list[RANDOM % wallpaper_count]}"
 		selected_name=$(basename "$selected_wallpaper")
-		if [[ "$selected_name" != "$current_wallpaper_name" ]]; then
+
+		# Son kullanılanlar listesinde var mı kontrol et
+		if ! printf '%s\n' "${recent_wallpapers[@]}" | grep -q "^${selected_name}$"; then
 			break
 		fi
 		((attempt++))
@@ -93,6 +122,10 @@ change_wallpaper() {
 	# Duvar kağıdını değiştir
 	ln -sf "$selected_wallpaper" "$WALLPAPER_LINK"
 	set_wallpaper "$selected_wallpaper"
+
+	# Geçmişe ekle
+	echo "$selected_name" >>"$HISTORY_FILE"
+
 	echo -e "${GREEN}Duvar kağıdı değiştirildi: $selected_name${NC}"
 }
 
@@ -157,6 +190,11 @@ select_wallpaper() {
 	if [[ -f "$WALLPAPERS_FOLDER/$wallpaper_name" ]]; then
 		ln -sf "$WALLPAPERS_FOLDER/$wallpaper_name" "$WALLPAPER_LINK"
 		set_wallpaper "$WALLPAPERS_FOLDER/$wallpaper_name"
+
+		# Geçmişe ekle
+		init_history
+		echo "$wallpaper_name" >>"$HISTORY_FILE"
+
 		echo -e "${GREEN}Duvar kağıdı değiştirildi: $wallpaper_name${NC}"
 	else
 		echo -e "${RED}Geçersiz seçim veya iptal edildi${NC}"
