@@ -1,4 +1,4 @@
-# modules/themes/colors.nix
+# modules/themes/default.nix
 {
   kenp = {
     # Base Tokyo Night colors
@@ -39,14 +39,40 @@
   };
 
   fonts = {
+    sizes = {
+      xs = "11px";
+      sm = "12px";
+      md = "13px";
+      base = "13.3px";
+      lg = "14px";
+      xl = "15px";
+      "2xl" = "16px";
+    };
+
     main = {
       family = "Maple Mono";
-      size = "16px";
+      size = "2xl";
       weight = "bold";
     };
+
+    editor = {
+      family = "Maple Mono";
+      size = "xl";
+    };
+
+    terminal = {
+      family = "Hack Nerd Font";
+      size = "base";
+    };
+
+    mono = {
+      family = "Hack Nerd Font";
+      size = "sm";
+    };
+
     notifications = {
       family = "Hack Nerd Font";
+      size = "md";
     };
   };
 }
-

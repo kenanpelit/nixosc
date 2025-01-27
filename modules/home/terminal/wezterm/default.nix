@@ -3,7 +3,10 @@
 # WezTerm Terminal Emulator Configuration
 # ==============================================================================
 { config, lib, pkgs, ... }:
-
+let
+  colors = import ./../../../themes/default.nix;
+  inherit (colors) kenp;
+in
 {
   programs.wezterm = {
     enable = true;
@@ -30,12 +33,12 @@
 
       -- Font Configuration
       config.font = wezterm.font_with_fallback({
-        { family = "Hack Nerd Font", weight = "Regular" },
-        { family = "Hack Nerd Font Bold", weight = "Bold" },
-        { family = "Hack Nerd Font Italic", italic = true },
-        { family = "Hack Nerd Font Bold Italic", weight = "Bold", italic = true },
+        { family = "${colors.fonts.terminal.family}", weight = "Regular" },
+        { family = "${colors.fonts.terminal.family} Bold", weight = "Bold" },
+        { family = "${colors.fonts.terminal.family} Italic", italic = true },
+        { family = "${colors.fonts.terminal.family} Bold Italic", weight = "Bold", italic = true },
       })
-      config.font_size = 13.3
+      config.font_size = ${lib.strings.removeSuffix "px" colors.fonts.terminal.size}
       config.line_height = 1.0
       config.harfbuzz_features = {
         "kern",
@@ -48,8 +51,8 @@
       -- Window Appearance
       config.window_padding = { left = 6, right = 6, top = 6, bottom = 6 }
       config.window_decorations = "NONE"
-      config.window_background_opacity = 1.0
-      config.text_background_opacity = 1.0
+      config.window_background_opacity = ${colors.effects.opacity}
+      config.text_background_opacity = ${colors.effects.opacity}
       config.adjust_window_size_when_changing_font_size = false
 
       -- Tab Bar
@@ -202,7 +205,7 @@
       -- Status line updates
       wezterm.on("update-right-status", function(window, _)
         local SOLID_LEFT_ARROW = ""
-        local ARROW_FOREGROUND = { Foreground = { Color = "#bd93f9" } }
+        local ARROW_FOREGROUND = { Foreground = { Color = "${kenp.mauve}" } }
         local prefix = ""
 
         if window:leader_is_active() then
@@ -211,15 +214,15 @@
         end
 
         if window:active_tab():tab_id() ~= 0 then
-          ARROW_FOREGROUND = { Foreground = { Color = "#282a36" } }
+          ARROW_FOREGROUND = { Foreground = { Color = "${kenp.crust}" } }
         end
 
         window:set_left_status(wezterm.format({
-          { Background = { Color = "#ff79c6" } },
+          { Background = { Color = "${kenp.pink}" } },
           { Attribute = { Intensity = "Bold" } },
           { Text = prefix },
-          { Background = { Color = "#bd93f9" } },
-          { Foreground = { Color = "#282a36" } },
+          { Background = { Color = "${kenp.mauve}" } },
+          { Foreground = { Color = "${kenp.crust}" } },
           { Text = " TERM " },
           ARROW_FOREGROUND,
           { Text = SOLID_LEFT_ARROW },
@@ -232,44 +235,44 @@
       config.unicode_version = 14
       config.freetype_load_target = "Light"
 
-      -- Color Scheme (Tokyonight)
+      -- Color Scheme
       config.colors = {
-        foreground = "#d8dae9",
-        background = "#24283B",
-        cursor_bg = "#d6acff",
-        cursor_fg = "#6272a4",
-        selection_fg = "#282a36",
-        selection_bg = "#bd93f9",
+        foreground = "${kenp.text}",
+        background = "${kenp.base}",
+        cursor_bg = "${kenp.mauve}",
+        cursor_fg = "${kenp.surface2}",
+        selection_fg = "${kenp.crust}",
+        selection_bg = "${kenp.mauve}",
         tab_bar = {
-          background = "#1e1f29",
+          background = "${kenp.mantle}",
           active_tab = {
-            bg_color = "#bd93f9",
-            fg_color = "#282a36",
+            bg_color = "${kenp.mauve}",
+            fg_color = "${kenp.crust}",
           },
           inactive_tab = {
-            bg_color = "#282a36",
-            fg_color = "#f8f8f2",
+            bg_color = "${kenp.crust}",
+            fg_color = "${kenp.text}",
           },
         },
         ansi = {
-          "#595D71",
-          "#f38ba8",
-          "#50fa7b",
-          "#f1fa8c",
-          "#bd93f9",
-          "#ff79c6",
-          "#8be9fd",
-          "#f8f8f2",
+          "${kenp.surface1}",  -- Black
+          "${kenp.red}",       -- Red
+          "${kenp.green}",     -- Green
+          "${kenp.yellow}",    -- Yellow
+          "${kenp.mauve}",     -- Blue
+          "${kenp.pink}",      -- Magenta
+          "${kenp.sky}",       -- Cyan
+          "${kenp.text}",      -- White
         },
         brights = {
-          "#6272a4",
-          "#e95678",
-          "#69ff94",
-          "#ffffa5",
-          "#d6acff",
-          "#ff92df",
-          "#a4ffff",
-          "#ffffff",
+          "${kenp.surface2}",  -- Bright Black
+          "${kenp.red}",       -- Bright Red
+          "${kenp.green}",     -- Bright Green
+          "${kenp.yellow}",    -- Bright Yellow
+          "${kenp.mauve}",     -- Bright Blue
+          "${kenp.pink}",      -- Bright Magenta
+          "${kenp.sky}",       -- Bright Cyan
+          "#ffffff",           -- Bright White
         },
       }
 
