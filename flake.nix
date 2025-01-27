@@ -69,8 +69,9 @@
    # === Desktop Environment - Hyprland Ecosystem ===
    # Core Hyprland compositor
    hyprland = {
-     #url = "github:hyprwm/hyprland/e66eab7b6a90514251439f661454c536afa3e5c8";
-     url = "github:hyprwm/hyprland/bb5b09def0645838456eb7eb1f52b471441acba1"; # 0126 - 5738
+     #url = "github:hyprwm/hyprand/e66eab7b6a90514251439f661454c536afa3e5c8";
+     #url = "github:hyprwm/hyprland/bb5b09def0645838456eb7eb1f52b471441acba1"; # 0126 - 5738
+     url = "github:hyprwm/hyprland/d2773d7a4ecde7111af4ec71b51b1996ec1d96bf"; # 0128 - 5748
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
