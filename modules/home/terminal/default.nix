@@ -23,17 +23,11 @@
 # - Shell Theme:
 #   - Powerlevel10k (p10k): Fast and customizable prompt
 #
-# - Terminal Utilities:
-#   - Figlet: ASCII art text generator
-#     * Custom font configurations
-#     * Enhanced with Toilet for additional effects
-#
 # Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
   imports = [
-    ./figlet
     ./foot
     ./kitty
     ./p10k

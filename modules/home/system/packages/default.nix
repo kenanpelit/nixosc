@@ -234,8 +234,10 @@ let
   terminalFun = with pkgs; [
     cbonsai        # ASCII bonsai ağacı
     cmatrix        # Matrix efekti
+    figlet         # ASCII metin banner oluşturucu
     pipes          # ASCII boru animasyonu
     sl             # ASCII buhar lokomotifi
+    toilet         # ASCII sanat metin oluşturucu
     tty-clock      # Terminal saati
     transmission_4 # Torrent istemcisi
     pirate-get     # TPB arayüzü
