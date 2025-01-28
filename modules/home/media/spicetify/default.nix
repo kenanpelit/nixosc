@@ -23,9 +23,8 @@ in
   # =============================================================================
   programs.spicetify = {
     enable = true;
-    spotifyPackage = pkgs.spotify;  # Explicit spotify package reference
     
-    # Custom TokyoNight Theme Configuration
+    # TokyoNight teması konfigürasyonu
     theme = {
       name = "TokyoNight";
       src = pkgs.fetchFromGitHub {
@@ -35,12 +34,16 @@ in
         sha256 = "02aw8kvk4m7radsywpl10gq8x5g23xj5gwspyiawf7mdrazzvf3h";
       };
       injectCss = true;
+      injectThemeJs = true;
       replaceColors = true;
+      sidebarConfig = true;
+      homeConfig = true;
       overwriteAssets = true;
-      colorScheme = "night";
     };
-
-    # Enabled Extensions from spicetify-nix
+    
+    colorScheme = "storm";
+    
+    # En temel eklentiler
     enabledExtensions = with spicePkgs.extensions; [
       adblock
       hidePodcasts

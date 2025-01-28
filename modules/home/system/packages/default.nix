@@ -81,7 +81,7 @@
     playerctl       # Media control
     satty           # Screenshot
     soundwireserver # Audio streaming
-    spotify         # Spotify music service
+    #spotify         # Spotify music service
     swappy          # Screenshot editor
     tdf             # File manager
     vlc             # Media player
