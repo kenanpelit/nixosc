@@ -8,6 +8,11 @@
   # Service Configuration
   # =============================================================================
   services.hyprsunset.enable = true;  # Enable HyprSunset service
+  #services.ollama = {
+  #  enable = true;
+  #  # Load DeepSeek model on startup
+  #  loadModels = [ "deepseek-r1:8b" ];
+  #};
 
   programs = {
     # =============================================================================
