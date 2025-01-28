@@ -96,6 +96,13 @@
       ];
 
       # =====================================================
+      # Ecosystem Settings
+      # =====================================================
+      #ecosystem = {
+      #  no_update_news = true;           # Güncelleme bildirimlerini devre dışı bırak
+      #};
+
+      # =====================================================
       # Giriş Aygıtları Yapılandırması
       # =====================================================
       input = {
@@ -237,11 +244,6 @@
           render_power = 3;               # Gölge gücü
           color = "rgba(00000055)";       # Gölge rengi
         };
-      };
-
-      # Ekosystem
-      ecosystem = {
-        no_update_news = true;
       };
 
       # =====================================================

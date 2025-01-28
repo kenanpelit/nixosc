@@ -1,7 +1,6 @@
 # hosts/hay/default.nix
 # ==============================================================================
 # HAY - Ana Bilgisayar Konfigürasyonu
-# Açıklama: Birincil sistemin temel yapılandırma dosyası
 # ==============================================================================
 { pkgs, config, lib, inputs, username, ... }:
 {
@@ -9,79 +8,67 @@
   # Temel Sistem İmportları
   # -------------------------------------------------------
   imports = [
-    ./hardware-configuration.nix         # Donanım yapılandırması
-    ./../../modules/core                 # Çekirdek modüller
-    inputs.home-manager.nixosModules.home-manager  # Home Manager
+    ./hardware-configuration.nix
+    ./../../modules/core
+    inputs.home-manager.nixosModules.home-manager
   ];
-  
+
   # -------------------------------------------------------
-  # Home Manager Temel Ayarları
+  # Home Manager Entegrasyonu (Tekilleştirilmiş)
   # -------------------------------------------------------
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
     extraSpecialArgs = { inherit inputs username; };
-    backupFileExtension = "backup";  # Bu satırı ekleyin
+    
+    # Kullanıcıya Özel Ayarlar
+    users.${username} = {
+      imports = [ 
+        ../../modules/home 
+      ];
+
+      home = {
+        stateVersion = "25.05";
+        packages = with pkgs; [
+          git
+          htop
+          zsh
+          zoxide
+        ];
+      };
+
+      # Modül Aktivasyonları
+      modules = {
+        tmux.enable = true;
+        mpv.enable = true;
+      };
+    };
   };
 
   # -------------------------------------------------------
-  # Önyükleme ve GRUB Ayarları
+  # Önyükleme Ayarları
   # -------------------------------------------------------
-  boot.loader = {
-    systemd-boot.enable = lib.mkForce false;  # systemd-boot devre dışı
-    # NOT: GRUB ayarlarınız buraya eklenebilir
-  };
+  boot.loader.systemd-boot.enable = lib.mkForce false;
 
   # -------------------------------------------------------
   # Sistem Paketleri
   # -------------------------------------------------------
   environment.systemPackages = with pkgs; [
-    # Terminal ve Sistem Araçları
-    tmux      # Terminal multiplexer
-    ncurses   # Terminal GUI desteği
+    tmux
+    ncurses
   ];
 
   # -------------------------------------------------------
-  # Ağ ve Güvenlik Servisleri
+  # Ağ ve Güvenlik
   # -------------------------------------------------------
   services.openssh = {
-    enable = true;                    # SSH servisini etkinleştir
-    ports = [ 22 ];                   # Standart SSH portu
+    enable = true;
+    ports = [ 22 ];
     settings = {
-      PasswordAuthentication = true;   # Şifre ile kimlik doğrulama
-      AllowUsers = [ "${username}" ];  # Sadece belirlenen kullanıcıya izin ver
-      #AllowUsers = null;              # Tüm kullanıcılara izin ver
-      PermitRootLogin = "yes";         # Root girişine izin ver
-      # NOT: Üretim ortamında bu ayarlar gözden geçirilmeli
+      PasswordAuthentication = true;
+      AllowUsers = [ "${username}" ];
+      PermitRootLogin = "yes";
     };
-  };
-
-  # -------------------------------------------------------
-  # Home Manager Kullanıcı Yapılandırması
-  # -------------------------------------------------------
-  home-manager.users.${username} = { ... }: {
-    imports = [
-      ../../modules/home      # Tüm home modüllerini import eder
-    ];
-
-    # Temel Ayarlar
-    home.stateVersion = "25.05";
-    
-    # Modül Aktivasyonları
-    modules = {
-      tmux.enable = true;
-      mpv.enable = true;   # MPV modülünü etkinleştir
-    };
-  
-    # Kullanıcı Paketleri
-    home.packages = with pkgs; [
-      # Geliştirme Araçları
-      git         # Versiyon kontrol sistemi
-      # Sistem Araçları
-      htop        # İnteraktif sistem monitörü
-      zsh         # Z shell
-      zoxide      # Akıllı cd alternatifi
-    ];
   };
 
   # -------------------------------------------------------
@@ -92,16 +79,10 @@
     algorithm = "zstd";
     memoryPercent = 30;
   };
-  # Örnek: Bellek ve CPU optimizasyonları buraya eklenebilir
-  # Örnek: I/O scheduler ayarları
-  # Örnek: Sistem limitleri
 
   # -------------------------------------------------------
-  # NOT: Ek Servisler ve Özellikler
+  # Ek Servisler (Opsiyonel)
   # -------------------------------------------------------
-  # - systemd servisleri
-  # - Cron görevleri
-  # - Ağ ayarları
-  # - Güvenlik duvarı kuralları
-  # buraya eklenebilir
+  # services.nginx.enable = true;
+  # networking.firewall.allowedTCPPorts = [ 80 443 ];
 }
