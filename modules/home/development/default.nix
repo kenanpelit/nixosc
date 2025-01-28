@@ -20,5 +20,6 @@
    ./git
    ./lazygit
    ./nvim
+   #./ollama
  ];
 }

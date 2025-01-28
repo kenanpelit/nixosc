@@ -120,6 +120,7 @@ in
     cachix              # Binary cache
     nix-output-monitor  # Nix build monitor
     ollama              # LLM Runner
+    ollama-webui        # Web arayüzü
 
     # ==============================================================================
     # SSH Tools
