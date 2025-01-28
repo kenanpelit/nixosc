@@ -354,6 +354,7 @@ get_username() {
 	exit 1
 }
 
+# Username değişikliği için yeni backup yönetimi
 set_username() {
 	log "STEP" "Updating configuration files with username"
 
@@ -372,6 +373,13 @@ set_username() {
 		log "ERROR" "Current username not defined"
 		return 1
 	fi
+
+	# Backup dizini ve log dosyası hazırlama
+	local backup_timestamp=$(date +%Y%m%d_%H%M%S)
+	local backup_path="$BACKUP_DIR/username_changes/$backup_timestamp"
+	local backup_log="$backup_path/backup.log"
+
+	mkdir -p "$backup_path"
 
 	# Değiştirilecek dosyaları bul
 	local files_to_change=()
@@ -400,23 +408,56 @@ set_username() {
 		return 1
 	fi
 
-	# Dosyaları güncelle
+	# Backup log başlangıcı
+	{
+		echo "Username Change Backup Log"
+		echo "=========================="
+		echo "Timestamp: $backup_timestamp"
+		echo "Old Username: $CURRENT_USERNAME"
+		echo "New Username: $username"
+		echo -e "\nBacked up files:"
+	} >"$backup_log"
+
+	# Dosyaları yedekle ve güncelle
 	local success=0
 	for file in "${files_to_change[@]}"; do
-		cp "$file" "${file}.bak"
-		if sed -i "s/${CURRENT_USERNAME}/${username}/g" "$file"; then
-			log "DEBUG" "Updated: $file (backup: ${file}.bak)"
+		# Backup dizin yapısını oluştur
+		local relative_path=${file#./}
+		local backup_file="$backup_path/$relative_path"
+		mkdir -p "$(dirname "$backup_file")"
+
+		# Dosyayı yedekle
+		if cp "$file" "$backup_file"; then
+			# Backup loguna kaydet
+			echo "- $relative_path" >>"$backup_log"
+
+			# Dosyayı güncelle
+			if sed -i "s/${CURRENT_USERNAME}/${username}/g" "$file"; then
+				log "DEBUG" "Updated and backed up: $file → $backup_file"
+			else
+				log "ERROR" "Failed to update: $file"
+				cp "$backup_file" "$file" # Hatada geri al
+				success=1
+			fi
 		else
-			log "ERROR" "Failed to update: $file"
-			mv "${file}.bak" "$file"
+			log "ERROR" "Failed to backup: $file"
 			success=1
 		fi
 	done
 
+	# Backup özeti loguna ekle
+	{
+		echo -e "\nOperation Summary"
+		echo "================="
+		echo "Total files processed: ${#files_to_change[@]}"
+		echo "Status: $([[ $success -eq 0 ]] && echo "SUCCESS" || echo "FAILED")"
+		echo "Backup location: $backup_path"
+	} >>"$backup_log"
+
 	if [ $success -eq 0 ]; then
-		log "OK" "Username update completed"
+		log "OK" "Username update completed - Backup at: $backup_path"
 	else
-		log "ERROR" "Username update failed"
+		log "ERROR" "Username update failed - Check backup at: $backup_path"
 	fi
 
 	return $success
