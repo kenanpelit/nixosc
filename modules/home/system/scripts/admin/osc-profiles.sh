@@ -369,10 +369,13 @@ show_main_menu() {
 		read -r cmd
 
 		case $cmd in
-		d)
-			echo -ne "Silinecek profil numarası: "
-			read -r num
-			delete_profile $num
+		[dD])
+			while true; do
+				echo -ne "\n${BOLD}Silinecek profil numarası (çıkmak için 'q'): ${NC}"
+				read -r num
+				[ "$num" = "q" ] && break
+				delete_profile $num && break
+			done
 			;;
 		c)
 			echo -ne "1. profil numarası: "
