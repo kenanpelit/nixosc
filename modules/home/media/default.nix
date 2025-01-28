@@ -24,6 +24,6 @@
    ./cava
    ./mpd
    ./mpv
-   #./spicetify
+   ./spicetify
  ];
 }

@@ -2,30 +2,27 @@
 # ==============================================================================
 # Spicetify Spotify Client Configuration
 # ==============================================================================
-{ pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, inputs, ... }:
+
 let
-  # Spicetify paketlerini inputs'ten çeker
-  spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.system} or null;
+  spicePkgs = inputs.spicetify-nix.packages.${pkgs.system}.default;
 in
 {
   # =============================================================================
   # Package Configuration
   # =============================================================================
-  nixpkgs.config.allowUnfreePredicate =
-    pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
+  nixpkgs.config.allowUnfreePredicate = pkg: 
+    builtins.elem (lib.getName pkg) [ "spotify" ];
 
   # =============================================================================
   # Module Imports
   # =============================================================================
-  imports = if spicePkgs != null then
-    [ inputs.spicetify-nix.homeManagerModules.default ]
-  else
-    [];
+  imports = [ inputs.spicetify-nix.homeManagerModule ];
 
   # =============================================================================
   # Spicetify Settings
   # =============================================================================
-  programs.spicetify = lib.mkIf (spicePkgs != null) {
+  programs.spicetify = {
     enable = true;
     theme = {
       name = "TokyoNight";
@@ -38,12 +35,12 @@ in
       injectCss = true;
       replaceColors = true;
       overwriteAssets = true;
-      colorScheme = "night";  # night, storm veya day
+      colorScheme = "night";
     };
-    enabledExtensions = with spicePkgs.extensions or []; [
-      adblock
-      hidePodcasts
-      shuffle
+    enabledExtensions = [
+      "adblock.js"
+      "hidePodcasts.js"
+      "shuffle.js"
     ];
   };
 }
