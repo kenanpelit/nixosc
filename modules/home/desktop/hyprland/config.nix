@@ -528,6 +528,7 @@
         # Özel Uygulamalar
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 5 silent] SoundWireServer'"
+        "ALT CTRL, W, exec, whatsie -w"
         "ALT, T, exec, semsumo start kkenp always"
         "ALT CTRL, C, exec, semsumo start wcta always"
         "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
