@@ -54,6 +54,7 @@ REQUIRED_PACKAGES=(
 	"sops"
 	"age"
 	"openssl"
+	"file"
 )
 
 # Asset listesi
