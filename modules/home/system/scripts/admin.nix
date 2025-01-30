@@ -93,6 +93,9 @@ let
   osc-ulauncher_ext = pkgs.writeShellScriptBin "osc-ulauncher_ext" (
     builtins.readFile ./admin/osc-ulauncher_ext.sh
   );
+  osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
+    builtins.readFile ./admin/osc-vradio.sh
+  );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./admin/semsumo.sh
   );
@@ -148,6 +151,7 @@ in {
     osc-sync
     osc-test
     osc-ulauncher_ext
+    osc-vradio
     semsumo
     svmarch
     svmnixos
