@@ -26,8 +26,9 @@
 # - CLI interface with toggle support
 #
 # Version: 1.1
-# Author: Terminal Radio Team
+# Author: Kenan Pelit | https://github.com/kenanpelit/tradio
 # License: MIT
+#
 
 # Disable debug output
 set +x
@@ -73,12 +74,12 @@ NOW_PLAYING_FILE="/tmp/tradio_current.txt"
 # Default volume
 VOLUME=100
 
-# Default player
+# Default player (can be 'cvlc' or 'mpv')
 PLAYER="cvlc"
 
 # Dependency check with generic instructions
 check_dependencies() {
-	local deps=("$PLAYER")
+	local deps=("$PLAYER" "mpv")
 	local missing=()
 
 	for dep in "${deps[@]}"; do
@@ -223,14 +224,25 @@ play_radio() {
 	fi
 	add_to_history "$name"
 
-	# Start VLC player
-	cvlc --no-video \
-		--play-and-exit \
-		--quiet \
-		--intf dummy \
-		--volume="$VOLUME" \
-		"$url" 2>/dev/null &
-	play_status=$?
+	# Start player based on selected player
+	if [[ "$PLAYER" == "cvlc" ]]; then
+		cvlc --no-video \
+			--play-and-exit \
+			--quiet \
+			--intf dummy \
+			--volume="$VOLUME" \
+			"$url" 2>/dev/null &
+		play_status=$?
+	elif [[ "$PLAYER" == "mpv" ]]; then
+		mpv --no-video \
+			--quiet \
+			--volume="$VOLUME" \
+			"$url" 2>/dev/null &
+		play_status=$?
+	else
+		echo -e "${RED}Unsupported player: $PLAYER${NC}"
+		return 1
+	fi
 
 	# Handle player start status
 	if [[ $play_status -eq 0 ]]; then
@@ -262,9 +274,17 @@ play_station_by_number() {
 	if [ "$number" -gt 0 ] && [ "$number" -le ${#SORTED_STATIONS[@]} ]; then
 		local station_name="${SORTED_STATIONS[$((number - 1))]}"
 		play_radio "${RADIOS[$station_name]}" "$station_name" "$toggle"
-		# Wait for user input before returning to the menu
-		echo -e "${GREEN}Press any key to return to the menu...${NC}"
-		read -n 1 -s
+
+		# Clear and show minimal info
+		clear
+		echo -e "${BOLD}🎵 Terminal Radio Player v1.1${NC}"
+		echo "----------------------------------------"
+		echo -e "Volume: $VOLUME%"
+		echo -e "Now Playing: $station_name"
+		echo -e "Player: $PLAYER"
+		echo "----------------------------------------"
+
+		exit 0
 	else
 		echo -e "${RED}Invalid station number: $number${NC}"
 		echo "Available stations: 1-${#SORTED_STATIONS[@]}"
@@ -309,6 +329,7 @@ show_menu() {
 	echo -e "${BOLD}🎵 Terminal Radio Player v1.1${NC}"
 	echo "----------------------------------------"
 	echo -e "${YELLOW}Volume: $VOLUME%${NC}"
+	echo -e "${YELLOW}Player: $PLAYER${NC}"
 
 	# Show current playback status
 	if is_radio_playing && [ -f "$NOW_PLAYING_FILE" ]; then
@@ -362,7 +383,8 @@ show_menu() {
 	echo -e "\n${BLUE}Commands:${NC}"
 	echo -e "r) Random Play    s) Search"
 	echo -e "f) Favorites      h) History"
-	echo -e "v) Volume         q) Quit"
+	echo -e "v) Volume         p) Toggle Player (cvlc/mpv)"
+	echo -e "q) Quit"
 	echo -e "\nYour choice: "
 }
 
@@ -382,6 +404,7 @@ main() {
 			echo "  -t, --toggle   Toggle play/stop for given station"
 			echo "  -s, --stop     Stop currently playing station"
 			echo "  -l, --list     List all available stations"
+			echo "  -p, --player   Switch player (cvlc/mpv)"
 			echo "  NUMBER         Play station number (1-${#SORTED_STATIONS[@]})"
 			exit 0
 			;;
@@ -404,6 +427,17 @@ main() {
 				echo "$i) $station"
 				((i++))
 			done
+			exit 0
+			;;
+		-p | --player)
+			# Toggle between VLC and MPV
+			if [[ "$PLAYER" == "cvlc" ]]; then
+				PLAYER="mpv"
+				echo -e "${GREEN}Switched to MPV player${NC}"
+			else
+				PLAYER="cvlc"
+				echo -e "${GREEN}Switched to VLC player${NC}"
+			fi
 			exit 0
 			;;
 		*)
@@ -488,6 +522,17 @@ main() {
 				echo -e "${RED}Invalid volume level!${NC}"
 				sleep 1
 			fi
+			;;
+		p | P)
+			# Toggle between VLC and MPV
+			if [[ "$PLAYER" == "cvlc" ]]; then
+				PLAYER="mpv"
+				echo -e "${GREEN}Switched to MPV player${NC}"
+			else
+				PLAYER="cvlc"
+				echo -e "${GREEN}Switched to VLC player${NC}"
+			fi
+			sleep 1
 			;;
 		q | Q)
 			echo -e "${GREEN}Goodbye!${NC}"
