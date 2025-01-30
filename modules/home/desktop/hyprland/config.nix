@@ -442,6 +442,10 @@
         "size 400 900, class:^(io.ente.auth)$"
         "center, class:^(io.ente.auth)$"
 
+        # webcord warning dialog
+        "float, class:^(WebCord)$ title:^(Warning: Opening link in external app)$"
+        "center, class:^(WebCord)$ title:^(Warning: Opening link in external app)$"
+
         # org.twosheds.iwgtk
         "float, class:^(org.twosheds.iwgtk)$"
         "size 1536 864, class:^(org.twosheds.iwgtk)$"
