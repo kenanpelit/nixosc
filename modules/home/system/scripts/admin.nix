@@ -54,6 +54,9 @@ let
   osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
     builtins.readFile ./admin/osc-profiles.sh
   );
+  osc-radio = pkgs.writeShellScriptBin "osc-radio" (
+    builtins.readFile ./admin/osc-radio.sh
+  );
   osc-rsync_backup = pkgs.writeShellScriptBin "osc-rsync_backup" (
     builtins.readFile ./admin/osc-rsync_backup.sh
   );
@@ -132,6 +135,7 @@ in {
     osc-mrelay
     osc-pass-tool
     osc-profiles
+    osc-radio
     osc-rsync_backup
     osc-semsumo-create
     osc-soundctl
