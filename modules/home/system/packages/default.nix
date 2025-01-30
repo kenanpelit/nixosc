@@ -86,6 +86,7 @@
     tdf             # File manager
     vlc             # Media player
     yt-dlp          # Video downloader
+    radiotray-ng    # Internet radio player
 
     # System Tools -----------------------------
     atop            # System monitor
