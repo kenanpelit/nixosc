@@ -497,6 +497,8 @@
         "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
         "ALT, E, exec, hypr-spotify_toggle"                                           # Spotify toggle
         "ALT CTRL, E, exec, mpc-control toggle"                                       # MPC kontrolü
+        "ALT, i, exec, osc-vradio"                                                    # Virgin radio toggle
+
 
         # MPV Yönetimi
         "CTRL ALT, 1, exec, hypr-mpv-manager start"                                   # MPV başlat
