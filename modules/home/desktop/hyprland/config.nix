@@ -439,7 +439,7 @@
 
         # ente
         "float, class:^(io.ente.auth)$"
-        "size 360 440, class:^(io.ente.auth)$"
+        "size 400 900, class:^(io.ente.auth)$"
         "center, class:^(io.ente.auth)$"
 
         # org.twosheds.iwgtk
