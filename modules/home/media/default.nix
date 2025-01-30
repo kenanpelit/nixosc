@@ -25,5 +25,6 @@
    ./mpd
    ./mpv
    ./spicetify
+   ./radio
  ];
 }
