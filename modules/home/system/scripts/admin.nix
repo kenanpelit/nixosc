@@ -42,6 +42,9 @@ let
   osc-generate_nix_start = pkgs.writeShellScriptBin "osc-generate_nix_start" (
     builtins.readFile ./admin/osc-generate_nix_start.sh
   );
+  osc-gist = pkgs.writeShellScriptBin "osc-gist" (
+    builtins.readFile ./admin/osc-gist.sh
+  );
   osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
     builtins.readFile ./admin/osc-gpg_unlock.sh
   );
@@ -134,6 +137,7 @@ in {
     osc-generate_nix_admin
     osc-generate_nix_bin
     osc-generate_nix_start
+    osc-gist
     osc-gpg_unlock
     osc-mrelay
     osc-pass-tool
