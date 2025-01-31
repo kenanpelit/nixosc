@@ -1,78 +1,92 @@
-# modules/home/sops/default.nix
+# modules/home/security/sops/default.nix
+# SOPS (Secrets OPerationS) Configuration for Home Manager
+# Manages encrypted secrets and secure file deployments
 # ==============================================================================
-# SOPS Secrets Management Configuration
-# ==============================================================================
+
 { username, inputs, ... }:
 {
-  # =============================================================================
-  # Module Imports
-  # =============================================================================
-  imports = [
-    inputs.sops-nix.homeManagerModules.sops
-  ];
-  
-  # =============================================================================
-  # SOPS Configuration
-  # =============================================================================
-  sops = {
-    defaultSopsFile = ./../../../../secrets/home-secrets.enc.yaml;
-    age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
-    validateSopsFiles = false;
+ # =============================================================================
+ # Import SOPS Home Manager Module
+ # Required for secrets management functionality
+ # =============================================================================
+ imports = [
+   inputs.sops-nix.homeManagerModules.sops
+ ];
+ 
+ # =============================================================================
+ # Core SOPS Configuration 
+ # Defines default secret location and age key settings
+ # =============================================================================
+ sops = {
+   # Default encrypted secrets file location
+   defaultSopsFile = ./../../../../secrets/home-secrets.enc.yaml;
+   
+   # Age private key location for decryption
+   age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
+   
+   # Disable strict file validation
+   validateSopsFiles = false;
 
-    # ---------------------------------------------------------------------------
-    # Secrets Configuration
-    # ---------------------------------------------------------------------------
-    secrets = {
-      "github_token" = {
-        path = "/home/${username}/.config/github/token";
-      };
-      
-      "nix_conf" = {
-        path = "/home/${username}/.config/nix/nix.conf";
-        mode = "0600";
-      };
-      
-      "gist_token" = {
-        path = "/home/${username}/.gist";
-        mode = "0600";
-      };
+   # ---------------------------------------------------------------------------
+   # Secrets Configuration
+   # Defines individual secret files, their target paths and permissions
+   # ---------------------------------------------------------------------------
+   secrets = {
+     # GitHub access token
+     "github_token" = {
+       path = "/home/${username}/.config/github/token";
+     };
+     
+     # Nix configuration file
+     "nix_conf" = {
+       path = "/home/${username}/.config/nix/nix.conf";
+       mode = "0600";
+     };
+     
+     # GitHub Gist access token
+     "gist_token" = {
+       path = "/home/${username}/.gist";
+       mode = "0600";
+     };
+     
+     # Subliminal subtitle downloader config
+     "subliminal_config" = {
+       path = "/home/${username}/.config/subliminal/subliminal.toml";
+       mode = "0600";
+       sopsFile = ./../../../../secrets/subliminal.enc.toml;
+     };
+     
+     # Tmux configuration backup
+     "tmux_backup_archive" = {
+       path = "/home/${username}/.backup/tmux.tar.gz";
+       mode = "0600";
+       format = "binary";
+       sopsFile = ./../../../../assets/tmux.enc.tar.gz;
+     };
+     
+     # Oh-my-tmux configuration backup
+     "oh-my-tmux_backup_archive" = {
+       path = "/home/${username}/.backup/oh-my-tmux.tar.gz";
+       mode = "0600";
+       format = "binary";
+       sopsFile = ./../../../../assets/oh-my-tmux.enc.tar.gz;
+     };
+     
+     # MPV media player backup
+     "mpv_backup_archive" = {
+       path = "/home/${username}/.backup/mpv.tar.gz";
+       mode = "0600";
+       format = "binary";
+       sopsFile = ./../../../../assets/mpv.enc.tar.gz;
+     };
 
-      "subliminal_config" = {
-        path = "/home/${username}/.config/subliminal/subliminal.toml";
-        mode = "0600";
-        sopsFile = ./../../../../secrets/subliminal.enc.toml;
-      };
-
-      "tmux_backup_archive" = {
-        path = "/home/${username}/.backup/tmux.tar.gz";
-        mode = "0600";
-        format = "binary";
-        sopsFile = ./../../../../assets/tmux.enc.tar.gz;
-      };
-
-      "oh-my-tmux_backup_archive" = {
-        path = "/home/${username}/.backup/oh-my-tmux.tar.gz";
-        mode = "0600";
-        format = "binary";
-        sopsFile = ./../../../../assets/oh-my-tmux.enc.tar.gz;
-      };
-
-      "mpv_backup_archive" = {
-        path = "/home/${username}/.backup/mpv.tar.gz";
-        mode = "0600";
-        format = "binary";
-        sopsFile = ./../../../../assets/mpv.enc.tar.gz;
-
-#     };
-#     "dot_backup_archive" = {
-#       path = "/home/${username}/.backup/dot.tar.gz";
-#       mode = "0600";
-#       format = "binary";
-#       #sopsFile = ./../../../assets/dot.enc.tar.gz;
-#       # Projedeki assets yerine direkt home'daki .nixosc/assets'i kullanalım
-#       sopsFile = "/home/${username}/.nixosc/assets/dot.enc.tar.gz";
-      };
-    };
-  };
+     # Dotfiles backup archive (currently disabled)
+     # "dot_backup_archive" = {
+     #   path = "/home/${username}/.backup/dot.tar.gz";
+     #   mode = "0600";
+     #   format = "binary";
+     #   sopsFile = "/home/${username}/.nixosc/assets/dot.enc.tar.gz";
+     # };
+   };
+ };
 }
-
