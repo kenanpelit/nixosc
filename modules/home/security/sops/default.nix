@@ -41,11 +41,6 @@
         path = "/home/${username}/.config/subliminal/subliminal.toml";
         mode = "0600";
         sopsFile = ./../../../../secrets/subliminal.enc.toml;
-        prefix_dir = {
-         mode = "0755";
-         owner = "${username}";
-         group = "users";
-        };
       };
 
       "tmux_backup_archive" = {
