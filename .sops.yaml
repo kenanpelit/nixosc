@@ -1,24 +1,25 @@
 ---
 creation_rules:
-  - path_regex: ^(secrets|assets)/.*$  # secrets ve assets dizinlerindeki tüm dosyalar
-    encrypted_regex: '^(.*)$'  # Tüm içerik şifrelenir
-    key_groups:
-      - age:
-          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
+ # =============================================================================
+ # Ana Konfigürasyon
+ # secrets ve assets dizinlerindeki tüm dosyalar için temel kural
+ # =============================================================================
+ - path_regex: ^(secrets|assets)/.*$
+   encrypted_regex: '^(.*)$'
+   key_groups: &default_age_key
+     - age:
+         - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
 
-  # Özel kurallar ekleyebilirsiniz
-  - path_regex: ^config/.*\.secret\.yaml$  # config dizinindeki .secret.yaml ile biten dosyalar
-    key_groups:
-      - age:
-          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
+ # =============================================================================
+ # Özel Dizin Kuralları
+ # Belirli dizinler için özel yapılandırmalar
+ # =============================================================================
+ - path_regex: ^config/.*\.secret\.yaml$  # Config dizini için özel kural
+   key_groups: *default_age_key
 
-  # Varsayılan kural (diğer şifrelenecek dosyalar için)
-  - path_regex: .*\.(secret|encrypted)\..*$
-    key_groups:
-      - age:
-          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
-
-  - path_regex: .*\.enc\.tar\.gz$
-    key_groups:
-      - age:
-          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
+ # =============================================================================
+ # Dosya Uzantısı Kuralları
+ # Özel dosya uzantıları için kurallar
+ # =============================================================================
+ - path_regex: .*\.(secret|encrypted|enc|toml)\.(.*|tar\.gz)$  # Birleştirilmiş uzantı kuralı
+   key_groups: *default_age_key
