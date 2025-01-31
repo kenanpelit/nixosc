@@ -20,10 +20,10 @@
  sops = {
    # Default encrypted secrets file location
    defaultSopsFile = ./../../../../secrets/home-secrets.enc.yaml;
-   
+
    # Age private key location for decryption
    age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
-   
+
    # Disable strict file validation
    validateSopsFiles = false;
 
@@ -36,26 +36,26 @@
      "github_token" = {
        path = "/home/${username}/.config/github/token";
      };
-     
+
      # Nix configuration file
      "nix_conf" = {
        path = "/home/${username}/.config/nix/nix.conf";
        mode = "0600";
      };
-     
+
      # GitHub Gist access token
      "gist_token" = {
        path = "/home/${username}/.gist";
        mode = "0600";
      };
-     
-     # Subliminal subtitle downloader config
-     "subliminal_config" = {
-       path = "/home/${username}/.config/subliminal/subliminal.toml";
-       mode = "0600";
-       sopsFile = ./../../../../secrets/subliminal.enc.toml;
-     };
-     
+
+     ## Subliminal subtitle downloader config
+     #"subliminal_config" = {
+     #  sopsFile = ./../../../../secrets/subliminal.enc.toml;
+     #  mode = "0600";
+     #  path = "/home/${username}/.config/subliminal/subliminal.toml";
+     #};
+
      # Tmux configuration backup
      "tmux_backup_archive" = {
        path = "/home/${username}/.backup/tmux.tar.gz";
@@ -63,7 +63,7 @@
        format = "binary";
        sopsFile = ./../../../../assets/tmux.enc.tar.gz;
      };
-     
+
      # Oh-my-tmux configuration backup
      "oh-my-tmux_backup_archive" = {
        path = "/home/${username}/.backup/oh-my-tmux.tar.gz";
@@ -71,7 +71,7 @@
        format = "binary";
        sopsFile = ./../../../../assets/oh-my-tmux.enc.tar.gz;
      };
-     
+
      # MPV media player backup
      "mpv_backup_archive" = {
        path = "/home/${username}/.backup/mpv.tar.gz";
