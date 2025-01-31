@@ -36,7 +36,18 @@
         path = "/home/${username}/.gist";
         mode = "0600";
       };
-   
+
+      "subliminal_config" = {
+        path = "/home/${username}/.config/subliminal/subliminal.toml";
+        mode = "0600";
+        sopsFile = ./../../../../secrets/subliminal.enc.toml;
+        prefix_dir = {
+         mode = "0755";
+         owner = "${username}";
+         group = "users";
+        };
+      };
+
       "tmux_backup_archive" = {
         path = "/home/${username}/.backup/tmux.tar.gz";
         mode = "0600";
