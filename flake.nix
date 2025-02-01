@@ -142,6 +142,13 @@
      url = "github:yazi-rs/plugins";
      flake = false;  # Raw source, not a Nix flake
    };
+
+   # === Package Search Tools ===
+   # Interactive package search utility
+   nix-search-tv = {
+     url = "github:3timeslazy/nix-search-tv";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
  };
  
  # System outputs and configurations
@@ -187,6 +194,11 @@
                  inherit inputs username host;
                };
              };
+           }
+           {
+            environment.systemPackages = [
+             inputs.nix-search-tv.packages.${system}.default
+            ];
            }
          ] ++ modules;  # Add machine-specific modules
          
