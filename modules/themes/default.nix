@@ -1,3 +1,4 @@
+# modules/themes/default.nix
 # ==============================================================================
 # Theme Configuration
 # Author: Kenan Pelit
