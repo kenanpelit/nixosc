@@ -164,6 +164,7 @@
     # Nix Tools ---------------------------
     nix-prefetch-git    # Git prefetch
     nix-prefetch-github # GitHub prefetch
+    #nix-search-tv       # An integration nix-search
 
     # Tmux Dependencies -------------------
     gnutar              # Archiver
