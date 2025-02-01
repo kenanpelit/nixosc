@@ -28,5 +28,6 @@
    ./packages
    ./program
    ./scripts
+   ./search
  ];
 }
