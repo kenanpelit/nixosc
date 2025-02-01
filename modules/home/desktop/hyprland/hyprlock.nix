@@ -1,13 +1,17 @@
 # modules/home/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Configuration with Nord Theme
+# Hyprlock Configuration with Tokyo Night Theme
 # ==============================================================================
 { pkgs, ... }:
 let
   colors = {
-    text = "rgba(216, 222, 233, 0.80)";
-    text_bright = "rgba(216, 222, 233, 0.90)";
-    white_trans = "rgba(255, 255, 255, 0.15)";
+    base = "rgba(36, 40, 59, 1.0)";         # Primary background
+    surface0 = "rgba(41, 46, 66, 0.7)";     # Surface for elements
+    text = "rgba(192, 202, 245, 0.9)";      # Primary text
+    subtext0 = "rgba(154, 165, 206, 0.8)";  # Secondary text
+    blue = "rgba(122, 162, 247, 0.9)";      # Accents
+    lavender = "rgba(180, 249, 248, 0.6)";  # Button hover
+    white_trans = "rgba(255, 255, 255, 0.15)"; # Transparent white for inputs
   };
 in
 {
@@ -31,6 +35,7 @@ in
       brightness = 0.82
       vibrancy = 0.17
       vibrancy_darkness = 0.0
+      color = ${colors.base}
     }
 
     # ---------------------------------------------------------------------------
@@ -79,7 +84,7 @@ in
       monitor =
       path = ${./../../../../wallpapers/nixos/avatar.png}
       border_size = 3
-      border_color = rgba(255, 255, 255, .75)
+      border_color = ${colors.blue}
       size = 120
       rounding = 60
       position = 0, 50
@@ -89,7 +94,7 @@ in
     shape {
       monitor =
       size = 250, 50
-      color = ${colors.white_trans}
+      color = ${colors.surface0}
       rounding = 10
       position = 0, -130
       halign = center
@@ -98,7 +103,7 @@ in
     label {
       monitor =
       text = $USER
-      color = ${colors.text_bright}
+      color = ${colors.text}
       font_size = 16
       font_family = Hack
       position = 0, -130
@@ -112,9 +117,9 @@ in
       dots_size = 0.2
       dots_spacing = 0.2
       dots_center = true
-      outer_color = rgba(255, 255, 255, 0.1)
-      inner_color = ${colors.white_trans}
-      font_color = rgb(230, 230, 230)
+      outer_color = ${colors.surface0}
+      inner_color = ${colors.lavender}
+      font_color = ${colors.text}
       fade_on_empty = true
       font_family = Hack
       placeholder_text = <i><span foreground="##ffffff99">🔒 Enter Pass</span></i>
@@ -125,7 +130,7 @@ in
     label {
       monitor =
       text = cmd[update:1000] echo "Up $(uptime | awk -F'up ' '{print $2}' | awk -F',' '{print $1}')"
-      color = rgba(216, 222, 233, 0.70)
+      color = ${colors.subtext0}
       font_size = 14
       font_family = Hack
       position = 0, -350
@@ -135,7 +140,7 @@ in
     label {
       monitor =
       text = 󰐥  󰜉  󰤄
-      color = rgba(255, 255, 255, 0.75)
+      color = ${colors.text}
       font_size = 40
       position = 0, 100
       halign = center
