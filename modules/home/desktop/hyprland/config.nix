@@ -533,8 +533,10 @@
 
         # Özel Uygulamalar
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
+        "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 8 silent] start-zen-kenp-always'"
+        "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 8 silent] start-zen-compecta-always'"
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify-always'"
-        "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
+        "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
         "ALT, T, exec, semsumo start kkenp always"
         "ALT CTRL, C, exec, semsumo start wcta always"
