@@ -43,6 +43,8 @@
       liberation_ttf         # Metric-compatible alternatives
       fira-code              # Programming font with ligatures
       fira-code-symbols      # Additional programming symbols
+      cascadia-code          # Terminal and console fonts
+      inter                  # Modern interface and statistics font
     ];
 
     # ==============================================================================
