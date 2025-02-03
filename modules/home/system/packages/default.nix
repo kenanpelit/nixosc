@@ -27,6 +27,8 @@
     tree           # Directory tree viewer
     trash-cli      # Trash CLI manager
     unzip          # Archive extractor
+    fdupes         # Duplicate file finder
+    czkawka        # Duplicate and similar file finder GUI
 
     # Development Tools ---------------------------
     binsider               # Binary analyzer
