@@ -91,7 +91,6 @@ DOT_PATHS=(
 	".ssh"
 	".todo"
 	".vpn"
-	".wall"
 	".zen"
 )
 
