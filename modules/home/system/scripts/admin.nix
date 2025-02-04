@@ -93,6 +93,9 @@ let
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./admin/osc-test.sh
   );
+  osc-tv-splitter = pkgs.writeShellScriptBin "osc-tv-splitter" (
+    builtins.readFile ./admin/osc-tv-splitter.sh
+  );
   osc-ulauncher_ext = pkgs.writeShellScriptBin "osc-ulauncher_ext" (
     builtins.readFile ./admin/osc-ulauncher_ext.sh
   );
@@ -154,6 +157,7 @@ in {
     osc-symlink_manager
     osc-sync
     osc-test
+    osc-tv-splitter
     osc-ulauncher_ext
     osc-vradio
     semsumo
