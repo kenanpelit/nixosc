@@ -26,6 +26,8 @@ let
   pythonWithLibtmux = pkgs.python3.withPackages (ps: with ps; [
     ipython        # Enhanced interactive Python shell
     libtmux        # Python API for tmux
+    pip            # Python package installer
+    pipx           # Install and run Python applications in isolated environments
   ]);
 in
 {
