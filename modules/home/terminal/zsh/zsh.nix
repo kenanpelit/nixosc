@@ -42,6 +42,9 @@
       export XDG_DATA_HOME="$HOME/.local/share"
       export XDG_STATE_HOME="$HOME/.local/state"
 
+      # Application Paths
+      export PATH=$PATH:$HOME/.iptv/bin
+
       # ZSH Directory Structure
       export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
       mkdir -p "$XDG_CACHE_HOME/zsh"
