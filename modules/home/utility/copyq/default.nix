@@ -124,7 +124,7 @@
     itemtext\enabled=true
 
     [Theme]
-    alt_bg=#1e1e2e
+    alt_bg=#313244
     alt_item_css=
     bg=#1e1e2e
     css=
@@ -190,3 +190,4 @@
     copyq
   ];
 }
+
