@@ -142,6 +142,7 @@
     sway             # Window manager
     beauty-line-icon-theme # Icons
     gnomeExtensions.gsconnect # KDE Connect
+    walker           # Wayland-native application runner
     wtype            # Key simulator
     whatsie          # WhatsApp
     whatsapp-for-linux # WhatsApp

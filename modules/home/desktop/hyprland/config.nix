@@ -32,6 +32,8 @@
         "pypr"
         # Initialize workspace layout
         "m2w2"
+        # Start in service-mode application launcher
+        "walker --gapplication-service"
         # Initialize screen locker for security
         "hyprlock"
         # Set initial audio levels - microphone to 5% - speaker volume to 15%
@@ -493,6 +495,7 @@
 
         # Uygulama Başlatıcılar
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
+        "$mainMod ALT, Space, exec, walker"                          # Rofi
         "ALT, Space, exec, ulauncher-toggle"                                          # Ulauncher
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"  # Terminal dosya yönetici
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
