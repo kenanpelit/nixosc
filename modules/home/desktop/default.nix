@@ -35,6 +35,7 @@
    ./swaync
    ./swayosd
    ./ulauncher
+   ./walker
    ./waybar
    ./waypaper
    #./wpaperd
