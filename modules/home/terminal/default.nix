@@ -28,7 +28,7 @@
 { config, lib, pkgs, ... }:
 {
   imports = [
-    ./foot
+    #./foot
     ./kitty
     ./p10k
     ./tmux

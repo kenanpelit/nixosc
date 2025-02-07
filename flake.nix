@@ -69,10 +69,6 @@
    # === Desktop Environment - Hyprland Ecosystem ===
    # Core Hyprland compositor
    hyprland = {
-     #url = "github:hyprwm/hyprand/e66eab7b6a90514251439f661454c536afa3e5c8";
-     #url = "github:hyprwm/hyprland/bb5b09def0645838456eb7eb1f52b471441acba1"; # 0126 - 5738
-     #url = "github:hyprwm/hyprland/d2773d7a4ecde7111af4ec71b51b1996ec1d96bf"; # 0128 - 5748
-     #url = "github:hyprwm/hyprland/d462cc7fa166e1e6a6f14b58a2dd1e8b92e15426"; # 0130 - 5760
      url = "github:hyprwm/hyprland/54441e0c4e51dd182f78876c014446d5d0359ba8"; # 0207 - 5797
      inputs.nixpkgs.follows = "nixpkgs";
    };
@@ -150,6 +146,12 @@
      url = "github:3timeslazy/nix-search-tv";
      inputs.nixpkgs.follows = "nixpkgs";
    };
+
+   # === Application Launcher ===
+   walker = {
+     url = "github:abenz1267/walker";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
  };
  
  # System outputs and configurations
@@ -168,6 +170,10 @@
            # Add any required insecure packages here
            # "example-package-1.0.0"
          ];
+         nixConfig = {
+           extra-substituters = ["https://walker-git.cachix.org"];
+           extra-trusted-public-keys = ["walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="];
+         };
        };
      };
      
@@ -194,11 +200,16 @@
                extraSpecialArgs = {
                  inherit inputs username host;
                };
+               modules = [
+                 ./modules/programs/walker.nix
+                 inputs.walker.homeManagerModules.default
+               ];
              };
            }
            {
             environment.systemPackages = [
              inputs.nix-search-tv.packages.${system}.default
+             inputs.walker.packages.${system}.default
             ];
            }
          ] ++ modules;  # Add machine-specific modules
@@ -226,10 +237,6 @@
          modules = [ ./hosts/vhay ];
        };
      };
-      # You can add additional outputs here, such as:
-      # - Development shells
-      # - Custom packages
-      # - NixOS modules
-      # - Home-manager modules
-    };
+   };
 }
+
