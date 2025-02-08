@@ -1,4 +1,4 @@
-# modules/home/yazi/default.nix
+# modules/home/file/yazi/default.nix
 # ==============================================================================
 # Yazi File Manager Configuration
 # ==============================================================================
@@ -27,18 +27,19 @@
       };
     };
 
-    # ---------------------------------------------------------------------------
-    # Plugin Configuration
-    # ---------------------------------------------------------------------------
-    plugins = {
-      full-border = "${inputs.yazi-plugins}/full-border.yazi";
-    };
+#    # ---------------------------------------------------------------------------
+#    # Plugin Configuration
+#    # ---------------------------------------------------------------------------
+#    plugins = {
+#      full-border = "${inputs.yazi-plugins}/full-border.yazi";
+#    };
   };
 
   # =============================================================================
   # Additional Configuration
   # =============================================================================
-  xdg.configFile."yazi/init.lua".text = ''
-    require("full-border"):setup()
-  '';
+#  xdg.configFile."yazi/init.lua".text = ''
+#    require("full-border"):setup()
+#  '';
 }
+

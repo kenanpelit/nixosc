@@ -95,6 +95,12 @@
         # Font Rendering Ayarları
         # -----------------------------------------
         "FREETYPE_PROPERTIES,truetype:interpreter-version=40"
+
+        # -----------------------------------------
+        # Temel Sistem Değişkenleri
+        # -----------------------------------------
+        #"TERMINAL,kitty"
+        #"TERM,xterm-kitty"
       ];
 
       # =====================================================
@@ -306,9 +312,6 @@
         "float, ^(kitty-scratch)$"
         "size 75% 60%, ^(kitty-scratch)$"
         "center, ^(kitty-scratch)$"
-        "float, ^(pavucontrol)$"
-        "size 40% 90%, ^(pavucontrol)$"
-        "move 59% 5%, ^(pavucontrol)$"
         "float, ^(htop)$"
         "size 80% 80%, ^(htop)$"
         "center, ^(htop)$"
@@ -365,7 +368,6 @@
         "float, class:^(waypaper)$"
         "float, class:^(zenity)$"
         "float, class:^(org.gnome.FileRoller)$"
-        "float, class:^(pavucontrol)$"
         "float, class:^(SoundWireServer)$"
         "float, class:^(.sameboy-wrapped)$"
         "float, class:^(file_progress)$"
@@ -438,6 +440,12 @@
         "move 74% 10%, class:^(com.github.hluk.copyq)$"
         "animation popout, class:^(com.github.hluk.copyq)$"
         "dimaround, class:^(com.github.hluk.copyq)$"
+
+        # Pavucontrol
+        "float, class:^(org.pulseaudio.pavucontrol)$"
+        "size 60% 90%, class:^(org.pulseaudio.pavucontrol)$" 
+        "animation popin, class:^(org.pulseaudio.pavucontrol)$"
+        "dimaround, class:^(org.pulseaudio.pavucontrol)$"
 
         # ente
         "float, class:^(io.ente.auth)$"
