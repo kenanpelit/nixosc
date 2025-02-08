@@ -68,7 +68,7 @@
     pv              # Pipe viewer
     gist            # GitHub gist tool
     python312Packages.subliminal  # Subtitles
-    python312Packages.googletrans # Translation
+    #python312Packages.googletrans # Translation
     translate-shell # Translation tool
 
     # Media Tools -------------------------------
@@ -121,6 +121,7 @@
 
     # Desktop Tools ---------------------------
     bleachbit        # System cleaner
+    libqalculate     # Advanced calculator library
     discord          # Chat platform
     ente-auth        # Auth tool
     hyprsunset       # Color temperature
@@ -142,7 +143,7 @@
     sway             # Window manager
     beauty-line-icon-theme # Icons
     gnomeExtensions.gsconnect # KDE Connect
-    walker           # Wayland-native application runner
+    #walker           # Wayland-native application runner
     wtype            # Key simulator
     whatsie          # WhatsApp
     whatsapp-for-linux # WhatsApp

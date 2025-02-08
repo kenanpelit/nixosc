@@ -122,6 +122,7 @@ in
     cachix              # Binary cache
     nix-output-monitor  # Nix build monitor
     ollama              # LLM Runner
+    go                  # Go runtime
     #ollama-webui        # Web arayüzü
 
     # ==============================================================================
@@ -167,6 +168,7 @@ in
     mpc-cli             # MPD client
     rmpc                # Rich MPD client
     acl                 # Access control lists
+    lsb-release         # Distribution information
 
     # ==============================================================================
     # Remote Access

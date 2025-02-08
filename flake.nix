@@ -102,7 +102,7 @@
    # === Development Tools ===
    # Nix code formatter and linter
    alejandra = {
-     url = "github:kamadorueda/alejandra/3.0.0";
+     url = "github:kamadorueda/alejandra/3.1.0";
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
@@ -150,8 +150,16 @@
      url = "github:3timeslazy/nix-search-tv";
      inputs.nixpkgs.follows = "nixpkgs";
    };
+
+   # === Application Launcher & Tools ===
+   walker = {
+     #url = "github:abenz1267/walker/1a82eceaa337966ee3fdee540117d7306003487a"; # 0207 - 1045
+     #url = "github:abenz1267/walker/0.12.14";
+     url = "github:abenz1267/walker";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
  };
- 
+
  # System outputs and configurations
  outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, ... }@inputs:
    let
@@ -199,6 +207,7 @@
            {
             environment.systemPackages = [
              inputs.nix-search-tv.packages.${system}.default
+             inputs.walker.packages.${system}.default
             ];
            }
          ] ++ modules;  # Add machine-specific modules
