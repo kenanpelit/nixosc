@@ -1,18 +1,17 @@
 # modules/core/user/packages/default.nix
 # ==============================================================================
 # System Core Packages Configuration
-# modules/core/user/packages/default.nix
 # ==============================================================================
 #
-# This configuration manages system-level packages required for core functionality:
-# - System utilities and services
-# - Core development tools
-# - Hardware management
-# - System security
-# - Virtualization support
-# - Network infrastructure
+# Sistem seviyesinde gerekli temel paketlerin yapılandırması:
+# - Sistem yönetimi ve temel araçlar
+# - Sistem güvenliği ve servisler
+# - Donanım ve sürücü yönetimi
+# - Ağ altyapısı ve güvenliği
+# - Sanallaştırma ve container
+# - Sistem entegrasyonu
 #
-# These packages are installed system-wide and are available to all users.
+# Bu paketler sistem genelinde kurulur ve tüm kullanıcılar tarafından erişilebilir.
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -20,160 +19,124 @@
 
 let
   # ==============================================================================
-  # Custom Python Environment Configuration
-  # Python packages required for system automation and management
+  # Python Ortam Yapılandırması
   # ==============================================================================
   pythonWithLibtmux = pkgs.python3.withPackages (ps: with ps; [
-    ipython        # Enhanced interactive Python shell
-    libtmux        # Python API for tmux
-    pip            # Python package installer
-    pipx           # Install and run Python applications in isolated environments
+    ipython        # Gelişmiş Python shell
+    libtmux        # Tmux için Python API
+    pip            # Paket yükleyici
+    pipx           # İzole ortam yükleyici
   ]);
 in
 {
   environment.systemPackages = with pkgs; [
     # ==============================================================================
-    # Core System Utilities
-    # Essential system management and configuration tools
+    # Temel Sistem Araçları
     # ==============================================================================
-    home-manager           # User environment management
-    catppuccin-grub       # Theme for GRUB bootloader
-    dconf                 # Low-level configuration system
-    dconf-editor          # Configuration editor for dconf
-    libnotify            # Desktop notification library
-    poweralertd          # Power management notifications
-    xdg-utils            # Desktop integration utilities
-    gzip                 # Compression utility
-    gcc                  # GNU Compiler Collection
-    gnumake              # Build automation tool
-    coreutils           # GNU core utilities
-    libinput            # Input device management
-    fusuma              # Multitouch gestures
-    touchegg            # Multitouch gesture recognizer
+    home-manager        # Kullanıcı ortam yönetimi
+    catppuccin-grub     # GRUB teması
+    dconf               # Yapılandırma sistemi
+    dconf-editor        # dconf editörü
+    libnotify           # Masaüstü bildirim
+    poweralertd         # Güç yönetimi bildirimleri
+    xdg-utils           # Masaüstü entegrasyonu
+    gzip                # Sıkıştırma
+    gcc                 # GNU derleyici
+    gnumake             # İnşa otomasyon
+    coreutils           # GNU temel araçları
+    libinput            # Giriş aygıtı yönetimi
+    fusuma              # Çoklu dokunma
+    touchegg            # Hareket tanıma
+    procps              # Süreç izleme
+    sysstat             # Sistem performans
+    acl                 # Erişim kontrol
+    lsb-release         # Dağıtım bilgisi
+    man-pages           # Sistem kılavuzları
+    tmux                # Terminal çoklayıcı
 
     # ==============================================================================
-    # Terminal and Shell Tools
-    # Command-line utilities and shell enhancements
+    # Sistem Güvenliği
     # ==============================================================================
-    curl                 # URL data transfer tool
-    wget                # Network file retriever
-    tmux                # Terminal multiplexer
-    man-pages           # System manual pages
-    socat               # Multipurpose relay tool
-
-    # ==============================================================================
-    # Custom Python Environment
-    # Python installation with specific packages
-    # ==============================================================================
-    pythonWithLibtmux    # Custom Python with tmux support
-
-    # ==============================================================================
-    # System Monitoring
-    # System performance and resource monitoring tools
-    # ==============================================================================
-    htop                # Interactive process viewer
-    powertop            # Power consumption monitor
-    sysstat            # System performance tools
-    procps              # Process monitoring tools
-
-    # ==============================================================================
-    # Network Infrastructure
-    # Core networking tools and utilities
-    # ==============================================================================
-    iptables            # Firewall management
-    tcpdump             # Network packet analyzer
-    nethogs             # Net bandwidth monitor
-    bind                # DNS tools
-    iwd                 # Wireless daemon
-    impala              # Network query engine
-    iwgtk               # Wireless configuration
-    libnotify           # Desktop notifications
-    gawk                # Pattern scanning tool
-    iw                  # Wireless tools
-    iftop               # Network usage monitor
-    mtr                 # Network diagnostic tool
-    nmap                # Network exploration tool
-    speedtest-cli       # Internet speed test
-    iperf               # Network performance tool
-    rsync               # File synchronization
-
-    # ==============================================================================
-    # Security Tools
-    # System security and encryption utilities
-    # ==============================================================================
-    age                 # Modern encryption tool
-    openssl             # SSL/TLS toolkit
-    sops                # Secrets management
-    hblock              # Adblocker
+    age                 # Şifreleme
+    openssl             # SSL/TLS araçları
+    sops                # Gizli yönetimi
+    hblock              # Reklam engelleyici
     gnupg               # GNU Privacy Guard
-    gcr                 # GNOME crypto services
-    gnome-keyring       # Password management
-    pinentry-gnome3     # PIN entry dialog
+    gcr                 # GNOME kriptografi
+    gnome-keyring       # Parola yönetimi
+    pinentry-gnome3     # PIN girişi
 
     # ==============================================================================
-    # Development Tools
-    # Programming and development utilities
+    # Ağ Altyapısı
     # ==============================================================================
-    git                 # Version control
-    gdb                 # GNU debugger
-    nvd                 # Nix version diff
-    ncdu                # Disk usage analyzer
-    du-dust             # Disk usage utility
-    cachix              # Binary cache
-    nix-output-monitor  # Nix build monitor
-    ollama              # LLM Runner
-    go                  # Go runtime
-    #ollama-webui        # Web arayüzü
+    iptables            # Güvenlik duvarı
+    tcpdump             # Paket analizi
+    nethogs             # Bant genişliği izleme
+    bind                # DNS araçları
+    iwd                 # Kablosuz daemon
+    impala              # Ağ sorgu motoru
+    iwgtk               # Kablosuz yapılandırma
+    gawk                # Metin işleme
+    iw                  # Kablosuz araçları
+    iftop               # Ağ kullanım izleme
+    mtr                 # Ağ teşhis
+    nmap                # Ağ keşif
+    speedtest-cli       # İnternet hız testi
+    iperf               # Ağ performans
+    rsync               # Dosya senkronizasyon
+    curl                # URL veri transfer
+    wget                # Ağ dosya indirme
+    socat               # Çok amaçlı relay
 
     # ==============================================================================
-    # SSH Tools
-    # Secure shell utilities
+    # Sanallaştırma ve Container
     # ==============================================================================
-    assh                # SSH configuration manager
-    openssh             # OpenSSH client/server
+    virt-manager        # VM yönetim GUI
+    virt-viewer         # VM görüntüleyici
+    qemu                # Makine emülatörü
+    spice-gtk           # Uzak görüntüleme
+    win-virtio          # Windows sürücüleri
+    win-spice           # Windows konuk araçları
+    swtpm               # TPM emülatörü
+    podman              # Container motoru
+    
+    # ==============================================================================
+    # Güç Yönetimi
+    # ==============================================================================
+    upower              # Güç yönetim servisi
+    acpi                # ACPI araçları
+    powertop            # Güç izleme
 
     # ==============================================================================
-    # Virtualization
-    # Virtual machine and container support
+    # Sistem Entegrasyonu
     # ==============================================================================
-    virt-manager        # VM management GUI
-    virt-viewer         # VM display client
-    qemu                # Machine emulator
-    spice-gtk           # Remote display client
-    win-virtio          # Windows drivers
-    win-spice          # Windows guest tools
-    swtpm               # TPM emulator
-    podman              # Container engine
+    flatpak             # Uygulama sanal ortam
+    xdg-desktop-portal  # Masaüstü entegrasyon
+    xdg-desktop-portal-gtk # GTK arka uç
 
     # ==============================================================================
-    # Power Management
-    # Power control and monitoring
+    # SSH ve Uzak Erişim
     # ==============================================================================
-    upower              # Power management service
-    acpi                # ACPI utilities
-    powertop            # Power monitoring tool
+    assh                # SSH yapılandırma
+    openssh             # SSH istemci/sunucu
+    tigervnc            # VNC uygulaması
 
     # ==============================================================================
-    # Desktop Integration
-    # System and desktop environment integration
+    # Temel Geliştirme Araçları
     # ==============================================================================
-    flatpak             # Application sandboxing
-    xdg-desktop-portal  # Desktop integration portal
-    xdg-desktop-portal-gtk # GTK portal backend
+    git                 # Versiyon kontrol
+    gdb                 # GNU hata ayıklayıcı
+    nvd                 # Nix versiyon diff
+    cachix              # İkili önbellek
+    nix-output-monitor  # Nix inşa izleyici
+    go                  # Go çalışma zamanı
+    ollama              # LLM çalıştırıcı
+    ollama-webui        # Ollama web arayüzü
 
     # ==============================================================================
-    # Media Tools
-    # Audio and media utilities
+    # Python Ortamı
     # ==============================================================================
-    mpc-cli             # MPD client
-    rmpc                # Rich MPD client
-    acl                 # Access control lists
-    lsb-release         # Distribution information
-
-    # ==============================================================================
-    # Remote Access
-    # Remote desktop and access tools
-    # ==============================================================================
-    tigervnc            # VNC implementation
+    pythonWithLibtmux   # Özel Python kurulumu
   ];
 }
+
