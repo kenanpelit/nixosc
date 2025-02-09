@@ -153,9 +153,8 @@
 
    # === Application Launcher & Tools ===
    walker = {
-     #url = "github:abenz1267/walker/1a82eceaa337966ee3fdee540117d7306003487a"; # 0207 - 1045
-     #url = "github:abenz1267/walker/0.12.14";
-     url = "github:abenz1267/walker";
+     #url = "github:abenz1267/walker";
+     url = "github:abenz1267/walker/0.12.15";
      inputs.nixpkgs.follows = "nixpkgs";
    };
  };
