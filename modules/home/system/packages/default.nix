@@ -94,7 +94,7 @@
    playerctl       # Medya kontrolü
    satty           # Ekran görüntüsü
    soundwireserver # Ses akışı
-   spotify         # Müzik servisi  
+   #spotify         # Müzik servisi  
    swappy          # Ekran görüntüsü editörü
    tdf             # Dosya yöneticisi
    vlc             # Medya oynatıcı
