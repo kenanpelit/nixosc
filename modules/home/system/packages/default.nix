@@ -44,6 +44,7 @@
     shellcheck            # Shell analyzer
     shfmt                 # Shell formatter
     stylua                # Lua formatter
+    tig                   # Text-mode interface for git
     tree-sitter           # Parser generator
     treefmt2              # Multi-language formatter
     xxd                   # Hex editor
