@@ -131,7 +131,6 @@ in
     nix-output-monitor  # Nix inşa izleyici
     go                  # Go çalışma zamanı
     ollama              # LLM çalıştırıcı
-    ollama-webui        # Ollama web arayüzü
 
     # ==============================================================================
     # Python Ortamı
