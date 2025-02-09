@@ -18,124 +18,130 @@
 { pkgs, ... }:
 
 let
-  # ==============================================================================
-  # Python Ortam Yapılandırması
-  # ==============================================================================
-  pythonWithLibtmux = pkgs.python3.withPackages (ps: with ps; [
-    ipython        # Gelişmiş Python shell
-    libtmux        # Tmux için Python API
-    pip            # Paket yükleyici
-    pipx           # İzole ortam yükleyici
-  ]);
+ # ==============================================================================
+ # Python Ortam Yapılandırması
+ # ==============================================================================
+ customPython = pkgs.python3.withPackages (ps: with ps; [
+   ipython        # Gelişmiş Python shell
+   libtmux        # Tmux için Python API
+   pip            # Paket yükleyici
+   pipx           # İzole ortam yükleyici
+ ]);
 in
 {
-  environment.systemPackages = with pkgs; [
-    # ==============================================================================
-    # Temel Sistem Araçları
-    # ==============================================================================
-    home-manager        # Kullanıcı ortam yönetimi
-    catppuccin-grub     # GRUB teması
-    dconf               # Yapılandırma sistemi
-    dconf-editor        # dconf editörü
-    libnotify           # Masaüstü bildirim
-    poweralertd         # Güç yönetimi bildirimleri
-    xdg-utils           # Masaüstü entegrasyonu
-    gzip                # Sıkıştırma
-    gcc                 # GNU derleyici
-    gnumake             # İnşa otomasyon
-    coreutils           # GNU temel araçları
-    libinput            # Giriş aygıtı yönetimi
-    fusuma              # Çoklu dokunma
-    touchegg            # Hareket tanıma
-    procps              # Süreç izleme
-    sysstat             # Sistem performans
-    acl                 # Erişim kontrol
-    lsb-release         # Dağıtım bilgisi
-    man-pages           # Sistem kılavuzları
-    tmux                # Terminal çoklayıcı
+ environment.systemPackages = with pkgs; [
+   # ==============================================================================
+   # Temel Sistem Araçları
+   # ==============================================================================
+   home-manager        # Kullanıcı ortam yönetimi
+   catppuccin-grub    # GRUB teması
+   dconf              # Yapılandırma sistemi
+   dconf-editor       # dconf editörü
+   libnotify          # Masaüstü bildirim
+   poweralertd        # Güç yönetimi bildirimleri
+   xdg-utils          # Masaüstü entegrasyonu
+   gzip               # Sıkıştırma
+   gcc                # GNU derleyici
+   gnumake            # İnşa otomasyon
+   coreutils          # GNU temel araçları
+   libinput           # Giriş aygıtı yönetimi
+   fusuma             # Çoklu dokunma
+   touchegg           # Hareket tanıma
+   procps             # Süreç izleme
+   sysstat            # Sistem performans
+   acl                # Erişim kontrol
+   lsb-release        # Dağıtım bilgisi
+   man-pages          # Sistem kılavuzları
 
-    # ==============================================================================
-    # Sistem Güvenliği
-    # ==============================================================================
-    age                 # Şifreleme
-    openssl             # SSL/TLS araçları
-    sops                # Gizli yönetimi
-    hblock              # Reklam engelleyici
-    gnupg               # GNU Privacy Guard
-    gcr                 # GNOME kriptografi
-    gnome-keyring       # Parola yönetimi
-    pinentry-gnome3     # PIN girişi
+   # ==============================================================================
+   # Tmux ve Terminal Araçları
+   # ==============================================================================
+   tmux               # Terminal çoklayıcı
+   gnutar             # Arşivleyici
+   yq                 # YAML/JSON işlemci
+   gawk               # Metin işleme
 
-    # ==============================================================================
-    # Ağ Altyapısı
-    # ==============================================================================
-    iptables            # Güvenlik duvarı
-    tcpdump             # Paket analizi
-    nethogs             # Bant genişliği izleme
-    bind                # DNS araçları
-    iwd                 # Kablosuz daemon
-    impala              # Ağ sorgu motoru
-    iwgtk               # Kablosuz yapılandırma
-    gawk                # Metin işleme
-    iw                  # Kablosuz araçları
-    iftop               # Ağ kullanım izleme
-    mtr                 # Ağ teşhis
-    nmap                # Ağ keşif
-    speedtest-cli       # İnternet hız testi
-    iperf               # Ağ performans
-    rsync               # Dosya senkronizasyon
-    curl                # URL veri transfer
-    wget                # Ağ dosya indirme
-    socat               # Çok amaçlı relay
+   # ==============================================================================
+   # Sistem Güvenliği
+   # ==============================================================================
+   age                # Şifreleme
+   openssl            # SSL/TLS araçları
+   sops               # Gizli yönetimi
+   hblock             # Reklam engelleyici
+   gnupg              # GNU Privacy Guard
+   gcr                # GNOME kriptografi
+   gnome-keyring      # Parola yönetimi
+   pinentry-gnome3    # PIN girişi
 
-    # ==============================================================================
-    # Sanallaştırma ve Container
-    # ==============================================================================
-    virt-manager        # VM yönetim GUI
-    virt-viewer         # VM görüntüleyici
-    qemu                # Makine emülatörü
-    spice-gtk           # Uzak görüntüleme
-    win-virtio          # Windows sürücüleri
-    win-spice           # Windows konuk araçları
-    swtpm               # TPM emülatörü
-    podman              # Container motoru
-    
-    # ==============================================================================
-    # Güç Yönetimi
-    # ==============================================================================
-    upower              # Güç yönetim servisi
-    acpi                # ACPI araçları
-    powertop            # Güç izleme
+   # ==============================================================================
+   # Ağ Altyapısı
+   # ==============================================================================
+   iptables           # Güvenlik duvarı
+   tcpdump            # Paket analizi
+   nethogs            # Bant genişliği izleme
+   bind               # DNS araçları
+   iwd                # Kablosuz daemon
+   impala             # Ağ sorgu motoru
+   iwgtk              # Kablosuz yapılandırma
+   iw                 # Kablosuz araçları
+   iftop              # Ağ kullanım izleme
+   mtr                # Ağ teşhis
+   nmap               # Ağ keşif
+   speedtest-cli      # İnternet hız testi
+   iperf              # Ağ performans
+   rsync              # Dosya senkronizasyon
+   curl               # URL veri transfer
+   wget               # Ağ dosya indirme
+   socat              # Çok amaçlı relay
 
-    # ==============================================================================
-    # Sistem Entegrasyonu
-    # ==============================================================================
-    flatpak             # Uygulama sanal ortam
-    xdg-desktop-portal  # Masaüstü entegrasyon
-    xdg-desktop-portal-gtk # GTK arka uç
+   # ==============================================================================
+   # Sanallaştırma ve Container
+   # ==============================================================================
+   virt-manager       # VM yönetim GUI
+   virt-viewer        # VM görüntüleyici
+   qemu               # Makine emülatörü
+   spice-gtk          # Uzak görüntüleme
+   win-virtio         # Windows sürücüleri
+   win-spice          # Windows konuk araçları
+   swtpm              # TPM emülatörü
+   podman             # Container motoru
+   
+   # ==============================================================================
+   # Güç Yönetimi
+   # ==============================================================================
+   upower             # Güç yönetim servisi
+   acpi               # ACPI araçları
+   powertop           # Güç izleme
 
-    # ==============================================================================
-    # SSH ve Uzak Erişim
-    # ==============================================================================
-    assh                # SSH yapılandırma
-    openssh             # SSH istemci/sunucu
-    tigervnc            # VNC uygulaması
+   # ==============================================================================
+   # Sistem Entegrasyonu
+   # ==============================================================================
+   flatpak             # Uygulama sanal ortam
+   xdg-desktop-portal  # Masaüstü entegrasyon
+   xdg-desktop-portal-gtk # GTK arka uç
 
-    # ==============================================================================
-    # Temel Geliştirme Araçları
-    # ==============================================================================
-    git                 # Versiyon kontrol
-    gdb                 # GNU hata ayıklayıcı
-    nvd                 # Nix versiyon diff
-    cachix              # İkili önbellek
-    nix-output-monitor  # Nix inşa izleyici
-    go                  # Go çalışma zamanı
-    ollama              # LLM çalıştırıcı
+   # ==============================================================================
+   # SSH ve Uzak Erişim
+   # ==============================================================================
+   assh                # SSH yapılandırma
+   openssh             # SSH istemci/sunucu
+   tigervnc            # VNC uygulaması
 
-    # ==============================================================================
-    # Python Ortamı
-    # ==============================================================================
-    pythonWithLibtmux   # Özel Python kurulumu
-  ];
+   # ==============================================================================
+   # Temel Geliştirme Araçları
+   # ==============================================================================
+   git                 # Versiyon kontrol
+   gdb                 # GNU hata ayıklayıcı
+   nvd                 # Nix versiyon diff
+   cachix              # İkili önbellek
+   nix-output-monitor  # Nix inşa izleyici
+   go                  # Go çalışma zamanı
+   ollama              # LLM çalıştırıcı
+
+   # ==============================================================================
+   # Python Ortamı
+   # ==============================================================================
+   customPython        # Özel Python kurulumu
+ ];
 }
 
