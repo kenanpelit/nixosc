@@ -455,6 +455,9 @@
         # webcord warning dialog
         "float, class:^(WebCord)$ title:^(Warning: Opening link in external app)$"
         "center, class:^(WebCord)$ title:^(Warning: Opening link in external app)$"
+        "float, title:^(blob:https://discord.com).*$"
+        "center, title:^(blob:https://discord.com).*$"
+        "animation popin, title:^(blob:https://discord.com).*$"
 
         # org.twosheds.iwgtk
         "float, class:^(org.twosheds.iwgtk)$"
