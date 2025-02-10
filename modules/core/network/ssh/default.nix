@@ -9,7 +9,6 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { pkgs, ... }:
 {
   programs.ssh = {
@@ -21,10 +20,9 @@
       Host *
         ServerAliveInterval 60
         ServerAliveCountMax 2
-        ProxyCommand ${pkgs.assh}/bin/.assh-wrapped connect --port=%p %h
+        ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
     '';
   };
-
   environment = {
     # Variables
     variables = {
