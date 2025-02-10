@@ -27,19 +27,18 @@
       };
     };
 
-#    # ---------------------------------------------------------------------------
-#    # Plugin Configuration
-#    # ---------------------------------------------------------------------------
-#    plugins = {
-#      full-border = "${inputs.yazi-plugins}/full-border.yazi";
-#    };
+    # ---------------------------------------------------------------------------
+    # Plugin Configuration
+    # ---------------------------------------------------------------------------
+    plugins = {
+      full-border = "${inputs.yazi-plugins}/full-border.yazi";
+    };
   };
 
   # =============================================================================
   # Additional Configuration
   # =============================================================================
-#  xdg.configFile."yazi/init.lua".text = ''
-#    require("full-border"):setup()
-#  '';
+  xdg.configFile."yazi/init.lua".text = ''
+    require("full-border"):setup()
+  '';
 }
-
