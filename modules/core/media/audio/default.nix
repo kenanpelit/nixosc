@@ -1,16 +1,16 @@
 # modules/core/media/audio/default.nix
 # ==============================================================================
-# Audio Configuration
+# Audio Configuration for ThinkPad X1 Carbon 6th
 # ==============================================================================
 # This configuration manages audio system settings including:
-# - PipeWire sound server
-# - ALSA support and configuration
+# - PipeWire sound server with ThinkPad-specific optimizations
+# - ALSA support and ThinkPad ACPI configuration
 # - PulseAudio compatibility layer
 # - Real-time audio latency management
+# - LED control for audio functions
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { pkgs, ... }:
 {
   # Real-time Kit - Audio Latency Management
@@ -34,13 +34,27 @@
     
     # WirePlumber Session Manager
     wireplumber.enable = true;
-    
-    # Low Latency Mode (currently disabled)
-    # lowLatency.enable = true;
+  };
+
+  # ThinkPad-specific audio configurations
+  sound = {
+    enable = true;
+    extraConfig = ''
+      # ThinkPad-specific ALSA configurations
+      options snd-hda-intel model=thinkpad
+      options snd-hda-intel position_fix=1
+      options snd-hda-intel enable=yes
+      # ThinkPad ACPI sound control
+      options thinkpad_acpi volume_mode=enable
+      options thinkpad_acpi volume_capabilities=1
+    '';
   };
 
   # Required Audio Packages
   environment.systemPackages = with pkgs; [
     pulseaudioFull  # Full PulseAudio suite for compatibility
+    alsaUtils       # ALSA utilities for debugging
+    pavucontrol     # PulseAudio volume control
+    pamixer         # Command line mixer for PulseAudio
   ];
 }
