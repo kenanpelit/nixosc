@@ -37,24 +37,22 @@
   };
 
   # ThinkPad-specific audio configurations
-  sound = {
-    enable = true;
-    extraConfig = ''
-      # ThinkPad-specific ALSA configurations
-      options snd-hda-intel model=thinkpad
-      options snd-hda-intel position_fix=1
-      options snd-hda-intel enable=yes
-      # ThinkPad ACPI sound control
-      options thinkpad_acpi volume_mode=enable
-      options thinkpad_acpi volume_capabilities=1
-    '';
-  };
+  boot.extraModprobeConfig = ''
+    # ThinkPad-specific ALSA configurations
+    options snd-hda-intel model=thinkpad
+    options snd-hda-intel position_fix=1
+    options snd-hda-intel enable=yes
+    # ThinkPad ACPI sound control
+    options thinkpad_acpi volume_mode=enable
+    options thinkpad_acpi volume_capabilities=1
+  '';
 
   # Required Audio Packages
   environment.systemPackages = with pkgs; [
     pulseaudioFull  # Full PulseAudio suite for compatibility
-    alsaUtils       # ALSA utilities for debugging
+    alsa-utils      # ALSA utilities for debugging
     pavucontrol     # PulseAudio volume control
     pamixer         # Command line mixer for PulseAudio
   ];
 }
+

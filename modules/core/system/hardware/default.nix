@@ -41,7 +41,6 @@
   # ThinkPad ACPI and power management
   services = {
     throttled.enable = true;  # ThinkPad-specific CPU throttling daemon
-    power-profiles-daemon.enable = true;
     tlp = {
       enable = true;
       settings = {
@@ -78,4 +77,3 @@
     thinkfan     # ThinkPad fan control
   ];
 }
-
