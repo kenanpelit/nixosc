@@ -117,6 +117,9 @@ let
   move_media_files = pkgs.writeShellScriptBin "move_media_files" (
     builtins.readFile ./bin/move_media_files.sh
   );
+  mp4tomkv = pkgs.writeShellScriptBin "mp4tomkv" (
+    builtins.readFile ./bin/mp4tomkv.sh
+  );
   mpc-control = pkgs.writeShellScriptBin "mpc-control" (
     builtins.readFile ./bin/mpc-control.sh
   );
@@ -378,6 +381,7 @@ in {
     mkv2mp4
     monitor_brightness
     move_media_files
+    mp4tomkv
     mpc-control
     music
     ntodo
