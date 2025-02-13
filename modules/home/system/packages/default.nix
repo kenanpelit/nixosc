@@ -75,6 +75,7 @@
    bat             # Gelişmiş cat
    detox           # Dosya adı temizleyici
    pv              # Boru görüntüleyici
+   pwgen           # Password generator
    gist            # GitHub gist aracı
    translate-shell # Çeviri aracı
    rmpc            # Zengin MPD istemcisi
