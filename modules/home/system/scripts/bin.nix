@@ -285,6 +285,9 @@ let
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
   );
+  vnc-connect = pkgs.writeShellScriptBin "vnc-connect" (
+    builtins.readFile ./bin/vnc-connect.sh
+  );
   wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
     builtins.readFile ./bin/wallpaper-manager.sh
   );
@@ -437,6 +440,7 @@ in {
     tunnelshow
     turbo-boost-setup
     vm-start
+    vnc-connect
     wallpaper-manager
     waybar-bluelightfilter-monitor
     waybar-bluelightfilter-toggle
