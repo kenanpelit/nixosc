@@ -5,7 +5,7 @@
     topBar = with custom; {
       position = "top";
       layer = "top";
-      height = 32;
+      height = 34;
       margin-top = 0;
       margin-bottom = 0;
       margin-left = 0;
@@ -179,7 +179,7 @@
     bottomBar = with custom; {
       layer = "top";
       position = "bottom";
-      height = 32;
+      height = 34;
       margin-top = 0;
       margin-bottom = 0;
       margin-left = 0;
@@ -200,7 +200,7 @@
         "bluetooth"
         "pulseaudio#sink"
         "pulseaudio#source"
-        "hyprland/language"
+        #"hyprland/language"
         "custom/notification"
         "custom/firewall"
         "custom/blank"
