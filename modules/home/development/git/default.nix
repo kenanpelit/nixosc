@@ -1,4 +1,3 @@
-# modules/home/git/default.nix
 # ==============================================================================
 # Git Configuration
 # ==============================================================================
@@ -11,6 +10,15 @@
     enable = true;
     userName = "kenanpelit";
     userEmail = "kenanpelit@gmail.com";
+    
+    # ---------------------------------------------------------------------------
+    # Git Signing Configuration
+    # ---------------------------------------------------------------------------
+    signing = {
+      key = null;  # GPG key ID veya null
+      signByDefault = false;  # Commit'leri otomatik imzalama
+      format = "ssh";  # İmzalama formatı: "ssh" veya "gpg"
+    };
     
     # ---------------------------------------------------------------------------
     # Basic Settings
@@ -28,6 +36,7 @@
       pull.rebase = true;
       push.autoSetupRemote = true;
     };
+
     # ---------------------------------------------------------------------------
     # Delta Configuration (Git Diff Tool)
     # ---------------------------------------------------------------------------
@@ -42,6 +51,7 @@
       };
     };
   };
+
   # =============================================================================
   # Additional Git Tools
   # =============================================================================
@@ -97,3 +107,4 @@
     glols = "git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset' --stat";
   };
 }
+

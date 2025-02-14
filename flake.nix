@@ -73,7 +73,8 @@
      #url = "github:hyprwm/hyprland/bb5b09def0645838456eb7eb1f52b471441acba1"; # 0126 - 5738
      #url = "github:hyprwm/hyprland/d2773d7a4ecde7111af4ec71b51b1996ec1d96bf"; # 0128 - 5748
      #url = "github:hyprwm/hyprland/d462cc7fa166e1e6a6f14b58a2dd1e8b92e15426"; # 0130 - 5760
-     url = "github:hyprwm/hyprland/54441e0c4e51dd182f78876c014446d5d0359ba8"; # 0207 - 5797
+     #url = "github:hyprwm/hyprland/54441e0c4e51dd182f78876c014446d5d0359ba8"; # 0207 - 5797
+     url = "github:hyprwm/hyprland/df3fba157279de53c582344b59699a21ac5d62b5"; # 0214 - 5814
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
