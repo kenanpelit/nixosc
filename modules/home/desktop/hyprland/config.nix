@@ -441,6 +441,10 @@
         "animation popout, class:^(com.github.hluk.copyq)$"
         "dimaround, class:^(com.github.hluk.copyq)$"
 
+        # VNC
+        "workspace 6, ^(Vncviewer)$ title:^(.*TigerVNC)$"
+        "fullscreen, ^(Vncviewer)$ title:^(.*TigerVNC)$"
+
         # Pavucontrol
         "float, class:^(org.pulseaudio.pavucontrol)$"
         "size 60% 90%, class:^(org.pulseaudio.pavucontrol)$" 
