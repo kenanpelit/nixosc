@@ -44,13 +44,5 @@
       lfs.enable = true;    # Large File Storage support
     };
   };
-  
-  # =============================================================================
-  # System Level Package Configurations
-  # This will be moved to system-level configuration
-  # =============================================================================
-  nixpkgs.config.permittedInsecurePackages = [
-    "electron"
-  ];
 }
 
