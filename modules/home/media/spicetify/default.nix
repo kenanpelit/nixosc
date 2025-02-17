@@ -1,14 +1,17 @@
 # modules/home/media/spicetify/default.nix
 # ==============================================================================
 # Spicetify Spotify Client Configuration
+# Customizes Spotify client with themes and extensions
 # ==============================================================================
 { pkgs, lib, inputs, ... }:
 let
+  # Get Spicetify packages for current system
   spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.system};
 in
 {
   # =============================================================================
   # Package Configuration
+  # This will be moved to system-level configuration
   # =============================================================================
   nixpkgs.config.allowUnfreePredicate =
     pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
@@ -19,12 +22,14 @@ in
   imports = [ inputs.spicetify-nix.homeManagerModules.default ];
   
   # =============================================================================
-  # Spicetify Settings
+  # Spicetify Configuration
   # =============================================================================
   programs.spicetify = {
     enable = true;
     
-    # TokyoNight teması konfigürasyonu
+    # ---------------------------------------------------------------------------
+    # Theme Configuration - TokyoNight
+    # ---------------------------------------------------------------------------
     theme = {
       name = "TokyoNight";
       src = pkgs.fetchFromGitHub {
@@ -33,21 +38,25 @@ in
         rev = "d88ca06eaeeb424d19e0d6f7f8e614e4bce962be";
         sha256 = "02aw8kvk4m7radsywpl10gq8x5g23xj5gwspyiawf7mdrazzvf3h";
       };
-      injectCss = true;
-      injectThemeJs = true;
-      replaceColors = true;
-      sidebarConfig = true;
-      homeConfig = true;
-      overwriteAssets = true;
+      injectCss = true;        # Inject custom CSS
+      injectThemeJs = true;    # Inject theme's JavaScript
+      replaceColors = true;    # Replace Spotify's default colors
+      sidebarConfig = true;    # Apply theme to sidebar
+      homeConfig = true;       # Apply theme to home page
+      overwriteAssets = true;  # Override Spotify's assets
     };
     
+    # Color scheme selection
     colorScheme = "storm";
     
-    # En temel eklentiler
+    # ---------------------------------------------------------------------------
+    # Extensions Configuration
+    # ---------------------------------------------------------------------------
     enabledExtensions = with spicePkgs.extensions; [
-      adblock
-      hidePodcasts
-      shuffle
+      adblock       # Block advertisements
+      hidePodcasts  # Hide podcast recommendations
+      shuffle       # Enhanced shuffle functionality
     ];
   };
 }
+
