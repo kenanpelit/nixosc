@@ -19,13 +19,15 @@
       ./hardware-configuration.nix
     ];
   
-  # Bootloader configuration
+  # =============================================================================
+  # Bootloader Configuration
+  # =============================================================================
   boot.loader.systemd-boot.enable = false;
   boot.loader.grub = {
     enable = true;
-    device = "nodev";
-    useOSProber = true;
-    efiSupport = true;
+    device = "nodev";          # Install GRUB without specific device (EFI)
+    useOSProber = true;        # Enable OS prober for multi-boot
+    efiSupport = true;         # Enable EFI support
   };
   boot.loader.efi = {
     canTouchEfiVariables = true;
@@ -35,11 +37,17 @@
   # Use latest kernel packages
   boot.kernelPackages = pkgs.linuxPackages_latest;
   
-  # Networking
-  networking.hostName = "hay";
-  networking.networkmanager.enable = true;
+  # =============================================================================
+  # Networking Configuration
+  # =============================================================================
+  networking = {
+    hostName = "hay";         # Main system hostname
+    networkmanager.enable = true;
+  };
   
-  # Timezone and localization
+  # =============================================================================
+  # Timezone and Localization
+  # =============================================================================
   time.timeZone = "Europe/Istanbul";
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
@@ -54,15 +62,19 @@
     LC_TIME = "tr_TR.UTF-8";
   };
 
-  # Keyboard layouts
+  # =============================================================================
+  # Keyboard Configuration
+  # =============================================================================
   services.xserver.xkb = {
-    layout = "tr";    # Change this to your preferred keyboard layout (e.g., "us", "de", "fr")
-    variant = "f";    # Change or remove this line based on your keyboard variant
-    options = "ctrl:nocaps";  # Optional: Makes Caps Lock an additional Ctrl key
+    layout = "tr";             # Turkish keyboard layout
+    variant = "f";             # F-keyboard variant
+    options = "ctrl:nocaps";   # Use Caps Lock as Ctrl
   };
-  console.keyMap = "trf";  # Change this to match your keyboard layout
+  console.keyMap = "trf";      # Turkish-F console keymap
  
-  # User account
+  # =============================================================================
+  # User Account Configuration
+  # =============================================================================
   users.users.kenan = {
     isNormalUser = true;
     description = "Kenan Pelit";
@@ -70,33 +82,47 @@
     packages = with pkgs; [];
   };
 
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
+  # =============================================================================
+  # Package Management Configuration
+  # =============================================================================
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [ "electron" ];
+    allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
+  };
 
+  # =============================================================================
+  # System Packages
+  # =============================================================================
   environment.systemPackages = with pkgs; [
     # System tools
-    wget
-    vim
-    git
-    htop
-    tmux
-    sops
-    age
-    assh
-    ncurses
-    pv
-    file
-
+    wget        # File downloader
+    vim         # Text editor
+    git         # Version control
+    htop        # System monitor
+    tmux        # Terminal multiplexer
+    sops        # Secrets management
+    age         # File encryption
+    assh        # SSH config manager
+    ncurses     # Terminal UI library
+    pv          # Pipe viewer
+    file        # File type identifier
     # Security and encryption
-    gnupg
-    openssl
+    gnupg       # GNU Privacy Guard
+    openssl     # SSL/TLS toolkit
   ];
 
-  # Enable GnuPG agent
+  # =============================================================================
+  # Program Configurations
+  # =============================================================================
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
   };
   
+  # =============================================================================
+  # System Version
+  # =============================================================================
   system.stateVersion = "25.05";
 }
+

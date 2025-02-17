@@ -19,24 +19,30 @@
       ./hardware-configuration.nix
     ];
 
-  # Bootloader for VM
+  # =============================================================================
+  # Bootloader Configuration for VM
+  # =============================================================================
   boot = {
     loader.grub = {
       enable = true;
-      device = "/dev/vda";
-      useOSProber = true;
+      device = "/dev/vda";         # Install GRUB on main virtual disk
+      useOSProber = true;          # Enable OS prober for multi-boot
     };
     # Latest kernel packages
     kernelPackages = pkgs.linuxPackages_latest;
   };
 
-  # Networking
+  # =============================================================================
+  # Networking Configuration
+  # =============================================================================
   networking = {
-    hostName = "vhay";
-    networkmanager.enable = true;
+    hostName = "vhay";             # Virtual machine hostname
+    networkmanager.enable = true;   # Enable NetworkManager
   };
 
-  # Timezone and localization
+  # =============================================================================
+  # Timezone and Localization
+  # =============================================================================
   time.timeZone = "Europe/Istanbul";
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
@@ -51,15 +57,19 @@
     LC_TIME = "tr_TR.UTF-8";
   };
 
-  # Keyboard layouts
+  # =============================================================================
+  # Keyboard Configuration
+  # =============================================================================
   services.xserver.xkb = {
-    layout = "tr";    # Change this to your preferred keyboard layout (e.g., "us", "de", "fr")
-    variant = "f";    # Change or remove this line based on your keyboard variant
-    options = "ctrl:nocaps";  # Optional: Makes Caps Lock an additional Ctrl key
+    layout = "tr";    # Turkish keyboard layout
+    variant = "f";    # F-keyboard variant
+    options = "ctrl:nocaps";  # Use Caps Lock as Ctrl
   };
-  console.keyMap = "trf";  # Change this to match your keyboard layout
+  console.keyMap = "trf";  # Turkish-F console keymap
  
-    # User account for VM
+  # =============================================================================
+  # User Account Configuration
+  # =============================================================================
   users.users.kenan = {
     isNormalUser = true;
     description = "Kenan Pelit";
@@ -70,10 +80,18 @@
     ];
   };
 
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
+  # =============================================================================
+  # Package Management Configuration
+  # =============================================================================
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [ "electron" ];
+    allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
+  };
 
-  # Program configurations
+  # =============================================================================
+  # Program Configurations
+  # =============================================================================
   programs = {
     tmux.enable = true;
     gnupg.agent = {
@@ -82,28 +100,34 @@
     };
   };
 
-  # Base system packages for VM
+  # =============================================================================
+  # System Packages
+  # =============================================================================
   environment.systemPackages = with pkgs; [
     # System tools
-    wget
-    vim
-    git
-    htop
-    tmux
-    sops
-    age
-    assh
-    ncurses
-    pv
-    file
-
+    wget        # File downloader
+    vim         # Text editor
+    git         # Version control
+    htop        # System monitor
+    tmux        # Terminal multiplexer
+    sops        # Secrets management
+    age         # File encryption
+    assh        # SSH config manager
+    ncurses     # Terminal UI library
+    pv          # Pipe viewer
+    file        # File type identifier
     # Security and encryption
-    gnupg
-    openssl
+    gnupg       # GNU Privacy Guard
+    openssl     # SSL/TLS toolkit
   ];
 
-  # Enable OpenSSH server
-  services.openssh.enable = true;
+  # =============================================================================
+  # Service Configuration
+  # =============================================================================
+  services.openssh.enable = true;    # Enable OpenSSH daemon
 
+  # =============================================================================
+  # System Version
+  # =============================================================================
   system.stateVersion = "25.05";
 }
