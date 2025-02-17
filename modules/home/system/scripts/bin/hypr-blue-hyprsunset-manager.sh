@@ -18,8 +18,8 @@ declare -r PID_FILE="$HOME/.cache/hyprsunset.pid"
 declare -r LOG_FILE="/tmp/hyprsunset.log"
 
 # Varsayılan sıcaklık ayarları
-TEMP_DAY=4500        # Gündüz sıcaklığı (6000K)
-TEMP_EVENING=4300    # Akşam sıcaklığı (5000K)
+TEMP_DAY=4300        # Gündüz sıcaklığı (6000K)
+TEMP_EVENING=4200    # Akşam sıcaklığı (5000K)
 TEMP_NIGHT=4100      # Gece sıcaklığı (4000K)
 TEMP_LATE_NIGHT=4000 # Geç gece sıcaklığı (3500K)
 

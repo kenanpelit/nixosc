@@ -9,13 +9,7 @@ let
   spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.system};
 in
 {
-  # =============================================================================
-  # Package Configuration
-  # This will be moved to system-level configuration
-  # =============================================================================
-  nixpkgs.config.allowUnfreePredicate =
-    pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
-  
+ 
   # =============================================================================
   # Module Imports
   # =============================================================================
