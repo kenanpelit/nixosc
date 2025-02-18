@@ -95,7 +95,8 @@
    playerctl       # Medya kontrolü
    satty           # Ekran görüntüsü
    soundwireserver # Ses akışı
-   #spotify         # Müzik servisi  
+   spotify         # Müzik servisi  
+   spotify-cli-linux # Command line interface to Spotify
    swappy          # Ekran görüntüsü editörü
    tdf             # Dosya yöneticisi
    vlc             # Medya oynatıcı
