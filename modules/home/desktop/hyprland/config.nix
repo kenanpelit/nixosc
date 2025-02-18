@@ -518,6 +518,8 @@
         # Medya ve Ses Kontrolü
         "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
         "ALT, E, exec, hypr-spotify_toggle"                                           # Spotify toggle
+        "ALT CTRL, N, exec, spotifycli --next"                                        # Spotify next
+        "ALT CTRL, B, exec, spotifycli --prev"                                        # Spotify prev 
         "ALT CTRL, E, exec, mpc-control toggle"                                       # MPC kontrolü
         "ALT, i, exec, osc-vradio"                                                    # Virgin radio toggle
 

@@ -24,7 +24,7 @@
    ./cava
    ./mpd
    ./mpv
-   ./spicetify
+   #./spicetify
    ./radio
  ];
 }
