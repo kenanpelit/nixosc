@@ -33,6 +33,9 @@ let
   osc-blocklist = pkgs.writeShellScriptBin "osc-blocklist" (
     builtins.readFile ./admin/osc-blocklist.sh
   );
+  osc-cleaup-grub = pkgs.writeShellScriptBin "osc-cleaup-grub" (
+    builtins.readFile ./admin/osc-cleaup-grub.sh
+  );
   osc-generate_nix_admin = pkgs.writeShellScriptBin "osc-generate_nix_admin" (
     builtins.readFile ./admin/osc-generate_nix_admin.sh
   );
@@ -140,6 +143,7 @@ in {
     osc-audio-init
     osc-backup
     osc-blocklist
+    osc-cleaup-grub
     osc-generate_nix_admin
     osc-generate_nix_bin
     osc-generate_nix_start
