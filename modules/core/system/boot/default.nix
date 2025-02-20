@@ -9,7 +9,6 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { pkgs, config, lib, inputs, system, ... }:
 let
   hostname = config.networking.hostName;
@@ -40,4 +39,11 @@ in
       } else {};
     };
   };
+
+  # Clean up old theme directories before GRUB installation
+  system.activationScripts.cleanGrubTheme = ''
+    echo "Cleaning up old GRUB theme directories..."
+    rm -rf /boot/theme
+    rm -rf /boot/grub/themes
+  '';
 }
