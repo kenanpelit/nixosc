@@ -85,11 +85,11 @@
   # =============================================================================
   # Package Management Configuration
   # =============================================================================
-  nixpkgs.config = {
-    allowUnfree = true;
-    permittedInsecurePackages = [ "electron" ];
-    allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
-  };
+  #nixpkgs.config = {
+  #  allowUnfree = true;
+  #  permittedInsecurePackages = [ "electron" ];
+  #  allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
+  #};
 
   # =============================================================================
   # System Packages
@@ -107,6 +107,7 @@
     ncurses     # Terminal UI library
     pv          # Pipe viewer
     file        # File type identifier
+    bc          # GNU software calculator
     # Security and encryption
     gnupg       # GNU Privacy Guard
     openssl     # SSL/TLS toolkit

@@ -52,6 +52,10 @@ in
    acl                # Erişim kontrol
    lsb-release        # Dağıtım bilgisi
    man-pages          # Sistem kılavuzları
+   # Boot ve Sistem Temel Paketleri
+   grub2                     # GRUB bootloader
+   perl                      # Temel Perl kurulumu
+   perlPackages.FilePath     # File::Path modülü (rmtree için)
 
    # ==============================================================================
    # Tmux ve Terminal Araçları
