@@ -85,8 +85,6 @@
   # =============================================================================
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "electron" ];
-    allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
   };
 
   # =============================================================================
