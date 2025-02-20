@@ -13,6 +13,14 @@
 let
   hostname = config.networking.hostName;
   isPhysicalMachine = hostname == "hay";
+  
+  # Create a cleanup script
+  cleanupScript = pkgs.writeScript "cleanup-grub-theme" ''
+    #!${pkgs.bash}/bin/bash
+    echo "Cleaning up old GRUB theme directories..."
+    rm -rf /boot/theme
+    rm -rf /boot/grub/themes
+  '';
 in
 {
   boot = {
@@ -31,6 +39,11 @@ in
         splashImage = "${inputs.distro-grub-themes.packages.${system}.nixos-grub-theme}/splash_image.jpg";
         gfxmodeEfi = "1920x1080";
         gfxmodeBios = "1920x1080";
+        
+        # Run cleanup before GRUB installation
+        extraInstallCommands = ''
+          ${cleanupScript}
+        '';
       };
       
       efi = if isPhysicalMachine then {
@@ -39,11 +52,4 @@ in
       } else {};
     };
   };
-
-  # Clean up old theme directories before GRUB installation
-  system.activationScripts.cleanGrubTheme = ''
-    echo "Cleaning up old GRUB theme directories..."
-    rm -rf /boot/theme
-    rm -rf /boot/grub/themes
-  '';
 }
