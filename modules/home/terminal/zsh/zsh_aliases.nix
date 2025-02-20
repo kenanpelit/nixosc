@@ -66,6 +66,7 @@
       nix-clean = "nh clean all --keep 5";
       nix-search = "nh search";
       nix-test = "nh os test";
+      nst = "nix-search-tv print | fzf --preview 'nix-search-tv preview {}'";
 
       # =============================================================================
       # Python Development
