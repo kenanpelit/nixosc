@@ -85,11 +85,9 @@
   # =============================================================================
   # Package Management Configuration
   # =============================================================================
-  #nixpkgs.config = {
-  #  allowUnfree = true;
-  #  permittedInsecurePackages = [ "electron" ];
-  #  allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "spotify" ];
-  #};
+  nixpkgs.config = {
+    allowUnfree = true;
+  };
 
   # =============================================================================
   # System Packages
