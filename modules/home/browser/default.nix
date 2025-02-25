@@ -14,7 +14,7 @@
 
 {
  imports = [
-   #./firefox
+   ./firefox
    ./zen
    ./chrome
  ];
