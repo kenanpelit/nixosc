@@ -835,8 +835,8 @@ build_system_with_cache() {
 
 		# Önbellekleme için ek flagler
 		[[ $CACHE_ENABLED == true ]] && {
-			build_command+=" --option use-substitutes true"
-			build_command+=" --option substitutes \"https://cache.nixos.org/ file://$CACHE_DIR\""
+			build_command+=" --option substitute true"
+			build_command+=" --option substituters \"https://cache.nixos.org/ file://$CACHE_DIR\""
 		}
 
 		log "INFO" "Çalıştırılıyor: $build_command"
