@@ -102,7 +102,7 @@
    vlc             # Medya oynatıcı
    yt-dlp          # Video indirici
    radiotray-ng    # İnternet radyosu
-   python312Packages.subliminal # Altyazı indirici
+   #python312Packages.subliminal # Altyazı indirici
 
    # ==============================================================================
    # Sistem İzleme

@@ -20,6 +20,7 @@
    ./webcord
    ./elektron
    ./obsidian
+   #./subliminal
    ./ytdlp
    #./zotfiles
  ];
