@@ -12,10 +12,10 @@ let
   # =============================================================================
   baseSettings = {
     # Directory Settings
-    download-dir = "${config.home.homeDirectory}/Downloads/transmission/complete";
-    incomplete-dir = "${config.home.homeDirectory}/Downloads/transmission/incomplete";
+    download-dir = "${config.home.homeDirectory}/.tor/transmission/complete";
+    incomplete-dir = "${config.home.homeDirectory}/.tor/transmission/incomplete";
     incomplete-dir-enabled = true;
-    watch-dir = "${config.home.homeDirectory}/Downloads/transmission/watch";
+    watch-dir = "${config.home.homeDirectory}/.tor/transmission/watch";
     watch-dir-enabled = true;
 
     # RPC Settings
@@ -57,7 +57,7 @@ in
         ExecStartPre = [
           (pkgs.writeShellScript "transmission-setup" ''
             # Create necessary directories
-            mkdir -p ${config.home.homeDirectory}/Downloads/transmission/{complete,incomplete,watch}
+            mkdir -p ${config.home.homeDirectory}/.tor/transmission/{complete,incomplete,watch}
             mkdir -p ${config.home.homeDirectory}/${settingsDir}
             
             # Backup and copy new settings
