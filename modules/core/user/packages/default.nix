@@ -52,6 +52,7 @@ in
    acl                # Erişim kontrol
    lsb-release        # Dağıtım bilgisi
    man-pages          # Sistem kılavuzları
+   ventoy             # New bootable USB solution
    # Boot ve Sistem Temel Paketleri
    grub2                     # GRUB bootloader
    perl                      # Temel Perl kurulumu
