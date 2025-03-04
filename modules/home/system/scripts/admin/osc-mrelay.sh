@@ -38,7 +38,7 @@ NC='\033[0m' # No Color
 
 # Configuration directories and files
 LOG_DIR="$HOME/.logs/mullvad"
-CONFIG_DIR="$HOME/.config/mullvad-relay-manager"
+CONFIG_DIR="$HOME/.config/mrelay"
 FAVORITES_FILE="$CONFIG_DIR/favorites.txt"
 HISTORY_FILE="$LOG_DIR/connection_history.log"
 
