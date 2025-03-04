@@ -18,6 +18,14 @@
       '';
       executable = true;
     };
+
+    "sway/qemu_ubuntu" = {
+      text = ''
+        exec svmubuntu
+        for_window [app_id="qemu"] fullscreen enable
+      '';
+      executable = true;
+    };
   };
 }
 

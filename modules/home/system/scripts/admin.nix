@@ -117,6 +117,9 @@ let
   svmnixos = pkgs.writeShellScriptBin "svmnixos" (
     builtins.readFile ./admin/svmnixos.sh
   );
+  svmubuntu = pkgs.writeShellScriptBin "svmubuntu" (
+    builtins.readFile ./admin/svmubuntu.sh
+  );
   vmarch = pkgs.writeShellScriptBin "vmarch" (
     builtins.readFile ./admin/vmarch.sh
   );
@@ -171,6 +174,7 @@ in {
     semsumo
     svmarch
     svmnixos
+    svmubuntu
     vmarch
     vmnixos
     zen_profile_launcher
