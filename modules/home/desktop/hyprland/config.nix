@@ -490,7 +490,7 @@
         "$mainMod, F1, exec, rofi-hypr-keybinds"
 
         # Terminal Emülatörleri
-        "$mainMod, Return, exec, kitty"                                                  # Normal mod
+        "$mainMod, Return, exec, kitty"                                                 # Normal mod
         "ALT, Return, exec, [float; center; size 950 650] kitty"                        # Yüzen mod
         "$mainMod SHIFT, Return, exec, [fullscreen] kitty"                              # Tam ekran mod
         #"$mainMod, Return, exec, wezterm"
@@ -570,10 +570,15 @@
         "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
         "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
-        # screenshot
-        ",Print, exec, screenshot --swappy"
-        "$mainMod, Print, exec, screenshot --save"
-        "$mainMod SHIFT ,Print, exec, screenshot --copy"
+        # Screenshot
+        ",Print, exec, hypr-screenshot ri"                  # Print: Bölge Interaktif (düzenleyicide açar)
+        "$mainMod SHIFT, Print, exec, hypr-screenshot rf"   # Super + Shift + Print: Bölge Dosya (dosyaya kaydeder)
+        "CTRL, Print, exec, hypr-screenshot rc"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
+        "$mainMod, Print, exec, hypr-screenshot si"         # Super + Print: Ekran Interaktif (düzenleyicide açar)
+        "SHIFT, Print, exec, hypr-screenshot sf"            # Shift + Print: Ekran Dosya (dosyaya kaydeder)
+        "CTRL SHIFT, Print, exec, hypr-screenshot sc"       # Ctrl + Shift + Print: Ekran Kopyala (panoya kopyalar)
+        "$mainMod ALT, Print, exec, hypr-screenshot p"      # Super + Alt + Print: Renk seçer
+        "$mainMod CTRL, Print, exec, hypr-screenshot o"     # Super + Ctrl + Print: Son ekran görüntüsünü açar
 
         # switch focus
         "$mainMod, left, movefocus, l"
