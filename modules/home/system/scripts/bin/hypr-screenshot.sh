@@ -2,156 +2,230 @@
 
 #######################################
 #
-# Version: 1.0.0
-# Date: 2024-12-08
+# Version: 1.1.0
+# Date: 2025-03-07
 # Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
-# Description: HyprFlow
+# Description: HyprFlow - Advanced Screenshot Utility
 #
 # License: MIT
 #
 #######################################
 
-# Screenshot Settings
+# Yapılandırma Ayarları
 SAVE_DIR="$HOME/Pictures/ss"
-BORDER_COLOR="#000000b0"
-SELECTION_COLOR="#00000000"
-BORDER_WIDTH="2"
-COLOR_PICKER_BORDER="#ff0000ff"
+BORDER_COLOR="#3584e4b0"        # Daha modern bir mavi ton
+SELECTION_COLOR="#00000040"     # Hafif şeffaf siyah selection fill
+BORDER_WIDTH="3"                # Daha kalın sınır
+COLOR_PICKER_BORDER="#e01b24ff" # Canlı kırmızı
+
+# Dosya adı formatı
+FILENAME_FORMAT="screenshot_%Y-%m-%d_%H-%M-%S.png"
+EDITOR="swappy" # Düzenleyici uygulaması
+
+# Hata kodları
+EXIT_SUCCESS=0
+EXIT_INVALID_OPTION=1
+EXIT_MISSING_DEPENDENCY=2
+
+# Bağımlılıkları kontrol et
+check_dependencies() {
+	local missing_deps=()
+	for cmd in grim slurp wl-copy notify-send magick "$EDITOR"; do
+		if ! command -v "$cmd" &>/dev/null; then
+			missing_deps+=("$cmd")
+		fi
+	done
+
+	if [ ${#missing_deps[@]} -ne 0 ]; then
+		show_notification "Eksik Bağımlılıklar" "Lütfen yükleyin: ${missing_deps[*]}" "critical"
+		exit $EXIT_MISSING_DEPENDENCY
+	fi
+}
 
 # Yardım fonksiyonu
 show_help() {
-  cat <<EOF
-Screenshot Tool Help:
---------------------
-Usage: $0 [OPTION]
+	cat <<EOF
+╭────────────────────────────────────╮
+│       HyprFlow Screenshot Tool     │
+╰────────────────────────────────────╯
 
-Options:
-  rc    Region Copy        - Seçilen bölgenin ekran görüntüsünü panoya kopyalar
-  rf    Region File        - Seçilen bölgenin ekran görüntüsünü dosyaya kaydeder
-  ri    Region Interactive - Seçilen bölgenin ekran görüntüsünü düzenleyicide açar
-  sc    Screen Copy        - Tüm ekranın görüntüsünü panoya kopyalar
-  sf    Screen File        - Tüm ekranın görüntüsünü dosyaya kaydeder
-  si    Screen Interactive - Tüm ekranın görüntüsünü düzenleyicide açar
-  p     Pick Color         - Ekrandan renk seçer ve renk kodunu panoya kopyalar
-  help  Show Help          - Bu yardım mesajını gösterir
+Kullanım: $(basename "$0") [SEÇENEK]
 
-Examples:
-  $0 rc    # Seçilen alanı panoya kopyalar
-  $0 sf    # Tüm ekranı dosyaya kaydeder
-  $0 p     # Renk seçer
+BÖLGE KOMUTLARI:
+  rc    Bölge Kopyala      - Seçilen bölgeyi panoya kopyalar
+  rf    Bölge Dosya        - Seçilen bölgeyi dosyaya kaydeder
+  ri    Bölge Interaktif   - Seçilen bölgeyi düzenleyicide açar
 
-Notes:
-- Screenshots are saved to: $SAVE_DIR
-- Interactive mode uses swappy editor
-- Color picker shows preview notification
+EKRAN KOMUTLARI:
+  sc    Ekran Kopyala      - Tüm ekranı panoya kopyalar
+  sf    Ekran Dosya        - Tüm ekranı dosyaya kaydeder
+  si    Ekran Interaktif   - Tüm ekranı düzenleyicide açar
+
+DİĞER KOMUTLAR:
+  p     Renk Seç           - Ekrandan renk seçer ve panoya kopyalar
+  help  Yardım             - Bu yardım mesajını gösterir
+
+ÖRNEKLER:
+  $(basename "$0") rc    # Seçilen alanı panoya kopyalar
+  $(basename "$0") sf    # Tüm ekranı dosyaya kaydeder
+  $(basename "$0") p     # Renk seçer
+
+NOTLAR:
+- Kayıt dizini: $SAVE_DIR
+- Interaktif mod $EDITOR kullanır
+- Dosya formatı: $FILENAME_FORMAT
+
+Geliştiren: Kenan Pelit
 EOF
 }
 
 # Screenshot alma fonksiyonu
 take_screenshot() {
-  local filename="$1"
-  grim -g "$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH")" "$filename"
+	local filename="$1"
+	local success=false
+
+	grim -g "$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH")" "$filename" && success=true
+
+	if [ "$success" = true ]; then
+		return $EXIT_SUCCESS
+	else
+		show_notification "Hata" "Ekran görüntüsü alınamadı" "critical"
+		return 1
+	fi
 }
 
 # Klasör oluşturma fonksiyonu
 create_screenshot_dir() {
-  if [[ ! -d "$SAVE_DIR" ]]; then
-    mkdir -p "$SAVE_DIR"
-  fi
+	if [[ ! -d "$SAVE_DIR" ]]; then
+		mkdir -p "$SAVE_DIR"
+		if [ $? -ne 0 ]; then
+			show_notification "Hata" "Dizin oluşturulamadı: $SAVE_DIR" "critical"
+			exit 1
+		fi
+	fi
 }
 
 # Timestamp oluşturma fonksiyonu
-get_timestamp() {
-  date +%Y-%m-%d_%H-%M-%S
+get_filename() {
+	local format="${1:-$FILENAME_FORMAT}"
+	date +"$format"
 }
 
 # Bildirim gösterme fonksiyonu
 show_notification() {
-  local title="$1"
-  local message="$2"
-  local urgency="${3:-low}"
-  local icon="${4:-}"
+	local title="$1"
+	local message="$2"
+	local urgency="${3:-normal}"
+	local icon="${4:-preferences-desktop-screensaver}"
 
-  if [ -n "$icon" ]; then
-    notify-send -h string:x-canonical-private-synchronous:sys-notify -u "$urgency" -i "$icon" "$title" "$message"
-  else
-    notify-send -h string:x-canonical-private-synchronous:sys-notify -u "$urgency" "$title" "$message"
-  fi
+	notify-send -h string:x-canonical-private-synchronous:hyprflow-screenshot \
+		-u "$urgency" -i "$icon" "$title" "$message"
 }
 
 # Renk seçme fonksiyonu
 pick_color() {
-  slurp -p -b '#00000000' -c "$COLOR_PICKER_BORDER" -w "$BORDER_WIDTH" |
-    grim -g - -t ppm - |
-    magick - -format '%[pixel:p{0,0}]' txt:- 2>/dev/null |
-    tail -n1 | cut -d' ' -f4
+	local color
+	color=$(slurp -p -b '#00000000' -c "$COLOR_PICKER_BORDER" -w "$BORDER_WIDTH" |
+		grim -g - -t ppm - |
+		magick - -format '%[pixel:p{0,0}]' txt:- 2>/dev/null |
+		tail -n1 | cut -d' ' -f4)
+
+	echo "$color"
 }
+
+# Son ekran görüntüsünü açma fonksiyonu
+open_last_screenshot() {
+	local latest
+	latest=$(find "$SAVE_DIR" -type f -name "*.png" -printf "%T@ %p\n" | sort -n | tail -1 | cut -d' ' -f2-)
+
+	if [ -n "$latest" ]; then
+		xdg-open "$latest" &
+		show_notification "Görüntü Açıldı" "$(basename "$latest")"
+	else
+		show_notification "Hata" "Görüntü bulunamadı" "critical"
+	fi
+}
+
+# Başlangıçta bağımlılıkları kontrol et
+check_dependencies
 
 # Ana işlem kontrolü
 case $1 in
 rc) # Bölgeyi kopyala
-  grim -g "$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH")" - | wl-copy
-  show_notification "Screenshot" "Copied to clipboard"
-  ;;
+	temp_file=$(mktemp)
+	if take_screenshot "$temp_file"; then
+		cat "$temp_file" | wl-copy
+		rm -f "$temp_file"
+		show_notification "Screenshot" "Panoya kopyalandı" "normal" "edit-copy"
+	fi
+	;;
 
 rf) # Bölgeyi dosyaya kaydet
-  create_screenshot_dir
-  filename="$SAVE_DIR/$(get_timestamp).png"
-  take_screenshot "$filename"
-  show_notification "Screenshot" "Saved as: $filename"
-  ;;
+	create_screenshot_dir
+	filename="$SAVE_DIR/$(get_filename)"
+	if take_screenshot "$filename"; then
+		show_notification "Screenshot" "Kaydedildi: $(basename "$filename")" "normal" "document-save"
+	fi
+	;;
 
 ri) # Bölgeyi interaktif düzenleme ile al
-  create_screenshot_dir
-  filename="$SAVE_DIR/swappy-$(get_timestamp).png"
-  grim -g "$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH")" - | swappy -f - -o "$filename"
-  show_notification "Screenshot" "Saved as: $filename"
-  ;;
+	create_screenshot_dir
+	filename="$SAVE_DIR/$(get_filename)"
+	grim -g "$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH")" - |
+		"$EDITOR" -f - -o "$filename" &&
+		show_notification "Screenshot" "Kaydedildi: $(basename "$filename")" "normal" "document-edit"
+	;;
 
 sc) # Ekranın tamamını kopyala
-  grim - | wl-copy
-  show_notification "Screenshot" "Full screen copied to clipboard"
-  ;;
+	grim - | wl-copy &&
+		show_notification "Screenshot" "Tam ekran panoya kopyalandı" "normal" "edit-copy"
+	;;
 
 sf) # Ekranın tamamını dosyaya kaydet
-  create_screenshot_dir
-  filename="$SAVE_DIR/$(get_timestamp).png"
-  grim "$filename"
-  show_notification "Screenshot" "Full screen saved as: $filename"
-  ;;
+	create_screenshot_dir
+	filename="$SAVE_DIR/$(get_filename)"
+	grim "$filename" &&
+		show_notification "Screenshot" "Tam ekran kaydedildi: $(basename "$filename")" "normal" "document-save"
+	;;
 
 si) # Ekranın tamamını interaktif düzenleme ile al
-  create_screenshot_dir
-  filename="$SAVE_DIR/swappy-$(get_timestamp).png"
-  grim - | swappy -f - -o "$filename"
-  show_notification "Screenshot" "Saved as: $filename"
-  ;;
+	create_screenshot_dir
+	filename="$SAVE_DIR/$(get_filename)"
+	grim - | "$EDITOR" -f - -o "$filename" &&
+		show_notification "Screenshot" "Kaydedildi: $(basename "$filename")" "normal" "document-edit"
+	;;
 
 p) # Renk seçme ve önizleme
-  color=$(pick_color)
-  if [ -n "$color" ]; then
-    echo -n "$color" | wl-copy
-    image="/tmp/color_preview_${color//[#\/\\]/}.png"
-    magick -size 48x48 xc:"$color" "$image" 2>/dev/null
+	color=$(pick_color)
+	if [ -n "$color" ]; then
+		echo -n "$color" | wl-copy
+		image="/tmp/color_preview_${color//[#\/\\]/}.png"
+		magick -size 64x64 xc:"$color" -bordercolor black -border 1 "$image" 2>/dev/null
 
-    if [ -f "$image" ]; then
-      show_notification "$color" "Color copied to clipboard" "low" "$image"
-    else
-      show_notification "$color" "Color copied to clipboard"
-    fi
-    rm -f "$image"
-  else
-    show_notification "Error" "Failed to capture color" "critical"
-  fi
-  ;;
+		if [ -f "$image" ]; then
+			show_notification "$color" "Renk panoya kopyalandı" "normal" "$image"
+		else
+			show_notification "$color" "Renk panoya kopyalandı" "normal" "color-select"
+		fi
+		rm -f "$image" 2>/dev/null
+	else
+		show_notification "Hata" "Renk seçilemedi" "critical"
+	fi
+	;;
+
+o | open) # Son ekran görüntüsünü aç
+	open_last_screenshot
+	;;
 
 help | --help | -h)
-  show_help
-  ;;
+	show_help
+	;;
 
 *)
-  show_notification "Error" "Invalid option. Use '$0 help' for usage information." "critical"
-  exit 1
-  ;;
+	show_notification "Hata" "Geçersiz seçenek: '$1'. Yardım için '$(basename "$0") help' komutunu kullanın." "critical"
+	exit $EXIT_INVALID_OPTION
+	;;
 esac
+
+exit $EXIT_SUCCESS
