@@ -95,6 +95,28 @@
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
+   # === Hyprland Python Plugin Framework ===
+   # PyPrland - Python plugin system for Hyprland
+   pyprland = {
+     url = "github:hyprland-community/pyprland/bc70784ed75cdf765fb74d0d08b6703a6173b958";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
+   
+   # PyPrland dependencies
+   poetry2nix = {
+     url = "github:nix-community/poetry2nix";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
+   
+   systems = {
+     url = "github:nix-systems/default-linux";
+   };
+   
+   flake-compat = {
+     url = "github:edolstra/flake-compat";
+     flake = false;
+   };
+   
    # === Development Tools ===
    # Nix code formatter and linter
    alejandra = {
@@ -126,7 +148,6 @@
      url = "github:nix-community/browser-previews";
      inputs.nixpkgs.follows = "nixpkgs";
    };
-
    # Binary cache management
    cachix-pkgs = {
      url = "github:cachix/cachix";
@@ -139,23 +160,20 @@
      url = "github:yazi-rs/plugins";
      flake = false;  # Raw source, not a Nix flake
    };
-
    # === Package Search Tools ===
    # Interactive package search utility
    nix-search-tv = {
      url = "github:3timeslazy/nix-search-tv";
      inputs.nixpkgs.follows = "nixpkgs";
    };
-
    # === Application Launcher & Tools ===
    walker = {
      url = "github:abenz1267/walker/83d945b6c4579e20b0ad043585bbf6552b99d441"; # 0209 - 1052
      inputs.nixpkgs.follows = "nixpkgs";
    };
  };
-
  # System outputs and configurations
- outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, ... }@inputs:
+ outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, ... }@inputs:
    let
      # === Global Variables ===
      username = "kenan";        # Primary user account
@@ -211,6 +229,11 @@
            inherit self inputs username host system;
          };
        };
+      
+     # Setup for PyPrland packages
+     inherit (inputs.poetry2nix.lib) mkPoetry2Nix;
+     eachSystem = nixpkgs.lib.genAttrs (import systems);
+     pkgsFor = eachSystem (sys: import nixpkgs {localSystem = sys;});
    in
    {
      # === Machine Configurations ===
@@ -229,10 +252,43 @@
          modules = [ ./hosts/vhay ];
        };
      };
-      # You can add additional outputs here, such as:
-      # - Development shells
-      # - Custom packages
-      # - NixOS modules
-      # - Home-manager modules
-    };
+     
+     # === PyPrland packages and shells ===
+     packages = eachSystem (sys: let
+       inherit (mkPoetry2Nix {pkgs = pkgsFor.${sys};}) mkPoetryApplication;
+     in {
+       pyprland = mkPoetryApplication {
+         projectDir = nixpkgs.lib.cleanSource "${pyprland}";
+         checkGroups = [];
+       };
+     });
+     
+     devShells = eachSystem (sys: let
+       inherit (mkPoetry2Nix {pkgs = pkgsFor.${sys};}) mkPoetryEnv;
+     in {
+       pyprland = pkgsFor.${sys}.mkShellNoCC {
+         packages = with pkgsFor.${sys}; [
+           (mkPoetryEnv {projectDir = "${pyprland}";})
+           poetry
+         ];
+       };
+     });
+     
+     # You can add additional outputs here, such as:
+     # - Development shells
+     # - Custom packages
+     # - NixOS modules
+     # - Home-manager modules
+   };
+   
+   # Additional configuration for binary cache
+   nixConfig = {
+     extra-substituters = [
+       "https://hyprland-community.cachix.org"
+     ];
+     extra-trusted-public-keys = [
+       "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+     ];
+   };
 }
+
