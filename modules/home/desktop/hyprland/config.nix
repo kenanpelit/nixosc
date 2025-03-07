@@ -570,15 +570,20 @@
         "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
         "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
-        # Screenshot
-        ",Print, exec, hypr-screenshot ri"                  # Print: Bölge Interaktif (düzenleyicide açar)
-        "$mainMod SHIFT, Print, exec, hypr-screenshot rf"   # Super + Shift + Print: Bölge Dosya (dosyaya kaydeder)
-        "CTRL, Print, exec, hypr-screenshot rc"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
-        "$mainMod, Print, exec, hypr-screenshot si"         # Super + Print: Ekran Interaktif (düzenleyicide açar)
-        "SHIFT, Print, exec, hypr-screenshot sf"            # Shift + Print: Ekran Dosya (dosyaya kaydeder)
-        "CTRL SHIFT, Print, exec, hypr-screenshot sc"       # Ctrl + Shift + Print: Ekran Kopyala (panoya kopyalar)
-        "$mainMod ALT, Print, exec, hypr-screenshot p"      # Super + Alt + Print: Renk seçer
-        "$mainMod CTRL, Print, exec, hypr-screenshot o"     # Super + Ctrl + Print: Son ekran görüntüsünü açar
+        # Screenshot v1.2.0 Kısayolları
+        ",Print, exec, screenshot ri"                  # Print: Bölge Interaktif (düzenleyicide açar)
+        "$mainMod SHIFT, Print, exec, screenshot rf"   # Super + Shift + Print: Bölge Dosya (dosyaya kaydeder)
+        "CTRL, Print, exec, screenshot rc"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
+        "$mainMod CTRL, Print, exec, screenshot rec"   # Super + Ctrl + Print: Bölge Düzenle ve Kopyala
+        "$mainMod, Print, exec, screenshot si"         # Super + Print: Ekran Interaktif (düzenleyicide açar)
+        "SHIFT, Print, exec, screenshot sf"            # Shift + Print: Ekran Dosya (dosyaya kaydeder)
+        "CTRL SHIFT, Print, exec, screenshot sc"       # Ctrl + Shift + Print: Ekran Kopyala (panoya kopyalar)
+        "$mainMod SHIFT CTRL, Print, exec, screenshot sec" # Super + Shift + Ctrl + Print: Ekran Düzenle ve Kopyala
+        "ALT, Print, exec, screenshot wi"              # Alt + Print: Pencere Interaktif (düzenleyicide açar)
+        "ALT SHIFT, Print, exec, screenshot wf"        # Alt + Shift + Print: Pencere Dosya (dosyaya kaydeder)
+        "ALT CTRL, Print, exec, screenshot wc"         # Alt + Ctrl + Print: Pencere Kopyala (panoya kopyalar)
+        "$mainMod ALT, Print, exec, screenshot p"      # Super + Alt + Print: Renk seçer
+        "$mainMod ALT CTRL, Print, exec, screenshot o" # Super + Alt + Ctrl + Print: Son ekran görüntüsünü açar
 
         # switch focus
         "$mainMod, left, movefocus, l"
