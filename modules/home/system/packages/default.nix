@@ -32,8 +32,8 @@
    unzip          # Arşiv açıcı
    fdupes         # Yinelenen dosya bulucu
    czkawka        # Yinelenen dosya bulucu GUI
-   ftp            # built-in FTP clients
    lftp           # FTP clients
+   android-tools  # adb
  
    # ==============================================================================
    # Geliştirme Araçları
