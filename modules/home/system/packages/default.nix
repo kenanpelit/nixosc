@@ -157,6 +157,7 @@
    gopass           # Parola CLI
    pdftk            # PDF araçları
    zathura          # PDF görüntüleyici
+   imagemagick      # Image manager
    evince           # PDF görüntüleyici
    candy-icons      # Simge teması
    wpaperd          # Duvar kağıdı 

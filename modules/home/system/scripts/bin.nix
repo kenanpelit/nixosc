@@ -66,9 +66,6 @@ let
   hypr-mullvad_toggle = pkgs.writeShellScriptBin "hypr-mullvad_toggle" (
     builtins.readFile ./bin/hypr-mullvad_toggle.sh
   );
-  hypr-screenshot = pkgs.writeShellScriptBin "hypr-screenshot" (
-    builtins.readFile ./bin/hypr-screenshot.sh
-  );
   hypr-spotify_toggle = pkgs.writeShellScriptBin "hypr-spotify_toggle" (
     builtins.readFile ./bin/hypr-spotify_toggle.sh
   );
@@ -191,9 +188,6 @@ let
   );
   rvim = pkgs.writeShellScriptBin "rvim" (
     builtins.readFile ./bin/rvim.sh
-  );
-  satty-screenshot = pkgs.writeShellScriptBin "satty-screenshot" (
-    builtins.readFile ./bin/satty-screenshot.sh
   );
   ScrcpyUSB = pkgs.writeShellScriptBin "ScrcpyUSB" (
     builtins.readFile ./bin/ScrcpyUSB.sh
@@ -367,7 +361,6 @@ in {
     hypr-monitor_toggle
     hypr-mpv-manager
     hypr-mullvad_toggle
-    hypr-screenshot
     hypr-spotify_toggle
     hypr-start-batteryd
     hypr-start-disable_wifi_power_save
@@ -409,7 +402,6 @@ in {
     rsync-tool
     runbg
     rvim
-    satty-screenshot
     ScrcpyUSB
     ScrcpyWiFi
     screenshot
