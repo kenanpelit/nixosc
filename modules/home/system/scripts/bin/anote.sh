@@ -615,7 +615,11 @@ copy_mode() {
 		[[ -z "$selected" ]] && exit 0
 		dir=$(dirname "$selected")
 		update_history "$dir" "$selected"
-		copy_to_clipboard "$(cat "$selected")"
+
+		# Dosya içeriğini oku ve panoya kopyala
+		content="$(cat "$selected")"
+		copy_to_clipboard "$content"
+
 		# Önizleme göster
 		echo -e "\n--- Kopyalanan İçerik ---"
 		bat --color=always -pp "$selected"
