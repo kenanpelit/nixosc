@@ -603,28 +603,23 @@ copy_mode() {
 			find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
 				fzf -d / --with-nth -2.. \
 					--preview 'bat --color=always -pp {}' \
-					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort"
-			--header 'ESC:Geri ENTER:Kopyala' \
-				--prompt="anote > kopyala: "
+					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
+					--header 'ESC:Geri ENTER:Kopyala' \
+					--prompt="anote > kopyala: "
 		)
-
 		if [[ -f /tmp/anote_nav ]]; then
 			rm /tmp/anote_nav
 			show_anote_tui
 			break
 		fi
-
 		[[ -z "$selected" ]] && exit 0
 		dir=$(dirname "$selected")
 		update_history "$dir" "$selected"
-
 		copy_to_clipboard "$(cat "$selected")"
-
 		# Önizleme göster
 		echo -e "\n--- Kopyalanan İçerik ---"
 		bat --color=always -pp "$selected"
 		echo -e "\n"
-
 		read -n 1 -p "Başka bir dosya içeriği kopyalamak ister misiniz? (e/h): " yn
 		echo
 		[[ "$yn" != "e" ]] && break
