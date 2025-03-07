@@ -19,7 +19,7 @@
       executable = true;
     };
 
-    "sway/qemu_ubuntu" = {
+    "sway/qemu_vmubuntu" = {
       text = ''
         exec svmubuntu
         for_window [app_id="qemu"] fullscreen enable
