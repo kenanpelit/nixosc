@@ -32,6 +32,8 @@
    unzip          # Arşiv açıcı
    fdupes         # Yinelenen dosya bulucu
    czkawka        # Yinelenen dosya bulucu GUI
+   ftp            # built-in FTP clients
+   lftp           # FTP clients
  
    # ==============================================================================
    # Geliştirme Araçları
@@ -181,7 +183,6 @@
    # ==============================================================================
    # Önizleme Araçları
    # ==============================================================================
-   file           # Dosya tanımlayıcı
    jq             # JSON aracı
    bat            # Kod görüntüleyici
    glow           # Markdown görüntüleyici
