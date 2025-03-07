@@ -1,85 +1,139 @@
 #!/usr/bin/env bash
-
 #######################################
 #
-# Version: 1.0.0
-# Date: 2024-12-08
-# Author: Kenan Pelit
+# Version: 1.1.0
+# Date: 2025-03-07
+# Original Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
-# Description: HyprFlow
+# Description: HyprFlow - Enhanced Bluetooth Connection Manager
 #
 # License: MIT
 #
 #######################################
 
-# Bluetooth cihaz adresini tanımlıyoruz
-device_address="E8:EE:CC:4D:29:00"
-device_name="SL4" # Cihazın adı
+# Loglama fonksiyonu
+log() {
+	echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
 
-# Cihazın bağlantı durumunu alıyoruz
-connection_status=$(bluetoothctl info "$device_address" | grep "Connected:" | awk '{print $2}')
+# Hata kontrolü fonksiyonu
+check_command() {
+	command -v $1 >/dev/null 2>&1 || {
+		log "Hata: $1 komutu bulunamadı. Lütfen yükleyin."
+		exit 1
+	}
+}
 
-# Duruma göre bağlantı durumunu belirliyoruz
-if [ "$connection_status" == "yes" ]; then
-  status="connected"
-else
-  status="disconnected"
-fi
+# Bildirim gönderme fonksiyonu
+send_notification() {
+	if command -v notify-send >/dev/null 2>&1; then
+		notify-send -t 5000 "$1" "$2"
+	fi
+}
 
-# İlk bağlantı durumunu gösteriyoruz
-echo "Device $device_name ($device_address) is currently $status"
+# Ses ayarlarını yapılandırma fonksiyonu
+configure_audio() {
+	local mode=$1
 
-# Bağlantıyı kesme ve ses ayarlama işlemleri
-if [ "$connection_status" == "yes" ]; then
-  echo "Disconnecting from $device_name ($device_address)..."
-  bluetoothctl disconnect "$device_address" >/dev/null
-  notify-send -t 5000 "$device_name Disconnected" "$device_name ($device_address) bağlantısı kesildi."
-  status="disconnected"
+	if [ "$mode" = "bluetooth" ]; then
+		# Bluetooth cihazının tanımlanması için kısa bir bekleme süresi
+		log "Bluetooth ses cihazı bekleniyor..."
+		sleep 3
 
-  # Bağlantı kesildikten sonra varsayılan ses düzeylerini ayarlama
-  default_sink=$(pactl get-default-sink)
-  default_source=$(pactl get-default-source)
+		# PulseAudio/PipeWire Bluetooth ses çıkışını ayarlama
+		bluetooth_sink=$(pactl list short sinks | grep -i "bluez" | awk '{print $2}')
+		if [ -n "$bluetooth_sink" ]; then
+			pactl set-default-sink "$bluetooth_sink"
+			pactl set-sink-volume @DEFAULT_SINK@ 40%
+			log "Ses çıkışı Bluetooth cihazına ayarlandı: $bluetooth_sink (%40)"
+		else
+			log "Uyarı: Bluetooth cihazı ses çıkışı olarak bulunamadı."
+		fi
 
-  if [ -n "$default_sink" ]; then
-    pactl set-sink-volume "$default_sink" 15%
-    echo "Varsayılan ses çıkışı $default_sink olarak %15 seviyesine ayarlandı."
-  fi
+		# PulseAudio/PipeWire Bluetooth ses girişini ayarlama
+		bluetooth_source=$(pactl list short sources | grep -i "bluez" | awk '{print $2}')
+		if [ -n "$bluetooth_source" ]; then
+			pactl set-default-source "$bluetooth_source"
+			pactl set-source-volume @DEFAULT_SOURCE@ 5%
+			log "Ses girişi Bluetooth cihazına ayarlandı: $bluetooth_source (%5)"
+		else
+			log "Uyarı: Bluetooth cihazı ses girişi olarak bulunamadı."
+		fi
+	else
+		# Varsayılan ses ayarlarına dönme
+		pactl set-sink-volume @DEFAULT_SINK@ 15%
+		pactl set-source-volume @DEFAULT_SOURCE@ 0%
+		log "Varsayılan ses çıkışı %15, ses girişi %0 seviyesine ayarlandı."
+	fi
+}
 
-  if [ -n "$default_source" ]; then
-    pactl set-source-volume "$default_source" 0%
-    echo "Varsayılan ses girişi $default_source olarak %0 seviyesine ayarlandı."
-  fi
-else
-  # Cihaz bağlı değilse bağlantıyı sağlıyor ve ses ayarlarını yapıyoruz
-  echo "Connecting to $device_name ($device_address)..."
-  bluetoothctl connect "$device_address" >/dev/null
-  notify-send -t 5000 "$device_name Connected" "$device_name ($device_address) bağlantısı kuruldu."
-  status="connected"
+# Bluetooth bağlantı yönetimi fonksiyonu
+manage_bluetooth_connection() {
+	local device_address=$1
+	local device_name=$2
 
-  # Bluetooth cihazının tanımlanması için kısa bir bekleme süresi
-  sleep 3
+	# Cihazın bağlantı durumunu alıyoruz
+	if ! connection_status=$(bluetoothctl info "$device_address" | grep "Connected:" | awk '{print $2}'); then
+		log "Hata: Bluetooth cihaz bilgisi alınamadı."
+		exit 1
+	fi
 
-  # PulseAudio/PipeWire varsayılan profili Bluetooth için ayarlıyoruz
-  bluetooth_sink=$(pactl list short sinks | grep -i "bluez" | awk '{print $1}')
-  if [ -n "$bluetooth_sink" ]; then
-    # Ses çıkışını Bluetooth cihazına yönlendir
-    pactl set-default-sink "$bluetooth_sink"
-    pactl set-sink-volume "$bluetooth_sink" 40%
-    echo "Ses çıkışı Bluetooth cihazına ayarlandı: $bluetooth_sink"
-  else
-    echo "Bluetooth cihazı ses çıkışı olarak bulunamadı."
-  fi
+	# Duruma göre bağlantı durumunu belirliyoruz
+	if [ "$connection_status" == "yes" ]; then
+		current_status="bağlı"
 
-  bluetooth_source=$(pactl list short sources | grep -i "bluez" | awk '{print $1}')
-  if [ -n "$bluetooth_source" ]; then
-    # Ses girişini Bluetooth cihazına yönlendir
-    pactl set-default-source "$bluetooth_source"
-    pactl set-source-volume "$bluetooth_source" 5%
-    echo "Ses girişi Bluetooth cihazına ayarlandı: $bluetooth_source"
-  else
-    echo "Bluetooth cihazı ses girişi olarak bulunamadı."
-  fi
-fi
+		log "Cihaz $device_name ($device_address) şu anda $current_status"
+		log "Bağlantı kesiliyor..."
 
-# Son durumu gösteriyoruz
-echo "Device $device_name ($device_address) is now $status"
+		if bluetoothctl disconnect "$device_address"; then
+			log "Bağlantı başarıyla kesildi."
+			send_notification "$device_name Bağlantısı Kesildi" "$device_name ($device_address) bağlantısı kesildi."
+			configure_audio "default"
+			new_status="bağlantı kesildi"
+		else
+			log "Hata: Bağlantı kesilirken bir sorun oluştu."
+			exit 1
+		fi
+	else
+		current_status="bağlı değil"
+
+		log "Cihaz $device_name ($device_address) şu anda $current_status"
+		log "Bağlanılıyor..."
+
+		if bluetoothctl connect "$device_address"; then
+			log "Bağlantı başarıyla kuruldu."
+			send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+			configure_audio "bluetooth"
+			new_status="bağlandı"
+		else
+			log "Hata: Bağlanırken bir sorun oluştu."
+			exit 1
+		fi
+	fi
+
+	log "Cihaz $device_name ($device_address) şimdi $new_status"
+}
+
+# Ana işlem
+main() {
+	# Gerekli komutları kontrol et
+	check_command bluetoothctl
+	check_command pactl
+
+	# Bluetooth cihaz bilgilerini tanımlıyoruz
+	device_address="E8:EE:CC:4D:29:00"
+	device_name="SL4"
+
+	# Bluetooth etkin mi kontrol et
+	if ! bluetoothctl show | grep -q "Powered: yes"; then
+		log "Bluetooth etkin değil. Etkinleştiriliyor..."
+		bluetoothctl power on
+		sleep 2
+	fi
+
+	# Bluetooth bağlantısını yönet
+	manage_bluetooth_connection "$device_address" "$device_name"
+}
+
+# Scripti çalıştır
+main
