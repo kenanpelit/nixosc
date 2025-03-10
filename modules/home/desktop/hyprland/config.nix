@@ -451,6 +451,13 @@
         "animation popin, class:^(org.pulseaudio.pavucontrol)$"
         "dimaround, class:^(org.pulseaudio.pavucontrol)$"
 
+        # VLC
+        "float, class:^(vlc)$"
+        "size 800 1250, class:^(vlc)$"
+        "move 1700 90, class:^(vlc)$"
+        "workspace 6, class:^(vlc)$"
+        "pin, class:^(vlc)$"
+
         # ente
         "float, class:^(io.ente.auth)$"
         "size 400 900, class:^(io.ente.auth)$"
@@ -521,7 +528,9 @@
         "ALT CTRL, N, exec, spotifycli --next"                                        # Spotify next
         "ALT CTRL, B, exec, spotifycli --prev"                                        # Spotify prev 
         "ALT CTRL, E, exec, mpc-control toggle"                                       # MPC kontrolü
-        "ALT, i, exec, osc-vradio"                                                    # Virgin radio toggle
+        #"ALT, i, exec, osc-vradio"                                                    # Virgin radio toggle
+        "ALT, i, exec, hypr-vlc_toggle"                                               # VLC toggle
+
 
 
         # MPV Yönetimi
