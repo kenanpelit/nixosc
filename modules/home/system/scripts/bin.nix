@@ -264,9 +264,6 @@ let
   tsm = pkgs.writeShellScriptBin "tsm" (
     builtins.readFile ./bin/tsm.sh
   );
-  tsms = pkgs.writeShellScriptBin "tsms" (
-    builtins.readFile ./bin/tsms.sh
-  );
   tty_config = pkgs.writeShellScriptBin "tty_config" (
     builtins.readFile ./bin/tty_config.sh
   );
@@ -427,7 +424,6 @@ in {
     toggle_oppacity
     toggle_waybar
     tsm
-    tsms
     tty_config
     tunnelshow
     turbo-boost-setup
