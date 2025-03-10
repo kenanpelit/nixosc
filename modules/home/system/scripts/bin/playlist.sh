@@ -66,6 +66,7 @@ usage() {
 	echo "  -f, --format BİÇİM     Sadece belirtilen dosya formatını ekle (virgülle ayrılmış liste olabilir)"
 	echo "  -r, --recursive BOOLE  Alt dizinleri tara (true/false, varsayılan: true)"
 	echo "  -p, --prefix METİN     Tüm dosya yollarına önek ekle"
+	echo "  --player TİP           Oynatıcı tipi: 'vlc', 'mpv' veya 'dual' (her ikisi için, varsayılan: dual)"
 	echo "  -h, --help             Bu yardım mesajını göster"
 	echo
 	echo "Örnekler:"
@@ -107,6 +108,7 @@ GROUP=true
 FORMAT="mp3"
 RECURSIVE=true
 PREFIX=""
+PLAYER_TYPE="dual" # "vlc", "mpv" veya "dual" (her ikisi için)
 
 # Parametre işleme
 while [[ $# -gt 0 ]]; do
@@ -141,6 +143,13 @@ while [[ $# -gt 0 ]]; do
 		;;
 	-p | --prefix)
 		PREFIX="$2"
+		shift 2
+		;;
+	--player)
+		PLAYER_TYPE="$2"
+		if [[ ! "$PLAYER_TYPE" =~ ^(vlc|mpv|dual)$ ]]; then
+			error "Geçersiz oynatıcı tipi. 'vlc', 'mpv' veya 'dual' olmalıdır."
+		fi
 		shift 2
 		;;
 	-h | --help)
@@ -182,6 +191,7 @@ echo "Format: $FORMAT"
 echo "Sıralama: $SORT"
 echo "Gruplama: $GROUP"
 echo "Alt dizinler: $RECURSIVE"
+echo "Oynatıcı: $PLAYER_TYPE"
 if [ -n "$PREFIX" ]; then
 	echo "Önek: $PREFIX"
 fi
@@ -233,6 +243,13 @@ process_files() {
 	local current_lesson=""
 	local counter=0
 
+	# Playlist tipi dual ise, ikinci bir playlist dosyası oluştur
+	local mpv_playlist=""
+	if [ "$PLAYER_TYPE" = "dual" ]; then
+		mpv_playlist="${PLAYLIST%.m3u}_mpv.m3u"
+		echo "#EXTM3U" >"$mpv_playlist"
+	fi
+
 	while IFS= read -r file; do
 		((counter++))
 		show_progress $counter $total_files
@@ -244,32 +261,70 @@ process_files() {
 		lesson_dir=$(dirname "$file")
 		lesson_name=$(basename "$lesson_dir" | sed -E 's/^[0-9]+_[0-9]+_//; s/-/ /g')
 
-		# Yeni ders başladığında başlık ekle
-		if [ "$GROUP" = true ] && [ "$current_lesson" != "$lesson_name" ]; then
-			echo -e "\n#EXTINF:-1,=== $lesson_name ===" >>"$PLAYLIST"
-			current_lesson="$lesson_name"
-		fi
-
 		# Dosya adını al
 		file_basename=$(basename "$file")
 
 		# Dosya tipini basit bir şekilde al (dosya adını kullan)
 		file_type="${file_basename%.*}"
 
-		# Tam dosya yolunu kullan - göreli yol yerine
+		# Her iki oynatıcı için farklı yollar hazırla
+		# 1. VLC için mutlak yol
 		if [ -n "$PREFIX" ]; then
-			# Önek varsa ekle
-			relative_path="$PREFIX/$(realpath --relative-to="$DIR" "$file")"
+			vlc_path="$PREFIX/$(realpath --relative-to="$DIR" "$file")"
 		else
-			# Tam mutlak yolu kullan
-			relative_path="$file"
+			vlc_path="$file"
 		fi
 
-		echo "#EXTINF:-1,$file_type" >>"$PLAYLIST"
-		echo "$relative_path" >>"$PLAYLIST"
+		# 2. MPV için göreceli veya mutlak yol
+		mpv_path="$file" # Mutlak yol
+
+		# Hangi oynatıcı için playlist oluşturuyorsak uygun yolu kullan
+		if [ "$PLAYER_TYPE" = "vlc" ] || [ "$PLAYER_TYPE" = "dual" ]; then
+			# VLC playlist'i için
+			# Yeni ders başladığında başlık ekle
+			if [ "$GROUP" = true ] && [ "$current_lesson" != "$lesson_name" ]; then
+				echo -e "\n#EXTINF:-1,=== $lesson_name ===" >>"$PLAYLIST"
+				current_lesson="$lesson_name"
+			fi
+
+			echo "#EXTINF:-1,$file_type" >>"$PLAYLIST"
+			echo "$vlc_path" >>"$PLAYLIST"
+		fi
+
+		if [ "$PLAYER_TYPE" = "mpv" ] || [ "$PLAYER_TYPE" = "dual" ]; then
+			# MPV playlist'i için
+			if [ "$PLAYER_TYPE" = "dual" ]; then
+				# Dual modda ise MPV için ayrı bir dosyaya yaz
+
+				# Yeni ders başladığında başlık ekle
+				if [ "$GROUP" = true ] && [ "$current_lesson" != "$lesson_name" ] && [ "$PLAYER_TYPE" = "dual" ]; then
+					echo -e "\n#EXTINF:-1,=== $lesson_name ===" >>"$mpv_playlist"
+				fi
+
+				echo "#EXTINF:-1,$file_type" >>"$mpv_playlist"
+				echo "$mpv_path" >>"$mpv_playlist"
+			elif [ "$PLAYER_TYPE" = "mpv" ]; then
+				# Sadece MPV modunda ise, ana playlist'e yaz
+
+				# Yeni ders başladığında başlık ekle
+				if [ "$GROUP" = true ] && [ "$current_lesson" != "$lesson_name" ]; then
+					echo -e "\n#EXTINF:-1,=== $lesson_name ===" >>"$PLAYLIST"
+					current_lesson="$lesson_name"
+				fi
+
+				echo "#EXTINF:-1,$file_type" >>"$PLAYLIST"
+				echo "$mpv_path" >>"$PLAYLIST"
+			fi
+		fi
 	done <"$temp_file"
 
 	echo -e "\n"
+
+	# Eğer dual mod ise, MPV playlist'ini oluşturduğumuzu bildir
+	if [ "$PLAYER_TYPE" = "dual" ]; then
+		echo -e "${GREEN}VLC playlist oluşturuldu: $PLAYLIST${NC}"
+		echo -e "${GREEN}MPV playlist oluşturuldu: $mpv_playlist${NC}"
+	fi
 }
 
 process_files
@@ -287,6 +342,8 @@ fi
 # Dosya yollarını doğrula
 echo -e "${CYAN}Dosya yolları kontrol ediliyor...${NC}"
 invalid_paths=0
+
+# Ana playlist'i kontrol et
 while IFS= read -r line; do
 	# #EXTINF ile başlamayan ve boş olmayan satırları kontrol et
 	if [[ ! "$line" =~ ^#EXTINF && -n "$line" && ! "$line" =~ ^#EXTM3U ]]; then
@@ -296,6 +353,20 @@ while IFS= read -r line; do
 		fi
 	fi
 done <"$PLAYLIST"
+
+# Eğer dual mod ise, MPV playlist'ini de kontrol et
+if [ "$PLAYER_TYPE" = "dual" ]; then
+	mpv_playlist="${PLAYLIST%.m3u}_mpv.m3u"
+	while IFS= read -r line; do
+		# #EXTINF ile başlamayan ve boş olmayan satırları kontrol et
+		if [[ ! "$line" =~ ^#EXTINF && -n "$line" && ! "$line" =~ ^#EXTM3U ]]; then
+			if [ ! -f "$line" ]; then
+				echo -e "${YELLOW}Uyarı: MPV Dosya bulunamadı: $line${NC}"
+				((invalid_paths++))
+			fi
+		fi
+	done <"$mpv_playlist"
+fi
 
 # Sonuç bildirimi
 song_count=$(grep -c -v "#EXT" "$PLAYLIST")
@@ -312,5 +383,20 @@ fi
 echo -e "${GREEN}İşlem tamamlandı.${NC}"
 echo
 echo -e "${CYAN}Nasıl çalıştırmalı:${NC}"
-echo -e "  vlc \"$PLAYLIST\" --intf minimal"
-echo -e "  cvlc \"$PLAYLIST\""
+
+if [ "$PLAYER_TYPE" = "vlc" ] || [ "$PLAYER_TYPE" = "dual" ]; then
+	echo -e "  ${GREEN}VLC ile:${NC}"
+	echo -e "  vlc \"$PLAYLIST\" --intf minimal"
+	echo -e "  cvlc \"$PLAYLIST\""
+fi
+
+if [ "$PLAYER_TYPE" = "mpv" ] || [ "$PLAYER_TYPE" = "dual" ]; then
+	echo -e "  ${GREEN}MPV ile:${NC}"
+	if [ "$PLAYER_TYPE" = "dual" ]; then
+		mpv_playlist="${PLAYLIST%.m3u}_mpv.m3u"
+		echo -e "  mpv --playlist=\"$mpv_playlist\""
+	else
+		echo -e "  mpv --playlist=\"$PLAYLIST\""
+	fi
+	echo -e "  mpv --playlist=\"$PLAYLIST\" --loop-playlist=inf  # Tekrarlı çalma"
+fi
