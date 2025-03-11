@@ -531,8 +531,6 @@
         #"ALT, i, exec, osc-vradio"                                                    # Virgin radio toggle
         "ALT, i, exec, hypr-vlc_toggle"                                               # VLC toggle
 
-
-
         # MPV Yönetimi
         "CTRL ALT, 1, exec, hypr-mpv-manager start"                                   # MPV başlat
         "ALT, 1, exec, hypr-mpv-manager playback"                                     # Oynatma kontrolü
