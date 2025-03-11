@@ -34,6 +34,7 @@
    czkawka        # Yinelenen dosya bulucu GUI
    lftp           # FTP clients
    android-tools  # adb
+   scrcpy         # Android devices over USB or TCP/IP
  
    # ==============================================================================
    # Geliştirme Araçları
