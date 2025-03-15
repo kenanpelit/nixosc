@@ -251,8 +251,8 @@ function layout_1() {
 function layout_2() {
 	print_info "Creating 2-panel layout..."
 	tmux new-window -n 'kenp' \; \
-		split-window -v -p 50 \; \
-		select-pane -t 1
+		split-window -v -p 80 \; \
+		select-pane -t 2
 
 	# Silent execution
 	exec 2>/dev/null &
