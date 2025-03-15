@@ -74,7 +74,6 @@ DOT_PATHS=(
 	".config/google-chrome"
 	".config/hblock"
 	".config/nix"
-	".config/mrelay"
 	".config/sops"
 	".config/subliminal"
 	".config/ulauncher"

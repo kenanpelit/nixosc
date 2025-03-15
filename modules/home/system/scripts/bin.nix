@@ -222,11 +222,8 @@ let
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
   );
-  tkenp = pkgs.writeShellScriptBin "tkenp" (
-    builtins.readFile ./bin/tkenp.sh
-  );
-  tmo = pkgs.writeShellScriptBin "tmo" (
-    builtins.readFile ./bin/tmo.sh
+  tm = pkgs.writeShellScriptBin "tm" (
+    builtins.readFile ./bin/tm.sh
   );
   tmux-backup = pkgs.writeShellScriptBin "tmux-backup" (
     builtins.readFile ./bin/tmux-backup.sh
@@ -321,18 +318,6 @@ let
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
-  t1 = pkgs.writeShellScriptBin "t1" (
-    builtins.readFile ./bin/t1
-  );
-  t3 = pkgs.writeShellScriptBin "t3" (
-    builtins.readFile ./bin/t3
-  );
-  t4 = pkgs.writeShellScriptBin "t4" (
-    builtins.readFile ./bin/t4
-  );
-  tm = pkgs.writeShellScriptBin "tm" (
-    builtins.readFile ./bin/tm
-  );
 
 in {
   home.packages = with pkgs; [
@@ -410,8 +395,7 @@ in {
     start-foot-server
     startup-manager
     st
-    tkenp
-    tmo
+    tm
     tmux-backup
     tmux-copy
     tmux_cta
@@ -443,9 +427,5 @@ in {
     waybar-weather-update
     waybar-wf-recorder
     wrename
-    t1
-    t3
-    t4
-    tm
   ];
 }
