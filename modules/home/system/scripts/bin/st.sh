@@ -1,1 +1,1 @@
-~/.bin/sem.sh start Zen-Kenp default
+semsumo start Zen-Kenp default

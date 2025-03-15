@@ -30,20 +30,10 @@
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
       "vpn_mode": "never"
     },
-    "kcta": {
-      "command": "kitty",
-      "args": ["--class", "TmuxCta", "-T", "Tmux", "-e", "tmux_cta"],
-      "vpn_mode": "always"
-    },
     "wkenp": {
       "command": "wezterm",
       "args": ["start", "--class", "TmuxKenp", "-e", "tmux_kenp"],
       "vpn_mode": "never"
-    },
-    "wcta": {
-      "command": "wezterm",
-      "args": ["start", "--class", "TmuxCta", "-e", "tmux_cta"],
-      "vpn_mode": "always"
     },
     "wezterm": {
       "command": "wezterm",
