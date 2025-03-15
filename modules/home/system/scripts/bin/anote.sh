@@ -255,8 +255,8 @@ clean_history() {
 	if [[ -f "$HISTORY_FILE" ]]; then
 		# Var olmayan dosya referanslarını temizle
 		jq 'to_entries | map(
-           .value = (.value | map(select(.file | test("^/") and (.file | test("^" + env.HOME) and (env.HOME + .file | test("e"))))))
-           | from_entries' "$HISTORY_FILE" >"$temp_file"
+           .value = (.value | map(select((.file | test("^/")) and (.file | test("^" + env.HOME)) and ((env.HOME + .file) | test("e")))))
+           ) | from_entries' "$HISTORY_FILE" >"$temp_file"
 		mv "$temp_file" "$HISTORY_FILE"
 
 		# Boş dizin kayıtlarını temizle
