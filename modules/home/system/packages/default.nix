@@ -54,7 +54,7 @@
    stylua                # Lua biçimlendirici
    tig                   # Git metin arayüzü
    tree-sitter           # Parser üreteci
-   treefmt2              # Çoklu dil biçimlendirici
+   treefmt               # Çoklu dil biçimlendirici
    xxd                   # Hex editör
    nix-search-tv         # Nix paket arayıcı
    inputs.alejandra.defaultPackage.${pkgs.system} # Nix biçimlendirici
