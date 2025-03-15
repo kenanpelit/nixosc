@@ -213,9 +213,6 @@ let
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
   );
-  start-foot-server = pkgs.writeShellScriptBin "start-foot-server" (
-    builtins.readFile ./bin/start-foot-server.sh
-  );
   startup-manager = pkgs.writeShellScriptBin "startup-manager" (
     builtins.readFile ./bin/startup-manager.sh
   );
@@ -230,9 +227,6 @@ let
   );
   tmux-copy = pkgs.writeShellScriptBin "tmux-copy" (
     builtins.readFile ./bin/tmux-copy.sh
-  );
-  tmux_cta = pkgs.writeShellScriptBin "tmux_cta" (
-    builtins.readFile ./bin/tmux_cta.sh
   );
   tmux-fspeed = pkgs.writeShellScriptBin "tmux-fspeed" (
     builtins.readFile ./bin/tmux-fspeed.sh
@@ -392,13 +386,11 @@ in {
     snippetp
     snippets
     ssh-launcher
-    start-foot-server
     startup-manager
     st
     tm
     tmux-backup
     tmux-copy
-    tmux_cta
     tmux-fspeed
     tmux_kenp
     tmux-plugins
