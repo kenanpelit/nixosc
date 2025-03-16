@@ -264,6 +264,9 @@ let
   turbo-boost-setup = pkgs.writeShellScriptBin "turbo-boost-setup" (
     builtins.readFile ./bin/turbo-boost-setup.sh
   );
+  vir = pkgs.writeShellScriptBin "vir" (
+    builtins.readFile ./bin/vir.sh
+  );
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
   );
@@ -403,6 +406,7 @@ in {
     tty_config
     tunnelshow
     turbo-boost-setup
+    vir
     vm-start
     vnc-connect
     wallpaper-manager
