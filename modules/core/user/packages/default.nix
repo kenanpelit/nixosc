@@ -124,6 +124,7 @@ in
    flatpak             # Uygulama sanal ortam
    xdg-desktop-portal  # Masaüstü entegrasyon
    xdg-desktop-portal-gtk # GTK arka uç
+   libdrm              # Direct Rendering Manager library and headers
 
    # ==============================================================================
    # SSH ve Uzak Erişim

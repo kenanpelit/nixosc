@@ -66,6 +66,9 @@ let
   osc-rsync_backup = pkgs.writeShellScriptBin "osc-rsync_backup" (
     builtins.readFile ./admin/osc-rsync_backup.sh
   );
+  osc-rsync = pkgs.writeShellScriptBin "osc-rsync" (
+    builtins.readFile ./admin/osc-rsync.sh
+  );
   osc-semsumo-create = pkgs.writeShellScriptBin "osc-semsumo-create" (
     builtins.readFile ./admin/osc-semsumo-create.sh
   );
@@ -157,6 +160,7 @@ in {
     osc-profiles
     osc-radio
     osc-rsync_backup
+    osc-rsync
     osc-semsumo-create
     osc-soundctl
     osc-spotify
