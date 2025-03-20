@@ -98,7 +98,7 @@
    # === Hyprland Python Plugin Framework ===
    # PyPrland - Python plugin system for Hyprland
    pyprland = {
-     url = "github:hyprland-community/pyprland/bc70784ed75cdf765fb74d0d08b6703a6173b958";
+     url = "github:hyprland-community/pyprland/ac78b7182583f0507e225967ceb8870d8c49d010"; # 0317 - 1417
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
