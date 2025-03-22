@@ -10,7 +10,7 @@
       # Transmission script konumu
       export TSM_SCRIPT="tsm"
       # ZSH Completion için komut açıklamaları
-      *tsm*completions() {
+      _tsm_completions() {
           local commands=(
               # Temel komutlar
               "list:Torrent listesini göster"
@@ -56,7 +56,7 @@
           )
           _describe 'tsm' commands
       }
-      compdef *tsm*completions tsm-
+      compdef _tsm_completions tsm-
     '';
     # Transmission CLI alias'ları
     shellAliases = {
@@ -111,3 +111,4 @@
     };
   };
 }
+
