@@ -123,6 +123,13 @@ check_transmission() {
 # İlerleme çubuğu oluştur
 progress_bar() {
 	local percent=$1
+
+	# N/A veya sayı olmayanlar için kontrol
+	if [[ ! "$percent" =~ ^[0-9]+$ ]]; then
+		echo -e "  N/A |${Yellow}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░${Color_Off}|"
+		return
+	fi
+
 	local width=50
 	local num_blocks=$(((percent * width) / 100))
 	local progress=""
