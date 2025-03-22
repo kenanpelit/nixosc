@@ -335,10 +335,7 @@
         "float, class:^(gcr-prompter)$"
         "center, class:^(gcr-prompter)$"
         "pin, class:^(gcr-prompter)$"
-      ];
 
-      # Advanced Window Rules
-      windowrulev2 = [
         # Workspace Assignments
         "workspace 1 silent, class:^(Kenp)$"
         "workspace 1, class:^(zen)$"
