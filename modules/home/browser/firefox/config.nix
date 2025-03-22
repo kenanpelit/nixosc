@@ -18,8 +18,8 @@ let
  searchConfig = let
    nix-icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
  in {
-   "Ecosia" = {
-     iconUpdateURL = "https://www.ecosia.org/static/icons/favicon.ico";
+   "ecosia" = {
+     icon = "https://www.ecosia.org/static/icons/favicon.ico";
      updateInterval = 24 * 60 * 60 * 1000;
      definedAliases = ["@e" "@ecosia"];
      urls = lib.singleton {
@@ -62,7 +62,7 @@ let
      };
    };
    "Nixpkgs" = {
-     iconUpdateURL = "https://github.com/favicon.ico";
+     icon = "https://github.com/favicon.ico";
      definedAliases = ["@npkgs"];
      urls = lib.singleton {
        template = "https://github.com/search";
@@ -73,7 +73,7 @@ let
      };
    };
    "Github Nix Code" = {
-     iconUpdateURL = "https://github.com/favicon.ico";
+     icon = "https://github.com/favicon.ico";
      definedAliases = ["@ghn"];
      urls = lib.singleton {
        template = "https://github.com/search";
@@ -94,7 +94,7 @@ in {
      extensions.packages = extensionsList;
      search = {
        force = true;
-       default = "Ecosia";
+       default = "ecosia";
        engines = searchConfig;
      };
      settings = {
