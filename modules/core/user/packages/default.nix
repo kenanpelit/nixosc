@@ -98,6 +98,7 @@ in
    curl               # URL veri transfer
    wget               # Ağ dosya indirme
    socat              # Çok amaçlı relay
+   at
 
    # ==============================================================================
    # Sanallaştırma ve Container
