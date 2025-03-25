@@ -177,7 +177,7 @@ in
       nerd-fonts.symbols-only
       twemoji-color-font
       noto-fonts-emoji
-      maple-mono
+      maple-mono.NF  # Düzeltildi: Spesifik bir varyant kullanılıyor
       font-awesome
     ];
     
@@ -193,3 +193,4 @@ in
     };
   };
 }
+

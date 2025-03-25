@@ -167,7 +167,7 @@
    sway             # Pencere yöneticisi
    beauty-line-icon-theme # Simgeler
    gnomeExtensions.gsconnect # KDE Connect
-   walker           # Uygulama başlatıcı
+   #walker           # Uygulama başlatıcı
    wtype            # Tuş simülatörü
    whatsie          # WhatsApp
    whatsapp-for-linux # WhatsApp
