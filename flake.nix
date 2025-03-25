@@ -247,10 +247,10 @@
      inputs.nixpkgs.follows = "nixpkgs";
    };
    # === Application Launcher & Tools ===
-   walker = {
-     url = "github:abenz1267/walker";  # Updated to latest version
-     inputs.nixpkgs.follows = "nixpkgs";
-   };
+   #walker = {
+   #  url = "github:abenz1267/walker";  # Updated to latest version
+   #  inputs.nixpkgs.follows = "nixpkgs";
+   #};
  };
  
  # System outputs and configurations
@@ -301,7 +301,7 @@
            {
             environment.systemPackages = [
              inputs.nix-search-tv.packages.${system}.default
-             inputs.walker.packages.${system}.default
+             #inputs.walker.packages.${system}.default
             ];
            }
          ] ++ modules;  # Add machine-specific modules
