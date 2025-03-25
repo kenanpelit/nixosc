@@ -3,7 +3,7 @@
 #   NixOS System Configuration Flake
 #   Project: NixOS Configuration Suite (nixosc)
 #   Version: 2.0.0
-#   Date: 2024-01-23
+#   Date: 2024-03-25
 #   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
 #
@@ -69,9 +69,88 @@
    # === Desktop Environment - Hyprland Ecosystem ===
    # Core Hyprland compositor
    hyprland = {
-     url = "github:hyprwm/hyprland/9171db1984415a8553ee707bc2f558eb1ae06e7e"; # 0317
-     #url = "github:hyprwm/hyprland/aec69131cd3daa6915facef21b32c4914d22af90"; # 0324 - 5927
+     #url = "github:hyprwm/hyprland/9171db1984415a8553ee707bc2f558eb1ae06e7e"; # 0317
+     url = "github:hyprwm/hyprland";  # Latest version without pinning
      inputs.nixpkgs.follows = "nixpkgs";
+   };
+
+   # Hyprland language parsing library
+   hyprlang = {
+     url = "github:hyprwm/hyprlang";
+     inputs = {
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # Hyprland utility libraries
+   hyprutils = {
+     url = "github:hyprwm/hyprutils";
+     inputs = {
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # Wayland protocol definitions for Hyprland
+   hyprland-protocols = {
+     url = "github:hyprwm/hyprland-protocols";
+     inputs = {
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # XDG Desktop Portal implementation for Hyprland
+   xdph = {
+     url = "github:hyprwm/xdg-desktop-portal-hyprland";
+     inputs = {
+       hyprland-protocols.follows = "hyprland-protocols";
+       hyprlang.follows = "hyprlang";
+       hyprutils.follows = "hyprutils";
+       hyprwayland-scanner.follows = "hyprwayland-scanner";
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # Hyprland cursor library
+   hyprcursor = {
+     url = "github:hyprwm/hyprcursor";
+     inputs = {
+       hyprlang.follows = "hyprlang";
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # Hyprland Wayland protocol scanner
+   hyprwayland-scanner = {
+     url = "github:hyprwm/hyprwayland-scanner";
+     inputs = {
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # Hyprland graphics library
+   hyprgraphics = {
+     url = "github:hyprwm/hyprgraphics";
+     inputs = {
+       hyprutils.follows = "hyprutils";
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
+   };
+
+   # Hyprland Qt integration
+   hyprland-qtutils = {
+     url = "github:hyprwm/hyprland-qtutils";
+     inputs = {
+       hyprlang.follows = "hyprlang";
+       nixpkgs.follows = "nixpkgs";
+       systems.follows = "systems";
+     };
    };
 
    # Essential Hyprland plugins
@@ -99,7 +178,7 @@
    # === Hyprland Python Plugin Framework ===
    # PyPrland - Python plugin system for Hyprland
    pyprland = {
-     url = "github:hyprland-community/pyprland/ac78b7182583f0507e225967ceb8870d8c49d010"; # 0317 - 1417
+     url = "github:hyprland-community/pyprland";  # Updated to latest version
      inputs.nixpkgs.follows = "nixpkgs";
    };
    
@@ -169,12 +248,14 @@
    };
    # === Application Launcher & Tools ===
    walker = {
-     url = "github:abenz1267/walker/83d945b6c4579e20b0ad043585bbf6552b99d441"; # 0209 - 1052
+     url = "github:abenz1267/walker";  # Updated to latest version
      inputs.nixpkgs.follows = "nixpkgs";
    };
  };
+ 
  # System outputs and configurations
- outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, ... }@inputs:
+ outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, 
+             hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, ... }@inputs:
    let
      # === Global Variables ===
      username = "kenan";        # Primary user account
