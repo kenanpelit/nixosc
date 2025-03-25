@@ -45,15 +45,6 @@ let
   start-discord-never = pkgs.writeShellScriptBin "start-discord-never" (
     builtins.readFile ./start/start-discord-never.sh
   );
-  start-kcta-always = pkgs.writeShellScriptBin "start-kcta-always" (
-    builtins.readFile ./start/start-kcta-always.sh
-  );
-  start-kcta-default = pkgs.writeShellScriptBin "start-kcta-default" (
-    builtins.readFile ./start/start-kcta-default.sh
-  );
-  start-kcta-never = pkgs.writeShellScriptBin "start-kcta-never" (
-    builtins.readFile ./start/start-kcta-never.sh
-  );
   start-kitty-single-always = pkgs.writeShellScriptBin "start-kitty-single-always" (
     builtins.readFile ./start/start-kitty-single-always.sh
   );
@@ -98,15 +89,6 @@ let
   );
   start-transmission-gtk-never = pkgs.writeShellScriptBin "start-transmission-gtk-never" (
     builtins.readFile ./start/start-transmission-gtk-never.sh
-  );
-  start-wcta-always = pkgs.writeShellScriptBin "start-wcta-always" (
-    builtins.readFile ./start/start-wcta-always.sh
-  );
-  start-wcta-default = pkgs.writeShellScriptBin "start-wcta-default" (
-    builtins.readFile ./start/start-wcta-default.sh
-  );
-  start-wcta-never = pkgs.writeShellScriptBin "start-wcta-never" (
-    builtins.readFile ./start/start-wcta-never.sh
   );
   start-webcord-always = pkgs.writeShellScriptBin "start-webcord-always" (
     builtins.readFile ./start/start-webcord-always.sh
@@ -225,9 +207,6 @@ in {
     start-discord-always
     start-discord-default
     start-discord-never
-    start-kcta-always
-    start-kcta-default
-    start-kcta-never
     start-kitty-single-always
     start-kitty-single-default
     start-kitty-single-never
@@ -243,9 +222,6 @@ in {
     start-transmission-gtk-always
     start-transmission-gtk-default
     start-transmission-gtk-never
-    start-wcta-always
-    start-wcta-default
-    start-wcta-never
     start-webcord-always
     start-webcord-default
     start-webcord-never
