@@ -98,7 +98,7 @@ in
    curl               # URL veri transfer
    wget               # Ağ dosya indirme
    socat              # Çok amaçlı relay
-   at
+   at                 # job scheduling command
 
    # ==============================================================================
    # Sanallaştırma ve Container

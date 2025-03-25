@@ -38,7 +38,10 @@ TARGET_ROOT="$HOME"
 # Link yapılacak dizinlerin listesi
 DIRS=(
 	"Documents"
+	"Downloads"
 	"Music"
+	"Pictures"
+	"Videos"
 	"Work"
 	"Tmp"
 	# Buraya yeni dizinler eklenebilir
