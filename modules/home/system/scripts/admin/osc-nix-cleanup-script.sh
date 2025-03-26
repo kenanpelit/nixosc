@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Nix ve NixOS için kapsamlı temizlik öneri scripti
+# Nix ve NixOS için gelişmiş kapsamlı temizlik öneri scripti
 # Bu script, Nix store'u temizlemek için yapmanız gerekenleri size önerir
 
 # Renkli çıktı için
@@ -11,34 +11,40 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}===========================================================${NC}"
-echo -e "${BLUE}           NixOS Kapsamlı Temizlik Önerileri               ${NC}"
+echo -e "${BLUE}           NixOS Gelişmiş Temizlik Önerileri               ${NC}"
 echo -e "${BLUE}===========================================================${NC}"
 
 # Kullanıcıya önerileri göster
 echo -e "\n${YELLOW}Aşağıdaki komutları sırasıyla çalıştırmanız önerilir:${NC}"
 
-echo -e "\n${GREEN}[1]${NC} Tüm eski nesilleri temizlemek için:"
-echo -e "   • sudo nix-collect-garbage --delete-older-than 0d"
-
-echo -e "\n${GREEN}[2]${NC} Tüm kullanıcı profillerini temizlemek için:"
-echo -e "   • sudo find /nix/var/nix/profiles/per-user -type l -name '*-link' | xargs -r rm -f"
-
-echo -e "\n${GREEN}[3]${NC} Sistem nesillerini temizlemek için:"
-echo -e "   • sudo nixos-rebuild boot --delete-generations old"
-
-echo -e "\n${GREEN}[4]${NC} Gereksiz paketleri temizlemek için:"
+echo -e "\n${GREEN}[1]${NC} Temel temizlik için:"
+echo -e "   • sudo nix-collect-garbage --delete-older-than 7d"
 echo -e "   • sudo nix-store --gc"
 
-echo -e "\n${GREEN}[5]${NC} Nix store'u optimize etmek için:"
+echo -e "\n${GREEN}[2]${NC} Home-manager nesillerini temizlemek için:"
+echo -e "   • LC_ALL=C home-manager expire-generations \"\$(LC_ALL=C date +%Y-%m-%d)\""
+
+echo -e "\n${GREEN}[3]${NC} GC köklerini (roots) listelemek için:"
+echo -e "   • nix-store --gc --print-roots | egrep -v \"^(/nix/var|/run/\\w+-system|\\{memory|/proc)\""
+
+echo -e "\n${GREEN}[4]${NC} Güvenli olmayan GC köklerini kaldırmak için (dikkatli kullanın):"
+echo -e "   • nix-store --gc --print-roots | egrep -v \"^(/nix/var|/run/\\w+-system|\\{memory|/proc)\" | awk '{ print \$1 }' | grep -vE 'home-manager|flake-registry\\.json' | xargs -L1 unlink"
+
+echo -e "\n${GREEN}[5]${NC} Store'u optimize etmek için:"
 echo -e "   • sudo nix-store --optimize"
 
-echo -e "\n${GREEN}[6]${NC} Sistemi yeniden derlemek için:"
+echo -e "\n${GREEN}[6]${NC} Sistem yapılandırmasını yenilemek için:"
+echo -e "   • sudo nixos-rebuild boot --delete-generations old"
 echo -e "   • sudo nixos-rebuild switch"
+
+echo -e "\n${GREEN}[7]${NC} Home-manager yapılandırmasını yenilemek için:"
+echo -e "   • home-manager switch"
 
 echo -e "\n${BLUE}===========================================================${NC}"
 
 echo -e "\n${YELLOW}Notlar:${NC}"
 echo -e "• Her komutu sırasıyla çalıştırmanız ve tamamlanmasını beklemeniz önerilir."
+echo -e "• 4. adım güçlüdür ve bazı sembolik bağları kaldırır - dikkatli kullanın."
 echo -e "• Bu temizlik işlemleri bittikten sonra, Hyprland yapılandırma hatalarınız çözülmüş olabilir."
 echo -e "• Hyprland yapılandırmanızda windowrulev2 formatını kullanmayı unutmayın."
 echo -e "• Temizlik işlemi tamamlandıktan sonra, oturumu yeniden başlatmak faydalı olabilir."
