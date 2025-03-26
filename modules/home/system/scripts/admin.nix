@@ -54,6 +54,9 @@ let
   osc-mrelay = pkgs.writeShellScriptBin "osc-mrelay" (
     builtins.readFile ./admin/osc-mrelay.sh
   );
+  osc-nix-cleanup-script = pkgs.writeShellScriptBin "osc-nix-cleanup-script" (
+    builtins.readFile ./admin/osc-nix-cleanup-script.sh
+  );
   osc-pass-tool = pkgs.writeShellScriptBin "osc-pass-tool" (
     builtins.readFile ./admin/osc-pass-tool.sh
   );
@@ -156,6 +159,7 @@ in {
     osc-gist
     osc-gpg_unlock
     osc-mrelay
+    osc-nix-cleanup-script
     osc-pass-tool
     osc-profiles
     osc-radio
