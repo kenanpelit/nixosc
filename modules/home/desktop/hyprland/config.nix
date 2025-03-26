@@ -335,7 +335,10 @@
         "float, class:^(gcr-prompter)$"
         "center, class:^(gcr-prompter)$"
         "pin, class:^(gcr-prompter)$"
+      ];
 
+      # Advanced Window Rules
+      windowrulev2 = [
         # Workspace Assignments
         "workspace 1 silent, class:^(Kenp)$"
         "workspace 1, class:^(zen)$"
@@ -447,13 +450,6 @@
         "size 60% 90%, class:^(org.pulseaudio.pavucontrol)$" 
         "animation popin, class:^(org.pulseaudio.pavucontrol)$"
         "dimaround, class:^(org.pulseaudio.pavucontrol)$"
-
-        # VLC
-        "float, class:^(vlc)$"
-        "size 800 1250, class:^(vlc)$"
-        "move 1700 90, class:^(vlc)$"
-        "workspace 6, class:^(vlc)$"
-        "pin, class:^(vlc)$"
 
         # ente
         "float, class:^(io.ente.auth)$"
