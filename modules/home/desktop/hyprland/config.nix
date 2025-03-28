@@ -558,7 +558,7 @@
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify-always'"
         "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
-        "ALT, T, exec, start-wkenp-always"
+        "ALT, T, exec, start-kkenp-always"
         "ALT CTRL, C, exec, start-wkenp-always"
         "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
 
