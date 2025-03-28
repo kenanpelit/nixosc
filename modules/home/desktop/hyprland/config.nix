@@ -323,11 +323,11 @@
         "float, ^(notes)$"
         "size 70% 50%, ^(notes)$"
         "center, ^(notes)$"
-        "float, ^(anotes)$"
-        "center, ^(anotes)$"
-        "size 1536 864, ^(anotes)$"
-        "animation slide, ^(anotes)$"
-        "opacity 0.95 0.95, ^(anotes)$"
+        "float, ^(anote)$"
+        "center, ^(anote)$"
+        "size 1536 864, ^(anote)$"
+        "animation slide, ^(anote)$"
+        "opacity 0.95 0.95, ^(anote)$"
         "float,^(otpclient)$"
         "size 20%,^(otpclient)$"
         "move 79% 40%,^(otpclient)$"
@@ -568,6 +568,7 @@
         "ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
         ",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
         "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
+        "$mainMod CTRL, M, exec, hypr-start-manager anote -t"                       # Not yöneticisi
         "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
         # Screenshot v1.2.0 Kısayolları
@@ -663,7 +664,7 @@
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
 
         # Temel Çalışma Alanı Navigasyonu
-        "ALT, M, workspace, previous"              # Önceki çalışma alanına dön
+        "ALT, N, workspace, previous"              # Önceki çalışma alanına dön
         "ALT, Tab, workspace, e+1"                 # Bir sonraki çalışma alanına geç
         "ALT CTRL, tab, workspace, e-1"            # Bir önceki çalışma alanına geç
 
