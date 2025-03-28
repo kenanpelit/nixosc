@@ -111,6 +111,9 @@ let
   osc-ulauncher_ext = pkgs.writeShellScriptBin "osc-ulauncher_ext" (
     builtins.readFile ./admin/osc-ulauncher_ext.sh
   );
+  osc-video-converter = pkgs.writeShellScriptBin "osc-video-converter" (
+    builtins.readFile ./admin/osc-video-converter.sh
+  );
   osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
     builtins.readFile ./admin/osc-vradio.sh
   );
@@ -178,6 +181,7 @@ in {
     osc-test
     osc-tv-splitter
     osc-ulauncher_ext
+    osc-video-converter
     osc-vradio
     semsumo
     svmarch

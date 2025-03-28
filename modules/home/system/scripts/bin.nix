@@ -105,17 +105,11 @@ let
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
   );
-  mkv2mp4 = pkgs.writeShellScriptBin "mkv2mp4" (
-    builtins.readFile ./bin/mkv2mp4.sh
-  );
   monitor_brightness = pkgs.writeShellScriptBin "monitor_brightness" (
     builtins.readFile ./bin/monitor_brightness.sh
   );
   move_media_files = pkgs.writeShellScriptBin "move_media_files" (
     builtins.readFile ./bin/move_media_files.sh
-  );
-  mp4tomkv = pkgs.writeShellScriptBin "mp4tomkv" (
-    builtins.readFile ./bin/mp4tomkv.sh
   );
   mpc-control = pkgs.writeShellScriptBin "mpc-control" (
     builtins.readFile ./bin/mpc-control.sh
@@ -203,9 +197,6 @@ let
   );
   smart-suspend = pkgs.writeShellScriptBin "smart-suspend" (
     builtins.readFile ./bin/smart-suspend.sh
-  );
-  snippetp = pkgs.writeShellScriptBin "snippetp" (
-    builtins.readFile ./bin/snippetp.sh
   );
   snippets = pkgs.writeShellScriptBin "snippets" (
     builtins.readFile ./bin/snippets.sh
@@ -353,10 +344,8 @@ in {
     hypr-workspace-monitor
     image-deduplicator
     lofi
-    mkv2mp4
     monitor_brightness
     move_media_files
-    mp4tomkv
     mpc-control
     music
     ntodo
@@ -386,7 +375,6 @@ in {
     screenshot
     sil_ayni_mp4
     smart-suspend
-    snippetp
     snippets
     ssh-launcher
     startup-manager
