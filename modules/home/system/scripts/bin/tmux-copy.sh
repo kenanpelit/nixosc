@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #######################################
 #
-# Version: 1.0.1
-# Date: 2025-03-28
+# Version: 1.0.2
+# Date: 2025-03-29
 # Original Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
 # Description: ClipManager - Tmux Buffer ve Clipboard Yönetim Aracı
@@ -38,10 +38,11 @@ set -euo pipefail
 
 # Kullanım bilgisi
 usage() {
-	echo "Kullanım: $0 [-b|-c]"
+	echo "Kullanım: $0 [-b|-c|-h]"
 	echo "Seçenekler:"
 	echo "  -b: Buffer yönetimi için tmux modu"
 	echo "  -c: Clipboard yönetimi için cliphist modu"
+	echo "  -h: Bu yardım mesajını gösterir"
 	echo
 	echo "Kısayollar:"
 	echo "  CTRL-R: Listeyi yenile"
@@ -52,7 +53,7 @@ usage() {
 	exit 1
 }
 
-# Buffer modu için fonksiyon
+# Buffer modu için düzeltilmiş fonksiyon
 handle_buffer_mode() {
 	# Tmux session kontrolü
 	if ! tmux info &>/dev/null; then
@@ -61,25 +62,39 @@ handle_buffer_mode() {
 	fi
 
 	# Buffer listesi boş mu kontrolü
-	if ! tmux list-buffers &>/dev/null; then
+	if ! tmux list-buffers &>/dev/null || [[ -z "$(tmux list-buffers 2>/dev/null)" ]]; then
 		echo "Hata: Buffer listesi boş!"
 		exit 1
 	fi
 
+	# Buffer önizleme fonksiyonu
+	preview_buffer() {
+		local buffer_name="$1"
+		if [[ -n "$buffer_name" ]]; then
+			tmux show-buffer -b "$buffer_name"
+		else
+			echo "Geçersiz buffer adı"
+		fi
+	}
+
 	# Buffer listesi ile fzf
 	selected_buffer=$(tmux list-buffers -F '#{buffer_name}:#{buffer_sample}' |
-		fzf --preview 'tmux show-buffer -b $(echo {} | cut -d ":" -f1)' \
+		fzf --preview 'buffer_name=$(echo {} | cut -d ":" -f1); tmux show-buffer -b "$buffer_name"' \
 			--preview-window 'right:60%:wrap' \
-			--header 'Buffer Seçimi | CTRL-R: Yenile | ESC: Çıkış' \
+			--header 'Buffer Seçimi | CTRL-R: Yenile | CTRL-Y: Kopyala | ESC: Çıkış' \
 			--bind 'ctrl-r:reload(tmux list-buffers -F "#{buffer_name}:#{buffer_sample}")' \
-			--bind 'ctrl-y:execute-silent(tmux show-buffer -b $(echo {} | cut -d ":" -f1) | wl-copy)' \
+			--bind 'ctrl-y:execute-silent(buffer_name=$(echo {} | cut -d ":" -f1); tmux show-buffer -b "$buffer_name" | wl-copy)' \
 			--delimiter ':')
 
 	# Seçim yapıldı mı kontrolü
 	if [[ -n "$selected_buffer" ]]; then
 		buffer_name=$(echo "$selected_buffer" | cut -d ':' -f1)
-		tmux paste-buffer -b "$buffer_name"
-		echo "Seçilen buffer yapıştırıldı"
+		if [[ -n "$buffer_name" ]]; then
+			tmux paste-buffer -b "$buffer_name"
+			echo "Seçilen buffer yapıştırıldı: $buffer_name"
+		else
+			echo "Geçersiz buffer adı, yapıştırılamadı"
+		fi
 	fi
 }
 
@@ -190,6 +205,10 @@ main() {
 	-c)
 		echo "INFO: Clipboard modu başlatılıyor..."
 		handle_cliphist_mode
+		;;
+	-h | --help)
+		usage
+		exit 0
 		;;
 	*)
 		usage
