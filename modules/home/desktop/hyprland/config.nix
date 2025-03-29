@@ -323,11 +323,11 @@
         "float, ^(notes)$"
         "size 70% 50%, ^(notes)$"
         "center, ^(notes)$"
-        "float, ^(anotes)$"
-        "center, ^(anotes)$"
-        "size 1536 864, ^(anotes)$"
-        "animation slide, ^(anotes)$"
-        "opacity 0.95 0.95, ^(anotes)$"
+        "float, ^(anote)$"
+        "center, ^(anote)$"
+        "size 1536 864, ^(anote)$"
+        "animation slide, ^(anote)$"
+        "opacity 0.95 0.95, ^(anote)$"
         "float,^(otpclient)$"
         "size 20%,^(otpclient)$"
         "move 79% 40%,^(otpclient)$"
@@ -335,7 +335,10 @@
         "float, class:^(gcr-prompter)$"
         "center, class:^(gcr-prompter)$"
         "pin, class:^(gcr-prompter)$"
+      ];
 
+      # Advanced Window Rules
+      windowrulev2 = [
         # Workspace Assignments
         "workspace 1 silent, class:^(Kenp)$"
         "workspace 1, class:^(zen)$"
@@ -448,13 +451,6 @@
         "animation popin, class:^(org.pulseaudio.pavucontrol)$"
         "dimaround, class:^(org.pulseaudio.pavucontrol)$"
 
-        # VLC
-        "float, class:^(vlc)$"
-        "size 800 1250, class:^(vlc)$"
-        "move 1700 90, class:^(vlc)$"
-        "workspace 6, class:^(vlc)$"
-        "pin, class:^(vlc)$"
-
         # ente
         "float, class:^(io.ente.auth)$"
         "size 400 900, class:^(io.ente.auth)$"
@@ -562,8 +558,8 @@
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify-always'"
         "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
-        "ALT, T, exec, semsumo start kkenp always"
-        "ALT CTRL, C, exec, semsumo start wcta always"
+        "ALT, T, exec, start-kkenp-always"
+        "ALT CTRL, C, exec, start-wkenp-always"
         "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
 
         # Sistem Fonksiyonları
@@ -572,6 +568,7 @@
         "ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
         ",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
         "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
+        "$mainMod CTRL, M, exec, hypr-start-manager anote -t"                       # Not yöneticisi
         "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
         # Screenshot v1.2.0 Kısayolları
@@ -667,7 +664,7 @@
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
 
         # Temel Çalışma Alanı Navigasyonu
-        "ALT, M, workspace, previous"              # Önceki çalışma alanına dön
+        "ALT, N, workspace, previous"              # Önceki çalışma alanına dön
         "ALT, Tab, workspace, e+1"                 # Bir sonraki çalışma alanına geç
         "ALT CTRL, tab, workspace, e-1"            # Bir önceki çalışma alanına geç
 
