@@ -153,13 +153,13 @@ check_dependencies() {
 	done
 
 	# En az bir clipboard yardımcı programı gerekli
-	if ! command -v xsel &>/dev/null &&
+	if ! command -v wl-copy &>/dev/null &&
+		! command -v xsel &>/dev/null &&
 		! command -v xclip &>/dev/null &&
-		! command -v wl-copy &>/dev/null &&
 		! command -v pbcopy &>/dev/null &&
 		! command -v clip &>/dev/null &&
 		[[ "$TERM_PROGRAM" != tmux ]]; then
-		missing_deps+=("xsel/xclip/wl-copy/pbcopy/clip/tmux")
+		missing_deps+=("wl-copy/xclip/xsel/pbcopy/clip/tmux")
 	fi
 
 	if [[ ${#missing_deps[@]} -gt 0 ]]; then
@@ -288,29 +288,72 @@ update_cache() {
 	mv "$CACHE_DIR/temp_cache" "$cache_file"
 }
 
-# Panoya kopyalama (platform bağımsız)
+# Panoya kopyalama (platform bağımsız ve geliştirilmiş)
 copy_to_clipboard() {
 	local content="$1"
+	local success=false
+	local clipboard_tool=""
+	local error_output=""
 
-	# tmux içindeyse tmux tamponuna kopyala
-	if [[ "$TERM_PROGRAM" = tmux ]]; then
+	# Clipboard araçlarını ve uygunluklarını kontrol et
+	if [[ -n "$WAYLAND_DISPLAY" ]] && command -v wl-copy >/dev/null 2>&1; then
+		clipboard_tool="wl-copy"
+		error_output=$(printf '%s' "$content" | wl-copy 2>&1) && success=true
+	elif [[ -n "$DISPLAY" ]]; then
+		if command -v xsel >/dev/null 2>&1; then
+			clipboard_tool="xsel"
+			error_output=$(printf '%s' "$content" | xsel -b 2>&1) && success=true
+		elif command -v xclip >/dev/null 2>&1; then
+			clipboard_tool="xclip"
+			error_output=$(printf '%s' "$content" | xclip -selection clipboard -r 2>&1) && success=true
+		fi
+	elif [[ "$OSTYPE" == "darwin"* ]] && command -v pbcopy >/dev/null 2>&1; then
+		clipboard_tool="pbcopy"
+		error_output=$(printf '%s' "$content" | pbcopy 2>&1) && success=true
+	elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]] && command -v clip >/dev/null 2>&1; then
+		clipboard_tool="clip"
+		error_output=$(printf '%s' "$content" | clip 2>&1) && success=true
+	fi
+
+	# Tmux içindeyse tmux tamponuna kopyala (ek güvenlik olarak)
+	if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
 		printf '%s' "$content" | tmux load-buffer - 2>/dev/null
+		if [[ $? -eq 0 ]]; then
+			# Diğer yöntemler başarısız olduysa tmux'u kullan
+			if [[ "$success" != "true" ]]; then
+				success=true
+				clipboard_tool="tmux buffer"
+			fi
+		fi
 	fi
 
-	# Kullanılabilir clipboard araçlarını dene
-	printf '%s' "$content" | wl-copy 2>/dev/null ||
-		printf '%s' "$content" | xsel -b 2>/dev/null ||
-		printf '%s' "$content" | xclip -selection clipboard -r 2>/dev/null ||
-		printf '%s' "$content" | pbcopy 2>/dev/null ||
-		printf '%s' "$content" | clip 2>/dev/null ||
+	# Hiçbir clipboard aracı bulunamadı veya çalışmadıysa, dosyaya yaz
+	if [[ "$success" != "true" ]]; then
+		mkdir -p "$CACHE_DIR"
 		printf '%s' "$content" >"$CACHE_DIR/clipboard_content"
-
-	# Başarı durumu kontrol et
-	if [[ $? -eq 0 ]]; then
-		echo "✓ İçerik panoya kopyalandı"
-	else
-		echo "⚠️ Panoya kopyalama başarısız! İçerik $CACHE_DIR/clipboard_content dosyasına yazıldı."
+		echo "⚠️ Panoya kopyalama başarısız! Kullanılabilir clipboard aracı bulunamadı."
+		echo "⚠️ İçerik $CACHE_DIR/clipboard_content dosyasına yazıldı."
+		# Kopyalanamadığını belirtmek için hata kodu döndür
+		return 1
 	fi
+
+	# İçerik uzunluğuna göre bildirim şekli
+	local content_length=${#content}
+	local preview=""
+
+	if [[ $content_length -gt 100 ]]; then
+		# Uzun içerik için ilk 50 ve son 30 karakteri göster
+		preview=$(echo "${content:0:50}...${content: -30}" | tr -d '\n')
+	else
+		# Kısa içerik için tamamını göster (yeni satırları temizleyerek)
+		preview=$(echo "$content" | tr -d '\n')
+	fi
+
+	echo "✓ İçerik $(tput setaf 2)başarıyla$(tput sgr0) panoya kopyalandı (${clipboard_tool})"
+	echo "$(tput setaf 8)Önizleme: ${preview}$(tput sgr0)"
+
+	# Başarılı durumda 0 dön
+	return 0
 }
 
 # =================================================================
@@ -424,9 +467,10 @@ snippet_mode() {
 		echo "$selected" | bat --color=always -pp -l "${file_name##*.}"
 		echo -e "\n"
 
-		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h): " yn
+		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
 		echo
-		[[ "$yn" != "e" ]] && break
+		[[ -z "$yn" ]] && yn="h" # Enter'a basılırsa varsayılan 'h' olsun
+		[[ "$yn" != "e" && "$yn" != "E" ]] && break
 	done
 }
 
@@ -540,9 +584,10 @@ cheats_mode() {
 		echo "$selected" | bat --color=always -pp -l "${file_name##*.}"
 		echo -e "\n"
 
-		read -n 1 -p "Başka bir cheat seçmek ister misiniz? (e/h): " yn
+		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
 		echo
-		[[ "$yn" != "e" ]] && break
+		[[ -z "$yn" ]] && yn="h" # Enter'a basılırsa varsayılan 'h' olsun
+		[[ "$yn" != "e" && "$yn" != "E" ]] && break
 	done
 }
 
@@ -624,9 +669,11 @@ copy_mode() {
 		echo -e "\n--- Kopyalanan İçerik ---"
 		bat --color=always -pp "$selected"
 		echo -e "\n"
-		read -n 1 -p "Başka bir dosya içeriği kopyalamak ister misiniz? (e/h): " yn
+
+		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
 		echo
-		[[ "$yn" != "e" ]] && break
+		[[ -z "$yn" ]] && yn="h" # Enter'a basılırsa varsayılan 'h' olsun
+		[[ "$yn" != "e" && "$yn" != "E" ]] && break
 	done
 }
 
