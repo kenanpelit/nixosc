@@ -13,7 +13,7 @@
 # Repository: github.com/kenanpelit
 
 # İlham kaynağı: notekami projesi (https://github.com/gotbletu/fzf-nova)
-# Versiyon: 2.0
+# Versiyon: 2.1
 # Lisans: GPLv3
 
 # Katı mod - hataları daha iyi yakalamak için
@@ -44,6 +44,12 @@ CLEANUP_INTERVAL=$((7 * 24 * 60 * 60)) # 7 gün
 export FZF_DEFAULT_OPTS="-e -i --info=hidden --layout=reverse --scroll-off=5 --tiebreak=index"
 FZF_DEFAULT_OPTS+=" --bind 'home:first,end:last,ctrl-k:preview-page-up,ctrl-j:preview-page-down'"
 FZF_DEFAULT_OPTS+=" --bind 'ctrl-y:preview-up,ctrl-e:preview-down,ctrl-/:change-preview-window(hidden|)'"
+
+# Varsa konfigürasyon dosyasını yükle
+if [[ -f "$CONFIG_FILE" ]]; then
+	# shellcheck source=/dev/null
+	source "$CONFIG_FILE"
+fi
 
 # =================================================================
 # YARDIMCI FONKSİYONLAR
@@ -159,7 +165,7 @@ check_dependencies() {
 		! command -v xclip &>/dev/null &&
 		! command -v pbcopy &>/dev/null &&
 		! command -v clip &>/dev/null &&
-		[[ "$TERM_PROGRAM" != tmux ]]; then
+		[[ "$TERM_PROGRAM" != tmux ]] && [[ -z "$TMUX" ]]; then
 		missing_deps+=("wl-copy/xclip/xsel/pbcopy/clip/tmux")
 	fi
 
@@ -194,26 +200,32 @@ create_required_directories() {
 
 # Kayıt işlemleri
 update_history() {
-	local dir=$1
-	local file=$2
+	local dir="$1"
+	local file="$2"
 	local timestamp=$(date +%s)
 	local temp_file="$CACHE_DIR/history.tmp"
 
 	# history.json dosyası yoksa oluştur
 	[[ ! -f "$HISTORY_FILE" ]] && echo "{}" >"$HISTORY_FILE"
 
+	# Dizin ve dosya yollarında özel karakterleri escape et
+	local esc_dir
+	local esc_file
+	esc_dir=$(echo "$dir" | sed 's/\\/\\\\/g; s/"/\\"/g')
+	esc_file=$(echo "$file" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
 	# Dizin geçmişte varsa güncelle, yoksa ekle
-	if jq -e "has(\"$dir\")" "$HISTORY_FILE" >/dev/null; then
-		jq --arg dir "$dir" \
-			--arg file "$file" \
+	if jq -e "has(\"$esc_dir\")" "$HISTORY_FILE" >/dev/null; then
+		jq --arg dir "$esc_dir" \
+			--arg file "$esc_file" \
 			--arg time "$timestamp" \
 			'.[$dir] = (.[$dir] | map(select(.file != $file)) + [{
                 "file": $file,
                 "time": $time | tonumber
              }] | sort_by(-.time)[0:100])' "$HISTORY_FILE" >"$temp_file"
 	else
-		jq --arg dir "$dir" \
-			--arg file "$file" \
+		jq --arg dir "$esc_dir" \
+			--arg file "$esc_file" \
 			--arg time "$timestamp" \
 			'.[$dir] = [{
                 "file": $file,
@@ -226,12 +238,12 @@ update_history() {
 
 # Geçmiş dosyaları sıralar (en son kullanılanlar önce)
 get_sorted_files() {
-	local dir=$1
+	local dir="$1"
 	local recent_files=""
 
 	# Geçmişte kayıtlı dosyaları al
-	if [[ -f "$HISTORY_FILE" ]] && jq -e "has(\"$dir\")" "$HISTORY_FILE" >/dev/null; then
-		recent_files=$(jq -r --arg dir "$dir" '.[$dir][].file' "$HISTORY_FILE")
+	if [[ -f "$HISTORY_FILE" ]] && jq -e "has(\"$dir\")" "$HISTORY_FILE" >/dev/null 2>&1; then
+		recent_files=$(jq -r --arg dir "$dir" '.[$dir][].file' "$HISTORY_FILE" 2>/dev/null)
 	fi
 
 	# Önce geçmiş dosyaları göster
@@ -240,9 +252,9 @@ get_sorted_files() {
 	done < <(echo "$recent_files")
 
 	# Sonra diğer dosyaları göster (geçmişte olmayanlar)
-	find "$dir" -type f | while IFS= read -r file; do
+	find "$dir" -type f 2>/dev/null | while IFS= read -r file; do
 		if [[ -n "$recent_files" ]]; then
-			echo "$recent_files" | grep -q "^$file$" || echo "$file"
+			echo "$recent_files" | grep -Fxq "$file" || echo "$file"
 		else
 			echo "$file"
 		fi
@@ -256,9 +268,20 @@ clean_history() {
 	if [[ -f "$HISTORY_FILE" ]]; then
 		# Var olmayan dosya referanslarını temizle
 		jq 'to_entries | map(
-           .value = (.value | map(select((.file | test("^/")) and (.file | test("^" + env.HOME)) and ((env.HOME + .file) | test("e")))))
+           .value = (.value | map(select(.file | test("^/") | not or (.file | test("^" + env.HOME) | not) or ((.file) | test("e")))))
            ) | from_entries' "$HISTORY_FILE" >"$temp_file"
-		mv "$temp_file" "$HISTORY_FILE"
+
+		# Düzeltilmiş kontrol: gerçek dosyaları tut
+		jq 'to_entries | map(
+           .value = (.value | map(select(.file | halt_error(1) as $_ | input_filename | capture("^(?<fn>.*)$") | .fn as $fn | $fn | test("e") )))
+           ) | from_entries' "$HISTORY_FILE" >"$temp_file"
+
+		if [[ $? -eq 0 ]]; then
+			mv "$temp_file" "$HISTORY_FILE"
+		else
+			# jq hatası durumunda boş geçmişle başla
+			echo "{}" >"$HISTORY_FILE"
+		fi
 
 		# Boş dizin kayıtlarını temizle
 		jq 'to_entries | map(select(.value != [])) | from_entries' "$HISTORY_FILE" >"$temp_file"
@@ -284,6 +307,9 @@ update_cache() {
 	local item="$1"
 	local cache_file="$2"
 
+	# Cache dosyasının varlığından emin ol
+	[[ ! -f "$cache_file" ]] && touch "$cache_file"
+
 	# Girdiyi en başa ekle ve tekrarları kaldır
 	echo "$item" | cat - "$cache_file" | awk '!seen[$0]++' | head -n 100 >"$CACHE_DIR/temp_cache"
 	mv "$CACHE_DIR/temp_cache" "$cache_file"
@@ -299,27 +325,46 @@ copy_to_clipboard() {
 	# Clipboard araçlarını ve uygunluklarını kontrol et
 	if [[ -n "$WAYLAND_DISPLAY" ]] && command -v wl-copy >/dev/null 2>&1; then
 		clipboard_tool="wl-copy"
-		error_output=$(printf '%s' "$content" | wl-copy 2>&1) && success=true
+		if printf '%s' "$content" | wl-copy 2>/dev/null; then
+			success=true
+		else
+			error_output="wl-copy hatası"
+		fi
 	elif [[ -n "$DISPLAY" ]]; then
 		if command -v xsel >/dev/null 2>&1; then
 			clipboard_tool="xsel"
-			error_output=$(printf '%s' "$content" | xsel -b 2>&1) && success=true
+			if printf '%s' "$content" | xsel -b 2>/dev/null; then
+				success=true
+			else
+				error_output="xsel hatası"
+			fi
 		elif command -v xclip >/dev/null 2>&1; then
 			clipboard_tool="xclip"
-			error_output=$(printf '%s' "$content" | xclip -selection clipboard -r 2>&1) && success=true
+			if printf '%s' "$content" | xclip -selection clipboard -r 2>/dev/null; then
+				success=true
+			else
+				error_output="xclip hatası"
+			fi
 		fi
 	elif [[ "$OSTYPE" == "darwin"* ]] && command -v pbcopy >/dev/null 2>&1; then
 		clipboard_tool="pbcopy"
-		error_output=$(printf '%s' "$content" | pbcopy 2>&1) && success=true
+		if printf '%s' "$content" | pbcopy 2>/dev/null; then
+			success=true
+		else
+			error_output="pbcopy hatası"
+		fi
 	elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]] && command -v clip >/dev/null 2>&1; then
 		clipboard_tool="clip"
-		error_output=$(printf '%s' "$content" | clip 2>&1) && success=true
+		if printf '%s' "$content" | clip 2>/dev/null; then
+			success=true
+		else
+			error_output="clip hatası"
+		fi
 	fi
 
 	# Tmux içindeyse tmux tamponuna kopyala (ek güvenlik olarak)
 	if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
-		printf '%s' "$content" | tmux load-buffer - 2>/dev/null
-		if [[ $? -eq 0 ]]; then
+		if printf '%s' "$content" | tmux load-buffer - 2>/dev/null; then
 			# Diğer yöntemler başarısız olduysa tmux'u kullan
 			if [[ "$success" != "true" ]]; then
 				success=true
@@ -334,6 +379,7 @@ copy_to_clipboard() {
 		printf '%s' "$content" >"$CACHE_DIR/clipboard_content"
 		echo "⚠️ Panoya kopyalama başarısız! Kullanılabilir clipboard aracı bulunamadı."
 		echo "⚠️ İçerik $CACHE_DIR/clipboard_content dosyasına yazıldı."
+		echo "⚠️ Hata: $error_output"
 		# Kopyalanamadığını belirtmek için hata kodu döndür
 		return 1
 	fi
@@ -435,10 +481,12 @@ snippet_mode() {
 				--preview-window 'down' \
 				--preview '
                    file=$(echo {} | cut -d: -f1)
+                   line=$(echo {} | cut -d: -f2)
                    title=$(echo {} | cut -d " " -f2-)
                    ext=${file##*.}
                    awk -v title="$title" "BEGIN{RS=\"\"} \$0 ~ title" "$file" | 
-                       bat --color=always -pp -l "$ext"
+                       bat --color=always -pp -l "$ext" 2>/dev/null || 
+                       awk -v title="$title" "BEGIN{RS=\"\"} \$0 ~ title" "$file"
                ')
 
 		# Geri gitme isteği geldi mi kontrol et
@@ -465,7 +513,11 @@ snippet_mode() {
 
 		# Önizleme göster
 		echo -e "\n--- Kopyalanan Snippet ---"
-		echo "$selected" | bat --color=always -pp -l "${file_name##*.}"
+		if command -v bat >/dev/null 2>&1; then
+			echo "$selected" | bat --color=always -pp -l "${file_name##*.}" 2>/dev/null || echo "$selected"
+		else
+			echo "$selected"
+		fi
 		echo -e "\n"
 
 		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
@@ -482,7 +534,7 @@ single_mode() {
 	touch "$SNIPPET_FILE" "$SNIPPET_CACHE"
 
 	local selected
-	selected="$(cat "$SNIPPET_CACHE" "$SNIPPET_FILE" | awk '!seen[$0]++' |
+	selected="$(cat "$SNIPPET_CACHE" "$SNIPPET_FILE" 2>/dev/null | awk '!seen[$0]++' |
 		sed '/^$/d' |
 		fzf -e -i \
 			--prompt="Snippet > " \
@@ -508,6 +560,7 @@ single_mode() {
 # Çok Satırlı Snippet Dosyası Seçme Modu
 multi_mode() {
 	local MULTI_CACHE="$CACHE_DIR/multi"
+	mkdir -p "$CACHE_DIR"
 	touch "$MULTI_CACHE"
 
 	while true; do
@@ -521,7 +574,7 @@ multi_mode() {
 			fzf -e -i \
 				--delimiter / \
 				--with-nth -2,-1 \
-				--preview 'bat --color=always -pp {}' \
+				--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 				--preview-window='right:60%:wrap' \
 				--prompt="Metin bloğu > " \
 				--header="ESC: Çıkış | ENTER: Kopyala | CTRL+E: Düzenle" \
@@ -546,7 +599,11 @@ multi_mode() {
 
 		# Önizleme göster
 		echo -e "\n--- Kopyalanan İçerik ---"
-		bat --color=always -pp "$selected"
+		if command -v bat >/dev/null 2>&1; then
+			bat --color=always -pp "$selected" 2>/dev/null || cat "$selected"
+		else
+			cat "$selected"
+		fi
 		echo -e "\n"
 
 		read -n 1 -p "Başka bir dosya seçmek ister misiniz? (e/h) [h]: " yn
@@ -570,10 +627,12 @@ cheats_mode() {
 				--preview-window 'down' \
 				--preview '
                    file=$(echo {} | cut -d: -f1)
+                   line=$(echo {} | cut -d: -f2)
                    title=$(echo {} | cut -d " " -f2-)
                    ext=${file##*.}
                    awk -v title="$title" "BEGIN{RS=\"\"} \$0 ~ title" "$file" |
-                       bat --color=always -pp -l "$ext"
+                       bat --color=always -pp -l "$ext" 2>/dev/null || 
+                       awk -v title="$title" "BEGIN{RS=\"\"} \$0 ~ title" "$file"
                ')
 
 		if [[ -f /tmp/anote_nav ]]; then
@@ -596,7 +655,11 @@ cheats_mode() {
 
 		# Önizleme göster
 		echo -e "\n--- Kopyalanan Cheat ---"
-		echo "$selected" | bat --color=always -pp -l "${file_name##*.}"
+		if command -v bat >/dev/null 2>&1; then
+			echo "$selected" | bat --color=always -pp -l "${file_name##*.}" 2>/dev/null || echo "$selected"
+		else
+			echo "$selected"
+		fi
 		echo -e "\n"
 
 		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
@@ -606,63 +669,13 @@ cheats_mode() {
 	done
 }
 
-# Dosya Düzenleme Modu
-edit_mode() {
-	while true; do
-		if [[ "$TERM_PROGRAM" = tmux ]]; then
-			selected=$(find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
-				fzf -m -d / --with-nth -2.. \
-					--bind "shift-delete:execute:gio trash --force {} >/dev/tty" \
-					--bind "ctrl-v:execute:qmv -f do {} >/dev/tty" \
-					--bind "ctrl-r:reload:find '$ANOTE_DIR'/ -type f | sort" \
-					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
-					--header 'ESC:Geri C-v:yeniden-adlandır C-r:yenile S-del:çöpe-at' \
-					--preview 'bat --color=always -pp {}' \
-					--prompt="anote > düzenle: ")
-
-			if [[ -f /tmp/anote_nav ]]; then
-				rm /tmp/anote_nav
-				show_anote_tui
-				break
-			fi
-
-			[[ -z "$selected" ]] && exit 0
-
-			# Çoklu seçimde her dosyayı ayrı pencerede düzenle
-			while IFS= read -r line; do
-				filename="$(basename "$line")"
-				tmux new-window -n "${filename}" "$EDITOR $line"
-			done < <(echo "$selected")
-		else
-			selected=$(find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
-				fzf -d / --with-nth -2.. \
-					--preview 'bat --color=always -pp {}' \
-					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
-					--header 'ESC:Geri ENTER:Düzenle' \
-					--prompt="anote > düzenle: ")
-
-			if [[ -f /tmp/anote_nav ]]; then
-				rm /tmp/anote_nav
-				show_anote_tui
-				break
-			fi
-
-			[[ -z "$selected" ]] && exit 0
-			dir=$(dirname "$selected")
-			update_history "$dir" "$selected"
-			"$EDITOR" "$selected"
-		fi
-		break
-	done
-}
-
 # Dosya İçeriği Kopyalama Modu
 copy_mode() {
 	while true; do
 		selected=$(
 			find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
 				fzf -d / --with-nth -2.. \
-					--preview 'bat --color=always -pp {}' \
+					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
 					--header 'ESC:Geri ENTER:Kopyala' \
 					--prompt="anote > kopyala: "
@@ -682,13 +695,82 @@ copy_mode() {
 
 		# Önizleme göster
 		echo -e "\n--- Kopyalanan İçerik ---"
-		bat --color=always -pp "$selected"
+		if command -v bat >/dev/null 2>&1; then
+			bat --color=always -pp "$selected" 2>/dev/null || cat "$selected"
+		else
+			cat "$selected"
+		fi
 		echo -e "\n"
 
-		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
+		read -n 1 -p "Başka bir dosya seçmek ister misiniz? (e/h) [h]: " yn
 		echo
 		[[ -z "$yn" ]] && yn="h" # Enter'a basılırsa varsayılan 'h' olsun
 		[[ "$yn" != "e" && "$yn" != "E" ]] && break
+	done
+}
+
+# Dosya Düzenleme Modu
+edit_mode() {
+	while true; do
+		if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
+			selected=$(find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
+				fzf -m -d / --with-nth -2.. \
+					--bind "tab:down,shift-tab:up" \
+					--bind "shift-delete:execute:rm -i {} >/dev/tty" \
+					--bind "ctrl-v:execute:qmv -f do {} >/dev/tty 2>/dev/null || echo 'qmv bulunamadı'" \
+					--bind "ctrl-r:reload:find '$ANOTE_DIR'/ -type f | sort" \
+					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
+					--header 'ESC:Geri C-v:yeniden-adlandır C-r:yenile S-del:sil' \
+					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
+					--prompt="anote > düzenle: ")
+			if [[ -f /tmp/anote_nav ]]; then
+				rm /tmp/anote_nav
+				show_anote_tui
+				break
+			fi
+			[[ -z "$selected" ]] && exit 0
+			# Çoklu seçimde her dosyayı ayrı pencerede düzenle
+			while IFS= read -r line; do
+				filename="$(basename "$line")"
+				tmux new-window -n "${filename}" "$EDITOR $line"
+			done < <(echo "$selected")
+		else
+			# Önce bir dizin veya dosya yolu alın
+			read -e -p "Dosya yolu (tab ile tamamlayabilirsiniz): " -i "$ANOTE_DIR/" file_path
+
+			if [[ -d "$file_path" ]]; then
+				# Eğer bir dizin seçildiyse, o dizindeki dosyaları listele
+				selected=$(find "$file_path" -type f 2>/dev/null | sort |
+					fzf -d / --with-nth -2.. \
+						--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
+						--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
+						--header 'ESC:Geri ENTER:Düzenle' \
+						--prompt="anote > düzenle: ")
+			elif [[ -f "$file_path" ]]; then
+				# Eğer doğrudan bir dosya seçildiyse, o dosyayı kullan
+				selected="$file_path"
+			else
+				# Ne dizin ne de dosya ise
+				if [[ ! -e "$(dirname "$file_path")" ]]; then
+					mkdir -p "$(dirname "$file_path")"
+					selected="$file_path"
+				else
+					selected="$file_path"
+				fi
+			fi
+
+			if [[ -f /tmp/anote_nav ]]; then
+				rm /tmp/anote_nav
+				show_anote_tui
+				break
+			fi
+
+			[[ -z "$selected" ]] && exit 0
+			dir=$(dirname "$selected")
+			update_history "$dir" "$selected"
+			"$EDITOR" "$selected"
+		fi
+		break
 	done
 }
 
@@ -696,10 +778,16 @@ copy_mode() {
 search_mode() {
 	while true; do
 		selected=$(grep -rnv '^[[:space:]]*$' "$ANOTE_DIR"/* 2>/dev/null |
-			fzf -d / --with-nth 6.. \
+			fzf -d : --with-nth 1,2,3 \
 				--prompt="anote > ara: " \
 				--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
-				--header "ESC:Geri ENTER:Seç")
+				--header "ESC:Geri ENTER:Seç" \
+				--preview '
+                    file=$(echo {} | cut -d: -f1)
+                    line=$(echo {} | cut -d: -f2)
+                    bat --color=always --highlight-line "$line" "$file" 2>/dev/null || 
+                    cat "$file" | nl -w4 -s": " | grep -A 5 -B 5 "^[ ]*$line:"
+                ')
 
 		if [[ -f /tmp/anote_nav ]]; then
 			rm /tmp/anote_nav
@@ -713,7 +801,7 @@ search_mode() {
 		dir=$(dirname "$file_name")
 		update_history "$dir" "$file_name"
 
-		if [[ "$TERM_PROGRAM" = tmux ]]; then
+		if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
 			tmux new-window -n "ara-sonucu" "$EDITOR +$file_num $file_name"
 		else
 			"$EDITOR" +"$file_num" "$file_name"
@@ -722,29 +810,23 @@ search_mode() {
 	done
 }
 
-# Yeni Dosya Oluşturma Modu
+# Yeni Dosya Oluşturma Modu - Shell-tarzı Tab Tamamlama
 create_mode() {
 	while true; do
-		selected=$(echo | fzf --print-query \
-			--prompt="anote > yeni dosya adı: " \
-			--header 'ESC:Geri ENTER:Oluştur | örn: notlar.md veya linux/komutlar.sh' \
-			--preview-window 'down' \
-			--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
-			--preview "find $ANOTE_DIR/ -type d | sed -e '/^[[:blank:]]*$/d' | sort")
+		# Tab tamamlama ile dosya yolu iste
+		read -e -p "Yeni dosya yolu (tab ile tamamlayabilirsiniz): " -i "$ANOTE_DIR/" file_path
 
-		if [[ -f /tmp/anote_nav ]]; then
-			rm /tmp/anote_nav
-			show_anote_tui
-			break
+		if [[ -z "$file_path" ]]; then
+			exit 0
 		fi
 
-		[[ -z "$selected" ]] && exit 0
-		mkdir -p "$(dirname "$ANOTE_DIR/$selected")"
+		# Dizini oluştur
+		mkdir -p "$(dirname "$file_path")"
 
-		if [[ "$TERM_PROGRAM" = tmux ]]; then
-			tmux new-window -n "yeni-dosya" "$EDITOR $ANOTE_DIR/$selected"
+		if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
+			tmux new-window -n "yeni-dosya" "$EDITOR $file_path"
 		else
-			"$EDITOR" "$ANOTE_DIR/$selected"
+			"$EDITOR" "$file_path"
 		fi
 		break
 	done
@@ -753,15 +835,21 @@ create_mode() {
 # Karalama Kağıdı Modu
 scratch_mode() {
 	mkdir -p "$(dirname "$SCRATCH_FILE")"
-	[[ -z "$(tail -n 1 "$SCRATCH_FILE" 2>/dev/null)" ]] || printf "\n" >>"$SCRATCH_FILE"
+	touch "$SCRATCH_FILE"
+
+	# Dosyanın sonuna yeni not için başlık ekle eğer dosya boş değilse önce satır başı ekle
+	if [[ -s "$SCRATCH_FILE" ]]; then
+		echo "" >>"$SCRATCH_FILE"
+	fi
+
 	printf "%s\n\n" "#### $TIMESTAMP" >>"$SCRATCH_FILE"
 
 	# tmux içinde veya dışında çalışabilmesi için düzeltme
 	if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
-		tmux new-window -n "scratch" "$EDITOR +999999 $SCRATCH_FILE"
+		tmux new-window -n "scratch" "$EDITOR +\$ $SCRATCH_FILE"
 	else
 		# Doğrudan editörü başlat
-		"$EDITOR" +999999 "$SCRATCH_FILE"
+		"$EDITOR" "+\$" "$SCRATCH_FILE"
 	fi
 
 	# Çıkış sonrası arayüze dönüş için opsiyonel kod
@@ -806,9 +894,13 @@ main() {
 			exit 1
 		fi
 		mkdir -p "$(dirname "$SCRATCH_FILE")"
+		touch "$SCRATCH_FILE"
 		shift
 		input="$*"
-		[[ -z "$(tail -n 1 "$SCRATCH_FILE" 2>/dev/null)" ]] || printf "\n" >>"$SCRATCH_FILE"
+		# Dosyanın sonuna yeni not için başlık ekle eğer dosya boş değilse önce satır başı ekle
+		if [[ -s "$SCRATCH_FILE" ]]; then
+			echo "" >>"$SCRATCH_FILE"
+		fi
 		printf "%s\n" "#### $TIMESTAMP" >>"$SCRATCH_FILE"
 		printf "%s\n" "$input" >>"$SCRATCH_FILE"
 		echo "Not eklendi: $SCRATCH_FILE"
@@ -829,7 +921,7 @@ main() {
 			cd "$ANOTE_DIR" || exit 1
 			selected=$(find . -type f -not -path "*/\.*" | sort |
 				fzf -e -i --prompt="anote > düzenle: " \
-					--preview 'bat --color=always -pp {}' \
+					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 					--info=hidden --layout=reverse --scroll-off=5 \
 					--bind 'home:first,end:last,ctrl-k:preview-page-up,ctrl-j:preview-page-down')
 			[[ -z "$selected" ]] && exit 0
@@ -854,13 +946,19 @@ main() {
 		if [[ -z "$2" ]]; then
 			# Arama terimi belirtilmemişse interaktif ara
 			selected=$(grep -rnv '^[[:space:]]*$' "$ANOTE_DIR"/* 2>/dev/null |
-				fzf -d / --with-nth 6.. --prompt="anote > ara: ")
+				fzf -d : --with-nth 1,2,3 --prompt="anote > ara: " \
+					--preview '
+				    file=$(echo {} | cut -d: -f1)
+				    line=$(echo {} | cut -d: -f2)
+				    bat --color=always --highlight-line "$line" "$file" 2>/dev/null || 
+				    cat "$file" | nl -w4 -s": " | grep -A 5 -B 5 "^[ ]*$line:"
+				')
 			[[ -z "$selected" ]] && exit 0
 			file_name=$(echo "$selected" | cut -d ':' -f1)
 			file_num=$(echo "$selected" | cut -d ':' -f2)
 			dir=$(dirname "$file_name")
 			update_history "$dir" "$file_name"
-			if [[ "$TERM_PROGRAM" = tmux ]]; then
+			if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
 				tmux new-window -n "ara-sonucu" "$EDITOR +$file_num $file_name"
 			else
 				"$EDITOR" +"$file_num" "$file_name"
@@ -869,22 +967,30 @@ main() {
 			# Belirtilen kelimeyi ara
 			cd "$ANOTE_DIR" || exit 1
 			shift
-			grep --color=auto -rnH "$*" .
+			grep --color=auto -rnH "$*" . 2>/dev/null || echo "Sonuç bulunamadı."
 		fi
 		;;
 	-p | --print)
 		if [[ -z "$2" ]]; then
 			# Dosya belirtilmemişse fzf ile seç
-			selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/\.*" | sort |
+			selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/\.*" 2>/dev/null | sort |
 				fzf -d / --with-nth -2.. \
-					--preview 'bat --color=always -pp {}' \
+					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 					--prompt="anote > görüntüle: ")
 			[[ -z "$selected" ]] && exit 0
-			bat --color=always -pp "$selected"
+			if command -v bat >/dev/null 2>&1; then
+				bat --color=always -pp "$selected" 2>/dev/null || cat "$selected"
+			else
+				cat "$selected"
+			fi
 		else
 			# Belirtilen dosyayı görüntüle
 			if [[ -f "$ANOTE_DIR/$2" ]]; then
-				bat --color=always -pp "$ANOTE_DIR/$2"
+				if command -v bat >/dev/null 2>&1; then
+					bat --color=always -pp "$ANOTE_DIR/$2" 2>/dev/null || cat "$ANOTE_DIR/$2"
+				else
+					cat "$ANOTE_DIR/$2"
+				fi
 			else
 				echo "HATA: Dosya bulunamadı: $ANOTE_DIR/$2" >&2
 				exit 1
@@ -935,20 +1041,15 @@ EOF
 		;;
 	*)
 		# Diğer durumlar - dosya adı belirtilmişse içeriğini göster
-		if command -v bat >/dev/null; then
-			if [[ -f "$ANOTE_DIR/$1" ]]; then
-				bat --color=always -pp "$ANOTE_DIR/$1"
+		if [[ -f "$ANOTE_DIR/$1" ]]; then
+			if command -v bat >/dev/null 2>&1; then
+				bat --color=always -pp "$ANOTE_DIR/$1" 2>/dev/null || cat "$ANOTE_DIR/$1"
 			else
-				echo "HATA: Dosya bulunamadı: $ANOTE_DIR/$1" >&2
-				exit 1
+				cat "$ANOTE_DIR/$1"
 			fi
 		else
-			if [[ -f "$ANOTE_DIR/$1" ]]; then
-				cat "$ANOTE_DIR/$1"
-			else
-				echo "HATA: Dosya bulunamadı: $ANOTE_DIR/$1" >&2
-				exit 1
-			fi
+			echo "HATA: Dosya bulunamadı: $ANOTE_DIR/$1" >&2
+			exit 1
 		fi
 		;;
 	esac
