@@ -79,6 +79,7 @@ SEÇENEKLER:
   -S, --single-snippet      → Tek satır snippet modunu başlatır
   -M, --multi-snippet       → Çok satırlı snippet modunu başlatır
   -c, --config              → Konfigürasyon dosyasını düzenler
+      --scratch               → Karalama defterini açar
 
 TUŞ KISAYOLLARI (FZF içinde):
   Tab / Shift+Tab          → Aşağı/yukarı gezinme
@@ -754,7 +755,20 @@ scratch_mode() {
 	mkdir -p "$(dirname "$SCRATCH_FILE")"
 	[[ -z "$(tail -n 1 "$SCRATCH_FILE" 2>/dev/null)" ]] || printf "\n" >>"$SCRATCH_FILE"
 	printf "%s\n\n" "#### $TIMESTAMP" >>"$SCRATCH_FILE"
-	"$EDITOR" +999999 "$SCRATCH_FILE"
+
+	# tmux içinde veya dışında çalışabilmesi için düzeltme
+	if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
+		tmux new-window -n "scratch" "$EDITOR +999999 $SCRATCH_FILE"
+	else
+		# Doğrudan editörü başlat
+		"$EDITOR" +999999 "$SCRATCH_FILE"
+	fi
+
+	# Çıkış sonrası arayüze dönüş için opsiyonel kod
+	if [[ "$1" != "direct" ]]; then
+		sleep 0.5 # Editörün kapanmasını bekle
+		show_anote_tui
+	fi
 }
 
 # =================================================================
@@ -781,12 +795,9 @@ main() {
 		show_snippet_info | less -R
 		exit 0
 		;;
-	-A | --audit)
-		# Not defterini düzenle
-		mkdir -p "$(dirname "$SCRATCH_FILE")"
-		[[ -z "$(tail -n 1 "$SCRATCH_FILE" 2>/dev/null)" ]] || printf "\n" >>"$SCRATCH_FILE"
-		printf "%s\n\n" "#### $TIMESTAMP" >>"$SCRATCH_FILE"
-		"$EDITOR" +999999 "$SCRATCH_FILE"
+	-A | --audit | --scratch)
+		# Not defterini düzenle (audit ve scratch aynı işi yapar)
+		scratch_mode "direct"
 		;;
 	-a | --auto)
 		# Not defterine otomatik giriş ekle
