@@ -810,25 +810,52 @@ search_mode() {
 	done
 }
 
-# Yeni Dosya Oluşturma Modu - Shell-tarzı Tab Tamamlama
+# Yeni Dosya Oluşturma Modu - Geliştirilmiş Tab Tamamlama
 create_mode() {
+	local file_path
+
 	while true; do
-		# Tab tamamlama ile dosya yolu iste
-		read -e -p "Yeni dosya yolu (tab ile tamamlayabilirsiniz): " -i "$ANOTE_DIR/" file_path
+		echo "=== Yeni Dosya Oluştur ==="
+		echo "1) Dosya yolu gir"
+		echo "2) Dizinleri Göster"
+		echo "3) Ana Menüye Dön"
+		read -p "Seçiminiz (1-3): " choice
 
-		if [[ -z "$file_path" ]]; then
-			exit 0
-		fi
+		case $choice in
+		1)
+			# Kullanıcıdan dosya yolu al
+			echo "Dosya yolu girin (varsayılan: $ANOTE_DIR/)"
+			echo "NOT: Tab tuşunu kullanarak yolu tamamlayabilirsiniz"
+			read -e -p "> " -i "$ANOTE_DIR/" file_path
 
-		# Dizini oluştur
-		mkdir -p "$(dirname "$file_path")"
+			if [[ -z "$file_path" ]]; then
+				continue
+			fi
 
-		if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
-			tmux new-window -n "yeni-dosya" "$EDITOR $file_path"
-		else
-			"$EDITOR" "$file_path"
-		fi
-		break
+			# Dizin oluştur
+			mkdir -p "$(dirname "$file_path")"
+
+			# Dosyayı düzenle
+			if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
+				tmux new-window -n "yeni-dosya" "$EDITOR $file_path"
+			else
+				"$EDITOR" "$file_path"
+			fi
+			return
+			;;
+		2)
+			echo "Mevcut dizinler:"
+			find "$ANOTE_DIR" -type d | sort
+			echo ""
+			;;
+		3)
+			show_anote_tui
+			return
+			;;
+		*)
+			echo "Geçersiz seçim! Lütfen 1-3 arası bir sayı girin."
+			;;
+		esac
 	done
 }
 

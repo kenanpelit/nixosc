@@ -966,11 +966,11 @@
         "systems": "systems_4"
       },
       "locked": {
-        "lastModified": 1742816055,
-        "narHash": "sha256-uxPknq5vuSl5h3kV1s+PzrCul2m8jgXcFEx/OMTchlg=",
+        "lastModified": 1743452824,
+        "narHash": "sha256-wfXP1rk2jpuKq2Jm95Y33HazkiG85t1dZYWUvV1FmDc=",
         "owner": "hyprwm",
         "repo": "hyprpicker",
-        "rev": "09101f77a4a9d14837c94a12765294683a6ee1a3",
+        "rev": "6692091d56d75d3858c85e5cabe52c4469a8c932",
         "type": "github"
       },
       "original": {
