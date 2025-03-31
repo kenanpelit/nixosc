@@ -509,36 +509,50 @@ multi_mode() {
 	local MULTI_CACHE="$CACHE_DIR/multi"
 	touch "$MULTI_CACHE"
 
-	local selected
-	selected="$({
-		cat "$MULTI_CACHE" 2>/dev/null
-		find "$CHEAT_DIR" -type f -not -name ".*" 2>/dev/null
-	} |
-		awk '!seen[$0]++' |
-		sort |
-		fzf -e -i \
-			--delimiter / \
-			--with-nth -2,-1 \
-			--preview 'bat --color=always -pp {}' \
-			--preview-window='right:60%:wrap' \
-			--prompt="Metin bloğu > " \
-			--header="ESC: Çıkış | ENTER: Kopyala | CTRL+E: Düzenle" \
-			--info=hidden \
-			--layout=reverse \
-			--tiebreak=index \
-			--bind "ctrl-e:execute($EDITOR {} < /dev/tty > /dev/tty)")"
+	while true; do
+		local selected
+		selected="$({
+			cat "$MULTI_CACHE" 2>/dev/null
+			find "$CHEAT_DIR" -type f -not -name ".*" 2>/dev/null
+		} |
+			awk '!seen[$0]++' |
+			sort |
+			fzf -e -i \
+				--delimiter / \
+				--with-nth -2,-1 \
+				--preview 'bat --color=always -pp {}' \
+				--preview-window='right:60%:wrap' \
+				--prompt="Metin bloğu > " \
+				--header="ESC: Çıkış | ENTER: Kopyala | CTRL+E: Düzenle" \
+				--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
+				--bind "ctrl-e:execute($EDITOR {} < /dev/tty > /dev/tty)")"
 
-	[[ -z "$selected" ]] && exit 0
+		if [[ -f /tmp/anote_nav ]]; then
+			rm /tmp/anote_nav
+			show_anote_tui
+			break
+		fi
 
-	update_cache "$selected" "$MULTI_CACHE"
+		[[ -z "$selected" ]] && exit 0
 
-	# Dosyanın içeriğini panoya kopyala
-	copy_to_clipboard "$(cat "$selected")"
+		dir=$(dirname "$selected")
+		update_history "$dir" "$selected"
+		update_cache "$selected" "$MULTI_CACHE"
 
-	# Önizleme göster
-	echo -e "\n--- Kopyalanan İçerik ---"
-	bat --color=always -pp "$selected"
-	echo -e "\n"
+		# Dosyanın içeriğini panoya kopyala
+		content="$(cat "$selected")"
+		copy_to_clipboard "$content"
+
+		# Önizleme göster
+		echo -e "\n--- Kopyalanan İçerik ---"
+		bat --color=always -pp "$selected"
+		echo -e "\n"
+
+		read -n 1 -p "Başka bir dosya seçmek ister misiniz? (e/h) [h]: " yn
+		echo
+		[[ -z "$yn" ]] && yn="h" # Enter'a basılırsa varsayılan 'h' olsun
+		[[ "$yn" != "e" && "$yn" != "E" ]] && break
+	done
 }
 
 # Cheats Modu (cheatsheet'ten kopyalama)
