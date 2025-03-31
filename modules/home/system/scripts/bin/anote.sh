@@ -810,50 +810,166 @@ search_mode() {
 	done
 }
 
-# Yeni Dosya Oluşturma Modu - Geliştirilmiş Tab Tamamlama
+# Yeni Dosya Oluşturma Modu - Geliştirilmiş ve Kullanıcı Dostu
 create_mode() {
 	local file_path
+	local file_ext
+	local dir_path
 
 	while true; do
-		echo "=== Yeni Dosya Oluştur ==="
-		echo "1) Dosya yolu gir"
-		echo "2) Dizinleri Göster"
-		echo "3) Ana Menüye Dön"
-		read -p "Seçiminiz (1-3): " choice
+		clear
+		echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+		echo "┃                             YENİ DOSYA OLUŞTUR                               ┃"
+		echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+		echo
+		echo "  1) Tam dosya yolu gir (tab ile tamamlanabilir)"
+		echo "  2) Önce dizin seç, sonra dosya adı gir"
+		echo "  3) Sık kullanılan dizinleri göster"
+		echo "  4) Son oluşturulan dosyaları göster"
+		echo "  5) Ana Menüye Dön"
+		echo
+		read -p "  Seçiminiz (1-5): " choice
 
 		case $choice in
 		1)
-			# Kullanıcıdan dosya yolu al
-			echo "Dosya yolu girin (varsayılan: $ANOTE_DIR/)"
-			echo "NOT: Tab tuşunu kullanarak yolu tamamlayabilirsiniz"
-			read -e -p "> " -i "$ANOTE_DIR/" file_path
+			echo
+			echo "Dosya yolu girin (Tab tuşu ile tamamlanabilir):"
+			read -e -p "  > " -i "$ANOTE_DIR/" file_path
 
 			if [[ -z "$file_path" ]]; then
 				continue
 			fi
 
-			# Dizin oluştur
-			mkdir -p "$(dirname "$file_path")"
+			# Tam dizin yolunu al
+			dir_path=$(dirname "$file_path")
+
+			# Dizin yoksa sor ve oluştur
+			if [[ ! -d "$dir_path" ]]; then
+				read -p "  Dizin '$dir_path' mevcut değil. Oluşturulsun mu? (e/h): " confirm
+				if [[ "$confirm" != "e" && "$confirm" != "E" ]]; then
+					continue
+				fi
+				mkdir -p "$dir_path"
+				echo "  ✓ Dizin oluşturuldu: $dir_path"
+			fi
+
+			# Dosya uzantısını kontrol et
+			file_ext="${file_path##*.}"
+			if [[ "$file_path" == "$file_ext" ]]; then
+				echo "  ⚠️ Dosya uzantısı belirtilmedi. Önerilen uzantılar: .md, .txt, .sh"
+				read -p "  Devam etmek istiyor musunuz? (e/h): " confirm
+				if [[ "$confirm" != "e" && "$confirm" != "E" ]]; then
+					continue
+				fi
+			fi
+
+			# Geçmişe ekle
+			update_history "$dir_path" "$file_path"
 
 			# Dosyayı düzenle
 			if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
-				tmux new-window -n "yeni-dosya" "$EDITOR $file_path"
+				tmux new-window -n "${file_path##*/}" "$EDITOR $file_path"
 			else
 				"$EDITOR" "$file_path"
 			fi
 			return
 			;;
 		2)
-			echo "Mevcut dizinler:"
-			find "$ANOTE_DIR" -type d | sort
-			echo ""
+			echo
+			echo "Önce dizin seçin (Tab tuşu ile tamamlanabilir):"
+			read -e -p "  > " -i "$ANOTE_DIR/" dir_path
+
+			if [[ -z "$dir_path" ]]; then
+				continue
+			fi
+
+			# Dizin yoksa sor ve oluştur
+			if [[ ! -d "$dir_path" ]]; then
+				read -p "  Dizin '$dir_path' mevcut değil. Oluşturulsun mu? (e/h): " confirm
+				if [[ "$confirm" != "e" && "$confirm" != "E" ]]; then
+					continue
+				fi
+				mkdir -p "$dir_path"
+				echo "  ✓ Dizin oluşturuldu: $dir_path"
+			fi
+
+			# Dizindeki dosyaları göster
+			if [[ "$(ls -A "$dir_path" 2>/dev/null)" ]]; then
+				echo
+				echo "  Dizindeki mevcut dosyalar:"
+				ls -1 "$dir_path" | while read line; do
+					echo "    - $line"
+				done
+				echo
+			fi
+
+			# Dosya adını iste
+			echo "Şimdi dosya adını girin:"
+			read -p "  > " file_name
+
+			if [[ -z "$file_name" ]]; then
+				continue
+			fi
+
+			# Tam dosya yolunu oluştur
+			file_path="${dir_path%/}/$file_name"
+
+			# Dosya uzantısını kontrol et
+			file_ext="${file_name##*.}"
+			if [[ "$file_name" == "$file_ext" ]]; then
+				echo "  ⚠️ Dosya uzantısı belirtilmedi. Önerilen uzantılar: .md, .txt, .sh"
+				read -p "  Devam etmek istiyor musunuz? (e/h): " confirm
+				if [[ "$confirm" != "e" && "$confirm" != "E" ]]; then
+					continue
+				fi
+			fi
+
+			# Geçmişe ekle
+			update_history "$dir_path" "$file_path"
+
+			# Dosyayı düzenle
+			if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
+				tmux new-window -n "$file_name" "$EDITOR $file_path"
+			else
+				"$EDITOR" "$file_path"
+			fi
+			return
 			;;
 		3)
+			echo
+			echo "Sık kullanılan dizinler:"
+			echo
+			find "$ANOTE_DIR" -maxdepth 2 -type d | sort | while read dir; do
+				echo "  - $dir"
+			done
+			echo
+			read -p "Devam etmek için Enter'a basın..." dummy
+			;;
+		4)
+			echo
+			if [[ -f "$HISTORY_FILE" ]]; then
+				echo "Son oluşturulan dosyalar:"
+				echo
+				jq -r 'to_entries | .[].value[0:5] | .[].file' "$HISTORY_FILE" 2>/dev/null |
+					sort | uniq | head -10 | while read file; do
+					if [[ -f "$file" ]]; then
+						echo "  - $file ($(stat -c %y "$file" | cut -d' ' -f1))"
+					fi
+				done
+			else
+				echo "Henüz kayıtlı geçmiş bulunmuyor."
+			fi
+			echo
+			read -p "Devam etmek için Enter'a basın..." dummy
+			;;
+		5)
 			show_anote_tui
 			return
 			;;
 		*)
-			echo "Geçersiz seçim! Lütfen 1-3 arası bir sayı girin."
+			echo
+			echo "⚠️ Geçersiz seçim! Lütfen 1-5 arası bir sayı girin."
+			sleep 1
 			;;
 		esac
 	done
@@ -861,22 +977,60 @@ create_mode() {
 
 # Karalama Kağıdı Modu
 scratch_mode() {
+	# Önce dizini ve dosyayı hazırla
 	mkdir -p "$(dirname "$SCRATCH_FILE")"
 	touch "$SCRATCH_FILE"
 
-	# Dosyanın sonuna yeni not için başlık ekle eğer dosya boş değilse önce satır başı ekle
+	# Not defterinin başlığını ve ilk satırlarını kontrol et
+	local first_line=""
 	if [[ -s "$SCRATCH_FILE" ]]; then
-		echo "" >>"$SCRATCH_FILE"
+		first_line=$(head -n 1 "$SCRATCH_FILE")
+		# Eğer son satır boş değilse boş satır ekle
+		if [[ "$(tail -c 1 "$SCRATCH_FILE")" != "" ]]; then
+			echo "" >>"$SCRATCH_FILE"
+		fi
 	fi
 
-	printf "%s\n\n" "#### $TIMESTAMP" >>"$SCRATCH_FILE"
+	# Eğer dosya boşsa veya doğru başlık yoksa, scratch dosyası başlığını ekle
+	if [[ -z "$first_line" || "$first_line" != "# Scratch Notes - $USER" ]]; then
+		{
+			echo "# Scratch Notes - $USER"
+			echo "# Bu dosya $ANOTE_DIR içinde otomatik olarak oluşturulmuş karalama notları içerir."
+			echo "# Her yeni giriş bir tarih/saat başlığı ile ayrılır."
+			echo ""
+		} >"$SCRATCH_FILE.tmp"
 
-	# tmux içinde veya dışında çalışabilmesi için düzeltme
+		# Mevcut içeriği koru
+		if [[ -s "$SCRATCH_FILE" ]]; then
+			cat "$SCRATCH_FILE" >>"$SCRATCH_FILE.tmp"
+		fi
+
+		mv "$SCRATCH_FILE.tmp" "$SCRATCH_FILE"
+	fi
+
+	# Yeni not başlığını ekle
+	printf "\n#### %s\n\n" "$(date "+%Y-%m-%d %H:%M:%S")" >>"$SCRATCH_FILE"
+
+	# Backups dizini varsa, bir yedek al (günde bir kez)
+	local backup_dir="$ANOTE_DIR/backups"
+	local today=$(date +%Y%m%d)
+	local backup_file="$backup_dir/scratch_$today.bak"
+
+	if [[ -d "$backup_dir" && ! -f "$backup_file" ]]; then
+		cp "$SCRATCH_FILE" "$backup_file"
+	fi
+
+	# Editörde aç - daha iyi cursor pozisyonlama
 	if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
-		tmux new-window -n "scratch" "$EDITOR +\$ $SCRATCH_FILE"
+		tmux new-window -n "scratch" "$EDITOR \"+normal G$\" $SCRATCH_FILE"
 	else
-		# Doğrudan editörü başlat
-		"$EDITOR" "+\$" "$SCRATCH_FILE"
+		if [[ "$EDITOR" == *"vim"* || "$EDITOR" == *"nvim"* ]]; then
+			# Vim ve NeoVim için en altta konumlan
+			$EDITOR "+normal G$" "$SCRATCH_FILE"
+		else
+			# Diğer editörler için
+			$EDITOR "+$" "$SCRATCH_FILE"
+		fi
 	fi
 
 	# Çıkış sonrası arayüze dönüş için opsiyonel kod
