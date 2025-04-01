@@ -323,11 +323,11 @@
         "float,class:^(notes)$"
         "size 70% 50%,class:^(notes)$"
         "center,class:^(notes)$"
-        "float,class:^(anotes)$"
-        "center,class:^(anotes)$"
-        "size 1536 864,class:^(anotes)$"
-        "animation slide,class:^(anotes)$"
-        "opacity 0.95 0.95,class:^(anotes)$"
+        "float,class:^(anote)$"
+        "center,class:^(anote)$"
+        "size 1536 864,class:^(anote)$"
+        "animation slide,class:^(anote)$"
+        "opacity 0.95 0.95,class:^(anote)$"
         "float,class:^(otpclient)$"
         "size 20%,class:^(otpclient)$"
         "move 79% 40%,class:^(otpclient)$"
@@ -562,8 +562,8 @@
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify-always'"
         "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
-        "ALT, T, exec, semsumo start kkenp always"
-        "ALT CTRL, C, exec, semsumo start wcta always"
+        "ALT, T, exec, start-kkenp-always"
+        "ALT CTRL, C, exec, start-wkenp-always"
         "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
 
         # Sistem Fonksiyonları
@@ -572,6 +572,7 @@
         "ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
         ",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
         "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
+        "$mainMod CTRL, M, exec, hypr-start-manager anote -t"                       # Not yöneticisi
         "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
         # Screenshot v1.2.0 Kısayolları
