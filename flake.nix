@@ -69,8 +69,8 @@
    # === Desktop Environment - Hyprland Ecosystem ===
    # Core Hyprland compositor
    hyprland = {
-     #url = "github:hyprwm/hyprland/9171db1984415a8553ee707bc2f558eb1ae06e7e"; # 0318
-     url = "github:hyprwm/hyprland/v0.48.1";  # Pin to specific v0.48.1 release
+     #url = "github:hyprwm/hyprland/v0.48.1";  # Pin to specific v0.48.1 release
+     url = "github:hyprwm/hyprland/d1a59ec39eb4c0d6a7d3d38a26f8924e6bca5cef"; # 0401 - 5955 Commits
      inputs.nixpkgs.follows = "nixpkgs";
    };
 
