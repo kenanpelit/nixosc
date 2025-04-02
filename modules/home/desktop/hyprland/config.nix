@@ -571,8 +571,8 @@
         "ALT, F12, exec, hypr-mullvad_toggle toggle"                                # VPN toggle
         "ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
         ",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
-        "$mainMod, M, exec, hypr-start-manager anote"                               # Not yöneticisi
-        "$mainMod CTRL, M, exec, hypr-start-manager anote -t"                       # Not yöneticisi
+        "$mainMod, M, exec, anotes"                               # Not yöneticisi
+        "$mainMod CTRL, M, exec, anotes -t"                       # Not yöneticisi
         "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
 
         # Screenshot v1.2.0 Kısayolları
