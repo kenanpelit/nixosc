@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Script to edit remote files using vim over SSH
-# Usage: ./remote_vim_edit.sh user@host:/path/to/file
+# Script to edit remote files using nvim over SSH
+# Usage: ./remote_nvim_edit.sh user@host:/path/to/file
 
 # Function to display usage
 show_usage() {
@@ -72,8 +72,8 @@ scp -P $SSH_PORT $SSH_KEY "$REMOTE_PATH" "$TEMP_FILE" || {
 # Get initial modification time
 INITIAL_MTIME=$(stat -c %Y "$TEMP_FILE" 2>/dev/null || stat -f %m "$TEMP_FILE")
 
-# Edit the file with vim
-vim "$TEMP_FILE"
+# Edit the file with nvim
+nvim "$TEMP_FILE"
 
 # Get new modification time
 NEW_MTIME=$(stat -c %Y "$TEMP_FILE" 2>/dev/null || stat -f %m "$TEMP_FILE")

@@ -7,7 +7,7 @@
 # Features:
 # - Auto-detects SSH users from config
 # - Supports custom SSH ports
-# - Allows different editors (vim, neovim, etc.)
+# - Allows different editors (nvim, neovim, etc.)
 # - SSH key management
 # - Pre-edit file existence and permission checking
 # - Automatic backups in ~/.vir directory
@@ -20,7 +20,7 @@
 #   Repository: https://github.com/kenanpelit/nixosc
 #   License: MIT
 #
-# Usage: ./vir.sh [options] [user@]hostname path/to/file [vim-options]
+# Usage: ./vir.sh [options] [user@]hostname path/to/file [nvim-options]
 
 set -e # Stop script on error
 
@@ -54,12 +54,12 @@ function show_usage() {
 	echo "Seamlessly edit remote files over SSH using Vim's SCP functionality."
 	echo
 	echo "Usage:"
-	echo "  $0 [options] [user@]hostname path/to/file [vim-options]"
+	echo "  $0 [options] [user@]hostname path/to/file [nvim-options]"
 	echo
 	echo "Options:"
 	echo "  -h, --help              Show this help message"
 	echo "  -p, --port PORT         Specify SSH port (default: 22)"
-	echo "  -e, --editor EDITOR     Specify editor to use (default: vim)"
+	echo "  -e, --editor EDITOR     Specify editor to use (default: nvim)"
 	echo "  -i, --identity FILE     Specify identity file for SSH"
 	echo "  -c, --check             Check if the file exists before opening"
 	echo "  -w, --writeable         Check if the file is writeable before opening"
@@ -76,7 +76,7 @@ function show_usage() {
 
 # Default values
 PORT=22
-EDITOR="vim"
+EDITOR="nvim"
 IDENTITY_FILE=""
 CHECK_FILE=false
 CHECK_WRITABLE=false

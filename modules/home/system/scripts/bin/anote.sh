@@ -34,7 +34,7 @@ SNIPPETS_DIR="$ANOTE_DIR/snippets"
 SCRATCH_DIR="$ANOTE_DIR/scratch"
 
 # Varsayılan ayarlar
-EDITOR="${EDITOR:-vim}"
+EDITOR="${EDITOR:-nvim}"
 TIMESTAMP="$(date +%Y-%m-%d\ %H:%M:%S)"
 SCRATCH_FILE="$SCRATCH_DIR/$(date +%Y-%m).txt"
 HISTORY_FILE="$CACHE_DIR/history.json"
@@ -1024,7 +1024,7 @@ scratch_mode() {
 	if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
 		tmux new-window -n "scratch" "$EDITOR \"+normal G$\" $SCRATCH_FILE"
 	else
-		if [[ "$EDITOR" == *"vim"* || "$EDITOR" == *"nvim"* ]]; then
+		if [[ "$EDITOR" == *"nvim"* || "$EDITOR" == *"nvim"* ]]; then
 			# Vim ve NeoVim için en altta konumlan
 			$EDITOR "+normal G$" "$SCRATCH_FILE"
 		else
@@ -1202,7 +1202,7 @@ main() {
 ANOTE_DIR="$HOME/.anote"
 
 # Editör
-EDITOR="vim"
+EDITOR="nvim"
 
 # Tarih formatı
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"

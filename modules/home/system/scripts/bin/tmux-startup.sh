@@ -87,7 +87,7 @@ create_or_attach_session "KENP" || {
   create_t3_window "SSH"
 
   tmux new-session -d -s "TmuxConfig" -c ~/.tmux
-  tmux send-keys -t "TmuxConfig" "vim ~/.config/tmux/tmux.conf.local" C-m
+  tmux send-keys -t "TmuxConfig" "nvim ~/.config/tmux/tmux.conf.local" C-m
 
   tmux new-session -d -s "Tor" -c /repo/tor
   create_t3_window "Tor"
@@ -97,7 +97,7 @@ create_or_attach_session "KENP" || {
 
   # Yeni Vim oturumu
   tmux new-session -d -s "Vim" -c ~/
-  tmux send-keys -t "Vim" "vim" C-m
+  tmux send-keys -t "Vim" "nvim" C-m
 
   # Ana oturuma bağlan
   tmux attach-session -t "KENP"

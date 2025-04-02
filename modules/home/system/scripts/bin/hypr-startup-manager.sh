@@ -27,7 +27,7 @@
 ## Listelemek için
 #./startup-manager.sh list
 
-## Düzenlemek için (vim ile)
+## Düzenlemek için (nvim ile)
 #./startup-manager.sh edit
 
 ## Tüm uygulamaları başlatmak için
@@ -391,7 +391,7 @@ edit_config() {
     create_default_config
   fi
 
-  ${EDITOR:-vim} "$CONFIG_FILE"
+  ${EDITOR:-nvim} "$CONFIG_FILE"
 
   if ! validate_config; then
     die "Configuration file is invalid after editing"
