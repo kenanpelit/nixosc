@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# anotes - a script to run anote in kitty with various options
+# anotes - a script to run anote in kitty or wezterm with various options
 # Usage: anotes [option]
 # Sets nvim as the default editor if no EDITOR is defined
 # Options:
@@ -16,18 +16,26 @@ if [ -z "$EDITOR" ] && [ -z "$VISUAL" ]; then
 	export EDITOR=nvim
 fi
 
+# Detect terminal preference
+# We'll check if wezterm is available, otherwise fall back to kitty
+if command -v wezterm &>/dev/null; then
+	TERMINAL_CMD="wezterm start --class anote"
+else
+	TERMINAL_CMD="kitty --class anote -T anote --single-instance"
+fi
+
 case "$1" in
 -t | --single)
-	kitty --class anote -T anote --single-instance -e anote -t
+	$TERMINAL_CMD -e anote -t
 	;;
 -M | --multi)
-	kitty --class anote -T anote --single-instance -e anote -M
+	$TERMINAL_CMD -e anote -M
 	;;
 -s | --search)
-	kitty --class anote -T anote --single-instance -e anote -s
+	$TERMINAL_CMD -e anote -s
 	;;
 -A | --audit)
-	kitty --class anote -T anote --single-instance -e anote -A
+	$TERMINAL_CMD -e anote -A
 	;;
 -h | --help)
 	echo "Usage: anotes [option]"
@@ -40,6 +48,6 @@ case "$1" in
 	echo "  (no option)    Run anote with default settings"
 	;;
 *)
-	kitty --class anote -T anote --single-instance -e anote
+	$TERMINAL_CMD -e anote
 	;;
 esac
