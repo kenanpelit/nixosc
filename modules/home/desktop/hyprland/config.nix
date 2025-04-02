@@ -99,8 +99,10 @@
         # -----------------------------------------
         # Temel Sistem Değişkenleri
         # -----------------------------------------
-        #"TERMINAL,kitty"
-        #"TERM,xterm-kitty"
+        "EDITOR,nvim"                           # Varsayılan metin düzenleyici
+        "VISUAL,nvim"                           # Varsayılan görsel düzenleyici
+        "TERMINAL,kitty"
+        "TERM,xterm-kitty"
       ];
 
       # =====================================================
