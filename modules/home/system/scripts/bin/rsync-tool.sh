@@ -566,10 +566,10 @@ show_all_patterns() {
 # Exclude dosyasını düzenle
 edit_exclude_file() {
 	local exclude_file="$1"
-	local editor="${EDITOR:-vim}"
+	local editor="${EDITOR:-nvim}"
 
 	if ! command -v "$editor" >/dev/null; then
-		editor="vim"
+		editor="nvim"
 	fi
 
 	mkdir -p "$(dirname "$exclude_file")"

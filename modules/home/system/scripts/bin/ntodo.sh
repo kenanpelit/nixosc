@@ -25,6 +25,6 @@ TODO_FILE="${XDG_DATA_HOME:-$HOME/}.todo"
 if [ -n "$1" ]; then
   echo "$@" >>"$TODO_FILE"
 else
-  "${EDITOR:-vim}" "$TODO_FILE"
+  "${EDITOR:-nvim}" "$TODO_FILE"
 fi
 pkill -RTMIN+7 waybar # update status bar

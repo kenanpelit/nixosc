@@ -87,7 +87,7 @@ PARAMETRELER:
 NOT:
     Renk sıcaklığı değerleri Kelvin cinsindendir.
     Düşük değerler (örn. 3000K) daha sıcak/kırmızımsı,
-    yüksek değerler (örn. 6500K) daha soğuk/mavimsi renk verir.
+    yüksek değerler (örn. 6500K) daha soğuk/manvimsi renk verir.
 
 EOF
 }

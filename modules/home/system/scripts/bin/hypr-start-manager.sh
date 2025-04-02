@@ -421,8 +421,8 @@ start_tcopyc() {
 }
 
 start_todo() {
-	check_application "vim"
-	GDK_BACKEND=wayland kitty --title todo --hold -e vim ~/.todo >>/dev/null 2>&1 &
+	check_application "nvim"
+	GDK_BACKEND=wayland kitty --title todo --hold -e nvim ~/.todo >>/dev/null 2>&1 &
 	disown
 	notify-send -t 1000 "Todo" "Todo uygulaması başlatılıyor..."
 }
@@ -708,7 +708,7 @@ case "$COMMAND" in
 	if [ ! -f "$CONFIG_FILE" ]; then
 		create_default_config
 	fi
-	${EDITOR:-vim} "$CONFIG_FILE"
+	${EDITOR:-nvim} "$CONFIG_FILE"
 	;;
 "--log")
 	if [ -f "$LOG_FILE" ]; then
