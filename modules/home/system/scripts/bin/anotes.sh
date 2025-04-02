@@ -18,10 +18,10 @@ fi
 
 # Detect terminal preference
 # We'll check if wezterm is available, otherwise fall back to kitty
-if command -v wezterm &>/dev/null; then
-	TERMINAL_CMD="wezterm start --class anote"
-else
+if command -v kitty &>/dev/null; then
 	TERMINAL_CMD="kitty --class anote -T anote --single-instance"
+else
+	TERMINAL_CMD="wezterm start --class anote"
 fi
 
 case "$1" in
