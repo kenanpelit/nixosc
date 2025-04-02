@@ -2,6 +2,7 @@
 
 # anotes - a script to run anote in kitty with various options
 # Usage: anotes [option]
+# Sets vim as the default editor if no EDITOR is defined
 # Options:
 #   -t, --single   Run anote in single mode
 #   -M, --multi    Run anote in multi mode
@@ -9,6 +10,11 @@
 #   -A, --audit    Run anote in audit mode
 #   -h, --help     Show this help message
 #   (no option)    Run anote with default settings
+
+# Set EDITOR environment variable to vim if not already set
+if [ -z "$EDITOR" ] && [ -z "$VISUAL" ]; then
+	export EDITOR=vim
+fi
 
 case "$1" in
 -t | --single)
