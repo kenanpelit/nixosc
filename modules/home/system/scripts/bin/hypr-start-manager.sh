@@ -708,7 +708,7 @@ case "$COMMAND" in
 	if [ ! -f "$CONFIG_FILE" ]; then
 		create_default_config
 	fi
-	${EDITOR:-nano} "$CONFIG_FILE"
+	${EDITOR:-vim} "$CONFIG_FILE"
 	;;
 "--log")
 	if [ -f "$LOG_FILE" ]; then
