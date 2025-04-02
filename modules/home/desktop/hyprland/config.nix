@@ -668,7 +668,7 @@
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
 
         # Temel Çalışma Alanı Navigasyonu
-        "ALT, M, workspace, previous"              # Önceki çalışma alanına dön
+        "ALT, N, workspace, previous"              # Önceki çalışma alanına dön
         "ALT, Tab, workspace, e+1"                 # Bir sonraki çalışma alanına geç
         "ALT CTRL, tab, workspace, e-1"            # Bir önceki çalışma alanına geç
 
