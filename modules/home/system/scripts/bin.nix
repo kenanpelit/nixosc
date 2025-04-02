@@ -102,6 +102,9 @@ let
   image-deduplicator = pkgs.writeShellScriptBin "image-deduplicator" (
     builtins.readFile ./bin/image-deduplicator.sh
   );
+  kanote = pkgs.writeShellScriptBin "kanote" (
+    builtins.readFile ./bin/kanote.sh
+  );
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
   );
@@ -343,6 +346,7 @@ in {
     hypr-vlc_toggle
     hypr-workspace-monitor
     image-deduplicator
+    kanote
     lofi
     monitor_brightness
     move_media_files
