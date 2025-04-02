@@ -3,6 +3,9 @@ let
   anote = pkgs.writeShellScriptBin "anote" (
     builtins.readFile ./bin/anote.sh
   );
+  anotes = pkgs.writeShellScriptBin "anotes" (
+    builtins.readFile ./bin/anotes.sh
+  );
   ascii = pkgs.writeShellScriptBin "ascii" (
     builtins.readFile ./bin/ascii.sh
   );
@@ -101,9 +104,6 @@ let
   );
   image-deduplicator = pkgs.writeShellScriptBin "image-deduplicator" (
     builtins.readFile ./bin/image-deduplicator.sh
-  );
-  kanote = pkgs.writeShellScriptBin "kanote" (
-    builtins.readFile ./bin/kanote.sh
   );
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
@@ -313,6 +313,7 @@ let
 in {
   home.packages = with pkgs; [
     anote
+    anotes
     ascii
     bulk_rename
     clearam
@@ -346,7 +347,6 @@ in {
     hypr-vlc_toggle
     hypr-workspace-monitor
     image-deduplicator
-    kanote
     lofi
     monitor_brightness
     move_media_files
