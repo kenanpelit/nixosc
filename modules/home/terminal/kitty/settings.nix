@@ -22,6 +22,7 @@
         box_drawing_scale = "0.001, 1, 1.5, 2";
         disable_ligatures = "never";
         force_ltr = "no";
+        editor = "vim";
         
         # =========================================================================
         # İmleç Ayarları
