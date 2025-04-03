@@ -71,8 +71,8 @@
    hyprland = {
      #url = "github:hyprwm/hyprland/v0.48.1";  # Pin to specific v0.48.1 release
      #url = "github:hyprwm/hyprland/d1a59ec39eb4c0d6a7d3d38a26f8924e6bca5cef"; # 0401 - 5955 Commits
-     url = "github:hyprwm/hyprland/a4e6c5d678e8dd27ab07a6d6eb4ba2834fab81d1"; # 0402 - 5958 Commits
-
+     #url = "github:hyprwm/hyprland/a4e6c5d678e8dd27ab07a6d6eb4ba2834fab81d1"; # 0402 - 5958 Commits
+     url = "github:hyprwm/hyprland/5e8bb7178501ea65fe54be5614e6ba4a6369c600"; # 0403 - 5962 Commits
      inputs.nixpkgs.follows = "nixpkgs";
    };
 
