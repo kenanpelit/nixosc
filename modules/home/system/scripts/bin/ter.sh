@@ -136,27 +136,36 @@ connect_to_tunnel() {
 	local tunnel_name="$1"
 	local user="$2"
 
-	echo "Bağlanıyor: $tunnel_name"
+	echo -e "\033[38;5;110mBağlanıyor: $tunnel_name\033[0m"
 
 	# Tünel bilgisini al
 	local tunnel_info=$(ssh -p "${REMOTE_PORT}" "${REMOTE_USER}@${REMOTE_HOST}" "cat ${TUNNEL_DB} | grep -E '^[^|]*\\|${tunnel_name}\\|'")
 
 	if [ -z "$tunnel_info" ]; then
-		echo -e "${COLOR_RED}Hata: $tunnel_name adlı tünel bulunamadı!${COLOR_END}"
+		echo -e "\033[38;5;174mHata: $tunnel_name adlı tünel bulunamadı!\033[0m"
 		exit 1
 	fi
 
 	# Debug: tünel bilgisini göster
-	echo -e "${COLOR_BLUE}Bulunan tünel: $tunnel_info${COLOR_END}"
+	echo -e "\033[38;5;110mBulunan tünel: \033[38;5;145m$tunnel_info\033[0m"
 
 	# Port bilgisini ayıkla (ilk "|" işaretinden önceki kısım)
 	local port=$(echo "$tunnel_info" | cut -d'|' -f1)
+	local hostname=$(echo "$tunnel_info" | cut -d'|' -f3)
+	local description=$(echo "$tunnel_info" | cut -d'|' -f4)
+	local date=$(echo "$tunnel_info" | cut -d'|' -f5)
 
 	# Jump host üzerinden SSH komutunu çalıştır
-	local SSH_COMMAND="ssh -J terminal -p $port $user@localhost"
-	echo -e "${COLOR_HGREEN}Çalıştırılıyor: $SSH_COMMAND${COLOR_END}"
-	$SSH_COMMAND
-	echo -e "${COLOR_HGREEN}Bitti.${COLOR_END}"
+	echo -e "\033[48;5;108m\033[38;5;232m Çalıştırılıyor \033[0m \033[38;5;114mssh -J terminal -p $port $user@localhost\033[0m"
+
+	# Görsel ayrıştırıcı
+	echo -e ""
+
+	# SSH komutu
+	ssh -J terminal -p $port $user@localhost
+
+	# Bağlantı sonlandığında görsel bildirim
+	echo -e "\033[48;5;108m\033[38;5;232m                Bağlantı sonlandırıldı                \033[0m"
 }
 
 # Yardım bilgisini göster
