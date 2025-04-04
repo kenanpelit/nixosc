@@ -41,9 +41,12 @@ HISTORY_FILE="$CACHE_DIR/history.json"
 CLEANUP_INTERVAL=$((7 * 24 * 60 * 60)) # 7 gün
 
 # Varsayılan fzf ayarları
-export FZF_DEFAULT_OPTS="-e -i --info=hidden --layout=reverse --scroll-off=5 --tiebreak=index"
+export FZF_DEFAULT_OPTS="-e -i --info=inline --layout=reverse --scroll-off=5 --tiebreak=index --no-unicode"
+FZF_DEFAULT_OPTS+=" --color=bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796,fg:#cad3f5"
+FZF_DEFAULT_OPTS+=" --color=header:#8aadf4,info:#c6a0f6,pointer:#f4dbd6,marker:#f4dbd6,prompt:#c6a0f6"
 FZF_DEFAULT_OPTS+=" --bind 'home:first,end:last,ctrl-k:preview-page-up,ctrl-j:preview-page-down'"
 FZF_DEFAULT_OPTS+=" --bind 'ctrl-y:preview-up,ctrl-e:preview-down,ctrl-/:change-preview-window(hidden|)'"
+FZF_DEFAULT_OPTS+=" --bind 'ctrl-b:toggle-preview,ctrl-d:toggle-preview-wrap'"
 
 # Varsa konfigürasyon dosyasını yükle
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -315,73 +318,88 @@ update_cache() {
 	mv "$CACHE_DIR/temp_cache" "$cache_file"
 }
 
-# Panoya kopyalama (platform bağımsız ve geliştirilmiş)
 copy_to_clipboard() {
 	local content="$1"
 	local success=false
-	local clipboard_tool=""
+	local wl_success=false
+	local tmux_success=false
+	local clipboard_tools=""
 	local error_output=""
 
-	# Clipboard araçlarını ve uygunluklarını kontrol et
-	if [[ -n "$WAYLAND_DISPLAY" ]] && command -v wl-copy >/dev/null 2>&1; then
-		clipboard_tool="wl-copy"
+	# Boş içeriği kontrol et
+	if [[ -z "$content" ]]; then
+		echo "⚠️ Kopyalanacak içerik boş!"
+		return 1
+	fi
+
+	# İçeriği geçici bir dosyaya yaz (hata durumunda yedek olması için)
+	mkdir -p "$CACHE_DIR"
+	printf '%s' "$content" >"$CACHE_DIR/clipboard_content.tmp"
+
+	# 1. ÖNCELİK: Wayland ile wl-copy (her zaman dene)
+	if command -v wl-copy >/dev/null 2>&1; then
 		if printf '%s' "$content" | wl-copy 2>/dev/null; then
-			success=true
+			wl_success=true
+			clipboard_tools="wl-copy"
 		else
 			error_output="wl-copy hatası"
 		fi
-	elif [[ -n "$DISPLAY" ]]; then
-		if command -v xsel >/dev/null 2>&1; then
-			clipboard_tool="xsel"
-			if printf '%s' "$content" | xsel -b 2>/dev/null; then
-				success=true
+	fi
+
+	# 2. ÖNCELİK: tmux buffer (her zaman dene, sonuç ne olursa olsun)
+	if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
+		if printf '%s' "$content" | tmux load-buffer - 2>/dev/null; then
+			tmux_success=true
+			if [[ -n "$clipboard_tools" ]]; then
+				clipboard_tools="$clipboard_tools, tmux buffer"
 			else
-				error_output="xsel hatası"
+				clipboard_tools="tmux buffer"
 			fi
-		elif command -v xclip >/dev/null 2>&1; then
-			clipboard_tool="xclip"
-			if printf '%s' "$content" | xclip -selection clipboard -r 2>/dev/null; then
-				success=true
-			else
-				error_output="xclip hatası"
-			fi
-		fi
-	elif [[ "$OSTYPE" == "darwin"* ]] && command -v pbcopy >/dev/null 2>&1; then
-		clipboard_tool="pbcopy"
-		if printf '%s' "$content" | pbcopy 2>/dev/null; then
-			success=true
 		else
-			error_output="pbcopy hatası"
-		fi
-	elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]] && command -v clip >/dev/null 2>&1; then
-		clipboard_tool="clip"
-		if printf '%s' "$content" | clip 2>/dev/null; then
-			success=true
-		else
-			error_output="clip hatası"
+			error_output="$error_output, tmux buffer hatası"
 		fi
 	fi
 
-	# Tmux içindeyse tmux tamponuna kopyala (ek güvenlik olarak)
-	if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
-		if printf '%s' "$content" | tmux load-buffer - 2>/dev/null; then
-			# Diğer yöntemler başarısız olduysa tmux'u kullan
-			if [[ "$success" != "true" ]]; then
-				success=true
-				clipboard_tool="tmux buffer"
+	# İlk iki yöntemden en az biri başarılıysa, başarılı kabul et
+	if [[ "$wl_success" == "true" || "$tmux_success" == "true" ]]; then
+		success=true
+	fi
+
+	# Diğer yöntemleri dene (ilk iki yöntem başarısız olursa)
+	if [[ "$success" != "true" ]]; then
+		# 3. ÖNCELİK: X11 ile xsel veya xclip
+		if [[ -n "$DISPLAY" ]]; then
+			if command -v xsel >/dev/null 2>&1; then
+				if printf '%s' "$content" | xsel -ib 2>/dev/null; then
+					success=true
+					clipboard_tools="xsel"
+				else
+					error_output="$error_output, xsel hatası"
+				fi
+			elif command -v xclip >/dev/null 2>&1; then
+				if printf '%s' "$content" | xclip -selection clipboard -i 2>/dev/null; then
+					success=true
+					clipboard_tools="xclip"
+				else
+					error_output="$error_output, xclip hatası"
+				fi
 			fi
 		fi
 	fi
 
 	# Hiçbir clipboard aracı bulunamadı veya çalışmadıysa, dosyaya yaz
 	if [[ "$success" != "true" ]]; then
-		mkdir -p "$CACHE_DIR"
-		printf '%s' "$content" >"$CACHE_DIR/clipboard_content"
-		echo "⚠️ Panoya kopyalama başarısız! Kullanılabilir clipboard aracı bulunamadı."
+		mv "$CACHE_DIR/clipboard_content.tmp" "$CACHE_DIR/clipboard_content"
+		chmod 644 "$CACHE_DIR/clipboard_content"
+		echo "⚠️ Panoya kopyalama başarısız! Hiçbir clipboard aracı çalışmadı."
 		echo "⚠️ İçerik $CACHE_DIR/clipboard_content dosyasına yazıldı."
 		echo "⚠️ Hata: $error_output"
+
 		# Kopyalanamadığını belirtmek için hata kodu döndür
 		return 1
+	else
+		# Geçici dosyayı temizle
+		rm -f "$CACHE_DIR/clipboard_content.tmp"
 	fi
 
 	# İçerik uzunluğuna göre bildirim şekli
@@ -396,7 +414,7 @@ copy_to_clipboard() {
 		preview=$(echo "$content" | tr -d '\n')
 	fi
 
-	echo "✓ İçerik $(tput setaf 2)başarıyla$(tput sgr0) panoya kopyalandı (${clipboard_tool})"
+	echo "✓ İçerik $(tput setaf 2)başarıyla$(tput sgr0) panoya kopyalandı (${clipboard_tools})"
 	echo "$(tput setaf 8)Önizleme: ${preview}$(tput sgr0)"
 
 	# Başarılı durumda 0 dön
@@ -1045,6 +1063,7 @@ scratch_mode() {
 # =================================================================
 
 main() {
+
 	# Bağımlılıkları kontrol et
 	check_dependencies
 
