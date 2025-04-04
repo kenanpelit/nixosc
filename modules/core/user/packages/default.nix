@@ -118,6 +118,7 @@ in
    upower             # Güç yönetim servisi
    acpi               # ACPI araçları
    powertop           # Güç izleme
+   ddcutil            # Monitor settings
 
    # ==============================================================================
    # Sistem Entegrasyonu

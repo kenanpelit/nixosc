@@ -48,9 +48,6 @@ let
   hypr-blue-wlsunset-mananger = pkgs.writeShellScriptBin "hypr-blue-wlsunset-mananger" (
     builtins.readFile ./bin/hypr-blue-wlsunset-mananger.sh
   );
-  hypr-clibp = pkgs.writeShellScriptBin "hypr-clibp" (
-    builtins.readFile ./bin/hypr-clibp.sh
-  );
   hypr-colorpicker = pkgs.writeShellScriptBin "hypr-colorpicker" (
     builtins.readFile ./bin/hypr-colorpicker.sh
   );
@@ -183,14 +180,8 @@ let
   runbg = pkgs.writeShellScriptBin "runbg" (
     builtins.readFile ./bin/runbg.sh
   );
-  rvim = pkgs.writeShellScriptBin "rvim" (
-    builtins.readFile ./bin/rvim.sh
-  );
-  ScrcpyUSB = pkgs.writeShellScriptBin "ScrcpyUSB" (
-    builtins.readFile ./bin/ScrcpyUSB.sh
-  );
-  ScrcpyWiFi = pkgs.writeShellScriptBin "ScrcpyWiFi" (
-    builtins.readFile ./bin/ScrcpyWiFi.sh
+  scrcpy = pkgs.writeShellScriptBin "scrcpy" (
+    builtins.readFile ./bin/scrcpy.sh
   );
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
@@ -212,6 +203,9 @@ let
   );
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
+  );
+  ter = pkgs.writeShellScriptBin "ter" (
+    builtins.readFile ./bin/ter.sh
   );
   tm = pkgs.writeShellScriptBin "tm" (
     builtins.readFile ./bin/tm.sh
@@ -251,9 +245,6 @@ let
   );
   tty_config = pkgs.writeShellScriptBin "tty_config" (
     builtins.readFile ./bin/tty_config.sh
-  );
-  tunnelshow = pkgs.writeShellScriptBin "tunnelshow" (
-    builtins.readFile ./bin/tunnelshow.sh
   );
   turbo-boost-setup = pkgs.writeShellScriptBin "turbo-boost-setup" (
     builtins.readFile ./bin/turbo-boost-setup.sh
@@ -331,7 +322,6 @@ in {
     hypr-blue-hyprsunset-manager
     hypr-bluetooth_toggle
     hypr-blue-wlsunset-mananger
-    hypr-clibp
     hypr-colorpicker
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
@@ -376,9 +366,7 @@ in {
     rsync-retry
     rsync-tool
     runbg
-    rvim
-    ScrcpyUSB
-    ScrcpyWiFi
+    scrcpy
     screenshot
     sil_ayni_mp4
     smart-suspend
@@ -386,6 +374,7 @@ in {
     ssh-launcher
     startup-manager
     st
+    ter
     tm
     tmux-backup
     tmux-copy
@@ -399,7 +388,6 @@ in {
     toggle_waybar
     tsm
     tty_config
-    tunnelshow
     turbo-boost-setup
     vir
     vm-start
