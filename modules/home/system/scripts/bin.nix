@@ -180,9 +180,6 @@ let
   runbg = pkgs.writeShellScriptBin "runbg" (
     builtins.readFile ./bin/runbg.sh
   );
-  scrcpy = pkgs.writeShellScriptBin "scrcpy" (
-    builtins.readFile ./bin/scrcpy.sh
-  );
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
   );
@@ -366,7 +363,6 @@ in {
     rsync-retry
     rsync-tool
     runbg
-    scrcpy
     screenshot
     sil_ayni_mp4
     smart-suspend
