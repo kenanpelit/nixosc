@@ -85,10 +85,10 @@ fetch_tunnel_list() {
         # Bağlantı durumunu kontrol et
         cmd = "nc -z -w1 127.0.0.1 " port " 2>/dev/null";
         if (system(cmd) == 0) {
-            conn_status = "\033[1;42m CONNECTED \033[1;0m";
+            conn_status = "\033[48;5;108m\033[38;5;232m CONNECTED \033[0m";
             connected = 1;
         } else {
-            conn_status = "\033[1;41m NOTCONNEC \033[1;0m";
+            conn_status = "\033[48;5;174m\033[38;5;232m NOTCONNEC \033[0m";
             connected = 0;
         }
         
@@ -98,18 +98,18 @@ fetch_tunnel_list() {
         }
         
         # Çıktı renklerini ve formatını ayarla
-        printf("\033[1;45m TUNNEL \033[1;0m \033[1;46m %-15s \033[1;0m %s", name, conn_status);
+        printf("\033[48;5;175m\033[38;5;232m TUNNEL \033[0m \033[48;5;116m\033[38;5;232m %-15s \033[0m %s", name, conn_status);
         
         # SSH komutunu göster
         printf(" ssh -p %s '$user'@localhost", port);
         
         # Tarih bilgisi
         if (date != "") {
-            printf(" \033[1;30mDate: %s\033[1;0m", date);
+            printf(" \033[38;5;240mDate: %s\033[0m", date);
         }
         
         # Açıklama ve hostname
-        printf(" \033[0;95m%s - hostname: %s\033[1;0m\n", description, hostname);
+        printf(" \033[38;5;139m%s - hostname: %s\033[0m\n", description, hostname);
     }'\'''
 
 	# Uzak sunucuda komutu çalıştır
