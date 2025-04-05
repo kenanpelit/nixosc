@@ -170,7 +170,7 @@ connect_to_tunnel() {
 	fi
 
 	# Görsel ayrıştırıcı
-	echo -e "\033[48;5;108m\033[38;5;232m                                                  \033[0m"
+	echo -e " "
 
 	# SSH komutu çalıştır
 	if [ "$use_byobu" = "true" ]; then
