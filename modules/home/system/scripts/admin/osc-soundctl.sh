@@ -1,28 +1,35 @@
 #!/usr/bin/env bash
 #===============================================================================
 #
-#   Script: OSC HyprFlow Audio Switcher
-#   Version: 1.0.0
-#   Date: 2024-01-23
-#   Author: Kenan Pelit
-#   Repository: https://github.com/kenanpelit/nixosc
-#   Description: Advanced audio output switcher for Hyprland with PulseAudio
-#                integration and architecture-aware library handling
+#   Script: HyprFlow PipeWire Audio Switcher
+#   Version: 2.0.0
+#   Date: 2024-04-07
+#   Original Author: Kenan Pelit
+#   Original Repository: https://github.com/kenanpelit/nixosc
+#   Description: Advanced audio output switcher for Hyprland with PipeWire
+#                integration
 #
 #   Features:
-#   - Dynamic sink detection and switching
-#   - Architecture-aware library path handling
-#   - PulseAudio environment configuration
+#   - Dynamic sink detection and switching for PipeWire
 #   - Desktop notifications
 #   - Automatic sink input migration
 #   - Colored terminal output
 #   - Volume and microphone control
+#   - Enhanced error handling
+#   - Configuration file support
 #
 #   License: MIT
 #
 #===============================================================================
 
-# Renk tanımları
+# Script terminates on error
+set -e
+
+# Configuration
+CONFIG_DIR="$HOME/.config/hyprflow"
+CONFIG_FILE="$CONFIG_DIR/audio_switcher.conf"
+
+# Color definitions
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -30,10 +37,45 @@ BLUE=$(tput setaf 4)
 CYAN=$(tput setaf 6)
 RESET=$(tput sgr0)
 
-# Debug modu
+# Debug mode
 DEBUG=false
 
-# Debug fonksiyonu
+# Version
+VERSION="2.0.0"
+
+# Create config directory if it doesn't exist
+if [ ! -d "$CONFIG_DIR" ]; then
+	mkdir -p "$CONFIG_DIR"
+fi
+
+# Create default config file if it doesn't exist
+if [ ! -f "$CONFIG_FILE" ]; then
+	cat >"$CONFIG_FILE" <<EOF
+# HyprFlow Audio Switcher Configuration
+
+# Debug mode (true/false)
+DEBUG=false
+
+# Volume step percentage
+VOLUME_STEP=5
+
+# Notification timeout in milliseconds
+NOTIFICATION_TIMEOUT=3000
+EOF
+fi
+
+# Load configuration
+if [ -f "$CONFIG_FILE" ]; then
+	source "$CONFIG_FILE"
+fi
+
+# Volume step from config or default
+VOLUME_STEP=${VOLUME_STEP:-5}
+
+# Notification timeout
+NOTIFICATION_TIMEOUT=${NOTIFICATION_TIMEOUT:-3000}
+
+# Debug function
 debug_print() {
 	if [ "$DEBUG" = true ]; then
 		echo
@@ -41,151 +83,194 @@ debug_print() {
 		echo "${CYAN} $1 ${RESET}"
 		echo "${BLUE}=========================================${RESET}"
 		shift
-		echo "${GREEN}$@${RESET}"
+		printf "${GREEN}$@${RESET}\n"
 	fi
 }
 
-# Argümanları kontrol et
+# Check command exists
+check_command() {
+	if ! command -v "$1" &>/dev/null; then
+		echo "${RED}Error: $1 is required but not found. Please install it.${RESET}"
+		return 1
+	fi
+	return 0
+}
+
+# Safe notification function
+notify() {
+	if command -v notify-send &>/dev/null; then
+		notify-send -t "$NOTIFICATION_TIMEOUT" "$1" "$2"
+	fi
+	echo "${GREEN}$1: $2${RESET}"
+}
+
+# Check arguments
 for arg in "$@"; do
 	if [ "$arg" = "-d" ] || [ "$arg" = "--debug" ]; then
 		DEBUG=true
-		# Argümanı kaldır
+		# Remove argument
 		set -- "${@/$arg/}"
 	fi
 done
 
-# Mimari
-case "$SNAP_ARCH" in
-"amd64") ARCH="x86_64-linux-gnu" ;;
-"armhf") ARCH="arm-linux-gnueabihf" ;;
-"arm64") ARCH="aarch64-linux-gnu" ;;
-*) ARCH="$SNAP_ARCH-linux-gnu" ;;
-esac
-
-debug_print "Mimari Tespit Ediliyor" "$ARCH"
-
-# Pulseaudio ayarları
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SNAP/usr/lib/$ARCH/pulseaudio"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$SNAP/lib/$ARCH"
-debug_print "Pulseaudio Ortam Değişkenleri" "$LD_LIBRARY_PATH"
-
-# Ses çıkışları
-SINKS=($(pactl list sinks short | awk '{print $1}'))
-RUNNING_SINK=$(pactl list sinks short | grep RUNNING | awk '{print $1}')
-INPUTS=($(pactl list sink-inputs short | awk '{print $1}'))
-SINKS_COUNT=${#SINKS[@]}
-debug_print "Ses Çıkışları" "Toplam: $SINKS_COUNT"
-
-# Çalışan ses çıkışını bul
-for i in "${!SINKS[@]}"; do
-	if [[ ${SINKS[$i]} == "$RUNNING_SINK" ]]; then
-		SINK_INDEX=$i
-		break
+# Check dependencies
+check_dependencies() {
+	# Check for PipeWire
+	if ! check_command "pw-cli"; then
+		echo "${YELLOW}Warning: pw-cli not found. Falling back to PulseAudio compatibility layer.${RESET}"
 	fi
-done
 
-# Ses çıkışı değiştirme
-switch_sink() {
-	local target_sink=$1
-	pactl set-default-sink "$target_sink"
-	for input in "${INPUTS[@]}"; do
-		pactl move-sink-input "$input" "$target_sink"
-	done
-	local sink_name=$(pactl list sinks | awk -v sink_name="$target_sink" '
-    $1 == "Sink" && $2 == "#"sink_name {found=1} 
-    found && /device.description/ {match($0, /device.description = "(.*)"/, arr); print arr[1]; exit}')
-	notify-send "Ses Çıkışı Değiştirildi" "Yeni Ses Çıkışı: $sink_name"
-	echo "${GREEN}Yeni Ses Çıkışı: $sink_name${RESET}"
+	# Check for pactl (PulseAudio compatibility layer)
+	if ! check_command "pactl"; then
+		echo "${RED}Error: pactl not found. Please install PipeWire and its PulseAudio compatibility layer.${RESET}"
+		exit 1
+	fi
+
+	# Check for notify-send (optional)
+	if ! command -v notify-send &>/dev/null; then
+		echo "${YELLOW}Warning: notify-send not found. Notifications will be disabled.${RESET}"
+	fi
 }
 
-# Ses kontrolü
+# Get audio sinks
+get_sinks() {
+	check_command "pactl" || exit 1
+	SINKS=($(pactl list sinks short | awk '{print $1}'))
+	RUNNING_SINK=$(pactl list sinks short | grep RUNNING | awk '{print $1}')
+
+	# If no running sink found, use the default sink
+	if [ -z "$RUNNING_SINK" ]; then
+		RUNNING_SINK=$(pactl get-default-sink)
+	fi
+
+	INPUTS=($(pactl list sink-inputs short | awk '{print $1}'))
+
+	SINKS_COUNT=${#SINKS[@]}
+	debug_print "Ses Çıkışları" "Toplam: $SINKS_COUNT"
+
+	# Find running sink index
+	for i in "${!SINKS[@]}"; do
+		if [[ ${SINKS[$i]} == "$RUNNING_SINK" ]]; then
+			SINK_INDEX=$i
+			break
+		fi
+	done
+}
+
+# Get sink name
+get_sink_name() {
+	local sink_id=$1
+	pactl list sinks | awk -v sink_name="$sink_id" '
+    $1 == "Sink" && $2 == "#"sink_name {found=1} 
+    found && /device.description/ {match($0, /device.description = "(.*)"/, arr); print arr[1]; exit}'
+}
+
+# Switch audio output
+switch_sink() {
+	local target_sink=$1
+
+	# Set default sink
+	if ! pactl set-default-sink "$target_sink"; then
+		echo "${RED}Failed to set default sink to $target_sink${RESET}"
+		return 1
+	fi
+
+	# Move all inputs to the new sink
+	for input in "${INPUTS[@]}"; do
+		pactl move-sink-input "$input" "$target_sink" || true
+	done
+
+	local sink_name=$(get_sink_name "$target_sink")
+	notify "Ses Çıkışı Değiştirildi" "Yeni Ses Çıkışı: $sink_name"
+	return 0
+}
+
+# Volume control
 control_volume() {
+	check_command "pactl" || exit 1
+
 	case $1 in
 	"up")
-		pactl set-sink-volume @DEFAULT_SINK@ +5%
+		pactl set-sink-volume @DEFAULT_SINK@ +${VOLUME_STEP}% || echo "${RED}Failed to increase volume${RESET}"
 		notify_volume
 		;;
 	"down")
-		pactl set-sink-volume @DEFAULT_SINK@ -5%
+		pactl set-sink-volume @DEFAULT_SINK@ -${VOLUME_STEP}% || echo "${RED}Failed to decrease volume${RESET}"
 		notify_volume
 		;;
 	"set")
 		if [[ $2 =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
-			pactl set-sink-volume @DEFAULT_SINK@ ${2}%
+			pactl set-sink-volume @DEFAULT_SINK@ ${2}% || echo "${RED}Failed to set volume${RESET}"
 			notify_volume
 		else
 			echo "${RED}Hata: Geçersiz ses seviyesi (0-100)${RESET}"
 		fi
 		;;
 	"mute")
-		pactl set-sink-mute @DEFAULT_SINK@ toggle
+		pactl set-sink-mute @DEFAULT_SINK@ toggle || echo "${RED}Failed to toggle mute${RESET}"
 		notify_mute
 		;;
 	esac
 }
 
-# Mikrofon kontrolü
+# Microphone control
 control_mic() {
+	check_command "pactl" || exit 1
+
 	case $1 in
 	"up")
-		pactl set-source-volume @DEFAULT_SOURCE@ +5%
+		pactl set-source-volume @DEFAULT_SOURCE@ +${VOLUME_STEP}% || echo "${RED}Failed to increase mic volume${RESET}"
 		notify_mic
 		;;
 	"down")
-		pactl set-source-volume @DEFAULT_SOURCE@ -5%
+		pactl set-source-volume @DEFAULT_SOURCE@ -${VOLUME_STEP}% || echo "${RED}Failed to decrease mic volume${RESET}"
 		notify_mic
 		;;
 	"set")
 		if [[ $2 =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
-			pactl set-source-volume @DEFAULT_SOURCE@ ${2}%
+			pactl set-source-volume @DEFAULT_SOURCE@ ${2}% || echo "${RED}Failed to set mic volume${RESET}"
 			notify_mic
 		else
 			echo "${RED}Hata: Geçersiz mikrofon seviyesi (0-100)${RESET}"
 		fi
 		;;
 	"mute")
-		pactl set-source-mute @DEFAULT_SOURCE@ toggle
+		pactl set-source-mute @DEFAULT_SOURCE@ toggle || echo "${RED}Failed to toggle mic mute${RESET}"
 		notify_mic_mute
 		;;
 	esac
 }
 
-# Bildirimler
+# Notifications
 notify_volume() {
-	local vol=$(pactl get-sink-volume @DEFAULT_SINK@ | awk '{print $5}' | tr -d '%')
-	notify-send "Ses Seviyesi" "Ses: ${vol}%"
-	echo "${GREEN}Ses Seviyesi: ${vol}%${RESET}"
+	local vol=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
+	notify "Ses Seviyesi" "Ses: ${vol}%"
 }
 
 notify_mute() {
 	local mute=$(pactl get-sink-mute @DEFAULT_SINK@ | awk '{print $2}')
 	if [ "$mute" = "yes" ]; then
-		notify-send "Ses" "Ses Kapatıldı"
-		echo "${YELLOW}Ses Kapatıldı${RESET}"
+		notify "Ses" "Ses Kapatıldı"
 	else
-		notify-send "Ses" "Ses Açıldı"
-		echo "${GREEN}Ses Açıldı${RESET}"
+		notify "Ses" "Ses Açıldı"
 	fi
 }
 
 notify_mic() {
-	local vol=$(pactl get-source-volume @DEFAULT_SOURCE@ | awk '{print $5}' | tr -d '%')
-	notify-send "Mikrofon Seviyesi" "Mikrofon: ${vol}%"
-	echo "${GREEN}Mikrofon Seviyesi: ${vol}%${RESET}"
+	local vol=$(pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\d+(?=%)' | head -1)
+	notify "Mikrofon Seviyesi" "Mikrofon: ${vol}%"
 }
 
 notify_mic_mute() {
 	local mute=$(pactl get-source-mute @DEFAULT_SOURCE@ | awk '{print $2}')
 	if [ "$mute" = "yes" ]; then
-		notify-send "Mikrofon" "Mikrofon Kapatıldı"
-		echo "${YELLOW}Mikrofon Kapatıldı${RESET}"
+		notify "Mikrofon" "Mikrofon Kapatıldı"
 	else
-		notify-send "Mikrofon" "Mikrofon Açıldı"
-		echo "${GREEN}Mikrofon Açıldı${RESET}"
+		notify "Mikrofon" "Mikrofon Açıldı"
 	fi
 }
 
-# Yardım
+# Help
 print_help() {
 	echo "Kullanım: $0 [-d|--debug] [seçenek] [değer]"
 	echo "Seçenekler:"
@@ -198,38 +283,80 @@ print_help() {
 	echo "  mic set N     - Mikrofon sesini N% olarak ayarla (0-100)"
 	echo "  mic mute      - Mikrofonu aç/kapat"
 	echo "  switch        - Ses çıkışını değiştir"
-	echo "  help         - Bu yardım mesajını göster"
+	echo "  help          - Bu yardım mesajını göster"
+	echo "  version       - Versiyon bilgisini göster"
+	echo "  list          - Tüm ses çıkışlarını listele"
 }
 
-# Ses çıkışı değiştirme
+# Version info
+print_version() {
+	echo "HyprFlow PipeWire Audio Switcher v$VERSION"
+}
+
+# List audio devices
+list_devices() {
+	echo "Ses Çıkışları:"
+	echo "-------------------------"
+	pactl list sinks short
+
+	echo -e "\nMikrofonlar:"
+	echo "-------------------------"
+	pactl list sources short | grep -v monitor
+}
+
+# Switch audio output
 handle_switch() {
-	if [[ $SINKS_COUNT -ne 0 ]]; then
-		if [[ ${SINKS[-1]} -eq "$RUNNING_SINK" ]]; then
-			debug_print "Çıkış Değiştiriliyor" "İlk çıkışa geçiliyor..."
-			switch_sink "${SINKS[0]}"
-		else
-			NEW_INDEX=$((SINK_INDEX + 1))
-			debug_print "Çıkış Değiştiriliyor" "Sonraki çıkışa geçiliyor..."
-			switch_sink "${SINKS[$NEW_INDEX]}"
-		fi
+	get_sinks
+
+	if [[ $SINKS_COUNT -eq 0 ]]; then
+		echo "${RED}Hata: Ses çıkışları bulunamadı.${RESET}"
+		notify "Hata" "Ses çıkışı bulunamadı."
+		return 1
+	fi
+
+	if [[ -z "$SINK_INDEX" ]]; then
+		# If no sink index found, use the first sink
+		debug_print "Çıkış Değiştiriliyor" "İlk çıkışa geçiliyor..."
+		switch_sink "${SINKS[0]}"
+	elif [[ $SINK_INDEX -eq $(($SINKS_COUNT - 1)) ]]; then
+		# If we're at the last sink, go to the first one
+		debug_print "Çıkış Değiştiriliyor" "İlk çıkışa geçiliyor..."
+		switch_sink "${SINKS[0]}"
 	else
-		echo "${RED}Ses çıkışları bulunamadı.${RESET}"
-		notify-send "Hata" "Ses çıkışı bulunamadı."
+		# Go to the next sink
+		local new_index=$(($SINK_INDEX + 1))
+		debug_print "Çıkış Değiştiriliyor" "Sonraki çıkışa geçiliyor..."
+		switch_sink "${SINKS[$new_index]}"
 	fi
 }
 
-# Ana kontrol
-case $1 in
-"volume")
-	control_volume "$2" "$3"
-	;;
-"mic")
-	control_mic "$2" "$3"
-	;;
-"switch")
-	handle_switch
-	;;
-"help" | *)
-	print_help
-	;;
-esac
+# Main function
+main() {
+	# Check dependencies
+	check_dependencies
+
+	# Process command
+	case $1 in
+	"volume")
+		control_volume "$2" "$3"
+		;;
+	"mic")
+		control_mic "$2" "$3"
+		;;
+	"switch")
+		handle_switch
+		;;
+	"version")
+		print_version
+		;;
+	"list")
+		list_devices
+		;;
+	"help" | *)
+		print_help
+		;;
+	esac
+}
+
+# Run main function
+main "$@"
