@@ -90,6 +90,7 @@ DOT_PATHS=(
 	".podman"
 	".ssh"
 	".todo"
+	".vir"
 	".vnc"
 	".vpn"
 	".zen"
