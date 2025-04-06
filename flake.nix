@@ -70,7 +70,7 @@
    # Core Hyprland compositor
    hyprland = {
      #url = "github:hyprwm/hyprland/v0.48.1";  # Pin to specific v0.48.1 release
-     url = "github:hyprwm/hyprland/ed05f14300adecfa2c289d2100a00ca60da72992"; # 0405 - 5966 Commits
+     url = "github:hyprwm/hyprland/e96b8ce4cc5e5856b6da653f1d92af856b5e72c9"; # 0406 - 5968 Commits
      inputs.nixpkgs.follows = "nixpkgs";
    };
 
