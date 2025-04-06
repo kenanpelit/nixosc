@@ -301,7 +301,7 @@
            {
             environment.systemPackages = [
              inputs.nix-search-tv.packages.${system}.default
-             #inputs.walker.packages.${system}.default
+             inputs.walker.packages.${system}.default
             ];
            }
          ] ++ modules;  # Add machine-specific modules
