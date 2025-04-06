@@ -516,8 +516,8 @@
 
         # Uygulama Başlatıcılar
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
-        "$mainMod ALT, Space, exec, walker"                                           # Walker
-        "ALT, Space, exec, ulauncher-toggle"                                          # Ulauncher
+        "ALT, Space, exec, walker"                                                    # Walker
+        "$mainMod ALT, Space, exec, ulauncher-toggle"                                 # Ulauncher
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"  # Terminal dosya yönetici
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
 
