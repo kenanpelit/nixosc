@@ -516,7 +516,7 @@
 
         # Uygulama Başlatıcılar
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
-        "$mainMod ALT, Space, exec, walker"                          # Rofi
+        "$mainMod ALT, Space, exec, walker"                                           # Walker
         "ALT, Space, exec, ulauncher-toggle"                                          # Ulauncher
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"  # Terminal dosya yönetici
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
@@ -549,7 +549,7 @@
         "$mainMod, backspace, exec, power-menu"                                      # Güç menüsü
         "$mainMod, C, exec, hyprpicker -a"                                           # Renk seçici
         "$mainMod, N, exec, swaync-client -t -sw"                                    # Bildirim merkezi
-        "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 11] resources'" # Sistem monitörü
+        "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'" # Sistem monitörü
 
         # Monitör ve Ekran Yönetimi
         "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"    # Monitör değiştir
@@ -559,8 +559,8 @@
 
         # Özel Uygulamalar
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
-        "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 8 silent] start-zen-kenp-always'"
-        "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 8 silent] start-zen-compecta-always'"
+        "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 1 silent] start-zen-kenp-always'"
+        "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 4 silent] start-zen-compecta-always'"
         "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify-always'"
         "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
