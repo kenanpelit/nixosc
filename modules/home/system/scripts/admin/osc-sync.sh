@@ -77,6 +77,7 @@ DOT_PATHS=(
 	".config/sops"
 	".config/subliminal"
 	".config/ulauncher"
+	".config/walker"
 	".config/zsh/history"
 	".gnupg"
 	".iptv"
