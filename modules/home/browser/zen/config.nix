@@ -34,17 +34,17 @@ in
     enable = true;
     
     # Default applications
-    defaultApplications = {
-      # Browser related - all three options with browser as default
-      "default-web-browser" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "text/html" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "x-scheme-handler/http" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "x-scheme-handler/https" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "x-scheme-handler/about" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "x-scheme-handler/unknown" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "application/xhtml+xml" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-      "text/xml" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
-    };
+    #defaultApplications = {
+    #  # Browser related - all three options with browser as default
+    #  "default-web-browser" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "text/html" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "x-scheme-handler/http" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "x-scheme-handler/https" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "x-scheme-handler/about" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "x-scheme-handler/unknown" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "application/xhtml+xml" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #  "text/xml" = ["zen-browser.desktop" "zen-beta.desktop" "zen.desktop"];
+    #};
   };
 
   # =============================================================================
