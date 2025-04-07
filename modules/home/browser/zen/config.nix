@@ -70,7 +70,7 @@ in
       ];
       icon = "zen-browser";
       startupNotify = true;
-      startupWMClass = "zen-browser";
+      # startupWMClass = "zen-browser"; # Bu satırı kaldırdım
       actions = {
         "new-private-window" = {
           name = "New Private Window";
@@ -105,7 +105,7 @@ in
       ];
       icon = "zen-beta";
       startupNotify = true;
-      startupWMClass = "zen-beta";
+      # startupWMClass = "zen-beta"; # Bu satırı kaldırdım
       actions = {
         "new-private-window" = {
           name = "New Private Window";
@@ -140,7 +140,7 @@ in
       ];
       icon = "zen";
       startupNotify = true;
-      startupWMClass = "zen";
+      # startupWMClass = "zen"; # Bu satırı kaldırdım
       actions = {
         "new-private-window" = {
           name = "New Private Window";
