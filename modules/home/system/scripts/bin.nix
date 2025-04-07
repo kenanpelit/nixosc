@@ -297,9 +297,6 @@ let
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
-  zen = pkgs.writeShellScriptBin "zen" (
-    builtins.readFile ./bin/zen.sh
-  );
 
 in {
   home.packages = with pkgs; [
@@ -402,6 +399,5 @@ in {
     waybar-weather-update
     waybar-wf-recorder
     wrename
-    zen
   ];
 }
