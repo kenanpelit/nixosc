@@ -365,6 +365,7 @@
         "workspace 8 silent,class:^(Brave-browser)$,title:^(Spotify - Web Player).*"
         "workspace 8,class:^(com.obsproject.Studio)$"
         "workspace 9 silent,class:^(Whats)$"
+        "workspace 9 silent,title:^(web.whatsapp.com)$ class:^(Brave-browser)$"
         "workspace 9 silent,title:^(web.whatsapp.com)$"
 
         # Floating Windows
