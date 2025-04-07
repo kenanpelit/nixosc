@@ -501,11 +501,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1744008831,
-        "narHash": "sha256-g3mHJLB8ShKuMaBBZxiGuoftJ22f7Boegiw5xBUnS8E=",
+        "lastModified": 1744038920,
+        "narHash": "sha256-9a4V1wQXS8hXZtc7mRtz0qINkGW+C99aDrmXY6oYBFg=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "f463902a3f03e15af658e48bcc60b39188ddf734",
+        "rev": "a4d8020820a85b47f842eae76ad083b0ec2a886a",
         "type": "github"
       },
       "original": {
@@ -683,17 +683,17 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1743975326,
-        "narHash": "sha256-snhX/FKfsO0OKQGNiX2ZOnVlB1HGALjlzW30+Qm5Lh8=",
+        "lastModified": 1744029991,
+        "narHash": "sha256-++WgYi6LeTvsRtCwEF0G91cFctfPCK+mA32jkokNAPs=",
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "85f874d10f97b8bb35e79a9a219b0217e2938794",
+        "rev": "8a8f394da70e40043d1ba2c193b81867560b2b05",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "85f874d10f97b8bb35e79a9a219b0217e2938794",
+        "rev": "8a8f394da70e40043d1ba2c193b81867560b2b05",
         "type": "github"
       }
     },
@@ -1376,11 +1376,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1744021632,
-        "narHash": "sha256-IPulkPKcMb6Qx90t+PN1/LMNflCs+EuUOgh5jQNC+ho=",
+        "lastModified": 1744044384,
+        "narHash": "sha256-CLKBIS7jc9Nq6lgiie2xLmEF9LiYnHIdXsc9E1SOoac=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "1063a6c1fae5b6bcb9a3b7bb52a756606a5b72de",
+        "rev": "06ddef013bd1e40928c3c164fc928e4f32d144fd",
         "type": "github"
       },
       "original": {
@@ -1957,11 +1957,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1743854692,
-        "narHash": "sha256-0j18TfmblTLRC/yJhx3uhaJZ1gmq1JDCZgKtJMjHb9s=",
+        "lastModified": 1744032540,
+        "narHash": "sha256-KMshnTCoe11oTzsUp5T3e0+9/dVlLSI/wIA7Nli3LI0=",
         "owner": "0xc000022070",
         "repo": "zen-browser-flake",
-        "rev": "d0b39aeb79744bc47c6cc3b0fde1d5156673d4a6",
+        "rev": "f4edde8a094098c8f16de4efc93e057c2cd3c06b",
         "type": "github"
       },
       "original": {

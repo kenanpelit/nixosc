@@ -347,6 +347,7 @@
         "workspace 3 silent,class:^(AI)$"
         "workspace 3,class:^(evince)$"
         "workspace 4 silent,class:^(CompecTA)$"
+        "workspace 4 silent,title:^(compecta)$"
         "workspace 4,class:^(Gimp-2.10)$"
         "workspace 4,class:^(Aseprite)$"
         "workspace 5 silent,class:^(Discord)$"
@@ -354,6 +355,8 @@
         "workspace 5 silent,tile,class:^(discord)$"
         "workspace 5,class:^(Audacious)$"
         "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
+        "workspace 6 silent,title:^(New Private Tab - Brave)$"
+        #"workspace 6 silent,title:^(youtube.com)$"
         "workspace 6 silent,class:^(qemu-system-x86_64)$"
         "workspace 6 silent,class:^(qemu)$"
         "workspace 7 silent,class:^(org.keepassxc.KeePassXC)$"
@@ -361,6 +364,7 @@
         "workspace 8 silent,class:^(Spotify)$"
         "workspace 8,class:^(com.obsproject.Studio)$"
         "workspace 9 silent,class:^(Whats)$"
+        "workspace 9 silent,title:^(web.whatsapp.com)$"
 
         # Floating Windows
         "float,class:^(clipb)$"
