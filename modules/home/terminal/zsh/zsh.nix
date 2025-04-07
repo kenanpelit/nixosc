@@ -115,8 +115,8 @@
     # History Configuration
     # -----------------------------------------------------------------------------
     history = {
-      size = 50000;                  # Maximum events in memory
-      save = 60000;                  # Maximum events in history file
+      size = 60000;                  # Maximum events in memory
+      save = 50000;                  # Maximum events in history file
       path = "$ZDOTDIR/history";     # History file location
       ignoreDups = true;             # Ignore duplicate commands
       share = true;                  # Share history between sessions
