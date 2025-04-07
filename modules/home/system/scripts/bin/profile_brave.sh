@@ -9,7 +9,7 @@
 #   - Özel pencere sınıfı ve başlık ayarlama
 #   - Komut satırı argümanlarını destekleme
 #   - Profil listeleme
-#   - Hazır uygulama kısayolları (whatsapp, youtube, tiktok, spotify)
+#   - Hazır uygulama kısayolları (whatsapp, youtube, tiktok, spotify, discord)
 #
 #===============================================================================
 set -euo pipefail
@@ -32,6 +32,7 @@ usage() {
 	echo -e "       veya: $0 ${BOLD}--youtube${RESET} [brave_parametreleri]"
 	echo -e "       veya: $0 ${BOLD}--tiktok${RESET} [brave_parametreleri]"
 	echo -e "       veya: $0 ${BOLD}--spotify${RESET} [brave_parametreleri]"
+	echo -e "       veya: $0 ${BOLD}--discord${RESET} [brave_parametreleri]"
 	echo
 	echo -e "${BOLD}Parametreler:${RESET}"
 	echo "  --class=SINIF     Pencere sınıfını ayarlar (window manager entegrasyonu için)"
@@ -40,6 +41,7 @@ usage() {
 	echo "  --youtube         YouTube uygulamasını başlatır (Kenp profili ile)"
 	echo "  --tiktok          TikTok uygulamasını başlatır (Kenp profili ile)"
 	echo "  --spotify         Spotify uygulamasını başlatır (Kenp profili ile)"
+	echo "  --discord         Discord uygulamasını başlatır (Kenp profili ile)"
 	echo
 	list_profiles
 	exit "${1:-0}"
@@ -73,6 +75,14 @@ launch_spotify() {
 	echo -e "${GREEN}Spotify başlatılıyor...${RESET}"
 	exec "$0" "Kenp" --app="https://open.spotify.com/" --class=Spotify --title=Spotify "$@"
 }
+
+launch_discord() {
+	echo -e "${GREEN}Discord başlatılıyor...${RESET}"
+	# pass komutunu kullanarak Discord kanalı URL'sini al
+	local discord_url
+	discord_url=$(pass discord-channels)
+	exec "$0" "Kenp" --app="$discord_url" --class=Discord --title=Discord "$@"
+}
 # Ana işlev
 main() {
 	# Parametre kontrolü
@@ -94,6 +104,10 @@ main() {
 	--spotify)
 		shift
 		launch_spotify "$@"
+		;;
+	--discord)
+		shift
+		launch_discord "$@"
 		;;
 	esac
 	# İlk parametre profil adı
