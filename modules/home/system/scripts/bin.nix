@@ -135,6 +135,9 @@ let
   power-menu = pkgs.writeShellScriptBin "power-menu" (
     builtins.readFile ./bin/power-menu.sh
   );
+  profile_brave = pkgs.writeShellScriptBin "profile_brave" (
+    builtins.readFile ./bin/profile_brave.sh
+  );
   profile_chrome = pkgs.writeShellScriptBin "profile_chrome" (
     builtins.readFile ./bin/profile_chrome.sh
   );
@@ -345,6 +348,7 @@ in {
     playlist
     ports
     power-menu
+    profile_brave
     profile_chrome
     publicip
     record
