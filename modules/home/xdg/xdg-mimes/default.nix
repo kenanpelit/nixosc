@@ -9,7 +9,7 @@ let
  # Default Applications Map
  # =============================================================================
  defaultApps = {
-   browser = [ "zen.desktop" ];
+   browser = [ "zen-browser.desktop" "zen-beta.desktop" "zen.desktop" ];
    text = [ "kitty-nvim.desktop" ];  # Değiştirildi
    image = [ "imv-dir.desktop" ];
    audio = [ "mpv.desktop" ];
