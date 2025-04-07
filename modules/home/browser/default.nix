@@ -14,6 +14,7 @@
 
 {
  imports = [
+   ./brave
    ./firefox
    ./zen
    ./chrome
