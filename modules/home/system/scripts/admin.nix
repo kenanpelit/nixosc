@@ -120,9 +120,6 @@ let
   osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
     builtins.readFile ./admin/osc-vradio.sh
   );
-  semsumo_1 = pkgs.writeShellScriptBin "semsumo_1" (
-    builtins.readFile ./admin/semsumo_1.sh
-  );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./admin/semsumo.sh
   );
@@ -189,7 +186,6 @@ in {
     osc-ulauncher_ext
     osc-video-converter
     osc-vradio
-    semsumo_1
     semsumo
     svmarch
     svmnixos
