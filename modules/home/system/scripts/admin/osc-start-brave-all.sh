@@ -7,11 +7,12 @@
 #   Date: 2025-04-08
 #   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
-#   Description: Brave tarayıcı profillerini ve web uygulamalarını
-#                semsumo ile entegre şekilde başlatan otomatik başlatma scripti
+#   Description: Brave tarayıcı profillerini, web uygulamalarını ve terminal
+#                oturumlarını semsumo ile başlatan otomatik başlatma scripti
 #
 #   Features:
 #   - Semsumo entegrasyonu (yapılandırma semsumo config ile yönetilir)
+#   - Terminal oturumları başlatma (kitty, wezterm, alacritty)
 #   - Farklı Brave profillerini belirli workspace'lere yerleştirir
 #   - Web uygulamalarını belirli profillerle açar (WhatsApp, YouTube, vb.)
 #   - VPN kontrolü ve yönetimi (secure/bypass)
@@ -44,7 +45,7 @@ log() {
 	echo "[$timestamp] [$app] $message" | tee -a "$LOG_FILE"
 
 	if [[ "$notify" == "true" ]]; then
-		notify-send -a "Brave Startup" "$app: $message"
+		notify-send -a "Uygulama Başlatıcı" "$app: $message"
 	fi
 }
 
@@ -123,20 +124,21 @@ get_vpn_mode() {
 	fi
 }
 
-# Scriptleri oluştur
-generate_scripts() {
-	log "GENERATE" "Semsumo scriptlerini oluşturuyor..." "true"
+# Terminal oturumlarını başlat
+start_terminal_sessions() {
+	log "TERMINAL" "Terminal oturumları başlatılıyor..." "true"
 
-	if ! command -v $SEMSUMO >/dev/null; then
-		log "ERROR" "Semsumo komutu bulunamadı!" "true"
-		return 1
-	fi
+	# Terminal oturumlarını başlat
+	log "TERMINAL" "kkenp oturumu başlatılıyor" "true"
+	launch_profile "kkenp"
 
-	# Scriptleri oluştur
-	$SEMSUMO --create --verbose
+	#log "TERMINAL" "wkenp oturumu başlatılıyor" "true"
+	#launch_profile "wkenp"
 
-	log "GENERATE" "Scriptler oluşturuldu" "true"
-	return 0
+	#log "TERMINAL" "mkenp oturumu başlatılıyor" "true"
+	#launch_profile "mkenp"
+
+	log "TERMINAL" "Tüm terminal oturumları başlatıldı" "true"
 }
 
 # Brave profilleri ve uygulamalarını başlat
@@ -179,13 +181,13 @@ check_hyprland() {
 
 # Ana fonksiyon
 main() {
-	log "START" "Brave Profile Startup Manager v2.0 başlatılıyor" "true"
+	log "START" "Uygulama Başlatma Yöneticisi başlatılıyor" "true"
 
 	# Hyprland kontrolü
 	check_hyprland
 
-	# Scriptleri oluştur/güncelle
-	generate_scripts
+	# Terminal oturumlarını başlat
+	start_terminal_sessions
 
 	# Profilleri başlat
 	start_brave_profiles
@@ -197,7 +199,7 @@ main() {
 	log "WORKSPACE" "Tüm uygulamalar başlatıldı, $FINAL_WORKSPACE numaralı workspace'e dönülüyor" "true"
 	switch_workspace "$FINAL_WORKSPACE"
 
-	log "DONE" "Tüm Brave profilleri ve uygulamaları başlatıldı" "true"
+	log "DONE" "Tüm uygulamalar başarıyla başlatıldı" "true"
 }
 
 # Çalıştır

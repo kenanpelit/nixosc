@@ -48,6 +48,9 @@ let
   start-kkenp = pkgs.writeShellScriptBin "start-kkenp" (
     builtins.readFile ./start/start-kkenp.sh
   );
+  start-mkenp = pkgs.writeShellScriptBin "start-mkenp" (
+    builtins.readFile ./start/start-mkenp.sh
+  );
   start-mpv = pkgs.writeShellScriptBin "start-mpv" (
     builtins.readFile ./start/start-mpv.sh
   );
@@ -105,6 +108,7 @@ in {
     start-discord
     start-kitty-single
     start-kkenp
+    start-mkenp
     start-mpv
     start-spotify
     start-webcord
