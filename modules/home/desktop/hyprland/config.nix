@@ -340,7 +340,7 @@
         "pin,class:^(gcr-prompter)$"
 
         # Workspace Assignments
-        "workspace 1 silent,class:^(Kenp)$"
+        #"workspace 1 silent,class:^(Kenp)$"
         "workspace 1,class:^(zen)$"
         "workspace 2 silent,class:^(Tmux)$,title:^(Tmux)$"
         "workspace 2 silent,class:^(TmuxKenp)$"
