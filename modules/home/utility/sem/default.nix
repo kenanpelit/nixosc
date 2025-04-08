@@ -31,6 +31,12 @@
       "vpn": "bypass",
       "workspace": "2"
     },
+    "mkenp": {
+      "command": "kitty",
+      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
+      "vpn": "secure",
+      "workspace": "2"
+    },
     "wkenp": {
       "command": "wezterm",
       "args": ["start", "--class", "TmuxKenp", "-e", "tmux_kenp"],
@@ -152,7 +158,7 @@
       "command": "profile_brave",
       "args": ["--whatsapp"],
       "vpn": "secure",
-      "workspace": "5",
+      "workspace": "9",
       "fullscreen": "true"
     },
     "Zen-Kenp": {
