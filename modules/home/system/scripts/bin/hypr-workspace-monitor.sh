@@ -193,13 +193,21 @@ toggle_monitor_focus() {
 
 navigate_browser_tab() {
 	local direction=$1
+	local current_window=$(hyprctl activewindow -j | jq -r '.class')
 
-	if [ "$direction" = "next" ]; then
-		# Try both methods for compatibility
-		wtype -M ctrl -k tab 2>/dev/null || ydotool key ctrl+tab 2>/dev/null
+	if [[ "$current_window" == "brave" || "$current_window" == "Brave" ]]; then
+		if [ "$direction" = "next" ]; then
+			hyprctl dispatch exec "wtype -P ctrl -p tab -r tab -R ctrl"
+		else
+			hyprctl dispatch exec "wtype -P ctrl -P shift -p tab -r tab -R shift -R ctrl"
+		fi
 	else
-		# Try both methods for compatibility
-		wtype -M ctrl -M shift -k tab 2>/dev/null || ydotool key ctrl+shift+tab 2>/dev/null
+		# Diğer tarayıcılar için
+		if [ "$direction" = "next" ]; then
+			wtype -M ctrl -k tab 2>/dev/null || ydotool key ctrl+tab 2>/dev/null
+		else
+			wtype -M ctrl -M shift -k tab 2>/dev/null || ydotool key ctrl+shift+tab 2>/dev/null
+		fi
 	fi
 }
 
