@@ -88,20 +88,24 @@ make_fullscreen() {
 launch_terminal_profile() {
 	local profile_name="$1"
 
-	# Script dosyasını kontrol et
-	local script_path="$SCRIPTS_DIR/start-${profile_name,,}.sh"
-
-	if [[ ! -f "$script_path" ]]; then
-		log "ERROR" "$profile_name için script bulunamadı: $script_path" "true"
-		return 1
-	fi
-
-	log "LAUNCH" "$profile_name başlatılıyor (script: $script_path)" "true"
-
-	# Script'i çalıştır
-	bash "$script_path"
+	# Komutu çalıştır
+	log "LAUNCH" "$profile_name başlatılıyor" "true"
+	start-$profile_name
 
 	log "DONE" "$profile_name başlatma işlemi tamamlandı" "false"
+	return 0
+}
+
+# Semsumo uygulamasını başlatma
+launch_semsumo_app() {
+	local app_name="$1"
+
+	log "LAUNCH" "$app_name uygulaması başlatılıyor" "true"
+
+	# Komutu doğrudan çalıştır
+	start-$app_name
+
+	log "DONE" "$app_name başlatma işlemi tamamlandı" "false"
 	return 0
 }
 
@@ -190,18 +194,24 @@ start_brave_profiles() {
 	log "BRAVE" "Tüm Brave profilleri başlatıldı" "true"
 }
 
-# Brave web uygulamalarını başlat
-start_brave_apps() {
-	log "APP" "Web uygulamaları başlatılıyor..." "true"
+# Uygulamaları başlat (Semsumo ve Brave karışık)
+start_applications() {
+	log "APP" "Uygulamalar başlatılıyor..." "true"
 
-	# Web Uygulamaları (Uygulama, Workspace, Fullscreen)
+	# WhatsApp
 	launch_brave_app "whatsapp" "9" "true"
-	launch_brave_app "spotify" "8" "true"
+
+	# Spotify - Semsumo komutu ile başlat
+	log "APP" "Spotify başlatılıyor..." "true"
+	launch_semsumo_app "spotify"
+
+	# YouTube - Brave ile başlat
 	launch_brave_app "youtube" "7" "true"
+
 	#launch_brave_app "tiktok" "7" "true"   # İsteğe bağlı
 	#launch_brave_app "discord" "5" "true"  # İsteğe bağlı
 
-	log "APP" "Tüm web uygulamaları başlatıldı" "true"
+	log "APP" "Tüm uygulamalar başlatıldı" "true"
 }
 
 # Hyprland durumunu kontrol et
@@ -227,8 +237,8 @@ main() {
 	# Brave profilleri başlat
 	start_brave_profiles
 
-	# Web uygulamaları başlat
-	start_brave_apps
+	# Uygulamaları başlat (Web ve Spotify)
+	start_applications
 
 	# İşlemler tamamlandıktan sonra workspace 2'ye dön
 	log "WORKSPACE" "Tüm uygulamalar başlatıldı, $FINAL_WORKSPACE numaralı workspace'e dönülüyor" "true"
