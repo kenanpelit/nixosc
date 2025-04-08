@@ -566,14 +566,14 @@
 
         # Özel Uygulamalar
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
-        "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 1 silent] start-zen-kenp-always'"
-        "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 4 silent] start-zen-compecta-always'"
-        "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify-always'"
+        "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 1 silent] start-zen-kenp'"
+        "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 4 silent] start-zen-compecta'"
+        "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify'"
         "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
-        "ALT, T, exec, start-kkenp-always"
-        "ALT CTRL, C, exec, start-wkenp-always"
-        "$mainMod ALT, RETURN, exec, osc-start-semsumo-all"
+        "ALT, T, exec, start-kkenp"
+        "ALT CTRL, C, exec, start-wkenp"
+        "$mainMod ALT, RETURN, exec, osc-start-brave-all"
 
         # Sistem Fonksiyonları
         ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle

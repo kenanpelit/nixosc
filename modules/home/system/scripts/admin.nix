@@ -36,14 +36,8 @@ let
   osc-cleaup-grub = pkgs.writeShellScriptBin "osc-cleaup-grub" (
     builtins.readFile ./admin/osc-cleaup-grub.sh
   );
-  osc-generate_nix_admin = pkgs.writeShellScriptBin "osc-generate_nix_admin" (
-    builtins.readFile ./admin/osc-generate_nix_admin.sh
-  );
-  osc-generate_nix_bin = pkgs.writeShellScriptBin "osc-generate_nix_bin" (
-    builtins.readFile ./admin/osc-generate_nix_bin.sh
-  );
-  osc-generate_nix_start = pkgs.writeShellScriptBin "osc-generate_nix_start" (
-    builtins.readFile ./admin/osc-generate_nix_start.sh
+  osc-generate_nix = pkgs.writeShellScriptBin "osc-generate_nix" (
+    builtins.readFile ./admin/osc-generate_nix.sh
   );
   osc-gist = pkgs.writeShellScriptBin "osc-gist" (
     builtins.readFile ./admin/osc-gist.sh
@@ -93,8 +87,17 @@ let
   osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
     builtins.readFile ./admin/osc-ssh-session-manager.sh
   );
+  osc-start-brave-all = pkgs.writeShellScriptBin "osc-start-brave-all" (
+    builtins.readFile ./admin/osc-start-brave-all.sh
+  );
   osc-start-semsumo-all = pkgs.writeShellScriptBin "osc-start-semsumo-all" (
     builtins.readFile ./admin/osc-start-semsumo-all.sh
+  );
+  osc-start-semsumo-all-v1 = pkgs.writeShellScriptBin "osc-start-semsumo-all-v1" (
+    builtins.readFile ./admin/osc-start-semsumo-all.v1.sh
+  );
+  osc-start-semsumo-all_v2 = pkgs.writeShellScriptBin "osc-start-semsumo-all_v2" (
+    builtins.readFile ./admin/osc-start-semsumo-all_v2.sh
   );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./admin/osc-subliminal.sh
@@ -144,7 +147,6 @@ let
   zen_terminate_sessions = pkgs.writeShellScriptBin "zen_terminate_sessions" (
     builtins.readFile ./admin/zen_terminate_sessions.sh
   );
-
 in {
   home.packages = with pkgs; [
     check_images
@@ -159,9 +161,7 @@ in {
     osc-backup
     osc-blocklist
     osc-cleaup-grub
-    osc-generate_nix_admin
-    osc-generate_nix_bin
-    osc-generate_nix_start
+    osc-generate_nix
     osc-gist
     osc-gpg_unlock
     osc-mrelay
@@ -178,7 +178,10 @@ in {
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
     osc-ssh-session-manager
+    osc-start-brave-all
     osc-start-semsumo-all
+    osc-start-semsumo-all-v1
+    osc-start-semsumo-all_v2
     osc-subliminal
     osc-symlink_manager
     osc-sync
