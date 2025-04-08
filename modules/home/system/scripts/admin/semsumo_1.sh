@@ -17,7 +17,6 @@
 # - Metrics collection in JSON format
 # - Secure file permissions and error handling
 # - Session script generator (--create parameter)
-# - Hyprland workspace support
 #
 # Config: ~/.config/sem/config.json
 # Logs: ~/.config/sem/logs/sem.log
@@ -69,7 +68,6 @@ readonly NC='\033[0m'
 # Global variables
 declare -a TEMP_FILES=()
 declare -A ACTIVE_MONITORS=()
-VERBOSE=0
 
 # Initialize environment
 initialize() {
@@ -131,7 +129,7 @@ log_success() {
 }
 
 log_verbose() {
-	if [[ ${VERBOSE} -eq 1 ]]; then
+	if [[ ${VERBOSE:-0} -eq 1 ]]; then
 		echo -e "${CYAN}[VERBOSE]${NC} $1" >&2
 		echo "[$(date '+%Y-%m-%d %H:%M:%S')] [VERBOSE] $1" >>"$LOG_FILE"
 	fi
@@ -346,9 +344,8 @@ list_sessions() {
         key: .key,
         command: .value.command,
         vpn: (.value.vpn // "secure"),
-        workspace: (.value.workspace // "0"),
         args: (.value.args|join(" "))
-    } | "\(.key):\n  Command: \(.command)\n  VPN Mode: \(.vpn)\n  Workspace: \(.workspace)\n  Arguments: \(.args)"' "$CONFIG_FILE" |
+    } | "\(.key):\n  Command: \(.command)\n  VPN Mode: \(.vpn)\n  Arguments: \(.args)"' "$CONFIG_FILE" |
 		while IFS= read -r line; do
 			if [[ $line =~ :$ ]]; then
 				session=${line%:}
@@ -502,16 +499,7 @@ create_script() {
 
 	log_verbose "Creating script: $script_path for profile $profile with VPN mode: $vpn_mode"
 
-	# Workspace ayarlarını config dosyasından al (yoksa varsayılan değerleri kullan)
-	local workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
-	local final_workspace=$(jq -r ".sessions.\"$profile\".final_workspace // \"$workspace\"" "$CONFIG_FILE")
-	local wait_time=$(jq -r ".sessions.\"$profile\".wait_time // \"2\"" "$CONFIG_FILE")
-	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // \"false\"" "$CONFIG_FILE")
-
-	# Profile ismini düzenle (camel case ve büyük harfe çevir)
-	local upper_profile=$(echo "$profile" | tr '-' '_' | tr 'a-z' 'A-Z')
-
-	# Script içeriğini oluştur
+	# Create script content with improved comments and structure
 	cat >"$script_path" <<EOF
 #!/usr/bin/env bash
 #===============================================================================
@@ -527,75 +515,9 @@ set -euo pipefail
 # Environment setup
 export TMPDIR="$TMP_DIR"
 
-# Sabitler
-WORKSPACE_${upper_profile}=$workspace
-FINAL_WORKSPACE=$final_workspace
-WAIT_TIME=$wait_time
-
-# Workspace'e geçiş fonksiyonu
-switch_workspace() {
-	local workspace="\$1"
-	if command -v hyprctl &>/dev/null; then
-		echo "Workspace \$workspace'e geçiliyor..."
-		hyprctl dispatch workspace "\$workspace"
-		sleep 1
-	fi
-}
-
-# Tam ekran yapma fonksiyonu
-make_fullscreen() {
-	if command -v hyprctl &>/dev/null; then
-		echo "Aktif pencere tam ekran yapılıyor..."
-		sleep 1
-		hyprctl dispatch fullscreen 1
-		sleep 1
-	fi
-}
-
-EOF
-
-	# Workspace değeri varsa geçiş kodu ekle
-	if [[ "$workspace" != "0" ]]; then
-		cat >>"$script_path" <<EOF
-# $profile workspace'ine geç
-switch_workspace "\$WORKSPACE_${upper_profile}"
-
-EOF
-	fi
-
-	# Start session kodu
-	cat >>"$script_path" <<EOF
 # Start session with Semsumo
-echo "$profile başlatılıyor..."
 $SEMSUMO start "$profile" "$vpn_mode"
 
-# Uygulama açılması için bekle
-echo "Uygulama açılması için \$WAIT_TIME saniye bekleniyor..."
-sleep \$WAIT_TIME
-
-EOF
-
-	# Tam ekran seçeneği etkinse ekle
-	if [[ "$fullscreen" == "true" ]]; then
-		cat >>"$script_path" <<EOF
-# Tam ekran yap
-make_fullscreen
-
-EOF
-	fi
-
-	# Final workspace geçişi, eğer başlangıç workspace'inden farklıysa
-	if [[ "$final_workspace" != "0" && "$final_workspace" != "$workspace" ]]; then
-		cat >>"$script_path" <<EOF
-# Tamamlandığında ana workspace'e geri dön
-echo "İşlem tamamlandı, workspace \$FINAL_WORKSPACE'e dönülüyor..."
-switch_workspace "\$FINAL_WORKSPACE"
-
-EOF
-	fi
-
-	# Script sonlandırması
-	cat >>"$script_path" <<EOF
 # Exit successfully
 exit 0
 EOF
@@ -743,80 +665,67 @@ EOF
 
 show_help() {
 	cat <<EOF
-Session Manager $VERSION - Terminal ve Uygulama Oturumları Yöneticisi
+Session Manager $VERSION - Terminal and Application Session Manager
 
-Kullanım: 
-  semsumo <komut> [parametreler]
+Usage: 
+  semsumo <command> [parameters]
 
-Komutlar:
-  start   <oturum> [vpn_modu]  Oturum başlat
-  stop    <oturum>             Oturum durdur
-  restart <oturum> [vpn_modu]  Oturum yeniden başlat
-  status  <oturum>             Oturum durumunu göster
-  list                         Mevcut oturumları listele
-  add     <json_veri>          Yeni oturum yapılandırması ekle
-  remove  <oturum>             Oturum yapılandırmasını kaldır
-  backup                       Config yedekle
-  validate                     Config doğrula  
-  version                      Versiyon bilgisi
-  help                         Bu yardım mesajını göster
-  --create [options]           Oturum yönetimi scriptleri oluştur
+Commands:
+  start   <session> [vpn_mode]  Start session
+  stop    <session>             Stop session
+  restart <session> [vpn_mode]  Restart session
+  status  <session>             Show session status
+  list                          List available sessions
+  add     <json_data>           Add new session configuration
+  remove  <session>             Remove session configuration
+  backup                        Backup config
+  validate                      Validate config  
+  version                       Show version information
+  help                          Show this help message
+  --create [options]            Generate session management scripts
   
-VPN Modları:
-  bypass  : VPN dışında çalıştır (VPN'i bypass et)
-  secure  : VPN üzerinden güvenli şekilde çalıştır
+VPN Modes:
+  bypass  : Run outside VPN (bypass VPN)
+  secure  : Run securely through VPN
 
-Yapılandırma Parametreleri:
-  vpn             : "secure" veya "bypass" (VPN modu)
-  workspace       : Uygulamanın çalışacağı Hyprland workspace numarası
-  final_workspace : İşlem sonrası dönülecek workspace numarası
-  wait_time       : Uygulama başlatıldıktan sonra beklenecek süre (saniye)
-  fullscreen      : Uygulamayı tam ekran yapmak için "true" değeri ver
+Example Usage:
+  # Session start examples
+  semsumo start secure-browser         # Use configuration VPN mode
+  semsumo start local-browser bypass   # Run outside VPN
+  semsumo restart zen-browser secure   # Restart inside VPN
 
-Örnek Kullanımlar:
-  # Oturum başlatma örnekleri
-  semsumo start secure-browser         # Yapılandırma VPN modunu kullan
-  semsumo start local-browser bypass   # VPN dışında çalıştır
-  semsumo restart zen-browser secure   # VPN içinde yeniden başlat
+  # Session management
+  semsumo list                         # List all sessions
+  semsumo status local-browser         # Check session status
+  semsumo stop secure-browser          # Stop session
 
-  # Oturum yönetimi
-  semsumo list                         # Tüm oturumları listele
-  semsumo status local-browser         # Oturum durumunu kontrol et
-  semsumo stop secure-browser          # Oturumu durdur
+  # Script generation
+  semsumo --create                     # Generate session scripts
+  semsumo --create --verbose           # Generate with detailed output
 
-  # Script oluşturma
-  semsumo --create                     # Oturum scriptlerini oluştur
-  semsumo --create --verbose           # Detaylı bilgilerle oluştur
-
-  # Yapılandırma örnekleri
+  # Configuration examples
   semsumo add '{
     "secure-browser": {
       "command": "/usr/bin/firefox",
       "args": ["-P", "Secure", "--class", "Firefox-Secure"],
-      "vpn": "secure",
-      "workspace": "2",
-      "fullscreen": "true"
+      "vpn": "secure"
     }
   }'
 
   semsumo add '{
-    "discord-app": {
-      "command": "discord",
-      "args": ["--class", "Discord"],
-      "vpn": "bypass",
-      "workspace": "5",
-      "final_workspace": "2",
-      "wait_time": "3",
-      "fullscreen": "true"
+    "local-terminal": {
+      "command": "/usr/bin/alacritty",
+      "args": ["--class", "Terminal", "-T", "Local"],
+      "vpn": "bypass"
     }
   }'
 
-  semsumo remove old-profile           # Profili kaldır
-  semsumo backup                       # Yapılandırmayı yedekle
+  semsumo remove old-profile           # Remove profile
+  semsumo backup                       # Backup configuration
 
-Not: VPN modu yapılandırma dosyasında tanımlıysa ve komut satırında 
-belirtilmemişse, yapılandırmadaki mod kullanılır. Hiçbiri belirtilmemişse 
-"secure" mod varsayılan olarak kullanılır.
+Note: If VPN mode is defined in the configuration file and not specified 
+on the command line, the mode from the configuration is used. If neither 
+is specified, "secure" mode is used by default.
 EOF
 }
 

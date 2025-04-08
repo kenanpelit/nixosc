@@ -28,22 +28,26 @@
     "kkenp": {
       "command": "kitty",
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "2"
     },
     "wkenp": {
       "command": "wezterm",
       "args": ["start", "--class", "TmuxKenp", "-e", "tmux_kenp"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "2"
     },
     "wezterm": {
       "command": "wezterm",
       "args": ["start", "--class", "wezterm"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "2"
     },
     "kitty-single": {
       "command": "kitty",
       "args": ["--class", "kitty", "-T", "kitty", "--single-instance"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "2"
     },
     "wezterm-rmpc": {
       "command": "wezterm",
@@ -53,122 +57,162 @@
     "discord": {
       "command": "discord",
       "args": ["-m", "--class=discord", "--title=discord"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "5",
+      "fullscreen": "true",
+      "final_workspace": "2"
     },
     "webcord": {
       "command": "webcord",
       "args": ["-m", "--class=WebCord", "--title=Webcord"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "5",
+      "fullscreen": "true",
+      "final_workspace": "2"
     },
     "Chrome-Kenp": {
       "command": "profile_chrome",
       "args": ["Kenp", "--class", "Kenp"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "1"
     },
     "Chrome-CompecTA": {
       "command": "profile_chrome",
       "args": ["CompecTA", "--class", "CompecTA"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "4"
     },
     "Chrome-AI": {
       "command": "profile_chrome",
       "args": ["AI", "--class", "AI"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "3"
     },
     "Chrome-Whats": {
       "command": "profile_chrome",
       "args": ["Whats", "--class", "Whats"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "9"
     },
     "Brave-Kenp": {
       "command": "profile_brave",
       "args": ["Kenp", "--class", "Kenp"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "1"
     },
     "Brave-CompecTA": {
       "command": "profile_brave",
       "args": ["CompecTA", "--class", "CompecTA" , "--title", "CompecTA"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "4"
     },
     "Brave-Ai": {
       "command": "profile_brave",
       "args": ["Ai", "--class", "Ai", "--title", "Ai"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "3"
     },
     "Brave-Whats": {
       "command": "profile_brave",
       "args": ["Whats", "--class", "Whats", "--title", "Whats"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "9"
     },
     "Brave-Yotube": {
       "command": "profile_brave",
       "args": ["--youtube"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "6",
+      "fullscreen": "true"
     },
     "Brave-Tiktok": {
       "command": "profile_brave",
       "args": ["--tiktok"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "6",
+      "fullscreen": "true"
     },
     "Brave-Spotify": {
       "command": "profile_brave",
       "args": ["--spotify"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "8",
+      "fullscreen": "true"
     },
     "Brave-Discord": {
       "command": "profile_brave",
       "args": ["--discord"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "5",
+      "final_workspace": "2",
+      "wait_time": "2",
+      "fullscreen": "true"
     },
     "Brave-Whatsapp": {
       "command": "profile_brave",
       "args": ["--whatsapp"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "5",
+      "fullscreen": "true"
     },
     "Zen-Kenp": {
       "command": "zen",
       "args": ["-P", "Kenp", "--class", "Kenp", "--name", "Kenp", "--restore-session"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "1"
     },
     "Zen-CompecTA": {
       "command": "zen",
       "args": ["-P", "CompecTA", "--class", "CompecTA", "--name", "CompecTA", "--restore-session"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "4"
     },
     "Zen-Discord": {
       "command": "zen",
       "args": ["-P", "Discord", "--class", "Discord", "--name", "Discord", "--restore-session"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "5",
+      "fullscreen": "true"
     },
     "Zen-NoVpn": {
       "command": "zen",
       "args": ["-P", "NoVpn", "--class", "AI", "--name", "AI", "--restore-session"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "3"
     },
     "Zen-Proxy": {
       "command": "zen",
       "args": ["-P", "Proxy", "--class", "Proxy", "--name", "Proxy", "--restore-session"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "7"
     },
     "Zen-Spotify": {
       "command": "zen",
       "args": ["-P", "Spotify", "--class", "Spotify", "--name", "Spotify", "--restore-session"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "7",
+      "fullscreen": "true"
     },
     "Zen-Whats": {
       "command": "zen",
       "args": ["-P", "Whats", "--class", "Whats", "--name", "Whats", "--restore-session"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "9",
+      "fullscreen": "true"
     },
     "spotify": {
       "command": "spotify",
       "args": ["--class", "Spotify", "-T", "Spotify"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "8",
+      "fullscreen": "true"
     },
     "mpv": {
       "command": "mpv",
       "args": [],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "6",
+      "fullscreen": "true"
     }
   }
 }

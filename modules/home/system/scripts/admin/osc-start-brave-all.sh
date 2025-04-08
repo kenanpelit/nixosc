@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 
-set -x
-
 #===============================================================================
 #
 #   Script: Brave Profile Startup Manager
-#   Version: 1.0.0
+#   Version: 2.0.0
 #   Date: 2025-04-08
 #   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
-#   Description: Brave tarayıcı profillerini ve web uygulamalarını kontrollü
-#                şekilde başlatan otomatik başlatma scripti
+#   Description: Brave tarayıcı profillerini ve web uygulamalarını
+#                semsumo ile entegre şekilde başlatan otomatik başlatma scripti
 #
 #   Features:
+#   - Semsumo entegrasyonu (yapılandırma semsumo config ile yönetilir)
 #   - Farklı Brave profillerini belirli workspace'lere yerleştirir
-#   - Çoklu başlatmaları önler (uygulama kontrolü)
 #   - Web uygulamalarını belirli profillerle açar (WhatsApp, YouTube, vb.)
 #   - VPN kontrolü ve yönetimi (secure/bypass)
 #   - Workspace yönetimi (Hyprland entegrasyonu)
@@ -22,17 +20,12 @@ set -x
 #===============================================================================
 
 # Yapılandırma Değişkenleri
-readonly BRAVE_CMD="profile_brave"
 readonly LOG_DIR="$HOME/.logs"
 readonly LOG_FILE="$LOG_DIR/brave-startup.log"
 readonly FINAL_WORKSPACE="2" # Son dönülecek workspace
-
-# Bekleme süreleri
-readonly PROFILE_WAIT=4       # Profil başlatıldıktan sonraki bekleme süresi
-readonly PROFILE_AFTER_WAIT=1 # İşlem tamamlandıktan sonraki bekleme süresi
-readonly APP_WAIT=4           # Web uygulaması başlatıldıktan sonraki bekleme süresi
-readonly FULLSCREEN_WAIT=1    # Tam ekran komutu sonrası bekleme
-readonly APP_AFTER_WAIT=1     # İşlem tamamlandıktan sonraki bekleme süresi
+readonly CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/sem/config.json"
+readonly SEMSUMO="semsumo"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
 
 # Log dizinini oluştur
 [[ ! -d "$LOG_DIR" ]] && mkdir -p "$LOG_DIR"
@@ -40,27 +33,6 @@ readonly APP_AFTER_WAIT=1     # İşlem tamamlandıktan sonraki bekleme süresi
 # Hata yakalama
 set -euo pipefail
 trap 'echo "Hata oluştu. Satır: $LINENO, Komut: $BASH_COMMAND"' ERR
-
-# Yapılandırma: ProfileID:Workspace:VPNMode:Title:Class
-# Tam olarak profil başlatıcının bize gösterdiği profil isimlerini kullanıyoruz
-declare -A BRAVE_PROFILES=(
-	["Kenp"]="1:secure:Kenp:Kenp"
-	["Ai"]="3:bypass:Ai:Ai"
-	["CompecTA"]="4:secure:CompecTA:CompecTA"
-	["Whats"]="9:secure:WhatsApp:Whats"
-)
-
-# Yapılandırma: App:Workspace:VPNMode:ProfileID:Fullscreen
-declare -A BRAVE_APPS=(
-	["whatsapp"]="9:secure:Whats:yes"
-	["youtube"]="7:secure:Kenp:yes"
-	["tiktok"]="7:secure:Kenp:yes"
-	["spotify"]="8:bypass:Kenp:yes"
-	["discord"]="5:secure:Kenp:yes"
-)
-
-# Geçerli workspace'i izle
-current_workspace=""
 
 # Loglama Fonksiyonu
 log() {
@@ -76,22 +48,8 @@ log() {
 	fi
 }
 
-# VPN Durum Kontrolü
-check_vpn() {
-	local mode="$1"
-
-	if [[ "$mode" == "secure" ]]; then
-		# VPN bağlantısı var mı kontrol et
-		if pgrep -x "openvpn" >/dev/null || ip link show tun0 >/dev/null 2>&1 || ip link show wg0-mullvad >/dev/null 2>&1; then
-			return 0
-		else
-			log "VPN" "VPN bağlantısı gerekli ama aktif değil" "true"
-			return 1
-		fi
-	fi
-
-	return 0
-}
+# Geçerli workspace'i izle
+current_workspace=""
 
 # Workspace'e geçiş - ama sadece gerekliyse
 switch_workspace() {
@@ -111,115 +69,109 @@ switch_workspace() {
 	fi
 }
 
-# Pencereyi tam ekran yap - daha basit yaklaşım
-make_fullscreen() {
-	local workspace="$1"
+# Profil başlatma - artık semsumo aracılığıyla
+launch_profile() {
+	local profile_name="$1"
 
-	log "FULLSCREEN" "Workspace $workspace'deki aktif pencere tam ekran yapılıyor" "false"
+	# Script dosyasını kontrol et
+	local script_path="$SCRIPTS_DIR/start-${profile_name,,}.sh"
 
-	if command -v hyprctl >/dev/null; then
-		# Workspace'de olduğumuzdan emin ol
-		switch_workspace "$workspace"
-
-		# Biraz bekle, pencere düzgün yüklensin
-		sleep 1
-
-		# Aktif pencereyi tam ekran yap - basit yaklaşım
-		hyprctl dispatch fullscreen 1
-
-		log "FULLSCREEN" "Tam ekran komutu gönderildi (workspace: $workspace)" "false"
-
-		# Tam ekran komutunun uygulanması için bekle
-		sleep $FULLSCREEN_WAIT
+	if [[ ! -f "$script_path" ]]; then
+		log "ERROR" "$profile_name için script bulunamadı: $script_path" "true"
+		return 1
 	fi
+
+	log "LAUNCH" "$profile_name başlatılıyor (script: $script_path)" "true"
+
+	# Script'i çalıştır
+	bash "$script_path"
+
+	log "DONE" "$profile_name başlatma işlemi tamamlandı" "false"
+	return 0
 }
 
-# Brave profilini başlat
-launch_brave_profile() {
+# Profillerin workspace bilgisini config'den al
+get_workspace() {
 	local profile="$1"
-	local config="${BRAVE_PROFILES[$profile]}"
+	local workspace
 
-	local workspace=$(echo "$config" | cut -d: -f1)
-	local vpn_mode=$(echo "$config" | cut -d: -f2)
-	local title=$(echo "$config" | cut -d: -f3)
-	local class=$(echo "$config" | cut -d: -f4)
+	if [[ -f "$CONFIG_FILE" ]]; then
+		workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
+		if [[ "$workspace" == "null" || "$workspace" == "0" ]]; then
+			log "WARN" "$profile için workspace bilgisi bulunamadı" "false"
+			echo "0"
+		else
+			echo "$workspace"
+		fi
+	else
+		log "ERROR" "Config dosyası bulunamadı: $CONFIG_FILE" "false"
+		echo "0"
+	fi
+}
 
-	# VPN kontrolü
-	if ! check_vpn "$vpn_mode"; then
-		log "BRAVE" "VPN gerekliyken bağlantı yok - $profile profili başlatılmıyor" "true"
+# Profilin vpn modunu al
+get_vpn_mode() {
+	local profile="$1"
+	local vpn_mode
+
+	if [[ -f "$CONFIG_FILE" ]]; then
+		vpn_mode=$(jq -r ".sessions.\"$profile\".vpn // \"secure\"" "$CONFIG_FILE")
+		echo "$vpn_mode"
+	else
+		log "ERROR" "Config dosyası bulunamadı: $CONFIG_FILE" "false"
+		echo "secure" # Varsayılan olarak secure döndür
+	fi
+}
+
+# Scriptleri oluştur
+generate_scripts() {
+	log "GENERATE" "Semsumo scriptlerini oluşturuyor..." "true"
+
+	if ! command -v $SEMSUMO >/dev/null; then
+		log "ERROR" "Semsumo komutu bulunamadı!" "true"
 		return 1
 	fi
 
-	# Önce workspace'e geç ve orada kal
-	switch_workspace "$workspace"
+	# Scriptleri oluştur
+	$SEMSUMO --create --verbose
 
-	log "BRAVE" "$profile profili başlatılıyor (VPN: $vpn_mode, workspace: $workspace)" "true"
-
-	# Brave profilini başlat
-	$BRAVE_CMD "$profile" "--class=$class" "--title=$title" &
-
-	# Uygulama açılması için bekle
-	log "BRAVE" "$profile profili için açılması bekleniyor..." "false"
-	sleep $PROFILE_WAIT
-
-	# Workspace'de kalındığından emin ol
-	switch_workspace "$workspace"
-
-	log "BRAVE" "$profile profili işlemi tamamlandı" "false"
-
-	# İşlem tamamlandı, biraz daha bekleyip diğerine geç
-	sleep $PROFILE_AFTER_WAIT
+	log "GENERATE" "Scriptler oluşturuldu" "true"
 	return 0
 }
 
-# Brave web uygulamasını başlat
-launch_brave_app() {
-	local app="$1"
-	local config="${BRAVE_APPS[$app]}"
+# Brave profilleri ve uygulamalarını başlat
+start_brave_profiles() {
+	local profiles=(
+		"Brave-Kenp"
+		"Brave-Ai"
+		"Brave-CompecTA"
+	)
 
-	local workspace=$(echo "$config" | cut -d: -f1)
-	local vpn_mode=$(echo "$config" | cut -d: -f2)
-	local profile=$(echo "$config" | cut -d: -f3)
-	local fullscreen=$(echo "$config" | cut -d: -f4)
+	for profile in "${profiles[@]}"; do
+		launch_profile "$profile"
+	done
+}
 
-	# VPN kontrolü
-	if ! check_vpn "$vpn_mode"; then
-		log "APP" "VPN gerekliyken bağlantı yok - $app uygulaması başlatılmıyor" "true"
-		return 1
-	fi
+# Brave web uygulamalarını başlat
+start_brave_apps() {
+	local apps=(
+		"Brave-Whatsapp"
+		"Brave-Spotify"
+		"Brave-Yotube"
+		#"Brave-Tiktok"  # İsteğe bağlı
+		#"Brave-Discord" # İsteğe bağlı
+	)
 
-	# Önce workspace'e geç ve orada kal
-	switch_workspace "$workspace"
-
-	log "APP" "$app uygulaması başlatılıyor (VPN: $vpn_mode, workspace: $workspace)" "true"
-
-	# Web uygulamasını başlat
-	$BRAVE_CMD "--$app" "--class=$app" "--title=$app" &
-
-	# Uygulama açılması için bekle
-	log "APP" "$app uygulaması için açılması bekleniyor..." "false"
-	sleep $APP_WAIT
-
-	# Workspace'de kalındığından emin ol
-	switch_workspace "$workspace"
-
-	# Tam ekrana geç
-	if [[ "$fullscreen" == "yes" ]]; then
-		make_fullscreen "$workspace"
-	fi
-
-	log "APP" "$app uygulaması işlemi tamamlandı" "false"
-
-	# İşlem tamamlandı, biraz daha bekleyip diğerine geç
-	sleep $APP_AFTER_WAIT
-	return 0
+	for app in "${apps[@]}"; do
+		launch_profile "$app"
+	done
 }
 
 # Hyprland durumunu kontrol et
 check_hyprland() {
 	if ! command -v hyprctl >/dev/null; then
-		log "WARN" "Hyprctl bulunamadı, pencere yönetimi işlevleri devre dışı" "true"
-		return 0
+		log "WARN" "Hyprctl bulunamadı, pencere yönetimi işlevleri sınırlı olabilir" "true"
+		return 1
 	fi
 
 	return 0
@@ -227,24 +179,19 @@ check_hyprland() {
 
 # Ana fonksiyon
 main() {
-	log "START" "Brave Profile Startup başlatılıyor" "true"
+	log "START" "Brave Profile Startup Manager v2.0 başlatılıyor" "true"
 
 	# Hyprland kontrolü
 	check_hyprland
 
-	# Her profili ve uygulamayı kendi workspace'inde tamamen işle
+	# Scriptleri oluştur/güncelle
+	generate_scripts
 
-	# Ana profilleri başlat
-	launch_brave_profile "Kenp"     # Workspace 1
-	launch_brave_profile "Ai"       # Workspace 3
-	launch_brave_profile "CompecTA" # Workspace 4
+	# Profilleri başlat
+	start_brave_profiles
 
 	# Web uygulamalarını başlat
-	launch_brave_app "whatsapp" # Workspace 9
-	launch_brave_app "spotify"  # Workspace 8
-	launch_brave_app "youtube"  # Workspace 7
-	launch_brave_app "tiktok"   # Workspace 7 (isteğe bağlı)
-	launch_brave_app "discord"  # Workspace 5 (isteğe bağlı)
+	start_brave_apps
 
 	# İşlemler tamamlandıktan sonra workspace 2'ye dön
 	log "WORKSPACE" "Tüm uygulamalar başlatıldı, $FINAL_WORKSPACE numaralı workspace'e dönülüyor" "true"
