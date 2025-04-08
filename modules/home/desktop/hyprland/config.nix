@@ -572,8 +572,8 @@
         "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"
         "ALT CTRL, W, exec, whatsie -w"
         "ALT, T, exec, start-kkenp"
-        "ALT CTRL, C, exec, start-wkenp"
-        "$mainMod ALT, RETURN, exec, osc-start-brave-all"
+        "ALT CTRL, C, exec, start-mkenp"
+        "$mainMod ALT, RETURN, exec, osc-start-all"
 
         # Sistem Fonksiyonları
         ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle
