@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_DISCORD"
 
 # Start session with Semsumo
 echo "discord başlatılıyor..."
-semsumo start "discord" "bypass"
+semsumo start "discord" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

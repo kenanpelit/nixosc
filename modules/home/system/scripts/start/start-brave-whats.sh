@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_WHATS"
 
 # Start session with Semsumo
 echo "Brave-Whats başlatılıyor..."
-semsumo start "Brave-Whats" "secure"
+semsumo start "Brave-Whats" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

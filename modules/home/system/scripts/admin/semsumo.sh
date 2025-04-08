@@ -2,7 +2,7 @@
 
 #######################################
 #
-# Version: 2.1.1
+# Version: 2.1.2
 # Date: 2025-04-08
 # Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
@@ -35,7 +35,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 # Version
-readonly VERSION="2.1.1"
+readonly VERSION="2.1.2"
 
 # Core configuration
 readonly SCRIPT_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/sem"
@@ -562,11 +562,11 @@ switch_workspace "\$WORKSPACE_${upper_profile}"
 EOF
 	fi
 
-	# Start session kodu
+	# Start session kodu - background'da çalıştır
 	cat >>"$script_path" <<EOF
 # Start session with Semsumo
 echo "$profile başlatılıyor..."
-$SEMSUMO start "$profile" "$vpn_mode"
+$SEMSUMO start "$profile" "$vpn_mode" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için \$WAIT_TIME saniye bekleniyor..."

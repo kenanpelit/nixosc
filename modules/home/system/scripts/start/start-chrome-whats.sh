@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_CHROME_WHATS"
 
 # Start session with Semsumo
 echo "Chrome-Whats başlatılıyor..."
-semsumo start "Chrome-Whats" "secure"
+semsumo start "Chrome-Whats" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

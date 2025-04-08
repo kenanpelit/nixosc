@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_DISCORD"
 
 # Start session with Semsumo
 echo "Brave-Discord başlatılıyor..."
-semsumo start "Brave-Discord" "secure"
+semsumo start "Brave-Discord" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

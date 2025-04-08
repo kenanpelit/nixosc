@@ -12,8 +12,8 @@ set -euo pipefail
 export TMPDIR="/tmp/sem"
 
 # Sabitler
-WORKSPACE_WKENP=2
-FINAL_WORKSPACE=2
+WORKSPACE_WKENP=0
+FINAL_WORKSPACE=0
 WAIT_TIME=2
 
 # Workspace'e geçiş fonksiyonu
@@ -36,12 +36,9 @@ make_fullscreen() {
 	fi
 }
 
-# wkenp workspace'ine geç
-switch_workspace "$WORKSPACE_WKENP"
-
 # Start session with Semsumo
 echo "wkenp başlatılıyor..."
-semsumo start "wkenp" "bypass"
+semsumo start "wkenp" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

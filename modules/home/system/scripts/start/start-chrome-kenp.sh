@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_CHROME_KENP"
 
 # Start session with Semsumo
 echo "Chrome-Kenp başlatılıyor..."
-semsumo start "Chrome-Kenp" "secure"
+semsumo start "Chrome-Kenp" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

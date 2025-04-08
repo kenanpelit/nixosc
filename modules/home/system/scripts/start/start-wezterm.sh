@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_WEZTERM"
 
 # Start session with Semsumo
 echo "wezterm başlatılıyor..."
-semsumo start "wezterm" "secure"
+semsumo start "wezterm" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

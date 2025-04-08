@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_COMPECTA"
 
 # Start session with Semsumo
 echo "Brave-CompecTA başlatılıyor..."
-semsumo start "Brave-CompecTA" "secure"
+semsumo start "Brave-CompecTA" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_CHROME_AI"
 
 # Start session with Semsumo
 echo "Chrome-AI başlatılıyor..."
-semsumo start "Chrome-AI" "secure"
+semsumo start "Chrome-AI" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

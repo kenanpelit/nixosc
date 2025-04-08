@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_KENP"
 
 # Start session with Semsumo
 echo "Brave-Kenp başlatılıyor..."
-semsumo start "Brave-Kenp" "secure"
+semsumo start "Brave-Kenp" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

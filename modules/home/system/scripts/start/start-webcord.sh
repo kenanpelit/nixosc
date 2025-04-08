@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_WEBCORD"
 
 # Start session with Semsumo
 echo "webcord başlatılıyor..."
-semsumo start "webcord" "bypass"
+semsumo start "webcord" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

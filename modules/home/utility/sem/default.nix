@@ -28,20 +28,17 @@
     "kkenp": {
       "command": "kitty",
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
-      "vpn": "bypass",
-      "workspace": "2"
+      "vpn": "bypass"
     },
     "mkenp": {
       "command": "kitty",
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
-      "vpn": "secure",
-      "workspace": "2"
+      "vpn": "secure"
     },
     "wkenp": {
       "command": "wezterm",
       "args": ["start", "--class", "TmuxKenp", "-e", "tmux_kenp"],
-      "vpn": "bypass",
-      "workspace": "2"
+      "vpn": "bypass"
     },
     "wezterm": {
       "command": "wezterm",

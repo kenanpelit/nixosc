@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_SPOTIFY"
 
 # Start session with Semsumo
 echo "Zen-Spotify başlatılıyor..."
-semsumo start "Zen-Spotify" "bypass"
+semsumo start "Zen-Spotify" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

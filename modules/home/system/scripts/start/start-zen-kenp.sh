@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_KENP"
 
 # Start session with Semsumo
 echo "Zen-Kenp başlatılıyor..."
-semsumo start "Zen-Kenp" "secure"
+semsumo start "Zen-Kenp" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."
