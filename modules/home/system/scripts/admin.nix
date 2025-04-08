@@ -69,9 +69,6 @@ let
   osc-scrcpy = pkgs.writeShellScriptBin "osc-scrcpy" (
     builtins.readFile ./admin/osc-scrcpy.sh
   );
-  osc-semsumo-create = pkgs.writeShellScriptBin "osc-semsumo-create" (
-    builtins.readFile ./admin/osc-semsumo-create.sh
-  );
   osc-soundctl = pkgs.writeShellScriptBin "osc-soundctl" (
     builtins.readFile ./admin/osc-soundctl.sh
   );
@@ -123,6 +120,9 @@ let
   osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
     builtins.readFile ./admin/osc-vradio.sh
   );
+  semsumo_1 = pkgs.writeShellScriptBin "semsumo_1" (
+    builtins.readFile ./admin/semsumo_1.sh
+  );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./admin/semsumo.sh
   );
@@ -172,7 +172,6 @@ in {
     osc-rsync_backup
     osc-rsync
     osc-scrcpy
-    osc-semsumo-create
     osc-soundctl
     osc-spotify
     osc-ssh-hosts-backup-script
@@ -190,6 +189,7 @@ in {
     osc-ulauncher_ext
     osc-video-converter
     osc-vradio
+    semsumo_1
     semsumo
     svmarch
     svmnixos
