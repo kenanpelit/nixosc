@@ -2,12 +2,12 @@
 #===============================================================================
 #
 #   Script: OSC Hybrid Workspace Launcher
-#   Version: 2.1.0
-#   Date: 2025-04-08
+#   Version: 2.0.0
+#   Date: 2024-01-23
 #   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
 #   Description: Advanced workspace session launcher with VPN-awareness and hybrid
-#                launch strategies for optimal startup performance - Brave edition
+#                launch strategies for optimal startup performance
 #
 #   Features:
 #   - Smart VPN detection and validation (OpenVPN & Mullvad)
@@ -36,38 +36,25 @@ trap 'echo "Hata oluştu. Satır: $LINENO, Komut: $BASH_COMMAND"' ERR
 
 # Uygulama Grupları - workspace ve başlatma stratejisine göre gruplandırılmış
 declare -A APP_GROUPS
-APP_GROUPS["core"]="start-kkenp" # Terminal & Dev
-#APP_GROUPS["browsers"]="start-zen-kenp start-zen-novpn start-zen-compecta" # Ana browserlar
-APP_GROUPS["brave-browsers"]="start-brave-kenp start-brave-ai start-brave-compecta"        # Brave browserlar
-APP_GROUPS["brave-services"]="start-brave-spotify start-brave-tiktok start-brave-whatsapp" # Brave web uygulamaları
-#APP_GROUPS["communication"]="start-webcord start-zen-whats"                # İletişim
-#APP_GROUPS["media"]="start-spotify"                                        # Medya
+APP_GROUPS["core"]="start-kkenp"                                           # Terminal & Dev
+APP_GROUPS["browsers"]="start-zen-kenp start-zen-novpn start-zen-compecta" # Ana browserlar
+APP_GROUPS["communication"]="start-webcord start-zen-whats"                # İletişim
+APP_GROUPS["media"]="start-spotify"                                        # Medya
 
 # Uygulama Yapılandırması - workspace:fullscreen:togglegroup:vpn:sleep
 declare -A APP_CONFIGS
 # Terminal & Dev (Core)
-APP_CONFIGS["start-kkenp"]="2:no:no:bypass:2" # Tmux session
-# Zen Browsers
-#APP_CONFIGS["start-zen-kenp"]="1:no:no:secure:2"     # Main browser
-#APP_CONFIGS["start-zen-novpn"]="3:no:no:bypass:2"    # No VPN browser
-#APP_CONFIGS["start-zen-compecta"]="4:no:no:secure:2" # Work browser
-# Brave Browsers
-APP_CONFIGS["start-brave-kenp"]="1:no:no:secure:2" # Main Brave
-APP_CONFIGS["start-brave-ai"]="3:no:no:bypass:2"   # AI Brave
-#APP_CONFIGS["start-brave-whats"]="9:no:yes:secure:2"    # Whats Brave
-APP_CONFIGS["start-brave-compecta"]="4:no:no:secure:2" # Work Brave
-# Brave Web Services
-APP_CONFIGS["start-brave-spotify"]="8:yes:no:bypass:2"  # Spotify in Brave
-APP_CONFIGS["start-brave-tiktok"]="7:yes:no:secure:2"   # TikTok in Brave
-APP_CONFIGS["start-brave-discord"]="5:yes:no:secure:2"  # Discord in Brave
-APP_CONFIGS["start-brave-whatsapp"]="9:yes:no:secure:2" # WhatsApp in Brave
-APP_CONFIGS["start-brave-youtube"]="7:yes:no:secure:2"  # YouTube in Brave
+APP_CONFIGS["start-kkenp"]="2:no:no:always:2" # Tmux session
+# Browsers
+APP_CONFIGS["start-zen-kenp"]="1:no:no:always:2"     # Main browser
+APP_CONFIGS["start-zen-novpn"]="3:no:no:always:2"    # No VPN browser
+APP_CONFIGS["start-zen-compecta"]="4:no:no:always:2" # Work browser
 # Communication
-#APP_CONFIGS["start-zen-discord"]="5:no:yes:secure:2" # Discord browser
-#APP_CONFIGS["start-webcord"]="5:no:yes:bypass:2"   # Webcord
-#APP_CONFIGS["start-zen-whats"]="9:no:yes:secure:2" # WhatsApp
+#APP_CONFIGS["start-zen-discord"]="5:no:yes:always:2" # Discord browser
+APP_CONFIGS["start-webcord"]="5:no:yes:always:2"   # Webcord
+APP_CONFIGS["start-zen-whats"]="9:no:yes:always:2" # WhatsApp
 # Media
-#APP_CONFIGS["start-spotify"]="8:no:no:bypass:2" # Spotify
+APP_CONFIGS["start-spotify"]="8:no:no:always:2" # Spotify
 
 # Gelişmiş Loglama Fonksiyonu
 log() {
@@ -91,7 +78,7 @@ check_vpn_status() {
 	local vpn_mode=$1
 	local app_name=$2
 
-	if [[ "$vpn_mode" == "secure" ]]; then
+	if [[ "$vpn_mode" == "always" ]]; then
 		# OpenVPN process kontrolü
 		local openvpn_active=false
 		if pgrep -x "openvpn" >/dev/null || ip link show tun0 >/dev/null 2>&1; then
@@ -162,15 +149,6 @@ set_cpu_frequency() {
 # Tekil Uygulama Başlatma
 launch_app() {
 	local script_name=$1
-	local app_name="${script_name#start-}"
-
-	# Uygulama zaten çalışıyor mu kontrol et
-	if pgrep -f "$app_name" >/dev/null; then
-		log "$app_name" "Uygulama zaten çalışıyor, tekrar başlatılmayacak" "true"
-		return 0
-	fi
-
-	local script_name=$1
 	local config=${APP_CONFIGS[$script_name]}
 	local workspace=$(echo "$config" | cut -d: -f1)
 	local fullscreen=$(echo "$config" | cut -d: -f2)
@@ -184,15 +162,10 @@ launch_app() {
 		return 1
 	fi
 
-	# Uzantısız script dosyasını ara (NixOS'ta uzantı olmadan sembolik linkler oluşturulur)
-	local script_path="$SCRIPTS_DIR/${script_name}"
+	local script_path="$SCRIPTS_DIR/${script_name}-${vpn_mode}"
 	log "${script_name#start-}" "Starting (VPN: $vpn_mode)" "false"
 
 	if [[ -x "$script_path" ]]; then
-		# Önce workspace'e geçiş yapalım
-		hyprctl dispatch workspace "$workspace"
-		sleep 0.5
-
 		"$script_path" &
 		local app_pid=$!
 		sleep "$sleep_time"
@@ -207,34 +180,11 @@ launch_app() {
 			hyprctl dispatch togglegroup
 		fi
 
+		wait $app_pid
 		log "WORKSPACE" "Switched to workspace $workspace" "false"
 	else
-		# Uzantılı script dosyasını da kontrol et (.sh uzantısı varsa) - gelecekteki uyumluluk için
-		script_path="$SCRIPTS_DIR/${script_name}.sh"
-		if [[ -x "$script_path" ]]; then
-			# Önce workspace'e geçiş yapalım
-			hyprctl dispatch workspace "$workspace"
-			sleep 0.5
-
-			"$script_path" &
-			local app_pid=$!
-			sleep "$sleep_time"
-
-			# Fullscreen ve group ayarları
-			if [[ "$fullscreen" == "yes" ]]; then
-				sleep 0.5
-				hyprctl dispatch fullscreen 0
-			fi
-			if [[ "$togglegroup" == "yes" ]]; then
-				sleep 0.5
-				hyprctl dispatch togglegroup
-			fi
-
-			log "WORKSPACE" "Switched to workspace $workspace" "false"
-		else
-			log "ERROR" "Script bulunamadı: $SCRIPTS_DIR/${script_name}" "true" 10000
-			return 1
-		fi
+		log "ERROR" "Script bulunamadı: $script_path" "true" 10000
+		return 1
 	fi
 }
 
@@ -270,16 +220,14 @@ launch_apps_hybrid() {
 	# Grup 1: Core uygulamalar (sıralı)
 	launch_group "core" false
 
-	# Grup 2: Brave Browserlar (paralel)
-	launch_group "brave-browsers" true
+	# Grup 2: Browserlar (paralel)
+	launch_group "browsers" true
 
-	# Grup 3: Brave web servisleri (paralel)
-	launch_group "brave-services" true
+	# Grup 3: İletişim uygulamaları (paralel)
+	launch_group "communication" true
 
-	# Aşağıdaki gruplar devre dışı bırakıldı
-	# launch_group "browsers" true
-	# launch_group "communication" true
-	# launch_group "media" false
+	# Grup 4: Medya uygulamaları (sıralı)
+	launch_group "media" false
 
 	local end_time=$(date +%s.%N)
 	local duration=$(echo "$end_time - $start_time" | bc)
@@ -289,23 +237,12 @@ launch_apps_hybrid() {
 # Ana Fonksiyon
 main() {
 	local start_time=$(date +%s)
-	log "START" "Brave Hybrid launcher starting! 🔥" "true" 5000
+	log "START" "Hybrid launcher starting! 🔥" "true" 5000
 
 	# Log rotasyonu (1MB üzerinde ise yedekle)
-	if [[ -f "$LOG_FILE" ]]; then
-		local log_size
-		if command -v stat &>/dev/null; then
-			# Linux
-			log_size=$(stat -c %s "$LOG_FILE" 2>/dev/null || echo "0")
-		else
-			# BSD/macOS
-			log_size=$(stat -f %z "$LOG_FILE" 2>/dev/null || echo "0")
-		fi
-
-		if [ "$log_size" -gt 1048576 ]; then
-			mv "$LOG_FILE" "$LOG_FILE.old"
-			log "LOG" "Log dosyası rotasyonu yapıldı" "false"
-		fi
+	if [[ -f "$LOG_FILE" ]] && [[ $(stat -f%z "$LOG_FILE") -gt 1048576 ]]; then
+		mv "$LOG_FILE" "$LOG_FILE.old"
+		log "LOG" "Log dosyası rotasyonu yapıldı" "false"
 	fi
 
 	# CPU yüksek performans modu

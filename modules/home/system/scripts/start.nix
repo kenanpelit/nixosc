@@ -87,7 +87,6 @@ let
   start-zen-whats = pkgs.writeShellScriptBin "start-zen-whats" (
     builtins.readFile ./start/start-zen-whats.sh
   );
-
 in {
   home.packages = with pkgs; [
     start-brave-ai

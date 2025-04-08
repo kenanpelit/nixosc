@@ -300,7 +300,6 @@ let
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
-
 in {
   home.packages = with pkgs; [
     anote
