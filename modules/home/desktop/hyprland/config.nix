@@ -361,6 +361,7 @@
         "workspace 6 silent,class:^(qemu)$"
         "workspace 7 silent,class:^(org.keepassxc.KeePassXC)$"
         "workspace 7 silent,class:^(com.transmissionbt.transmission.*)$"
+        "workspace 7 silent,title:^(brave-youtube.com__-Default)$"
         "workspace 8 silent,class:^(Spotify)$"
         "workspace 8 silent,class:^(Brave-browser)$,title:^(Spotify - Web Player).*"
         "workspace 8,class:^(com.obsproject.Studio)$"
