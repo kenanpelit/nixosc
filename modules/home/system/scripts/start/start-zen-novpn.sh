@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_NOVPN"
 
 # Start session with Semsumo
 echo "Zen-NoVpn başlatılıyor..."
-semsumo start "Zen-NoVpn" "bypass"
+semsumo start "Zen-NoVpn" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

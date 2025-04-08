@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_SPOTIFY"
 
 # Start session with Semsumo
 echo "Brave-Spotify başlatılıyor..."
-semsumo start "Brave-Spotify" "secure"
+semsumo start "Brave-Spotify" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

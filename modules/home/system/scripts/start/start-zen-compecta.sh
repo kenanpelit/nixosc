@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_COMPECTA"
 
 # Start session with Semsumo
 echo "Zen-CompecTA başlatılıyor..."
-semsumo start "Zen-CompecTA" "secure"
+semsumo start "Zen-CompecTA" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

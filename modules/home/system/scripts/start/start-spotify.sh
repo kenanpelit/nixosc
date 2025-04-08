@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_SPOTIFY"
 
 # Start session with Semsumo
 echo "spotify başlatılıyor..."
-semsumo start "spotify" "bypass"
+semsumo start "spotify" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

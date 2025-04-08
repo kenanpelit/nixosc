@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_MPV"
 
 # Start session with Semsumo
 echo "mpv başlatılıyor..."
-semsumo start "mpv" "bypass"
+semsumo start "mpv" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

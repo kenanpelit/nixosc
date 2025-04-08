@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_YOTUBE"
 
 # Start session with Semsumo
 echo "Brave-Yotube başlatılıyor..."
-semsumo start "Brave-Yotube" "secure"
+semsumo start "Brave-Yotube" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

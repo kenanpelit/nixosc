@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_WHATSAPP"
 
 # Start session with Semsumo
 echo "Brave-Whatsapp başlatılıyor..."
-semsumo start "Brave-Whatsapp" "secure"
+semsumo start "Brave-Whatsapp" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_KITTY_SINGLE"
 
 # Start session with Semsumo
 echo "kitty-single başlatılıyor..."
-semsumo start "kitty-single" "secure"
+semsumo start "kitty-single" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

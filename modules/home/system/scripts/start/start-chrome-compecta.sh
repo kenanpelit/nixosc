@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_CHROME_COMPECTA"
 
 # Start session with Semsumo
 echo "Chrome-CompecTA başlatılıyor..."
-semsumo start "Chrome-CompecTA" "secure"
+semsumo start "Chrome-CompecTA" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

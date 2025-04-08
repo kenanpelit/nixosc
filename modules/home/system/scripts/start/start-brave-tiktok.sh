@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_BRAVE_TIKTOK"
 
 # Start session with Semsumo
 echo "Brave-Tiktok başlatılıyor..."
-semsumo start "Brave-Tiktok" "secure"
+semsumo start "Brave-Tiktok" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

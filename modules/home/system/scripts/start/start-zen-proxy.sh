@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_PROXY"
 
 # Start session with Semsumo
 echo "Zen-Proxy başlatılıyor..."
-semsumo start "Zen-Proxy" "bypass"
+semsumo start "Zen-Proxy" "bypass" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

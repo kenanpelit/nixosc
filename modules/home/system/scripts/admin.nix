@@ -84,6 +84,9 @@ let
   osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
     builtins.readFile ./admin/osc-ssh-session-manager.sh
   );
+  osc-start-all = pkgs.writeShellScriptBin "osc-start-all" (
+    builtins.readFile ./admin/osc-start-all.sh
+  );
   osc-start-brave-all = pkgs.writeShellScriptBin "osc-start-brave-all" (
     builtins.readFile ./admin/osc-start-brave-all.sh
   );
@@ -174,6 +177,7 @@ in {
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
     osc-ssh-session-manager
+    osc-start-all
     osc-start-brave-all
     osc-start-semsumo-all
     osc-start-semsumo-all-v1

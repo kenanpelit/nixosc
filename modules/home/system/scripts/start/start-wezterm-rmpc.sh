@@ -38,7 +38,7 @@ make_fullscreen() {
 
 # Start session with Semsumo
 echo "wezterm-rmpc başlatılıyor..."
-semsumo start "wezterm-rmpc" "secure"
+semsumo start "wezterm-rmpc" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

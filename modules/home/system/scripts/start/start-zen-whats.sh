@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_WHATS"
 
 # Start session with Semsumo
 echo "Zen-Whats başlatılıyor..."
-semsumo start "Zen-Whats" "secure"
+semsumo start "Zen-Whats" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."

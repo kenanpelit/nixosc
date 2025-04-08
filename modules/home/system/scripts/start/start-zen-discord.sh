@@ -41,7 +41,7 @@ switch_workspace "$WORKSPACE_ZEN_DISCORD"
 
 # Start session with Semsumo
 echo "Zen-Discord başlatılıyor..."
-semsumo start "Zen-Discord" "secure"
+semsumo start "Zen-Discord" "secure" &
 
 # Uygulama açılması için bekle
 echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."
