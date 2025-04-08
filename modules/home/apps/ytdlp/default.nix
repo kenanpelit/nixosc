@@ -60,6 +60,7 @@
     # ---------------------------------------------------------------------------
     # Browser Integration
     # ---------------------------------------------------------------------------
-    --cookies-from-browser firefox:/home/${username}/.zen/Kenp
+    #--cookies-from-browser firefox:/home/${username}/.zen/Kenp
+    --cookies-from-browser brave:/home/${username}/.config/BraveSoftware/Brave-Browser/Default
   '';
 }
