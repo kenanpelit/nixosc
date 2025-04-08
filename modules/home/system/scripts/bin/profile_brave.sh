@@ -10,6 +10,7 @@
 #   - Komut satırı argümanlarını destekleme
 #   - Profil listeleme
 #   - Hazır uygulama kısayolları (whatsapp, youtube, tiktok, spotify, discord)
+#   - Wayland ve dokunmatik yüzey desteği
 #
 #===============================================================================
 set -euo pipefail
@@ -23,6 +24,12 @@ RESET="\033[0m"
 # Konfigürasyon
 BRAVE_CMD="brave"
 LOCAL_STATE_PATH="${HOME}/.config/BraveSoftware/Brave-Browser/Local State"
+# Wayland ve dokunmatik yüzey için varsayılan bayraklar
+DEFAULT_FLAGS=(
+	"--restore-last-session"
+	"--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform"
+	"--ozone-platform=wayland"
+)
 # Kullanım bilgisi
 usage() {
 	echo -e "${BOLD}Brave Profil Başlatıcı${RESET}"
@@ -42,6 +49,11 @@ usage() {
 	echo "  --tiktok          TikTok uygulamasını başlatır (Kenp profili ile)"
 	echo "  --spotify         Spotify uygulamasını başlatır (Kenp profili ile)"
 	echo "  --discord         Discord uygulamasını başlatır (Kenp profili ile)"
+	echo
+	echo -e "${BOLD}Varsayılan Bayraklar:${RESET}"
+	echo "  --restore-last-session                             Son oturumu geri yükler"
+	echo "  --enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform   İki parmakla gezinme hareketleri"
+	echo "  --ozone-platform=wayland                           Wayland desteği"
 	echo
 	list_profiles
 	exit "${1:-0}"
@@ -152,6 +164,8 @@ main() {
 	fi
 	# Brave komut satırı argümanlarını oluştur
 	cmd=("$BRAVE_CMD" "--profile-directory=$profile_key")
+	# Varsayılan bayrakları ekle
+	cmd+=("${DEFAULT_FLAGS[@]}")
 	# Class ve title parametrelerini ekle
 	[ -n "$window_class" ] && cmd+=("--class=$window_class")
 	[ -n "$window_title" ] && cmd+=("--window-name=$window_title")
