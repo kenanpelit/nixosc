@@ -87,17 +87,11 @@ let
   osc-start-all = pkgs.writeShellScriptBin "osc-start-all" (
     builtins.readFile ./admin/osc-start-all.sh
   );
-  osc-start-brave-all = pkgs.writeShellScriptBin "osc-start-brave-all" (
-    builtins.readFile ./admin/osc-start-brave-all.sh
+  osc-start-brave = pkgs.writeShellScriptBin "osc-start-brave" (
+    builtins.readFile ./admin/osc-start-brave.sh
   );
-  osc-start-semsumo-all = pkgs.writeShellScriptBin "osc-start-semsumo-all" (
-    builtins.readFile ./admin/osc-start-semsumo-all.sh
-  );
-  osc-start-semsumo-all-v1 = pkgs.writeShellScriptBin "osc-start-semsumo-all-v1" (
-    builtins.readFile ./admin/osc-start-semsumo-all.v1.sh
-  );
-  osc-start-semsumo-all_v2 = pkgs.writeShellScriptBin "osc-start-semsumo-all_v2" (
-    builtins.readFile ./admin/osc-start-semsumo-all_v2.sh
+  osc-start-zen = pkgs.writeShellScriptBin "osc-start-zen" (
+    builtins.readFile ./admin/osc-start-zen.sh
   );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./admin/osc-subliminal.sh
@@ -178,10 +172,8 @@ in {
     osc-ssh-passwordless
     osc-ssh-session-manager
     osc-start-all
-    osc-start-brave-all
-    osc-start-semsumo-all
-    osc-start-semsumo-all-v1
-    osc-start-semsumo-all_v2
+    osc-start-brave
+    osc-start-zen
     osc-subliminal
     osc-symlink_manager
     osc-sync

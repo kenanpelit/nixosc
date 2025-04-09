@@ -71,7 +71,6 @@
       "vpn": "bypass",
       "workspace": "5",
       "fullscreen": "true",
-      "final_workspace": "2"
     },
     "Chrome-Kenp": {
       "command": "profile_chrome",
