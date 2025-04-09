@@ -70,6 +70,7 @@ DOT_PATHS=(
 	".anydesk"
 	".apps"
 	".backups"
+	".config/brave"
 	".config/BraveSoftware"
 	".config/github"
 	".config/google-chrome"
