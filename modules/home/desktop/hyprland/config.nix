@@ -477,6 +477,12 @@
         "center,title:^(blob:https://discord.com).*$"
         "animation popin,title:^(blob:https://discord.com).*$"
 
+        # Meet
+        "float,title:^(Meet).*$"
+        "size 918 558,title:^(Meet).*$"
+        "workspace 4,title:^(Meet).*$"
+        "center,title:^(Meet).*$"
+
         # org.twosheds.iwgtk
         "float,class:^(org.twosheds.iwgtk)$"
         "size 1536 864,class:^(org.twosheds.iwgtk)$"
