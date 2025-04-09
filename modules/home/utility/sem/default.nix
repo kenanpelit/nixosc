@@ -70,7 +70,7 @@
       "args": ["-m", "--class=WebCord", "--title=Webcord"],
       "vpn": "bypass",
       "workspace": "5",
-      "fullscreen": "true",
+      "fullscreen": "true"
     },
     "Chrome-Kenp": {
       "command": "profile_chrome",
