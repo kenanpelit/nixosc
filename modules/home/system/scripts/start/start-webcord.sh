@@ -13,7 +13,7 @@ export TMPDIR="/tmp/sem"
 
 # Sabitler
 WORKSPACE_WEBCORD=5
-FINAL_WORKSPACE=2
+FINAL_WORKSPACE=5
 WAIT_TIME=2
 
 # Workspace'e geçiş fonksiyonu
@@ -49,10 +49,6 @@ sleep $WAIT_TIME
 
 # Tam ekran yap
 make_fullscreen
-
-# Tamamlandığında ana workspace'e geri dön
-echo "İşlem tamamlandı, workspace $FINAL_WORKSPACE'e dönülüyor..."
-switch_workspace "$FINAL_WORKSPACE"
 
 # Exit successfully
 exit 0
