@@ -11,6 +11,7 @@
 #   - Komut satırı argümanlarını destekleme
 #   - Profil listeleme
 #   - Hazır uygulama kısayolları (whatsapp, youtube, tiktok, spotify, discord)
+#   - SOCKS5 Proxy Desteği
 #   - Wayland ve dokunmatik yüzey desteği
 #   - Yeni pencere zorlama özelliği
 #
@@ -38,6 +39,12 @@ DEFAULT_FLAGS=(
 	"--new-window"
 )
 
+# Proxy ayarları
+PROXY_ENABLED=false
+PROXY_HOST="127.0.0.1"
+PROXY_PORT="4999"
+PROXY_TYPE="socks5"
+
 # Kullanım bilgisi
 usage() {
 	echo -e "${BOLD}Brave Profil Başlatıcı${RESET}"
@@ -48,6 +55,7 @@ usage() {
 	echo -e "       veya: $0 ${BOLD}--tiktok${RESET} [brave_parametreleri]"
 	echo -e "       veya: $0 ${BOLD}--spotify${RESET} [brave_parametreleri]"
 	echo -e "       veya: $0 ${BOLD}--discord${RESET} [brave_parametreleri]"
+	echo -e "       veya: $0 ${BOLD}--proxy${RESET} [brave_parametreleri]"
 	echo
 	echo -e "${BOLD}Parametreler:${RESET}"
 	echo "  --class=SINIF     Pencere sınıfını ayarlar (window manager entegrasyonu için)"
@@ -57,6 +65,10 @@ usage() {
 	echo "  --tiktok          TikTok uygulamasını başlatır (Kenp profili ile)"
 	echo "  --spotify         Spotify uygulamasını başlatır (Kenp profili ile)"
 	echo "  --discord         Discord uygulamasını başlatır (Kenp profili ile)"
+	echo "  --proxy           Proxy ile Brave başlatır (Proxy profili ile)"
+	echo "  --proxy-host=HOST Proxy sunucu adresi (varsayılan: 127.0.0.1)"
+	echo "  --proxy-port=PORT Proxy sunucu portu (varsayılan: 4999)"
+	echo "  --proxy-type=TYPE Proxy türü (socks5, http, https) (varsayılan: socks5)"
 	echo "  --kill-profile    Sadece bu profil için çalışan Brave örneklerini kapat"
 	echo "  --kill-all        Tüm Brave örneklerini kapat"
 	echo
@@ -112,6 +124,13 @@ launch_discord() {
 	exec "$0" "Kenp" --app="$discord_url" --class=Discord --title=Discord "$@"
 }
 
+# Proxy ile başlatma
+launch_proxy() {
+	echo -e "${GREEN}Proxy ile Brave başlatılıyor...${RESET}"
+	PROXY_ENABLED=true
+	exec "$0" "Proxy" --class=Proxy --title="Proxy Browser" "$@"
+}
+
 # Belirli bir profil için çalışan Brave örneklerini kapat
 kill_profile_brave() {
 	local profile_dir="$1"
@@ -156,6 +175,10 @@ main() {
 		shift
 		launch_discord "$@"
 		;;
+	--proxy)
+		shift
+		launch_proxy "$@"
+		;;
 	--kill-all)
 		echo -e "${YELLOW}Tüm Brave örnekleri kapatılıyor...${RESET}"
 		killall brave 2>/dev/null || true
@@ -182,6 +205,18 @@ main() {
 		--title=*)
 			window_title="${1#*=}"
 			;;
+		--proxy-host=*)
+			PROXY_HOST="${1#*=}"
+			PROXY_ENABLED=true
+			;;
+		--proxy-port=*)
+			PROXY_PORT="${1#*=}"
+			PROXY_ENABLED=true
+			;;
+		--proxy-type=*)
+			PROXY_TYPE="${1#*=}"
+			PROXY_ENABLED=true
+			;;
 		--kill-profile)
 			kill_profile=true
 			;;
@@ -194,6 +229,12 @@ main() {
 		esac
 		shift
 	done
+
+	# "Proxy" profili seçildiyse ve proxy parametresi açıkça verilmediyse otomatik etkinleştir
+	if [ "$profile_name" = "Proxy" ] && [ "$PROXY_ENABLED" = false ]; then
+		PROXY_ENABLED=true
+		echo -e "${YELLOW}Proxy profili seçildi, proxy desteği otomatik olarak etkinleştirildi${RESET}"
+	fi
 
 	# Local State dosyasının varlığını kontrol et
 	if [ ! -f "$LOCAL_STATE_PATH" ]; then
@@ -235,6 +276,14 @@ main() {
 
 	# Varsayılan bayrakları ekle
 	cmd+=("${DEFAULT_FLAGS[@]}")
+
+	# Proxy etkinleştirilmişse proxy bayraklarını ekle
+	if [ "$PROXY_ENABLED" = true ]; then
+		echo -e "${BLUE}Proxy etkinleştiriliyor: ${PROXY_TYPE}://${PROXY_HOST}:${PROXY_PORT}${RESET}"
+		cmd+=("--proxy-server=${PROXY_TYPE}://${PROXY_HOST}:${PROXY_PORT}")
+		cmd+=("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE ${PROXY_HOST}")
+		cmd+=("--proxy-bypass-list=<local>")
+	fi
 
 	# Class ve title parametrelerini her zaman ekle
 	cmd+=("--class=$window_class")
