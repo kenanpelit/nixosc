@@ -734,9 +734,33 @@ start_brave_profiles() {
 		return 0
 	fi
 
-	# Tüm profilleri sıralı başlat
+	# İstenen sırada profil isimleri
+	local profile_order=("Kenp" "Ai" "CompecTA")
+
+	# Belirtilen sırada profilleri başlat
+	for profile_name in "${profile_order[@]}"; do
+		if [[ -n "${profiles[$profile_name]}" ]]; then
+			launch_brave_profile "$profile_name"
+		else
+			log "WARNING" "BRAVE" "Profil bulunamadı: $profile_name" "false"
+		fi
+	done
+
+	# Sıralamada olmayan diğer profilleri başlat (isteğe bağlı)
 	for profile_name in "${!profiles[@]}"; do
-		launch_brave_profile "$profile_name"
+		# Bu profil zaten sıralamada var mı kontrol et
+		local already_loaded=false
+		for ordered_profile in "${profile_order[@]}"; do
+			if [[ "$profile_name" == "$ordered_profile" ]]; then
+				already_loaded=true
+				break
+			fi
+		done
+
+		# Eğer daha önce yüklenmediyse yükle
+		if [[ "$already_loaded" == "false" ]]; then
+			launch_brave_profile "$profile_name"
+		fi
 	done
 
 	log "SUCCESS" "BRAVE" "Tüm Brave profilleri başlatıldı" "true"
