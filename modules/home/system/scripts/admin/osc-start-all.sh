@@ -205,6 +205,10 @@ start_applications() {
 	log "APP" "Spotify başlatılıyor..." "true"
 	launch_semsumo_app "spotify"
 
+	# Spotify - Semsumo komutu ile başlat
+	log "APP" "Discord başlatılıyor..." "true"
+	launch_semsumo_app "webcord"
+
 	# YouTube - Brave ile başlat
 	launch_brave_app "youtube" "7" "true"
 
