@@ -139,7 +139,23 @@ handle_buffer_mode() {
 
 	# Buffer listesi boş mu kontrolü
 	if ! tmux list-buffers &>/dev/null || [[ -z "$(tmux list-buffers 2>/dev/null)" ]]; then
-		error "Buffer listesi boş!"
+		cat <<-'EMPTYART'
+			        
+			   ┌────────────────────────────────────────────────────┐
+			   │                                                    │
+			   │   ¯\_(ツ)_/¯                                       │
+			   │                                                    │
+			   │   Tmux buffer'ım boş!                              │
+			   │                                                    │
+			   │   Önce bir şeyler kopyalasanız iyi olur yoksa      │
+			   │   burada birlikte bekleyeceğiz...                  │
+			   │                                                    │
+			   │   İpucu: Tmux'ta [prefix]+[ ile copy mode'a girin  │
+			   │   ve birşeyler kopyalayın                          │
+			   │                                                    │
+			   └────────────────────────────────────────────────────┘
+			        
+		EMPTYART
 		exit 1
 	fi
 
