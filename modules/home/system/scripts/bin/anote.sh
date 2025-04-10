@@ -320,11 +320,10 @@ update_cache() {
 
 copy_to_clipboard() {
 	local content="$1"
+	local max_attempts=3
+	local attempt=1
 	local success=false
-	local wl_success=false
-	local tmux_success=false
 	local clipboard_tools=""
-	local error_output=""
 
 	# Boş içeriği kontrol et
 	if [[ -z "$content" ]]; then
@@ -336,66 +335,47 @@ copy_to_clipboard() {
 	mkdir -p "$CACHE_DIR"
 	printf '%s' "$content" >"$CACHE_DIR/clipboard_content.tmp"
 
-	# 1. ÖNCELİK: Wayland ile wl-copy (her zaman dene)
-	if command -v wl-copy >/dev/null 2>&1; then
-		if printf '%s' "$content" | wl-copy 2>/dev/null; then
-			wl_success=true
-			clipboard_tools="wl-copy"
-		else
-			error_output="wl-copy hatası"
+	# Kopyalama döngüsü
+	while [[ $attempt -le $max_attempts && "$success" != "true" ]]; do
+		if [[ $attempt -gt 1 ]]; then
+			echo "🔄 Kopyalama yeniden deneniyor... ($attempt/$max_attempts)"
+			sleep 0.5
 		fi
-	fi
 
-	# 2. ÖNCELİK: tmux buffer (her zaman dene, sonuç ne olursa olsun)
-	if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
-		if printf '%s' "$content" | tmux load-buffer - 2>/dev/null; then
-			tmux_success=true
-			if [[ -n "$clipboard_tools" ]]; then
-				clipboard_tools="$clipboard_tools, tmux buffer"
-			else
-				clipboard_tools="tmux buffer"
+		# 1. Wayland ile wl-copy
+		if command -v wl-copy >/dev/null 2>&1; then
+			if printf '%s' "$content" | wl-copy 2>/dev/null; then
+				success=true
+				clipboard_tools="wl-copy"
+			elif cat "$CACHE_DIR/clipboard_content.tmp" | wl-copy 2>/dev/null; then
+				success=true
+				clipboard_tools="wl-copy (dosya üzerinden)"
 			fi
-		else
-			error_output="$error_output, tmux buffer hatası"
 		fi
-	fi
 
-	# İlk iki yöntemden en az biri başarılıysa, başarılı kabul et
-	if [[ "$wl_success" == "true" || "$tmux_success" == "true" ]]; then
-		success=true
-	fi
-
-	# Diğer yöntemleri dene (ilk iki yöntem başarısız olursa)
-	if [[ "$success" != "true" ]]; then
-		# 3. ÖNCELİK: X11 ile xsel veya xclip
-		if [[ -n "$DISPLAY" ]]; then
-			if command -v xsel >/dev/null 2>&1; then
-				if printf '%s' "$content" | xsel -ib 2>/dev/null; then
-					success=true
-					clipboard_tools="xsel"
+		# 2. tmux buffer
+		if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
+			if printf '%s' "$content" | tmux load-buffer - 2>/dev/null; then
+				# tmux başarılı olduysa ve daha önce bir clipboard aracı başarılı olduysa
+				# clipboard_tools değişkenine tmux'u da ekleyelim
+				if [[ "$success" == "true" ]]; then
+					clipboard_tools="$clipboard_tools, tmux buffer"
 				else
-					error_output="$error_output, xsel hatası"
-				fi
-			elif command -v xclip >/dev/null 2>&1; then
-				if printf '%s' "$content" | xclip -selection clipboard -i 2>/dev/null; then
 					success=true
-					clipboard_tools="xclip"
-				else
-					error_output="$error_output, xclip hatası"
+					clipboard_tools="tmux buffer"
 				fi
 			fi
 		fi
-	fi
 
-	# Hiçbir clipboard aracı bulunamadı veya çalışmadıysa, dosyaya yaz
+		((attempt++))
+	done
+
+	# Hiçbir şekilde başarılı olunamadıysa
 	if [[ "$success" != "true" ]]; then
 		mv "$CACHE_DIR/clipboard_content.tmp" "$CACHE_DIR/clipboard_content"
 		chmod 644 "$CACHE_DIR/clipboard_content"
-		echo "⚠️ Panoya kopyalama başarısız! Hiçbir clipboard aracı çalışmadı."
-		echo "⚠️ İçerik $CACHE_DIR/clipboard_content dosyasına yazıldı."
-		echo "⚠️ Hata: $error_output"
-
-		# Kopyalanamadığını belirtmek için hata kodu döndür
+		echo "⚠️ Panoya kopyalama başarısız! İçerik dosyaya yazıldı."
+		echo "⚠️ İçerik: $CACHE_DIR/clipboard_content"
 		return 1
 	else
 		# Geçici dosyayı temizle
@@ -414,7 +394,8 @@ copy_to_clipboard() {
 		preview=$(echo "$content" | tr -d '\n')
 	fi
 
-	echo "✓ İçerik $(tput setaf 2)başarıyla$(tput sgr0) panoya kopyalandı (${clipboard_tools})"
+	# Başarılı kopyalama bildirimi
+	echo "✓ İçerik başarıyla panoya kopyalandı (${clipboard_tools})"
 	echo "$(tput setaf 8)Önizleme: ${preview}$(tput sgr0)"
 
 	# Başarılı durumda 0 dön
