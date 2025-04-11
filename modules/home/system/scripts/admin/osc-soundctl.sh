@@ -2,8 +2,8 @@
 #===============================================================================
 #
 #   Script: HyprFlow PipeWire Audio Switcher
-#   Version: 2.0.0
-#   Date: 2024-04-07
+#   Version: 2.1.0
+#   Date: 2025-04-11
 #   Original Author: Kenan Pelit
 #   Original Repository: https://github.com/kenanpelit/nixosc
 #   Description: Advanced audio output switcher for Hyprland with PipeWire
@@ -17,6 +17,7 @@
 #   - Volume and microphone control
 #   - Enhanced error handling
 #   - Configuration file support
+#   - Init mode for setting default audio levels
 #
 #   License: MIT
 #
@@ -41,7 +42,11 @@ RESET=$(tput sgr0)
 DEBUG=false
 
 # Version
-VERSION="2.0.0"
+VERSION="2.1.0"
+
+# Default init values
+DEFAULT_VOLUME=15
+DEFAULT_MIC_VOLUME=5
 
 # Create config directory if it doesn't exist
 if [ ! -d "$CONFIG_DIR" ]; then
@@ -61,6 +66,12 @@ VOLUME_STEP=5
 
 # Notification timeout in milliseconds
 NOTIFICATION_TIMEOUT=3000
+
+# Default volume level for init command (0-100)
+DEFAULT_VOLUME=15
+
+# Default microphone level for init command (0-100)
+DEFAULT_MIC_VOLUME=5
 EOF
 fi
 
@@ -74,6 +85,10 @@ VOLUME_STEP=${VOLUME_STEP:-5}
 
 # Notification timeout
 NOTIFICATION_TIMEOUT=${NOTIFICATION_TIMEOUT:-3000}
+
+# Default init values from config
+DEFAULT_VOLUME=${DEFAULT_VOLUME:-15}
+DEFAULT_MIC_VOLUME=${DEFAULT_MIC_VOLUME:-5}
 
 # Debug function
 debug_print() {
@@ -241,6 +256,24 @@ control_mic() {
 	esac
 }
 
+# Initialize audio levels
+initialize_audio() {
+	check_command "pactl" || exit 1
+
+	# Set default volume
+	debug_print "Başlangıç" "Ses seviyesi %$DEFAULT_VOLUME olarak ayarlanıyor..."
+	pactl set-sink-volume @DEFAULT_SINK@ ${DEFAULT_VOLUME}% || echo "${RED}Failed to set initial volume${RESET}"
+
+	# Set default microphone volume
+	debug_print "Başlangıç" "Mikrofon seviyesi %$DEFAULT_MIC_VOLUME olarak ayarlanıyor..."
+	pactl set-source-volume @DEFAULT_SOURCE@ ${DEFAULT_MIC_VOLUME}% || echo "${RED}Failed to set initial mic volume${RESET}"
+
+	# Ensure audio is not muted
+	pactl set-sink-mute @DEFAULT_SINK@ 0 || echo "${RED}Failed to unmute audio${RESET}"
+
+	notify "Ses Ayarları" "Ses: %$DEFAULT_VOLUME, Mikrofon: %$DEFAULT_MIC_VOLUME olarak ayarlandı"
+}
+
 # Notifications
 notify_volume() {
 	local vol=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
@@ -274,6 +307,7 @@ notify_mic_mute() {
 print_help() {
 	echo "Kullanım: $0 [-d|--debug] [seçenek] [değer]"
 	echo "Seçenekler:"
+	echo "  init          - Ses ve mikrofon seviyelerini varsayılan değerlere ayarla"
 	echo "  volume up     - Sesi artır"
 	echo "  volume down   - Sesi azalt"
 	echo "  volume set N  - Sesi N% olarak ayarla (0-100)"
@@ -345,6 +379,9 @@ main() {
 		;;
 	"switch")
 		handle_switch
+		;;
+	"init")
+		initialize_audio
 		;;
 	"version")
 		print_version

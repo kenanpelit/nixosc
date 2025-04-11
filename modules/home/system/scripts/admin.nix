@@ -24,9 +24,6 @@ let
   osc-assh-manager = pkgs.writeShellScriptBin "osc-assh-manager" (
     builtins.readFile ./admin/osc-assh-manager.sh
   );
-  osc-audio-init = pkgs.writeShellScriptBin "osc-audio-init" (
-    builtins.readFile ./admin/osc-audio-init.sh
-  );
   osc-backup = pkgs.writeShellScriptBin "osc-backup" (
     builtins.readFile ./admin/osc-backup.sh
   );
@@ -151,7 +148,6 @@ in {
     gitsumo
     m2w2
     osc-assh-manager
-    osc-audio-init
     osc-backup
     osc-blocklist
     osc-cleaup-grub
