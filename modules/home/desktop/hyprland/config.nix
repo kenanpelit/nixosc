@@ -537,6 +537,7 @@
 
         # Medya ve Ses Kontrolü
         "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
+        "ALT CTRL, A, exec, osc-soundctl switch-mic"                                  # Mikrofon değiştirici
         "ALT, E, exec, osc-spotify"                                                   # Spotify toggle
         "ALT CTRL, N, exec, osc-spotify next"                                         # spotifycli --next  # Spotify next
         "ALT CTRL, B, exec, osc-spotify prev"                                         # spotifycli --prev  # Spotify prev 

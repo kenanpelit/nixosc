@@ -172,11 +172,38 @@ get_sinks() {
 	done
 }
 
+# Get audio sources (microphones)
+get_sources() {
+	check_command "pactl" || exit 1
+	# Get all sources but exclude monitors (which are just outputs of other streams)
+	SOURCES=($(pactl list sources short | grep -v "monitor" | awk '{print $1}'))
+	DEFAULT_SOURCE=$(pactl get-default-source)
+
+	SOURCES_COUNT=${#SOURCES[@]}
+	debug_print "Mikrofonlar" "Toplam: $SOURCES_COUNT"
+
+	# Find default source index
+	for i in "${!SOURCES[@]}"; do
+		if [[ ${SOURCES[$i]} == "$DEFAULT_SOURCE" ]]; then
+			SOURCE_INDEX=$i
+			break
+		fi
+	done
+}
+
 # Get sink name
 get_sink_name() {
 	local sink_id=$1
 	pactl list sinks | awk -v sink_name="$sink_id" '
     $1 == "Sink" && $2 == "#"sink_name {found=1} 
+    found && /device.description/ {match($0, /device.description = "(.*)"/, arr); print arr[1]; exit}'
+}
+
+# Get source name
+get_source_name() {
+	local source_id=$1
+	pactl list sources | awk -v source_name="$source_id" '
+    $1 == "Source" && $2 == "#"source_name {found=1} 
     found && /device.description/ {match($0, /device.description = "(.*)"/, arr); print arr[1]; exit}'
 }
 
@@ -197,6 +224,21 @@ switch_sink() {
 
 	local sink_name=$(get_sink_name "$target_sink")
 	notify "Ses Çıkışı Değiştirildi" "Yeni Ses Çıkışı: $sink_name"
+	return 0
+}
+
+# Switch microphone input
+switch_source() {
+	local target_source=$1
+
+	# Set default source
+	if ! pactl set-default-source "$target_source"; then
+		echo "${RED}Failed to set default source to $target_source${RESET}"
+		return 1
+	fi
+
+	local source_name=$(get_source_name "$target_source")
+	notify "Mikrofon Değiştirildi" "Yeni Mikrofon: $source_name"
 	return 0
 }
 
@@ -317,9 +359,10 @@ print_help() {
 	echo "  mic set N     - Mikrofon sesini N% olarak ayarla (0-100)"
 	echo "  mic mute      - Mikrofonu aç/kapat"
 	echo "  switch        - Ses çıkışını değiştir"
+	echo "  switch-mic    - Mikrofonlar arasında geçiş yap"
 	echo "  help          - Bu yardım mesajını göster"
 	echo "  version       - Versiyon bilgisini göster"
-	echo "  list          - Tüm ses çıkışlarını listele"
+	echo "  list          - Tüm ses çıkışları ve mikrofonları listele"
 }
 
 # Version info
@@ -332,10 +375,12 @@ list_devices() {
 	echo "Ses Çıkışları:"
 	echo "-------------------------"
 	pactl list sinks short
+	echo -e "Aktif çıkış: $(pactl get-default-sink)"
 
 	echo -e "\nMikrofonlar:"
 	echo "-------------------------"
 	pactl list sources short | grep -v monitor
+	echo -e "Aktif mikrofon: $(pactl get-default-source)"
 }
 
 # Switch audio output
@@ -364,6 +409,32 @@ handle_switch() {
 	fi
 }
 
+# Switch microphone input
+handle_switch_mic() {
+	get_sources
+
+	if [[ $SOURCES_COUNT -eq 0 ]]; then
+		echo "${RED}Hata: Mikrofonlar bulunamadı.${RESET}"
+		notify "Hata" "Mikrofon bulunamadı."
+		return 1
+	fi
+
+	if [[ -z "$SOURCE_INDEX" ]]; then
+		# If no source index found, use the first source
+		debug_print "Mikrofon Değiştiriliyor" "İlk mikrofona geçiliyor..."
+		switch_source "${SOURCES[0]}"
+	elif [[ $SOURCE_INDEX -eq $(($SOURCES_COUNT - 1)) ]]; then
+		# If we're at the last source, go to the first one
+		debug_print "Mikrofon Değiştiriliyor" "İlk mikrofona geçiliyor..."
+		switch_source "${SOURCES[0]}"
+	else
+		# Go to the next source
+		local new_index=$(($SOURCE_INDEX + 1))
+		debug_print "Mikrofon Değiştiriliyor" "Sonraki mikrofona geçiliyor..."
+		switch_source "${SOURCES[$new_index]}"
+	fi
+}
+
 # Main function
 main() {
 	# Check dependencies
@@ -379,6 +450,9 @@ main() {
 		;;
 	"switch")
 		handle_switch
+		;;
+	"switch-mic")
+		handle_switch_mic
 		;;
 	"init")
 		initialize_audio
