@@ -175,20 +175,24 @@ get_sinks() {
 # Get audio sources (microphones)
 get_sources() {
 	check_command "pactl" || exit 1
-	# Get all sources but exclude monitors (which are just outputs of other streams)
-	SOURCES=($(pactl list sources short | grep -v "monitor" | awk '{print $1}'))
+
+	# Get all sources but exclude monitors - we want actual input devices only
+	SOURCES=($(pactl list sources short | grep "input" | grep -v "monitor" | awk '{print $2}'))
 	DEFAULT_SOURCE=$(pactl get-default-source)
 
 	SOURCES_COUNT=${#SOURCES[@]}
 	debug_print "Mikrofonlar" "Toplam: $SOURCES_COUNT"
 
 	# Find default source index
+	SOURCE_INDEX=-1
 	for i in "${!SOURCES[@]}"; do
-		if [[ ${SOURCES[$i]} == "$DEFAULT_SOURCE" ]]; then
+		if [[ "${SOURCES[$i]}" == "$DEFAULT_SOURCE" ]]; then
 			SOURCE_INDEX=$i
 			break
 		fi
 	done
+
+	debug_print "Aktif Mikrofon" "Index: $SOURCE_INDEX, Adı: $DEFAULT_SOURCE"
 }
 
 # Get sink name
@@ -237,7 +241,13 @@ switch_source() {
 		return 1
 	fi
 
-	local source_name=$(get_source_name "$target_source")
+	# Get human-friendly name
+	local source_name=$(pactl list sources | grep -A 1 -B 0 "$target_source" | grep "Description" | cut -d':' -f2 | xargs)
+	# If we can't get name from description, try the old method
+	if [ -z "$source_name" ]; then
+		source_name=$(get_source_name "$target_source")
+	fi
+
 	notify "Mikrofon Değiştirildi" "Yeni Mikrofon: $source_name"
 	return 0
 }
@@ -419,20 +429,33 @@ handle_switch_mic() {
 		return 1
 	fi
 
-	if [[ -z "$SOURCE_INDEX" ]]; then
-		# If no source index found, use the first source
-		debug_print "Mikrofon Değiştiriliyor" "İlk mikrofona geçiliyor..."
-		switch_source "${SOURCES[0]}"
-	elif [[ $SOURCE_INDEX -eq $(($SOURCES_COUNT - 1)) ]]; then
-		# If we're at the last source, go to the first one
-		debug_print "Mikrofon Değiştiriliyor" "İlk mikrofona geçiliyor..."
-		switch_source "${SOURCES[0]}"
-	else
-		# Go to the next source
-		local new_index=$(($SOURCE_INDEX + 1))
-		debug_print "Mikrofon Değiştiriliyor" "Sonraki mikrofona geçiliyor..."
-		switch_source "${SOURCES[$new_index]}"
+	if [ "$DEBUG" = true ]; then
+		echo "${CYAN}Mevcut mikrofonlar:${RESET}"
+		for i in "${!SOURCES[@]}"; do
+			local src_name=$(pactl list sources | grep -A 1 -B 0 "${SOURCES[$i]}" | grep "Description" | cut -d':' -f2 | xargs)
+			echo "$i: ${SOURCES[$i]} - $src_name"
+			if [[ $i -eq $SOURCE_INDEX ]]; then
+				echo "   ${GREEN}[aktif]${RESET}"
+			fi
+		done
 	fi
+
+	# If no source index found or invalid, use the first source
+	if [[ $SOURCE_INDEX -lt 0 ]]; then
+		debug_print "Mikrofon Değiştiriliyor" "Geçerli mikrofon bulunamadı, ilk mikrofona geçiliyor..."
+		switch_source "${SOURCES[0]}"
+		return 0
+	fi
+
+	# Calculate next index with proper modulo for cycling
+	local next_index=$(((SOURCE_INDEX + 1) % SOURCES_COUNT))
+
+	debug_print "Mikrofon Değiştiriliyor" "Index $SOURCE_INDEX -> $next_index"
+	debug_print "Mevcut Mikrofon" "${SOURCES[$SOURCE_INDEX]}"
+	debug_print "Yeni Mikrofon" "${SOURCES[$next_index]}"
+
+	# Switch to the next microphone
+	switch_source "${SOURCES[$next_index]}"
 }
 
 # Main function
