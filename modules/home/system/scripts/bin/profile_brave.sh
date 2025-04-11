@@ -60,7 +60,7 @@ usage() {
 	echo -e "${BOLD}Parametreler:${RESET}"
 	echo "  --class=SINIF     Pencere sınıfını ayarlar (window manager entegrasyonu için)"
 	echo "  --title=BASLIK    Pencere başlığını ayarlar"
-	echo "  --whatsapp        WhatsApp uygulamasını başlatır (Whats profili ile)"
+	echo "  --whatsapp        WhatsApp uygulamasını başlatır (Kenp profili ile)"
 	echo "  --youtube         YouTube uygulamasını başlatır (Kenp profili ile)"
 	echo "  --tiktok          TikTok uygulamasını başlatır (Kenp profili ile)"
 	echo "  --spotify         Spotify uygulamasını başlatır (Kenp profili ile)"
@@ -98,7 +98,7 @@ list_profiles() {
 # Önceden tanımlanmış uygulamalar
 launch_whatsapp() {
 	echo -e "${GREEN}WhatsApp başlatılıyor...${RESET}"
-	exec "$0" "Whats" --app="https://web.whatsapp.com" --class=Whats --title=Whats "$@"
+	exec "$0" "Kenp" --app="https://web.whatsapp.com" --class=Whats --title=Whats "$@"
 }
 
 launch_youtube() {
