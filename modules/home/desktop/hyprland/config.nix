@@ -103,7 +103,7 @@
         "VISUAL,nvim"                           # Varsayılan görsel düzenleyici
         "TERMINAL,kitty"
         "TERM,xterm-kitty"
-        "BROWSER,zen"                           # Varsayılan tarayıcı
+        "BROWSER,brave"                         # Varsayılan tarayıcı
       ];
 
       # =====================================================
