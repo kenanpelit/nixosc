@@ -38,6 +38,9 @@
         "hyprlock"
         # Set initial audio levels - microphone to 5% - speaker volume to 15%
         "osc-audio-init"
+        # Hyrsunset set
+        "hypr-blue-hyprsunset-manager"
+
       ];
 
       # =====================================================

@@ -90,9 +90,6 @@ let
   hypr-startup-manager = pkgs.writeShellScriptBin "hypr-startup-manager" (
     builtins.readFile ./bin/hypr-startup-manager.sh
   );
-  hypr-status-check = pkgs.writeShellScriptBin "hypr-status-check" (
-    builtins.readFile ./bin/hypr-status-check.sh
-  );
   hypr-vlc_toggle = pkgs.writeShellScriptBin "hypr-vlc_toggle" (
     builtins.readFile ./bin/hypr-vlc_toggle.sh
   );
@@ -332,7 +329,6 @@ in {
     hypr-start-semsumo-light
     hypr-start-update
     hypr-startup-manager
-    hypr-status-check
     hypr-vlc_toggle
     hypr-workspace-monitor
     image-deduplicator

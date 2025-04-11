@@ -27,7 +27,6 @@
  imports = [
    ./gtk
    ./hyprland
-   #./hyprsunset
    ./qt
    ./rofi
    ./sway
