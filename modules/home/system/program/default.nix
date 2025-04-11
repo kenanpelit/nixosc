@@ -8,7 +8,7 @@
   # =============================================================================
   # Service Configuration
   # =============================================================================
-  services.hyprsunset.enable = true;  # Enable HyprSunset service for automatic blue light filtering
+  #services.hyprsunset.enable = true;  # Enable HyprSunset service for automatic blue light filtering
   
   programs = {
     # ---------------------------------------------------------------------------
