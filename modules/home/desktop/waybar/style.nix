@@ -1,4 +1,4 @@
-# modules/home/waybar/style.nix
+# modules/home/desktop/waybar/style.nix
 { custom, ... }:
 {
   programs.waybar.style = ''
@@ -13,12 +13,12 @@
     }
 
     window#waybar {
-      background: rgba(18, 20, 29, 0.95);  /* Daha koyu ve yarı saydam arkaplan */
-      color: #f8f8f2;  /* Yüksek kontrastlı metin rengi */
-      border-top: 1px solid rgba(100, 114, 125, 0.5);
+      background: ${custom.background_0};
+      color: ${custom.text_color};
+      border-top: 1px solid ${custom.border_color};
     }
 
-    /* Terminal/Bash uyumlu stil için tüm modüller */
+    /* Common style for all modules */
     #workspaces,
     #bluetooth,
     #custom-vpnstatus,
@@ -39,14 +39,15 @@
     #language,
     #tray,
     #mpris {
-      background-color: rgba(40, 42, 54, 0.85);  /* Koyu ama terminal ile uyumlu arka plan */
-      padding: 2px 8px;
+      background-color: ${custom.background_1};
+      padding: 1px 6px;
       margin: 2px 2px;
-      border: 1px solid rgba(100, 114, 125, 0.4);
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
+      transition: all 0.2s ease;
     }
 
-    /* Çalışma alanları için geliştirilmiş stil */
+    /* Workspace specific styles */
     #workspaces {
       margin: 2px 2px;
       padding: 0;
@@ -56,102 +57,104 @@
     #workspaces button {
       min-height: 20px;
       min-width: 20px;
-      padding: 2px 8px;
+      padding: 1px 6px;
       margin: 0 2px;
-      border-radius: 4px;
-      color: #8be9fd;  /* Terminal mavi */
-      background-color: rgba(40, 42, 54, 0.85);
-      border: 1px solid rgba(100, 114, 125, 0.4);
-      font-weight: bold;
+      border-radius: 6px;
+      color: ${custom.blue};
+      background-color: ${custom.background_1};
+      transition: all 0.2s ease;
+      border: 1px solid ${custom.border_color};
     }
 
     #workspaces button.active {
-      color: #ff79c6;  /* Terminal pembe */
-      background-color: rgba(80, 85, 98, 0.6);
-      border-color: #8be9fd;
+      color: ${custom.magenta};
+      background-color: rgba(122, 162, 247, 0.2);
+      border-color: ${custom.blue};
     }
 
     #workspaces button.empty {
-      color: #6272a4;  /* Soluk metin rengi */
-      background-color: rgba(40, 42, 54, 0.6);
+      color: ${custom.text_color};
+      background-color: ${custom.background_1};
       opacity: 0.8;
     }
 
     #workspaces button.urgent {
-      color: #ff5555;  /* Terminal kırmızı */
-      background-color: rgba(255, 85, 85, 0.2);
-      border-color: #ff5555;
+      color: ${custom.red};
+      background-color: rgba(247, 118, 142, 0.2);
+      border-color: ${custom.red};
       animation: workspace_urgent 1s ease-in-out infinite;
     }
 
-    /* Terminal renk paletine uyumlu modül renkleri */
-    #bluetooth { color: #8be9fd; }  /* Siyan */
-    #bluetooth.connected { color: #8be9fd; }
+    /* Module specific colors */
+    #bluetooth { color: ${custom.cyan}; }
+    #bluetooth.connected { color: ${custom.blue}; }
     
-    #network { color: #8be9fd; }  /* Siyan */
-    #network.disconnected { color: #ff5555; }  /* Kırmızı */
-    
-    #battery { color: #ff79c6; }  /* Pembe */
-    #battery.charging { color: #8be9fd; }  /* Siyan */
-    #battery.full { color: #50fa7b; }  /* Yeşil */
-    #battery.warning:not(.charging) { color: #ffb86c; }  /* Turuncu */
+    #network { color: ${custom.blue}; }
+    #network.disconnected { color: ${custom.red}; }
+    #network.ethernet,
+    #network.wifi { color: ${custom.blue}; }
+
+    #battery { color: ${custom.magenta}; }
+    #battery.charging { color: ${custom.cyan}; }
+    #battery.full { color: ${custom.green}; }
+    #battery.warning:not(.charging) { color: ${custom.orange}; }
     #battery.critical:not(.charging) { 
-      color: #ff5555;  /* Kırmızı */
+      color: ${custom.red};
       animation: blink-critical 1s infinite;
     }
 
-    #pulseaudio { color: #ff79c6; }  /* Pembe */
-    #pulseaudio.muted { color: #ff5555; }  /* Kırmızı */
+    #pulseaudio { color: ${custom.magenta}; }
+    #pulseaudio.muted { color: ${custom.red}; }
     
-    #pulseaudio#sink { color: #ff79c6; }  /* Pembe */
-    #pulseaudio#sink.muted { color: #ff5555; }  /* Kırmızı */
+    #pulseaudio#sink { color: ${custom.magenta}; }
+    #pulseaudio#sink.muted { color: ${custom.red}; }
     
-    #pulseaudio#source { color: #8be9fd; }  /* Siyan */
-    #pulseaudio#source.muted { color: #ff5555; }  /* Kırmızı */
+    #pulseaudio#source { color: ${custom.cyan}; }
+    #pulseaudio#source.muted { color: ${custom.red}; }
     
-    #cpu { color: #50fa7b; }  /* Yeşil */
-    #memory { color: #ff79c6; }  /* Pembe */
-    #disk { color: #ffb86c; }  /* Turuncu */
+    #cpu { color: ${custom.green}; }
+    #memory { color: ${custom.magenta}; }
+    #disk { color: ${custom.orange}; }
     
     #custom-vpnstatus.connected,
     #custom-vpnmullvad.connected,
-    #custom-vpnother.connected { color: #50fa7b; }  /* Yeşil */
+    #custom-vpnother.connected { color: ${custom.green}; }
     
     #custom-vpnstatus.disconnected,
     #custom-vpnmullvad.disconnected,
-    #custom-vpnother.disconnected { color: #ff5555; }  /* Kırmızı */
+    #custom-vpnother.disconnected { color: ${custom.red}; }
 
     #mpris {
-      background-color: rgba(40, 42, 54, 0.85);
+      background-color: ${custom.background_1};
     }
 
-    #mpris.playing { color: #50fa7b; }  /* Yeşil */
-    #mpris.paused { color: #8be9fd; }  /* Siyan */
-    #mpris.stopped { color: #ff5555; }  /* Kırmızı */
+    #mpris.playing { color: ${custom.green}; }
+    #mpris.paused { color: ${custom.blue}; }
+    #mpris.stopped { color: ${custom.red}; }
 
     #custom-launcher {
-      color: #8be9fd;  /* Siyan */
+      color: ${custom.cyan};
       font-size: 20px;
       padding: 0 10px;
       margin: 4px 8px 4px 4px;
-      background: rgba(40, 42, 54, 0.85);
-      border: 1px solid rgba(100, 114, 125, 0.4);
+      background: ${custom.background_1};
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
     }
 
     #custom-launcher:hover {
-      background-color: rgba(98, 114, 164, 0.4);
-      border-color: #8be9fd;
+      background-color: rgba(125, 207, 255, 0.1);
+      border-color: ${custom.cyan};
     }
 
-    /* Sistem simgeleri */
+    /* System icons with adjusted sizes */
     #custom-notification,
     #custom-firewall,
     #custom-power {
-      background-color: rgba(40, 42, 54, 0.85);
+      background-color: ${custom.background_1};
       padding: 0 8px;
       margin: 4px 2px;
-      border: 1px solid rgba(100, 114, 125, 0.4);
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
       min-width: 24px;
       font-size: 16px;
@@ -161,7 +164,7 @@
       padding: 0 6px;
       font-size: 15px;
       margin-right: 4px;
-      color: #ffb86c;  /* Turuncu */
+      color: ${custom.orange};
     }
 
     #custom-firewall {
@@ -174,7 +177,7 @@
       padding: 0 7px;
       font-size: 17px;
       margin: 4px 4px 4px 2px;
-      color: #ff5555;  /* Kırmızı */
+      color: ${custom.red};
     }
 
     #tray {
@@ -182,20 +185,19 @@
     }
 
     #tray menu {
-      background: rgba(40, 42, 54, 0.95);
-      border: 1px solid rgba(100, 114, 125, 0.4);
+      background: ${custom.background_1};
+      border: 1px solid ${custom.border_color};
     }
 
     #clock {
-      color: #8be9fd;  /* Siyan */
-      font-weight: bold;
+      color: ${custom.cyan};
     }
 
     #language {
-      color: #ff79c6;  /* Pembe */
+      color: ${custom.magenta};
     }
 
-    /* Hover efektleri - Terminal renkleriyle uyumlu */
+    /* Hover effects */
     #bluetooth:hover,
     #custom-vpnstatus:hover,
     #custom-todo:hover,
@@ -214,68 +216,67 @@
     #clock:hover,
     #language:hover,
     #mpris:hover {
-      background-color: rgba(98, 114, 164, 0.4);
-      border-color: #bd93f9;  /* Mor */
+      background-color: rgba(122, 162, 247, 0.1);
+      border-color: ${custom.blue};
     }
 
     #temperature {
-      color: #50fa7b;  /* Yeşil */
+      color: ${custom.green};
     }
 
     #temperature.critical {
-      color: #ff5555;  /* Kırmızı */
+      color: ${custom.red};
       animation: blink-critical 1s infinite;
     }
 
     #temperature:hover {
-      background-color: rgba(98, 114, 164, 0.4);
-      border-color: #bd93f9;
+      background-color: rgba(122, 162, 247, 0.1);
+      border-color: ${custom.blue};
     }
 
     #custom-notification:hover {
-      background-color: rgba(255, 184, 108, 0.2);
-      border-color: #ffb86c;
+      background-color: rgba(224, 175, 104, 0.1);
+      border-color: ${custom.orange};
     }
 
     #custom-firewall:hover {
-      background-color: rgba(255, 85, 85, 0.2);
-      border-color: #ff5555;
+      background-color: rgba(247, 118, 142, 0.1);
+      border-color: ${custom.red};
     }
 
     #custom-power:hover {
-      background-color: rgba(255, 85, 85, 0.2);
-      border-color: #ff5555;
+      background-color: rgba(247, 118, 142, 0.1);
+      border-color: ${custom.red};
     }
 
     tooltip {
-      background: rgba(40, 42, 54, 0.95);
-      border: 1px solid rgba(100, 114, 125, 0.4);
+      background: ${custom.background_1};
+      border: 1px solid ${custom.border_color};
       border-radius: 6px;
     }
 
     tooltip label {
-      color: #f8f8f2;  /* Parlak metin rengi */
+      color: ${custom.text_color};
       padding: 6px;
     }
 
     @keyframes blink-critical {
       to {
-        background-color: #ff5555;
-        color: #282a36;
+        background-color: ${custom.red};
+        color: ${custom.background_1};
       }
     }
 
     @keyframes workspace_urgent {
       0% {
-        box-shadow: 0 0 5px rgba(255, 85, 85, 0.3);
+        box-shadow: 0 0 5px rgba(247, 118, 142, 0.3);
       }
       50% {
-        box-shadow: 0 0 10px rgba(255, 85, 85, 0.6);
+        box-shadow: 0 0 10px rgba(247, 118, 142, 0.6);
       }
       100% {
-        box-shadow: 0 0 5px rgba(255, 85, 85, 0.3);
+        box-shadow: 0 0 5px rgba(247, 118, 142, 0.3);
       }
     }
   '';
 }
-
