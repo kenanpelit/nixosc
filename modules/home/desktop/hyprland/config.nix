@@ -39,8 +39,8 @@
         # Set initial audio levels - microphone to 5% - speaker volume to 15%
         "osc-audio-init"
         # Hyrsunset set
-        "hypr-blue-hyprsunset-manager"
-
+        #"hyprctl dispatch exec [workspace special:hyprinit silent] sleep 2 && hypr-blue-hyprsunset-manager start"
+        "hypr-blue-hyprsunset-manager start"
       ];
 
       # =====================================================
