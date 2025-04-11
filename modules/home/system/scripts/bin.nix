@@ -45,9 +45,6 @@ let
   hypr-bluetooth_toggle = pkgs.writeShellScriptBin "hypr-bluetooth_toggle" (
     builtins.readFile ./bin/hypr-bluetooth_toggle.sh
   );
-  hypr-blue-wlsunset-mananger = pkgs.writeShellScriptBin "hypr-blue-wlsunset-mananger" (
-    builtins.readFile ./bin/hypr-blue-wlsunset-mananger.sh
-  );
   hypr-colorpicker = pkgs.writeShellScriptBin "hypr-colorpicker" (
     builtins.readFile ./bin/hypr-colorpicker.sh
   );
@@ -56,9 +53,6 @@ let
   );
   hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
     builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
-  );
-  hypr-monitor_toggle = pkgs.writeShellScriptBin "hypr-monitor_toggle" (
-    builtins.readFile ./bin/hypr-monitor_toggle.sh
   );
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
@@ -311,11 +305,9 @@ in {
     hypr-blue-hyprshade-manager
     hypr-blue-hyprsunset-manager
     hypr-bluetooth_toggle
-    hypr-blue-wlsunset-mananger
     hypr-colorpicker
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
-    hypr-monitor_toggle
     hypr-mpv-manager
     hypr-mullvad_toggle
     hypr-start-batteryd
