@@ -36,9 +36,6 @@ let
   hypr-blue-gammastep-manager = pkgs.writeShellScriptBin "hypr-blue-gammastep-manager" (
     builtins.readFile ./bin/hypr-blue-gammastep-manager.sh
   );
-  hypr-blue-hyprshade-manager = pkgs.writeShellScriptBin "hypr-blue-hyprshade-manager" (
-    builtins.readFile ./bin/hypr-blue-hyprshade-manager.sh
-  );
   hypr-blue-hyprsunset-manager = pkgs.writeShellScriptBin "hypr-blue-hyprsunset-manager" (
     builtins.readFile ./bin/hypr-blue-hyprsunset-manager.sh
   );
@@ -201,17 +198,11 @@ let
   tmux-copy = pkgs.writeShellScriptBin "tmux-copy" (
     builtins.readFile ./bin/tmux-copy.sh
   );
-  tmux-fspeed = pkgs.writeShellScriptBin "tmux-fspeed" (
-    builtins.readFile ./bin/tmux-fspeed.sh
-  );
   tmux_kenp = pkgs.writeShellScriptBin "tmux_kenp" (
     builtins.readFile ./bin/tmux_kenp.sh
   );
   tmux-plugins = pkgs.writeShellScriptBin "tmux-plugins" (
     builtins.readFile ./bin/tmux-plugins.sh
-  );
-  tmux-startup = pkgs.writeShellScriptBin "tmux-startup" (
-    builtins.readFile ./bin/tmux-startup.sh
   );
   toggle_blur = pkgs.writeShellScriptBin "toggle_blur" (
     builtins.readFile ./bin/toggle_blur.sh
@@ -299,7 +290,6 @@ in {
     gnome-start-all
     hypr-airplane_mode
     hypr-blue-gammastep-manager
-    hypr-blue-hyprshade-manager
     hypr-blue-hyprsunset-manager
     hypr-bluetooth_toggle
     hypr-colorpicker
@@ -354,10 +344,8 @@ in {
     tm
     tmux-backup
     tmux-copy
-    tmux-fspeed
     tmux_kenp
     tmux-plugins
-    tmux-startup
     toggle_blur
     toggle_float
     toggle_oppacity
