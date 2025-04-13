@@ -102,9 +102,6 @@ let
   ntodo = pkgs.writeShellScriptBin "ntodo" (
     builtins.readFile ./bin/ntodo.sh
   );
-  pass-clip-both = pkgs.writeShellScriptBin "pass-clip-both" (
-    builtins.readFile ./bin/pass-clip-both.sh
-  );
   pdfkes = pkgs.writeShellScriptBin "pdfkes" (
     builtins.readFile ./bin/pdfkes.sh
   );
@@ -312,7 +309,6 @@ in {
     mpc-control
     music
     ntodo
-    pass-clip-both
     pdfkes
     playlist
     ports
