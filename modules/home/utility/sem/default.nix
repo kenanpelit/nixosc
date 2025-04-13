@@ -120,6 +120,12 @@
       "vpn": "secure",
       "workspace": "9"
     },
+    "Brave-Exclude": {
+      "command": "profile_brave",
+      "args": ["Exclude", "--class", "Exclude", "--title", "Exclude"],
+      "vpn": "bypass",
+      "workspace": "6"
+    },
     "Brave-Yotube": {
       "command": "profile_brave",
       "args": ["--youtube"],

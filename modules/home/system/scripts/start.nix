@@ -9,6 +9,9 @@ let
   start-brave-discord = pkgs.writeShellScriptBin "start-brave-discord" (
     builtins.readFile ./start/start-brave-discord.sh
   );
+  start-brave-exclude = pkgs.writeShellScriptBin "start-brave-exclude" (
+    builtins.readFile ./start/start-brave-exclude.sh
+  );
   start-brave-kenp = pkgs.writeShellScriptBin "start-brave-kenp" (
     builtins.readFile ./start/start-brave-kenp.sh
   );
@@ -95,6 +98,7 @@ in {
     start-brave-ai
     start-brave-compecta
     start-brave-discord
+    start-brave-exclude
     start-brave-kenp
     start-brave-spotify
     start-brave-tiktok
