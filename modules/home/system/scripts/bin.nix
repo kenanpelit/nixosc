@@ -18,14 +18,8 @@ let
   clustergit = pkgs.writeShellScriptBin "clustergit" (
     builtins.readFile ./bin/clustergit.sh
   );
-  compress = pkgs.writeShellScriptBin "compress" (
-    builtins.readFile ./bin/compress.sh
-  );
   container-engine-manager = pkgs.writeShellScriptBin "container-engine-manager" (
     builtins.readFile ./bin/container-engine-manager.sh
-  );
-  extract = pkgs.writeShellScriptBin "extract" (
-    builtins.readFile ./bin/extract.sh
   );
   gnome-start-all = pkgs.writeShellScriptBin "gnome-start-all" (
     builtins.readFile ./bin/gnome-start-all.sh
@@ -183,6 +177,9 @@ let
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
   );
+  tarchiver = pkgs.writeShellScriptBin "tarchiver" (
+    builtins.readFile ./bin/tarchiver.sh
+  );
   ter = pkgs.writeShellScriptBin "ter" (
     builtins.readFile ./bin/ter.sh
   );
@@ -281,9 +278,7 @@ in {
     bulk_rename
     clearam
     clustergit
-    compress
     container-engine-manager
-    extract
     gnome-start-all
     hypr-airplane_mode
     hypr-blue-gammastep-manager
@@ -336,6 +331,7 @@ in {
     ssh-launcher
     startup-manager
     st
+    tarchiver
     ter
     tm
     tmux-backup
