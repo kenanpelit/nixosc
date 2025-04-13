@@ -585,7 +585,7 @@
 
         # Sistem Fonksiyonları
         ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle
-        "ALT, F12, exec, hypr-mullvad_toggle toggle"                                # VPN toggle
+        "ALT, F12, exec, osc-mullvad toggle"                                        # VPN toggle
         "ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
         ",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
         "$mainMod, M, exec, anotes"                               # Not yöneticisi

@@ -42,8 +42,8 @@ let
   osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
     builtins.readFile ./admin/osc-gpg_unlock.sh
   );
-  osc-mrelay = pkgs.writeShellScriptBin "osc-mrelay" (
-    builtins.readFile ./admin/osc-mrelay.sh
+  osc-mullvad = pkgs.writeShellScriptBin "osc-mullvad" (
+    builtins.readFile ./admin/osc-mullvad.sh
   );
   osc-nix-cleanup-script = pkgs.writeShellScriptBin "osc-nix-cleanup-script" (
     builtins.readFile ./admin/osc-nix-cleanup-script.sh
@@ -154,7 +154,7 @@ in {
     osc-generate_nix
     osc-gist
     osc-gpg_unlock
-    osc-mrelay
+    osc-mullvad
     osc-nix-cleanup-script
     osc-pass-tool
     osc-profiles

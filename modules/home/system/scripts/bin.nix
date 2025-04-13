@@ -57,9 +57,6 @@ let
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
   );
-  hypr-mullvad_toggle = pkgs.writeShellScriptBin "hypr-mullvad_toggle" (
-    builtins.readFile ./bin/hypr-mullvad_toggle.sh
-  );
   hypr-start-batteryd = pkgs.writeShellScriptBin "hypr-start-batteryd" (
     builtins.readFile ./bin/hypr-start-batteryd.sh
   );
@@ -309,7 +306,6 @@ in {
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
     hypr-mpv-manager
-    hypr-mullvad_toggle
     hypr-start-batteryd
     hypr-start-disable_wifi_power_save
     hypr-start-manager
