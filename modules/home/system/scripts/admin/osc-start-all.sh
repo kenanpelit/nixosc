@@ -262,14 +262,22 @@ profiles:
     fullscreen: false
     enabled: true
 
+  - name: "Whats"
+    workspace: 9
+    class: "Whats"
+    title: "Whats"
+    fullscreen: false
+    enabled: true
+
+
 # Web uygulamaları
 apps:
-  - name: "whatsapp"
-    workspace: 9
+  - name: "webcord"
+    workspace: 5
     fullscreen: true
     enabled: true
-    type: "brave"
-  
+    type: "semsumo"
+
   - name: "youtube"
     workspace: 7
     fullscreen: true
@@ -282,12 +290,12 @@ apps:
     enabled: true
     type: "semsumo"
   
-  - name: "webcord"
-    workspace: 5
+  - name: "whatsapp"
+    workspace: 9
     fullscreen: true
-    enabled: true
-    type: "semsumo"
-
+    enabled: false
+    type: "brave"
+  
 # Terminal oturumları
 terminals:
   - name: "kkenp"
@@ -323,10 +331,11 @@ load_config() {
 	profiles["Kenp"]="workspace=1,class=Kenp,title=Kenp,fullscreen=false,enabled=true"
 	profiles["Ai"]="workspace=3,class=Ai,title=Ai,fullscreen=false,enabled=true"
 	profiles["CompecTA"]="workspace=4,class=CompecTA,title=CompecTA,fullscreen=false,enabled=true"
+	profiles["Whats"]="workspace=9,class=Whats,title=Whats,fullscreen=false,enabled=true"
 
 	# Uygulamaları tanımla
 	apps=()
-	apps["whatsapp"]="workspace=9,fullscreen=true,enabled=true,type=brave"
+	apps["whatsapp"]="workspace=9,fullscreen=true,enabled=false,type=brave"
 	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
 	apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"

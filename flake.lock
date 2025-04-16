@@ -1376,11 +1376,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1744740579,
-        "narHash": "sha256-Z5c4YdSIruSNSUWfMODwrArSym6ZAwP8uNJn3kFPa88=",
+        "lastModified": 1744782863,
+        "narHash": "sha256-NBvSCE2MXjK7yCLEMsZ+lrImbuoukLGsJYrWCxemGNM=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "1736f0da65fea7f5b4025e9024b94d427ce215af",
+        "rev": "e561993c7848eaa7288e16219c62c8d5bbbe81d8",
         "type": "github"
       },
       "original": {
@@ -1471,11 +1471,11 @@
         "systems": "systems_10"
       },
       "locked": {
-        "lastModified": 1744665496,
-        "narHash": "sha256-nXnWAseJCk06WzOc70512jiRDbBZY/rQEuOUqLtdYes=",
+        "lastModified": 1744756635,
+        "narHash": "sha256-o48AFUgi91LejL2zNt9fY4xKqoZI2mZUPzpLwWQM6Rw=",
         "owner": "hyprland-community",
         "repo": "pyprland",
-        "rev": "154ec5a21dd927c77cfee6ef4166e014c26884c7",
+        "rev": "cc1be63ef4b998f4aebd5336a148b0aa267b54a7",
         "type": "github"
       },
       "original": {
@@ -1957,11 +1957,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1744727679,
-        "narHash": "sha256-DIAYck5TAJI8/8jXUL9YOteDjjkM81/oQOlX8ieLLnQ=",
+        "lastModified": 1744777359,
+        "narHash": "sha256-20REqJW54bbQIBuP19fcjPamV9mpWN0+RPcp5hQwwLI=",
         "owner": "0xc000022070",
         "repo": "zen-browser-flake",
-        "rev": "02e0840599ba1e89b5adeeca77a0bcc2bcd22df8",
+        "rev": "d2bb30f451ef7802aca1954a6eb75efbc4c25872",
         "type": "github"
       },
       "original": {
