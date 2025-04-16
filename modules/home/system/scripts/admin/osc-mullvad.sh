@@ -48,7 +48,7 @@ CONNECTION_RETRIES=3
 
 # Configuration directories and files
 LOG_DIR="$HOME/.logs/mullvad"
-CONFIG_DIR="$HOME/.config/mrelay"
+CONFIG_DIR="$HOME/.config/mullvad"
 FAVORITES_FILE="$CONFIG_DIR/favorites.txt"
 HISTORY_FILE="$LOG_DIR/connection_history.log"
 
@@ -550,13 +550,24 @@ manage_favorites() {
 		fi
 
 		# Check if relay is already in favorites
-		if grep -q "^$current_relay$" "$FAVORITES_FILE"; then
+		if grep -q "^$current_relay|" "$FAVORITES_FILE" || grep -q "^$current_relay$" "$FAVORITES_FILE"; then
 			log "Relay $current_relay is already in favorites"
 			notify "ℹ️ MULLVAD VPN" "Relay already in favorites" "security-medium"
 		else
-			echo "$current_relay" >>"$FAVORITES_FILE"
-			log "Added $current_relay to favorites"
-			notify "⭐ MULLVAD VPN" "Added relay to favorites" "security-high"
+			# Ping ile kaydetmek için ping testi yap
+			local ip=$(mullvad relay list | grep -E "^[[:space:]]*$current_relay" | awk '{print $2}' | tr -d '(),')
+			local ping_avg="N/A"
+
+			if [[ -n "$ip" && "$ip" != *":"* ]]; then
+				ping_result=$(ping -c 3 -W 2 $ip 2>/dev/null | grep 'avg' | awk -F '/' '{print $5}')
+				if [[ -n "$ping_result" ]]; then
+					ping_avg=$ping_result
+				fi
+			fi
+
+			echo "$current_relay|$ping_avg" >>"$FAVORITES_FILE"
+			log "Added $current_relay to favorites (ping: $ping_avg ms)"
+			notify "⭐ MULLVAD VPN" "Added relay to favorites (ping: $ping_avg ms)" "security-high"
 		fi
 		;;
 
@@ -569,11 +580,17 @@ manage_favorites() {
 
 		echo -e "${CYAN}Select relay to remove:${NC}"
 		local i=1
-		while read -r line; do
-			local country=$(echo "$line" | cut -d'-' -f1)
-			local city=$(echo "$line" | cut -d'-' -f2)
-			local protocol=$(echo "$line" | cut -d'-' -f3)
-			echo -e "${YELLOW}$i)${NC} $line (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})"
+		while IFS="|" read -r relay ping_time; do
+			local country=$(echo "$relay" | cut -d'-' -f1)
+			local city=$(echo "$relay" | cut -d'-' -f2)
+			local protocol=$(echo "$relay" | cut -d'-' -f3)
+
+			local ping_display=""
+			if [[ -n "$ping_time" && "$ping_time" != "N/A" ]]; then
+				ping_display=" ${PURPLE}[${ping_time} ms]${NC}"
+			fi
+
+			echo -e "${YELLOW}$i)${NC} $relay (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})${ping_display}"
 			i=$((i + 1))
 		done <"$FAVORITES_FILE"
 
@@ -586,7 +603,7 @@ manage_favorites() {
 		fi
 
 		if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -lt "$i" ]; then
-			local removed_relay=$(sed -n "${choice}p" "$FAVORITES_FILE")
+			local removed_relay=$(sed -n "${choice}p" "$FAVORITES_FILE" | cut -d"|" -f1)
 			sed -i "${choice}d" "$FAVORITES_FILE"
 			log "Removed $removed_relay from favorites"
 			notify "🗑️ MULLVAD VPN" "Removed relay from favorites" "security-medium"
@@ -604,11 +621,17 @@ manage_favorites() {
 
 		echo -e "${CYAN}Favorite relays:${NC}"
 		local i=1
-		while read -r line; do
-			local country=$(echo "$line" | cut -d'-' -f1)
-			local city=$(echo "$line" | cut -d'-' -f2)
-			local protocol=$(echo "$line" | cut -d'-' -f3)
-			echo -e "${YELLOW}$i)${NC} $line (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})"
+		while IFS="|" read -r relay ping_time; do
+			local country=$(echo "$relay" | cut -d'-' -f1)
+			local city=$(echo "$relay" | cut -d'-' -f2)
+			local protocol=$(echo "$relay" | cut -d'-' -f3)
+
+			local ping_display=""
+			if [[ -n "$ping_time" && "$ping_time" != "N/A" ]]; then
+				ping_display=" ${PURPLE}[${ping_time} ms]${NC}"
+			fi
+
+			echo -e "${YELLOW}$i)${NC} $relay (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})${ping_display}"
 			i=$((i + 1))
 		done <"$FAVORITES_FILE"
 		;;
@@ -622,11 +645,17 @@ manage_favorites() {
 
 		echo -e "${CYAN}Select relay to connect to:${NC}"
 		local i=1
-		while read -r line; do
-			local country=$(echo "$line" | cut -d'-' -f1)
-			local city=$(echo "$line" | cut -d'-' -f2)
-			local protocol=$(echo "$line" | cut -d'-' -f3)
-			echo -e "${YELLOW}$i)${NC} $line (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})"
+		while IFS="|" read -r relay ping_time; do
+			local country=$(echo "$relay" | cut -d'-' -f1)
+			local city=$(echo "$relay" | cut -d'-' -f2)
+			local protocol=$(echo "$relay" | cut -d'-' -f3)
+
+			local ping_display=""
+			if [[ -n "$ping_time" && "$ping_time" != "N/A" ]]; then
+				ping_display=" ${PURPLE}[${ping_time} ms]${NC}"
+			fi
+
+			echo -e "${YELLOW}$i)${NC} $relay (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})${ping_display}"
 			i=$((i + 1))
 		done <"$FAVORITES_FILE"
 
@@ -639,7 +668,7 @@ manage_favorites() {
 		fi
 
 		if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -lt "$i" ]; then
-			local selected_relay=$(sed -n "${choice}p" "$FAVORITES_FILE")
+			local selected_relay=$(sed -n "${choice}p" "$FAVORITES_FILE" | cut -d"|" -f1)
 			connect_to_relay "$selected_relay"
 		else
 			log "Invalid selection"
@@ -652,6 +681,28 @@ manage_favorites() {
 		echo -e "${YELLOW}Available actions: add, remove, list, connect${NC}"
 		;;
 	esac
+}
+
+# Eski favori dosyası formatını güncelleyen bir fonksiyon:
+migrate_favorites_format() {
+	if [[ ! -s "$FAVORITES_FILE" ]]; then
+		return 0 # Dosya boş veya yok, bir şey yapmaya gerek yok
+	fi
+
+	local temp_file="${FAVORITES_FILE}.tmp"
+
+	while read -r line; do
+		# Eğer satır zaten | içeriyorsa, yeni formatta demektir
+		if [[ "$line" == *"|"* ]]; then
+			echo "$line" >>"$temp_file"
+		else
+			# Eski formatta, ping bilgisini ekle
+			echo "${line}|N/A" >>"$temp_file"
+		fi
+	done <"$FAVORITES_FILE"
+
+	mv "$temp_file" "$FAVORITES_FILE"
+	log "Favorites file format updated to include ping times"
 }
 
 # Function to show comprehensive connection status
@@ -818,70 +869,13 @@ test_connection() {
 	echo -e "\n${BLUE}Test complete. For comprehensive testing, visit https://mullvad.net/check/ in your browser.${NC}"
 }
 
-# Function to find the fastest relay
-# Function to show help message
-show_help() {
-	echo -e "${BLUE}===== Integrated Mullvad VPN Manager v$VERSION =====${NC}"
-	echo -e ""
-	echo -e "${CYAN}Usage:${NC} $SCRIPT_NAME [COMMAND] [ARGUMENTS]"
-	echo -e ""
-	echo -e "${YELLOW}Basic Connection Commands:${NC}"
-	echo -e "    ${GREEN}connect${NC}           Connect to Mullvad VPN using default settings"
-	echo -e "    ${GREEN}disconnect${NC}        Disconnect from Mullvad VPN"
-	echo -e "    ${GREEN}toggle${NC}            Toggle VPN connection on/off"
-	echo -e "    ${GREEN}status${NC}            Show current connection status and details"
-	echo -e "    ${GREEN}test${NC}              Test current connection for leaks/issues"
-	echo -e "    ${GREEN}help${NC}              Show this help message"
-	echo -e ""
-	echo -e "${YELLOW}Protocol Commands:${NC}"
-	echo -e "    ${GREEN}protocol${NC}          Toggle between OpenVPN and WireGuard for current location"
-	echo -e ""
-	echo -e "${YELLOW}Location Selection:${NC}"
-	echo -e "    ${GREEN}random${NC}            Switch to a random relay from all available relays"
-	echo -e "    ${GREEN}<country>${NC}         Switch to a random relay in a specific country (e.g., us, fr, jp)"
-	echo -e "    ${GREEN}<country> <city>${NC}  Switch to a random relay in a specific city (e.g., us nyc, de fra)"
-	echo -e ""
-	echo -e "${YELLOW}Advanced Selection:${NC}"
-	echo -e "    ${GREEN}fastest${NC} [country]  Find and connect to the fastest relay (optionally in a specific country)"
-	echo -e "    ${GREEN}owned${NC} [country]    Connect to a Mullvad-owned relay (not rented)"
-	echo -e "    ${GREEN}rented${NC} [country]   Connect to a rented relay infrastructure"
-	echo -e ""
-	echo -e "${YELLOW}Favorites Management:${NC}"
-	echo -e "    ${GREEN}favorite add${NC}       Add current relay to favorites"
-	echo -e "    ${GREEN}favorite remove${NC}    Remove a relay from favorites (interactive)"
-	echo -e "    ${GREEN}favorite list${NC}      List all favorite relays"
-	echo -e "    ${GREEN}favorite connect${NC}   Connect to a favorite relay (interactive)"
-	echo -e ""
-	echo -e "${YELLOW}Automatic Switching:${NC}"
-	echo -e "    ${GREEN}timer${NC} <minutes>    Switch relays automatically every X minutes"
-	echo -e "    ${GREEN}timer stop${NC}         Stop the automatic switching timer"
-	echo -e ""
-	echo -e "${YELLOW}Examples:${NC}"
-	echo -e "    ${GREEN}$SCRIPT_NAME connect${NC}           # Connect to VPN with default settings"
-	echo -e "    ${GREEN}$SCRIPT_NAME disconnect${NC}        # Disconnect from VPN"
-	echo -e "    ${GREEN}$SCRIPT_NAME toggle${NC}            # Toggle VPN connection on/off"
-	echo -e "    ${GREEN}$SCRIPT_NAME protocol${NC}          # Switch between OpenVPN/WireGuard"
-	echo -e "    ${GREEN}$SCRIPT_NAME random${NC}            # Switch to any random relay"
-	echo -e "    ${GREEN}$SCRIPT_NAME fr${NC}                # Switch to French relay"
-	echo -e "    ${GREEN}$SCRIPT_NAME us nyc${NC}            # Switch to a New York relay"
-	echo -e "    ${GREEN}$SCRIPT_NAME fastest de${NC}        # Find fastest German relay"
-	echo -e "    ${GREEN}$SCRIPT_NAME favorite add${NC}      # Add current relay to favorites"
-	echo -e "    ${GREEN}$SCRIPT_NAME timer 30${NC}          # Change relay every 30 minutes"
-	echo -e ""
-	echo -e "${YELLOW}Available Countries:${NC}"
-	echo -e "    ${CYAN}Europe:${NC} at be bg ch cz de dk ee es fi fr gb gr hr hu ie it nl no pl pt ro rs se si sk tr ua"
-	echo -e "    ${CYAN}Americas:${NC} br ca cl co mx pe us"
-	echo -e "    ${CYAN}Asia/Pacific:${NC} au hk id jp my ph sg th"
-	echo -e "    ${CYAN}Africa/ME:${NC} il ng za"
-	echo -e "    ${CYAN}Other:${NC} nz"
-}
-
-# Function to find the fastest relay with ping tests
+# Find_fastest_relay fonksiyonunu düzenleme
 find_fastest_relay() {
 	local country=$1
-	local timeout=2     # Timeout in seconds for ping
-	local iterations=3  # Number of pings per relay
-	local max_relays=10 # Maximum number of relays to test
+	local add_to_favorites=$2 # Yeni parametre: favorilere eklemek için
+	local timeout=2           # Timeout in seconds for ping
+	local iterations=3        # Number of pings per relay
+	local max_relays=10       # Maximum number of relays to test
 
 	log "Finding fastest relay..."
 	notify "🔍 MULLVAD VPN" "Finding fastest relay..." "security-medium"
@@ -936,7 +930,26 @@ find_fastest_relay() {
 
 	if [[ -n "$best_relay" ]]; then
 		echo -e "\n${GREEN}Best relay: $best_relay with average ping ${best_avg} ms${NC}"
+
+		# Bağlantıyı kur
 		connect_to_relay "$best_relay"
+
+		if [[ "$add_to_favorites" == "true" ]]; then
+			# Relay ping süresiyle birlikte kaydet
+			local relay_with_ping="${best_relay}|${best_avg}"
+
+			# Favorilerde olup olmadığını kontrol et
+			if grep -q "^${best_relay}|" "$FAVORITES_FILE"; then
+				log "Relay $best_relay is already in favorites, updating ping time"
+				# Mevcut satırı güncelle
+				sed -i "s|^${best_relay}|.*|${relay_with_ping}|" "$FAVORITES_FILE"
+				notify "ℹ️ MULLVAD VPN" "Relay ping time updated in favorites (${best_avg} ms)" "security-medium"
+			else
+				echo "$relay_with_ping" >>"$FAVORITES_FILE"
+				log "Added $best_relay to favorites (ping: ${best_avg} ms)"
+				notify "⭐ MULLVAD VPN" "Added fastest relay to favorites (${best_avg} ms)" "security-high"
+			fi
+		fi
 	else
 		echo -e "${RED}Could not find a responsive relay${NC}"
 		notify "❌ MULLVAD VPN" "No responsive relay found" "security-low"
@@ -944,10 +957,70 @@ find_fastest_relay() {
 	fi
 }
 
+# Function to show help message
+show_help() {
+	echo -e "${BLUE}===== Integrated Mullvad VPN Manager v$VERSION =====${NC}"
+	echo -e ""
+	echo -e "${CYAN}Usage:${NC} $SCRIPT_NAME [COMMAND] [ARGUMENTS]"
+	echo -e ""
+	echo -e "${YELLOW}Basic Connection Commands:${NC}"
+	echo -e "    ${GREEN}connect${NC}           Connect to Mullvad VPN using default settings"
+	echo -e "    ${GREEN}disconnect${NC}        Disconnect from Mullvad VPN"
+	echo -e "    ${GREEN}toggle${NC}            Toggle VPN connection on/off"
+	echo -e "    ${GREEN}status${NC}            Show current connection status and details"
+	echo -e "    ${GREEN}test${NC}              Test current connection for leaks/issues"
+	echo -e "    ${GREEN}help${NC}              Show this help message"
+	echo -e ""
+	echo -e "${YELLOW}Protocol Commands:${NC}"
+	echo -e "    ${GREEN}protocol${NC}          Toggle between OpenVPN and WireGuard for current location"
+	echo -e ""
+	echo -e "${YELLOW}Location Selection:${NC}"
+	echo -e "    ${GREEN}random${NC}            Switch to a random relay from all available relays"
+	echo -e "    ${GREEN}<country>${NC}         Switch to a random relay in a specific country (e.g., us, fr, jp)"
+	echo -e "    ${GREEN}<country> <city>${NC}  Switch to a random relay in a specific city (e.g., us nyc, de fra)"
+	echo -e ""
+	echo -e "${YELLOW}Advanced Selection:${NC}"
+	echo -e "    ${GREEN}fastest${NC} [country]            Find and connect to the fastest relay (optionally in a specific country)"
+	echo -e "    ${GREEN}fastest-fav${NC} [country]       Find fastest relay, connect and add to favorites"
+	echo -e "    ${GREEN}owned${NC} [country]              Connect to a Mullvad-owned relay (not rented)"
+	echo -e "    ${GREEN}rented${NC} [country]             Connect to a rented relay infrastructure"
+	echo -e ""
+	echo -e "${YELLOW}Favorites Management:${NC}"
+	echo -e "    ${GREEN}favorite add${NC}       Add current relay to favorites"
+	echo -e "    ${GREEN}favorite remove${NC}    Remove a relay from favorites (interactive)"
+	echo -e "    ${GREEN}favorite list${NC}      List all favorite relays"
+	echo -e "    ${GREEN}favorite connect${NC}   Connect to a favorite relay (interactive)"
+	echo -e ""
+	echo -e "${YELLOW}Automatic Switching:${NC}"
+	echo -e "    ${GREEN}timer${NC} <minutes>    Switch relays automatically every X minutes"
+	echo -e "    ${GREEN}timer stop${NC}         Stop the automatic switching timer"
+	echo -e ""
+	echo -e "${YELLOW}Examples:${NC}"
+	echo -e "    ${GREEN}$SCRIPT_NAME connect${NC}           # Connect to VPN with default settings"
+	echo -e "    ${GREEN}$SCRIPT_NAME disconnect${NC}        # Disconnect from VPN"
+	echo -e "    ${GREEN}$SCRIPT_NAME toggle${NC}            # Toggle VPN connection on/off"
+	echo -e "    ${GREEN}$SCRIPT_NAME protocol${NC}          # Switch between OpenVPN/WireGuard"
+	echo -e "    ${GREEN}$SCRIPT_NAME random${NC}            # Switch to any random relay"
+	echo -e "    ${GREEN}$SCRIPT_NAME fr${NC}                # Switch to French relay"
+	echo -e "    ${GREEN}$SCRIPT_NAME us nyc${NC}            # Switch to a New York relay"
+	echo -e "    ${GREEN}$SCRIPT_NAME fastest de${NC}        # Find fastest German relay"
+	echo -e "    ${GREEN}$SCRIPT_NAME fastest-fav${NC}       # Find fastest relay and add to favorites"
+	echo -e "    ${GREEN}$SCRIPT_NAME favorite add${NC}      # Add current relay to favorites"
+	echo -e "    ${GREEN}$SCRIPT_NAME timer 30${NC}          # Change relay every 30 minutes"
+	echo -e ""
+	echo -e "${YELLOW}Available Countries:${NC}"
+	echo -e "    ${CYAN}Europe:${NC} at be bg ch cz de dk ee es fi fr gb gr hr hu ie it nl no pl pt ro rs se si sk tr ua"
+	echo -e "    ${CYAN}Americas:${NC} br ca cl co mx pe us"
+	echo -e "    ${CYAN}Asia/Pacific:${NC} au hk id jp my ph sg th"
+	echo -e "    ${CYAN}Africa/ME:${NC} il ng za"
+	echo -e "    ${CYAN}Other:${NC} nz"
+}
+
 # Main function to handle all commands
 main() {
 	# Check requirements first
 	check_requirements
+	migrate_favorites_format
 
 	# Process command line arguments
 	case "${1:-help}" in
@@ -1007,7 +1080,10 @@ main() {
 
 	# Advanced selection
 	"fastest")
-		find_fastest_relay "$2"
+		find_fastest_relay "$2" "false"
+		;;
+	"fastest-fav")
+		find_fastest_relay "$2" "true"
 		;;
 	"owned")
 		relay=$(get_random_relay "$2" "" "owned")
