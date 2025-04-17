@@ -335,7 +335,7 @@ load_config() {
 
 	# Uygulamaları tanımla
 	apps=()
-	apps["whatsapp"]="workspace=9,fullscreen=true,enabled=false,type=brave"
+	#apps["whatsapp"]="workspace=9,fullscreen=true,enabled=true,type=brave"
 	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
 	apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
@@ -613,7 +613,7 @@ launch_brave_profile() {
 	# da çalıştırılacaksa, şimdi workspace'i değiştirme
 	if [[ "$profile" == "Whats" && "$workspace" == "9" && "$RUN_APPS" == "true" ]]; then
 		log "INFO" "BRAVE" "$profile profili için workspace değişikliği erteleniyor" "false"
-		
+
 		# Profil zaten çalışıyorsa yeniden başlatma
 		if is_app_running "$class" "brave"; then
 			log "WARNING" "BRAVE" "$profile profili zaten çalışıyor, yeniden başlatılmıyor" "false"
@@ -639,10 +639,10 @@ launch_brave_profile() {
 		"$PROFILE_BRAVE" "$profile" --class="$class" --title="$title" --restore-last-session &
 		local pid=$!
 		track_process "$profile" "$pid"
-		
+
 		log "SUCCESS" "BRAVE" "$profile profili başlatıldı, workspace'e geçiş ertelendi" "false"
 		return 0
-  fi
+	fi
 
 	# Workspace'e geç
 	switch_workspace "$workspace"
@@ -816,17 +816,17 @@ start_applications() {
 
 	# Önce workspace 9 olmayan uygulamaları başlat
 	local workspace9_apps=()
-	
+
 	for app_name in "${!apps[@]}"; do
 		local app_data="${apps[$app_name]}"
 		local workspace=$(echo "$app_data" | grep -o "workspace=[^,]*" | cut -d= -f2)
 		local app_type=$(echo "$app_data" | grep -o "type=[^,]*" | cut -d= -f2)
-		
+
 		# Workspace 9 olan uygulamaları sonraya bırak
 		if [[ "$workspace" == "9" ]]; then
 			workspace9_apps+=("$app_name")
 			continue
-		}
+		fi
 
 		if [[ "$app_type" == "brave" ]]; then
 			launch_brave_app "$app_name"
@@ -839,18 +839,18 @@ start_applications() {
 			log "WARNING" "APP" "Bilinmeyen uygulama türü: $app_type, $app_name başlatılmıyor" "false"
 		fi
 	done
-	
+
 	# Şimdi workspace 9'a ait uygulamaları başlat (eğer varsa)
 	if [[ ${#workspace9_apps[@]} -gt 0 ]]; then
 		# Önce workspace 9'a geç
 		switch_workspace "9"
 		sleep 1
-		
+
 		# Workspace 9'daki tüm uygulamaları başlat
 		for app_name in "${workspace9_apps[@]}"; do
 			local app_data="${apps[$app_name]}"
 			local app_type=$(echo "$app_data" | grep -o "type=[^,]*" | cut -d= -f2)
-			
+
 			if [[ "$app_type" == "brave" ]]; then
 				launch_brave_app "$app_name"
 			elif [[ "$app_type" == "semsumo" ]]; then
@@ -1031,9 +1031,6 @@ main() {
 
 	# Yapılandırma dosyasını yükle
 	load_config
-
-	# Hyprland kontrolü
-	check_hyprland
 
 	# Terminal oturumlarını başlat
 	if [[ "$RUN_TERMINALS" == "true" ]]; then
