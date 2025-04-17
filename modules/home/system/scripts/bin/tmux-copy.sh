@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #######################################
 #
-# Version: 2.0.0
-# Date: 2025-04-10
-# Original Authors: Kenan Pelit and original speed script author
+# Version: 2.1.0
+# Date: 2025-04-17
+# Original Authors: Kenan Pelit
 # Description: Enhanced Tmux and Clipboard Manager
 #
 # Bu script üç temel modda çalışır:
@@ -54,23 +54,52 @@ MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# FZF tema yapılandırması - tüm modlarda tutarlı görünüm için
+setup_fzf_theme() {
+	local prompt_text="${1:-FZF}"
+	local header_text="${2:-CTRL-R: Yenile | ESC: Çık}"
+
+	export FZF_DEFAULT_OPTS="\
+        -e -i \
+        --info=default \
+        --layout=reverse \
+        --margin=1 \
+        --padding=1 \
+        --ansi \
+        --prompt='$prompt_text: ' \
+        --pointer='❯' \
+        --header='$header_text' \
+        --color='bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796,fg:#cad3f5' \
+        --color='header:#8aadf4,info:#c6a0f6,pointer:#f4dbd6,marker:#f4dbd6,prompt:#c6a0f6' \
+        --bind 'ctrl-j:preview-down,ctrl-k:preview-up' \
+        --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up' \
+        --bind 'ctrl-/:change-preview-window(hidden|)' \
+        --color='pointer:magenta' \
+        --tiebreak=index"
+}
+
 # Kullanım bilgisi
 usage() {
-	echo -e "${BLUE}Enhanced Tmux ve Clipboard Yöneticisi${NC}"
-	echo
-	echo -e "Kullanım: $0 ${GREEN}[-b|-c|-s|-h]${NC}"
-	echo -e "Seçenekler:"
-	echo -e "  ${GREEN}-b${NC}: Buffer yönetimi için tmux modu"
-	echo -e "  ${GREEN}-c${NC}: Clipboard yönetimi için cliphist modu"
-	echo -e "  ${GREEN}-s${NC}: Hızlı komut çalıştırma modu"
-	echo -e "  ${GREEN}-h${NC}: Bu yardım mesajını gösterir"
-	echo
-	echo -e "${YELLOW}Kısayollar:${NC}"
-	echo -e "  CTRL-R: Listeyi yenile"
-	echo -e "  CTRL-D: Seçili öğeyi sil (sadece clipboard modu)"
-	echo -e "  CTRL-Y: Seçili öğeyi kopyala"
-	echo -e "  Enter: Seç ve işlem yap"
-	echo -e "  ESC: Çıkış"
+	cat <<EOF
+$(echo -e "${BLUE}Enhanced Tmux ve Clipboard Yöneticisi v2.1.0${NC}")
+
+$(echo -e "Kullanım: $0 ${GREEN}[-b|-c|-s|-h]${NC}")
+$(echo -e "Seçenekler:")
+$(echo -e "  ${GREEN}-b${NC}: Buffer yönetimi için tmux modu")
+$(echo -e "  ${GREEN}-c${NC}: Clipboard yönetimi için cliphist modu")
+$(echo -e "  ${GREEN}-s${NC}: Hızlı komut çalıştırma modu")
+$(echo -e "  ${GREEN}-h${NC}: Bu yardım mesajını gösterir")
+
+$(echo -e "${YELLOW}Kısayollar:${NC}")
+$(echo -e "  CTRL-R: Listeyi yenile")
+$(echo -e "  CTRL-D: Seçili öğeyi sil (sadece clipboard modu)")
+$(echo -e "  CTRL-Y: Seçili öğeyi kopyala")
+$(echo -e "  CTRL-J/K: Önizlemede aşağı/yukarı")
+$(echo -e "  CTRL-D/U: Önizlemede sayfa aşağı/yukarı")
+$(echo -e "  CTRL-/: Önizleme penceresini aç/kapat")
+$(echo -e "  Enter: Seç ve işlem yap")
+$(echo -e "  ESC: Çıkış")
+EOF
 	exit 1
 }
 
@@ -114,8 +143,9 @@ check_requirements() {
 			error "wl-clipboard kurulu değil!"
 			req_failed=1
 		fi
+		# Görüntü önizleme opsiyonel
 		if ! command -v chafa &>/dev/null; then
-			error "chafa kurulu değil - görüntü önizleme devre dışı!"
+			info "Not: chafa kurulu değil - görüntü önizleme devre dışı!"
 		fi
 		;;
 	"speed")
@@ -130,6 +160,27 @@ check_requirements() {
 	return $req_failed
 }
 
+# Boş buffer kontrolü için grafik
+show_empty_buffer_art() {
+	cat <<-'EMPTYART'
+		        
+		   ┌────────────────────────────────────────────────────┐
+		   │                                                    │
+		   │   ¯\_(ツ)_/¯                                       │
+		   │                                                    │
+		   │   Tmux buffer'ım boş!                              │
+		   │                                                    │
+		   │   Önce bir şeyler kopyalasanız iyi olur yoksa      │
+		   │   burada birlikte bekleyeceğiz...                  │
+		   │                                                    │
+		   │   İpucu: Tmux'ta [prefix]+[ ile copy mode'a girin  │
+		   │   ve birşeyler kopyalayın                          │
+		   │                                                    │
+		   └────────────────────────────────────────────────────┘
+		        
+	EMPTYART
+}
+
 # Buffer modu fonksiyonu
 handle_buffer_mode() {
 	# Gereksinimler kontrolü
@@ -139,45 +190,21 @@ handle_buffer_mode() {
 
 	# Buffer listesi boş mu kontrolü
 	if ! tmux list-buffers &>/dev/null || [[ -z "$(tmux list-buffers 2>/dev/null)" ]]; then
-		cat <<-'EMPTYART'
-			        
-			   ┌────────────────────────────────────────────────────┐
-			   │                                                    │
-			   │   ¯\_(ツ)_/¯                                       │
-			   │                                                    │
-			   │   Tmux buffer'ım boş!                              │
-			   │                                                    │
-			   │   Önce bir şeyler kopyalasanız iyi olur yoksa      │
-			   │   burada birlikte bekleyeceğiz...                  │
-			   │                                                    │
-			   │   İpucu: Tmux'ta [prefix]+[ ile copy mode'a girin  │
-			   │   ve birşeyler kopyalayın                          │
-			   │                                                    │
-			   └────────────────────────────────────────────────────┘
-			        
-		EMPTYART
+		show_empty_buffer_art
 		exit 1
 	fi
 
+	# FZF tema ayarı
+	setup_fzf_theme "Buffer" "Buffer Seçimi | CTRL-R: Yenile | CTRL-Y: Kopyala | ESC: Çık"
+
 	info "Buffer modu başlatılıyor..."
 
-	# Buffer önizleme fonksiyonu
-	preview_buffer() {
-		local buffer_name="$1"
-		if [[ -n "$buffer_name" ]]; then
-			tmux show-buffer -b "$buffer_name"
-		else
-			echo "Geçersiz buffer adı"
-		fi
-	}
-
-	# Buffer listesi ile fzf
+	# FZF için buffer listesi
 	selected_buffer=$(tmux list-buffers -F '#{buffer_name}:#{buffer_sample}' |
 		fzf --preview 'buffer_name=$(echo {} | cut -d ":" -f1); tmux show-buffer -b "$buffer_name"' \
 			--preview-window 'right:60%:wrap' \
-			--header "Buffer Seçimi | CTRL-R: Yenile | CTRL-Y: Kopyala | ESC: Çık" \
 			--bind "ctrl-r:reload(tmux list-buffers -F '#{buffer_name}:#{buffer_sample}')" \
-			--bind "ctrl-y:execute-silent(buffer_name=\$(echo {} | cut -d ':' -f1); tmux show-buffer -b \"\$buffer_name\" | wl-copy)" \
+			--bind "ctrl-y:execute-silent(buffer_name=\$(echo {} | cut -d ':' -f1); tmux show-buffer -b \"\$buffer_name\" | wl-copy && echo 'Kopyalandı: \$buffer_name' >&2)" \
 			--delimiter ':')
 
 	# Seçim yapıldı mı kontrolü
@@ -199,6 +226,9 @@ handle_cliphist_mode() {
 		exit 1
 	fi
 
+	# FZF tema ayarı
+	setup_fzf_theme "Clipboard" "Clipboard Geçmişi | CTRL-R: Yenile | CTRL-D: Sil | CTRL-Y: Kopyala | Enter: Seç"
+
 	info "Clipboard modu başlatılıyor..."
 
 	# Önizleme betiği oluştur
@@ -210,7 +240,7 @@ handle_cliphist_mode() {
 #!/usr/bin/env bash
 set -euo pipefail
 
-preview_limit=1000
+preview_limit=5000
 
 # Terminal ekranını temizle
 clear
@@ -240,9 +270,9 @@ fi
 
 # File çıktısını al
 file_output=$(file -b "$temp_file")
-echo "Dosya türü: $file_output"
-echo "Boyut: $(du -h "$temp_file" | cut -f1)"
-echo "İçerik:"
+echo -e "\033[1;34mDosya türü:\033[0m $file_output"
+echo -e "\033[1;34mBoyut:\033[0m $(du -h "$temp_file" | cut -f1)"
+echo -e "\033[1;34mİçerik:\033[0m"
 echo
 
 # PNG/JPEG kontrolü
@@ -255,7 +285,7 @@ if [[ "$file_output" == *"PNG"* ]] || [[ "$file_output" == *"JPEG"* ]] || [[ "$f
 else
     head -c "$preview_limit" "$temp_file"
     if [ "$(wc -c < "$temp_file")" -gt "$preview_limit" ]; then
-        echo -e "\n... (devamı var)"
+        echo -e "\n\033[0;33m... (devamı var)\033[0m"
     fi
 fi
 
@@ -269,8 +299,7 @@ EOL
 			--preview-window "right:60%:wrap" \
 			--bind "ctrl-r:reload(cliphist list)" \
 			--bind "ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)" \
-			--bind "ctrl-y:execute-silent(echo {} | cliphist decode | wl-copy)" \
-			--header 'Clipboard Geçmişi | CTRL-R: Yenile | CTRL-D: Sil | CTRL-Y: Kopyala | Enter: Seç')
+			--bind "ctrl-y:execute-silent(echo {} | cliphist decode | wl-copy && echo 'İçerik kopyalandı' >&2)")
 
 	# Geçici dosyaları temizle
 	rm -f "$PREVIEW_SCRIPT"
@@ -306,6 +335,14 @@ handle_speed_mode() {
 	ssh_count=$(find "$DIR" -type f -name '_ssh*' 2>/dev/null | wc -l)
 	tmux_count=$(find "$DIR" -type f -name '_tmux*' 2>/dev/null | wc -l)
 
+	# FZF tema ayarı - speed mode için özel header
+	setup_fzf_theme "Speed" "Toplam: $total | SSH: $ssh_count | TMUX: $tmux_count | ESC ile çık, ENTER ile çalıştır"
+
+	# Speed modu için ek ayarlar
+	export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
+        --delimiter=_ \
+        --with-nth=2.."
+
 	# Sık kullanılanları al
 	get_frequent() {
 		if [ -f "$CACHE_FILE" ] && [ -s "$CACHE_FILE" ]; then
@@ -318,24 +355,6 @@ handle_speed_mode() {
 				sed 's/^/⭐ /'
 		fi
 	}
-
-	# FZF için özel ayarlar
-	export FZF_DEFAULT_OPTS="\
-        -e -i \
-        --delimiter=_ \
-        --with-nth=2.. \
-        --info=default \
-        --layout=reverse \
-        --margin=1 \
-        --padding=1 \
-        --ansi \
-        --prompt='Speed: ' \
-        --pointer='❯' \
-        --header='Toplam: $total | SSH: $ssh_count | TMUX: $tmux_count | ESC ile çık, ENTER ile çalıştır' \
-        --color='header:blue' \
-        --color='prompt:cyan' \
-        --color='pointer:magenta' \
-        --tiebreak=index"
 
 	# Ana komut
 	SELECTED="$(
