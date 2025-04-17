@@ -36,9 +36,6 @@ let
   gitgo = pkgs.writeShellScriptBin "gitgo" (
     builtins.readFile ./bin/gitgo.sh
   );
-  gitsumo = pkgs.writeShellScriptBin "gitsumo" (
-    builtins.readFile ./bin/gitsumo.sh
-  );
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
   );
@@ -395,7 +392,6 @@ in {
     crypto-manager
     dotfiles-manager
     gitgo
-    gitsumo
     hypr-airplane_mode
     hypr-blue-gammastep-manager
     hypr-blue-hyprsunset-manager
