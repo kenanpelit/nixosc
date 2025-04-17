@@ -27,17 +27,17 @@
   "sessions": {
     "kkenp": {
       "command": "kitty",
-      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
+      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tm"],
       "vpn": "bypass"
     },
     "mkenp": {
       "command": "kitty",
-      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tmux_kenp"],
+      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tm"],
       "vpn": "secure"
     },
     "wkenp": {
       "command": "wezterm",
-      "args": ["start", "--class", "TmuxKenp", "-e", "tmux_kenp"],
+      "args": ["start", "--class", "TmuxKenp", "-e", "tm"],
       "vpn": "bypass"
     },
     "wezterm": {

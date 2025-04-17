@@ -186,12 +186,6 @@ let
   tm = pkgs.writeShellScriptBin "tm" (
     builtins.readFile ./bin/tm.sh
   );
-  tmux_kenp = pkgs.writeShellScriptBin "tmux_kenp" (
-    builtins.readFile ./bin/tmux_kenp.sh
-  );
-  tmx = pkgs.writeShellScriptBin "tmx" (
-    builtins.readFile ./bin/tmx.sh
-  );
   toggle_blur = pkgs.writeShellScriptBin "toggle_blur" (
     builtins.readFile ./bin/toggle_blur.sh
   );
@@ -328,8 +322,6 @@ in {
     tarchiver
     ter
     tm
-    tmux_kenp
-    tmx
     toggle_blur
     toggle_float
     toggle_oppacity
