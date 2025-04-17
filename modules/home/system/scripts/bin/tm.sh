@@ -469,7 +469,7 @@ kenp_session_mode() {
 		fi
 
 		# Create layout directly with built-in function
-		kenp_create_layout "$session_name"
+		#kenp_create_layout "$session_name"
 
 		# Attach to the session
 		info "Yeni oluşturulan '$session_name' oturumuna bağlanılıyor..."
@@ -1431,7 +1431,7 @@ main() {
 	local module="${1:-}"
 	shift 2>/dev/null || true
 
-	# Hiçbir parametre verilmezse doğrudan kenp_session_mode çalıştır
+	# Hiçbir parametre verilmezse doğrudan kenp_session_mode çalıştır ve çık
 	if [ -z "$module" ]; then
 		kenp_session_mode
 		return $?
