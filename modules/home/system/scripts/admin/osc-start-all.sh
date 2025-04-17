@@ -609,6 +609,41 @@ launch_brave_profile() {
 		return 0
 	fi
 
+	# Eğer Whats profili ise ve workspace 9'a atanmışsa, ve web uygulamaları
+	# da çalıştırılacaksa, şimdi workspace'i değiştirme
+	if [[ "$profile" == "Whats" && "$workspace" == "9" && "$RUN_APPS" == "true" ]]; then
+		log "INFO" "BRAVE" "$profile profili için workspace değişikliği erteleniyor" "false"
+		
+		# Profil zaten çalışıyorsa yeniden başlatma
+		if is_app_running "$class" "brave"; then
+			log "WARNING" "BRAVE" "$profile profili zaten çalışıyor, yeniden başlatılmıyor" "false"
+			return 0
+		fi
+
+		# PROFILE_BRAVE komutunu kontrol et
+		if ! command -v "$PROFILE_BRAVE" &>/dev/null; then
+			log "ERROR" "BRAVE" "$PROFILE_BRAVE komutu bulunamadı" "true"
+			return 1
+		fi
+
+		log "INFO" "BRAVE" "$profile profili hazırlanıyor, ancak workspace'e geçiş daha sonra yapılacak" "true"
+		show_progress "$current_step" "$total_steps" "Brave: $profile (ertelendi)"
+
+		# Kuru çalıştırma modunda işlem yapma
+		if [[ "$DRY_RUN" == "true" ]]; then
+			log "DEBUG" "BRAVE" "Kuru çalıştırma: $profile profili daha sonra başlatılacaktı" "false"
+			return 0
+		fi
+
+		# Brave profilini başlat ancak workspace'e geçme
+		"$PROFILE_BRAVE" "$profile" --class="$class" --title="$title" --restore-last-session &
+		local pid=$!
+		track_process "$profile" "$pid"
+		
+		log "SUCCESS" "BRAVE" "$profile profili başlatıldı, workspace'e geçiş ertelendi" "false"
+		return 0
+	}
+
 	# Workspace'e geç
 	switch_workspace "$workspace"
 
@@ -743,8 +778,8 @@ start_brave_profiles() {
 		return 0
 	fi
 
-	# İstenen sırada profil isimleri
-	local profile_order=("Kenp" "Ai" "CompecTA")
+	# İstenen sırada profil isimleri - Whats profili en sona alındı
+	local profile_order=("Kenp" "Ai" "CompecTA" "Whats")
 
 	# Belirtilen sırada profilleri başlat
 	for profile_name in "${profile_order[@]}"; do
@@ -775,42 +810,58 @@ start_brave_profiles() {
 	log "SUCCESS" "BRAVE" "Tüm Brave profilleri başlatıldı" "true"
 }
 
-# Uygulamaları başlat (Semsumo ve Brave karışık)
+# Uygulamaları, önce workspace 9 olmayanları başlatacak şekilde düzenle
 start_applications() {
 	log "INFO" "APP" "Uygulamalar başlatılıyor..." "true"
 
-	# Web uygulamalarını başlat
+	# Önce workspace 9 olmayan uygulamaları başlat
+	local workspace9_apps=()
+	
 	for app_name in "${!apps[@]}"; do
 		local app_data="${apps[$app_name]}"
+		local workspace=$(echo "$app_data" | grep -o "workspace=[^,]*" | cut -d= -f2)
 		local app_type=$(echo "$app_data" | grep -o "type=[^,]*" | cut -d= -f2)
+		
+		# Workspace 9 olan uygulamaları sonraya bırak
+		if [[ "$workspace" == "9" ]]; then
+			workspace9_apps+=("$app_name")
+			continue
+		}
 
 		if [[ "$app_type" == "brave" ]]; then
 			launch_brave_app "$app_name"
 		elif [[ "$app_type" == "semsumo" ]]; then
-			# Semsumo uygulamasını workspace ile ilişkilendirmek için özel işlem
-			local workspace=$(echo "$app_data" | grep -o "workspace=[^,]*" | cut -d= -f2)
-			if [[ -n "$workspace" ]]; then
-				switch_workspace "$workspace"
-				sleep 1
-			fi
+			# Workspace'e geç
+			switch_workspace "$workspace"
+			sleep 1
 			launch_semsumo_app "$app_name"
 		else
 			log "WARNING" "APP" "Bilinmeyen uygulama türü: $app_type, $app_name başlatılmıyor" "false"
 		fi
 	done
-
-	log "SUCCESS" "APP" "Tüm uygulamalar başlatıldı" "true"
-}
-
-# Hyprland durumunu kontrol et
-check_hyprland() {
-	if ! command -v hyprctl >/dev/null; then
-		log "WARNING" "SYSTEM" "Hyprctl bulunamadı, pencere yönetimi işlevleri sınırlı olabilir" "true"
-		return 1
+	
+	# Şimdi workspace 9'a ait uygulamaları başlat (eğer varsa)
+	if [[ ${#workspace9_apps[@]} -gt 0 ]]; then
+		# Önce workspace 9'a geç
+		switch_workspace "9"
+		sleep 1
+		
+		# Workspace 9'daki tüm uygulamaları başlat
+		for app_name in "${workspace9_apps[@]}"; do
+			local app_data="${apps[$app_name]}"
+			local app_type=$(echo "$app_data" | grep -o "type=[^,]*" | cut -d= -f2)
+			
+			if [[ "$app_type" == "brave" ]]; then
+				launch_brave_app "$app_name"
+			elif [[ "$app_type" == "semsumo" ]]; then
+				launch_semsumo_app "$app_name"
+			else
+				log "WARNING" "APP" "Bilinmeyen uygulama türü: $app_type, $app_name başlatılmıyor" "false"
+			fi
+		done
 	fi
 
-	log "INFO" "SYSTEM" "Hyprland WM algılandı, pencere yönetimi etkinleştirildi" "false"
-	return 0
+	log "SUCCESS" "APP" "Tüm uygulamalar başlatıldı" "true"
 }
 
 # Komut satırı parametrelerini işleme
