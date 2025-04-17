@@ -12,6 +12,12 @@ let
   bulk_rename = pkgs.writeShellScriptBin "bulk_rename" (
     builtins.readFile ./bin/bulk_rename.sh
   );
+  check_images = pkgs.writeShellScriptBin "check_images" (
+    builtins.readFile ./bin/check_images.sh
+  );
+  chroot_manager = pkgs.writeShellScriptBin "chroot_manager" (
+    builtins.readFile ./bin/chroot_manager.sh
+  );
   clearam = pkgs.writeShellScriptBin "clearam" (
     builtins.readFile ./bin/clearam.sh
   );
@@ -21,8 +27,17 @@ let
   container-engine-manager = pkgs.writeShellScriptBin "container-engine-manager" (
     builtins.readFile ./bin/container-engine-manager.sh
   );
-  gnome-start-all = pkgs.writeShellScriptBin "gnome-start-all" (
-    builtins.readFile ./bin/gnome-start-all.sh
+  crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
+    builtins.readFile ./bin/crypto-manager.sh
+  );
+  dotfiles-manager = pkgs.writeShellScriptBin "dotfiles-manager" (
+    builtins.readFile ./bin/dotfiles-manager.sh
+  );
+  gitgo = pkgs.writeShellScriptBin "gitgo" (
+    builtins.readFile ./bin/gitgo.sh
+  );
+  gitsumo = pkgs.writeShellScriptBin "gitsumo" (
+    builtins.readFile ./bin/gitsumo.sh
   );
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
@@ -60,12 +75,6 @@ let
   hypr-start-semsumo-all = pkgs.writeShellScriptBin "hypr-start-semsumo-all" (
     builtins.readFile ./bin/hypr-start-semsumo-all.sh
   );
-  hypr-start-semsumo-light = pkgs.writeShellScriptBin "hypr-start-semsumo-light" (
-    builtins.readFile ./bin/hypr-start-semsumo-light.sh
-  );
-  hypr-start-update = pkgs.writeShellScriptBin "hypr-start-update" (
-    builtins.readFile ./bin/hypr-start-update.sh
-  );
   hypr-startup-manager = pkgs.writeShellScriptBin "hypr-startup-manager" (
     builtins.readFile ./bin/hypr-startup-manager.sh
   );
@@ -81,6 +90,9 @@ let
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
   );
+  m2w2 = pkgs.writeShellScriptBin "m2w2" (
+    builtins.readFile ./bin/m2w2.sh
+  );
   monitor_brightness = pkgs.writeShellScriptBin "monitor_brightness" (
     builtins.readFile ./bin/monitor_brightness.sh
   );
@@ -95,6 +107,99 @@ let
   );
   ntodo = pkgs.writeShellScriptBin "ntodo" (
     builtins.readFile ./bin/ntodo.sh
+  );
+  osc-assh-manager = pkgs.writeShellScriptBin "osc-assh-manager" (
+    builtins.readFile ./bin/osc-assh-manager.sh
+  );
+  osc-backup = pkgs.writeShellScriptBin "osc-backup" (
+    builtins.readFile ./bin/osc-backup.sh
+  );
+  osc-blocklist = pkgs.writeShellScriptBin "osc-blocklist" (
+    builtins.readFile ./bin/osc-blocklist.sh
+  );
+  osc-cleaup-grub = pkgs.writeShellScriptBin "osc-cleaup-grub" (
+    builtins.readFile ./bin/osc-cleaup-grub.sh
+  );
+  osc-generate_nix = pkgs.writeShellScriptBin "osc-generate_nix" (
+    builtins.readFile ./bin/osc-generate_nix.sh
+  );
+  osc-gist = pkgs.writeShellScriptBin "osc-gist" (
+    builtins.readFile ./bin/osc-gist.sh
+  );
+  osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
+    builtins.readFile ./bin/osc-gpg_unlock.sh
+  );
+  osc-mullvad = pkgs.writeShellScriptBin "osc-mullvad" (
+    builtins.readFile ./bin/osc-mullvad.sh
+  );
+  osc-nix-cleanup-script = pkgs.writeShellScriptBin "osc-nix-cleanup-script" (
+    builtins.readFile ./bin/osc-nix-cleanup-script.sh
+  );
+  osc-pass-tool = pkgs.writeShellScriptBin "osc-pass-tool" (
+    builtins.readFile ./bin/osc-pass-tool.sh
+  );
+  osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
+    builtins.readFile ./bin/osc-profiles.sh
+  );
+  osc-radio = pkgs.writeShellScriptBin "osc-radio" (
+    builtins.readFile ./bin/osc-radio.sh
+  );
+  osc-rsync_backup = pkgs.writeShellScriptBin "osc-rsync_backup" (
+    builtins.readFile ./bin/osc-rsync_backup.sh
+  );
+  osc-rsync = pkgs.writeShellScriptBin "osc-rsync" (
+    builtins.readFile ./bin/osc-rsync.sh
+  );
+  osc-scrcpy = pkgs.writeShellScriptBin "osc-scrcpy" (
+    builtins.readFile ./bin/osc-scrcpy.sh
+  );
+  osc-soundctl = pkgs.writeShellScriptBin "osc-soundctl" (
+    builtins.readFile ./bin/osc-soundctl.sh
+  );
+  osc-spotify = pkgs.writeShellScriptBin "osc-spotify" (
+    builtins.readFile ./bin/osc-spotify.sh
+  );
+  osc-ssh-hosts-backup-script = pkgs.writeShellScriptBin "osc-ssh-hosts-backup-script" (
+    builtins.readFile ./bin/osc-ssh-hosts-backup-script.sh
+  );
+  osc-ssh-passwordless = pkgs.writeShellScriptBin "osc-ssh-passwordless" (
+    builtins.readFile ./bin/osc-ssh-passwordless.sh
+  );
+  osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
+    builtins.readFile ./bin/osc-ssh-session-manager.sh
+  );
+  osc-start-all = pkgs.writeShellScriptBin "osc-start-all" (
+    builtins.readFile ./bin/osc-start-all.sh
+  );
+  osc-start-brave = pkgs.writeShellScriptBin "osc-start-brave" (
+    builtins.readFile ./bin/osc-start-brave.sh
+  );
+  osc-start-zen = pkgs.writeShellScriptBin "osc-start-zen" (
+    builtins.readFile ./bin/osc-start-zen.sh
+  );
+  osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
+    builtins.readFile ./bin/osc-subliminal.sh
+  );
+  osc-symlink_manager = pkgs.writeShellScriptBin "osc-symlink_manager" (
+    builtins.readFile ./bin/osc-symlink_manager.sh
+  );
+  osc-sync = pkgs.writeShellScriptBin "osc-sync" (
+    builtins.readFile ./bin/osc-sync.sh
+  );
+  osc-test = pkgs.writeShellScriptBin "osc-test" (
+    builtins.readFile ./bin/osc-test.sh
+  );
+  osc-tv-splitter = pkgs.writeShellScriptBin "osc-tv-splitter" (
+    builtins.readFile ./bin/osc-tv-splitter.sh
+  );
+  osc-ulauncher_ext = pkgs.writeShellScriptBin "osc-ulauncher_ext" (
+    builtins.readFile ./bin/osc-ulauncher_ext.sh
+  );
+  osc-video-converter = pkgs.writeShellScriptBin "osc-video-converter" (
+    builtins.readFile ./bin/osc-video-converter.sh
+  );
+  osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
+    builtins.readFile ./bin/osc-vradio.sh
   );
   pdfkes = pkgs.writeShellScriptBin "pdfkes" (
     builtins.readFile ./bin/pdfkes.sh
@@ -159,14 +264,14 @@ let
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
   );
+  semsumo = pkgs.writeShellScriptBin "semsumo" (
+    builtins.readFile ./bin/semsumo.sh
+  );
   sil_ayni_mp4 = pkgs.writeShellScriptBin "sil_ayni_mp4" (
     builtins.readFile ./bin/sil_ayni_mp4.sh
   );
   smart-suspend = pkgs.writeShellScriptBin "smart-suspend" (
     builtins.readFile ./bin/smart-suspend.sh
-  );
-  snippets = pkgs.writeShellScriptBin "snippets" (
-    builtins.readFile ./bin/snippets.sh
   );
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
@@ -176,6 +281,15 @@ let
   );
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
+  );
+  svmarch = pkgs.writeShellScriptBin "svmarch" (
+    builtins.readFile ./bin/svmarch.sh
+  );
+  svmnixos = pkgs.writeShellScriptBin "svmnixos" (
+    builtins.readFile ./bin/svmnixos.sh
+  );
+  svmubuntu = pkgs.writeShellScriptBin "svmubuntu" (
+    builtins.readFile ./bin/svmubuntu.sh
   );
   tarchiver = pkgs.writeShellScriptBin "tarchiver" (
     builtins.readFile ./bin/tarchiver.sh
@@ -204,11 +318,14 @@ let
   tty_config = pkgs.writeShellScriptBin "tty_config" (
     builtins.readFile ./bin/tty_config.sh
   );
-  turbo-boost-setup = pkgs.writeShellScriptBin "turbo-boost-setup" (
-    builtins.readFile ./bin/turbo-boost-setup.sh
-  );
   vir = pkgs.writeShellScriptBin "vir" (
     builtins.readFile ./bin/vir.sh
+  );
+  vmarch = pkgs.writeShellScriptBin "vmarch" (
+    builtins.readFile ./bin/vmarch.sh
+  );
+  vmnixos = pkgs.writeShellScriptBin "vmnixos" (
+    builtins.readFile ./bin/vmnixos.sh
   );
   vm-start = pkgs.writeShellScriptBin "vm-start" (
     builtins.readFile ./bin/vm-start.sh
@@ -258,16 +375,27 @@ let
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
+  zen_profile_launcher = pkgs.writeShellScriptBin "zen_profile_launcher" (
+    builtins.readFile ./bin/zen_profile_launcher.sh
+  );
+  zen_terminate_sessions = pkgs.writeShellScriptBin "zen_terminate_sessions" (
+    builtins.readFile ./bin/zen_terminate_sessions.sh
+  );
 in {
   home.packages = with pkgs; [
     anote
     anotes
     ascii
     bulk_rename
+    check_images
+    chroot_manager
     clearam
     clustergit
     container-engine-manager
-    gnome-start-all
+    crypto-manager
+    dotfiles-manager
+    gitgo
+    gitsumo
     hypr-airplane_mode
     hypr-blue-gammastep-manager
     hypr-blue-hyprsunset-manager
@@ -280,18 +408,48 @@ in {
     hypr-start-disable_wifi_power_save
     hypr-start-manager
     hypr-start-semsumo-all
-    hypr-start-semsumo-light
-    hypr-start-update
     hypr-startup-manager
     hypr-vlc_toggle
     hypr-workspace-monitor
     image-deduplicator
     lofi
+    m2w2
     monitor_brightness
     move_media_files
     mpc-control
     music
     ntodo
+    osc-assh-manager
+    osc-backup
+    osc-blocklist
+    osc-cleaup-grub
+    osc-generate_nix
+    osc-gist
+    osc-gpg_unlock
+    osc-mullvad
+    osc-nix-cleanup-script
+    osc-pass-tool
+    osc-profiles
+    osc-radio
+    osc-rsync_backup
+    osc-rsync
+    osc-scrcpy
+    osc-soundctl
+    osc-spotify
+    osc-ssh-hosts-backup-script
+    osc-ssh-passwordless
+    osc-ssh-session-manager
+    osc-start-all
+    osc-start-brave
+    osc-start-zen
+    osc-subliminal
+    osc-symlink_manager
+    osc-sync
+    osc-test
+    osc-tv-splitter
+    osc-ulauncher_ext
+    osc-video-converter
+    osc-vradio
     pdfkes
     playlist
     ports
@@ -313,12 +471,15 @@ in {
     rsync-tool
     runbg
     screenshot
+    semsumo
     sil_ayni_mp4
     smart-suspend
-    snippets
     ssh-launcher
     startup-manager
     st
+    svmarch
+    svmnixos
+    svmubuntu
     tarchiver
     ter
     tm
@@ -328,8 +489,9 @@ in {
     toggle_waybar
     tsm
     tty_config
-    turbo-boost-setup
     vir
+    vmarch
+    vmnixos
     vm-start
     vnc-connect
     wallpaper-manager
@@ -346,5 +508,7 @@ in {
     waybar-weather-update
     waybar-wf-recorder
     wrename
+    zen_profile_launcher
+    zen_terminate_sessions
   ];
 }
