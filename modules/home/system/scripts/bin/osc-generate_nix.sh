@@ -11,7 +11,7 @@
 #
 #   Features:
 #   - Automatically generates Nix expressions for shell scripts
-#   - Handles multiple script directories (admin, bin, start)
+#   - Handles multiple script directories (bin, start)
 #   - Handles special filename patterns (t1-9, tm)
 #   - Ignores underscore-prefixed files
 #   - Creates modular home-manager packages
@@ -25,7 +25,6 @@ set -euo pipefail
 
 # Configuration: Define directories to process
 declare -A DIRECTORIES=(
-	["admin"]="$HOME/.nixosc/modules/home/system/scripts/admin"
 	["bin"]="$HOME/.nixosc/modules/home/system/scripts/bin"
 	["start"]="$HOME/.nixosc/modules/home/system/scripts/start"
 )
