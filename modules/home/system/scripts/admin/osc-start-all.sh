@@ -642,7 +642,7 @@ launch_brave_profile() {
 		
 		log "SUCCESS" "BRAVE" "$profile profili başlatıldı, workspace'e geçiş ertelendi" "false"
 		return 0
-	}
+  fi
 
 	# Workspace'e geç
 	switch_workspace "$workspace"
