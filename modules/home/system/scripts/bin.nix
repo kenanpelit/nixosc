@@ -186,17 +186,11 @@ let
   tm = pkgs.writeShellScriptBin "tm" (
     builtins.readFile ./bin/tm.sh
   );
-  tmux-backup = pkgs.writeShellScriptBin "tmux-backup" (
-    builtins.readFile ./bin/tmux-backup.sh
-  );
-  tmux-copy = pkgs.writeShellScriptBin "tmux-copy" (
-    builtins.readFile ./bin/tmux-copy.sh
-  );
   tmux_kenp = pkgs.writeShellScriptBin "tmux_kenp" (
     builtins.readFile ./bin/tmux_kenp.sh
   );
-  tmux-plugins = pkgs.writeShellScriptBin "tmux-plugins" (
-    builtins.readFile ./bin/tmux-plugins.sh
+  tmx = pkgs.writeShellScriptBin "tmx" (
+    builtins.readFile ./bin/tmx.sh
   );
   toggle_blur = pkgs.writeShellScriptBin "toggle_blur" (
     builtins.readFile ./bin/toggle_blur.sh
@@ -334,10 +328,8 @@ in {
     tarchiver
     ter
     tm
-    tmux-backup
-    tmux-copy
     tmux_kenp
-    tmux-plugins
+    tmx
     toggle_blur
     toggle_float
     toggle_oppacity
