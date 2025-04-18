@@ -1,187 +1,214 @@
 #!/usr/bin/env bash
 
-#set -x
-
 #######################################
-#
-# Version: 3.0.0
+# Semsumo - Advanced Session Manager
+# Version: 4.3.0
 # Author: Kenan Pelit
-# Description: Semsumo - Terminal ve Uygulama Oturumları Yöneticisi
-#
-# Özellikler:
-# - VPN (Mullvad) entegrasyonu (secure/bypass)
-# - Grup tabanlı oturum yönetimi
-# - Oturum başlatma/durdurma/yeniden başlatma
-# - Workspace entegrasyonu
-# - Başlatma scripti oluşturucu
-#
-# Yapılandırma: Script içinde gömülü
-# PID: /tmp/sem/
-#
-# Lisans: MIT
-#
+# Description: Robust session manager with VPN integration
 #######################################
 
+# Strict mode
 set -euo pipefail
 IFS=$'\n\t'
 
-# Temel yapılandırma
-readonly VERSION="3.0.0"
+# Configuration
+readonly VERSION="4.3.0"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/sem"
 readonly CONFIG_FILE="$CONFIG_DIR/config.json"
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
 readonly PID_DIR="/tmp/sem"
-readonly DEFAULT_WAIT_TIME=2
+readonly LOG_FILE="/tmp/sem/semsumo.log"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
+readonly DEFAULT_WAIT_TIME=3
+readonly DEFAULT_FULLSCREEN_WAIT=2
+readonly DEFAULT_SWITCH_WAIT=1
 
-# Renk tanımları
+# Color definitions
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly CYAN='\033[0;36m'
+readonly MAGENTA='\033[0;35m'
 readonly NC='\033[0m'
 
-# Global değişkenler
+# Global variables
 DEBUG=0
 CREATE_MODE=0
-CONFIG_OVERRIDE=""
-OUTPUT_OVERRIDE=""
 PARALLEL=0
+CURRENT_WORKSPACE=""
 
-# Gömülü grup tanımları - kolayca düzenlenebilir
-declare -A APP_GROUPS
-APP_GROUPS["browsers"]="Brave-Kenp Brave-CompecTA Brave-Ai Brave-Whats" # Ana tarayıcılar
-#APP_GROUPS["terminals"]="kkenp mkenp wkenp"                             # Terminal oturumları
-APP_GROUPS["terminals"]="kkenp" # Terminal oturumları
-#APP_GROUPS["communications"]="discord webcord Brave-Whatsapp"           # İletişim uygulamaları
-APP_GROUPS["communications"]="webcord"                      # İletişim uygulamaları
-APP_GROUPS["media"]="spotify Brave-Spotify"                 # Medya uygulamaları
-APP_GROUPS["all"]="browsers terminals communications media" # Tüm gruplar
+## Embedded group definitions
+#declare -A APP_GROUPS=(
+#	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats,Chrome-Kenp,Chrome-CompecTA,Chrome-AI,Chrome-Whats"
+#	["terminals"]="kkenp,mkenp,wkenp,wezterm,kitty-single,wezterm-rmpc"
+#	["communications"]="discord,webcord,Brave-Discord,Brave-Whatsapp,Zen-Discord,Zen-Whats"
+#	["media"]="spotify,mpv,Brave-Yotube,Brave-Tiktok,Brave-Spotify,Zen-Spotify"
+#	["zen"]="Zen-Kenp,Zen-CompecTA,Zen-NoVpn,Zen-Proxy"
+#	["all"]="browsers terminals communications media zen"
+#)
 
-# Gömülü oturum yapılandırması
-EMBEDDED_CONFIG='{
+# Embedded group definitions
+declare -A APP_GROUPS=(
+	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats"
+	["terminals"]="kkenp"
+	["communications"]="webcord"
+	["media"]="spotify"
+	["all"]="browsers communications media terminals"
+)
+
+# Initialize environment
+initialize() {
+	mkdir -p "$CONFIG_DIR" "$PID_DIR" "/tmp/sem"
+	touch "$LOG_FILE"
+
+	if [[ ! -f "$CONFIG_FILE" ]]; then
+		cat >"$CONFIG_FILE" <<'EOF'
+{
   "sessions": {
     "kkenp": {
       "command": "kitty",
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tm"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "2",
+      "wait_time": 1
     },
     "mkenp": {
       "command": "kitty",
       "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tm"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "workspace": "2",
+      "wait_time": 1
     },
     "wkenp": {
       "command": "wezterm",
       "args": ["start", "--class", "TmuxKenp", "-e", "tm"],
-      "vpn": "bypass"
+      "vpn": "bypass",
+      "workspace": "2",
+      "wait_time": 1
     },
     "wezterm": {
       "command": "wezterm",
       "args": ["start", "--class", "wezterm"],
       "vpn": "secure",
-      "workspace": "2"
+      "workspace": "2",
+      "wait_time": 1
     },
     "kitty-single": {
       "command": "kitty",
       "args": ["--class", "kitty", "-T", "kitty", "--single-instance"],
       "vpn": "secure",
-      "workspace": "2"
+      "workspace": "2",
+      "wait_time": 1
     },
     "wezterm-rmpc": {
       "command": "wezterm",
       "args": ["start", "--class", "rmpc", "-e", "rmpc"],
-      "vpn": "secure"
+      "vpn": "secure",
+      "wait_time": 1
     },
     "discord": {
       "command": "discord",
       "args": ["-m", "--class=discord", "--title=discord"],
       "vpn": "bypass",
       "workspace": "5",
-      "fullscreen": "true",
-      "final_workspace": "2"
+      "fullscreen": true,
+      "final_workspace": "2",
+      "wait_time": 1
     },
     "webcord": {
       "command": "webcord",
       "args": ["-m", "--class=WebCord", "--title=Webcord"],
-      "vpn": "bypass",
+      "vpn": "secure",
       "workspace": "5",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Chrome-Kenp": {
       "command": "profile_chrome",
       "args": ["Kenp", "--class", "Kenp"],
       "vpn": "secure",
-      "workspace": "1"
+      "workspace": "1",
+      "wait_time": 1
     },
     "Chrome-CompecTA": {
       "command": "profile_chrome",
       "args": ["CompecTA", "--class", "CompecTA"],
       "vpn": "secure",
-      "workspace": "4"
+      "workspace": "4",
+      "wait_time": 1
     },
     "Chrome-AI": {
       "command": "profile_chrome",
       "args": ["AI", "--class", "AI"],
       "vpn": "secure",
-      "workspace": "3"
+      "workspace": "3",
+      "wait_time": 1
     },
     "Chrome-Whats": {
       "command": "profile_chrome",
       "args": ["Whats", "--class", "Whats"],
       "vpn": "secure",
-      "workspace": "9"
+      "workspace": "9",
+      "wait_time": 1
     },
     "Brave-Kenp": {
       "command": "profile_brave",
       "args": ["Kenp"],
       "vpn": "secure",
-      "workspace": "1"
+      "workspace": "1",
+      "wait_time": 1
     },
     "Brave-CompecTA": {
       "command": "profile_brave",
       "args": ["CompecTA"],
       "vpn": "secure",
-      "workspace": "4"
+      "workspace": "4",
+      "wait_time": 1
     },
     "Brave-Ai": {
       "command": "profile_brave",
       "args": ["Ai"],
       "vpn": "secure",
-      "workspace": "3"
+      "workspace": "3",
+      "wait_time": 1
     },
     "Brave-Whats": {
       "command": "profile_brave",
       "args": ["Whats"],
       "vpn": "secure",
-      "workspace": "9"
+      "workspace": "9",
+      "wait_time": 1
     },
     "Brave-Exclude": {
       "command": "profile_brave",
       "args": ["Exclude"],
       "vpn": "bypass",
-      "workspace": "6"
+      "workspace": "6",
+      "wait_time": 1
     },
     "Brave-Yotube": {
       "command": "profile_brave",
       "args": ["--youtube"],
       "vpn": "secure",
       "workspace": "6",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Brave-Tiktok": {
       "command": "profile_brave",
       "args": ["--tiktok"],
       "vpn": "secure",
       "workspace": "6",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Brave-Spotify": {
       "command": "profile_brave",
       "args": ["--spotify"],
       "vpn": "secure",
       "workspace": "8",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Brave-Discord": {
       "command": "profile_brave",
@@ -189,138 +216,134 @@ EMBEDDED_CONFIG='{
       "vpn": "secure",
       "workspace": "5",
       "final_workspace": "2",
-      "wait_time": "2",
-      "fullscreen": "true"
+      "wait_time": 1,
+      "fullscreen": true
     },
     "Brave-Whatsapp": {
       "command": "profile_brave",
       "args": ["--whatsapp"],
       "vpn": "secure",
       "workspace": "9",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Zen-Kenp": {
       "command": "zen",
       "args": ["-P", "Kenp", "--class", "Kenp", "--name", "Kenp", "--restore-session"],
       "vpn": "secure",
-      "workspace": "1"
+      "workspace": "1",
+      "wait_time": 1
     },
     "Zen-CompecTA": {
       "command": "zen",
       "args": ["-P", "CompecTA", "--class", "CompecTA", "--name", "CompecTA", "--restore-session"],
       "vpn": "secure",
-      "workspace": "4"
+      "workspace": "4",
+      "wait_time": 1
     },
     "Zen-Discord": {
       "command": "zen",
       "args": ["-P", "Discord", "--class", "Discord", "--name", "Discord", "--restore-session"],
       "vpn": "secure",
       "workspace": "5",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Zen-NoVpn": {
       "command": "zen",
       "args": ["-P", "NoVpn", "--class", "AI", "--name", "AI", "--restore-session"],
       "vpn": "bypass",
-      "workspace": "3"
+      "workspace": "3",
+      "wait_time": 1
     },
     "Zen-Proxy": {
       "command": "zen",
       "args": ["-P", "Proxy", "--class", "Proxy", "--name", "Proxy", "--restore-session"],
       "vpn": "bypass",
-      "workspace": "7"
+      "workspace": "7",
+      "wait_time": 1
     },
     "Zen-Spotify": {
       "command": "zen",
       "args": ["-P", "Spotify", "--class", "Spotify", "--name", "Spotify", "--restore-session"],
       "vpn": "bypass",
       "workspace": "7",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "Zen-Whats": {
       "command": "zen",
       "args": ["-P", "Whats", "--class", "Whats", "--name", "Whats", "--restore-session"],
       "vpn": "secure",
       "workspace": "9",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "spotify": {
       "command": "spotify",
       "args": ["--class", "Spotify", "-T", "Spotify"],
       "vpn": "bypass",
       "workspace": "8",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     },
     "mpv": {
       "command": "mpv",
       "args": [],
       "vpn": "bypass",
       "workspace": "6",
-      "fullscreen": "true"
+      "fullscreen": true,
+      "wait_time": 1
     }
   }
-}'
-
-# Ortamı başlat
-initialize() {
-	# Gerekli dizinleri oluştur
-	mkdir -p "$CONFIG_DIR" "$PID_DIR"
-
-	# Yapılandırma dosyası mevcut değilse gömülü yapılandırmadan oluştur
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		echo "$EMBEDDED_CONFIG" >"$CONFIG_FILE"
+}
+EOF
 		chmod 600 "$CONFIG_FILE"
-		log_info "Varsayılan yapılandırma oluşturuldu: $CONFIG_FILE"
 	fi
 }
 
-# Loglama fonksiyonları
-log_info() {
-	echo -e "${GREEN}[BİLGİ]${NC} $1"
+# Logging functions
+log() {
+	local level="$1"
+	local message="$2"
+	local timestamp=$(date +"%Y-%m-%d %T")
+
+	case "$level" in
+	"INFO") echo -e "${GREEN}[INFO]${NC} $message" ;;
+	"WARN") echo -e "${YELLOW}[WARN]${NC} $message" ;;
+	"ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
+	"DEBUG") [[ $DEBUG -eq 1 ]] && echo -e "${CYAN}[DEBUG]${NC} $message" ;;
+	*) echo -e "[$level] $message" ;;
+	esac
+
+	echo "[$timestamp][$level] $message" >>"$LOG_FILE"
 }
 
-log_warn() {
-	echo -e "${YELLOW}[UYARI]${NC} $1"
+# Check if command exists
+command_exists() {
+	command -v "$1" >/dev/null 2>&1
 }
 
-log_error() {
-	echo -e "${RED}[HATA]${NC} $1"
-}
-
-log_success() {
-	echo -e "${GREEN}✓${NC} $1"
-}
-
-log_debug() {
-	if [[ $DEBUG -eq 1 ]]; then
-		echo -e "${CYAN}[HATA AYIKLAMA]${NC} $1"
-	fi
-}
-
-# VPN fonksiyonları
+# Check VPN status
 check_vpn() {
-	if ! command -v mullvad &>/dev/null; then
-		log_debug "Mullvad istemcisi bulunamadı, VPN bağlantısı olmadığı varsayılıyor"
-		echo "false"
-		return 0
+	if ! command_exists "mullvad"; then
+		log "WARN" "Mullvad VPN not installed"
+		return 1
 	fi
 
 	if mullvad status 2>/dev/null | grep -q "Connected"; then
-		local vpn_details
-		vpn_details=$(mullvad status | grep "Relay:" | awk -F': ' '{print $2}')
-		log_debug "VPN aktif: $vpn_details"
-		echo "true"
+		log "DEBUG" "VPN is connected"
 		return 0
 	fi
 
-	log_debug "VPN bağlantısı bulunamadı"
-	echo "false"
-	return 0
+	log "DEBUG" "VPN is not connected"
+	return 1
 }
 
+# Get VPN mode for session
 get_vpn_mode() {
-	local session_name=$1
-	local cli_mode=${2:-}
+	local session_name="$1"
+	local cli_mode="${2:-}"
 
 	case "$cli_mode" in
 	bypass | secure)
@@ -330,639 +353,569 @@ get_vpn_mode() {
 		jq -r ".sessions.\"$session_name\".vpn // \"secure\"" "$CONFIG_FILE"
 		;;
 	*)
-		log_error "Geçersiz VPN modu: $cli_mode. 'secure' veya 'bypass' kullanın"
+		log "ERROR" "Invalid VPN mode: $cli_mode. Use 'secure' or 'bypass'"
 		return 1
 		;;
 	esac
 }
 
-# Oturum yönetimi
-execute_application() {
-	local cmd=$1
-	shift
-	local -a args=("$@")
+# Switch workspace reliably
+switch_workspace() {
+	local workspace="$1"
+	local wait_time="${2:-$DEFAULT_SWITCH_WAIT}"
 
-	log_debug "Çalıştırılıyor: $cmd ${args[*]}"
-	nohup "$cmd" "${args[@]}" >/dev/null 2>&1 &
-	echo $!
-}
+	[[ -z "$workspace" || "$workspace" == "0" || "$workspace" == "null" ]] && return 0
+	[[ "$CURRENT_WORKSPACE" == "$workspace" ]] && return 0
 
-start_session() {
-	local session_name=$1
-	local vpn_param=${2:-}
-
-	# Oturumun var olup olmadığını kontrol et
-	local command
-	command=$(jq -r ".sessions.\"${session_name}\".command" "$CONFIG_FILE")
-	if [[ "$command" == "null" ]]; then
-		log_error "Oturum bulunamadı: $session_name"
+	if ! command_exists "hyprctl"; then
+		log "WARN" "hyprctl not found, workspace switching disabled"
 		return 1
 	fi
 
-	# Komut için argümanları al
-	readarray -t args < <(jq -r ".sessions.\"${session_name}\".args[]" "$CONFIG_FILE" 2>/dev/null || echo "")
+	log "INFO" "Switching to workspace $workspace"
+	if ! hyprctl dispatch workspace "$workspace" >/dev/null 2>&1; then
+		log "ERROR" "Failed to switch to workspace $workspace"
+		return 1
+	fi
 
-	# VPN modunu belirle
-	local vpn_mode
-	vpn_mode=$(get_vpn_mode "$session_name" "$vpn_param")
-	local vpn_status
-	vpn_status=$(check_vpn)
-	local pid
+	CURRENT_WORKSPACE="$workspace"
+	sleep "$wait_time"
+	return 0
+}
 
-	# VPN moduna göre başlat
-	case "$vpn_mode" in
-	secure)
-		if [[ "$vpn_status" != "true" ]]; then
-			log_warn "VPN bağlantısı bulunamadı. $session_name VPN koruması olmadan başlatılıyor."
-			if command -v notify-send &>/dev/null; then
-				notify-send "Oturum Yöneticisi" "VPN bağlantısı yok. $session_name VPN koruması olmadan başlatılıyor."
-			fi
-			pid=$(execute_application "$command" "${args[@]}")
-		else
-			log_info "$session_name VPN koruması ile başlatılıyor"
-			pid=$(execute_application "$command" "${args[@]}")
+# Handle final workspace if specified
+handle_final_workspace() {
+	local session_name="$1"
+	local final_workspace=$(jq -r ".sessions.\"${session_name}\".final_workspace // \"0\"" "$CONFIG_FILE")
+
+	if [[ "$final_workspace" != "0" && "$final_workspace" != "null" ]]; then
+		switch_workspace "$final_workspace"
+	fi
+}
+
+# Make application fullscreen
+make_fullscreen() {
+	local wait_time="${1:-$DEFAULT_FULLSCREEN_WAIT}"
+
+	if ! command_exists "hyprctl"; then
+		log "WARN" "hyprctl not found, fullscreen disabled"
+		return 1
+	fi
+
+	log "INFO" "Making application fullscreen"
+	sleep "$wait_time"
+	hyprctl dispatch fullscreen 1 >/dev/null 2>&1
+	sleep 1
+	return 0
+}
+
+# Handle workspace and fullscreen setup
+handle_workspace() {
+	local session_name="$1"
+	local config=$(jq -r ".sessions.\"${session_name}\"" "$CONFIG_FILE")
+
+	local workspace=$(jq -r '.workspace // "0"' <<<"$config")
+	local fullscreen=$(jq -r '.fullscreen // "false"' <<<"$config")
+	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+
+	if [[ "$workspace" != "0" && "$workspace" != "null" ]]; then
+		switch_workspace "$workspace" "$wait_time"
+
+		if [[ "$fullscreen" == "true" ]]; then
+			make_fullscreen "$wait_time"
 		fi
-		;;
-	bypass)
-		if [[ "$vpn_status" == "true" ]]; then
-			if command -v mullvad-exclude &>/dev/null; then
-				log_info "$session_name VPN tüneli dışında başlatılıyor"
-				pid=$(mullvad-exclude "$command" "${args[@]}")
-			else
-				log_warn "mullvad-exclude bulunamadı - $session_name normal şekilde çalıştırılıyor"
-				pid=$(execute_application "$command" "${args[@]}")
-			fi
-		else
-			log_info "VPN aktif değil, $session_name normal şekilde başlatılıyor"
-			pid=$(execute_application "$command" "${args[@]}")
-		fi
-		;;
-	esac
-
-	# PID'i kaydet
-	local pid_file="$PID_DIR/${session_name}.pid"
-	echo "$pid" >"$pid_file"
-	log_success "Oturum başlatıldı: $session_name (PID: $pid)"
-
-	# Workspace değiştirme işlemini yönet
-	handle_workspace "$session_name" "$pid"
+	fi
 
 	return 0
 }
 
-handle_workspace() {
-	local session_name=$1
-	local pid=$2
+# Execute application with proper error handling
+execute_application() {
+	local cmd="$1"
+	shift
+	local -a args=("$@")
 
-	# Workspace belirtilip belirtilmediğini kontrol et
-	local workspace
-	workspace=$(jq -r ".sessions.\"${session_name}\".workspace // \"0\"" "$CONFIG_FILE")
-	local fullscreen
-	fullscreen=$(jq -r ".sessions.\"${session_name}\".fullscreen // \"false\"" "$CONFIG_FILE")
-	local wait_time
-	wait_time=$(jq -r ".sessions.\"${session_name}\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
+	log "DEBUG" "Executing: $cmd ${args[*]}"
 
-	# Eğer workspace belirtilmişse ve hyprctl kullanılabilirse, geçiş yap
-	if [[ "$workspace" != "0" && "$workspace" != "null" ]]; then
-		if command -v hyprctl &>/dev/null; then
-			log_info "$workspace workspace'ine geçiliyor"
-			hyprctl dispatch workspace "$workspace"
-			sleep 1
+	if ! command_exists "$cmd"; then
+		log "ERROR" "Command not found: $cmd"
+		return 1
+	fi
 
-			# Tam ekran yapılacaksa
-			if [[ "$fullscreen" == "true" ]]; then
-				log_debug "$session_name tam ekran yapılmadan önce $wait_time saniye bekleniyor"
-				sleep "$wait_time"
-				hyprctl dispatch fullscreen 1
-			fi
+	# Special handling for specific applications
+	case "$cmd" in
+	webcord | spotify | discord | mpv)
+		"$cmd" "${args[@]}" >/dev/null 2>&1 &
+		;;
+	*)
+		nohup "$cmd" "${args[@]}" >/dev/null 2>&1 &
+		;;
+	esac
 
-			# Son workspace'e geçiş yapılacaksa
-			local final_workspace
-			final_workspace=$(jq -r ".sessions.\"${session_name}\".final_workspace // \"\"" "$CONFIG_FILE")
-			if [[ -n "$final_workspace" && "$final_workspace" != "null" && "$final_workspace" != "$workspace" ]]; then
-				log_debug "$final_workspace workspace'ine geçmeden önce $wait_time saniye bekleniyor"
-				sleep "$wait_time"
-				hyprctl dispatch workspace "$final_workspace"
-			fi
+	local pid=$!
+
+	# Verify the process is running
+	if ! kill -0 "$pid" 2>/dev/null; then
+		log "ERROR" "Failed to start process: $cmd"
+		return 1
+	fi
+
+	echo "$pid"
+	return 0
+}
+
+# Start session with all features
+start_session() {
+	local session_name="$1"
+	local vpn_param="${2:-}"
+
+	# Check if session exists
+	if ! jq -e ".sessions.\"${session_name}\"" "$CONFIG_FILE" >/dev/null; then
+		log "ERROR" "Session not found: $session_name"
+		return 1
+	fi
+
+	local config=$(jq -r ".sessions.\"${session_name}\"" "$CONFIG_FILE")
+	local command=$(jq -r '.command' <<<"$config")
+	local args=$(jq -r '.args // [] | join(" ")' <<<"$config")
+	local vpn_mode=$(get_vpn_mode "$session_name" "$vpn_param")
+	local vpn_active=$(check_vpn && echo true || echo false)
+
+	# Handle workspace first
+	handle_workspace "$session_name"
+
+	# Start the application
+	log "INFO" "Starting session: $session_name (VPN: $vpn_mode)"
+
+	local pid
+	case "$vpn_mode" in
+	secure)
+		if ! $vpn_active; then
+			log "WARN" "VPN not connected. Starting $session_name without protection"
+		fi
+		pid=$(execute_application "$command" $args)
+		;;
+	bypass)
+		if $vpn_active && command_exists "mullvad-exclude"; then
+			log "INFO" "Starting $session_name bypassing VPN"
+			pid=$(mullvad-exclude "$command" $args)
 		else
-			log_warn "hyprctl bulunamadı, workspace değiştirme devre dışı"
+			pid=$(execute_application "$command" $args)
 		fi
-	fi
-}
+		;;
+	esac
 
-stop_session() {
-	local session_name=$1
-	local pid_file="$PID_DIR/${session_name}.pid"
-
-	if [[ -f "$pid_file" ]]; then
-		local pid
-		pid=$(<"$pid_file")
-		if kill "$pid" 2>/dev/null; then
-			rm -f "$pid_file"
-			log_success "Oturum durduruldu: $session_name"
-			return 0
-		fi
-	fi
-	log_error "Çalışan oturum bulunamadı: $session_name"
-	return 1
-}
-
-restart_session() {
-	local session_name=$1
-	local vpn_param=${2:-}
-
-	log_info "Oturum yeniden başlatılıyor: $session_name"
-	if stop_session "$session_name"; then
-		sleep 1
-		start_session "$session_name" "$vpn_param"
-		return $?
+	# Save PID if successful
+	if [[ -n "$pid" && "$pid" -gt 0 ]]; then
+		echo "$pid" >"$PID_DIR/${session_name}.pid"
+		log "INFO" "Session started successfully: $session_name (PID: $pid)"
 	else
-		log_warn "Oturum $session_name çalışmıyordu, şimdi başlatılıyor"
-		start_session "$session_name" "$vpn_param"
-		return $?
+		log "ERROR" "Failed to start session: $session_name"
+		return 1
 	fi
+
+	# Wait if specified
+	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+	sleep "$wait_time"
+
+	# Handle final workspace if specified
+	handle_final_workspace "$session_name"
+
+	return 0
 }
 
-# Utility functions
+# Check session status
 check_status() {
-	local session_name=$1
+	local session_name="$1"
 	local pid_file="$PID_DIR/${session_name}.pid"
 
-	if [[ -f "$pid_file" ]] && kill -0 "$(<"$pid_file")" 2>/dev/null; then
+	if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
 		echo "running"
 	else
 		echo "stopped"
 	fi
 }
 
-show_version() {
-	echo "semsumo sürüm $VERSION"
+# Stop session
+stop_session() {
+	local session_name="$1"
+	local pid_file="$PID_DIR/${session_name}.pid"
+
+	if [[ -f "$pid_file" ]]; then
+		local pid=$(cat "$pid_file")
+
+		if kill "$pid" 2>/dev/null; then
+			rm -f "$pid_file"
+			log "INFO" "Session stopped: $session_name"
+			return 0
+		fi
+	fi
+
+	log "WARN" "No running session found: $session_name"
+	return 1
 }
 
-# Oturumları listele
+# Restart session
+restart_session() {
+	local session_name="$1"
+	local vpn_param="${2:-}"
+
+	log "INFO" "Restarting session: $session_name"
+
+	if stop_session "$session_name"; then
+		sleep 2
+	else
+		log "WARN" "Session not running, starting fresh: $session_name"
+	fi
+
+	start_session "$session_name" "$vpn_param"
+	return $?
+}
+
+# List all sessions
 list_sessions() {
-	printf "${BLUE}%s${NC}\n" "Mevcut Oturumlar:"
+	log "INFO" "Available sessions:"
 
-	jq -r '.sessions | to_entries[] | {
-        key: .key,
-        command: .value.command,
-        vpn: (.value.vpn // "secure"),
-        workspace: (.value.workspace // "0"),
-        args: (.value.args|join(" "))
-    } | "\(.key):\n  Komut: \(.command)\n  VPN Modu: \(.vpn)\n  Workspace: \(.workspace)\n  Parametreler: \(.args)"' "$CONFIG_FILE" |
-		while IFS= read -r line; do
-			if [[ $line =~ :$ ]]; then
-				session=${line%:}
-				status=$(check_status "$session")
-				if [[ "$status" == "running" ]]; then
-					echo -e "${GREEN}${line} [ÇALIŞIYOR]${NC}"
-				else
-					echo -e "${GREEN}${line}${NC}"
-				fi
-			elif [[ $line =~ ^[[:space:]]*VPN[[:space:]]Modu:[[:space:]]*(.*) ]]; then
-				mode=${BASH_REMATCH[1]}
-				case "$mode" in
-				secure) printf "  VPN Modu: ${RED}%s${NC}\n" "$mode" ;;
-				bypass) printf "  VPN Modu: ${GREEN}%s${NC}\n" "$mode" ;;
-				*) printf "  VPN Modu: ${YELLOW}%s${NC}\n" "$mode" ;;
-				esac
-			else
-				echo "$line"
-			fi
-		done
+	jq -r '.sessions | keys[]' "$CONFIG_FILE" | while read -r session; do
+		local config=$(jq -r ".sessions.\"$session\"" "$CONFIG_FILE")
+		local command=$(jq -r '.command' <<<"$config")
+		local vpn=$(jq -r '.vpn // "secure"' <<<"$config")
+		local workspace=$(jq -r '.workspace // "0"' <<<"$config")
+		local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+		local status=$(check_status "$session")
+
+		printf "${GREEN}%s${NC}: " "$session"
+
+		if [[ "$status" == "running" ]]; then
+			printf "[${GREEN}RUNNING${NC}] "
+		else
+			printf "[${RED}STOPPED${NC}] "
+		fi
+
+		printf "Command: ${BLUE}%s${NC}, " "$command"
+		printf "VPN: ${CYAN}%s${NC}, " "$vpn"
+		printf "Workspace: ${YELLOW}%s${NC}, " "$workspace"
+		printf "Wait: ${MAGENTA}%ss${NC}\n" "$wait_time"
+	done
 }
 
-# Grup işlemleri
+# List all groups
 list_groups() {
-	printf "${BLUE}%s${NC}\n" "Tanımlı Gruplar:"
+	log "INFO" "Available groups:"
 
 	for group in "${!APP_GROUPS[@]}"; do
 		printf "${GREEN}%s${NC}: " "$group"
-		# Grubun içeriğini göster
-		local apps="${APP_GROUPS[$group]}"
-		# Eğer grup adı "all" ise, bu bir meta grup - içindeki grup adlarını göster
+
 		if [[ "$group" == "all" ]]; then
-			printf "Meta-grup, içerik: ${YELLOW}%s${NC}\n" "$apps"
+			printf "${YELLOW}%s${NC} (meta group)\n" "${APP_GROUPS[$group]}"
 		else
-			printf "${CYAN}%s${NC}\n" "$apps"
+			printf "${CYAN}%s${NC}\n" "${APP_GROUPS[$group]}"
 		fi
 	done
 }
 
-# Bir grubu başlat
+# Start a group of sessions
 start_group() {
-	local group_name=$1
-	local parallel=${2:-false}
+	local group_name="$1"
+	local parallel="${2:-false}"
 
 	if [[ ! -v APP_GROUPS["$group_name"] ]]; then
-		log_error "Tanımlı grup bulunamadı: $group_name"
+		log "ERROR" "Group not found: $group_name"
 		return 1
 	fi
 
-	local group_content="${APP_GROUPS[$group_name]}"
-	local start_time
-	start_time=$(date +%s)
+	local start_time=$(date +%s)
+	log "INFO" "Starting group: $group_name"
 
-	# Eğer grup bir meta-grup ise (all gibi), alt grupları başlat
-	if [[ "$group_name" == "all" || "$group_content" =~ browsers|terminals|communications|media ]]; then
-		log_info "Meta-grup başlatılıyor: $group_name"
-		for subgroup in $group_content; do
-			if [[ -v APP_GROUPS["$subgroup"] ]]; then
-				log_info "Alt grup başlatılıyor: $subgroup"
-				start_group "$subgroup" "$parallel"
-			else
-				log_error "Alt grup bulunamadı: $subgroup"
-			fi
+	# Handle meta groups
+	if [[ "$group_name" == "all" ]]; then
+		local subgroups=("browsers" "terminals" "communications" "media")
+
+		for subgroup in "${subgroups[@]}"; do
+			start_group "$subgroup" "$parallel"
+			sleep 3
 		done
-	else
-		# Normal grup - oturumları başlat
-		log_info "Grup başlatılıyor: $group_name ($group_content)"
-
-		if [[ "$parallel" == "true" ]]; then
-			log_debug "Paralel başlatma modu aktif"
-			local pids=()
-			for session in $group_content; do
-				start_session "$session" &
-				pids+=($!)
-			done
-
-			# Tüm paralel işlemlerin tamamlanmasını bekle
-			for pid in "${pids[@]}"; do
-				wait "$pid" || true # Hata olursa da devam et
-			done
-		else
-			# Sıralı başlatma
-			for session in $group_content; do
-				start_session "$session"
-			done
-		fi
-	fi
-
-	local end_time
-	end_time=$(date +%s)
-	local duration=$((end_time - start_time))
-	log_success "Grup başlatıldı: $group_name (Süre: ${duration}s)"
-
-	# En son 2 numaralı workspace'e dön (varsayılan)
-	if command -v hyprctl &>/dev/null; then
-		log_info "Ana workspace'e dönülüyor (2)"
-		hyprctl dispatch workspace 2
-	fi
-}
-
-# Yardım göster
-show_help() {
-	cat <<EOF
-Oturum Yöneticisi $VERSION - Terminal ve Uygulama Oturumları Yöneticisi
-
-Kullanım: 
-  semsumo <komut> [parametreler]
-
-Komutlar:
-  start   <oturum> [vpn_modu]  Oturum başlat
-  stop    <oturum>             Oturum durdur
-  restart <oturum> [vpn_modu]  Oturum yeniden başlat
-  status  <oturum>             Oturum durumunu göster
-  list                         Mevcut oturumları listele
-  group   <grup>  [parallel]   Bir grup oturumu başlat (opsiyonel paralel)
-  groups                       Tanımlı grupları listele
-  version                      Versiyon bilgisi
-  help                         Bu yardım mesajını göster
-  --create [options]           Oturum yönetimi scriptleri oluştur
-  
-VPN Modları:
-  bypass  : VPN dışında çalıştır (VPN'i bypass et)
-  secure  : VPN üzerinden güvenli şekilde çalıştır
-
-Yapılandırma Parametreleri:
-  vpn             : "secure" veya "bypass" (VPN modu)
-  workspace       : Uygulamanın çalışacağı Hyprland workspace numarası
-  final_workspace : İşlem sonrası dönülecek workspace numarası
-  wait_time       : Uygulama başlatıldıktan sonra beklenecek süre (saniye)
-  fullscreen      : Uygulamayı tam ekran yapmak için "true" değeri ver
-
-Grup Örnekleri:
-  semsumo group browsers         # Tüm tarayıcıları başlat
-  semsumo group terminals        # Tüm terminal oturumlarını başlat
-  semsumo group communications -p # İletişim uygulamalarını paralel başlat
-  semsumo group all              # Tüm grupları başlat
-
-Örnek Kullanımlar:
-  # Oturum başlatma örnekleri
-  semsumo start secure-browser         # Yapılandırma VPN modunu kullan
-  semsumo start local-browser bypass   # VPN dışında çalıştır
-  semsumo restart discord secure       # VPN içinde yeniden başlat
-
-  # Oturum yönetimi
-  semsumo list                         # Tüm oturumları listele
-  semsumo status spotify               # Oturum durumunu kontrol et
-  semsumo stop discord                 # Oturumu durdur
-
-  # Script oluşturma
-  semsumo --create                     # Oturum scriptlerini oluştur
-  semsumo --create --debug             # Detaylı bilgilerle oluştur
-
-Yapılandırma dosyası: $CONFIG_FILE
-
-Not: VPN modu yapılandırma dosyasında tanımlıysa ve komut satırında 
-belirtilmemişse, yapılandırmadaki mod kullanılır. Hiçbiri belirtilmemişse 
-"secure" mod varsayılan olarak kullanılır.
-EOF
-}
-
-# Script oluşturma fonksiyonları
-create_script() {
-	local profile=$1
-	local vpn_mode=$2
-	local script_path="$SCRIPTS_DIR/start-${profile,,}.sh"
-
-	if [[ ! -d "$SCRIPTS_DIR" ]]; then
-		mkdir -p "$SCRIPTS_DIR"
-	fi
-
-	# Yapılandırmadan workspace ayarlarını al
-	local workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
-	local final_workspace=$(jq -r ".sessions.\"$profile\".final_workspace // \"$workspace\"" "$CONFIG_FILE")
-	local wait_time=$(jq -r ".sessions.\"$profile\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
-	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // \"false\"" "$CONFIG_FILE")
-
-	# Script içeriği oluştur
-	cat >"$script_path" <<EOF
-#!/usr/bin/env bash
-#===============================================================================
-# $profile için oluşturulan başlatma script'i
-# VPN Modu: $vpn_mode
-# Elle düzenlemeyin - semsumo tarafından otomatik oluşturulmuştur
-#===============================================================================
-
-# Hata yönetimi
-set -euo pipefail
-
-# Ortam ayarları
-export TMPDIR="$PID_DIR"
-
-# Sabitler
-WORKSPACE=$workspace
-FINAL_WORKSPACE=$final_workspace
-WAIT_TIME=$wait_time
-
-# Workspace'e geçiş fonksiyonu
-switch_workspace() {
-    local workspace="\$1"
-    if command -v hyprctl &>/dev/null; then
-        echo "Workspace \$workspace'e geçiliyor..."
-        hyprctl dispatch workspace "\$workspace"
-        sleep 1
-    fi
-}
-
-# Tam ekran yapma fonksiyonu
-make_fullscreen() {
-    if command -v hyprctl &>/dev/null; then
-        echo "Aktif pencere tam ekran yapılıyor..."
-        sleep 1
-        hyprctl dispatch fullscreen 1
-        sleep 1
-    fi
-}
-
-EOF
-
-	# Workspace belirtilmişse geçiş ekle
-	if [[ "$workspace" != "0" ]]; then
-		cat >>"$script_path" <<EOF
-# $profile workspace'ine geç
-switch_workspace "\$WORKSPACE"
-
-EOF
-	fi
-
-	# Oturum başlatma kodu
-	cat >>"$script_path" <<EOF
-# Semsumo ile oturumu başlat
-echo "$profile başlatılıyor..."
-semsumo start "$profile" "$vpn_mode" &
-
-# Uygulamanın açılması için bekle
-echo "Uygulama açılması için \$WAIT_TIME saniye bekleniyor..."
-sleep \$WAIT_TIME
-
-EOF
-
-	# Fullscreen aktifse ekle
-	if [[ "$fullscreen" == "true" ]]; then
-		cat >>"$script_path" <<EOF
-# Tam ekran yap
-make_fullscreen
-
-EOF
-	fi
-
-	# Son workspace farklıysa geçiş ekle
-	if [[ "$final_workspace" != "0" && "$final_workspace" != "$workspace" ]]; then
-		cat >>"$script_path" <<EOF
-# Tamamlandığında ana workspace'e geri dön
-echo "İşlem tamamlandı, workspace \$FINAL_WORKSPACE'e dönülüyor..."
-switch_workspace "\$FINAL_WORKSPACE"
-
-EOF
-	fi
-
-	# Script sonlandırma
-	cat >>"$script_path" <<EOF
-# Başarıyla çıkış yap
-exit 0
-EOF
-
-	# Scripti çalıştırılabilir yap
-	chmod 755 "$script_path"
-	log_success "Oluşturuldu: start-${profile,,}.sh"
-}
-
-run_script_generator() {
-	log_info "Script oluşturma başlatılıyor..."
-
-	# jq kurulu mu kontrol et
-	if ! command -v jq &>/dev/null; then
-		log_error "Script oluşturma için jq gerekli"
-		return 1
-	fi
-
-	# Script dizinini oluştur
-	if [[ ! -d "$SCRIPTS_DIR" ]]; then
-		mkdir -p "$SCRIPTS_DIR"
-		log_info "Script dizini oluşturuldu: $SCRIPTS_DIR"
-	fi
-
-	# Tüm profilleri al
-	local profiles
-	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
-	local total=$(echo "$profiles" | wc -l)
-
-	log_info "$total profil için başlatma scriptleri oluşturuluyor..."
-
-	# Her profil için işlem yap
-	while IFS= read -r profile; do
-		# Boş satırları atla
-		if [[ -z "$profile" ]]; then
-			continue
-		fi
-
-		# Yapılandırmadan VPN modunu al
-		local vpn_mode
-		vpn_mode=$(jq -r ".sessions.\"$profile\".vpn // \"secure\"" "$CONFIG_FILE")
-
-		# Script oluştur
-		create_script "$profile" "$vpn_mode"
-	done <<<"$profiles"
-
-	log_success "Script oluşturma tamamlandı! $total script oluşturuldu."
-
-	# Kullanım örneği göster
-	if [[ $total -gt 0 ]]; then
-		local example
-		example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
-		echo ""
-		log_info "Kullanım örneği: $SCRIPTS_DIR/start-${example,,}.sh"
-	fi
-
-	return 0
-}
-
-# Komut satırı parametreleri
-parse_args() {
-	# Script oluşturma modunu yönet
-	if [[ "${1:-}" == "--create" ]]; then
-		shift
-		CREATE_MODE=1
-
-		# Oluşturma için özel parametreleri ayrıştır
-		while [[ $# -gt 0 ]]; do
-			case $1 in
-			--debug | -d)
-				DEBUG=1
-				shift
-				;;
-			--config | -c)
-				CONFIG_OVERRIDE="$2"
-				shift 2
-				;;
-			--output | -o)
-				OUTPUT_OVERRIDE="$2"
-				shift 2
-				;;
-			*)
-				log_error "Bilinmeyen parametre: $1"
-				show_help
-				exit 1
-				;;
-			esac
-		done
-
-		# Alternatif yapılandırma belirtilmişse kullan
-		if [[ -n "$CONFIG_OVERRIDE" ]]; then
-			CONFIG_FILE="$CONFIG_OVERRIDE"
-		fi
-
-		# Alternatif çıkış dizini belirtilmişse kullan
-		if [[ -n "$OUTPUT_OVERRIDE" ]]; then
-			SCRIPTS_DIR="$OUTPUT_OVERRIDE"
-		fi
 
 		return 0
 	fi
 
-	# Hata ayıklama bayrağını yönet
-	if [[ "${1:-}" == "--debug" || "${1:-}" == "-d" ]]; then
-		DEBUG=1
-		shift
+	# Split group members
+	IFS=',' read -ra sessions <<<"${APP_GROUPS[$group_name]}"
+
+	if [[ "$parallel" == "true" && ${#sessions[@]} -gt 1 ]]; then
+		log "INFO" "Starting sessions in parallel"
+
+		for session in "${sessions[@]}"; do
+			(
+				start_session "$session"
+			) &
+		done
+
+		wait
+	else
+		for session in "${sessions[@]}"; do
+			start_session "$session"
+			sleep 2
+		done
 	fi
 
-	# Yapılandırma geçersiz kılmayı yönet
-	if [[ "${1:-}" == "--config" || "${1:-}" == "-c" ]]; then
-		if [[ -n "${2:-}" ]]; then
-			CONFIG_FILE="$2"
-			shift 2
-		else
-			log_error "--config parametresi için değer eksik"
-			show_help
-			exit 1
-		fi
-	fi
+	local end_time=$(date +%s)
+	local duration=$((end_time - start_time))
 
-	# Paralel çalıştırma parametresi
-	if [[ "${1:-}" == "--parallel" || "${1:-}" == "-p" ]]; then
-		PARALLEL=1
-		shift
+	log "INFO" "Group started successfully: $group_name (Duration: ${duration}s)"
+
+	# Return to main workspace if not terminals
+	if [[ "$group_name" != "terminals" ]]; then
+		switch_workspace "2" "2"
 	fi
 
 	return 0
 }
 
-# Ana fonksiyon
-main() {
-	initialize
-	parse_args "$@"
+# Create startup script for a profile
+create_startup_script() {
+	local profile="$1"
+	local script_path="$SCRIPTS_DIR/start-${profile,,}.sh"
 
-	# Script oluşturma modunu yönet
-	if [[ $CREATE_MODE -eq 1 ]]; then
-		run_script_generator
-		exit $?
+	# Check if profile exists
+	if ! jq -e ".sessions.\"$profile\"" "$CONFIG_FILE" >/dev/null; then
+		log "ERROR" "Profile not found: $profile"
+		return 1
 	fi
 
-	# Normal komutları yönet
+	# Get configuration
+	local config=$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")
+	local command=$(jq -r '.command' <<<"$config")
+	local args=$(jq -r '.args // [] | join(" ")' <<<"$config")
+	local vpn_mode=$(jq -r '.vpn // "secure"' <<<"$config")
+	local workspace=$(jq -r '.workspace // "0"' <<<"$config")
+	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+	local fullscreen=$(jq -r '.fullscreen // "false"' <<<"$config")
+	local final_workspace=$(jq -r '.final_workspace // "0"' <<<"$config")
+
+	# Create scripts directory if not exists
+	mkdir -p "$SCRIPTS_DIR"
+
+	# Generate the script
+	cat >"$script_path" <<EOF
+#!/usr/bin/env bash
+# Profile: $profile
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# Configuration
+PROFILE="$profile"
+COMMAND="$command"
+ARGS="$args"
+VPN_MODE="$vpn_mode"
+WORKSPACE="$workspace"
+WAIT_TIME="$wait_time"
+FULLSCREEN="$fullscreen"
+FINAL_WORKSPACE="$final_workspace"
+LOG_FILE="/tmp/start-\$PROFILE.log"
+
+# Logging
+exec > >(tee -a "\$LOG_FILE") 2>&1
+echo -e "\n[$(date "+%Y-%m-%d %H:%M:%S")] Starting \$PROFILE..."
+
+# Functions
+vpn_status() {
+    if command -v mullvad >/dev/null 2>&1; then
+        mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected"
+    else
+        echo "not_installed"
+    fi
+}
+
+switch_workspace() {
+    if [[ "\$1" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
+        echo "Switching to workspace \$1"
+        hyprctl dispatch workspace "\$1"
+        sleep "\$2"
+    fi
+}
+
+start_application() {
+    case "\$VPN_MODE" in
+        bypass)
+            if [[ \$(vpn_status) == "connected" ]] && command -v mullvad-exclude >/dev/null 2>&1; then
+                echo "Starting with VPN bypass"
+                mullvad-exclude "\$COMMAND" \$ARGS &
+            else
+                echo "Starting normally (VPN bypass not available)"
+                "\$COMMAND" \$ARGS &
+            fi
+            ;;
+        secure)
+            if [[ \$(vpn_status) != "connected" ]]; then
+                echo "WARNING: VPN not connected! Starting without protection"
+            fi
+            "\$COMMAND" \$ARGS &
+            ;;
+    esac
+}
+
+# Main execution
+echo "Initializing \$PROFILE..."
+switch_workspace "\$WORKSPACE" "\$WAIT_TIME"
+
+echo "Starting application..."
+start_application
+APP_PID=\$!
+
+# Save PID
+echo "\$APP_PID" > "/tmp/sem/\$PROFILE.pid"
+echo "Application started with PID: \$APP_PID"
+
+# Fullscreen if needed
+if [[ "\$FULLSCREEN" == "true" ]] && command -v hyprctl >/dev/null 2>&1; then
+    sleep "\$WAIT_TIME"
+    echo "Enabling fullscreen"
+    hyprctl dispatch fullscreen 1
+fi
+
+# Return to final workspace if specified
+if [[ "\$FINAL_WORKSPACE" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
+    sleep 1
+    switch_workspace "\$FINAL_WORKSPACE" "\$WAIT_TIME"
+fi
+
+exit 0
+EOF
+
+	# Make script executable
+	chmod +x "$script_path"
+	log "INFO" "Created startup script: $script_path"
+}
+
+# Generate startup scripts for all profiles
+generate_startup_scripts() {
+	log "INFO" "Generating startup scripts for all profiles..."
+
+	if ! command_exists jq; then
+		log "ERROR" "jq is required for script generation"
+		return 1
+	fi
+
+	local profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
+	local total=$(echo "$profiles" | wc -l)
+	local count=0
+
+	while IFS= read -r profile; do
+		if create_startup_script "$profile"; then
+			count=$((count + 1))
+		fi
+	done <<<"$profiles"
+
+	log "INFO" "Successfully generated $count/$total startup scripts"
+	return 0
+}
+
+# Show help
+show_help() {
+	cat <<EOF
+Semsumo $VERSION - Advanced Session Manager
+
+Usage: semsumo <command> [parameters]
+
+Commands:
+  start   <session> [vpn_mode]  Start a session
+  stop    <session>             Stop a session
+  restart <session> [vpn_mode]  Restart a session
+  status  <session>             Show session status
+  list                          List all sessions
+  group   <group>               Start a group of sessions
+  groups                        List all groups
+  create                        Generate startup scripts for all profiles
+  help                          Show this help message
+
+Options:
+  -p, --parallel               Start group sessions in parallel
+  -d, --debug                  Enable debug mode
+
+VPN Modes:
+  bypass  : Run outside VPN
+  secure  : Run through VPN (default)
+
+Examples:
+  semsumo start Brave-Kenp
+  semsumo start webcord bypass
+  semsumo group browsers
+  semsumo group all -p
+  semsumo create
+
+Config: $CONFIG_FILE
+Logs: $LOG_FILE
+Startup Scripts: $SCRIPTS_DIR
+EOF
+}
+
+# Main function
+main() {
+	initialize
+
+	# Parse options
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-p | --parallel)
+			PARALLEL=1
+			shift
+			;;
+		-d | --debug)
+			DEBUG=1
+			shift
+			;;
+		*) break ;;
+		esac
+	done
+
 	case "${1:-}" in
 	start)
-		if [[ -z "${2:-}" ]]; then
+		[[ -z "${2:-}" ]] && {
+			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		fi
+		}
 		start_session "$2" "${3:-}"
 		;;
 	stop)
-		if [[ -z "${2:-}" ]]; then
+		[[ -z "${2:-}" ]] && {
+			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		fi
+		}
 		stop_session "$2"
 		;;
 	restart)
-		if [[ -z "${2:-}" ]]; then
+		[[ -z "${2:-}" ]] && {
+			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		fi
+		}
 		restart_session "$2" "${3:-}"
 		;;
 	status)
-		if [[ -z "${2:-}" ]]; then
+		[[ -z "${2:-}" ]] && {
+			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		fi
+		}
 		check_status "$2"
 		;;
-	list)
-		list_sessions
-		;;
+	list) list_sessions ;;
 	group)
-		if [[ -z "${2:-}" ]]; then
+		[[ -z "${2:-}" ]] && {
+			log "ERROR" "Group name required"
 			list_groups
-			exit 0
-		fi
-		if [[ $PARALLEL -eq 1 ]]; then
-			start_group "$2" "true"
-		else
-			start_group "$2" "false"
-		fi
+			exit 1
+		}
+		start_group "$2" "$([[ $PARALLEL -eq 1 ]] && echo "true" || echo "false")"
 		;;
-	groups)
-		list_groups
-		;;
-	version)
-		show_version
-		;;
-	help | --help | -h)
-		show_help
-		;;
+	groups) list_groups ;;
+	create) generate_startup_scripts ;;
+	help | --help | -h) show_help ;;
+	version | --version | -v) echo "Semsumo v$VERSION" ;;
 	*)
 		show_help
 		exit 1
@@ -970,5 +923,5 @@ main() {
 	esac
 }
 
-# Scripti çalıştır
+# Run the script
 main "$@"

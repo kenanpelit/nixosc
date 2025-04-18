@@ -165,9 +165,6 @@ let
   osc-start-all = pkgs.writeShellScriptBin "osc-start-all" (
     builtins.readFile ./bin/osc-start-all.sh
   );
-  osc-start-brave = pkgs.writeShellScriptBin "osc-start-brave" (
-    builtins.readFile ./bin/osc-start-brave.sh
-  );
   osc-start-zen = pkgs.writeShellScriptBin "osc-start-zen" (
     builtins.readFile ./bin/osc-start-zen.sh
   );
@@ -432,7 +429,6 @@ in {
     osc-ssh-passwordless
     osc-ssh-session-manager
     osc-start-all
-    osc-start-brave
     osc-start-zen
     osc-subliminal
     osc-symlink_manager
