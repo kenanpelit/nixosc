@@ -1,175 +1,319 @@
 #!/usr/bin/env bash
 
+#set -x
+
 #######################################
 #
-# Version: 2.1.2
-# Date: 2025-04-08
+# Version: 3.0.0
 # Author: Kenan Pelit
-# Repository: github.com/kenanpelit/dotfiles
-# Description: Session Manager (semsumo) - Terminal and Application Session Manager
+# Description: Semsumo - Terminal ve Uygulama Oturumları Yöneticisi
 #
-# This script is designed to manage application sessions in Unix/Linux systems.
-# Main features:
-# - Simplified VPN (Mullvad) integration (secure/bypass)
-# - JSON-based configuration system
-# - Session start/stop/restart
-# - CPU and memory usage monitoring
-# - Metrics collection in JSON format
-# - Secure file permissions and error handling
-# - Session script generator (--create parameter)
-# - Hyprland workspace support
+# Özellikler:
+# - VPN (Mullvad) entegrasyonu (secure/bypass)
+# - Grup tabanlı oturum yönetimi
+# - Oturum başlatma/durdurma/yeniden başlatma
+# - Workspace entegrasyonu
+# - Başlatma scripti oluşturucu
 #
-# Config: ~/.config/sem/config.json
-# Logs: ~/.config/sem/logs/sem.log
+# Yapılandırma: Script içinde gömülü
 # PID: /tmp/sem/
 #
-# License: MIT
+# Lisans: MIT
 #
 #######################################
 
-# shellcheck disable=SC2034
-# shellcheck disable=SC2154
-
-# Strict mode configuration
-set -Eeuo pipefail
+set -euo pipefail
 IFS=$'\n\t'
 
-# Version
-readonly VERSION="2.1.2"
-
-# Core configuration
-readonly SCRIPT_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/sem"
-readonly CONFIG_FILE="$SCRIPT_PATH/config.json"
-readonly LOG_FILE="$SCRIPT_PATH/logs/sem.log"
-readonly CONFIG_SCHEMA="$SCRIPT_PATH/schema.json"
-readonly BACKUP_DIR="$SCRIPT_PATH/backups"
-readonly PID_DIR="/tmp/sem"
-readonly METRICS_FILE="/tmp/sem_metrics.json"
-
-# Default values
-readonly DEFAULT_COMMAND_TIMEOUT=30
-readonly DEFAULT_MAX_RETRIES=3
-readonly DEFAULT_RETRY_DELAY=1
-readonly DEFAULT_MONITOR_INTERVAL=5
-
-# Script generator configuration
+# Temel yapılandırma
+readonly VERSION="3.0.0"
+readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/sem"
+readonly CONFIG_FILE="$CONFIG_DIR/config.json"
 readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
-readonly SEMSUMO="semsumo"
-readonly TMP_DIR="/tmp/sem"
+readonly PID_DIR="/tmp/sem"
+readonly DEFAULT_WAIT_TIME=2
 
-# Color definitions
+# Renk tanımları
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly CYAN='\033[0;36m'
-readonly MAGENTA='\033[0;35m'
 readonly NC='\033[0m'
 
-# Global variables
-declare -a TEMP_FILES=()
-declare -A ACTIVE_MONITORS=()
-VERBOSE=0
+# Global değişkenler
+DEBUG=0
+CREATE_MODE=0
+CONFIG_OVERRIDE=""
+OUTPUT_OVERRIDE=""
+PARALLEL=0
 
-# Initialize environment
+# Gömülü grup tanımları - kolayca düzenlenebilir
+declare -A APP_GROUPS
+APP_GROUPS["browsers"]="Brave-Kenp Brave-CompecTA Brave-Ai Brave-Whats" # Ana tarayıcılar
+#APP_GROUPS["terminals"]="kkenp mkenp wkenp"                             # Terminal oturumları
+APP_GROUPS["terminals"]="kkenp" # Terminal oturumları
+#APP_GROUPS["communications"]="discord webcord Brave-Whatsapp"           # İletişim uygulamaları
+APP_GROUPS["communications"]="webcord"                      # İletişim uygulamaları
+APP_GROUPS["media"]="spotify Brave-Spotify"                 # Medya uygulamaları
+APP_GROUPS["all"]="browsers terminals communications media" # Tüm gruplar
+
+# Gömülü oturum yapılandırması
+EMBEDDED_CONFIG='{
+  "sessions": {
+    "kkenp": {
+      "command": "kitty",
+      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tm"],
+      "vpn": "bypass"
+    },
+    "mkenp": {
+      "command": "kitty",
+      "args": ["--class", "TmuxKenp", "-T", "Tmux", "-e", "tm"],
+      "vpn": "secure"
+    },
+    "wkenp": {
+      "command": "wezterm",
+      "args": ["start", "--class", "TmuxKenp", "-e", "tm"],
+      "vpn": "bypass"
+    },
+    "wezterm": {
+      "command": "wezterm",
+      "args": ["start", "--class", "wezterm"],
+      "vpn": "secure",
+      "workspace": "2"
+    },
+    "kitty-single": {
+      "command": "kitty",
+      "args": ["--class", "kitty", "-T", "kitty", "--single-instance"],
+      "vpn": "secure",
+      "workspace": "2"
+    },
+    "wezterm-rmpc": {
+      "command": "wezterm",
+      "args": ["start", "--class", "rmpc", "-e", "rmpc"],
+      "vpn": "secure"
+    },
+    "discord": {
+      "command": "discord",
+      "args": ["-m", "--class=discord", "--title=discord"],
+      "vpn": "bypass",
+      "workspace": "5",
+      "fullscreen": "true",
+      "final_workspace": "2"
+    },
+    "webcord": {
+      "command": "webcord",
+      "args": ["-m", "--class=WebCord", "--title=Webcord"],
+      "vpn": "bypass",
+      "workspace": "5",
+      "fullscreen": "true"
+    },
+    "Chrome-Kenp": {
+      "command": "profile_chrome",
+      "args": ["Kenp", "--class", "Kenp"],
+      "vpn": "secure",
+      "workspace": "1"
+    },
+    "Chrome-CompecTA": {
+      "command": "profile_chrome",
+      "args": ["CompecTA", "--class", "CompecTA"],
+      "vpn": "secure",
+      "workspace": "4"
+    },
+    "Chrome-AI": {
+      "command": "profile_chrome",
+      "args": ["AI", "--class", "AI"],
+      "vpn": "secure",
+      "workspace": "3"
+    },
+    "Chrome-Whats": {
+      "command": "profile_chrome",
+      "args": ["Whats", "--class", "Whats"],
+      "vpn": "secure",
+      "workspace": "9"
+    },
+    "Brave-Kenp": {
+      "command": "profile_brave",
+      "args": ["Kenp"],
+      "vpn": "secure",
+      "workspace": "1"
+    },
+    "Brave-CompecTA": {
+      "command": "profile_brave",
+      "args": ["CompecTA"],
+      "vpn": "secure",
+      "workspace": "4"
+    },
+    "Brave-Ai": {
+      "command": "profile_brave",
+      "args": ["Ai"],
+      "vpn": "secure",
+      "workspace": "3"
+    },
+    "Brave-Whats": {
+      "command": "profile_brave",
+      "args": ["Whats"],
+      "vpn": "secure",
+      "workspace": "9"
+    },
+    "Brave-Exclude": {
+      "command": "profile_brave",
+      "args": ["Exclude"],
+      "vpn": "bypass",
+      "workspace": "6"
+    },
+    "Brave-Yotube": {
+      "command": "profile_brave",
+      "args": ["--youtube"],
+      "vpn": "secure",
+      "workspace": "6",
+      "fullscreen": "true"
+    },
+    "Brave-Tiktok": {
+      "command": "profile_brave",
+      "args": ["--tiktok"],
+      "vpn": "secure",
+      "workspace": "6",
+      "fullscreen": "true"
+    },
+    "Brave-Spotify": {
+      "command": "profile_brave",
+      "args": ["--spotify"],
+      "vpn": "secure",
+      "workspace": "8",
+      "fullscreen": "true"
+    },
+    "Brave-Discord": {
+      "command": "profile_brave",
+      "args": ["--discord"],
+      "vpn": "secure",
+      "workspace": "5",
+      "final_workspace": "2",
+      "wait_time": "2",
+      "fullscreen": "true"
+    },
+    "Brave-Whatsapp": {
+      "command": "profile_brave",
+      "args": ["--whatsapp"],
+      "vpn": "secure",
+      "workspace": "9",
+      "fullscreen": "true"
+    },
+    "Zen-Kenp": {
+      "command": "zen",
+      "args": ["-P", "Kenp", "--class", "Kenp", "--name", "Kenp", "--restore-session"],
+      "vpn": "secure",
+      "workspace": "1"
+    },
+    "Zen-CompecTA": {
+      "command": "zen",
+      "args": ["-P", "CompecTA", "--class", "CompecTA", "--name", "CompecTA", "--restore-session"],
+      "vpn": "secure",
+      "workspace": "4"
+    },
+    "Zen-Discord": {
+      "command": "zen",
+      "args": ["-P", "Discord", "--class", "Discord", "--name", "Discord", "--restore-session"],
+      "vpn": "secure",
+      "workspace": "5",
+      "fullscreen": "true"
+    },
+    "Zen-NoVpn": {
+      "command": "zen",
+      "args": ["-P", "NoVpn", "--class", "AI", "--name", "AI", "--restore-session"],
+      "vpn": "bypass",
+      "workspace": "3"
+    },
+    "Zen-Proxy": {
+      "command": "zen",
+      "args": ["-P", "Proxy", "--class", "Proxy", "--name", "Proxy", "--restore-session"],
+      "vpn": "bypass",
+      "workspace": "7"
+    },
+    "Zen-Spotify": {
+      "command": "zen",
+      "args": ["-P", "Spotify", "--class", "Spotify", "--name", "Spotify", "--restore-session"],
+      "vpn": "bypass",
+      "workspace": "7",
+      "fullscreen": "true"
+    },
+    "Zen-Whats": {
+      "command": "zen",
+      "args": ["-P", "Whats", "--class", "Whats", "--name", "Whats", "--restore-session"],
+      "vpn": "secure",
+      "workspace": "9",
+      "fullscreen": "true"
+    },
+    "spotify": {
+      "command": "spotify",
+      "args": ["--class", "Spotify", "-T", "Spotify"],
+      "vpn": "bypass",
+      "workspace": "8",
+      "fullscreen": "true"
+    },
+    "mpv": {
+      "command": "mpv",
+      "args": [],
+      "vpn": "bypass",
+      "workspace": "6",
+      "fullscreen": "true"
+    }
+  }
+}'
+
+# Ortamı başlat
 initialize() {
-	mkdir -p "$SCRIPT_PATH"/{logs,backups} "$PID_DIR"
-	touch "$LOG_FILE" "$METRICS_FILE"
-	chmod 700 "$SCRIPT_PATH"
-	chmod 600 "$CONFIG_FILE" "$LOG_FILE" 2>/dev/null || true
+	# Gerekli dizinleri oluştur
+	mkdir -p "$CONFIG_DIR" "$PID_DIR"
 
-	if [[ ! -s "$METRICS_FILE" ]]; then
-		echo '{"sessions":{}}' >"$METRICS_FILE"
+	# Yapılandırma dosyası mevcut değilse gömülü yapılandırmadan oluştur
+	if [[ ! -f "$CONFIG_FILE" ]]; then
+		echo "$EMBEDDED_CONFIG" >"$CONFIG_FILE"
+		chmod 600 "$CONFIG_FILE"
+		log_info "Varsayılan yapılandırma oluşturuldu: $CONFIG_FILE"
 	fi
 }
 
-# Cleanup handler
-cleanup() {
-	local exit_code=$?
-	for pid in "${ACTIVE_MONITORS[@]}"; do
-		kill "$pid" 2>/dev/null || true
-	done
-	rm -f "${TEMP_FILES[@]}" 2>/dev/null || true
-	exit "$exit_code"
-}
-
-# Error handler
-error_handler() {
-	local exit_code=$1
-	local line_no=$2
-	local bash_lineno=$3
-	local last_command=$4
-	local func_trace=$5
-
-	log_error "Error on line $line_no: Command '$last_command' exited with status $exit_code"
-	log_error "Function trace: $func_trace"
-}
-
-# Set up traps
-trap cleanup EXIT
-trap 'error_handler $? $LINENO $BASH_LINENO "$BASH_COMMAND" $(printf "::%s" ${FUNCNAME[@]:-})' ERR
-
-# Logging functions
+# Loglama fonksiyonları
 log_info() {
-	echo -e "${GREEN}[INFO]${NC} $1" >&2
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $1" >>"$LOG_FILE"
+	echo -e "${GREEN}[BİLGİ]${NC} $1"
 }
 
 log_warn() {
-	echo -e "${YELLOW}[WARN]${NC} $1" >&2
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] $1" >>"$LOG_FILE"
+	echo -e "${YELLOW}[UYARI]${NC} $1"
 }
 
 log_error() {
-	echo -e "${RED}[ERROR]${NC} $1" >&2
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $1" >>"$LOG_FILE"
+	echo -e "${RED}[HATA]${NC} $1"
 }
 
 log_success() {
 	echo -e "${GREEN}✓${NC} $1"
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] $1" >>"$LOG_FILE"
 }
 
-log_verbose() {
-	if [[ ${VERBOSE} -eq 1 ]]; then
-		echo -e "${CYAN}[VERBOSE]${NC} $1" >&2
-		echo "[$(date '+%Y-%m-%d %H:%M:%S')] [VERBOSE] $1" >>"$LOG_FILE"
+log_debug() {
+	if [[ $DEBUG -eq 1 ]]; then
+		echo -e "${CYAN}[HATA AYIKLAMA]${NC} $1"
 	fi
 }
 
-# Config validation
-validate_config() {
-	if ! command -v ajv &>/dev/null; then
-		log_error "ajv command not found. Install with: npm install -g ajv-cli"
-		return 1
-	fi
-
-	if ! ajv validate -s "$CONFIG_SCHEMA" -d "$CONFIG_FILE"; then
-		log_error "Config file failed schema validation"
-		return 1
-	fi
-}
-
-# VPN functions
+# VPN fonksiyonları
 check_vpn() {
-	local status_output
 	if ! command -v mullvad &>/dev/null; then
-		log_warn "Mullvad VPN client not found - assuming no VPN connection"
+		log_debug "Mullvad istemcisi bulunamadı, VPN bağlantısı olmadığı varsayılıyor"
 		echo "false"
 		return 0
 	fi
 
-	status_output=$(mullvad status 2>/dev/null || echo "Not connected")
-
-	if echo "$status_output" | grep -q "Connected"; then
+	if mullvad status 2>/dev/null | grep -q "Connected"; then
 		local vpn_details
-		vpn_details=$(echo "$status_output" | grep "Relay:" | awk -F': ' '{print $2}')
-		log_info "VPN active: $vpn_details"
+		vpn_details=$(mullvad status | grep "Relay:" | awk -F': ' '{print $2}')
+		log_debug "VPN aktif: $vpn_details"
 		echo "true"
 		return 0
 	fi
 
-	log_info "No VPN connection"
+	log_debug "VPN bağlantısı bulunamadı"
 	echo "false"
 	return 0
 }
@@ -183,25 +327,22 @@ get_vpn_mode() {
 		echo "$cli_mode"
 		;;
 	"")
-		if [[ -f "$CONFIG_FILE" ]]; then
-			jq -r ".sessions.\"$session_name\".vpn // \"secure\"" "$CONFIG_FILE"
-		else
-			echo "secure"
-		fi
+		jq -r ".sessions.\"$session_name\".vpn // \"secure\"" "$CONFIG_FILE"
 		;;
 	*)
-		log_error "Invalid VPN mode: $cli_mode. Use 'secure' or 'bypass'"
+		log_error "Geçersiz VPN modu: $cli_mode. 'secure' veya 'bypass' kullanın"
 		return 1
 		;;
 	esac
 }
 
-# Session management
+# Oturum yönetimi
 execute_application() {
 	local cmd=$1
 	shift
 	local -a args=("$@")
 
+	log_debug "Çalıştırılıyor: $cmd ${args[*]}"
 	nohup "$cmd" "${args[@]}" >/dev/null 2>&1 &
 	echo $!
 }
@@ -209,63 +350,104 @@ execute_application() {
 start_session() {
 	local session_name=$1
 	local vpn_param=${2:-}
-	local start_time
-	start_time=$(date +%s)
 
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		log_error "Config file not found: $CONFIG_FILE"
-		return 1
-	fi
-
+	# Oturumun var olup olmadığını kontrol et
 	local command
 	command=$(jq -r ".sessions.\"${session_name}\".command" "$CONFIG_FILE")
 	if [[ "$command" == "null" ]]; then
-		log_error "Session not found: $session_name"
+		log_error "Oturum bulunamadı: $session_name"
 		return 1
 	fi
 
-	readarray -t args < <(jq -r ".sessions.\"${session_name}\".args[]" "$CONFIG_FILE")
+	# Komut için argümanları al
+	readarray -t args < <(jq -r ".sessions.\"${session_name}\".args[]" "$CONFIG_FILE" 2>/dev/null || echo "")
 
+	# VPN modunu belirle
 	local vpn_mode
 	vpn_mode=$(get_vpn_mode "$session_name" "$vpn_param")
 	local vpn_status
 	vpn_status=$(check_vpn)
 	local pid
 
+	# VPN moduna göre başlat
 	case "$vpn_mode" in
 	secure)
 		if [[ "$vpn_status" != "true" ]]; then
-			log_warn "No VPN connection found. Starting application normally: $session_name"
+			log_warn "VPN bağlantısı bulunamadı. $session_name VPN koruması olmadan başlatılıyor."
 			if command -v notify-send &>/dev/null; then
-				notify-send "Session Manager" "No VPN connection found. Starting $session_name session without VPN."
+				notify-send "Oturum Yöneticisi" "VPN bağlantısı yok. $session_name VPN koruması olmadan başlatılıyor."
 			fi
 			pid=$(execute_application "$command" "${args[@]}")
 		else
+			log_info "$session_name VPN koruması ile başlatılıyor"
 			pid=$(execute_application "$command" "${args[@]}")
 		fi
 		;;
 	bypass)
 		if [[ "$vpn_status" == "true" ]]; then
 			if command -v mullvad-exclude &>/dev/null; then
+				log_info "$session_name VPN tüneli dışında başlatılıyor"
 				pid=$(mullvad-exclude "$command" "${args[@]}")
 			else
-				log_warn "mullvad-exclude not found - running normally"
+				log_warn "mullvad-exclude bulunamadı - $session_name normal şekilde çalıştırılıyor"
 				pid=$(execute_application "$command" "${args[@]}")
 			fi
 		else
+			log_info "VPN aktif değil, $session_name normal şekilde başlatılıyor"
 			pid=$(execute_application "$command" "${args[@]}")
 		fi
 		;;
 	esac
 
+	# PID'i kaydet
 	local pid_file="$PID_DIR/${session_name}.pid"
 	echo "$pid" >"$pid_file"
+	log_success "Oturum başlatıldı: $session_name (PID: $pid)"
 
-	monitor_resources "$session_name" "$pid" &
-	ACTIVE_MONITORS["$session_name"]=$!
+	# Workspace değiştirme işlemini yönet
+	handle_workspace "$session_name" "$pid"
 
-	update_metrics "$session_name" "$start_time" "$(date +%s)" "started"
-	log_info "Session started: $session_name (PID: $pid)"
+	return 0
+}
+
+handle_workspace() {
+	local session_name=$1
+	local pid=$2
+
+	# Workspace belirtilip belirtilmediğini kontrol et
+	local workspace
+	workspace=$(jq -r ".sessions.\"${session_name}\".workspace // \"0\"" "$CONFIG_FILE")
+	local fullscreen
+	fullscreen=$(jq -r ".sessions.\"${session_name}\".fullscreen // \"false\"" "$CONFIG_FILE")
+	local wait_time
+	wait_time=$(jq -r ".sessions.\"${session_name}\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
+
+	# Eğer workspace belirtilmişse ve hyprctl kullanılabilirse, geçiş yap
+	if [[ "$workspace" != "0" && "$workspace" != "null" ]]; then
+		if command -v hyprctl &>/dev/null; then
+			log_info "$workspace workspace'ine geçiliyor"
+			hyprctl dispatch workspace "$workspace"
+			sleep 1
+
+			# Tam ekran yapılacaksa
+			if [[ "$fullscreen" == "true" ]]; then
+				log_debug "$session_name tam ekran yapılmadan önce $wait_time saniye bekleniyor"
+				sleep "$wait_time"
+				hyprctl dispatch fullscreen 1
+			fi
+
+			# Son workspace'e geçiş yapılacaksa
+			local final_workspace
+			final_workspace=$(jq -r ".sessions.\"${session_name}\".final_workspace // \"\"" "$CONFIG_FILE")
+			if [[ -n "$final_workspace" && "$final_workspace" != "null" && "$final_workspace" != "$workspace" ]]; then
+				log_debug "$final_workspace workspace'ine geçmeden önce $wait_time saniye bekleniyor"
+				sleep "$wait_time"
+				hyprctl dispatch workspace "$final_workspace"
+			fi
+		else
+			log_warn "hyprctl bulunamadı, workspace değiştirme devre dışı"
+		fi
+	fi
 }
 
 stop_session() {
@@ -277,136 +459,28 @@ stop_session() {
 		pid=$(<"$pid_file")
 		if kill "$pid" 2>/dev/null; then
 			rm -f "$pid_file"
-			if [[ -n "${ACTIVE_MONITORS[$session_name]:-}" ]]; then
-				kill "${ACTIVE_MONITORS[$session_name]}" 2>/dev/null || true
-				unset "ACTIVE_MONITORS[$session_name]"
-			fi
-			log_info "Session stopped: $session_name"
-			update_metrics "$session_name" "$(date +%s)" "$(date +%s)" "stopped"
+			log_success "Oturum durduruldu: $session_name"
 			return 0
 		fi
 	fi
-	log_error "No running session found: $session_name"
+	log_error "Çalışan oturum bulunamadı: $session_name"
 	return 1
 }
 
-# Session management functions
-add_session() {
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		# First time config creation
-		echo '{"sessions":{}}' >"$CONFIG_FILE"
-	fi
-
-	if ! echo "$1" | jq . >/dev/null 2>&1; then
-		log_error "Invalid JSON data"
-		return 1
-	fi
-
-	local temp_file
-	temp_file=$(mktemp)
-	TEMP_FILES+=("$temp_file")
-
-	if jq --argjson new "$1" '.sessions += $new' "$CONFIG_FILE" >"$temp_file" &&
-		mv "$temp_file" "$CONFIG_FILE"; then
-		log_info "Session added successfully"
-	else
-		log_error "Error adding session"
-		return 1
-	fi
-}
-
-remove_session() {
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		log_error "Config file not found"
-		return 1
-	fi
-
-	local temp_file
-	temp_file=$(mktemp)
-	TEMP_FILES+=("$temp_file")
-
-	if jq --arg name "$1" 'del(.sessions[$name])' "$CONFIG_FILE" >"$temp_file" &&
-		mv "$temp_file" "$CONFIG_FILE"; then
-		log_info "Session successfully removed: $1"
-	else
-		log_error "Error removing session"
-		return 1
-	fi
-}
-
-list_sessions() {
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		log_error "Config file not found"
-		return 1
-	fi
-
-	printf "${BLUE}%s${NC}\n" "Available Sessions:"
-
-	jq -r '.sessions | to_entries[] | {
-        key: .key,
-        command: .value.command,
-        vpn: (.value.vpn // "secure"),
-        workspace: (.value.workspace // "0"),
-        args: (.value.args|join(" "))
-    } | "\(.key):\n  Command: \(.command)\n  VPN Mode: \(.vpn)\n  Workspace: \(.workspace)\n  Arguments: \(.args)"' "$CONFIG_FILE" |
-		while IFS= read -r line; do
-			if [[ $line =~ :$ ]]; then
-				session=${line%:}
-				status=$(check_status "$session")
-				echo -e "${GREEN}${line}${NC}"
-			elif [[ $line =~ ^[[:space:]]*VPN[[:space:]]Mode:[[:space:]]*(.*) ]]; then
-				mode=${BASH_REMATCH[1]}
-				case "$mode" in
-				secure) printf "  VPN Mode: ${RED}%s${NC}\n" "$mode" ;;
-				bypass) printf "  VPN Mode: ${GREEN}%s${NC}\n" "$mode" ;;
-				*) printf "  VPN Mode: ${YELLOW}%s${NC}\n" "$mode" ;;
-				esac
-			else
-				echo "$line"
-			fi
-		done
-}
-
-# Resource monitoring
-monitor_resources() {
+restart_session() {
 	local session_name=$1
-	local pid=$2
-	local interval=${3:-$DEFAULT_MONITOR_INTERVAL}
+	local vpn_param=${2:-}
 
-	while kill -0 "$pid" 2>/dev/null; do
-		local cpu mem
-		cpu=$(ps -p "$pid" -o %cpu= 2>/dev/null || echo "0")
-		mem=$(ps -p "$pid" -o %mem= 2>/dev/null || echo "0")
-
-		update_metrics "$session_name" "$(date +%s)" "$(date +%s)" "running" "{\"cpu\":$cpu,\"mem\":$mem}"
-		sleep "$interval"
-	done
-}
-
-# Metrics management
-update_metrics() {
-	local session_name=$1
-	local start_time=$2
-	local end_time=$3
-	local status=$4
-	local resources=${5:-"{}"}
-
-	local duration=$((end_time - start_time))
-	local temp_file
-	temp_file=$(mktemp)
-	TEMP_FILES+=("$temp_file")
-
-	jq --arg session "$session_name" \
-		--arg timestamp "$(date -Iseconds)" \
-		--arg duration "$duration" \
-		--arg status "$status" \
-		--argjson resources "$resources" \
-		'.sessions[$session].runs += [{
-            timestamp: $timestamp,
-            duration: $duration | tonumber,
-            status: $status,
-            resources: $resources
-        }]' "$METRICS_FILE" >"$temp_file" && mv "$temp_file" "$METRICS_FILE"
+	log_info "Oturum yeniden başlatılıyor: $session_name"
+	if stop_session "$session_name"; then
+		sleep 1
+		start_session "$session_name" "$vpn_param"
+		return $?
+	else
+		log_warn "Oturum $session_name çalışmıyordu, şimdi başlatılıyor"
+		start_session "$session_name" "$vpn_param"
+		return $?
+	fi
 }
 
 # Utility functions
@@ -421,328 +495,125 @@ check_status() {
 	fi
 }
 
-backup_config() {
-	local timestamp
-	timestamp=$(date +%Y%m%d_%H%M%S)
-	local backup_file="$BACKUP_DIR/sem_config_$timestamp.json"
-
-	if cp "$CONFIG_FILE" "$backup_file"; then
-		log_info "Config backed up: $backup_file"
-		return 0
-	else
-		log_error "Error backing up config"
-		return 1
-	fi
-}
-
 show_version() {
-	echo "semsumo version $VERSION"
+	echo "semsumo sürüm $VERSION"
 }
 
-#===============================================================================
-# Session Script Generator Functions (--create parameter)
-#===============================================================================
+# Oturumları listele
+list_sessions() {
+	printf "${BLUE}%s${NC}\n" "Mevcut Oturumlar:"
 
-check_script_generator_dependencies() {
-	local missing_deps=0
+	jq -r '.sessions | to_entries[] | {
+        key: .key,
+        command: .value.command,
+        vpn: (.value.vpn // "secure"),
+        workspace: (.value.workspace // "0"),
+        args: (.value.args|join(" "))
+    } | "\(.key):\n  Komut: \(.command)\n  VPN Modu: \(.vpn)\n  Workspace: \(.workspace)\n  Parametreler: \(.args)"' "$CONFIG_FILE" |
+		while IFS= read -r line; do
+			if [[ $line =~ :$ ]]; then
+				session=${line%:}
+				status=$(check_status "$session")
+				if [[ "$status" == "running" ]]; then
+					echo -e "${GREEN}${line} [ÇALIŞIYOR]${NC}"
+				else
+					echo -e "${GREEN}${line}${NC}"
+				fi
+			elif [[ $line =~ ^[[:space:]]*VPN[[:space:]]Modu:[[:space:]]*(.*) ]]; then
+				mode=${BASH_REMATCH[1]}
+				case "$mode" in
+				secure) printf "  VPN Modu: ${RED}%s${NC}\n" "$mode" ;;
+				bypass) printf "  VPN Modu: ${GREEN}%s${NC}\n" "$mode" ;;
+				*) printf "  VPN Modu: ${YELLOW}%s${NC}\n" "$mode" ;;
+				esac
+			else
+				echo "$line"
+			fi
+		done
+}
 
-	# Check for required commands
-	for cmd in jq "$SEMSUMO" mkdir chmod; do
-		if ! command -v "$cmd" >/dev/null 2>&1; then
-			log_error "Required command not found: $cmd"
-			missing_deps=1
+# Grup işlemleri
+list_groups() {
+	printf "${BLUE}%s${NC}\n" "Tanımlı Gruplar:"
+
+	for group in "${!APP_GROUPS[@]}"; do
+		printf "${GREEN}%s${NC}: " "$group"
+		# Grubun içeriğini göster
+		local apps="${APP_GROUPS[$group]}"
+		# Eğer grup adı "all" ise, bu bir meta grup - içindeki grup adlarını göster
+		if [[ "$group" == "all" ]]; then
+			printf "Meta-grup, içerik: ${YELLOW}%s${NC}\n" "$apps"
 		else
-			log_verbose "Found required command: $cmd"
+			printf "${CYAN}%s${NC}\n" "$apps"
 		fi
 	done
-
-	if [[ $missing_deps -eq 1 ]]; then
-		log_error "Please install missing dependencies and try again."
-		return 1
-	fi
-
-	return 0
 }
 
-validate_script_generator_config() {
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		log_error "Configuration file not found at: $CONFIG_FILE"
+# Bir grubu başlat
+start_group() {
+	local group_name=$1
+	local parallel=${2:-false}
+
+	if [[ ! -v APP_GROUPS["$group_name"] ]]; then
+		log_error "Tanımlı grup bulunamadı: $group_name"
 		return 1
 	fi
 
-	# Check if config is valid JSON
-	if ! jq empty "$CONFIG_FILE" 2>/dev/null; then
-		log_error "Configuration file is not valid JSON: $CONFIG_FILE"
-		return 1
-	fi
+	local group_content="${APP_GROUPS[$group_name]}"
+	local start_time
+	start_time=$(date +%s)
 
-	# Check if config contains sessions field
-	if ! jq -e '.sessions' "$CONFIG_FILE" >/dev/null 2>&1; then
-		log_error "Configuration file must contain a 'sessions' field"
-		return 1
-	fi
-
-	# Check if there are any profiles defined
-	local profile_count
-	profile_count=$(jq '.sessions | keys | length' "$CONFIG_FILE")
-
-	if [[ $profile_count -eq 0 ]]; then
-		log_warn "No profiles found in configuration file"
-		return 1
+	# Eğer grup bir meta-grup ise (all gibi), alt grupları başlat
+	if [[ "$group_name" == "all" || "$group_content" =~ browsers|terminals|communications|media ]]; then
+		log_info "Meta-grup başlatılıyor: $group_name"
+		for subgroup in $group_content; do
+			if [[ -v APP_GROUPS["$subgroup"] ]]; then
+				log_info "Alt grup başlatılıyor: $subgroup"
+				start_group "$subgroup" "$parallel"
+			else
+				log_error "Alt grup bulunamadı: $subgroup"
+			fi
+		done
 	else
-		log_info "Found $profile_count profile(s) in configuration file"
-		return 0
+		# Normal grup - oturumları başlat
+		log_info "Grup başlatılıyor: $group_name ($group_content)"
+
+		if [[ "$parallel" == "true" ]]; then
+			log_debug "Paralel başlatma modu aktif"
+			local pids=()
+			for session in $group_content; do
+				start_session "$session" &
+				pids+=($!)
+			done
+
+			# Tüm paralel işlemlerin tamamlanmasını bekle
+			for pid in "${pids[@]}"; do
+				wait "$pid" || true # Hata olursa da devam et
+			done
+		else
+			# Sıralı başlatma
+			for session in $group_content; do
+				start_session "$session"
+			done
+		fi
 	fi
-}
 
-create_script() {
-	local profile=$1
-	local vpn_mode=$2
-	local script_path="$SCRIPTS_DIR/start-${profile,,}.sh"
+	local end_time
+	end_time=$(date +%s)
+	local duration=$((end_time - start_time))
+	log_success "Grup başlatıldı: $group_name (Süre: ${duration}s)"
 
-	log_verbose "Creating script: $script_path for profile $profile with VPN mode: $vpn_mode"
-
-	# Workspace ayarlarını config dosyasından al (yoksa varsayılan değerleri kullan)
-	local workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
-	local final_workspace=$(jq -r ".sessions.\"$profile\".final_workspace // \"$workspace\"" "$CONFIG_FILE")
-	local wait_time=$(jq -r ".sessions.\"$profile\".wait_time // \"2\"" "$CONFIG_FILE")
-	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // \"false\"" "$CONFIG_FILE")
-
-	# Profile ismini düzenle (camel case ve büyük harfe çevir)
-	local upper_profile=$(echo "$profile" | tr '-' '_' | tr 'a-z' 'A-Z')
-
-	# Script içeriğini oluştur
-	cat >"$script_path" <<EOF
-#!/usr/bin/env bash
-#===============================================================================
-# Generated script for $profile
-# VPN Mode: $vpn_mode
-# Do not edit manually - this file is automatically generated
-#===============================================================================
-
-# Error handling
-set -euo pipefail
-
-# Environment setup
-export TMPDIR="$TMP_DIR"
-
-# Sabitler
-WORKSPACE_${upper_profile}=$workspace
-FINAL_WORKSPACE=$final_workspace
-WAIT_TIME=$wait_time
-
-# Workspace'e geçiş fonksiyonu
-switch_workspace() {
-	local workspace="\$1"
+	# En son 2 numaralı workspace'e dön (varsayılan)
 	if command -v hyprctl &>/dev/null; then
-		echo "Workspace \$workspace'e geçiliyor..."
-		hyprctl dispatch workspace "\$workspace"
-		sleep 1
+		log_info "Ana workspace'e dönülüyor (2)"
+		hyprctl dispatch workspace 2
 	fi
 }
 
-# Tam ekran yapma fonksiyonu
-make_fullscreen() {
-	if command -v hyprctl &>/dev/null; then
-		echo "Aktif pencere tam ekran yapılıyor..."
-		sleep 1
-		hyprctl dispatch fullscreen 1
-		sleep 1
-	fi
-}
-
-EOF
-
-	# Workspace değeri varsa geçiş kodu ekle
-	if [[ "$workspace" != "0" ]]; then
-		cat >>"$script_path" <<EOF
-# $profile workspace'ine geç
-switch_workspace "\$WORKSPACE_${upper_profile}"
-
-EOF
-	fi
-
-	# Start session kodu - background'da çalıştır
-	cat >>"$script_path" <<EOF
-# Start session with Semsumo
-echo "$profile başlatılıyor..."
-$SEMSUMO start "$profile" "$vpn_mode" &
-
-# Uygulama açılması için bekle
-echo "Uygulama açılması için \$WAIT_TIME saniye bekleniyor..."
-sleep \$WAIT_TIME
-
-EOF
-
-	# Tam ekran seçeneği etkinse ekle
-	if [[ "$fullscreen" == "true" ]]; then
-		cat >>"$script_path" <<EOF
-# Tam ekran yap
-make_fullscreen
-
-EOF
-	fi
-
-	# Final workspace geçişi, eğer başlangıç workspace'inden farklıysa
-	if [[ "$final_workspace" != "0" && "$final_workspace" != "$workspace" ]]; then
-		cat >>"$script_path" <<EOF
-# Tamamlandığında ana workspace'e geri dön
-echo "İşlem tamamlandı, workspace \$FINAL_WORKSPACE'e dönülüyor..."
-switch_workspace "\$FINAL_WORKSPACE"
-
-EOF
-	fi
-
-	# Script sonlandırması
-	cat >>"$script_path" <<EOF
-# Exit successfully
-exit 0
-EOF
-
-	# Make script executable and set proper permissions
-	chmod 755 "$script_path"
-	log_success "Created: start-${profile,,}.sh"
-}
-
-process_profiles() {
-	local profiles
-	local total_profiles
-	local current=0
-
-	# Get all profile names from config in one call
-	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
-	total_profiles=$(echo "$profiles" | wc -l)
-
-	echo "----------------------------------------"
-	log_info "Starting script generation for $total_profiles profile(s)..."
-
-	# Process each profile and generate scripts based on VPN mode
-	while IFS= read -r profile; do
-		current=$((current + 1))
-
-		# Skip empty profiles (shouldn't happen with proper JSON)
-		if [[ -z "$profile" ]]; then
-			continue
-		fi
-
-		# Show progress
-		log_info "[$current/$total_profiles] Processing profile: $profile"
-
-		# Validate profile name (avoid directory traversal)
-		if [[ "$profile" =~ [\/\\] ]]; then
-			log_error "Invalid profile name (contains path characters): $profile"
-			continue
-		fi
-
-		# Get VPN mode from config - convert old vpn_mode if needed
-		local vpn_mode
-
-		# First try the new 'vpn' field
-		vpn_mode=$(jq -r ".sessions.\"$profile\".vpn // \"\"" "$CONFIG_FILE")
-
-		# If empty, try legacy vpn_mode and convert
-		if [[ -z "$vpn_mode" ]]; then
-			local legacy_mode
-			legacy_mode=$(jq -r ".sessions.\"$profile\".vpn_mode // \"default\"" "$CONFIG_FILE")
-
-			case "$legacy_mode" in
-			"never")
-				vpn_mode="bypass"
-				;;
-			"always")
-				vpn_mode="secure"
-				;;
-			*)
-				vpn_mode="secure" # Default to secure if not specified or invalid
-				;;
-			esac
-
-			log_verbose "Converting legacy vpn_mode '$legacy_mode' to '$vpn_mode' for profile $profile"
-		fi
-
-		# Generate script with the correct VPN mode
-		create_script "$profile" "$vpn_mode"
-
-		echo ""
-	done <<<"$profiles"
-
-	echo "----------------------------------------"
-	log_success "Script generation complete! Generated $total_profiles scripts."
-}
-
-run_script_generator() {
-	local alternative_config=${1:-""}
-	local alternative_output=${2:-""}
-
-	# Set alternative config if provided
-	if [[ -n "$alternative_config" ]]; then
-		CONFIG_FILE="$alternative_config"
-	fi
-
-	# Set alternative output directory if provided
-	if [[ -n "$alternative_output" ]]; then
-		SCRIPTS_DIR="$alternative_output"
-	fi
-
-	# Check dependencies
-	if ! check_script_generator_dependencies; then
-		return 1
-	fi
-
-	# Validate configuration file
-	if ! validate_script_generator_config; then
-		return 1
-	fi
-
-	# Create necessary directories with proper permissions
-	mkdir -p "$SCRIPTS_DIR"
-	if [[ ! -d "$TMP_DIR" ]]; then
-		mkdir -p "$TMP_DIR"
-		chmod 700 "$TMP_DIR"
-		log_verbose "Created temporary directory: $TMP_DIR"
-	fi
-
-	# Process profiles and generate scripts
-	process_profiles
-
-	# Show usage examples
-	echo ""
-	log_info "Usage examples:"
-
-	# Get first profile for example
-	local example_profile
-	example_profile=$(jq -r '.sessions | keys[0] // "example"' "$CONFIG_FILE")
-	example_profile=${example_profile,,}
-
-	echo "  $SCRIPTS_DIR/start-$example_profile.sh"
-
-	return 0
-}
-
-show_create_help() {
-	cat <<EOF
-Script Generator for Semsumo Profiles
-
-Usage: semsumo --create [OPTIONS]
-
-Generate session management scripts for Semsumo profiles.
-
-Options:
-  -h, --help     Show this help message and exit
-  -v, --verbose  Enable verbose output
-  -c, --config   Specify an alternative config file location
-  -o, --output   Specify an alternative output directory
-
-Example:
-  semsumo --create --verbose
-  semsumo --create --config ~/custom-config.json --output ~/scripts
-
-EOF
-}
-
+# Yardım göster
 show_help() {
 	cat <<EOF
-Session Manager $VERSION - Terminal ve Uygulama Oturumları Yöneticisi
+Oturum Yöneticisi $VERSION - Terminal ve Uygulama Oturumları Yöneticisi
 
 Kullanım: 
   semsumo <komut> [parametreler]
@@ -753,10 +624,8 @@ Komutlar:
   restart <oturum> [vpn_modu]  Oturum yeniden başlat
   status  <oturum>             Oturum durumunu göster
   list                         Mevcut oturumları listele
-  add     <json_veri>          Yeni oturum yapılandırması ekle
-  remove  <oturum>             Oturum yapılandırmasını kaldır
-  backup                       Config yedekle
-  validate                     Config doğrula  
+  group   <grup>  [parallel]   Bir grup oturumu başlat (opsiyonel paralel)
+  groups                       Tanımlı grupları listele
   version                      Versiyon bilgisi
   help                         Bu yardım mesajını göster
   --create [options]           Oturum yönetimi scriptleri oluştur
@@ -772,46 +641,28 @@ Yapılandırma Parametreleri:
   wait_time       : Uygulama başlatıldıktan sonra beklenecek süre (saniye)
   fullscreen      : Uygulamayı tam ekran yapmak için "true" değeri ver
 
+Grup Örnekleri:
+  semsumo group browsers         # Tüm tarayıcıları başlat
+  semsumo group terminals        # Tüm terminal oturumlarını başlat
+  semsumo group communications -p # İletişim uygulamalarını paralel başlat
+  semsumo group all              # Tüm grupları başlat
+
 Örnek Kullanımlar:
   # Oturum başlatma örnekleri
   semsumo start secure-browser         # Yapılandırma VPN modunu kullan
   semsumo start local-browser bypass   # VPN dışında çalıştır
-  semsumo restart zen-browser secure   # VPN içinde yeniden başlat
+  semsumo restart discord secure       # VPN içinde yeniden başlat
 
   # Oturum yönetimi
   semsumo list                         # Tüm oturumları listele
-  semsumo status local-browser         # Oturum durumunu kontrol et
-  semsumo stop secure-browser          # Oturumu durdur
+  semsumo status spotify               # Oturum durumunu kontrol et
+  semsumo stop discord                 # Oturumu durdur
 
   # Script oluşturma
   semsumo --create                     # Oturum scriptlerini oluştur
-  semsumo --create --verbose           # Detaylı bilgilerle oluştur
+  semsumo --create --debug             # Detaylı bilgilerle oluştur
 
-  # Yapılandırma örnekleri
-  semsumo add '{
-    "secure-browser": {
-      "command": "/usr/bin/firefox",
-      "args": ["-P", "Secure", "--class", "Firefox-Secure"],
-      "vpn": "secure",
-      "workspace": "2",
-      "fullscreen": "true"
-    }
-  }'
-
-  semsumo add '{
-    "discord-app": {
-      "command": "discord",
-      "args": ["--class", "Discord"],
-      "vpn": "bypass",
-      "workspace": "5",
-      "final_workspace": "2",
-      "wait_time": "3",
-      "fullscreen": "true"
-    }
-  }'
-
-  semsumo remove old-profile           # Profili kaldır
-  semsumo backup                       # Yapılandırmayı yedekle
+Yapılandırma dosyası: $CONFIG_FILE
 
 Not: VPN modu yapılandırma dosyasında tanımlıysa ve komut satırında 
 belirtilmemişse, yapılandırmadaki mod kullanılır. Hiçbiri belirtilmemişse 
@@ -819,50 +670,247 @@ belirtilmemişse, yapılandırmadaki mod kullanılır. Hiçbiri belirtilmemişse
 EOF
 }
 
-# Main program
-main() {
-	initialize
+# Script oluşturma fonksiyonları
+create_script() {
+	local profile=$1
+	local vpn_mode=$2
+	local script_path="$SCRIPTS_DIR/start-${profile,,}.sh"
 
-	# Handle script generator (--create parameter)
+	if [[ ! -d "$SCRIPTS_DIR" ]]; then
+		mkdir -p "$SCRIPTS_DIR"
+	fi
+
+	# Yapılandırmadan workspace ayarlarını al
+	local workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
+	local final_workspace=$(jq -r ".sessions.\"$profile\".final_workspace // \"$workspace\"" "$CONFIG_FILE")
+	local wait_time=$(jq -r ".sessions.\"$profile\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
+	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // \"false\"" "$CONFIG_FILE")
+
+	# Script içeriği oluştur
+	cat >"$script_path" <<EOF
+#!/usr/bin/env bash
+#===============================================================================
+# $profile için oluşturulan başlatma script'i
+# VPN Modu: $vpn_mode
+# Elle düzenlemeyin - semsumo tarafından otomatik oluşturulmuştur
+#===============================================================================
+
+# Hata yönetimi
+set -euo pipefail
+
+# Ortam ayarları
+export TMPDIR="$PID_DIR"
+
+# Sabitler
+WORKSPACE=$workspace
+FINAL_WORKSPACE=$final_workspace
+WAIT_TIME=$wait_time
+
+# Workspace'e geçiş fonksiyonu
+switch_workspace() {
+    local workspace="\$1"
+    if command -v hyprctl &>/dev/null; then
+        echo "Workspace \$workspace'e geçiliyor..."
+        hyprctl dispatch workspace "\$workspace"
+        sleep 1
+    fi
+}
+
+# Tam ekran yapma fonksiyonu
+make_fullscreen() {
+    if command -v hyprctl &>/dev/null; then
+        echo "Aktif pencere tam ekran yapılıyor..."
+        sleep 1
+        hyprctl dispatch fullscreen 1
+        sleep 1
+    fi
+}
+
+EOF
+
+	# Workspace belirtilmişse geçiş ekle
+	if [[ "$workspace" != "0" ]]; then
+		cat >>"$script_path" <<EOF
+# $profile workspace'ine geç
+switch_workspace "\$WORKSPACE"
+
+EOF
+	fi
+
+	# Oturum başlatma kodu
+	cat >>"$script_path" <<EOF
+# Semsumo ile oturumu başlat
+echo "$profile başlatılıyor..."
+semsumo start "$profile" "$vpn_mode" &
+
+# Uygulamanın açılması için bekle
+echo "Uygulama açılması için \$WAIT_TIME saniye bekleniyor..."
+sleep \$WAIT_TIME
+
+EOF
+
+	# Fullscreen aktifse ekle
+	if [[ "$fullscreen" == "true" ]]; then
+		cat >>"$script_path" <<EOF
+# Tam ekran yap
+make_fullscreen
+
+EOF
+	fi
+
+	# Son workspace farklıysa geçiş ekle
+	if [[ "$final_workspace" != "0" && "$final_workspace" != "$workspace" ]]; then
+		cat >>"$script_path" <<EOF
+# Tamamlandığında ana workspace'e geri dön
+echo "İşlem tamamlandı, workspace \$FINAL_WORKSPACE'e dönülüyor..."
+switch_workspace "\$FINAL_WORKSPACE"
+
+EOF
+	fi
+
+	# Script sonlandırma
+	cat >>"$script_path" <<EOF
+# Başarıyla çıkış yap
+exit 0
+EOF
+
+	# Scripti çalıştırılabilir yap
+	chmod 755 "$script_path"
+	log_success "Oluşturuldu: start-${profile,,}.sh"
+}
+
+run_script_generator() {
+	log_info "Script oluşturma başlatılıyor..."
+
+	# jq kurulu mu kontrol et
+	if ! command -v jq &>/dev/null; then
+		log_error "Script oluşturma için jq gerekli"
+		return 1
+	fi
+
+	# Script dizinini oluştur
+	if [[ ! -d "$SCRIPTS_DIR" ]]; then
+		mkdir -p "$SCRIPTS_DIR"
+		log_info "Script dizini oluşturuldu: $SCRIPTS_DIR"
+	fi
+
+	# Tüm profilleri al
+	local profiles
+	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
+	local total=$(echo "$profiles" | wc -l)
+
+	log_info "$total profil için başlatma scriptleri oluşturuluyor..."
+
+	# Her profil için işlem yap
+	while IFS= read -r profile; do
+		# Boş satırları atla
+		if [[ -z "$profile" ]]; then
+			continue
+		fi
+
+		# Yapılandırmadan VPN modunu al
+		local vpn_mode
+		vpn_mode=$(jq -r ".sessions.\"$profile\".vpn // \"secure\"" "$CONFIG_FILE")
+
+		# Script oluştur
+		create_script "$profile" "$vpn_mode"
+	done <<<"$profiles"
+
+	log_success "Script oluşturma tamamlandı! $total script oluşturuldu."
+
+	# Kullanım örneği göster
+	if [[ $total -gt 0 ]]; then
+		local example
+		example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
+		echo ""
+		log_info "Kullanım örneği: $SCRIPTS_DIR/start-${example,,}.sh"
+	fi
+
+	return 0
+}
+
+# Komut satırı parametreleri
+parse_args() {
+	# Script oluşturma modunu yönet
 	if [[ "${1:-}" == "--create" ]]; then
 		shift
-		VERBOSE=0
-		CONFIG_OVERRIDE=""
-		OUTPUT_OVERRIDE=""
+		CREATE_MODE=1
 
-		# Parse create-specific arguments
+		# Oluşturma için özel parametreleri ayrıştır
 		while [[ $# -gt 0 ]]; do
 			case $1 in
-			-h | --help)
-				show_create_help
-				exit 0
-				;;
-			-v | --verbose)
-				VERBOSE=1
+			--debug | -d)
+				DEBUG=1
 				shift
 				;;
-			-c | --config)
+			--config | -c)
 				CONFIG_OVERRIDE="$2"
 				shift 2
 				;;
-			-o | --output)
+			--output | -o)
 				OUTPUT_OVERRIDE="$2"
 				shift 2
 				;;
 			*)
-				log_error "Unknown option for create: $1"
-				show_create_help
+				log_error "Bilinmeyen parametre: $1"
+				show_help
 				exit 1
 				;;
 			esac
 		done
 
-		# Run script generator with parsed options
-		run_script_generator "$CONFIG_OVERRIDE" "$OUTPUT_OVERRIDE"
+		# Alternatif yapılandırma belirtilmişse kullan
+		if [[ -n "$CONFIG_OVERRIDE" ]]; then
+			CONFIG_FILE="$CONFIG_OVERRIDE"
+		fi
+
+		# Alternatif çıkış dizini belirtilmişse kullan
+		if [[ -n "$OUTPUT_OVERRIDE" ]]; then
+			SCRIPTS_DIR="$OUTPUT_OVERRIDE"
+		fi
+
+		return 0
+	fi
+
+	# Hata ayıklama bayrağını yönet
+	if [[ "${1:-}" == "--debug" || "${1:-}" == "-d" ]]; then
+		DEBUG=1
+		shift
+	fi
+
+	# Yapılandırma geçersiz kılmayı yönet
+	if [[ "${1:-}" == "--config" || "${1:-}" == "-c" ]]; then
+		if [[ -n "${2:-}" ]]; then
+			CONFIG_FILE="$2"
+			shift 2
+		else
+			log_error "--config parametresi için değer eksik"
+			show_help
+			exit 1
+		fi
+	fi
+
+	# Paralel çalıştırma parametresi
+	if [[ "${1:-}" == "--parallel" || "${1:-}" == "-p" ]]; then
+		PARALLEL=1
+		shift
+	fi
+
+	return 0
+}
+
+# Ana fonksiyon
+main() {
+	initialize
+	parse_args "$@"
+
+	# Script oluşturma modunu yönet
+	if [[ $CREATE_MODE -eq 1 ]]; then
+		run_script_generator
 		exit $?
 	fi
 
-	# Handle regular commands
+	# Normal komutları yönet
 	case "${1:-}" in
 	start)
 		if [[ -z "${2:-}" ]]; then
@@ -883,7 +931,7 @@ main() {
 			show_help
 			exit 1
 		fi
-		stop_session "$2" && start_session "$2" "${3:-}"
+		restart_session "$2" "${3:-}"
 		;;
 	status)
 		if [[ -z "${2:-}" ]]; then
@@ -895,25 +943,19 @@ main() {
 	list)
 		list_sessions
 		;;
-	add)
+	group)
 		if [[ -z "${2:-}" ]]; then
-			show_help
-			exit 1
+			list_groups
+			exit 0
 		fi
-		add_session "$2"
-		;;
-	remove)
-		if [[ -z "${2:-}" ]]; then
-			show_help
-			exit 1
+		if [[ $PARALLEL -eq 1 ]]; then
+			start_group "$2" "true"
+		else
+			start_group "$2" "false"
 		fi
-		remove_session "$2"
 		;;
-	backup)
-		backup_config
-		;;
-	validate)
-		validate_config
+	groups)
+		list_groups
 		;;
 	version)
 		show_version
@@ -928,4 +970,5 @@ main() {
 	esac
 }
 
+# Scripti çalıştır
 main "$@"
