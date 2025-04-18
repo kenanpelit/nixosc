@@ -2,7 +2,6 @@
 # Profile: Zen-Whats
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-Whats..."
 echo "Initializing Zen-Whats..."
 
 # Switch to initial workspace

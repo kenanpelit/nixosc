@@ -2,7 +2,6 @@
 # Profile: discord
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting discord..."
 echo "Initializing discord..."
 
 # Switch to initial workspace

@@ -2,7 +2,6 @@
 # Profile: mpv
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting mpv..."
 echo "Initializing mpv..."
 
 # Switch to initial workspace

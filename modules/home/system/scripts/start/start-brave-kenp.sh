@@ -2,7 +2,6 @@
 # Profile: Brave-Kenp
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Kenp..."
 echo "Initializing Brave-Kenp..."
 
 # Switch to initial workspace

@@ -2,7 +2,6 @@
 # Profile: spotify
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting spotify..."
 echo "Initializing spotify..."
 
 # Switch to initial workspace

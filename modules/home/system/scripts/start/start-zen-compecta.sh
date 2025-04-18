@@ -2,7 +2,6 @@
 # Profile: Zen-CompecTA
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-CompecTA..."
 echo "Initializing Zen-CompecTA..."
 
 # Switch to initial workspace

@@ -2,7 +2,6 @@
 # Profile: wezterm-rmpc
 set -euo pipefail
 
-echo "[2025-04-18 15:53:00] Starting wezterm-rmpc..."
 echo "Initializing wezterm-rmpc..."
 
 # Switch to initial workspace

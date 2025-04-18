@@ -2,7 +2,6 @@
 # Profile: Chrome-CompecTA
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Chrome-CompecTA..."
 echo "Initializing Chrome-CompecTA..."
 
 # Switch to initial workspace

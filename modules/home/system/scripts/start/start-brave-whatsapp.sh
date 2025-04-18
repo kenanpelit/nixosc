@@ -2,7 +2,6 @@
 # Profile: Brave-Whatsapp
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Whatsapp..."
 echo "Initializing Brave-Whatsapp..."
 
 # Switch to initial workspace

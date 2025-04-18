@@ -2,7 +2,6 @@
 # Profile: Zen-Discord
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-Discord..."
 echo "Initializing Zen-Discord..."
 
 # Switch to initial workspace

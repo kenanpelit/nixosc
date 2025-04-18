@@ -2,7 +2,6 @@
 # Profile: Chrome-Kenp
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Chrome-Kenp..."
 echo "Initializing Chrome-Kenp..."
 
 # Switch to initial workspace

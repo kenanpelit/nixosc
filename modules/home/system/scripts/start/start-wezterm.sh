@@ -2,7 +2,6 @@
 # Profile: wezterm
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting wezterm..."
 echo "Initializing wezterm..."
 
 # Switch to initial workspace

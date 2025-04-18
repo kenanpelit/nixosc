@@ -2,7 +2,6 @@
 # Profile: Zen-Kenp
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-Kenp..."
 echo "Initializing Zen-Kenp..."
 
 # Switch to initial workspace

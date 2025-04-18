@@ -2,7 +2,6 @@
 # Profile: Brave-Tiktok
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Tiktok..."
 echo "Initializing Brave-Tiktok..."
 
 # Switch to initial workspace

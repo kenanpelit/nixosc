@@ -2,7 +2,6 @@
 # Profile: Brave-Whats
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Whats..."
 echo "Initializing Brave-Whats..."
 
 # Switch to initial workspace

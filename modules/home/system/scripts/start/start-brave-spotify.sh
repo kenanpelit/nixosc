@@ -2,7 +2,6 @@
 # Profile: Brave-Spotify
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Spotify..."
 echo "Initializing Brave-Spotify..."
 
 # Switch to initial workspace

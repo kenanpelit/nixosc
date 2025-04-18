@@ -2,7 +2,6 @@
 # Profile: Zen-NoVpn
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-NoVpn..."
 echo "Initializing Zen-NoVpn..."
 
 # Switch to initial workspace

@@ -2,7 +2,6 @@
 # Profile: Brave-Ai
 set -euo pipefail
 
-echo "[2025-04-18 15:52:58] Starting Brave-Ai..."
 echo "Initializing Brave-Ai..."
 
 # Switch to initial workspace
