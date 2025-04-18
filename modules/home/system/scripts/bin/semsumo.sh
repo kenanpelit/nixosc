@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+## Embedded group definitions
+#declare -A APP_GROUPS=(
+#	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats,Chrome-Kenp,Chrome-CompecTA,Chrome-AI,Chrome-Whats"
+#	["terminals"]="kkenp,mkenp,wkenp,wezterm,kitty-single,wezterm-rmpc"
+#	["communications"]="discord,webcord,Brave-Discord,Brave-Whatsapp,Zen-Discord,Zen-Whats"
+#	["media"]="spotify,mpv,Brave-Yotube,Brave-Tiktok,Brave-Spotify,Zen-Spotify"
+#	["zen"]="Zen-Kenp,Zen-CompecTA,Zen-NoVpn,Zen-Proxy"
+#	["all"]="browsers terminals communications media zen"
+#)
+
 #######################################
 # Semsumo - Advanced Session Manager
 # Version: 4.3.0
@@ -36,16 +46,6 @@ DEBUG=0
 CREATE_MODE=0
 PARALLEL=0
 CURRENT_WORKSPACE=""
-
-## Embedded group definitions
-#declare -A APP_GROUPS=(
-#	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats,Chrome-Kenp,Chrome-CompecTA,Chrome-AI,Chrome-Whats"
-#	["terminals"]="kkenp,mkenp,wkenp,wezterm,kitty-single,wezterm-rmpc"
-#	["communications"]="discord,webcord,Brave-Discord,Brave-Whatsapp,Zen-Discord,Zen-Whats"
-#	["media"]="spotify,mpv,Brave-Yotube,Brave-Tiktok,Brave-Spotify,Zen-Spotify"
-#	["zen"]="Zen-Kenp,Zen-CompecTA,Zen-NoVpn,Zen-Proxy"
-#	["all"]="browsers terminals communications media zen"
-#)
 
 # Embedded group definitions
 declare -A APP_GROUPS=(
@@ -319,6 +319,13 @@ log() {
 	echo "[$timestamp][$level] $message" >>"$LOG_FILE"
 }
 
+# Shortcut log functions for backward compatibility
+log_info() { log "INFO" "$1"; }
+log_warn() { log "WARN" "$1"; }
+log_error() { log "ERROR" "$1"; }
+log_debug() { log "DEBUG" "$1"; }
+log_success() { log "INFO" "$1"; }
+
 # Check if command exists
 command_exists() {
 	command -v "$1" >/dev/null 2>&1
@@ -364,6 +371,7 @@ switch_workspace() {
 	local workspace="$1"
 	local wait_time="${2:-$DEFAULT_SWITCH_WAIT}"
 
+	# Skip if workspace is not specified or already there
 	[[ -z "$workspace" || "$workspace" == "0" || "$workspace" == "null" ]] && return 0
 	[[ "$CURRENT_WORKSPACE" == "$workspace" ]] && return 0
 
@@ -389,6 +397,7 @@ handle_final_workspace() {
 	local final_workspace=$(jq -r ".sessions.\"${session_name}\".final_workspace // \"0\"" "$CONFIG_FILE")
 
 	if [[ "$final_workspace" != "0" && "$final_workspace" != "null" ]]; then
+		log "INFO" "Switching to final workspace $final_workspace"
 		switch_workspace "$final_workspace"
 	fi
 }
@@ -412,11 +421,11 @@ make_fullscreen() {
 # Handle workspace and fullscreen setup
 handle_workspace() {
 	local session_name="$1"
-	local config=$(jq -r ".sessions.\"${session_name}\"" "$CONFIG_FILE")
 
-	local workspace=$(jq -r '.workspace // "0"' <<<"$config")
-	local fullscreen=$(jq -r '.fullscreen // "false"' <<<"$config")
-	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+	# Extract configuration
+	local workspace=$(jq -r ".sessions.\"${session_name}\".workspace // \"0\"" "$CONFIG_FILE")
+	local fullscreen=$(jq -r ".sessions.\"${session_name}\".fullscreen // false" "$CONFIG_FILE")
+	local wait_time=$(jq -r ".sessions.\"${session_name}\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
 
 	if [[ "$workspace" != "0" && "$workspace" != "null" ]]; then
 		switch_workspace "$workspace" "$wait_time"
@@ -475,9 +484,7 @@ start_session() {
 		return 1
 	fi
 
-	local config=$(jq -r ".sessions.\"${session_name}\"" "$CONFIG_FILE")
-	local command=$(jq -r '.command' <<<"$config")
-	local args=$(jq -r '.args // [] | join(" ")' <<<"$config")
+	local command=$(jq -r ".sessions.\"${session_name}\".command" "$CONFIG_FILE")
 	local vpn_mode=$(get_vpn_mode "$session_name" "$vpn_param")
 	local vpn_active=$(check_vpn && echo true || echo false)
 
@@ -488,25 +495,35 @@ start_session() {
 	log "INFO" "Starting session: $session_name (VPN: $vpn_mode)"
 
 	local pid
+	# Get args as individual items to handle spaces and special characters correctly
+	local args=()
+	readarray -t args < <(jq -r ".sessions.\"${session_name}\".args[]" "$CONFIG_FILE" 2>/dev/null || echo "")
+
 	case "$vpn_mode" in
 	secure)
 		if ! $vpn_active; then
 			log "WARN" "VPN not connected. Starting $session_name without protection"
 		fi
-		pid=$(execute_application "$command" $args)
+		pid=$(execute_application "$command" "${args[@]}")
 		;;
 	bypass)
 		if $vpn_active && command_exists "mullvad-exclude"; then
 			log "INFO" "Starting $session_name bypassing VPN"
-			pid=$(mullvad-exclude "$command" $args)
+			pid=$(mullvad-exclude "$command" "${args[@]}")
 		else
-			pid=$(execute_application "$command" $args)
+			if ! $vpn_active; then
+				log "INFO" "VPN not active, starting $session_name normally"
+			else
+				log "WARN" "mullvad-exclude not found, starting $session_name normally"
+			fi
+			pid=$(execute_application "$command" "${args[@]}")
 		fi
 		;;
 	esac
 
 	# Save PID if successful
 	if [[ -n "$pid" && "$pid" -gt 0 ]]; then
+		mkdir -p "$PID_DIR"
 		echo "$pid" >"$PID_DIR/${session_name}.pid"
 		log "INFO" "Session started successfully: $session_name (PID: $pid)"
 	else
@@ -515,7 +532,7 @@ start_session() {
 	fi
 
 	# Wait if specified
-	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+	local wait_time=$(jq -r ".sessions.\"${session_name}\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
 	sleep "$wait_time"
 
 	# Handle final workspace if specified
@@ -577,11 +594,10 @@ list_sessions() {
 	log "INFO" "Available sessions:"
 
 	jq -r '.sessions | keys[]' "$CONFIG_FILE" | while read -r session; do
-		local config=$(jq -r ".sessions.\"$session\"" "$CONFIG_FILE")
-		local command=$(jq -r '.command' <<<"$config")
-		local vpn=$(jq -r '.vpn // "secure"' <<<"$config")
-		local workspace=$(jq -r '.workspace // "0"' <<<"$config")
-		local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
+		local command=$(jq -r ".sessions.\"$session\".command" "$CONFIG_FILE")
+		local vpn=$(jq -r ".sessions.\"$session\".vpn // \"secure\"" "$CONFIG_FILE")
+		local workspace=$(jq -r ".sessions.\"$session\".workspace // \"0\"" "$CONFIG_FILE")
+		local wait_time=$(jq -r ".sessions.\"$session\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
 		local status=$(check_status "$session")
 
 		printf "${GREEN}%s${NC}: " "$session"
@@ -619,60 +635,61 @@ start_group() {
 	local group_name="$1"
 	local parallel="${2:-false}"
 
+	# Check if group exists
 	if [[ ! -v APP_GROUPS["$group_name"] ]]; then
 		log "ERROR" "Group not found: $group_name"
 		return 1
 	fi
 
+	local group_content="${APP_GROUPS[$group_name]}"
 	local start_time=$(date +%s)
-	log "INFO" "Starting group: $group_name"
 
-	# Handle meta groups
+	# Handle meta group "all"
 	if [[ "$group_name" == "all" ]]; then
-		local subgroups=("browsers" "terminals" "communications" "media")
+		log "INFO" "Starting meta group: $group_name"
 
+		local subgroups=(browsers terminals communications media)
 		for subgroup in "${subgroups[@]}"; do
-			start_group "$subgroup" "$parallel"
-			sleep 3
+			if [[ -v APP_GROUPS["$subgroup"] ]]; then
+				log "INFO" "Starting subgroup: $subgroup"
+				start_group "$subgroup" "$parallel"
+				sleep 2
+			fi
 		done
-
-		return 0
-	fi
-
-	# Split group members
-	IFS=',' read -ra sessions <<<"${APP_GROUPS[$group_name]}"
-
-	if [[ "$parallel" == "true" && ${#sessions[@]} -gt 1 ]]; then
-		log "INFO" "Starting sessions in parallel"
-
-		for session in "${sessions[@]}"; do
-			(
-				start_session "$session"
-			) &
-		done
-
-		wait
 	else
-		for session in "${sessions[@]}"; do
-			start_session "$session"
-			sleep 2
-		done
+		log "INFO" "Starting group: $group_name ($group_content)"
+
+		# Process comma-separated session list
+		IFS=',' read -ra sessions <<<"$group_content"
+
+		if [[ "$parallel" == "true" ]]; then
+			log "DEBUG" "Using parallel mode"
+			local pids=()
+
+			for session in "${sessions[@]}"; do
+				start_session "$session" &
+				pids+=($!)
+			done
+
+			# Wait for all parallel sessions to complete
+			for pid in "${pids[@]}"; do
+				wait "$pid" 2>/dev/null || true
+			done
+		else
+			for session in "${sessions[@]}"; do
+				start_session "$session"
+				sleep 2
+			done
+		fi
 	fi
 
-	local end_time=$(date +%s)
-	local duration=$((end_time - start_time))
-
-	log "INFO" "Group started successfully: $group_name (Duration: ${duration}s)"
-
-	# Return to main workspace if not terminals
-	if [[ "$group_name" != "terminals" ]]; then
-		switch_workspace "2" "2"
-	fi
+	local duration=$(($(date +%s) - start_time))
+	log "INFO" "Group startup complete: $group_name (Time: ${duration}s)"
 
 	return 0
 }
 
-# Create startup script for a profile - especially for terminal apps like kitty
+# Create startup script for a profile
 create_startup_script() {
 	local profile="$1"
 	local script_path="$SCRIPTS_DIR/start-${profile,,}.sh"
@@ -688,41 +705,33 @@ create_startup_script() {
 	local vpn_mode=$(jq -r ".sessions.\"$profile\".vpn // \"secure\"" "$CONFIG_FILE")
 	local workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
 	local wait_time=$(jq -r ".sessions.\"$profile\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
-	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // \"false\"" "$CONFIG_FILE")
+	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // false" "$CONFIG_FILE")
 	local final_workspace=$(jq -r ".sessions.\"$profile\".final_workspace // \"$workspace\"" "$CONFIG_FILE")
 
+	# Build command line based on app type
+	local cmd_args=""
+
 	# Handle terminal apps specially
-	local cmd_line=""
 	if [[ "$command" == "kitty" || "$command" == "wezterm" ]]; then
-		# For terminal apps, construct the command line more carefully
-		cmd_line="$command"
+		# For terminal apps, extract and format args specially to handle -e properly
+		local arg_count=$(jq ".sessions.\"$profile\".args | length" "$CONFIG_FILE")
+		local args=()
 
-		# Extract args one by one and add to cmd_line
-		local arg_count=$(jq '.args | length' <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")")
 		for ((i = 0; i < arg_count; i++)); do
-			local arg=$(jq -r ".args[$i]" <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")")
+			args[i]=$(jq -r ".sessions.\"$profile\".args[$i]" "$CONFIG_FILE")
+		done
 
-			# Check if this is the shell command (-e argument for kitty)
-			if [[ "$arg" == "-e" && $i -lt $((arg_count - 1)) ]]; then
-				# Add -e and the shell command with special handling
-				local shell_cmd=$(jq -r ".args[$((i + 1))]" <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")")
-				cmd_line+=" -e $shell_cmd"
-				# Skip the next arg since we've already processed it
-				((i++))
-			else
-				# Regular arg
-				cmd_line+=" $arg"
-			fi
+		# Format args for proper quoting in the script
+		for arg in "${args[@]}"; do
+			cmd_args+=" \"$arg\""
 		done
 	else
-		# For non-terminal apps, use the standard approach with arg array
-		local args_array=()
-		mapfile -t args_array < <(jq -r '.args[]' <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")" 2>/dev/null)
+		# For other apps, format args normally
+		local args=()
+		readarray -t args < <(jq -r ".sessions.\"$profile\".args[]" "$CONFIG_FILE" 2>/dev/null || echo "")
 
-		# Build command line
-		cmd_line="$command"
-		for arg in "${args_array[@]}"; do
-			cmd_line+=" \"$arg\""
+		for arg in "${args[@]}"; do
+			cmd_args+=" \"$arg\""
 		done
 	fi
 
@@ -735,6 +744,7 @@ create_startup_script() {
 # Profile: $profile
 set -euo pipefail
 
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Starting $profile..."
 echo "Initializing $profile..."
 
 # Switch to initial workspace
@@ -746,34 +756,32 @@ if [[ "$workspace" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
 fi
 
 echo "Uygulama başlatılıyor..."
-echo "COMMAND: $cmd_line"
+echo "COMMAND: $command$cmd_args"
 echo "VPN MODE: $vpn_mode"
 
 # Start the application with the appropriate VPN mode
 case "$vpn_mode" in
     bypass)
-        VPN_STATUS=\$(command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected")
-        if [[ "\$VPN_STATUS" == "connected" ]]; then
+        if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "VPN bypass ile başlatılıyor (mullvad-exclude)"
-                mullvad-exclude $cmd_line &
+                mullvad-exclude $command$cmd_args &
             else
                 echo "UYARI: mullvad-exclude bulunamadı, normal başlatılıyor"
-                $cmd_line &
+                $command$cmd_args &
             fi
         else
             echo "VPN bağlı değil, normal başlatılıyor"
-            $cmd_line &
+            $command$cmd_args &
         fi
         ;;
     secure|*)
-        VPN_STATUS=\$(command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected")
-        if [[ "\$VPN_STATUS" != "connected" ]]; then
-            echo "UYARI: VPN bağlı değil! Korumasız başlatılıyor"
-        else
+        if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             echo "VPN koruması ile başlatılıyor"
+        else
+            echo "UYARI: VPN bağlı değil! Korumasız başlatılıyor"
         fi
-        $cmd_line &
+        $command$cmd_args &
         ;;
 esac
 
@@ -807,89 +815,7 @@ EOF
 
 	# Make script executable
 	chmod +x "$script_path"
-	log "INFO" "Başlatma scripti oluşturuldu: $script_path"
-	return 0
-}
-
-# Generate startup scripts for all profiles
-generate_startup_scripts() {
-	log "INFO" "Tüm profiller için başlatma scriptleri oluşturuluyor..."
-
-	# Check if jq is available
-	if ! command -v jq &>/dev/null; then
-		log "ERROR" "Script oluşturmak için jq gerekiyor"
-		return 1
-	fi
-
-	# Create scripts directory
-	mkdir -p "$SCRIPTS_DIR"
-
-	# Get all profiles
-	local profiles count=0 total=0
-	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
-	total=$(echo "$profiles" | wc -l)
-
-	# Process each profile
-	while IFS= read -r profile; do
-		[[ -z "$profile" ]] && continue
-
-		if create_startup_script "$profile"; then
-			((count++))
-			echo -ne "\rİlerleme: $count/$total"
-		fi
-	done <<<"$profiles"
-	echo ""
-
-	log "INFO" "$total profilden $count tanesi için başlatma scripti oluşturuldu"
-
-	# Show an example
-	if [[ $count -gt 0 ]]; then
-		local example
-		example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
-		echo "Örnek kullanım: $SCRIPTS_DIR/start-${example,,}.sh"
-	fi
-
-	return 0
-}
-
-# Generate startup scripts for all profiles
-generate_startup_scripts() {
-	log_info "Tüm profiller için başlatma scriptleri oluşturuluyor..."
-
-	# Check if jq is available
-	if ! command -v jq &>/dev/null; then
-		log_error "Script oluşturmak için jq gerekiyor"
-		return 1
-	fi
-
-	# Create scripts directory
-	mkdir -p "$SCRIPTS_DIR"
-
-	# Get all profiles
-	local profiles count=0 total=0
-	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
-	total=$(echo "$profiles" | wc -l)
-
-	# Process each profile
-	while IFS= read -r profile; do
-		[[ -z "$profile" ]] && continue
-
-		if create_startup_script "$profile"; then
-			((count++))
-			echo -ne "\rİlerleme: $count/$total"
-		fi
-	done <<<"$profiles"
-	echo ""
-
-	log_success "$total profilden $count tanesi için başlatma scripti oluşturuldu"
-
-	# Show an example
-	if [[ $count -gt 0 ]]; then
-		local example
-		example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
-		echo "Örnek kullanım: $SCRIPTS_DIR/start-${example,,}.sh"
-	fi
-
+	log "INFO" "Created startup script: $script_path"
 	return 0
 }
 
@@ -902,17 +828,33 @@ generate_startup_scripts() {
 		return 1
 	fi
 
+	# Create scripts directory
+	mkdir -p "$SCRIPTS_DIR"
+
+	# Get all profiles
 	local profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
 	local total=$(echo "$profiles" | wc -l)
 	local count=0
 
+	# Process each profile
 	while IFS= read -r profile; do
+		[[ -z "$profile" ]] && continue
+
 		if create_startup_script "$profile"; then
 			count=$((count + 1))
+			echo -ne "\rProgress: $count/$total"
 		fi
 	done <<<"$profiles"
+	echo ""
 
 	log "INFO" "Successfully generated $count/$total startup scripts"
+
+	# Show an example
+	if [[ $count -gt 0 ]]; then
+		local example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
+		echo "Example usage: $SCRIPTS_DIR/start-${example,,}.sh"
+	fi
+
 	return 0
 }
 
@@ -974,58 +916,80 @@ main() {
 		esac
 	done
 
+	# Process commands
 	case "${1:-}" in
 	start)
-		[[ -z "${2:-}" ]] && {
+		if [[ -z "${2:-}" ]]; then
 			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		}
+		fi
 		start_session "$2" "${3:-}"
 		;;
 	stop)
-		[[ -z "${2:-}" ]] && {
+		if [[ -z "${2:-}" ]]; then
 			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		}
+		fi
 		stop_session "$2"
 		;;
 	restart)
-		[[ -z "${2:-}" ]] && {
+		if [[ -z "${2:-}" ]]; then
 			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		}
+		fi
 		restart_session "$2" "${3:-}"
 		;;
 	status)
-		[[ -z "${2:-}" ]] && {
+		if [[ -z "${2:-}" ]]; then
 			log "ERROR" "Session name required"
 			show_help
 			exit 1
-		}
+		fi
 		check_status "$2"
 		;;
-	list) list_sessions ;;
+	list)
+		list_sessions
+		;;
 	group)
-		[[ -z "${2:-}" ]] && {
+		if [[ -z "${2:-}" ]]; then
 			log "ERROR" "Group name required"
 			list_groups
 			exit 1
-		}
-		start_group "$2" "$([[ $PARALLEL -eq 1 ]] && echo "true" || echo "false")"
+		fi
+		# Use parallel mode if specified
+		if [[ $PARALLEL -eq 1 ]]; then
+			start_group "$2" "true"
+		else
+			start_group "$2" "false"
+		fi
 		;;
-	groups) list_groups ;;
-	create) generate_startup_scripts ;;
-	help | --help | -h) show_help ;;
-	version | --version | -v) echo "Semsumo v$VERSION" ;;
-	*)
+	groups)
+		list_groups
+		;;
+	create)
+		generate_startup_scripts
+		;;
+	help | --help | -h)
 		show_help
+		;;
+	version | --version | -v)
+		echo "Semsumo v$VERSION"
+		;;
+	*)
+		# No command or unknown command
+		if [[ -z "${1:-}" ]]; then
+			show_help
+		else
+			log "ERROR" "Unknown command: ${1:-}"
+			show_help
+		fi
 		exit 1
 		;;
 	esac
 }
 
-# Run the script
+# Execute main function with all arguments
 main "$@"
