@@ -1,58 +1,84 @@
 #!/usr/bin/env bash
-#===============================================================================
-# discord için oluşturulan başlatma script'i
-# VPN Modu: bypass
-# Elle düzenlemeyin - semsumo tarafından otomatik oluşturulmuştur
-#===============================================================================
+# Profile: discord
 
-# Hata yönetimi
 set -euo pipefail
+IFS=$'\n\t'
 
-# Ortam ayarları
-export TMPDIR="/tmp/sem"
+# Configuration
+PROFILE="discord"
+COMMAND="discord"
+ARGS="-m --class=discord --title=discord"
+VPN_MODE="bypass"
+WORKSPACE="5"
+WAIT_TIME="1"
+FULLSCREEN="true"
+FINAL_WORKSPACE="2"
+LOG_FILE="/tmp/start-$PROFILE.log"
 
-# Sabitler
-WORKSPACE=5
-FINAL_WORKSPACE=2
-WAIT_TIME=2
+# Logging
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo -e "\n[2025-04-18 14:42:49] Starting $PROFILE..."
 
-# Workspace'e geçiş fonksiyonu
+# Functions
+vpn_status() {
+    if command -v mullvad >/dev/null 2>&1; then
+        mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected"
+    else
+        echo "not_installed"
+    fi
+}
+
 switch_workspace() {
-    local workspace="$1"
-    if command -v hyprctl &>/dev/null; then
-        echo "Workspace $workspace'e geçiliyor..."
-        hyprctl dispatch workspace "$workspace"
-        sleep 1
+    if [[ "$1" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
+        echo "Switching to workspace $1"
+        hyprctl dispatch workspace "$1"
+        sleep "$2"
     fi
 }
 
-# Tam ekran yapma fonksiyonu
-make_fullscreen() {
-    if command -v hyprctl &>/dev/null; then
-        echo "Aktif pencere tam ekran yapılıyor..."
-        sleep 1
-        hyprctl dispatch fullscreen 1
-        sleep 1
-    fi
+start_application() {
+    case "$VPN_MODE" in
+        bypass)
+            if [[ $(vpn_status) == "connected" ]] && command -v mullvad-exclude >/dev/null 2>&1; then
+                echo "Starting with VPN bypass"
+                mullvad-exclude "$COMMAND" $ARGS &
+            else
+                echo "Starting normally (VPN bypass not available)"
+                "$COMMAND" $ARGS &
+            fi
+            ;;
+        secure)
+            if [[ $(vpn_status) != "connected" ]]; then
+                echo "WARNING: VPN not connected! Starting without protection"
+            fi
+            "$COMMAND" $ARGS &
+            ;;
+    esac
 }
 
-# discord workspace'ine geç
-switch_workspace "$WORKSPACE"
+# Main execution
+echo "Initializing $PROFILE..."
+switch_workspace "$WORKSPACE" "$WAIT_TIME"
 
-# Semsumo ile oturumu başlat
-echo "discord başlatılıyor..."
-semsumo start "discord" "bypass" &
+echo "Starting application..."
+start_application
+APP_PID=$!
 
-# Uygulamanın açılması için bekle
-echo "Uygulama açılması için $WAIT_TIME saniye bekleniyor..."
-sleep $WAIT_TIME
+# Save PID
+echo "$APP_PID" > "/tmp/sem/$PROFILE.pid"
+echo "Application started with PID: $APP_PID"
 
-# Tam ekran yap
-make_fullscreen
+# Fullscreen if needed
+if [[ "$FULLSCREEN" == "true" ]] && command -v hyprctl >/dev/null 2>&1; then
+    sleep "$WAIT_TIME"
+    echo "Enabling fullscreen"
+    hyprctl dispatch fullscreen 1
+fi
 
-# Tamamlandığında ana workspace'e geri dön
-echo "İşlem tamamlandı, workspace $FINAL_WORKSPACE'e dönülüyor..."
-switch_workspace "$FINAL_WORKSPACE"
+# Return to final workspace if specified
+if [[ "$FINAL_WORKSPACE" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
+    sleep 1
+    switch_workspace "$FINAL_WORKSPACE" "$WAIT_TIME"
+fi
 
-# Başarıyla çıkış yap
 exit 0
