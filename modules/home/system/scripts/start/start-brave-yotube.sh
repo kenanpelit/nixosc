@@ -5,9 +5,9 @@ set -euo pipefail
 echo "Initializing Brave-Yotube..."
 
 # Switch to initial workspace
-if [[ "6" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-    echo "Workspace 6'e geçiliyor..."
-    hyprctl dispatch workspace "6"
+if [[ "7" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
+    echo "Workspace 7'e geçiliyor..."
+    hyprctl dispatch workspace "7"
     sleep 1
     echo "Geçiş için 1 saniye bekleniyor..."
 fi
@@ -60,10 +60,10 @@ if [[ "true" == "true" ]]; then
 fi
 
 # Switch to final workspace if needed
-if [[ "6" != "0" && "6" != "6" ]]; then
+if [[ "7" != "0" && "7" != "7" ]]; then
     echo "Son workspace'e geçiliyor..."
     if command -v hyprctl >/dev/null 2>&1; then
-        hyprctl dispatch workspace "6"
+        hyprctl dispatch workspace "7"
     fi
 fi
 

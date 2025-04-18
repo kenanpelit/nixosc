@@ -52,7 +52,7 @@ declare -A APP_GROUPS=(
 	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats"
 	["terminals"]="kkenp"
 	["communications"]="webcord"
-	["media"]="spotify"
+	["media"]="spotify,Brave-Yotube"
 	["all"]="browsers communications media terminals"
 )
 
@@ -190,7 +190,7 @@ initialize() {
       "command": "profile_brave",
       "args": ["--youtube"],
       "vpn": "secure",
-      "workspace": "6",
+      "workspace": "7",
       "fullscreen": true,
       "wait_time": 1
     },
