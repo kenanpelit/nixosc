@@ -672,7 +672,7 @@ start_group() {
 	return 0
 }
 
-# Create startup script for a profile
+# Create startup script for a profile - especially for terminal apps like kitty
 create_startup_script() {
 	local profile="$1"
 	local script_path="$SCRIPTS_DIR/start-${profile,,}.sh"
@@ -683,27 +683,48 @@ create_startup_script() {
 		return 1
 	fi
 
-	# Get configuration
-	local config=$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")
-	local command=$(jq -r '.command' <<<"$config")
-	local vpn_mode=$(jq -r '.vpn // "secure"' <<<"$config")
-	local workspace=$(jq -r '.workspace // "0"' <<<"$config")
-	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
-	local fullscreen=$(jq -r '.fullscreen // "false"' <<<"$config")
-	local final_workspace=$(jq -r '.final_workspace // "0"' <<<"$config")
+	# Get basic configuration
+	local command=$(jq -r ".sessions.\"$profile\".command" "$CONFIG_FILE")
+	local vpn_mode=$(jq -r ".sessions.\"$profile\".vpn // \"secure\"" "$CONFIG_FILE")
+	local workspace=$(jq -r ".sessions.\"$profile\".workspace // \"0\"" "$CONFIG_FILE")
+	local wait_time=$(jq -r ".sessions.\"$profile\".wait_time // \"$DEFAULT_WAIT_TIME\"" "$CONFIG_FILE")
+	local fullscreen=$(jq -r ".sessions.\"$profile\".fullscreen // \"false\"" "$CONFIG_FILE")
+	local final_workspace=$(jq -r ".sessions.\"$profile\".final_workspace // \"$workspace\"" "$CONFIG_FILE")
 
-	# Get arguments as individual items
-	local args_array=()
-	mapfile -t args_array < <(jq -r '.args[] | @sh' <<<"$config" 2>/dev/null)
-	local args_str=""
+	# Handle terminal apps specially
+	local cmd_line=""
+	if [[ "$command" == "kitty" || "$command" == "wezterm" ]]; then
+		# For terminal apps, construct the command line more carefully
+		cmd_line="$command"
 
-	# Create a properly quoted arguments string
-	for arg in "${args_array[@]}"; do
-		# Remove surrounding quotes added by @sh
-		arg=$(eval echo "$arg")
-		# Add the argument with proper quoting
-		args_str+=" \"$arg\""
-	done
+		# Extract args one by one and add to cmd_line
+		local arg_count=$(jq '.args | length' <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")")
+		for ((i = 0; i < arg_count; i++)); do
+			local arg=$(jq -r ".args[$i]" <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")")
+
+			# Check if this is the shell command (-e argument for kitty)
+			if [[ "$arg" == "-e" && $i -lt $((arg_count - 1)) ]]; then
+				# Add -e and the shell command with special handling
+				local shell_cmd=$(jq -r ".args[$((i + 1))]" <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")")
+				cmd_line+=" -e $shell_cmd"
+				# Skip the next arg since we've already processed it
+				((i++))
+			else
+				# Regular arg
+				cmd_line+=" $arg"
+			fi
+		done
+	else
+		# For non-terminal apps, use the standard approach with arg array
+		local args_array=()
+		mapfile -t args_array < <(jq -r '.args[]' <<<"$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")" 2>/dev/null)
+
+		# Build command line
+		cmd_line="$command"
+		for arg in "${args_array[@]}"; do
+			cmd_line+=" \"$arg\""
+		done
+	fi
 
 	# Create scripts directory if not exists
 	mkdir -p "$SCRIPTS_DIR"
@@ -713,116 +734,72 @@ create_startup_script() {
 #!/usr/bin/env bash
 # Profile: $profile
 set -euo pipefail
-IFS=\$'\\n\\t'
 
-# Configuration
-PROFILE="$profile"
-COMMAND="$command"
-WORKSPACE="$workspace"
-WAIT_TIME="$wait_time"
-FULLSCREEN="$fullscreen"
-FINAL_WORKSPACE="$final_workspace"
-VPN_MODE="$vpn_mode"
-LOG_FILE="/tmp/start-\$PROFILE.log"
-
-# Logging setup
-exec > >(tee -a "\$LOG_FILE") 2>&1
-echo "[$(date "+%Y-%m-%d %H:%M:%S")] Starting \$PROFILE..."
-
-# Functions
-vpn_status() {
-    if command -v mullvad >/dev/null 2>&1; then
-        if mullvad status 2>/dev/null | grep -q "Connected"; then
-            echo "connected"
-        else
-            echo "disconnected"
-        fi
-    else
-        echo "not_installed"
-    fi
-}
-
-switch_workspace() {
-    local target_workspace="\$1"
-    local wait_duration="\$2"
-    
-    if [[ "\$target_workspace" != "0" && "\$target_workspace" != "" ]] && command -v hyprctl >/dev/null 2>&1; then
-        echo "Workspace \$target_workspace'e geçiliyor..."
-        hyprctl dispatch workspace "\$target_workspace"
-        echo "Geçiş için \$wait_duration saniye bekleniyor..."
-        sleep "\$wait_duration"
-    fi
-}
-
-# Main execution
-echo "Initializing \$PROFILE..."
+echo "Initializing $profile..."
 
 # Switch to initial workspace
-switch_workspace "\$WORKSPACE" "\$WAIT_TIME"
+if [[ "$workspace" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
+    echo "Workspace ${workspace}'e geçiliyor..."
+    hyprctl dispatch workspace "${workspace}"
+    sleep $wait_time
+    echo "Geçiş için $wait_time saniye bekleniyor..."
+fi
 
-# Start application with appropriate VPN mode
 echo "Uygulama başlatılıyor..."
-echo "COMMAND: \$COMMAND$args_str"
-echo "VPN MODE: \$VPN_MODE"
+echo "COMMAND: $cmd_line"
+echo "VPN MODE: $vpn_mode"
 
-# Create function to run the command with proper arguments
-run_command() {
-    $command$args_str "\$@"
-}
-
-case "\$VPN_MODE" in
+# Start the application with the appropriate VPN mode
+case "$vpn_mode" in
     bypass)
-        VPN_STATUS=\$(vpn_status)
+        VPN_STATUS=\$(command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected")
         if [[ "\$VPN_STATUS" == "connected" ]]; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "VPN bypass ile başlatılıyor (mullvad-exclude)"
-                # Use direct command with quoted arguments
-                mullvad-exclude $command$args_str &
+                mullvad-exclude $cmd_line &
             else
                 echo "UYARI: mullvad-exclude bulunamadı, normal başlatılıyor"
-                # Use direct command with quoted arguments
-                $command$args_str &
+                $cmd_line &
             fi
         else
             echo "VPN bağlı değil, normal başlatılıyor"
-            # Use direct command with quoted arguments
-            $command$args_str &
+            $cmd_line &
         fi
         ;;
     secure|*)
-        VPN_STATUS=\$(vpn_status)
+        VPN_STATUS=\$(command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected")
         if [[ "\$VPN_STATUS" != "connected" ]]; then
             echo "UYARI: VPN bağlı değil! Korumasız başlatılıyor"
         else
             echo "VPN koruması ile başlatılıyor"
         fi
-        # Use direct command with quoted arguments
-        $command$args_str &
+        $cmd_line &
         ;;
 esac
 
 # Save PID and wait a moment
 APP_PID=\$!
 mkdir -p "/tmp/sem"
-echo "\$APP_PID" > "/tmp/sem/\$PROFILE.pid"
+echo "\$APP_PID" > "/tmp/sem/$profile.pid"
 echo "Uygulama başlatıldı (PID: \$APP_PID)"
 
 # Make fullscreen if needed
-if [[ "\$FULLSCREEN" == "true" ]]; then
-    echo "Uygulama yüklenmesi için \$WAIT_TIME saniye bekleniyor..."
-    sleep "\$WAIT_TIME"
+if [[ "$fullscreen" == "true" ]]; then
+    echo "Uygulama yüklenmesi için $wait_time saniye bekleniyor..."
+    sleep $wait_time
     
     if command -v hyprctl >/dev/null 2>&1; then
         echo "Tam ekran yapılıyor..."
         hyprctl dispatch fullscreen 1
-        sleep 1
     fi
 fi
 
 # Switch to final workspace if needed
-if [[ "\$FINAL_WORKSPACE" != "0" && "\$FINAL_WORKSPACE" != "\$WORKSPACE" ]]; then
+if [[ "$final_workspace" != "0" && "$final_workspace" != "$workspace" ]]; then
     echo "Son workspace'e geçiliyor..."
-    switch_workspace "\$FINAL_WORKSPACE" 1
+    if command -v hyprctl >/dev/null 2>&1; then
+        hyprctl dispatch workspace "$final_workspace"
+    fi
 fi
 
 exit 0
