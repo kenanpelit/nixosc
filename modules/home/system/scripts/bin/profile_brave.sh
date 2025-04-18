@@ -14,6 +14,8 @@
 #   - SOCKS5 Proxy Desteği
 #   - Wayland ve dokunmatik yüzey desteği
 #   - Yeni pencere zorlama özelliği
+#   - İnkognito mod desteği
+#   - Yeni profil oluşturma
 #
 #===============================================================================
 
@@ -30,6 +32,7 @@ RESET="\033[0m"
 # Konfigürasyon
 BRAVE_CMD="brave"
 LOCAL_STATE_PATH="${HOME}/.config/BraveSoftware/Brave-Browser/Local State"
+BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
 
 # Wayland ve dokunmatik yüzey için varsayılan bayraklar
 DEFAULT_FLAGS=(
@@ -56,6 +59,7 @@ usage() {
 	echo -e "       veya: $0 ${BOLD}--spotify${RESET} [brave_parametreleri]"
 	echo -e "       veya: $0 ${BOLD}--discord${RESET} [brave_parametreleri]"
 	echo -e "       veya: $0 ${BOLD}--proxy${RESET} [brave_parametreleri]"
+	echo -e "       veya: $0 ${BOLD}--create-profile=ISIM${RESET} [--icon=ICON_PATH]"
 	echo
 	echo -e "${BOLD}Parametreler:${RESET}"
 	echo "  --class=SINIF     Pencere sınıfını ayarlar (window manager entegrasyonu için)"
@@ -71,6 +75,9 @@ usage() {
 	echo "  --proxy-type=TYPE Proxy türü (socks5, http, https) (varsayılan: socks5)"
 	echo "  --kill-profile    Sadece bu profil için çalışan Brave örneklerini kapat"
 	echo "  --kill-all        Tüm Brave örneklerini kapat"
+	echo "  --incognito       Seçilen profili inkognito modunda başlatır"
+	echo "  --create-profile=ISIM  Belirtilen isimde yeni bir profil oluşturur"
+	echo "  --icon=ICON_PATH  Yeni oluşturulan profile özel bir simge ekler (--create-profile ile kullanılır)"
 	echo
 	echo -e "${BOLD}Varsayılan Bayraklar:${RESET}"
 	echo "  --restore-last-session                             Son oturumu geri yükler"
@@ -93,6 +100,62 @@ list_profiles() {
 	jq -r '.profile.info_cache | to_entries | map("  " + .key + ": " + .value.name) | .[]' <"$LOCAL_STATE_PATH" 2>/dev/null |
 		sort -k1,1 -k2,2n ||
 		echo -e "${RED}Hata: Brave profil bilgisi okunamadı!${RESET}"
+}
+
+# Yeni profil oluşturma
+create_profile() {
+	local profile_name="$1"
+	local icon_path="${2:-}"
+
+	echo -e "${BLUE}Yeni profil oluşturuluyor: ${RESET}$profile_name"
+
+	# Profile ismi kontrolü
+	if [[ -z "$profile_name" ]]; then
+		echo -e "${RED}Hata: Profil ismi boş olamaz!${RESET}"
+		return 1
+	fi
+
+	# Mevcut profilleri kontrol et
+	if [ -f "$LOCAL_STATE_PATH" ]; then
+		local existing_profile
+		existing_profile=$(jq -r --arg name "$profile_name" \
+			'.profile.info_cache | to_entries | .[] | select(.value.name == $name) | .key' <"$LOCAL_STATE_PATH")
+
+		if [ -n "$existing_profile" ]; then
+			echo -e "${YELLOW}Uyarı: '$profile_name' isimli profil zaten mevcut.${RESET}"
+			echo -e "Profil dizini: $BRAVE_PROFILES_DIR/Profile $existing_profile"
+			return 0
+		fi
+	fi
+
+	# Yeni profil için bir profil numarası oluştur
+	local profile_number
+	profile_number=$(find "$BRAVE_PROFILES_DIR" -maxdepth 1 -name "Profile *" | wc -l)
+	profile_number=$((profile_number + 1))
+	local profile_dir="Profile $profile_number"
+	local profile_path="$BRAVE_PROFILES_DIR/$profile_dir"
+
+	# Brave'i yeni profil oluşturma modunda başlat
+	echo -e "${GREEN}Brave başlatılıyor ve yeni profil oluşturuluyor...${RESET}"
+
+	# Profil dizinini oluştur
+	mkdir -p "$profile_path"
+
+	# Özel ikon ayarla (eğer verilmişse)
+	if [[ -n "$icon_path" && -f "$icon_path" ]]; then
+		echo -e "${BLUE}Profil için özel ikon ayarlanıyor: ${RESET}$icon_path"
+		# Özel ikon kopyalanabilir veya yapılandırma dosyasına referans eklenebilir
+		cp "$icon_path" "$profile_path/icon.png"
+	fi
+
+	# Profili başlat ve kullanıcının yapılandırmasını tamamlamasını sağla
+	echo -e "${YELLOW}Profil oluşturma işlemi başlatılıyor. Brave açıldığında profili yapılandırın ve kapatın.${RESET}"
+	"$BRAVE_CMD" "--profile-directory=$profile_dir" "--profile-creation-name=$profile_name"
+
+	echo -e "${GREEN}Profil oluşturma tamamlandı: ${RESET}$profile_name"
+	echo -e "Yeni profili şu şekilde kullanabilirsiniz: $0 \"$profile_name\""
+
+	return 0
 }
 
 # Önceden tanımlanmış uygulamalar
@@ -153,8 +216,19 @@ main() {
 	# Parametre kontrolü
 	[ $# -eq 0 ] && usage 0
 
-	# Özel uygulama kısayolları
+	# Önce özel parametreleri işle
 	case "$1" in
+	--create-profile=*)
+		profile_name="${1#*=}"
+		shift
+		icon_path=""
+		if [[ "$1" == --icon=* ]]; then
+			icon_path="${1#*=}"
+			shift
+		fi
+		create_profile "$profile_name" "$icon_path"
+		exit $?
+		;;
 	--whatsapp)
 		shift
 		launch_whatsapp "$@"
@@ -195,6 +269,7 @@ main() {
 	window_title=""
 	brave_args=()
 	kill_profile=false
+	incognito_mode=false
 
 	# Parametreleri işle
 	while [ $# -gt 0 ]; do
@@ -219,6 +294,9 @@ main() {
 			;;
 		--kill-profile)
 			kill_profile=true
+			;;
+		--incognito)
+			incognito_mode=true
 			;;
 		--help | -h)
 			usage 0
@@ -271,11 +349,23 @@ main() {
 		echo -e "${YELLOW}Başlık belirtilmedi, '$window_title' başlık olarak kullanılacak${RESET}"
 	fi
 
+	# İnkognito modu etkinse başlık ve sınıfı güncelle
+	if $incognito_mode; then
+		window_title="$window_title (Inkognito)"
+		window_class="${window_class}_incognito"
+		echo -e "${BLUE}İnkognito modu etkinleştirildi${RESET}"
+	fi
+
 	# Brave komut satırı argümanlarını oluştur
 	cmd=("$BRAVE_CMD" "--profile-directory=$profile_key")
 
-	# Varsayılan bayrakları ekle
-	cmd+=("${DEFAULT_FLAGS[@]}")
+	# İnkognito modu etkinse ilgili bayrağı ekle
+	if $incognito_mode; then
+		cmd+=("--incognito")
+	else
+		# Varsayılan bayrakları ekle (inkognito modunda son oturumu geri yükleme olmaz)
+		cmd+=("${DEFAULT_FLAGS[@]}")
+	fi
 
 	# Proxy etkinleştirilmişse proxy bayraklarını ekle
 	if [ "$PROXY_ENABLED" = true ]; then

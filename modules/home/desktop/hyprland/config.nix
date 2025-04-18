@@ -356,6 +356,7 @@
         "workspace 5,class:^(Audacious)$"
         "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
         "workspace 6 silent,title:^(New Private Tab - Brave)$"
+        "workspace 6 silent,title:^Kenp Browser (Inkognito)$"
         #"workspace 6 silent,title:^(youtube.com)$"
         "workspace 6 silent,class:^(qemu-system-x86_64)$"
         "workspace 6 silent,class:^(qemu)$"
