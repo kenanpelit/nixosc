@@ -98,31 +98,31 @@
     },
     "Brave-Kenp": {
       "command": "profile_brave",
-      "args": ["Kenp", "--class", "Kenp"],
+      "args": ["Kenp"],
       "vpn": "secure",
       "workspace": "1"
     },
     "Brave-CompecTA": {
       "command": "profile_brave",
-      "args": ["CompecTA", "--class", "CompecTA" , "--title", "CompecTA"],
+      "args": ["CompecTA"],
       "vpn": "secure",
       "workspace": "4"
     },
     "Brave-Ai": {
       "command": "profile_brave",
-      "args": ["Ai", "--class", "Ai", "--title", "Ai"],
+      "args": ["Ai"],
       "vpn": "secure",
       "workspace": "3"
     },
     "Brave-Whats": {
       "command": "profile_brave",
-      "args": ["Whats", "--class", "Whats", "--title", "Whats"],
+      "args": ["Whats"],
       "vpn": "secure",
       "workspace": "9"
     },
     "Brave-Exclude": {
       "command": "profile_brave",
-      "args": ["Exclude", "--class", "Exclude", "--title", "Exclude"],
+      "args": ["Exclude"],
       "vpn": "bypass",
       "workspace": "6"
     },
