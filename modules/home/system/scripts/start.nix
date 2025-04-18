@@ -27,8 +27,8 @@ let
   start-brave-whats = pkgs.writeShellScriptBin "start-brave-whats" (
     builtins.readFile ./start/start-brave-whats.sh
   );
-  start-brave-yotube = pkgs.writeShellScriptBin "start-brave-yotube" (
-    builtins.readFile ./start/start-brave-yotube.sh
+  start-brave-youtube = pkgs.writeShellScriptBin "start-brave-youtube" (
+    builtins.readFile ./start/start-brave-youtube.sh
   );
   start-chrome-ai = pkgs.writeShellScriptBin "start-chrome-ai" (
     builtins.readFile ./start/start-chrome-ai.sh
@@ -104,7 +104,7 @@ in {
     start-brave-tiktok
     start-brave-whatsapp
     start-brave-whats
-    start-brave-yotube
+    start-brave-youtube
     start-chrome-ai
     start-chrome-compecta
     start-chrome-kenp
