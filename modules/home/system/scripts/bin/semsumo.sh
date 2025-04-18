@@ -18,7 +18,7 @@ readonly CONFIG_FILE="$CONFIG_DIR/config.json"
 readonly PID_DIR="/tmp/sem"
 readonly LOG_FILE="/tmp/sem/semsumo.log"
 readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
-readonly DEFAULT_WAIT_TIME=3
+readonly DEFAULT_WAIT_TIME=1
 readonly DEFAULT_FULLSCREEN_WAIT=2
 readonly DEFAULT_SWITCH_WAIT=1
 
@@ -514,32 +514,24 @@ start_session() {
 		pid=$(execute_application "$command" "${args[@]}")
 		;;
 	bypass)
-		# List of applications known to have issues with mullvad-exclude
-		local problematic_apps=("spotify" "webcord" "discord")
+		# Special cases that shouldn't use mullvad-exclude
+		local no_exclude_apps=("spotify" "kkenp" "webcord" "discord")
 
-		# Check if this is a problematic application
-		local skip_bypass=false
-		for app in "${problematic_apps[@]}"; do
-			if [[ "$command" == "$app" ]]; then
-				log "INFO" "$app detected - using normal start instead of bypass"
-				skip_bypass=true
-				break
-			fi
-		done
-
-		if $skip_bypass || ! $vpn_active || ! command_exists "mullvad-exclude"; then
-			if ! $vpn_active; then
+		if [[ " ${no_exclude_apps[*]} " =~ " $command " ]] || ! $vpn_active || ! command_exists "mullvad-exclude"; then
+			if [[ " ${no_exclude_apps[*]} " =~ " $command " ]]; then
+				log "INFO" "$command detected - using normal start instead of bypass"
+			elif ! $vpn_active; then
 				log "INFO" "VPN not active, starting $session_name normally"
-			elif ! command_exists "mullvad-exclude"; then
+			else
 				log "WARN" "mullvad-exclude not found, starting $session_name normally"
 			fi
 			pid=$(execute_application "$command" "${args[@]}")
 		else
 			log "INFO" "Starting $session_name bypassing VPN"
-			# Add timeout to prevent hanging
+			# Try mullvad-exclude with timeout and prevent duplicate starts
 			if ! pid=$(timeout 10s mullvad-exclude "$command" "${args[@]}"); then
-				log "WARN" "mullvad-exclude timed out, falling back to normal start"
-				pid=$(execute_application "$command" "${args[@]}")
+				log "WARN" "mullvad-exclude timed out for $session_name"
+				return 1 # Don't fallback to prevent duplicates
 			fi
 		fi
 		;;
