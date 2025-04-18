@@ -24,7 +24,7 @@
    ./candy
    ./copyq
    ./iwmenu
-   ./sem
+   #./sem
    ./sesh
  ];
 }
