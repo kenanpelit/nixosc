@@ -2,7 +2,6 @@
 # Profile: Brave-Discord
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Discord..."
 echo "Initializing Brave-Discord..."
 
 # Switch to initial workspace

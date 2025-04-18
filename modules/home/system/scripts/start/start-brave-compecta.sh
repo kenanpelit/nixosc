@@ -2,7 +2,6 @@
 # Profile: Brave-CompecTA
 set -euo pipefail
 
-echo "[2025-04-18 15:52:58] Starting Brave-CompecTA..."
 echo "Initializing Brave-CompecTA..."
 
 # Switch to initial workspace

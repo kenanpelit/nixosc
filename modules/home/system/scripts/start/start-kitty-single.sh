@@ -2,7 +2,6 @@
 # Profile: kitty-single
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting kitty-single..."
 echo "Initializing kitty-single..."
 
 # Switch to initial workspace

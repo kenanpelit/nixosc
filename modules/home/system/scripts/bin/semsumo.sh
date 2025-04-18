@@ -1,15 +1,5 @@
 #!/usr/bin/env bash
 
-## Embedded group definitions
-#declare -A APP_GROUPS=(
-#	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats,Chrome-Kenp,Chrome-CompecTA,Chrome-AI,Chrome-Whats"
-#	["terminals"]="kkenp,mkenp,wkenp,wezterm,kitty-single,wezterm-rmpc"
-#	["communications"]="discord,webcord,Brave-Discord,Brave-Whatsapp,Zen-Discord,Zen-Whats"
-#	["media"]="spotify,mpv,Brave-Yotube,Brave-Tiktok,Brave-Spotify,Zen-Spotify"
-#	["zen"]="Zen-Kenp,Zen-CompecTA,Zen-NoVpn,Zen-Proxy"
-#	["all"]="browsers terminals communications media zen"
-#)
-
 #######################################
 # Semsumo - Advanced Session Manager
 # Version: 4.3.0
@@ -46,6 +36,16 @@ DEBUG=0
 CREATE_MODE=0
 PARALLEL=0
 CURRENT_WORKSPACE=""
+
+## Embedded group definitions
+#declare -A APP_GROUPS=(
+#	["browsers"]="Brave-Kenp,Brave-CompecTA,Brave-Ai,Brave-Whats,Chrome-Kenp,Chrome-CompecTA,Chrome-AI,Chrome-Whats"
+#	["terminals"]="kkenp,mkenp,wkenp,wezterm,kitty-single,wezterm-rmpc"
+#	["communications"]="discord,webcord,Brave-Discord,Brave-Whatsapp,Zen-Discord,Zen-Whats"
+#	["media"]="spotify,mpv,Brave-Yotube,Brave-Tiktok,Brave-Spotify,Zen-Spotify"
+#	["zen"]="Zen-Kenp,Zen-CompecTA,Zen-NoVpn,Zen-Proxy"
+#	["all"]="browsers terminals communications media zen"
+#)
 
 # Embedded group definitions
 declare -A APP_GROUPS=(
@@ -486,7 +486,10 @@ start_session() {
 
 	local command=$(jq -r ".sessions.\"${session_name}\".command" "$CONFIG_FILE")
 	local vpn_mode=$(get_vpn_mode "$session_name" "$vpn_param")
-	local vpn_active=$(check_vpn && echo true || echo false)
+	local vpn_active=false
+	if check_vpn; then
+		vpn_active=true
+	fi
 
 	# Handle workspace first
 	handle_workspace "$session_name"
@@ -497,7 +500,11 @@ start_session() {
 	local pid
 	# Get args as individual items to handle spaces and special characters correctly
 	local args=()
-	readarray -t args < <(jq -r ".sessions.\"${session_name}\".args[]" "$CONFIG_FILE" 2>/dev/null || echo "")
+	while IFS= read -r arg; do
+		[[ -n "$arg" ]] && args+=("$arg")
+	done < <(jq -r ".sessions.\"${session_name}\".args[]?" "$CONFIG_FILE")
+
+	log "DEBUG" "Command: $command, Args: ${args[*]}"
 
 	case "$vpn_mode" in
 	secure)
@@ -507,16 +514,33 @@ start_session() {
 		pid=$(execute_application "$command" "${args[@]}")
 		;;
 	bypass)
-		if $vpn_active && command_exists "mullvad-exclude"; then
-			log "INFO" "Starting $session_name bypassing VPN"
-			pid=$(mullvad-exclude "$command" "${args[@]}")
-		else
+		# List of applications known to have issues with mullvad-exclude
+		local problematic_apps=("spotify" "webcord" "discord")
+
+		# Check if this is a problematic application
+		local skip_bypass=false
+		for app in "${problematic_apps[@]}"; do
+			if [[ "$command" == "$app" ]]; then
+				log "INFO" "$app detected - using normal start instead of bypass"
+				skip_bypass=true
+				break
+			fi
+		done
+
+		if $skip_bypass || ! $vpn_active || ! command_exists "mullvad-exclude"; then
 			if ! $vpn_active; then
 				log "INFO" "VPN not active, starting $session_name normally"
-			else
+			elif ! command_exists "mullvad-exclude"; then
 				log "WARN" "mullvad-exclude not found, starting $session_name normally"
 			fi
 			pid=$(execute_application "$command" "${args[@]}")
+		else
+			log "INFO" "Starting $session_name bypassing VPN"
+			# Add timeout to prevent hanging
+			if ! pid=$(timeout 10s mullvad-exclude "$command" "${args[@]}"); then
+				log "WARN" "mullvad-exclude timed out, falling back to normal start"
+				pid=$(execute_application "$command" "${args[@]}")
+			fi
 		fi
 		;;
 	esac
@@ -744,7 +768,6 @@ create_startup_script() {
 # Profile: $profile
 set -euo pipefail
 
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Starting $profile..."
 echo "Initializing $profile..."
 
 # Switch to initial workspace

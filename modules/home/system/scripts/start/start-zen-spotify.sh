@@ -2,7 +2,6 @@
 # Profile: Zen-Spotify
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-Spotify..."
 echo "Initializing Zen-Spotify..."
 
 # Switch to initial workspace

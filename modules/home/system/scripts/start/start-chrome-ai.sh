@@ -2,7 +2,6 @@
 # Profile: Chrome-AI
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Chrome-AI..."
 echo "Initializing Chrome-AI..."
 
 # Switch to initial workspace

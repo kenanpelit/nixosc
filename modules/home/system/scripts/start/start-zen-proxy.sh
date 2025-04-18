@@ -2,7 +2,6 @@
 # Profile: Zen-Proxy
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Zen-Proxy..."
 echo "Initializing Zen-Proxy..."
 
 # Switch to initial workspace

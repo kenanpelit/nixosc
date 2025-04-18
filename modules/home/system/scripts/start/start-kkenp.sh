@@ -2,7 +2,6 @@
 # Profile: kkenp
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting kkenp..."
 echo "Initializing kkenp..."
 
 # Switch to initial workspace

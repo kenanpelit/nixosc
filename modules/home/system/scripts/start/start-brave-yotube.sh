@@ -2,7 +2,6 @@
 # Profile: Brave-Yotube
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Yotube..."
 echo "Initializing Brave-Yotube..."
 
 # Switch to initial workspace

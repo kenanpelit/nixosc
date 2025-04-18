@@ -2,7 +2,6 @@
 # Profile: Chrome-Whats
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Chrome-Whats..."
 echo "Initializing Chrome-Whats..."
 
 # Switch to initial workspace

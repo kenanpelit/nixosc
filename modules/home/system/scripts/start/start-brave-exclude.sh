@@ -2,7 +2,6 @@
 # Profile: Brave-Exclude
 set -euo pipefail
 
-echo "[2025-04-18 15:52:59] Starting Brave-Exclude..."
 echo "Initializing Brave-Exclude..."
 
 # Switch to initial workspace
