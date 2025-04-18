@@ -30,9 +30,6 @@ let
   crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
     builtins.readFile ./bin/crypto-manager.sh
   );
-  dotfiles-manager = pkgs.writeShellScriptBin "dotfiles-manager" (
-    builtins.readFile ./bin/dotfiles-manager.sh
-  );
   gitgo = pkgs.writeShellScriptBin "gitgo" (
     builtins.readFile ./bin/gitgo.sh
   );
@@ -390,7 +387,6 @@ in {
     clustergit
     container-engine-manager
     crypto-manager
-    dotfiles-manager
     gitgo
     hypr-airplane_mode
     hypr-blue-gammastep-manager
