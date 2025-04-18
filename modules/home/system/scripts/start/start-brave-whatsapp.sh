@@ -1,84 +1,116 @@
 #!/usr/bin/env bash
 # Profile: Brave-Whatsapp
-
 set -euo pipefail
 IFS=$'\n\t'
 
 # Configuration
 PROFILE="Brave-Whatsapp"
 COMMAND="profile_brave"
-ARGS="--whatsapp"
-VPN_MODE="secure"
 WORKSPACE="9"
 WAIT_TIME="1"
 FULLSCREEN="true"
 FINAL_WORKSPACE="0"
+VPN_MODE="secure"
 LOG_FILE="/tmp/start-$PROFILE.log"
 
-# Logging
+# Logging setup
 exec > >(tee -a "$LOG_FILE") 2>&1
-echo -e "\n[2025-04-18 14:42:49] Starting $PROFILE..."
+echo "[2025-04-18 15:16:11] Starting $PROFILE..."
 
 # Functions
 vpn_status() {
     if command -v mullvad >/dev/null 2>&1; then
-        mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected"
+        if mullvad status 2>/dev/null | grep -q "Connected"; then
+            echo "connected"
+        else
+            echo "disconnected"
+        fi
     else
         echo "not_installed"
     fi
 }
 
 switch_workspace() {
-    if [[ "$1" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-        echo "Switching to workspace $1"
-        hyprctl dispatch workspace "$1"
-        sleep "$2"
+    local target_workspace="$1"
+    local wait_duration="$2"
+    
+    if [[ "$target_workspace" != "0" && "$target_workspace" != "" ]] && command -v hyprctl >/dev/null 2>&1; then
+        echo "Workspace $target_workspace'e geçiliyor..."
+        hyprctl dispatch workspace "$target_workspace"
+        echo "Geçiş için $wait_duration saniye bekleniyor..."
+        sleep "$wait_duration"
     fi
-}
-
-start_application() {
-    case "$VPN_MODE" in
-        bypass)
-            if [[ $(vpn_status) == "connected" ]] && command -v mullvad-exclude >/dev/null 2>&1; then
-                echo "Starting with VPN bypass"
-                mullvad-exclude "$COMMAND" $ARGS &
-            else
-                echo "Starting normally (VPN bypass not available)"
-                "$COMMAND" $ARGS &
-            fi
-            ;;
-        secure)
-            if [[ $(vpn_status) != "connected" ]]; then
-                echo "WARNING: VPN not connected! Starting without protection"
-            fi
-            "$COMMAND" $ARGS &
-            ;;
-    esac
 }
 
 # Main execution
 echo "Initializing $PROFILE..."
+
+# Switch to initial workspace
 switch_workspace "$WORKSPACE" "$WAIT_TIME"
 
-echo "Starting application..."
-start_application
+# Start application with appropriate VPN mode
+echo "Uygulama başlatılıyor..."
+echo "COMMAND: $COMMAND "--whatsapp""
+echo "VPN MODE: $VPN_MODE"
+
+# Create function to run the command with proper arguments
+run_command() {
+    profile_brave "--whatsapp" "$@"
+}
+
+case "$VPN_MODE" in
+    bypass)
+        VPN_STATUS=$(vpn_status)
+        if [[ "$VPN_STATUS" == "connected" ]]; then
+            if command -v mullvad-exclude >/dev/null 2>&1; then
+                echo "VPN bypass ile başlatılıyor (mullvad-exclude)"
+                # Use direct command with quoted arguments
+                mullvad-exclude profile_brave "--whatsapp" &
+            else
+                echo "UYARI: mullvad-exclude bulunamadı, normal başlatılıyor"
+                # Use direct command with quoted arguments
+                profile_brave "--whatsapp" &
+            fi
+        else
+            echo "VPN bağlı değil, normal başlatılıyor"
+            # Use direct command with quoted arguments
+            profile_brave "--whatsapp" &
+        fi
+        ;;
+    secure|*)
+        VPN_STATUS=$(vpn_status)
+        if [[ "$VPN_STATUS" != "connected" ]]; then
+            echo "UYARI: VPN bağlı değil! Korumasız başlatılıyor"
+        else
+            echo "VPN koruması ile başlatılıyor"
+        fi
+        # Use direct command with quoted arguments
+        profile_brave "--whatsapp" &
+        ;;
+esac
+
+# Save PID and wait a moment
 APP_PID=$!
-
-# Save PID
+mkdir -p "/tmp/sem"
 echo "$APP_PID" > "/tmp/sem/$PROFILE.pid"
-echo "Application started with PID: $APP_PID"
+echo "Uygulama başlatıldı (PID: $APP_PID)"
 
-# Fullscreen if needed
-if [[ "$FULLSCREEN" == "true" ]] && command -v hyprctl >/dev/null 2>&1; then
+# Make fullscreen if needed
+if [[ "$FULLSCREEN" == "true" ]]; then
+    echo "Uygulama yüklenmesi için $WAIT_TIME saniye bekleniyor..."
     sleep "$WAIT_TIME"
-    echo "Enabling fullscreen"
-    hyprctl dispatch fullscreen 1
+    
+    if command -v hyprctl >/dev/null 2>&1; then
+        echo "Tam ekran yapılıyor..."
+        hyprctl dispatch fullscreen 1
+        sleep 1
+    fi
 fi
 
-# Return to final workspace if specified
-if [[ "$FINAL_WORKSPACE" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-    sleep 1
-    switch_workspace "$FINAL_WORKSPACE" "$WAIT_TIME"
+# Switch to final workspace if needed
+if [[ "$FINAL_WORKSPACE" != "0" && "$FINAL_WORKSPACE" != "$WORKSPACE" ]]; then
+    echo "Son workspace'e geçiliyor..."
+    switch_workspace "$FINAL_WORKSPACE" 1
 fi
 
 exit 0
