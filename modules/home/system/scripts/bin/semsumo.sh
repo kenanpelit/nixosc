@@ -686,12 +686,24 @@ create_startup_script() {
 	# Get configuration
 	local config=$(jq -r ".sessions.\"$profile\"" "$CONFIG_FILE")
 	local command=$(jq -r '.command' <<<"$config")
-	local args=$(jq -r '.args // [] | join(" ")' <<<"$config")
 	local vpn_mode=$(jq -r '.vpn // "secure"' <<<"$config")
 	local workspace=$(jq -r '.workspace // "0"' <<<"$config")
 	local wait_time=$(jq -r '.wait_time // "'"$DEFAULT_WAIT_TIME"'"' <<<"$config")
 	local fullscreen=$(jq -r '.fullscreen // "false"' <<<"$config")
 	local final_workspace=$(jq -r '.final_workspace // "0"' <<<"$config")
+
+	# Get arguments as individual items
+	local args_array=()
+	mapfile -t args_array < <(jq -r '.args[] | @sh' <<<"$config" 2>/dev/null)
+	local args_str=""
+
+	# Create a properly quoted arguments string
+	for arg in "${args_array[@]}"; do
+		# Remove surrounding quotes added by @sh
+		arg=$(eval echo "$arg")
+		# Add the argument with proper quoting
+		args_str+=" \"$arg\""
+	done
 
 	# Create scripts directory if not exists
 	mkdir -p "$SCRIPTS_DIR"
@@ -700,85 +712,117 @@ create_startup_script() {
 	cat >"$script_path" <<EOF
 #!/usr/bin/env bash
 # Profile: $profile
-
 set -euo pipefail
-IFS=$'\n\t'
+IFS=\$'\\n\\t'
 
 # Configuration
 PROFILE="$profile"
 COMMAND="$command"
-ARGS="$args"
-VPN_MODE="$vpn_mode"
 WORKSPACE="$workspace"
 WAIT_TIME="$wait_time"
 FULLSCREEN="$fullscreen"
 FINAL_WORKSPACE="$final_workspace"
+VPN_MODE="$vpn_mode"
 LOG_FILE="/tmp/start-\$PROFILE.log"
 
-# Logging
+# Logging setup
 exec > >(tee -a "\$LOG_FILE") 2>&1
-echo -e "\n[$(date "+%Y-%m-%d %H:%M:%S")] Starting \$PROFILE..."
+echo "[$(date "+%Y-%m-%d %H:%M:%S")] Starting \$PROFILE..."
 
 # Functions
 vpn_status() {
     if command -v mullvad >/dev/null 2>&1; then
-        mullvad status 2>/dev/null | grep -q "Connected" && echo "connected" || echo "disconnected"
+        if mullvad status 2>/dev/null | grep -q "Connected"; then
+            echo "connected"
+        else
+            echo "disconnected"
+        fi
     else
         echo "not_installed"
     fi
 }
 
 switch_workspace() {
-    if [[ "\$1" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-        echo "Switching to workspace \$1"
-        hyprctl dispatch workspace "\$1"
-        sleep "\$2"
+    local target_workspace="\$1"
+    local wait_duration="\$2"
+    
+    if [[ "\$target_workspace" != "0" && "\$target_workspace" != "" ]] && command -v hyprctl >/dev/null 2>&1; then
+        echo "Workspace \$target_workspace'e geçiliyor..."
+        hyprctl dispatch workspace "\$target_workspace"
+        echo "Geçiş için \$wait_duration saniye bekleniyor..."
+        sleep "\$wait_duration"
     fi
-}
-
-start_application() {
-    case "\$VPN_MODE" in
-        bypass)
-            if [[ \$(vpn_status) == "connected" ]] && command -v mullvad-exclude >/dev/null 2>&1; then
-                echo "Starting with VPN bypass"
-                mullvad-exclude "\$COMMAND" \$ARGS &
-            else
-                echo "Starting normally (VPN bypass not available)"
-                "\$COMMAND" \$ARGS &
-            fi
-            ;;
-        secure)
-            if [[ \$(vpn_status) != "connected" ]]; then
-                echo "WARNING: VPN not connected! Starting without protection"
-            fi
-            "\$COMMAND" \$ARGS &
-            ;;
-    esac
 }
 
 # Main execution
 echo "Initializing \$PROFILE..."
+
+# Switch to initial workspace
 switch_workspace "\$WORKSPACE" "\$WAIT_TIME"
 
-echo "Starting application..."
-start_application
+# Start application with appropriate VPN mode
+echo "Uygulama başlatılıyor..."
+echo "COMMAND: \$COMMAND$args_str"
+echo "VPN MODE: \$VPN_MODE"
+
+# Create function to run the command with proper arguments
+run_command() {
+    $command$args_str "\$@"
+}
+
+case "\$VPN_MODE" in
+    bypass)
+        VPN_STATUS=\$(vpn_status)
+        if [[ "\$VPN_STATUS" == "connected" ]]; then
+            if command -v mullvad-exclude >/dev/null 2>&1; then
+                echo "VPN bypass ile başlatılıyor (mullvad-exclude)"
+                # Use direct command with quoted arguments
+                mullvad-exclude $command$args_str &
+            else
+                echo "UYARI: mullvad-exclude bulunamadı, normal başlatılıyor"
+                # Use direct command with quoted arguments
+                $command$args_str &
+            fi
+        else
+            echo "VPN bağlı değil, normal başlatılıyor"
+            # Use direct command with quoted arguments
+            $command$args_str &
+        fi
+        ;;
+    secure|*)
+        VPN_STATUS=\$(vpn_status)
+        if [[ "\$VPN_STATUS" != "connected" ]]; then
+            echo "UYARI: VPN bağlı değil! Korumasız başlatılıyor"
+        else
+            echo "VPN koruması ile başlatılıyor"
+        fi
+        # Use direct command with quoted arguments
+        $command$args_str &
+        ;;
+esac
+
+# Save PID and wait a moment
 APP_PID=\$!
-
-# Save PID
+mkdir -p "/tmp/sem"
 echo "\$APP_PID" > "/tmp/sem/\$PROFILE.pid"
-echo "Application started with PID: \$APP_PID"
+echo "Uygulama başlatıldı (PID: \$APP_PID)"
 
-# Fullscreen if needed
-if [[ "\$FULLSCREEN" == "true" ]] && command -v hyprctl >/dev/null 2>&1; then
+# Make fullscreen if needed
+if [[ "\$FULLSCREEN" == "true" ]]; then
+    echo "Uygulama yüklenmesi için \$WAIT_TIME saniye bekleniyor..."
     sleep "\$WAIT_TIME"
-    echo "Enabling fullscreen"
-    hyprctl dispatch fullscreen 1
+    
+    if command -v hyprctl >/dev/null 2>&1; then
+        echo "Tam ekran yapılıyor..."
+        hyprctl dispatch fullscreen 1
+        sleep 1
+    fi
 fi
 
-# Return to final workspace if specified
-if [[ "\$FINAL_WORKSPACE" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-    sleep 1
-    switch_workspace "\$FINAL_WORKSPACE" "\$WAIT_TIME"
+# Switch to final workspace if needed
+if [[ "\$FINAL_WORKSPACE" != "0" && "\$FINAL_WORKSPACE" != "\$WORKSPACE" ]]; then
+    echo "Son workspace'e geçiliyor..."
+    switch_workspace "\$FINAL_WORKSPACE" 1
 fi
 
 exit 0
@@ -786,7 +830,90 @@ EOF
 
 	# Make script executable
 	chmod +x "$script_path"
-	log "INFO" "Created startup script: $script_path"
+	log "INFO" "Başlatma scripti oluşturuldu: $script_path"
+	return 0
+}
+
+# Generate startup scripts for all profiles
+generate_startup_scripts() {
+	log "INFO" "Tüm profiller için başlatma scriptleri oluşturuluyor..."
+
+	# Check if jq is available
+	if ! command -v jq &>/dev/null; then
+		log "ERROR" "Script oluşturmak için jq gerekiyor"
+		return 1
+	fi
+
+	# Create scripts directory
+	mkdir -p "$SCRIPTS_DIR"
+
+	# Get all profiles
+	local profiles count=0 total=0
+	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
+	total=$(echo "$profiles" | wc -l)
+
+	# Process each profile
+	while IFS= read -r profile; do
+		[[ -z "$profile" ]] && continue
+
+		if create_startup_script "$profile"; then
+			((count++))
+			echo -ne "\rİlerleme: $count/$total"
+		fi
+	done <<<"$profiles"
+	echo ""
+
+	log "INFO" "$total profilden $count tanesi için başlatma scripti oluşturuldu"
+
+	# Show an example
+	if [[ $count -gt 0 ]]; then
+		local example
+		example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
+		echo "Örnek kullanım: $SCRIPTS_DIR/start-${example,,}.sh"
+	fi
+
+	return 0
+}
+
+# Generate startup scripts for all profiles
+generate_startup_scripts() {
+	log_info "Tüm profiller için başlatma scriptleri oluşturuluyor..."
+
+	# Check if jq is available
+	if ! command -v jq &>/dev/null; then
+		log_error "Script oluşturmak için jq gerekiyor"
+		return 1
+	fi
+
+	# Create scripts directory
+	mkdir -p "$SCRIPTS_DIR"
+
+	# Get all profiles
+	local profiles count=0 total=0
+	profiles=$(jq -r '.sessions | keys[]' "$CONFIG_FILE")
+	total=$(echo "$profiles" | wc -l)
+
+	# Process each profile
+	while IFS= read -r profile; do
+		[[ -z "$profile" ]] && continue
+
+		if create_startup_script "$profile"; then
+			((count++))
+			echo -ne "\rİlerleme: $count/$total"
+		fi
+	done <<<"$profiles"
+	echo ""
+
+	log_success "$total profilden $count tanesi için başlatma scripti oluşturuldu"
+
+	# Show an example
+	if [[ $count -gt 0 ]]; then
+		local example
+		example=$(jq -r '.sessions | keys[0]' "$CONFIG_FILE")
+		echo "Örnek kullanım: $SCRIPTS_DIR/start-${example,,}.sh"
+	fi
+
+	return 0
 }
 
 # Generate startup scripts for all profiles
