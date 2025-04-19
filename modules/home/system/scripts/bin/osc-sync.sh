@@ -72,6 +72,7 @@ DOT_PATHS=(
 	".backups"
 	".config/brave"
 	".config/BraveSoftware"
+	".config/cliphist"
 	".config/github"
 	".config/google-chrome"
 	".config/hblock"
