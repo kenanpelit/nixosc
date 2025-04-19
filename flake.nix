@@ -248,7 +248,8 @@
    };
    # === Application Launcher & Tools ===
    walker = {
-     url = "github:abenz1267/walker/v0.12.20";  # Updated to latest version
+     #url = "github:abenz1267/walker/v0.12.20";  # Updated to latest version
+     url = "github:abenz1267/walker/v0.12.21";  # Updated to latest version
      inputs.nixpkgs.follows = "nixpkgs";
    };
  };
