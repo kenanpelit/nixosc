@@ -45,6 +45,7 @@ DRY_RUN=false
 CURRENT_WORKSPACE=""
 RETRY_COUNT=3
 FINAL_WORKSPACE=""
+disable_final_workspace=0
 total_steps=0
 current_step=0
 declare -A APP_PIDS
@@ -580,30 +581,6 @@ switch_workspace() {
 	return 0
 }
 
-# Handle final workspace if specified
-handle_final_workspace() {
-	local session_name="$1"
-	local final_workspace=""
-
-	# If specific final workspace is provided, use it
-	if [[ -n "$FINAL_WORKSPACE" ]]; then
-		final_workspace="$FINAL_WORKSPACE"
-	else
-		# Otherwise check the session's final_workspace
-		final_workspace=$(jq -r ".sessions.\"${session_name}\".final_workspace // \"0\"" "$CONFIG_FILE")
-
-		# If not set in session, check global settings
-		if [[ "$final_workspace" == "0" || "$final_workspace" == "null" ]]; then
-			final_workspace=$(jq -r ".settings.final_workspace // \"0\"" "$CONFIG_FILE")
-		fi
-	fi
-
-	if [[ "$final_workspace" != "0" && "$final_workspace" != "null" ]]; then
-		log "INFO" "WORKSPACE" "Switching to final workspace $final_workspace"
-		switch_workspace "$final_workspace"
-	fi
-}
-
 # Make application fullscreen
 make_fullscreen() {
 	local wait_time="${1:-$DEFAULT_FULLSCREEN_WAIT}"
@@ -851,9 +828,9 @@ start_session() {
 	local session_name="$1"
 	local vpn_param="${2:-}"
 
-	# Check if session exists
+	# Check if session exists in config
 	if ! jq -e ".sessions.\"${session_name}\"" "$CONFIG_FILE" >/dev/null; then
-		log "ERROR" "SESSION" "Session not found: $session_name"
+		log "ERROR" "SESSION" "Session not found in config: $session_name"
 		return 1
 	fi
 
@@ -934,24 +911,15 @@ start_session() {
 		pid=$(execute_application "$command" "${args[@]}")
 		;;
 	bypass)
-		# Special cases that shouldn't use mullvad-exclude
-		local no_exclude_apps=("spotify" "kkenp" "webcord" "discord")
-
-		if [[ " ${no_exclude_apps[*]} " =~ " $command " ]] || ! $vpn_active || ! command_exists "mullvad-exclude"; then
-			if [[ " ${no_exclude_apps[*]} " =~ " $command " ]]; then
-				log "INFO" "VPN" "$command detected - using normal start instead of bypass"
-			elif ! $vpn_active; then
-				log "INFO" "VPN" "VPN not active, starting $session_name normally"
-			else
-				log "WARN" "VPN" "mullvad-exclude not found, starting $session_name normally"
-			fi
+		if ! command_exists "mullvad-exclude"; then
+			log "WARN" "VPN" "mullvad-exclude not found, starting normally"
 			pid=$(execute_application "$command" "${args[@]}")
 		else
-			log "INFO" "VPN" "Starting $session_name bypassing VPN"
-			# Try mullvad-exclude with timeout
+			log "INFO" "VPN" "Starting $session_name bypassing VPN (timeout: 10s)"
 			pid=$(timeout 10s mullvad-exclude "$command" "${args[@]}" 2>/dev/null)
+
 			if [[ -z "$pid" || "$pid" -le 0 ]]; then
-				log "WARN" "VPN" "mullvad-exclude timed out or failed for $session_name, trying normal execution"
+				log "WARN" "VPN" "Bypass failed, trying normal start"
 				pid=$(execute_application "$command" "${args[@]}")
 			fi
 		fi
@@ -1055,6 +1023,88 @@ list_groups() {
 	done
 }
 
+# Handle final workspace if specified
+handle_final_workspace() {
+	local session_name="$1"
+
+	# Disable_final_workspace değişkeni 1 ise işlemi atla
+	if [[ "$disable_final_workspace" -eq 1 ]]; then
+		return 0
+	fi
+
+	local final_workspace=""
+
+	# If specific final workspace is provided, use it
+	if [[ -n "$FINAL_WORKSPACE" ]]; then
+		final_workspace="$FINAL_WORKSPACE"
+	else
+		# Otherwise check the session's final_workspace
+		final_workspace=$(jq -r ".sessions.\"${session_name}\".final_workspace // \"0\"" "$CONFIG_FILE")
+
+		# If not set in session, check global settings
+		if [[ "$final_workspace" == "0" || "$final_workspace" == "null" ]]; then
+			final_workspace=$(jq -r ".settings.final_workspace // \"0\"" "$CONFIG_FILE")
+		fi
+	fi
+
+	if [[ "$final_workspace" != "0" && "$final_workspace" != "null" ]]; then
+		log "INFO" "WORKSPACE" "Switching to final workspace $final_workspace"
+		switch_workspace "$final_workspace"
+	fi
+}
+
+start_all_groups() {
+	local old_disable_final_workspace="$disable_final_workspace"
+	disable_final_workspace=1
+	local start_time=$(date +%s)
+
+	log "INFO" "ALL" "Starting all groups sequentially"
+
+	# Grupları tanımlı sırayla başlat
+	local group_order=("terminals" "browsers" "communications" "media")
+
+	for group in "${group_order[@]}"; do
+		if [[ -v APP_GROUPS["$group"] ]]; then
+			log "INFO" "ALL" "Starting $group group"
+			local group_content="${APP_GROUPS["$group"]}"
+
+			# Trim ve boş eleman kontrolü
+			local sessions=()
+			while IFS=',' read -ra temp_arr; do
+				for session in "${temp_arr[@]}"; do
+					session=$(echo "$session" | xargs) # Trim whitespace
+					[[ -n "$session" ]] && sessions+=("$session")
+				done
+			done <<<"$group_content"
+
+			for session in "${sessions[@]}"; do
+				log "INFO" "SESSION" "Starting session: $session"
+
+				# Session'ın config'te var olduğunu kontrol et
+				if ! jq -e ".sessions.\"$session\"" "$CONFIG_FILE" >/dev/null; then
+					log "ERROR" "SESSION" "Session not found in config: $session"
+					continue
+				fi
+
+				start_session "$session"
+				sleep 1
+			done
+		fi
+	done
+
+	disable_final_workspace="$old_disable_final_workspace"
+
+	# Final workspace'e geç
+	local final_workspace=$(jq -r ".settings.final_workspace // \"0\"" "$CONFIG_FILE")
+	if [[ "$final_workspace" != "0" && "$final_workspace" != "null" ]]; then
+		log "INFO" "WORKSPACE" "Switching to final workspace $final_workspace"
+		switch_workspace "$final_workspace"
+	fi
+
+	local duration=$(($(date +%s) - start_time))
+	log "SUCCESS" "ALL" "All groups started successfully (Time: ${duration}s)"
+}
+
 # Start a group of sessions
 start_group() {
 	local group_name="$1"
@@ -1066,31 +1116,28 @@ start_group() {
 		return 1
 	fi
 
+	# Geçici olarak final workspace geçişlerini devre dışı bırak
+	local old_disable_final_workspace="$disable_final_workspace"
+	disable_final_workspace=1
+
 	local group_content="${APP_GROUPS[$group_name]}"
 	local start_time=$(date +%s)
 
-	# Handle meta group "all"
+	# Handle meta group "all" using the helper function
 	if [[ "$group_name" == "all" ]]; then
-		log "INFO" "GROUP" "Starting meta group: $group_name"
-
-		local subgroups=(browsers terminals communications media)
-		for subgroup in "${subgroups[@]}"; do
-			if [[ -v APP_GROUPS["$subgroup"] ]]; then
-				log "INFO" "GROUP" "Starting subgroup: $subgroup"
-				start_group "$subgroup" "$parallel"
-				sleep 2
-			fi
-		done
+		start_all_groups
 	else
 		log "INFO" "GROUP" "Starting group: $group_name ($group_content)"
 
 		# Calculate total steps for progress bar
 		local sessions_array=()
+		local OLD_IFS="$IFS"
 		IFS=',' read -ra sessions_array <<<"$group_content"
+		IFS="$OLD_IFS"
 		total_steps=${#sessions_array[@]}
 		current_step=0
 
-		# Process comma-separated session list
+		# Process sessions
 		if [[ "$parallel" == "true" ]]; then
 			log "DEBUG" "GROUP" "Using parallel mode"
 			local pids=()
@@ -1105,11 +1152,39 @@ start_group() {
 				wait "$pid" 2>/dev/null || true
 			done
 		else
+			# Önce uygulamaları workspace'e göre gruplandır
+			declare -A workspace_sessions
+
 			for session in "${sessions_array[@]}"; do
-				start_session "$session"
+				local workspace=$(jq -r ".sessions.\"${session}\".workspace // \"0\"" "$CONFIG_FILE")
+
+				# Workspace listesine ekle
+				if [[ -z "${workspace_sessions[$workspace]+x}" ]]; then
+					workspace_sessions[$workspace]="$session"
+				else
+					workspace_sessions[$workspace]="${workspace_sessions[$workspace]} $session"
+				fi
+			done
+
+			# Her workspace için uygulamaları başlat
+			for workspace in "${!workspace_sessions[@]}"; do
+				# Skip invalid workspace
+				[[ "$workspace" == "0" || "$workspace" == "null" ]] && continue
+
+				# Switch to workspace once
+				switch_workspace "$workspace"
 				sleep 1
+
+				# Start all apps in this workspace
+				for session in ${workspace_sessions[$workspace]}; do
+					start_session "$session"
+					sleep 1
+				done
 			done
 		fi
+
+		# Alt gruplar için eski değeri geri yükle
+		disable_final_workspace="$old_disable_final_workspace"
 	fi
 
 	local duration=$(($(date +%s) - start_time))
@@ -1712,12 +1787,20 @@ main() {
 			list_groups
 			exit 1
 		fi
-		# Use parallel mode if specified
-		if [[ $PARALLEL -eq 1 ]]; then
-			start_group "$2" "true"
-		else
-			start_group "$2" "false"
-		fi
+		case "$2" in
+		all)
+			start_all_groups
+			;;
+		*)
+			if [[ -v APP_GROUPS["$2"] ]]; then
+				start_group "$2" "$([[ $PARALLEL -eq 1 ]] && echo "true" || echo "false")"
+			else
+				log "ERROR" "GROUP" "Invalid group: $2"
+				list_groups
+				exit 1
+			fi
+			;;
+		esac
 		;;
 	groups)
 		list_groups
