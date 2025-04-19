@@ -304,6 +304,34 @@
              inputs.walker.packages.${system}.default
             ];
            }
+           
+           # CopyQ overlay - Upgrade to v10.0.0
+           {
+             nixpkgs.overlays = [
+               (final: prev: {
+                 copyq = prev.copyq.overrideAttrs (oldAttrs: {
+                   version = "10.0.0";
+                   src = prev.fetchFromGitHub {
+                     owner = "hluk";
+                     repo = "CopyQ";
+                     rev = "v10.0.0";
+                     sha256 = "sha256-lH3WJ6cK2eCnmcLVLnYUypABj73UZjGqqDPp92QE+V4=";
+                   };
+                   # Wayland protokol tanımlarını ekleyerek sorunları çözelim
+                   buildInputs = (oldAttrs.buildInputs or []) ++ [ 
+                     prev.wayland-protocols
+                     prev.wayland-scanner
+                   ];
+                   # Eksik wayland.xml dosyasını sağlamak için oluşturma adımını düzenleyelim
+                   preConfigure = (oldAttrs.preConfigure or "") + ''
+                     cp ${prev.wayland-protocols}/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml .
+                     cp ${prev.wayland.dev}/share/wayland/wayland.xml .
+                   '';
+                 });
+               })
+             ];
+           }
+
          ] ++ modules;  # Add machine-specific modules
          
          # Pass additional arguments to all modules
