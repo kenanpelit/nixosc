@@ -1,142 +1,129 @@
 #!/usr/bin/env bash
-# chist.sh - Cliphist Yardımcı Scripti
-#
-# Kullanım: ./chist.sh [komut]
-#
-# Komutlar:
-#   text       - Metin geçmişini göster ve seçilen metni kopyala
-#   preview    - Seçilen resmi swappy ile önizle ve düzenle
-#   all        - Tüm geçmişi göster ve seç
-#   wipe       - Tüm cliphist veritabanını temizle
-#   inspect    - Bir öğenin detaylı bilgilerini göster
+# chist.sh - Cliphist Yardımcı Scripti (fzf entegrasyonlu)
 
-# Basit tema ayarı - tek tırnak içinde ve kısa
-LAUNCHER="rofi -dmenu -i -theme-str 'window {width: 50%;} listview {columns: 1;}'"
-NOTIFY_CMD="notify-send"
-
-# Komut var mı kontrol et
+# Bağımlılık kontrolü
 command_exists() {
 	command -v "$1" &>/dev/null
 }
 
-# ID'yi temizle ve sadece ID değerini al
+for cmd in cliphist wl-copy notify-send; do
+	if ! command_exists "$cmd"; then
+		echo "Hata: $cmd bulunamadı!" >&2
+		exit 1
+	fi
+done
+
+# Pager seçimi (fzf veya rofi)
+if command_exists "fzf"; then
+	PAGER="fzf"
+elif command_exists "rofi"; then
+	PAGER="rofi -dmenu -i -theme-str 'window {width: 50%;}' -theme-str 'listview {columns: 1;}'"
+else
+	echo "Hata: Ne fzf ne de rofi bulunamadı!" >&2
+	exit 1
+fi
+
+NOTIFY_CMD="notify-send"
+
+# ID'yi temizle
 extract_id() {
 	echo "$1" | awk '{print $1}' | tr -d '\n'
 }
 
 # Geçici klasör
-TEMP_DIR="/tmp/cliphist-helper"
+TEMP_DIR="/tmp/cliphist-$(date +%s)"
 mkdir -p "$TEMP_DIR"
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Ana fonksiyonlar
-show_text_history() {
-	local selected
-	selected=$(cliphist list | grep -v 'binary data' | eval $LAUNCHER -p \"Metin Geçmişi\")
-	if [ -n "$selected" ]; then
-		id=$(extract_id "$selected")
-		cliphist decode "$id" | wl-copy
-		$NOTIFY_CMD "Clipboard" "Metin kopyalandı"
+# Seçim yapma fonksiyonu (fzf/rofi uyumlu)
+select_item() {
+	local prompt="$1"
+	local items="$2"
+
+	if [ "$PAGER" = "fzf" ]; then
+		echo "$items" | fzf --prompt="$prompt " --height=40% --reverse
+	else
+		echo "$items" | eval "$PAGER -p \"$prompt\""
 	fi
 }
 
+# Ana fonksiyonlar
+show_text_history() {
+	local selected id
+	selected=$(select_item "Metin Geçmişi" "$(cliphist list | grep -v 'binary data')")
+	[ -n "$selected" ] || return
+	id=$(extract_id "$selected")
+	cliphist decode "$id" | wl-copy || $NOTIFY_CMD "Hata" "Kopyalama başarısız"
+	$NOTIFY_CMD "Clipboard" "Metin kopyalandı"
+}
+
 show_all_history() {
-	local selected
-	selected=$(cliphist list | eval $LAUNCHER -p \"Tüm Geçmiş\")
-	if [ -n "$selected" ]; then
-		id=$(extract_id "$selected")
-		cliphist decode "$id" | wl-copy
-		$NOTIFY_CMD "Clipboard" "İçerik kopyalandı"
-	fi
+	local selected id
+	selected=$(select_item "Tüm Geçmiş" "$(cliphist list)")
+	[ -n "$selected" ] || return
+	id=$(extract_id "$selected")
+	cliphist decode "$id" | wl-copy || $NOTIFY_CMD "Hata" "Kopyalama başarısız"
+	$NOTIFY_CMD "Clipboard" "İçerik kopyalandı"
 }
 
 wipe_history() {
 	local confirm
-	confirm=$(echo -e "Hayır\nEvet" | eval $LAUNCHER -p \"Tüm clipboard geçmişini temizle?\")
-	if [ "$confirm" = "Evet" ]; then
-		cliphist wipe
-		$NOTIFY_CMD "Clipboard" "Geçmiş temizlendi"
+	if [ "$PAGER" = "fzf" ]; then
+		confirm=$(echo -e "Hayır\nEvet" | fzf --prompt="Tüm geçmişi silmek istiyor musunuz? " --height=20%)
 	else
-		$NOTIFY_CMD "Clipboard" "İşlem iptal edildi"
+		confirm=$(echo -e "Hayır\nEvet" | eval "$PAGER -p \"Tüm geçmişi sil?\"")
 	fi
+
+	[ "$confirm" = "Evet" ] || {
+		$NOTIFY_CMD "Clipboard" "İşlem iptal edildi"
+		return
+	}
+	cliphist wipe && $NOTIFY_CMD "Clipboard" "Geçmiş temizlendi"
 }
 
 preview_image() {
-	local selected
-	selected=$(cliphist list | grep -P '^\d+\s+\[\[\s*binary data .*(jpeg|jpg|png|bmp)' | eval $LAUNCHER -p \"Önizleme için bir resim seçin\")
+	local selected id image_file
+	selected=$(select_item "Resim Seç" "$(cliphist list | grep -P 'binary data.*(jpeg|jpg|png|bmp)')")
+	[ -n "$selected" ] || return
 
-	if [ -n "$selected" ]; then
-		id=$(extract_id "$selected")
-		image_file="$TEMP_DIR/preview.png"
+	id=$(extract_id "$selected")
+	image_file="$TEMP_DIR/preview-$(date +%s).png"
 
-		if command_exists "swappy"; then
-			cliphist decode "$id" >"$image_file"
-			swappy -f "$image_file" -o "$image_file"
+	cliphist decode "$id" >"$image_file" || {
+		$NOTIFY_CMD "Hata" "Resim oluşturulamadı"
+		return 1
+	}
 
-			if [ -f "$image_file" ]; then
-				cat "$image_file" | wl-copy
-				$NOTIFY_CMD "Clipboard" "Düzenlenen resim kopyalandı"
-			fi
-		elif command_exists "imv"; then
-			cliphist decode "$id" >"$image_file"
-			imv "$image_file"
-			$NOTIFY_CMD "Clipboard" "Görüntü kopyalandı"
-		elif command_exists "feh"; then
-			cliphist decode "$id" >"$image_file"
-			feh "$image_file"
-			$NOTIFY_CMD "Clipboard" "Görüntü kopyalandı"
-		else
-			$NOTIFY_CMD "Clipboard" "Resim görüntüleyici bulunamadı"
-		fi
+	if command_exists "swappy"; then
+		swappy -f "$image_file" -o "$image_file" && [ -f "$image_file" ] && {
+			cat "$image_file" | wl-copy
+			$NOTIFY_CMD "Clipboard" "Resim kopyalandı"
+		}
+	elif command_exists "imv"; then
+		imv "$image_file"
+	elif command_exists "feh"; then
+		feh "$image_file"
+	else
+		$NOTIFY_CMD "Hata" "Görüntüleyici bulunamadı"
 	fi
 }
 
-inspect_item() {
-	local selected
-	selected=$(cliphist list | eval $LAUNCHER -p \"İncelenecek öğeyi seçin\")
-	if [ -n "$selected" ]; then
-		id=$(extract_id "$selected")
-		cliphist decode "$id" >"$TEMP_DIR/content.txt"
-		cat "$TEMP_DIR/content.txt" | eval $LAUNCHER -p \"İçerik İnceleme\"
-	fi
+# fzf özel fonksiyonu
+fzf_search() {
+	local selected id
+	selected=$(cliphist list | fzf --prompt="Ara: " --height=50% --reverse --preview "cliphist decode {1}" --preview-window=right:50%:wrap)
+	[ -n "$selected" ] || return
+	id=$(extract_id "$selected")
+	cliphist decode "$id" | wl-copy || $NOTIFY_CMD "Hata" "Kopyalama başarısız"
+	$NOTIFY_CMD "Clipboard" "İçerik kopyalandı"
 }
 
-# Komut argümanlarını kontrol et
-ACTION="${1:-text}"
-
-case "$ACTION" in
-text)
-	show_text_history
-	;;
-preview)
-	preview_image
-	;;
-all)
-	show_all_history
-	;;
-wipe)
-	wipe_history
-	;;
-inspect)
-	inspect_item
-	;;
-help | --help | -h)
-	echo "Cliphist Helper - Clipboard Yönetim Aracı"
-	echo ""
-	echo "Kullanım: $0 [komut]"
-	echo ""
-	echo "Komutlar:"
-	echo "  text     - Metin geçmişini göster"
-	echo "  preview  - Swappy ile resim önizle ve düzenle"
-	echo "  all      - Tüm geçmişi göster"
-	echo "  wipe     - Geçmişi temizle"
-	echo "  inspect  - Öğeyi incele"
-	echo "  help     - Bu yardım mesajını göster"
-	;;
-*)
-	echo "Bilinmeyen komut: $ACTION"
-	echo "Yardım için: $0 help"
-	exit 1
-	;;
+# Komut seçimi
+case "${1:-text}" in
+text) show_text_history ;;
+preview) preview_image ;;
+all) show_all_history ;;
+wipe) wipe_history ;;
+search) fzf_search ;;
+*) echo "Kullanım: $0 [text|preview|all|wipe|search]" >&2 ;;
 esac
-
-exit 0
