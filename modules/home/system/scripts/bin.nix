@@ -15,6 +15,9 @@ let
   check_images = pkgs.writeShellScriptBin "check_images" (
     builtins.readFile ./bin/check_images.sh
   );
+  chist = pkgs.writeShellScriptBin "chist" (
+    builtins.readFile ./bin/chist.sh
+  );
   chroot_manager = pkgs.writeShellScriptBin "chroot_manager" (
     builtins.readFile ./bin/chroot_manager.sh
   );
@@ -379,6 +382,7 @@ in {
     ascii
     bulk_rename
     check_images
+    chist
     chroot_manager
     clearam
     clustergit
