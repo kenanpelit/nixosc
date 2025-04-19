@@ -19,9 +19,13 @@
         # Keep clipboard content persistent across program restarts
         "wl-clip-persist --clipboard both"
         # Store clipboard history using cliphist
-        "wl-paste --watch cliphist store"
+        #"wl-paste --watch cliphist store"
+        # Enhanced clipboard management with cliphist
+        "wl-paste --type text --watch cliphist store"     # Store text content
+        "wl-paste --type image --watch cliphist store"    # Store image content including screenshots 
         # Advanced clipboard manager with searchable history
-        "copyq"
+        # Advanced clipboard manager with searchable history
+        #"copyq"
         # Set system cursor theme and size
         "hyprctl setcursor catppuccin-mocha-lavender-cursors 24"
         # Initialize wallpaper daemon for dynamic wallpapers
@@ -679,8 +683,11 @@
         "$mainMod, mouse_up, workspace, e+1"
 
         # clipboard manager
-        "$mainMod, V, exec, copyq toggle"
-        "$mainMod CTRL, V, exec, cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy"
+        #"$mainMod, V, exec, copyq toggle"
+        "$mainMod, V, exec, chist all"
+        #"$mainMod CTRL, V, exec, cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy"
+        "$mainMod CTRL, V, exec, chist preview"
+        "$mainMod CTRL SHIFT, V, exec, chist inspect"
 
         # Ana Pencere Yönetimi
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
