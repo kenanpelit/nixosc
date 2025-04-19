@@ -8,10 +8,18 @@ echo "Initializing Brave-Whatsapp..."
 
 # Switch to initial workspace
 if [[ "9" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-    echo "Switching to workspace 9..."
-    hyprctl dispatch workspace "9"
-    sleep 1
-    echo "Waiting 1 seconds for transition..."
+    # Get current workspace
+    CURRENT_WORKSPACE=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+    
+    # Only switch if we're not already on the target workspace
+    if [[ "$CURRENT_WORKSPACE" != "9" ]]; then
+        echo "Switching to workspace 9..."
+        hyprctl dispatch workspace "9"
+        sleep 1
+        echo "Waiting 1 seconds for transition..."
+    else
+        echo "Already on workspace 9, skipping switch."
+    fi
 fi
 
 echo "Starting application..."
@@ -62,10 +70,18 @@ if [[ "true" == "true" ]]; then
 fi
 
 # Switch to final workspace if needed
-if [[ "9" != "0" && "9" != "9" ]]; then
-    echo "Switching to final workspace..."
-    if command -v hyprctl >/dev/null 2>&1; then
-        hyprctl dispatch workspace "9"
+if [[ "9" != "0" ]]; then
+    # Get current workspace again
+    CURRENT_WORKSPACE=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+    
+    # Only switch if we're not already on the target final workspace
+    if [[ "$CURRENT_WORKSPACE" != "9" ]]; then
+        echo "Switching to final workspace 9..."
+        if command -v hyprctl >/dev/null 2>&1; then
+            hyprctl dispatch workspace "9"
+        fi
+    else
+        echo "Already on final workspace 9, skipping switch."
     fi
 fi
 
