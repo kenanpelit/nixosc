@@ -8,10 +8,18 @@ echo "Initializing Chrome-AI..."
 
 # Switch to initial workspace
 if [[ "3" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-    echo "Switching to workspace 3..."
-    hyprctl dispatch workspace "3"
-    sleep 1
-    echo "Waiting 1 seconds for transition..."
+    # Get current workspace
+    CURRENT_WORKSPACE=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+    
+    # Only switch if we're not already on the target workspace
+    if [[ "$CURRENT_WORKSPACE" != "3" ]]; then
+        echo "Switching to workspace 3..."
+        hyprctl dispatch workspace "3"
+        sleep 1
+        echo "Waiting 1 seconds for transition..."
+    else
+        echo "Already on workspace 3, skipping switch."
+    fi
 fi
 
 echo "Starting application..."
@@ -62,10 +70,18 @@ if [[ "false" == "true" ]]; then
 fi
 
 # Switch to final workspace if needed
-if [[ "3" != "0" && "3" != "3" ]]; then
-    echo "Switching to final workspace..."
-    if command -v hyprctl >/dev/null 2>&1; then
-        hyprctl dispatch workspace "3"
+if [[ "3" != "0" ]]; then
+    # Get current workspace again
+    CURRENT_WORKSPACE=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+    
+    # Only switch if we're not already on the target final workspace
+    if [[ "$CURRENT_WORKSPACE" != "3" ]]; then
+        echo "Switching to final workspace 3..."
+        if command -v hyprctl >/dev/null 2>&1; then
+            hyprctl dispatch workspace "3"
+        fi
+    else
+        echo "Already on final workspace 3, skipping switch."
     fi
 fi
 

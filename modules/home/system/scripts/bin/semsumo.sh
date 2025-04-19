@@ -543,9 +543,8 @@ switch_workspace() {
 	local workspace="$1"
 	local wait_time="${2:-$DEFAULT_SWITCH_WAIT}"
 
-	# Skip if workspace is not specified or already there
+	# Skip if workspace is not specified
 	[[ -z "$workspace" || "$workspace" == "0" || "$workspace" == "null" ]] && return 0
-	[[ "$CURRENT_WORKSPACE" == "$workspace" ]] && return 0
 
 	# Skip in dry run mode
 	if [[ "$DRY_RUN" == "true" ]]; then
@@ -559,6 +558,17 @@ switch_workspace() {
 		return 1
 	fi
 
+	# Get current workspace
+	local current=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+
+	# Check if we're already on the requested workspace
+	if [[ "$current" == "$workspace" ]]; then
+		log "DEBUG" "WORKSPACE" "Already on workspace $workspace, skipping switch" "false"
+		CURRENT_WORKSPACE="$workspace"
+		return 0
+	fi
+
+	# Otherwise, switch to the requested workspace
 	log "INFO" "WORKSPACE" "Switching to workspace $workspace"
 	if ! hyprctl dispatch workspace "$workspace" >/dev/null 2>&1; then
 		log "ERROR" "WORKSPACE" "Failed to switch to workspace $workspace"
@@ -1170,10 +1180,18 @@ echo "Initializing $profile..."
 
 # Switch to initial workspace
 if [[ "$workspace" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
-    echo "Switching to workspace $workspace..."
-    hyprctl dispatch workspace "$workspace"
-    sleep $wait_time
-    echo "Waiting $wait_time seconds for transition..."
+    # Get current workspace
+    CURRENT_WORKSPACE=\$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+    
+    # Only switch if we're not already on the target workspace
+    if [[ "\$CURRENT_WORKSPACE" != "$workspace" ]]; then
+        echo "Switching to workspace $workspace..."
+        hyprctl dispatch workspace "$workspace"
+        sleep $wait_time
+        echo "Waiting $wait_time seconds for transition..."
+    else
+        echo "Already on workspace $workspace, skipping switch."
+    fi
 fi
 
 echo "Starting application..."
@@ -1224,10 +1242,18 @@ if [[ "$fullscreen" == "true" ]]; then
 fi
 
 # Switch to final workspace if needed
-if [[ "$final_workspace" != "0" && "$final_workspace" != "$workspace" ]]; then
-    echo "Switching to final workspace..."
-    if command -v hyprctl >/dev/null 2>&1; then
-        hyprctl dispatch workspace "$final_workspace"
+if [[ "$final_workspace" != "0" ]]; then
+    # Get current workspace again
+    CURRENT_WORKSPACE=\$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+    
+    # Only switch if we're not already on the target final workspace
+    if [[ "\$CURRENT_WORKSPACE" != "$final_workspace" ]]; then
+        echo "Switching to final workspace $final_workspace..."
+        if command -v hyprctl >/dev/null 2>&1; then
+            hyprctl dispatch workspace "$final_workspace"
+        fi
+    else
+        echo "Already on final workspace $final_workspace, skipping switch."
     fi
 fi
 
