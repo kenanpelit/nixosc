@@ -22,7 +22,7 @@
  imports = [
    ./bat
    ./candy
-   ./copyq
+   #./copyq
    ./iwmenu
    #./sem
    ./sesh
