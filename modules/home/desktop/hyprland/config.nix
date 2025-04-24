@@ -358,6 +358,7 @@
         "workspace 5,class:^(WebCord)$"
         "workspace 5 silent,tile,class:^(discord)$"
         "workspace 5,class:^(Audacious)$"
+        "workspace 5 silent,class:^(Ferdium)$,title:^(Ferdium)$"
         "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
         "workspace 6 silent,title:^(New Private Tab - Brave)$"
         "workspace 6 silent,title:^Kenp Browser (Inkognito)$"
@@ -373,6 +374,7 @@
         "workspace 9 silent,class:^(Whats)$"
         "workspace 9 silent,title:^(web.whatsapp.com)$ class:^(Brave-browser)$"
         "workspace 9 silent,title:^(web.whatsapp.com)$"
+
 
         # Floating Windows
         "float,class:^(clipb)$"
