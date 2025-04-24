@@ -1,25 +1,10 @@
 #!/usr/bin/env bash
 #===============================================================================
 #
-#   Script: VideoAlchemist
-#   Version: 1.1.0
+#   Script: Kompakt Video Dönüştürücü
+#   Version: 2.0.1
 #   Date: 2025-04-24
-#   Original Author: Kenan Pelit
-#   Repository: https://github.com/kenanpelit/nixosc
-#   Description: Comprehensive video format conversion utility that transforms
-#                between MP4 and MKV formats with enhanced user experience
-#
-#   Features:
-#   - Converts between MP4 and MKV formats without quality loss
-#   - Supports both single file and batch directory conversions
-#   - Interactive progress bar with visual feedback
-#   - File management options (keep or delete original files)
-#   - Optimized encoding settings for different conversion types
-#   - Multi-threaded processing for improved performance
-#   - Enhanced AV1 codec support
-#   - Better error handling and file verification
-#
-#   License: MIT
+#   Description: Basitleştirilmiş video format dönüştürme aracı
 #
 #===============================================================================
 
@@ -61,372 +46,337 @@ show_progress() {
 
 # Yardım mesajı
 show_help() {
-	echo -e "${CYAN}╔════════════════════════════════════════╗${NC}"
-	echo -e "${CYAN}║     Video Format Dönüştürücü v1.1      ║${NC}"
-	echo -e "${CYAN}╚════════════════════════════════════════╝${NC}"
+	echo -e "${CYAN}╔═══════════════════════════════════════════╗${NC}"
+	echo -e "${CYAN}║     Kompakt Video Dönüştürücü v2.0.1      ║${NC}"
+	echo -e "${CYAN}╚═══════════════════════════════════════════╝${NC}"
 	echo -e "${YELLOW}Kullanım:${NC}"
-	echo -e "  $0 mp4tomkv <dosya.mp4 veya dizin>"
-	echo -e "  $0 mkvtomp4 <dosya.mkv veya dizin>"
-	echo -e "\n${YELLOW}Örnekler:${NC}"
-	echo -e "  $0 mp4tomkv video.mp4     ${GREEN}# Tek bir MP4 dosyasını MKV'ye dönüştür${NC}"
-	echo -e "  $0 mkvtomp4 /home/videos  ${GREEN}# Dizindeki tüm MKV dosyalarını MP4'e dönüştür${NC}"
+	echo -e "  $0 tv <dosya>           ${GREEN}# Normal TV uyumlu dönüştürme${NC}"
+	echo -e "  $0 tvfast <dosya>       ${GREEN}# Hızlı TV uyumlu dönüştürme${NC}"
+	echo -e "  $0 mp4tomkv <dosya>     ${GREEN}# MP4 → MKV dönüştürme${NC}"
+	echo -e "  $0 mkvtomp4 <dosya>     ${GREEN}# MKV → MP4 dönüştürme${NC}"
 }
 
-# Dosya boyutu kontrolü - dosya boyutu belirli bir minimum değerin altındaysa uyarı verir
-check_file_size() {
-	local file="$1"
-	local min_size_kb=100 # Minimum dosya boyutu (KB)
+# Video süresini al (saniye olarak)
+get_duration() {
+	local input_file="$1"
+	local duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input_file")
+	echo ${duration%.*}
+}
 
-	# Dosya boyutunu KB cinsinden al
-	local size_kb=$(du -k "$file" | cut -f1)
+# Video bilgilerini göster
+show_video_info() {
+	local input_file="$1"
 
-	if [[ $size_kb -lt $min_size_kb ]]; then
-		return 1 # Dosya çok küçük
+	echo -e "${BLUE}Video Bilgileri:${NC}"
+	echo -e "${YELLOW}------------------------${NC}"
+
+	# Video kodeki
+	local video_codec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file")
+	echo -e "${BLUE}Video Kodeki:${NC} $video_codec"
+
+	# Ses kodeki
+	local audio_codec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file")
+	echo -e "${BLUE}Ses Kodeki:${NC} $audio_codec"
+
+	# Çözünürlük
+	local resolution=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$input_file")
+	echo -e "${BLUE}Çözünürlük:${NC} $resolution"
+
+	# Video boyutu ve süre
+	local size=$(du -h "$input_file" | cut -f1)
+	local duration_sec=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input_file")
+	local hours=$((${duration_sec%.*} / 3600))
+	local minutes=$(((${duration_sec%.*} % 3600) / 60))
+	local seconds=$((${duration_sec%.*} % 60))
+
+	echo -e "${BLUE}Dosya Boyutu:${NC} $size"
+	echo -e "${BLUE}Süre:${NC} $hours:$minutes:$seconds"
+	echo -e "${YELLOW}------------------------${NC}"
+}
+
+# TV Uyumlu Formata Dönüştür (Normal)
+convert_tv() {
+	local input_file="$1"
+	local filename=$(basename "$input_file")
+	local dirname=$(dirname "$input_file")
+	local basename="${filename%.*}"
+	local output_file="${dirname}/${basename}_TV_UYUMLU.mp4"
+
+	echo -e "\n${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
+	echo -e "${YELLOW}║ Dönüştürülüyor: $(basename "$input_file")${NC}"
+	echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}"
+
+	# Video bilgilerini göster ve süreyi al
+	show_video_info "$input_file"
+	local duration=$(get_duration "$input_file")
+
+	echo -e "${BLUE}Dönüşüm tipi: Orijinal → TV Uyumlu MP4 (H.264/AAC)${NC}"
+	echo -e "${BLUE}Çıktı dosyası: ${output_file}${NC}"
+
+	# Dönüştür
+	ffmpeg -i "$input_file" \
+		-c:v libx264 \
+		-profile:v high \
+		-level:v 4.0 \
+		-preset medium \
+		-crf 23 \
+		-c:a aac \
+		-b:a 192k \
+		-ac 2 \
+		-threads $THREADS \
+		-movflags +faststart \
+		-progress - \
+		"$output_file" 2>/dev/null |
+		while read -r line; do
+			if [[ $line =~ out_time=([0-9:.]+) ]]; then
+				time="${BASH_REMATCH[1]}"
+				current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+				show_progress "$duration" "${current_seconds%.*}"
+			fi
+		done
+
+	if [ $? -eq 0 ] && [ -f "$output_file" ]; then
+		echo -e "\n${GREEN}Başarıyla dönüştürüldü: $(basename "$output_file")${NC}"
+		echo -e "${YELLOW}Orijinal boyut: $(du -h "$input_file" | cut -f1)${NC}"
+		echo -e "${YELLOW}Yeni boyut: $(du -h "$output_file" | cut -f1)${NC}"
 	else
-		return 0 # Dosya boyutu iyi
+		echo -e "\n${RED}Hata: Dönüştürme işlemi başarısız oldu.${NC}"
+		[ -f "$output_file" ] && rm -f "$output_file"
 	fi
 }
 
-# Video kodek bilgilerini al
-get_video_codec() {
+# TV Uyumlu Formata Dönüştür (Hızlı)
+convert_tv_fast() {
 	local input_file="$1"
-	ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file"
+	local filename=$(basename "$input_file")
+	local dirname=$(dirname "$input_file")
+	local basename="${filename%.*}"
+	local output_file="${dirname}/${basename}_TV_UYUMLU.mp4"
+
+	echo -e "\n${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
+	echo -e "${YELLOW}║ Dönüştürülüyor (HIZLI MOD): $(basename "$input_file")${NC}"
+	echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}"
+
+	# Video bilgilerini göster ve süreyi al
+	show_video_info "$input_file"
+	local duration=$(get_duration "$input_file")
+
+	# Video çözünürlüğünü al
+	local video_resolution=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$input_file")
+	IFS='x' read -r width height <<<"$video_resolution"
+
+	# Çözünürlük yüksekse, azalt (720p'ye düşür)
+	local scale_option=""
+	if [ "$height" -gt 720 ]; then
+		echo -e "${YELLOW}Yüksek çözünürlük tespit edildi. İşlemi hızlandırmak için 720p'ye düşürülüyor.${NC}"
+		scale_option="-vf scale=-2:720"
+	fi
+
+	echo -e "${BLUE}Dönüşüm tipi: Orijinal → TV Uyumlu MP4 (H.264/AAC) - HIZLI MOD${NC}"
+	echo -e "${BLUE}Çıktı dosyası: ${output_file}${NC}"
+
+	# Hızlı dönüştürme
+	ffmpeg -i "$input_file" \
+		-c:v libx264 \
+		-profile:v main \
+		-level:v 4.0 \
+		-preset ultrafast \
+		-crf 28 \
+		$scale_option \
+		-c:a aac \
+		-b:a 128k \
+		-ac 2 \
+		-threads $THREADS \
+		-movflags +faststart \
+		-progress - \
+		"$output_file" 2>/dev/null |
+		while read -r line; do
+			if [[ $line =~ out_time=([0-9:.]+) ]]; then
+				time="${BASH_REMATCH[1]}"
+				current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+				show_progress "$duration" "${current_seconds%.*}"
+			fi
+		done
+
+	if [ $? -eq 0 ] && [ -f "$output_file" ]; then
+		echo -e "\n${GREEN}Başarıyla dönüştürüldü: $(basename "$output_file")${NC}"
+		echo -e "${YELLOW}Orijinal boyut: $(du -h "$input_file" | cut -f1)${NC}"
+		echo -e "${YELLOW}Yeni boyut: $(du -h "$output_file" | cut -f1)${NC}"
+	else
+		echo -e "\n${RED}Hata: Dönüştürme işlemi başarısız oldu.${NC}"
+		[ -f "$output_file" ] && rm -f "$output_file"
+	fi
 }
 
-# MP4'ten MKV'ye dönüştürme fonksiyonu
+# MP4 → MKV Dönüştürme
 convert_mp4_to_mkv() {
 	local input_file="$1"
-	local output_file="${input_file%.*}.mkv"
-	local conversion_status=1 # Başlangıçta başarısız olarak işaretle
+	local filename=$(basename "$input_file")
+	local dirname=$(dirname "$input_file")
+	local basename="${filename%.*}"
+	local output_file="${dirname}/${basename}.mkv"
 
-	# Eğer dosya zaten mkv ise atla
-	if [ "${input_file##*.}" = "mkv" ]; then
-		echo -e "${YELLOW}Atlanıyor: $input_file zaten MKV formatında.${NC}"
-		return
+	# Uzantı kontrolü
+	if [ "${input_file##*.}" != "mp4" ]; then
+		echo -e "${RED}Hata: Lütfen bir MP4 dosyası seçin.${NC}"
+		exit 1
 	fi
 
 	echo -e "\n${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
 	echo -e "${YELLOW}║ Dönüştürülüyor: $(basename "$input_file")${NC}"
 	echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}"
 
-	# Video süresini al (saniye olarak)
-	duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input_file")
-	duration=${duration%.*}
-
-	# Video bilgilerini al
-	local video_info=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate -of csv=p=0 "$input_file")
-	IFS=',' read -r width height frame_rate <<<"$video_info"
-	echo -e "${BLUE}Çözünürlük: ${width}x${height}${NC}"
+	# Video bilgilerini göster ve süreyi al
+	show_video_info "$input_file"
+	local duration=$(get_duration "$input_file")
 
 	# Kodek bilgisini al
-	local codec=$(get_video_codec "$input_file")
-	echo -e "${BLUE}Girdi Kodeki: ${codec}${NC}"
+	local codec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file")
+	echo -e "${BLUE}Dönüşüm tipi: MP4 → MKV${NC}"
 
-	# AV1 kodeki için özel işlem
-	if [[ "$codec" == "av1" ]]; then
-		echo -e "${YELLOW}AV1 kodek tespit edildi. Özel dönüşüm ayarları kullanılıyor...${NC}"
-		echo -e "${BLUE}Dönüşüm tipi: MP4 (AV1) → MKV (AV1 - yeniden kodlama)${NC}"
+	# Dönüştür
+	ffmpeg -i "$input_file" \
+		-c:v copy \
+		-c:a copy \
+		-c:s copy \
+		-progress - \
+		"$output_file" 2>/dev/null |
+		while read -r line; do
+			if [[ $line =~ out_time=([0-9:.]+) ]]; then
+				time="${BASH_REMATCH[1]}"
+				current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+				show_progress "$duration" "${current_seconds%.*}"
+			fi
+		done
 
-		# AV1 için özel dönüştürme komutunu çalıştır
-		ffmpeg -i "$input_file" \
-			-c:v copy \
-			-c:a copy \
-			-progress - \
-			"$output_file" 2>conversion_error.log |
-			while read -r line; do
-				if [[ $line =~ out_time=([0-9:.]+) ]]; then
-					time="${BASH_REMATCH[1]}"
-					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-					show_progress "$duration" "${current_seconds%.*}"
-				fi
-			done
-
-		conversion_status=$?
-	else
-		echo -e "${BLUE}Dönüşüm tipi: MP4 → MKV (kopyalama)${NC}"
-
-		# Standard dönüştürme (kalite kaybı olmadan)
-		ffmpeg -i "$input_file" \
-			-c:v copy \
-			-c:a copy \
-			-c:s copy \
-			-progress - \
-			"$output_file" 2>conversion_error.log |
-			while read -r line; do
-				if [[ $line =~ out_time=([0-9:.]+) ]]; then
-					time="${BASH_REMATCH[1]}"
-					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-					show_progress "$duration" "${current_seconds%.*}"
-				fi
-			done
-
-		conversion_status=$?
-	fi
-
-	# Dönüştürme başarılı mı kontrol et
-	if [ $conversion_status -eq 0 ] && [ -f "$output_file" ]; then
-		# Dosya boyutu kontrolü
-		if ! check_file_size "$output_file"; then
-			echo -e "\n${RED}Hata: Dönüştürülen dosya ($output_file) çok küçük. Dönüştürme muhtemelen başarısız oldu.${NC}"
-			echo -e "${YELLOW}Hata günlüğü:${NC}"
-			cat conversion_error.log
-			echo -e "${YELLOW}Orijinal dosya korunuyor.${NC}"
-			rm -f "$output_file" # Bozuk çıktı dosyasını sil
-			rm -f conversion_error.log
-			return
-		fi
-
+	if [ $? -eq 0 ] && [ -f "$output_file" ] && [ $(du -k "$output_file" | cut -f1) -gt 100 ]; then
 		echo -e "\n${GREEN}Başarıyla dönüştürüldü: $(basename "$output_file")${NC}"
-		# Orijinal dosyanın ve yeni dosyanın boyutlarını göster
-		original_size=$(du -h "$input_file" | cut -f1)
-		new_size=$(du -h "$output_file" | cut -f1)
-		echo -e "${YELLOW}Orijinal boyut: $original_size${NC}"
-		echo -e "${YELLOW}Yeni boyut: $new_size${NC}"
+		echo -e "${YELLOW}Orijinal boyut: $(du -h "$input_file" | cut -f1)${NC}"
+		echo -e "${YELLOW}Yeni boyut: $(du -h "$output_file" | cut -f1)${NC}"
 
 		# Kullanıcıya sor
 		echo -e "\nOrijinal MP4 dosyası silinsin mi?"
 		echo -e "1) ${GREEN}Evet, sil${NC}"
 		echo -e "2) ${BLUE}Hayır, sakla${NC}"
 		read -p "Seçiminiz (1/2): " choice
-		case $choice in
-		1)
+		if [ "$choice" = "1" ]; then
 			rm "$input_file"
 			echo -e "${RED}Orijinal dosya silindi: $(basename "$input_file")${NC}"
-			;;
-		2)
+		else
 			echo -e "${GREEN}Orijinal dosya saklandı: $(basename "$input_file")${NC}"
-			;;
-		*)
-			echo -e "${YELLOW}Geçersiz seçim. Orijinal dosya saklandı.${NC}"
-			;;
-		esac
+		fi
 	else
-		echo -e "\n${RED}Hata: $input_file dönüştürülemedi${NC}"
-		echo -e "${YELLOW}Hata günlüğü:${NC}"
-		cat conversion_error.log
-		rm -f "$output_file" # Bozuk çıktı dosyasını sil
+		echo -e "\n${RED}Hata: Dönüştürme işlemi başarısız oldu.${NC}"
+		[ -f "$output_file" ] && rm -f "$output_file"
 	fi
-
-	# Hata günlüğü dosyasını temizle
-	rm -f conversion_error.log
 }
 
-# MKV'den MP4'e dönüştürme fonksiyonu
+# MKV → MP4 Dönüştürme
 convert_mkv_to_mp4() {
 	local input_file="$1"
-	local output_file="${input_file%.mkv}.mp4"
-	local conversion_status=1 # Başlangıçta başarısız olarak işaretle
+	local filename=$(basename "$input_file")
+	local dirname=$(dirname "$input_file")
+	local basename="${filename%.*}"
+	local output_file="${dirname}/${basename}.mp4"
 
-	# Eğer dosya zaten mp4 ise atla
-	if [ "${input_file##*.}" = "mp4" ]; then
-		echo -e "${YELLOW}Atlanıyor: $input_file zaten MP4 formatında.${NC}"
-		return
+	# Uzantı kontrolü
+	if [ "${input_file##*.}" != "mkv" ]; then
+		echo -e "${RED}Hata: Lütfen bir MKV dosyası seçin.${NC}"
+		exit 1
 	fi
 
 	echo -e "\n${YELLOW}╔════════════════════════════════════════════════════════╗${NC}"
 	echo -e "${YELLOW}║ Dönüştürülüyor: $(basename "$input_file")${NC}"
 	echo -e "${YELLOW}╚════════════════════════════════════════════════════════╝${NC}"
 
-	# Video süresini al (saniye olarak)
-	duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input_file")
-	duration=${duration%.*}
-
-	# Video bilgilerini al
-	local video_info=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate -of csv=p=0 "$input_file")
-	IFS=',' read -r width height frame_rate <<<"$video_info"
-	echo -e "${BLUE}Çözünürlük: ${width}x${height}${NC}"
+	# Video bilgilerini göster ve süreyi al
+	show_video_info "$input_file"
+	local duration=$(get_duration "$input_file")
 
 	# Kodek bilgisini al
-	local codec=$(get_video_codec "$input_file")
-	echo -e "${BLUE}Girdi Kodeki: ${codec}${NC}"
+	local codec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file")
+	echo -e "${BLUE}Dönüşüm tipi: MKV → MP4${NC}"
 
-	# AV1 kodeki için özel işlem
-	if [[ "$codec" == "av1" ]]; then
-		echo -e "${YELLOW}AV1 kodek tespit edildi. Özel dönüşüm ayarları kullanılıyor...${NC}"
-		echo -e "${BLUE}Dönüşüm tipi: MKV (AV1) → MP4 (h264)${NC}"
+	# Dönüştür
+	ffmpeg -i "$input_file" \
+		-c:v libx264 \
+		-preset ultrafast \
+		-crf 23 \
+		-c:a aac \
+		-b:a 192k \
+		-threads $THREADS \
+		-movflags +faststart \
+		-progress - \
+		"$output_file" 2>/dev/null |
+		while read -r line; do
+			if [[ $line =~ out_time=([0-9:.]+) ]]; then
+				time="${BASH_REMATCH[1]}"
+				current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+				show_progress "$duration" "${current_seconds%.*}"
+			fi
+		done
 
-		# AV1'den MP4'e dönüştürme (h264'e yeniden kodlama)
-		ffmpeg -i "$input_file" \
-			-c:v libx264 \
-			-preset medium \
-			-crf 23 \
-			-c:a aac \
-			-b:a 192k \
-			-threads $THREADS \
-			-movflags +faststart \
-			-progress - \
-			"$output_file" 2>conversion_error.log |
-			while read -r line; do
-				if [[ $line =~ out_time=([0-9:.]+) ]]; then
-					time="${BASH_REMATCH[1]}"
-					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-					show_progress "$duration" "${current_seconds%.*}"
-				fi
-			done
-
-		conversion_status=$?
-	else
-		echo -e "${BLUE}Dönüşüm tipi: MKV → MP4 (yeniden kodlama)${NC}"
-
-		# FFmpeg ile dönüştürme (yeniden kodlama ile)
-		ffmpeg -i "$input_file" \
-			-c:v libx264 \
-			-preset ultrafast \
-			-crf 25 \
-			-c:a aac \
-			-b:a 128k \
-			-threads $THREADS \
-			-movflags +faststart \
-			-progress - \
-			"$output_file" 2>conversion_error.log |
-			while read -r line; do
-				if [[ $line =~ out_time=([0-9:.]+) ]]; then
-					time="${BASH_REMATCH[1]}"
-					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-					show_progress "$duration" "${current_seconds%.*}"
-				fi
-			done
-
-		conversion_status=$?
-	fi
-
-	# Dönüştürme başarılı mı kontrol et
-	if [ $conversion_status -eq 0 ] && [ -f "$output_file" ]; then
-		# Dosya boyutu kontrolü
-		if ! check_file_size "$output_file"; then
-			echo -e "\n${RED}Hata: Dönüştürülen dosya ($output_file) çok küçük. Dönüştürme muhtemelen başarısız oldu.${NC}"
-			echo -e "${YELLOW}Hata günlüğü:${NC}"
-			cat conversion_error.log
-			echo -e "${YELLOW}Orijinal dosya korunuyor.${NC}"
-			rm -f "$output_file" # Bozuk çıktı dosyasını sil
-			rm -f conversion_error.log
-			return
-		fi
-
+	if [ $? -eq 0 ] && [ -f "$output_file" ] && [ $(du -k "$output_file" | cut -f1) -gt 100 ]; then
 		echo -e "\n${GREEN}Başarıyla dönüştürüldü: $(basename "$output_file")${NC}"
-		# Orijinal dosyanın ve yeni dosyanın boyutlarını göster
-		original_size=$(du -h "$input_file" | cut -f1)
-		new_size=$(du -h "$output_file" | cut -f1)
-		echo -e "${YELLOW}Orijinal boyut: $original_size${NC}"
-		echo -e "${YELLOW}Yeni boyut: $new_size${NC}"
+		echo -e "${YELLOW}Orijinal boyut: $(du -h "$input_file" | cut -f1)${NC}"
+		echo -e "${YELLOW}Yeni boyut: $(du -h "$output_file" | cut -f1)${NC}"
 
 		# Kullanıcıya sor
 		echo -e "\nOrijinal MKV dosyası silinsin mi?"
 		echo -e "1) ${GREEN}Evet, sil${NC}"
 		echo -e "2) ${BLUE}Hayır, sakla${NC}"
 		read -p "Seçiminiz (1/2): " choice
-		case $choice in
-		1)
+		if [ "$choice" = "1" ]; then
 			rm "$input_file"
 			echo -e "${RED}Orijinal dosya silindi: $(basename "$input_file")${NC}"
-			;;
-		2)
+		else
 			echo -e "${GREEN}Orijinal dosya saklandı: $(basename "$input_file")${NC}"
-			;;
-		*)
-			echo -e "${YELLOW}Geçersiz seçim. Orijinal dosya saklandı.${NC}"
-			;;
-		esac
-	else
-		echo -e "\n${RED}Hata: $input_file dönüştürülemedi${NC}"
-		echo -e "${YELLOW}Hata günlüğü:${NC}"
-		cat conversion_error.log
-		rm -f "$output_file" # Bozuk çıktı dosyasını sil
-	fi
-
-	# Hata günlüğü dosyasını temizle
-	rm -f conversion_error.log
-}
-
-# Ana işlev - Tek dosya veya dizindeki tüm dosyaları dönüştür
-process_input() {
-	local mode="$1"
-	local input_path="$2"
-	local extension=""
-
-	if [ "$mode" = "mp4tomkv" ]; then
-		convert_func="convert_mp4_to_mkv"
-		extension="mp4"
-	elif [ "$mode" = "mkvtomp4" ]; then
-		convert_func="convert_mkv_to_mp4"
-		extension="mkv"
-	else
-		echo -e "${RED}Hata: Geçersiz dönüşüm modu.${NC}"
-		show_help
-		exit 1
-	fi
-
-	# Eğer girdi bir dizin ise
-	if [ -d "$input_path" ]; then
-		echo -e "${CYAN}╔═══════════════════════════════════════════════════════╗${NC}"
-		echo -e "${CYAN}║ Dizindeki tüm .$extension dosyaları dönüştürülecek...  ║${NC}"
-		echo -e "${CYAN}╚═══════════════════════════════════════════════════════╝${NC}"
-
-		# Dosya sayısını bul
-		file_count=$(find "$input_path" -type f -name "*.$extension" | wc -l)
-
-		if [ "$file_count" -eq 0 ]; then
-			echo -e "${RED}Hata: Dizinde .$extension dosyası bulunamadı.${NC}"
-			exit 1
-		fi
-
-		echo -e "${GREEN}Toplam $file_count adet .$extension dosyası bulundu.${NC}"
-		echo -e "${YELLOW}Dönüştürme başlıyor. Devam etmek istiyor musunuz? (e/h)${NC}"
-		read -p "Seçiminiz: " start_choice
-
-		if [ "$start_choice" = "e" ] || [ "$start_choice" = "E" ]; then
-			current=1
-			find "$input_path" -type f -name "*.$extension" | while read -r file; do
-				echo -e "${CYAN}İşleniyor: $current / $file_count${NC}"
-				$convert_func "$file"
-				current=$((current + 1))
-			done
-			echo -e "\n${GREEN}╔═══════════════════════════════════════════════════════╗${NC}"
-			echo -e "${GREEN}║           Tüm dönüştürmeler tamamlandı!               ║${NC}"
-			echo -e "${GREEN}╚═══════════════════════════════════════════════════════╝${NC}"
-		else
-			echo -e "${YELLOW}İşlem iptal edildi.${NC}"
-			exit 0
-		fi
-	# Eğer girdi bir dosya ise
-	elif [ -f "$input_path" ]; then
-		if [[ "$input_path" == *.$extension ]]; then
-			$convert_func "$input_path"
-			echo -e "\n${GREEN}╔═══════════════════════════════════════════════════════╗${NC}"
-			echo -e "${GREEN}║                İşlem tamamlandı!                      ║${NC}"
-			echo -e "${GREEN}╚═══════════════════════════════════════════════════════╝${NC}"
-		else
-			echo -e "${RED}Hata: Lütfen bir .$extension dosyası seçin.${NC}"
-			exit 1
 		fi
 	else
-		echo -e "${RED}Hata: Geçersiz dosya veya dizin.${NC}"
-		exit 1
+		echo -e "\n${RED}Hata: Dönüştürme işlemi başarısız oldu.${NC}"
+		[ -f "$output_file" ] && rm -f "$output_file"
 	fi
 }
 
 # Ana program
-# Parametre kontrolü
 if [ $# -lt 2 ]; then
 	show_help
 	exit 1
 fi
 
-mode="$1"
-input_path="$2"
+command="$1"
+input_file="$2"
 
-case "$mode" in
-mp4tomkv | mkvtomp4)
-	process_input "$mode" "$input_path"
+if [ ! -f "$input_file" ]; then
+	echo -e "${RED}Hata: Dosya bulunamadı - $input_file${NC}"
+	exit 1
+fi
+
+case "$command" in
+tv)
+	convert_tv "$input_file"
+	;;
+tvfast)
+	convert_tv_fast "$input_file"
+	;;
+mp4tomkv)
+	convert_mp4_to_mkv "$input_file"
+	;;
+mkvtomp4)
+	convert_mkv_to_mp4 "$input_file"
 	;;
 help | -h | --help)
 	show_help
 	;;
 *)
-	echo -e "${RED}Hata: Geçersiz mod.${NC}"
+	echo -e "${RED}Hata: Geçersiz komut.${NC}"
 	show_help
 	exit 1
 	;;
 esac
+
+echo -e "\n${GREEN}╔═══════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║                İşlem tamamlandı!                      ║${NC}"
+echo -e "${GREEN}╚═══════════════════════════════════════════════════════╝${NC}"
 
 exit 0
