@@ -2,9 +2,9 @@
 #===============================================================================
 #
 #   Script: VideoAlchemist
-#   Version: 1.0.0
-#   Date: 2024-03-28
-#   Author: Kenan Pelit
+#   Version: 1.1.0
+#   Date: 2025-04-24
+#   Original Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
 #   Description: Comprehensive video format conversion utility that transforms
 #                between MP4 and MKV formats with enhanced user experience
@@ -16,6 +16,8 @@
 #   - File management options (keep or delete original files)
 #   - Optimized encoding settings for different conversion types
 #   - Multi-threaded processing for improved performance
+#   - Enhanced AV1 codec support
+#   - Better error handling and file verification
 #
 #   License: MIT
 #
@@ -60,7 +62,7 @@ show_progress() {
 # Yardım mesajı
 show_help() {
 	echo -e "${CYAN}╔════════════════════════════════════════╗${NC}"
-	echo -e "${CYAN}║     Video Format Dönüştürücü v1.0      ║${NC}"
+	echo -e "${CYAN}║     Video Format Dönüştürücü v1.1      ║${NC}"
 	echo -e "${CYAN}╚════════════════════════════════════════╝${NC}"
 	echo -e "${YELLOW}Kullanım:${NC}"
 	echo -e "  $0 mp4tomkv <dosya.mp4 veya dizin>"
@@ -70,10 +72,32 @@ show_help() {
 	echo -e "  $0 mkvtomp4 /home/videos  ${GREEN}# Dizindeki tüm MKV dosyalarını MP4'e dönüştür${NC}"
 }
 
+# Dosya boyutu kontrolü - dosya boyutu belirli bir minimum değerin altındaysa uyarı verir
+check_file_size() {
+	local file="$1"
+	local min_size_kb=100 # Minimum dosya boyutu (KB)
+
+	# Dosya boyutunu KB cinsinden al
+	local size_kb=$(du -k "$file" | cut -f1)
+
+	if [[ $size_kb -lt $min_size_kb ]]; then
+		return 1 # Dosya çok küçük
+	else
+		return 0 # Dosya boyutu iyi
+	fi
+}
+
+# Video kodek bilgilerini al
+get_video_codec() {
+	local input_file="$1"
+	ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$input_file"
+}
+
 # MP4'ten MKV'ye dönüştürme fonksiyonu
 convert_mp4_to_mkv() {
 	local input_file="$1"
 	local output_file="${input_file%.*}.mkv"
+	local conversion_status=1 # Başlangıçta başarısız olarak işaretle
 
 	# Eğer dosya zaten mkv ise atla
 	if [ "${input_file##*.}" = "mkv" ]; then
@@ -93,25 +117,65 @@ convert_mp4_to_mkv() {
 	local video_info=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate -of csv=p=0 "$input_file")
 	IFS=',' read -r width height frame_rate <<<"$video_info"
 	echo -e "${BLUE}Çözünürlük: ${width}x${height}${NC}"
-	echo -e "${BLUE}Dönüşüm tipi: MP4 → MKV (kopyalama)${NC}"
 
-	# FFmpeg ile dönüştürme (kalite kaybı olmadan)
-	ffmpeg -i "$input_file" \
-		-c:v copy \
-		-c:a copy \
-		-c:s copy \
-		-progress - \
-		"$output_file" 2>/dev/null |
-		while read -r line; do
-			if [[ $line =~ out_time=([0-9:.]+) ]]; then
-				time="${BASH_REMATCH[1]}"
-				current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-				show_progress "$duration" "${current_seconds%.*}"
-			fi
-		done
+	# Kodek bilgisini al
+	local codec=$(get_video_codec "$input_file")
+	echo -e "${BLUE}Girdi Kodeki: ${codec}${NC}"
+
+	# AV1 kodeki için özel işlem
+	if [[ "$codec" == "av1" ]]; then
+		echo -e "${YELLOW}AV1 kodek tespit edildi. Özel dönüşüm ayarları kullanılıyor...${NC}"
+		echo -e "${BLUE}Dönüşüm tipi: MP4 (AV1) → MKV (AV1 - yeniden kodlama)${NC}"
+
+		# AV1 için özel dönüştürme komutunu çalıştır
+		ffmpeg -i "$input_file" \
+			-c:v copy \
+			-c:a copy \
+			-progress - \
+			"$output_file" 2>conversion_error.log |
+			while read -r line; do
+				if [[ $line =~ out_time=([0-9:.]+) ]]; then
+					time="${BASH_REMATCH[1]}"
+					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+					show_progress "$duration" "${current_seconds%.*}"
+				fi
+			done
+
+		conversion_status=$?
+	else
+		echo -e "${BLUE}Dönüşüm tipi: MP4 → MKV (kopyalama)${NC}"
+
+		# Standard dönüştürme (kalite kaybı olmadan)
+		ffmpeg -i "$input_file" \
+			-c:v copy \
+			-c:a copy \
+			-c:s copy \
+			-progress - \
+			"$output_file" 2>conversion_error.log |
+			while read -r line; do
+				if [[ $line =~ out_time=([0-9:.]+) ]]; then
+					time="${BASH_REMATCH[1]}"
+					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+					show_progress "$duration" "${current_seconds%.*}"
+				fi
+			done
+
+		conversion_status=$?
+	fi
 
 	# Dönüştürme başarılı mı kontrol et
-	if [ $? -eq 0 ] && [ -f "$output_file" ]; then
+	if [ $conversion_status -eq 0 ] && [ -f "$output_file" ]; then
+		# Dosya boyutu kontrolü
+		if ! check_file_size "$output_file"; then
+			echo -e "\n${RED}Hata: Dönüştürülen dosya ($output_file) çok küçük. Dönüştürme muhtemelen başarısız oldu.${NC}"
+			echo -e "${YELLOW}Hata günlüğü:${NC}"
+			cat conversion_error.log
+			echo -e "${YELLOW}Orijinal dosya korunuyor.${NC}"
+			rm -f "$output_file" # Bozuk çıktı dosyasını sil
+			rm -f conversion_error.log
+			return
+		fi
+
 		echo -e "\n${GREEN}Başarıyla dönüştürüldü: $(basename "$output_file")${NC}"
 		# Orijinal dosyanın ve yeni dosyanın boyutlarını göster
 		original_size=$(du -h "$input_file" | cut -f1)
@@ -138,13 +202,20 @@ convert_mp4_to_mkv() {
 		esac
 	else
 		echo -e "\n${RED}Hata: $input_file dönüştürülemedi${NC}"
+		echo -e "${YELLOW}Hata günlüğü:${NC}"
+		cat conversion_error.log
+		rm -f "$output_file" # Bozuk çıktı dosyasını sil
 	fi
+
+	# Hata günlüğü dosyasını temizle
+	rm -f conversion_error.log
 }
 
 # MKV'den MP4'e dönüştürme fonksiyonu
 convert_mkv_to_mp4() {
 	local input_file="$1"
 	local output_file="${input_file%.mkv}.mp4"
+	local conversion_status=1 # Başlangıçta başarısız olarak işaretle
 
 	# Eğer dosya zaten mp4 ise atla
 	if [ "${input_file##*.}" = "mp4" ]; then
@@ -164,29 +235,74 @@ convert_mkv_to_mp4() {
 	local video_info=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate -of csv=p=0 "$input_file")
 	IFS=',' read -r width height frame_rate <<<"$video_info"
 	echo -e "${BLUE}Çözünürlük: ${width}x${height}${NC}"
-	echo -e "${BLUE}Dönüşüm tipi: MKV → MP4 (yeniden kodlama)${NC}"
 
-	# FFmpeg ile dönüştürme (yeniden kodlama ile)
-	ffmpeg -i "$input_file" \
-		-c:v libx264 \
-		-preset ultrafast \
-		-crf 25 \
-		-c:a aac \
-		-b:a 128k \
-		-threads $THREADS \
-		-movflags +faststart \
-		-progress - \
-		"$output_file" 2>/dev/null |
-		while read -r line; do
-			if [[ $line =~ out_time=([0-9:.]+) ]]; then
-				time="${BASH_REMATCH[1]}"
-				current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-				show_progress "$duration" "${current_seconds%.*}"
-			fi
-		done
+	# Kodek bilgisini al
+	local codec=$(get_video_codec "$input_file")
+	echo -e "${BLUE}Girdi Kodeki: ${codec}${NC}"
+
+	# AV1 kodeki için özel işlem
+	if [[ "$codec" == "av1" ]]; then
+		echo -e "${YELLOW}AV1 kodek tespit edildi. Özel dönüşüm ayarları kullanılıyor...${NC}"
+		echo -e "${BLUE}Dönüşüm tipi: MKV (AV1) → MP4 (h264)${NC}"
+
+		# AV1'den MP4'e dönüştürme (h264'e yeniden kodlama)
+		ffmpeg -i "$input_file" \
+			-c:v libx264 \
+			-preset medium \
+			-crf 23 \
+			-c:a aac \
+			-b:a 192k \
+			-threads $THREADS \
+			-movflags +faststart \
+			-progress - \
+			"$output_file" 2>conversion_error.log |
+			while read -r line; do
+				if [[ $line =~ out_time=([0-9:.]+) ]]; then
+					time="${BASH_REMATCH[1]}"
+					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+					show_progress "$duration" "${current_seconds%.*}"
+				fi
+			done
+
+		conversion_status=$?
+	else
+		echo -e "${BLUE}Dönüşüm tipi: MKV → MP4 (yeniden kodlama)${NC}"
+
+		# FFmpeg ile dönüştürme (yeniden kodlama ile)
+		ffmpeg -i "$input_file" \
+			-c:v libx264 \
+			-preset ultrafast \
+			-crf 25 \
+			-c:a aac \
+			-b:a 128k \
+			-threads $THREADS \
+			-movflags +faststart \
+			-progress - \
+			"$output_file" 2>conversion_error.log |
+			while read -r line; do
+				if [[ $line =~ out_time=([0-9:.]+) ]]; then
+					time="${BASH_REMATCH[1]}"
+					current_seconds=$(echo "$time" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+					show_progress "$duration" "${current_seconds%.*}"
+				fi
+			done
+
+		conversion_status=$?
+	fi
 
 	# Dönüştürme başarılı mı kontrol et
-	if [ $? -eq 0 ] && [ -f "$output_file" ]; then
+	if [ $conversion_status -eq 0 ] && [ -f "$output_file" ]; then
+		# Dosya boyutu kontrolü
+		if ! check_file_size "$output_file"; then
+			echo -e "\n${RED}Hata: Dönüştürülen dosya ($output_file) çok küçük. Dönüştürme muhtemelen başarısız oldu.${NC}"
+			echo -e "${YELLOW}Hata günlüğü:${NC}"
+			cat conversion_error.log
+			echo -e "${YELLOW}Orijinal dosya korunuyor.${NC}"
+			rm -f "$output_file" # Bozuk çıktı dosyasını sil
+			rm -f conversion_error.log
+			return
+		fi
+
 		echo -e "\n${GREEN}Başarıyla dönüştürüldü: $(basename "$output_file")${NC}"
 		# Orijinal dosyanın ve yeni dosyanın boyutlarını göster
 		original_size=$(du -h "$input_file" | cut -f1)
@@ -213,7 +329,13 @@ convert_mkv_to_mp4() {
 		esac
 	else
 		echo -e "\n${RED}Hata: $input_file dönüştürülemedi${NC}"
+		echo -e "${YELLOW}Hata günlüğü:${NC}"
+		cat conversion_error.log
+		rm -f "$output_file" # Bozuk çıktı dosyasını sil
 	fi
+
+	# Hata günlüğü dosyasını temizle
+	rm -f conversion_error.log
 }
 
 # Ana işlev - Tek dosya veya dizindeki tüm dosyaları dönüştür
