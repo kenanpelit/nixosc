@@ -174,6 +174,7 @@
    whatsie          # WhatsApp
    whatsapp-for-linux # WhatsApp
    waybar-mpris     # Medya kontrolü
+   ferdium          # Services in one place
 
    # ==============================================================================
    # Tarayıcılar
