@@ -369,6 +369,16 @@ create_default_config() {
       "enabled": true,
       "type": "app"
     }
+    "ferdium": {
+      "command": "ferdium",
+      "args": [],
+      "vpn": "secure",
+      "workspace": "4",
+      "fullscreen": true,
+      "wait_time": 1,
+      "enabled": true,
+      "type": "app"
+    },
   }
 }
 EOF
