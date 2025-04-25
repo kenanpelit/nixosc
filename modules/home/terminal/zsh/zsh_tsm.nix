@@ -1,4 +1,3 @@
-# modules/home/termina/zsh/zsh_tsm.nix
 # ==============================================================================
 # Transmission CLI Yapılandırması ve Alias'ları
 # ==============================================================================
@@ -6,7 +5,7 @@
 {
   programs.zsh = {
     # Script konumu ve completion tanımlamaları
-    initExtra = ''
+    initContent = ''
       # Transmission script konumu
       export TSM_SCRIPT="tsm"
       # ZSH Completion için komut açıklamaları

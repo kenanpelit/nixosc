@@ -1,4 +1,3 @@
-# modules/home/terminal/zsh/zsh_completions/default.nix
 { config, ... }:
 {
   home.file = {
@@ -7,8 +6,7 @@
     # Diğer completion dosyaları için:
     # ".config/zsh/completions/other-completion.zsh".source = ./other-completion.zsh;
   };
-
-  programs.zsh.initExtra = ''
+  programs.zsh.initContent = ''
     fpath+=~/.config/zsh/completions
     autoload -Uz compinit && compinit
   '';
