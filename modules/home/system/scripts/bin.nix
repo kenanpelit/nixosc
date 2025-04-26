@@ -12,6 +12,9 @@ let
   bulk_rename = pkgs.writeShellScriptBin "bulk_rename" (
     builtins.readFile ./bin/bulk_rename.sh
   );
+  cdiff = pkgs.writeShellScriptBin "cdiff" (
+    builtins.readFile ./bin/cdiff.sh
+  );
   check_images = pkgs.writeShellScriptBin "check_images" (
     builtins.readFile ./bin/check_images.sh
   );
@@ -165,6 +168,9 @@ let
   osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
     builtins.readFile ./bin/osc-ssh-session-manager.sh
   );
+  osc-start-all_fer = pkgs.writeShellScriptBin "osc-start-all_fer" (
+    builtins.readFile ./bin/osc-start-all_fer.sh
+  );
   osc-start-all = pkgs.writeShellScriptBin "osc-start-all" (
     builtins.readFile ./bin/osc-start-all.sh
   );
@@ -260,6 +266,9 @@ let
   );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./bin/semsumo.sh
+  );
+  semsumo-start = pkgs.writeShellScriptBin "semsumo-start" (
+    builtins.readFile ./bin/semsumo-start.sh
   );
   sil_ayni_mp4 = pkgs.writeShellScriptBin "sil_ayni_mp4" (
     builtins.readFile ./bin/sil_ayni_mp4.sh
@@ -381,6 +390,7 @@ in {
     anotes
     ascii
     bulk_rename
+    cdiff
     check_images
     chist
     chroot_manager
@@ -432,6 +442,7 @@ in {
     osc-ssh-hosts-backup-script
     osc-ssh-passwordless
     osc-ssh-session-manager
+    osc-start-all_fer
     osc-start-all
     osc-start-zen
     osc-subliminal
@@ -464,6 +475,7 @@ in {
     runbg
     screenshot
     semsumo
+    semsumo-start
     sil_ayni_mp4
     smart-suspend
     ssh-launcher
