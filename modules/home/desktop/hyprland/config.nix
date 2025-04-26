@@ -603,6 +603,7 @@
         ",Print, exec, screenshot ri"                  # Print: Bölge Interaktif (düzenleyicide açar)
         "$mainMod SHIFT, Print, exec, screenshot rf"   # Super + Shift + Print: Bölge Dosya (dosyaya kaydeder)
         "CTRL, Print, exec, screenshot rc"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
+        "CTRL Print, d, exec, screenshot d"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
         "$mainMod CTRL, Print, exec, screenshot rec"   # Super + Ctrl + Print: Bölge Düzenle ve Kopyala
         "$mainMod, Print, exec, screenshot si"         # Super + Print: Ekran Interaktif (düzenleyicide açar)
         "SHIFT, Print, exec, screenshot sf"            # Shift + Print: Ekran Dosya (dosyaya kaydeder)

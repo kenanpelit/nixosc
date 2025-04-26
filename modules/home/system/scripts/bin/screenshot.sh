@@ -2,8 +2,8 @@
 
 #######################################
 #
-# Version: 1.2.0
-# Date: 2025-03-07
+# Version: 1.3.0
+# Date: 2025-04-26
 # Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
 # Description: HyprFlow - Gelişmiş Ekran Görüntüsü Aracı
@@ -13,7 +13,7 @@
 #######################################
 
 # Yapılandırma Ayarları
-SAVE_DIR="$HOME/Pictures/ssreenshots"
+SAVE_DIR="$HOME/Pictures/screenshots" # Yazım hatası düzeltildi: ssreenshots -> screenshots
 TEMP_DIR="/tmp/hyprflow"
 BORDER_COLOR="#3584e4b0"        # Daha modern bir mavi ton
 SELECTION_COLOR="#00000040"     # Hafif şeffaf siyah selection fill
@@ -30,6 +30,7 @@ FILENAME_FORMAT="screenshot_%Y-%m-%d_%H-%M-%S.png"
 EXIT_SUCCESS=0
 EXIT_INVALID_OPTION=1
 EXIT_MISSING_DEPENDENCY=2
+EXIT_CANCELLED=3
 
 # En iyi düzenleyiciyi bul
 select_editor() {
@@ -91,7 +92,7 @@ show_help() {
 	cat <<EOF
 ╭────────────────────────────────────╮
 │       HyprFlow Screenshot Tool     │
-│             Sürüm 1.2.0            │
+│             Sürüm 1.3.0            │
 ╰────────────────────────────────────╯
 
 Kullanım: $(basename "$0") [SEÇENEK]
@@ -116,6 +117,7 @@ PENCERE KOMUTLARI:
 DİĞER KOMUTLARI:
   p     Renk Seç           - Ekrandan renk seçer ve panoya kopyalar
   o     Aç                 - Son ekran görüntüsünü açar
+  d     Dizin Aç           - Ekran görüntüleri dizinini açar
   help  Yardım             - Bu yardım mesajını gösterir
 
 ÖRNEKLER:
@@ -131,21 +133,6 @@ NOTLAR:
 
 Geliştiren: Kenan Pelit
 EOF
-}
-
-# Screenshot alma fonksiyonu
-take_screenshot() {
-	local filename="$1"
-	local success=false
-
-	grim -g "$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH")" "$filename" && success=true
-
-	if [ "$success" = true ]; then
-		return $EXIT_SUCCESS
-	else
-		show_notification "Hata" "Ekran görüntüsü alınamadı" "critical"
-		return 1
-	fi
 }
 
 # Aktif pencere screenshot alma fonksiyonu
@@ -209,17 +196,58 @@ show_notification() {
 	local urgency="${3:-normal}"
 	local icon="${4:-preferences-desktop-screensaver}"
 
+	# SwayNC için özel bildirim süresi parametreleri ve standart parametre
 	notify-send -h string:x-canonical-private-synchronous:hyprflow-screenshot \
+		-h int:transient:1 \
+		-h int:expire-time:2000 \
+		-t 2000 \
 		-u "$urgency" -i "$icon" "$title" "$message"
 }
 
-# Renk seçme fonksiyonu
+# Screenshot alma fonksiyonu
+take_screenshot() {
+	local filename="$1"
+
+	# Çıktıyı yakalayarak slurp komutunu çalıştır
+	local slurp_output
+	slurp_output=$(slurp -b "$BORDER_COLOR" -c "$SELECTION_COLOR" -w "$BORDER_WIDTH" 2>&1)
+
+	# Slurp'un çıkış kodunu kontrol et
+	if [ $? -ne 0 ]; then
+		# Slurp başarısız olduysa (ESC ile çıkış veya başka bir iptal durumu)
+		# Hiçbir bildirim gösterme ve sessizce çık
+		return $EXIT_CANCELLED
+	fi
+
+	# Slurp başarılı olduysa, grim ile ekran görüntüsü al
+	if grim -g "$slurp_output" "$filename"; then
+		return $EXIT_SUCCESS
+	else
+		show_notification "Hata" "Ekran görüntüsü alınamadı" "critical"
+		return 1
+	fi
+}
+
+# Renk seçme fonksiyonu - İyileştirilmiş sürüm
 pick_color() {
 	local color
+	local slurp_output
 
-	# Renk seçme
-	color=$(slurp -p -b '#00000000' -c "$COLOR_PICKER_BORDER" -w "$BORDER_WIDTH" |
-		grim -g - -t ppm -)
+	# Renk seçme - İptal edilme durumunu işle
+	slurp_output=$(slurp -p -b '#00000000' -c "$COLOR_PICKER_BORDER" -w "$BORDER_WIDTH" 2>&1)
+
+	# Slurp'un çıkış kodunu kontrol et
+	if [ $? -ne 0 ]; then
+		# İptal edildi, sessizce çık
+		return $EXIT_CANCELLED
+	fi
+
+	# Renk seçimi başarılıysa grim ile görüntü al
+	color=$(echo "$slurp_output" | grim -g - -t ppm - 2>/dev/null)
+
+	if [ $? -ne 0 ]; then
+		return 1
+	fi
 
 	# ImageMagick ile renk değerini çıkarma
 	if command -v magick &>/dev/null; then
@@ -267,6 +295,18 @@ open_last_screenshot() {
 		show_notification "Görüntü Açıldı" "$(basename "$latest")"
 	else
 		show_notification "Hata" "Görüntü bulunamadı" "critical"
+	fi
+}
+
+# Ekran görüntüleri dizinini açma fonksiyonu
+open_screenshots_dir() {
+	if [ -d "$SAVE_DIR" ]; then
+		xdg-open "$SAVE_DIR" &
+		show_notification "Dizin Açıldı" "$SAVE_DIR"
+	else
+		create_screenshot_dir
+		xdg-open "$SAVE_DIR" &
+		show_notification "Dizin Açıldı" "$SAVE_DIR"
 	fi
 }
 
@@ -399,6 +439,12 @@ wi) # Aktif pencereyi interaktif düzenleme ile al
 
 p) # Renk seçme ve önizleme
 	color=$(pick_color)
+
+	# İptal edilmişse sessizce çık
+	if [ $? -eq $EXIT_CANCELLED ]; then
+		exit $EXIT_SUCCESS
+	fi
+
 	if [ -n "$color" ]; then
 		echo -n "$color" | wl-copy
 		image="$TEMP_DIR/color_preview_${color//[#\/\\]/}.png"
@@ -411,7 +457,7 @@ p) # Renk seçme ve önizleme
 		else
 			# ImageMagick yoksa önizleme olmadan bildirim göster
 			show_notification "$color" "Renk panoya kopyalandı" "normal" "color-select"
-			return 0
+			exit $EXIT_SUCCESS
 		fi
 
 		if [ -f "$image" ]; then
@@ -426,6 +472,10 @@ p) # Renk seçme ve önizleme
 
 o | open) # Son ekran görüntüsünü aç
 	open_last_screenshot
+	;;
+
+d | dir) # Ekran görüntüleri dizinini aç
+	open_screenshots_dir
 	;;
 
 help | --help | -h)
