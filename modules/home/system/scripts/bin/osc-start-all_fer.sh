@@ -273,7 +273,7 @@ profiles:
 # Web uygulamaları
 apps:
   - name: "ferdium"
-    workspace: 4
+    workspace: 5
     fullscreen: true
     enabled: true
     type: "semsumo"
@@ -287,7 +287,7 @@ apps:
   - name: "youtube"
     workspace: 7
     fullscreen: true
-    enabled: false
+    enabled: true
     type: "brave"
   
   - name: "spotify"
