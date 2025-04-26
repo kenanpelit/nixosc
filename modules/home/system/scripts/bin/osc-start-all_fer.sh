@@ -337,14 +337,15 @@ load_config() {
 	profiles["Kenp"]="workspace=1,class=Kenp,title=Kenp,fullscreen=false,enabled=true"
 	profiles["Ai"]="workspace=3,class=Ai,title=Ai,fullscreen=false,enabled=true"
 	profiles["CompecTA"]="workspace=4,class=CompecTA,title=CompecTA,fullscreen=false,enabled=true"
-	profiles["Whats"]="workspace=9,class=Whats,title=Whats,fullscreen=false,enabled=true"
+	profiles["Whats"]="workspace=9,class=Whats,title=Whats,fullscreen=false,enabled=false"
 
 	# Uygulamaları tanımla
 	apps=()
 	#apps["whatsapp"]="workspace=9,fullscreen=true,enabled=true,type=brave"
-	apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
-	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
+	apps["webcord"]="workspace=5,fullscreen=true,enabled=false,type=semsumo"
+	apps["youtube"]="workspace=7,fullscreen=true,enabled=false,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
+	apps["ferdium"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
 
 	# Terminal oturumlarını tanımla
 	terminals=()

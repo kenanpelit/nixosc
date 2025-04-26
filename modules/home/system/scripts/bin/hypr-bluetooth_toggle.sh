@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #######################################
 #
-# Version: 1.1.0
-# Date: 2025-03-07
+# Version: 1.1.1
+# Date: 2025-04-26
 # Original Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
 # Description: HyprFlow - Enhanced Bluetooth Connection Manager
@@ -12,8 +12,10 @@
 #######################################
 
 # Bluetooth cihaz bilgileri
-DEFAULT_DEVICE_ADDRESS="E8:EE:CC:4D:29:00"
-DEFAULT_DEVICE_NAME="SL4"
+DEFAULT_DEVICE_ADDRESS="F4:9D:8A:3D:CB:30"
+DEFAULT_DEVICE_NAME="SL4P"
+ALTERNATIVE_DEVICE_ADDRESS="E8:EE:CC:4D:29:00"
+ALTERNATIVE_DEVICE_NAME="SL4"
 
 # Ses ayarları
 BT_VOLUME_LEVEL=40
