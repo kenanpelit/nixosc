@@ -45,6 +45,9 @@ let
   start-discord = pkgs.writeShellScriptBin "start-discord" (
     builtins.readFile ./start/start-discord.sh
   );
+  start-ferdium = pkgs.writeShellScriptBin "start-ferdium" (
+    builtins.readFile ./start/start-ferdium.sh
+  );
   start-kitty-single = pkgs.writeShellScriptBin "start-kitty-single" (
     builtins.readFile ./start/start-kitty-single.sh
   );
@@ -110,6 +113,7 @@ in {
     start-chrome-kenp
     start-chrome-whats
     start-discord
+    start-ferdium
     start-kitty-single
     start-kkenp
     start-mkenp

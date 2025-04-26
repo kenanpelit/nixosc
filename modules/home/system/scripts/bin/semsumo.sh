@@ -368,7 +368,7 @@ create_default_config() {
       "wait_time": 1,
       "enabled": true,
       "type": "app"
-    }
+    },
     "ferdium": {
       "command": "ferdium",
       "args": [],
@@ -378,7 +378,7 @@ create_default_config() {
       "wait_time": 1,
       "enabled": true,
       "type": "app"
-    },
+    }
   }
 }
 EOF
