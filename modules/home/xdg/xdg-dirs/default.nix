@@ -31,9 +31,6 @@
     dataHome = "$HOME/.local/share";
     stateHome = "$HOME/.local/state";
     cacheHome = "$HOME/.cache";
-    
-    # Özel XDG dizini ekle (not: home-manager'ın varsayılan XDG değişkenlerinin dışında)
-    backupHome = "$HOME/.backup";
   };
 }
 
