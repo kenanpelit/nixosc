@@ -21,7 +21,6 @@
       # Özel dizinler için extraConfig kullan
       extraConfig = {
         XDG_WORK_DIR = "$HOME/Work";
-        XDG_BACKUP_DIR = "$HOME/.backup";
         XDG_PROJECTS_DIR = "$HOME/Projects";
         XDG_TMP_DIR = "$HOME/Tmp";
       };
