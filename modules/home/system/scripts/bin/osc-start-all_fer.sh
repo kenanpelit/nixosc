@@ -260,28 +260,22 @@ profiles:
     class: "CompecTA"
     title: "CompecTA"
     fullscreen: false
-    enabled: false
+    enabled: true
 
   - name: "Whats"
     workspace: 9
     class: "Whats"
     title: "Whats"
     fullscreen: false
-    enabled: false
+    enabled: true
 
 
 # Web uygulamaları
 apps:
-  - name: "ferdium"
-    workspace: 5
-    fullscreen: true
-    enabled: true
-    type: "semsumo"
-
   - name: "webcord"
     workspace: 5
     fullscreen: true
-    enabled: false
+    enabled: true
     type: "semsumo"
 
   - name: "youtube"
@@ -341,11 +335,11 @@ load_config() {
 
 	# Uygulamaları tanımla
 	apps=()
-	#apps["whatsapp"]="workspace=9,fullscreen=true,enabled=true,type=brave"
+	apps["whatsapp"]="workspace=9,fullscreen=true,enabled=false,type=brave"
 	apps["webcord"]="workspace=5,fullscreen=true,enabled=false,type=semsumo"
-	apps["youtube"]="workspace=7,fullscreen=true,enabled=false,type=brave"
+	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
-	apps["ferdium"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
+	apps["ferdium"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
 
 	# Terminal oturumlarını tanımla
 	terminals=()
@@ -529,7 +523,6 @@ launch_terminal_profile() {
 	return 0
 }
 
-# Semsumo uygulamasını başlatma
 # Semsumo uygulamasını başlatma
 launch_semsumo_app() {
 	local app_name="$1"
