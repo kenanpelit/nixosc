@@ -10,14 +10,13 @@
     createDirectories = true;  # Olmayan dizinleri oluştur
     
     # Temel dizinler
-    desktop = "$HOME/Desktop";
     documents = "$HOME/Documents";
     download = "$HOME/Downloads";
     music = "$HOME/Music";
     pictures = "$HOME/Pictures";
+    tmp = "$HOME/Tmp";
     videos = "$HOME/Videos";
-    templates = "$HOME/Templates";
-    publicShare = "$HOME/Public";
+    work = "$HOME/Work";
     
     # Özel dizinler
     extraConfig = {
