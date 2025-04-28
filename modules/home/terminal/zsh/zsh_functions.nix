@@ -85,26 +85,6 @@
         fi
       }
 
-      # Tmp dizini altında dosya oluşturup düzenleme
-      function vv() {
-        local filename="$1"
-        if [[ -z "$filename" ]]; then
-          echo "Hata: Dosya adı gerekli."
-          return 1
-        fi
-        
-        # Tmp dizininin varlığını kontrol et, yoksa oluştur
-        local tmp_dir="$HOME/Tmp"
-        if [[ ! -d "$tmp_dir" ]]; then
-          mkdir -p "$tmp_dir"
-        fi
-        
-        local file_path="$tmp_dir/$filename"
-        [[ ! -f "$file_path" ]] && touch "$file_path"
-        chmod 755 "$file_path"
-        vim -c "set paste" "$file_path"
-      }
-
       # =============================================================================
       # Arşiv Yönetimi Fonksiyonları
       # =============================================================================
