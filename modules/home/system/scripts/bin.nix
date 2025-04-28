@@ -336,6 +336,9 @@ let
   vnc-connect = pkgs.writeShellScriptBin "vnc-connect" (
     builtins.readFile ./bin/vnc-connect.sh
   );
+  vv = pkgs.writeShellScriptBin "vv" (
+    builtins.readFile ./bin/vv.sh
+  );
   wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
     builtins.readFile ./bin/wallpaper-manager.sh
   );
@@ -498,6 +501,7 @@ in {
     vmnixos
     vm-start
     vnc-connect
+    vv
     wallpaper-manager
     waybar-bluelightfilter-monitor
     waybar-bluelightfilter-toggle
