@@ -9,6 +9,9 @@ let
   ascii = pkgs.writeShellScriptBin "ascii" (
     builtins.readFile ./bin/ascii.sh
   );
+  brave_killer = pkgs.writeShellScriptBin "brave_killer" (
+    builtins.readFile ./bin/brave_killer.sh
+  );
   bulk_rename = pkgs.writeShellScriptBin "bulk_rename" (
     builtins.readFile ./bin/bulk_rename.sh
   );
@@ -392,6 +395,7 @@ in {
     anote
     anotes
     ascii
+    brave_killer
     bulk_rename
     cdiff
     check_images
