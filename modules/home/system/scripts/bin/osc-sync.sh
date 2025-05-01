@@ -73,6 +73,7 @@ DOT_PATHS=(
 	".config/brave"
 	".config/BraveSoftware"
 	".config/cliphist"
+	".config/Ferdium"
 	".config/github"
 	".config/google-chrome"
 	".config/hblock"

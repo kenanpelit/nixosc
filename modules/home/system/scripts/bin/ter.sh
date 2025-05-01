@@ -2,9 +2,9 @@
 #===============================================================================
 #
 #   Script: OSC Remote Tunnel Manager
-#   Version: 1.0.0
-#   Date: 2024-04-05
-#   Author: Kenan Pelit
+#   Version: 1.1.0
+#   Date: 2024-04-29
+#   Author: Kenan Pelit (Improvement by Claude)
 #   Repository: https://github.com/kenanpelit/nixosc
 #   Description: Remote SSH tunnel manager with search capabilities for
 #                filtering tunnel connections and status
@@ -15,6 +15,7 @@
 #   - Configurable connection parameters
 #   - Direct tunnel command execution
 #   - Pattern-based filtering
+#   - Connection status check before attempting to connect
 #
 #   License: MIT
 #
@@ -119,12 +120,12 @@ fetch_tunnel_list() {
 # Bir port'un açık olup olmadığını kontrol et (tünelin bağlı olup olmadığı)
 is_connected() {
 	local port=$1
-	local sock=$(
-		nc -z -w1 127.0.0.1 "$port" 2>/dev/null
-		echo $?
-	)
 
-	if [ $sock -eq 0 ]; then
+	# Doğrudan uzak sunucuda port kontrolü yap
+	local cmd="nc -z -w1 127.0.0.1 $port 2>/dev/null && echo 'CONNECTED' || echo 'NOTCONNECTED'"
+	local status=$(ssh -p "${REMOTE_PORT}" "${REMOTE_USER}@${REMOTE_HOST}" "$cmd")
+
+	if [ "$status" = "CONNECTED" ]; then
 		return 0 # Bağlı
 	else
 		return 1 # Bağlı değil
@@ -136,6 +137,7 @@ connect_to_tunnel() {
 	local tunnel_name="$1"
 	local user="$2"
 	local use_byobu="$3"
+	local force_connect="$4"
 
 	echo -e "\033[38;5;110mBağlanıyor: $tunnel_name\033[0m"
 
@@ -155,6 +157,17 @@ connect_to_tunnel() {
 	local hostname=$(echo "$tunnel_info" | cut -d'|' -f3)
 	local description=$(echo "$tunnel_info" | cut -d'|' -f4)
 	local date=$(echo "$tunnel_info" | cut -d'|' -f5)
+
+	# Tünelin bağlı olup olmadığını kontrol et
+	# Doğrudan terminal sunucusunda port kontrolü yap
+	local connection_check="nc -z -w1 127.0.0.1 $port 2>/dev/null"
+	local is_tunnel_open=$(ssh -p "${REMOTE_PORT}" "${REMOTE_USER}@${REMOTE_HOST}" "$connection_check; echo \$?")
+
+	if [ "$is_tunnel_open" != "0" ] && [ "$force_connect" != "true" ]; then
+		echo -e "\033[48;5;174m\033[38;5;232m BAĞLANTI YOK \033[0m \033[38;5;174mHata: $tunnel_name tüneli aktif değil! Bağlantı kurulamaz.\033[0m"
+		echo -e "\033[38;5;110mİpucu: Yine de bağlanmak için '-f' parametresini kullanabilirsiniz: ter -cf $tunnel_name\033[0m"
+		exit 1
+	fi
 
 	# SSH komutu oluştur (normal veya byobu)
 	local SSH_COMMAND="ssh -J terminal -p $port $user@localhost"
@@ -192,6 +205,7 @@ Seçenekler:
   -c, --connect ISIM     ISIM adlı tünele bağlan
   -b, --byobu            Byobu oturumu başlat ve bağlan (sadece -c ile kullanılır)
   -cb, --connect-byobu ISIM  ISIM adlı tünele bağlan ve byobu oturumu başlat
+  -f, --force            Tünel bağlı olmasa bile bağlanmaya zorla
   -u, --user KULLANICI   Uzak makineye bağlanırken kullanılacak kullanıcı (varsayılan: root)
   -o, --online           Sadece bağlı olan tünelleri listele
   -h, --help             Bu yardım mesajını göster ve çık
@@ -199,7 +213,8 @@ Seçenekler:
 Örnekler:
   $(basename $0)                     # Tüm tünelleri listele
   $(basename $0) production          # "production" içeren tünelleri listele
-  $(basename $0) -c myserver         # "myserver" adlı tünele bağlan
+  $(basename $0) -c myserver         # "myserver" adlı tünele bağlan (sadece açık tüneller)
+  $(basename $0) -cf myserver        # "myserver" adlı tünele bağlanmaya zorla (kapalı olsa bile)
   $(basename $0) -cb myserver        # "myserver" adlı tünele bağlan ve byobu başlat
   $(basename $0) -c myserver -b      # "myserver" adlı tünele bağlan ve byobu başlat
   $(basename $0) -o                  # Sadece bağlı tünelleri listele
@@ -215,6 +230,7 @@ main() {
 	local online_only="false"
 	local search_pattern=""
 	local use_byobu="false"
+	local force_connect="false"
 
 	# Eğer özel parametreler varsa işle
 	while [[ $# -gt 0 ]]; do
@@ -230,6 +246,10 @@ main() {
 			;;
 		-b | --byobu)
 			use_byobu="true"
+			shift
+			;;
+		-f | --force)
+			force_connect="true"
 			shift
 			;;
 		-u | --user)
@@ -259,6 +279,27 @@ main() {
 			use_byobu="true"
 			shift 2
 			;;
+		-cf | --connect-force)
+			if [[ -z "$2" || "$2" == -* ]]; then
+				echo "Hata: --connect-force parametresi için tünel ismi gerekli"
+				show_help
+				exit 1
+			fi
+			tunnel_name="$2"
+			force_connect="true"
+			shift 2
+			;;
+		-cbf | --connect-byobu-force)
+			if [[ -z "$2" || "$2" == -* ]]; then
+				echo "Hata: --connect-byobu-force parametresi için tünel ismi gerekli"
+				show_help
+				exit 1
+			fi
+			tunnel_name="$2"
+			use_byobu="true"
+			force_connect="true"
+			shift 2
+			;;
 		*)
 			# İlk pozisyonel argüman arama deseni olarak kullanılır
 			if [[ -z "$search_pattern" && "$1" != -* ]]; then
@@ -275,7 +316,7 @@ main() {
 
 	# Eğer tünel bağlantısı istendiyse
 	if [[ -n "$tunnel_name" ]]; then
-		connect_to_tunnel "$tunnel_name" "$user" "$use_byobu"
+		connect_to_tunnel "$tunnel_name" "$user" "$use_byobu" "$force_connect"
 	else
 		# Aksi halde tünelleri listele (arama deseni veya online flagi ile)
 		fetch_tunnel_list "$search_pattern" "$user" "$online_only"
