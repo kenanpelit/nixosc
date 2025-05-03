@@ -339,7 +339,7 @@ load_config() {
 	apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
 	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
-	apps["ferdium"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
+	apps["ferdium"]="workspace=9,fullscreen=true,enabled=true,type=semsumo"
 
 	# Terminal oturumlarını tanımla
 	terminals=()
