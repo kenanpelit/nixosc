@@ -336,7 +336,7 @@ load_config() {
 	# Uygulamaları tanımla
 	apps=()
 	apps["whatsapp"]="workspace=9,fullscreen=true,enabled=false,type=brave"
-	apps["webcord"]="workspace=5,fullscreen=true,enabled=false,type=semsumo"
+	apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
 	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
 	apps["ferdium"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
