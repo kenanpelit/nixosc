@@ -373,7 +373,7 @@ create_default_config() {
       "command": "ferdium",
       "args": [],
       "vpn": "secure",
-      "workspace": "5",
+      "workspace": "9",
       "fullscreen": true,
       "wait_time": 1,
       "enabled": true,
