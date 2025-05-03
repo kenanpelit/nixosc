@@ -1,36 +1,36 @@
 # modules/home/security/gnupg/default.nix
 # ==============================================================================
-# GnuPG Configuration
+# GnuPG Yapılandırması
 # ==============================================================================
-# This module manages GnuPG and related cryptographic settings including:
-# - GPG agent configuration
-# - SSH agent integration
-# - Pinentry settings
-# - Cache timeouts
+# Bu modül GnuPG ve ilgili kriptografik ayarları yönetir:
+# - GPG agent yapılandırması
+# - SSH agent entegrasyonu
+# - Pinentry ayarları
+# - Önbellek zaman aşımları
 #
-# Key components:
-# - GnuPG program settings
-# - GPG agent service
-# - SSH support configuration
+# Temel bileşenler:
+# - GnuPG program ayarları
+# - GPG agent servisi
+# - SSH desteği yapılandırması
 #
-# Author: Kenan Pelit
+# Yazar: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
   programs.gpg = {
     enable = true;
     settings = {
-      # Basic Settings
+      # Temel Ayarlar
       use-agent = true;
       keyid-format = "LONG";
       with-fingerprint = true;
       
-      # Algorithm Preferences
+      # Algoritma Tercihleri
       personal-cipher-preferences = "AES256 AES192 AES";
       personal-digest-preferences = "SHA512 SHA384 SHA256";
       personal-compress-preferences = "ZLIB BZIP2 ZIP";
       
-      # Security Settings
+      # Güvenlik Ayarları
       require-cross-certification = true;
       no-emit-version = true;
       no-comments = true;
@@ -49,7 +49,9 @@
     maxCacheTtl = 864000;
     defaultCacheTtlSsh = 864000;     # SSH için de 10 gün
     maxCacheTtlSsh = 864000;
-    pinentryPackage = pkgs.pinentry-gnome3;
+    pinentry = {
+      package = pkgs.pinentry-gnome3;
+    };
     enableExtraSocket = true;
     extraConfig = ''
       no-allow-external-cache
@@ -59,3 +61,4 @@
     enableScDaemon = false;
   };
 }
+
