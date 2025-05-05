@@ -111,9 +111,6 @@ let
   ntodo = pkgs.writeShellScriptBin "ntodo" (
     builtins.readFile ./bin/ntodo.sh
   );
-  osc-assh-manager = pkgs.writeShellScriptBin "osc-assh-manager" (
-    builtins.readFile ./bin/osc-assh-manager.sh
-  );
   osc-backup = pkgs.writeShellScriptBin "osc-backup" (
     builtins.readFile ./bin/osc-backup.sh
   );
@@ -162,14 +159,8 @@ let
   osc-spotify = pkgs.writeShellScriptBin "osc-spotify" (
     builtins.readFile ./bin/osc-spotify.sh
   );
-  osc-ssh-hosts-backup-script = pkgs.writeShellScriptBin "osc-ssh-hosts-backup-script" (
-    builtins.readFile ./bin/osc-ssh-hosts-backup-script.sh
-  );
-  osc-ssh-passwordless = pkgs.writeShellScriptBin "osc-ssh-passwordless" (
-    builtins.readFile ./bin/osc-ssh-passwordless.sh
-  );
-  osc-ssh-session-manager = pkgs.writeShellScriptBin "osc-ssh-session-manager" (
-    builtins.readFile ./bin/osc-ssh-session-manager.sh
+  osc-ssh = pkgs.writeShellScriptBin "osc-ssh" (
+    builtins.readFile ./bin/osc-ssh.sh
   );
   osc-start-all_fer = pkgs.writeShellScriptBin "osc-start-all_fer" (
     builtins.readFile ./bin/osc-start-all_fer.sh
@@ -429,7 +420,6 @@ in {
     mpc-control
     music
     ntodo
-    osc-assh-manager
     osc-backup
     osc-blocklist
     osc-cleaup-grub
@@ -446,9 +436,7 @@ in {
     osc-scrcpy
     osc-soundctl
     osc-spotify
-    osc-ssh-hosts-backup-script
-    osc-ssh-passwordless
-    osc-ssh-session-manager
+    osc-ssh
     osc-start-all_fer
     osc-start-all
     osc-start-zen
