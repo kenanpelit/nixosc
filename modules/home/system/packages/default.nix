@@ -67,7 +67,7 @@
    entr            # Dosya izleyici
    jq              # JSON işlemci
    killall         # Süreç sonlandırıcı
-   mimeo          # MIME işleyici
+   mimeo           # MIME işleyici
    most            # Sayfalayıcı
    ripgrep         # Metin arama
    sesh            # Oturum yöneticisi
@@ -83,6 +83,7 @@
    translate-shell # Çeviri aracı
    rmpc            # Zengin MPD istemcisi
    mpc-cli         # MPD istemcisi
+   calcurse        # Takvim
 
    # ==============================================================================
    # Medya Araçları
