@@ -195,6 +195,9 @@ let
   osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
     builtins.readFile ./bin/osc-vradio.sh
   );
+  osc-waybar = pkgs.writeShellScriptBin "osc-waybar" (
+    builtins.readFile ./bin/osc-waybar.sh
+  );
   pdfkes = pkgs.writeShellScriptBin "pdfkes" (
     builtins.readFile ./bin/pdfkes.sh
   );
@@ -336,42 +339,6 @@ let
   wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
     builtins.readFile ./bin/wallpaper-manager.sh
   );
-  waybar-bluelightfilter-monitor = pkgs.writeShellScriptBin "waybar-bluelightfilter-monitor" (
-    builtins.readFile ./bin/waybar-bluelightfilter-monitor.sh
-  );
-  waybar-bluelightfilter-toggle = pkgs.writeShellScriptBin "waybar-bluelightfilter-toggle" (
-    builtins.readFile ./bin/waybar-bluelightfilter-toggle.sh
-  );
-  waybar-bluetooth-menu = pkgs.writeShellScriptBin "waybar-bluetooth-menu" (
-    builtins.readFile ./bin/waybar-bluetooth-menu.sh
-  );
-  waybar-hyprshade_toggle = pkgs.writeShellScriptBin "waybar-hyprshade_toggle" (
-    builtins.readFile ./bin/waybar-hyprshade_toggle.sh
-  );
-  waybar-idle-inhibitor = pkgs.writeShellScriptBin "waybar-idle-inhibitor" (
-    builtins.readFile ./bin/waybar-idle-inhibitor.sh
-  );
-  waybar-mic = pkgs.writeShellScriptBin "waybar-mic" (
-    builtins.readFile ./bin/waybar-mic.sh
-  );
-  waybar-vpn-mullvad-check = pkgs.writeShellScriptBin "waybar-vpn-mullvad-check" (
-    builtins.readFile ./bin/waybar-vpn-mullvad-check.sh
-  );
-  waybar-vpn-other-check = pkgs.writeShellScriptBin "waybar-vpn-other-check" (
-    builtins.readFile ./bin/waybar-vpn-other-check.sh
-  );
-  waybar-vpn-status-check = pkgs.writeShellScriptBin "waybar-vpn-status-check" (
-    builtins.readFile ./bin/waybar-vpn-status-check.sh
-  );
-  waybar-weather-full = pkgs.writeShellScriptBin "waybar-weather-full" (
-    builtins.readFile ./bin/waybar-weather-full.sh
-  );
-  waybar-weather-update = pkgs.writeShellScriptBin "waybar-weather-update" (
-    builtins.readFile ./bin/waybar-weather-update.sh
-  );
-  waybar-wf-recorder = pkgs.writeShellScriptBin "waybar-wf-recorder" (
-    builtins.readFile ./bin/waybar-wf-recorder.sh
-  );
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
@@ -448,6 +415,7 @@ in {
     osc-ulauncher_ext
     osc-video-converter
     osc-vradio
+    osc-waybar
     pdfkes
     playlist
     ports
@@ -495,18 +463,6 @@ in {
     vnc-connect
     vv
     wallpaper-manager
-    waybar-bluelightfilter-monitor
-    waybar-bluelightfilter-toggle
-    waybar-bluetooth-menu
-    waybar-hyprshade_toggle
-    waybar-idle-inhibitor
-    waybar-mic
-    waybar-vpn-mullvad-check
-    waybar-vpn-other-check
-    waybar-vpn-status-check
-    waybar-weather-full
-    waybar-weather-update
-    waybar-wf-recorder
     wrename
     zen_profile_launcher
     zen_terminate_sessions
