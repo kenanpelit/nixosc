@@ -20,6 +20,8 @@
         "custom/todo"
         "custom/blank"
         "clock"
+        "custom/weather"
+        "clock"
       ];
       modules-right = [
         "custom/vpnstatus"
@@ -55,6 +57,14 @@
         tooltip = true;
         tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
         format-alt = "󰃭 {:%d/%m}";
+      };
+
+      "custom/weather" = {
+        exec = "curl -s 'wttr.in/Istanbul?format=1' | tr -d +";
+        interval = 3600;
+        format = "{}";
+        tooltip = true;
+        tooltip-format = "Hava Durumu";
       };
 
       "hyprland/workspaces" = {
@@ -129,7 +139,13 @@
         format-disconnected = "󰤭";
         on-click-right = "rofi-iwmenu";
         on-click-middle = "rofi-wifi";
-        tooltip-format = "Connected to {essid}\nIP: {ipaddr}";
+        tooltip-format-wifi = '''
+          SSID: {essid}
+          Sinyal: {signalStrength}%
+          IP: {ipaddr}
+          Ağ Geçidi: {gwaddr}
+          DNS: {frequency} MHz
+        ''';
       };
 
       battery = {
@@ -153,6 +169,7 @@
         format = "󱄅";
         on-click = "wallpaper-manager";
         on-click-right = "rofi -show drun";
+        on-click-middle = "rofi -show window";
         tooltip = true;
         tooltip-format = "Random Wallpaper";
       };
@@ -211,6 +228,7 @@
         format = "󱄅";
         on-click = "wallpaper-manager";
         on-click-right = "rofi -show drun";
+        on-click-middle = "rofi -show window";
         tooltip = true;
         tooltip-format = "Random Wallpaper";
       };
@@ -249,7 +267,7 @@
 
       disk = {
         format = "󰋊 {percentage_used}%";
-        interval = 60;
+        interval = 300;
         on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
       };
 
