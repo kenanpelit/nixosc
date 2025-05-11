@@ -88,8 +88,8 @@
         interval = 1800;
         format = "{}";
         on-click = "xdg-open 'https://wttr.in/Istanbul'";
-        on-click-right = "osc-waybar.sh weather";
-        on-click-middle = "osc-waybar.sh weather update";
+        on-click-right = "osc-waybar weather";
+        on-click-middle = "osc-waybar weather update";
         tooltip = true;
         exec-on-event = true;
         return-type = "text";
