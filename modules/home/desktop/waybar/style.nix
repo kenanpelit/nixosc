@@ -290,7 +290,6 @@
     #custom-weather:hover {
       background-color: rgba(122, 162, 247, 0.1);
       border-color: ${custom.blue};
-      transform: scale(1.05);
     }
 
     @keyframes blink-critical {
