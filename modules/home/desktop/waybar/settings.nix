@@ -139,15 +139,16 @@
         format-disconnected = "󰤭";
         on-click-right = "rofi-iwmenu";
         on-click-middle = "rofi-wifi";
-        tooltip-format-wifi = '''
+        tooltip-format = "Connected to {essid}\nIP: {ipaddr}";
+        tooltip-format-wifi = ''
           SSID: {essid}
-          Sinyal: {signalStrength}%
+          Signal: {signalStrength}%
           IP: {ipaddr}
-          Ağ Geçidi: {gwaddr}
-          DNS: {frequency} MHz
-        ''';
+          GW: {gwaddr}
+          Frequency: {frequency} MHz
+        '';
       };
-
+     
       battery = {
         interval = 30;
         states = {
