@@ -262,6 +262,37 @@
       padding: 6px;
     }
 
+    /* Weather module specific styling */
+    #custom-weather {
+      color: ${custom.blue};
+      font-size: 16px;
+      padding: 0 10px;
+      min-width: 60px;
+    }
+    
+    /* Weather condition colors */
+    #custom-weather.sunny {
+      color: ${custom.yellow};
+    }
+    
+    #custom-weather.cloudy {
+      color: ${custom.cyan};
+    }
+    
+    #custom-weather.rainy {
+      color: ${custom.blue};
+    }
+    
+    #custom-weather.snowy {
+      color: ${custom.text_color};
+    }
+    
+    #custom-weather:hover {
+      background-color: rgba(122, 162, 247, 0.1);
+      border-color: ${custom.blue};
+      transform: scale(1.05);
+    }
+
     @keyframes blink-critical {
       to {
         background-color: ${custom.red};
