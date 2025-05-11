@@ -20,8 +20,8 @@
         "custom/todo"
         "custom/blank"
         "clock"
+        "custom/blank"
         "custom/weather"
-        "clock"
       ];
       modules-right = [
         "custom/vpnstatus"
@@ -57,14 +57,42 @@
         tooltip = true;
         tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
         format-alt = "󰃭 {:%d/%m}";
+        on-click-middle = "rofi -show window";
       };
 
       "custom/weather" = {
-        exec = "curl -s 'wttr.in/Istanbul?format=1' | tr -d +";
-        interval = 3600;
+        exec = pkgs.writeShellScript "weather" ''
+          weather=$(curl -s 'wttr.in/Istanbul?format=%c+%t+%h+%w' 2>/dev/null)
+          if [ -z "$weather" ]; then
+            echo " Hata"
+          else
+            condition=$(echo "$weather" | awk '{print $1}')
+            temp=$(echo "$weather" | awk '{print $2}')
+            humidity=$(echo "$weather" | awk '{print $3}')
+            wind=$(echo "$weather" | awk '{print $4}')
+            
+            # Emoji ve renk belirleme
+            case "$condition" in
+              *☀*|*🌞*) icon="";;
+              *☁*|*⛅*) icon="";;
+              *🌧*|*🌦*) icon="";;
+              *⛈*) icon="";;
+              *🌨*|*❄*) icon="";;
+              *🌫*) icon="";;
+              *) icon="";;
+            esac
+            
+            echo "$icon $temp"
+          fi
+        '';
+        interval = 1800;
         format = "{}";
+        on-click = "xdg-open 'https://wttr.in/Istanbul'";
+        on-click-right = "osc-waybar.sh weather";
+        on-click-middle = "osc-waybar.sh weather update";
         tooltip = true;
-        tooltip-format = "Hava Durumu";
+        exec-on-event = true;
+        return-type = "text";
       };
 
       "hyprland/workspaces" = {
