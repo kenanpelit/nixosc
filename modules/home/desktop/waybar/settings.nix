@@ -61,7 +61,7 @@
       };
 
       "custom/weather" = {
-        exec = pkgs.writeShellScript "weather" ''
+        exec = ''
           weather=$(curl -s 'wttr.in/Istanbul?format=%c+%t+%h+%w' 2>/dev/null)
           if [ -z "$weather" ]; then
             echo " Hata"
