@@ -263,13 +263,20 @@
       url = "github:abenz1267/walker/v0.12.21";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # === COSMIC Desktop Environment ===
+    # COSMIC desktop for NixOS
+    nixos-cosmic = {
+      url = "github:lilyinstarlight/nixos-cosmic";
+      inputs.nixpkgs.follows = "nixpkgs"; # Use the same nixpkgs as above
+    };
   };
  
   # ============================================================================
   # SYSTEM CONFIGURATION OUTPUTS
   # ============================================================================
   outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, 
-              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, ... }@inputs:
+              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, nixos-cosmic, ... }@inputs:
     let
       # === Global Variables ===
       username = "kenan";        # Primary user account
@@ -310,6 +317,21 @@
                 extraSpecialArgs = {
                   inherit inputs username host;
                 };
+              };
+            }
+            
+            # COSMIC Desktop Environment module
+            inputs.nixos-cosmic.nixosModules.default
+            
+            # Cachix binary cache for COSMIC
+            {
+              nix.settings = {
+                substituters = [ 
+                  "https://cosmic.cachix.org/" 
+                ];
+                trusted-public-keys = [ 
+                  "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" 
+                ];
               };
             }
             
@@ -394,9 +416,11 @@
     nixConfig = {
       extra-substituters = [
         "https://hyprland-community.cachix.org"
+        "https://cosmic.cachix.org/"
       ];
       extra-trusted-public-keys = [
         "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+        "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
       ];
     };
 }
