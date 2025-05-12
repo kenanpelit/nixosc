@@ -4,40 +4,44 @@
 # ==============================================================================
 # This configuration manages power-related settings including:
 # - UPower configuration
-# - TLP power management
+# - Power management policies
 # - Thermal control
 # - System logging
 #
 # Author: Kenan Pelit
+# Modified: 2025-05-12 (COSMIC compatibility)
 # ==============================================================================
-
 { ... }:
 {
   services = {
     # UPower Configuration
+    # UPower handles power management events and battery state
     upower = {
       enable = true;
-      criticalPowerAction = "Hibernate";
+      criticalPowerAction = "Hibernate";  # Hibernate when battery critically low
     };
-
+    
     # Power Management (logind)
+    # Controls system behavior for power events like lid close
     logind = {
-      lidSwitch = "suspend";              # Laptop kapağı kapatıldığında
-      lidSwitchDocked = "suspend";        # Dock'a bağlıyken kapak kapatıldığında
-      lidSwitchExternalPower = "suspend"; # Harici güç varken kapak kapatıldığında
+      lidSwitch = "suspend";              # Suspend when laptop lid closed
+      lidSwitchDocked = "suspend";        # Suspend when lid closed while docked
+      lidSwitchExternalPower = "suspend"; # Suspend when lid closed on AC power
       extraConfig = ''
-        HandlePowerKey=ignore             # Güç düğmesine basıldığında
-        HandleSuspendKey=suspend          # Uyku tuşuna basıldığında
-        HandleHibernateKey=hibernate      # Hazırda beklet tuşuna basıldığında
-        IdleAction=suspend                # Boşta kalma eylemi
-        IdleActionSec=60min               # Boşta kalma süresi
+        HandlePowerKey=ignore             # Ignore power button press (prevent accidental shutdown)
+        HandleSuspendKey=suspend          # Suspend when suspend key pressed
+        HandleHibernateKey=hibernate      # Hibernate when hibernate key pressed
+        IdleAction=suspend                # Action to take when system is idle
+        IdleActionSec=60min               # Time before idle action is triggered
       '';
     };
-
-    # TLP Power Management
+    
+    # TLP Power Management - Disabled for COSMIC compatibility
+    # TLP provides advanced power management but conflicts with power-profiles-daemon
     tlp = {
-      enable = true;
+      enable = false;  # Disabled to avoid conflict with power-profiles-daemon used by COSMIC
       settings = {
+        # CPU Governor Settings (preserved for reference)
         CPU_SCALING_GOVERNOR_ON_AC = "performance";
         CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
         CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
@@ -48,16 +52,22 @@
         CPU_MAX_PERF_ON_BAT = 80;
       };
     };
-
+    
+    # Enable power-profiles-daemon for COSMIC compatibility
+    # This provides a modern power management service that integrates well with desktop environments
+    power-profiles-daemon.enable = true;
+    
     # Thermal Management
+    # Prevents overheating by monitoring and controlling temperature
     thermald.enable = true;
-
-    # System Logging
+    
+    # System Logging Configuration
+    # Controls how much log data is stored
     journald = {
       extraConfig = ''
-        SystemMaxUse=5G
-        SystemMaxFileSize=500M
-        MaxRetentionSec=1month
+        SystemMaxUse=5G                 # Maximum disk space used by logs
+        SystemMaxFileSize=500M          # Maximum size of individual log files
+        MaxRetentionSec=1month          # How long to keep logs
       '';
     };
   };
