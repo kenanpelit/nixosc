@@ -687,11 +687,11 @@
         "$mainMod, mouse_up, workspace, e+1"
 
         # clipboard manager
-        #"$mainMod, V, exec, copyq toggle"
-        "$mainMod, V, exec, chist all"
+        "$mainMod, V, exec, copyq toggle"
+        "$mainMod CTRL, V, exec, chist all"
         #"$mainMod CTRL, V, exec, cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy"
-        "$mainMod CTRL, V, exec, chist preview"
-        "$mainMod CTRL SHIFT, V, exec, chist inspect"
+        #"$mainMod CTRL, V, exec, chist preview"
+        #"$mainMod CTRL SHIFT, V, exec, chist inspect"
 
         # Ana Pencere Yönetimi
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et

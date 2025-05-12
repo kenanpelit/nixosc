@@ -156,7 +156,7 @@
    qalculate-gtk    # Hesap makinesi
    woomer           # Pencere yöneticisi
    zenity           # GTK diyalogları
-   #copyq            # Pano yöneticisi
+   copyq            # Pano yöneticisi
    cliphist         # Pano yöneticisi
    clipman          # Pano yöneticisi
    keepassxc        # Parola yöneticisi
