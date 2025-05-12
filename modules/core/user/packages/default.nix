@@ -89,6 +89,7 @@ in
    iwd                # Kablosuz daemon
    impala             # Ağ sorgu motoru
    iwgtk              # Kablosuz yapılandırma
+   networkmanagerapplet
    iw                 # Kablosuz araçları
    iftop              # Ağ kullanım izleme
    mtr                # Ağ teşhis

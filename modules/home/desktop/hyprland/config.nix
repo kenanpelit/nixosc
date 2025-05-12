@@ -42,6 +42,8 @@
         "hyprlock"
         # Set initial audio levels - microphone to 5% - speaker volume to 15%
         "osc-soundctl init"
+        # NetworkManagerApplet
+        #"nm-applet --indicator"
       ];
 
       # =====================================================
@@ -496,6 +498,16 @@
         "float,class:^(iwgtk)$"
         "size 360 440,class:^(iwgtk)$"
         "center,class:^(iwgtk)$"
+
+        "float,class:^(nm-connection-editor)$"
+        "size 1200 800,class:^(nm-connection-editor)$"
+        "center,class:^(nm-connection-editor)$"
+        "float,class:^(org.gnome.NetworkDisplays)$"
+        "size 1200 800,class:^(org.gnome.NetworkDisplays)$"
+        "center,class:^(org.gnome.NetworkDisplays)$"
+        "float,class:^(nm-applet)$"
+        "size 360 440,class:^(nm-applet)$"
+        "center,class:^(nm-applet)$"
 
         "float,class:^(gcr-prompter)$"
         "center,class:^(gcr-prompter)$"
