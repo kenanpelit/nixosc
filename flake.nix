@@ -269,7 +269,7 @@
          allowUnfree = true;  # Enable proprietary software
          permittedInsecurePackages = [
            # Add any required insecure packages here
-           # "example-package-1.0.0"
+           "ventoy-1.1.05"
          ];
        };
      };
