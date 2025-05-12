@@ -8,7 +8,6 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { pkgs, ... }:
 {
   systemd.user.services.wifi-power-save-notify = {
@@ -23,10 +22,10 @@
       DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
     };
     
-    path = [ pkgs.iw pkgs.gawk pkgs.libnotify ];
+    path = [ pkgs.networkmanager pkgs.gawk pkgs.libnotify ];
     
     script = ''
-      interface=$(iw dev | awk '$1=="Interface"{print $2}')
+      interface=$(nmcli -t -f DEVICE device status | grep "^wlan" | head -n1)
       if [ -n "$interface" ]; then
         notify-send -t 10000 "Wi-Fi Güç Tasarrufu" "$interface için güç tasarrufu kapatıldı."
       fi
@@ -37,18 +36,19 @@
       RemainAfterExit = "yes";
     };
   };
-
+  
   systemd.services.disable-wifi-power-save = {
     description = "Disable WiFi power save";
-    after = [ "iwd.service" ];
-    requires = [ "iwd.service" ];
+    after = [ "NetworkManager.service" ];
+    requires = [ "NetworkManager.service" ];
     wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.iw pkgs.gawk ];
+    path = [ pkgs.networkmanager pkgs.gawk ];
     
     script = ''
-      for interface in $(iw dev | awk '$1=="Interface"{print $2}')
+      for interface in $(nmcli -t -f DEVICE device status | grep "^wlan")
       do
-        iw "$interface" set power_save off
+        nmcli connection modify type wifi wifi.powersave 2 || \
+        nmcli radio wifi off && nmcli radio wifi on
       done
     '';
     
@@ -59,3 +59,4 @@
     };
   };
 }
+
