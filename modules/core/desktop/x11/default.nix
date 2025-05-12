@@ -8,42 +8,51 @@
 # - Input device settings
 #
 # Author: Kenan Pelit
+# Modified: 2025-05-12 (COSMIC compatibility)
 # ==============================================================================
 { username, ... }:
 {
   services = {
     # X Server Settings
+    # Base X server configuration needed by both Wayland and X11 desktop environments
     xserver = {
-      enable = true;
+      enable = true;  # Enable X Server (required even for Wayland sessions)
+      
       # Keyboard Configuration
+      # Set Turkish F-layout as default with Caps Lock as Ctrl
       xkb = {
-        layout = "tr";
-        variant = "f";
-        options = "ctrl:nocaps";  # Caps Lock as Ctrl
+        layout = "tr";             # Turkish keyboard layout
+        variant = "f";             # F-keyboard variant (Turkish standard)
+        options = "ctrl:nocaps";   # Remap Caps Lock as Ctrl for better ergonomics
       };
     };
     
-    # COSMIC Masaüstü Ortamı
+    # COSMIC Desktop Environment
+    # Modern, intuitive desktop environment developed by System76
     desktopManager.cosmic.enable = true;
     
-    # COSMIC Greeter etkinleştir
+    # COSMIC Greeter
+    # Login screen for the COSMIC desktop environment
     displayManager.cosmic-greeter.enable = true;
     
-    # Otomatik giriş ayarlarını devre dışı bırak veya COSMIC'e uyarla
+    # Display Manager Auto-Login Settings
+    # Disabled to allow COSMIC Greeter to work properly
     displayManager.autoLogin = {
-      enable = false;  # COSMIC Greeter'ı denemek için şimdilik kapatın
-      # Daha sonra COSMIC ile otomatik giriş yapmak isterseniz:
-      # enable = true;
-      # user = "${username}";
+      enable = false;  # Disable auto-login to use COSMIC Greeter
+      user = "${username}";  # Keep username reference for future use if needed
     };
     
-    # Varsayılan oturum ayarı (gerekirse)
+    # Set COSMIC as the default session
+    # This ensures COSMIC is launched when logging in
     displayManager.defaultSession = "cosmic";
     
     # Input Device Settings
-    libinput.enable = true;  # Enable libinput for input devices
+    # Enable libinput for touchpad, trackpoint, and other input devices
+    libinput.enable = true;  # Modern input device driver for X/Wayland
   };
   
-  # COSMIC için gerekli clipboard manager ayarı
+  # COSMIC requires clipboard manager to be enabled
+  # This enables the data control protocol for Wayland
   environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
 }
+
