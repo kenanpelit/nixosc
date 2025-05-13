@@ -19,7 +19,7 @@
 #===============================================================================
 
 # Yapılandırma Değişkenleri
-VV_DIR="${VV_DIR:-$HOME/Tmp/vv}"                     # Ana dizin
+VV_DIR="${VV_DIR:-$HOME/.anote/scratch}"             # Ana dizin
 VV_EDITOR="${VV_EDITOR:-vim}"                        # Düzenleyici program
 VV_EDITOR_OPTS="${VV_EDITOR_OPTS:--c \"set paste\"}" # Düzenleyici seçenekleri
 VV_DATE_FORMAT="${VV_DATE_FORMAT:-%Y%m%d}"           # Tarih formatı
