@@ -1,6 +1,6 @@
 # modules/core/network/wireless/default.nix
 # ==============================================================================
-# Kablosuz Ağ Yapılandırması - NetworkManager + nm-applet İkon Özelleştirme
+# Kablosuz Ağ Yapılandırması - NetworkManager + Candy Beauty Icons
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
@@ -26,25 +26,30 @@
     fallbackDns = [ "1.1.1.1" "8.8.8.8" ];
   };
 
-  # nm-applet için ikon özelleştirme
+  # Gerekli paketler
   environment.systemPackages = with pkgs; [
-    networkmanagerapplet  # nm-applet paketi
-    beautyline-icon-theme  # BeautyLine ikon teması (paket adını kontrol edin)
+    networkmanagerapplet
+    candy-beauty-icon-theme  # Candy Beauty ikon teması
   ];
 
-  # GTK ikon temasını BeautyLine olarak ayarla
+  # GTK ikon temasını ayarla
   environment.variables = {
-    GTK_ICON_THEME = "BeautyLine";
+    GTK_ICON_THEME = "al-beautyline";  # candy-beauty-icon-theme paketinin gerçek tema adı
   };
 
-  # Alternatif: Doğrudan hicolor temasına özel ikon ekleme (kalıcı çözüm)
+  # Doğrudan ikon override (22px boyutunda)
   environment.etc = {
     "icons/hicolor/22x22/apps/nm-device-wireless.png" = {
-      source = "${pkgs.beautyline-icon-theme}/share/icons/BeautyLine/apps/scalable/nm-device-wireless.svg";
+      source = "${pkgs.candy-beauty-icon-theme}/share/icons/al-beautyline/panel/22/network-wireless.png";
+    };
+    
+    # Alternatif SVG versiyonu (eğer PNG çalışmazsa)
+    "icons/hicolor/scalable/apps/nm-device-wireless.svg" = {
+      source = "${pkgs.candy-beauty-icon-theme}/share/icons/al-beautyline/devices/scalable/network-wireless.svg";
     };
   };
 
-  # nm-applet'i otomatik başlat (opsiyonel)
+  # nm-applet otomatik başlatma
   systemd.user.services.nm-applet = {
     description = "NetworkManager Applet";
     wantedBy = [ "graphical-session.target" ];
@@ -53,5 +58,13 @@
       Restart = "on-failure";
     };
   };
+
+  # İkon temasının doğru yüklendiğinden emin olmak için
+  system.activationScripts.icon-theme-check = ''
+    if [ ! -d "${pkgs.candy-beauty-icon-theme}/share/icons/al-beautyline" ]; then
+      echo "HATA: al-beautyline ikon teması bulunamadı!"
+      exit 1
+    fi
+  '';
 }
 
