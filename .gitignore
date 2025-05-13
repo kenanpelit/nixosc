@@ -2,6 +2,7 @@
 hay
 hay/*
 secrets/home-secrets.yaml
+secrets/wireless-secrets.yaml
 secrets/nix.conf
 **/*.key
 **/*.pem
