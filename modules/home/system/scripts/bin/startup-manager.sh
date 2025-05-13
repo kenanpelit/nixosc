@@ -15,7 +15,7 @@
 # =================================================================
 
 # Sabit değişkenler ve yapılandırmalar
-readonly LOG_DIR="$HOME/.log"
+readonly LOG_DIR="$HOME/.logs"
 readonly CONFIG_DIR="$HOME/.config"
 readonly STARTUP_LOG="$LOG_DIR/startup-manager.log"
 

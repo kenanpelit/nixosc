@@ -12,6 +12,8 @@
         "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
         # Update DBus environment for Wayland session
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
+        # NetworkManagerApplet
+        "nm-applet --indicator"
         # Power management notifications (battery, lid, etc.)
         "poweralertd"
         # Notification center for system-wide notifications
@@ -42,8 +44,6 @@
         "hyprlock"
         # Set initial audio levels - microphone to 5% - speaker volume to 15%
         "osc-soundctl init"
-        # NetworkManagerApplet
-        #"nm-applet --indicator"
       ];
 
       # =====================================================
