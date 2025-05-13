@@ -1,4 +1,4 @@
-# modules/home/touchegg/default.nix
+# modules/home/services/touchegg/default.nix
 # ==============================================================================
 # Touchégg Gesture Configuration
 # ==============================================================================
@@ -10,7 +10,8 @@
   systemd.user.services.touchegg = {
     Unit = {
       Description = "Touchégg Daemon (User)";
-      After = [ "graphical-session-pre.target" "dbus.service" "hyprland-session.target" ];
+      # hyprland-session.target'ı kaldırdım - bu döngüye neden oluyordu
+      After = [ "graphical-session-pre.target" "dbus.service" ];
       PartOf = [ "graphical-session.target" ];
       Requires = [ "dbus.service" ];
     };
