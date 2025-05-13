@@ -7,7 +7,9 @@
 #
 # Oturum Dağılımı:
 # TTY1: Hyprland - Modern Wayland pencere yöneticisi
-# TTY2: QEMU Sanal Makine - Sway ile yönetilen VM ortamı
+# TTY2: QEMU NixOS VM (Sway ile)
+# TTY3: QEMU Arch VM (Sway ile)
+# TTY4: QEMU Ubuntu VM (Sway ile)
 # TTY5: GNOME masaüstü ortamı
 # TTY6: COSMIC masaüstü ortamı - System76 tarafından geliştirilen Rust tabanlı DE
 # =================================================================
@@ -118,14 +120,27 @@ start_hyprland() {
 	export XDG_SESSION_DESKTOP="Hyprland"
 	export XDG_CURRENT_DESKTOP="Hyprland"
 
-	# Hyprland başlatma scriptini çalıştır
-	exec "$CONFIG_DIR/hypr/start/hyprland_tty.sh" >>"$LOG_DIR/hyprland_tty.log" 2>&1
+	# Hyprland_tty scriptini çalıştır (PATH'de olacak)
+	if command -v hyprland_tty &>/dev/null; then
+		info "hyprland_tty scripti PATH'de bulundu, çalıştırılıyor..."
+		exec hyprland_tty >>"$LOG_DIR/hyprland.log" 2>&1
+	else
+		# Alternatif: Doğrudan Hyprland'i başlat
+		info "hyprland_tty scripti bulunamadı, doğrudan Hyprland başlatılıyor..."
+		if command -v Hyprland &>/dev/null; then
+			exec Hyprland >>"$LOG_DIR/hyprland.log" 2>&1
+		elif command -v hyprland &>/dev/null; then
+			exec hyprland >>"$LOG_DIR/hyprland.log" 2>&1
+		else
+			error "Hyprland binary bulunamadı! Lütfen kurulumu kontrol edin."
+		fi
+	fi
 }
 
-# QEMU sanal makine ortamını başlat (TTY2)
-start_qemu() {
-	print_header "QEMU SANAL MAKİNE ORTAMI BAŞLATILIYOR (TTY2)"
-	info "Sway pencere yöneticisi QEMU konfigürasyonu ile başlatılıyor..."
+# QEMU NixOS sanal makine ortamını başlat (TTY2)
+start_qemu_nixos() {
+	print_header "QEMU NIXOS SANAL MAKİNE ORTAMI BAŞLATILIYOR (TTY2)"
+	info "Sway pencere yöneticisi QEMU NixOS konfigürasyonu ile başlatılıyor..."
 
 	# Sway için gerekli ortam değişkenleri
 	export XDG_SESSION_TYPE="wayland"
@@ -134,7 +149,37 @@ start_qemu() {
 	export DESKTOP_SESSION="sway"
 
 	# Sway'i özel konfigürasyon ile başlat
-	exec sway -c "$CONFIG_DIR/sway/qemu-config" >>"$LOG_DIR/qemu-session.log" 2>&1
+	exec sway -c "$CONFIG_DIR/sway/qemu_vmnixos" >>"$LOG_DIR/qemu-nixos-session.log" 2>&1
+}
+
+# QEMU Arch sanal makine ortamını başlat (TTY3)
+start_qemu_arch() {
+	print_header "QEMU ARCH SANAL MAKİNE ORTAMI BAŞLATILIYOR (TTY3)"
+	info "Sway pencere yöneticisi QEMU Arch konfigürasyonu ile başlatılıyor..."
+
+	# Sway için gerekli ortam değişkenleri
+	export XDG_SESSION_TYPE="wayland"
+	export XDG_SESSION_DESKTOP="sway"
+	export XDG_CURRENT_DESKTOP="sway"
+	export DESKTOP_SESSION="sway"
+
+	# Sway'i özel konfigürasyon ile başlat
+	exec sway -c "$CONFIG_DIR/sway/qemu_vmarch" >>"$LOG_DIR/qemu-arch-session.log" 2>&1
+}
+
+# QEMU Ubuntu sanal makine ortamını başlat (TTY4)
+start_qemu_ubuntu() {
+	print_header "QEMU UBUNTU SANAL MAKİNE ORTAMI BAŞLATILIYOR (TTY4)"
+	info "Sway pencere yöneticisi QEMU Ubuntu konfigürasyonu ile başlatılıyor..."
+
+	# Sway için gerekli ortam değişkenleri
+	export XDG_SESSION_TYPE="wayland"
+	export XDG_SESSION_DESKTOP="sway"
+	export XDG_CURRENT_DESKTOP="sway"
+	export DESKTOP_SESSION="sway"
+
+	# Sway'i özel konfigürasyon ile başlat
+	exec sway -c "$CONFIG_DIR/sway/qemu_vmubuntu" >>"$LOG_DIR/qemu-ubuntu-session.log" 2>&1
 }
 
 # GNOME masaüstü ortamını başlat (TTY5)
@@ -189,7 +234,9 @@ main() {
 	# TTY numarasına göre uygun masaüstü ortamını başlat
 	case "${XDG_VTNR}" in
 	1) start_hyprland ;;
-	2) start_qemu ;;
+	2) start_qemu_nixos ;;
+	3) start_qemu_arch ;;
+	4) start_qemu_ubuntu ;;
 	5) start_gnome ;;
 	6) start_cosmic ;;
 	*)
