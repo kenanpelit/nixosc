@@ -198,6 +198,9 @@ let
   osc-waybar = pkgs.writeShellScriptBin "osc-waybar" (
     builtins.readFile ./bin/osc-waybar.sh
   );
+  osc-wifi-home = pkgs.writeShellScriptBin "osc-wifi-home" (
+    builtins.readFile ./bin/osc-wifi-home.sh
+  );
   pdfkes = pkgs.writeShellScriptBin "pdfkes" (
     builtins.readFile ./bin/pdfkes.sh
   );
@@ -416,6 +419,7 @@ in {
     osc-video-converter
     osc-vradio
     osc-waybar
+    osc-wifi-home
     pdfkes
     playlist
     ports

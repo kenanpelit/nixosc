@@ -76,24 +76,6 @@
      #   format = "binary";
      #   sopsFile = "/home/${username}/.nixosc/assets/dot.enc.tar.gz";
      # };
-     
-     # Ken_5 ağı parolası
-     "wireless_ken_5_password" = {
-       sopsFile = ./../../../../secrets/wireless-secrets.enc.yaml;
-       key = "ken_5_password";
-       # NetworkManager'ın erişebilmesi için
-       owner = "root";
-       group = "networkmanager";
-       mode = "0640";
-     };
-     # Ken_2_4 ağı parolası
-     "wireless_ken_2_4_password" = {
-       sopsFile = ./../../../../secrets/wireless-secrets.enc.yaml;
-       key = "ken_2_4_password";
-       owner = "root";
-       group = "networkmanager";
-       mode = "0640";
-     };
    };
  };
 }

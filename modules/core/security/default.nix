@@ -23,5 +23,6 @@
     ./pam
     ./keyring
     ./hblock
+    ./sops
   ];
 }
