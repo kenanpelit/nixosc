@@ -20,14 +20,11 @@
         "swaync"
         # Keep clipboard content persistent across program restarts
         "wl-clip-persist --clipboard both"
-        # Store clipboard history using cliphist
-        #"wl-paste --watch cliphist store"
         # Enhanced clipboard management with cliphist
         "wl-paste --type text --watch cliphist store"     # Store text content
         "wl-paste --type image --watch cliphist store"    # Store image content including screenshots 
         # Advanced clipboard manager with searchable history
-        # Advanced clipboard manager with searchable history
-        #"copyq"
+        "copyq"
         # Set system cursor theme and size
         "hyprctl setcursor catppuccin-mocha-lavender-cursors 24"
         # Initialize wallpaper daemon for dynamic wallpapers
