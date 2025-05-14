@@ -4,7 +4,7 @@
 # COSMIC MONITOR & WORKSPACE CONTROL
 #######################################
 #
-# Version: 1.0.0
+# Version: 1.0.3
 # Date: 2025-05-14
 # Author: Kenan Pelit
 # Description: CosmicFlow - Enhanced COSMIC Desktop Control Tool
@@ -13,30 +13,7 @@
 #
 #######################################
 
-# This script provides monitor and workspace control for the COSMIC
-# desktop environment. It manages operations such as:
-# - Monitor switching and focus control
-# - Workspace navigation and management
-# - Window focus and cycling
-# - Window movement between workspaces
-# - Auto-tiling control
-#
-# Requirements:
-#   - COSMIC desktop environment
-#   - cosmic-session
-#   - jq: JSON processing tool
-#   - ydotool or wtype: Wayland automation tools (for keyboard simulation)
-#
-# Installation:
-#   The above tools must be installed on your system
-#   to run this script.
-#
-# Note:
-#   Script uses $HOME/.cache/cosmic/toggle directory
-#   Directory will be created automatically if it doesn't exist
-
 # Enable strict mode
-#
 set -euo pipefail
 
 # Constants
@@ -56,12 +33,16 @@ fi
 
 # Create workspace tracking files if they don't exist
 if [ ! -f "$CURRENT_WS_FILE" ]; then
-	get_current_workspace >"$CURRENT_WS_FILE" 2>/dev/null || echo "1" >"$CURRENT_WS_FILE"
+	echo "1" >"$CURRENT_WS_FILE"
 fi
 
 if [ ! -f "$PREVIOUS_WS_FILE" ]; then
 	echo "1" >"$PREVIOUS_WS_FILE"
 fi
+
+# Default values
+direction="+1"
+debug=false
 
 #######################################
 # Logging Functions
@@ -89,9 +70,18 @@ log_debug() {
 #######################################
 
 get_current_workspace() {
-	# For COSMIC, we need to get the current workspace
-	# This might need adaptation based on COSMIC's command-line tools
-	cosmic-workspace-info current 2>/dev/null || echo "1"
+	# Try to get current workspace from COSMIC
+	if command -v cosmic-workspace-info >/dev/null 2>&1; then
+		ws=$(cosmic-workspace-info current 2>/dev/null) || ws="1"
+		echo "$ws"
+	else
+		# Fallback to stored value
+		if [ -s "$CURRENT_WS_FILE" ]; then
+			cat "$CURRENT_WS_FILE"
+		else
+			echo "1" # Default
+		fi
+	fi
 }
 
 get_previous_workspace() {
@@ -102,17 +92,6 @@ get_previous_workspace() {
 	fi
 }
 
-get_current_monitor() {
-	# Get the current monitor in COSMIC
-	cosmic-monitor-info active 2>/dev/null || echo "eDP-1"
-}
-
-get_all_monitors() {
-	# Get all monitors in COSMIC
-	cosmic-monitor-info list 2>/dev/null || echo "eDP-1"
-}
-
-# Update workspace history - simplified version
 update_workspace_history() {
 	local new_ws
 	new_ws=$(get_current_workspace)
@@ -122,126 +101,168 @@ update_workspace_history() {
 	local old_ws
 	if [ -s "$CURRENT_WS_FILE" ]; then
 		old_ws=$(cat "$CURRENT_WS_FILE")
-		log_debug "Current workspace from file: $old_ws"
 
 		# If workspace changed, update previous
 		if [ "$new_ws" != "$old_ws" ]; then
 			echo "$old_ws" >"$PREVIOUS_WS_FILE"
 			log_debug "Updated previous workspace to: $old_ws"
 		fi
-	else
-		log_debug "No current workspace file found or it's empty"
 	fi
 
 	# Always update current workspace
 	echo "$new_ws" >"$CURRENT_WS_FILE"
 	log_debug "Updated current workspace to: $new_ws"
-
-	# Verify files were updated
-	log_debug "Current workspace file now contains: $(cat "$CURRENT_WS_FILE" 2>/dev/null || echo 'ERROR READING FILE')"
-	log_debug "Previous workspace file now contains: $(cat "$PREVIOUS_WS_FILE" 2>/dev/null || echo 'ERROR READING FILE')"
 }
 
-switch_to_workspace() {
-	local next_ws=$1
-
-	# Get current workspace before switching
-	local current_ws
-	current_ws=$(get_current_workspace)
-	log_debug "Switching from workspace $current_ws to $next_ws"
-
-	# Save current as previous before switching
-	echo "$current_ws" >"$PREVIOUS_WS_FILE"
-
-	# Switch to target workspace - using COSMIC keyboard shortcut simulation
-	# Super+[workspace_number]
-	if command -v wtype >/dev/null 2>&1; then
-		wtype -M super -k $next_ws -R super
-	elif command -v ydotool >/dev/null 2>&1; then
-		ydotool key super+$next_ws
-	else
-		log_error "Neither wtype nor ydotool found for keyboard simulation"
+# Function to start ydotoold daemon if not running
+start_ydotoold() {
+	if ! command -v ydotool >/dev/null 2>&1; then
+		log_error "ydotool bulunamadı. Lütfen ydotool paketini yükleyin."
 		return 1
 	fi
 
-	# Update current workspace after switching
-	echo "$next_ws" >"$CURRENT_WS_FILE"
+	if ! pidof ydotoold >/dev/null 2>&1; then
+		log_debug "ydotoold servisi başlatılıyor..."
+		ydotoold >/dev/null 2>&1 &
+		sleep 1
 
-	log_debug "Switch complete. Previous workspace set to $current_ws"
+		if ! pidof ydotoold >/dev/null 2>&1; then
+			log_error "ydotoold servisi başlatılamadı!"
+			return 1
+		fi
+
+		log_debug "ydotoold servisi başlatıldı."
+	else
+		log_debug "ydotoold servisi zaten çalışıyor."
+	fi
+
+	return 0
 }
 
+# Execute ydotool key sequence safely
+ydotool_exec() {
+	# Start ydotoold if not running
+	start_ydotoold || return 1
+
+	log_debug "ydotool komutu çalıştırılıyor: ydotool key $*"
+
+	# Execute command with explicit timeout to prevent hanging
+	timeout 2 ydotool key "$@" || {
+		local ret=$?
+		if [ $ret -eq 124 ]; then
+			log_error "ydotool komutu zaman aşımına uğradı"
+		else
+			log_error "ydotool komutu başarısız oldu (kod: $ret)"
+		fi
+		return 1
+	}
+
+	return 0
+}
+
+# Switch to specified workspace
+switch_to_workspace() {
+	local target_ws=$1
+	local current_ws
+	current_ws=$(get_current_workspace)
+
+	log_debug "Çalışma alanı değiştiriliyor: $current_ws -> $target_ws"
+
+	# Store current workspace as previous
+	echo "$current_ws" >"$PREVIOUS_WS_FILE"
+
+	# Map workspace number to appropriate key code
+	local key_num
+	case "$target_ws" in
+	10) key_num="19" ;; # key_0
+	1) key_num="10" ;;
+	2) key_num="11" ;;
+	3) key_num="12" ;;
+	4) key_num="13" ;;
+	5) key_num="14" ;;
+	6) key_num="15" ;;
+	7) key_num="16" ;;
+	8) key_num="17" ;;
+	9) key_num="18" ;;
+	*)
+		log_error "Geçersiz çalışma alanı numarası: $target_ws (1-10 arası olmalı)"
+		return 1
+		;;
+	esac
+
+	# Try to switch workspace using ydotool - Super+Number
+	# Super key down, number key down, number key up, Super key up
+	if ! ydotool_exec "125:1" "$key_num:1" "$key_num:0" "125:0"; then
+		log_error "Çalışma alanına geçiş başarısız oldu: $target_ws"
+		return 1
+	fi
+
+	sleep 0.5
+	update_workspace_history
+}
+
+# Switch workspace in a direction
 switch_workspace_direction() {
 	local direction=$1
 	local current_ws
 	current_ws=$(get_current_workspace)
 
-	log_debug "Switching workspace direction: $direction from current $current_ws"
+	log_debug "Çalışma alanı yönü değiştiriliyor: $direction (şu anki: $current_ws)"
 
-	# Save current as previous before switching
+	# Store current workspace as previous
 	echo "$current_ws" >"$PREVIOUS_WS_FILE"
 
-	# Use keyboard shortcuts for direction-based navigation
-	case $direction in
+	case "$direction" in
 	"Left")
-		log_debug "Moving to workspace left"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -M shift -k Left -R shift -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+shift+Left
-		fi
+		log_debug "Sol çalışma alanına geçiliyor"
+		# Super+Shift+Left: 125=Super, 50=Shift, 105=Left
+		ydotool_exec "125:1" "50:1" "105:1" "105:0" "50:0" "125:0"
 		;;
 	"Right")
-		log_debug "Moving to workspace right"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -M shift -k Right -R shift -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+shift+Right
-		fi
+		log_debug "Sağ çalışma alanına geçiliyor"
+		# Super+Shift+Right: 125=Super, 50=Shift, 106=Right
+		ydotool_exec "125:1" "50:1" "106:1" "106:0" "50:0" "125:0"
 		;;
 	esac
 
-	# Update current workspace after switching
-	sleep 0.5 # Small delay to ensure workspace change completes
-	local new_ws
-	new_ws=$(get_current_workspace)
-	echo "$new_ws" >"$CURRENT_WS_FILE"
-
-	log_debug "Switch direction complete. New workspace: $new_ws"
+	sleep 0.5
+	update_workspace_history
 }
 
-#######################################
-# Window Management Functions
-#######################################
-
-get_focused_window() {
-	# Get the currently focused window in COSMIC
-	cosmic-window-info active 2>/dev/null || echo "null"
-}
-
+# Move current window to specified workspace
 move_window_to_workspace() {
 	local target_ws=$1
-	local focused_window
-	focused_window=$(get_focused_window)
 
-	if [ "$focused_window" != "null" ]; then
-		log_debug "Moving window $focused_window to workspace $target_ws"
+	log_debug "Pencere çalışma alanına taşınıyor: $target_ws"
 
-		# Move window to target workspace using keyboard shortcuts
-		# Super+Shift+[workspace_number]
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -M shift -k $target_ws -R shift -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+shift+$target_ws
-		else
-			log_error "Neither wtype nor ydotool found for keyboard simulation"
-			return 1
-		fi
+	# Map workspace number to appropriate key code
+	local key_num
+	case "$target_ws" in
+	10) key_num="19" ;; # key_0
+	1) key_num="10" ;;
+	2) key_num="11" ;;
+	3) key_num="12" ;;
+	4) key_num="13" ;;
+	5) key_num="14" ;;
+	6) key_num="15" ;;
+	7) key_num="16" ;;
+	8) key_num="17" ;;
+	9) key_num="18" ;;
+	*)
+		log_error "Geçersiz çalışma alanı numarası: $target_ws (1-10 arası olmalı)"
+		return 1
+		;;
+	esac
 
-		# Update workspace tracking
-		echo "$target_ws" >"$CURRENT_WS_FILE"
-	else
-		log_error "No focused window to move"
+	# Try to move window using ydotool: Super+Shift+Number
+	# Super down, Shift down, Number down, Number up, Shift up, Super up
+	if ! ydotool_exec "125:1" "50:1" "$key_num:1" "$key_num:0" "50:0" "125:0"; then
+		log_error "Pencereyi çalışma alanına taşıma başarısız oldu: $target_ws"
+		return 1
 	fi
+
+	sleep 0.5
+	update_workspace_history
 }
 
 #######################################
@@ -253,28 +274,53 @@ toggle_monitor_focus() {
 	local current_state
 	current_state=$(cat "$STATE_FILE")
 
-	log_debug "Toggling monitor focus, current state: $current_state"
+	log_debug "Monitör odağı değiştiriliyor, mevcut durum: $current_state"
 
-	# Change focus and save new state based on current state
 	if [ "$current_state" = "up" ]; then
-		# Focus down monitor
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k Down -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+Down
-		fi
+		# Focus down monitor: Super+Down
+		ydotool_exec "125:1" "108:1" "108:0" "125:0"
 		echo "down" >"$STATE_FILE"
-		log_debug "Focus changed to: down"
 	else
-		# Focus up monitor
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k Up -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+Up
-		fi
+		# Focus up monitor: Super+Up
+		ydotool_exec "125:1" "103:1" "103:0" "125:0"
 		echo "up" >"$STATE_FILE"
-		log_debug "Focus changed to: up"
 	fi
+
+	log_debug "Monitör odağı değiştirildi, yeni durum: $(cat "$STATE_FILE")"
+}
+
+#######################################
+# Window Management Functions
+#######################################
+
+# Move window focus in a direction
+move_window_focus() {
+	local direction=$1
+
+	log_debug "Pencere odağı taşınıyor: $direction"
+
+	case "$direction" in
+	"left")
+		# Super+h: 125=Super, 43=h
+		ydotool_exec "125:1" "43:1" "43:0" "125:0"
+		;;
+	"right")
+		# Super+l: 125=Super, 46=l
+		ydotool_exec "125:1" "46:1" "46:0" "125:0"
+		;;
+	"up")
+		# Super+k: 125=Super, 45=k
+		ydotool_exec "125:1" "45:1" "45:0" "125:0"
+		;;
+	"down")
+		# Super+j: 125=Super, 44=j
+		ydotool_exec "125:1" "44:1" "44:0" "125:0"
+		;;
+	*)
+		log_error "Geçersiz yön: $direction"
+		return 1
+		;;
+	esac
 }
 
 #######################################
@@ -282,35 +328,33 @@ toggle_monitor_focus() {
 #######################################
 
 toggle_tiling() {
-	log_debug "Toggling auto-tiling mode"
+	log_debug "Karo modu değiştiriliyor"
 
-	# Toggle auto-tiling with cosmic-specific keyboard shortcut (Super+Y)
-	if command -v wtype >/dev/null 2>&1; then
-		wtype -M super -k y -R super
-	elif command -v ydotool >/dev/null 2>&1; then
-		ydotool key super+y
-	else
-		log_error "Neither wtype nor ydotool found for keyboard simulation"
+	# Toggle tiling with Super+Y: 125=Super, 21=y
+	if ! ydotool_exec "125:1" "21:1" "21:0" "125:0"; then
+		log_error "Karo modu değiştirilemedi"
 		return 1
 	fi
+
+	log_debug "Karo modu değiştirildi"
+	return 0
 }
 
 open_launcher() {
-	log_debug "Opening COSMIC launcher"
+	log_debug "Başlatıcı açılıyor"
 
-	# Open launcher with Super key
-	if command -v wtype >/dev/null 2>&1; then
-		wtype -M super -R super
-	elif command -v ydotool >/dev/null 2>&1; then
-		ydotool key super
-	else
-		log_error "Neither wtype nor ydotool found for keyboard simulation"
+	# Open launcher with Super key: 125=Super
+	if ! ydotool_exec "125:1" "125:0"; then
+		log_error "Başlatıcı açılamadı"
 		return 1
 	fi
+
+	log_debug "Başlatıcı açıldı"
+	return 0
 }
 
 #######################################
-# Help Message Function
+# Help and Maintenance Functions
 #######################################
 
 show_help() {
@@ -354,40 +398,32 @@ Examples:
   $0 -wt      # Go to previous workspace
   $0 -tt      # Toggle auto-tiling
 
-Version: 1.0.0
+Version: 1.0.3
 EOF
 	exit 0
 }
 
-#######################################
-# Debug/Maintenance Functions
-#######################################
-
 clear_workspace_history() {
-	log_info "Clearing workspace history files"
+	log_info "Çalışma alanı geçmiş dosyaları temizleniyor"
 	rm -f "$CURRENT_WS_FILE" "$PREVIOUS_WS_FILE"
 
 	# Create them anew
-	get_current_workspace >"$CURRENT_WS_FILE" 2>/dev/null || echo "1" >"$CURRENT_WS_FILE"
+	echo "1" >"$CURRENT_WS_FILE"
 	echo "1" >"$PREVIOUS_WS_FILE"
 
-	log_info "Workspace history files reset"
+	log_info "Çalışma alanı geçmiş dosyaları sıfırlandı"
 }
 
 #######################################
-# Main Script
+# Main Command Processor
 #######################################
-
-# Default values
-direction="+1"
-debug=false
 
 # Show help if no arguments provided
 if [ $# -eq 0 ]; then
 	show_help
 fi
 
-# Parse command line arguments
+# Process command line arguments
 while [[ $# -gt 0 ]]; do
 	case $1 in
 	-h)
@@ -395,7 +431,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	-d)
 		debug=true
-		log_info "Debug mode enabled"
+		log_info "Hata ayıklama modu etkinleştirildi"
 		shift
 		;;
 	-c)
@@ -403,111 +439,89 @@ while [[ $# -gt 0 ]]; do
 		shift
 		;;
 	-mt)
-		log_debug "Toggling monitor focus"
+		log_debug "Monitör odağı değiştiriliyor"
 		toggle_monitor_focus
 		shift
 		;;
 	-ml)
-		log_debug "Focusing left monitor"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k Left -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+Left
-		fi
+		log_debug "Sol monitöre odaklanılıyor"
+		# Super+Left: 125=Super, 105=Left
+		ydotool_exec "125:1" "105:1" "105:0" "125:0"
 		shift
 		;;
 	-mr)
-		log_debug "Focusing right monitor"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k Right -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+Right
-		fi
+		log_debug "Sağ monitöre odaklanılıyor"
+		# Super+Right: 125=Super, 106=Right
+		ydotool_exec "125:1" "106:1" "106:0" "125:0"
 		shift
 		;;
 	-wt)
-		log_debug "Switching to previous workspace"
+		log_debug "Önceki çalışma alanına geçiliyor"
 		prev_ws=$(get_previous_workspace)
-		log_debug "Previous workspace is: $prev_ws"
+		log_debug "Önceki çalışma alanı: $prev_ws"
 		switch_to_workspace "$prev_ws"
 		shift
 		;;
 	-wr)
-		log_debug "Switching to workspace on right"
+		log_debug "Sağdaki çalışma alanına geçiliyor"
 		switch_workspace_direction "Right"
 		shift
 		;;
 	-wl)
-		log_debug "Switching to workspace on left"
+		log_debug "Soldaki çalışma alanına geçiliyor"
 		switch_workspace_direction "Left"
 		shift
 		;;
 	-wn)
 		if [[ -z "${2:-}" ]]; then
-			log_error "Workspace number is required for -wn"
+			log_error "-wn için çalışma alanı numarası gereklidir"
 			exit 1
 		fi
-		log_debug "Jumping to workspace $2"
+		log_debug "$2 numaralı çalışma alanına geçiliyor"
 		switch_to_workspace "$2"
 		shift 2
 		;;
 	-mw)
 		if [[ -z "${2:-}" ]]; then
-			log_error "Workspace number is required for -mw"
+			log_error "-mw için çalışma alanı numarası gereklidir"
 			exit 1
 		fi
-		log_debug "Moving window to workspace $2"
+		log_debug "Pencere $2 numaralı çalışma alanına taşınıyor"
 		move_window_to_workspace "$2"
 		shift 2
 		;;
 	-vl)
-		log_debug "Moving focus left"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k h -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+h
-		fi
+		log_debug "Odak sola taşınıyor"
+		move_window_focus "left"
 		shift
 		;;
 	-vr)
-		log_debug "Moving focus right"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k l -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+l
-		fi
+		log_debug "Odak sağa taşınıyor"
+		move_window_focus "right"
 		shift
 		;;
 	-vu)
-		log_debug "Moving focus up"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k k -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+k
-		fi
+		log_debug "Odak yukarı taşınıyor"
+		move_window_focus "up"
 		shift
 		;;
 	-vd)
-		log_debug "Moving focus down"
-		if command -v wtype >/dev/null 2>&1; then
-			wtype -M super -k j -R super
-		elif command -v ydotool >/dev/null 2>&1; then
-			ydotool key super+j
-		fi
+		log_debug "Odak aşağı taşınıyor"
+		move_window_focus "down"
 		shift
 		;;
 	-tt)
-		log_debug "Toggling tiling mode"
+		log_debug "Karo modu değiştiriliyor"
 		toggle_tiling
 		shift
 		;;
 	-ol)
-		log_debug "Opening launcher"
+		log_debug "Başlatıcı açılıyor"
 		open_launcher
 		shift
 		;;
 	*)
-		log_error "Invalid option: $1"
+		log_error "Geçersiz seçenek: $1"
 		show_help
 		;;
 	esac
