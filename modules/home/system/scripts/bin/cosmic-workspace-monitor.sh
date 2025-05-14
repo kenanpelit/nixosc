@@ -1,47 +1,46 @@
 #!/usr/bin/env bash
 
 #######################################
-# HYPRLAND MONITOR & WORKSPACE CONTROL
+# COSMIC MONITOR & WORKSPACE CONTROL
 #######################################
 #
-# Version: 1.3.0
+# Version: 1.0.0
 # Date: 2025-05-14
-# Original Author: Kenan Pelit
-# Description: HyprFlow - Enhanced Hyprland Control Tool
+# Author: Kenan Pelit
+# Description: CosmicFlow - Enhanced COSMIC Desktop Control Tool
 #
 # License: MIT
 #
 #######################################
 
-# This script provides monitor and workspace control for the Hyprland
-# window manager. It manages operations such as:
+# This script provides monitor and workspace control for the COSMIC
+# desktop environment. It manages operations such as:
 # - Monitor switching and focus control
 # - Workspace navigation and management
 # - Window focus and cycling
-# - Browser tab navigation
 # - Window movement between workspaces
-# - Quick workspace jumping
+# - Auto-tiling control
 #
 # Requirements:
-#   - hyprctl: Hyprland control tool
-#   - pypr: Hyprland Python tool
+#   - COSMIC desktop environment
+#   - cosmic-session
 #   - jq: JSON processing tool
-#   - ydotool or wtype: Wayland automation tools
+#   - ydotool or wtype: Wayland automation tools (for keyboard simulation)
 #
 # Installation:
 #   The above tools must be installed on your system
 #   to run this script.
 #
 # Note:
-#   Script uses $HOME/.cache/hypr/toggle directory
+#   Script uses $HOME/.cache/cosmic/toggle directory
 #   Directory will be created automatically if it doesn't exist
-#   Also, hyperland gestures must be turned off
 
 # Enable strict mode
+#
 set -euo pipefail
 
 # Constants
-readonly CACHE_DIR="$HOME/.cache/hypr/toggle"
+readonly CACHE_DIR="$HOME/.cache/cosmic/toggle"
 readonly STATE_FILE="$CACHE_DIR/focus_state"
 readonly CURRENT_WS_FILE="$CACHE_DIR/current_workspace"
 readonly PREVIOUS_WS_FILE="$CACHE_DIR/previous_workspace"
@@ -90,7 +89,9 @@ log_debug() {
 #######################################
 
 get_current_workspace() {
-	hyprctl monitors -j | jq -r '.[] | select(.focused==true) | .activeWorkspace.name'
+	# For COSMIC, we need to get the current workspace
+	# This might need adaptation based on COSMIC's command-line tools
+	cosmic-workspace-info current 2>/dev/null || echo "1"
 }
 
 get_previous_workspace() {
@@ -102,20 +103,13 @@ get_previous_workspace() {
 }
 
 get_current_monitor() {
-	hyprctl monitors -j | jq -r '.[] | select(.focused==true).name'
+	# Get the current monitor in COSMIC
+	cosmic-monitor-info active 2>/dev/null || echo "eDP-1"
 }
 
 get_all_monitors() {
-	hyprctl monitors -j | jq -r '.[].name'
-}
-
-get_workspaces_for_monitor() {
-	local monitor=$1
-	hyprctl workspaces -j | jq -r ".[] | select(.monitor==\"$monitor\") | select(.name!=\"special\") | .name" | sort -n
-}
-
-get_all_workspaces() {
-	hyprctl workspaces -j | jq -r '.[] | select(.name!="special") | .name' | sort -n
+	# Get all monitors in COSMIC
+	cosmic-monitor-info list 2>/dev/null || echo "eDP-1"
 }
 
 # Update workspace history - simplified version
@@ -159,8 +153,16 @@ switch_to_workspace() {
 	# Save current as previous before switching
 	echo "$current_ws" >"$PREVIOUS_WS_FILE"
 
-	# Switch to target workspace
-	hyprctl dispatch workspace name:$next_ws
+	# Switch to target workspace - using COSMIC keyboard shortcut simulation
+	# Super+[workspace_number]
+	if command -v wtype >/dev/null 2>&1; then
+		wtype -M super -k $next_ws -R super
+	elif command -v ydotool >/dev/null 2>&1; then
+		ydotool key super+$next_ws
+	else
+		log_error "Neither wtype nor ydotool found for keyboard simulation"
+		return 1
+	fi
 
 	# Update current workspace after switching
 	echo "$next_ws" >"$CURRENT_WS_FILE"
@@ -178,19 +180,28 @@ switch_workspace_direction() {
 	# Save current as previous before switching
 	echo "$current_ws" >"$PREVIOUS_WS_FILE"
 
-	# Use simple dispatch commands for left/right navigation
+	# Use keyboard shortcuts for direction-based navigation
 	case $direction in
 	"Left")
-		log_debug "Dispatching workspace to previous"
-		hyprctl dispatch workspace m-1
+		log_debug "Moving to workspace left"
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -M shift -k Left -R shift -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+shift+Left
+		fi
 		;;
 	"Right")
-		log_debug "Dispatching workspace to next"
-		hyprctl dispatch workspace m+1
+		log_debug "Moving to workspace right"
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -M shift -k Right -R shift -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+shift+Right
+		fi
 		;;
 	esac
 
 	# Update current workspace after switching
+	sleep 0.5 # Small delay to ensure workspace change completes
 	local new_ws
 	new_ws=$(get_current_workspace)
 	echo "$new_ws" >"$CURRENT_WS_FILE"
@@ -203,7 +214,8 @@ switch_workspace_direction() {
 #######################################
 
 get_focused_window() {
-	hyprctl activewindow -j | jq -r '.address'
+	# Get the currently focused window in COSMIC
+	cosmic-window-info active 2>/dev/null || echo "null"
 }
 
 move_window_to_workspace() {
@@ -213,8 +225,17 @@ move_window_to_workspace() {
 
 	if [ "$focused_window" != "null" ]; then
 		log_debug "Moving window $focused_window to workspace $target_ws"
-		hyprctl dispatch movetoworkspace "$target_ws"
-		hyprctl dispatch workspace "$target_ws"
+
+		# Move window to target workspace using keyboard shortcuts
+		# Super+Shift+[workspace_number]
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -M shift -k $target_ws -R shift -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+shift+$target_ws
+		else
+			log_error "Neither wtype nor ydotool found for keyboard simulation"
+			return 1
+		fi
 
 		# Update workspace tracking
 		echo "$target_ws" >"$CURRENT_WS_FILE"
@@ -236,40 +257,55 @@ toggle_monitor_focus() {
 
 	# Change focus and save new state based on current state
 	if [ "$current_state" = "up" ]; then
-		hyprctl dispatch movefocus d
+		# Focus down monitor
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k Down -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+Down
+		fi
 		echo "down" >"$STATE_FILE"
 		log_debug "Focus changed to: down"
 	else
-		hyprctl dispatch movefocus u
+		# Focus up monitor
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k Up -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+Up
+		fi
 		echo "up" >"$STATE_FILE"
 		log_debug "Focus changed to: up"
 	fi
 }
 
 #######################################
-# Browser Tab Management Functions
+# COSMIC Specific Functions
 #######################################
 
-navigate_browser_tab() {
-	local direction=$1
-	local current_window
-	current_window=$(hyprctl activewindow -j | jq -r '.class')
+toggle_tiling() {
+	log_debug "Toggling auto-tiling mode"
 
-	log_debug "Navigating browser tab $direction in window class: $current_window"
-
-	if [[ "$current_window" == "brave" || "$current_window" == "Brave" ]]; then
-		if [ "$direction" = "next" ]; then
-			hyprctl dispatch exec "wtype -P ctrl -p tab -r tab -R ctrl"
-		else
-			hyprctl dispatch exec "wtype -P ctrl -P shift -p tab -r tab -R shift -R ctrl"
-		fi
+	# Toggle auto-tiling with cosmic-specific keyboard shortcut (Super+Y)
+	if command -v wtype >/dev/null 2>&1; then
+		wtype -M super -k y -R super
+	elif command -v ydotool >/dev/null 2>&1; then
+		ydotool key super+y
 	else
-		# Diğer tarayıcılar için
-		if [ "$direction" = "next" ]; then
-			wtype -M ctrl -k tab 2>/dev/null || ydotool key ctrl+tab 2>/dev/null
-		else
-			wtype -M ctrl -M shift -k tab 2>/dev/null || ydotool key ctrl+shift+tab 2>/dev/null
-		fi
+		log_error "Neither wtype nor ydotool found for keyboard simulation"
+		return 1
+	fi
+}
+
+open_launcher() {
+	log_debug "Opening COSMIC launcher"
+
+	# Open launcher with Super key
+	if command -v wtype >/dev/null 2>&1; then
+		wtype -M super -R super
+	elif command -v ydotool >/dev/null 2>&1; then
+		ydotool key super
+	else
+		log_error "Neither wtype nor ydotool found for keyboard simulation"
+		return 1
 	fi
 }
 
@@ -280,14 +316,12 @@ navigate_browser_tab() {
 show_help() {
 	cat <<EOF
 ╔══════════════════════════════════╗
-║   HyprFlow - Hyprland Control    ║
+║   CosmicFlow - COSMIC Control    ║
 ╚══════════════════════════════════╝
 
 Usage: $0 [-h] [OPTION]
 
 Monitor Operations:
-  -ms         Shift monitors without focus
-  -msf        Shift monitors with focus
   -mt         Toggle monitor focus (up/down)
   -ml         Switch to left monitor
   -mr         Switch to right monitor
@@ -300,16 +334,14 @@ Workspace Operations:
   -mw NUM     Move focused window to workspace NUM
 
 Window Operations:
-  -vn         Cycle to next window
-  -vp         Cycle to previous window
   -vl         Move focus left
   -vr         Move focus right
   -vu         Move focus up
   -vd         Move focus down
 
-Browser Operations:
-  -tn         Next browser tab
-  -tp         Previous browser tab
+COSMIC Specific:
+  -tt         Toggle tiling mode
+  -ol         Open launcher
 
 Other:
   -h          Show this help message
@@ -319,10 +351,10 @@ Other:
 Examples:
   $0 -wn 5    # Jump to workspace 5
   $0 -mw 3    # Move current window to workspace 3
-  $0 -ms      # Shift monitors
   $0 -wt      # Go to previous workspace
+  $0 -tt      # Toggle auto-tiling
 
-Version: 1.3.0
+Version: 1.0.0
 EOF
 	exit 0
 }
@@ -370,17 +402,6 @@ while [[ $# -gt 0 ]]; do
 		clear_workspace_history
 		shift
 		;;
-	-ms)
-		log_debug "Shifting monitors without focus"
-		pypr shift_monitors "$direction"
-		shift
-		;;
-	-msf)
-		log_debug "Shifting monitors with focus"
-		pypr shift_monitors "$direction"
-		hyprctl dispatch focusmonitor "$direction"
-		shift
-		;;
 	-mt)
 		log_debug "Toggling monitor focus"
 		toggle_monitor_focus
@@ -388,12 +409,20 @@ while [[ $# -gt 0 ]]; do
 		;;
 	-ml)
 		log_debug "Focusing left monitor"
-		hyprctl dispatch focusmonitor l
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k Left -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+Left
+		fi
 		shift
 		;;
 	-mr)
 		log_debug "Focusing right monitor"
-		hyprctl dispatch focusmonitor r
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k Right -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+Right
+		fi
 		shift
 		;;
 	-wt)
@@ -405,34 +434,12 @@ while [[ $# -gt 0 ]]; do
 		;;
 	-wr)
 		log_debug "Switching to workspace on right"
-		# Save current workspace before switching
-		current_ws=$(get_current_workspace)
-		echo "$current_ws" >"$PREVIOUS_WS_FILE"
-
-		# Direct command for workspace right
-		hyprctl dispatch workspace +1
-
-		# Update current workspace after switching
-		new_ws=$(get_current_workspace)
-		echo "$new_ws" >"$CURRENT_WS_FILE"
-
-		log_debug "Switched from $current_ws to $new_ws"
+		switch_workspace_direction "Right"
 		shift
 		;;
 	-wl)
 		log_debug "Switching to workspace on left"
-		# Save current workspace before switching
-		current_ws=$(get_current_workspace)
-		echo "$current_ws" >"$PREVIOUS_WS_FILE"
-
-		# Direct command for workspace left
-		hyprctl dispatch workspace -1
-
-		# Update current workspace after switching
-		new_ws=$(get_current_workspace)
-		echo "$new_ws" >"$CURRENT_WS_FILE"
-
-		log_debug "Switched from $current_ws to $new_ws"
+		switch_workspace_direction "Left"
 		shift
 		;;
 	-wn)
@@ -441,18 +448,7 @@ while [[ $# -gt 0 ]]; do
 			exit 1
 		fi
 		log_debug "Jumping to workspace $2"
-
-		# Save current workspace before switching
-		current_ws=$(get_current_workspace)
-		echo "$current_ws" >"$PREVIOUS_WS_FILE"
-
-		# Direct command to avoid issues with workspace names
-		hyprctl dispatch workspace "$2"
-
-		# Update current after switching
-		echo "$2" >"$CURRENT_WS_FILE"
-
-		log_debug "Switched from workspace $current_ws to $2"
+		switch_to_workspace "$2"
 		shift 2
 		;;
 	-mw)
@@ -464,44 +460,50 @@ while [[ $# -gt 0 ]]; do
 		move_window_to_workspace "$2"
 		shift 2
 		;;
-	-vn)
-		log_debug "Cycling to next window"
-		hyprctl dispatch cyclenext
-		shift
-		;;
-	-vp)
-		log_debug "Cycling to previous window"
-		hyprctl dispatch cyclenext prev
-		shift
-		;;
 	-vl)
 		log_debug "Moving focus left"
-		hyprctl dispatch movefocus l
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k h -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+h
+		fi
 		shift
 		;;
 	-vr)
 		log_debug "Moving focus right"
-		hyprctl dispatch movefocus r
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k l -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+l
+		fi
 		shift
 		;;
 	-vu)
 		log_debug "Moving focus up"
-		hyprctl dispatch movefocus u
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k k -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+k
+		fi
 		shift
 		;;
 	-vd)
 		log_debug "Moving focus down"
-		hyprctl dispatch movefocus d
+		if command -v wtype >/dev/null 2>&1; then
+			wtype -M super -k j -R super
+		elif command -v ydotool >/dev/null 2>&1; then
+			ydotool key super+j
+		fi
 		shift
 		;;
-	-tn)
-		log_debug "Navigating to next browser tab"
-		navigate_browser_tab "next"
+	-tt)
+		log_debug "Toggling tiling mode"
+		toggle_tiling
 		shift
 		;;
-	-tp)
-		log_debug "Navigating to previous browser tab"
-		navigate_browser_tab "prev"
+	-ol)
+		log_debug "Opening launcher"
+		open_launcher
 		shift
 		;;
 	*)
