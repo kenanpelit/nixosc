@@ -88,7 +88,7 @@ in
    bind               # DNS araçları
    iwd                # Kablosuz daemon
    impala             # Ağ sorgu motoru
-   iwgtk              # Kablosuz yapılandırma
+   #iwgtk              # Kablosuz yapılandırma
    networkmanagerapplet
    iw                 # Kablosuz araçları
    iftop              # Ağ kullanım izleme
