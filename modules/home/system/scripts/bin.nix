@@ -36,6 +36,9 @@ let
   container-engine-manager = pkgs.writeShellScriptBin "container-engine-manager" (
     builtins.readFile ./bin/container-engine-manager.sh
   );
+  cosmic-workspace-monitor = pkgs.writeShellScriptBin "cosmic-workspace-monitor" (
+    builtins.readFile ./bin/cosmic-workspace-monitor.sh
+  );
   crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
     builtins.readFile ./bin/crypto-manager.sh
   );
@@ -368,6 +371,7 @@ in {
     clearam
     clustergit
     container-engine-manager
+    cosmic-workspace-monitor
     crypto-manager
     gitgo
     hypr-airplane_mode
