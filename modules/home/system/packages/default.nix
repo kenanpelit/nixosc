@@ -172,7 +172,7 @@
    gnomeExtensions.gsconnect # KDE Connect
    #walker           # Uygulama başlatıcı
    wtype            # Tuş simülatörü
-   ydotools         # Tuş simülatörü
+   ydotool          # Tuş simülatörü
    whatsie          # WhatsApp
    whatsapp-for-linux # WhatsApp
    waybar-mpris     # Medya kontrolü
