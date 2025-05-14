@@ -1,9 +1,9 @@
-# NixOS Configuration
+# NixOS Configuration Suite (nixosc)
 
 <div align="center">
    <img src="./.github/assets/logo/nixos-logo.png" width="100px" />
    <br>
-      Kenan's NixOS Configuration 
+      Kenan's NixOS Configuration Suite
    <br>
       <img src="./.github/assets/pallet/pallet-0.png" width="600px" /> <br>
 
@@ -33,49 +33,96 @@
    <img src="./.github/assets/screenshots/1.png" style="margin-bottom: 10px;"/> <br>
    <img src="./.github/assets/screenshots/hyprlock.png" style="margin-bottom: 10px;" /> <br>
    <img src="./.github/assets/screenshots/grub.png" style="margin-bottom: 10px;" /> <br>
-
 </p>
 
-## 🗃️ Overview
+## 📋 Project Overview
 
-### 📚 Layout
+**NixOS Configuration Suite (nixosc)** - Version 3.0.0
 
--   [flake.nix](flake.nix) - Base of the configuration
--   [hosts](hosts) - 🌳 Per-host configurations
-    - [hay](hosts/hay/) - 💻 Laptop configuration
-    - [vhay](hosts/vhay/) - 🗄️ VM configuration
--   [modules](modules) - 🍱 Modularized NixOS configurations
-    -   [core](modules/core/) - ⚙️ Core NixOS configuration
-    -   [homes](modules/home/) - 🏠 Home-Manager configuration
--   [themes](themes/) - 🎨 Catppuccin Mocha
--   [wallpapers](wallpapers/) - 🌄 Wallpapers collection
+A comprehensive NixOS system configuration management suite that provides:
 
-## 📓 Components
+- Modular configuration structure
+- Hybrid workspace session management
+- VPN-aware application launching
+- Automated backup and restoration tools
+- Custom admin tooling generation
+- Home-manager integration
+- Hardware-specific optimizations
 
-|                             | NixOS + Hyprland                                                                              |
-| --------------------------- | :---------------------------------------------------------------------------------------------: |
-| **Window Manager**          | [Hyprland][Hyprland] |
-| **Bar**                     | [Waybar][Waybar] |
-| **Application Launcher**    | [rofi][rofi] |
-| **Notification Daemon**     | [swaync][swaync] |
-| **Terminal Emulator**       | [Kitty][Kitty] + [Wezterm][Wezterm] + [Foot][Foot] |
-| **Shell**                   | [zsh][zsh] + [oh-my-zsh][oh-my-zsh] + [p10k][p10k] |
-| **Text Editor**             | [Neovim][Neovim] |
-| **Network Management Tool** | [iwd][iwd] + [iwgtk][iwgtk] |
-| **System Resource Monitor** | [Btop][Btop] |
-| **File Manager**            | [nemo][nemo] + [yazi][yazi] |
-| **Fonts**                   | [Hack Nerd Font][Nerd fonts] + [Maple Mono][Maple Mono] |
-| **Color Scheme**            | [Catppuccin Mocha][Catppuccin] |
-| **Cursor**                  | [catppuccin-mocha-lavender-cursors][catppuccin-cursors] |
-| **Icons**                   | [Papirus-Dark][Papirus-Dark] |
-| **Lockscreen**             | [Hyprlock][Hyprlock] + [Swaylock-effects][Swaylock-effects] |
-| **Image Viewer**            | [qview][qview] |
-| **Media Player**            | [mpv][mpv] |
-| **Music Player**            | [audacious][audacious] |
-| **Screenshot Software**     | [grimblast][grimblast] |
-| **Screen Recording**        | [wf-recorder][wf-recorder] |
-| **Clipboard**               | [wl-clip-persist][wl-clip-persist] + [CopyQ][CopyQ] |
-| **Color Picker**            | [hyprpicker][hyprpicker] |
+## 🗃️ Repository Structure
+
+- [flake.nix](flake.nix) - Core configuration with all input sources and system outputs
+- [hosts](hosts) - 🌳 Per-host configurations
+  - [hay](hosts/hay/) - 💻 Laptop configuration
+  - [vhay](hosts/vhay/) - 🗄️ VM configuration
+- [modules](modules) - 🍱 Modularized NixOS configurations
+  - [core](modules/core/) - ⚙️ Core NixOS configuration
+  - [homes](modules/home/) - 🏠 Home-Manager configuration
+- [themes](themes/) - 🎨 Catppuccin Mocha
+- [wallpapers](wallpapers/) - 🌄 Wallpapers collection
+
+## 🧩 Components & Technologies
+
+### Core Systems
+| Component | Technology |
+|-----------|------------|
+| **Base System** | [NixOS Unstable](https://nixos.org/) |
+| **User Environment** | [Home-Manager](https://github.com/nix-community/home-manager) |
+| **Secrets Management** | [SOPS-nix](https://github.com/Mic92/sops-nix) |
+| **Package Repositories** | [NUR](https://github.com/nix-community/NUR) |
+
+### Desktop Environment
+| Component | Implementation |
+|-----------|---------------|
+| **Window Manager** | [Hyprland](https://github.com/hyprwm/hyprland) |
+| **Bar** | [Waybar](https://github.com/Alexays/Waybar) |
+| **Application Launcher** | [rofi](https://github.com/lbonn/rofi) + [Walker](https://github.com/abenz1267/walker) |
+| **Notification Daemon** | [swaync](https://github.com/ErikReider/SwayNotificationCenter) |
+| **Alt Desktop Environment** | [COSMIC](https://github.com/pop-os/cosmic) (via nixos-cosmic) |
+
+### Terminal & Shell
+| Component | Technology |
+|-----------|------------|
+| **Terminal Emulators** | [Kitty](https://github.com/kovidgoyal/kitty) + [Wezterm](https://wezfurlong.org/wezterm/) + [Foot](https://codeberg.org/dnkl/foot) |
+| **Shell** | [zsh](https://ohmyz.sh/) + [oh-my-zsh](https://ohmyz.sh/) + [p10k](https://github.com/romkatv/powerlevel10k) |
+| **Text Editor** | [Neovim](https://github.com/neovim/neovim) |
+| **System Monitor** | [Btop](https://github.com/aristocratos/btop) |
+| **File Managers** | [nemo](https://github.com/linuxmint/nemo/) + [yazi](https://github.com/sxyazi/yazi) |
+
+### Security & System
+| Component | Implementation |
+|-----------|---------------|
+| **Lockscreen** | [Hyprlock](https://github.com/hyprwm/hyprlock) + [Swaylock-effects](https://github.com/mortie/swaylock-effects) |
+| **Network Management** | [iwd](https://git.kernel.org/pub/scm/network/wireless/iwd.git/) + [iwgtk](https://github.com/J-Lentz/iwgtk) |
+| **Boot Loader** | GRUB with custom [distro-grub-themes](https://github.com/AdisonCavani/distro-grub-themes) |
+
+### Multimedia & Utilities
+| Component | Technology |
+|-----------|------------|
+| **Image Viewer** | [qview](https://interversehq.com/qview/) |
+| **Media Player** | [mpv](https://github.com/mpv-player/mpv) |
+| **Music Player** | [audacious](https://audacious-media-player.org/) + [spicetify](https://github.com/gerg-l/spicetify-nix) |
+| **Screenshot Tools** | [grimblast](https://github.com/hyprwm/contrib) |
+| **Screen Recording** | [wf-recorder](https://github.com/ammen99/wf-recorder) |
+| **Clipboard Managers** | [wl-clip-persist](https://github.com/Linus789/wl-clip-persist) + [CopyQ](https://hluk.github.io/CopyQ/) |
+| **Color Picker** | [hyprpicker](https://github.com/hyprwm/hyprpicker) |
+
+### Theming
+| Component | Implementation |
+|-----------|---------------|
+| **Theme** | [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) |
+| **Cursor** | [catppuccin-mocha-lavender-cursors](https://github.com/catppuccin/cursors) |
+| **Icons** | [Papirus-Dark](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme) |
+| **Fonts** | [Hack Nerd Font](https://github.com/ryanoasis/nerd-fonts) + [Maple Mono](https://github.com/subframe7536/maple-font) |
+
+### Advanced Features
+| Feature | Implementation |
+|---------|---------------|
+| **Hyprland Python Plugins** | [PyPrland](https://github.com/hyprland-community/pyprland) |
+| **Browser Customization** | [zen-browser](https://github.com/0xc000022070/zen-browser-flake) |
+| **Flatpak Integration** | [nix-flatpak](https://github.com/gmodena/nix-flatpak) |
+| **Package Search** | [nix-search-tv](https://github.com/3timeslazy/nix-search-tv) |
+| **Hyprland Extensions** | Multiple [plugins](https://github.com/hyprwm/hyprland-plugins) and [utilities](https://github.com/hyprwm/contrib) |
 
 ## 🚀 Installation 
 
@@ -194,6 +241,23 @@ Some components need manual configuration:
 - Discord theme (in Discord settings under VENCORD > Themes)
 - Browser configuration
 
+## ⚙️ Binary Cache Configuration
+
+This configuration uses binary caches to improve build times:
+
+```nix
+nixConfig = {
+  extra-substituters = [
+    "https://hyprland-community.cachix.org"
+    "https://cosmic.cachix.org/"
+  ];
+  extra-trusted-public-keys = [
+    "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+    "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+  ];
+};
+```
+
 ## ⌨️ Shell Aliases
 
 <details>
@@ -306,6 +370,35 @@ Default ```$mainMod``` is the ```SUPER``` key.
 [Full keybinding configuration](modules/home/hyprland/conf/hyprland.conf)
 </details>
 
+## 🧠 Extended Hyprland Features
+
+The configuration includes numerous Hyprland extensions and plugins:
+
+- **Core Ecosystem Components**:
+  - hyprlang - Language parsing for Hyprland configuration
+  - hyprcursor - Custom cursor library
+  - xdph - XDG Desktop Portal implementation
+  - hyprland-protocols - Wayland protocol definitions
+
+- **Plugins & Utilities**:
+  - PyPrland - Python plugin system for scripting Hyprland
+  - hypr-contrib - Additional community utilities
+  - hyprpicker - Color picker utility
+  - hyprmag - Screen magnification tool
+
+- **Graphics & Integration**:
+  - hyprgraphics - Graphics library
+  - hyprland-qtutils - Qt integration
+  - hyprwayland-scanner - Protocol scanner
+
+## 🖥️ Alternative Environments
+
+This configuration includes support for alternative desktop environments:
+
+- **COSMIC Desktop** (System76's desktop environment)
+  - Integrated via nixos-cosmic module
+  - Configured with proper binary cache
+
 ## 🛠️ Customization
 
 ### Adding New Packages
@@ -326,19 +419,22 @@ For more detailed information:
 - [NixOS Manual](https://nixos.org/manual/nixos/stable/)
 - [Home Manager Manual](https://nix-community.github.io/home-manager/)
 - [Hyprland Documentation](https://wiki.hyprland.org/)
+- [PyPrland Documentation](https://github.com/hyprland-community/pyprland)
+- [COSMIC Desktop](https://github.com/pop-os/cosmic)
 
 ## 👥 Credits
 
 Special thanks to:
 - [Frost-Phoenix/nixos-config](https://github.com/Frost-Phoenix/nixos-config) for inspiration and examples
-- [All component creators](#components)
+- All component creators and maintainers
+- NixOS and Hyprland communities
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 <!-- Component Links -->
-[Hyprland]: https://github.com/hyprwm/Hyprland
+[Hyprland]: https://github.com/hyprwm/hyprland
 [Kitty]: https://github.com/kovidgoyal/kitty
 [Wezterm]: https://wezfurlong.org/wezterm/index.html
 [Foot]: https://codeberg.org/dnkl/foot
