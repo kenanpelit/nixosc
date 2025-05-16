@@ -12,7 +12,7 @@
 # Author: Kenan Pelit
 # Last Updated: 2025-05-16
 # ==============================================================================
-{ config, lib, username, ... }:
+{ config, lib, pkgs, username, ... }:
 {
   nix = {
     settings = {
@@ -36,15 +36,22 @@
       # Parallel builds across cores
       cores = 0;
       
-      # Use binary caches to speed up builds
-      substituters = [
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
+      # Merge with existing substituters instead of replacing them
+      substituters = lib.mkMerge [
+        (lib.mkIf (config.nix.settings ? substituters) config.nix.settings.substituters)
+        [
+          "https://cache.nixos.org"
+          "https://nix-community.cachix.org"
+        ]
       ];
-      # Trusted public keys for binary caches
-      trusted-public-keys = [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      
+      # Merge with existing trusted public keys
+      trusted-public-keys = lib.mkMerge [
+        (lib.mkIf (config.nix.settings ? trusted-public-keys) config.nix.settings.trusted-public-keys)
+        [
+          "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+          "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        ]
       ];
       
       # Rate-limit download bandwidth to 50 MiB/s to avoid network saturation
@@ -82,7 +89,8 @@
     
     # Experimental Features
     # Enable commands like 'nix run', 'nix shell', and support for flakes
-    extraOptions = ''
+    # Only set if not already defined in the flake configuration
+    extraOptions = lib.mkIf (!config.nix ? extraOptions) ''
       # Enable experimental features
       experimental-features = nix-command flakes ca-derivations
       
@@ -103,18 +111,20 @@
     '';
     
     # Registry configuration for centralized flake management
-    registry = {
+    # Only apply if not already defined in the flake
+    registry = lib.mkIf (!config.nix ? registry) {
       nixpkgs.flake = lib.mkDefault (import ../../../flake/sources.nix).nixpkgs;
     };
     
-    # Nix path configuration
-    nixPath = [
+    # Nix path configuration - only apply if not already set
+    nixPath = lib.mkIf (!config.nix ? nixPath) [
       "nixpkgs=${config.nix.registry.nixpkgs.flake}"
       "home-manager=${config.nix.registry.home-manager.flake}"
     ];
   };
   
   # System-wide package environment to include basic Nix utilities
+  # Only add these if they're not already included in the flake's systemPackages
   environment.systemPackages = with pkgs; [
     # Nix-specific utilities that help with maintenance
     nix-index
