@@ -36,24 +36,13 @@
       # Parallel builds across cores
       cores = 0;
       
-      # Add our cache to any existing ones without causing infinite recursion
-      substituters = lib.mkBefore [
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
-      ];
-      
-      # Add our trusted keys - use mkBefore to avoid recursion
-      trusted-public-keys = lib.mkBefore [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      ];
-      
       # Rate-limit download bandwidth to 50 MiB/s to avoid network saturation
       download-speed-rate = "50M";
       
-      # Enable content-addressed derivations (experimental)
-      # This helps with better deduplication and more resilient builds
-      extra-experimental-features = [ "ca-derivations" ];
+      # Extra experimental features (if supported by your Nix version)
+      extra-experimental-features = [
+        "ca-derivations"
+      ];
       
       # System Features
       system-features = [
@@ -86,10 +75,7 @@
     # Only set if not already defined in the flake configuration
     extraOptions = lib.mkIf (!config.nix ? extraOptions) ''
       # Enable experimental features
-      experimental-features = nix-command flakes ca-derivations
-      
-      # Enable content-addressed path support
-      extra-content-addressed-paths = /nix/store/**
+      experimental-features = nix-command flakes
       
       # Allow more time for builds
       timeout = 3600
@@ -99,9 +85,6 @@
       
       # Whether to warn about dirty Git trees when using flakes
       warn-dirty = true
-      
-      # Track which packages are installed through which user action
-      use-registries = true
     '';
     
     # Registry configuration for centralized flake management
