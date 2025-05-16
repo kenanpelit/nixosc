@@ -5,38 +5,122 @@
 # This configuration manages core Nix settings including:
 # - User permissions
 # - Store optimization
+# - Garbage collection
 # - System features
 # - Experimental features
 #
 # Author: Kenan Pelit
+# Last Updated: 2025-05-16
 # ==============================================================================
-
-{ username, ... }:
+{ config, lib, username, ... }:
 {
   nix = {
     settings = {
       # System Users
-      allowed-users = [ "${username}" ];
-      trusted-users = [ "${username}" ];
+      # Allow specific users to perform Nix operations
+      allowed-users = [ "${username}" "root" ];
+      # Grant trusted user status for maintenance operations like garbage collection
+      trusted-users = [ "${username}" "root" ];
       
       # Store Configuration
+      # Enable automatic hard-linking of same-content files
       auto-optimise-store = true;
+      # Keep build outputs in the Nix store to prevent rebuilding
       keep-outputs = true;
+      # Keep build instructions to improve development experience
       keep-derivations = true;
+      # Enable sandboxed builds for better security and reproducibility
       sandbox = true;
+      # Maximum number of parallel jobs during builds
+      max-jobs = "auto";
+      # Parallel builds across cores
+      cores = 0;
       
-      # Features
+      # Use binary caches to speed up builds
+      substituters = [
+        "https://cache.nixos.org"
+        "https://nix-community.cachix.org"
+      ];
+      # Trusted public keys for binary caches
+      trusted-public-keys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      ];
+      
+      # Rate-limit download bandwidth to 50 MiB/s to avoid network saturation
+      download-speed-rate = "50M";
+      
+      # Enable content-addressed derivations (experimental)
+      # This helps with better deduplication and more resilient builds
+      extra-experimental-features = [ "ca-derivations" ];
+      
+      # System Features
       system-features = [
-        "nixos-test"
-        "benchmark"
-        "big-parallel"
-        "kvm"
+        "nixos-test"   # Enable NixOS tests
+        "benchmark"    # Allow benchmarking tools
+        "big-parallel" # Support highly parallel builds
+        "kvm"          # Enable KVM acceleration
       ];
     };
     
+    # Garbage Collection
+    # Automatically clean up old Nix store items to save disk space
+    gc = {
+      automatic = true;
+      dates = "weekly";   # Run GC once per week
+      options = "--delete-older-than 30d";  # Remove generations older than 30 days
+      # Keep last 5 generations irrespective of their age
+      persistent = true;
+    };
+    
+    # Storage Optimization
+    # Run optimization task once a day to identify and hard-link duplicate files
+    optimise = {
+      automatic = true;
+      dates = [ "03:00" ]; # Run at 3 AM
+    };
+    
     # Experimental Features
+    # Enable commands like 'nix run', 'nix shell', and support for flakes
     extraOptions = ''
-      experimental-features = nix-command flakes
+      # Enable experimental features
+      experimental-features = nix-command flakes ca-derivations
+      
+      # Enable content-addressed path support
+      extra-content-addressed-paths = /nix/store/**
+      
+      # Allow more time for builds
+      timeout = 3600
+      
+      # Use Nix's fallback to build derivations when not in the binary cache
+      fallback = true
+      
+      # Whether to warn about dirty Git trees when using flakes
+      warn-dirty = true
+      
+      # Track which packages are installed through which user action
+      use-registries = true
     '';
+    
+    # Registry configuration for centralized flake management
+    registry = {
+      nixpkgs.flake = lib.mkDefault (import ../../../flake/sources.nix).nixpkgs;
+    };
+    
+    # Nix path configuration
+    nixPath = [
+      "nixpkgs=${config.nix.registry.nixpkgs.flake}"
+      "home-manager=${config.nix.registry.home-manager.flake}"
+    ];
   };
+  
+  # System-wide package environment to include basic Nix utilities
+  environment.systemPackages = with config.nix.package.passthru; [
+    # Nix-specific utilities that help with maintenance
+    nix-info
+    nix-top
+    nix-tree
+    nix-diff
+  ];
 }
+
