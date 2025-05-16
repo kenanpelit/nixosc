@@ -66,7 +66,7 @@
     # Garbage Collection
     # Automatically clean up old Nix store items to save disk space
     gc = {
-      automatic = true;
+      automatic = lib.mkIf (!config.programs.nh.clean.enable) true;  # Only enable if nh.clean is not enabled
       dates = "weekly";   # Run GC once per week
       options = "--delete-older-than 30d";  # Remove generations older than 30 days
       # Keep last 5 generations irrespective of their age
@@ -115,10 +115,9 @@
   };
   
   # System-wide package environment to include basic Nix utilities
-  environment.systemPackages = with config.nix.package.passthru; [
+  environment.systemPackages = with pkgs; [
     # Nix-specific utilities that help with maintenance
-    nix-info
-    nix-top
+    nix-index
     nix-tree
     nix-diff
   ];
