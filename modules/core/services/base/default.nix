@@ -28,5 +28,8 @@
     
     # Ad Blocking
     hblock.enable = true;      # Enable hBlock for ad blocking
+
+    # Firmware Update Service
+    fwupd.enable = true;       # Enable firmware update daemon
   };
 }
