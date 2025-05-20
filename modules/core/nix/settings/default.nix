@@ -37,8 +37,8 @@
       dates = [ "03:00" ];
     };
     
-    # Experimental Features - Only minimal stable features
-    extraOptions = lib.mkIf (!config.nix ? extraOptions) ''
+    # Experimental Features - Always set, to make sure it's effective
+    extraOptions = ''
       experimental-features = nix-command flakes
     '';
   };
