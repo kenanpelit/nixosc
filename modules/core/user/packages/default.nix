@@ -121,6 +121,7 @@ in
    acpi               # ACPI araçları
    powertop           # Güç izleme
    ddcutil            # Monitor settings
+   fwupd
 
    # ==============================================================================
    # Sistem Entegrasyonu
