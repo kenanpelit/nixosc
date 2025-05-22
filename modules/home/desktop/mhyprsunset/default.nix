@@ -12,32 +12,30 @@ let
   cfg = config.services.mhyprsunset;
 in
 {
-  # =============================================================================
-  # Service Options
-  # =============================================================================
   options.services.mhyprsunset = {
     enable = lib.mkEnableOption "Hypr sunset service";
   };
-  # =============================================================================
-  # Service Implementation
-  # =============================================================================
-  config = lib.mkIf cfg.enable {  # cfg.enable kullanımı
+
+  config = lib.mkIf cfg.enable {
     systemd.user.services.mhyprsunset = {
       Unit = {
         Description = "HyprSunset color temperature manager";
-        After = ["hyprland-session.target"];
-        PartOf = ["hyprland-session.target"];
+        After = ["graphical-session.target"];
+        PartOf = ["graphical-session.target"];
       };
       Service = {
-        Type = "forking";
-        Environment = "PATH=/etc/profiles/per-user/${username}/bin:$PATH";
-        ExecStart = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager start";
-        ExecStop = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager stop";
-        Restart = "on-failure";
-        RestartSec = 3;
+        Type = "oneshot";  # forking yerine oneshot
+        RemainAfterExit = true;
+        Environment = [
+          "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+          "XDG_RUNTIME_DIR=%i"
+        ];
+        ExecStart = "${config.home.profileDirectory}/bin/hypr-blue-hyprsunset-manager start";
+        ExecStop = "${config.home.profileDirectory}/bin/hypr-blue-hyprsunset-manager stop";
+        Restart = "no";  # oneshot için restart kapalı
       };
       Install = {
-        WantedBy = ["hyprland-session.target"];
+        WantedBy = ["graphical-session.target"];
       };
     };
   };
