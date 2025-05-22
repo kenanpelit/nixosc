@@ -121,7 +121,7 @@ start_sunset() {
 		return 0
 	else
 		echo "Hypr Sunset zaten çalışıyor"
-		return 1
+		return 0 # Systemd için success döndür
 	fi
 }
 
@@ -151,7 +151,7 @@ stop_sunset() {
 		return 0
 	else
 		echo "Hypr Sunset zaten durdurulmuş"
-		return 1
+		return 0 # Systemd için success döndür
 	fi
 }
 
