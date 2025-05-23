@@ -46,8 +46,8 @@ in
        
        # Visual Configuration
        # Set high-resolution display modes
-       gfxmodeEfi = "1920x1080";    # EFI mode resolution
-       gfxmodeBios = "1920x1080";   # BIOS mode resolution
+       gfxmodeEfi = "1920x1200";    # EFI mode resolution
+       gfxmodeBios = "1920x1200";   # BIOS mode resolution
        # Apply NixOS GRUB theme
        theme = inputs.distro-grub-themes.packages.${system}.nixos-grub-theme;
        #theme = inputs.distro-grub-themes.packages.${system}.thinkpad-grub-theme;
