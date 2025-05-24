@@ -2,13 +2,13 @@
 
 #######################################
 #
-# Version: 1.0.3
-# Date: 2025-05-24
-# Author: Kenan Pelit
-# Repository: github.com/kenanpelit/dotfiles
-# Description: HyprSunset Manager
+# Sürüm: 1.0.4
+# Tarih: 2025-05-24
+# Yazar: Kenan Pelit
+# Depo: github.com/kenanpelit/dotfiles
+# Açıklama: HyprSunset Yöneticisi (Systemd Uyumlu)
 #
-# License: MIT
+# Lisans: MIT
 #
 #######################################
 
@@ -68,20 +68,34 @@ cleanup() {
 	fi
 }
 
+# Daemon cleanup - YENİ
+cleanup_daemon() {
+	log "Daemon cleanup başlıyor (PID: $$)"
+	rm -f "$STATE_FILE" "$PID_FILE"
+
+	# Renk sıcaklığını sıfırla
+	if command -v hyprsunset >/dev/null 2>&1; then
+		hyprsunset -i >/dev/null 2>&1
+		log "Renk sıcaklığı sıfırlandı"
+	fi
+	log "Daemon cleanup tamamlandı"
+}
+
 # Set trap for cleanup
 CLEANUP_ON_EXIT=false
 trap cleanup EXIT INT TERM
 
-# Kullanım bilgisi
+# Kullanım bilgisi - GÜNCELLEME
 usage() {
 	cat <<EOF
-Hypr Sunset - Renk Sıcaklığı Yönetim Aracı (Fixed Version)
+Hypr Sunset - Renk Sıcaklığı Yönetim Aracı (Systemd Uyumlu Sürüm)
 
 KULLANIM:
     $(basename "$0") [KOMUT] [PARAMETRELER]
 
 KOMUTLAR:
-    start         Hypr Sunset'i başlat
+    start         Hypr Sunset'i başlat (fork modu)
+    daemon        Hypr Sunset'i daemon modunda başlat (systemd için)
     stop          Hypr Sunset'i durdur
     toggle        Hypr Sunset'i aç/kapat
     status        Hypr Sunset durumunu göster
@@ -98,16 +112,21 @@ PARAMETRELER:
     --interval VALUE        Kontrol aralığı (saniye)
 
 ÖRNEKLER:
-    $(basename "$0") start
-    $(basename "$0") toggle
-    $(basename "$0") status
+    $(basename "$0") start    # Manuel başlatma (fork modu)
+    $(basename "$0") daemon   # Systemd için daemon modu
+    $(basename "$0") toggle   # Aç/Kapat
+    $(basename "$0") status   # Durum göster
+
+NOT:
+    - 'start' komutu fork modunda çalışır (manuel kullanım için)
+    - 'daemon' komutu systemd servisleri için özel olarak tasarlanmıştır
 EOF
 }
 
 # Bağımlılıkları kontrol et
 check_dependencies() {
 	if ! command -v hyprsunset >/dev/null 2>&1; then
-		echo "Error: hyprsunset bulunamadı. Lütfen yükleyin."
+		echo "Hata: hyprsunset bulunamadı. Lütfen yükleyin."
 		log "HATA: hyprsunset komutu bulunamadı"
 		exit 1
 	fi
@@ -156,9 +175,40 @@ adjust_temperature() {
 	fi
 }
 
-# Daemon fonksiyonu - FIXED
+# Direct daemon mode for systemd - YENİ
+daemon_mode() {
+	log "Systemd daemon modu başlatıldı (PID: $$)"
+
+	# State file ve PID file oluştur
+	touch "$STATE_FILE"
+	echo "$$" >"$PID_FILE"
+
+	# Daemon cleanup trap'i ayarla
+	trap 'cleanup_daemon; exit 0' EXIT INT TERM
+
+	# İlk sıcaklık ayarını yap
+	adjust_temperature
+
+	# Ana daemon döngüsü
+	while true; do
+		sleep "$CHECK_INTERVAL"
+
+		# Eğer state file silinmişse çık
+		if [[ ! -f "$STATE_FILE" ]]; then
+			log "State file silinmiş, daemon sonlanıyor"
+			break
+		fi
+
+		adjust_temperature
+		log "Bir sonraki kontrol: ${CHECK_INTERVAL} saniye sonra"
+	done
+
+	log "Daemon modu sona erdi"
+}
+
+# Daemon fonksiyonu - FIXED (eski fork modu için)
 daemon_loop() {
-	log "Daemon döngüsü başlatıldı (PID: $$)"
+	log "Fork daemon döngüsü başlatıldı (PID: $$)"
 
 	# İlk sıcaklık ayarını yap
 	adjust_temperature
@@ -176,10 +226,10 @@ daemon_loop() {
 		log "Bir sonraki kontrol: ${CHECK_INTERVAL} saniye sonra"
 	done
 
-	log "Daemon döngüsü sona erdi"
+	log "Fork daemon döngüsü sona erdi"
 }
 
-# Servisi başlat - FIXED
+# Servisi başlat - FIXED (fork modu)
 start_sunset() {
 	if [[ -f "$STATE_FILE" ]]; then
 		log "Servis zaten çalışıyor"
@@ -187,7 +237,7 @@ start_sunset() {
 		return 1
 	fi
 
-	log "Hypr Sunset başlatılıyor"
+	log "Hypr Sunset başlatılıyor (fork modu)"
 	touch "$STATE_FILE"
 
 	# Daemon'u arka planda başlat
@@ -196,16 +246,16 @@ start_sunset() {
 
 	# PID'yi kaydet
 	echo "$daemon_pid" >"$PID_FILE"
-	log "Daemon başlatıldı (PID: $daemon_pid)"
+	log "Fork daemon başlatıldı (PID: $daemon_pid)"
 
 	# Başlatmanın başarılı olduğunu kontrol et
 	sleep 1
 	if kill -0 "$daemon_pid" 2>/dev/null; then
-		send_notification "Hypr Sunset" "Başarıyla başlatıldı"
+		send_notification "Hypr Sunset" "Başarıyla başlatıldı (fork modu)"
 		echo "Hypr Sunset başlatıldı (PID: $daemon_pid)"
 		return 0
 	else
-		log "HATA: Daemon başlatılamadı"
+		log "HATA: Fork daemon başlatılamadı"
 		rm -f "$STATE_FILE" "$PID_FILE"
 		echo "HATA: Servis başlatılamadı"
 		return 1
@@ -274,15 +324,23 @@ toggle_sunset() {
 	fi
 }
 
-# Durum göster - FIXED
+# Durum göster - GÜNCELLEME
 show_status() {
 	if [[ -f "$STATE_FILE" ]]; then
 		local pid=""
 		local status="AKTİF"
+		local mode="Bilinmiyor"
 
 		if [[ -f "$PID_FILE" ]]; then
 			pid=$(cat "$PID_FILE")
-			if ! kill -0 "$pid" 2>/dev/null; then
+			if kill -0 "$pid" 2>/dev/null; then
+				# Process komut satırını kontrol ederek modu belirle
+				if ps -p "$pid" -o cmd= | grep -q "daemon"; then
+					mode="Systemd Daemon"
+				else
+					mode="Fork Daemon"
+				fi
+			else
 				status="HATA (PID geçersiz)"
 			fi
 		else
@@ -291,7 +349,9 @@ show_status() {
 
 		echo "Hypr Sunset: $status"
 		[[ -n "$pid" ]] && echo "PID: $pid"
+		echo "Mod: $mode"
 		echo "Son başlatma: $(stat -c %y "$STATE_FILE" 2>/dev/null || echo 'Bilinmiyor')"
+		echo ""
 		echo "Ayarlar:"
 		echo "  Gündüz: ${TEMP_DAY}K (${TIME_DAY_START}:00)"
 		echo "  Akşam: ${TEMP_EVENING}K (${TIME_EVENING_START}:00)"
@@ -311,16 +371,16 @@ show_status() {
 	if [[ -f "$LOG_FILE" ]]; then
 		echo ""
 		echo "Son log kayıtları:"
-		tail -n 3 "$LOG_FILE" 2>/dev/null || echo "Log okunamadı"
+		tail -n 5 "$LOG_FILE" 2>/dev/null || echo "Log okunamadı"
 	fi
 }
 
-# Ana işlem - FIXED
+# Ana işlem - GÜNCELLEME
 main() {
 	# Log dosyasını başlat
 	mkdir -p "$(dirname "$LOG_FILE")"
 	touch "$LOG_FILE"
-	log "=== Hypr Sunset Manager başlatıldı ==="
+	log "=== Hypr Sunset Manager başlatıldı (v1.0.4) ==="
 
 	check_dependencies
 
@@ -367,6 +427,10 @@ main() {
 			;;
 		start)
 			start_sunset
+			exit $?
+			;;
+		daemon)
+			daemon_mode
 			exit $?
 			;;
 		stop)
