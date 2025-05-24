@@ -1,4 +1,4 @@
-# modules/home/desktop/hyprsunset/default.nix
+# modules/home/desktop/mhyprsunset/default.nix
 # ==============================================================================
 # HyprSunset Service Configuration
 # ==============================================================================
@@ -13,28 +13,31 @@ let
 in
 {
   # =============================================================================
-  # Service Options
+  # Servis Seçenekleri
   # =============================================================================
   options.services.mhyprsunset = {
-    enable = lib.mkEnableOption "Hypr sunset service";
+    enable = lib.mkEnableOption "Hypr sunset servisi";
   };
+  
   # =============================================================================
-  # Service Implementation
+  # Servis Uygulaması
   # =============================================================================
-  config = lib.mkIf cfg.enable {  # cfg.enable kullanımı
+  config = lib.mkIf cfg.enable {
     systemd.user.services.mhyprsunset = {
       Unit = {
-        Description = "HyprSunset color temperature manager";
+        Description = "HyprSunset renk sıcaklığı yöneticisi";
         After = ["hyprland-session.target"];
         PartOf = ["hyprland-session.target"];
       };
       Service = {
-        Type = "forking";
+        Type = "simple";  # forking'den simple'a değiştirildi
         Environment = "PATH=/etc/profiles/per-user/${username}/bin:$PATH";
-        ExecStart = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager start";
+        ExecStart = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager daemon";  # daemon modu eklendi
         ExecStop = "/etc/profiles/per-user/${username}/bin/hypr-blue-hyprsunset-manager stop";
         Restart = "on-failure";
         RestartSec = 3;
+        KillMode = "mixed";      # Eklendi
+        KillSignal = "SIGTERM";  # Eklendi
       };
       Install = {
         WantedBy = ["hyprland-session.target"];
@@ -42,4 +45,3 @@ in
     };
   };
 }
-
