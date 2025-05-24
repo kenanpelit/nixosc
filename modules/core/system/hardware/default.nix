@@ -65,7 +65,6 @@
     
     extraModprobeConfig = ''
       options thinkpad_acpi fan_control=1
-      options thinkpad_acpi led_control=1
       options thinkpad_acpi brightness_mode=1
       options thinkpad_acpi volume_mode=1
     '';
@@ -88,5 +87,28 @@
     nvme-cli
     intel-gpu-tools
   ];
+
+  # LED and hotkey management for E14 Gen 6
+  services.udev.extraRules = ''
+    # Fix microphone LED permissions and initial state
+    SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::micmute/brightness"
+    SUBSYSTEM=="leds", KERNEL=="platform::mute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::mute/brightness"
+  '';
+
+  # Service to fix LED state on boot
+  systemd.services.fix-led-state = {
+    description = "Fix ThinkPad LED states on boot";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-udev-settle.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "fix-leds" ''
+        # Reset microphone LED state
+        echo 0 > /sys/class/leds/platform::micmute/brightness || true
+        echo 0 > /sys/class/leds/platform::mute/brightness || true
+      '';
+      RemainAfterExit = true;
+    };
+  };
 }
 
