@@ -692,6 +692,9 @@
         ",XF86AudioPrev,exec, playerctl previous"
         ",XF86AudioStop,exec, playerctl stop"
 
+        # Fn+F4 functionality using pamixer and LED brightness control
+        ",XF86AudioMicMute, exec, toggle-mic"
+
         "$mainMod, mouse_down, workspace, e-1"
         "$mainMod, mouse_up, workspace, e+1"
 
