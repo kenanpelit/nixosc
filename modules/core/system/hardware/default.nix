@@ -103,7 +103,11 @@
     serviceConfig = {
       Type = "oneshot";
       ExecStart = pkgs.writeShellScript "fix-leds" ''
-        # Reset microphone LED state
+        # Set LED triggers for proper audio integration
+        echo "audio-micmute" > /sys/class/leds/platform::micmute/trigger || true
+        echo "audio-mute" > /sys/class/leds/platform::mute/trigger || true
+        
+        # Reset LED states
         echo 0 > /sys/class/leds/platform::micmute/brightness || true
         echo 0 > /sys/class/leds/platform::mute/brightness || true
       '';
