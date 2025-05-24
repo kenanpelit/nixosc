@@ -2,8 +2,8 @@
 
 #######################################
 #
-# Version: 1.0.2
-# Date: 2025-04-11
+# Version: 1.0.3
+# Date: 2025-05-24
 # Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
 # Description: HyprSunset Manager
@@ -24,25 +24,58 @@ log() {
 }
 
 # Varsayılan sıcaklık ayarları
-TEMP_DAY=4300        # Gündüz sıcaklığı (6000K)
-TEMP_EVENING=4200    # Akşam sıcaklığı (5000K)
-TEMP_NIGHT=4100      # Gece sıcaklığı (4000K)
-TEMP_LATE_NIGHT=4000 # Geç gece sıcaklığı (3500K)
+TEMP_DAY=4300
+TEMP_EVENING=4200
+TEMP_NIGHT=4100
+TEMP_LATE_NIGHT=4000
 
 # Varsayılan zaman ayarları
-TIME_DAY_START=6         # Gündüz başlangıcı
-TIME_EVENING_START=17    # Akşam başlangıcı
-TIME_NIGHT_START=20      # Gece başlangıcı
-TIME_LATE_NIGHT_START=22 # Geç gece başlangıcı
+TIME_DAY_START=6
+TIME_EVENING_START=17
+TIME_NIGHT_START=20
+TIME_LATE_NIGHT_START=22
 
 # Diğer ayarlar
-CHECK_INTERVAL=3600 # Kontrol aralığı (saniye)
-AUTO_START=false    # Otomatik başlatma
+CHECK_INTERVAL=3600
+AUTO_START=false
+
+# Cleanup function - FIXED
+cleanup() {
+	local exit_code=$?
+	log "Cleanup çağrıldı (exit code: $exit_code)"
+
+	# Sadece stop komutu veya hata durumunda cleanup yap
+	if [[ "$CLEANUP_ON_EXIT" == "true" ]]; then
+		log "Cleanup yapılıyor..."
+		if [[ -f "$PID_FILE" ]]; then
+			local pid=$(cat "$PID_FILE" 2>/dev/null)
+			if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+				kill -TERM "$pid" 2>/dev/null
+				sleep 2
+				kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null
+			fi
+			rm -f "$PID_FILE"
+		fi
+		rm -f "$STATE_FILE"
+
+		# Reset temperature
+		if command -v hyprsunset >/dev/null 2>&1; then
+			hyprsunset -i >/dev/null 2>&1
+		fi
+		log "Cleanup tamamlandı"
+	else
+		log "Normal çıkış - cleanup atlandı"
+	fi
+}
+
+# Set trap for cleanup
+CLEANUP_ON_EXIT=false
+trap cleanup EXIT INT TERM
 
 # Kullanım bilgisi
 usage() {
 	cat <<EOF
-Hypr Sunset - Renk Sıcaklığı Yönetim Aracı
+Hypr Sunset - Renk Sıcaklığı Yönetim Aracı (Fixed Version)
 
 KULLANIM:
     $(basename "$0") [KOMUT] [PARAMETRELER]
@@ -56,75 +89,50 @@ KOMUTLAR:
 
 PARAMETRELER:
     --temp-day VALUE        Gündüz sıcaklığı (Kelvin)
-                           (varsayılan: $TEMP_DAY)
     --temp-evening VALUE    Akşam sıcaklığı (Kelvin)
-                           (varsayılan: $TEMP_EVENING)
     --temp-night VALUE      Gece sıcaklığı (Kelvin)
-                           (varsayılan: $TEMP_NIGHT)
     --temp-late VALUE       Geç gece sıcaklığı (Kelvin)
-                           (varsayılan: $TEMP_LATE_NIGHT)
     --day-start VALUE       Gündüz başlangıç saati (0-23)
-                           (varsayılan: $TIME_DAY_START)
     --evening-start VALUE   Akşam başlangıç saati (0-23)
-                           (varsayılan: $TIME_EVENING_START)
     --night-start VALUE     Gece başlangıç saati (0-23)
-                           (varsayılan: $TIME_NIGHT_START)
     --interval VALUE        Kontrol aralığı (saniye)
-                           (varsayılan: $CHECK_INTERVAL)
-    --auto-start           Otomatik başlatma aktif
 
 ÖRNEKLER:
-    # Varsayılan ayarlarla başlatma
     $(basename "$0") start
-
-    # Özel sıcaklık değerleriyle başlatma
-    $(basename "$0") start --temp-day 5500 --temp-night 3000
-
-    # Özel zaman ayarlarıyla başlatma
-    $(basename "$0") start --day-start 7 --evening-start 16
-
-    # Durumu kontrol etme
+    $(basename "$0") toggle
     $(basename "$0") status
-
-NOT:
-    Renk sıcaklığı değerleri Kelvin cinsindendir.
-    Düşük değerler (örn. 3000K) daha sıcak/kırmızımsı,
-    yüksek değerler (örn. 6500K) daha soğuk/manvimsi renk verir.
-
 EOF
 }
 
 # Bağımlılıkları kontrol et
 check_dependencies() {
-	log "Bağımlılıkları kontrol ediliyor"
-	if ! command -v hyprsunset &>/dev/null; then
+	if ! command -v hyprsunset >/dev/null 2>&1; then
 		echo "Error: hyprsunset bulunamadı. Lütfen yükleyin."
 		log "HATA: hyprsunset komutu bulunamadı"
 		exit 1
 	fi
+}
 
-	# notify-send de kontrol edilsin
-	if ! command -v notify-send &>/dev/null; then
-		log "UYARI: notify-send bulunamadı, bildirimler gösterilmeyecek"
-		# notify-send olmadan da çalışabilir, sadece uyarı verelim
-		send_notification() {
-			log "Bildirim (notify-send olmadan): $2"
-		}
-	else
-		send_notification() {
-			notify-send -t 2000 "$1" "$2"
-			log "Bildirim gönderildi: $1 - $2"
-		}
+# Bildirim gönder
+send_notification() {
+	if command -v notify-send >/dev/null 2>&1; then
+		notify-send -t 2000 "$1" "$2" 2>/dev/null
 	fi
+	log "Bildirim: $1 - $2"
 }
 
 # Sıcaklığı ayarla
 set_temperature() {
 	local temp=$1
 	log "Sıcaklık ayarlanıyor: ${temp}K"
-	hyprsunset -t $temp
-	# Son ayarlanan sıcaklığı kaydet
-	echo "$temp" >"$LAST_TEMP_FILE"
+
+	# Sessiz modda çalıştır
+	if hyprsunset -t "$temp" >/dev/null 2>&1; then
+		echo "$temp" >"$LAST_TEMP_FILE"
+		log "Sıcaklık başarıyla ayarlandı: ${temp}K"
+	else
+		log "HATA: Sıcaklık ayarlanamadı: ${temp}K"
+	fi
 }
 
 # Mevcut saati al
@@ -132,236 +140,244 @@ get_current_hour() {
 	date +%H
 }
 
-# Servisi başlat
-start_sunset() {
-	if [ ! -f "$STATE_FILE" ]; then
-		log "Hypr Sunset başlatılıyor"
-		touch "$STATE_FILE"
-		start_daemon
-		send_notification "Hypr Sunset" "Başlatıldı"
-
-		# Daha güvenli başlangıç kontrolü
-		sleep 1
-		if [ -f "$PID_FILE" ]; then
-			pid=$(cat "$PID_FILE")
-			if kill -0 $pid 2>/dev/null; then
-				log "Daemon başarıyla başlatıldı (PID: $pid)"
-				return 0
-			else
-				log "UYARI: Daemon başlatıldı ama PID geçersiz!"
-				rm -f "$PID_FILE"
-				return 2
-			fi
-		else
-			log "UYARI: Daemon başlatılamadı!"
-			return 2
-		fi
-	else
-		log "Servis zaten çalışıyor"
-		send_notification "Hypr Sunset" "Servis zaten çalışıyor"
-		return 1
-	fi
-}
-
-# Servisi durdur
-stop_sunset() {
-	if [ -f "$STATE_FILE" ]; then
-		log "Hypr Sunset durduruluyor"
-		# Önce state dosyasını kaldır
-		rm -f "$STATE_FILE"
-
-		# Tüm hyprsunset process'lerini bul ve öldür
-		pkill -f hyprsunset || true
-		log "hyprsunset süreçleri sonlandırıldı"
-
-		# PID dosyasını kontrol et ve process'i öldür
-		if [ -f "$PID_FILE" ]; then
-			pid=$(cat "$PID_FILE")
-			kill -9 "$pid" 2>/dev/null || true
-			log "Daemon süreci sonlandırıldı (PID: $pid)"
-			rm -f "$PID_FILE"
-		fi
-
-		# Son olarak rengi sıfırla ve bildirim gönder
-		sleep 0.5 # Küçük bir bekleme ekle
-		hyprsunset -i
-		log "Renk sıcaklığı sıfırlandı"
-		send_notification "Hypr Sunset" "Durduruldu"
-		return 0
-	else
-		log "Servis zaten durdurulmuş durumda"
-		send_notification "Hypr Sunset" "Servis zaten durdurulmuş"
-		return 1
-	fi
-}
-
-# Toggle fonksiyonu
-toggle_sunset() {
-	log "Toggle çağrıldı"
-	if [ -f "$STATE_FILE" ]; then
-		# Eğer state file varsa ama PID file yoksa, servisi yeniden başlat
-		if [ ! -f "$PID_FILE" ]; then
-			log "State dosyası var ama PID dosyası yok, servis yeniden başlatılıyor"
-			start_daemon
-			send_notification "Hypr Sunset" "Servis yeniden başlatıldı"
-			return
-		fi
-
-		# PID file varsa, servisi durdur
-		log "Servis kapatılıyor (toggle)"
-		stop_sunset
-	else
-		# State file yoksa, servisi başlat
-		log "Servis başlatılıyor (toggle)"
-		start_sunset
-	fi
-}
-
 # Sıcaklığı ayarla
 adjust_temperature() {
 	local hour=$(get_current_hour)
 	log "Saat $hour için sıcaklık ayarlanıyor"
 
-	if [ "$hour" -ge "$TIME_DAY_START" ] && [ "$hour" -lt "$TIME_EVENING_START" ]; then
-		log "Gündüz modu: ${TEMP_DAY}K"
-		set_temperature $TEMP_DAY
-	elif [ "$hour" -ge "$TIME_EVENING_START" ] && [ "$hour" -lt "$TIME_NIGHT_START" ]; then
-		log "Akşam modu: ${TEMP_EVENING}K"
-		set_temperature $TEMP_EVENING
-	elif [ "$hour" -ge "$TIME_NIGHT_START" ] && [ "$hour" -lt "$TIME_LATE_NIGHT_START" ]; then
-		log "Gece modu: ${TEMP_NIGHT}K"
-		set_temperature $TEMP_NIGHT
+	if [[ "$hour" -ge "$TIME_DAY_START" && "$hour" -lt "$TIME_EVENING_START" ]]; then
+		set_temperature "$TEMP_DAY"
+	elif [[ "$hour" -ge "$TIME_EVENING_START" && "$hour" -lt "$TIME_NIGHT_START" ]]; then
+		set_temperature "$TEMP_EVENING"
+	elif [[ "$hour" -ge "$TIME_NIGHT_START" && "$hour" -lt "$TIME_LATE_NIGHT_START" ]]; then
+		set_temperature "$TEMP_NIGHT"
 	else
-		log "Geç gece modu: ${TEMP_LATE_NIGHT}K"
-		set_temperature $TEMP_LATE_NIGHT
+		set_temperature "$TEMP_LATE_NIGHT"
 	fi
 }
 
-# Daemon'u başlat
-start_daemon() {
-	log "Daemon başlatılıyor"
-	# Arka planda çalıştır
-	(
-		while [ -f "$STATE_FILE" ]; do
-			adjust_temperature
-			log "Bir sonraki kontrol için bekleniyor (${CHECK_INTERVAL} saniye)"
-			sleep $CHECK_INTERVAL
-		done
-	) &
+# Daemon fonksiyonu - FIXED
+daemon_loop() {
+	log "Daemon döngüsü başlatıldı (PID: $$)"
 
-	# PID'yi kaydet
-	echo $! >"$PID_FILE"
-	log "Daemon PID: $(cat "$PID_FILE")"
+	# İlk sıcaklık ayarını yap
+	adjust_temperature
+
+	while [[ -f "$STATE_FILE" ]]; do
+		sleep "$CHECK_INTERVAL"
+
+		# State file kontrol et
+		if [[ ! -f "$STATE_FILE" ]]; then
+			log "State file silinmiş, daemon sonlanıyor"
+			break
+		fi
+
+		adjust_temperature
+		log "Bir sonraki kontrol: ${CHECK_INTERVAL} saniye sonra"
+	done
+
+	log "Daemon döngüsü sona erdi"
 }
 
-# Detaylı durum bilgisi göster
+# Servisi başlat - FIXED
+start_sunset() {
+	if [[ -f "$STATE_FILE" ]]; then
+		log "Servis zaten çalışıyor"
+		echo "Hypr Sunset zaten çalışıyor"
+		return 1
+	fi
+
+	log "Hypr Sunset başlatılıyor"
+	touch "$STATE_FILE"
+
+	# Daemon'u arka planda başlat
+	daemon_loop &
+	local daemon_pid=$!
+
+	# PID'yi kaydet
+	echo "$daemon_pid" >"$PID_FILE"
+	log "Daemon başlatıldı (PID: $daemon_pid)"
+
+	# Başlatmanın başarılı olduğunu kontrol et
+	sleep 1
+	if kill -0 "$daemon_pid" 2>/dev/null; then
+		send_notification "Hypr Sunset" "Başarıyla başlatıldı"
+		echo "Hypr Sunset başlatıldı (PID: $daemon_pid)"
+		return 0
+	else
+		log "HATA: Daemon başlatılamadı"
+		rm -f "$STATE_FILE" "$PID_FILE"
+		echo "HATA: Servis başlatılamadı"
+		return 1
+	fi
+}
+
+# Servisi durdur - FIXED
+stop_sunset() {
+	if [[ ! -f "$STATE_FILE" ]]; then
+		log "Servis zaten durdurulmuş"
+		echo "Hypr Sunset zaten durdurulmuş"
+		return 1
+	fi
+
+	log "Hypr Sunset durduruluyor"
+
+	# Cleanup flag'i set et
+	CLEANUP_ON_EXIT=true
+
+	# State file'ı sil (daemon döngüsünü durdurmak için)
+	rm -f "$STATE_FILE"
+
+	# PID file varsa daemon'u öldür
+	if [[ -f "$PID_FILE" ]]; then
+		local pid=$(cat "$PID_FILE")
+		if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+			log "Daemon sonlandırılıyor (PID: $pid)"
+			kill -TERM "$pid" 2>/dev/null
+
+			# 5 saniye bekle
+			for i in {1..5}; do
+				if ! kill -0 "$pid" 2>/dev/null; then
+					break
+				fi
+				sleep 1
+			done
+
+			# Hala çalışıyorsa zorla öldür
+			if kill -0 "$pid" 2>/dev/null; then
+				log "Daemon zorla sonlandırılıyor"
+				kill -KILL "$pid" 2>/dev/null
+			fi
+		fi
+		rm -f "$PID_FILE"
+	fi
+
+	# Rengi sıfırla
+	if hyprsunset -i >/dev/null 2>&1; then
+		log "Renk sıcaklığı sıfırlandı"
+	fi
+
+	send_notification "Hypr Sunset" "Durduruldu"
+	echo "Hypr Sunset durduruldu"
+
+	# Cleanup flag'i sıfırla
+	CLEANUP_ON_EXIT=false
+	return 0
+}
+
+# Toggle fonksiyonu - FIXED
+toggle_sunset() {
+	if [[ -f "$STATE_FILE" ]]; then
+		stop_sunset
+	else
+		start_sunset
+	fi
+}
+
+# Durum göster - FIXED
 show_status() {
-	if [ -f "$STATE_FILE" ]; then
+	if [[ -f "$STATE_FILE" ]]; then
 		local pid=""
-		[ -f "$PID_FILE" ] && pid=$(cat "$PID_FILE")
+		local status="AKTİF"
 
-		echo "Hypr Sunset: AKTİF"
-		echo "PID: $pid"
-		echo "Son başlatma: $(stat -c %y "$STATE_FILE")"
+		if [[ -f "$PID_FILE" ]]; then
+			pid=$(cat "$PID_FILE")
+			if ! kill -0 "$pid" 2>/dev/null; then
+				status="HATA (PID geçersiz)"
+			fi
+		else
+			status="HATA (PID dosyası yok)"
+		fi
+
+		echo "Hypr Sunset: $status"
+		[[ -n "$pid" ]] && echo "PID: $pid"
+		echo "Son başlatma: $(stat -c %y "$STATE_FILE" 2>/dev/null || echo 'Bilinmiyor')"
 		echo "Ayarlar:"
-		echo "  Gündüz sıcaklığı: ${TEMP_DAY}K (${TIME_DAY_START}:00'dan itibaren)"
-		echo "  Akşam sıcaklığı: ${TEMP_EVENING}K (${TIME_EVENING_START}:00'dan itibaren)"
-		echo "  Gece sıcaklığı: ${TEMP_NIGHT}K (${TIME_NIGHT_START}:00'dan itibaren)"
-		echo "  Geç gece sıcaklığı: ${TEMP_LATE_NIGHT}K (${TIME_LATE_NIGHT_START}:00'dan itibaren)"
+		echo "  Gündüz: ${TEMP_DAY}K (${TIME_DAY_START}:00)"
+		echo "  Akşam: ${TEMP_EVENING}K (${TIME_EVENING_START}:00)"
+		echo "  Gece: ${TEMP_NIGHT}K (${TIME_NIGHT_START}:00)"
+		echo "  Geç gece: ${TEMP_LATE_NIGHT}K (${TIME_LATE_NIGHT_START}:00)"
 		echo "  Kontrol aralığı: ${CHECK_INTERVAL} saniye"
-		echo "  Log dosyası: ${LOG_FILE}"
 
-		# PID dosyası yoksa uyarı göster
-		if [ ! -f "$PID_FILE" ]; then
-			echo "UYARI: Servis durumu tutarsız (PID dosyası bulunamadı)"
-		elif ! kill -0 $pid 2>/dev/null; then
-			echo "UYARI: Servis durumu tutarsız (PID geçersiz)"
+		# Son sıcaklık
+		if [[ -f "$LAST_TEMP_FILE" ]]; then
+			echo "  Son sıcaklık: $(cat "$LAST_TEMP_FILE")K"
 		fi
 	else
 		echo "Hypr Sunset: KAPALI"
 	fi
 
-	# Log bilgisini göster
-	if [ -f "$LOG_FILE" ]; then
+	# Son log kayıtları
+	if [[ -f "$LOG_FILE" ]]; then
 		echo ""
 		echo "Son log kayıtları:"
-		tail -n 5 "$LOG_FILE"
+		tail -n 3 "$LOG_FILE" 2>/dev/null || echo "Log okunamadı"
 	fi
 }
 
-# Ana işlem
+# Ana işlem - FIXED
 main() {
-	# Log dosyasını başlat/kontrol et
+	# Log dosyasını başlat
+	mkdir -p "$(dirname "$LOG_FILE")"
 	touch "$LOG_FILE"
-	log "Hypr Blue Hyprsunset Manager başlatıldı"
+	log "=== Hypr Sunset Manager başlatıldı ==="
 
 	check_dependencies
+
+	# Eğer parametre yoksa usage göster
+	if [[ $# -eq 0 ]]; then
+		usage
+		exit 1
+	fi
 
 	# Parametreleri işle
 	while [[ $# -gt 0 ]]; do
 		case $1 in
 		--temp-day)
 			TEMP_DAY="$2"
-			log "Gündüz sıcaklığı ayarlandı: $TEMP_DAY"
 			shift 2
 			;;
 		--temp-evening)
 			TEMP_EVENING="$2"
-			log "Akşam sıcaklığı ayarlandı: $TEMP_EVENING"
 			shift 2
 			;;
 		--temp-night)
 			TEMP_NIGHT="$2"
-			log "Gece sıcaklığı ayarlandı: $TEMP_NIGHT"
 			shift 2
 			;;
 		--temp-late)
 			TEMP_LATE_NIGHT="$2"
-			log "Geç gece sıcaklığı ayarlandı: $TEMP_LATE_NIGHT"
 			shift 2
 			;;
 		--day-start)
 			TIME_DAY_START="$2"
-			log "Gündüz başlangıcı ayarlandı: $TIME_DAY_START"
 			shift 2
 			;;
 		--evening-start)
 			TIME_EVENING_START="$2"
-			log "Akşam başlangıcı ayarlandı: $TIME_EVENING_START"
 			shift 2
 			;;
 		--night-start)
 			TIME_NIGHT_START="$2"
-			log "Gece başlangıcı ayarlandı: $TIME_NIGHT_START"
 			shift 2
 			;;
 		--interval)
 			CHECK_INTERVAL="$2"
-			log "Kontrol aralığı ayarlandı: $CHECK_INTERVAL saniye"
 			shift 2
 			;;
-		--auto-start)
-			AUTO_START=true
-			log "Otomatik başlatma etkinleştirildi"
-			shift
-			;;
 		start)
-			log "'start' komutu alındı"
 			start_sunset
 			exit $?
 			;;
 		stop)
-			log "'stop' komutu alındı"
 			stop_sunset
 			exit $?
 			;;
 		toggle)
-			log "'toggle' komutu alındı"
 			toggle_sunset
 			exit $?
 			;;
 		status)
-			log "'status' komutu alındı"
 			show_status
 			exit $?
 			;;
@@ -371,32 +387,12 @@ main() {
 			;;
 		*)
 			echo "Geçersiz parametre: $1"
-			log "HATA: Geçersiz parametre: $1"
 			usage
 			exit 1
 			;;
 		esac
 	done
-
-	# Eğer hiç parametre verilmemişse kullanım bilgisini göster
-	if [ "$AUTO_START" = true ]; then
-		log "Otomatik başlatma modu"
-		if [ ! -f "$STATE_FILE" ]; then
-			log "State dosyası bulunamadı, otomatik başlatılıyor"
-			touch "$STATE_FILE"
-			start_daemon
-		else
-			log "State dosyası zaten var, servis çalışıyor olabilir"
-		fi
-	else
-		log "Parametre verilmedi, kullanım bilgisi gösteriliyor"
-		usage
-		exit 1
-	fi
 }
-
-# CTRL+C ile düzgün çıkış
-trap 'echo "Program sonlandırılıyor..."; log "Program sonlandırılıyor (SIGINT/SIGTERM)"; [ -f "$LAST_TEMP_FILE" ] && hyprsunset -t $(cat "$LAST_TEMP_FILE"); [ -f "$STATE_FILE" ] && rm "$STATE_FILE"; [ -f "$PID_FILE" ] && rm "$PID_FILE"; exit 0' SIGINT SIGTERM
 
 # Programı başlat
 main "$@"
