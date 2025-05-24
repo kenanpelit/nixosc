@@ -315,6 +315,9 @@ let
   toggle_float = pkgs.writeShellScriptBin "toggle_float" (
     builtins.readFile ./bin/toggle_float.sh
   );
+  toggle-mic = pkgs.writeShellScriptBin "toggle-mic" (
+    builtins.readFile ./bin/toggle-mic.sh
+  );
   toggle_oppacity = pkgs.writeShellScriptBin "toggle_oppacity" (
     builtins.readFile ./bin/toggle_oppacity.sh
   );
@@ -464,6 +467,7 @@ in {
     tm
     toggle_blur
     toggle_float
+    toggle-mic
     toggle_oppacity
     toggle_waybar
     tsm
