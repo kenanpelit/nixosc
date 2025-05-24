@@ -52,21 +52,14 @@
   
   # ThinkPad E14 Gen 6 specific audio configurations
   boot.extraModprobeConfig = ''
-    # Intel SOF (Sound Open Firmware) configurations for Meteor Lake-P
     options snd-intel-dspcfg dsp_driver=1
     options snd-sof-pci-intel-mtl enable=1
-    
-    # ThinkPad E14 Gen 6 specific ALSA configurations
     options snd-hda-intel model=thinkpad
     options snd-hda-intel position_fix=1
     options snd-hda-intel enable=yes
     options snd-hda-intel power_save=1
-    
-    # ThinkPad ACPI sound control for function keys
     options thinkpad_acpi volume_mode=1
     options thinkpad_acpi volume_capabilities=1
-    
-    # Intel Smart Sound Technology optimizations
     options snd-sof sof_debug=0
     options snd-sof-intel-hda-common hda_model=thinkpad
   '';
