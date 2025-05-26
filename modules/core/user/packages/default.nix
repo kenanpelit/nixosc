@@ -101,6 +101,7 @@ in
    wget               # Ağ dosya indirme
    socat              # Çok amaçlı relay
    at                 # job scheduling command
+   autossh            # SSH sessions and tunnels
 
    # ==============================================================================
    # Sanallaştırma ve Container
