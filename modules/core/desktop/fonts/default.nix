@@ -162,7 +162,7 @@
   # - Sets up application launcher (rofi) fonts
   # ==============================================================================
   home-manager.users.${username} = {
-    home.stateVersion = "25.05";
+    home.stateVersion = "25.11";
     
     # Dunst notification daemon font configuration
     services.dunst.settings.global = {
