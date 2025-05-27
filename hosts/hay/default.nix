@@ -31,7 +31,7 @@
         ../../modules/home 
       ];
       home = {
-        stateVersion = "25.05";
+        stateVersion = "25.11";
         packages = with pkgs; [
           git         # Version control
           htop        # System monitoring

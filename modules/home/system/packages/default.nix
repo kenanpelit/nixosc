@@ -147,7 +147,7 @@
    bleachbit        # Sistem temizleyici
    libqalculate     # Gelişmiş hesap makinesi kitaplığı
    discord          # Sohbet platformu
-   #ente-auth        # Kimlik doğrulama
+   ente-auth        # Kimlik doğrulama
    hyprsunset       # Renk sıcaklığı
    hypridle         # Boşta yöneticisi
    brightnessctl    # Parlaklık kontrolü
