@@ -272,7 +272,13 @@ profiles:
 
 # Web uygulamaları
 apps:
-  - name: "webcord"
+#  - name: "webcord"
+#    workspace: 5
+#    fullscreen: true
+#    enabled: true
+#    type: "semsumo"
+#
+  - name: "discord"
     workspace: 5
     fullscreen: true
     enabled: true
@@ -336,7 +342,8 @@ load_config() {
 	# Uygulamaları tanımla
 	apps=()
 	apps["whatsapp"]="workspace=9,fullscreen=true,enabled=false,type=brave"
-	apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
+	#apps["webcord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
+	apps["discord"]="workspace=5,fullscreen=true,enabled=true,type=semsumo"
 	apps["youtube"]="workspace=7,fullscreen=true,enabled=true,type=brave"
 	apps["spotify"]="workspace=8,fullscreen=true,enabled=true,type=semsumo"
 	apps["ferdium"]="workspace=9,fullscreen=true,enabled=true,type=semsumo"
