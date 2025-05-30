@@ -16,6 +16,6 @@
 {
  imports = [
    ./nemo
-   ./yazi
+   #./yazi
  ];
 }
