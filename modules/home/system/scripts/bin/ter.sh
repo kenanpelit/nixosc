@@ -2,9 +2,9 @@
 #===============================================================================
 #
 #   Script: OSC Remote Tunnel Manager
-#   Version: 1.1.0
+#   Version: 1.2.0
 #   Date: 2024-04-29
-#   Author: Kenan Pelit (Improvement by Claude)
+#   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
 #   Description: Remote SSH tunnel manager with search capabilities for
 #                filtering tunnel connections and status
@@ -16,6 +16,7 @@
 #   - Direct tunnel command execution
 #   - Pattern-based filtering
 #   - Connection status check before attempting to connect
+#   - Automatic byobu session management
 #
 #   License: MIT
 #
@@ -136,8 +137,6 @@ is_connected() {
 connect_to_tunnel() {
 	local tunnel_name="$1"
 	local user="$2"
-	local use_byobu="$3"
-	local force_connect="$4"
 
 	echo -e "\033[38;5;110mBağlanıyor: $tunnel_name\033[0m"
 
@@ -163,34 +162,22 @@ connect_to_tunnel() {
 	local connection_check="nc -z -w1 127.0.0.1 $port 2>/dev/null"
 	local is_tunnel_open=$(ssh -p "${REMOTE_PORT}" "${REMOTE_USER}@${REMOTE_HOST}" "$connection_check; echo \$?")
 
-	if [ "$is_tunnel_open" != "0" ] && [ "$force_connect" != "true" ]; then
+	if [ "$is_tunnel_open" != "0" ]; then
 		echo -e "\033[48;5;174m\033[38;5;232m BAĞLANTI YOK \033[0m \033[38;5;174mHata: $tunnel_name tüneli aktif değil! Bağlantı kurulamaz.\033[0m"
-		echo -e "\033[38;5;110mİpucu: Yine de bağlanmak için '-f' parametresini kullanabilirsiniz: ter -cf $tunnel_name\033[0m"
 		exit 1
 	fi
 
-	# SSH komutu oluştur (normal veya byobu)
-	local SSH_COMMAND="ssh -J terminal -p $port $user@localhost"
+	# Byobu komutu - oturum ismi "kenan" olarak sabit
+	local BYOBU_CMD="byobu has -t kenan || byobu new-session -d -s kenan && byobu a -t kenan"
 
-	# Byobu kullanılması isteniyorsa komuta ekle
-	if [ "$use_byobu" = "true" ]; then
-		# Byobu komutu - oturum ismi "kenan" olarak sabit
-		local BYOBU_CMD="byobu has -t kenan || byobu new-session -d -s kenan && byobu a -t kenan"
-		echo -e "\033[48;5;108m\033[38;5;232m Çalıştırılıyor \033[0m \033[38;5;114mssh -t -J terminal -p $port $user@localhost \"$BYOBU_CMD\"\033[0m"
-		echo -e "\033[48;5;108m\033[38;5;232m Byobu oturumu başlatılıyor \033[0m"
-	else
-		echo -e "\033[48;5;108m\033[38;5;232m Çalıştırılıyor \033[0m \033[38;5;114m$SSH_COMMAND\033[0m"
-	fi
+	echo -e "\033[48;5;108m\033[38;5;232m Çalıştırılıyor \033[0m \033[38;5;114mssh -t -J terminal -p $port $user@localhost \"$BYOBU_CMD\"\033[0m"
+	echo -e "\033[48;5;108m\033[38;5;232m Byobu oturumu başlatılıyor \033[0m"
 
 	# Görsel ayrıştırıcı
 	echo -e " "
 
-	# SSH komutu çalıştır
-	if [ "$use_byobu" = "true" ]; then
-		ssh -t -J terminal -p $port $user@localhost "$BYOBU_CMD"
-	else
-		ssh -J terminal -p $port $user@localhost
-	fi
+	# SSH komutu çalıştır - her zaman byobu ile
+	ssh -t -J terminal -p $port $user@localhost "$BYOBU_CMD"
 
 	# Bağlantı sonlandığında görsel bildirim
 	echo -e "\033[48;5;108m\033[38;5;232m                Bağlantı sonlandırıldı                \033[0m"
@@ -202,10 +189,7 @@ show_help() {
 Kullanım: $(basename $0) [SEÇENEKLER] [ARAMA_DESENİ]
 
 Seçenekler:
-  -c, --connect ISIM     ISIM adlı tünele bağlan
-  -b, --byobu            Byobu oturumu başlat ve bağlan (sadece -c ile kullanılır)
-  -cb, --connect-byobu ISIM  ISIM adlı tünele bağlan ve byobu oturumu başlat
-  -f, --force            Tünel bağlı olmasa bile bağlanmaya zorla
+  -c, --connect ISIM     ISIM adlı tünele bağlan (otomatik byobu oturumu)
   -u, --user KULLANICI   Uzak makineye bağlanırken kullanılacak kullanıcı (varsayılan: root)
   -o, --online           Sadece bağlı olan tünelleri listele
   -h, --help             Bu yardım mesajını göster ve çık
@@ -213,11 +197,10 @@ Seçenekler:
 Örnekler:
   $(basename $0)                     # Tüm tünelleri listele
   $(basename $0) production          # "production" içeren tünelleri listele
-  $(basename $0) -c myserver         # "myserver" adlı tünele bağlan (sadece açık tüneller)
-  $(basename $0) -cf myserver        # "myserver" adlı tünele bağlanmaya zorla (kapalı olsa bile)
-  $(basename $0) -cb myserver        # "myserver" adlı tünele bağlan ve byobu başlat
-  $(basename $0) -c myserver -b      # "myserver" adlı tünele bağlan ve byobu başlat
+  $(basename $0) -c myserver         # "myserver" adlı tünele bağlan (byobu oturumu otomatik)
   $(basename $0) -o                  # Sadece bağlı tünelleri listele
+
+Not: Tüm bağlantılar otomatik olarak byobu oturumu ('kenan' isimli) başlatır.
 
 CompecTA HPC Solutions (c) 2024
 EOF
@@ -229,8 +212,6 @@ main() {
 	local user="root"
 	local online_only="false"
 	local search_pattern=""
-	local use_byobu="false"
-	local force_connect="false"
 
 	# Eğer özel parametreler varsa işle
 	while [[ $# -gt 0 ]]; do
@@ -243,14 +224,6 @@ main() {
 			fi
 			tunnel_name="$2"
 			shift 2
-			;;
-		-b | --byobu)
-			use_byobu="true"
-			shift
-			;;
-		-f | --force)
-			force_connect="true"
-			shift
 			;;
 		-u | --user)
 			if [[ -z "$2" || "$2" == -* ]]; then
@@ -269,37 +242,6 @@ main() {
 			show_help
 			exit 0
 			;;
-		-cb | --connect-byobu)
-			if [[ -z "$2" || "$2" == -* ]]; then
-				echo "Hata: --connect-byobu parametresi için tünel ismi gerekli"
-				show_help
-				exit 1
-			fi
-			tunnel_name="$2"
-			use_byobu="true"
-			shift 2
-			;;
-		-cf | --connect-force)
-			if [[ -z "$2" || "$2" == -* ]]; then
-				echo "Hata: --connect-force parametresi için tünel ismi gerekli"
-				show_help
-				exit 1
-			fi
-			tunnel_name="$2"
-			force_connect="true"
-			shift 2
-			;;
-		-cbf | --connect-byobu-force)
-			if [[ -z "$2" || "$2" == -* ]]; then
-				echo "Hata: --connect-byobu-force parametresi için tünel ismi gerekli"
-				show_help
-				exit 1
-			fi
-			tunnel_name="$2"
-			use_byobu="true"
-			force_connect="true"
-			shift 2
-			;;
 		*)
 			# İlk pozisyonel argüman arama deseni olarak kullanılır
 			if [[ -z "$search_pattern" && "$1" != -* ]]; then
@@ -316,7 +258,7 @@ main() {
 
 	# Eğer tünel bağlantısı istendiyse
 	if [[ -n "$tunnel_name" ]]; then
-		connect_to_tunnel "$tunnel_name" "$user" "$use_byobu" "$force_connect"
+		connect_to_tunnel "$tunnel_name" "$user"
 	else
 		# Aksi halde tünelleri listele (arama deseni veya online flagi ile)
 		fetch_tunnel_list "$search_pattern" "$user" "$online_only"
