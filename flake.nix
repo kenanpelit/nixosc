@@ -72,7 +72,7 @@
     # === Desktop Environment - Hyprland Ecosystem ===
     # Core Hyprland Wayland compositor - pinned to specific commit for stability
     hyprland = {
-      url = "github:hyprwm/hyprland/82b854954230a45d590c1287a8c2c1f0076f3392"; # 0601 - 6152 Commits
+      url = "github:hyprwm/hyprland/69c2b2926e128f1fd09080aed43944987a42026f"; # 0531 - 6150 Commits
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
