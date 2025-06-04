@@ -189,6 +189,7 @@
       # =====================================================
       misc = {
         # Görünüm ayarları
+        no_direct_scanout = true;
         disable_hyprland_logo = true;      # Logo gösterimini kapat
         disable_splash_rendering = true;   # Açılış ekranını kapat
 
