@@ -70,6 +70,16 @@
         "HYPRLAND_NO_SD_NOTIFY,1"               # Systemd bildirimleri devre dışı
 
         # -----------------------------------------
+        # Intel Arc Graphics Crash Fix
+        # -----------------------------------------
+        "WLR_DRM_NO_ATOMIC,1"                   # Atomic mode setting devre dışı
+        "WLR_DRM_NO_ATOMIC_GAMMA,1"             # Atomic gamma devre dışı  
+        "WLR_RENDERER,gles2"                    # OpenGL ES 2.0 renderer zorla
+        "INTEL_DEBUG,norbc"                     # Intel debug ayarları
+        "__GL_GSYNC_ALLOWED,0"                  # G-Sync devre dışı
+        "__GL_VRR_ALLOWED,0"                    # VRR devre dışı
+
+        # -----------------------------------------
         # GTK Tema ve Görünüm
         # -----------------------------------------
         "GTK_THEME,catppuccin-mocha-blue-standard" # GTK teması
