@@ -8,7 +8,7 @@
 # - Input device settings
 #
 # Author: Kenan Pelit
-# Modified: 2025-05-12 (COSMIC compatibility)
+# Modified: 2025-05-12 (COSMIC compatibility) - COSMIC Desktop commented out
 # ==============================================================================
 { username, ... }:
 {
@@ -27,32 +27,32 @@
       };
     };
     
-    # COSMIC Desktop Environment
+    # COSMIC Desktop Environment - COMMENTED OUT
     # Modern, intuitive desktop environment developed by System76
-    desktopManager.cosmic.enable = true;
+    # desktopManager.cosmic.enable = true;
     
-    # COSMIC Greeter
+    # COSMIC Greeter - COMMENTED OUT
     # Login screen for the COSMIC desktop environment
-    displayManager.cosmic-greeter.enable = true;
+    # displayManager.cosmic-greeter.enable = true;
     
     # Display Manager Auto-Login Settings
-    # Disabled to allow COSMIC Greeter to work properly
+    # Re-enabled since COSMIC Greeter is disabled
     displayManager.autoLogin = {
-      enable = false;  # Disable auto-login to use COSMIC Greeter
-      user = "${username}";  # Keep username reference for future use if needed
+      enable = true;  # Enable auto-login since COSMIC Greeter is disabled
+      user = "${username}";  # Auto-login with the specified username
     };
     
-    # Set COSMIC as the default session
-    # This ensures COSMIC is launched when logging in
-    displayManager.defaultSession = "cosmic";
+    # Set default session - COSMIC commented out
+    # This would ensure COSMIC is launched when logging in
+    # displayManager.defaultSession = "cosmic";
     
     # Input Device Settings
     # Enable libinput for touchpad, trackpoint, and other input devices
     libinput.enable = true;  # Modern input device driver for X/Wayland
   };
   
-  # COSMIC requires clipboard manager to be enabled
+  # COSMIC clipboard manager setting - COMMENTED OUT
   # This enables the data control protocol for Wayland
-  environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
+  # environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
 }
 
