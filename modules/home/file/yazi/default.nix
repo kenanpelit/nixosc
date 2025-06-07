@@ -15,7 +15,7 @@
     # Manager Settings
     # ---------------------------------------------------------------------------
     settings = {
-      manager = {
+      mgr = {
         ratio = [1 3 4];
         linemode = "size";
         show_hidden = true;
