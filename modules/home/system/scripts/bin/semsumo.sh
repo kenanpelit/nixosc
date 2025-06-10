@@ -135,7 +135,7 @@ create_default_config() {
     "discord": {
       "command": "discord",
       "args": ["-m", "--class=discord", "--title=discord"],
-      "vpn": "bypass",
+      "vpn": "secure",
       "workspace": "5",
       "fullscreen": true,
       "wait_time": 1,
