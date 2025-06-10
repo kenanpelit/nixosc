@@ -24,10 +24,10 @@ fi
 
 echo "Starting application..."
 echo "COMMAND: discord "-m" "--class=discord" "--title=discord""
-echo "VPN MODE: bypass"
+echo "VPN MODE: secure"
 
 # Start the application with the appropriate VPN mode
-case "bypass" in
+case "secure" in
     bypass)
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
