@@ -986,11 +986,11 @@
         "systems": "systems_4"
       },
       "locked": {
-        "lastModified": 1749162400,
-        "narHash": "sha256-tK5PCJVvpx95hbKvzUGldS3QIwuFfz5rYdc8EDCelL8=",
+        "lastModified": 1749573585,
+        "narHash": "sha256-Bxp5RgoC62bpJtwoc9oOtf3cIFxm+XxZRZLIffkoMkA=",
         "owner": "hyprwm",
         "repo": "hyprpicker",
-        "rev": "b01491ac4e8c193a07e6f55756f159a978a4057b",
+        "rev": "68bc7875fd6e5eb6fa3c3265be89dd9129fc1cd5",
         "type": "github"
       },
       "original": {
@@ -1359,11 +1359,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1749566933,
-        "narHash": "sha256-rolwj4dzqfzFMG3VGEN7zKwGTBd0XAKcvOTTEOre3XY=",
+        "lastModified": 1749584818,
+        "narHash": "sha256-ceSuhCfsAIullY/OCrUY4SxzaUX8L4/B4/Xr+N9LCro=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "28532113cfab3f76c3a80f04ef38dca164d7b819",
+        "rev": "26835ebbcace9ee869576f81fb960009a9429e14",
         "type": "github"
       },
       "original": {
