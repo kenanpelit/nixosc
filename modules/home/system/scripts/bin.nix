@@ -168,14 +168,8 @@ let
   osc-ssh = pkgs.writeShellScriptBin "osc-ssh" (
     builtins.readFile ./bin/osc-ssh.sh
   );
-  osc-start-all_fer = pkgs.writeShellScriptBin "osc-start-all_fer" (
-    builtins.readFile ./bin/osc-start-all_fer.sh
-  );
-  osc-start-all = pkgs.writeShellScriptBin "osc-start-all" (
-    builtins.readFile ./bin/osc-start-all.sh
-  );
-  osc-start-zen = pkgs.writeShellScriptBin "osc-start-zen" (
-    builtins.readFile ./bin/osc-start-zen.sh
+  osc-start = pkgs.writeShellScriptBin "osc-start" (
+    builtins.readFile ./bin/osc-start.sh
   );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./bin/osc-subliminal.sh
@@ -418,9 +412,7 @@ in {
     osc-soundctl
     osc-spotify
     osc-ssh
-    osc-start-all_fer
-    osc-start-all
-    osc-start-zen
+    osc-start
     osc-subliminal
     osc-symlink_manager
     osc-sync
