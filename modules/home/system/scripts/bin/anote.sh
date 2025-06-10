@@ -201,58 +201,83 @@ create_required_directories() {
 	fi
 }
 
-# Kayıt işlemleri
+# Güvenli geçmiş güncelleme fonksiyonu
 update_history() {
 	local dir="$1"
 	local file="$2"
 	local timestamp=$(date +%s)
 	local temp_file="$CACHE_DIR/history.tmp"
 
-	# history.json dosyası yoksa oluştur
-	[[ ! -f "$HISTORY_FILE" ]] && echo "{}" >"$HISTORY_FILE"
-
-	# Dizin ve dosya yollarında özel karakterleri escape et
-	local esc_dir
-	local esc_file
-	esc_dir=$(echo "$dir" | sed 's/\\/\\\\/g; s/"/\\"/g')
-	esc_file=$(echo "$file" | sed 's/\\/\\\\/g; s/"/\\"/g')
-
-	# Dizin geçmişte varsa güncelle, yoksa ekle
-	if jq -e "has(\"$esc_dir\")" "$HISTORY_FILE" >/dev/null; then
-		jq --arg dir "$esc_dir" \
-			--arg file "$esc_file" \
-			--arg time "$timestamp" \
-			'.[$dir] = (.[$dir] | map(select(.file != $file)) + [{
-                "file": $file,
-                "time": $time | tonumber
-             }] | sort_by(-.time)[0:100])' "$HISTORY_FILE" >"$temp_file"
-	else
-		jq --arg dir "$esc_dir" \
-			--arg file "$esc_file" \
-			--arg time "$timestamp" \
-			'.[$dir] = [{
-                "file": $file,
-                "time": $time | tonumber
-            }]' "$HISTORY_FILE" >"$temp_file"
+	# Girdi validasyonu
+	if [[ -z "$dir" || -z "$file" ]]; then
+		return 1
 	fi
 
-	mv "$temp_file" "$HISTORY_FILE"
+	# history.json dosyası yoksa veya bozuksa oluştur
+	if [[ ! -f "$HISTORY_FILE" ]] || ! jq empty "$HISTORY_FILE" 2>/dev/null; then
+		echo "{}" >"$HISTORY_FILE"
+	fi
+
+	# Dizin ve dosya yollarında özel karakterleri escape et
+	local esc_dir esc_file
+	esc_dir=$(printf '%s' "$dir" | jq -R .)
+	esc_file=$(printf '%s' "$file" | jq -R .)
+
+	# Güvenli JSON güncelleme
+	jq --argjson dir "$esc_dir" \
+		--argjson file "$esc_file" \
+		--arg time "$timestamp" \
+		'
+	   .[$dir] = (
+	       if has($dir) and (.[$dir] | type) == "array" then
+	           .[$dir] | map(select(.file != $file)) + [{
+	               "file": $file,
+	               "time": ($time | tonumber)
+	           }] | sort_by(-.time)[0:100]
+	       else
+	           [{
+	               "file": $file,
+	               "time": ($time | tonumber)
+	           }]
+	       end
+	   )
+	   ' "$HISTORY_FILE" >"$temp_file" 2>/dev/null
+
+	if [[ $? -eq 0 && -s "$temp_file" ]]; then
+		mv "$temp_file" "$HISTORY_FILE"
+	else
+		# Hata durumunda basit kayıt tut
+		echo "{\"$dir\": [{\"file\": \"$file\", \"time\": $timestamp}]}" >"$HISTORY_FILE"
+	fi
+
+	# Geçici dosyayı temizle
+	rm -f "$temp_file"
 }
 
-# Geçmiş dosyaları sıralar (en son kullanılanlar önce)
+# Güvenli dosya sıralama fonksiyonu
 get_sorted_files() {
 	local dir="$1"
 	local recent_files=""
 
-	# Geçmişte kayıtlı dosyaları al
-	if [[ -f "$HISTORY_FILE" ]] && jq -e "has(\"$dir\")" "$HISTORY_FILE" >/dev/null 2>&1; then
-		recent_files=$(jq -r --arg dir "$dir" '.[$dir][].file' "$HISTORY_FILE" 2>/dev/null)
+	# Geçmişte kayıtlı dosyaları güvenli şekilde al
+	if [[ -f "$HISTORY_FILE" ]] && jq empty "$HISTORY_FILE" 2>/dev/null; then
+		if jq -e "has(\"$dir\")" "$HISTORY_FILE" >/dev/null 2>&1; then
+			recent_files=$(jq -r --arg dir "$dir" '
+				if has($dir) and (.[$dir] | type) == "array" then
+					.[$dir] | map(select(. != null and has("file"))) | .[].file
+				else
+					empty
+				end
+			' "$HISTORY_FILE" 2>/dev/null)
+		fi
 	fi
 
 	# Önce geçmiş dosyaları göster
-	while IFS= read -r file; do
-		[[ -f "$file" ]] && echo "$file"
-	done < <(echo "$recent_files")
+	if [[ -n "$recent_files" ]]; then
+		while IFS= read -r file; do
+			[[ -f "$file" ]] && echo "$file"
+		done <<<"$recent_files"
+	fi
 
 	# Sonra diğer dosyaları göster (geçmişte olmayanlar)
 	find "$dir" -type f 2>/dev/null | while IFS= read -r file; do
@@ -264,31 +289,55 @@ get_sorted_files() {
 	done
 }
 
-# Geçmiş temizleme (silinmiş dosyaları geçmişten kaldır)
+# Geliştirilmiş geçmiş temizleme fonksiyonu
 clean_history() {
 	local temp_file="$CACHE_DIR/history.tmp"
 
 	if [[ -f "$HISTORY_FILE" ]]; then
-		# Var olmayan dosya referanslarını temizle
-		jq 'to_entries | map(
-           .value = (.value | map(select(.file | test("^/") | not or (.file | test("^" + env.HOME) | not) or ((.file) | test("e")))))
-           ) | from_entries' "$HISTORY_FILE" >"$temp_file"
+		# Önce JSON'un geçerliliğini kontrol et
+		if ! jq empty "$HISTORY_FILE" 2>/dev/null; then
+			echo "⚠️ Geçmiş dosyası bozuk, yeniden oluşturuluyor..."
+			echo "{}" >"$HISTORY_FILE"
+			return 0
+		fi
 
-		# Düzeltilmiş kontrol: gerçek dosyaları tut
-		jq 'to_entries | map(
-           .value = (.value | map(select(.file | halt_error(1) as $_ | input_filename | capture("^(?<fn>.*)$") | .fn as $fn | $fn | test("e") )))
-           ) | from_entries' "$HISTORY_FILE" >"$temp_file"
+		# Var olmayan dosya referanslarını güvenli şekilde temizle
+		jq '
+		to_entries | 
+		map(
+			select(.value != null and (.value | type) == "array") |
+			.value = (.value | 
+				map(
+					select(
+						. != null and 
+						(. | type) == "object" and 
+						has("file") and 
+						(.file | type) == "string" and
+						(.file | length) > 0
+					)
+				) |
+				map(select(.file as $f | ($f | test("^/")) and ($f | test("\\.")) ))
+			)
+		) | 
+		from_entries |
+		to_entries | 
+		map(select(.value | length > 0)) | 
+		from_entries
+		' "$HISTORY_FILE" >"$temp_file" 2>/dev/null
 
-		if [[ $? -eq 0 ]]; then
+		# jq başarılı olduysa dosyayı güncelle
+		if [[ $? -eq 0 && -s "$temp_file" ]]; then
 			mv "$temp_file" "$HISTORY_FILE"
 		else
-			# jq hatası durumunda boş geçmişle başla
+			# Hata durumunda yeni bir geçmiş dosyası oluştur
 			echo "{}" >"$HISTORY_FILE"
 		fi
 
-		# Boş dizin kayıtlarını temizle
-		jq 'to_entries | map(select(.value != [])) | from_entries' "$HISTORY_FILE" >"$temp_file"
-		mv "$temp_file" "$HISTORY_FILE"
+		# Geçici dosyayı temizle
+		rm -f "$temp_file"
+	else
+		# Dosya yoksa oluştur
+		echo "{}" >"$HISTORY_FILE"
 	fi
 }
 
