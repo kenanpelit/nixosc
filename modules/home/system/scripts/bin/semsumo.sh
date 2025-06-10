@@ -43,14 +43,22 @@ declare -A BROWSERS=(
 	["brave-ai"]="profile_brave|Ai --class Ai --title Ai --restore-last-session|3|secure|2|false"
 	["brave-compecta"]="profile_brave|CompecTA --class CompecTA --title CompecTA --restore-last-session|4|secure|2|false"
 	["brave-whats"]="profile_brave|Whats --class Whats --title Whats --restore-last-session|9|secure|1|false"
+	["brave-exclude"]="profile_brave|Exclude --class Exclude --title Exclude --restore-last-session|6|bypass|1|false"
 	["brave-youtube"]="profile_brave|--youtube --class youtube --title youtube|7|secure|1|true"
+	["brave-tiktok"]="profile_brave|--tiktok --class tiktok --title tiktok|6|secure|1|true"
 	["brave-spotify"]="profile_brave|--spotify --class spotify --title spotify|8|secure|1|true"
 	["brave-discord"]="profile_brave|--discord --class discord --title discord|5|secure|1|true"
 	["brave-whatsapp"]="profile_brave|--whatsapp --class whatsapp --title whatsapp|9|secure|1|true"
+	["chrome-kenp"]="profile_chrome|Kenp --class Kenp|1|secure|1|false"
+	["chrome-compecta"]="profile_chrome|CompecTA --class CompecTA|4|secure|1|false"
+	["chrome-ai"]="profile_chrome|AI --class AI|3|secure|1|false"
+	["chrome-whats"]="profile_chrome|Whats --class Whats|9|secure|1|false"
 	["zen-kenp"]="zen|-P Kenp --class Kenp --name Kenp --restore-session|1|secure|1|false"
-	["zen-novpn"]="zen|-P NoVpn --class NoVpn --name NoVpn --restore-session|1|secure|1|false"
+	["zen-novpn"]="zen|-P NoVpn --class AI --name AI --restore-session|3|bypass|1|false"
 	["zen-compecta"]="zen|-P CompecTA --class CompecTA --name CompecTA --restore-session|4|secure|1|false"
 	["zen-discord"]="zen|-P Discord --class Discord --name Discord --restore-session|5|secure|1|true"
+	["zen-proxy"]="zen|-P Proxy --class Proxy --name Proxy --restore-session|7|bypass|1|false"
+	["zen-spotify"]="zen|-P Spotify --class Spotify --name Spotify --restore-session|7|bypass|1|true"
 	["zen-whats"]="zen|-P Whats --class Whats --name Whats --restore-session|9|secure|1|true"
 )
 
@@ -59,6 +67,7 @@ declare -A APPS=(
 	["discord"]="discord|-m --class=discord --title=discord|5|secure|1|true"
 	["webcord"]="webcord|-m --class=WebCord --title=Webcord|5|secure|1|true"
 	["spotify"]="spotify|--class Spotify -T Spotify|8|bypass|1|true"
+	["mpv"]="mpv|--player-operation-mode=pseudo-gui --input-ipc-server=/tmp/mpvsocket|6|bypass|1|true"
 	["ferdium"]="ferdium||9|secure|1|true"
 )
 
