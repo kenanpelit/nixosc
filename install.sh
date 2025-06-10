@@ -833,11 +833,17 @@ build_system_with_cache() {
 			log "INFO" "Profil kullanılıyor: $PROFILE_NAME"
 		}
 
-		# Önbellekleme için ek flagler
-		[[ $CACHE_ENABLED == true ]] && {
-			build_command+=" --option substitute true"
-			build_command+=" --option substituters \"https://cache.nixos.org/ file://$CACHE_DIR\""
-		}
+		# Flake config güven ayarını ekle
+		build_command+=" --accept-flake-config"
+
+		# Önbellekleme için ek flagler - sadece gerçek önbellek varsa
+		if [[ $CACHE_ENABLED == true && -d "$CACHE_DIR" ]]; then
+			# Binary cache store URL'ini düzelt
+			local cache_store_url="file://$CACHE_DIR"
+			build_command+=" --option extra-substituters \"$cache_store_url\""
+			build_command+=" --option extra-trusted-public-keys \"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=\""
+			log "DEBUG" "Önbellek kullanılıyor: $cache_store_url"
+		fi
 
 		log "INFO" "Çalıştırılıyor: $build_command"
 
