@@ -607,8 +607,7 @@
         "ALT, T, exec, start-kkenp"
         "ALT CTRL, C, exec, start-mkenp"
         #"$mainMod ALT, RETURN, exec, osc-start-all"
-        "$mainMod ALT, RETURN, exec, osc-start-all_fer"
-
+        "$mainMod ALT, RETURN, exec, osc-start"
 
         # Sistem Fonksiyonları
         ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle
