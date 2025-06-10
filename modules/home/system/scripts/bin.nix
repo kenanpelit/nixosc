@@ -264,6 +264,9 @@ let
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
   );
+  semsumo-bak = pkgs.writeShellScriptBin "semsumo-bak" (
+    builtins.readFile ./bin/semsumo.bak.sh
+  );
   semsumo = pkgs.writeShellScriptBin "semsumo" (
     builtins.readFile ./bin/semsumo.sh
   );
@@ -444,6 +447,7 @@ in {
     rsync-tool
     runbg
     screenshot
+    semsumo-bak
     semsumo
     semsumo-start
     sil_ayni_mp4
