@@ -62,6 +62,19 @@ BROWSER_TYPE="brave"
 LAUNCH_ALL=false
 LAUNCH_TYPE=""
 BROWSER_ONLY=false
+LAUNCH_DAILY=false
+
+# Daily/Essential profiles list
+declare -A DAILY_PROFILES=(
+	["kkenp"]="TERMINALS"
+	["brave-kenp"]="BRAVE_BROWSERS"
+	["brave-ai"]="BRAVE_BROWSERS"
+	["brave-compecta"]="BRAVE_BROWSERS"
+	["brave-youtube"]="BRAVE_BROWSERS"
+	["discord"]="APPS"
+	["spotify"]="APPS"
+	["ferdium"]="APPS"
+)
 
 #-------------------------------------------------------------------------------
 # Application Definitions
@@ -346,7 +359,69 @@ generate_all_scripts() {
 	log "SUCCESS" "GENERATE" "Generated $count startup scripts (ALL browsers + terminals + apps) in $SCRIPTS_DIR"
 }
 
-generate_browser_only_scripts() {
+generate_daily_scripts() {
+	log "INFO" "GENERATE" "Generating scripts for daily/essential profiles only..."
+
+	local count=0
+
+	# Generate daily profiles only
+	for profile in "${!DAILY_PROFILES[@]}"; do
+		local profile_type="${DAILY_PROFILES[$profile]}"
+		local config=""
+
+		case "$profile_type" in
+		"TERMINALS")
+			config="${TERMINALS[$profile]}"
+			;;
+		"BRAVE_BROWSERS")
+			config="${BRAVE_BROWSERS[$profile]}"
+			;;
+		"APPS")
+			config="${APPS[$profile]}"
+			;;
+		esac
+
+		if [[ -n "$config" ]]; then
+			generate_script "$profile" "$config"
+			((count++))
+		else
+			log "WARN" "GENERATE" "Profile not found: $profile"
+		fi
+	done
+
+	log "SUCCESS" "GENERATE" "Generated $count daily/essential scripts in $SCRIPTS_DIR"
+}
+
+launch_daily_profiles() {
+	log "INFO" "LAUNCH" "Starting daily/essential profiles..."
+
+	# Launch daily profiles in specific order
+	local daily_order=("kkenp" "brave-kenp" "brave-ai" "brave-compecta" "discord" "spotify" "ferdium" "brave-youtube")
+
+	for profile in "${daily_order[@]}"; do
+		if [[ -v DAILY_PROFILES["$profile"] ]]; then
+			local profile_type="${DAILY_PROFILES[$profile]}"
+			local config=""
+
+			case "$profile_type" in
+			"TERMINALS")
+				config="${TERMINALS[$profile]}"
+				launch_application "$profile" "$config" "terminal"
+				;;
+			"BRAVE_BROWSERS")
+				config="${BRAVE_BROWSERS[$profile]}"
+				launch_application "$profile" "$config" "brave"
+				;;
+			"APPS")
+				config="${APPS[$profile]}"
+				launch_application "$profile" "$config" "app"
+				;;
+			esac
+		fi
+	done
+
+	log "SUCCESS" "LAUNCH" "Daily/essential profiles launched"
+
 	log "INFO" "GENERATE" "Generating scripts for $BROWSER_TYPE browser only..."
 
 	local count=0
@@ -760,8 +835,10 @@ show_help() {
 	echo
 	echo -e "${BOLD}Examples:${NC}"
 	echo "    $0 generate --all                   # Generate ALL scripts (all browsers)"
+	echo "    $0 generate --daily                 # Generate daily/essential scripts only"
 	echo "    $0 brave generate --browser-only    # Generate only Brave scripts"
 	echo "    $0 zen generate zen-discord         # Generate specific Zen script"
+	echo "    $0 launch --daily                   # Launch daily/essential profiles"
 	echo "    $0 brave launch --browsers          # Launch all Brave browser profiles"
 	echo "    $0 launch discord                   # Launch discord directly"
 	echo "    $0 chrome launch --all              # Launch all Chrome profiles & apps"
@@ -857,6 +934,10 @@ parse_args() {
 			fi
 			shift
 			;;
+		--daily)
+			LAUNCH_DAILY=true
+			shift
+			;;
 		--browser-only)
 			# For generate mode: only current browser type
 			BROWSER_ONLY=true
@@ -940,6 +1021,8 @@ main() {
 	if [[ "$MODE_GENERATE" == "true" ]]; then
 		if [[ "$LAUNCH_ALL" == "true" ]]; then
 			generate_all_scripts
+		elif [[ "$LAUNCH_DAILY" == "true" ]]; then
+			generate_daily_scripts
 		elif [[ "$BROWSER_ONLY" == "true" ]]; then
 			generate_browser_only_scripts
 		elif [[ -n "$LAUNCH_TYPE" ]]; then
@@ -953,7 +1036,9 @@ main() {
 		fi
 
 	elif [[ "$MODE_LAUNCH" == "true" ]]; then
-		if [[ -n "$SINGLE_PROFILE" ]]; then
+		if [[ "$LAUNCH_DAILY" == "true" ]]; then
+			launch_daily_profiles
+		elif [[ -n "$SINGLE_PROFILE" ]]; then
 			launch_profile "$SINGLE_PROFILE"
 		else
 			# Launch in order: terminals, browsers, apps
