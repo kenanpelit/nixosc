@@ -19,7 +19,7 @@ if [[ "6" != "0" ]] && command -v hyprctl >/dev/null 2>&1; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: profile_brave Exclude --class Exclude --title Exclude --restore-last-session"
+echo "COMMAND: profile_brave Exclude --restore-last-session"
 echo "VPN MODE: bypass"
 
 # Start application with VPN mode
@@ -28,14 +28,14 @@ case "bypass" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass (mullvad-exclude)"
-                mullvad-exclude profile_brave Exclude --class Exclude --title Exclude --restore-last-session &
+                mullvad-exclude profile_brave Exclude --restore-last-session &
             else
                 echo "WARNING: mullvad-exclude not found, starting normally"
-                profile_brave Exclude --class Exclude --title Exclude --restore-last-session &
+                profile_brave Exclude --restore-last-session &
             fi
         else
             echo "VPN not connected, starting normally"
-            profile_brave Exclude --class Exclude --title Exclude --restore-last-session &
+            profile_brave Exclude --restore-last-session &
         fi
         ;;
     secure|*)
@@ -44,7 +44,7 @@ case "bypass" in
         else
             echo "WARNING: VPN not connected! Starting without protection"
         fi
-        profile_brave Exclude --class Exclude --title Exclude --restore-last-session &
+        profile_brave Exclude --restore-last-session &
         ;;
 esac
 

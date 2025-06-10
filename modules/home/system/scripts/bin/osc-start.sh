@@ -92,11 +92,11 @@ declare -A TERMINALS=(
 
 # Browser Applications - Brave
 declare -A BRAVE_BROWSERS=(
-	["brave-kenp"]="profile_brave|Kenp --class Kenp --title Kenp --restore-last-session|1|secure|2|false"
-	["brave-ai"]="profile_brave|Ai --class Ai --title Ai --restore-last-session|3|secure|2|false"
-	["brave-compecta"]="profile_brave|CompecTA --class CompecTA --title CompecTA --restore-last-session|4|secure|2|false"
-	["brave-whats"]="profile_brave|Whats --class Whats --title Whats --restore-last-session|9|secure|1|false"
-	["brave-exclude"]="profile_brave|Exclude --class Exclude --title Exclude --restore-last-session|6|bypass|1|false"
+	["brave-kenp"]="profile_brave|Kenp --restore-last-session|1|secure|2|false"
+	["brave-ai"]="profile_brave|Ai --restore-last-session|3|secure|2|false"
+	["brave-compecta"]="profile_brave|CompecTA --restore-last-session|4|secure|2|false"
+	["brave-whats"]="profile_brave|Whats --restore-last-session|9|secure|1|false"
+	["brave-exclude"]="profile_brave|Exclude --restore-last-session|6|bypass|1|false"
 	["brave-youtube"]="profile_brave|--youtube --class youtube --title youtube|7|secure|1|true"
 	["brave-tiktok"]="profile_brave|--tiktok --class tiktok --title tiktok|6|secure|1|true"
 	["brave-spotify"]="profile_brave|--spotify --class spotify --title spotify|8|secure|1|true"
