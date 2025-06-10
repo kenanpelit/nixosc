@@ -963,11 +963,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1717888083,
-        "narHash": "sha256-Ntb+lvscDzOAGOJo+xOtjRrjdIDW6HpAtehlh5VipV8=",
+        "lastModified": 1749567286,
+        "narHash": "sha256-wEis7Z21RS+yuJGI8aSBVLkTvUWZQ6sej+Wx1movLAM=",
         "owner": "SIMULATAN",
         "repo": "hyprmag",
-        "rev": "a7ca558d357e2a0d34373620f89d2daf210744dc",
+        "rev": "a58f3715ab1b097343bda0918ebc450ffcae4627",
         "type": "github"
       },
       "original": {
@@ -1359,11 +1359,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1749560521,
-        "narHash": "sha256-Yizir0yHi3i+sQQu2PhExEiBPq7NSi0bXP9ypGYJLdA=",
+        "lastModified": 1749566933,
+        "narHash": "sha256-rolwj4dzqfzFMG3VGEN7zKwGTBd0XAKcvOTTEOre3XY=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "8facaa8de19c6af15769679c5e553a6cca62f459",
+        "rev": "28532113cfab3f76c3a80f04ef38dca164d7b819",
         "type": "github"
       },
       "original": {
