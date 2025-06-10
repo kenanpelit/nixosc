@@ -70,7 +70,6 @@ DOT_PATHS=(
 	".anydesk"
 	".apps"
 	".backups"
-	".config/brave"
 	".config/BraveSoftware"
 	".config/cliphist"
 	".config/Ferdium"
