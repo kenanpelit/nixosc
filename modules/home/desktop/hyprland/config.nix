@@ -15,7 +15,7 @@
         # NetworkManagerApplet
         "nm-applet --indicator"
         # Power management notifications (battery, lid, etc.)
-        "poweralertd -s"
+        "poweralertd -sS"
         # Notification center for system-wide notifications
         "swaync"
         # Keep clipboard content persistent across program restarts
