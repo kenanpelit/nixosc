@@ -73,11 +73,18 @@
         export PAGER='most'
         export TERM=xterm-256color
 
+        # Enhanced Pager Configuration
+        export MANPAGER="sh -c 'col -bx | bat -l man -p'"  # bat ile man pages
+        export LESS="-R --use-color -Dd+r -Du+b"           # Renkli less
+
         # History Settings
         setopt HIST_REDUCE_BLANKS
         setopt HIST_VERIFY
         setopt HIST_FCNTL_LOCK
         setopt HIST_BEEP
+        setopt HIST_IGNORE_ALL_DUPS    # Tüm duplikatları ignore et
+        setopt HIST_SAVE_NO_DUPS       # Kaydetmede duplikat yok
+        setopt HIST_FIND_NO_DUPS       # Aramada duplikat yok
 
         # FZF Configuration
         export FZF_DEFAULT_OPTS="--height 80% --layout=reverse --border --cycle --marker='✓' --pointer='▶'"
@@ -155,9 +162,13 @@
       zstyle ':completion:*' sort false
       zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
 
-      # FZF-Tab Configuration
+      # Enhanced FZF-Tab Configuration
       zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath'
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
+      zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'
+      zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git diff $word | delta'
+      zstyle ':fzf-tab:complete:ssh:argument-1' fzf-preview 'dig $word'
+      zstyle ':fzf-tab:complete:man:*' fzf-preview 'man $word | head -50'
       zstyle ':fzf-tab:*' fzf-command fzf
       zstyle ':fzf-tab:*' fzf-min-height 100
       zstyle ':fzf-tab:*' switch-group ',' '.'
@@ -169,15 +180,27 @@
     oh-my-zsh = {
       enable = true;
       plugins = [
+        # Core functionality
         "git"               # Git integration and aliases
         "sudo"              # Press ESC twice to add sudo
         "command-not-found" # Suggest packages for unknown commands
         "history"           # Enhanced history management
+        
+        # Navigation and productivity
         "copypath"          # Copy current directory path
         "dirhistory"        # Directory navigation shortcuts
+        "z"                 # Zoxide benzeri directory jumping
+        
+        # Enhanced experience
         "colored-man-pages" # Colorized man pages
         "extract"           # Universal archive extractor
         "aliases"           # Alias management and overview
+        "safe-paste"        # Güvenli paste (otomatik quote)
+        
+        # Development tools
+        "jsontools"         # JSON formatting and validation
+        "encode64"          # Base64 encoding/decoding
+        "urltools"          # URL encoding/decoding
       ];
     };
   };
