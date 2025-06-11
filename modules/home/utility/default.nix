@@ -12,7 +12,7 @@
 #   - CopyQ: Clipboard manager
 # - System Tools:
 #   - Iwmenu: Network management
-#   - Sem/Sesh: Session management
+#   - Sesh: Session management
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,7 +24,6 @@
    ./candy
    ./copyq
    ./iwmenu
-   #./sem
    ./sesh
  ];
 }
