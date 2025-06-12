@@ -26,7 +26,17 @@ readonly NC='\033[0m'
 debug_log() {
 	local message="$1"
 	local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-	echo "[${timestamp}] DEBUG: ${message}" >>"$DEBUG_LOG" 2>/dev/null || true
+
+	# Log dizinini yoksa oluştur
+	[[ -d "$LOG_DIR" ]] || mkdir -p "$LOG_DIR"
+
+	# Debug log dosyasına yaz
+	echo "[${timestamp}] DEBUG: ${message}" >>"$DEBUG_LOG" 2>/dev/null || {
+		# Fallback - stderr'e yaz
+		echo "[${timestamp}] DEBUG: ${message}" >&2
+	}
+
+	# Ayrıca stderr'e de yaz
 	echo "[${timestamp}] DEBUG: ${message}" >&2
 }
 
@@ -105,7 +115,6 @@ setup_directories() {
 		else
 			debug_log "Log dosyası oluşturulamadı: $HYPRLAND_LOG"
 		fi
-
 	else
 		debug_log "HATA: Log dizini oluşturulamadı: $LOG_DIR"
 		error "Log dizini oluşturulamadı: $LOG_DIR"
@@ -115,7 +124,6 @@ setup_directories() {
 	if [[ -f "$HYPRLAND_LOG" ]]; then
 		local file_size=$(stat -c%s "$HYPRLAND_LOG" 2>/dev/null || echo 0)
 		debug_log "Mevcut log dosyası boyutu: $file_size bytes"
-
 		if [[ $file_size -gt 10485760 ]]; then
 			debug_log "Log dosyası 10MB'den büyük, yedekleniyor"
 			mv "$HYPRLAND_LOG" "${HYPRLAND_LOG}.old"
@@ -198,7 +206,7 @@ setup_environment() {
 	export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 	export GDK_BACKEND=wayland
 	export SDL_VIDEODRIVER=wayland
-	export _JAVA_AWT_WM_NONREPARENTING=1
+	export JAVA_AWT_WM_NONREPARENTING=1 # FIX: * işareti kaldırıldı
 	export CLUTTER_BACKEND=wayland
 	export OZONE_PLATFORM=wayland
 	debug_log "Wayland backend ayarları yapıldı"
@@ -308,7 +316,7 @@ cleanup() {
 # =================================================================
 
 main() {
-	# Debug log başlat
+	# Debug log başlat - EN BAŞTA
 	debug_log "Script başlatıldı: $(date)"
 	debug_log "Kullanıcı: $USER"
 	debug_log "PWD: $(pwd)"
