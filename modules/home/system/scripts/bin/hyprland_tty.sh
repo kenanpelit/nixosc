@@ -22,7 +22,7 @@ readonly NC='\033[0m'
 # Yardımcı Fonksiyonlar
 # =================================================================
 
-# Debug log fonksiyonu - her zaman çalışır
+# Debug log fonksiyonu - TTY için optimize edilmiş
 debug_log() {
 	local message="$1"
 	local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -30,14 +30,28 @@ debug_log() {
 	# Log dizinini yoksa oluştur
 	[[ -d "$LOG_DIR" ]] || mkdir -p "$LOG_DIR"
 
+	# TTY ortamında mı kontrol et
+	local is_tty=false
+	if [[ "$(tty 2>/dev/null)" =~ ^/dev/tty[0-9]+$ ]]; then
+		is_tty=true
+	fi
+
 	# Debug log dosyasına yaz
 	echo "[${timestamp}] DEBUG: ${message}" >>"$DEBUG_LOG" 2>/dev/null || {
-		# Fallback - stderr'e yaz
-		echo "[${timestamp}] DEBUG: ${message}" >&2
+		# Fallback - /tmp'ye yaz
+		echo "[${timestamp}] DEBUG: ${message}" >>"/tmp/hyprland_debug_$USER.log" 2>/dev/null || true
 	}
 
-	# Ayrıca stderr'e de yaz
-	echo "[${timestamp}] DEBUG: ${message}" >&2
+	# TTY'de ise hem dosyaya hem ekrana yaz (daha agresif)
+	if [[ "$is_tty" == "true" ]]; then
+		# TTY'de direkt konsola da yazdır
+		echo "[${timestamp}] DEBUG: ${message}" >/dev/tty1 2>/dev/null || true
+		# Systemd journal'a da gönder
+		logger -t "hyprland_tty" "DEBUG: ${message}" 2>/dev/null || true
+	else
+		# Normal terminal - stderr'e yaz
+		echo "[${timestamp}] DEBUG: ${message}" >&2
+	fi
 }
 
 # Güvenli log fonksiyonu
@@ -61,19 +75,43 @@ log() {
 }
 
 info() {
-	echo -e "${GREEN}[INFO]${NC} $1"
-	log "INFO" "$1"
+	local message="$1"
+	echo -e "${GREEN}[INFO]${NC} $message"
+
+	# TTY'de ise ekranda da göster
+	if [[ "$(tty 2>/dev/null)" =~ ^/dev/tty[0-9]+$ ]]; then
+		echo -e "${GREEN}[INFO]${NC} $message" >/dev/tty1 2>/dev/null || true
+		logger -t "hyprland_tty" "INFO: $message" 2>/dev/null || true
+	fi
+
+	log "INFO" "$message"
 }
 
 warn() {
-	echo -e "${YELLOW}[WARN]${NC} $1"
-	log "WARN" "$1"
+	local message="$1"
+	echo -e "${YELLOW}[WARN]${NC} $message"
+
+	# TTY'de ise ekranda da göster
+	if [[ "$(tty 2>/dev/null)" =~ ^/dev/tty[0-9]+$ ]]; then
+		echo -e "${YELLOW}[WARN]${NC} $message" >/dev/tty1 2>/dev/null || true
+		logger -t "hyprland_tty" "WARN: $message" 2>/dev/null || true
+	fi
+
+	log "WARN" "$message"
 }
 
 error() {
-	echo -e "${RED}[ERROR]${NC} $1"
-	log "ERROR" "$1"
-	debug_log "FATAL ERROR: $1"
+	local message="$1"
+	echo -e "${RED}[ERROR]${NC} $message"
+
+	# TTY'de ise ekranda da göster
+	if [[ "$(tty 2>/dev/null)" =~ ^/dev/tty[0-9]+$ ]]; then
+		echo -e "${RED}[ERROR]${NC} $message" >/dev/tty1 2>/dev/null || true
+		logger -t "hyprland_tty" "ERROR: $message" 2>/dev/null || true
+	fi
+
+	log "ERROR" "$message"
+	debug_log "FATAL ERROR: $message"
 	exit 1
 }
 
@@ -316,6 +354,18 @@ cleanup() {
 # =================================================================
 
 main() {
+	# TTY ortamında ise log görüntüleme için ek önlemler
+	local current_tty=$(tty 2>/dev/null || echo "unknown")
+	if [[ "$current_tty" =~ ^/dev/tty[0-9]+$ ]]; then
+		# TTY'de çalışıyoruz, logları hem dosyaya hem systemd journal'a gönderelim
+		exec 19>&2 # stderr'i fd 19'a kaydet
+		exec 2> >(logger -t "hyprland_tty" 2>/dev/null || cat >&19)
+
+		# Başlangıç mesajı
+		echo "=== HYPRLAND TTY BAŞLATMA - TTY MODU ===" >/dev/tty1 2>/dev/null || true
+		echo "Loglar: $DEBUG_LOG ve systemd journal (journalctl -t hyprland_tty)" >/dev/tty1 2>/dev/null || true
+		echo "Başlatma zamanı: $(date)" >/dev/tty1 2>/dev/null || true
+	fi
 	# Debug log başlat - EN BAŞTA
 	debug_log "Script başlatıldı: $(date)"
 	debug_log "Kullanıcı: $USER"
