@@ -350,17 +350,7 @@ main() {
 	start_hyprland
 }
 
-# TTY kontrolü (isteğe bağlı)
-if [[ "${FORCE:-0}" != "1" && "$(tty)" != "/dev/tty1" ]]; then
-	warn "Bu script TTY1 için tasarlandı, mevcut TTY: $(tty)"
-	read -p "Devam edilsin mi? (y/N): " -n 1 -r
-	echo
-	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-		info "İptal edildi"
-		debug_log "Kullanıcı tarafından iptal edildi"
-		exit 0
-	fi
-fi
+# TTY kontrolü kaldırıldı - her yerden çalışabilir
 
 # Script'i çalıştır
 main "$@"
