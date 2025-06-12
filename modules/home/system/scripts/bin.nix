@@ -66,6 +66,9 @@ let
   hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
     builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
   );
+  hyprland_tty_all = pkgs.writeShellScriptBin "hyprland_tty_all" (
+    builtins.readFile ./bin/hyprland_tty_all.sh
+  );
   hyprland_tty = pkgs.writeShellScriptBin "hyprland_tty" (
     builtins.readFile ./bin/hyprland_tty.sh
   );
@@ -372,6 +375,7 @@ in {
     hypr-colorpicker
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
+    hyprland_tty_all
     hyprland_tty
     hypr-mpv-manager
     hypr-start-batteryd
