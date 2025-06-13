@@ -1,35 +1,52 @@
 #!/usr/bin/env bash
-#set -x
 #===============================================================================
 #
-#   Script: Brave Profile Launcher
+#   Script: Brave Profile Launcher (İyileştirilmiş)
 #   Description: Brave tarayıcısı için profil bazlı başlatma aracı
+#   Version: 2.0
 #
 #   Özellikler:
 #   - Profil bazlı Brave başlatma
 #   - Özel pencere sınıfı ve başlık ayarlama
 #   - Komut satırı argümanlarını destekleme
-#   - Profil listeleme
+#   - Profil listeleme ve yönetimi
 #   - Hazır uygulama kısayolları (whatsapp, youtube, tiktok, spotify, discord)
-#   - SOCKS5 Proxy Desteği
+#   - SOCKS5/HTTP Proxy Desteği
 #   - Wayland ve dokunmatik yüzey desteği
 #   - Yeni pencere zorlama özelliği
 #   - İnkognito mod desteği
-#   - Yeni profil oluşturma
+#   - Yeni profil oluşturma ve silme
+#   - Yapılandırma dosyası desteği
+#   - Gelişmiş hata yönetimi ve loglama
 #
 #===============================================================================
 
-set -euo pipefail
+set -eo pipefail
+
+# Script sürümü
+readonly SCRIPT_VERSION="2.0"
+readonly SCRIPT_NAME="$(basename "$0")"
 
 # Renk tanımlamaları
-BOLD="\033[1m"
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-RESET="\033[0m"
+readonly BOLD="\033[1m"
+readonly RED="\033[31m"
+readonly GREEN="\033[32m"
+readonly YELLOW="\033[33m"
+readonly BLUE="\033[34m"
+readonly CYAN="\033[36m"
+readonly RESET="\033[0m"
 
-# Konfigürasyon
+# Semboller
+readonly SUCCESS="✓"
+readonly ERROR="✗"
+readonly WARNING="⚠"
+readonly INFO="ℹ"
+
+# Konfigürasyon dosyası
+readonly CONFIG_FILE="${HOME}/.config/brave-launcher/config.conf"
+readonly LOG_FILE="${HOME}/.config/brave-launcher/brave-launcher.log"
+
+# Varsayılan konfigürasyon
 BRAVE_CMD="brave"
 LOCAL_STATE_PATH="${HOME}/.config/BraveSoftware/Brave-Browser/Local State"
 BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
@@ -37,9 +54,11 @@ BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
 # Wayland ve dokunmatik yüzey için varsayılan bayraklar
 DEFAULT_FLAGS=(
 	"--restore-last-session"
-	"--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform"
+	"--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,VaapiVideoDecoder"
 	"--ozone-platform=wayland"
 	"--new-window"
+	"--disable-web-security"
+	"--disable-features=VizDisplayCompositor"
 )
 
 # Proxy ayarları
@@ -48,185 +67,456 @@ PROXY_HOST="127.0.0.1"
 PROXY_PORT="4999"
 PROXY_TYPE="socks5"
 
+# Loglama
+log() {
+	local level="$1"
+	shift
+	local message="$*"
+	local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+	# Log dizinini oluştur
+	mkdir -p "$(dirname "$LOG_FILE")"
+
+	# Log dosyasına yaz
+	echo "[$timestamp] [$level] $message" >>"$LOG_FILE"
+
+	# Terminale de yazdır
+	case "$level" in
+	"ERROR")
+		echo -e "${RED}${ERROR} $message${RESET}" >&2
+		;;
+	"WARN")
+		echo -e "${YELLOW}${WARNING} $message${RESET}"
+		;;
+	"INFO")
+		echo -e "${BLUE}${INFO} $message${RESET}"
+		;;
+	"SUCCESS")
+		echo -e "${GREEN}${SUCCESS} $message${RESET}"
+		;;
+	*)
+		echo "$message"
+		;;
+	esac
+}
+
+# Hata yakalama - sadece kritik hatalar için
+error_handler() {
+	local line_no=$1
+	local error_code=$2
+
+	# Sadece ciddi hataları yakala (1'den büyük çıkış kodları)
+	if [[ $error_code -gt 1 ]]; then
+		log "ERROR" "Script failed at line $line_no with exit code $error_code"
+		exit "$error_code"
+	fi
+}
+
+# Sadece ciddi hatalar için trap kur
+trap 'error_handler ${LINENO} $?' ERR
+
+# Konfigürasyon dosyasını yükle
+load_config() {
+	if [[ -f "$CONFIG_FILE" ]]; then
+		# shellcheck source=/dev/null
+		source "$CONFIG_FILE"
+	else
+		create_default_config
+	fi
+}
+
+# Varsayılan konfigürasyon dosyası oluştur
+create_default_config() {
+	mkdir -p "$(dirname "$CONFIG_FILE")"
+	cat >"$CONFIG_FILE" <<'EOF'
+# Brave Launcher Konfigürasyonu
+
+# Brave komutu
+BRAVE_CMD="brave"
+
+# Proxy ayarları
+PROXY_HOST="127.0.0.1"
+PROXY_PORT="4999"
+PROXY_TYPE="socks5"
+
+# Ek Brave bayrakları (boşlukla ayrılmış)
+CUSTOM_FLAGS=""
+
+# Varsayılan profil
+DEFAULT_PROFILE="Default"
+
+# Debug modu (true/false)
+DEBUG_MODE=false
+EOF
+	log "SUCCESS" "Varsayılan konfigürasyon dosyası oluşturuldu: $CONFIG_FILE"
+}
+
+# Debug modu kontrolü
+debug() {
+	[[ "${DEBUG_MODE:-false}" == "true" ]] && log "DEBUG" "$*"
+}
+
+# Gerekli bağımlılıkları kontrol et
+check_dependencies() {
+	local deps=("jq")
+	local missing=()
+
+	for dep in "${deps[@]}"; do
+		if ! command -v "$dep" &>/dev/null; then
+			missing+=("$dep")
+		fi
+	done
+
+	# Brave komutunu kontrol et - farklı isimler dene
+	local brave_found=false
+	local brave_commands=("brave" "brave-browser" "brave-bin" "/usr/bin/brave" "/usr/bin/brave-browser")
+
+	for brave_cmd in "${brave_commands[@]}"; do
+		if command -v "$brave_cmd" &>/dev/null; then
+			BRAVE_CMD="$brave_cmd"
+			brave_found=true
+			log "INFO" "Brave bulundu: $brave_cmd"
+			break
+		fi
+	done
+
+	if [[ "$brave_found" == false ]]; then
+		missing+=("brave")
+	fi
+
+	if [[ ${#missing[@]} -gt 0 ]]; then
+		log "ERROR" "Eksik bağımlılıklar: ${missing[*]}"
+		log "INFO" "Kurulum: sudo apt install ${missing[*]// / }"
+		exit 1
+	fi
+}
+
 # Kullanım bilgisi
 usage() {
-	echo -e "${BOLD}Brave Profil Başlatıcı${RESET}"
+	echo -e "${BOLD}Brave Profil Başlatıcı v${SCRIPT_VERSION}${RESET}"
 	echo
-	echo -e "Kullanım: $0 ${BOLD}<profil_ismi>${RESET} [--class=SINIF] [--title=BASLIK] [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--whatsapp${RESET} [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--youtube${RESET} [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--tiktok${RESET} [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--spotify${RESET} [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--discord${RESET} [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--proxy${RESET} [brave_parametreleri]"
-	echo -e "       veya: $0 ${BOLD}--create-profile=ISIM${RESET} [--icon=ICON_PATH]"
+	echo -e "${BOLD}Kullanım:${RESET}"
+	echo -e "  $SCRIPT_NAME ${BOLD}<profil_ismi>${RESET} [seçenekler] [brave_parametreleri]"
+	echo -e "  $SCRIPT_NAME ${BOLD}--whatsapp${RESET} [seçenekler]"
+	echo -e "  $SCRIPT_NAME ${BOLD}--youtube${RESET} [seçenekler]"
+	echo -e "  $SCRIPT_NAME ${BOLD}--spotify${RESET} [seçenekler]"
+	echo -e "  $SCRIPT_NAME ${BOLD}--discord${RESET} [seçenekler]"
 	echo
-	echo -e "${BOLD}Parametreler:${RESET}"
-	echo "  --class=SINIF     Pencere sınıfını ayarlar (window manager entegrasyonu için)"
-	echo "  --title=BASLIK    Pencere başlığını ayarlar"
-	echo "  --whatsapp        WhatsApp uygulamasını başlatır (Kenp profili ile)"
-	echo "  --youtube         YouTube uygulamasını başlatır (Kenp profili ile)"
-	echo "  --tiktok          TikTok uygulamasını başlatır (Kenp profili ile)"
-	echo "  --spotify         Spotify uygulamasını başlatır (Kenp profili ile)"
-	echo "  --discord         Discord uygulamasını başlatır (Kenp profili ile)"
-	echo "  --proxy           Proxy ile Brave başlatır (Proxy profili ile)"
-	echo "  --proxy-host=HOST Proxy sunucu adresi (varsayılan: 127.0.0.1)"
-	echo "  --proxy-port=PORT Proxy sunucu portu (varsayılan: 4999)"
-	echo "  --proxy-type=TYPE Proxy türü (socks5, http, https) (varsayılan: socks5)"
-	echo "  --kill-profile    Sadece bu profil için çalışan Brave örneklerini kapat"
-	echo "  --kill-all        Tüm Brave örneklerini kapat"
-	echo "  --incognito       Seçilen profili inkognito modunda başlatır"
-	echo "  --create-profile=ISIM  Belirtilen isimde yeni bir profil oluşturur"
-	echo "  --icon=ICON_PATH  Yeni oluşturulan profile özel bir simge ekler (--create-profile ile kullanılır)"
+	echo -e "${BOLD}Seçenekler:${RESET}"
+	echo "  --class=SINIF              Pencere sınıfını ayarlar"
+	echo "  --title=BASLIK             Pencere başlığını ayarlar"
+	echo "  --proxy[=host:port]        Proxy ile başlatır"
+	echo "  --Proxy                    Proxy profili ile başlatır"
+	echo "  --proxy-type=TYPE          Proxy türü (socks5, http, https)"
+	echo "  --incognito                İnkognito modunda başlatır"
+	echo "  --kill-profile             Bu profil için çalışan örnekleri kapat"
+	echo "  --kill-all                 Tüm Brave örneklerini kapat"
+	echo "  --create-profile=ISIM      Yeni profil oluştur"
+	echo "  --delete-profile=ISIM      Profil sil"
+	echo "  --list-profiles            Profilleri listele"
+	echo "  --config                   Konfigürasyon dosyasını düzenle"
+	echo "  --version                  Sürüm bilgisini göster"
+	echo "  --help, -h                 Bu yardımı göster"
 	echo
-	echo -e "${BOLD}Varsayılan Bayraklar:${RESET}"
-	echo "  --restore-last-session                             Son oturumu geri yükler"
-	echo "  --enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform   İki parmakla gezinme hareketleri"
-	echo "  --ozone-platform=wayland                           Wayland desteği"
-	echo "  --new-window                                       Yeni pencere zorlama"
+	echo -e "${BOLD}Hazır Uygulamalar:${RESET}"
+	echo "  --whatsapp                 WhatsApp Web"
+	echo "  --youtube                  YouTube"
+	echo "  --tiktok                   TikTok"
+	echo "  --spotify                  Spotify Web Player"
+	echo "  --discord                  Discord Web"
+	echo
+	echo -e "${BOLD}Örnekler:${RESET}"
+	echo "  $SCRIPT_NAME \"İş Profili\" --class=WorkBrowser"
+	echo "  $SCRIPT_NAME Default --incognito"
+	echo "  $SCRIPT_NAME --whatsapp"
+	echo "  $SCRIPT_NAME Proxy --proxy=127.0.0.1:9050"
 	echo
 	list_profiles
 	exit "${1:-0}"
 }
 
-# Profil listesi
+# Profil listesi (geliştirilmiş)
 list_profiles() {
 	echo -e "${BOLD}Mevcut profiller:${RESET}"
-	if [ ! -f "$LOCAL_STATE_PATH" ]; then
-		echo -e "${RED}Hata: Brave profil bilgisi bulunamadı!${RESET}"
+
+	if [[ ! -f "$LOCAL_STATE_PATH" ]]; then
+		log "ERROR" "Brave profil bilgisi bulunamadı: $LOCAL_STATE_PATH"
 		return 1
 	fi
+
 	# Profilleri listele ve formatla
-	jq -r '.profile.info_cache | to_entries | map("  " + .key + ": " + .value.name) | .[]' <"$LOCAL_STATE_PATH" 2>/dev/null |
-		sort -k1,1 -k2,2n ||
-		echo -e "${RED}Hata: Brave profil bilgisi okunamadı!${RESET}"
+	local profiles
+	if ! profiles=$(jq -r '.profile.info_cache | to_entries | 
+		map("  " + .key + ": " + .value.name) | 
+		.[]' "$LOCAL_STATE_PATH" 2>/dev/null | sort); then
+		log "ERROR" "Brave profil bilgisi okunamadı"
+		return 1
+	fi
+
+	if [[ -z "$profiles" ]]; then
+		echo -e "${YELLOW}  Henüz profil oluşturulmamış${RESET}"
+	else
+		echo "$profiles"
+	fi
+
+	echo
 }
 
-# Yeni profil oluşturma
+# Profil silme
+delete_profile() {
+	local profile_name="$1"
+
+	if [[ -z "$profile_name" ]]; then
+		log "ERROR" "Profil ismi belirtilmedi"
+		return 1
+	fi
+
+	# Profil anahtarını bul
+	local profile_key
+	if ! profile_key=$(jq -r --arg name "$profile_name" \
+		'.profile.info_cache | to_entries | .[] | 
+		select(.value.name == $name) | .key' "$LOCAL_STATE_PATH" 2>/dev/null); then
+		log "ERROR" "Profil bilgisi okunamadı"
+		return 1
+	fi
+
+	if [[ -z "$profile_key" ]]; then
+		log "ERROR" "Profil bulunamadı: $profile_name"
+		return 1
+	fi
+
+	# Onay al
+	echo -e "${YELLOW}${WARNING} '$profile_name' profili silinecek. Emin misiniz? [y/N]${RESET}"
+	read -r confirmation
+
+	if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
+		log "INFO" "İşlem iptal edildi"
+		return 0
+	fi
+
+	# Profil dizinini sil
+	local profile_path="$BRAVE_PROFILES_DIR/$profile_key"
+	if [[ -d "$profile_path" ]]; then
+		rm -rf "$profile_path"
+		log "SUCCESS" "Profil dizini silindi: $profile_path"
+	fi
+
+	log "SUCCESS" "Profil '$profile_name' başarıyla silindi"
+}
+
+# Yeni profil oluşturma (geliştirilmiş)
 create_profile() {
 	local profile_name="$1"
 	local icon_path="${2:-}"
 
-	echo -e "${BLUE}Yeni profil oluşturuluyor: ${RESET}$profile_name"
-
-	# Profile ismi kontrolü
 	if [[ -z "$profile_name" ]]; then
-		echo -e "${RED}Hata: Profil ismi boş olamaz!${RESET}"
+		log "ERROR" "Profil ismi boş olamaz"
 		return 1
 	fi
 
-	# Mevcut profilleri kontrol et
-	if [ -f "$LOCAL_STATE_PATH" ]; then
-		local existing_profile
-		existing_profile=$(jq -r --arg name "$profile_name" \
-			'.profile.info_cache | to_entries | .[] | select(.value.name == $name) | .key' <"$LOCAL_STATE_PATH")
+	# Profil ismi kontrolü
+	if [[ "$profile_name" =~ [^a-zA-Z0-9\ \-\_] ]]; then
+		log "ERROR" "Profil ismi sadece harf, rakam, boşluk, tire ve alt çizgi içerebilir"
+		return 1
+	fi
 
-		if [ -n "$existing_profile" ]; then
-			echo -e "${YELLOW}Uyarı: '$profile_name' isimli profil zaten mevcut.${RESET}"
-			echo -e "Profil dizini: $BRAVE_PROFILES_DIR/Profile $existing_profile"
+	log "INFO" "Yeni profil oluşturuluyor: $profile_name"
+
+	# Mevcut profilleri kontrol et
+	if [[ -f "$LOCAL_STATE_PATH" ]]; then
+		local existing_profile
+		if existing_profile=$(jq -r --arg name "$profile_name" \
+			'.profile.info_cache | to_entries | .[] | 
+			select(.value.name == $name) | .key' "$LOCAL_STATE_PATH" 2>/dev/null) && [[ -n "$existing_profile" ]]; then
+			log "WARN" "Profil zaten mevcut: $profile_name"
 			return 0
 		fi
 	fi
 
-	# Yeni profil için bir profil numarası oluştur
-	local profile_number
-	profile_number=$(find "$BRAVE_PROFILES_DIR" -maxdepth 1 -name "Profile *" | wc -l)
-	profile_number=$((profile_number + 1))
+	# Yeni profil numarası oluştur
+	local profile_number=1
+	while [[ -d "$BRAVE_PROFILES_DIR/Profile $profile_number" ]]; do
+		((profile_number++))
+	done
+
 	local profile_dir="Profile $profile_number"
 	local profile_path="$BRAVE_PROFILES_DIR/$profile_dir"
-
-	# Brave'i yeni profil oluşturma modunda başlat
-	echo -e "${GREEN}Brave başlatılıyor ve yeni profil oluşturuluyor...${RESET}"
 
 	# Profil dizinini oluştur
 	mkdir -p "$profile_path"
 
-	# Özel ikon ayarla (eğer verilmişse)
+	# Özel ikon ayarla
 	if [[ -n "$icon_path" && -f "$icon_path" ]]; then
-		echo -e "${BLUE}Profil için özel ikon ayarlanıyor: ${RESET}$icon_path"
-		# Özel ikon kopyalanabilir veya yapılandırma dosyasına referans eklenebilir
+		log "INFO" "Profil ikonu ayarlanıyor: $icon_path"
 		cp "$icon_path" "$profile_path/icon.png"
 	fi
 
-	# Profili başlat ve kullanıcının yapılandırmasını tamamlamasını sağla
-	echo -e "${YELLOW}Profil oluşturma işlemi başlatılıyor. Brave açıldığında profili yapılandırın ve kapatın.${RESET}"
-	"$BRAVE_CMD" "--profile-directory=$profile_dir" "--profile-creation-name=$profile_name"
+	# Profili başlat
+	log "INFO" "Brave başlatılıyor, profili yapılandırın ve kapatın"
+	"$BRAVE_CMD" "--profile-directory=$profile_dir" \
+		"--profile-creation-name=$profile_name" \
+		--no-first-run &
 
-	echo -e "${GREEN}Profil oluşturma tamamlandı: ${RESET}$profile_name"
-	echo -e "Yeni profili şu şekilde kullanabilirsiniz: $0 \"$profile_name\""
+	local brave_pid=$!
+
+	# Brave'in başlamasını bekle
+	sleep 3
+
+	# Brave kapanana kadar bekle
+	wait "$brave_pid" 2>/dev/null || true
+
+	log "SUCCESS" "Profil oluşturuldu: $profile_name"
+	log "INFO" "Kullanım: $SCRIPT_NAME \"$profile_name\""
 
 	return 0
 }
 
-# Önceden tanımlanmış uygulamalar
-launch_whatsapp() {
-	echo -e "${GREEN}WhatsApp başlatılıyor...${RESET}"
-	exec "$0" "Kenp" --app="https://web.whatsapp.com" --class=Whats --title=Whats "$@"
+# Uygulama başlatıcıları (geliştirilmiş)
+launch_app() {
+	local app_name="$1"
+	local app_url="$2"
+	local profile="${3:-Kenp}"
+	shift 3
+
+	log "SUCCESS" "$app_name başlatılıyor..."
+
+	# exec yerine normal çağrı
+	"$0" "$profile" --app="$app_url" \
+		--class="$app_name" --title="$app_name" "$@"
 }
 
-launch_youtube() {
-	echo -e "${GREEN}YouTube başlatılıyor...${RESET}"
-	exec "$0" "Kenp" --app="https://youtube.com" --class=Youtube --title=Youtube "$@"
-}
-
-launch_tiktok() {
-	echo -e "${GREEN}TikTok başlatılıyor...${RESET}"
-	exec "$0" "Kenp" --app="https://tiktok.com" --class=Tiktok --title=Tiktok "$@"
-}
-
-launch_spotify() {
-	echo -e "${GREEN}Spotify başlatılıyor...${RESET}"
-	exec "$0" "Kenp" --app="https://open.spotify.com/" --class=Spotify --title=Spotify "$@"
-}
+launch_whatsapp() { launch_app "WhatsApp" "https://web.whatsapp.com" "Kenp" "$@"; }
+launch_youtube() { launch_app "YouTube" "https://youtube.com" "Kenp" "$@"; }
+launch_tiktok() { launch_app "TikTok" "https://tiktok.com" "Kenp" "$@"; }
+launch_spotify() { launch_app "Spotify" "https://open.spotify.com/" "Kenp" "$@"; }
 
 launch_discord() {
-	echo -e "${GREEN}Discord başlatılıyor...${RESET}"
-	# pass komutunu kullanarak Discord kanalı URL'sini al
 	local discord_url
 	discord_url=$(pass discord-channels 2>/dev/null || echo "https://discord.com/app")
-	exec "$0" "Kenp" --app="$discord_url" --class=Discord --title=Discord "$@"
+	launch_app "Discord" "$discord_url" "Kenp" "$@"
 }
 
-# Proxy ile başlatma
+# Proxy ile başlatma (geliştirilmiş)
 launch_proxy() {
-	echo -e "${GREEN}Proxy ile Brave başlatılıyor...${RESET}"
+	log "SUCCESS" "Proxy ile Brave başlatılıyor"
 	PROXY_ENABLED=true
-	exec "$0" "Proxy" --class=Proxy --title="Proxy Browser" "$@"
+	"$0" "Proxy" --class=ProxyBrowser --title="Proxy Browser" "$@"
 }
 
-# Belirli bir profil için çalışan Brave örneklerini kapat
+# Profil için çalışan Brave örneklerini kapat (geliştirilmiş)
 kill_profile_brave() {
 	local profile_dir="$1"
-	echo -e "${YELLOW}Profil '$profile_dir' için çalışan Brave örnekleri aranıyor...${RESET}"
+	log "INFO" "Profil '$profile_dir' için çalışan Brave örnekleri aranıyor"
 
-	# Tek tırnak kullanarak oluşabilecek sorunları önlüyoruz
-	pids=$(ps aux | grep "brave.*profile-directory=$profile_dir" | grep -v grep | awk '{print $2}')
+	local pids
+	pids=$(pgrep -f "brave.*profile-directory=$profile_dir" || true)
 
-	if [ -n "$pids" ]; then
-		echo -e "${YELLOW}Profil için çalışan Brave örnekleri bulundu. Kapatılıyor...${RESET}"
-		echo "$pids" | xargs kill 2>/dev/null || true
-		sleep 0.5
+	if [[ -n "$pids" ]]; then
+		log "WARN" "Profil için çalışan Brave örnekleri bulundu, kapatılıyor"
+		echo "$pids" | xargs kill -TERM 2>/dev/null || true
+		sleep 2
+
+		# Hala çalışan varsa zorla kapat
+		pids=$(pgrep -f "brave.*profile-directory=$profile_dir" || true)
+		if [[ -n "$pids" ]]; then
+			echo "$pids" | xargs kill -KILL 2>/dev/null || true
+		fi
+
+		log "SUCCESS" "Profil örnekleri kapatıldı"
 	else
-		echo -e "${GREEN}Profil için çalışan Brave örneği bulunamadı.${RESET}"
+		log "INFO" "Profil için çalışan Brave örneği bulunamadı"
 	fi
+}
+
+# Tüm Brave örneklerini kapat
+kill_all_brave() {
+	log "WARN" "Tüm Brave örnekleri kapatılıyor"
+	pkill -TERM brave 2>/dev/null || true
+	sleep 2
+	pkill -KILL brave 2>/dev/null || true
+	log "SUCCESS" "Tüm Brave örnekleri kapatıldı"
+}
+
+# Konfigürasyon düzenleme
+edit_config() {
+	local editor="${EDITOR:-nano}"
+	log "INFO" "Konfigürasyon dosyası düzenleniyor: $CONFIG_FILE"
+	"$editor" "$CONFIG_FILE"
+}
+
+# Profil doğrulama
+validate_profile() {
+	local profile_name="$1"
+
+	if [[ ! -f "$LOCAL_STATE_PATH" ]]; then
+		log "ERROR" "Brave profil dosyası bulunamadı: $LOCAL_STATE_PATH"
+		return 1
+	fi
+
+	local profile_key
+	if ! profile_key=$(jq -r --arg name "$profile_name" \
+		'.profile.info_cache | to_entries | .[] | 
+		select(.value.name == $name) | .key' "$LOCAL_STATE_PATH" 2>/dev/null); then
+		log "ERROR" "Profil bilgisi okunamadı"
+		return 1
+	fi
+
+	if [[ -z "$profile_key" ]]; then
+		log "ERROR" "Profil bulunamadı: $profile_name"
+		list_profiles
+		return 1
+	fi
+
+	echo "$profile_key"
 }
 
 # Ana işlev
 main() {
-	# Parametre kontrolü
-	[ $# -eq 0 ] && usage 0
+	# Konfigürasyonu yükle
+	load_config
 
-	# Önce özel parametreleri işle
+	# Bağımlılıkları kontrol et
+	check_dependencies
+
+	# Parametre kontrolü
+	[[ $# -eq 0 ]] && usage 0
+
+	# Özel parametreleri işle
 	case "$1" in
+	--version)
+		echo "Brave Launcher v$SCRIPT_VERSION"
+		exit 0
+		;;
+	--config)
+		edit_config
+		exit 0
+		;;
+	--list-profiles)
+		list_profiles
+		exit 0
+		;;
 	--create-profile=*)
 		profile_name="${1#*=}"
 		shift
 		icon_path=""
-		if [[ "$1" == --icon=* ]]; then
-			icon_path="${1#*=}"
-			shift
-		fi
+		# Parametreleri işle
+		while [[ $# -gt 0 ]]; do
+			case "$1" in
+			--icon=*)
+				icon_path="${1#*=}"
+				shift
+				;;
+			*)
+				break
+				;;
+			esac
+		done
 		create_profile "$profile_name" "$icon_path"
+		exit $?
+		;;
+	--delete-profile=*)
+		profile_name="${1#*=}"
+		delete_profile "$profile_name"
 		exit $?
 		;;
 	--whatsapp)
@@ -253,33 +543,40 @@ main() {
 		shift
 		launch_proxy "$@"
 		;;
+	--Proxy)
+		shift
+		launch_proxy "$@"
+		;;
 	--kill-all)
-		echo -e "${YELLOW}Tüm Brave örnekleri kapatılıyor...${RESET}"
-		killall brave 2>/dev/null || true
+		kill_all_brave
 		exit 0
+		;;
+	--help | -h)
+		usage 0
 		;;
 	esac
 
 	# İlk parametre profil adı
-	profile_name="$1"
+	local profile_name="$1"
 	shift
 
 	# Varsayılan değerler
-	window_class=""
-	window_title=""
-	brave_args=()
-	kill_profile=false
-	incognito_mode=false
+	local window_class=""
+	local window_title=""
+	local brave_args=()
+	local kill_profile=false
+	local incognito_mode=false
 
-	# Parametreleri işle
-	while [ $# -gt 0 ]; do
-		case "$1" in
-		--class=*)
-			window_class="${1#*=}"
+	# Parametreleri güvenli şekilde işle
+	while [[ $# -gt 0 ]]; do
+		case "${1:-}" in
+		--class=*) window_class="${1#*=}" ;;
+		--title=*) window_title="${1#*=}" ;;
+		--proxy=*)
+			IFS=':' read -r PROXY_HOST PROXY_PORT <<<"${1#*=}"
+			PROXY_ENABLED=true
 			;;
-		--title=*)
-			window_title="${1#*=}"
-			;;
+		--proxy) PROXY_ENABLED=true ;;
 		--proxy-host=*)
 			PROXY_HOST="${1#*=}"
 			PROXY_ENABLED=true
@@ -292,101 +589,115 @@ main() {
 			PROXY_TYPE="${1#*=}"
 			PROXY_ENABLED=true
 			;;
-		--kill-profile)
-			kill_profile=true
-			;;
-		--incognito)
-			incognito_mode=true
-			;;
-		--help | -h)
-			usage 0
-			;;
+		--kill-profile) kill_profile=true ;;
+		--incognito) incognito_mode=true ;;
+		--help | -h) usage 0 ;;
 		*)
-			brave_args+=("$1")
+			if [[ -n "${1:-}" ]]; then
+				brave_args+=("$1")
+			fi
 			;;
 		esac
 		shift
 	done
 
-	# "Proxy" profili seçildiyse ve proxy parametresi açıkça verilmediyse otomatik etkinleştir
-	if [ "$profile_name" = "Proxy" ] && [ "$PROXY_ENABLED" = false ]; then
+	# Proxy profili kontrolü
+	if [[ "$profile_name" == "Proxy" && "$PROXY_ENABLED" == false ]]; then
 		PROXY_ENABLED=true
-		echo -e "${YELLOW}Proxy profili seçildi, proxy desteği otomatik olarak etkinleştirildi${RESET}"
+		log "INFO" "Proxy profili seçildi, proxy otomatik etkinleştirildi"
 	fi
 
-	# Local State dosyasının varlığını kontrol et
-	if [ ! -f "$LOCAL_STATE_PATH" ]; then
-		echo -e "${RED}Hata: Brave profil dosyası bulunamadı: $LOCAL_STATE_PATH${RESET}"
+	# Profili doğrula
+	local profile_key
+	if ! profile_key=$(validate_profile "$profile_name"); then
 		exit 1
 	fi
 
-	# Profil anahtarını bul
-	profile_key=$(jq -r --arg name "$profile_name" \
-		'.profile.info_cache | to_entries | .[] | 
-        select(.value.name == $name) | .key' <"$LOCAL_STATE_PATH")
-
-	# Profil anahtarı bulunamazsa hata ver
-	if [ -z "$profile_key" ]; then
-		echo -e "${RED}Hata: '$profile_name' isimli profil bulunamadı.${RESET}"
-		list_profiles
-		exit 1
-	fi
-
-	# Profil için çalışan örnekleri kapat (isteğe bağlı)
+	# Profil örneklerini kapat
 	if $kill_profile; then
 		kill_profile_brave "$profile_key"
 	fi
 
-	# Class belirtilmemişse, profil adını kullan
-	if [ -z "$window_class" ]; then
-		window_class="$profile_name"
-		echo -e "${YELLOW}Sınıf belirtilmedi, profil adı '$window_class' sınıf olarak kullanılacak${RESET}"
-	fi
+	# Pencere ayarları
+	[[ -z "$window_class" ]] && window_class="$profile_name"
+	[[ -z "$window_title" ]] && window_title="$profile_name Browser"
 
-	# Title belirtilmemişse, profil adını kullan
-	if [ -z "$window_title" ]; then
-		window_title="$profile_name Browser"
-		echo -e "${YELLOW}Başlık belirtilmedi, '$window_title' başlık olarak kullanılacak${RESET}"
-	fi
-
-	# İnkognito modu etkinse başlık ve sınıfı güncelle
+	# İnkognito modu
 	if $incognito_mode; then
-		window_title="$window_title (Inkognito)"
+		window_title="$window_title (İnkognito)"
 		window_class="${window_class}_incognito"
-		echo -e "${BLUE}İnkognito modu etkinleştirildi${RESET}"
+		log "INFO" "İnkognito modu etkinleştirildi"
 	fi
 
-	# Brave komut satırı argümanlarını oluştur
-	cmd=("$BRAVE_CMD" "--profile-directory=$profile_key")
+	# Komut oluştur
+	local cmd=("$BRAVE_CMD" "--profile-directory=$profile_key")
 
-	# İnkognito modu etkinse ilgili bayrağı ekle
+	# İnkognito modu
 	if $incognito_mode; then
 		cmd+=("--incognito")
 	else
-		# Varsayılan bayrakları ekle (inkognito modunda son oturumu geri yükleme olmaz)
 		cmd+=("${DEFAULT_FLAGS[@]}")
 	fi
 
-	# Proxy etkinleştirilmişse proxy bayraklarını ekle
-	if [ "$PROXY_ENABLED" = true ]; then
-		echo -e "${BLUE}Proxy etkinleştiriliyor: ${PROXY_TYPE}://${PROXY_HOST}:${PROXY_PORT}${RESET}"
+	# Özel bayraklar
+	if [[ -n "${CUSTOM_FLAGS:-}" ]]; then
+		# shellcheck disable=SC2086
+		cmd+=($CUSTOM_FLAGS)
+	fi
+
+	# Proxy ayarları
+	if [[ "$PROXY_ENABLED" == true ]]; then
+		log "INFO" "Proxy etkinleştiriliyor: ${PROXY_TYPE}://${PROXY_HOST}:${PROXY_PORT}"
 		cmd+=("--proxy-server=${PROXY_TYPE}://${PROXY_HOST}:${PROXY_PORT}")
 		cmd+=("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE ${PROXY_HOST}")
 		cmd+=("--proxy-bypass-list=<local>")
 	fi
 
-	# Class ve title parametrelerini her zaman ekle
+	# Pencere ayarları
 	cmd+=("--class=$window_class")
 	cmd+=("--window-name=$window_title")
 
-	# Diğer Brave parametrelerini ekle
-	[ ${#brave_args[@]} -gt 0 ] && cmd+=("${brave_args[@]}")
+	# Ek parametreler
+	[[ ${#brave_args[@]} -gt 0 ]] && cmd+=("${brave_args[@]}")
 
-	# Başlatılacak komutu göster
-	echo -e "${BLUE}Başlatılıyor: ${RESET}${cmd[*]}"
+	# Debug bilgisi (sadece debug modunda göster)
+	[[ "${DEBUG_MODE:-false}" == "true" ]] && debug "Komut: ${cmd[*]}"
+	log "INFO" "Kullanılan Brave komutu: $BRAVE_CMD"
 
 	# Brave'i başlat
-	"${cmd[@]}"
+	log "SUCCESS" "Brave başlatılıyor: $profile_name"
+
+	# Önce komutu test et
+	if ! command -v "$BRAVE_CMD" &>/dev/null; then
+		log "ERROR" "Brave komutu bulunamadı: $BRAVE_CMD"
+		exit 1
+	fi
+
+	# Komutu çalıştır ve çıktısını yakala
+	if "${cmd[@]}" &>/dev/null & then
+		local brave_pid=$!
+		log "INFO" "Brave başlatıldı (PID: $brave_pid)"
+
+		# Brave'in başlamasını bekle ve daha iyi kontrol et
+		sleep 1
+
+		# Brave'in hala çalışıp çalışmadığını kontrol et
+		if kill -0 "$brave_pid" 2>/dev/null; then
+			log "SUCCESS" "Brave başarıyla çalışıyor (PID: $brave_pid)"
+		else
+			# Process çoktan başka bir PID'ye geçmiş olabilir (normal)
+			log "SUCCESS" "Brave başlatıldı"
+		fi
+	else
+		log "ERROR" "Brave başlatılamadı"
+
+		# Hata durumunda komutu debug için tekrar çalıştır
+		log "INFO" "Debug için komut tekrar çalıştırılıyor..."
+		"${cmd[@]}" 2>&1 | head -5 | while read -r line; do
+			log "ERROR" "$line"
+		done
+		return 1
+	fi
 }
 
 # Scripti çalıştır
