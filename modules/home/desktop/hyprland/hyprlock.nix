@@ -1,32 +1,25 @@
-# modules/home/hyprland/hyprlock.nix
+# modules/home/desktop/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Configuration with Tokyo Night Theme
+# Fixed Hyprlock Configuration with Tokyo Night Theme
 # ==============================================================================
 { pkgs, ... }:
 let
   colors = {
-    base = "rgba(36, 40, 59, 1.0)";         # Primary background
-    surface0 = "rgba(41, 46, 66, 0.7)";     # Surface for elements
-    text = "rgba(192, 202, 245, 0.9)";      # Primary text
-    subtext0 = "rgba(154, 165, 206, 0.8)";  # Secondary text
-    blue = "rgba(122, 162, 247, 0.9)";      # Accents
-    lavender = "rgba(180, 249, 248, 0.6)";  # Button hover
-    white_trans = "rgba(255, 255, 255, 0.15)"; # Transparent white for inputs
+    base = "rgba(36, 40, 59, 1.0)";
+    surface0 = "rgba(41, 46, 66, 0.8)";
+    text = "rgba(192, 202, 245, 0.95)";
+    subtext0 = "rgba(154, 165, 206, 0.8)";
+    blue = "rgba(122, 162, 247, 0.9)";
+    lavender = "rgba(180, 249, 248, 0.6)";
+    green = "rgba(158, 206, 106, 0.9)";
+    red = "rgba(247, 118, 142, 0.9)";
   };
 in
 {
-  # =============================================================================
-  # Package Installation
-  # =============================================================================
   home.packages = [ pkgs.hyprlock ];
 
-  # =============================================================================
-  # Lock Screen Configuration
-  # =============================================================================
   xdg.configFile."hypr/hyprlock.conf".text = ''
-    # ---------------------------------------------------------------------------
-    # Background Configuration
-    # ---------------------------------------------------------------------------
+    # Background
     background {
       monitor =
       path = ${./../../../../wallpapers/nixos/nixos.png}
@@ -34,52 +27,53 @@ in
       contrast = 0.89
       brightness = 0.82
       vibrancy = 0.17
-      vibrancy_darkness = 0.0
       color = ${colors.base}
     }
 
-    # ---------------------------------------------------------------------------
-    # General Settings
-    # ---------------------------------------------------------------------------
+    # General settings
     general {
       no_fade_in = false
       grace = 0
       disable_loading_bar = true
     }
 
-    # ---------------------------------------------------------------------------
-    # Time and Date Labels
-    # ---------------------------------------------------------------------------
+    # Day of week
     label {
       monitor =
-      text = cmd[update:1000] echo -e "$(date +"%A")"
+      text = cmd[update:1000] echo "$(date +"%A")"
       color = ${colors.text}
-      font_size = 40
+      font_size = 42
       font_family = Hack
       position = 0, 300
       halign = center
       valign = center
     }
+
+    # Date
     label {
       monitor =
-      text = cmd[update:1000] echo -e "$(date +"%d %B")"
-      color = ${colors.text}
-      font_size = 25
+      text = cmd[update:1000] echo "$(date +"%d %B %Y")"
+      color = ${colors.blue}
+      font_size = 26
       font_family = Hack
       position = 0, 250
       halign = center
       valign = center
     }
+
+    # Time - FIX: Simple time without HTML spans
     label {
       monitor =
-      text = cmd[update:1000] echo "<span>$(date +"- %R -")</span>"
+      text = cmd[update:1000] echo "$(date +"%H:%M")"
       color = ${colors.text}
-      font_size = 20
+      font_size = 22
       font_family = Hack
       position = 0, 200
       halign = center
       valign = center
     }
+
+    # Avatar
     image {
       monitor =
       path = ${./../../../../wallpapers/nixos/avatar.png}
@@ -91,6 +85,8 @@ in
       halign = center
       valign = center
     }
+
+    # Username background
     shape {
       monitor =
       size = 250, 50
@@ -100,6 +96,8 @@ in
       halign = center
       valign = center
     }
+
+    # Username
     label {
       monitor =
       text = $USER
@@ -110,6 +108,8 @@ in
       halign = center
       valign = center
     }
+
+    # Password input - FIX: Simple placeholder
     input-field {
       monitor =
       size = 250, 50
@@ -122,14 +122,28 @@ in
       font_color = ${colors.text}
       fade_on_empty = true
       font_family = Hack
-      placeholder_text = <i><span foreground="##ffffff99">🔒 Enter Pass</span></i>
+      placeholder_text = Enter Password
       position = 0, -200
       halign = center
       valign = center
     }
+
+    # System uptime - Fixed command
     label {
       monitor =
-      text = cmd[update:1000] echo "Up $(uptime | awk -F'up ' '{print $2}' | awk -F',' '{print $1}')"
+      text = cmd[update:60000] echo "Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
+      color = ${colors.subtext0}
+      font_size = 14
+      font_family = Hack
+      position = 0, -320
+      halign = center
+      valign = center
+    }
+
+    # Music status - Fixed Spotify detection
+    label {
+      monitor =
+      text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "Music: $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "Music: No Player"; fi
       color = ${colors.subtext0}
       font_size = 14
       font_family = Hack
@@ -137,6 +151,8 @@ in
       halign = center
       valign = center
     }
+
+    # Bottom action icons - Power, Restart, Sleep
     label {
       monitor =
       text = 󰐥  󰜉  󰤄
