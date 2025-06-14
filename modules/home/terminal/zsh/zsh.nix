@@ -189,7 +189,7 @@
         # Navigation and productivity
         "copypath"          # Copy current directory path
         "dirhistory"        # Directory navigation shortcuts
-        "z"                 # Zoxide benzeri directory jumping
+        #"z"                 # Zoxide benzeri directory jumping
         
         # Enhanced experience
         "colored-man-pages" # Colorized man pages
