@@ -150,6 +150,9 @@ let
   osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
     builtins.readFile ./bin/osc-profiles.sh
   );
+  osc-proxy = pkgs.writeShellScriptBin "osc-proxy" (
+    builtins.readFile ./bin/osc-proxy.sh
+  );
   osc-radio = pkgs.writeShellScriptBin "osc-radio" (
     builtins.readFile ./bin/osc-radio.sh
   );
@@ -403,6 +406,7 @@ in {
     osc-nix-cleanup-script
     osc-pass-tool
     osc-profiles
+    osc-proxy
     osc-radio
     osc-rsync_backup
     osc-rsync
