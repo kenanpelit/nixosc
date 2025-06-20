@@ -22,7 +22,7 @@
  imports = [
    ./audacious
    ./cava
-   ./mpd
+   #./mpd
    ./mpv
    #./spicetify
    ./radio
