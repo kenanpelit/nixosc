@@ -210,7 +210,6 @@
 
         # Performans optimizasyonları
         vfr = true;                        # Variable framerate (güç tasarrufu)
-        no_direct_scanout = false;         # Direct scanout aktif (performans)
         disable_autoreload = false;        # Config otomatik yeniden yükleme
 
         # Pencere davranışları
@@ -227,14 +226,13 @@
 
         # Monitör ve odak yönetimi
         mouse_move_focuses_monitor = true; # Fare monitör odağı
-        suppress_portal_warnings = false;  # Portal uyarılarını bastırma
         initial_workspace_tracking = 1;    # Başlangıç workspace takibi
 
         # Özel özellikler
         close_special_on_empty = true;     # Boş special workspace'i kapat
         new_window_takes_over_fullscreen = 2; # Yeni pencere fullscreen davranışı
         allow_session_lock_restore = true; # Session lock restore
-        background_color = 0x111111;       # Arka plan rengi
+        background_color = "11184810";     # Arka plan rengi
         render_ahead_of_time = false;      # Ahead-of-time rendering
         render_ahead_safezone = 1;         # Render safezone
       };
@@ -248,7 +246,6 @@
         special_scale_factor = 0.8;        # Özel ölçekleme faktörü
         force_split = 2;                   # Zorunlu bölme yönü (2 = sağa)
         split_width_multiplier = 1.0;      # Bölme genişlik çarpanı
-        no_gaps_when_only = false;         # Tek pencerede gap'leri koru
         use_active_for_splits = true;      # Aktif pencere için split kullan
         default_split_ratio = 1.0;         # Varsayılan split oranı
       };
@@ -259,12 +256,10 @@
         mfact = 0.55;                     # Ana pencere oranı (biraz daha büyük)
         orientation = "left";             # Yerleşim yönü (master solda daha yaygın)
         inherit_fullscreen = true;        # Fullscreen miras alma
-        always_center_master = false;     # Master'ı her zaman ortala
         smart_resizing = true;            # Akıllı boyutlandırma
         drop_at_cursor = false;           # Cursor'a pencere bırakma
         allow_small_split = false;        # Küçük split'lere izin verme
         special_scale_factor = 0.8;       # Special workspace ölçeği
-        no_gaps_when_only = false;        # Tek pencerede gap'leri koru
       };
 
       # =====================================================
@@ -320,12 +315,6 @@
           color = "rgba(00000066)";       # Gölge rengi (biraz koyulaştırıldı)
           scale = 0.97;                   # Gölge ölçeği
         };
- 
-        # Modern drop shadow efekti
-        drop_shadow = true;               # Drop shadow etkin
-        shadow_range = 30;                # Drop shadow menzili
-        shadow_offset = "0 2";            # Drop shadow konumu
-        shadow_scale = 0.97;              # Drop shadow ölçeği
       };
 
       # =====================================================
