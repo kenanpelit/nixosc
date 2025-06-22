@@ -574,8 +574,15 @@
 
       # No gaps workspace rules
       workspace = [
-        "w[1], gapsout:8, gapsin:4"
-        "w[2], gapsout:8, gapsin:4"
+        "w[1], gapsout:0, gapsin:0"
+        "w[2], gapsout:0, gapsin:0"
+        "w[3], gapsout:0, gapsin:0"
+        "w[4], gapsout:0, gapsin:0"
+        "w[5], gapsout:0, gapsin:0"
+        "w[6], gapsout:0, gapsin:0"
+        "w[7], gapsout:0, gapsin:0"
+        "w[8], gapsout:0, gapsin:0"
+        "w[9], gapsout:0, gapsin:0"
       ];
 
       # Key Bindings
