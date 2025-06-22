@@ -350,31 +350,21 @@ navigate_browser_tab() {
 
 	log_debug "Navigating browser tab $direction in window class: $current_window"
 
-	# Enhanced browser support
+	# Browser detection - geniş pattern matching
 	case "$current_window" in
-	"brave" | "Brave" | "firefox" | "Firefox" | "chromium" | "Chromium" | "google-chrome" | "Google-chrome")
+	*"brave"* | *"Brave"* | *"firefox"* | *"Firefox"* | *"chromium"* | *"Chromium"* | *"google-chrome"* | *"Google-chrome"* | *"zen"* | *"Zen"*)
+		log_debug "Browser detected: $current_window"
+
+		# ESKI SCRIPT'TEKİ GİBİ hyprctl dispatch exec kullan!
 		if [ "$direction" = "next" ]; then
-			if command -v wtype &>/dev/null; then
-				wtype -M ctrl -k tab 2>/dev/null
-			elif command -v ydotool &>/dev/null; then
-				ydotool key ctrl+tab 2>/dev/null
-			else
-				log_error "Neither wtype nor ydotool available for browser tab navigation"
-				return 1
-			fi
+			hyprctl dispatch exec "wtype -P ctrl -p Tab -r Tab -R ctrl"
 		else
-			if command -v wtype &>/dev/null; then
-				wtype -M ctrl -M shift -k tab 2>/dev/null
-			elif command -v ydotool &>/dev/null; then
-				ydotool key ctrl+shift+tab 2>/dev/null
-			else
-				log_error "Neither wtype nor ydotool available for browser tab navigation"
-				return 1
-			fi
+			hyprctl dispatch exec "wtype -P ctrl -P shift -p Tab -r Tab -R shift -R ctrl"
 		fi
 		;;
 	*)
 		log_error "Browser not supported or no browser focused: $current_window"
+		log_error "Supported browsers: brave, firefox, chromium, google-chrome, zen"
 		return 1
 		;;
 	esac
