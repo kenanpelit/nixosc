@@ -133,25 +133,29 @@
         kb_layout = "tr";                    # Klavye düzeni
         kb_variant = "f";                    # F-klavye varyantı
         kb_options = "ctrl:nocaps";          # Caps Lock -> Ctrl
-        repeat_rate = "25";                  # Tuş tekrar hızı
-        repeat_delay = "300";                # Tuş tekrar gecikmesi
-        sensitivity = "0.70";                # Fare hassasiyeti
-        accel_profile = "adaptive";          # İvmelenme profili
+        repeat_rate = 35;                    # Tuş tekrar hızı (string'den int'e)
+        repeat_delay = 250;                  # Tuş tekrar gecikmesi (biraz daha hızlı)
+        sensitivity = 0.0;                   # Fare hassasiyeti (string'den float'a)
+        accel_profile = "flat";              # İvmelenme profili (gaming için daha iyi)
 
         # Touchpad ayarları
         touchpad = {
-          natural_scroll = "false";          # Doğal kaydırma
-          disable_while_typing = "true";     # Yazarken devre dışı bırak
-          tap-to-click = "true";             # Dokunmatik tıklama
-          drag_lock = "true";                # Sürükleme kilidi
-          scroll_factor = "0.70";            # Kaydırma faktörü
+          natural_scroll = false;            # Doğal kaydırma (boolean)
+          disable_while_typing = true;       # Yazarken devre dışı bırak (boolean)
+          tap-to-click = true;               # Dokunmatik tıklama (boolean)
+          drag_lock = true;                  # Sürükleme kilidi (boolean)
+          scroll_factor = 1.0;               # Kaydırma faktörü (standart)
+          clickfinger_behavior = true;       # Modern clickfinger davranışı
+          middle_button_emulation = true;    # Orta tuş emülasyonu
+          tap-and-drag = true;               # Tap ve sürükle
         };
 
         # Diğer giriş ayarları
-        numlock_by_default = "0";            # NumLock varsayılan durumu
-        left_handed = "0";                   # Sol el modu
-        follow_mouse = "0";                  # Fare odak davranışı
-        float_switch_override_focus = "0";   # Yüzen pencere odak geçişi
+        numlock_by_default = false;          # NumLock varsayılan durumu (boolean)
+        left_handed = false;                 # Sol el modu (boolean)
+        follow_mouse = 1;                    # Fare odak davranışı (1 = sane default)
+        float_switch_override_focus = 2;     # Yüzen pencere odak geçişi (2 = better)
+        force_no_accel = true;               # Fare ivmelenmesini zorla kapat
       };
 
       # =====================================================
@@ -159,20 +163,26 @@
       # =====================================================
       general = {
         "$mainMod" = "SUPER";                # Ana modifikatör tuşu
-        gaps_in = 0;
-        gaps_out = 0;
-        border_size = 2;
+        gaps_in = 4;                         # İç boşluklar (0'dan daha güzel)
+        gaps_out = 8;                        # Dış boşluklar
+        border_size = 2;                     # Border kalınlığı
         "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
         "col.inactive_border" = "rgba(595959aa)";
-        layout = "master";
-        allow_tearing = false;
+        layout = "master";                   # Layout
+        allow_tearing = false;               # Tearing'e izin verme
+        resize_on_border = true;             # Border'dan resize
+        extend_border_grab_area = 15;        # Border grab alanı
+        hover_icon_on_border = true;         # Border'da hover iconu
+        no_border_on_floating = false;       # Floating'de border
       };
 
+      # Group ayarları (değişiklik yok, güzel olmuş)
       group = {
         "col.border_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
         "col.border_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
         "col.border_locked_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
         "col.border_locked_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
+        
         groupbar = {
           render_titles = false;
           gradients = false;
@@ -191,18 +201,42 @@
         # Görünüm ayarları
         disable_hyprland_logo = true;      # Logo gösterimini kapat
         disable_splash_rendering = true;   # Açılış ekranını kapat
+        force_default_wallpaper = 0;       # Varsayılan duvar kağıdını zorla (kapalı)
 
         # Güç yönetimi
         mouse_move_enables_dpms = true;    # Fare hareketi ekranı açar
         key_press_enables_dpms = true;     # Tuş basımı ekranı açar
-        vrr = 0;                           # VRR/Adaptive sync
+        vrr = 1;                           # VRR/Adaptive sync (1 = etkin, daha iyi)
+
+        # Performans optimizasyonları
+        vfr = true;                        # Variable framerate (güç tasarrufu)
+        no_direct_scanout = false;         # Direct scanout aktif (performans)
+        disable_autoreload = false;        # Config otomatik yeniden yükleme
 
         # Pencere davranışları
         focus_on_activate = true;          # Aktif pencereye odaklan
         always_follow_on_dnd = true;       # Sürükle-bırak takibi
+        layers_hog_keyboard_focus = true;  # Layer'ların klavye odağını alması
+        animate_manual_resizes = true;     # Manuel resize animasyonları
+        animate_mouse_windowdragging = true; # Pencere sürükleme animasyonları
+
+        # Terminal swallow ayarları
         enable_swallow = true;             # Pencere yutma özelliği
+        swallow_regex = "^(kitty|foot|alacritty|wezterm)$"; # Daha kapsamlı terminal listesi
+        swallow_exception_regex = "^(wev|Wayland-desktop)$"; # Yutulmaması gerekenler
+
+        # Monitör ve odak yönetimi
         mouse_move_focuses_monitor = true; # Fare monitör odağı
-        swallow_regex = "^(kitty)$";       # Yutulacak pencereler
+        suppress_portal_warnings = false;  # Portal uyarılarını bastırma
+        initial_workspace_tracking = 1;    # Başlangıç workspace takibi
+
+        # Özel özellikler
+        close_special_on_empty = true;     # Boş special workspace'i kapat
+        new_window_takes_over_fullscreen = 2; # Yeni pencere fullscreen davranışı
+        allow_session_lock_restore = true; # Session lock restore
+        background_color = 0x111111;       # Arka plan rengi
+        render_ahead_of_time = false;      # Ahead-of-time rendering
+        render_ahead_safezone = 1;         # Render safezone
       };
 
       # =====================================================
@@ -212,13 +246,25 @@
         pseudotile = true;                 # Sahte döşeme
         preserve_split = true;             # Bölme konumunu koru
         special_scale_factor = 0.8;        # Özel ölçekleme faktörü
-        force_split = 2;                   # Zorunlu bölme yönü
+        force_split = 2;                   # Zorunlu bölme yönü (2 = sağa)
+        split_width_multiplier = 1.0;      # Bölme genişlik çarpanı
+        no_gaps_when_only = false;         # Tek pencerede gap'leri koru
+        use_active_for_splits = true;      # Aktif pencere için split kullan
+        default_split_ratio = 1.0;         # Varsayılan split oranı
       };
 
       master = {
-        new_on_top = true;                # Yeni pencereleri üste ekle
-        mfact = 0.5;                      # Ana pencere oranı
-        orientation = "right";            # Yerleşim yönü
+        new_on_top = false;               # Yeni pencereleri alta ekle (daha mantıklı)
+        new_status = "slave";             # Yeni pencere durumu
+        mfact = 0.55;                     # Ana pencere oranı (biraz daha büyük)
+        orientation = "left";             # Yerleşim yönü (master solda daha yaygın)
+        inherit_fullscreen = true;        # Fullscreen miras alma
+        always_center_master = false;     # Master'ı her zaman ortala
+        smart_resizing = true;            # Akıllı boyutlandırma
+        drop_at_cursor = false;           # Cursor'a pencere bırakma
+        allow_small_split = false;        # Küçük split'lere izin verme
+        special_scale_factor = 0.8;       # Special workspace ölçeği
+        no_gaps_when_only = false;        # Tek pencerede gap'leri koru
       };
 
       # =====================================================
@@ -239,35 +285,47 @@
       decoration = {
         # Temel görünüm
         rounding = 10;                    # Köşe yuvarlaklığı
-
-        # Opaklık ayarları
-        active_opacity = 2.0;             # Aktif pencere opaklığı
-        inactive_opacity = 1.0;           # Pasif pencere opaklığı
+ 
+        # Opaklık ayarları (düzeltildi)
+        active_opacity = 1.0;             # Aktif pencere tam opak
+        inactive_opacity = 0.95;          # Pasif pencereler hafif şeffaf
         fullscreen_opacity = 1.0;         # Tam ekran opaklığı
-
+ 
         # Karartma ayarları
         dim_inactive = true;              # Pasif pencere karartma
-        dim_strength = 0.1;               # Karartma şiddeti
-
-        # Bulanıklık ayarları
+        dim_strength = 0.15;              # Karartma şiddeti (artırıldı)
+ 
+        # Geliştirilmiş bulanıklık ayarları
         blur = {
           enabled = true;                 # Bulanıklık efekti
-          size = 6;                       # Bulanıklık boyutu
-          passes = 3;                     # Bulanıklık geçişleri
+          size = 8;                       # Bulanıklık boyutu (iyileştirildi)
+          passes = 2;                     # Bulanıklık geçişleri (performans için azaltıldı)
           ignore_opacity = true;          # Opaklığı yoksay
           new_optimizations = true;       # Yeni optimizasyonlar
           xray = false;                   # X-ray efekti
+          vibrancy = 0.1696;              # Modern glassmorphism efekti
+          vibrancy_darkness = 0.0;        # Vibrancy karartma
+          special = false;                # Special workspace'te blur kapalı
+          popups = true;                  # Popup'larda blur aktif
+          popups_ignorealpha = 0.2;       # Popup blur eşiği
         };
-
-        # Gölge ayarları
+ 
+        # İyileştirilmiş gölge ayarları
         shadow = {
           enabled = true;                 # Gölge efekti
           ignore_window = true;           # Pencere gölgesi
-          offset = "0 2";                 # Gölge konumu
-          range = 20;                     # Gölge menzili
-          render_power = 3;               # Gölge gücü
-          color = "rgba(00000055)";       # Gölge rengi
+          offset = "0 4";                 # Gölge konumu (Y ekseninde artırıldı)
+          range = 25;                     # Gölge menzili (genişletildi)
+          render_power = 2;               # Gölge gücü (performans için azaltıldı)
+          color = "rgba(00000066)";       # Gölge rengi (biraz koyulaştırıldı)
+          scale = 0.97;                   # Gölge ölçeği
         };
+ 
+        # Modern drop shadow efekti
+        drop_shadow = true;               # Drop shadow etkin
+        shadow_range = 30;                # Drop shadow menzili
+        shadow_offset = "0 2";            # Drop shadow konumu
+        shadow_scale = 0.97;              # Drop shadow ölçeği
       };
 
       # =====================================================
@@ -278,20 +336,18 @@
 
         # Bezier eğrileri
         bezier = [
-          "slow, 0, 0.85, 0.3, 1"
-          "winOut, 0.3, -0.3, 0, 1"
-          "wind, 0.05, 0.9, 0.1, 1.05"
-          "linear, 0.0, 0.0, 1.0, 1.0"
+          "fluent_decel, 0, 0.2, 0.4, 1"
+          "easeOutCirc, 0, 0.55, 0.45, 1"
+          "easeOutCubic, 0.33, 1, 0.68, 1"
         ];
 
         # Animasyon tanımları
         animation = [
-          "windowsIn, 1, 4, slow, popin"
-          "windowsOut, 1, 4, winOut, popin"
-          "windowsMove, 1, 4, wind, slide"
-          "fade, 1, 5, slow"
-          "workspaces, 1, 4, wind"
-          "border, 1, 10, linear"
+          "windows, 1, 2, easeOutCubic, slide"
+          "windowsOut, 1, 2, easeOutCubic, slide"
+          "fade, 1, 3, easeOutCirc"
+          "workspaces, 1, 3, easeOutCubic"
+          "border, 1, 1, linear"
         ];
       };
 
