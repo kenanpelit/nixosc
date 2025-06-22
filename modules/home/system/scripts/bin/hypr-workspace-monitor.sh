@@ -348,23 +348,48 @@ navigate_browser_tab() {
 	local current_window
 	current_window=$(hyprctl activewindow -j | jq -r '.class')
 
-	log_debug "Navigating browser tab $direction in window class: $current_window"
+	log_debug "Navigating browser tab $direction in window class: '$current_window'"
 
-	# Browser detection - geniş pattern matching
+	# Debug: Aktual class'ı göster
+	echo "[DEBUG] Detected browser class: '$current_window'"
+
+	# Daha kapsamlı browser detection
 	case "$current_window" in
-	*"brave"* | *"Brave"* | *"firefox"* | *"Firefox"* | *"chromium"* | *"Chromium"* | *"google-chrome"* | *"Google-chrome"* | *"zen"* | *"Zen"*)
+	*[Bb]rave* | *[Ff]irefox* | *[Cc]hromium* | *[Cc]hrome* | *[Zz]en* | *[Ee]dge*)
 		log_debug "Browser detected: $current_window"
 
-		# ESKI SCRIPT'TEKİ GİBİ hyprctl dispatch exec kullan!
+		# Farklı wtype syntax'ları dene
 		if [ "$direction" = "next" ]; then
-			hyprctl dispatch exec "wtype -P ctrl -p Tab -r Tab -R ctrl"
+			# Syntax 1: Modern wtype
+			hyprctl dispatch exec "wtype -M ctrl -k Tab" 2>/dev/null ||
+				# Syntax 2: Eski wtype
+				hyprctl dispatch exec "wtype -P ctrl -p Tab -r Tab -R ctrl" 2>/dev/null ||
+				# Syntax 3: Direct wtype
+				wtype -M ctrl -k Tab 2>/dev/null ||
+				# Syntax 4: ydotool fallback
+				ydotool key 29:1 15:1 15:0 29:0 2>/dev/null ||
+				log_error "All tab navigation methods failed"
 		else
-			hyprctl dispatch exec "wtype -P ctrl -P shift -p Tab -r Tab -R shift -R ctrl"
+			# Syntax 1: Modern wtype
+			hyprctl dispatch exec "wtype -M ctrl -M shift -k Tab" 2>/dev/null ||
+				# Syntax 2: Eski wtype
+				hyprctl dispatch exec "wtype -P ctrl -P shift -p Tab -r Tab -R shift -R ctrl" 2>/dev/null ||
+				# Syntax 3: Direct wtype
+				wtype -M ctrl -M shift -k Tab 2>/dev/null ||
+				# Syntax 4: ydotool fallback
+				ydotool key 29:1 42:1 15:1 15:0 42:0 29:0 2>/dev/null ||
+				log_error "All tab navigation methods failed"
 		fi
+		return 0
 		;;
 	*)
-		log_error "Browser not supported or no browser focused: $current_window"
-		log_error "Supported browsers: brave, firefox, chromium, google-chrome, zen"
+		log_error "Browser not supported or no browser focused"
+		log_error "Current window class: '$current_window'"
+		log_error "Supported browsers: Any browser containing brave, firefox, chromium, chrome, zen, edge"
+
+		# Debug: Tüm açık pencere class'larını göster
+		echo "[DEBUG] All open window classes:"
+		hyprctl clients -j | jq -r '.[].class' | sort | uniq
 		return 1
 		;;
 	esac
