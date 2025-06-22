@@ -238,6 +238,33 @@
       };
 
       # =====================================================
+      # Gesture Ayarları - Touchpad & Touchscreen
+      # =====================================================
+      gestures = {
+        # Temel workspace swipe
+        workspace_swipe = true;                   # Workspace swipe etkin
+        workspace_swipe_fingers = 3;              # 3 parmak (standart)
+        workspace_swipe_min_fingers = false;      # Minimum parmak sayısı kontrolü kapalı
+        workspace_swipe_distance = 200;           # Daha hassas (300->200)
+        
+        # Touchscreen desteği
+        workspace_swipe_touch = false;            # Touchscreen swipe kapalı (laptop için)
+        workspace_swipe_touch_invert = false;     # Touchscreen yön normal
+        
+        # Yön kontrolü
+        workspace_swipe_invert = true;            # Touchpad yön ters (doğal)
+        
+        # İleri seviye ayarlar
+        workspace_swipe_min_speed_to_force = 20;  # Daha düşük hız eşiği (30->20)
+        workspace_swipe_cancel_ratio = 0.3;       # İptal oranı (0.5->0.3, daha kolay)
+        workspace_swipe_create_new = true;        # Son workspace'ten swipe ile yeni workspace
+        workspace_swipe_direction_lock = true;    # Yön kilidi aktif
+        workspace_swipe_direction_lock_threshold = 15; # Yön kilidi eşiği (10->15)
+        workspace_swipe_forever = false;          # Sınırsız swipe kapalı (workspace sınırında dur)
+        workspace_swipe_use_r = false;            # 'r' prefix kullanma (varsayılan 'm')
+      };
+
+      # =====================================================
       # Yerleşim Yöneticisi Ayarları
       # =====================================================
       dwindle = {
