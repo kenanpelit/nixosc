@@ -4,9 +4,10 @@
 # HYPRLAND MONITOR & WORKSPACE CONTROL
 #######################################
 #
-# Version: 1.3.0
-# Date: 2025-05-14
+# Version: 1.4.0
+# Date: 2025-06-22
 # Original Author: Kenan Pelit
+# Enhanced Version: With validation and improved help
 # Description: HyprFlow - Enhanced Hyprland Control Tool
 #
 # License: MIT
@@ -55,14 +56,96 @@ if [ ! -f "$STATE_FILE" ]; then
 	echo "up" >"$STATE_FILE"
 fi
 
-# Create workspace tracking files if they don't exist
-if [ ! -f "$CURRENT_WS_FILE" ]; then
-	get_current_workspace >"$CURRENT_WS_FILE" 2>/dev/null || echo "1" >"$CURRENT_WS_FILE"
-fi
+#######################################
+# Validation Functions
+#######################################
 
-if [ ! -f "$PREVIOUS_WS_FILE" ]; then
-	echo "1" >"$PREVIOUS_WS_FILE"
-fi
+validate_workspace() {
+	local ws=$1
+	if ! [[ "$ws" =~ ^[0-9]+$ ]]; then
+		log_error "Invalid workspace number: $ws (must be a positive integer)"
+		return 1
+	fi
+	if [ "$ws" -lt 1 ] || [ "$ws" -gt 10 ]; then
+		log_error "Workspace number out of range: $ws (valid range: 1-10)"
+		return 1
+	fi
+	return 0
+}
+
+validate_dependencies() {
+	local deps=("hyprctl" "jq")
+	local missing_deps=()
+
+	for dep in "${deps[@]}"; do
+		if ! command -v "$dep" &>/dev/null; then
+			missing_deps+=("$dep")
+		fi
+	done
+
+	# Check optional dependencies
+	if ! command -v "pypr" &>/dev/null; then
+		log_debug "pypr not found - monitor shifting will not work"
+	fi
+
+	if ! command -v "wtype" &>/dev/null && ! command -v "ydotool" &>/dev/null; then
+		log_debug "Neither wtype nor ydotool found - browser tab navigation may not work"
+	fi
+
+	if [ ${#missing_deps[@]} -gt 0 ]; then
+		log_error "Missing required dependencies: ${missing_deps[*]}"
+		log_error "Please install the missing dependencies and try again"
+		exit 1
+	fi
+}
+
+#######################################
+# Safe File Operations
+#######################################
+
+safe_read_file() {
+	local file=$1
+	local default=${2:-"1"}
+
+	if [ -f "$file" ] && [ -r "$file" ]; then
+		local content
+		content=$(cat "$file" 2>/dev/null | head -1 | tr -d '\n\r')
+		if [[ "$content" =~ ^[0-9]+$ ]] && [ "$content" -ge 1 ] && [ "$content" -le 10 ]; then
+			echo "$content"
+		else
+			log_debug "Invalid content in $file: '$content', using default: $default"
+			echo "$default"
+		fi
+	else
+		log_debug "File $file not readable, using default: $default"
+		echo "$default"
+	fi
+}
+
+safe_write_file() {
+	local file=$1
+	local content=$2
+
+	if validate_workspace "$content"; then
+		echo "$content" >"$file" 2>/dev/null || log_error "Failed to write to $file"
+	else
+		log_error "Attempted to write invalid workspace number: $content"
+	fi
+}
+
+# Initialize workspace tracking files with safe operations
+init_workspace_files() {
+	local current_ws
+	current_ws=$(get_current_workspace 2>/dev/null || echo "1")
+
+	if [ ! -f "$CURRENT_WS_FILE" ]; then
+		safe_write_file "$CURRENT_WS_FILE" "$current_ws"
+	fi
+
+	if [ ! -f "$PREVIOUS_WS_FILE" ]; then
+		safe_write_file "$PREVIOUS_WS_FILE" "1"
+	fi
+}
 
 #######################################
 # Logging Functions
@@ -94,11 +177,7 @@ get_current_workspace() {
 }
 
 get_previous_workspace() {
-	if [ -s "$PREVIOUS_WS_FILE" ]; then
-		cat "$PREVIOUS_WS_FILE"
-	else
-		echo "1" # Default to workspace 1 if no history
-	fi
+	safe_read_file "$PREVIOUS_WS_FILE" "1"
 }
 
 get_current_monitor() {
@@ -118,38 +197,45 @@ get_all_workspaces() {
 	hyprctl workspaces -j | jq -r '.[] | select(.name!="special") | .name' | sort -n
 }
 
-# Update workspace history - simplified version
+# Update workspace history - enhanced with validation
 update_workspace_history() {
 	local new_ws
 	new_ws=$(get_current_workspace)
+
+	if ! validate_workspace "$new_ws"; then
+		log_error "Current workspace validation failed: $new_ws"
+		return 1
+	fi
+
 	log_debug "Updating workspace history. New workspace: $new_ws"
 
-	# Read current workspace
+	# Read current workspace safely
 	local old_ws
-	if [ -s "$CURRENT_WS_FILE" ]; then
-		old_ws=$(cat "$CURRENT_WS_FILE")
-		log_debug "Current workspace from file: $old_ws"
+	old_ws=$(safe_read_file "$CURRENT_WS_FILE" "1")
+	log_debug "Current workspace from file: $old_ws"
 
-		# If workspace changed, update previous
-		if [ "$new_ws" != "$old_ws" ]; then
-			echo "$old_ws" >"$PREVIOUS_WS_FILE"
-			log_debug "Updated previous workspace to: $old_ws"
-		fi
-	else
-		log_debug "No current workspace file found or it's empty"
+	# If workspace changed, update previous
+	if [ "$new_ws" != "$old_ws" ]; then
+		safe_write_file "$PREVIOUS_WS_FILE" "$old_ws"
+		log_debug "Updated previous workspace to: $old_ws"
 	fi
 
 	# Always update current workspace
-	echo "$new_ws" >"$CURRENT_WS_FILE"
+	safe_write_file "$CURRENT_WS_FILE" "$new_ws"
 	log_debug "Updated current workspace to: $new_ws"
 
 	# Verify files were updated
-	log_debug "Current workspace file now contains: $(cat "$CURRENT_WS_FILE" 2>/dev/null || echo 'ERROR READING FILE')"
-	log_debug "Previous workspace file now contains: $(cat "$PREVIOUS_WS_FILE" 2>/dev/null || echo 'ERROR READING FILE')"
+	log_debug "Current workspace file now contains: $(safe_read_file "$CURRENT_WS_FILE")"
+	log_debug "Previous workspace file now contains: $(safe_read_file "$PREVIOUS_WS_FILE")"
 }
 
 switch_to_workspace() {
 	local next_ws=$1
+
+	if ! validate_workspace "$next_ws"; then
+		log_error "Cannot switch to invalid workspace: $next_ws"
+		return 1
+	fi
 
 	# Get current workspace before switching
 	local current_ws
@@ -157,13 +243,13 @@ switch_to_workspace() {
 	log_debug "Switching from workspace $current_ws to $next_ws"
 
 	# Save current as previous before switching
-	echo "$current_ws" >"$PREVIOUS_WS_FILE"
+	safe_write_file "$PREVIOUS_WS_FILE" "$current_ws"
 
 	# Switch to target workspace
 	hyprctl dispatch workspace name:$next_ws
 
 	# Update current workspace after switching
-	echo "$next_ws" >"$CURRENT_WS_FILE"
+	safe_write_file "$CURRENT_WS_FILE" "$next_ws"
 
 	log_debug "Switch complete. Previous workspace set to $current_ws"
 }
@@ -176,7 +262,7 @@ switch_workspace_direction() {
 	log_debug "Switching workspace direction: $direction from current $current_ws"
 
 	# Save current as previous before switching
-	echo "$current_ws" >"$PREVIOUS_WS_FILE"
+	safe_write_file "$PREVIOUS_WS_FILE" "$current_ws"
 
 	# Use simple dispatch commands for left/right navigation
 	case $direction in
@@ -193,7 +279,7 @@ switch_workspace_direction() {
 	# Update current workspace after switching
 	local new_ws
 	new_ws=$(get_current_workspace)
-	echo "$new_ws" >"$CURRENT_WS_FILE"
+	safe_write_file "$CURRENT_WS_FILE" "$new_ws"
 
 	log_debug "Switch direction complete. New workspace: $new_ws"
 }
@@ -208,18 +294,25 @@ get_focused_window() {
 
 move_window_to_workspace() {
 	local target_ws=$1
+
+	if ! validate_workspace "$target_ws"; then
+		log_error "Cannot move window to invalid workspace: $target_ws"
+		return 1
+	fi
+
 	local focused_window
 	focused_window=$(get_focused_window)
 
-	if [ "$focused_window" != "null" ]; then
+	if [ "$focused_window" != "null" ] && [ -n "$focused_window" ]; then
 		log_debug "Moving window $focused_window to workspace $target_ws"
 		hyprctl dispatch movetoworkspace "$target_ws"
 		hyprctl dispatch workspace "$target_ws"
 
 		# Update workspace tracking
-		echo "$target_ws" >"$CURRENT_WS_FILE"
+		safe_write_file "$CURRENT_WS_FILE" "$target_ws"
 	else
 		log_error "No focused window to move"
+		return 1
 	fi
 }
 
@@ -230,7 +323,7 @@ move_window_to_workspace() {
 toggle_monitor_focus() {
 	# Read current state
 	local current_state
-	current_state=$(cat "$STATE_FILE")
+	current_state=$(cat "$STATE_FILE" 2>/dev/null || echo "up")
 
 	log_debug "Toggling monitor focus, current state: $current_state"
 
@@ -257,72 +350,101 @@ navigate_browser_tab() {
 
 	log_debug "Navigating browser tab $direction in window class: $current_window"
 
-	if [[ "$current_window" == "brave" || "$current_window" == "Brave" ]]; then
+	# Enhanced browser support
+	case "$current_window" in
+	"brave" | "Brave" | "firefox" | "Firefox" | "chromium" | "Chromium" | "google-chrome" | "Google-chrome")
 		if [ "$direction" = "next" ]; then
-			hyprctl dispatch exec "wtype -P ctrl -p tab -r tab -R ctrl"
+			if command -v wtype &>/dev/null; then
+				wtype -M ctrl -k tab 2>/dev/null
+			elif command -v ydotool &>/dev/null; then
+				ydotool key ctrl+tab 2>/dev/null
+			else
+				log_error "Neither wtype nor ydotool available for browser tab navigation"
+				return 1
+			fi
 		else
-			hyprctl dispatch exec "wtype -P ctrl -P shift -p tab -r tab -R shift -R ctrl"
+			if command -v wtype &>/dev/null; then
+				wtype -M ctrl -M shift -k tab 2>/dev/null
+			elif command -v ydotool &>/dev/null; then
+				ydotool key ctrl+shift+tab 2>/dev/null
+			else
+				log_error "Neither wtype nor ydotool available for browser tab navigation"
+				return 1
+			fi
 		fi
-	else
-		# Diğer tarayıcılar için
-		if [ "$direction" = "next" ]; then
-			wtype -M ctrl -k tab 2>/dev/null || ydotool key ctrl+tab 2>/dev/null
-		else
-			wtype -M ctrl -M shift -k tab 2>/dev/null || ydotool key ctrl+shift+tab 2>/dev/null
-		fi
-	fi
+		;;
+	*)
+		log_error "Browser not supported or no browser focused: $current_window"
+		return 1
+		;;
+	esac
 }
 
 #######################################
-# Help Message Function
+# Help Message Function (Enhanced)
 #######################################
 
 show_help() {
 	cat <<EOF
-╔══════════════════════════════════╗
-║   HyprFlow - Hyprland Control    ║
-╚══════════════════════════════════╝
+╭─────────────────────────────────────────────────────────────╮
+│                🚀 HyprFlow - Hyprland Control                │
+│                     Enhanced Version 1.4.0                  │
+╰─────────────────────────────────────────────────────────────╯
 
-Usage: $0 [-h] [OPTION]
+📋 QUICK REFERENCE (Most Used Commands):
+  $0 -wt         ← Go to previous workspace (super useful!)
+  $0 -wn 5       ← Jump to workspace 5
+  $0 -mw 3       ← Move current window to workspace 3
+  $0 -wr/-wl     ← Navigate workspaces left/right
 
-Monitor Operations:
-  -ms         Shift monitors without focus
-  -msf        Shift monitors with focus
-  -mt         Toggle monitor focus (up/down)
-  -ml         Switch to left monitor
-  -mr         Switch to right monitor
+🖥️  MONITOR OPERATIONS:
+  -ms            Shift monitors without focus
+  -msf           Shift monitors with focus  
+  -mt            Toggle monitor focus (up/down)
+  -ml            Switch to left monitor
+  -mr            Switch to right monitor
 
-Workspace Operations:
-  -wt         Switch to previous workspace
-  -wr         Switch to workspace on the right
-  -wl         Switch to workspace on the left
-  -wn NUM     Jump to workspace NUM
-  -mw NUM     Move focused window to workspace NUM
+🏠 WORKSPACE OPERATIONS:
+  -wt            Switch to previous workspace ⭐
+  -wr            Switch to workspace on the right
+  -wl            Switch to workspace on the left  
+  -wn NUM        Jump to workspace NUM (1-10)
+  -mw NUM        Move focused window to workspace NUM
 
-Window Operations:
-  -vn         Cycle to next window
-  -vp         Cycle to previous window
-  -vl         Move focus left
-  -vr         Move focus right
-  -vu         Move focus up
-  -vd         Move focus down
+🪟 WINDOW OPERATIONS:
+  -vn            Cycle to next window
+  -vp            Cycle to previous window
+  -vl/-vr        Move focus left/right
+  -vu/-vd        Move focus up/down
 
-Browser Operations:
-  -tn         Next browser tab
-  -tp         Previous browser tab
+🌐 BROWSER OPERATIONS:
+  -tn            Next browser tab
+  -tp            Previous browser tab
+  
+🛠️  MAINTENANCE & DEBUG:
+  -h             Show this help message
+  -d             Debug mode (detailed output)
+  -c             Clear workspace history files
 
-Other:
-  -h          Show this help message
-  -d          Debug mode (detailed output)
-  -c          Clear workspace history files
+📝 EXAMPLES:
+  $0 -wn 5       # Jump to workspace 5
+  $0 -mw 3       # Move current window to workspace 3  
+  $0 -ms         # Shift monitors
+  $0 -wt         # Go to previous workspace (most useful!)
+  $0 -d -wn 2    # Jump to workspace 2 with debug output
 
-Examples:
-  $0 -wn 5    # Jump to workspace 5
-  $0 -mw 3    # Move current window to workspace 3
-  $0 -ms      # Shift monitors
-  $0 -wt      # Go to previous workspace
+💡 TIPS:
+  • Use -wt frequently to toggle between two workspaces
+  • Combine -d with any command for troubleshooting
+  • Workspace numbers must be between 1-10
+  • Browser tab navigation works with: Firefox, Chrome, Chromium, Brave
 
-Version: 1.3.0
+🔧 REQUIREMENTS:
+  Required: hyprctl, jq
+  Optional: pypr (for monitor operations), wtype/ydotool (for browser tabs)
+
+Version: 1.4.0 | License: MIT
+Report issues: Check logs in ~/.cache/hypr/toggle/debug.log
 EOF
 	exit 0
 }
@@ -335,9 +457,11 @@ clear_workspace_history() {
 	log_info "Clearing workspace history files"
 	rm -f "$CURRENT_WS_FILE" "$PREVIOUS_WS_FILE"
 
-	# Create them anew
-	get_current_workspace >"$CURRENT_WS_FILE" 2>/dev/null || echo "1" >"$CURRENT_WS_FILE"
-	echo "1" >"$PREVIOUS_WS_FILE"
+	# Create them anew with validation
+	local current_ws
+	current_ws=$(get_current_workspace 2>/dev/null || echo "1")
+	safe_write_file "$CURRENT_WS_FILE" "$current_ws"
+	safe_write_file "$PREVIOUS_WS_FILE" "1"
 
 	log_info "Workspace history files reset"
 }
@@ -355,6 +479,12 @@ if [ $# -eq 0 ]; then
 	show_help
 fi
 
+# Validate dependencies first
+validate_dependencies
+
+# Initialize workspace files
+init_workspace_files
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
 	case $1 in
@@ -371,14 +501,24 @@ while [[ $# -gt 0 ]]; do
 		shift
 		;;
 	-ms)
-		log_debug "Shifting monitors without focus"
-		pypr shift_monitors "$direction"
+		if command -v pypr &>/dev/null; then
+			log_debug "Shifting monitors without focus"
+			pypr shift_monitors "$direction"
+		else
+			log_error "pypr not found - cannot shift monitors"
+			exit 1
+		fi
 		shift
 		;;
 	-msf)
-		log_debug "Shifting monitors with focus"
-		pypr shift_monitors "$direction"
-		hyprctl dispatch focusmonitor "$direction"
+		if command -v pypr &>/dev/null; then
+			log_debug "Shifting monitors with focus"
+			pypr shift_monitors "$direction"
+			hyprctl dispatch focusmonitor "$direction"
+		else
+			log_error "pypr not found - cannot shift monitors"
+			exit 1
+		fi
 		shift
 		;;
 	-mt)
@@ -407,14 +547,14 @@ while [[ $# -gt 0 ]]; do
 		log_debug "Switching to workspace on right"
 		# Save current workspace before switching
 		current_ws=$(get_current_workspace)
-		echo "$current_ws" >"$PREVIOUS_WS_FILE"
+		safe_write_file "$PREVIOUS_WS_FILE" "$current_ws"
 
 		# Direct command for workspace right
 		hyprctl dispatch workspace +1
 
 		# Update current workspace after switching
 		new_ws=$(get_current_workspace)
-		echo "$new_ws" >"$CURRENT_WS_FILE"
+		safe_write_file "$CURRENT_WS_FILE" "$new_ws"
 
 		log_debug "Switched from $current_ws to $new_ws"
 		shift
@@ -423,14 +563,14 @@ while [[ $# -gt 0 ]]; do
 		log_debug "Switching to workspace on left"
 		# Save current workspace before switching
 		current_ws=$(get_current_workspace)
-		echo "$current_ws" >"$PREVIOUS_WS_FILE"
+		safe_write_file "$PREVIOUS_WS_FILE" "$current_ws"
 
 		# Direct command for workspace left
 		hyprctl dispatch workspace -1
 
 		# Update current workspace after switching
 		new_ws=$(get_current_workspace)
-		echo "$new_ws" >"$CURRENT_WS_FILE"
+		safe_write_file "$CURRENT_WS_FILE" "$new_ws"
 
 		log_debug "Switched from $current_ws to $new_ws"
 		shift
@@ -438,19 +578,25 @@ while [[ $# -gt 0 ]]; do
 	-wn)
 		if [[ -z "${2:-}" ]]; then
 			log_error "Workspace number is required for -wn"
+			log_info "Usage: $0 -wn <workspace_number> (1-10)"
 			exit 1
 		fi
+
+		if ! validate_workspace "$2"; then
+			exit 1
+		fi
+
 		log_debug "Jumping to workspace $2"
 
 		# Save current workspace before switching
 		current_ws=$(get_current_workspace)
-		echo "$current_ws" >"$PREVIOUS_WS_FILE"
+		safe_write_file "$PREVIOUS_WS_FILE" "$current_ws"
 
 		# Direct command to avoid issues with workspace names
 		hyprctl dispatch workspace "$2"
 
 		# Update current after switching
-		echo "$2" >"$CURRENT_WS_FILE"
+		safe_write_file "$CURRENT_WS_FILE" "$2"
 
 		log_debug "Switched from workspace $current_ws to $2"
 		shift 2
@@ -458,8 +604,14 @@ while [[ $# -gt 0 ]]; do
 	-mw)
 		if [[ -z "${2:-}" ]]; then
 			log_error "Workspace number is required for -mw"
+			log_info "Usage: $0 -mw <workspace_number> (1-10)"
 			exit 1
 		fi
+
+		if ! validate_workspace "$2"; then
+			exit 1
+		fi
+
 		log_debug "Moving window to workspace $2"
 		move_window_to_workspace "$2"
 		shift 2
@@ -506,7 +658,8 @@ while [[ $# -gt 0 ]]; do
 		;;
 	*)
 		log_error "Invalid option: $1"
-		show_help
+		log_info "Use $0 -h for help"
+		exit 1
 		;;
 	esac
 done
