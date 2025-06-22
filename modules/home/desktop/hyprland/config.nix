@@ -340,47 +340,147 @@
         ];
       };
 
-      # Window Rules Section
+      # =====================================================
+      # Window Rules Section - Optimized & Organized
+      # =====================================================
       windowrule = [
+        # ===== MEDIA APPLICATIONS =====
+        # MPV - Picture-in-Picture Video Player
         "float,class:^(mpv)$"
         "size 19%,class:^(mpv)$"
         "move 1% 77%,class:^(mpv)$"
-        "opacity 1.0,class:^(mpv)$"
+        "opacity 1.0 override 1.0 override,class:^(mpv)$"
         "pin,class:^(mpv)$"
-        "float,class:^(Vncviewer)$"
-        "center,class:^(Vncviewer)$"
+        "idleinhibit focus,class:^(mpv)$"
+
+        # VLC Media Player
+        "float,class:^(vlc)$"
+        "size 800 1250,class:^(vlc)$"
+        "move 1700 90,class:^(vlc)$"
+        "workspace 6,class:^(vlc)$"
+        "pin,class:^(vlc)$"
+
+        # Image Viewers
         "float,class:^(Viewnior)$"
         "center,class:^(Viewnior)$"
         "size 1200 800,class:^(Viewnior)$"
         "float,class:^(imv)$"
         "center,class:^(imv)$"
         "size 1200 725,class:^(imv)$"
-        "tile,class:^(Aseprite)$"
+        "opacity 1.0 override 1.0 override,title:^(.*imv.*)$"
+
+        # Audio
         "float,class:^(audacious)$"
-        "pin,class:^(rofi)$"
-        "pin,class:^(waypaper)$"
+        "workspace 5,class:^(Audacious)$"
+
+        # ===== PRODUCTIVITY APPLICATIONS =====
+        # Graphics & Design
+        "tile,class:^(Aseprite)$"
+        "workspace 4,class:^(Aseprite)$"
+        "opacity 1.0 override 1.0 override,class:^(Aseprite)$"
+        "workspace 4,class:^(Gimp-2.10)$"
         "tile,class:^(neovide)$"
+        "opacity 1.0 override 1.0 override,class:^(Unity)$"
+
+        # Document Viewer
+        "workspace 3,class:^(evince)$"
+        "opacity 1.0 override 1.0 override,class:^(evince)$"
+
+        # OBS Studio
+        "workspace 8,class:^(com.obsproject.Studio)$"
+
+        # ===== SYSTEM UTILITIES =====
+        # Remote Desktop
+        "float,class:^(Vncviewer)$"
+        "center,class:^(Vncviewer)$"
+        "workspace 6,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
+        "fullscreen,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
+
+        # File Management
         "float,class:^(udiskie)$"
-        "float,title:^(Transmission)$"
-        "float,title:^(Volume Control)$"
-        "float,title:^(Firefox — Sharing Indicator)$"
-        "move 0 0,title:^(Firefox — Sharing Indicator)$"
-        "size 700 450,title:^(Volume Control)$"
-        "move 40 55%,title:^(Volume Control)$"
-        # Legacy Window Rules
+        "float,class:^(org.gnome.FileRoller)$"
+        "center,class:^(org.gnome.FileRoller)$"
+        "size 850 500,class:^(org.gnome.FileRoller)$"
+
+        # ===== TERMINAL APPLICATIONS =====
+        # Terminal File Managers
+        "float,class:^(yazi)$"
+        "center,class:^(yazi)$"
+        "size 1920 1080,class:^(yazi)$"
+        "float,class:^(ranger)$"
+        "size 75% 60%,class:^(ranger)$"
+        "center,class:^(ranger)$"
+
+        # System Monitor
+        "float,class:^(htop)$"
+        "size 80% 80%,class:^(htop)$"
+        "center,class:^(htop)$"
+
+        # Scratchpad Terminals
         "float,class:^(scratchpad)$"
         "center,class:^(scratchpad)$"
         "float,class:^(kitty-scratch)$"
         "size 75% 60%,class:^(kitty-scratch)$"
         "center,class:^(kitty-scratch)$"
-        "float,class:^(htop)$"
-        "size 80% 80%,class:^(htop)$"
-        "center,class:^(htop)$"
-        "float,class:^(ranger)$"
-        "size 75% 60%,class:^(ranger)$"
-        "center,class:^(ranger)$"
-        "float,class:^(yazi)$"
-        "center,class:^(yazi)$"
+
+        # ===== COMMUNICATION =====
+        # Discord/WebCord
+        "workspace 5 silent,class:^(Discord)$"
+        "workspace 5,class:^(WebCord)$"
+        "workspace 5 silent,tile,class:^(discord)$"
+        "float,class:^(WebCord)$,title:^(Warning: Opening link in external app)$"
+        "center,class:^(WebCord)$,title:^(Warning: Opening link in external app)$"
+        "float,title:^(blob:https://discord.com).*$"
+        "center,title:^(blob:https://discord.com).*$"
+        "animation popin,title:^(blob:https://discord.com).*$"
+
+        # WhatsApp
+        "workspace 9 silent,class:^(Whats)$"
+        "workspace 9 silent,title:^(web.whatsapp.com)$ class:^(Brave-browser)$"
+        "workspace 9 silent,title:^(web.whatsapp.com)$"
+        "workspace 9 silent,class:^(Ferdium)$,title:^(Ferdium)$"
+
+        # Video Conferencing
+        "float,title:^(Meet).*$"
+        "size 918 558,title:^(Meet).*$"
+        "workspace 4,title:^(Meet).*$"
+        "center,title:^(Meet).*$"
+
+        # ===== WORKSPACE ASSIGNMENTS =====
+        # Browser Workspaces
+        "workspace 1,class:^(zen)$"
+        "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
+        "workspace 6 silent,title:^(New Private Tab - Brave)$"
+        "workspace 6 silent,title:^Kenp Browser (Inkognito)$"
+        "workspace 7 silent,title:^(brave-youtube.com__-Default)$"
+        "workspace 8 silent,class:^(Brave-browser)$,title:^(Spotify - Web Player).*"
+
+        # Development/Terminal
+        "workspace 2 silent,class:^(Tmux)$,title:^(Tmux)$"
+        "workspace 2 silent,class:^(TmuxKenp)$"
+
+        # AI/Documents
+        "workspace 3 silent,class:^(AI)$"
+
+        # Work/Projects
+        "workspace 4 silent,class:^(CompecTA)$"
+        "workspace 4 silent,title:^(compecta)$"
+
+        # Security/System
+        "workspace 7 silent,class:^(org.keepassxc.KeePassXC)$"
+        "workspace 7 silent,class:^(com.transmissionbt.transmission.*)$"
+
+        # Entertainment
+        "workspace 8 silent,class:^(Spotify)$"
+        "workspace 6 silent,class:^(qemu-system-x86_64)$"
+        "workspace 6 silent,class:^(qemu)$"
+
+        # ===== LAUNCHER & SYSTEM TOOLS =====
+        # Application Launchers
+        "pin,class:^(rofi)$"
+        "pin,class:^(waypaper)$"
+
+        # Notes & Clipboard
         "float,class:^(notes)$"
         "size 70% 50%,class:^(notes)$"
         "center,class:^(notes)$"
@@ -389,168 +489,58 @@
         "size 1536 864,class:^(anote)$"
         "animation slide,class:^(anote)$"
         "opacity 0.95 0.95,class:^(anote)$"
-        "float,class:^(otpclient)$"
-        "size 20%,class:^(otpclient)$"
-        "move 79% 40%,class:^(otpclient)$"
-        "opacity 1.0 1.0,class:^(otpclient)$"
-        "float,class:^(gcr-prompter)$"
-        "center,class:^(gcr-prompter)$"
-        "pin,class:^(gcr-prompter)$"
 
-        # Workspace Assignments
-        #"workspace 1 silent,class:^(Kenp)$"
-        "workspace 1,class:^(zen)$"
-        "workspace 2 silent,class:^(Tmux)$,title:^(Tmux)$"
-        "workspace 2 silent,class:^(TmuxKenp)$"
-        "workspace 3 silent,class:^(AI)$"
-        "workspace 3,class:^(evince)$"
-        "workspace 4 silent,class:^(CompecTA)$"
-        "workspace 4 silent,title:^(compecta)$"
-        "workspace 4,class:^(Gimp-2.10)$"
-        "workspace 4,class:^(Aseprite)$"
-        "workspace 5 silent,class:^(Discord)$"
-        "workspace 5,class:^(WebCord)$"
-        "workspace 5 silent,tile,class:^(discord)$"
-        "workspace 5,class:^(Audacious)$"
-        "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
-        "workspace 6 silent,title:^(New Private Tab - Brave)$"
-        "workspace 6 silent,title:^Kenp Browser (Inkognito)$"
-        #"workspace 6 silent,title:^(youtube.com)$"
-        "workspace 6 silent,class:^(qemu-system-x86_64)$"
-        "workspace 6 silent,class:^(qemu)$"
-        "workspace 7 silent,class:^(org.keepassxc.KeePassXC)$"
-        "workspace 7 silent,class:^(com.transmissionbt.transmission.*)$"
-        "workspace 7 silent,title:^(brave-youtube.com__-Default)$"
-        "workspace 8 silent,class:^(Spotify)$"
-        "workspace 8 silent,class:^(Brave-browser)$,title:^(Spotify - Web Player).*"
-        "workspace 8,class:^(com.obsproject.Studio)$"
-        "workspace 9 silent,class:^(Whats)$"
-        "workspace 9 silent,title:^(web.whatsapp.com)$ class:^(Brave-browser)$"
-        "workspace 9 silent,title:^(web.whatsapp.com)$"
-        "workspace 9 silent,class:^(Ferdium)$,title:^(Ferdium)$"
-
-        # Floating Windows
+        # Clipboard Manager
         "float,class:^(clipb)$"
-        "float,class:^(dropdown)$"
-        "float,class:^(waypaper)$"
-        "float,class:^(zenity)$"
-        "float,class:^(org.gnome.FileRoller)$"
-        "float,class:^(SoundWireServer)$"
-        "float,class:^(.sameboy-wrapped)$"
-        "float,class:^(file_progress)$"
-        "float,class:^(confirm)$"
-        "float,class:^(dialog)$"
-        "float,class:^(download)$"
-        "float,class:^(notification)$"
-        "float,class:^(error)$"
-        "float,class:^(confirmreset)$"
-        "float,title:^(Open File)$"
-        "float,title:^(File Upload)$"
-        "float,title:^(branchdialog)$"
-        "float,title:^(Confirm to replace files)$"
-        "float,title:^(File Operation Progress)$"
-        "float,title:^(Picture-in-Picture)$"
-
-        # Size and Position Rules
-        "size 1920 1080,class:^(yazi)$"
-        "size 1536 864,class:^(clipb)$"
-        "size 850 500,class:^(zenity)$"
-        "size 850 500,class:^(org.gnome.FileRoller)$"
-        "size 850 500,title:^(File Upload)$"
-        "size 99% 50%,class:^(dropdown)$"
-        "move 0.5% 3%,class:^(dropdown)$"
         "center,class:^(clipb)$"
-        "center,class:^(zenity)$"
-        "center,class:^(org.gnome.FileRoller)$"
-
-        # Animation and Visual Effects
+        "size 1536 864,class:^(clipb)$"
         "animation slide,class:^(clipb)$"
-        "opacity 1.0 override 1.0 override,title:^(Picture-in-Picture)$"
-        "opacity 1.0 override 1.0 override,title:^(.*imv.*)$"
-        "opacity 1.0 override 1.0 override,title:^(.*mpv.*)$"
-        "opacity 1.0 override 1.0 override,class:^(mpv)$"
-        "opacity 1.0 override 1.0 override,class:^(Aseprite)$"
-        "opacity 1.0 override 1.0 override,class:^(Unity)$"
-        "opacity 1.0 override 1.0 override,class:^(zen)$"
-        "opacity 1.0 override 1.0 override,class:^(evince)$"
-        "opacity 0.0 override,class:^(xwaylandvideobridge)$"
-        "opacity 1.0 override 1.0 override,class:^(kitty)$"
-        "opacity 1.0 override 1.0 override,class:^(foot)$"
-        "opacity 1.0 override 1.0 override,class:^(Alacritty)$"
-
-        # Special Behaviors
-        "pin,title:^(Picture-in-Picture)$"
-        "idleinhibit focus,class:^(mpv)$"
-        "idleinhibit fullscreen,class:^(firefox)$"
-        "noanim,class:^(xwaylandvideobridge)$"
-        "noinitialfocus,class:^(xwaylandvideobridge)$"
-        "maxsize 1 1,class:^(xwaylandvideobridge)$"
-        "noblur,class:^(xwaylandvideobridge)$"
-        "workspace special:dropdown,class:^(dropdown)$"
-
-        # No gaps when only
-        "bordersize 0,floating:0,onworkspace:w[t1]"
-        "rounding 0,floating:0,onworkspace:w[t1]"
-        "bordersize 0,floating:0,onworkspace:w[tg1]"
-        "rounding 0,floating:0,onworkspace:w[tg1]"
-        "bordersize 0,floating:0,onworkspace:f[1]"
-        "rounding 0,floating:0,onworkspace:f[1]"
-
-        # Context Menu Rules
-        "opaque,class:^()$,title:^()$"
-        "noshadow,class:^()$,title:^()$"
-        "noblur,class:^()$,title:^()$"
-
-        # Copyq
         "float,class:^(com.github.hluk.copyq)$"
         "size 25% 80%,class:^(com.github.hluk.copyq)$"
         "move 74% 10%,class:^(com.github.hluk.copyq)$"
         "animation popout,class:^(com.github.hluk.copyq)$"
         "dimaround,class:^(com.github.hluk.copyq)$"
 
-        # VNC
-        "workspace 6,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
-        "fullscreen,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
+        # Dropdown Terminal
+        "float,class:^(dropdown)$"
+        "size 99% 50%,class:^(dropdown)$"
+        "move 0.5% 3%,class:^(dropdown)$"
+        "workspace special:dropdown,class:^(dropdown)$"
 
-        # Pavucontrol
-        "float,class:^(org.pulseaudio.pavucontrol)$"
-        "size 60% 90%,class:^(org.pulseaudio.pavucontrol)$" 
-        "animation popin,class:^(org.pulseaudio.pavucontrol)$"
-        "dimaround,class:^(org.pulseaudio.pavucontrol)$"
-
-        # VLC
-        "float,class:^(vlc)$"
-        "size 800 1250,class:^(vlc)$"
-        "move 1700 90,class:^(vlc)$"
-        "workspace 6,class:^(vlc)$"
-        "pin,class:^(vlc)$"
-
-        # ente
+        # ===== AUTHENTICATION & SECURITY =====
+        # OTP Client
+        "float,class:^(otpclient)$"
+        "size 20%,class:^(otpclient)$"
+        "move 79% 40%,class:^(otpclient)$"
+        "opacity 1.0 1.0,class:^(otpclient)$"
         "float,class:^(io.ente.auth)$"
         "size 400 900,class:^(io.ente.auth)$"
         "center,class:^(io.ente.auth)$"
 
-        # webcord warning dialog
-        "float,class:^(WebCord)$,title:^(Warning: Opening link in external app)$"
-        "center,class:^(WebCord)$,title:^(Warning: Opening link in external app)$"
-        "float,title:^(blob:https://discord.com).*$"
-        "center,title:^(blob:https://discord.com).*$"
-        "animation popin,title:^(blob:https://discord.com).*$"
+        # System Prompts
+        "float,class:^(gcr-prompter)$"
+        "center,class:^(gcr-prompter)$"
+        "pin,class:^(gcr-prompter)$"
+        "animation fade,class:^(gcr-prompter)$"
+        "opacity 0.95 0.95,class:^(gcr-prompter)$"
 
-        # Meet
-        "float,title:^(Meet).*$"
-        "size 918 558,title:^(Meet).*$"
-        "workspace 4,title:^(Meet).*$"
-        "center,title:^(Meet).*$"
+        # ===== AUDIO CONTROL =====
+        # Volume Control
+        "float,title:^(Volume Control)$"
+        "size 700 450,title:^(Volume Control)$"
+        "move 40 55%,title:^(Volume Control)$"
+        "float,class:^(org.pulseaudio.pavucontrol)$"
+        "size 60% 90%,class:^(org.pulseaudio.pavucontrol)$"
+        "animation popin,class:^(org.pulseaudio.pavucontrol)$"
+        "dimaround,class:^(org.pulseaudio.pavucontrol)$"
 
-        # org.twosheds.iwgtk
+        # ===== NETWORK MANAGEMENT =====
         "float,class:^(org.twosheds.iwgtk)$"
         "size 1536 864,class:^(org.twosheds.iwgtk)$"
         "center,class:^(org.twosheds.iwgtk)$"
         "float,class:^(iwgtk)$"
         "size 360 440,class:^(iwgtk)$"
         "center,class:^(iwgtk)$"
-
         "float,class:^(nm-connection-editor)$"
         "size 1200 800,class:^(nm-connection-editor)$"
         "center,class:^(nm-connection-editor)$"
@@ -561,15 +551,69 @@
         "size 360 440,class:^(nm-applet)$"
         "center,class:^(nm-applet)$"
 
-        "float,class:^(gcr-prompter)$"
-        "center,class:^(gcr-prompter)$"
-        "pin,class:^(gcr-prompter)$"
-        "animation fade,class:^(gcr-prompter)$"
-        "opacity 0.95 0.95,class:^(gcr-prompter)$"
-        
-        # Window rules ile birden fazla pencere varken gap ekle
-        "bordersize 2, floating:0"      # Floating olmayan pencereler
-        "rounding 10, floating:0"       # Floating olmayan pencereler
+        # ===== GAMING & EMULATION =====
+        "float,class:^(.sameboy-wrapped)$"
+        "float,class:^(SoundWireServer)$"
+
+        # ===== GENERIC DIALOG RULES =====
+        # File Dialogs
+        "float,title:^(Open File)$"
+        "float,title:^(File Upload)$"
+        "size 850 500,title:^(File Upload)$"
+        "float,title:^(Confirm to replace files)$"
+        "float,title:^(File Operation Progress)$"
+        "float,title:^(branchdialog)$"
+
+        # System Dialogs
+        "float,class:^(file_progress)$"
+        "float,class:^(confirm)$"
+        "float,class:^(dialog)$"
+        "float,class:^(download)$"
+        "float,class:^(notification)$"
+        "float,class:^(error)$"
+        "float,class:^(confirmreset)$"
+        "float,class:^(zenity)$"
+        "center,class:^(zenity)$"
+        "size 850 500,class:^(zenity)$"
+
+        # ===== BROWSER SPECIFIC =====
+        # Firefox Sharing Indicator
+        "float,title:^(Firefox — Sharing Indicator)$"
+        "move 0 0,title:^(Firefox — Sharing Indicator)$"
+        "idleinhibit fullscreen,class:^(firefox)$"
+
+        # Transmission
+        "float,title:^(Transmission)$"
+
+        # Picture-in-Picture
+        "float,title:^(Picture-in-Picture)$"
+        "pin,title:^(Picture-in-Picture)$"
+        "opacity 1.0 override 1.0 override,title:^(Picture-in-Picture)$"
+
+        # ===== XWAYLAND VIDEO BRIDGE =====
+        "opacity 0.0 override,class:^(xwaylandvideobridge)$"
+        "noanim,class:^(xwaylandvideobridge)$"
+        "noinitialfocus,class:^(xwaylandvideobridge)$"
+        "maxsize 1 1,class:^(xwaylandvideobridge)$"
+        "noblur,class:^(xwaylandvideobridge)$"
+
+        # ===== CONTEXT MENU OPTIMIZATION =====
+        "opaque,class:^()$,title:^()$"
+        "noshadow,class:^()$,title:^()$"
+        "noblur,class:^()$,title:^()$"
+
+        # ===== TERMINAL OPACITY OVERRIDES =====
+        "opacity 1.0 override 1.0 override,class:^(kitty)$"
+        "opacity 1.0 override 1.0 override,class:^(foot)$"
+        "opacity 1.0 override 1.0 override,class:^(Alacritty)$"
+
+        # ===== BROWSER OPACITY OVERRIDES =====
+        "opacity 1.0 override 1.0 override,class:^(zen)$"
+
+        # ===== GLOBAL LAYOUT RULES =====
+        # Floating olmayan pencereler için global kurallar
+        "bordersize 2, floating:0"      # Tüm tiled pencerelere border
+        "rounding 10, floating:0"       # Tüm tiled pencerelere rounding
       ];
 
       # No gaps workspace rules
@@ -766,9 +810,6 @@
         # clipboard manager
         "$mainMod, V, exec, copyq toggle"
         "$mainMod CTRL, V, exec, chist all"
-        #"$mainMod CTRL, V, exec, cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy"
-        #"$mainMod CTRL, V, exec, chist preview"
-        #"$mainMod CTRL SHIFT, V, exec, chist inspect"
 
         # Ana Pencere Yönetimi
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
@@ -788,8 +829,8 @@
         "$mainMod, Tab, changegroupactive"         # Pencere grubu içinde aktif pencereyi değiştir
 
         # Pencere Bölme ve Boyutlandırma
-        "$mainMod ALT, right, exec, hyprctl dispatch splitratio -0.2"   # Sol bölme oranını azalt
-        "$mainMod ALT, left, exec, hyprctl dispatch splitratio +0.2"  # Sağ bölme oranını artır
+        "$mainMod ALT, left, exec, hyprctl dispatch splitratio -0.2"   # Sol bölme oranını azalt
+        "$mainMod ALT, right, exec, hyprctl dispatch splitratio +0.2"  # Sağ bölme oranını artır
       ];
 
       bindm = [
