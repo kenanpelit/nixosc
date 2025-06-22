@@ -32,7 +32,7 @@
         # Start wallpaper rotation/management service
         "wallpaper-manager start"
         # Python script runner for custom workspace management
-        "pypr"
+        #"pypr" # systemctl --user status pyprland.service
         # Initialize workspace layout
         "m2w2"
         # Start in service-mode application launcher
