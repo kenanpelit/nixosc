@@ -15,7 +15,6 @@
     plugins = [
       "scratchpads",
       "lost_windows",
-      "monitors", 
       "shift_monitors",
       "toggle_dpms",
       "expose",
@@ -41,8 +40,6 @@
     # ---------------------------------------------------------------------------
     # Monitor Management - Enhanced  
     # ---------------------------------------------------------------------------
-    [monitors]
-    placement = "bottom"       # Yeni monitor placement
     
     [shift_monitors]
     raise_monitor = true
