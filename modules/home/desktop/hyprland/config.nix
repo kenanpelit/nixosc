@@ -242,7 +242,7 @@
       # =====================================================
       gestures = {
         # Temel workspace swipe
-        workspace_swipe = true;                   # Workspace swipe etkin
+        workspace_swipe = false;                   # Workspace swipe etkin
         workspace_swipe_fingers = 3;              # 3 parmak (standart)
         workspace_swipe_min_fingers = false;      # Minimum parmak sayısı kontrolü kapalı
         workspace_swipe_distance = 200;           # Daha hassas (300->200)
