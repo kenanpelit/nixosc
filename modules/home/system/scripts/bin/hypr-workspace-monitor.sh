@@ -348,51 +348,23 @@ navigate_browser_tab() {
 	local current_window
 	current_window=$(hyprctl activewindow -j | jq -r '.class')
 
-	log_debug "Navigating browser tab $direction in window class: '$current_window'"
+	log_debug "Navigating browser tab $direction in window class: $current_window"
 
-	# Debug: Aktual class'ı göster
-	echo "[DEBUG] Detected browser class: '$current_window'"
-
-	# Daha kapsamlı browser detection
-	case "$current_window" in
-	*[Bb]rave* | *[Ff]irefox* | *[Cc]hromium* | *[Cc]hrome* | *[Zz]en* | *[Ee]dge*)
-		log_debug "Browser detected: $current_window"
-
-		# Farklı wtype syntax'ları dene
+	# Eski script'teki basit yaklaşım
+	if [[ "$current_window" == *"brave"* || "$current_window" == *"Brave"* ]]; then
 		if [ "$direction" = "next" ]; then
-			# Syntax 1: Modern wtype
-			hyprctl dispatch exec "wtype -M ctrl -k Tab" 2>/dev/null ||
-				# Syntax 2: Eski wtype
-				hyprctl dispatch exec "wtype -P ctrl -p Tab -r Tab -R ctrl" 2>/dev/null ||
-				# Syntax 3: Direct wtype
-				wtype -M ctrl -k Tab 2>/dev/null ||
-				# Syntax 4: ydotool fallback
-				ydotool key 29:1 15:1 15:0 29:0 2>/dev/null ||
-				log_error "All tab navigation methods failed"
+			hyprctl dispatch exec "wtype -P ctrl -p tab -r tab -R ctrl"
 		else
-			# Syntax 1: Modern wtype
-			hyprctl dispatch exec "wtype -M ctrl -M shift -k Tab" 2>/dev/null ||
-				# Syntax 2: Eski wtype
-				hyprctl dispatch exec "wtype -P ctrl -P shift -p Tab -r Tab -R shift -R ctrl" 2>/dev/null ||
-				# Syntax 3: Direct wtype
-				wtype -M ctrl -M shift -k Tab 2>/dev/null ||
-				# Syntax 4: ydotool fallback
-				ydotool key 29:1 42:1 15:1 15:0 42:0 29:0 2>/dev/null ||
-				log_error "All tab navigation methods failed"
+			hyprctl dispatch exec "wtype -P ctrl -P shift -p tab -r tab -R shift -R ctrl"
 		fi
-		return 0
-		;;
-	*)
-		log_error "Browser not supported or no browser focused"
-		log_error "Current window class: '$current_window'"
-		log_error "Supported browsers: Any browser containing brave, firefox, chromium, chrome, zen, edge"
-
-		# Debug: Tüm açık pencere class'larını göster
-		echo "[DEBUG] All open window classes:"
-		hyprctl clients -j | jq -r '.[].class' | sort | uniq
-		return 1
-		;;
-	esac
+	else
+		# Diğer tarayıcılar için
+		if [ "$direction" = "next" ]; then
+			wtype -M ctrl -k tab 2>/dev/null || ydotool key ctrl+tab 2>/dev/null
+		else
+			wtype -M ctrl -M shift -k tab 2>/dev/null || ydotool key ctrl+shift+tab 2>/dev/null
+		fi
+	fi
 }
 
 #######################################
