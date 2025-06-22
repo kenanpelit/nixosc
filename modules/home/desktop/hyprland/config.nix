@@ -163,8 +163,8 @@
       # =====================================================
       general = {
         "$mainMod" = "SUPER";                # Ana modifikatör tuşu
-        gaps_in = 4;                         # İç boşluklar (0'dan daha güzel)
-        gaps_out = 8;                        # Dış boşluklar
+        gaps_in = 0;                         # İç boşluklar
+        gaps_out = 0;                        # Dış boşluklar
         border_size = 2;                     # Border kalınlığı
         "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
         "col.inactive_border" = "rgba(595959aa)";
@@ -566,6 +566,10 @@
         "pin,class:^(gcr-prompter)$"
         "animation fade,class:^(gcr-prompter)$"
         "opacity 0.95 0.95,class:^(gcr-prompter)$"
+        
+        # Window rules ile birden fazla pencere varken gap ekle
+        "bordersize 2, floating:0"      # Floating olmayan pencereler
+        "rounding 10, floating:0"       # Floating olmayan pencereler
       ];
 
       # No gaps workspace rules
