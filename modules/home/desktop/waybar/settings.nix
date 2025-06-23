@@ -62,24 +62,22 @@
 
       "custom/weather" = {
         exec = ''
-          weather=$(curl -s 'wttr.in/Istanbul?format=%c+%t+%h+%w' 2>/dev/null)
+          weather=$(curl -s --connect-timeout 5 'wttr.in/Istanbul?format=%c+%t' 2>/dev/null)
           if [ -z "$weather" ]; then
-            echo " Hata"
+            echo "󰔏 N/A"
           else
-            condition=$(echo "$weather" | awk '{print $1}')
-            temp=$(echo "$weather" | awk '{print $2}')
-            humidity=$(echo "$weather" | awk '{print $3}')
-            wind=$(echo "$weather" | awk '{print $4}')
+            condition=$(echo "$weather" | cut -c1)
+            temp=$(echo "$weather" | cut -c2-)
             
-            # Emoji ve renk belirleme
             case "$condition" in
-              *☀*|*🌞*) icon="";;
-              *☁*|*⛅*) icon="";;
-              *🌧*|*🌦*) icon="";;
-              *⛈*) icon="";;
-              *🌨*|*❄*) icon="";;
-              *🌫*) icon="";;
-              *) icon="";;
+              "☀") icon="󰖙";;        # nf-weather-day-sunny
+              "⛅") icon="󰖕";;        # nf-weather-day-cloudy  
+              "☁") icon="󰖐";;        # nf-weather-cloudy
+              "🌧") icon="󰖖";;        # nf-weather-day-rain
+              "⛈") icon="󰙾";;        # nf-weather-thunderstorm
+              "🌨") icon="󰖘";;        # nf-weather-day-snow
+              "🌫") icon="󰖑";;        # nf-weather-fog
+              *) icon="󰔏";;          # nf-weather-thermometer
             esac
             
             echo "$icon $temp"
@@ -88,13 +86,10 @@
         interval = 1800;
         format = "{}";
         on-click = "xdg-open 'https://wttr.in/Istanbul'";
-        on-click-right = "osc-waybar weather";
-        on-click-middle = "osc-waybar weather update";
         tooltip = true;
-        exec-on-event = true;
-        return-type = "text";
+        tooltip-format = "Hava Durumu - Istanbul";
       };
-
+     
       "hyprland/workspaces" = {
         active-only = false;
         disable-scroll = true;
