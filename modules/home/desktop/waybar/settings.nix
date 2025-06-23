@@ -66,20 +66,28 @@
           if [ -z "$weather" ]; then
             echo "󰔏 N/A"
           else
-            condition=$(echo "$weather" | cut -c1)
-            temp=$(echo "$weather" | cut -c2-)
-            
-            case "$condition" in
-              "☀") icon="󰖙";;        # nf-weather-day-sunny
-              "⛅") icon="󰖕";;        # nf-weather-day-cloudy  
-              "☁") icon="󰖐";;        # nf-weather-cloudy
-              "🌧") icon="󰖖";;        # nf-weather-day-rain
-              "⛈") icon="󰙾";;        # nf-weather-thunderstorm
-              "🌨") icon="󰖘";;        # nf-weather-day-snow
-              "🌫") icon="󰖑";;        # nf-weather-fog
-              *) icon="󰔏";;          # nf-weather-thermometer
-            esac
-            
+            # Emoji'leri doğru şekilde parse et
+            if [[ "$weather" == *"☀"* ]]; then
+              icon="󰖙"  # nf-weather-day-sunny
+            elif [[ "$weather" == *"⛅"* ]]; then
+              icon="󰖕"  # nf-weather-day-cloudy  
+            elif [[ "$weather" == *"☁"* ]]; then
+              icon="󰖐"  # nf-weather-cloudy
+            elif [[ "$weather" == *"🌧"* ]]; then
+              icon="󰖖"  # nf-weather-day-rain
+            elif [[ "$weather" == *"⛈"* ]]; then
+              icon="󰙾"  # nf-weather-thunderstorm
+            elif [[ "$weather" == *"🌨"* ]]; then
+              icon="󰖘"  # nf-weather-day-snow
+            elif [[ "$weather" == *"🌫"* ]]; then
+              icon="󰖑"  # nf-weather-fog
+            else
+              icon="󰔏"  # nf-weather-thermometer
+            fi
+      
+            # Sıcaklığı al (emoji'den sonraki kısım)
+            temp=$(echo "$weather" | sed 's/^[^+]*\(+[^°]*°[CF]\)/\1/')
+      
             echo "$icon $temp"
           fi
         '';
