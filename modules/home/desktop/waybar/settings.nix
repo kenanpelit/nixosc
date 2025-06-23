@@ -1,4 +1,4 @@
-# modules/home/waybar/settings.nix
+# modules/home/desktop/waybar/settings.nix
 { custom, ... }:
 {
   programs.waybar.settings = {
@@ -101,15 +101,15 @@
         format = "{icon}";
         on-click = "activate";
         format-icons = {
-          "1" = "1";
-          "2" = "2";
-          "3" = "3";
-          "4" = "4";
-          "5" = "5";
-          "6" = "6";
-          "7" = "7";
-          "8" = "8";
-          "9" = "9";
+          "1" = "󰖟";  # Browser
+          "2" = "󰆍";  # Terminal
+          "3" = "󰈙";  # Documents
+          "4" = "󰑴";  # Work/Design
+          "5" = "󰙯";  # Communication
+          "6" = "󰊖";  # Entertainment
+          "7" = "󰒓";  # Security
+          "8" = "󰎆";  # Music
+          "9" = "󰍹";  # Chat
           sort-by-number = true;
           urgent = "";  # Ünlem işareti
           focused = "";  # İçi dolu daire
@@ -374,15 +374,15 @@
         format = "{icon}";
         on-click = "activate";
         format-icons = {
-          "1" = "1";
-          "2" = "2";
-          "3" = "3";
-          "4" = "4";
-          "5" = "5";
-          "6" = "6";
-          "7" = "7";
-          "8" = "8";
-          "9" = "9";
+          "1" = "󰖟";  # Browser
+          "2" = "󰆍";  # Terminal
+          "3" = "󰈙";  # Documents
+          "4" = "󰑴";  # Work/Design
+          "5" = "󰙯";  # Communication
+          "6" = "󰊖";  # Entertainment
+          "7" = "󰒓";  # Security
+          "8" = "󰎆";  # Music
+          "9" = "󰍹";  # Chat
           sort-by-number = true;
           urgent = "";  # Ünlem işareti
           focused = "";  # İçi dolu daire
