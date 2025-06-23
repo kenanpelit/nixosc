@@ -280,7 +280,7 @@
       master = {
         new_on_top = false;               # Yeni pencereleri alta ekle (daha mantıklı)
         new_status = "slave";             # Yeni pencere durumu
-        mfact = 0.55;                     # Ana pencere oranı (biraz daha büyük)
+        mfact = 0.67;                     # Ana pencere oranı (biraz daha büyük)
         orientation = "left";             # Yerleşim yönü (master solda daha yaygın)
         inherit_fullscreen = true;        # Fullscreen miras alma
         smart_resizing = true;            # Akıllı boyutlandırma
