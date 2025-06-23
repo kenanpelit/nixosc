@@ -1,6 +1,6 @@
 # modules/home/desktop/hyprland/hypridle.nix
 # ==============================================================================
-# Hypridle Configuration (Screen & Power Management) - Enhanced
+# Hypridle Configuration (Screen & Power Management) - Fixed Suspend Issues
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
@@ -9,12 +9,12 @@
   # =============================================================================
   home.file.".config/hypr/hypridle.conf".text = ''
     # ---------------------------------------------------------------------------
-    # General Settings
+    # General Settings - Fixed for Suspend Issues
     # ---------------------------------------------------------------------------
     general {
         lock_cmd = pidof hyprlock || hyprlock
-        before_sleep_cmd = loginctl lock-session
-        after_sleep_cmd = hyprctl dispatch dpms on
+        before_sleep_cmd = loginctl lock-session && sleep 1
+        after_sleep_cmd = hyprctl dispatch dpms on && sleep 2 && pkill -SIGUSR1 hyprlock
         ignore_dbus_inhibit = false            # DBus inhibit'leri dinle (media player vs.)
         ignore_systemd_inhibit = false         # Systemd inhibit'leri dinle
     }
@@ -46,11 +46,12 @@
     }
     
     # ---------------------------------------------------------------------------
-    # System Suspend (60 minutes)
+    # System Suspend (60 minutes) - Enhanced
     # ---------------------------------------------------------------------------
     listener {
         timeout = 3600
         on-timeout = systemctl suspend -i
+        on-resume = hyprctl dispatch dpms on && sleep 1
     }
     
     # ---------------------------------------------------------------------------
@@ -64,7 +65,7 @@
   '';
   
   # =============================================================================
-  # Enhanced Systemd Service
+  # Fixed Systemd Service (Less Restrictive)
   # =============================================================================
   systemd.user.services.hypridle = {
     Unit = {
@@ -79,15 +80,15 @@
       ExecStart = "${pkgs.hypridle}/bin/hypridle";
       ExecReload = "/bin/kill -SIGUSR2 $MAINPID";
       Restart = "on-failure";
-      RestartSec = "1";
+      RestartSec = "3";
       TimeoutStopSec = "10";
       KillMode = "mixed";
       
-      # Security hardening
-      PrivateNetwork = true;
-      ProtectHome = "read-only";
-      ProtectSystem = "strict";
-      NoNewPrivileges = true;
+      # Less restrictive security (for suspend/resume compatibility)
+      ProtectSystem = "false";     # Suspend için system access gerekli
+      ProtectHome = "false";       # Home access gerekli
+      PrivateNetwork = "false";    # Network access gerekli
+      NoNewPrivileges = false;     # Privileges gerekli
     };
     Install = {
       WantedBy = ["hyprland-session.target"];
@@ -95,28 +96,34 @@
   };
   
   # =============================================================================
-  # Optional: Power Profiles Support
+  # Suspend/Resume Fix Service
   # =============================================================================
-  systemd.user.services.hypridle-power-profile = {
+  systemd.user.services.suspend-resume-fix = {
     Unit = {
-      Description = "Hypridle power profile management";
-      After = ["hypridle.service"];
-      BindsTo = ["hypridle.service"];
+      Description = "Fix display issues after suspend/resume";
+      After = ["suspend.target"];
     };
     Service = {
       Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.writeShellScript "set-power-profile" ''
-        # AC/Battery power durumuna göre timing ayarla
-        if cat /sys/class/power_supply/AC*/online 2>/dev/null | grep -q 1; then
-          echo "AC power detected - extended timeouts"
-        else
-          echo "Battery power detected - aggressive power saving"
+      ExecStart = "${pkgs.writeShellScript "suspend-resume-fix" ''
+        #!/bin/bash
+        # Wait a bit for system to stabilize
+        sleep 2
+        
+        # Refresh Hyprland
+        if pgrep -x Hyprland > /dev/null; then
+          hyprctl dispatch dpms on
+          hyprctl reload
+        fi
+        
+        # Fix potential lock screen issues
+        if pgrep -x hyprlock > /dev/null; then
+          pkill -SIGUSR1 hyprlock
         fi
       ''}";
     };
     Install = {
-      WantedBy = ["hypridle.service"];
+      WantedBy = ["suspend.target"];
     };
   };
 }
