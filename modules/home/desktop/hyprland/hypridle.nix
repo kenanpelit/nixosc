@@ -14,7 +14,7 @@
     general {
         lock_cmd = pidof hyprlock || hyprlock
         before_sleep_cmd = loginctl lock-session && sleep 1
-        after_sleep_cmd = hyprctl dispatch dpms on && sleep 2 && pkill -SIGUSR1 hyprlock
+        after_sleep_cmd = hyprctl dispatch dpms on && sleep 2 # && pkill -SIGUSR1 hyprlock
         ignore_dbus_inhibit = false            # DBus inhibit'leri dinle (media player vs.)
         ignore_systemd_inhibit = false         # Systemd inhibit'leri dinle
     }
