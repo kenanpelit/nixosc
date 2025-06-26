@@ -19,8 +19,8 @@ SEÇENEKLER:
 
 ÇALIŞMA PRENSİBİ:
   1. Hedef dizin yolunu sorar
-  2. Dosya uzantısını sorar
-  3. Başlangıç numarasını sorar
+  2. Dosya uzantısını sorar (birden fazla uzantı desteklenir)
+  3. Başlangıç numarasını sorar (otomatik sıfırla doldurur)
   4. Önizleme gösterir
   5. Kullanıcı onayı alır
   6. Orijinal dosyaları yedekler
@@ -28,13 +28,13 @@ SEÇENEKLER:
 
 ÖRNEK KULLANIM:
   Dizin: /home/user/photos
-  Uzantı: jpg
+  Uzantı: jpg,png,jpeg (veya sadece jpg)
   Başlangıç: 1
   
   Sonuç:
-  IMG_2023_01_15.jpg -> 1.jpg
-  IMG_2023_01_16.jpg -> 2.jpg
-  IMG_2023_01_17.jpg -> 3.jpg
+  IMG_2023_01_15.jpg -> 01.jpg
+  IMG_2023_01_16.png -> 02.png  
+  IMG_2023_01_17.jpeg -> 03.jpeg
 
 GÜVENLİK ÖZELLİKLERİ:
   • Orijinal dosyalar yedeklenir
@@ -47,49 +47,20 @@ YEDEK DOSYALAR:
   Orijinal dosyalar şu formatta yedeklenir:
   backup_YYYYMMDD_HHMMSS/
 
-DİKKAT EDİLECEK NOKTALAR:
-  • Script, belirtilen uzantıdaki TÜM dosyaları değiştirir
-  • Hedef dizinde yazma izni gereklidir
-  • Yeterli disk alanı olduğundan emin olun
-  • İşlem geri alınamaz (yedek hariç)
+DESTEKLENEN UZANTI FORMATLARI:
+  • Tek uzantı: jpg
+  • Çoklu uzantı: jpg,png,jpeg
+  • Boşluklu: jpg, png, jpeg
 
-HATA DURUMUNDA:
-  • Yedek klasöründen dosyaları geri yükleyebilirsiniz
-  • Geçici dosyalar otomatik silinir
-  • Hata mesajları detaylı açıklama içerir
-
-ÖRNEKLER:
-  # Fotoğrafları yeniden adlandır
-  ./rename_files.sh
-  > Dizin: /home/user/photos
-  > Uzantı: jpg
-  > Başlangıç: 001
-
-  # Müzik dosyalarını yeniden adlandır  
-  ./rename_files.sh
-  > Dizin: /home/user/music
-  > Uzantı: mp3
-  > Başlangıç: 1
-
-YETKİ GEREKSİNİMLERİ:
-  • Hedef dizinde okuma/yazma izni
-  • Geçici dosya oluşturma izni
-  • Yedek dizini oluşturma izni
-
-DESTEKLENEN DOSYA TÜRLERI:
-  Tüm dosya uzantıları desteklenir (jpg, png, mp3, txt, pdf, vb.)
-
-SÜRÜM: 2.0
+SÜRÜM: 2.1
 YAZAR: Geliştirilmiş Bash Script
 LİSANS: MIT
-
-Daha fazla bilgi için: https://github.com/example/rename-files
 EOF
 }
 
 # Versiyon bilgisi
 show_version() {
-	echo "Dosya Yeniden Adlandırma Aracı v2.0"
+	echo "Dosya Yeniden Adlandırma Aracı v2.1"
 	echo "Bash Script - Gelişmiş Sürüm"
 	echo "Copyright (c) 2024"
 }
@@ -129,6 +100,36 @@ is_number() {
 	[[ $1 =~ ^[0-9]+$ ]]
 }
 
+# Fonksiyon: Uzantıları parse et
+parse_extensions() {
+	local input="$1"
+	# Virgül ve boşluklarla ayır, boş olanları filtrele
+	echo "$input" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$'
+}
+
+# Fonksiyon: Belirtilen uzantılardaki dosyaları bul
+find_files_by_extensions() {
+	local extensions=("$@")
+	local find_args=()
+
+	# Her uzantı için -name parametresi ekle
+	for ext in "${extensions[@]}"; do
+		if [ ${#find_args[@]} -gt 0 ]; then
+			find_args+=("-o")
+		fi
+		find_args+=("-name" "*.$ext")
+	done
+
+	# find komutunu çalıştır
+	find . -maxdepth 1 -type f \( "${find_args[@]}" \) 2>/dev/null | sort
+}
+
+# Fonksiyon: Dosya sayısını say
+count_files_by_extensions() {
+	local extensions=("$@")
+	find_files_by_extensions "${extensions[@]}" | wc -l
+}
+
 echo "=== Dosya Yeniden Adlandırma Aracı ==="
 echo
 
@@ -146,22 +147,35 @@ echo "Mevcut dizin: $(pwd)"
 echo
 
 # Dosya uzantısını al
-echo "Dosya uzantısını girin (örn: jpg, txt, pdf):"
-read -r extension
+echo "Dosya uzantısı(ları)nı girin:"
+echo "Örnekler:"
+echo "  - Tek uzantı: jpg"
+echo "  - Çoklu uzantı: jpg,png,jpeg"
+echo "  - Boşluklu: jpg, png, jpeg"
+read -r extension_input
 
 # Uzantı kontrolü
-if [ -z "$extension" ]; then
+if [ -z "$extension_input" ]; then
 	error_exit "Uzantı boş olamaz"
 fi
 
-# Belirtilen uzantıya sahip dosyaları say
-file_count=$(find . -maxdepth 1 -name "*.$extension" -type f | wc -l)
+# Uzantıları parse et
+mapfile -t extensions < <(parse_extensions "$extension_input")
 
-if [ "$file_count" -eq 0 ]; then
-	error_exit "Bu dizinde .$extension uzantılı dosya bulunamadı"
+if [ ${#extensions[@]} -eq 0 ]; then
+	error_exit "Geçerli uzantı bulunamadı"
 fi
 
-echo "Bulunan .$extension dosya sayısı: $file_count"
+echo "İşlenecek uzantılar: ${extensions[*]}"
+
+# Belirtilen uzantıya sahip dosyaları say
+file_count=$(count_files_by_extensions "${extensions[@]}")
+
+if [ "$file_count" -eq 0 ]; then
+	error_exit "Bu dizinde belirtilen uzantılı dosya bulunamadı: ${extensions[*]}"
+fi
+
+echo "Bulunan dosya sayısı: $file_count"
 echo
 
 # Başlangıç numarasını al
@@ -173,16 +187,33 @@ if ! is_number "$start_number"; then
 	error_exit "Lütfen geçerli bir sayı girin"
 fi
 
+# Sıfır padding uzunluğunu hesapla
+total_digits=${#file_count}
+if [ $total_digits -lt 2 ]; then
+	total_digits=2
+fi
+
 echo
-echo "Önizleme:"
-echo "=========="
+echo "Önizleme (sıfırla doldurma: $total_digits haneli):"
+echo "=================================================="
 
 # Önizleme göster
 counter=$start_number
-for file in *."$extension"; do
-	# Dosya gerçekten var mı kontrol et (glob expansion için)
+mapfile -t all_files < <(find_files_by_extensions "${extensions[@]}")
+
+for file_path in "${all_files[@]}"; do
+	file=$(basename "$file_path")
+	# Dosya gerçekten var mı kontrol et
 	[ -f "$file" ] || continue
-	echo "$file -> $counter.$extension"
+
+	# Orijinal uzantıyı koru
+	original_ext="${file##*.}"
+
+	# Sıfırla doldurulmuş numara oluştur
+	padded_number=$(printf "%0${total_digits}d" $counter)
+	new_name="$padded_number.$original_ext"
+
+	echo "$file -> $new_name"
 	counter=$((counter + 1))
 done
 
@@ -218,11 +249,17 @@ trap cleanup EXIT
 counter=$start_number
 success_count=0
 
-for file in *."$extension"; do
+for file_path in "${all_files[@]}"; do
+	file=$(basename "$file_path")
 	# Dosya gerçekten var mı kontrol et
 	[ -f "$file" ] || continue
 
-	new_name="$counter.$extension"
+	# Orijinal uzantıyı koru
+	original_ext="${file##*.}"
+
+	# Sıfırla doldurulmuş numara oluştur
+	padded_number=$(printf "%0${total_digits}d" $counter)
+	new_name="$padded_number.$original_ext"
 
 	# Dosyayı geçici dizine kopyala (güvenlik için)
 	if cp "$file" "$temp_dir/$new_name"; then
@@ -242,14 +279,15 @@ backup_dir="$target_dir/backup_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$backup_dir"
 
 echo "Orijinal dosyalar yedekleniyor: $backup_dir"
-for file in *."$extension"; do
+for file_path in "${all_files[@]}"; do
+	file=$(basename "$file_path")
 	[ -f "$file" ] || continue
 	mv "$file" "$backup_dir/"
 done
 
 # Yeni dosyaları ana dizine taşı
 echo "Yeni dosyalar ana dizine taşınıyor..."
-mv "$temp_dir"/*."$extension" "$target_dir/" 2>/dev/null || true
+mv "$temp_dir"/* "$target_dir/" 2>/dev/null || true
 
 echo
 echo "İşlem tamamlandı!"
@@ -257,4 +295,10 @@ echo "Yedek dosyalar: $backup_dir"
 echo
 echo "Sonuç:"
 echo "======"
-ls -la *."$extension" 2>/dev/null | sort -V || echo "Yeniden adlandırılmış dosya bulunamadı"
+
+# Sonuçları göster
+for ext in "${extensions[@]}"; do
+	if ls *."$ext" >/dev/null 2>&1; then
+		ls -la *."$ext" | sort -V
+	fi
+done
