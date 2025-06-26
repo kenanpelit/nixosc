@@ -723,11 +723,9 @@ multi_mode_cheats() {
 
 # 3. main fonksiyonunda yeni parametreleri ekleyin - bu satırları bulup değiştirin:
 	-M | --multi-snippet)
-		# Çok satırlı snippet modunu başlat
 		multi_mode
 		;;
 	-Ms | --multi-snippet-cheats)
-		# Çok satırlı snippet modunu başlat (sadece cheats)
 		multi_mode_cheats
 		;;
 
