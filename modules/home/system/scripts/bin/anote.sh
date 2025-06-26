@@ -460,7 +460,8 @@ list_anote_options() {
 	cat <<EOF
 snippet| -- snippets'ten panoya kopyala
 single| -- tek satır snippet modunu başlat
-multi| -- çok satırlı snippet modunu başlat
+multi| -- çok satırlı snippet modunu başlat (tüm dizinler)
+multi-cheats| -- çok satırlı snippet modunu başlat (sadece cheats)
 cheats| -- cheats'ten panoya kopyala
 copy| -- dosya içeriğini panoya kopyala  
 edit| -- dosyayı düzenle
@@ -489,6 +490,9 @@ show_anote_tui() {
 		;;
 	multi)
 		multi_mode
+		;;
+	multi-cheats)
+		multi_mode_cheats
 		;;
 	cheats)
 		cheats_mode
@@ -615,6 +619,62 @@ multi_mode() {
 		local selected
 		selected="$({
 			cat "$MULTI_CACHE" 2>/dev/null
+			# DEĞIŞIKLIK: Sadece CHEAT_DIR yerine ANOTE_DIR'da ara
+			find "$ANOTE_DIR" -type f -not -name ".*" 2>/dev/null
+		} |
+			awk '!seen[$0]++' |
+			sort |
+			fzf -e -i \
+				--delimiter / \
+				--with-nth -2,-1 \
+				--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
+				--preview-window='right:60%:wrap' \
+				--prompt="Metin bloğu (Tüm Dizinler) > " \
+				--header="ESC: Çıkış | ENTER: Kopyala | CTRL+E: Düzenle" \
+				--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
+				--bind "ctrl-e:execute($EDITOR {} < /dev/tty > /dev/tty)")"
+
+		if [[ -f /tmp/anote_nav ]]; then
+			rm /tmp/anote_nav
+			show_anote_tui
+			break
+		fi
+
+		[[ -z "$selected" ]] && exit 0
+
+		dir=$(dirname "$selected")
+		update_history "$dir" "$selected"
+		update_cache "$selected" "$MULTI_CACHE"
+
+		# Dosyanın içeriğini panoya kopyala
+		content="$(cat "$selected")"
+		copy_to_clipboard "$content"
+
+		# Önizleme göster
+		echo -e "\n--- Kopyalanan İçerik ---"
+		if command -v bat >/dev/null 2>&1; then
+			bat --color=always -pp "$selected" 2>/dev/null || cat "$selected"
+		else
+			cat "$selected"
+		fi
+		echo -e "\n"
+
+		read -n 1 -p "Başka bir dosya seçmek ister misiniz? (e/h) [h]: " yn
+		echo
+		[[ -z "$yn" ]] && yn="h" # Enter'a basılırsa varsayılan 'h' olsun
+		[[ "$yn" != "e" && "$yn" != "E" ]] && break
+	done
+}
+
+multi_mode_cheats() {
+	local MULTI_CACHE="$CACHE_DIR/multi"
+	mkdir -p "$CACHE_DIR"
+	touch "$MULTI_CACHE"
+
+	while true; do
+		local selected
+		selected="$({
+			cat "$MULTI_CACHE" 2>/dev/null
 			find "$CHEAT_DIR" -type f -not -name ".*" 2>/dev/null
 		} |
 			awk '!seen[$0]++' |
@@ -624,7 +684,7 @@ multi_mode() {
 				--with-nth -2,-1 \
 				--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 				--preview-window='right:60%:wrap' \
-				--prompt="Metin bloğu > " \
+				--prompt="Metin bloğu (Sadece Cheats) > " \
 				--header="ESC: Çıkış | ENTER: Kopyala | CTRL+E: Düzenle" \
 				--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
 				--bind "ctrl-e:execute($EDITOR {} < /dev/tty > /dev/tty)")"
@@ -1238,6 +1298,10 @@ main() {
 	-M | --multi-snippet)
 		# Çok satırlı snippet modunu başlat
 		multi_mode
+		;;
+	-Ms | --multi-snippet-cheats)
+		# Çok satırlı snippet modunu başlat (sadece cheats)
+		multi_mode_cheats
 		;;
 	-c | --config)
 		# Konfigürasyon dosyasını düzenle
