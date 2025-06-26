@@ -619,8 +619,8 @@ multi_mode() {
 		local selected
 		selected="$({
 			cat "$MULTI_CACHE" 2>/dev/null
-			# DEĞIŞIKLIK: Sadece CHEAT_DIR yerine ANOTE_DIR'da ara
-			find "$ANOTE_DIR" -type f -not -name ".*" 2>/dev/null
+			# DEĞIŞIKLIK: Sadece CHEAT_DIR yerine ANOTE_DIR'da ara, backup dizinini exclude et
+			find "$ANOTE_DIR" -type f -not -name ".*" -not -path "*/backups/*" 2>/dev/null
 		} |
 			awk '!seen[$0]++' |
 			sort |
@@ -721,6 +721,51 @@ multi_mode_cheats() {
 	done
 }
 
+# 3. main fonksiyonunda yeni parametreleri ekleyin - bu satırları bulup değiştirin:
+	-M | --multi-snippet)
+		# Çok satırlı snippet modunu başlat
+		multi_mode
+		;;
+	-Ms | --multi-snippet-cheats)
+		# Çok satırlı snippet modunu başlat (sadece cheats)
+		multi_mode_cheats
+		;;
+
+# 4. Yardım menüsünde yeni seçeneği ekleyin - show_anote_help fonksiyonunda:
+# Bu satırları bulup:
+#   -M, --multi-snippet       → Çok satırlı snippet modunu başlatır
+# Şu şekilde değiştirin:
+#   -M, --multi-snippet       → Çok satırlı snippet modunu başlatır (tüm dizinler)
+#   -Ms, --multi-snippet-cheats → Çok satırlı snippet modunu başlatır (sadece cheats)
+
+# 5. Ana menüyü güncelleyin - list_anote_options fonksiyonunda:
+list_anote_options() {
+	cat <<EOF
+snippet| -- snippets'ten panoya kopyala
+single| -- tek satır snippet modunu başlat
+multi| -- çok satırlı snippet modunu başlat (tüm dizinler)
+multi-cheats| -- çok satırlı snippet modunu başlat (sadece cheats)
+cheats| -- cheats'ten panoya kopyala
+copy| -- dosya içeriğini panoya kopyala  
+edit| -- dosyayı düzenle
+create| -- yeni dosya oluştur
+search| -- tümünde ara
+scratch| -- karalama kağıdı
+info| -- bilgi sayfası
+EOF
+}
+
+# 6. show_anote_tui fonksiyonunda da yeni seçeneği ekleyin:
+# Bu case bloğunu bulup:
+	multi)
+		multi_mode
+		;;
+# Hemen altına şunu ekleyin:
+	multi-cheats)
+		multi_mode_cheats
+		;;
+
+
 # Cheats Modu (cheatsheet'ten kopyalama)
 cheats_mode() {
 	while true; do
@@ -781,7 +826,7 @@ cheats_mode() {
 copy_mode() {
 	while true; do
 		selected=$(
-			find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
+			find "$ANOTE_DIR"/ -type f -not -path "*/backups/*" 2>/dev/null | sort |
 				fzf -d / --with-nth -2.. \
 					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 					--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
@@ -821,7 +866,7 @@ copy_mode() {
 edit_mode() {
 	while true; do
 		if [[ "$TERM_PROGRAM" = tmux ]] || [[ -n "$TMUX" ]]; then
-			selected=$(find "$ANOTE_DIR"/ -type f 2>/dev/null | sort |
+			selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/backups/*" 2>/dev/null | sort |
 				fzf -m -d / --with-nth -2.. \
 					--bind "tab:down,shift-tab:up" \
 					--bind "shift-delete:execute:rm -i {} >/dev/tty" \
@@ -885,7 +930,7 @@ edit_mode() {
 # Dosya Arama Modu
 search_mode() {
 	while true; do
-		selected=$(grep -rnv '^[[:space:]]*$' "$ANOTE_DIR"/* 2>/dev/null |
+		selected=$(grep -rnv '^[[:space:]]*$' --exclude-dir=backups "$ANOTE_DIR"/* 2>/dev/null |
 			fzf -d : --with-nth 1,2,3 \
 				--prompt="anote > ara: " \
 				--bind "esc:execute-silent(echo 'back' > /tmp/anote_nav)+abort" \
@@ -1203,7 +1248,7 @@ main() {
 	-l | --list)
 		# Tüm dosyaları listele
 		cd "$ANOTE_DIR" || exit 1
-		find . -type f -not -path "*/\.*" -printf "%P\n" | sort
+    find . -type f -not -path "*/\.*" -not -path "*/backups/*" -printf "%P\n" | sort
 		;;
 	-e | --edit)
 		if [[ -z "$2" ]]; then
@@ -1263,7 +1308,7 @@ main() {
 	-p | --print)
 		if [[ -z "$2" ]]; then
 			# Dosya belirtilmemişse fzf ile seç
-			selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/\.*" 2>/dev/null | sort |
+      selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/\.*" -not -path "*/backups/*" 2>/dev/null | sort |
 				fzf -d / --with-nth -2.. \
 					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 					--prompt="anote > görüntüle: ")
