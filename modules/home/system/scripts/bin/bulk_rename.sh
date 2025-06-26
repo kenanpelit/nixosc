@@ -197,9 +197,42 @@ echo
 echo "Önizleme (sıfırla doldurma: $total_digits haneli):"
 echo "=================================================="
 
+# Dosya sıralama seçenekleri
+echo "Dosya sıralama seçenekleri:"
+echo "1) Alfabetik sıra (varsayılan)"
+echo "2) Rastgele karıştır"
+echo "3) Dosya boyutuna göre (küçükten büyüğe)"
+echo "4) Değişiklik tarihine göre (eskiden yeniye)"
+read -p "Seçiminiz (1-4, varsayılan: 1): " sort_option
+
+# Dosyaları al ve sırala
+mapfile -t all_files < <(find_files_by_extensions "${extensions[@]}")
+
+case "${sort_option:-1}" in
+1)
+	echo "Alfabetik sıralama kullanılıyor..."
+	mapfile -t all_files < <(printf '%s\n' "${all_files[@]}" | sort)
+	;;
+2)
+	echo "Rastgele karıştırılıyor..."
+	mapfile -t all_files < <(printf '%s\n' "${all_files[@]}" | shuf)
+	;;
+3)
+	echo "Dosya boyutuna göre sıralanıyor..."
+	mapfile -t all_files < <(printf '%s\n' "${all_files[@]}" | xargs ls -lS | awk 'NR>1 {print $NF}')
+	;;
+4)
+	echo "Değişiklik tarihine göre sıralanıyor..."
+	mapfile -t all_files < <(printf '%s\n' "${all_files[@]}" | xargs ls -lt | awk 'NR>1 {print $NF}')
+	;;
+*)
+	echo "Geçersiz seçenek, alfabetik sıra kullanılıyor..."
+	mapfile -t all_files < <(printf '%s\n' "${all_files[@]}" | sort)
+	;;
+esac
+
 # Önizleme göster
 counter=$start_number
-mapfile -t all_files < <(find_files_by_extensions "${extensions[@]}")
 
 for file_path in "${all_files[@]}"; do
 	file=$(basename "$file_path")
