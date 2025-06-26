@@ -721,22 +721,6 @@ multi_mode_cheats() {
 	done
 }
 
-# 3. main fonksiyonunda yeni parametreleri ekleyin - bu satırları bulup değiştirin:
-	-M | --multi-snippet)
-		multi_mode
-		;;
-	-Ms | --multi-snippet-cheats)
-		multi_mode_cheats
-		;;
-
-# 4. Yardım menüsünde yeni seçeneği ekleyin - show_anote_help fonksiyonunda:
-# Bu satırları bulup:
-#   -M, --multi-snippet       → Çok satırlı snippet modunu başlatır
-# Şu şekilde değiştirin:
-#   -M, --multi-snippet       → Çok satırlı snippet modunu başlatır (tüm dizinler)
-#   -Ms, --multi-snippet-cheats → Çok satırlı snippet modunu başlatır (sadece cheats)
-
-# 5. Ana menüyü güncelleyin - list_anote_options fonksiyonunda:
 list_anote_options() {
 	cat <<EOF
 snippet| -- snippets'ten panoya kopyala
@@ -752,17 +736,6 @@ scratch| -- karalama kağıdı
 info| -- bilgi sayfası
 EOF
 }
-
-# 6. show_anote_tui fonksiyonunda da yeni seçeneği ekleyin:
-# Bu case bloğunu bulup:
-	multi)
-		multi_mode
-		;;
-# Hemen altına şunu ekleyin:
-	multi-cheats)
-		multi_mode_cheats
-		;;
-
 
 # Cheats Modu (cheatsheet'ten kopyalama)
 cheats_mode() {
@@ -1246,7 +1219,7 @@ main() {
 	-l | --list)
 		# Tüm dosyaları listele
 		cd "$ANOTE_DIR" || exit 1
-    find . -type f -not -path "*/\.*" -not -path "*/backups/*" -printf "%P\n" | sort
+		find . -type f -not -path "*/\.*" -not -path "*/backups/*" -printf "%P\n" | sort
 		;;
 	-e | --edit)
 		if [[ -z "$2" ]]; then
@@ -1278,7 +1251,7 @@ main() {
 	-s | --search)
 		if [[ -z "$2" ]]; then
 			# Arama terimi belirtilmemişse interaktif ara
-			selected=$(grep -rnv '^[[:space:]]*$' "$ANOTE_DIR"/* 2>/dev/null |
+			selected=$(grep -rnv '^[[:space:]]*$' --exclude-dir=backups "$ANOTE_DIR"/* 2>/dev/null |
 				fzf -d : --with-nth 1,2,3 --prompt="anote > ara: " \
 					--preview '
 				    file=$(echo {} | cut -d: -f1)
@@ -1306,7 +1279,7 @@ main() {
 	-p | --print)
 		if [[ -z "$2" ]]; then
 			# Dosya belirtilmemişse fzf ile seç
-      selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/\.*" -not -path "*/backups/*" 2>/dev/null | sort |
+			selected=$(find "$ANOTE_DIR"/ -type f -not -path "*/\.*" -not -path "*/backups/*" 2>/dev/null | sort |
 				fzf -d / --with-nth -2.. \
 					--preview 'bat --color=always -pp {} 2>/dev/null || cat {}' \
 					--prompt="anote > görüntüle: ")
