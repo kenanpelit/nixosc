@@ -7,6 +7,7 @@
 # Components:
 # - Window Managers:
 #   - Hyprland: Wayland compositor
+#   - Gnome: GNOME specific configurations
 #   - Sway: i3-compatible Wayland compositor
 # - UI Elements:
 #   - Waybar: Status bar
@@ -25,6 +26,7 @@
 
 {
  imports = [
+   ./gnome         # GNOME Desktop Environment Configuration
    ./gtk
    ./hyprland
    ./mhyprsunset
@@ -42,6 +44,3 @@
    ./xserver
  ];
 }
-
-
-
