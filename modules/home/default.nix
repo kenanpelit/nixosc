@@ -11,7 +11,6 @@
 # Module Structure:
 # 1. Desktop Environment
 #    - desktop/    → {hyprland, sway, waybar, rofi, ...}
-#    - gnome/      → GNOME specific configurations
 #    - xdg/        → {xdg-dirs, xdg-mimes, xdg-portal}
 #
 # 2. Applications & Media
@@ -42,7 +41,6 @@
     # Desktop Environment
     # =============================================================================
     ./desktop       # Window managers, bars, notifications, launchers
-    ./gnome         # GNOME Desktop Environment Configuration
     ./xdg           # XDG specifications and portals
     
     # =============================================================================
