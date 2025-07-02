@@ -1,7 +1,6 @@
 # modules/home/desktop/gnome/default.nix
 # ==============================================================================
 # GNOME Desktop Environment Configuration
-# Moved from modules/home/gnome to modules/home/desktop/gnome
 # ==============================================================================
 { config, lib, pkgs, ... }:
 
@@ -42,66 +41,37 @@ in
         gnome-text-editor # gedit
         
         # Additional GNOME core applications
-        gnome.nautilus              # File manager
-        gnome.gnome-terminal        # Terminal
-        gnome.gnome-calculator      # Calculator
-        gnome.gnome-calendar        # Calendar
-        gnome.gnome-contacts        # Contacts
-        gnome.gnome-weather         # Weather
-        gnome.gnome-clocks          # Clocks & timers
-        gnome.eog                   # Image viewer
-        gnome.gnome-font-viewer     # Font viewer
-        gnome.gnome-system-monitor  # System monitor
-        gnome.gnome-disk-utility    # Disk utility
-        gnome.gnome-screenshot      # Screenshot tool
+        nautilus                    # File manager
+        gnome-terminal              # Terminal
+        gnome-calculator            # Calculator
+        gnome-calendar              # Calendar
+        gnome-contacts              # Contacts
+        gnome-weather               # Weather
+        gnome-clocks                # Clocks & timers
+        eog                         # Image viewer
+        gnome-font-viewer           # Font viewer
+        gnome-system-monitor        # System monitor
+        gnome-disk-utility          # Disk utility
+        gnome-screenshot            # Screenshot tool
         
         # GNOME utilities
-        gnome.gnome-tweaks          # Advanced settings
-        gnome.dconf-editor          # Configuration editor
-        gnome.gnome-extensions-app  # Extensions manager
+        gnome-tweaks                # Advanced settings
+        dconf-editor                # Configuration editor
+        gnome-shell-extensions      # Extensions support
         
         # Additional useful applications
-        gnome.cheese                # Webcam application
-        gnome.totem                 # Video player
+        cheese                      # Webcam application
+        totem                       # Video player
         snapshot                    # Camera app
         loupe                       # Modern image viewer
       ]
     );
 
     # ==========================================================================
-    # GTK Configuration
+    # GTK Configuration - REMOVED
+    # Using existing GTK module to avoid conflicts
     # ==========================================================================
-    gtk = {
-      enable = true;
-      
-      theme = {
-        name = "Adwaita-dark";
-        package = pkgs.gnome.gnome-themes-extra;
-      };
-      
-      iconTheme = {
-        name = "Adwaita";
-        package = pkgs.gnome.adwaita-icon-theme;
-      };
-      
-      cursorTheme = {
-        name = "Adwaita";
-        package = pkgs.gnome.adwaita-icon-theme;
-      };
-      
-      font = {
-        name = colors.fonts.main.family;
-        size = colors.fonts.sizes.sm;
-      };
-      
-      gtk3.extraConfig = {
-        gtk-application-prefer-dark-theme = 1;
-      };
-      
-      gtk4.extraConfig = {
-        gtk-application-prefer-dark-theme = 1;
-      };
-    };
+    # gtk configuration is handled by modules/home/desktop/gtk
 
     # ==========================================================================
     # DConf Settings (Extended)
@@ -134,10 +104,9 @@ in
         document-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
         monospace-font-name = "${colors.fonts.terminal.family} ${toString colors.fonts.sizes.sm}";
         
-        # Additional interface settings
-        gtk-theme = "Adwaita-dark";
-        icon-theme = "Adwaita";
-        cursor-theme = "Adwaita";
+        # Additional interface settings (theme settings removed to avoid conflicts)
+        # gtk-theme = "Adwaita-dark";  # REMOVED - handled by GTK module
+        # icon-theme = "Adwaita";      # REMOVED - handled by GTK module
         color-scheme = "prefer-dark";
         font-antialiasing = "grayscale";
         font-hinting = "slight";
@@ -148,14 +117,14 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Window Manager Settings
+      # Window Manager Settings - REMOVED to avoid conflicts with GTK module
       # ------------------------------------------------------------------------
-      "org/gnome/desktop/wm/preferences" = {
-        titlebar-font = "${colors.fonts.main.family} Bold ${toString colors.fonts.sizes.sm}";
-        button-layout = "appmenu:minimize,maximize,close";
-        resize-with-right-button = true;
-        mouse-button-modifier = "<Super>";
-      };
+      # "org/gnome/desktop/wm/preferences" = {
+      #   titlebar-font = "${colors.fonts.main.family} Bold ${toString colors.fonts.sizes.sm}";
+      #   button-layout = "appmenu:minimize,maximize,close";
+      #   resize-with-right-button = true;
+      #   mouse-button-modifier = "<Super>";
+      # };
 
       # Window manager keybindings
       "org/gnome/desktop/wm/keybindings" = {
@@ -347,21 +316,22 @@ in
     };
 
     # ==========================================================================
-    # Services
+    # Services - REMOVED gnome-keyring to avoid conflicts
     # ==========================================================================
-    services = {
-      # GNOME Keyring
-      gnome-keyring = {
-        enable = true;
-        components = [ "pkcs11" "secrets" "ssh" ];
-      };
-    };
+    # services = {
+    #   # GNOME Keyring - DISABLED (conflicts with pass-secret-service)
+    #   gnome-keyring = {
+    #     enable = true;
+    #     components = [ "pkcs11" "secrets" "ssh" ];
+    #   };
+    # };
 
     # ==========================================================================
-    # Session Variables
+    # Session Variables - SIMPLIFIED
     # ==========================================================================
     home.sessionVariables = {
-      GTK_THEME = "Adwaita-dark";
+      # Let existing GTK module handle theme variables
+      GNOME_SESSION = "1";  # Indicate GNOME session
     };
   };
 }
