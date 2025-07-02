@@ -57,7 +57,6 @@ in
         # GNOME utilities
         gnome-tweaks                # Advanced settings
         dconf-editor                # Configuration editor
-        gnome-shell-extensions      # Extensions support
         
         # Additional useful applications
         cheese                      # Webcam application
@@ -333,6 +332,15 @@ in
       # Let existing GTK module handle theme variables
       GNOME_SESSION = "1";  # Indicate GNOME session
     };
+
+    # ==========================================================================
+    # System-level GNOME Package Exclusions
+    # ==========================================================================
+    # Note: This would need to be in system configuration, not home-manager
+    # For reference only - these packages can be excluded at system level:
+    # environment.gnome.excludePackages = with pkgs; [
+    #   gnome-tour epiphany geary gnome-music gnome-photos
+    # ];
   };
 }
 

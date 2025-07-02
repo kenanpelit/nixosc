@@ -15,70 +15,49 @@
 {
   services = {
     # X Server Settings
-    # Base X server configuration needed by both Wayland and X11 desktop environments
     xserver = {
-      enable = true;  # Enable X Server (required even for Wayland sessions)
+      enable = true;
       
       # Keyboard Configuration
-      # Set Turkish F-layout as default with Caps Lock as Ctrl
       xkb = {
-        layout = "tr";             # Turkish keyboard layout
-        variant = "f";             # F-keyboard variant (Turkish standard)
-        options = "ctrl:nocaps";   # Remap Caps Lock as Ctrl for better ergonomics
+        layout = "tr";
+        variant = "f";
+        options = "ctrl:nocaps";
+      };
+      
+      # Display Manager - GDM
+      displayManager = {
+        gdm = {
+          enable = true;
+          wayland = true;
+        };
+        autoLogin.enable = false;
+      };
+      
+      # Desktop Manager - GNOME
+      desktopManager = {
+        gnome.enable = true;
       };
     };
     
-    # Display Manager - GDM (GNOME Display Manager) - UPDATED SYNTAX
-    # GDM supports both GNOME and Wayland sessions like Hyprland
-    displayManager = {
-      gdm = {
-        enable = true;
-        wayland = true;  # Enable Wayland support in GDM
-      };
-      
-      # Auto-login disabled when using GDM (you can choose session at login)
-      autoLogin = {
-        enable = false;  # Disabled to allow session selection
-        # user = "${username}";  # Uncomment if you want auto-login
-      };
-      
-      # Default session - let user choose at login
-      # defaultSession = "gnome";  # Uncomment to default to GNOME
-    };
-    
-    # Desktop Manager - Enable GNOME - UPDATED SYNTAX
+    # Alternative: Try this syntax if above doesn't work
     desktopManager = {
       gnome.enable = true;
     };
     
-    # COSMIC Desktop Environment - COMMENTED OUT
-    # Modern, intuitive desktop environment developed by System76
-    # desktopManager.cosmic.enable = true;
-    
-    # COSMIC Greeter - COMMENTED OUT
-    # Login screen for the COSMIC desktop environment
-    # displayManager.cosmic-greeter.enable = true;
-    
-    # GNOME Services
-    gnome = {
-      gnome-keyring.enable = true;
-      sushi.enable = true;          # File previews in Nautilus
-      gnome-settings-daemon.enable = true;
-    };
-    
     # Input Device Settings
-    # Enable libinput for touchpad, trackpoint, and other input devices
-    libinput.enable = true;  # Modern input device driver for X/Wayland
+    libinput.enable = true;
   };
 
-  # Hyprland Program Configuration - REMOVED to avoid conflicts
-  # Hyprland is configured in the Wayland module
-  # programs.hyprland = {
-  #   enable = true;
-  #   package = inputs.hyprland.packages.${pkgs.system}.hyprland;
-  #   # Enable XWayland for X11 app compatibility
-  #   xwayland.enable = true;
-  # };
+  # Manual GNOME session file creation (fallback)
+  environment.etc."wayland-sessions/gnome.desktop".text = ''
+    [Desktop Entry]
+    Name=GNOME
+    Comment=This session logs you into GNOME
+    Exec=gnome-session
+    Type=Application
+    DesktopNames=GNOME
+  '';
 
   # Session Variables for Wayland
   # These environment variables ensure applications work properly in Wayland
@@ -106,24 +85,8 @@
   # This enables the data control protocol for Wayland
   # environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
 
-  # XDG Portal Configuration for Wayland - REMOVED to avoid conflicts
-  # Portal configuration is handled by the XDG module
-  # xdg.portal = {
-  #   enable = true;
-  #   wlr.enable = true;
-  #   extraPortals = with pkgs; [
-  #     xdg-desktop-portal-gnome
-  #     xdg-desktop-portal-gtk
-  #   ];
-  #   config = {
-  #     common = { default = [ "gtk" ]; };
-  #     gnome = { default = [ "gnome" "gtk" ]; };
-  #     hyprland = { default = [ "hyprland" "gtk" ]; };
-  #   };
-  # };
-
   # Audio Configuration (recommended for GNOME)
-  # Disable PulseAudio in favor of PipeWire (better Wayland support) - UPDATED SYNTAX
+  # Disable PulseAudio in favor of PipeWire (better Wayland support)
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -135,15 +98,5 @@
     # jack.enable = true;
   };
 
-  # Exclude unwanted GNOME packages (optional)
-  # Remove GNOME apps you don't need to keep system clean
-  environment.gnome.excludePackages = with pkgs; [
-    gnome-tour        # GNOME welcome tour
-    epiphany          # GNOME Web browser (you have Firefox)
-    geary             # Mail app
-    gnome-music       # Music player (updated package name)
-    gnome-photos      # Photo organizer (updated package name)
-    # Add more apps you don't want here
-  ];
 }
 
