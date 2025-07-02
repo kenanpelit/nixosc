@@ -1,4 +1,3 @@
-# ==============================================================================
 # modules/core/desktop/x11/default.nix
 # ==============================================================================
 # X Server & Display Manager Configuration
@@ -10,7 +9,6 @@
 # - Session management
 #
 # Author: Kenan Pelit
-# Modified: 2025-05-12 (COSMIC compatibility) - COSMIC Desktop commented out
 # Modified: 2025-07-02 (GNOME + Hyprland support)
 # ==============================================================================
 { username, inputs, pkgs, ... }:
@@ -21,29 +19,6 @@
     xserver = {
       enable = true;  # Enable X Server (required even for Wayland sessions)
       
-      # Display Manager - GDM (GNOME Display Manager)
-      # GDM supports both GNOME and Wayland sessions like Hyprland
-      displayManager = {
-        gdm = {
-          enable = true;
-          wayland = true;  # Enable Wayland support in GDM
-        };
-        
-        # Auto-login disabled when using GDM (you can choose session at login)
-        autoLogin = {
-          enable = false;  # Disabled to allow session selection
-          # user = "${username}";  # Uncomment if you want auto-login
-        };
-        
-        # Default session - let user choose at login
-        # defaultSession = "gnome";  # Uncomment to default to GNOME
-      };
-      
-      # Desktop Manager - Enable GNOME
-      desktopManager = {
-        gnome.enable = true;
-      };
-      
       # Keyboard Configuration
       # Set Turkish F-layout as default with Caps Lock as Ctrl
       xkb = {
@@ -51,6 +26,29 @@
         variant = "f";             # F-keyboard variant (Turkish standard)
         options = "ctrl:nocaps";   # Remap Caps Lock as Ctrl for better ergonomics
       };
+    };
+    
+    # Display Manager - GDM (GNOME Display Manager) - UPDATED SYNTAX
+    # GDM supports both GNOME and Wayland sessions like Hyprland
+    displayManager = {
+      gdm = {
+        enable = true;
+        wayland = true;  # Enable Wayland support in GDM
+      };
+      
+      # Auto-login disabled when using GDM (you can choose session at login)
+      autoLogin = {
+        enable = false;  # Disabled to allow session selection
+        # user = "${username}";  # Uncomment if you want auto-login
+      };
+      
+      # Default session - let user choose at login
+      # defaultSession = "gnome";  # Uncomment to default to GNOME
+    };
+    
+    # Desktop Manager - Enable GNOME - UPDATED SYNTAX
+    desktopManager = {
+      gnome.enable = true;
     };
     
     # COSMIC Desktop Environment - COMMENTED OUT
@@ -73,14 +71,14 @@
     libinput.enable = true;  # Modern input device driver for X/Wayland
   };
 
-  # Hyprland Program Configuration
-  # This makes Hyprland available as a session in GDM
-  programs.hyprland = {
-    enable = true;
-    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
-    # Enable XWayland for X11 app compatibility
-    xwayland.enable = true;
-  };
+  # Hyprland Program Configuration - REMOVED to avoid conflicts
+  # Hyprland is configured in the Wayland module
+  # programs.hyprland = {
+  #   enable = true;
+  #   package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  #   # Enable XWayland for X11 app compatibility
+  #   xwayland.enable = true;
+  # };
 
   # Session Variables for Wayland
   # These environment variables ensure applications work properly in Wayland
@@ -108,39 +106,25 @@
   # This enables the data control protocol for Wayland
   # environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
 
-  # XDG Portal Configuration for Wayland
-  # Portals handle file dialogs, screen sharing, etc. in Wayland
-  xdg.portal = {
-    enable = true;
-    wlr.enable = true;  # For Hyprland and other wlroots compositors
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gnome  # For GNOME integration
-      xdg-desktop-portal-gtk    # GTK portal for file dialogs
-    ];
-    config = {
-      common = {
-        default = [
-          "gtk"
-        ];
-      };
-      gnome = {
-        default = [
-          "gnome"
-          "gtk"
-        ];
-      };
-      hyprland = {
-        default = [
-          "hyprland"
-          "gtk"
-        ];
-      };
-    };
-  };
+  # XDG Portal Configuration for Wayland - REMOVED to avoid conflicts
+  # Portal configuration is handled by the XDG module
+  # xdg.portal = {
+  #   enable = true;
+  #   wlr.enable = true;
+  #   extraPortals = with pkgs; [
+  #     xdg-desktop-portal-gnome
+  #     xdg-desktop-portal-gtk
+  #   ];
+  #   config = {
+  #     common = { default = [ "gtk" ]; };
+  #     gnome = { default = [ "gnome" "gtk" ]; };
+  #     hyprland = { default = [ "hyprland" "gtk" ]; };
+  #   };
+  # };
 
   # Audio Configuration (recommended for GNOME)
-  # Disable PulseAudio in favor of PipeWire (better Wayland support)
-  hardware.pulseaudio.enable = false;
+  # Disable PulseAudio in favor of PipeWire (better Wayland support) - UPDATED SYNTAX
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -157,8 +141,8 @@
     gnome-tour        # GNOME welcome tour
     epiphany          # GNOME Web browser (you have Firefox)
     geary             # Mail app
-    gnome.gnome-music # Music player
-    gnome.gnome-photos # Photo organizer
+    gnome-music       # Music player (updated package name)
+    gnome-photos      # Photo organizer (updated package name)
     # Add more apps you don't want here
   ];
 }

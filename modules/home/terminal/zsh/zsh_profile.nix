@@ -6,18 +6,30 @@
       text = ''
         # Masaüstü oturumlarını otomatik başlatma yapılandırması
         # TTY1: Hyprland (birincil ekran)
-        # TTY2: Hyprland (ikincil ekran)
+        # TTY2: GNOME Wayland
         # TTY3: COSMIC masaüstü ortamı
         # TTY4: QEMU Ubuntu VM (Sway ile)
         # TTY5: QEMU NixOS VM (Sway ile)
         # TTY6: QEMU Arch VM (Sway ile)
         
-        if [ -z "''${WAYLAND_DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^(1|2)$ ]]; then
-            # TTY1 veya TTY2'de Hyprland başlat
+        if [ -z "''${WAYLAND_DISPLAY}" ] && [ "''${XDG_VTNR}" = "1" ]; then
+            # TTY1'de Hyprland başlat
             if command -v hyprland_tty >/dev/null 2>&1; then
                 exec hyprland_tty
             else
                 echo "Hyprland başlatma scripti bulunamadı!"
+                exec startup-manager
+            fi
+        elif [ -z "''${WAYLAND_DISPLAY}" ] && [ "''${XDG_VTNR}" = "2" ]; then
+            # TTY2'de GNOME Wayland başlat
+            export XDG_SESSION_TYPE=wayland
+            export XDG_SESSION_DESKTOP=gnome
+            export XDG_CURRENT_DESKTOP=GNOME
+            export XDG_RUNTIME_DIR=/run/user/$(id -u)
+            if command -v gnome-session >/dev/null 2>&1; then
+                exec gnome-session
+            else
+                echo "GNOME session bulunamadı!"
                 exec startup-manager
             fi
         elif [ -z "''${WAYLAND_DISPLAY}" ] && [ "''${XDG_VTNR}" = "3" ]; then
