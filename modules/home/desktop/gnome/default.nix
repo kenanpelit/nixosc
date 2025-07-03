@@ -358,6 +358,7 @@ in
           "discord.desktop:4"                 # Discord → Workspace 4
           "webcord.desktop:4"                 # Webcord → Workspace 4
           "whatsie.desktop:9"                 # WhatsApp → Workspace 9
+          "ferdium.desktop:9"                 # WhatsApp → Workspace 9
           "spotify.desktop:8"                 # Spotify → Workspace 8
           "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"  # Brave PWA → Workspace 7
         ];
