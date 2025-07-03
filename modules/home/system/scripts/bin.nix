@@ -45,6 +45,9 @@ let
   gitgo = pkgs.writeShellScriptBin "gitgo" (
     builtins.readFile ./bin/gitgo.sh
   );
+  gnome_flow = pkgs.writeShellScriptBin "gnome_flow" (
+    builtins.readFile ./bin/gnome_flow.sh
+  );
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
   );
@@ -371,6 +374,7 @@ in {
     cosmic-workspace-monitor
     crypto-manager
     gitgo
+    gnome_flow
     hypr-airplane_mode
     hypr-blue-gammastep-manager
     hypr-blue-hyprsunset-manager
