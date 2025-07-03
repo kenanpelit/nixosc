@@ -35,6 +35,7 @@ in
         "no-overview@fthx"
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
+        "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -348,11 +349,35 @@ in
         last-version-name-installed = "16.4";
       };
 
+      "org/gnome/shell/extensions/auto-move-windows" = {
+        # Auto Move Windows - Workspace Assignment
+        application-list = [
+          "brave-browser.desktop:1"           # Browser → Workspace 1
+          "kitty.desktop:2"                   # Terminal → Workspace 2  
+          "discord.desktop:4"                 # Discord → Workspace 4
+          "webcord.desktop:4"                 # Webcord → Workspace 4
+          "whatsie.desktop:9"                 # WhatsApp → Workspace 9
+          "spotify.desktop:8"                 # Spotify → Workspace 8
+          "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"  # Brave PWA → Workspace 7
+        ];
+      };
+
       # Shell keybindings
       "org/gnome/shell/keybindings" = {
         show-applications = ["<Super>a"];
         show-screenshot-ui = ["<Super>Print"];
         toggle-overview = ["<Super>s"];
+        
+        # Application switching keybinding'larını kapat (workspace çakışması için)
+        switch-to-application-1 = [];
+        switch-to-application-2 = [];
+        switch-to-application-3 = [];
+        switch-to-application-4 = [];
+        switch-to-application-5 = [];
+        switch-to-application-6 = [];
+        switch-to-application-7 = [];
+        switch-to-application-8 = [];
+        switch-to-application-9 = [];
       };
 
       # App switcher settings
@@ -601,7 +626,7 @@ in
         disable-while-typing = true;
         click-method = "fingers";  # Two-finger right click
         send-events = "enabled";
-        speed = 0.7;  # Biraz daha hızlı (0.0'dan 0.3'e)
+        speed = 0.7;  # Biraz daha hızlı (0.0'dan 0.7'e)
         accel-profile = "default";
         scroll-method = "two-finger-scrolling";
         middle-click-emulation = false;
