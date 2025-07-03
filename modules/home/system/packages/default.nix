@@ -84,6 +84,7 @@
    rmpc            # Zengin MPD istemcisi
    mpc-cli         # MPD istemcisi
    calcurse        # Takvim
+   wmctrl
 
    # ==============================================================================
    # Medya Araçları
