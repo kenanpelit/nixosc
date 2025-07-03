@@ -14,6 +14,18 @@
 { username, inputs, pkgs, ... }:
 {
   services = {
+    # ==========================================================================
+    # D-Bus Configuration - DÜZELTME (sadece eksik paketler eklendi)
+    # ==========================================================================
+    dbus = {
+      enable = true;
+      packages = with pkgs; [
+        gnome-settings-daemon
+        gnome-session
+        gnome-keyring  # Secret service için
+      ];
+    };
+
     # X Server Settings
     xserver = {
       enable = true;
@@ -24,79 +36,82 @@
         variant = "f";
         options = "ctrl:nocaps";
       };
-      
-      # Display Manager - GDM
-      displayManager = {
-        gdm = {
-          enable = true;
-          wayland = true;
-        };
-        autoLogin.enable = false;
-      };
-      
-      # Desktop Manager - GNOME
-      desktopManager = {
-        gnome.enable = true;
-      };
     };
     
-    # Alternative: Try this syntax if above doesn't work
+    # Display Manager - GDM
+    displayManager = {
+      gdm = {
+        enable = true;
+        wayland = true;
+      };
+      autoLogin.enable = false;
+    };
+    
+    # Desktop Manager - GNOME
     desktopManager = {
       gnome.enable = true;
     };
     
     # Input Device Settings
     libinput.enable = true;
-  };
-
-  # Manual GNOME session file creation (fallback)
-  environment.etc."wayland-sessions/gnome.desktop".text = ''
-    [Desktop Entry]
-    Name=GNOME
-    Comment=This session logs you into GNOME
-    Exec=gnome-session
-    Type=Application
-    DesktopNames=GNOME
-  '';
-
-  # Session Variables for Wayland
-  # These environment variables ensure applications work properly in Wayland
-  environment.sessionVariables = {
-    # Wayland-specific variables
-    NIXOS_OZONE_WL = "1";  # Enable Wayland for Electron apps (VS Code, Discord, etc.)
-    MOZ_ENABLE_WAYLAND = "1";  # Enable Wayland for Firefox (better performance)
     
-    # Qt applications
-    QT_QPA_PLATFORM = "wayland;xcb";  # Qt Wayland with X11 fallback
-    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";  # Let window manager handle decorations
-    
-    # GTK applications (GNOME apps)
-    GDK_BACKEND = "wayland,x11";  # GTK Wayland with X11 fallback
-    
-    # SDL applications (games, multimedia)
-    SDL_VIDEODRIVER = "wayland";  # Use Wayland for SDL apps
-    
-    # Cursor theme
-    XCURSOR_THEME = "Adwaita";  # Mouse cursor theme
-    XCURSOR_SIZE = "24";        # Cursor size
+    # GNOME Keyring (secret service için)
+    gnome.gnome-keyring.enable = true;
   };
   
-  # COSMIC clipboard manager setting - COMMENTED OUT
-  # This enables the data control protocol for Wayland
-  # environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
-
-  # Audio Configuration (recommended for GNOME)
-  # Disable PulseAudio in favor of PipeWire (better Wayland support)
+  # GNOME session files
+  environment.etc = {
+    "wayland-sessions/gnome.desktop".text = ''
+      [Desktop Entry]
+      Name=GNOME
+      Comment=This session logs you into GNOME
+      Exec=gnome-session
+      Type=Application
+      DesktopNames=GNOME
+    '';
+    
+    "xdg/gnome-session/sessions/gnome.session".text = ''
+      [GNOME Session]
+      Name=GNOME
+      RequiredComponents=org.gnome.Shell;org.gnome.SettingsDaemon.A11ySettings;org.gnome.SettingsDaemon.Color;org.gnome.SettingsDaemon.Datetime;org.gnome.SettingsDaemon.Housekeeping;org.gnome.SettingsDaemon.Keyboard;org.gnome.SettingsDaemon.MediaKeys;org.gnome.SettingsDaemon.Power;org.gnome.SettingsDaemon.PrintNotifications;org.gnome.SettingsDaemon.Rfkill;org.gnome.SettingsDaemon.ScreensaverProxy;org.gnome.SettingsDaemon.Sharing;org.gnome.SettingsDaemon.Smartcard;org.gnome.SettingsDaemon.Sound;org.gnome.SettingsDaemon.UsbProtection;org.gnome.SettingsDaemon.Wacom;org.gnome.SettingsDaemon.XSettings;
+    '';
+  };
+  
+  # Session Variables for Wayland
+  environment.sessionVariables = {
+    # Wayland-specific variables
+    NIXOS_OZONE_WL = "1";
+    MOZ_ENABLE_WAYLAND = "1";
+    
+    # Qt applications
+    QT_QPA_PLATFORM = "wayland;xcb";
+    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+    
+    # GTK applications
+    GDK_BACKEND = "wayland,x11";
+    
+    # SDL applications
+    SDL_VIDEODRIVER = "wayland";
+    
+    # Cursor theme
+    XCURSOR_THEME = "Adwaita";
+    XCURSOR_SIZE = "24";
+  };
+  
+  # Audio Configuration
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
-    pulse.enable = true;  # PulseAudio compatibility layer
-    # Optional: Enable JACK support for professional audio
-    # jack.enable = true;
+    pulse.enable = true;
   };
-
+  
+  # PAM for GNOME Keyring
+  security.pam.services = {
+    gdm.enableGnomeKeyring = true;
+    login.enableGnomeKeyring = true;
+  };
 }
 
