@@ -36,6 +36,7 @@ in
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
         "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
+        "weatheroclock@CleoMenezesJr.github.io"
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -626,7 +627,7 @@ in
         disable-while-typing = true;
         click-method = "fingers";  # Two-finger right click
         send-events = "enabled";
-        speed = 0.7;  # Biraz daha hızlı (0.0'dan 0.7'e)
+        speed = 0.8;  # Biraz daha hızlı (0.0'dan 0.8'e)
         accel-profile = "default";
         scroll-method = "two-finger-scrolling";
         middle-click-emulation = false;
