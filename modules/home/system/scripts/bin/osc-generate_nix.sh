@@ -27,6 +27,8 @@ set -euo pipefail
 declare -A DIRECTORIES=(
 	["bin"]="$HOME/.nixosc/modules/home/system/scripts/bin"
 	["start"]="$HOME/.nixosc/modules/home/system/scripts/start"
+	["gnome"]="$HOME/.nixosc/modules/home/system/scripts/gnome"
+
 )
 
 # Function to process a single directory
