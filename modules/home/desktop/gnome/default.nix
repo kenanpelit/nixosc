@@ -501,7 +501,6 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/"
         ];
       };
 
@@ -648,7 +647,7 @@ in
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20" = {
         binding = "<Alt>t";
-        command = "start-kkenp";
+        command = "gnome-kkenp";
         name = "Start KKENP";
       };
 
@@ -698,12 +697,6 @@ in
         binding = "<Super><Alt>Return";
         command = "osc-start_gnome launch --daily";
         name = "Gnome Start";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28" = {
-        binding = "<Alt>t";
-        command = "gnome-kkenp";
-        name = "Tmux Start";
       };
 
      # ------------------------------------------------------------------------
