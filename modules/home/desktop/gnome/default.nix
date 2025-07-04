@@ -544,7 +544,7 @@ in
       # APPLICATION LAUNCHERS
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5" = {
-        binding = "<Super>space";
+        binding = "<Super><Alt>space";
         command = "rofi-launcher";
         name = "Open Rofi Launcher";
       };
@@ -559,7 +559,7 @@ in
       # AUDIO & MEDIA CONTROL
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7" = {
-        binding = "<Alt>a";
+        binding = "<Super>space";
         command = "osc-soundctl switch";
         name = "Switch Audio Output";
       };
@@ -652,8 +652,8 @@ in
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21" = {
-        binding = "<Super>m";
-        command = "anotes";
+        binding = "<Super>n";
+        command = "anotes -M";
         name = "Notes Manager";
       };
 
@@ -694,9 +694,15 @@ in
       };
 
        "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27" = {
-        binding = "<Super>Alt";
+        binding = "<Super><Alt>Return";
         command = "osc-start_gnome launch --daily";
         name = "Gnome Start";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28" = {
+        binding = "<Alt>t";
+        command = "gnome-kkenp";
+        name = "Tmux Start";
       };
 
      # ------------------------------------------------------------------------
