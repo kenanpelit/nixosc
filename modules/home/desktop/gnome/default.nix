@@ -676,13 +676,18 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Power Settings
+      # Power Settings - UPDATED with Lid Close Action
       # ------------------------------------------------------------------------
       "org/gnome/settings-daemon/plugins/power" = {
         sleep-inactive-ac-type = "nothing";
         sleep-inactive-battery-type = "suspend";
         sleep-inactive-battery-timeout = 1800; # 30 minutes
         power-button-action = "interactive";
+  
+        # YENİ: Laptop kapağı kapatma ayarları
+        lid-close-ac-action = "suspend";        # Prize takılıyken kapak kapatınca suspend
+        lid-close-battery-action = "suspend";   # Pillide kapak kapatınca suspend
+        lid-close-suspend-with-external-monitor = true; # Harici monitör varsa suspend olmasın
       };
 
       # ------------------------------------------------------------------------
