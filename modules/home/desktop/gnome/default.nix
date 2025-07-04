@@ -355,8 +355,8 @@ in
         application-list = [
           "brave-browser.desktop:1"           # Browser → Workspace 1
           "kitty.desktop:2"                   # Terminal → Workspace 2  
-          "discord.desktop:4"                 # Discord → Workspace 4
-          "webcord.desktop:4"                 # Webcord → Workspace 4
+          "discord.desktop:5"                 # Discord → Workspace 4
+          "webcord.desktop:5"                 # Webcord → Workspace 4
           "whatsie.desktop:9"                 # WhatsApp → Workspace 9
           "ferdium.desktop:9"                 # WhatsApp → Workspace 9
           "spotify.desktop:8"                 # Spotify → Workspace 8
