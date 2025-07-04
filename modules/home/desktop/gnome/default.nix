@@ -38,6 +38,7 @@ in
         "weatheroclock@CleoMenezesJr.github.io"
         "spotify-controls@Sonath21"  # UUID düzeltildi - mevcut kurulu olan
         "space-bar@luchrioh"
+        "sound-percentage@subashghimire.info.np"
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -496,11 +497,6 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/"
         ];
       };
 
@@ -545,12 +541,6 @@ in
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5" = {
         binding = "<Super><Alt>space";
-        command = "rofi-launcher";
-        name = "Open Rofi Launcher";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6" = {
-        binding = "<Alt>space";
         command = "walker";
         name = "Open Walker";
       };
@@ -558,148 +548,124 @@ in
       # =======================================================================
       # AUDIO & MEDIA CONTROL
       # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7" = {
-        binding = "<Super>space";
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6" = {
+        binding = "<Alt>a";
         command = "osc-soundctl switch";
         name = "Switch Audio Output";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom8" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7" = {
         binding = "<Alt><Ctrl>a";
         command = "osc-soundctl switch-mic";
         name = "Switch Microphone";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom9" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom8" = {
         binding = "<Alt>e";
         command = "osc-spotify";
         name = "Spotify Toggle";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom9" = {
         binding = "<Alt><Ctrl>n";
         command = "osc-spotify next";
         name = "Spotify Next";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10" = {
         binding = "<Alt><Ctrl>b";
         command = "osc-spotify prev";
         name = "Spotify Previous";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
         binding = "<Alt>i";
         command = "hypr-vlc_toggle";
         name = "VLC Toggle";
       };
 
       # =======================================================================
-      # WALLPAPER MANAGEMENT
-      # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13" = {
-        binding = "<Super>w";
-        command = "wallpaper-manager select";
-        name = "Select Wallpaper";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14" = {
-        binding = "<Alt>0";
-        command = "wallpaper-manager";
-        name = "Random Wallpaper";
-      };
-
-      # =======================================================================
       # SYSTEM TOOLS
       # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom15" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12" = {
         binding = "<Alt>l";
-        command = "gnome-screensaver-command -l";
+        command = "loginctl lock-session";
         name = "Lock Screen";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16" = {
-        binding = "<Super>BackSpace";
-        command = "power-menu";
-        name = "Power Menu";
+      # =======================================================================
+      # WORKSPACE NAVIGATION
+      # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13" = {
+        binding = "<Alt>n";
+        command = "bash -c 'current=$(wmctrl -d | grep \"*\" | awk \"{print \\$1}\"); if [ $current -gt 0 ]; then wmctrl -s $((current - 1)); fi'";
+        name = "Previous Workspace";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17" = {
-        binding = "<Super>c";
-        command = "hyprpicker -a";
-        name = "Color Picker";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18" = {
-        binding = "<Super>n";
-        command = "swaync-client -t -sw";
-        name = "Notification Center";
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14" = {
+        binding = "<Alt>Tab";
+        command = "bash -c 'current=$(wmctrl -d | grep \"*\" | awk \"{print \\$1}\"); total=$(wmctrl -d | wc -l); if [ $current -lt $((total - 1)) ]; then wmctrl -s $((current + 1)); fi'";
+        name = "Next Workspace";
       };
 
       # =======================================================================
       # APPLICATIONS
       # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom15" = {
         binding = "<Super><Shift>d";
         command = "webcord --enable-features=UseOzonePlatform --ozone-platform=wayland";
         name = "Open Discord";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16" = {
         binding = "<Alt>t";
         command = "gnome-kkenp";
         name = "Start KKENP";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17" = {
         binding = "<Super>n";
         command = "anotes -M";
         name = "Notes Manager";
       };
 
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22" = {
-        binding = "<Super>v";
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18" = {
+        binding = "<Alt>v";
         command = "copyq toggle";
         name = "Clipboard Manager";
       };
 
       # =======================================================================
-      # WORKSPACE NAVIGATION (Additional Custom)
+      # VARIOUS TOOLS
       # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23" = {
-        binding = "<Alt>n";
-        command = "gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval 'Main.wm.actionMoveWorkspace(Meta.MotionDirection.LEFT)'";
-        name = "Previous Workspace";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24" = {
-        binding = "<Alt>Tab";
-        command = "gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval 'Main.wm.actionMoveWorkspace(Meta.MotionDirection.RIGHT)'";
-        name = "Next Workspace";
-      };
-
-      # =======================================================================
-      # Various
-      # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19" = {
         binding = "F10";
         command = "hypr-bluetooth_toggle";
         name = "Bluetooth Toggle";
       };
 
-       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26" = {
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20" = {
         binding = "<Alt>F12";
         command = "osc-mullvad toggle";
         name = "Mullvad Toggle";
       };
 
-       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27" = {
+      # =======================================================================
+      # STARTUP SCRIPTS
+      # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21" = {
         binding = "<Super><Alt>Return";
         command = "osc-start_gnome launch --daily";
         name = "Gnome Start";
       };
 
-     # ------------------------------------------------------------------------
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22" = {
+        binding = "<Super><Shift>s";
+        command = "gnome-screenshot -i";
+        name = "Screenshot Tool";
+      };
+
+      # ------------------------------------------------------------------------
       # Privacy Settings
       # ------------------------------------------------------------------------
       "org/gnome/desktop/privacy" = {
