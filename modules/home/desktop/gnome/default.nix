@@ -501,6 +501,7 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/"
         ];
       };
 
