@@ -38,7 +38,6 @@ in
         "weatheroclock@CleoMenezesJr.github.io"
         "spotify-controls@Sonath21"  # UUID düzeltildi - mevcut kurulu olan
         "space-bar@luchrioh"
-        "sshlist@extension.amarullz.com"  # Mevcut listede var, eklendi
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
