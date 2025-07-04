@@ -187,7 +187,7 @@ switch_workspace() {
 	if command -v wmctrl >/dev/null 2>&1; then
 		log "INFO" "WORKSPACE" "🎯 Switching to workspace $workspace using wmctrl"
 		wmctrl -s "$target_workspace"
-		sleep 2 # Simple 2 second wait
+		sleep 1 # Just 1 second is enough
 		log "SUCCESS" "WORKSPACE" "✅ Switched to workspace $workspace"
 	else
 		log "ERROR" "WORKSPACE" "❌ wmctrl not found - install with: nix-env -iA nixpkgs.wmctrl"
@@ -292,7 +292,7 @@ generate_script() {
 		echo "    "
 		echo "    if command -v wmctrl >/dev/null 2>&1; then"
 		echo "        wmctrl -s \"\$TARGET_WORKSPACE\""
-		echo "        sleep 2  # Simple 2 second wait"
+		echo "        sleep 1  # Just 1 second is enough"
 		echo "        echo \"✅ Switched to workspace $workspace\""
 		echo "    else"
 		echo "        echo \"❌ ERROR: wmctrl not found - install with: nix-env -iA nixpkgs.wmctrl\""

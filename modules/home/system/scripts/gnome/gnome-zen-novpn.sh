@@ -21,7 +21,7 @@ if [[ "3" != "0" ]]; then
     
     if command -v wmctrl >/dev/null 2>&1; then
         wmctrl -s "$TARGET_WORKSPACE"
-        sleep 2  # Simple 2 second wait
+        sleep 1  # Just 1 second is enough
         echo "✅ Switched to workspace 3"
     else
         echo "❌ ERROR: wmctrl not found - install with: nix-env -iA nixpkgs.wmctrl"
