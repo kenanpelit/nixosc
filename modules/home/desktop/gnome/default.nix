@@ -30,13 +30,15 @@ in
         "alt-tab-scroll-workaround@lucasresck.github.io"
         "extension-list@tu.berry"
         "gsconnect@andyholmes.github.io"
-        "simple-workspaces-bar@null-git"
+        #"simple-workspaces-bar@null-git"
         "bluetooth-quick-connect@bjarosze.gmail.com"
         "no-overview@fthx"
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
         "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
         "weatheroclock@CleoMenezesJr.github.io"
+        "spotify-controls@koolskateguy89"
+        "space-bar@luchrioh"
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -262,12 +264,12 @@ in
         show-offline = false;
       };
 
-      "org/gnome/shell/extensions/simple-workspaces-bar" = {
-        # Simple Workspaces Bar ayarları
-        position-in-panel = "left";
-        show-empty-workspaces = false;
-        toggle-overview = false;
-      };
+      #"org/gnome/shell/extensions/simple-workspaces-bar" = {
+      #  # Simple Workspaces Bar ayarları
+      #  position-in-panel = "left";
+      #  show-empty-workspaces = false;
+      #  toggle-overview = false;
+      #};
 
       "org/gnome/shell/extensions/bluetooth-quick-connect" = {
         # Bluetooth Quick Connect ayarları
@@ -348,6 +350,59 @@ in
         
         # Version info
         last-version-name-installed = "16.4";
+      };
+
+      "org/gnome/shell/extensions/spotify-controls" = {
+        show-track-info = false;           # Mevcut ayarınız
+        position = "middle-right";         # Mevcut ayarınız
+        show-notifications = true;         # Bildirimler aktif
+        track-length = 30;                # Track adı uzunluğu
+        show-pause-icon = true;           # Pause ikonu
+        show-next-icon = true;            # Next ikonu
+        show-prev-icon = true;            # Previous ikonu
+        button-color = "default";         # Düğme rengi
+        hide-on-no-spotify = true;        # Spotify kapalıyken gizle
+      };
+
+      "org/gnome/shell/extensions/space-bar/appearance" = {
+        application-styles = ''
+          .space-bar {
+            -natural-hpadding: 12px;
+          }
+
+          .space-bar-workspace-label.active {
+            margin: 0 4px;
+            background-color: rgba(255,255,255,0.3);
+            color: rgba(255,255,255,1);
+            border-color: rgba(0,0,0,0);
+            font-weight: 700;
+            border-radius: 4px;
+            border-width: 0px;
+            padding: 3px 8px;
+          }
+
+          .space-bar-workspace-label.inactive {
+            margin: 0 4px;
+            background-color: rgba(0,0,0,0);
+            color: rgba(255,255,255,1);
+            border-color: rgba(0,0,0,0);
+            font-weight: 700;
+            border-radius: 4px;
+            border-width: 0px;
+            padding: 3px 8px;
+          }
+
+          .space-bar-workspace-label.inactive.empty {
+            margin: 0 4px;
+            background-color: rgba(0,0,0,0);
+            color: rgba(255,255,255,0.5);
+            border-color: rgba(0,0,0,0);
+            font-weight: 700;
+            border-radius: 4px;
+            border-width: 0px;
+            padding: 3px 8px;
+          }
+        '';
       };
 
       "org/gnome/shell/extensions/auto-move-windows" = {
