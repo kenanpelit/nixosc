@@ -498,6 +498,9 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/"
         ];
       };
 
@@ -675,7 +678,28 @@ in
         name = "Next Workspace";
       };
 
-      # ------------------------------------------------------------------------
+      # =======================================================================
+      # Various
+      # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25" = {
+        binding = "F10";
+        command = "hypr-bluetooth_toggle";
+        name = "Bluetooth Toggle";
+      };
+
+       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26" = {
+        binding = "<Alt>F12";
+        command = "osc-mullvad toggle";
+        name = "Mullvad Toggle";
+      };
+
+       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27" = {
+        binding = "<Super>Alt";
+        command = "osc-start_gnome launch --daily";
+        name = "Gnome Start";
+      };
+
+     # ------------------------------------------------------------------------
       # Privacy Settings
       # ------------------------------------------------------------------------
       "org/gnome/desktop/privacy" = {
