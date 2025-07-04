@@ -24,21 +24,21 @@ in
     extensions = mkOption {
       type = types.listOf types.str;
       default = [
-        # Mevcut yüklü extension'lar
+        # Mevcut yüklü extension'lar - UUID düzeltmeleri yapıldı
         "clipboard-indicator@tudmotu.com"
         "dash-to-panel@jderose9.github.com"
         "alt-tab-scroll-workaround@lucasresck.github.io"
         "extension-list@tu.berry"
         "gsconnect@andyholmes.github.io"
-        #"simple-workspaces-bar@null-git"
         "bluetooth-quick-connect@bjarosze.gmail.com"
         "no-overview@fthx"
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
         "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
         "weatheroclock@CleoMenezesJr.github.io"
-        "spotify-controls@koolskateguy89"
+        "spotify-controls@Sonath21"  # UUID düzeltildi - mevcut kurulu olan
         "space-bar@luchrioh"
+        "sshlist@extension.amarullz.com"  # Mevcut listede var, eklendi
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -84,9 +84,6 @@ in
         copyq                       # Clipboard manager
         kitty                       # Terminal for keybindings
         nemo                        # Alternative file manager
-        
-        # Mevcut extension'lar için gerekli paketler (varsa)
-        # Bu extension'lar zaten yüklü olduğu için ek paket gerekmeyebilir
       ]
     );
 
@@ -206,7 +203,7 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Shell Settings & Extensions (Mevcut Extension'lar)
+      # Shell Settings & Extensions
       # ------------------------------------------------------------------------
       "org/gnome/shell" = {
         favorite-apps = [
@@ -214,10 +211,14 @@ in
           "kitty.desktop"
         ];
         enabled-extensions = cfg.extensions;
-        disabled-extensions = []; # Mevcut extension'ları etkinleştir
+        disabled-extensions = [];
       };
 
-      # Mevcut Extension Settings (Doğru Path ve Ayarlar)
+      # ------------------------------------------------------------------------
+      # Extension Configurations - UPDATED & OPTIMIZED
+      # ------------------------------------------------------------------------
+      
+      # Dash to Panel - Mevcut ayarlar korundu
       "org/gnome/shell/extensions/dash-to-panel" = {
         # Temel panel ayarları
         appicon-margin = 8;
@@ -248,9 +249,9 @@ in
         animate-appicon-hover-animation-extent = "{'RIPPLE': 4, 'PLANK': 4, 'SIMPLE': 1}";
       };
 
+      # Clipboard Indicator - Mevcut ayarlar korundu
       "org/gnome/shell/extensions/clipboard-indicator" = {
-        # Clipboard indicator ayarları
-        toggle-menu = ["<Super>v"];  # Keybinding duplicate olabilir, dikkat!
+        toggle-menu = ["<Super>v"];  # Clipboard manager keybinding ile çakışır, custom keybinding kullanılıyor
         clear-history = [];
         prev-entry = [];
         next-entry = [];
@@ -258,52 +259,67 @@ in
         display-mode = 0;
       };
 
+      # GSConnect - Mevcut ayarlar korundu
       "org/gnome/shell/extensions/gsconnect" = {
-        # GSConnect ayarları
         show-indicators = true;
         show-offline = false;
       };
 
-      #"org/gnome/shell/extensions/simple-workspaces-bar" = {
-      #  # Simple Workspaces Bar ayarları
-      #  position-in-panel = "left";
-      #  show-empty-workspaces = false;
-      #  toggle-overview = false;
-      #};
-
+      # Bluetooth Quick Connect - Mevcut ayarlar korundu
       "org/gnome/shell/extensions/bluetooth-quick-connect" = {
-        # Bluetooth Quick Connect ayarları
         show-battery-icon-on = true;
         show-battery-value-on = true;
       };
 
+      # No Overview - Minimal config
       "org/gnome/shell/extensions/no-overview" = {
         # No Overview - Otomatik ayar, genelde config gerektirmez
       };
 
+      # VITALS - UPDATED: Network TX eklendi + optimizasyonlar
       "org/gnome/shell/extensions/vitals" = {
-        # Vitals system monitor ayarları
-        hot-sensors = ["_processor_usage_" "_memory_usage_" "_network-rx_max_"];
+        # GÜNCELLENMIŞ: RX + TX network monitoring
+        hot-sensors = ["_processor_usage_" "_memory_usage_" "_network-rx_max_" "_network-tx_max_"];
         position-in-panel = 2;  # Center
         use-higher-precision = false;
         alphabetize = true;
         include-static-info = false;
+        
+        # YENİ: Ek optimizasyonlar
+        show-icons = true;          # Sensor ikonlarını göster
+        show-battery = true;        # Batarya bilgisini göster (laptop için)
+        unit-fahrenheit = false;    # Celsius kullan
+        memory-measurement = 0;     # Percentage olarak göster
+        network-speed-format = 1;   # Bit/s formatında
+        storage-measurement = 0;    # Percentage olarak göster
+        hide-zeros = true;          # Sıfır değerleri gizle (temiz görünüm)
+        menu-centered = false;      # Menu konumu
       };
 
+      # TILINGSHELL - UPDATED: Windows Suggestions özelliği eklendi
       "org/gnome/shell/extensions/tilingshell" = {
-        # Tiling Shell ayarları (Gerçek ayarlar)
-        
-        # Temel tiling ayarları
+        # Temel tiling ayarları (mevcut)
         enable-tiling-system = true;
         auto-tile = true;
         snap-assist = true;
         
-        # Layout ayarları
+        # Layout ayarları (mevcut)
         default-layout = "split";
         inner-gaps = 4;
         outer-gaps = 4;
         
-        # Keybindings (Hyprland benzeri)
+        # YENİ: Windows Suggestions özelliği (2024-2025 güncellemesi)
+        enable-window-suggestions = true;           # Ana özellik aktif
+        window-suggestions-for-snap-assist = true; # Snap Assistant için öneriler
+        window-suggestions-for-edge-tiling = true; # Edge tiling için öneriler
+        window-suggestions-for-keybinding = true;  # Keybinding tiling için öneriler
+        
+        # YENİ: Suggestions ayarları
+        suggestions-timeout = 3000;                # 3 saniye göster
+        max-suggestions-to-show = 6;               # Maksimum 6 öneri göster
+        enable-suggestions-scroll = true;          # Çok öneri varsa scroll
+        
+        # Keybindings (mevcut korundu)
         tile-left = ["<Super><Shift>Left"];
         tile-right = ["<Super><Shift>Right"];
         tile-up = ["<Super><Shift>Up"];
@@ -312,49 +328,50 @@ in
         toggle-tiling = ["<Super>t"];
         toggle-floating = ["<Super>f"];
         
-        # Window focus (Hyprland benzeri)
+        # Window focus (mevcut korundu)
         focus-left = ["<Super>Left"];
         focus-right = ["<Super>Right"];
         focus-up = ["<Super>Up"];
         focus-down = ["<Super>Down"];
         
-        # Layout switching
+        # Layout switching (mevcut korundu)
         next-layout = ["<Super>Tab"];
         prev-layout = ["<Super><Shift>Tab"];
         
-        # Resize ayarları
+        # Resize ayarları (mevcut korundu)
         resize-step = 50;
         
-        # Visual ayarları
+        # Visual ayarları (mevcut korundu)
         show-border = true;
         border-width = 2;
         border-color = "rgba(66, 165, 245, 0.8)";
         
-        # Animation
+        # Animation (mevcut korundu)
         enable-animations = true;
         animation-duration = 150;
         
-        # Advanced settings
+        # Advanced settings (mevcut korundu)
         respect-workspaces = true;
         tile-dialogs = false;
         tile-modals = false;
         
-        # Layout configurations (JSON string)
+        # Layout configurations (mevcut korundu)
         layouts-json = ''[{"id":"Layout 1","tiles":[{"x":0,"y":0,"width":0.22,"height":0.5,"groups":[1,2]},{"x":0,"y":0.5,"width":0.22,"height":0.5,"groups":[1,2]},{"x":0.22,"y":0,"width":0.56,"height":1,"groups":[2,3]},{"x":0.78,"y":0,"width":0.22,"height":0.5,"groups":[3,4]},{"x":0.78,"y":0.5,"width":0.22,"height":0.5,"groups":[3,4]}]},{"id":"Layout 2","tiles":[{"x":0,"y":0,"width":0.22,"height":1,"groups":[1]},{"x":0.22,"y":0,"width":0.56,"height":1,"groups":[1,2]},{"x":0.78,"y":0,"width":0.22,"height":1,"groups":[2]}]},{"id":"Layout 3","tiles":[{"x":0,"y":0,"width":0.33,"height":1,"groups":[1]},{"x":0.33,"y":0,"width":0.67,"height":1,"groups":[1]}]},{"id":"Layout 4","tiles":[{"x":0,"y":0,"width":0.67,"height":1,"groups":[1]},{"x":0.67,"y":0,"width":0.33,"height":1,"groups":[1]}]}]'';
         
-        # Selected layouts per workspace
+        # Selected layouts per workspace (mevcut korundu)
         selected-layouts = [["Layout 4" "Layout 4"] ["Layout 1" "Layout 1"] ["Layout 4" "Layout 4"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"]];
         
-        # System overrides (otomatik değişiklikler)
+        # System overrides (mevcut korundu)
         overridden-settings = ''{"org.gnome.mutter.keybindings":{"toggle-tiled-right":"['<Super>Right']","toggle-tiled-left":"['<Super>Left']"},"org.gnome.desktop.wm.keybindings":{"maximize":"['<Super>Up']","unmaximize":"['<Super>Down', '<Alt>F5']"},"org.gnome.mutter":{"edge-tiling":"true"}}'';
         
-        # Version info
+        # Version info (mevcut korundu)
         last-version-name-installed = "16.4";
       };
 
+      # SPOTIFY CONTROLS - UPDATED: Doğru UUID + kompakt mod
       "org/gnome/shell/extensions/spotify-controls" = {
-        show-track-info = false;           # Mevcut ayarınız
-        position = "middle-right";         # Mevcut ayarınız
+        show-track-info = false;           # Mevcut ayarınız korundu
+        position = "middle-right";         # Mevcut ayarınız korundu
         show-notifications = true;         # Bildirimler aktif
         track-length = 30;                # Track adı uzunluğu
         show-pause-icon = true;           # Pause ikonu
@@ -362,8 +379,14 @@ in
         show-prev-icon = true;            # Previous ikonu
         button-color = "default";         # Düğme rengi
         hide-on-no-spotify = true;        # Spotify kapalıyken gizle
+        
+        # YENİ: Kompakt mod ve optimizasyonlar
+        show-volume-control = false;      # Ses kontrolü gösterme (daha temiz panel)
+        show-album-art = false;          # Album kapağı gösterme (küçük panel için)
+        compact-mode = true;             # Kompakt mod (daha az yer kaplar)
       };
 
+      # Space Bar - Mevcut CSS korundu
       "org/gnome/shell/extensions/space-bar/appearance" = {
         application-styles = ''
           .space-bar {
@@ -405,13 +428,13 @@ in
         '';
       };
 
+      # Auto Move Windows - Mevcut ayarlar korundu
       "org/gnome/shell/extensions/auto-move-windows" = {
-        # Auto Move Windows - Workspace Assignment
         application-list = [
           "brave-browser.desktop:1"           # Browser → Workspace 1
           "kitty.desktop:2"                   # Terminal → Workspace 2  
-          "discord.desktop:5"                 # Discord → Workspace 4
-          "webcord.desktop:5"                 # Webcord → Workspace 4
+          "discord.desktop:5"                 # Discord → Workspace 5
+          "webcord.desktop:5"                 # Webcord → Workspace 5
           "whatsie.desktop:9"                 # WhatsApp → Workspace 9
           "ferdium.desktop:9"                 # WhatsApp → Workspace 9
           "spotify.desktop:8"                 # Spotify → Workspace 8
@@ -419,7 +442,7 @@ in
         ];
       };
 
-      # Shell keybindings
+      # Shell keybindings - Mevcut ayarlar korundu
       "org/gnome/shell/keybindings" = {
         show-applications = ["<Super>a"];
         show-screenshot-ui = ["<Super>Print"];
@@ -437,7 +460,7 @@ in
         switch-to-application-9 = [];
       };
 
-      # App switcher settings
+      # App switcher settings - Mevcut ayarlar korundu
       "org/gnome/shell/app-switcher" = {
         current-workspace-only = false;  # Show apps from all workspaces
       };
@@ -789,4 +812,3 @@ in
     };
   };
 }
-
