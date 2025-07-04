@@ -158,6 +158,7 @@
    woomer           # Pencere yöneticisi
    zenity           # GTK diyalogları
    copyq            # Pano yöneticisi
+   xclip
    cliphist         # Pano yöneticisi
    clipman          # Pano yöneticisi
    keepassxc        # Parola yöneticisi
