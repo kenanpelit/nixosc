@@ -733,8 +733,7 @@
         "ALT CTRL, W, exec, whatsie -w"
         "ALT, T, exec, start-kkenp"
         "ALT CTRL, C, exec, start-mkenp"
-        #"$mainMod ALT, RETURN, exec, osc-start-all"
-        "$mainMod ALT, RETURN, exec, osc-start launch --daily"
+        "$mainMod ALT, RETURN, exec, osc-start_hypr launch --daily"
 
         # Sistem Fonksiyonları
         ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle
