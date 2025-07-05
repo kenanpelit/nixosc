@@ -51,6 +51,9 @@ let
   gnome_flow = pkgs.writeShellScriptBin "gnome_flow" (
     builtins.readFile ./bin/gnome_flow.sh
   );
+  gnome-mpv-manager = pkgs.writeShellScriptBin "gnome-mpv-manager" (
+    builtins.readFile ./bin/gnome-mpv-manager.sh
+  );
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
   );
@@ -382,6 +385,7 @@ in {
     gitgo
     gnome-extensions-installer
     gnome_flow
+    gnome-mpv-manager
     hypr-airplane_mode
     hypr-blue-gammastep-manager
     hypr-blue-hyprsunset-manager
