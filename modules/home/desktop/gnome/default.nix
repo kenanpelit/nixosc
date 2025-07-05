@@ -48,7 +48,7 @@ in
     };
   };
 
-    config = mkIf (cfg.enable or true) {
+  config = mkIf (cfg.enable or true) {
     # ==========================================================================
     # Package Installation (Extended)
     # ==========================================================================
@@ -194,7 +194,6 @@ in
       "org/gnome/mutter" = {
         edge-tiling = true;
         dynamic-workspaces = false;  # Fixed workspaces like Hyprland
-      };
         workspaces-only-on-primary = false;
         center-new-windows = true;
       };
@@ -598,6 +597,15 @@ in
       };
 
       # =======================================================================
+      # MPV MANAGEMENT (GNOME-Flow Integration)
+      # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
+        binding = "<Alt>i";
+        command = "gnome-mpv-manager start";
+        name = "MPV Start/Focus";
+      };
+
+      # =======================================================================
       # SYSTEM TOOLS
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12" = {
@@ -676,15 +684,6 @@ in
         binding = "<Super><Shift>s";
         command = "gnome-screenshot -i";
         name = "Screenshot Tool";
-      };
-
-      # =======================================================================
-      # MPV MANAGEMENT (GNOME-Flow Integration)
-      # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
-        binding = "<Alt>i";
-        command = "gnome-mpv-manager start";
-        name = "MPV Start/Focus";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23" = {
@@ -793,11 +792,6 @@ in
         sleep-inactive-battery-type = "suspend";
         sleep-inactive-battery-timeout = 1800; # 30 minutes
         power-button-action = "interactive";
-
-        ## YENİ: Laptop kapağı kapatma ayarları
-        #lid-close-ac-action = "suspend";        # Prize takılıyken kapak kapatınca suspend
-        #lid-close-battery-action = "suspend";   # Pillide kapak kapatınca suspend
-        #lid-close-suspend-with-external-monitor = true; # Harici monitör varsa suspend olmasın
         handle-lid-switch = false;
       };
 
