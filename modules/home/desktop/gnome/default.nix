@@ -791,10 +791,26 @@ in
         sleep-inactive-ac-type = "suspend";
         sleep-inactive-ac-timeout = 3600; # 60 minutes
         sleep-inactive-battery-type = "suspend";
-        sleep-inactive-battery-timeout = 1800; # 30 minutes
+        sleep-inactive-battery-timeout = 3600; # 30 minutes
         power-button-action = "interactive";
         handle-lid-switch = false;
       };
+
+      # ------------------------------------------------------------------------
+      # Session Settings - Screen Blank Disabled
+      # ------------------------------------------------------------------------
+      "org/gnome/desktop/session" = {
+        idle-delay = 0; # Screen blank DISABLED (changed from 15 minutes)
+      };
+
+      ## ------------------------------------------------------------------------
+      ## Screensaver Settings - Keep lock but no auto-activation
+      ## ------------------------------------------------------------------------
+      #"org/gnome/desktop/screensaver" = {
+      #  lock-enabled = true;
+      #  lock-delay = 0;
+      #  idle-activation-enabled = false; # Screensaver auto-activation DISABLED
+      #};
 
       # ------------------------------------------------------------------------
       # Touchpad Settings - Traditional Scrolling + Faster Speed
