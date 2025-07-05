@@ -45,6 +45,9 @@ let
   gitgo = pkgs.writeShellScriptBin "gitgo" (
     builtins.readFile ./bin/gitgo.sh
   );
+  gnome-extensions-installer = pkgs.writeShellScriptBin "gnome-extensions-installer" (
+    builtins.readFile ./bin/gnome-extensions-installer.sh
+  );
   gnome_flow = pkgs.writeShellScriptBin "gnome_flow" (
     builtins.readFile ./bin/gnome_flow.sh
   );
@@ -377,6 +380,7 @@ in {
     cosmic-workspace-monitor
     crypto-manager
     gitgo
+    gnome-extensions-installer
     gnome_flow
     hypr-airplane_mode
     hypr-blue-gammastep-manager
