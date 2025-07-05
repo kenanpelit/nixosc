@@ -212,9 +212,14 @@ in
       # ------------------------------------------------------------------------
       "org/gnome/mutter" = {
         edge-tiling = true;
-        dynamic-workspaces = false;  # Fixed workspaces like Hyprland
+        dynamic-workspaces = false;
         workspaces-only-on-primary = false;
         center-new-windows = true;
+  
+        # Focus ayarları - YENİ
+        focus-change-on-pointer-rest = true;
+        auto-maximize = false;
+        attach-modal-dialogs = true;
       };
 
       # ------------------------------------------------------------------------
@@ -223,6 +228,12 @@ in
       "org/gnome/desktop/wm/preferences" = {
         num-workspaces = 9;  # 9 fixed workspaces
         workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
+
+        # Focus ayarları - YENİ
+        focus-mode = "click";
+        focus-new-windows = "smart";
+        auto-raise = false;
+        raise-on-click = true;
       };
 
       # ------------------------------------------------------------------------
@@ -356,7 +367,12 @@ in
         focus-right = ["<Super>Right"];
         focus-up = ["<Super>Up"];
         focus-down = ["<Super>Down"];
-        
+
+        # Focus ayarları ekle:
+        auto-focus-on-tile = true;        # Tile edildiğinde focus al
+        focus-follows-mouse = false;      # Mouse focus'u kapat (karışıklık olmasın)
+        respect-focus-hints = true;       # Uygulama focus taleplerini dinle
+
         # Layout switching (mevcut korundu)
         next-layout = ["<Super>Tab"];
         prev-layout = ["<Super><Shift>Tab"];
