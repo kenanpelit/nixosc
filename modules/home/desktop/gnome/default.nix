@@ -501,6 +501,11 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/"
         ];
       };
 
@@ -580,12 +585,6 @@ in
         binding = "<Alt><Ctrl>b";
         command = "osc-spotify prev";
         name = "Spotify Previous";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
-        binding = "<Alt>i";
-        command = "hypr-vlc_toggle";
-        name = "VLC Toggle";
       };
 
       # =======================================================================
@@ -669,6 +668,44 @@ in
         name = "Screenshot Tool";
       };
 
+      # =======================================================================
+      # MPV MANAGEMENT (GNOME-Flow Integration)
+      # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
+        binding = "<Alt>i";
+        command = "gnome-mpv-manager.sh start";
+        name = "MPV Start/Focus";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23" = {
+        binding = "<Alt><Shift>i";
+        command = "gnome-mpv-manager.sh move";
+        name = "MPV Move Window";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24" = {
+        binding = "<Alt><Ctrl>i";
+        command = "gnome-mpv-manager.sh resize";
+        name = "MPV Resize Center";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25" = {
+        binding = "<Alt>y";
+        command = "gnome-mpv-manager.sh play-yt";
+        name = "Play YouTube from Clipboard";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26" = {
+        binding = "<Alt><Shift>y";
+        command = "gnome-mpv-manager.sh save-yt";
+        name = "Download YouTube Video";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27" = {
+        binding = "<Alt>p";
+        command = "gnome-mpv-manager.sh playback";
+        name = "MPV Toggle Playback";
+      };
       # ------------------------------------------------------------------------
       # Privacy Settings
       # ------------------------------------------------------------------------
