@@ -638,14 +638,16 @@ in
       # =======================================================================
       # WORKSPACE NAVIGATION
       # =======================================================================
+      # Previous Workspace - DEĞİŞTİR
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13" = {
-        binding = "<Alt>n";
+        binding = "<Super><Alt>Left";  # Daha mantıklı: Super+Alt+Sol ok
         command = "bash -c 'current=$(wmctrl -d | grep \"*\" | awk \"{print \\$1}\"); if [ $current -gt 0 ]; then wmctrl -s $((current - 1)); fi'";
         name = "Previous Workspace";
       };
 
+      # Next Workspace - DEĞİŞTİR (Alt+Tab yerine)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14" = {
-        binding = "<Alt>Tab";
+        binding = "<Super><Alt>Right";  # Daha mantıklı: Super+Alt+Sağ ok
         command = "bash -c 'current=$(wmctrl -d | grep \"*\" | awk \"{print \\$1}\"); total=$(wmctrl -d | wc -l); if [ $current -lt $((total - 1)) ]; then wmctrl -s $((current + 1)); fi'";
         name = "Next Workspace";
       };
@@ -807,7 +809,7 @@ in
 
       # Restart (Güçlü kombinasyon)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38" = {
-        binding = "<Ctrl><Alt><Shift>r";
+        binding = "<Ctrl><Alt>r";
         command = "gnome-session-quit --reboot --no-prompt";
         name = "Restart Computer";
       };
