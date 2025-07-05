@@ -464,25 +464,7 @@ in
           "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"  # Brave PWA → Workspace 7
         ];
       };
-
-      # Shell keybindings - Mevcut ayarlar korundu
-      "org/gnome/shell/keybindings" = {
-        show-applications = ["<Super>a"];
-        show-screenshot-ui = ["<Super>Print"];
-        toggle-overview = ["<Super>s"];
-        
-        # Application switching keybinding'larını kapat (workspace çakışması için)
-        switch-to-application-1 = [];
-        switch-to-application-2 = [];
-        switch-to-application-3 = [];
-        switch-to-application-4 = [];
-        switch-to-application-5 = [];
-        switch-to-application-6 = [];
-        switch-to-application-7 = [];
-        switch-to-application-8 = [];
-        switch-to-application-9 = [];
-      };
-
+       
       # App switcher settings - Mevcut ayarlar korundu
       "org/gnome/shell/app-switcher" = {
         current-workspace-only = false;  # Show apps from all workspaces
