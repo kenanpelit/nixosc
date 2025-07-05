@@ -157,6 +157,7 @@ in
         switch-to-workspace-7 = [];
         switch-to-workspace-8 = [];
         switch-to-workspace-9 = [];
+        switch-to-workspace-10 = [];
 
         # Move window to workspace - FIXED FOR GNOME
         move-to-workspace-1 = ["<Super><Shift>1"];
@@ -169,11 +170,11 @@ in
         move-to-workspace-8 = ["<Super><Shift>8"];
         move-to-workspace-9 = ["<Super><Shift>9"];
 
-        # Navigate workspaces with arrows
-        switch-to-workspace-left = ["<Super><Ctrl>Left" "<Super>Page_Up"];
-        switch-to-workspace-right = ["<Super><Ctrl>Right" "<Super>Page_Down"];
-        switch-to-workspace-up = ["<Super><Ctrl>Up"];
-        switch-to-workspace-down = ["<Super><Ctrl>Down"];
+        # Navigate workspaces with arrows - DISABLED
+        switch-to-workspace-left = [];
+        switch-to-workspace-right = [];
+        switch-to-workspace-up = [];
+        switch-to-workspace-down = [];
 
         # Move window between workspaces
         move-to-workspace-left = ["<Super><Shift>Left"];
@@ -186,6 +187,24 @@ in
         move-window-right = ["<Super><Alt>Right" "<Super><Alt>l"];
         move-window-up = ["<Super><Alt>Up" "<Super><Alt>k"];
         move-window-down = ["<Super><Alt>Down" "<Super><Alt>j"];
+      };
+
+      # Shell keybindings - Mevcut ayarlar korundu
+      "org/gnome/shell/keybindings" = {
+        show-applications = ["<Super>a"];
+        show-screenshot-ui = ["<Super>Print"];
+        toggle-overview = ["<Super>s"];
+        
+        # Application switching keybinding'larını kapat (workspace çakışması için)
+        switch-to-application-1 = [];
+        switch-to-application-2 = [];
+        switch-to-application-3 = [];
+        switch-to-application-4 = [];
+        switch-to-application-5 = [];
+        switch-to-application-6 = [];
+        switch-to-application-7 = [];
+        switch-to-application-8 = [];
+        switch-to-application-9 = [];
       };
 
       # ------------------------------------------------------------------------
