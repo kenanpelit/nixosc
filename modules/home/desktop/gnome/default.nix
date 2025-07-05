@@ -805,6 +805,24 @@ in
     };
 
     # ==========================================================================
+    # Fix GSD Power Daemon for Lid Switch (Disable to let systemd handle)
+    # ==========================================================================
+    systemd.user.services.disable-gsd-power = {
+      Unit = {
+        Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
+        After = [ "gnome-session.target" ];
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
+        RemainAfterExit = true;
+      };
+      Install = {
+        WantedBy = [ "gnome-session.target" ];
+      };
+    };
+
+    # ==========================================================================
     # Session Variables
     # ==========================================================================
     home.sessionVariables = {
