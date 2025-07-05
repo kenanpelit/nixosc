@@ -673,37 +673,37 @@ in
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11" = {
         binding = "<Alt>i";
-        command = "gnome-mpv-manager.sh start";
+        command = "gnome-mpv-manager start";
         name = "MPV Start/Focus";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23" = {
         binding = "<Alt><Shift>i";
-        command = "gnome-mpv-manager.sh move";
+        command = "gnome-mpv-manager move";
         name = "MPV Move Window";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24" = {
         binding = "<Alt><Ctrl>i";
-        command = "gnome-mpv-manager.sh resize";
+        command = "gnome-mpv-manager resize";
         name = "MPV Resize Center";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25" = {
         binding = "<Alt>y";
-        command = "gnome-mpv-manager.sh play-yt";
+        command = "gnome-mpv-manager play-yt";
         name = "Play YouTube from Clipboard";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26" = {
         binding = "<Alt><Shift>y";
-        command = "gnome-mpv-manager.sh save-yt";
+        command = "gnome-mpv-manager save-yt";
         name = "Download YouTube Video";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27" = {
         binding = "<Alt>p";
-        command = "gnome-mpv-manager.sh playback";
+        command = "gnome-mpv-manager playback";
         name = "MPV Toggle Playback";
       };
       # ------------------------------------------------------------------------
