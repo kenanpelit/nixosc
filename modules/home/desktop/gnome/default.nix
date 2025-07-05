@@ -186,6 +186,7 @@ in
         move-window-right = ["<Super><Alt>Right" "<Super><Alt>l"];
         move-window-up = ["<Super><Alt>Up" "<Super><Alt>k"];
         move-window-down = ["<Super><Alt>Down" "<Super><Alt>j"];
+      };
 
       # ------------------------------------------------------------------------
       # Mutter (Window Manager) Settings - Optimized for Workspace Usage
