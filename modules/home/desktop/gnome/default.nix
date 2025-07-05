@@ -532,6 +532,10 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom39/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/"
         ];
       };
 
@@ -788,6 +792,38 @@ in
         binding = "<Super>9";
         command = "workspace-switcher 9";
         name = "Workspace 9 (with history)";
+      };
+
+      # =======================================================================
+      # POWER MANAGEMENT SHORTCUTS
+      # =======================================================================
+
+      # Shutdown (Güçlü kombinasyon)
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37" = {
+        binding = "<Ctrl><Alt><Shift>s";
+        command = "gnome-session-quit --power-off --no-prompt";
+        name = "Shutdown Computer";
+      };
+
+      # Restart (Güçlü kombinasyon)
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38" = {
+        binding = "<Ctrl><Alt><Shift>r";
+        command = "gnome-session-quit --reboot --no-prompt";
+        name = "Restart Computer";
+      };
+
+      # Logout (Daha kolay erişim)
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom39" = {
+        binding = "<Ctrl><Alt>q";
+        command = "gnome-session-quit --logout --no-prompt";
+        name = "Logout";
+      };
+
+      # Power Menu (Seçenekli)
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40" = {
+        binding = "<Ctrl><Alt>p";
+        command = "gnome-session-quit --power-off";
+        name = "Power Menu (with confirmation)";
       };
 
       # ------------------------------------------------------------------------
