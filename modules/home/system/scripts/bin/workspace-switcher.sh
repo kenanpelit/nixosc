@@ -2,18 +2,16 @@
 
 set -x
 
-# GNOME Workspace Switcher with History Support - FINAL FIXED
+# GNOME Workspace Switcher with History Support - TOGGLE FIX
 HISTORY_FILE="/tmp/gnome-workspace-history"
 
 # Function to get current workspace (returns 1-based index from GNOME)
 get_current_workspace() {
-	# Parse the LAST column (workspace number) not the first (index)
 	wmctrl -d | grep '*' | awk '{print $NF}'
 }
 
 # Function to get current workspace INDEX (0-based for wmctrl commands)
 get_current_workspace_index() {
-	# Parse the FIRST column (index) for wmctrl switching
 	wmctrl -d | grep '*' | awk '{print $1}'
 }
 
@@ -45,22 +43,15 @@ save_to_history() {
 		touch "$HISTORY_FILE"
 	fi
 
-	# Don't save if it's the same as the last entry
-	if [[ -f "$HISTORY_FILE" && -s "$HISTORY_FILE" ]]; then
-		local last=$(tail -1 "$HISTORY_FILE" 2>/dev/null)
-		if [[ "$last" == "$workspace" ]]; then
-			echo "Not saving $workspace - same as last entry"
-			return
-		fi
-	fi
-
-	# Add to history and keep only last 10 entries
+	# Always save - don't check for duplicates since we want history
 	echo "$workspace" >>"$HISTORY_FILE"
+
+	# Keep only last 10 entries
 	tail -10 "$HISTORY_FILE" >"${HISTORY_FILE}.tmp" && mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
 	echo "Saved workspace $workspace to history"
 }
 
-# Function to read previous workspace from history
+# Function to read previous workspace from history (excluding current)
 read_previous_workspace() {
 	if [[ ! -f "$HISTORY_FILE" || ! -s "$HISTORY_FILE" ]]; then
 		echo "1" # Return workspace 1 as default
@@ -81,7 +72,7 @@ read_previous_workspace() {
 	echo "1"
 }
 
-# Main function with history support - FINAL VERSION
+# Main function with toggle support - CORRECTED VERSION
 switch_to_workspace_with_history() {
 	local target=$1 # 1-based workspace number
 	local current=$(get_current_workspace)
@@ -94,13 +85,13 @@ switch_to_workspace_with_history() {
 		save_to_history "$current"
 		switch_to_workspace "$target"
 	else
-		echo "Same workspace, going to previous"
-		# If trying to go to current workspace, go to previous
+		echo "Same workspace - toggling to previous"
+		# Get previous workspace from history
 		local previous=$(read_previous_workspace)
-		echo "Previous workspace: $previous"
+		echo "Previous workspace from history: $previous"
+
 		if [[ "$previous" != "$current" ]]; then
-			# Save current to history before going to previous
-			save_to_history "$current"
+			# Switch to previous workspace (don't save current again)
 			switch_to_workspace "$previous"
 		else
 			echo "No different previous workspace found"
@@ -114,11 +105,14 @@ show_history() {
 	if [[ -f "$HISTORY_FILE" ]]; then
 		echo "History file contents:"
 		cat -n "$HISTORY_FILE"
+		echo "---"
+		echo "Last 3 entries:"
+		tail -3 "$HISTORY_FILE" | cat -n
 	else
 		echo "No history file"
 	fi
 	echo "Current workspace: $(get_current_workspace)"
-	echo "Current index: $(get_current_workspace_index)"
+	echo "Previous workspace: $(read_previous_workspace)"
 	echo "======================="
 }
 
@@ -139,6 +133,7 @@ clear)
 *)
 	echo "Usage: $0 {1-9|debug|clear}"
 	echo "Example: $0 2  # Switch to workspace 2"
+	echo "Example: $0 2  # Press again to go back to previous"
 	exit 1
 	;;
 esac
