@@ -147,16 +147,16 @@ in
         switch-windows = ["<Super>Tab"];
         switch-windows-backward = ["<Shift><Super>Tab"];
 
-        # Workspace switching (1-9) - FIXED FOR GNOME
-        switch-to-workspace-1 = ["<Super>1"];
-        switch-to-workspace-2 = ["<Super>2"];
-        switch-to-workspace-3 = ["<Super>3"];
-        switch-to-workspace-4 = ["<Super>4"];
-        switch-to-workspace-5 = ["<Super>5"];
-        switch-to-workspace-6 = ["<Super>6"];
-        switch-to-workspace-7 = ["<Super>7"];
-        switch-to-workspace-8 = ["<Super>8"];
-        switch-to-workspace-9 = ["<Super>9"];
+        # Workspace switching (1-9) - DISABLED for custom history support
+        switch-to-workspace-1 = [];
+        switch-to-workspace-2 = [];
+        switch-to-workspace-3 = [];
+        switch-to-workspace-4 = [];
+        switch-to-workspace-5 = [];
+        switch-to-workspace-6 = [];
+        switch-to-workspace-7 = [];
+        switch-to-workspace-8 = [];
+        switch-to-workspace-9 = [];
 
         # Move window to workspace - FIXED FOR GNOME
         move-to-workspace-1 = ["<Super><Shift>1"];
@@ -186,7 +186,6 @@ in
         move-window-right = ["<Super><Alt>Right" "<Super><Alt>l"];
         move-window-up = ["<Super><Alt>Up" "<Super><Alt>k"];
         move-window-down = ["<Super><Alt>Down" "<Super><Alt>j"];
-      };
 
       # ------------------------------------------------------------------------
       # Mutter (Window Manager) Settings - Optimized for Workspace Usage
@@ -194,6 +193,7 @@ in
       "org/gnome/mutter" = {
         edge-tiling = true;
         dynamic-workspaces = false;  # Fixed workspaces like Hyprland
+      };
         workspaces-only-on-primary = false;
         center-new-windows = true;
       };
@@ -506,6 +506,15 @@ in
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/"
         ];
       };
 
@@ -706,6 +715,64 @@ in
         command = "gnome-mpv-manager playback";
         name = "MPV Toggle Playback";
       };
+
+      # =======================================================================
+      # WORKSPACE SWITCHING WITH HISTORY SUPPORT
+      # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28" = {
+        binding = "<Super>1";
+        command = "workspace-switcher 1";
+        name = "Workspace 1 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29" = {
+        binding = "<Super>2";
+        command = "workspace-switcher 2";
+        name = "Workspace 2 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30" = {
+        binding = "<Super>3";
+        command = "workspace-switcher 3";
+        name = "Workspace 3 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31" = {
+        binding = "<Super>4";
+        command = "workspace-switcher 4";
+        name = "Workspace 4 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32" = {
+        binding = "<Super>5";
+        command = "workspace-switcher 5";
+        name = "Workspace 5 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33" = {
+        binding = "<Super>6";
+        command = "workspace-switcher 6";
+        name = "Workspace 6 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34" = {
+        binding = "<Super>7";
+        command = "workspace-switcher 7";
+        name = "Workspace 7 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35" = {
+        binding = "<Super>8";
+        command = "workspace-switcher 8";
+        name = "Workspace 8 (with history)";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36" = {
+        binding = "<Super>9";
+        command = "workspace-switcher 9";
+        name = "Workspace 9 (with history)";
+      };
+
       # ------------------------------------------------------------------------
       # Privacy Settings
       # ------------------------------------------------------------------------
