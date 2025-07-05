@@ -357,6 +357,9 @@ let
   wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
     builtins.readFile ./bin/wallpaper-manager.sh
   );
+  workspace-switcher = pkgs.writeShellScriptBin "workspace-switcher" (
+    builtins.readFile ./bin/workspace-switcher.sh
+  );
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
@@ -487,6 +490,7 @@ in {
     vnc-connect
     vv
     wallpaper-manager
+    workspace-switcher
     wrename
     zen_profile_launcher
     zen_terminate_sessions
