@@ -24,27 +24,31 @@ in
     extensions = mkOption {
       type = types.listOf types.str;
       default = [
-        # Mevcut yüklü extension'lar - UUID düzeltmeleri yapıldı
+        # Mevcut aktif extension'lar - güncel liste
         "clipboard-indicator@tudmotu.com"
         "dash-to-panel@jderose9.github.com"
         "alt-tab-scroll-workaround@lucasresck.github.io"
         "extension-list@tu.berry"
-        "gsconnect@andyholmes.github.io"
+        "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
         "bluetooth-quick-connect@bjarosze.gmail.com"
         "no-overview@fthx"
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
-        "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
         "weatheroclock@CleoMenezesJr.github.io"
-        "spotify-controls@Sonath21"  # UUID düzeltildi - mevcut kurulu olan
+        "spotify-controls@Sonath21"
         "space-bar@luchrioh"
         "sound-percentage@subashghimire.info.np"
+        "screenshort-cut@pauloimon"
+        "window-centering@hnjjhmtr27"
+        "disable-workspace-animation@ethnarque"
+        "gsconnect@andyholmes.github.io"
+        "mullvadindicator@pobega.github.com"
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
   };
 
-  config = mkIf (cfg.enable or true) {
+    config = mkIf (cfg.enable or true) {
     # ==========================================================================
     # Package Installation (Extended)
     # ==========================================================================
@@ -684,10 +688,11 @@ in
         sleep-inactive-battery-timeout = 1800; # 30 minutes
         power-button-action = "interactive";
   
-        # YENİ: Laptop kapağı kapatma ayarları
-        lid-close-ac-action = "suspend";        # Prize takılıyken kapak kapatınca suspend
-        lid-close-battery-action = "suspend";   # Pillide kapak kapatınca suspend
-        lid-close-suspend-with-external-monitor = true; # Harici monitör varsa suspend olmasın
+        ## YENİ: Laptop kapağı kapatma ayarları
+        #lid-close-ac-action = "suspend";        # Prize takılıyken kapak kapatınca suspend
+        #lid-close-battery-action = "suspend";   # Pillide kapak kapatınca suspend
+        #lid-close-suspend-with-external-monitor = true; # Harici monitör varsa suspend olmasın
+        handle-lid-switch = false;
       };
 
       # ------------------------------------------------------------------------
