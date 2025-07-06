@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
-# osc-waybar - waybar yardımcı programı
+# osc-waybar -  waybar yardımcı programı
 # Kullanım: osc-waybar [komut]
 
 VERSION="1.0.0"
-CONFIG_DIR="$HOME/.config/osc-waybar"
-
-# Yapılandırma dizinini oluştur (yoksa)
-mkdir -p "$CONFIG_DIR"
 
 # Yardım bilgilerini görüntüle
 show_help() {
