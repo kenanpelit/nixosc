@@ -213,9 +213,6 @@ let
   osc-vradio = pkgs.writeShellScriptBin "osc-vradio" (
     builtins.readFile ./bin/osc-vradio.sh
   );
-  osc-waybar = pkgs.writeShellScriptBin "osc-waybar" (
-    builtins.readFile ./bin/osc-waybar.sh
-  );
   osc-wifi-home = pkgs.writeShellScriptBin "osc-wifi-home" (
     builtins.readFile ./bin/osc-wifi-home.sh
   );
@@ -354,6 +351,9 @@ let
   vnc-connect = pkgs.writeShellScriptBin "vnc-connect" (
     builtins.readFile ./bin/vnc-connect.sh
   );
+  vpn-waybar = pkgs.writeShellScriptBin "vpn-waybar" (
+    builtins.readFile ./bin/vpn-waybar.sh
+  );
   vv = pkgs.writeShellScriptBin "vv" (
     builtins.readFile ./bin/vv.sh
   );
@@ -445,7 +445,6 @@ in {
     osc-ulauncher_ext
     osc-video-converter
     osc-vradio
-    osc-waybar
     osc-wifi-home
     pdfkes
     playlist
@@ -492,6 +491,7 @@ in {
     vmnixos
     vm-start
     vnc-connect
+    vpn-waybar
     vv
     wallpaper-manager
     workspace-switcher

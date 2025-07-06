@@ -140,7 +140,7 @@
       "custom/vpnstatus" = {
         interval = 5;
         format = "{}";
-        exec = "osc-waybar vpn-status";
+        exec = "vpn-waybar vpn-status";
         return-type = "json";
         tooltip = true;
       };
@@ -148,7 +148,7 @@
       "custom/vpnmullvad" = {
         interval = 5;
         format = "{}";
-        exec = "osc-waybar vpn-mullvad";
+        exec = "vpn-waybar vpn-mullvad";
         return-type = "json";
         tooltip = true;
         on-click-right = "mullvad connect";
@@ -158,7 +158,7 @@
       "custom/vpnother" = {
         interval = 5;
         format = "{}";
-        exec = "osc-waybar vpn-other";
+        exec = "vpn-waybar vpn-other";
         return-type = "json";
         tooltip = true;
       };
