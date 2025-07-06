@@ -336,6 +336,9 @@ let
   tty_config = pkgs.writeShellScriptBin "tty_config" (
     builtins.readFile ./bin/tty_config.sh
   );
+  videokes = pkgs.writeShellScriptBin "videokes" (
+    builtins.readFile ./bin/videokes.sh
+  );
   vir = pkgs.writeShellScriptBin "vir" (
     builtins.readFile ./bin/vir.sh
   );
@@ -483,6 +486,7 @@ in {
     toggle_waybar
     tsm
     tty_config
+    videokes
     vir
     vmarch
     vmnixos
