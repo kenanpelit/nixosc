@@ -63,6 +63,8 @@
   effects = {
     shadow = "rgba(0, 0, 0, 0.25)"; # Window and element shadows
     opacity = "1.0";                 # Global opacity setting
+    blur = "8px";                    # Blur effect for transparency
+    radius = "8px";                  # Border radius
   };
 
   # ==============================================================================
@@ -80,6 +82,8 @@
       lg = 14;      # Large text
       xl = 15;      # Extra large text
       "2xl" = 16;   # Double extra large text
+      "3xl" = 18;   # Triple extra large text
+      "4xl" = 20;   # Quadruple extra large text
     };
 
     # Font Sizes (string values for specific use cases)
@@ -92,6 +96,8 @@
       lg = "14";
       xl = "15";
       "2xl" = "16";
+      "3xl" = "18";
+      "4xl" = "20";
     };
   in {
     # Size Configurations
@@ -109,22 +115,62 @@
     editor = {
       family = "Maple Mono";        # Code editor font
       size = sizes.xl;
+      weight = "normal";
     };
     
     terminal = {
       family = "Hack Nerd Font";    # Terminal font with icons
       size = sizes.base;
+      weight = "normal";
     };
     
     mono = {
       family = "Hack Nerd Font";    # Monospace font for code
       size = sizes.sm;
+      weight = "normal";
     };
     
     notifications = {
       family = "Hack Nerd Font";    # Notification font
       size = sizes.md;
+      weight = "500";
     };
+    
+    # UI elements
+    ui = {
+      family = "Inter";             # UI font
+      size = sizes.sm;
+      weight = "400";
+    };
+    
+    # Headings
+    headings = {
+      family = "Inter";
+      sizes = {
+        h1 = sizes."4xl";
+        h2 = sizes."3xl";
+        h3 = sizes."2xl";
+        h4 = sizes.xl;
+        h5 = sizes.lg;
+        h6 = sizes.base;
+      };
+      weight = "600";
+    };
+  };
+  
+  # ==============================================================================
+  # Spacing Configuration
+  # ==============================================================================
+  spacing = {
+    xs = "4px";
+    sm = "8px";
+    md = "12px";
+    lg = "16px";
+    xl = "24px";
+    "2xl" = "32px";
+    "3xl" = "48px";
+    "4xl" = "64px";
   };
 }
 # ==============================================================================
+
