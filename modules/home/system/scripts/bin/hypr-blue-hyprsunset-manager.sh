@@ -24,10 +24,10 @@ log() {
 }
 
 # Varsayılan sıcaklık ayarları
-TEMP_DAY=4000
+TEMP_DAY=4050
 TEMP_EVENING=4000
-TEMP_NIGHT=4000
-TEMP_LATE_NIGHT=4000
+TEMP_NIGHT=3950
+TEMP_LATE_NIGHT=3900
 
 # Varsayılan zaman ayarları
 TIME_DAY_START=6
