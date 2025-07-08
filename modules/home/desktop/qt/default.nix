@@ -4,7 +4,15 @@
 # ==============================================================================
 { lib, pkgs, ... }:
 let
-  colors = import ./../../../themes/default.nix;
+  # Font ayarları
+  fonts = {
+    main = {
+      family = "Maple Mono";
+    };
+    sizes = {
+      sm = 12;
+    };
+  };
 in 
 {
   # =============================================================================
@@ -83,8 +91,8 @@ in
         };
         # Font Configuration
         Fonts = {
-          fixed = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
-          general = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          fixed = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          general = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,50,0,0,0,0,0";
         };
         # Interface Behavior
         Interface = {
@@ -119,8 +127,8 @@ in
         };
         # Font Configuration
         Fonts = {
-          fixed = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
-          general = "${colors.fonts.main.family},${toString colors.fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          fixed = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,50,0,0,0,0,0";
+          general = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,50,0,0,0,0,0";
         };
         # Interface Behavior
         Interface = {
@@ -141,3 +149,4 @@ in
     };
   };
 }
+
