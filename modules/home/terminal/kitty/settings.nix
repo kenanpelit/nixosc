@@ -2,20 +2,20 @@
 # ==============================================================================
 # Kitty Terminal Ayarları
 # ==============================================================================
-{ kittyTheme, colors, lib }:
+{ kittyTheme, colors, fonts, lib }:
 {
   programs.kitty = {
     font = {
-      name = colors.fonts.terminal.family;
+      name = fonts.terminal.family;
     };
-
+    
     # =============================================================================
     # Genel Ayarlar ve Renk Teması 
     # =============================================================================
     settings = 
       kittyTheme.colors //
       {
-        font_size = "13.3";  # Direkt string olarak veriyoruz
+        font_size = "13.3";
         term = "xterm-256color";
         adjust_line_height = "2";
         adjust_column_width = "0";
@@ -69,10 +69,10 @@
     # Ek Font Konfigürasyonu
     # =============================================================================
     extraConfig = ''
-      bold_font        ${colors.fonts.terminal.family} Bold
-      italic_font      ${colors.fonts.terminal.family} Italic
-      bold_italic_font ${colors.fonts.terminal.family} Bold Italic
-      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${colors.fonts.terminal.family}
+      bold_font        ${fonts.terminal.family} Bold
+      italic_font      ${fonts.terminal.family} Italic
+      bold_italic_font ${fonts.terminal.family} Bold Italic
+      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${fonts.terminal.family}
       font_features +liga,+calt
     '';
     
@@ -90,3 +90,4 @@
     };
   };
 }
+
