@@ -4,14 +4,19 @@
 # ==============================================================================
 { lib, pkgs, ... }:
 let
-  colors = import ./../../../themes/default.nix;
-  inherit (colors) kenp;
+  # Tokyo Night tema renkleri
+  colors = {
+    crust = "#1a1b26";
+    text = "#c0caf5";
+    surface1 = "#414868";
+  };
 in
 {
   # =============================================================================
   # Package Installation
   # =============================================================================
   home.packages = with pkgs; [ swayosd ];
+  
   # =============================================================================
   # Hyprland Integration
   # =============================================================================
@@ -21,12 +26,14 @@ in
       # Startup Configuration
       # ---------------------------------------------------------------------------
       exec-once = [ "swayosd-server" ];
+      
       # ---------------------------------------------------------------------------
       # Basic Volume Control
       # ---------------------------------------------------------------------------
       bind = [ 
         ",XF86AudioMute, exec, swayosd-client --output-volume mute-toggle" 
       ];
+      
       # ---------------------------------------------------------------------------
       # Brightness Control (Lock Screen Compatible)
       # ---------------------------------------------------------------------------
@@ -36,6 +43,7 @@ in
         "$mainMod, XF86MonBrightnessUp, exec, brightnessctl set 100%"
         "$mainMod, XF86MonBrightnessDown, exec, brightnessctl set 0%"
       ];
+      
       # ---------------------------------------------------------------------------
       # Volume Control (Hold)
       # ---------------------------------------------------------------------------
@@ -45,6 +53,7 @@ in
         "$mainMod, f12, exec, swayosd-client --output-volume +2 --max-volume=100"
         "$mainMod, f11, exec, swayosd-client --output-volume -2"
       ];
+      
       # ---------------------------------------------------------------------------
       # Lock Keys
       # ---------------------------------------------------------------------------
@@ -55,6 +64,7 @@ in
       ];
     };
   };
+  
   # =============================================================================
   # SwayOSD Styling
   # =============================================================================
@@ -64,21 +74,25 @@ in
         padding: 0px 10px;
         border-radius: 30px;
         border: 10px;
-        background: alpha(${kenp.crust}, 0.99);
+        background: alpha(${colors.crust}, 0.99);
     }
+    
     /* Container Layout */
     #container {
         margin: 15px;
     }
+    
     /* Basic Elements */
     image, label {
-        color: ${kenp.text};
+        color: ${colors.text};
     }
+    
     /* Disabled States */
     progressbar:disabled,
     image:disabled {
         opacity: 0.95;
     }
+    
     /* Progress Bar Styling */
     progressbar {
         min-height: 6px;
@@ -86,17 +100,20 @@ in
         background: transparent;
         border: none;
     }
+    
     trough {
         min-height: inherit;
         border-radius: inherit;
         border: none;
-        background: alpha(${kenp.surface1}, 0.1);
+        background: alpha(${colors.surface1}, 0.1);
     }
+    
     progress {
         min-height: inherit;
         border-radius: inherit;
         border: none;
-        background: ${kenp.text};
+        background: ${colors.text};
     }
   '';
 }
+
