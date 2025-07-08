@@ -4,7 +4,15 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
-  colors = import ./../../../themes/default.nix;
+  # Font ayarları
+  fonts = {
+    main = {
+      family = "Maple Mono";
+    };
+    sizes = {
+      sm = 12;
+    };
+  };
 in
 {
   # =============================================================================
@@ -20,7 +28,7 @@ in
       cursor-theme = "catppuccin-mocha-lavender-cursors";
       gtk-theme = "catppuccin-mocha-blue-standard";
       icon-theme = "a-candy-beauty-icon-theme";
-      font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
+      font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       text-scaling-factor = 1.0;
       enable-animations = true;
       gtk-enable-primary-paste = true;
@@ -46,8 +54,8 @@ in
     # Font Settings
     # ---------------------------------------------------------------------------
     font = {
-      name = colors.fonts.main.family;
-      size = colors.fonts.sizes.sm;
+      name = fonts.main.family;
+      size = fonts.sizes.sm;
     };
     
     # ---------------------------------------------------------------------------
@@ -90,7 +98,7 @@ in
       extraConfig = ''
         gtk-theme-name = "catppuccin-mocha-blue-standard"
         gtk-icon-theme-name = "a-candy-beauty-icon-theme"
-        gtk-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}"
+        gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
         gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors"
         gtk-cursor-theme-size = 24
         gtk-application-prefer-dark-theme = 1
@@ -113,7 +121,7 @@ in
     gtk3.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
-      gtk-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
+      gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
@@ -134,7 +142,7 @@ in
     gtk4.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
-      gtk-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
+      gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
@@ -177,7 +185,7 @@ in
       nerd-fonts.symbols-only
       twemoji-color-font
       noto-fonts-emoji
-      maple-mono.NF  # Düzeltildi: Spesifik bir varyant kullanılıyor
+      maple-mono.NF
       font-awesome
     ];
     
