@@ -4,8 +4,32 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
-  colors = import ./../../../themes/default.nix;
-  inherit (colors) kenp;
+  # Tokyo Night tema renkleri
+  colors = {
+    base = "#24283b";
+    mantle = "#1f2335";
+    crust = "#1a1b26";
+    text = "#c0caf5";
+    surface1 = "#414868";
+    surface2 = "#565f89";
+    mauve = "#bb9af7";
+    pink = "#ff75a0";
+    red = "#f7768e";
+    green = "#9ece6a";
+    yellow = "#e0af68";
+    sky = "#7dcfff";
+  };
+
+  # Font ve efekt ayarları
+  fonts = {
+    terminal = {
+      family = "Hack Nerd Font";
+    };
+  };
+
+  effects = {
+    opacity = "1.0";
+  };
 in
 {
   programs.wezterm = {
@@ -33,10 +57,10 @@ in
 
       -- Font Configuration
       config.font = wezterm.font_with_fallback({
-        { family = "${colors.fonts.terminal.family}", weight = "Regular" },
-        { family = "${colors.fonts.terminal.family} Bold", weight = "Bold" },
-        { family = "${colors.fonts.terminal.family} Italic", italic = true },
-        { family = "${colors.fonts.terminal.family} Bold Italic", weight = "Bold", italic = true },
+        { family = "${fonts.terminal.family}", weight = "Regular" },
+        { family = "${fonts.terminal.family} Bold", weight = "Bold" },
+        { family = "${fonts.terminal.family} Italic", italic = true },
+        { family = "${fonts.terminal.family} Bold Italic", weight = "Bold", italic = true },
       })
       config.font_size = tonumber("13.3")
       config.line_height = 1.0
@@ -51,8 +75,8 @@ in
       -- Window Appearance
       config.window_padding = { left = 6, right = 6, top = 6, bottom = 6 }
       config.window_decorations = "NONE"
-      config.window_background_opacity = ${colors.effects.opacity}
-      config.text_background_opacity = ${colors.effects.opacity}
+      config.window_background_opacity = ${effects.opacity}
+      config.text_background_opacity = ${effects.opacity}
       config.adjust_window_size_when_changing_font_size = false
 
       -- Tab Bar
@@ -205,7 +229,7 @@ in
       -- Status line updates
       wezterm.on("update-right-status", function(window, _)
         local SOLID_LEFT_ARROW = ""
-        local ARROW_FOREGROUND = { Foreground = { Color = "${kenp.mauve}" } }
+        local ARROW_FOREGROUND = { Foreground = { Color = "${colors.mauve}" } }
         local prefix = ""
 
         if window:leader_is_active() then
@@ -214,15 +238,15 @@ in
         end
 
         if window:active_tab():tab_id() ~= 0 then
-          ARROW_FOREGROUND = { Foreground = { Color = "${kenp.crust}" } }
+          ARROW_FOREGROUND = { Foreground = { Color = "${colors.crust}" } }
         end
 
         window:set_left_status(wezterm.format({
-          { Background = { Color = "${kenp.pink}" } },
+          { Background = { Color = "${colors.pink}" } },
           { Attribute = { Intensity = "Bold" } },
           { Text = prefix },
-          { Background = { Color = "${kenp.mauve}" } },
-          { Foreground = { Color = "${kenp.crust}" } },
+          { Background = { Color = "${colors.mauve}" } },
+          { Foreground = { Color = "${colors.crust}" } },
           { Text = " TERM " },
           ARROW_FOREGROUND,
           { Text = SOLID_LEFT_ARROW },
@@ -237,42 +261,42 @@ in
 
       -- Color Scheme
       config.colors = {
-        foreground = "${kenp.text}",
-        background = "${kenp.base}",
-        cursor_bg = "${kenp.mauve}",
-        cursor_fg = "${kenp.surface2}",
-        selection_fg = "${kenp.crust}",
-        selection_bg = "${kenp.mauve}",
+        foreground = "${colors.text}",
+        background = "${colors.base}",
+        cursor_bg = "${colors.mauve}",
+        cursor_fg = "${colors.surface2}",
+        selection_fg = "${colors.crust}",
+        selection_bg = "${colors.mauve}",
         tab_bar = {
-          background = "${kenp.mantle}",
+          background = "${colors.mantle}",
           active_tab = {
-            bg_color = "${kenp.mauve}",
-            fg_color = "${kenp.crust}",
+            bg_color = "${colors.mauve}",
+            fg_color = "${colors.crust}",
           },
           inactive_tab = {
-            bg_color = "${kenp.crust}",
-            fg_color = "${kenp.text}",
+            bg_color = "${colors.crust}",
+            fg_color = "${colors.text}",
           },
         },
         ansi = {
-          "${kenp.surface1}",  -- Black
-          "${kenp.red}",       -- Red
-          "${kenp.green}",     -- Green
-          "${kenp.yellow}",    -- Yellow
-          "${kenp.mauve}",     -- Blue
-          "${kenp.pink}",      -- Magenta
-          "${kenp.sky}",       -- Cyan
-          "${kenp.text}",      -- White
+          "${colors.surface1}",  -- Black
+          "${colors.red}",       -- Red
+          "${colors.green}",     -- Green
+          "${colors.yellow}",    -- Yellow
+          "${colors.mauve}",     -- Blue
+          "${colors.pink}",      -- Magenta
+          "${colors.sky}",       -- Cyan
+          "${colors.text}",      -- White
         },
         brights = {
-          "${kenp.surface2}",  -- Bright Black
-          "${kenp.red}",       -- Bright Red
-          "${kenp.green}",     -- Bright Green
-          "${kenp.yellow}",    -- Bright Yellow
-          "${kenp.mauve}",     -- Bright Blue
-          "${kenp.pink}",      -- Bright Magenta
-          "${kenp.sky}",       -- Bright Cyan
-          "#ffffff",           -- Bright White
+          "${colors.surface2}",  -- Bright Black
+          "${colors.red}",       -- Bright Red
+          "${colors.green}",     -- Bright Green
+          "${colors.yellow}",    -- Bright Yellow
+          "${colors.mauve}",     -- Bright Blue
+          "${colors.pink}",      -- Bright Magenta
+          "${colors.sky}",       -- Bright Cyan
+          "#ffffff",             -- Bright White
         },
       }
 
@@ -303,3 +327,4 @@ in
     '';
   };
 }
+
