@@ -4,13 +4,32 @@
 # ==============================================================================
 { pkgs, lib, config, inputs, ... }:
 let
-  colors = import ./../../../themes/default.nix;
-  inherit (colors) kenp;
+  # Tokyo Night tema renkleri
+  colors = {
+    crust = "#1a1b26";
+    text = "#c0caf5";
+    blue = "#7aa2f7";
+    red = "#f7768e";
+    yellow = "#e0af68";
+    mauve = "#bb9af7";
+    green = "#9ece6a";
+  };
+
+  # Font ayarları
+  fonts = {
+    notifications = {
+      family = "Hack Nerd Font";
+    };
+    sizes = {
+      xl = 15;
+    };
+  };
 in
 {
   programs.swaylock = {
     enable = true;
     package = pkgs.swaylock-effects;
+    
     # =============================================================================
     # Lock Screen Settings
     # =============================================================================
@@ -43,36 +62,36 @@ in
       # ---------------------------------------------------------------------------
       # Font Settings
       # ---------------------------------------------------------------------------
-      font = colors.fonts.notifications.family;
-      font-size = toString colors.fonts.sizes.xl;
+      font = fonts.notifications.family;
+      font-size = toString fonts.sizes.xl;
       
       # ---------------------------------------------------------------------------
       # Color Theme
       # ---------------------------------------------------------------------------
       # Highlight Colors
-      key-hl-color = "${kenp.blue}ff";          # Blue accent
-      bs-hl-color = "${kenp.red}ff";            # Red
+      key-hl-color = "${colors.blue}ff";          # Blue accent
+      bs-hl-color = "${colors.red}ff";            # Red
       
       # Ring Colors
-      ring-color = "${kenp.crust}aa";            # Dark background
-      ring-clear-color = "${kenp.yellow}ff";     # Orange
-      ring-caps-lock-color = "${kenp.mauve}ff";  # Purple
-      ring-ver-color = "${kenp.green}ff";        # Green
-      ring-wrong-color = "${kenp.red}ff";        # Bright red
+      ring-color = "${colors.crust}aa";            # Dark background
+      ring-clear-color = "${colors.yellow}ff";     # Orange
+      ring-caps-lock-color = "${colors.mauve}ff";  # Purple
+      ring-ver-color = "${colors.green}ff";        # Green
+      ring-wrong-color = "${colors.red}ff";        # Bright red
       
       # Interior Colors
-      inside-color = "${kenp.crust}cc";          # Darkest
-      inside-clear-color = "${kenp.crust}dd";
-      inside-caps-lock-color = "${kenp.crust}dd";
-      inside-ver-color = "${kenp.crust}dd";
-      inside-wrong-color = "${kenp.crust}dd";
+      inside-color = "${colors.crust}cc";          # Darkest
+      inside-clear-color = "${colors.crust}dd";
+      inside-caps-lock-color = "${colors.crust}dd";
+      inside-ver-color = "${colors.crust}dd";
+      inside-wrong-color = "${colors.crust}dd";
       
       # Text Colors
-      text-color = "${kenp.text}ff";              # Light gray
-      text-clear-color = "${kenp.yellow}ff";      # Orange
-      text-caps-lock-color = "${kenp.mauve}ff";   # Purple
-      text-ver-color = "${kenp.green}ff";         # Green
-      text-wrong-color = "${kenp.red}ff";         # Red
+      text-color = "${colors.text}ff";              # Light gray
+      text-clear-color = "${colors.yellow}ff";      # Orange
+      text-caps-lock-color = "${colors.mauve}ff";   # Purple
+      text-ver-color = "${colors.green}ff";         # Green
+      text-wrong-color = "${colors.red}ff";         # Red
       
       # Transparent UI Elements
       separator-color = "00000000";
@@ -83,8 +102,8 @@ in
       line-wrong-color = "00000000";
       
       # Layout Settings
-      layout-bg-color = "${kenp.crust}cc";        # Darkest shade
-      layout-text-color = "${kenp.text}ff";       # Light blue
+      layout-bg-color = "${colors.crust}cc";        # Darkest shade
+      layout-text-color = "${colors.text}ff";       # Light blue
     };
     
     # ---------------------------------------------------------------------------
@@ -93,3 +112,4 @@ in
     # Özel eklemeler buraya yapılabilir.
   };
 }
+
