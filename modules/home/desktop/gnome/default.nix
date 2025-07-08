@@ -1,13 +1,30 @@
 # modules/home/desktop/gnome/default.nix
 # ==============================================================================
-# GNOME Desktop Environment Configuration - Complete Edition
+# GNOME Desktop Environment Configuration
 # ==============================================================================
 { config, lib, pkgs, ... }:
 
 with lib;
 
 let
-  colors = import ./../../../themes/default.nix;
+  # Font ayarları
+  fonts = {
+    main = {
+      family = "Maple Mono";
+    };
+    editor = {
+      family = "Maple Mono";
+    };
+    terminal = {
+      family = "Hack Nerd Font";
+    };
+    sizes = {
+      sm = 12;
+      md = 13;
+      xl = 15;
+    };
+  };
+  
   cfg = config.modules.desktop.gnome or {};
 in
 {
@@ -99,7 +116,7 @@ in
       # Text Editor Configuration (Original - Preserved)
       # ------------------------------------------------------------------------
       "org/gnome/TextEditor" = {
-        custom-font = "${colors.fonts.editor.family} ${toString colors.fonts.sizes.xl}";
+        custom-font = "${fonts.editor.family} ${toString fonts.sizes.xl}";
         highlight-current-line = true;
         indent-style = "space";
         restore-session = false;
@@ -118,9 +135,9 @@ in
       # ------------------------------------------------------------------------
       "org/gnome/desktop/interface" = {
         # Original font settings (preserved)
-        font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
-        document-font-name = "${colors.fonts.main.family} ${toString colors.fonts.sizes.sm}";
-        monospace-font-name = "${colors.fonts.terminal.family} ${toString colors.fonts.sizes.sm}";
+        font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
+        document-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
+        monospace-font-name = "${fonts.terminal.family} ${toString fonts.sizes.sm}";
         
         # Additional interface settings
         color-scheme = "prefer-dark";
@@ -542,27 +559,6 @@ in
       # =======================================================================
       # TERMINAL EMULATORS
       # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0" = {
-        binding = "<Super>Return";
-        command = "kitty";
-        name = "Open Terminal (Kitty)";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1" = {
-        binding = "<Alt>Return";
-        command = "kitty --class=floating-kitty";
-        name = "Open Floating Terminal";
-      };
-
-      # =======================================================================
-      # FILE MANAGERS
-      # =======================================================================
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2" = {
-        binding = "<Super>e";
-        command = "nautilus";
-        name = "Open File Manager";
-      };
-
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3" = {
         binding = "<Alt><Ctrl>f";
         command = "nemo";
@@ -931,7 +927,7 @@ in
         foreground-color = "rgb(208,207,204)";
         use-theme-colors = false;
         use-system-font = false;
-        font = "${colors.fonts.terminal.family} ${toString colors.fonts.sizes.md}";
+        font = "${fonts.terminal.family} ${toString fonts.sizes.md}";
         cursor-shape = "block";
         cursor-blink-mode = "on";
         audible-bell = false;
@@ -993,3 +989,4 @@ in
     };
   };
 }
+
