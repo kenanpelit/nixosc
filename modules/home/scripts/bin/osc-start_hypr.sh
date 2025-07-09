@@ -25,7 +25,7 @@
 
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="7.0.0"
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/start"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"

@@ -18,7 +18,7 @@
 
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="7.1.0-workspace-really-fixed"
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/system/scripts/gnome"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/gnome"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
