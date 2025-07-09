@@ -1,14 +1,20 @@
-# modules/home/development/ollama/default.nix
+# modules/home/ollama/default.nix
 # ==============================================================================
 # Ollama LLM Configuration
+# ==============================================================================
+# This configuration manages Ollama LLM settings including:
+# - Service configuration and model management
+# - GPU acceleration settings
+# - Shell aliases and environment variables
+# - API and network configuration
+#
 # Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, ... }:
-
 let
-  cfg = config.modules.development.ollama;
+  cfg = config.modules.home.ollama;
 in {
-  options.modules.development.ollama = {
+  options.modules.home.ollama = {
     enable = lib.mkEnableOption "ollama configuration";
     
     # Başlangıç modelleri
@@ -17,21 +23,21 @@ in {
       default = [ "deepseek-r1:8b" ];
       description = "List of models to load at startup";
     };
-
+    
     # API port ayarı
     apiPort = lib.mkOption {
       type = lib.types.port;
       default = 11434;
       description = "Port for Ollama API to listen on";
     };
-
+    
     # GPU kullanımı
     useGPU = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Enable GPU acceleration";
     };
-
+    
     # Model dizini
     modelDir = lib.mkOption {
       type = lib.types.str;
@@ -55,23 +61,31 @@ in {
     # Python bağlayıcıları ve yardımcı araçlar
     home.packages = with pkgs; [
       python311Packages.ollama # Python API client
-      ollama-gui              # GUI arayüzü (varsa)
-      cuda-tools              # CUDA araçları (GPU kullanımı için)
+      # ollama-gui              # GUI arayüzü (paket mevcut değilse kaldırıldı)
+      # cuda-tools              # CUDA araçları (paket adı doğrulanmalı)
     ];
 
-    # Shell aliases
-    programs.zsh.shellAliases = {
-      "oll" = "ollama run";             # Hızlı model çalıştırma
-      "oll-ls" = "ollama list";         # Model listesi
-      "oll-pull" = "ollama pull";       # Model indirme
-      "oll-rm" = "ollama rm";           # Model silme
-      "oll-serve" = "ollama serve";     # API sunucusu başlatma
-    };
-
-    # Otomatik tamamlama desteği
-    programs.zsh.enableCompletion = true;
-    programs.zsh.completions = {
-      ollama = true;
+    # Shell konfigürasyonu
+    programs.zsh = {
+      # Otomatik tamamlama desteği
+      enableCompletion = true;
+      
+      # Shell aliases
+      shellAliases = {
+        "oll" = "ollama run";             # Hızlı model çalıştırma
+        "oll-ls" = "ollama list";         # Model listesi
+        "oll-pull" = "ollama pull";       # Model indirme
+        "oll-rm" = "ollama rm";           # Model silme
+        "oll-serve" = "ollama serve";     # API sunucusu başlatma
+      };
+      
+      # Ollama completion'ı manuel olarak ekle
+      initExtra = ''
+        # Ollama completion (eğer mevcut ise)
+        if command -v ollama >/dev/null 2>&1; then
+          eval "$(ollama completion zsh 2>/dev/null || true)"
+        fi
+      '';
     };
 
     # Ortam değişkenleri
