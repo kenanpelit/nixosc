@@ -15,7 +15,7 @@
   xdg.configFile."fastfetch/config.jsonc".text = ''
     {
       "logo": {
-        "source": "${./../../../../wallpapers/nixos/nixoslogo.png}",
+        "source": "${./../../../wallpapers/nixos/nixoslogo.png}",
         "type": "kitty-direct",
         "width": 33,
         "padding": {
