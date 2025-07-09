@@ -1,8 +1,16 @@
-# modules/home/desktop/hyprland/hyprlock.nix
+# modules/home/hyprland/hyprlock.nix
 # ==============================================================================
 # Fixed Hyprlock Configuration with Tokyo Night Theme
 # ==============================================================================
-{ pkgs, ... }:
+# This configuration manages hyprlock screen locker including:
+# - Tokyo Night color scheme
+# - Background and avatar configuration
+# - Clock and system information display
+# - Authentication input field
+#
+# Author: Kenan Pelit
+# ==============================================================================
+{ pkgs, username, ... }:
 let
   colors = {
     base = "rgba(36, 40, 59, 1.0)";
@@ -17,66 +25,66 @@ let
 in
 {
   home.packages = [ pkgs.hyprlock ];
-
+  
   xdg.configFile."hypr/hyprlock.conf".text = ''
     # Background
     background {
       monitor =
-      path = ${./../../../../wallpapers/nixos/nixos.png}
+      path = /home/${username}/Pictures/wallpapers/nixos/nixos.png
       blur_passes = 2
       contrast = 0.89
       brightness = 0.82
       vibrancy = 0.17
       color = ${colors.base}
     }
-
+    
     # General settings
     general {
       no_fade_in = false
       grace = 0
       disable_loading_bar = true
     }
-
+    
     # Day of week
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%A")"
       color = ${colors.text}
       font_size = 42
-      font_family = Hack
+      font_family = Hack Nerd Font
       position = 0, 300
       halign = center
       valign = center
     }
-
+    
     # Date
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%d %B %Y")"
       color = ${colors.blue}
       font_size = 26
-      font_family = Hack
+      font_family = Hack Nerd Font
       position = 0, 250
       halign = center
       valign = center
     }
-
-    # Time - FIX: Simple time without HTML spans
+    
+    # Time
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%H:%M")"
       color = ${colors.text}
       font_size = 22
-      font_family = Hack
+      font_family = Hack Nerd Font
       position = 0, 200
       halign = center
       valign = center
     }
-
+    
     # Avatar
     image {
       monitor =
-      path = ${./../../../../wallpapers/nixos/avatar.png}
+      path = /home/${username}/Pictures/wallpapers/nixos/avatar.png
       border_size = 3
       border_color = ${colors.blue}
       size = 120
@@ -85,7 +93,7 @@ in
       halign = center
       valign = center
     }
-
+    
     # Username background
     shape {
       monitor =
@@ -96,20 +104,20 @@ in
       halign = center
       valign = center
     }
-
+    
     # Username
     label {
       monitor =
       text = $USER
       color = ${colors.text}
       font_size = 16
-      font_family = Hack
+      font_family = Hack Nerd Font
       position = 0, -130
       halign = center
       valign = center
     }
-
-    # Password input - FIX: Simple placeholder
+    
+    # Password input
     input-field {
       monitor =
       size = 250, 50
@@ -121,43 +129,44 @@ in
       inner_color = ${colors.lavender}
       font_color = ${colors.text}
       fade_on_empty = true
-      font_family = Hack
+      font_family = Hack Nerd Font
       placeholder_text = Enter Password
       position = 0, -200
       halign = center
       valign = center
     }
-
-    # System uptime - Fixed command
+    
+    # System uptime
     label {
       monitor =
       text = cmd[update:60000] echo "Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
       color = ${colors.subtext0}
       font_size = 14
-      font_family = Hack
+      font_family = Hack Nerd Font
       position = 0, -320
       halign = center
       valign = center
     }
-
-    # Music status - Fixed Spotify detection
+    
+    # Music status
     label {
       monitor =
       text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "Music: $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "Music: No Player"; fi
       color = ${colors.subtext0}
       font_size = 14
-      font_family = Hack
+      font_family = Hack Nerd Font
       position = 0, -350
       halign = center
       valign = center
     }
-
+    
     # Bottom action icons - Power, Restart, Sleep
     label {
       monitor =
       text = 󰐥  󰜉  󰤄
       color = ${colors.text}
       font_size = 40
+      font_family = Hack Nerd Font
       position = 0, 100
       halign = center
       valign = bottom
