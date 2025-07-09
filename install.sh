@@ -595,14 +595,21 @@ list_available_modules() {
 }
 
 setup_nix_conf() {
-	if [[ ! -f "$NIX_CONF_FILE" ]]; then
+	# Symlink kontrolü eklendi: -f (dosya) VEYA -L (symlink)
+	if [[ ! -f "$NIX_CONF_FILE" && ! -L "$NIX_CONF_FILE" ]]; then
 		mkdir -p "$NIX_CONF_DIR"
 		echo "experimental-features = nix-command flakes" >"$NIX_CONF_FILE"
 		log "OK" "flakes desteği ile nix.conf oluşturuldu"
 	else
-		if ! grep -q "experimental-features.*=.*flakes" "$NIX_CONF_FILE"; then
+		# Dosya var (normal dosya veya symlink) - içeriği kontrol et
+		if [[ -r "$NIX_CONF_FILE" ]] && ! grep -q "experimental-features.*=.*flakes" "$NIX_CONF_FILE"; then
 			echo "experimental-features = nix-command flakes" >>"$NIX_CONF_FILE"
 			log "OK" "Mevcut nix.conf dosyasına flakes desteği eklendi"
+		elif [[ ! -r "$NIX_CONF_FILE" ]]; then
+			# Symlink var ama hedef dosya yok - uyarı ver
+			log "WARN" "nix.conf symlink mevcut ama hedef dosya okunamıyor"
+		else
+			log "DEBUG" "nix.conf mevcut ve flakes desteği zaten var"
 		fi
 	fi
 }
