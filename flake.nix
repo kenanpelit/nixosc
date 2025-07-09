@@ -72,7 +72,7 @@
     # === Desktop Environment - Hyprland Ecosystem ===
     # Core Hyprland Wayland compositor - pinned to specific commit for stability
     hyprland = {
-      url = "github:hyprwm/hyprland/bd4733a0ff2b89fd3f22dc6ec9ff00e070753662"; # 0522 - 6131 Commits
+      url = "github:hyprwm/hyprland/6375e471f33bf1a008a005e963c57a12c7ff0e94"; # 0709 - 6258 Commits
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -265,18 +265,18 @@
     };
 
     # === COSMIC Desktop Environment ===
-    # COSMIC desktop for NixOS
-    nixos-cosmic = {
-      url = "github:lilyinstarlight/nixos-cosmic";
-      inputs.nixpkgs.follows = "nixpkgs"; # Use the same nixpkgs as above
-    };
+    # COSMIC desktop for NixOS - COMMENTED OUT
+    # nixos-cosmic = {
+    #   url = "github:lilyinstarlight/nixos-cosmic";
+    #   inputs.nixpkgs.follows = "nixpkgs"; # Use the same nixpkgs as above
+    # };
   };
  
   # ============================================================================
   # SYSTEM CONFIGURATION OUTPUTS
   # ============================================================================
   outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, 
-              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, nixos-cosmic, ... }@inputs:
+              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, ... }@inputs:
     let
       # === Global Variables ===
       username = "kenan";        # Primary user account
@@ -320,20 +320,20 @@
               };
             }
             
-            # COSMIC Desktop Environment module
-            inputs.nixos-cosmic.nixosModules.default
+            # COSMIC Desktop Environment module - COMMENTED OUT
+            # inputs.nixos-cosmic.nixosModules.default
             
-            # Cachix binary cache for COSMIC
-            {
-              nix.settings = {
-                substituters = [ 
-                  "https://cosmic.cachix.org/" 
-                ];
-                trusted-public-keys = [ 
-                  "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" 
-                ];
-              };
-            }
+            # Cachix binary cache for COSMIC - COMMENTED OUT
+            # {
+            #   nix.settings = {
+            #     substituters = [ 
+            #       "https://cosmic.cachix.org/" 
+            #     ];
+            #     trusted-public-keys = [ 
+            #       "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" 
+            #     ];
+            #   };
+            # }
             
             # Global system packages
             {
@@ -416,11 +416,11 @@
     nixConfig = {
       extra-substituters = [
         "https://hyprland-community.cachix.org"
-        "https://cosmic.cachix.org/"
+        # "https://cosmic.cachix.org/"  # COSMIC cache commented out
       ];
       extra-trusted-public-keys = [
         "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
-        "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+        # "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="  # COSMIC key commented out
       ];
     };
 }

@@ -1,28 +1,15 @@
 # modules/core/security/default.nix
 # ==============================================================================
-# Security Configuration
+# Security Services Configuration
 # ==============================================================================
-# This configuration file manages all security-related settings including:
-# - Core system security settings
-# - GNOME Keyring integration
-# - GnuPG configuration
-# - Host blocking (hBlock)
-#
-# Key components:
-# - PAM and sudo configuration
-# - GNOME Keyring credential storage
-# - GnuPG agent and SSH support 
-# - System-wide ad and malware domain blocking
+# This configuration manages security-related services including:
+# - PolicyKit authorization
+# - System-wide security services
 #
 # Author: Kenan Pelit
 # ==============================================================================
 
 { ... }:
 {
-  imports = [
-    ./pam
-    ./keyring
-    ./hblock
-    ./sops
-  ];
+  security.polkit.enable = true;  # PolicyKit authorization manager
 }
