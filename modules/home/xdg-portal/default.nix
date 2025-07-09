@@ -1,4 +1,4 @@
-# modules/home/xdg/xdg-portal/default.nix
+# modules/home/xdg-portal/default.nix
 # ==============================================================================
 # XDG Portal Configuration
 # ==============================================================================

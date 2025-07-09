@@ -1,4 +1,4 @@
-# modules/home/desktop/waybar/settings.nix
+# modules/home/waybar/settings.nix
 { custom }:
 {
   topBar = with custom; {

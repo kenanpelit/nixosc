@@ -1,4 +1,4 @@
-# modules/home/services/touchegg/default.nix
+# modules/home/touchegg/default.nix
 # ==============================================================================
 # Touchégg Gesture Configuration
 # ==============================================================================

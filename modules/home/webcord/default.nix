@@ -1,4 +1,4 @@
-# modules/home/apps/webcord/default.nix
+# modules/home/webcord/default.nix
 { pkgs, ... }:
 let
   # Tokyo Night tema renkleri

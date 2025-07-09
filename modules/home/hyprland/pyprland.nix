@@ -1,4 +1,4 @@
-# modules/home/desktop/hyprland/pyprland.nix
+# modules/home/hyprland/pyprland.nix
 # ==============================================================================
 # Pyprland Configuration (Python Plugins for Hyprland) - Enhanced
 # ==============================================================================

@@ -1,4 +1,4 @@
-# modules/home/desktop/waybar/style.nix
+# modules/home/waybar/style.nix
 { custom }:
 ''
   * {

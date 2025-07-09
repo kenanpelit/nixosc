@@ -1,4 +1,4 @@
-# modules/home/terminal/kitty/settings.nix
+# modules/home/kitty/settings.nix
 # ==============================================================================
 # Kitty Terminal Ayarları
 # ==============================================================================

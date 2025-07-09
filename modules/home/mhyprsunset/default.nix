@@ -1,4 +1,4 @@
-# modules/home/desktop/mhyprsunset/default.nix
+# modules/home/mhyprsunset/default.nix
 # ==============================================================================
 # HyprSunset Service Configuration
 # ==============================================================================

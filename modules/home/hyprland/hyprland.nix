@@ -1,4 +1,4 @@
-# modules/home/desktop/hyprland/hyprland.nix
+# modules/home/hyprland/hyprland.nix
 # ==============================================================================
 # Hyprland Main Configuration
 # ==============================================================================

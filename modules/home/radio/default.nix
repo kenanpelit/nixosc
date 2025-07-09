@@ -1,4 +1,4 @@
-# modules/home/media/radio/default.nix
+# modules/home/radio/default.nix
 # radiotray-ng için bookmark yönetimi
 { config, lib, pkgs, ... }:
 

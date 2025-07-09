@@ -1,4 +1,4 @@
-# modules/home/desktop/hyprland/hypridle.nix
+# modules/home/hyprland/hypridle.nix
 # ==============================================================================
 # Hypridle Configuration (Screen & Power Management) - Fixed Suspend Issues
 # ==============================================================================

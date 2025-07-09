@@ -1,4 +1,4 @@
-# modules/home/system/search/default.nix
+# modules/home/search/default.nix
 { config, lib, pkgs, ... }:
 
 {
