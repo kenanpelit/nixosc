@@ -233,7 +233,7 @@
     # =============================================================================
     # AI & Machine Learning
     # =============================================================================
-    ./ollama        # Local large language model management
+    #./ollama        # Local large language model management
     
     # =============================================================================
     # Document & Archive Management
