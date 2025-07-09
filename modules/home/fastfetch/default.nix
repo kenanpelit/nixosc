@@ -2,12 +2,20 @@
 # ==============================================================================
 # Fastfetch System Information Tool Configuration
 # ==============================================================================
-{ pkgs, ... }:
+# This configuration manages fastfetch settings including:
+# - System information display layout
+# - Logo and theming configuration
+# - Custom module arrangements
+# - Color scheme and formatting
+#
+# Author: Kenan Pelit
+# ==============================================================================
+{ pkgs, username, ... }:
 {
   # =============================================================================
   # Package Installation
   # =============================================================================
-  home.packages = (with pkgs; [ fastfetch ]);
+  home.packages = [ pkgs.fastfetch ];
 
   # =============================================================================
   # Configuration File
@@ -15,7 +23,7 @@
   xdg.configFile."fastfetch/config.jsonc".text = ''
     {
       "logo": {
-        "source": "${./../../../wallpapers/nixos/nixoslogo.png}",
+        "source": "/home/${username}/Pictures/wallpapers/nixos/nixoslogo.png",
         "type": "kitty-direct",
         "width": 33,
         "padding": {
@@ -25,15 +33,15 @@
       "display": {
         "separator": "",
         "size": {
-            "binaryPrefix": "si",
+          "binaryPrefix": "si",
           "ndigits": 0
         },
         "percent": {
           "type": 1
         },
-        "key":{
-         "Width": 1
-         },
+        "key": {
+          "Width": 1
+        }
       },
       "modules": [
         {
@@ -49,7 +57,7 @@
         },
         {
           "type": "os",
-          "key": "╭─ ",
+          "key": "╭─ ",
           "format": "{3} ({12})",
           "keyColor": "32"
         },
@@ -72,7 +80,7 @@
         },
         {
           "type": "packages",
-          "key": "├─ ",
+          "key": "├─ ",
           "keyColor": "32"
         },
         {
@@ -81,47 +89,6 @@
           "keyColor": "32"
         },
         "break",
-       /* {
-          "type": "cpu",
-          "key": "╭─ ",
-          "keyColor": "34",
-          "freqNdigits": 1
-        },
-        {
-          "type": "gpu",
-          "key": "├─󰢮 ",
-          "format": "{1} {2} ({3})",
-          "keyColor": "34"
-        },
-        {
-          "type": "sound",
-          "key": "├─󰓃 ",
-          "format": "{2}",
-          "keyColor": "34"
-        },
-        {
-          "type": "battery",
-          "key": "├─󰁹 ",
-          "keyColor": "34"
-        },
-        {
-          "type": "memory",
-          "key": "├─ ",
-          "keyColor": "34"
-        },
-        {
-          "type": "disk",
-          "key": "├─󰋊 ",
-          "keyColor": "34"
-        },
-        {
-          "type": "localip",
-          "key": "╰─󱦂 ",
-          "keyColor": "34",
-          "showIpv4": true,
-          "compact": true
-        },
-        "break", */
         {
           "type": "display",
           "key": "╭─󰹑 ",
@@ -135,7 +102,7 @@
         },
         {
           "type": "wm",
-          "key": "├─ ",
+          "key": "├─ ",
           "keyColor": "33"
         },
         {
@@ -145,7 +112,7 @@
         },
         {
           "type": "icons",
-          "key": "├─ ",
+          "key": "├─ ",
           "keyColor": "33"
         },
         {
@@ -155,13 +122,13 @@
         },
         {
           "type": "font",
-          "key": "├─ ",
+          "key": "├─ ",
           "format": "{2}",
           "keyColor": "33"
         },
         {
           "type": "terminal",
-          "key": "╰─ ",
+          "key": "╰─ ",
           "format": "{3}",
           "keyColor": "33"
         },
@@ -169,8 +136,9 @@
         {
           "type": "colors",
           "symbol": "block"
-        },
+        }
       ]
     }
   '';
 }
+
