@@ -1,4 +1,4 @@
-# modules/home/media/spicetify/default.nix
+# modules/home/spicetify/default.nix
 # ==============================================================================
 # Spicetify Spotify Client Configuration
 # Customizes Spotify client with themes and extensions

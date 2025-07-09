@@ -1,4 +1,4 @@
-# modules/home/file/yazi/default.nix
+# modules/home/yazi/default.nix
 # ==============================================================================
 # Yazi File Manager Configuration
 # ==============================================================================

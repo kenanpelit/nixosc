@@ -1,4 +1,4 @@
-# modules/home/desktop/waybar/default.nix
+# modules/home/waybar/default.nix
 { pkgs, config, ... }:
 let
   # Tokyo Night tema renkleri

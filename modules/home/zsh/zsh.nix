@@ -1,4 +1,4 @@
-# modules/home/terminal/zsh/zsh.nix
+# modules/home/zsh/zsh.nix
 # ==============================================================================
 # ZSH Configuration
 # Author: Kenan Pelit

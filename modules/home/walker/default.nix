@@ -1,4 +1,4 @@
-# modules/home/desktop/walker/default.nix
+# modules/home/walker/default.nix
 { config, lib, pkgs, ... }:
 
 with lib;

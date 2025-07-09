@@ -1,4 +1,4 @@
-# modules/home/desktop/swaylock/default.nix
+# modules/home/swaylock/default.nix
 # ==============================================================================
 # SwayLock Screen Locker Configuration
 # ==============================================================================

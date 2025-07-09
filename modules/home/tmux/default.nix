@@ -1,4 +1,4 @@
-# modules/home/terminal/tmux/default.nix
+# modules/home/tmux/default.nix
 # ==============================================================================
 # Tmux Terminal Multiplexer Configuration
 # ==============================================================================

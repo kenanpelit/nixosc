@@ -1,4 +1,4 @@
-# modules/home/file/nemo/default.nix
+# modules/home/nemo/default.nix
 # ==============================================================================
 # Nemo File Manager Configuration
 # ==============================================================================

@@ -1,4 +1,4 @@
-# modules/home/terminal/kitty/default.nix
+# modules/home/kitty/default.nix
 # ==============================================================================
 # Kitty Terminal Emülatör Konfigürasyonu
 # ==============================================================================

@@ -1,4 +1,4 @@
-# modules/home/system/packages/default.nix
+# modules/home/packages/default.nix
 # ==============================================================================
 # User Home Packages Configuration
 # ==============================================================================

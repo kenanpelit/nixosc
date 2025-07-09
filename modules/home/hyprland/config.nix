@@ -1,5 +1,5 @@
 # Hyprland Window Manager Configuration
-# modules/home/desktop/hyprland/config.nix
+# modules/home/hyprland/config.nix
 { config, lib, pkgs, ... }:
 {
   wayland.windowManager.hyprland = {

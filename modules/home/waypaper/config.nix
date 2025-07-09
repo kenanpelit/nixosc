@@ -1,4 +1,4 @@
-# modules/home/desktop/waypaper/default.nix
+# modules/home/waypaper/default.nix
 # ==============================================================================
 # Waypaper Wallpaper Manager Configuration
 # ==============================================================================

@@ -1,4 +1,4 @@
-# modules/home/desktop/swayosd/default.nix
+# modules/home/swayosd/default.nix
 # ==============================================================================
 # SwayOSD On-Screen Display Configuration
 # ==============================================================================
