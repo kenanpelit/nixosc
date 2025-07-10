@@ -9,8 +9,8 @@ let
  # Default Applications Map
  # =============================================================================
  defaultApps = {
-   browser = [ "zen-browser.desktop" "zen-beta.desktop" "zen.desktop" ];
-   text = [ "kitty-nvim.desktop" ];  # Değiştirildi
+   browser = [ "brave-browser.desktop" ];
+   text = [ "kitty-nvim.desktop" ];
    image = [ "imv-dir.desktop" ];
    audio = [ "mpv.desktop" ];
    video = [ "mpv.desktop" ];
@@ -64,6 +64,7 @@ let
    directory = [ "inode/directory" ];
    browser = [
      "text/html"
+     "application/xhtml+xml"
      "x-scheme-handler/about"
      "x-scheme-handler/http"
      "x-scheme-handler/https"
@@ -132,7 +133,8 @@ in
  # =============================================================================
  home.packages = with pkgs; [ junction ];
  home.sessionVariables = {
-   TERMINAL = "kitty";  # Eklendi
+   TERMINAL = "kitty";
+   BROWSER = "brave";
    WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
  };
 }
