@@ -622,11 +622,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1752135428,
-        "narHash": "sha256-QEedkmDeowrROHZN0NZ6KL2R4JURmkgdBNq2uvUI194=",
+        "lastModified": 1752149140,
+        "narHash": "sha256-gbh1HL98Fdqu0jJIWN4OJQN7Kkth7+rbkFpSZLm/62A=",
         "owner": "hyprwm",
         "repo": "hyprgraphics",
-        "rev": "83885a6edf5932a894d7758511d1a34898aef79a",
+        "rev": "340494a38b5ec453dfc542c6226481f736cc8a9a",
         "type": "github"
       },
       "original": {
@@ -1918,11 +1918,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1752146286,
-        "narHash": "sha256-R1jVLsMiUAsELBrKi6dgW4h2V3g3241u1Y6gs3GNbh4=",
+        "lastModified": 1752151358,
+        "narHash": "sha256-5/lFeSPexC0oZOU4zQn6OoIK9JBO+BRJn4XgxGvVrXI=",
         "owner": "0xc000022070",
         "repo": "zen-browser-flake",
-        "rev": "91c4ef55f976e94144518c16bf736818c5928400",
+        "rev": "89256a056bd6910c3de0fbfbe0bbaf05218f39c8",
         "type": "github"
       },
       "original": {
