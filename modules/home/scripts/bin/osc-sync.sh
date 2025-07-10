@@ -35,7 +35,6 @@ NC='\033[0m'
 # Temel yapılandırma
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_DIR="$HOME/.nixosc"
-BACKUP_DIR="$SCRIPT_DIR/hay"
 ASSET_DIR="$SCRIPT_DIR/assets"
 LOG_DIR="$HOME/.logs/oscsync"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -137,7 +136,7 @@ check_dependencies() {
 }
 
 prepare_directories() {
-	local dirs=("$SCRIPT_DIR" "$BACKUP_DIR" "$ASSET_DIR" "$LOG_DIR")
+	local dirs=("$SCRIPT_DIR" "$ASSET_DIR" "$LOG_DIR")
 	for dir in "${dirs[@]}"; do
 		mkdir -p "$dir" || error "Dizin oluşturulamadı: $dir"
 	done
@@ -145,7 +144,7 @@ prepare_directories() {
 
 check_disk_space() {
 	local required_space=$((1024 * 1024 * 100))
-	local available_space=$(df -B1 "$BACKUP_DIR" | awk 'NR==2 {print $4}')
+	local available_space=$(df -B1 "$ASSET_DIR" | awk 'NR==2 {print $4}')
 	[[ "$available_space" -lt "$required_space" ]] && error "Yetersiz disk alanı (min. 100MB)"
 }
 
@@ -219,24 +218,24 @@ backup_dots() {
 
 	[[ ${#existing_paths[@]} -eq 0 ]] && error "Yedeklenecek dot dosyası yok"
 
-	mkdir -p "$BACKUP_DIR" || error "Yedekleme dizini oluşturulamadı"
+	mkdir -p "$ASSET_DIR" || error "Asset dizini oluşturulamadı"
 	cd "$HOME" || error "Home dizinine geçilemedi"
 
 	success "Tar arşivi oluşturuluyor..."
-	tar czf "$BACKUP_DIR/$DOT_BACKUP" "${existing_paths[@]}" || error "Tar oluşturulamadı"
+	tar czf "$ASSET_DIR/$DOT_BACKUP" "${existing_paths[@]}" || error "Tar oluşturulamadı"
 
 	success "Arşiv şifreleniyor..."
-	if encrypt_file "$BACKUP_DIR/$DOT_BACKUP" "$BACKUP_DIR/$DOT_ENCRYPTED"; then
-		rm -f "$BACKUP_DIR/$DOT_BACKUP"
-		success "Dot dosyaları yedeklendi: $BACKUP_DIR/$DOT_ENCRYPTED"
+	if encrypt_file "$ASSET_DIR/$DOT_BACKUP" "$ASSET_DIR/$DOT_ENCRYPTED"; then
+		rm -f "$ASSET_DIR/$DOT_BACKUP"
+		success "Dot dosyaları yedeklendi: $ASSET_DIR/$DOT_ENCRYPTED"
 	else
-		rm -f "$BACKUP_DIR/$DOT_BACKUP" "$BACKUP_DIR/$DOT_ENCRYPTED"
+		rm -f "$ASSET_DIR/$DOT_BACKUP" "$ASSET_DIR/$DOT_ENCRYPTED"
 		error "Şifreleme başarısız"
 	fi
 }
 
 restore_dots() {
-	local encrypted_file="$BACKUP_DIR/$DOT_ENCRYPTED"
+	local encrypted_file="$ASSET_DIR/$DOT_ENCRYPTED"
 	[[ ! -f "$encrypted_file" ]] && error "Şifrelenmiş yedek dosyası bulunamadı: $encrypted_file"
 
 	success "Dot dosyaları geri yükleniyor..."
@@ -441,10 +440,10 @@ main() {
 					fi
 				done
 
-				if [ -f "$BACKUP_DIR/$DOT_ENCRYPTED" ]; then
+				if [ -f "$ASSET_DIR/$DOT_ENCRYPTED" ]; then
 					echo -e "\n${BLUE}Son Yedek:${NC}"
-					local timestamp=$(date -r "$BACKUP_DIR/$DOT_ENCRYPTED" "+%Y-%m-%d %H:%M")
-					local size=$(du -h "$BACKUP_DIR/$DOT_ENCRYPTED" | cut -f1)
+					local timestamp=$(date -r "$ASSET_DIR/$DOT_ENCRYPTED" "+%Y-%m-%d %H:%M")
+					local size=$(du -h "$ASSET_DIR/$DOT_ENCRYPTED" | cut -f1)
 					echo -e "${GREEN}[Yedek var: $timestamp - $size]${NC}"
 				fi
 			else
