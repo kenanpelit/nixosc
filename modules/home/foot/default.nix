@@ -93,10 +93,9 @@ in
         blink = "yes";
         beam-thickness = "1.5";
         underline-thickness = "2";
-        color = "${lib.strings.removePrefix "#" colors.mauve}";
       };
       url = {
-        protocols = "http,https,ftp,ftps,file";
+        protocols = "http,https,file";
         launch = "xdg-open \${url}";
       };
       mouse = {
