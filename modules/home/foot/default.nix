@@ -1,4 +1,4 @@
-# modules/home/terminal/foot/default.nix
+# modules/home/foot/default.nix
 # ==============================================================================
 # Foot Terminal Emulator Configuration
 # ==============================================================================
@@ -64,9 +64,9 @@ in
       csd = {
         preferred = "none";
         size = "0";
-        color = "${colors.pink}";
+        color = "${lib.strings.removePrefix "#" colors.pink}";
         border-width = "0";
-        border-color = "${colors.surface1}";
+        border-color = "${lib.strings.removePrefix "#" colors.surface1}";
         button-width = "0";
       };
       environment = {
@@ -93,10 +93,10 @@ in
         blink = "yes";
         beam-thickness = "1.5";
         underline-thickness = "2";
-        color = "${colors.mauve} ${colors.surface2}";
+        color = "${lib.strings.removePrefix "#" colors.mauve}";
       };
       url = {
-        protocols = "http,https,file,mailto,news,gemini";
+        protocols = "http,https,ftp,ftps,file";
         launch = "xdg-open \${url}";
       };
       mouse = {
