@@ -95,7 +95,6 @@ in
         underline-thickness = "2";
       };
       url = {
-        protocols = "http,https,file";
         launch = "xdg-open \${url}";
       };
       mouse = {
