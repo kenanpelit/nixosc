@@ -9,62 +9,6 @@
 # - Virtualization and gaming services
 # - Development and user environment
 #
-# Module Structure:
-# 1. System Foundation
-#    - account/      → User account management
-#    - boot/         → Boot configuration and kernel
-#    - hardware/     → Hardware-specific settings
-#    - system/       → Core system settings
-#    - power/        → Power management and policies
-# 
-# 2. Package Management & Development
-#    - nix/          → Nix daemon settings and optimization
-#    - nixpkgs/      → Package configuration and overlays
-#    - packages/     → System-wide package management
-#    - cache/        → Build cache configuration
-#    - nh/           → Nix Helper tool configuration
-#
-# 3. Desktop & Media
-#    - fonts/        → Font configuration and rendering
-#    - wayland/      → Wayland compositor settings
-#    - x11/          → X11 display server configuration
-#    - xdg/          → Desktop integration and portals
-#    - audio/        → Audio system and PipeWire
-#    - bluetooth/    → Bluetooth device management
-#
-# 4. Network & Connectivity
-#    - dns/          → DNS configuration and nameservers
-#    - firewall/     → Firewall rules and network security
-#    - powersave/    → Network power optimization
-#    - ssh/          → SSH server and client configuration
-#    - tcp/          → TCP optimization settings
-#    - vpn/          → VPN client configuration
-#    - wireless/     → WiFi and wireless management
-#
-# 5. Security & Authentication
-#    - keyring/      → Credential storage and GNOME keyring
-#    - pam/          → Authentication module configuration
-#    - security/     → System security policies
-#    - sops/         → Secrets management
-#    - hblock/       → Ad blocking and DNS filtering
-#
-# 6. Services & Applications
-#    - services/     → Core system services
-#    - flatpak/      → Flatpak application management
-#    - transmission/ → BitTorrent client configuration
-#    - home/         → Home directory management
-#    - programs/     → Core program defaults
-#
-# 7. Virtualization & Containers
-#    - containers/   → Container registry configuration
-#    - podman/       → Podman container runtime
-#    - spice/        → SPICE guest services
-#    - vm/           → Virtual machine configuration
-#
-# 8. Gaming & Performance
-#    - gamescope/    → Gaming compositor
-#    - steam/        → Steam gaming platform
-#
 # Author: Kenan Pelit
 # ==============================================================================
 { inputs, nixpkgs, self, username, host, lib, ... }:
