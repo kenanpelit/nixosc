@@ -22,6 +22,8 @@ hosts/vhay/configuration.nix
 *.tar.gz
 !*.enc.tar.gz
 assets/dot.enc.tar.gz
+assets/dotfiles.enc.tar.gz
+
 
 # IDE and editor files
 *.swp
