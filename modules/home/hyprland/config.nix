@@ -233,8 +233,6 @@
         new_window_takes_over_fullscreen = 2; # Yeni pencere fullscreen davranışı
         allow_session_lock_restore = true; # Session lock restore
         background_color = "11184810";     # Arka plan rengi
-        render_ahead_of_time = false;      # Ahead-of-time rendering
-        render_ahead_safezone = 1;         # Render safezone
       };
 
       # =====================================================
