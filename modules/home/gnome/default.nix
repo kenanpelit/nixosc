@@ -1,4 +1,4 @@
-# modules/home/desktop/gnome/default.nix
+# modules/home/gnome/default.nix
 # ==============================================================================
 # GNOME Desktop Environment Configuration
 # ==============================================================================
