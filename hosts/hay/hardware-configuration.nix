@@ -8,39 +8,29 @@
     [ (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/acdaedc4-2e8f-4d6b-ab5e-97f88be7ca4a";
-      fsType = "ext4";
-    };
-
-  fileSystems."/backup" =
-    { device = "/dev/disk/by-uuid/205f64ad-80cf-456b-81e1-cfa53d81689c";
+    { device = "/dev/disk/by-uuid/07a32c60-8ecb-4307-a3c2-5212155bbca3";
       fsType = "ext4";
     };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/CE59-4A9A";
+    { device = "/dev/disk/by-uuid/1EF9-46A7";
       fsType = "vfat";
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
   fileSystems."/nixos" =
-    { device = "/dev/disk/by-uuid/bb428ecc-1674-4d6b-84d7-cde4491aa89d";
-      fsType = "ext4";
-    };
-
-  fileSystems."/others" =
-    { device = "/dev/disk/by-uuid/3d5445fa-cfc8-4ce3-b591-4800218f6b51";
+    { device = "/dev/disk/by-uuid/7d9380ab-98dd-43fb-8715-a73118cb9eb3";
       fsType = "ext4";
     };
 
   fileSystems."/repo" =
-    { device = "/dev/disk/by-uuid/dce4fd15-bbeb-4b9d-af96-b4fcc7b12f71";
+    { device = "/dev/disk/by-uuid/5b77bcb5-cc7d-4df1-accd-9c66bb0d37f8";
       fsType = "ext4";
     };
 
@@ -51,9 +41,9 @@
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.enp0s13f0u3u2.useDHCP = lib.mkDefault true;
   # networking.interfaces.enp0s31f6.useDHCP = lib.mkDefault true;
-  # networking.interfaces.wlp0s20f3.useDHCP = lib.mkDefault true;
+  # networking.interfaces.wlp2s0.useDHCP = lib.mkDefault true;
+  # networking.interfaces.wwan0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
