@@ -871,7 +871,7 @@
     extraConfig = ''
       # Monitor tanımlamaları
       monitor=desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1
-      monitor=desc:AU Optronics 0x2036,1920x1080@60,320x1440,1
+      monitor=desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1
 
       # Çalışma alanı atamaları
       workspace = 1, monitor:DELL UP2716D KRXTR88N909L,1, default:true
@@ -880,13 +880,13 @@
       workspace = 4, monitor:DELL UP2716D KRXTR88N909L,4
       workspace = 5, monitor:DELL UP2716D KRXTR88N909L,5
       workspace = 6, monitor:DELL UP2716D KRXTR88N909L,6
-      workspace = 7, monitor:AU Optronics 0x2036,7, default:true
-      workspace = 8, monitor:AU Optronics 0x2036,8
-      workspace = 9, monitor:AU Optronics 0x2036,9
+      workspace = 7, monitor:Chimei Innolux Corporation 0x143F,7, default:true
+      workspace = 8, monitor:Chimei Innolux Corporation 0x143F,8
+      workspace = 9, monitor:Chimei Innolux Corporation 0x143F,9
 
       # XWayland ayarları
       xwayland {
-        force_zero_scaling = true#
+        force_zero_scaling = true
       }
     '';
   };
