@@ -1,4 +1,4 @@
-# modules/core/user/packages/default.nix
+# modules/core/packages/default.nix
 # ==============================================================================
 # System Core Packages Configuration
 # ==============================================================================
@@ -48,7 +48,6 @@ in
     # Build Tools
     gcc                # GNU derleyici
     gnumake            # İnşa otomasyon
-    gdb                # GNU hata ayıklayıcı
     
     # System Libraries
     libdrm             # Direct Rendering Manager library and headers
@@ -73,18 +72,10 @@ in
     perlPackages.FilePath     # File::Path modülü (rmtree için)
 
     # ==============================================================================
-    # Terminal ve Shell Araçları
-    # ==============================================================================
-    tmux               # Terminal çoklayıcı
-    yq                 # YAML/JSON işlemci
-    gawk               # Metin işleme
-
-    # ==============================================================================
     # Sistem Güvenliği ve Şifreleme
     # ==============================================================================
-    # Encryption & Security
-    age                # Şifreleme
-    openssl            # SSL/TLS araçları
+    # System Security
+    openssl            # SSL/TLS araçları (sistem kütüphanesi)
     sops               # Gizli yönetimi
     gnupg              # GNU Privacy Guard
     
@@ -105,30 +96,23 @@ in
     iwd                # Kablosuz daemon
     iw                 # Kablosuz araçları
     
-    # Network Analysis & Monitoring
+    # Network Analysis & Monitoring (System Level)
     tcpdump            # Paket analizi
     nethogs            # Bant genişliği izleme
     iftop              # Ağ kullanım izleme
-    mtr                # Ağ teşhis
-    nmap               # Ağ keşif
-    speedtest-cli      # İnternet hız testi
-    iperf              # Ağ performans
     
     # Network Services
     bind               # DNS araçları
     impala             # Ağ sorgu motoru
+    dig                # DNS sorgu aracı (sistem seviyesi)
     
-    # Data Transfer
+    # Data Transfer (System Services)
     rsync              # Dosya senkronizasyon
-    curl               # URL veri transfer
-    wget               # Ağ dosya indirme
     socat              # Çok amaçlı relay
     
-    # Remote Access & SSH
-    assh               # SSH yapılandırma
+    # SSH Services
     openssh            # SSH istemci/sunucu
     autossh            # SSH sessions and tunnels
-    tigervnc           # VNC uygulaması
 
     # ==============================================================================
     # Sanallaştırma ve Container Teknolojileri
@@ -159,6 +143,7 @@ in
     # Hardware Management
     ddcutil            # Monitor settings
     fwupd              # Firmware güncelleyici
+    android-tools      # adb (sistem seviyesi)
     
     # Input Devices
     fusuma             # Çoklu dokunma
@@ -176,22 +161,9 @@ in
     flatpak            # Uygulama sanal ortam
 
     # ==============================================================================
-    # Geliştirme Araçları ve Diller
+    # Python Ortamı (Sistem Seviyesi)
     # ==============================================================================
-    # Version Control
-    git                # Versiyon kontrol
-    
-    # Nix Development Tools
-    nvd                # Nix versiyon diff
-    cachix             # İkili önbellek
-    nix-output-monitor # Nix inşa izleyici
-    
-    # Programming Languages
-    go                 # Go çalışma zamanı
     customPython       # Özel Python kurulumu
-    
-    # AI/ML Tools
-    ollama             # LLM çalıştırıcı
 
     # ==============================================================================
     # Sistem Görevleri ve Zamanlama
