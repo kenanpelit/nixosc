@@ -37,11 +37,14 @@
     detox         # Dosya adı temizleyici
     atool         # Arşiv aracı
     p7zip         # Sıkıştırma
+    lftp          # FTP clients
+    scrcpy        # Android devices over USB or TCP/IP
 
     # ==============================================================================
     # Geliştirme Araçları
     # ==============================================================================
     # Version Control
+    git           # Versiyon kontrol
     lazygit       # Git TUI
     tig           # Git metin arayüzü
     
@@ -50,32 +53,49 @@
     nixd                   # Nix LSP
     nixfmt-rfc-style       # Nix biçimlendirici
     nil                    # Nix dil araçları
-    shellcheck             # Kabuk analizci
-    shfmt                  # Kabuk biçimlendirici
-    stylua                 # Lua biçimlendirici
-    treefmt                # Çoklu dil biçimlendirici
+    shellcheck            # Kabuk analizci
+    shfmt                 # Kabuk biçimlendirici
+    stylua                # Lua biçimlendirici
+    treefmt               # Çoklu dil biçimlendirici
     inputs.alejandra.defaultPackage.${pkgs.system} # Nix biçimlendirici
     
     # Binary Analysis & Debugging
     binsider               # İkili analizci
     bitwise                # Bit manipülasyonu
     hexdump                # Hex görüntüleyici
-    xxd                    # Hex editör
+    xxd                   # Hex editör
     programmer-calculator  # Geliştirici hesap makinesi
     psmisc                 # Süreç araçları
-    strace                 # Sistem çağrı izleyici
+    strace                # Sistem çağrı izleyici
+    gdb                   # GNU hata ayıklayıcı
     
     # Development Tools
     tree-sitter           # Parser üreteci
     nix-search-tv         # Nix paket arayıcı
     gist                  # GitHub gist aracı
+    
+    # Nix Development Tools
+    nvd                # Nix versiyon diff
+    cachix             # İkili önbellek
+    nix-output-monitor # Nix inşa izleyici
+    
+    # Programming Languages & Runtimes
+    go                 # Go çalışma zamanı
+    
+    # AI/ML Tools
+    ollama             # LLM çalıştırıcı
 
     # ==============================================================================
     # Terminal Araçları
     # ==============================================================================
+    # Terminal Management
+    tmux            # Terminal çoklayıcı
+    
     # Text Processing
     bc              # Hesap makinesi
     jq              # JSON işlemci
+    yq              # YAML/JSON işlemci
+    gawk            # Metin işleme
     bat             # Gelişmiş cat
     ripgrep         # Metin arama (grep alternatifi)
     most            # Sayfalayıcı
@@ -99,6 +119,13 @@
     docfd           # Belge bulucu
     translate-shell # Çeviri aracı
     wmctrl
+    
+    # Network & Download Tools
+    curl            # URL veri transfer
+    wget            # Ağ dosya indirme
+    
+    # User Security Tools
+    age             # Şifreleme
 
     # ==============================================================================
     # Medya Araçları
@@ -172,15 +199,22 @@
     iptraf-ng       # IP trafik monitörü
     vnstat          # Ağ monitörü
     
+    # Network Analysis & Testing
+    mtr             # Ağ teşhis
+    nmap            # Ağ keşif
+    speedtest-cli   # İnternet hız testi
+    iperf           # Ağ performans
+    fping           # Hızlı ping
+    traceroute      # Ağ izleyici
+    
     # Network Tools
     aria2           # İndirme yöneticisi
     ethtool         # Ethernet aracı
-    fping           # Hızlı ping
-    traceroute      # Ağ izleyici
-    dig             # DNS aracı
     
-    # Remote Access
+    # Remote Access & SSH
+    assh            # SSH yapılandırma
     pssh            # Paralel SSH
+    tigervnc        # VNC uygulaması
     anydesk         # Uzak masaüstü
     
     # Network Management
@@ -282,18 +316,8 @@
     mediainfo      # Medya bilgisi
     ffmpegthumbnailer # Küçük resimler
     
-    # Security & Crypto
-    openssl        # SSL araçları
-    
     # CD/DVD Tools
     libcdio        # CD/DVD aracı
-
-    # ==============================================================================
-    # Mobile & Android Araçları
-    # ==============================================================================
-    android-tools  # adb
-    scrcpy         # Android devices over USB or TCP/IP
-    lftp           # FTP clients
 
     # ==============================================================================
     # VPN Araçları
