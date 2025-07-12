@@ -163,7 +163,7 @@
       format-ethernet = "󰤥";
       format-linked = "{ifname} (No IP)";
       format-disconnected = "󰤭";
-      on-click-right = "rofi-iwmenu";
+      on-click-right = "rofi-network-manager";
       on-click-middle = "rofi-wifi";
       tooltip-format = "Connected to {essid}\nIP: {ipaddr}";
       tooltip-format-wifi = ''
