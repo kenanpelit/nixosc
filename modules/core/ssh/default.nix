@@ -20,7 +20,6 @@
       Host *
         ServerAliveInterval 60
         ServerAliveCountMax 2
-        ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
     '';
   };
   environment = {
