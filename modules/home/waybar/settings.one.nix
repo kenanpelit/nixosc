@@ -60,7 +60,6 @@
       "network"            # 🌐 Network connectivity status
       "custom/vpn"         # 🔒 VPN status (unified Mullvad + others)
       "battery"            # 🔋 Battery status & power management
-      "custom/notification" # 🔔 System notifications center
       "custom/blank"       # ⎵  Visual spacing
       "tray"               # 📌 System tray applications
     ];
