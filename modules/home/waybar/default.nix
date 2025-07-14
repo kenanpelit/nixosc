@@ -222,7 +222,7 @@ let
   # Waybar için optimize edilmiş ayarlar
   custom = {
     font = "JetBrainsMono Nerd Font";
-    font_size = "14px";
+    font_size = "15px";
     font_weight = "600";
     text_color = colors.text;
     subtext_color = colors.subtext1;

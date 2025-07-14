@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-# osc-waybar - waybar yardımcı programı
-# Kullanım: osc-waybar [komut]
-
-# vpn-waybar - cache'siz, basit, çalışan versiyon
+# vpn-waybar - unified VPN status display
+# Tek çıktıda tüm VPN durumlarını gösterir
 
 set -euo pipefail
 
 # İkon tanımlamaları
 declare -A ICONS=(
-	["connected"]="󰦝 "
-	["disconnected"]="󰦞 "
-	["mullvad"]="󰒃 "
-	["warning"]="󰀦 "
+	["connected"]="󰦝"
+	["disconnected"]="󰦞"
+	["mullvad"]="󰒃"
+	["warning"]="󰀦"
+	["dual"]="󰓅"
+	["off"]="󰲛"
 )
 
 # JSON output fonksiyonu
@@ -39,123 +39,144 @@ format_interface_name() {
 }
 
 # Mullvad durumu kontrol
-check_mullvad_status() {
-	if ! command -v mullvad >/dev/null 2>&1; then
-		json_output "MVN ${ICONS[disconnected]}" "disconnected" "Mullvad Yüklü Değil"
-		return
-	fi
+get_mullvad_status() {
+	local mullvad_status="disconnected"
+	local mullvad_info=""
+	local mullvad_interface=""
 
-	local status_output
-	if ! status_output=$(timeout 5 mullvad status 2>/dev/null); then
-		json_output "MVN ${ICONS[disconnected]}" "disconnected" "Mullvad Komut Hatası"
-		return
-	fi
-
-	if echo "$status_output" | grep -q "Connected\|Connecting"; then
-		local relay_info
-		relay_info=$(echo "$status_output" | grep "Relay:" | head -1 | cut -d: -f2- | tr -d ' ' 2>/dev/null || echo "unknown")
-
-		if check_interface_ip "wg0-mullvad"; then
-			json_output "M-WG0 ${ICONS[mullvad]}" "connected" "Mullvad WireGuard: $relay_info"
-		elif check_interface_ip "tun0"; then
-			json_output "M-TUN0 ${ICONS[mullvad]}" "connected" "Mullvad OpenVPN: $relay_info"
-		else
-			json_output "MVN ${ICONS[warning]}" "warning" "Mullvad Bağlantı Problemi"
-		fi
-	else
-		json_output "MVN ${ICONS[disconnected]}" "disconnected" "Mullvad Bağlantısız"
-	fi
-}
-
-# Mullvad aktif mi kontrol et
-is_mullvad_active() {
 	if command -v mullvad >/dev/null 2>&1; then
 		local status_output
-		if status_output=$(timeout 3 mullvad status 2>/dev/null); then
-			echo "$status_output" | grep -q "Connected\|Connecting"
+		if status_output=$(timeout 5 mullvad status 2>/dev/null); then
+			if echo "$status_output" | grep -q "Connected\|Connecting"; then
+				local relay_info
+				relay_info=$(echo "$status_output" | grep "Relay:" | head -1 | cut -d: -f2- | tr -d ' ' 2>/dev/null || echo "unknown")
+
+				if check_interface_ip "wg0-mullvad"; then
+					mullvad_status="connected"
+					mullvad_interface="wg0-mullvad"
+					mullvad_info="WireGuard: $relay_info"
+				elif check_interface_ip "tun0"; then
+					mullvad_status="connected"
+					mullvad_interface="tun0"
+					mullvad_info="OpenVPN: $relay_info"
+				else
+					mullvad_status="warning"
+					mullvad_info="Connection Problem"
+				fi
+			fi
 		else
-			return 1
+			mullvad_status="error"
+			mullvad_info="Command Error"
 		fi
 	else
-		return 1
+		mullvad_status="not_installed"
+		mullvad_info="Not Installed"
 	fi
+
+	echo "$mullvad_status|$mullvad_info|$mullvad_interface"
 }
 
 # Diğer VPN'leri kontrol et
-check_other_vpns() {
-	local mullvad_active=false
-	local other_vpn_active=false
-	local other_vpn_interface=""
-	local other_vpn_ip=""
+get_other_vpns() {
+	local other_vpns=()
+	local mullvad_interfaces=("wg0-mullvad" "tun0")
 
-	# Mullvad durumunu kontrol et
-	if is_mullvad_active; then
-		mullvad_active=true
-	fi
-
-	# Aktif VPN interface'lerini bul
 	while IFS= read -r interface; do
 		interface=$(echo "$interface" | tr -d '[:space:]')
 		[[ -z "$interface" ]] && continue
 
-		if check_interface_ip "$interface"; then
-			# Mullvad aktif değilse veya interface Mullvad'a ait değilse
-			if [[ "$mullvad_active" == false ]] || [[ "$interface" != "wg0-mullvad" && "$interface" != "tun0" ]]; then
-				other_vpn_active=true
-				other_vpn_interface="$interface"
-				other_vpn_ip=$(ip addr show dev "$interface" 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d/ -f1 | head -1)
-				break
-			fi
+		# Mullvad interface'i değilse ve IP'si varsa
+		if [[ ! " ${mullvad_interfaces[*]} " =~ " ${interface} " ]] && check_interface_ip "$interface"; then
+			local ip
+			ip=$(ip addr show dev "$interface" 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d/ -f1 | head -1)
+			local formatted_name
+			formatted_name=$(format_interface_name "$interface")
+			other_vpns+=("$formatted_name:$ip")
 		fi
 	done < <(ip link show 2>/dev/null | grep -E "tun|wg|gpd" | grep "UP" | cut -d: -f2 | awk '{print $1}')
 
-	# Duruma göre sonuç üret
-	if [[ "$mullvad_active" == true && "$other_vpn_active" == true ]]; then
-		local formatted_name
-		formatted_name=$(format_interface_name "$other_vpn_interface")
-		json_output "DUAL ${ICONS[warning]}" "warning" "Çoklu VPN Aktif - Mullvad ve $formatted_name ($other_vpn_ip)"
-	elif [[ "$mullvad_active" == true ]]; then
-		json_output "MVN ${ICONS[connected]}" "mullvad-connected" "Mullvad VPN Aktif"
-	elif [[ "$other_vpn_active" == true ]]; then
-		local formatted_name
-		formatted_name=$(format_interface_name "$other_vpn_interface")
-		json_output "$formatted_name ${ICONS[connected]}" "vpn-connected" "$other_vpn_interface: $other_vpn_ip"
+	printf '%s\n' "${other_vpns[@]}"
+}
+
+# Ana VPN durumu analizi
+analyze_vpn_status() {
+	local mullvad_result other_vpns_result
+	mullvad_result=$(get_mullvad_status)
+	other_vpns_result=$(get_other_vpns)
+
+	IFS='|' read -r mullvad_status mullvad_info mullvad_interface <<<"$mullvad_result"
+
+	local text="" class="" tooltip=""
+
+	# Mullvad ve diğer VPN'ler aynı anda aktif
+	if [[ "$mullvad_status" == "connected" ]] && [[ -n "$other_vpns_result" ]]; then
+		local other_count
+		other_count=$(echo "$other_vpns_result" | wc -l)
+		local first_other
+		first_other=$(echo "$other_vpns_result" | head -1 | cut -d: -f1)
+
+		text="${ICONS[dual]} M+$first_other"
+		class="warning"
+		tooltip="⚠️ Multiple VPN Active\n\n"
+		tooltip+="🔵 Mullvad: $mullvad_info\n"
+		tooltip+="🟡 Other VPNs ($other_count):\n"
+		while IFS= read -r vpn_line; do
+			[[ -n "$vpn_line" ]] && tooltip+="  • $(echo "$vpn_line" | tr ':' ' - ')\n"
+		done <<<"$other_vpns_result"
+		tooltip+="\n⚠️ This may cause routing conflicts!"
+
+	# Sadece Mullvad aktif
+	elif [[ "$mullvad_status" == "connected" ]]; then
+		text="${ICONS[mullvad]} M"
+		class="connected"
+		tooltip="🔵 Mullvad VPN Connected\n\n"
+		tooltip+="📡 $mullvad_info\n"
+		tooltip+="🔌 Interface: $mullvad_interface"
+
+	# Sadece diğer VPN'ler aktif
+	elif [[ -n "$other_vpns_result" ]]; then
+		local vpn_count first_vpn
+		vpn_count=$(echo "$other_vpns_result" | wc -l)
+		first_vpn=$(echo "$other_vpns_result" | head -1)
+
+		if [[ $vpn_count -eq 1 ]]; then
+			text="${ICONS[connected]} $(echo "$first_vpn" | cut -d: -f1)"
+			class="connected"
+			tooltip="🟢 VPN Connected\n\n"
+			tooltip+="📡 $(echo "$first_vpn" | tr ':' ' - ')"
+		else
+			text="${ICONS[connected]} VPN×$vpn_count"
+			class="connected"
+			tooltip="🟢 Multiple VPNs Active ($vpn_count)\n\n"
+			while IFS= read -r vpn_line; do
+				[[ -n "$vpn_line" ]] && tooltip+="  • $(echo "$vpn_line" | tr ':' ' - ')\n"
+			done <<<"$other_vpns_result"
+		fi
+
+	# Mullvad problemi
+	elif [[ "$mullvad_status" == "warning" ]]; then
+		text="${ICONS[warning]} M-Error"
+		class="warning"
+		tooltip="⚠️ Mullvad Connection Issue\n\n"
+		tooltip+="Problem: $mullvad_info\n"
+		tooltip+="Try reconnecting Mullvad"
+
+	# Hiç VPN yok
 	else
-		json_output "OVN ${ICONS[disconnected]}" "disconnected" "VPN Bağlantısı Yok"
+		text="${ICONS[off]} No VPN"
+		class="disconnected"
+		tooltip="🔴 No VPN Connection\n\n"
+		if [[ "$mullvad_status" == "not_installed" ]]; then
+			tooltip+="📱 Mullvad: Not Installed\n"
+		else
+			tooltip+="📱 Mullvad: Disconnected\n"
+		fi
+		tooltip+="🌐 Other VPNs: None Active\n\n"
+		tooltip+="Click to manage VPN connections"
 	fi
-}
 
-# Genel VPN durumunu kontrol et
-check_vpn_status() {
-	if ip link show 2>/dev/null | grep -E "tun|wg|gpd" | grep -q "UP"; then
-		json_output "VPN ${ICONS[connected]}" "connected" "VPN Bağlı"
-	else
-		json_output "VPN ${ICONS[disconnected]}" "disconnected" "VPN Bağlantısız"
-	fi
-}
-
-# Yardım bilgilerini göster
-show_help() {
-	cat <<EOF
-Kullanım: vpn-waybar [komut]
-
-Komutlar:
-  vpn-mullvad            Mullvad VPN durumunu kontrol et
-  vpn-other              Diğer VPN bağlantılarını kontrol et
-  vpn-status             Genel VPN durumunu kontrol et
-  help                   Bu yardım mesajını göster
-EOF
-}
-
-# Ana kontrol
-main() {
-	case "${1:-help}" in
-	"vpn-mullvad") check_mullvad_status ;;
-	"vpn-other") check_other_vpns ;;
-	"vpn-status") check_vpn_status ;;
-	*) show_help ;;
-	esac
+	json_output "$text" "$class" "$tooltip"
 }
 
 # Script'i çalıştır
-main "$@"
+analyze_vpn_status

@@ -27,11 +27,9 @@
   /* Common style for all modules */
   #workspaces,
   #bluetooth,
-  #custom-vpnstatus,
+  #custom-vpn,
   #custom-todo,
   #custom-weather,
-  #custom-vpnmullvad,
-  #custom-vpnother,
   #custom-waybar-mpris,
   #pulseaudio,
   #pulseaudio#source,
@@ -191,20 +189,25 @@
     color: ${custom.red};
     background-color: rgba(247, 118, 142, 0.1);
   }
-  
-  #custom-vpnstatus.connected,
-  #custom-vpnmullvad.connected,
-  #custom-vpnother.connected { 
+
+  /* VPN module specific styles */
+  #custom-vpn { 
+    color: ${custom.cyan}; 
+  }
+  #custom-vpn.connected { 
     color: ${custom.green};
     background-color: rgba(158, 206, 106, 0.1);
     border-color: rgba(158, 206, 106, 0.3);
   }
-  
-  #custom-vpnstatus.disconnected,
-  #custom-vpnmullvad.disconnected,
-  #custom-vpnother.disconnected { 
+  #custom-vpn.warning { 
+    color: ${custom.orange};
+    background-color: rgba(255, 158, 100, 0.1);
+    border-color: rgba(255, 158, 100, 0.3);
+  }
+  #custom-vpn.disconnected { 
     color: ${custom.red};
     background-color: rgba(247, 118, 142, 0.05);
+    border-color: rgba(247, 118, 142, 0.3);
   }
 
   #mpris {
@@ -377,10 +380,8 @@
 
   /* Subtle hover effects */
   #bluetooth:hover,
-  #custom-vpnstatus:hover,
+  #custom-vpn:hover,
   #custom-todo:hover,
-  #custom-vpnmullvad:hover,
-  #custom-vpnother:hover,
   #custom-waybar-mpris:hover,
   #pulseaudio:hover,
   #pulseaudio#source:hover,
