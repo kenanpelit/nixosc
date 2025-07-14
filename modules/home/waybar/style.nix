@@ -79,9 +79,9 @@
 
   #workspaces button.active {
     color: ${custom.magenta};
-    background-color: rgba(187, 154, 247, 0.2);
-    border-color: ${custom.magenta};
-    box-shadow: 0 2px 8px rgba(187, 154, 247, 0.3);
+    background-color: rgba(187, 154, 247, 0.15);
+    border-color: rgba(187, 154, 247, 0.4);
+    box-shadow: 0 1px 3px rgba(187, 154, 247, 0.2);
   }
 
   #workspaces button.empty {
@@ -92,26 +92,24 @@
 
   #workspaces button.urgent {
     color: ${custom.red};
-    background-color: rgba(247, 118, 142, 0.2);
-    border-color: ${custom.red};
+    background-color: rgba(247, 118, 142, 0.15);
+    border-color: rgba(247, 118, 142, 0.4);
   }
 
   #workspaces button:hover:not(.active) {
     color: ${custom.cyan};
-    background-color: rgba(125, 207, 255, 0.15);
-    border-color: ${custom.cyan};
-    box-shadow: 0 2px 6px rgba(125, 207, 255, 0.2);
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
   }
 
-  /* Module specific colors */
+  /* Module specific colors - subtle */
   #bluetooth { 
     color: ${custom.cyan}; 
   }
   #bluetooth.connected { 
     color: ${custom.blue};
-    background-color: rgba(122, 162, 247, 0.15);
+    background-color: rgba(122, 162, 247, 0.1);
     border-color: rgba(122, 162, 247, 0.3);
-    box-shadow: 0 0 8px rgba(122, 162, 247, 0.2);
   }
   
   #network { 
@@ -119,12 +117,12 @@
   }
   #network.disconnected { 
     color: ${custom.red};
-    background-color: rgba(247, 118, 142, 0.1);
+    background-color: rgba(247, 118, 142, 0.05);
   }
   #network.ethernet,
   #network.wifi { 
     color: ${custom.blue};
-    background-color: rgba(122, 162, 247, 0.15);
+    background-color: rgba(122, 162, 247, 0.1);
     border-color: rgba(122, 162, 247, 0.3);
   }
 
@@ -133,21 +131,21 @@
   }
   #battery.charging { 
     color: ${custom.cyan};
-    background-color: rgba(125, 207, 255, 0.15);
+    background-color: rgba(125, 207, 255, 0.1);
     border-color: rgba(125, 207, 255, 0.3);
   }
   #battery.full { 
     color: ${custom.green};
-    background-color: rgba(158, 206, 106, 0.15);
+    background-color: rgba(158, 206, 106, 0.1);
     border-color: rgba(158, 206, 106, 0.3);
   }
   #battery.warning:not(.charging) { 
     color: ${custom.orange};
-    background-color: rgba(255, 158, 100, 0.1);
+    background-color: rgba(255, 158, 100, 0.08);
   }
   #battery.critical:not(.charging) { 
     color: ${custom.red};
-    background-color: rgba(247, 118, 142, 0.2);
+    background-color: rgba(247, 118, 142, 0.1);
   }
 
   #pulseaudio { 
@@ -191,23 +189,22 @@
   }
   #temperature.critical {
     color: ${custom.red};
-    background-color: rgba(247, 118, 142, 0.2);
+    background-color: rgba(247, 118, 142, 0.1);
   }
   
   #custom-vpnstatus.connected,
   #custom-vpnmullvad.connected,
   #custom-vpnother.connected { 
     color: ${custom.green};
-    background-color: rgba(158, 206, 106, 0.15);
+    background-color: rgba(158, 206, 106, 0.1);
     border-color: rgba(158, 206, 106, 0.3);
-    box-shadow: 0 0 8px rgba(158, 206, 106, 0.2);
   }
   
   #custom-vpnstatus.disconnected,
   #custom-vpnmullvad.disconnected,
   #custom-vpnother.disconnected { 
     color: ${custom.red};
-    background-color: rgba(247, 118, 142, 0.1);
+    background-color: rgba(247, 118, 142, 0.05);
   }
 
   #mpris {
@@ -219,12 +216,12 @@
 
   #mpris.playing { 
     color: ${custom.green};
-    background-color: rgba(158, 206, 106, 0.15);
+    background-color: rgba(158, 206, 106, 0.1);
     border-color: rgba(158, 206, 106, 0.3);
   }
   #mpris.paused { 
     color: ${custom.blue};
-    background-color: rgba(122, 162, 247, 0.1);
+    background-color: rgba(122, 162, 247, 0.05);
   }
   #mpris.stopped { 
     color: ${custom.red};
@@ -237,16 +234,16 @@
     padding: 2px 8px;
     margin: 2px 4px 2px 3px;
     background: ${custom.background_1};
-    border: 1px solid rgba(125, 207, 255, 0.4);
+    border: 1px solid rgba(125, 207, 255, 0.3);
     border-radius: 8px;
     transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 1px 4px rgba(125, 207, 255, 0.1);
+    box-shadow: 0 1px 4px rgba(125, 207, 255, 0.05);
   }
 
   #custom-launcher:hover {
-    background-color: rgba(125, 207, 255, 0.15);
+    background-color: rgba(125, 207, 255, 0.1);
     border-color: ${custom.cyan};
-    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.15);
   }
 
   /* System icons */
@@ -271,9 +268,8 @@
   }
 
   #custom-notification:hover {
-    background-color: rgba(255, 158, 100, 0.15);
+    background-color: rgba(255, 158, 100, 0.1);
     border-color: ${custom.orange};
-    box-shadow: 0 2px 6px rgba(255, 158, 100, 0.3);
   }
 
   #custom-firewall {
@@ -282,9 +278,8 @@
   }
 
   #custom-firewall:hover {
-    background-color: rgba(122, 162, 247, 0.15);
+    background-color: rgba(122, 162, 247, 0.1);
     border-color: ${custom.blue};
-    box-shadow: 0 2px 6px rgba(122, 162, 247, 0.3);
   }
 
   #custom-power {
@@ -294,9 +289,8 @@
   }
 
   #custom-power:hover {
-    background-color: rgba(247, 118, 142, 0.15);
+    background-color: rgba(247, 118, 142, 0.1);
     border-color: ${custom.red};
-    box-shadow: 0 2px 6px rgba(247, 118, 142, 0.3);
   }
 
   #tray {
@@ -318,7 +312,7 @@
   }
 
   #tray menuitem:hover {
-    background-color: rgba(122, 162, 247, 0.15);
+    background-color: rgba(122, 162, 247, 0.1);
     border-radius: 4px;
   }
 
@@ -326,9 +320,9 @@
     color: ${custom.cyan};
     font-weight: 600;
     padding: 2px 8px;
-    background-color: rgba(125, 207, 255, 0.15);
-    border-color: rgba(125, 207, 255, 0.4);
-    box-shadow: 0 1px 4px rgba(125, 207, 255, 0.1);
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
+    box-shadow: 0 1px 4px rgba(125, 207, 255, 0.05);
   }
 
   #language {
@@ -348,32 +342,31 @@
   
   #custom-weather.sunny {
     color: ${custom.yellow};
-    background-color: rgba(224, 175, 104, 0.15);
+    background-color: rgba(224, 175, 104, 0.1);
     border-color: rgba(224, 175, 104, 0.3);
   }
   
   #custom-weather.cloudy {
     color: ${custom.cyan};
-    background-color: rgba(125, 207, 255, 0.15);
+    background-color: rgba(125, 207, 255, 0.1);
     border-color: rgba(125, 207, 255, 0.3);
   }
   
   #custom-weather.rainy {
     color: ${custom.blue};
-    background-color: rgba(122, 162, 247, 0.15);
+    background-color: rgba(122, 162, 247, 0.1);
     border-color: rgba(122, 162, 247, 0.3);
   }
   
   #custom-weather.snowy {
     color: ${custom.text_color};
-    background-color: rgba(192, 202, 245, 0.15);
+    background-color: rgba(192, 202, 245, 0.1);
     border-color: rgba(192, 202, 245, 0.3);
   }
   
   #custom-weather:hover {
-    background-color: rgba(122, 162, 247, 0.2);
+    background-color: rgba(122, 162, 247, 0.15);
     border-color: ${custom.blue};
-    box-shadow: 0 2px 6px rgba(122, 162, 247, 0.3);
   }
 
   #custom-todo {
@@ -382,7 +375,7 @@
     font-weight: 500;
   }
 
-  /* Hover effects */
+  /* Subtle hover effects */
   #bluetooth:hover,
   #custom-vpnstatus:hover,
   #custom-todo:hover,
@@ -401,9 +394,9 @@
   #clock:hover,
   #language:hover,
   #mpris:hover {
-    background-color: rgba(122, 162, 247, 0.2);
+    background-color: rgba(122, 162, 247, 0.15);
     border-color: ${custom.blue};
-    box-shadow: 0 2px 6px rgba(122, 162, 247, 0.3);
+    box-shadow: 0 2px 6px rgba(122, 162, 247, 0.15);
   }
 
   tooltip {
