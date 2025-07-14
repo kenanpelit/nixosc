@@ -209,7 +209,7 @@
       format-ethernet = "󰤥";                  # Ethernet connection indicator
       format-linked = "{ifname} (No IP)";     # Connected but no IP assigned
       format-disconnected = "󰤭";             # No network connection
-      on-click-right = "rofi-iwmenu";         # Network interface selection menu
+      on-click-right = "rofi-network-manager";  # Network interface menu
       on-click-middle = "rofi-wifi";          # WiFi network selection menu
       tooltip-format = "Connected to {essid}\nIP: {ipaddr}";  # Basic connection info
       
