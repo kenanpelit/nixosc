@@ -251,7 +251,6 @@
 
   /* System icons */
   #custom-notification,
-  #custom-firewall,
   #custom-power {
     background-color: ${custom.background_1};
     padding: 2px 6px;
@@ -273,16 +272,6 @@
   #custom-notification:hover {
     background-color: rgba(255, 158, 100, 0.1);
     border-color: ${custom.orange};
-  }
-
-  #custom-firewall {
-    font-size: 14px;
-    margin: 2px 1px;
-  }
-
-  #custom-firewall:hover {
-    background-color: rgba(122, 162, 247, 0.1);
-    border-color: ${custom.blue};
   }
 
   #custom-power {
