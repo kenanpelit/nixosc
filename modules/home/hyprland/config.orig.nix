@@ -162,23 +162,21 @@
       # Genel Pencere Yöneticisi Ayarları
       # =====================================================
       general = {
-        "$mainMod" = "SUPER";                    # Ana modifikatör tuşu
-        gaps_in = 0;                             # İç boşluklar
-        gaps_out = 0;                            # Dış boşluklar
-        border_size = 2;                         # Border kalınlığı
+        "$mainMod" = "SUPER";                # Ana modifikatör tuşu
+        gaps_in = 0;                         # İç boşluklar
+        gaps_out = 0;                        # Dış boşluklar
+        border_size = 2;                     # Border kalınlığı
         "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
         "col.inactive_border" = "rgba(595959aa)";
-        layout = "master";                       # Layout
-        allow_tearing = false;                   # Tearing'e izin verme
-        resize_on_border = true;                 # Border'dan resize
-        extend_border_grab_area = 15;            # Border grab alanı
-        hover_icon_on_border = true;             # Border'da hover iconu
-        no_border_on_floating = false;           # Floating'de border
+        layout = "master";                   # Layout
+        allow_tearing = false;               # Tearing'e izin verme
+        resize_on_border = true;             # Border'dan resize
+        extend_border_grab_area = 15;        # Border grab alanı
+        hover_icon_on_border = true;         # Border'da hover iconu
+        no_border_on_floating = false;       # Floating'de border
       };
 
-      # =====================================================
-      # Grup Ayarları
-      # =====================================================
+      # Group ayarları (değişiklik yok, güzel olmuş)
       group = {
         "col.border_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
         "col.border_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
@@ -201,40 +199,40 @@
       # =====================================================
       misc = {
         # Görünüm ayarları
-        disable_hyprland_logo = true;           # Logo gösterimini kapat
-        disable_splash_rendering = true;        # Açılış ekranını kapat
-        force_default_wallpaper = 0;            # Varsayılan duvar kağıdını zorla
+        disable_hyprland_logo = true;      # Logo gösterimini kapat
+        disable_splash_rendering = true;   # Açılış ekranını kapat
+        force_default_wallpaper = 0;       # Varsayılan duvar kağıdını zorla (kapalı)
 
         # Güç yönetimi
-        mouse_move_enables_dpms = true;         # Fare hareketi ekranı açar
-        key_press_enables_dpms = true;          # Tuş basımı ekranı açar
-        vrr = 1;                                # VRR/Adaptive sync
+        mouse_move_enables_dpms = true;    # Fare hareketi ekranı açar
+        key_press_enables_dpms = true;     # Tuş basımı ekranı açar
+        vrr = 1;                           # VRR/Adaptive sync (1 = etkin, daha iyi)
 
         # Performans optimizasyonları
-        vfr = true;                             # Variable framerate
-        disable_autoreload = false;             # Config otomatik yeniden yükleme
+        vfr = true;                        # Variable framerate (güç tasarrufu)
+        disable_autoreload = false;        # Config otomatik yeniden yükleme
 
         # Pencere davranışları
-        focus_on_activate = true;               # Aktif pencereye odaklan
-        always_follow_on_dnd = true;            # Sürükle-bırak takibi
-        layers_hog_keyboard_focus = true;       # Layer klavye odağı
-        animate_manual_resizes = true;          # Manuel resize animasyonları
-        animate_mouse_windowdragging = true;    # Pencere sürükleme animasyonları
+        focus_on_activate = true;          # Aktif pencereye odaklan
+        always_follow_on_dnd = true;       # Sürükle-bırak takibi
+        layers_hog_keyboard_focus = true;  # Layer'ların klavye odağını alması
+        animate_manual_resizes = true;     # Manuel resize animasyonları
+        animate_mouse_windowdragging = true; # Pencere sürükleme animasyonları
 
         # Terminal swallow ayarları
-        enable_swallow = true;                  # Pencere yutma özelliği
-        swallow_regex = "^(kitty|foot|alacritty|wezterm)$";
-        swallow_exception_regex = "^(wev|Wayland-desktop)$";
+        enable_swallow = true;             # Pencere yutma özelliği
+        swallow_regex = "^(kitty|foot|alacritty|wezterm)$"; # Daha kapsamlı terminal listesi
+        swallow_exception_regex = "^(wev|Wayland-desktop)$"; # Yutulmaması gerekenler
 
         # Monitör ve odak yönetimi
-        mouse_move_focuses_monitor = true;      # Fare monitör odağı
-        initial_workspace_tracking = 1;        # Başlangıç workspace takibi
+        mouse_move_focuses_monitor = true; # Fare monitör odağı
+        initial_workspace_tracking = 1;    # Başlangıç workspace takibi
 
         # Özel özellikler
-        close_special_on_empty = true;          # Boş special workspace'i kapat
-        new_window_takes_over_fullscreen = 2;   # Yeni pencere fullscreen davranışı
-        allow_session_lock_restore = true;      # Session lock restore
-        background_color = "rgba(11,18,48,1.0)"; # Arka plan rengi (hex düzeltildi)
+        close_special_on_empty = true;     # Boş special workspace'i kapat
+        new_window_takes_over_fullscreen = 2; # Yeni pencere fullscreen davranışı
+        allow_session_lock_restore = true; # Session lock restore
+        background_color = "11184810";     # Arka plan rengi
       };
 
       # =====================================================
@@ -242,66 +240,63 @@
       # =====================================================
       gestures = {
         # Temel workspace swipe
-        workspace_swipe = false;                # Workspace swipe (kapalı)
-        workspace_swipe_fingers = 3;            # 3 parmak swipe
-        workspace_swipe_min_fingers = false;    # Min parmak kontrolü
-        workspace_swipe_distance = 200;         # Swipe mesafesi
-
+        workspace_swipe = false;                   # Workspace swipe etkin
+        workspace_swipe_fingers = 3;              # 3 parmak (standart)
+        workspace_swipe_min_fingers = false;      # Minimum parmak sayısı kontrolü kapalı
+        workspace_swipe_distance = 200;           # Daha hassas (300->200)
+        
         # Touchscreen desteği
-        workspace_swipe_touch = false;          # Touchscreen swipe
-        workspace_swipe_touch_invert = false;   # Touchscreen yön
-
+        workspace_swipe_touch = false;            # Touchscreen swipe kapalı (laptop için)
+        workspace_swipe_touch_invert = false;     # Touchscreen yön normal
+        
         # Yön kontrolü
-        workspace_swipe_invert = true;          # Doğal yön
-
+        workspace_swipe_invert = true;            # Touchpad yön ters (doğal)
+        
         # İleri seviye ayarlar
-        workspace_swipe_min_speed_to_force = 20;     # Min hız eşiği
-        workspace_swipe_cancel_ratio = 0.3;          # İptal oranı
-        workspace_swipe_create_new = true;           # Yeni workspace oluştur
-        workspace_swipe_direction_lock = true;       # Yön kilidi
-        workspace_swipe_direction_lock_threshold = 15; # Yön kilidi eşiği
-        workspace_swipe_forever = false;             # Sınırsız swipe
-        workspace_swipe_use_r = false;               # 'r' prefix kullanma
+        workspace_swipe_min_speed_to_force = 20;  # Daha düşük hız eşiği (30->20)
+        workspace_swipe_cancel_ratio = 0.3;       # İptal oranı (0.5->0.3, daha kolay)
+        workspace_swipe_create_new = true;        # Son workspace'ten swipe ile yeni workspace
+        workspace_swipe_direction_lock = true;    # Yön kilidi aktif
+        workspace_swipe_direction_lock_threshold = 15; # Yön kilidi eşiği (10->15)
+        workspace_swipe_forever = false;          # Sınırsız swipe kapalı (workspace sınırında dur)
+        workspace_swipe_use_r = false;            # 'r' prefix kullanma (varsayılan 'm')
       };
 
       # =====================================================
-      # Dwindle Layout Ayarları
+      # Yerleşim Yöneticisi Ayarları
       # =====================================================
       dwindle = {
-        pseudotile = true;                      # Sahte döşeme
-        preserve_split = true;                  # Bölme konumunu koru
-        special_scale_factor = 0.8;             # Özel ölçekleme
-        force_split = 2;                        # Zorunlu bölme yönü
-        split_width_multiplier = 1.0;           # Bölme genişlik çarpanı
-        use_active_for_splits = true;           # Aktif pencere split
-        default_split_ratio = 1.0;              # Varsayılan split oranı
+        pseudotile = true;                 # Sahte döşeme
+        preserve_split = true;             # Bölme konumunu koru
+        special_scale_factor = 0.8;        # Özel ölçekleme faktörü
+        force_split = 2;                   # Zorunlu bölme yönü (2 = sağa)
+        split_width_multiplier = 1.0;      # Bölme genişlik çarpanı
+        use_active_for_splits = true;      # Aktif pencere için split kullan
+        default_split_ratio = 1.0;         # Varsayılan split oranı
       };
 
-      # =====================================================
-      # Master Layout Ayarları
-      # =====================================================
       master = {
-        new_on_top = false;                     # Yeni pencereler alta
-        new_status = "slave";                   # Yeni pencere durumu
-        mfact = 0.67;                           # Ana pencere oranı
-        orientation = "left";                   # Master pencere konumu
-        inherit_fullscreen = true;              # Fullscreen miras alma
-        smart_resizing = true;                  # Akıllı boyutlandırma
-        drop_at_cursor = false;                 # Cursor'a pencere bırakma
-        allow_small_split = false;              # Küçük split'lere izin
-        special_scale_factor = 0.8;             # Special workspace ölçeği
+        new_on_top = false;               # Yeni pencereleri alta ekle (daha mantıklı)
+        new_status = "slave";             # Yeni pencere durumu
+        mfact = 0.67;                     # Ana pencere oranı (biraz daha büyük)
+        orientation = "left";             # Yerleşim yönü (master solda daha yaygın)
+        inherit_fullscreen = true;        # Fullscreen miras alma
+        smart_resizing = true;            # Akıllı boyutlandırma
+        drop_at_cursor = false;           # Cursor'a pencere bırakma
+        allow_small_split = false;        # Küçük split'lere izin verme
+        special_scale_factor = 0.8;       # Special workspace ölçeği
       };
 
       # =====================================================
       # Kısayol Tuşu Ayarları
       # =====================================================
       binds = {
-        pass_mouse_when_bound = true;           # Fare geçişine izin ver
-        workspace_back_and_forth = true;        # Workspace geri-ileri
-        allow_workspace_cycles = true;          # Workspace döngüsü
-        workspace_center_on = true;             # Merkeze hizalama
-        focus_preferred_method = 0;             # Odak yöntemi
-        ignore_group_lock = true;               # Grup kilidini yoksay
+        pass_mouse_when_bound = true;     # Fare geçişine izin ver
+        workspace_back_and_forth = true;  # Çalışma alanı geri-ileri
+        allow_workspace_cycles = true;    # Çalışma alanı döngüsü
+        workspace_center_on = true;       # Merkeze hizalama
+        focus_preferred_method = 0;       # Odak yöntemi
+        ignore_group_lock = true;         # Grup kilidini yoksay
       };
 
       # =====================================================
@@ -309,41 +304,41 @@
       # =====================================================
       decoration = {
         # Temel görünüm
-        rounding = 10;                          # Köşe yuvarlaklığı
-
-        # Opaklık ayarları
-        active_opacity = 1.0;                   # Aktif pencere tam opak
-        inactive_opacity = 0.95;                # Pasif pencereler hafif şeffaf
-        fullscreen_opacity = 1.0;               # Tam ekran opaklığı
-
+        rounding = 10;                    # Köşe yuvarlaklığı
+ 
+        # Opaklık ayarları (düzeltildi)
+        active_opacity = 1.0;             # Aktif pencere tam opak
+        inactive_opacity = 0.95;          # Pasif pencereler hafif şeffaf
+        fullscreen_opacity = 1.0;         # Tam ekran opaklığı
+ 
         # Karartma ayarları
-        dim_inactive = true;                    # Pasif pencere karartma
-        dim_strength = 0.15;                    # Karartma şiddeti
-
-        # Bulanıklık efektleri
+        dim_inactive = true;              # Pasif pencere karartma
+        dim_strength = 0.15;              # Karartma şiddeti (artırıldı)
+ 
+        # Geliştirilmiş bulanıklık ayarları
         blur = {
-          enabled = true;                       # Blur efekti aktif
-          size = 8;                             # Blur boyutu
-          passes = 2;                           # Blur geçiş sayısı
-          ignore_opacity = true;                # Opaklığı yoksay
-          new_optimizations = true;             # Yeni optimizasyonlar
-          xray = false;                         # X-ray efekti
-          vibrancy = 0.1696;                    # Glassmorphism efekti
-          vibrancy_darkness = 0.0;              # Vibrancy karartma
-          special = false;                      # Special workspace blur
-          popups = true;                        # Popup blur
-          popups_ignorealpha = 0.2;             # Popup blur eşiği
+          enabled = true;                 # Bulanıklık efekti
+          size = 8;                       # Bulanıklık boyutu (iyileştirildi)
+          passes = 2;                     # Bulanıklık geçişleri (performans için azaltıldı)
+          ignore_opacity = true;          # Opaklığı yoksay
+          new_optimizations = true;       # Yeni optimizasyonlar
+          xray = false;                   # X-ray efekti
+          vibrancy = 0.1696;              # Modern glassmorphism efekti
+          vibrancy_darkness = 0.0;        # Vibrancy karartma
+          special = false;                # Special workspace'te blur kapalı
+          popups = true;                  # Popup'larda blur aktif
+          popups_ignorealpha = 0.2;       # Popup blur eşiği
         };
-
-        # Gölge efektleri
+ 
+        # İyileştirilmiş gölge ayarları
         shadow = {
-          enabled = true;                       # Gölge efekti aktif
-          ignore_window = true;                 # Pencere gölgesi
-          offset = "0 4";                       # Gölge offset (x y)
-          range = 25;                           # Gölge genişliği
-          render_power = 2;                     # Gölge render gücü
-          color = "rgba(00000066)";             # Gölge rengi
-          scale = 0.97;                         # Gölge ölçeği
+          enabled = true;                 # Gölge efekti
+          ignore_window = true;           # Pencere gölgesi
+          offset = "0 4";                 # Gölge konumu (Y ekseninde artırıldı)
+          range = 25;                     # Gölge menzili (genişletildi)
+          render_power = 2;               # Gölge gücü (performans için azaltıldı)
+          color = "rgba(00000066)";       # Gölge rengi (biraz koyulaştırıldı)
+          scale = 0.97;                   # Gölge ölçeği
         };
       };
 
@@ -351,7 +346,7 @@
       # Animasyon Ayarları
       # =====================================================
       animations = {
-        enabled = true;                         # Animasyonları etkinleştir
+        enabled = true;                   # Animasyonları etkinleştir
 
         # Bezier eğrileri
         bezier = [
