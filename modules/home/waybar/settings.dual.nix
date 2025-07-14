@@ -133,7 +133,7 @@
           echo "$icon $temp"
         fi
       '';
-      interval = 1800;        # Update every 30 minutes
+      interval = 3600;        # Update every 30 minutes
       format = "{}";          # Display raw output from exec
       on-click = "xdg-open 'https://wttr.in/Istanbul'";  # Detailed forecast in browser
       tooltip = true;
