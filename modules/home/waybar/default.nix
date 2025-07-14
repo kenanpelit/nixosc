@@ -31,65 +31,6 @@ let
     rosewater = "#f5e0dc";
   };
 
-  # SEÇENEK 2: Nord Theme - Minimal ve profesyonel
-  nord_theme = {
-    # Polar Night
-    nord0 = "#2e3440";
-    nord1 = "#3b4252";
-    nord2 = "#434c5e";
-    nord3 = "#4c566a";
-    # Snow Storm
-    nord4 = "#d8dee9";
-    nord5 = "#e5e9f0";
-    nord6 = "#eceff4";
-    # Frost
-    nord7 = "#8fbcbb";
-    nord8 = "#88c0d0";
-    nord9 = "#81a1c1";
-    nord10 = "#5e81ac";
-    # Aurora
-    nord11 = "#bf616a";
-    nord12 = "#d08770";
-    nord13 = "#ebcb8b";
-    nord14 = "#a3be8c";
-    nord15 = "#b48ead";
-  };
-
-  # SEÇENEK 3: Dracula Theme - Vibrant ve göz alıcı
-  dracula_theme = {
-    background = "#282a36";
-    current_line = "#44475a";
-    foreground = "#f8f8f2";
-    comment = "#6272a4";
-    cyan = "#8be9fd";
-    green = "#50fa7b";
-    orange = "#ffb86c";
-    pink = "#ff79c6";
-    purple = "#bd93f9";
-    red = "#ff5555";
-    yellow = "#f1fa8c";
-  };
-
-  # SEÇENEK 4: Gruvbox Material Dark - Warm ve rahat
-  gruvbox_material = {
-    bg0 = "#1d2021";
-    bg1 = "#282828";
-    bg2 = "#32302f";
-    bg3 = "#3c3836";
-    bg4 = "#504945";
-    bg5 = "#665c54";
-    fg0 = "#fbf1c7";
-    fg1 = "#ebdbb2";
-    red = "#ea6962";
-    orange = "#e78a4e";
-    yellow = "#d8a657";
-    green = "#a9b665";
-    aqua = "#89b482";
-    blue = "#7daea3";
-    purple = "#d3869b";
-    gray = "#928374";
-  };
-
   # SEÇENEK 5: One Dark Pro - VS Code tarzı
   one_dark_pro = {
     bg = "#1e2127";
@@ -322,11 +263,8 @@ in
 # TEMATİK SEÇENEKLER:
 #
 # 1. Catppuccin Mocha - Modern, popüler, mükemmel contrast
-# 2. Nord Theme - Minimal, profesyonel, soğuk tonlar
-# 3. Dracula - Vibrant, göz alıcı, mor dominant
-# 4. Gruvbox Material - Warm, rahat, retro-modern
-# 5. One Dark Pro - VS Code tarzı, developer friendly
-# 6. Tokyo Night Storm (varsayılan) - Senin favorin! 🌙
+# 2. One Dark Pro - VS Code tarzı, developer friendly
+# 3. Tokyo Night Storm (varsayılan) - Senin favorin! 🌙
 #
 # Tema değiştirmek için sadece `selected_theme = tokyo_night_storm;` satırını
 # başka bir tema ile değiştir!
