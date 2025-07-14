@@ -291,7 +291,7 @@
       format-ethernet = "󰤥 Connected";          # Ethernet connection
       format-linked = "󰤥 {ifname} (No IP)";     # Connected but no IP
       format-disconnected = "󰤭 Disconnected";   # No connection
-      on-click-right = "rofi-iwmenu";           # Network interface menu
+      on-click-right = "rofi-network-manager";  # Network interface menu
       on-click-middle = "rofi-wifi";            # WiFi selection menu
       tooltip-format = "Connected to {essid}\nIP: {ipaddr}\nGateway: {gwaddr}";
       
