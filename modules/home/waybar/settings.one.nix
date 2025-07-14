@@ -61,8 +61,6 @@
       "custom/vpn"         # 🔒 VPN status (unified Mullvad + others)
       "battery"            # 🔋 Battery status & power management
       "custom/notification" # 🔔 System notifications center
-      "custom/firewall"    # 🛡️ Firewall status controls
-      "custom/power"       # ⚡ Power menu (shutdown/restart/logout)
       "custom/blank"       # ⎵  Visual spacing
       "tray"               # 📌 System tray applications
     ];
@@ -449,19 +447,6 @@
       tooltip-format = "Notifications\n\n󱎫 Sol: Toggle Panel\n󰑐 Sağ: Clear All";
     };
 
-    # 🛡️ Firewall Status & Control
-    "custom/firewall" = {
-      format = "{}";
-      # Check firewall status and return colored icon
-      exec = "sh -c 'if systemctl is-active firewall >/dev/null 2>&1; then echo \"<span foreground=\\\"${green}\\\">󰕥</span>\"; else echo \"<span foreground=\\\"${red}\\\">󰕥</span>\"; fi'";
-      on-click = "pkexec systemctl start firewall && notify-send 'Firewall' 'Started' -i security-high";
-      on-click-right = "pkexec systemctl restart firewall && notify-send 'Firewall' 'Restarted' -i security-high";
-      on-click-middle = "pkexec systemctl stop firewall && notify-send 'Firewall' 'Stopped' -i security-low";
-      interval = 5;                             # Check every 5 seconds
-      tooltip = true;
-      tooltip-format = "Firewall Status\n\n󱎫 Sol: Start\n󰦝 Orta: Stop\n󰑐 Sağ: Restart";
-    };
-
     # 📌 System Tray for Background Applications
     tray = {
       icon-size = 18;                           # Tray icon size
@@ -484,14 +469,6 @@
         spotify = "󰓇";        # Spotify music
         steam = "󰓓";          # Steam gaming platform
       };
-    };
-
-    # ⚡ Power Menu (Shutdown/Restart/Logout)
-    "custom/power" = {
-      format = "⏻";                            # Power symbol
-      on-click = "power-menu";                  # Open power menu script
-      tooltip = true;
-      tooltip-format = "Power Menu\n\nShutdown • Restart • Logout";
     };
   };
 }
