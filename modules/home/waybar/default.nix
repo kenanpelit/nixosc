@@ -187,7 +187,7 @@ let
   };
 
   # Seçtiğin tema - değiştirmek için bu satırı düzenle
-  selected_theme = one_dark_pro;  # catppuccin_mocha, nord_theme, dracula_theme, gruvbox_material, one_dark_pro, tokyo_night_storm
+  selected_theme = tokyo_night_storm;  # catppuccin_mocha, nord_theme, dracula_theme, gruvbox_material, one_dark_pro, tokyo_night_storm
   
   # Universal theme mapping - her tema için çalışır
   colors = {
