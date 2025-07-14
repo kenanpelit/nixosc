@@ -9,7 +9,7 @@ set -euo pipefail
 declare -A ICONS=(
 	["connected"]="󰦝"
 	["disconnected"]="󰦞"
-	["mullvad"]="󰒃"
+	["mullvad"]="󰌘"
 	["warning"]="󰀦"
 	["dual"]="󰓅"
 	["off"]="󰲛"
@@ -115,7 +115,7 @@ analyze_vpn_status() {
 		local first_other
 		first_other=$(echo "$other_vpns_result" | head -1 | cut -d: -f1)
 
-		text="${ICONS[dual]} M+$first_other"
+		text="${ICONS[dual]} Mullvad+$first_other"
 		class="warning"
 		tooltip="⚠️ Multiple VPN Active\n\n"
 		tooltip+="🔵 Mullvad: $mullvad_info\n"
@@ -127,7 +127,7 @@ analyze_vpn_status() {
 
 	# Sadece Mullvad aktif
 	elif [[ "$mullvad_status" == "connected" ]]; then
-		text="${ICONS[mullvad]} M"
+		text="${ICONS[mullvad]} Mullvad"
 		class="connected"
 		tooltip="🔵 Mullvad VPN Connected\n\n"
 		tooltip+="📡 $mullvad_info\n"
@@ -155,7 +155,7 @@ analyze_vpn_status() {
 
 	# Mullvad problemi
 	elif [[ "$mullvad_status" == "warning" ]]; then
-		text="${ICONS[warning]} M-Error"
+		text="${ICONS[warning]} Mullvad Issue"
 		class="warning"
 		tooltip="⚠️ Mullvad Connection Issue\n\n"
 		tooltip+="Problem: $mullvad_info\n"
@@ -163,7 +163,7 @@ analyze_vpn_status() {
 
 	# Hiç VPN yok
 	else
-		text="${ICONS[off]} No VPN"
+		text="${ICONS[off]} VPN"
 		class="disconnected"
 		tooltip="🔴 No VPN Connection\n\n"
 		if [[ "$mullvad_status" == "not_installed" ]]; then
