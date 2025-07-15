@@ -64,7 +64,7 @@
     ./mpd           # Music Player Daemon setup
     ./cava          # Console-based audio visualizer
     #./spicetify     # Spotify client customization
-    ./radio         # Internet radio streaming
+    #./radio         # Internet radio streaming
     
     # =============================================================================
     # Communication & Social
