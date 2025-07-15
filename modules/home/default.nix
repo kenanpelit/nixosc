@@ -24,6 +24,7 @@
     ./rofi          # Application launcher and menu system
     ./swaylock      # Screen locker for Wayland sessions
     ./swaync        # Notification center and control
+    ./mako          # Lightweight notification daemon for Wayland
     ./swayosd       # On-screen display for system controls
     ./gammastep     # Blue light filter and screen temperature
     ./mhyprsunset   # Advanced screen temperature control
