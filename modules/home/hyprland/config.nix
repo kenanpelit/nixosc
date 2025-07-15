@@ -17,7 +17,7 @@
         # Power management notifications (battery, lid, etc.)
         #"poweralertd -s -S"
         # Notification center for system-wide notifications
-        "swaync"
+        #"swaync"
         # Keep clipboard content persistent across program restarts
         "wl-clip-persist --clipboard both"
         # Enhanced clipboard management with cliphist
@@ -724,7 +724,9 @@
         "ALT, L, exec, hyprlock"                                                     # Ekran kilidi
         "$mainMod, backspace, exec, power-menu"                                      # Güç menüsü
         "$mainMod, C, exec, hyprpicker -a"                                           # Renk seçici
-        "$mainMod, N, exec, swaync-client -t -sw"                                    # Bildirim merkezi
+        #"$mainMod, N, exec, swaync-client -t -sw"                                   # Bildirim merkezi
+        "$mainMod, N, exec, makoctl restore"                                         # Bildirim merkezi
+        "$mainMod CTRL, N, exec, makoctl dismiss --all"                              # Bildirim merkezi
         "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'" # Sistem monitörü
 
         # Monitör ve Ekran Yönetimi

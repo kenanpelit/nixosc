@@ -7,7 +7,9 @@ let
     mantle = "#1f2335";
     surface0 = "#292e42";
     surface1 = "#414868";
+    surface2 = "#565f89";
     text = "#c0caf5";
+    subtext0 = "#9aa5ce";
     subtext1 = "#a9b1d6";
     green = "#9ece6a";
     blue = "#7aa2f7";
@@ -15,6 +17,7 @@ let
     red = "#f7768e";
     orange = "#ff9e64";
     yellow = "#e0af68";
+    cyan = "#7dcfff";
   };
 in
 {
@@ -27,133 +30,229 @@ in
   ];
 
   # =============================================================================
-  # Mako Configuration
+  # Mako Configuration - Enhanced but Stable
   # =============================================================================
   services.mako = {
     enable = true;
     
-    # Global options
-    anchor = "top-right";
-    font = "Noto Sans Regular 14";
-    backgroundColor = colors.base + "aa";  # 67% opacity
-    textColor = colors.text;
-    width = 540;
-    height = 320;
-    margin = "13,11";
-    padding = "8,10";
-    borderSize = 1;
-    borderColor = colors.purple;
-    borderRadius = 10;
-    progressColor = "over " + colors.surface1;
-    icons = true;
-    maxIconSize = 48;
-    iconLocation = "right";
-    defaultTimeout = 7000;
-    ignoreTimeout = false;
-    groupBy = "none";
-    layer = "overlay";
-    maxVisible = 5;
+    # All configuration now goes under settings
+    settings = {
+      # Positioning - slightly better spacing
+      anchor = "top-right";
+      margin = "15,20,0,0";
+      
+      # Typography - modern but safe with larger fonts
+      font = "JetBrainsMono Nerd Font 14";
+      
+      # Colors - enhanced Tokyo Night
+      background-color = colors.base + "f0";  # 94% opacity for better depth
+      text-color = colors.text;
+      border-color = colors.purple + "cc";    # Semi-transparent border
+      
+      # Dimensions - adjusted for larger fonts
+      width = 450;
+      height = 160;
+      padding = "18,20";
+      border-size = 2;
+      border-radius = 14;  # Slightly more rounded
+      
+      # Visual enhancements
+      progress-color = "over " + colors.cyan;
+      icons = 1;
+      max-icon-size = 64;  # Larger icons to match bigger fonts
+      icon-location = "left";  # Modern placement
+      
+      # Timing - optimized
+      default-timeout = 8000;
+      ignore-timeout = 0;
+      
+      # Organization
+      group-by = "app-name";  # Cleaner grouping
+      layer = "overlay";
+      max-visible = 4;  # One more for convenience
+      
+      # Enhanced format with larger fonts and better hierarchy
+      format = ''<span color="${colors.cyan}" size="14pt" weight="600">%a</span>\n<span color="${colors.text}" size="16pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="13pt">%b</span>'';
+    };
     
-    # Custom format with Tokyo Night styling
-    format = ''<span color="${colors.green}" size="13pt" line_height="1.3"><b>%a</b></span>\n<span color="${colors.subtext1}"><i>%s</i></span>\n%b'';
-    
-    # Sound notification (optional)
-    # onNotify = "exec paplay ~/.sounds/message.oga";
-    
-    # Extra configuration for different urgency levels and apps
+    # Enhanced styling - app-specific improvements
     extraConfig = ''
-      # Grouped notifications
+      # Grouped notifications - better styling
       [grouped]
-      format=<span size="13pt" line_height="1.3"><b>(%g) %a</b></span>\n%b
+      format=<span color="${colors.purple}" size="11pt" weight="600">(%g) %a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="10pt">%b</span>
       border-size=3
+      border-color=${colors.purple}
       
-      # Normal urgency
+      # Urgency levels with better visual distinction
       [urgency=normal]
-      background-color=${colors.base}
+      background-color=${colors.base}f0
       text-color=${colors.text}
-      border-color=${colors.purple}
-      progress-color=over ${colors.surface1}
+      border-color=${colors.blue}aa
+      border-size=2
       
-      # Critical notifications
       [urgency=critical]
-      background-color=${colors.base}
+      background-color=${colors.base}f5
       text-color=${colors.text}
-      border-color=${colors.orange}
+      border-color=${colors.red}
+      border-size=3
       default-timeout=0
+      format=<span color="${colors.red}" size="12pt" weight="700">⚠ %a</span>\n<span color="${colors.text}" size="14pt" weight="800">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       
-      # Low urgency
       [urgency=low]
-      background-color=${colors.base}
-      text-color=${colors.text}
-      border-color=${colors.purple}
+      background-color=${colors.base}dd
+      text-color=${colors.subtext1}
+      border-color=${colors.surface2}80
+      border-size=1
+      default-timeout=5000
       
-      # Spotify notifications
+      # App-specific enhancements
+      
+      # Spotify - music themed with icon
       [app-name=Spotify]
-      format=<span color="${colors.green}" size="13pt" line_height="1.3"><b>%a</b></span>\n<span color="${colors.purple}"><i>%s</i></span>\n%b
-      background-color=${colors.base}
-      text-color=${colors.text}
-      border-color=${colors.green}
-      default-timeout=3000
+      format=<span color="${colors.green}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.green}" size="11pt" style="italic">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.green}99
+      border-size=2
+      default-timeout=4000
       
-      # WhatsApp notifications
+      # System notifications
+      [app-name="notify-send"]
+      format=<span color="${colors.blue}" size="12pt" weight="600">ⓘ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.blue}99
+      
+      # WhatsApp/Messages - communication
       [app-name=whatsapp-nativefier-d40211]
-      format=<span color="${colors.green}" size="13pt" line_height="1.3"><b>%a</b></span>\n<span color="${colors.purple}"><i>%s</i></span>\n%b
-      background-color=${colors.base}
-      text-color=${colors.text}
-      border-color=${colors.red}
-      default-timeout=10000
+      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.cyan}99
+      border-size=2
+      default-timeout=12000
       
-      # Firefox notifications
+      # Firefox - web browsing
       [app-name=firefox]
-      format=<span color="${colors.green}" size="13pt" line_height="1.3"><b>%a</b></span>\n<span color="${colors.purple}"><i>%s</i></span>\n%b
-      background-color=${colors.base}
-      text-color=${colors.text}
-      border-color=${colors.red}
-      default-timeout=50000
+      format=<span color="${colors.orange}" size="12pt" weight="600">🦊 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.orange}99
+      default-timeout=8000
       
       # Chrome notifications
       [app-name=Google-chrome]
-      format=<span color="${colors.green}" size="13pt" line_height="1.3"><b>%a</b></span>\n<span color="${colors.purple}"><i>%s</i></span>\n%b
-      background-color=${colors.base}
-      text-color=${colors.text}
-      border-color=${colors.red}
-      default-timeout=30000
+      [app-name=google-chrome]
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.yellow}99
+      default-timeout=8000
       
-      # MPD notifications
+      # MPD/Music notifications
       [category=mpd]
-      default-timeout=2000
+      format=<span color="${colors.purple}" size="12pt" weight="600">♫ Music</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.purple}" size="11pt" style="italic">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.purple}99
+      default-timeout=3000
       group-by=category
       
-      # Mode: Away
+      # Discord/Communication apps
+      [app-name=discord]
+      [app-name=webcord]
+      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.cyan}99
+      
+      # Battery/Power notifications
+      [summary~="Battery"]
+      [summary~="Power"]
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🔋 Power</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.yellow}99
+      
+      # Network notifications
+      [summary~="Network"]
+      [summary~="WiFi"]
+      [summary~="Connection"]
+      format=<span color="${colors.blue}" size="12pt" weight="600">📶 Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.blue}99
+      
+      # System update notifications
+      [summary~="Update"]
+      [summary~="Upgrade"]
+      format=<span color="${colors.green}" size="12pt" weight="600">📦 System</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.green}99
+      default-timeout=12000
+      
+      # Modes
       [mode=away]
       default-timeout=0
       ignore-timeout=1
+      background-color=${colors.surface0}cc
+      text-color=${colors.subtext0}
       
-      # Mode: Do Not Disturb
       [mode=do-not-disturb]
       invisible=1
     '';
   };
 
   # =============================================================================
-  # Optional: Mako control scripts
+  # Systemd User Service Configuration
+  # =============================================================================
+  systemd.user.services.mako = {
+    Unit = {
+      Description = "Lightweight Wayland notification daemon";
+      Documentation = "man:mako(1)";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+      Wants = [ "graphical-session.target" ];
+    };
+    
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.mako}/bin/mako";
+      ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR1 $MAINPID";
+      Restart = "on-failure";
+      RestartSec = "2s";
+      KillMode = "mixed";
+      
+      # Environment variables for Wayland
+      Environment = [
+        "WAYLAND_DISPLAY=wayland-1"
+        "XDG_SESSION_TYPE=wayland"
+      ];
+    };
+    
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
+
+  # =============================================================================
+  # Enhanced Control Scripts and Aliases
   # =============================================================================
   home.sessionVariables = {
     # Ensure mako is used as the notification daemon
     NOTIFY_SEND_BIN = "${pkgs.libnotify}/bin/notify-send";
   };
 
-  # Optional: Add some useful aliases for mako control
+  # Enhanced aliases for better mako control
   home.shellAliases = {
-    # Mako control commands
+    # Basic mako control
     "mako-reload" = "makoctl reload";
     "mako-dismiss" = "makoctl dismiss";
     "mako-dismiss-all" = "makoctl dismiss --all";
     "mako-history" = "makoctl history";
     "mako-restore" = "makoctl restore";
     
-    # Test notification
+    # Enhanced test notifications
     "notify-test" = "notify-send 'Test Notification' 'This is a test message from Mako!' --icon=dialog-information";
+    "notify-critical" = "notify-send -u critical 'Critical Alert' 'This is a critical notification!'";
+    "notify-music" = "notify-send -a 'Spotify' 'Now Playing' 'Artist - Song Title'";
+    "notify-system" = "notify-send 'System Update' 'Updates are available for installation'";
+    
+    # Mako status and control
+    "mako-status" = "systemctl --user status mako";
+    "mako-restart" = "systemctl --user restart mako";
+    "mako-logs" = "journalctl --user -u mako -f";
   };
 }
 
