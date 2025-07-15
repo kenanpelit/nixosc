@@ -42,7 +42,7 @@ in
       margin = "15,20,0,0";
       
       # Typography - modern but safe with larger fonts
-      font = "JetBrainsMono Nerd Font 14";
+      font = "JetBrainsMono Nerd Font 12";
       
       # Colors - enhanced Tokyo Night
       background-color = colors.base + "f0";  # 94% opacity for better depth
@@ -72,7 +72,7 @@ in
       max-visible = 4;  # One more for convenience
       
       # Enhanced format with larger fonts and better hierarchy
-      format = ''<span color="${colors.cyan}" size="14pt" weight="600">%a</span>\n<span color="${colors.text}" size="16pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="13pt">%b</span>'';
+      format = ''<span color="${colors.cyan}" size="12pt" weight="600">%a</span>\n<span color="${colors.text}" size="16pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="13pt">%b</span>'';
     };
     
     # Enhanced styling - app-specific improvements
