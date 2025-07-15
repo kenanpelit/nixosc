@@ -1,7 +1,4 @@
-# modules/home/desktop/swaync/default.nix
-# ==============================================================================
-# SwayNC Notification Center Configuration
-# ==============================================================================
+# modules/home/swaync/default.nix
 { pkgs, ... }:
 let
   # Tokyo Night tema renkleri
@@ -30,7 +27,7 @@ let
     shadow = "rgba(0, 0, 0, 0.25)";
   };
 
-  # SwayNC tema CSS'i
+  # SwayNC tema CSS'i - FIXED
   swayncTheme = {
     style = ''
       @define-color shadow ${effects.shadow};
@@ -50,14 +47,23 @@ let
         font-family: "${fonts.notifications.family}";
         background-clip: border-box;
       }
+      
+      /* Floating notifications - no background overlay */
       .floating-notifications {
         background: transparent;
       }
+      
+      /* FIXED: Remove fullscreen overlay */
+      .blank-window {
+        background: transparent;  /* Was: alpha(black, 0.2) */
+      }
+      
       .notification-row {
         outline: none;
         margin: 10px;
         padding: 0;
       }
+      
       .notification {
         background: @base;
         border: 2px solid @surface1;
@@ -65,10 +71,12 @@ let
         margin: 5px;
         box-shadow: 0 0 8px 0 @shadow;
       }
+      
       .notification-content {
         padding: 10px;
         margin: 0;
       }
+      
       .close-button {
         background: @surface0;
         color: @text;
@@ -82,26 +90,35 @@ let
         min-width: 24px;
         min-height: 24px;
       }
+      
       .notification-default-action {
         margin: 0;
         padding: 0;
         border-radius: 8px;
       }
+      
       .notification-default-action:hover {
         background: @surface0;
       }
+      
       .notification-label {
         color: @text;
       }
+      
       .notification-background {
         background: @base;
       }
+      
+      /* Control center with proper positioning */
       .control-center {
         background: @base;
         border: 2px solid @surface1;
         border-radius: 8px;
         margin: 10px;
         box-shadow: 0 0 8px 0 @shadow;
+        /* Ensure it doesn't expand beyond intended size */
+        max-width: 400px;
+        max-height: 650px;
       }
     '';
   };
@@ -220,10 +237,16 @@ in
         border: 2px solid @surface1;
         border-radius: 0px;
         box-shadow: 0px 0px 2px black;
+        /* FIXED: Proper size constraints */
+        max-width: 400px;
+        max-height: 650px;
+        min-width: 300px;
+        min-height: 400px;
     }
 
+    /* FIXED: No fullscreen overlay - KEY FIX! */
     .blank-window {
-        background: alpha(black, 0.2);
+        background: transparent;
     }
 
     .control-center-list {
@@ -282,10 +305,6 @@ in
 
     .control-center-list>row:last-child {
         padding: 5px 10px 10px 10px;
-    }
-
-    .blank-window {
-        background: transparent;
     }
 
     .widget-title {

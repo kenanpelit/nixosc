@@ -243,6 +243,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
+    # === Notification System ===
+    # SwayNotificationCenter v0.12.1 with GTK4 fixes and CSS priority improvements
+    swaync-latest = {
+      url = "github:ErikReider/SwayNotificationCenter/v0.12.1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    
     # === Terminal and File Management ===
     # Terminal file manager plugins (raw source)
     yazi-plugins = {
@@ -276,13 +283,13 @@
   # SYSTEM CONFIGURATION OUTPUTS
   # ============================================================================
   outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, 
-              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, ... }@inputs:
+              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, swaync-latest, ... }@inputs:
     let
       # === Global Variables ===
       username = "kenan";        # Primary user account
       system = "x86_64-linux";   # System architecture
       
-      # Configure nixpkgs with system-wide settings
+      # Configure nixpkgs with system-wide settings and SwayNC v0.12.1 overlay
       pkgs = import nixpkgs {
         inherit system;
         config = {
@@ -292,6 +299,17 @@
             "ventoy-1.1.05"      # USB multi-boot tool with binary blobs
           ];
         };
+        overlays = [
+          # SwayNC v0.12.1 override for GTK4 fixes and CSS priority improvements
+          (final: prev: {
+            swaynotificationcenter = swaync-latest.packages.${system}.default.overrideAttrs (oldAttrs: {
+              meta = oldAttrs.meta // {
+                description = "SwayNotificationCenter v0.12.1 - GTK4 fixes, CSS priority, and performance improvements";
+                changelog = "https://github.com/ErikReider/SwayNotificationCenter/releases/tag/v0.12.1";
+              };
+            });
+          })
+        ];
       };
       
       # Import nixpkgs library for helper functions
