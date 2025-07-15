@@ -537,6 +537,12 @@
         "move 0.5% 3%,class:^(dropdown)$"
         "workspace special:dropdown,class:^(dropdown)$"
 
+        # Shortwave Radio Player - Flexible
+        "float,class:^(de.haeckerfelix.Shortwave)$"
+        "size 30% 80%,class:^(de.haeckerfelix.Shortwave)$"
+        "move 65% 10%,class:^(de.haeckerfelix.Shortwave)$"
+        "workspace 8,class:^(de.haeckerfelix.Shortwave)$"
+
         # ===== AUTHENTICATION & SECURITY =====
         # OTP Client
         "float,class:^(otpclient)$"

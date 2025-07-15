@@ -77,9 +77,9 @@
 
   #workspaces button.active {
     color: ${custom.magenta};
-    background-color: ${custom.magenta}33;  /* Tokyo Night magenta with 20% opacity */
-    border-color: ${custom.magenta}66;      /* Tokyo Night magenta with 40% opacity */
-    box-shadow: 0 1px 3px ${custom.magenta}33;
+    background-color: rgba(187, 154, 247, 0.2);
+    border-color: rgba(187, 154, 247, 0.4);
+    box-shadow: 0 1px 3px rgba(187, 154, 247, 0.2);
   }
 
   #workspaces button.empty {
@@ -90,14 +90,14 @@
 
   #workspaces button.urgent {
     color: ${custom.red};
-    background-color: ${custom.red}26;      /* Tokyo Night red with 15% opacity */
-    border-color: ${custom.red}66;         /* Tokyo Night red with 40% opacity */
+    background-color: rgba(247, 118, 142, 0.15);
+    border-color: rgba(247, 118, 142, 0.4);
   }
 
   #workspaces button:hover:not(.active) {
     color: ${custom.cyan};
-    background-color: ${custom.cyan}1a;     /* Tokyo Night cyan with 10% opacity */
-    border-color: ${custom.cyan}4d;        /* Tokyo Night cyan with 30% opacity */
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
   }
 
   /* Module specific colors - Tokyo Night Storm pure */
@@ -106,8 +106,8 @@
   }
   #bluetooth.connected { 
     color: ${custom.blue};
-    background-color: ${custom.blue}1a;     /* Tokyo Night blue with 10% opacity */
-    border-color: ${custom.blue}4d;        /* Tokyo Night blue with 30% opacity */
+    background-color: rgba(122, 162, 247, 0.1);
+    border-color: rgba(122, 162, 247, 0.3);
   }
   
   #network { 
@@ -115,13 +115,13 @@
   }
   #network.disconnected { 
     color: ${custom.red};
-    background-color: ${custom.red}0d;      /* Tokyo Night red with 5% opacity */
+    background-color: rgba(247, 118, 142, 0.05);
   }
   #network.ethernet,
   #network.wifi { 
     color: ${custom.blue};
-    background-color: ${custom.blue}1a;     /* Tokyo Night blue with 10% opacity */
-    border-color: ${custom.blue}4d;        /* Tokyo Night blue with 30% opacity */
+    background-color: rgba(122, 162, 247, 0.1);
+    border-color: rgba(122, 162, 247, 0.3);
   }
 
   #battery { 
@@ -129,21 +129,21 @@
   }
   #battery.charging { 
     color: ${custom.cyan};
-    background-color: ${custom.cyan}1a;     /* Tokyo Night cyan with 10% opacity */
-    border-color: ${custom.cyan}4d;        /* Tokyo Night cyan with 30% opacity */
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
   }
   #battery.full { 
     color: ${custom.green};
-    background-color: ${custom.green}1a;    /* Tokyo Night green with 10% opacity */
-    border-color: ${custom.green}4d;       /* Tokyo Night green with 30% opacity */
+    background-color: rgba(158, 206, 106, 0.1);
+    border-color: rgba(158, 206, 106, 0.3);
   }
   #battery.warning:not(.charging) { 
     color: ${custom.orange};
-    background-color: ${custom.orange}14;   /* Tokyo Night orange with 8% opacity */
+    background-color: rgba(255, 158, 100, 0.08);
   }
   #battery.critical:not(.charging) { 
     color: ${custom.red};
-    background-color: ${custom.red}1a;      /* Tokyo Night red with 10% opacity */
+    background-color: rgba(247, 118, 142, 0.1);
   }
 
   #pulseaudio { 
@@ -187,7 +187,7 @@
   }
   #temperature.critical {
     color: ${custom.red};
-    background-color: ${custom.red}1a;      /* Tokyo Night red with 10% opacity */
+    background-color: rgba(247, 118, 142, 0.1);
   }
 
   /* VPN module specific styles */
@@ -196,18 +196,18 @@
   }
   #custom-vpn.connected { 
     color: ${custom.green};
-    background-color: ${custom.green}1a;    /* Tokyo Night green with 10% opacity */
-    border-color: ${custom.green}4d;       /* Tokyo Night green with 30% opacity */
+    background-color: rgba(158, 206, 106, 0.1);
+    border-color: rgba(158, 206, 106, 0.3);
   }
   #custom-vpn.warning { 
     color: ${custom.orange};
-    background-color: ${custom.orange}1a;   /* Tokyo Night orange with 10% opacity */
-    border-color: ${custom.orange}4d;      /* Tokyo Night orange with 30% opacity */
+    background-color: rgba(255, 158, 100, 0.1);
+    border-color: rgba(255, 158, 100, 0.3);
   }
   #custom-vpn.disconnected { 
     color: ${custom.red};
-    background-color: ${custom.red}0d;      /* Tokyo Night red with 5% opacity */
-    border-color: ${custom.red}4d;         /* Tokyo Night red with 30% opacity */
+    background-color: rgba(247, 118, 142, 0.05);
+    border-color: rgba(247, 118, 142, 0.3);
   }
 
   #mpris {
@@ -219,12 +219,12 @@
 
   #mpris.playing { 
     color: ${custom.green};
-    background-color: ${custom.green}1a;    /* Tokyo Night green with 10% opacity */
-    border-color: ${custom.green}4d;       /* Tokyo Night green with 30% opacity */
+    background-color: rgba(158, 206, 106, 0.1);
+    border-color: rgba(158, 206, 106, 0.3);
   }
   #mpris.paused { 
     color: ${custom.blue};
-    background-color: ${custom.blue}0d;     /* Tokyo Night blue with 5% opacity */
+    background-color: rgba(122, 162, 247, 0.05);
   }
   #mpris.stopped { 
     color: ${custom.red};
@@ -237,16 +237,16 @@
     padding: 2px 8px;
     margin: 2px 4px 2px 3px;
     background: ${custom.background_1};
-    border: 1px solid ${custom.cyan}4d;     /* Tokyo Night cyan with 30% opacity */
+    border: 1px solid rgba(125, 207, 255, 0.3);
     border-radius: 8px;
     transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 1px 4px ${custom.cyan}0d; /* Tokyo Night cyan with 5% opacity */
+    box-shadow: 0 1px 4px rgba(125, 207, 255, 0.05);
   }
 
   #custom-launcher:hover {
-    background-color: ${custom.cyan}1a;     /* Tokyo Night cyan with 10% opacity */
+    background-color: rgba(125, 207, 255, 0.1);
     border-color: ${custom.cyan};
-    box-shadow: 0 2px 8px ${custom.cyan}26; /* Tokyo Night cyan with 15% opacity */
+    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.15);
   }
 
   /* System icons */
@@ -270,7 +270,7 @@
   }
 
   #custom-notification:hover {
-    background-color: ${custom.orange}1a;   /* Tokyo Night orange with 10% opacity */
+    background-color: rgba(255, 158, 100, 0.1);
     border-color: ${custom.orange};
   }
 
@@ -281,7 +281,7 @@
   }
 
   #custom-power:hover {
-    background-color: ${custom.red}1a;      /* Tokyo Night red with 10% opacity */
+    background-color: rgba(247, 118, 142, 0.1);
     border-color: ${custom.red};
   }
 
@@ -304,7 +304,7 @@
   }
 
   #tray menuitem:hover {
-    background-color: ${custom.blue}1a;     /* Tokyo Night blue with 10% opacity */
+    background-color: rgba(122, 162, 247, 0.1);
     border-radius: 4px;
   }
 
@@ -312,9 +312,9 @@
     color: ${custom.cyan};
     font-weight: 600;
     padding: 2px 8px;
-    background-color: ${custom.cyan}1a;     /* Tokyo Night cyan with 10% opacity */
-    border-color: ${custom.cyan}4d;        /* Tokyo Night cyan with 30% opacity */
-    box-shadow: 0 1px 4px ${custom.cyan}0d; /* Tokyo Night cyan with 5% opacity */
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
+    box-shadow: 0 1px 4px rgba(125, 207, 255, 0.05);
   }
 
   #language {
@@ -334,30 +334,30 @@
   
   #custom-weather.sunny {
     color: ${custom.yellow};
-    background-color: ${custom.yellow}1a;   /* Tokyo Night yellow with 10% opacity */
-    border-color: ${custom.yellow}4d;      /* Tokyo Night yellow with 30% opacity */
+    background-color: rgba(224, 175, 104, 0.1);
+    border-color: rgba(224, 175, 104, 0.3);
   }
   
   #custom-weather.cloudy {
     color: ${custom.cyan};
-    background-color: ${custom.cyan}1a;     /* Tokyo Night cyan with 10% opacity */
-    border-color: ${custom.cyan}4d;        /* Tokyo Night cyan with 30% opacity */
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
   }
   
   #custom-weather.rainy {
     color: ${custom.blue};
-    background-color: ${custom.blue}1a;     /* Tokyo Night blue with 10% opacity */
-    border-color: ${custom.blue}4d;        /* Tokyo Night blue with 30% opacity */
+    background-color: rgba(122, 162, 247, 0.1);
+    border-color: rgba(122, 162, 247, 0.3);
   }
   
   #custom-weather.snowy {
     color: ${custom.text_color};
-    background-color: ${custom.text_color}1a; /* Tokyo Night text with 10% opacity */
-    border-color: ${custom.text_color}4d;     /* Tokyo Night text with 30% opacity */
+    background-color: rgba(192, 202, 245, 0.1);
+    border-color: rgba(192, 202, 245, 0.3);
   }
   
   #custom-weather:hover {
-    background-color: ${custom.blue}26;     /* Tokyo Night blue with 15% opacity */
+    background-color: rgba(122, 162, 247, 0.15);
     border-color: ${custom.blue};
   }
 
@@ -384,9 +384,9 @@
   #clock:hover,
   #language:hover,
   #mpris:hover {
-    background-color: ${custom.blue}26;     /* Tokyo Night blue with 15% opacity */
+    background-color: rgba(122, 162, 247, 0.15);
     border-color: ${custom.blue};
-    box-shadow: 0 2px 6px ${custom.blue}26; /* Tokyo Night blue with 15% opacity */
+    box-shadow: 0 2px 6px rgba(122, 162, 247, 0.15);
   }
 
   tooltip {

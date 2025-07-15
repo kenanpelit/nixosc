@@ -159,7 +159,7 @@
     ani-cli         # Anime CLI
     rmpc            # Zengin MPD istemcisi
     mpc-cli         # MPD istemcisi
-    radiotray-ng    # İnternet radyosu
+    #radiotray-ng    # İnternet radyosu
     soundwireserver # Ses akışı
     
     # Torrent
