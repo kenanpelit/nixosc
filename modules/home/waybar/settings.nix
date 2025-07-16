@@ -39,6 +39,7 @@
     
     # Center: Time, Weather & Personal Productivity
     modules-center = [
+      "custom/mako-notifications" # 🔔 Mako notification status
       "custom/blank"       # ⎵  Visual spacing
       "custom/todo"        # 📋 Personal todo list integration
       "custom/blank"       # ⎵  Visual spacing  
@@ -128,6 +129,17 @@
 
     # ┌─ Center Section: Time, Weather & Productivity ───────────────────────────────────────────┐
     
+    # 🔔 Mako Notification Status & Controls
+    "custom/mako-notifications" = {
+      format = "{}";
+      exec = "mako-status";
+      return-type = "json";
+      interval = 2;                                # Daemon varsa uzun interval
+      on-click = "mako-status click";
+      on-click-right = "mako-status right-click";
+      on-click-middle = "mako-status middle-click";
+    };
+
     # 📋 Personal Todo List Integration
     "custom/todo" = {
       # Read todos from ~/.todo file, format as pipe-separated list

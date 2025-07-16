@@ -117,6 +117,9 @@ let
   m2w2 = pkgs.writeShellScriptBin "m2w2" (
     builtins.readFile ./bin/m2w2.sh
   );
+  mako-status = pkgs.writeShellScriptBin "mako-status" (
+    builtins.readFile ./bin/mako-status.sh
+  );
   monitor_brightness = pkgs.writeShellScriptBin "monitor_brightness" (
     builtins.readFile ./bin/monitor_brightness.sh
   );
@@ -416,6 +419,7 @@ in {
     image-deduplicator
     lofi
     m2w2
+    mako-status
     monitor_brightness
     move_media_files
     mpc-control
