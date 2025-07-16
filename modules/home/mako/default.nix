@@ -50,8 +50,10 @@ in
       border-color = colors.purple + "cc";    # Semi-transparent border
       
       # Dimensions - adjusted for larger fonts
-      width = 450;
-      height = 160;
+      #width = 450;
+      #height = 160;
+      width = 540;
+      height = 320;
       padding = "18,20";
       border-size = 2;
       border-radius = 14;  # Slightly more rounded
