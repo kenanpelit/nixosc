@@ -55,7 +55,11 @@ in
       padding = "18,20";
       border-size = 2;
       border-radius = 14;  # Slightly more rounded
-      
+
+      # History settings
+      max-history = 50;        # Maksimum 50 bildirim history'de tut
+      # max-history = 0;       # History'yi tamamen kapat
+  
       # Visual enhancements
       progress-color = "over " + colors.cyan;
       icons = 1;
