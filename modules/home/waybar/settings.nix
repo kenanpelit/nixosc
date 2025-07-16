@@ -128,16 +128,19 @@
     };
 
     # ┌─ Center Section: Time, Weather & Productivity ───────────────────────────────────────────┐
-    
+
     # 🔔 Mako Notification Status & Controls
     "custom/mako-notifications" = {
       format = "{}";
       exec = "mako-status";
       return-type = "json";
-      interval = 2;                                # Daemon varsa uzun interval
-      on-click = "mako-status click";
-      on-click-right = "mako-status right-click";
-      on-click-middle = "mako-status middle-click";
+      interval = 2;
+      on-click = "mako-status click";              # Sol: Dismiss/Restore
+      on-click-right = "mako-status right-click";  # Sağ: DND Toggle
+      on-click-middle = "mako-status middle-click"; # Orta: Dismiss All
+      on-scroll-up = "mako-status restore";        # Scroll Up: History Restore
+      on-scroll-down = "mako-status clear-history"; # Scroll Down: Clear History
+      tooltip-format = "󱎫 Sol: Dismiss/Restore\n󰑐 Sağ: DND Toggle\n󰦝 Orta: Dismiss All\n󰁝 Scroll ↑: Restore\n󰁅 Scroll ↓: Clear History";
     };
 
     # 📋 Personal Todo List Integration

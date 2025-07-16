@@ -91,6 +91,16 @@ case "${1:-}" in
 "middle-click")
 	makoctl dismiss --all 2>/dev/null || true
 	;;
+"restore")
+	makoctl restore 2>/dev/null || true
+	;;
+"clear-history")
+	# Clear history by restarting mako
+	pkill mako 2>/dev/null || true
+	sleep 1
+	mako &
+	2>/dev/null || true
+	;;
 "help" | "-h" | "--help")
 	echo "Mako Waybar Notification Script"
 	echo ""
@@ -101,6 +111,8 @@ case "${1:-}" in
 	echo "  click         Left click: Dismiss all notifications or restore"
 	echo "  right-click   Right click: Toggle do-not-disturb mode"
 	echo "  middle-click  Middle click: Dismiss all notifications"
+	echo "  restore       Restore notifications from history"
+	echo "  clear-history Clear notification history (restart mako)"
 	echo "  help|-h       Show this help message"
 	echo ""
 	echo "Examples:"
