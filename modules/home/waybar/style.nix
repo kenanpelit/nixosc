@@ -28,6 +28,7 @@
   #workspaces,
   #bluetooth,
   #custom-vpn,
+  #custom-mako-notifications,
   #custom-todo,
   #custom-weather,
   #custom-waybar-mpris,
@@ -359,6 +360,70 @@
   #custom-weather:hover {
     background-color: rgba(122, 162, 247, 0.15);
     border-color: ${custom.blue};
+  }
+
+  /* Mako Notifications module */
+  #custom-mako-notifications {
+    color: ${custom.cyan};
+    font-weight: 600;
+    padding: 2px 8px;
+    min-width: 30px;
+    background-color: rgba(125, 207, 255, 0.05);
+    border-color: rgba(125, 207, 255, 0.2);
+    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  #custom-mako-notifications.unread {
+    color: ${custom.red};
+    background-color: rgba(247, 118, 142, 0.15);
+    border-color: rgba(247, 118, 142, 0.4);
+    animation: notification-pulse 2s ease-in-out infinite;
+    box-shadow: 0 2px 8px rgba(247, 118, 142, 0.3);
+  }
+
+  #custom-mako-notifications.read {
+    color: ${custom.green};
+    background-color: rgba(158, 206, 106, 0.1);
+    border-color: rgba(158, 206, 106, 0.3);
+  }
+
+  #custom-mako-notifications.none {
+    color: ${custom.subtext_color};
+    opacity: 0.6;
+    background-color: ${custom.background_1};
+    border-color: ${custom.border_color};
+  }
+
+  #custom-mako-notifications.error {
+    color: ${custom.red};
+    background-color: rgba(247, 118, 142, 0.1);
+    border-color: rgba(247, 118, 142, 0.3);
+    opacity: 0.8;
+  }
+
+  #custom-mako-notifications:hover {
+    background-color: rgba(125, 207, 255, 0.2);
+    border-color: ${custom.cyan};
+    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.2);
+  }
+
+  #custom-mako-notifications.unread:hover {
+    background-color: rgba(247, 118, 142, 0.25);
+    border-color: ${custom.red};
+    box-shadow: 0 2px 12px rgba(247, 118, 142, 0.4);
+  }
+
+  /* Pulse animation for unread notifications */
+  @keyframes notification-pulse {
+    0% {
+      box-shadow: 0 2px 8px rgba(247, 118, 142, 0.3);
+    }
+    50% {
+      box-shadow: 0 2px 12px rgba(247, 118, 142, 0.5);
+    }
+    100% {
+      box-shadow: 0 2px 8px rgba(247, 118, 142, 0.3);
+    }
   }
 
   #custom-todo {

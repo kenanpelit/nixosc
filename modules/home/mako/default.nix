@@ -144,6 +144,14 @@ in
       border-color=${colors.yellow}99
       default-timeout=8000
       
+      # Chrome notifications
+      [app-name=brave]
+      [app-name=brave]
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.yellow}99
+      default-timeout=8000
+ 
       # MPD/Music notifications
       [category=mpd]
       format=<span color="${colors.purple}" size="12pt" weight="600">♫ Music</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.purple}" size="11pt" style="italic">%b</span>
@@ -195,39 +203,7 @@ in
   };
 
   # =============================================================================
-  # Systemd User Service Configuration
-  # =============================================================================
-  systemd.user.services.mako = {
-    Unit = {
-      Description = "Lightweight Wayland notification daemon";
-      Documentation = "man:mako(1)";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
-      Wants = [ "graphical-session.target" ];
-    };
-    
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.mako}/bin/mako";
-      ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR1 $MAINPID";
-      Restart = "on-failure";
-      RestartSec = "2s";
-      KillMode = "mixed";
-      
-      # Environment variables for Wayland
-      Environment = [
-        "WAYLAND_DISPLAY=wayland-1"
-        "XDG_SESSION_TYPE=wayland"
-      ];
-    };
-    
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
-    };
-  };
-
-  # =============================================================================
-  # Enhanced Control Scripts and Aliases
+  # Environment Variables and Aliases
   # =============================================================================
   home.sessionVariables = {
     # Ensure mako is used as the notification daemon
@@ -249,10 +225,23 @@ in
     "notify-music" = "notify-send -a 'Spotify' 'Now Playing' 'Artist - Song Title'";
     "notify-system" = "notify-send 'System Update' 'Updates are available for installation'";
     
-    # Mako status and control
-    "mako-status" = "systemctl --user status mako";
-    "mako-restart" = "systemctl --user restart mako";
-    "mako-logs" = "journalctl --user -u mako -f";
+    # Mako status and control - Updated for waybar integration
+    "mako-stat" = "mako-status";
+    "mako-click" = "mako-status click";
+    "mako-right-click" = "mako-status right-click";
+    "mako-middle-click" = "mako-status middle-click";
+    "mako-running" = "pgrep -f mako && echo 'Mako is running' || echo 'Mako is not running'";
+    "mako-restart" = "pkill mako; sleep 1; mako &";
+    "mako-start" = "mako &";
+    "mako-stop" = "pkill mako";
+    "mako-logs" = "journalctl --user -t mako -f";
+    
+    # Daemon control aliases
+    "mako-daemon-start" = "systemctl --user start mako-daemon";
+    "mako-daemon-stop" = "systemctl --user stop mako-daemon";
+    "mako-daemon-restart" = "systemctl --user restart mako-daemon";
+    "mako-daemon-status" = "systemctl --user status mako-daemon";
+    "mako-daemon-logs" = "journalctl --user -u mako-daemon -f";
   };
 }
 
