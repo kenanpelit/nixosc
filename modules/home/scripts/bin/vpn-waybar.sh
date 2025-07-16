@@ -127,7 +127,7 @@ analyze_vpn_status() {
 
 	# Sadece Mullvad aktif
 	elif [[ "$mullvad_status" == "connected" ]]; then
-		text="${ICONS[mullvad]} Mullvad"
+		text="${ICONS[mullvad]} M" # Sadece icon, yazı yok
 		class="connected"
 		tooltip="🔵 Mullvad VPN Connected\n\n"
 		tooltip+="📡 $mullvad_info\n"
