@@ -1,8 +1,8 @@
 {
   "positionX": "right",
   "positionY": "top",
-  "layer": "overlay",
-  "layer-shell": "true",
+  "layer": "top",
+  "layer-shell": true,
   "cssPriority": "application",
   "control-center-margin-top": 10,
   "control-center-margin-bottom": 10,
@@ -59,7 +59,7 @@
         ]
       },
       "menu#screenshot": {
-        "label": "  ",
+        "label": "  ",
         "position": "left",
         "actions": [
           {
@@ -77,15 +77,15 @@
         "position": "left",
         "actions": [
           {
-            "label": "  Record screen",
+            "label": "  Record screen",
             "command": "record screen & ; swaync-client -t"
           },
           {
-            "label": "  Record selection",
+            "label": "  Record selection",
             "command": "record area & ; swaync-client -t"
           },
           {
-            "label": "  Record GIF",
+            "label": "  Record GIF",
             "command": "record gif & ; swaync-client -t"
           },
           {
@@ -95,19 +95,19 @@
         ]
       },
       "menu#power-buttons": {
-        "label": "  ",
+        "label": "  ",
         "position": "left",
         "actions": [
           {
-            "label": "  Lock",
+            "label": "  Lock",
             "command": "swaylock"
           },
           {
-            "label": "  Reboot",
+            "label": "  Reboot",
             "command": "systemctl reboot"
           },
           {
-            "label": "  Shut down",
+            "label": "  Shut down",
             "command": "systemctl poweroff"
           }
         ]
@@ -118,9 +118,9 @@
       "device": "panel"
     },
     "volume": {
-      "label": "",
-      "expand-button-label": "",
-      "collapse-button-label": "",
+      "label": "",
+      "expand-button-label": "",
+      "collapse-button-label": "",
       "show-per-app": true,
       "show-per-app-icon": true,
       "show-per-app-label": false

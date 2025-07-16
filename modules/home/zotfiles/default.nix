@@ -34,7 +34,7 @@ with lib;
           # Shell script for handling the extraction process
           extractScript = pkgs.writeShellScript "extract-dotfiles" ''
             # Path to the encrypted dotfiles archive
-            DOTFILES_PATH="/home/${config.home.username}/.nixosc/hay/dotfiles.enc.tar.gz"
+            DOTFILES_PATH="/home/${config.home.username}/.nixosc/assets/dotfiles.enc.tar.gz"
             
             # Verify encrypted archive exists
             if [ ! -f "$DOTFILES_PATH" ]; then
