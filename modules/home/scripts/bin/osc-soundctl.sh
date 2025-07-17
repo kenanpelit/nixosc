@@ -304,20 +304,43 @@ get_sources() {
 	debug_print "Aktif Mikrofon" "Index: $SOURCE_INDEX, Adı: $DEFAULT_SOURCE"
 }
 
-# Get sink name with icon
+# Get sink description with better formatting
+get_sink_description() {
+	local sink_id="$1"
+	pactl list sinks | awk -v id="$sink_id" '
+        $1 == "Sink" && $2 == "#"id {found=1}
+        found && /Description:/ {
+            sub(/^[[:space:]]*Description:[[:space:]]*/, "")
+            # Remove unnecessary prefixes
+            gsub(/[Aa]nalog |[Dd]igital |[Ss]tereo |[Mm]ono |[Oo]utput|[Ii]nput/, "")
+            # Clean up common patterns
+            gsub(/\([^)]*\)/, "")  # Remove anything in parentheses
+            gsub(/[-_]/, " ")       # Replace underscores and hyphens with spaces
+            gsub(/ +/, " ")         # Collapse multiple spaces
+            sub(/^[[:space:]]+/, "") # Trim leading spaces
+            sub(/[[:space:]]+$/, "") # Trim trailing spaces
+            # Capitalize first letter
+            $0 = toupper(substr($0,1,1)) tolower(substr($0,2))
+            print
+            exit
+        }
+    '
+}
+
+# Get sink name with icon and improved formatting
 get_sink_display_name() {
 	local sink_name="$1"
 	local sink_id="$2"
 
-	# Get human-readable description
-	local description=$(pactl list sinks | awk -v id="$sink_id" '
-		$1 == "Sink" && $2 == "#"id {found=1}
-		found && /Description:/ {
-			sub(/^[[:space:]]*Description:[[:space:]]*/, "")
-			print
-			exit
-		}
-	')
+	# Get cleaned up description
+	local description=$(get_sink_description "$sink_id")
+
+	# If description is empty, use the sink name
+	if [ -z "$description" ]; then
+		description="$sink_name"
+		# Clean up sink name
+		description=$(echo "$description" | sed -e 's/alsa_output.//' -e 's/alsa_input.//' -e 's/\.analog-stereo//')
+	fi
 
 	local icon=$(get_device_icon "$description")
 	echo "$icon $description"
@@ -458,8 +481,21 @@ switch_sink() {
 	# Save preference
 	save_state "last_sink" "$target_sink"
 
+	# Get the sink ID for display purposes
+	local sink_id=""
+	for i in "${!SINKS[@]}"; do
+		if [[ "${SINKS[$i]}" == "$target_sink" ]]; then
+			sink_id="${SINK_IDS[$i]}"
+			break
+		fi
+	done
+
 	# Get display name for notification
-	local display_name=$(get_sink_display_name "$target_sink" "")
+	local display_name=$(get_sink_display_name "$target_sink" "$sink_id")
+
+	# Further clean up for notification
+	display_name=$(echo "$display_name" | sed -e 's/HDMI/HDMI/' -e 's/Headset/Headset/' -e 's/Speakers/Hoparlör/')
+
 	notify "Ses Çıkışı Değiştirildi" "$display_name" "audio-card"
 	return 0
 }
