@@ -1,4 +1,4 @@
-# modules/home/browser/brave/default.nix
+# modules/home/brave/default.nix
 # ==============================================================================
 # Brave Browser Configuration
 # ==============================================================================
@@ -7,6 +7,7 @@
 # - Default application associations
 # - MIME type handlers for web content
 # - URL scheme handlers
+# - Extensions management
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -14,6 +15,10 @@
 let
   system = pkgs.system;
 in {
+  imports = [
+    ./extensions.nix
+  ];
+
   options.my.browser.brave = {
     enable = lib.mkOption {
       type = lib.types.bool;
@@ -33,11 +38,11 @@ in {
       description = "The Brave browser package to install";
     };
   };
-
+  
   config = lib.mkIf config.my.browser.brave.enable {
     # Install Brave browser
     home.packages = [ config.my.browser.brave.package ];
-
+    
     # Configure default application associations
     xdg.mimeApps = lib.mkIf config.my.browser.brave.setAsDefault {
       enable = true;
