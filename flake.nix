@@ -260,10 +260,10 @@
     
     # === Application Launcher & Tools ===
     # Fast application launcher for Wayland
-    walker = {
-      url = "github:abenz1267/walker/v0.12.39";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    #walker = {
+    #  url = "github:abenz1267/walker/v0.12.39";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
 
     # === COSMIC Desktop Environment ===
     # COSMIC desktop for NixOS - COMMENTED OUT
