@@ -22,64 +22,43 @@ let
 in
 {
   # =============================================================================
-  # Package Installation - Emoji Desteği Eklendi
+  # Package Installation
   # =============================================================================
   home.packages = with pkgs; [ 
     mako
     libnotify  # For notify-send command
     # Emoji desteği için gerekli paketler
-    noto-fonts
     noto-fonts-emoji
-    noto-fonts-cjk
-    noto-fonts-extra
-    font-awesome
-    # Nerd fonts
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.fira-code
-    nerd-fonts.iosevka
-    # Ek emoji fontları
-    twemoji-color-font
-    openmoji-color
-    # Font araçları
+    noto-fonts
     fontconfig
   ];
 
   # =============================================================================
-  # Font Configuration - Gelişmiş emoji desteği
+  # Font Configuration - Emoji desteği
   # =============================================================================
   fonts.fontconfig = {
     enable = true;
     defaultFonts = {
-      sansSerif = [ "JetBrainsMono Nerd Font" "Noto Sans" "Noto Color Emoji" "Twitter Color Emoji" ];
-      monospace = [ "JetBrainsMono Nerd Font" "Noto Sans Mono" "Noto Color Emoji" ];
-      emoji = [ "Noto Color Emoji" "Twitter Color Emoji" "OpenMoji Color" ];
+      monospace = [ "JetBrainsMono Nerd Font" "Noto Color Emoji" ];
+      emoji = [ "Noto Color Emoji" ];
     };
   };
 
-  # Manuel fontconfig konfigürasyonu
+  # Manuel fontconfig emoji desteği
   xdg.configFile."fontconfig/fonts.conf".text = ''
     <?xml version="1.0"?>
     <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
     <fontconfig>
-      <!-- Emoji font mapping -->
-      <match>
-        <test name="family"><string>sans-serif</string></test>
+      <match target="pattern">
+        <test qual="any" name="family">
+          <string>monospace</string>
+        </test>
         <edit name="family" mode="prepend" binding="weak">
           <string>JetBrainsMono Nerd Font</string>
           <string>Noto Color Emoji</string>
-          <string>Twitter Color Emoji</string>
         </edit>
       </match>
       
-      <match>
-        <test name="family"><string>monospace</string></test>
-        <edit name="family" mode="prepend" binding="weak">
-          <string>JetBrainsMono Nerd Font</string>
-          <string>Noto Color Emoji</string>
-        </edit>
-      </match>
-
-      <!-- Emoji için renk desteği -->
       <match target="font">
         <test name="family" compare="contains">
           <string>Emoji</string>
@@ -103,8 +82,8 @@ in
       anchor = "top-right";
       margin = "15,20,0,0";
       
-      # Typography - daha temiz font konfigürasyonu
-      font = "JetBrainsMono Nerd Font 12";
+      # Typography - emoji desteği için font fallback
+      font = "JetBrainsMono Nerd Font 12, Noto Color Emoji 12";
       
       # Colors - enhanced Tokyo Night
       background-color = colors.base + "f0";  # 94% opacity for better depth
@@ -120,7 +99,6 @@ in
 
       # History settings
       max-history = 50;        # Maksimum 50 bildirim history'de tut
-      # max-history = 0;       # History'yi tamamen kapat
   
       # Visual enhancements
       progress-color = "over " + colors.cyan;
@@ -138,7 +116,6 @@ in
       max-visible = 4;  # One more for convenience
      
       # Enhanced format with larger fonts and better hierarchy
-      # Emoji desteği için markup="1" eklendi
       markup = 1;
       format = ''<span color="${colors.cyan}" size="12pt" weight="600">%a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="12pt">%b</span>'';
     };
@@ -197,7 +174,7 @@ in
       
       # WhatsApp/Messages - communication
       [app-name=whatsapp-nativefier-d40211]
-      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.cyan}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.cyan}99
       border-size=2
@@ -206,7 +183,7 @@ in
       
       # Firefox - web browsing
       [app-name=firefox]
-      format=<span color="${colors.orange}" size="12pt" weight="600">🦊 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.orange}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.orange}99
       default-timeout=8000
@@ -215,7 +192,7 @@ in
       # Chrome notifications
       [app-name=Google-chrome]
       [app-name=google-chrome]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       default-timeout=8000
@@ -223,7 +200,7 @@ in
       
       # Brave notifications
       [app-name=brave]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       default-timeout=8000
@@ -241,7 +218,7 @@ in
       # Discord/Communication apps
       [app-name=discord]
       [app-name=webcord]
-      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.cyan}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.cyan}99
       markup=1
@@ -249,7 +226,7 @@ in
       # Battery/Power notifications
       [summary~="Battery"]
       [summary~="Power"]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🔋 Power</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">⚡ Power</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       markup=1
@@ -258,7 +235,7 @@ in
       [summary~="Network"]
       [summary~="WiFi"]
       [summary~="Connection"]
-      format=<span color="${colors.blue}" size="12pt" weight="600">📶 Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.blue}" size="12pt" weight="600">● Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.blue}99
       markup=1
@@ -266,7 +243,7 @@ in
       # System update notifications
       [summary~="Update"]
       [summary~="Upgrade"]
-      format=<span color="${colors.green}" size="12pt" weight="600">📦 System</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.green}" size="12pt" weight="600">▲ System</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.green}99
       default-timeout=12000
@@ -291,12 +268,8 @@ in
   home.sessionVariables = {
     # Ensure mako is used as the notification daemon
     NOTIFY_SEND_BIN = "${pkgs.libnotify}/bin/notify-send";
-    # Emoji desteği için font konfigürasyonu
-    FONTCONFIG_FILE = "${pkgs.fontconfig.out}/etc/fonts/fonts.conf";
-    # Emoji font path'leri
-    FONTCONFIG_PATH = "${pkgs.fontconfig.out}/etc/fonts";
-    # Pango emoji desteği
-    PANGO_MODULE_PATH = "${pkgs.pango.out}/lib/pango/1.0/modules";
+    # Emoji desteği için
+    LC_ALL = "en_US.UTF-8";
   };
 
   # Enhanced aliases for better mako control
@@ -308,28 +281,24 @@ in
     "mako-history" = "makoctl history";
     "mako-restore" = "makoctl restore";
     
-    # Enhanced test notifications - daha temiz testler
-    "notify-test" = "notify-send 'Test Notification' 'This is a test message from Mako!' --icon=dialog-information";
-    "notify-critical" = "notify-send -u critical 'Critical Alert' 'This is a critical notification!'";
-    "notify-music" = "notify-send -a 'Spotify' 'Now Playing' 'Artist - Song Title'";
-    "notify-system" = "notify-send 'System Update' 'Updates are available for installation'";
-    # Gelişmiş emoji testleri - farklı türler
-    "notify-emoji-test" = "notify-send 'Emoji Test' 'Testing emojis: 🎵 📱 💬 🔥 ⭐ 🚀'";
-    "notify-emoji-faces" = "notify-send 'Face Emojis' '😀 😂 😍 🤔 😢 😱'";
-    "notify-emoji-symbols" = "notify-send 'Symbol Emojis' '✅ ❌ ⚠️ ℹ️ 🔔 🔕'";
-    "notify-emoji-hearts" = "notify-send 'Heart Emojis' '❤️ 💙 💚 💛 🧡 💜'";
-    
-    # Font test komutları
-    "font-test" = "fc-list | grep -i emoji";
-    "font-reload" = "fc-cache -f -v && mako-restart";
-    "mako-font-test" = "notify-send 'Font Test' 'Normal text with 🎉 emoji and ⭐ symbols'";
+    # Enhanced test notifications
+    "notify-test" = "notify-send Test Message";
+    "notify-critical" = "notify-send -u critical Critical Alert";
+    "notify-music" = "notify-send -a Spotify Now Playing";
+    "notify-system" = "notify-send System Update";
+    "notify-emoji" = "notify-send 'Symbol Test' '★ ♪ ● ⚡ ▲'";
+    "notify-simple" = "notify-send Star Check";
+    "notify-no-markup" = "MAKO_MARKUP=0 notify-send 'No Markup' '★ ♪ ● ⚡ ▲'";
+    "font-check" = "fc-list | grep -i emoji";
+    "font-reload" = "fc-cache -f -v";
+    "mako-full-restart" = "pkill mako; fc-cache -f -v; sleep 2; mako &";
+    "emoji-debug" = "echo 'Testing: ⭐ 🎵 📱' | od -c";
     
     # Mako status and control - Updated for waybar integration
     "mako-stat" = "mako-status";
     "mako-click" = "mako-status click";
     "mako-right-click" = "mako-status right-click";
     "mako-middle-click" = "mako-status middle-click";
-    "mako-running" = "pgrep -f mako && echo 'Mako is running' || echo 'Mako is not running'";
     "mako-restart" = "pkill mako; sleep 1; mako &";
     "mako-start" = "mako &";
     "mako-stop" = "pkill mako";
@@ -343,4 +312,3 @@ in
     "mako-daemon-logs" = "journalctl --user -u mako-daemon -f";
   };
 }
-

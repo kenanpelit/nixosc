@@ -1469,7 +1469,6 @@
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
         "systems": "systems_12",
-        "walker": "walker",
         "xdph": "xdph_2",
         "yazi-plugins": "yazi-plugins",
         "zen-browser": "zen-browser"
@@ -1579,21 +1578,6 @@
       }
     },
     "systems_12": {
-      "locked": {
-        "lastModified": 1689347949,
-        "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
-        "owner": "nix-systems",
-        "repo": "default-linux",
-        "rev": "31732fcf5e8fea42e59c2488ad31a0e651500f68",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default-linux",
-        "type": "github"
-      }
-    },
-    "systems_13": {
       "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
@@ -1767,28 +1751,6 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "type": "github"
-      }
-    },
-    "walker": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "systems": "systems_13"
-      },
-      "locked": {
-        "lastModified": 1752816574,
-        "narHash": "sha256-HLQ2hYZhXcrA9V0kshV1GxxgI1CGXtTeI7dKelrIz6w=",
-        "owner": "abenz1267",
-        "repo": "walker",
-        "rev": "701d00a6a024880aaf3d0a5424e1f966bff1057d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "abenz1267",
-        "ref": "v0.12.39",
-        "repo": "walker",
         "type": "github"
       }
     },
