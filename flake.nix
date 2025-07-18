@@ -261,7 +261,7 @@
     # === Application Launcher & Tools ===
     # Fast application launcher for Wayland
     walker = {
-      url = "github:abenz1267/walker/v0.12.21";
+      url = "github:abenz1267/walker/v0.12.39";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
