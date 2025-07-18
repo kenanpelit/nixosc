@@ -41,8 +41,8 @@ in
       anchor = "top-right";
       margin = "15,20,0,0";
       
-      # Typography - modern but safe with larger fonts
-      font = "JetBrainsMono Nerd Font 12";
+      # Typography - emoji desteği için font fallback
+      font = "Hack Nerd Font Mono 12";
       
       # Colors - enhanced Tokyo Night
       background-color = colors.base + "f0";  # 94% opacity for better depth
@@ -50,8 +50,6 @@ in
       border-color = colors.purple + "cc";    # Semi-transparent border
       
       # Dimensions - adjusted for larger fonts
-      #width = 450;
-      #height = 160;
       width = 540;
       height = 320;
       padding = "18,20";
@@ -60,7 +58,6 @@ in
 
       # History settings
       max-history = 50;        # Maksimum 50 bildirim history'de tut
-      # max-history = 0;       # History'yi tamamen kapat
   
       # Visual enhancements
       progress-color = "over " + colors.cyan;
@@ -76,8 +73,9 @@ in
       group-by = "app-name";  # Cleaner grouping
       layer = "overlay";
       max-visible = 4;  # One more for convenience
-      
+     
       # Enhanced format with larger fonts and better hierarchy
+      markup = 1;
       format = ''<span color="${colors.cyan}" size="12pt" weight="600">%a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="12pt">%b</span>'';
     };
     
@@ -88,6 +86,7 @@ in
       format=<span color="${colors.purple}" size="11pt" weight="600">(%g) %a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="10pt">%b</span>
       border-size=3
       border-color=${colors.purple}
+      markup=1
       
       # Urgency levels with better visual distinction
       [urgency=normal]
@@ -95,6 +94,7 @@ in
       text-color=${colors.text}
       border-color=${colors.blue}aa
       border-size=2
+      markup=1
       
       [urgency=critical]
       background-color=${colors.base}f5
@@ -103,6 +103,7 @@ in
       border-size=3
       default-timeout=0
       format=<span color="${colors.red}" size="12pt" weight="700">⚠ %a</span>\n<span color="${colors.text}" size="14pt" weight="800">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      markup=1
       
       [urgency=low]
       background-color=${colors.base}dd
@@ -110,6 +111,7 @@ in
       border-color=${colors.surface2}80
       border-size=1
       default-timeout=5000
+      markup=1
       
       # App-specific enhancements
       
@@ -120,43 +122,48 @@ in
       border-color=${colors.green}99
       border-size=2
       default-timeout=4000
+      markup=1
       
       # System notifications
       [app-name="notify-send"]
       format=<span color="${colors.blue}" size="12pt" weight="600">ⓘ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.blue}99
+      markup=1
       
       # WhatsApp/Messages - communication
       [app-name=whatsapp-nativefier-d40211]
-      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.cyan}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.cyan}99
       border-size=2
       default-timeout=12000
+      markup=1
       
       # Firefox - web browsing
       [app-name=firefox]
-      format=<span color="${colors.orange}" size="12pt" weight="600">🦊 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.orange}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.orange}99
       default-timeout=8000
+      markup=1
       
       # Chrome notifications
       [app-name=Google-chrome]
       [app-name=google-chrome]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       default-timeout=8000
+      markup=1
       
-      # Chrome notifications
+      # Brave notifications
       [app-name=brave]
-      [app-name=brave]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       default-timeout=8000
+      markup=1
  
       # MPD/Music notifications
       [category=mpd]
@@ -165,36 +172,41 @@ in
       border-color=${colors.purple}99
       default-timeout=3000
       group-by=category
+      markup=1
       
       # Discord/Communication apps
       [app-name=discord]
       [app-name=webcord]
-      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.cyan}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.cyan}99
+      markup=1
       
       # Battery/Power notifications
       [summary~="Battery"]
       [summary~="Power"]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🔋 Power</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">⚡ Power</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
+      markup=1
       
       # Network notifications
       [summary~="Network"]
       [summary~="WiFi"]
       [summary~="Connection"]
-      format=<span color="${colors.blue}" size="12pt" weight="600">📶 Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.blue}" size="12pt" weight="600">● Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.blue}99
+      markup=1
       
       # System update notifications
       [summary~="Update"]
       [summary~="Upgrade"]
-      format=<span color="${colors.green}" size="12pt" weight="600">📦 System</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.green}" size="12pt" weight="600">▲ System</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.green}99
       default-timeout=12000
+      markup=1
       
       # Modes
       [mode=away]
@@ -202,6 +214,7 @@ in
       ignore-timeout=1
       background-color=${colors.surface0}cc
       text-color=${colors.subtext0}
+      markup=1
       
       [mode=do-not-disturb]
       invisible=1
@@ -226,17 +239,18 @@ in
     "mako-restore" = "makoctl restore";
     
     # Enhanced test notifications
-    "notify-test" = "notify-send 'Test Notification' 'This is a test message from Mako!' --icon=dialog-information";
-    "notify-critical" = "notify-send -u critical 'Critical Alert' 'This is a critical notification!'";
-    "notify-music" = "notify-send -a 'Spotify' 'Now Playing' 'Artist - Song Title'";
-    "notify-system" = "notify-send 'System Update' 'Updates are available for installation'";
+    "notify-test" = "notify-send Test Message";
+    "notify-critical" = "notify-send -u critical Critical Alert";
+    "notify-music" = "notify-send -a Spotify Now Playing";
+    "notify-system" = "notify-send System Update";
+    "notify-emoji" = "notify-send 'Symbol Test' '★ ♪ ● ⚡ ▲'";
+    "notify-simple" = "notify-send Star Check";
     
     # Mako status and control - Updated for waybar integration
     "mako-stat" = "mako-status";
     "mako-click" = "mako-status click";
     "mako-right-click" = "mako-status right-click";
     "mako-middle-click" = "mako-status middle-click";
-    "mako-running" = "pgrep -f mako && echo 'Mako is running' || echo 'Mako is not running'";
     "mako-restart" = "pkill mako; sleep 1; mako &";
     "mako-start" = "mako &";
     "mako-stop" = "pkill mako";
