@@ -42,6 +42,7 @@
     # ==============================================================================
     packages = with pkgs; [
       # CORE FONTS - TESTED WORKING WITH MAKO (DO NOT MODIFY)
+      maple-mono.NF          # YOUR PREFERRED SYSTEM FONT (Nerd Font with icons)
       nerd-fonts.hack        # Primary system font with icon support
       noto-fonts             # Universal font coverage
       noto-fonts-cjk-sans    # Chinese, Japanese, and Korean characters
@@ -77,7 +78,7 @@
       # - Emoji fonts as fallback for all categories
       # - THIS EXACT CONFIGURATION WORKS WITH MAKO NOTIFICATIONS
       defaultFonts = {
-        monospace = [ "Hack Nerd Font Mono" "JetBrains Mono" "Fira Code" "Source Code Pro" "Liberation Mono" "Noto Color Emoji" ];
+        monospace = [ "Maple Mono NF" "Hack Nerd Font Mono" "JetBrains Mono" "Fira Code" "Source Code Pro" "Liberation Mono" "Noto Color Emoji" ];
         emoji = [ "Noto Color Emoji" ];
         # Optional: Add safe fallbacks (won't interfere with apps)
         serif = [ "Liberation Serif" "Noto Serif" "DejaVu Serif" ];
@@ -173,7 +174,8 @@
       # Original working aliases
       "font-list" = "fc-list";
       "font-emoji" = "fc-list | grep -i emoji";
-      "font-nerd" = "fc-list | grep -i 'nerd\\|hack'";
+      "font-nerd" = "fc-list | grep -i 'nerd\\|hack\\|maple'";
+      "font-maple" = "fc-list | grep -i maple";
       "font-reload" = "fc-cache -f -v";
       "font-test" = "echo 'Font Test: Hack Nerd Font with ★ ♪ ● ⚡ ▲ symbols and emoji support'";
       "emoji-test" = "echo '🎵 📱 💬 🔥 ⭐ 🚀 - Color emoji test'";
@@ -187,11 +189,13 @@
       
       # Mako testing (CRITICAL - tests emoji support)
       "mako-emoji-test" = "notify-send 'Emoji Test 🚀' 'Mako notification with emojis: 📱 💬 🔥 ⭐ 🎵'";
-      "mako-font-test" = "notify-send 'Font Test' 'Hack Nerd Font with symbols: ★ ♪ ● ⚡ ▲'";
+      "mako-font-test" = "notify-send 'Font Test' 'Maple Mono NF with symbols: ★ ♪ ● ⚡ ▲  '";
+      "mako-icons-test" = "notify-send 'Icon Test' 'Nerd Font icons:       '";
       
       # Font rendering tests
-      "font-render-test" = "echo 'Rendering Test: ABCDabcd1234 ★♪●⚡▲ 🚀📱💬'";
+      "font-render-test" = "echo 'Rendering Test: ABCDabcd1234 ★♪●⚡▲ 🚀📱💬     '";
       "font-ligature-test" = "echo 'Ligature Test: -> => != === >= <= && || /* */ //'";
+      "font-nerd-icons" = "echo 'Nerd Icons:            '";
     };
 
     # Session variables for enhanced font and emoji support
