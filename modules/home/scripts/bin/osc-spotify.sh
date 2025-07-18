@@ -255,9 +255,9 @@ function play_music {
 
 	# Şarkı bilgisini göster
 	if track_info=$(get_track_info); then
-		send_notification "Spotify" "▶ Oynatılıyor: $track_info" "normal" 3000
+		send_notification "Spotify" "▶️ Oynatılıyor: $track_info" "normal" 3000
 	else
-		send_notification "Spotify" "▶ Oynatılıyor"
+		send_notification "Spotify" "▶️ Oynatılıyor"
 	fi
 }
 
@@ -267,7 +267,7 @@ function pause_music {
 	check_spotify_ready || return 1
 
 	playerctl -p "$PLAYER" pause
-	send_notification "Spotify" "⏸ Duraklatıldı"
+	send_notification "Spotify" "⏸️ Duraklatıldı"
 }
 
 # Play/Pause işlevi
@@ -280,16 +280,16 @@ function toggle_playback {
 	case $STATUS in
 	"Playing")
 		playerctl -p "$PLAYER" pause
-		send_notification "Spotify" "⏸ Duraklatıldı"
+		send_notification "Spotify" "⏸️ Duraklatıldı"
 		;;
 	"Paused")
 		playerctl -p "$PLAYER" play
 
 		# Şarkı bilgisini göster
 		if track_info=$(get_track_info); then
-			send_notification "Spotify" "▶ Oynatılıyor: $track_info" "normal" 3000
+			send_notification "Spotify" "▶️ Oynatılıyor: $track_info" "normal" 3000
 		else
-			send_notification "Spotify" "▶ Oynatılıyor"
+			send_notification "Spotify" "▶️ Oynatılıyor"
 		fi
 		;;
 	*)
@@ -335,7 +335,7 @@ function stop_playback {
 	check_spotify_ready || return 1
 
 	playerctl -p "$PLAYER" stop
-	send_notification "Spotify" "⏹ Durduruldu"
+	send_notification "Spotify" "⏸️ Durduruldu"
 }
 
 # Ses seviyesini artır
