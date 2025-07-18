@@ -27,48 +27,7 @@ in
   home.packages = with pkgs; [ 
     mako
     libnotify  # For notify-send command
-    # Emoji desteği için gerekli paketler
-    noto-fonts-emoji
-    noto-fonts
-    fontconfig
   ];
-
-  # =============================================================================
-  # Font Configuration - Emoji desteği
-  # =============================================================================
-  fonts.fontconfig = {
-    enable = true;
-    defaultFonts = {
-      monospace = [ "JetBrainsMono Nerd Font" "Noto Color Emoji" ];
-      emoji = [ "Noto Color Emoji" ];
-    };
-  };
-
-  # Manuel fontconfig emoji desteği
-  xdg.configFile."fontconfig/fonts.conf".text = ''
-    <?xml version="1.0"?>
-    <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-    <fontconfig>
-      <match target="pattern">
-        <test qual="any" name="family">
-          <string>monospace</string>
-        </test>
-        <edit name="family" mode="prepend" binding="weak">
-          <string>JetBrainsMono Nerd Font</string>
-          <string>Noto Color Emoji</string>
-        </edit>
-      </match>
-      
-      <match target="font">
-        <test name="family" compare="contains">
-          <string>Emoji</string>
-        </test>
-        <edit name="color" mode="assign">
-          <bool>true</bool>
-        </edit>
-      </match>
-    </fontconfig>
-  '';
 
   # =============================================================================
   # Mako Configuration - Enhanced but Stable
@@ -83,7 +42,7 @@ in
       margin = "15,20,0,0";
       
       # Typography - emoji desteği için font fallback
-      font = "JetBrainsMono Nerd Font 12, Noto Color Emoji 12";
+      font = "Hack Nerd Font Mono 12";
       
       # Colors - enhanced Tokyo Night
       background-color = colors.base + "f0";  # 94% opacity for better depth
@@ -268,8 +227,6 @@ in
   home.sessionVariables = {
     # Ensure mako is used as the notification daemon
     NOTIFY_SEND_BIN = "${pkgs.libnotify}/bin/notify-send";
-    # Emoji desteği için
-    LC_ALL = "en_US.UTF-8";
   };
 
   # Enhanced aliases for better mako control
@@ -288,11 +245,6 @@ in
     "notify-system" = "notify-send System Update";
     "notify-emoji" = "notify-send 'Symbol Test' '★ ♪ ● ⚡ ▲'";
     "notify-simple" = "notify-send Star Check";
-    "notify-no-markup" = "MAKO_MARKUP=0 notify-send 'No Markup' '★ ♪ ● ⚡ ▲'";
-    "font-check" = "fc-list | grep -i emoji";
-    "font-reload" = "fc-cache -f -v";
-    "mako-full-restart" = "pkill mako; fc-cache -f -v; sleep 2; mako &";
-    "emoji-debug" = "echo 'Testing: ⭐ 🎵 📱' | od -c";
     
     # Mako status and control - Updated for waybar integration
     "mako-stat" = "mako-status";
@@ -312,3 +264,4 @@ in
     "mako-daemon-logs" = "journalctl --user -u mako-daemon -f";
   };
 }
+
