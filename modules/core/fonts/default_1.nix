@@ -1,4 +1,4 @@
-# modules/core/fonts/default.nix
+# modules/core/desktop/fonts/default.nix
 # ==============================================================================
 # Font Configuration for NixOS
 # ==============================================================================
@@ -9,7 +9,6 @@
 # - Default font assignments for different categories
 # - Font configuration for specific applications
 # - Anti-aliasing and hinting configurations
-# - Comprehensive emoji support and color rendering
 #
 # Dependencies:
 # - home-manager
@@ -18,10 +17,10 @@
 # - liberation-fonts
 #
 # Note: This configuration prioritizes readability and consistent rendering
-# across different display types and resolutions with full emoji support.
+# across different display types and resolutions.
 #
 # Author: Kenan Pelit
-# Last Modified: 2025-07-18
+# Last Modified: 2024-01-27
 # ==============================================================================
 
 { pkgs, username, ... }:
@@ -35,19 +34,17 @@
     # - Noto Fonts: Universal font family with extensive Unicode coverage
     # - Liberation Fonts: Metric-compatible alternatives to common fonts
     # - Fira Code: Programming font with ligatures
-    # - Emoji Fonts: Full color emoji support across all applications
     # ==============================================================================
     packages = with pkgs; [
       nerd-fonts.hack        # Primary system font with icon support
       noto-fonts             # Universal font coverage
       noto-fonts-cjk-sans    # Chinese, Japanese, and Korean characters
-      noto-fonts-emoji       # Full color emoji support
+      noto-fonts-emoji       # Full emoji support
       liberation_ttf         # Metric-compatible alternatives
       fira-code              # Programming font with ligatures
       fira-code-symbols      # Additional programming symbols
       cascadia-code          # Terminal and console fonts
       inter                  # Modern interface and statistics font
-      font-awesome           # Icon font for web and applications
     ];
 
     # ==============================================================================
@@ -55,11 +52,12 @@
     # ==============================================================================
     fontconfig = {
       # Default Font Assignments
-      # - Conservative approach: only set monospace and emoji
-      # - Let applications choose their own sans-serif/serif fonts
-      # - Emoji fonts as fallback for all categories
+      # - Each category has multiple fallback options
+      # - Ordered by preference and compatibility
       defaultFonts = {
-        monospace = [ "Hack Nerd Font Mono" "Fira Code" "Liberation Mono" "Noto Color Emoji" ];
+        monospace = [ "Hack Nerd Font Mono" "Fira Code" "Liberation Mono" ];
+        sansSerif = [ "Hack Nerd Font" "Liberation Sans" "Noto Sans" ];
+        serif = [ "Hack Nerd Font" "Liberation Serif" "Noto Serif" ];
         emoji = [ "Noto Color Emoji" ];
       };
 
@@ -84,20 +82,19 @@
       antialias = true;
 
       # ==============================================================================
-      # Advanced Font Configuration - Minimal and Safe
+      # Advanced Font Configuration
       # ==============================================================================
-      # This section contains only essential font rendering rules:
-      # - Global rendering defaults optimized for modern displays
-      # - Font-specific optimizations for better readability
-      # - Size-specific adjustments for different font sizes
-      # - NO emoji interference to preserve app-specific fonts
+      # This section contains detailed font rendering rules including:
+      # - Global rendering defaults
+      # - Font-specific optimizations
+      # - Size-specific adjustments
+      # - Display-specific settings
       # ==============================================================================
       localConf = ''
         <?xml version="1.0"?>
         <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
         <fontconfig>
           <!-- Global Font Rendering Settings -->
-          <!-- Optimized for modern LCD displays with subpixel rendering -->
           <match target="font">
             <edit name="antialias" mode="assign">
               <bool>true</bool>
@@ -107,7 +104,7 @@
             </edit>
             <edit name="hintstyle" mode="assign">
               <const>hintslight</const>
-            </end>
+            </edit>
             <edit name="rgba" mode="assign">
               <const>rgb</const>
             </edit>
@@ -117,7 +114,6 @@
           </match>
 
           <!-- Hack Nerd Font Specific Settings -->
-          <!-- Ensures optimal rendering for primary system font -->
           <match target="font">
             <test name="family" compare="contains">
               <string>Hack Nerd Font</string>
@@ -153,10 +149,8 @@
   # ==============================================================================
   environment = {
     variables = {
-      # Set the font configuration path for system-wide font access
+      # Set the font configuration path
       FONTCONFIG_PATH = "/etc/fonts";
-      # Enable UTF-8 locale support for proper emoji rendering
-      LC_ALL = "en_US.UTF-8";
     };
   };
 
@@ -164,18 +158,12 @@
   # Home Manager Configuration
   # ==============================================================================
   # Application-specific font settings managed through home-manager
-  # - Font utilities and session variables for enhanced font support
-  # - Minimal application interference - let apps choose their own fonts
+  # - Configures fonts for notification daemon (dunst)
+  # - Sets up application launcher (rofi) fonts
   # ==============================================================================
   home-manager.users.${username} = {
     home.stateVersion = "25.11";
-
-    # Rofi application launcher settings
-    programs.rofi = {
-      font = "Hack Nerd Font 13";
-      terminal = "${pkgs.kitty}/bin/kitty";
-    };
-
+    
     # Additional font utilities for user session
     home.shellAliases = {
       "font-list" = "fc-list";
@@ -186,12 +174,10 @@
       "emoji-test" = "echo '🎵 📱 💬 🔥 ⭐ 🚀 - Color emoji test'";
     };
 
-    # Session variables for enhanced font and emoji support
-    home.sessionVariables = {
-      # Ensure proper Unicode and emoji handling
-      LC_ALL = "en_US.UTF-8";
-      # Font configuration for applications
-      FONTCONFIG_FILE = "${pkgs.fontconfig.out}/etc/fonts/fonts.conf";
+    # Rofi application launcher settings
+    programs.rofi = {
+      font = "Hack Nerd Font 13";
+      terminal = "${pkgs.kitty}/bin/kitty";
     };
   };
 }
