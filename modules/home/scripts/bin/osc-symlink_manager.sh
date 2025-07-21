@@ -2,8 +2,8 @@
 #===============================================================================
 #
 #   Script: OSC Symlink Manager
-#   Version: 1.0.0
-#   Date: 2024-01-23
+#   Version: 1.1.0
+#   Date: 2025-07-20
 #   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
 #   Description: Manages symbolic links for configured directories between a
@@ -21,21 +21,20 @@
 #
 #===============================================================================
 
-# Hata ayıklama için
-set -euo pipefail
+# set -euo pipefail
 
-# Renk tanımlamaları
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colors
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
 
-# Kaynak ve hedef dizinleri
+# Configuration
 SOURCE_ROOT="/repo/archive"
 TARGET_ROOT="$HOME"
 
-# Link yapılacak dizinlerin listesi
+# Directories to link
 DIRS=(
 	"Documents"
 	"Downloads"
@@ -44,120 +43,205 @@ DIRS=(
 	"Videos"
 	"Work"
 	"Tmp"
-	# Buraya yeni dizinler eklenebilir
 )
 
-# Yardım mesajı
+# Options
+DRY_RUN=false
+FORCE=false
+
+# Simple logging
+log() {
+	local color="${2:-$NC}"
+	echo -e "${color}$1${NC}"
+}
+
+error() {
+	log "HATA: $1" "$RED"
+	exit 1
+}
+
+# Help
 show_help() {
 	echo -e "${BLUE}Symlink Yönetici${NC}"
-	echo "Kullanım: $(basename "$0") [SEÇENEKLER]"
+	echo
+	echo "Kullanım: $(basename "$0") [KOMUT] [SEÇENEKLER]"
+	echo
+	echo "Komutlar:"
+	echo "  create (varsayılan)    Symlink'leri oluştur"
+	echo "  remove                 Symlink'leri kaldır"
+	echo "  status                 Durumu göster"
 	echo
 	echo "Seçenekler:"
-	echo "  -l, --list     Mevcut array ve linkleri göster"
-	echo "  -d, --dry-run  Yapılacak işlemleri göster ama uygulama"
-	echo "  -h, --help     Bu yardım mesajını göster"
+	echo "  -d, --dry-run         Test modu"
+	echo "  -f, --force           Onay isteme"
+	echo "  -h, --help            Yardım"
+	echo
+	echo "Örnekler:"
+	echo "  $(basename "$0")                    # Symlink'leri oluştur"
+	echo "  $(basename "$0") status             # Durumu göster"
+	echo "  $(basename "$0") remove --dry-run   # Kaldırma testi"
 	echo
 }
 
-# Log fonksiyonu
-log() {
-	echo -e "${2:-$BLUE}$1${NC}"
+# Check prerequisites
+check_setup() {
+	[[ -d "$SOURCE_ROOT" ]] || error "Kaynak dizin bulunamadı: $SOURCE_ROOT"
+	[[ -w "$TARGET_ROOT" ]] || error "Hedef dizine yazma izni yok: $TARGET_ROOT"
 }
 
-# Array listesini göster
-show_array() {
-	log "\nYapılandırılmış dizinler:" "$BLUE"
-	for dir in "${DIRS[@]}"; do
-		echo "  - $dir"
-	done
-}
+# Show current status
+show_status() {
+	echo -e "\n${BLUE}=== Symlink Durumu ===${NC}"
 
-# Mevcut linkleri göster
-show_links() {
-	log "\nMevcut sembolik linkler:" "$BLUE"
+	local linked=0 missing=0
+
 	for dir in "${DIRS[@]}"; do
-		if [[ -L "$TARGET_ROOT/$dir" ]]; then
-			echo -e "${GREEN}✓${NC} $dir -> $(readlink "$TARGET_ROOT/$dir")"
+		local target="$TARGET_ROOT/$dir"
+		local source="$SOURCE_ROOT/$dir"
+
+		if [[ -L "$target" ]]; then
+			local link_target="$(readlink "$target" || echo "ERROR")"
+			if [[ "$link_target" == "$source" ]]; then
+				echo -e "${GREEN}✓${NC} $dir"
+				((linked++)) || true
+			else
+				echo -e "${YELLOW}⚠${NC} $dir -> $link_target (farklı hedef)"
+			fi
+		elif [[ -e "$target" ]]; then
+			echo -e "${RED}✗${NC} $dir (dosya var, link değil)"
+			((missing++)) || true
 		else
 			echo -e "${RED}✗${NC} $dir (link yok)"
+			((missing++)) || true
+		fi
+
+		# Check source
+		if [[ ! -d "$source" ]]; then
+			echo -e "  ${YELLOW}⚠ Kaynak yok: $source${NC}"
 		fi
 	done
+
+	echo -e "\n${BLUE}Toplam: ${#DIRS[@]} | Bağlı: $linked | Eksik: $missing${NC}"
 }
 
-# Hata kontrolü fonksiyonu
-check_source_dir() {
-	if [[ ! -d "$SOURCE_ROOT" ]]; then
-		log "Kaynak dizin ($SOURCE_ROOT) bulunamadı!" "$RED"
-		exit 1
-	fi
-}
-
-# Yedekleme fonksiyonu
+# Backup existing directory
 backup_dir() {
 	local dir="$1"
-	local backup_name="${dir}_backup_$(date +%Y%m%d_%H%M%S)"
+	local target="$TARGET_ROOT/$dir"
 
-	if [[ -d "$TARGET_ROOT/$dir" && ! -L "$TARGET_ROOT/$dir" ]]; then
+	if [[ -d "$target" && ! -L "$target" ]]; then
+		local backup="${target}_backup_$(date +%Y%m%d_%H%M%S)"
+
 		if [[ "$DRY_RUN" == "true" ]]; then
-			log "[DRY-RUN] Yedeklenecek: $dir -> $backup_name" "$YELLOW"
+			log "[TEST] Yedek: $dir -> $(basename "$backup")" "$YELLOW"
 		else
-			log "Yedekleniyor: $dir -> $backup_name" "$YELLOW"
-			mv "$TARGET_ROOT/$dir" "$TARGET_ROOT/$backup_name"
+			mv "$target" "$backup"
+			log "Yedeklendi: $(basename "$backup")" "$YELLOW"
 		fi
 	fi
 }
 
-# Link oluşturma fonksiyonu
+# Create single symlink
 create_link() {
 	local dir="$1"
 	local source="$SOURCE_ROOT/$dir"
 	local target="$TARGET_ROOT/$dir"
 
-	# Kaynak dizin kontrolü
+	# Create source if missing
 	if [[ ! -d "$source" ]]; then
-		if [[ "$DRY_RUN" == "true" ]]; then
-			log "[DRY-RUN] Kaynak dizin oluşturulacak: $source" "$YELLOW"
+		if [[ "$FORCE" == "true" ]] || [[ "$DRY_RUN" == "true" ]]; then
+			if [[ "$DRY_RUN" == "true" ]]; then
+				log "[TEST] Kaynak oluştur: $source" "$YELLOW"
+			else
+				mkdir -p "$source"
+				log "Kaynak oluşturuldu: $source" "$BLUE"
+			fi
 		else
-			log "Uyarı: Kaynak dizin mevcut değil: $source" "$YELLOW"
-			read -p "Kaynak dizin oluşturulsun mu? (e/h) " -n 1 -r
+			read -p "Kaynak dizin oluşturulsun mu ($source)? (e/h): " -n 1 -r
 			echo
 			if [[ $REPLY =~ ^[Ee]$ ]]; then
 				mkdir -p "$source"
 			else
-				return 1
+				log "Atlandı: $dir" "$YELLOW"
+				return
 			fi
 		fi
 	fi
 
-	# Mevcut link kontrolü
+	# Check existing link
 	if [[ -L "$target" ]]; then
-		log "Link zaten mevcut: $target -> $(readlink "$target")" "$YELLOW"
-		return 0
+		if [[ "$(readlink "$target")" == "$source" ]]; then
+			log "Zaten var: $dir" "$GREEN"
+			return
+		else
+			[[ "$FORCE" == "true" ]] && rm "$target" || return
+		fi
 	fi
 
-	# Link oluşturma
+	# Create link
 	if [[ "$DRY_RUN" == "true" ]]; then
-		log "[DRY-RUN] Link oluşturulacak: $target -> $source" "$GREEN"
+		log "[TEST] Link: $dir" "$YELLOW"
 	else
 		ln -s "$source" "$target"
-		log "Link oluşturuldu: $target -> $source" "$GREEN"
+		log "Oluşturuldu: $dir" "$GREEN"
 	fi
 }
 
-# Ana fonksiyon
-main() {
-	local DRY_RUN=false
+# Create all links
+create_links() {
+	[[ "$DRY_RUN" == "true" ]] && log "=== TEST MODU ===" "$YELLOW"
 
-	# Parametre kontrolü
+	log "\n=== Link Oluşturma ===" "$BLUE"
+
+	for dir in "${DIRS[@]}"; do
+		backup_dir "$dir"
+		create_link "$dir"
+	done
+
+	log "\nTamamlandı!" "$GREEN"
+}
+
+# Remove all links
+remove_links() {
+	[[ "$DRY_RUN" == "true" ]] && log "=== TEST MODU ===" "$YELLOW"
+
+	log "\n=== Link Kaldırma ===" "$BLUE"
+
+	for dir in "${DIRS[@]}"; do
+		local target="$TARGET_ROOT/$dir"
+
+		if [[ -L "$target" ]]; then
+			if [[ "$DRY_RUN" == "true" ]]; then
+				log "[TEST] Kaldır: $dir" "$YELLOW"
+			else
+				rm "$target"
+				log "Kaldırıldı: $dir" "$GREEN"
+			fi
+		else
+			log "Link değil: $dir" "$YELLOW"
+		fi
+	done
+
+	log "\nTamamlandı!" "$GREEN"
+}
+
+# Main
+main() {
+	local command="create"
+
+	# Parse arguments directly in main
 	while [[ $# -gt 0 ]]; do
 		case $1 in
-		-l | --list)
-			show_array
-			show_links
-			exit 0
+		create | remove | status)
+			command="$1"
+			shift
 			;;
 		-d | --dry-run)
 			DRY_RUN=true
+			shift
+			;;
+		-f | --force)
+			FORCE=true
 			shift
 			;;
 		-h | --help)
@@ -165,31 +249,18 @@ main() {
 			exit 0
 			;;
 		*)
-			log "Bilinmeyen parametre: $1" "$RED"
-			show_help
-			exit 1
+			error "Bilinmeyen parametre: $1"
 			;;
 		esac
 	done
 
-	if [[ "$DRY_RUN" == "true" ]]; then
-		log "DRY RUN MODU - Herhangi bir değişiklik yapılmayacak" "$YELLOW"
-	fi
+	check_setup
 
-	log "Sembolik link oluşturma işlemi başlıyor..." "$BLUE"
-
-	# Kaynak dizin kontrolü
-	check_source_dir
-
-	# Her dizin için işlem
-	for dir in "${DIRS[@]}"; do
-		log "\nİşleniyor: $dir" "$BLUE"
-		backup_dir "$dir"
-		create_link "$dir" || log "Link oluşturulamadı: $dir" "$RED"
-	done
-
-	show_links
+	case "$command" in
+	"create") create_links ;;
+	"remove") remove_links ;;
+	"status") show_status ;;
+	esac
 }
 
-# Scripti çalıştır
 main "$@"

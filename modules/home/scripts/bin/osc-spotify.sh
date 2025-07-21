@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #######################################
 #
-# Version: 2.2.0
-# Date: 2025-07-18
+# Version: 2.3.0
+# Date: 2025-07-19
 # Original Author: Kenan Pelit
 # Repository: github.com/kenanpelit/dotfiles
 # Description: Geliştirilmiş HyprFlow Spotify Controller (Hyprland & Wayland)
@@ -16,6 +16,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+CYAN='\033[0;36m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Yapılandırma değişkenleri
@@ -31,12 +33,16 @@ HYPR_ACTIVE=$(command -v hyprctl &>/dev/null && echo "true" || echo "false")
 # MPRIS için destek kontrolü
 MPRIS_SUPPORT=$(command -v dbus-send &>/dev/null && echo "true" || echo "false")
 
+# bc komutunun varlığını kontrol et
+BC_AVAILABLE=$(command -v bc &>/dev/null && echo "true" || echo "false")
+
 # Yardım fonksiyonu
 function show_help {
 	echo -e "${BLUE}HyprFlow Spotify Kontrolcü${NC} - Hyprland & Wayland Edition"
+	echo -e "${CYAN}Version: 2.3.0${NC}"
 	echo "Kullanım: $(basename $0) [KOMUT]"
 	echo ""
-	echo "Komutlar:"
+	echo -e "${YELLOW}Temel Kontroller:${NC}"
 	echo "  play           Oynatmaya başla"
 	echo "  pause          Duraklat"
 	echo "  play-pause     Oynatma/duraklatma geçişi yap (parametre verilmezse varsayılan)"
@@ -44,15 +50,25 @@ function show_help {
 	echo "  next           Sonraki şarkıya geç"
 	echo "  prev           Önceki şarkıya geç"
 	echo "  stop           Spotify'ı durdur"
+	echo ""
+	echo -e "${YELLOW}Ses Kontrolleri:${NC}"
 	echo "  volume-up      Ses seviyesini artır"
 	echo "  volume-down    Ses seviyesini azalt"
 	echo "  volume <0-100> Ses seviyesini ayarla (0-100 arası değer)"
-	echo "  status         Durum bilgisini göster"
-	echo "  share          Çalan şarkının URL ve URI'sini göster"
+	echo ""
+	echo -e "${YELLOW}Özellik Kontrolleri:${NC}"
 	echo "  toggle-shuffle Karıştırma modunu aç/kapat"
 	echo "  toggle-repeat  Tekrar modunu değiştir"
+	echo ""
+	echo -e "${YELLOW}Bilgi ve Paylaşım:${NC}"
+	echo "  status         Durum bilgisini göster"
+	echo "  share          Çalan şarkının URL ve URI'sini göster"
+	echo ""
+	echo -e "${YELLOW}Pencere Yönetimi:${NC}"
 	echo "  focus          Spotify penceresini odakla"
 	echo "  info           Aktif Spotify penceresi hakkında bilgi göster"
+	echo ""
+	echo -e "${YELLOW}Sistem:${NC}"
 	echo "  quit           Spotify'ı kapat"
 	echo "  help           Bu yardım mesajını göster"
 	exit 0
@@ -73,14 +89,23 @@ function send_notification {
 	fi
 }
 
-# Şarkı bilgilerini alma fonksiyonu
+# Şarkı bilgilerini alma fonksiyonu - Düzeltilmiş
 function get_track_info {
 	local artist=$(playerctl -p "$PLAYER" metadata artist 2>/dev/null)
 	local title=$(playerctl -p "$PLAYER" metadata title 2>/dev/null)
 	local album=$(playerctl -p "$PLAYER" metadata album 2>/dev/null)
 
-	if [ -n "$artist" ] && [ -n "$title" ]; then
-		echo "$title - $artist ($album)"
+	# En azından title varsa devam et
+	if [ -n "$title" ]; then
+		if [ -n "$artist" ] && [ -n "$album" ]; then
+			echo "$title - $artist ($album)"
+		elif [ -n "$artist" ]; then
+			echo "$title - $artist"
+		elif [ -n "$album" ]; then
+			echo "$title ($album)"
+		else
+			echo "$title" # Sadece başlık varsa bile göster (podcast için)
+		fi
 		return 0
 	else
 		return 1
@@ -102,16 +127,23 @@ function get_track_url {
 			uri="spotify:track:$track_id"
 			echo -e "${GREEN}Spotify URL:${NC} $url"
 			echo -e "${GREEN}Spotify URI:${NC} $uri"
-			send_notification "Spotify Bağlantıları" "URL: $url\nURI: $uri" "normal" 5000
+
+			# URL'yi panoya kopyala (eğer xclip varsa)
+			if command -v xclip &>/dev/null; then
+				echo "$url" | xclip -selection clipboard
+				send_notification "Spotify Bağlantıları" "📋 URL panoya kopyalandı\nURL: $url\nURI: $uri" "normal" 5000
+			else
+				send_notification "Spotify Bağlantıları" "URL: $url\nURI: $uri" "normal" 5000
+			fi
 			return 0
 		else
 			echo -e "${RED}Şu anda çalan şarkı yok veya bilgi alınamadı.${NC}"
-			send_notification "Spotify" "⚠ Şarkı bilgisi alınamadı" "critical"
+			send_notification "Spotify" "⚠️ Şarkı bilgisi alınamadı" "critical"
 			return 1
 		fi
 	else
 		echo -e "${RED}DBUS desteği yok. Bu özellik kullanılamıyor.${NC}"
-		send_notification "Spotify" "⚠ DBUS desteği yok" "critical"
+		send_notification "Spotify" "⚠️ DBUS desteği yok" "critical"
 		return 1
 	fi
 }
@@ -140,13 +172,13 @@ function toggle_shuffle {
 
 		# Bildirim gönder
 		if [ "$new_shuffle" = "true" ]; then
-			send_notification "Spotify" "↻ Karıştırma açık"
+			send_notification "Spotify" "🔀 Karıştırma açık"
 		else
-			send_notification "Spotify" "→ Karıştırma kapalı"
+			send_notification "Spotify" "➡️ Karıştırma kapalı"
 		fi
 	else
 		echo -e "${RED}DBUS desteği yok. Bu özellik kullanılamıyor.${NC}"
-		send_notification "Spotify" "⚠ DBUS desteği yok" "critical"
+		send_notification "Spotify" "⚠️ DBUS desteği yok" "critical"
 		return 1
 	fi
 }
@@ -166,15 +198,15 @@ function toggle_repeat {
 		case "$current_loop" in
 		"None")
 			new_loop="Track"
-			message="↻ Parça tekrarı açık"
+			message="🔂 Parça tekrarı açık"
 			;;
 		"Track")
 			new_loop="Playlist"
-			message="↺ Liste tekrarı açık"
+			message="🔁 Liste tekrarı açık"
 			;;
 		*)
 			new_loop="None"
-			message="→ Tekrar kapalı"
+			message="➡️ Tekrar kapalı"
 			;;
 		esac
 
@@ -190,7 +222,7 @@ function toggle_repeat {
 		send_notification "Spotify" "$message"
 	else
 		echo -e "${RED}DBUS desteği yok. Bu özellik kullanılamıyor.${NC}"
-		send_notification "Spotify" "⚠ DBUS desteği yok" "critical"
+		send_notification "Spotify" "⚠️ DBUS desteği yok" "critical"
 		return 1
 	fi
 }
@@ -199,10 +231,10 @@ function toggle_repeat {
 function quit_spotify {
 	if pgrep "$PLAYER" >/dev/null; then
 		killall "$PLAYER" 2>/dev/null
-		send_notification "Spotify" "× Spotify kapatıldı"
+		send_notification "Spotify" "❌ Spotify kapatıldı"
 		return 0
 	else
-		send_notification "Spotify" "ℹ Spotify zaten çalışmıyor"
+		send_notification "Spotify" "ℹ️ Spotify zaten çalışmıyor"
 		return 1
 	fi
 }
@@ -210,8 +242,8 @@ function quit_spotify {
 # Spotify'ın çalışıp çalışmadığını kontrol et
 function check_spotify_running {
 	if ! pgrep "$PLAYER" >/dev/null; then
-		send_notification "Spotify" "! Spotify çalışmıyor, başlatılıyor..." "normal" 3000
-		spotify &
+		send_notification "Spotify" "🚀 Spotify çalışmıyor, başlatılıyor..." "normal" 3000
+		spotify &>/dev/null &
 
 		# Spotify'ın başlamasını bekle
 		echo -e "${YELLOW}Spotify başlatılıyor...${NC}"
@@ -227,7 +259,7 @@ function check_spotify_running {
 		done
 
 		echo -e "\n${RED}Hata: Spotify başlatılamadı veya çok uzun sürdü.${NC}"
-		send_notification "Spotify" "⚠ Başlatma zaman aşımına uğradı" "critical" 4000
+		send_notification "Spotify" "⚠️ Başlatma zaman aşımına uğradı" "critical" 4000
 		return 1
 	fi
 	return 0
@@ -242,8 +274,27 @@ function check_spotify_ready {
 		sleep 0.5
 	done
 
-	send_notification "Spotify" "⚠ Spotify hazır değil, komut gönderilemedi" "critical" 3000
+	send_notification "Spotify" "⚠️ Spotify hazır değil, komut gönderilemedi" "critical" 3000
 	return 1
+}
+
+# Basit matematik fonksiyonu (bc yoksa kullanılır)
+function simple_calc {
+	local operation="$1"
+	case $operation in
+	"add")
+		echo $(($(echo "$2 * 100" | cut -d. -f1) + $(echo "$3 * 100" | cut -d. -f1))) | awk '{printf "%.2f", $1/100}'
+		;;
+	"sub")
+		echo $(($(echo "$2 * 100" | cut -d. -f1) - $(echo "$3 * 100" | cut -d. -f1))) | awk '{printf "%.2f", $1/100}'
+		;;
+	"div")
+		echo $(($2 * 100 / 100)) | awk '{printf "%.2f", $1/100}'
+		;;
+	"mul")
+		echo $(($2 * $3)) | awk '{printf "%.0f", $1}'
+		;;
+	esac
 }
 
 # Sadece oynat
@@ -255,9 +306,9 @@ function play_music {
 
 	# Şarkı bilgisini göster
 	if track_info=$(get_track_info); then
-		send_notification "Spotify" "▶ Oynatılıyor: $track_info" "normal" 3000
+		send_notification "Spotify" "▶️ Oynatılıyor: $track_info" "normal" 3000
 	else
-		send_notification "Spotify" "▶ Oynatılıyor"
+		send_notification "Spotify" "▶️ Oynatılıyor"
 	fi
 }
 
@@ -267,34 +318,39 @@ function pause_music {
 	check_spotify_ready || return 1
 
 	playerctl -p "$PLAYER" pause
-	send_notification "Spotify" "⏸ Duraklatıldı"
+	send_notification "Spotify" "⏸️ Duraklatıldı"
 }
 
-# Play/Pause işlevi
+# Play/Pause işlevi - Temiz Versiyon
 function toggle_playback {
 	check_spotify_running || return 1
 	check_spotify_ready || return 1
 
 	STATUS=$(playerctl -p "$PLAYER" status 2>/dev/null)
 
+	# Önce şarkı bilgisini al (her durumda)
+	track_info=$(get_track_info)
+
 	case $STATUS in
 	"Playing")
 		playerctl -p "$PLAYER" pause
-		send_notification "Spotify" "⏸ Duraklatıldı"
+		if [ -n "$track_info" ]; then
+			send_notification "Spotify" "⏸️ Duraklatıldı: $track_info" "normal" 3000
+		else
+			send_notification "Spotify" "⏸️ Duraklatıldı"
+		fi
 		;;
 	"Paused")
 		playerctl -p "$PLAYER" play
-
-		# Şarkı bilgisini göster
-		if track_info=$(get_track_info); then
-			send_notification "Spotify" "▶ Oynatılıyor: $track_info" "normal" 3000
+		if [ -n "$track_info" ]; then
+			send_notification "Spotify" "▶️ Oynatılıyor: $track_info" "normal" 3000
 		else
-			send_notification "Spotify" "▶ Oynatılıyor"
+			send_notification "Spotify" "▶️ Oynatılıyor"
 		fi
 		;;
 	*)
 		# Spotify açık ama yanıt vermiyorsa
-		send_notification "Spotify" "⚠ Spotify yanıt vermiyor, yeniden başlatın" "critical"
+		send_notification "Spotify" "⚠️ Spotify yanıt vermiyor, yeniden başlatın" "critical"
 		;;
 	esac
 }
@@ -308,9 +364,9 @@ function next_track {
 	sleep 0.5 # Metadata'nın güncellenmesi için bekle
 
 	if track_info=$(get_track_info); then
-		send_notification "Spotify" "→ Sonraki parça: $track_info" "normal" 3000
+		send_notification "Spotify" "⏭️ Sonraki parça: $track_info" "normal" 3000
 	else
-		send_notification "Spotify" "→ Sonraki parçaya geçildi"
+		send_notification "Spotify" "⏭️ Sonraki parçaya geçildi"
 	fi
 }
 
@@ -323,9 +379,9 @@ function previous_track {
 	sleep 0.5 # Metadata'nın güncellenmesi için bekle
 
 	if track_info=$(get_track_info); then
-		send_notification "Spotify" "← Önceki parça: $track_info" "normal" 3000
+		send_notification "Spotify" "⏮️ Önceki parça: $track_info" "normal" 3000
 	else
-		send_notification "Spotify" "← Önceki parçaya geçildi"
+		send_notification "Spotify" "⏮️ Önceki parçaya geçildi"
 	fi
 }
 
@@ -335,7 +391,7 @@ function stop_playback {
 	check_spotify_ready || return 1
 
 	playerctl -p "$PLAYER" stop
-	send_notification "Spotify" "⏹ Durduruldu"
+	send_notification "Spotify" "⏹️ Durduruldu"
 }
 
 # Ses seviyesini artır
@@ -345,14 +401,26 @@ function volume_up {
 
 	# Mevcut ses seviyesini al
 	current_vol=$(playerctl -p "$PLAYER" volume 2>/dev/null)
-	# Artış miktarını hesapla (0-1 aralığında)
-	increment=$(echo "scale=2; $VOL_INCREMENT / 100" | bc)
-	# Yeni ses seviyesini hesapla, en fazla 1.0 (100%)
-	new_vol=$(echo "$current_vol + $increment" | bc | awk '{if ($1 > 1.0) print 1.0; else print $1}')
+
+	# Hesaplama yöntemi seç
+	if [ "$BC_AVAILABLE" = "true" ]; then
+		# bc kullan
+		increment=$(echo "scale=2; $VOL_INCREMENT / 100" | bc)
+		new_vol=$(echo "$current_vol + $increment" | bc | awk '{if ($1 > 1.0) print 1.0; else print $1}')
+		vol_percent=$(echo "$new_vol * 100" | bc | cut -d. -f1)
+	else
+		# Basit aritmetik kullan
+		current_percent=$(echo "$current_vol * 100" | awk '{printf "%.0f", $1}')
+		new_percent=$((current_percent + VOL_INCREMENT))
+		if [ $new_percent -gt 100 ]; then
+			new_percent=100
+		fi
+		new_vol=$(echo "$new_percent / 100" | awk '{printf "%.2f", $1}')
+		vol_percent=$new_percent
+	fi
 
 	playerctl -p "$PLAYER" volume "$new_vol"
-	vol_percent=$(echo "$new_vol * 100" | bc | cut -d. -f1)
-	send_notification "Spotify" "♪ Ses: $vol_percent%"
+	send_notification "Spotify" "🔊 Ses: $vol_percent%"
 }
 
 # Ses seviyesini azalt
@@ -362,14 +430,26 @@ function volume_down {
 
 	# Mevcut ses seviyesini al
 	current_vol=$(playerctl -p "$PLAYER" volume 2>/dev/null)
-	# Azaltma miktarını hesapla (0-1 aralığında)
-	decrement=$(echo "scale=2; $VOL_INCREMENT / 100" | bc)
-	# Yeni ses seviyesini hesapla, en az 0.0 (0%)
-	new_vol=$(echo "$current_vol - $decrement" | bc | awk '{if ($1 < 0.0) print 0.0; else print $1}')
+
+	# Hesaplama yöntemi seç
+	if [ "$BC_AVAILABLE" = "true" ]; then
+		# bc kullan
+		decrement=$(echo "scale=2; $VOL_INCREMENT / 100" | bc)
+		new_vol=$(echo "$current_vol - $decrement" | bc | awk '{if ($1 < 0.0) print 0.0; else print $1}')
+		vol_percent=$(echo "$new_vol * 100" | bc | cut -d. -f1)
+	else
+		# Basit aritmetik kullan
+		current_percent=$(echo "$current_vol * 100" | awk '{printf "%.0f", $1}')
+		new_percent=$((current_percent - VOL_INCREMENT))
+		if [ $new_percent -lt 0 ]; then
+			new_percent=0
+		fi
+		new_vol=$(echo "$new_percent / 100" | awk '{printf "%.2f", $1}')
+		vol_percent=$new_percent
+	fi
 
 	playerctl -p "$PLAYER" volume "$new_vol"
-	vol_percent=$(echo "$new_vol * 100" | bc | cut -d. -f1)
-	send_notification "Spotify" "♪ Ses: $vol_percent%"
+	send_notification "Spotify" "🔉 Ses: $vol_percent%"
 }
 
 # Ses seviyesini belirli bir değere ayarla
@@ -380,12 +460,16 @@ function set_volume {
 	# Parametre kontrolü
 	if [[ $1 =~ ^[0-9]+$ ]] && [[ $1 -ge 0 && $1 -le 100 ]]; then
 		# 0-100 değerini 0-1 aralığına dönüştür
-		new_vol=$(echo "scale=2; $1 / 100" | bc)
+		if [ "$BC_AVAILABLE" = "true" ]; then
+			new_vol=$(echo "scale=2; $1 / 100" | bc)
+		else
+			new_vol=$(echo "$1 / 100" | awk '{printf "%.2f", $1}')
+		fi
 		playerctl -p "$PLAYER" volume "$new_vol"
-		send_notification "Spotify" "♪ Ses: $1%"
+		send_notification "Spotify" "🎵 Ses: $1%"
 	else
 		echo -e "${RED}Hatalı ses seviyesi değeri. 0-100 arası bir değer girin.${NC}"
-		send_notification "Spotify" "⚠ Hatalı ses seviyesi değeri" "critical"
+		send_notification "Spotify" "⚠️ Hatalı ses seviyesi değeri" "critical"
 		return 1
 	fi
 }
@@ -401,17 +485,21 @@ function show_status {
 	if track_info=$(get_track_info); then
 		# Ses seviyesini al
 		vol=$(playerctl -p "$PLAYER" volume 2>/dev/null)
-		vol_percent=$(echo "$vol * 100" | bc | cut -d. -f1)
-
-		# Durum simgesini belirle
-		status_icon="⏸"
-		if [ "$STATUS" = "Playing" ]; then
-			status_icon="▶"
+		if [ "$BC_AVAILABLE" = "true" ]; then
+			vol_percent=$(echo "$vol * 100" | bc | cut -d. -f1)
+		else
+			vol_percent=$(echo "$vol * 100" | awk '{printf "%.0f", $1}')
 		fi
 
-		send_notification "Spotify - $status_icon $STATUS" "$track_info\nSes: $vol_percent%" "normal" 5000
+		# Durum simgesini belirle
+		status_icon="⏸️"
+		if [ "$STATUS" = "Playing" ]; then
+			status_icon="▶️"
+		fi
+
+		send_notification "Spotify - $status_icon $STATUS" "$track_info\n🎵 Ses: $vol_percent%" "normal" 5000
 	else
-		send_notification "Spotify" "⚠ Şarkı bilgisi alınamadı" "critical"
+		send_notification "Spotify" "⚠️ Şarkı bilgisi alınamadı" "critical"
 	fi
 }
 
@@ -425,12 +513,12 @@ function focus_spotify {
 
 		if [ -n "$SPOTIFY_WINDOW" ]; then
 			hyprctl dispatch focuswindow "class:^(Spotify)$"
-			send_notification "Spotify" "♪ Spotify penceresi odaklandı"
+			send_notification "Spotify" "🎯 Spotify penceresi odaklandı"
 		else
-			send_notification "Spotify" "⚠ Spotify penceresi bulunamadı" "critical"
+			send_notification "Spotify" "⚠️ Spotify penceresi bulunamadı" "critical"
 		fi
 	else
-		send_notification "Spotify" "⚠ Hyprland aktif değil veya hyprctl bulunamadı" "critical"
+		send_notification "Spotify" "⚠️ Hyprland aktif değil veya hyprctl bulunamadı" "critical"
 	fi
 }
 
@@ -451,14 +539,14 @@ function spotify_window_info {
 			WORKSPACE=$(echo "$SPOTIFY_INFO" | grep "workspace:" | awk '{print $2}')
 			TITLE=$(echo "$SPOTIFY_INFO" | grep "title:" | cut -d':' -f2-)
 
-			send_notification "Spotify Pencere Bilgisi" "ID: $WINDOW_ID\nÇalışma Alanı: $WORKSPACE\nBaşlık: $TITLE" "normal" 5000
+			send_notification "Spotify Pencere Bilgisi" "🪟 ID: $WINDOW_ID\n🖥️ Çalışma Alanı: $WORKSPACE\n📝 Başlık: $TITLE" "normal" 5000
 		else
 			echo -e "${RED}Spotify penceresi bulunamadı.${NC}"
-			send_notification "Spotify" "⚠ Spotify penceresi bulunamadı" "critical"
+			send_notification "Spotify" "⚠️ Spotify penceresi bulunamadı" "critical"
 		fi
 	else
 		echo -e "${RED}Hyprland aktif değil veya hyprctl bulunamadı.${NC}"
-		send_notification "Spotify" "⚠ Hyprland aktif değil veya hyprctl bulunamadı" "critical"
+		send_notification "Spotify" "⚠️ Hyprland aktif değil veya hyprctl bulunamadı" "critical"
 	fi
 }
 

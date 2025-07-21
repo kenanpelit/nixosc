@@ -113,7 +113,39 @@ in
       default-timeout=5000
       markup=1
       
-      # App-specific enhancements
+      # App-specific enhancements with click actions
+      
+      # Ferdium - WhatsApp, Discord, Telegram etc.
+      [app-name=ferdium]
+      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.cyan}99
+      border-size=2
+      default-timeout=12000
+      markup=1
+      on-button-left=exec ferdium
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      # Discord - native Discord app
+      [app-name=discord]
+      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.cyan}99
+      markup=1
+      on-button-left=exec discord
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      # WebCord - alternative Discord client
+      [app-name=WebCord]
+      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.cyan}99
+      markup=1
+      on-button-left=exec webcord
+      on-button-middle=dismiss
+      on-button-right=dismiss
       
       # Spotify - music themed with icon
       [app-name=Spotify]
@@ -123,6 +155,9 @@ in
       border-size=2
       default-timeout=4000
       markup=1
+      on-button-left=exec spotify
+      on-button-middle=dismiss
+      on-button-right=dismiss
       
       # System notifications
       [app-name="notify-send"]
@@ -131,39 +166,53 @@ in
       border-color=${colors.blue}99
       markup=1
       
-      # WhatsApp/Messages - communication
+      # WhatsApp/Messages - native WhatsApp
       [app-name=whatsapp-nativefier-d40211]
-      format=<span color="${colors.cyan}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      [app-name=whatsapp]
+      format=<span color="${colors.cyan}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.cyan}99
       border-size=2
       default-timeout=12000
       markup=1
+      on-button-left=exec whatsapp-nativefier-d40211
+      on-button-middle=dismiss
+      on-button-right=dismiss
       
       # Firefox - web browsing
       [app-name=firefox]
-      format=<span color="${colors.orange}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.orange}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.orange}99
       default-timeout=8000
       markup=1
+      on-button-left=exec firefox
+      on-button-middle=dismiss
+      on-button-right=dismiss
       
       # Chrome notifications
       [app-name=Google-chrome]
       [app-name=google-chrome]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       default-timeout=8000
       markup=1
+      on-button-left=exec google-chrome-stable
+      on-button-middle=dismiss
+      on-button-right=dismiss
       
       # Brave notifications
       [app-name=brave]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">● %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      [app-name=brave-browser]
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.yellow}99
       default-timeout=8000
       markup=1
+      on-button-left=exec brave
+      on-button-middle=dismiss
+      on-button-right=dismiss
  
       # MPD/Music notifications
       [category=mpd]
@@ -174,13 +223,47 @@ in
       group-by=category
       markup=1
       
-      # Discord/Communication apps
-      [app-name=discord]
-      [app-name=webcord]
-      format=<span color="${colors.cyan}" size="12pt" weight="600">♪ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      # Telegram
+      [app-name=telegram]
+      [app-name=telegram-desktop]
+      format=<span color="${colors.cyan}" size="12pt" weight="600">✈️ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.cyan}99
       markup=1
+      on-button-left=exec telegram-desktop
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      # Slack
+      [app-name=slack]
+      format=<span color="${colors.purple}" size="12pt" weight="600">💼 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.purple}99
+      markup=1
+      on-button-left=exec slack
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      # Signal
+      [app-name=signal]
+      [app-name=signal-desktop]
+      format=<span color="${colors.blue}" size="12pt" weight="600">🔒 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.blue}99
+      markup=1
+      on-button-left=exec signal-desktop
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      # Email clients
+      [app-name=thunderbird]
+      format=<span color="${colors.blue}" size="12pt" weight="600">📧 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.blue}99
+      markup=1
+      on-button-left=exec thunderbird
+      on-button-middle=dismiss
+      on-button-right=dismiss
       
       # Battery/Power notifications
       [summary~="Battery"]
@@ -194,7 +277,7 @@ in
       [summary~="Network"]
       [summary~="WiFi"]
       [summary~="Connection"]
-      format=<span color="${colors.blue}" size="12pt" weight="600">● Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      format=<span color="${colors.blue}" size="12pt" weight="600">🌐 Network</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
       border-color=${colors.blue}99
       markup=1
@@ -246,6 +329,12 @@ in
     "notify-emoji" = "notify-send 'Symbol Test' '★ ♪ ● ⚡ ▲'";
     "notify-simple" = "notify-send Star Check";
     
+    # Test notifications for apps
+    "notify-ferdium" = "notify-send -a ferdium 'Ferdium Test' 'Click to open Ferdium'";
+    "notify-discord" = "notify-send -a discord 'Discord Test' 'Click to open Discord'";
+    "notify-webcord" = "notify-send -a WebCord 'WebCord Test' 'Click to open WebCord'";
+    "notify-brave" = "notify-send -a brave 'Brave Test' 'Click to open Brave'";
+    
     # Mako status and control - Updated for waybar integration
     "mako-stat" = "mako-status";
     "mako-click" = "mako-status click";
@@ -255,13 +344,7 @@ in
     "mako-start" = "mako &";
     "mako-stop" = "pkill mako";
     "mako-logs" = "journalctl --user -t mako -f";
-    
-    # Daemon control aliases
-    "mako-daemon-start" = "systemctl --user start mako-daemon";
-    "mako-daemon-stop" = "systemctl --user stop mako-daemon";
-    "mako-daemon-restart" = "systemctl --user restart mako-daemon";
-    "mako-daemon-status" = "systemctl --user status mako-daemon";
-    "mako-daemon-logs" = "journalctl --user -u mako-daemon -f";
+
   };
 }
 

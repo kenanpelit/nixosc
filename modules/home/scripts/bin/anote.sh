@@ -402,7 +402,51 @@ copy_to_clipboard() {
 			fi
 		fi
 
-		# 2. tmux buffer
+		# 2. X11 için xclip
+		if [[ "$success" != "true" ]] && command -v xclip >/dev/null 2>&1 && [[ -n "$DISPLAY" ]]; then
+			if printf '%s' "$content" | xclip -selection clipboard 2>/dev/null; then
+				success=true
+				clipboard_tools="xclip"
+			elif cat "$CACHE_DIR/clipboard_content.tmp" | xclip -selection clipboard 2>/dev/null; then
+				success=true
+				clipboard_tools="xclip (dosya üzerinden)"
+			fi
+		fi
+
+		# 3. X11 için xsel
+		if [[ "$success" != "true" ]] && command -v xsel >/dev/null 2>&1 && [[ -n "$DISPLAY" ]]; then
+			if printf '%s' "$content" | xsel --clipboard --input 2>/dev/null; then
+				success=true
+				clipboard_tools="xsel"
+			elif cat "$CACHE_DIR/clipboard_content.tmp" | xsel --clipboard --input 2>/dev/null; then
+				success=true
+				clipboard_tools="xsel (dosya üzerinden)"
+			fi
+		fi
+
+		# 4. macOS için pbcopy
+		if [[ "$success" != "true" ]] && command -v pbcopy >/dev/null 2>&1; then
+			if printf '%s' "$content" | pbcopy 2>/dev/null; then
+				success=true
+				clipboard_tools="pbcopy"
+			elif cat "$CACHE_DIR/clipboard_content.tmp" | pbcopy 2>/dev/null; then
+				success=true
+				clipboard_tools="pbcopy (dosya üzerinden)"
+			fi
+		fi
+
+		# 5. Windows için clip
+		if [[ "$success" != "true" ]] && command -v clip >/dev/null 2>&1; then
+			if printf '%s' "$content" | clip 2>/dev/null; then
+				success=true
+				clipboard_tools="clip"
+			elif cat "$CACHE_DIR/clipboard_content.tmp" | clip 2>/dev/null; then
+				success=true
+				clipboard_tools="clip (dosya üzerinden)"
+			fi
+		fi
+
+		# 6. tmux buffer
 		if [[ "$TERM_PROGRAM" == "tmux" || -n "$TMUX" ]]; then
 			if printf '%s' "$content" | tmux load-buffer - 2>/dev/null; then
 				# tmux başarılı olduysa ve daha önce bir clipboard aracı başarılı olduysa
@@ -412,6 +456,13 @@ copy_to_clipboard() {
 				else
 					success=true
 					clipboard_tools="tmux buffer"
+				fi
+			elif cat "$CACHE_DIR/clipboard_content.tmp" | tmux load-buffer - 2>/dev/null; then
+				if [[ "$success" == "true" ]]; then
+					clipboard_tools="$clipboard_tools, tmux buffer (dosya üzerinden)"
+				else
+					success=true
+					clipboard_tools="tmux buffer (dosya üzerinden)"
 				fi
 			fi
 		fi
@@ -518,7 +569,7 @@ show_anote_tui() {
 	esac
 }
 
-# Snippet Modu - çok satırlı snippet seçimi ve kopyalama
+# Snippet Modu - geliştirilmiş hata kontrolü ile
 snippet_mode() {
 	local selected
 	while true; do
@@ -550,27 +601,87 @@ snippet_mode() {
 
 		[[ -z "$selected" ]] && exit 0
 
+		# HATA KONTROLÜ: Seçilen değerin geçerliliğini kontrol et
+		if [[ ! "$selected" =~ ^[^:]+:[0-9]+:####\;[[:space:]]*.+ ]]; then
+			echo "⚠️ Hatalı seçim formatı: $selected"
+			continue
+		fi
+
 		# Seçilen snippet'i işle
 		file_name="$(echo "$selected" | cut -d: -f1)"
+		line_num="$(echo "$selected" | cut -d: -f2)"
+		snippet_title="$(echo "$selected" | cut -d: -f3- | sed 's/^####; *//')"
+
+		# HATA KONTROLÜ: Dosya var mı?
+		if [[ ! -f "$file_name" ]]; then
+			echo "⚠️ Dosya bulunamadı: $file_name"
+			continue
+		fi
+
+		# HATA KONTROLÜ: Snippet title boş mu?
+		if [[ -z "$snippet_title" ]]; then
+			echo "⚠️ Snippet başlığı boş"
+			continue
+		fi
+
+		echo "🔍 İşleniyor: $snippet_title (dosya: $file_name)"
+
 		dir=$(dirname "$file_name")
 		update_history "$dir" "$file_name"
-		snippet_title="$(echo "$selected" | cut -d " " -f2-)"
 
-		# Snippet içeriğini ayıkla (başlık ve açıklama satırlarını çıkar)
-		selected=$(awk -v title="$snippet_title" 'BEGIN{RS=""} $0 ~ title' "$file_name" |
-			sed -e '/^####;/d' -e '/^###;/d' -e '/^##;/d')
+		# Snippet içeriğini ayıkla - geliştirilmiş parsing
+		local snippet_content
+		snippet_content=$(awk -v title="$snippet_title" '
+			BEGIN { RS=""; found=0 }
+			$0 ~ title && /^####;/ { 
+				found=1; 
+				# Başlık satırını çıkar
+				gsub(/^####;[^\n]*\n?/, "");
+				# Açıklama ve örnek satırlarını çıkar  
+				gsub(/\n###;[^\n]*/, "");
+				gsub(/\n##;[^\n]*/, "");
+				# Başta ve sonda boş satırları temizle
+				gsub(/^\n+/, "");
+				gsub(/\n+$/, "");
+				print;
+				exit
+			}
+		' "$file_name")
+
+		# HATA KONTROLÜ: İçerik boş mu?
+		if [[ -z "$snippet_content" ]]; then
+			echo "⚠️ Snippet içeriği boş veya bulunamadı: $snippet_title"
+			echo "🔍 Alternatif parsing deneniyor..."
+
+			# Alternatif parsing yöntemi
+			snippet_content=$(sed -n "/^####; *$snippet_title/,/^####;/p" "$file_name" |
+				sed '1d;$d' |            # İlk ve son satırı çıkar
+				sed '/^###;/d; /^##;/d') # Açıklama satırlarını çıkar
+		fi
+
+		# Hala boşsa hata ver
+		if [[ -z "$snippet_content" ]]; then
+			echo "❌ Snippet içeriği alınamadı!"
+			read -n 1 -p "Devam etmek için bir tuşa basın..."
+			continue
+		fi
 
 		# Panoya kopyala
-		copy_to_clipboard "$selected"
+		echo "📋 Panoya kopyalanıyor..."
+		if copy_to_clipboard "$snippet_content"; then
+			echo "✅ Başarıyla kopyalandı!"
 
-		# Önizleme göster
-		echo -e "\n--- Kopyalanan Snippet ---"
-		if command -v bat >/dev/null 2>&1; then
-			echo "$selected" | bat --color=always -pp -l "${file_name##*.}" 2>/dev/null || echo "$selected"
+			# Önizleme göster
+			echo -e "\n--- Kopyalanan Snippet ---"
+			if command -v bat >/dev/null 2>&1; then
+				echo "$snippet_content" | bat --color=always -pp -l "${file_name##*.}" 2>/dev/null || echo "$snippet_content"
+			else
+				echo "$snippet_content"
+			fi
+			echo -e "\n"
 		else
-			echo "$selected"
+			echo "❌ Kopyalama başarısız!"
 		fi
-		echo -e "\n"
 
 		read -n 1 -p "Başka bir snippet seçmek ister misiniz? (e/h) [h]: " yn
 		echo
