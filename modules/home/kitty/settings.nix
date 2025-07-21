@@ -1,90 +1,139 @@
-# modules/home/kitty/settings.nix
+# modules/home/kitty/settings.nix  
 # ==============================================================================
-# Kitty Terminal Ayarları
+# Kitty Terminal Settings Configuration
 # ==============================================================================
-{ kittyTheme, colors, fonts, lib }:
+{ kittyTheme, palette, typography, performance, lib }:
+
 {
   programs.kitty = {
     font = {
-      name = fonts.terminal.family;
+      name = typography.family;
+      size = typography.size;
     };
     
-    # =============================================================================
-    # Genel Ayarlar ve Renk Teması 
-    # =============================================================================
-    settings = 
-      kittyTheme.colors //
-      {
-        font_size = "13.3";
-        term = "xterm-256color";
-        adjust_line_height = "2";
-        adjust_column_width = "0";
-        box_drawing_scale = "0.001, 1, 1.5, 2";
-        disable_ligatures = "never";
-        force_ltr = "no";
-        editor = "vim";
-        
-        # =========================================================================
-        # İmleç Ayarları
-        # =========================================================================
-        cursor_shape = "block";
-        cursor_blink_interval = "0.5";
-        cursor_beam_thickness = "1.5";
-        
-        # =========================================================================
-        # Pencere Ayarları
-        # =========================================================================
-        window_padding_width = "8";
-        scrollback_lines = "10000";
-        wheel_scroll_multiplier = "5.0";
-        touch_scroll_multiplier = "1.0";
-        repaint_delay = "10";
-        input_delay = "3";
-        sync_to_monitor = "yes";
-        
-        # =========================================================================
-        # Zil Ayarları
-        # =========================================================================
-        enable_audio_bell = "no";
-        visual_bell_duration = "0.0";
-        window_alert_on_bell = "yes";
-        
-        # =========================================================================
-        # Sekme Çubuğu Ayarları
-        # =========================================================================
-        tab_bar_style = "powerline";
-        tab_powerline_style = "angled";
-        active_tab_font_style = "bold";
-        inactive_tab_font_style = "normal";
-        
-        # =========================================================================
-        # URL Ayarları
-        # =========================================================================
-        url_style = "curly";
-        detect_urls = "yes";
-        copy_on_select = "yes";
-      };
+    # ==========================================================================
+    # Core Settings & Theme
+    # ==========================================================================
+    settings = kittyTheme.colors // {
+      # =======================================================================
+      # Terminal Configuration
+      # =======================================================================
+      font_size = toString typography.size;
+      term = "xterm-256color";
+      editor = "nvim";
+      
+      # Font rendering
+      adjust_line_height = "2";
+      adjust_column_width = "0";
+      box_drawing_scale = "0.001, 1, 1.5, 2";
+      disable_ligatures = "never";
+      force_ltr = "no";
+      
+      # =======================================================================
+      # Cursor Configuration
+      # =======================================================================
+      cursor_shape = "block";
+      cursor_blink_interval = "0.5";
+      cursor_beam_thickness = "1.5";
+      
+      # =======================================================================
+      # Window & Layout
+      # =======================================================================
+      window_padding_width = "8";
+      scrollback_lines = toString performance.scrollback_lines;
+      wheel_scroll_multiplier = "5.0";
+      touch_scroll_multiplier = "1.0";
+      
+      # =======================================================================
+      # Performance & Responsiveness
+      # =======================================================================
+      repaint_delay = toString performance.repaint_delay;
+      input_delay = toString performance.input_delay;
+      sync_to_monitor = "yes";
+      
+      # =======================================================================
+      # Audio & Visual Feedback
+      # =======================================================================
+      enable_audio_bell = "no";
+      visual_bell_duration = "0.0";
+      window_alert_on_bell = "yes";
+      
+      # =======================================================================
+      # Tab Bar Styling
+      # =======================================================================
+      tab_bar_style = "powerline";
+      tab_powerline_style = "angled";
+      active_tab_font_style = "bold";
+      inactive_tab_font_style = "normal";
+      
+      # =======================================================================
+      # URL & Selection
+      # =======================================================================
+      url_style = "curly";
+      detect_urls = "yes";
+      copy_on_select = "yes";
+    };
     
-    # =============================================================================
-    # Ek Font Konfigürasyonu
-    # =============================================================================
+    # ==========================================================================
+    # Advanced Font Configuration
+    # ==========================================================================
     extraConfig = ''
-      bold_font        ${fonts.terminal.family} Bold
-      italic_font      ${fonts.terminal.family} Italic
-      bold_italic_font ${fonts.terminal.family} Bold Italic
-      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${fonts.terminal.family}
-      font_features +liga,+calt
+      # Font variants
+      bold_font        ${typography.family} Bold
+      italic_font      ${typography.family} Italic
+      bold_italic_font ${typography.family} Bold Italic
+      
+      # Icon and symbol fonts  
+      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${typography.family}
+      symbol_map U+F000-U+F2E0 ${typography.family}
+      
+      # Font features
+      font_features ${lib.concatStringsSep "," (map (f: "+" + f) typography.features)}
+      
+      # Performance optimizations
+      input_delay ${toString performance.input_delay}
+      repaint_delay ${toString performance.repaint_delay}
     '';
     
-    # =============================================================================
-    # Kısayol Tuşları
-    # =============================================================================
+    # ==========================================================================
+    # Keyboard Shortcuts
+    # ==========================================================================
     keybindings = {
+      # Tab navigation
       "alt+1" = "goto_tab 1";
       "alt+2" = "goto_tab 2";
       "alt+3" = "goto_tab 3";
       "alt+4" = "goto_tab 4";
+      "alt+5" = "goto_tab 5";
+      "alt+6" = "goto_tab 6";
+      "alt+7" = "goto_tab 7";
+      "alt+8" = "goto_tab 8";
+      "alt+9" = "goto_tab 9";
       
+      # New tab/window
+      "ctrl+shift+t" = "new_tab";
+      "ctrl+shift+n" = "new_os_window";
+      
+      # Window management
+      "ctrl+shift+w" = "close_window";
+      "ctrl+shift+q" = "quit";
+      
+      # Text operations
+      "ctrl+shift+c" = "copy_to_clipboard";
+      "ctrl+shift+v" = "paste_from_clipboard";
+      
+      # Font size
+      "ctrl+shift+equal" = "increase_font_size";
+      "ctrl+shift+minus" = "decrease_font_size";
+      "ctrl+shift+backspace" = "restore_font_size";
+      
+      # Scrolling
+      "shift+page_up" = "scroll_page_up";
+      "shift+page_down" = "scroll_page_down";
+      "ctrl+shift+home" = "scroll_home";
+      "ctrl+shift+end" = "scroll_end";
+      
+      # Disable unwanted shortcuts
       "ctrl+shift+left" = "no_op";
       "ctrl+shift+right" = "no_op";
     };
