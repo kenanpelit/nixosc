@@ -283,7 +283,7 @@
       master = {
         new_on_top = false;                     # Yeni pencereler alta
         new_status = "slave";                   # Yeni pencere durumu
-        mfact = 0.67;                           # Ana pencere oranı
+        mfact = 0.60;                           # Ana pencere oranı
         orientation = "left";                   # Master pencere konumu
         inherit_fullscreen = true;              # Fullscreen miras alma
         smart_resizing = true;                  # Akıllı boyutlandırma
@@ -847,6 +847,9 @@
         # clipboard manager
         "$mainMod, V, exec, copyq toggle"
         "$mainMod CTRL, V, exec, chist all"
+         
+        # Swap Layout
+        "$mainmod CTRL, J, exec, hyprctl keyword general:layout "$([ "$(hyprctl getoption general:layout -j | jq -r '.str')" = "master" ] && echo "dwindle" || echo "master")""
 
         # Ana Pencere Yönetimi
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
