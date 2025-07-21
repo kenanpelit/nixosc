@@ -849,7 +849,7 @@
         "$mainMod CTRL, V, exec, chist all"
          
         # Swap Layout
-        "$mainmod CTRL, J, exec, hyprctl keyword general:layout "$([ "$(hyprctl getoption general:layout -j | jq -r '.str')" = "master" ] && echo "dwindle" || echo "master")""
+        "$mainmod CTRL, J, exec, hypr-layout_toggle"
 
         # Ana Pencere Yönetimi
         "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et

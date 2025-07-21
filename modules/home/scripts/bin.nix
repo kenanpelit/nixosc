@@ -84,6 +84,9 @@ let
   hyprland_tty = pkgs.writeShellScriptBin "hyprland_tty" (
     builtins.readFile ./bin/hyprland_tty.sh
   );
+  hypr-layout_toggle = pkgs.writeShellScriptBin "hypr-layout_toggle" (
+    builtins.readFile ./bin/hypr-layout_toggle.sh
+  );
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
   );
@@ -408,6 +411,7 @@ in {
     hypr-ctl_setup_dual_monitors
     hyprland_tty_all
     hyprland_tty
+    hypr-layout_toggle
     hypr-mpv-manager
     hypr-start-batteryd
     hypr-start-disable_wifi_power_save
