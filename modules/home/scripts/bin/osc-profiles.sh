@@ -797,7 +797,181 @@ show_main_menu() {
 	done
 }
 
-# Ana menü fonksiyonu, ayarlar menüsü ve diğer işlevler...
+# Yardım Menüsü Fonksiyonu
+show_help() {
+	echo -e "${CYAN}${BOLD}${TOP_CORNER}${BAR} NixOS Profil Yönetim Scripti ${BAR}${NC}"
+	echo -e "${VERTICAL} Author: Kenan Pelit"
+	echo -e "${VERTICAL} Version: 1.1.0"
+	echo -e "${BOT_CORNER}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${NC}"
+	echo
+	echo -e "${GREEN}${BOLD}KULLANIM:${NC}"
+	echo -e "  $0 [SEÇENEK]"
+	echo
+	echo -e "${ORANGE}${BOLD}SEÇENEKLER:${NC}"
+	echo -e "${TEE}${HORIZONTAL} ${WHITE}-h, --help${NC}      Bu yardım mesajını göster"
+	echo -e "${TEE}${HORIZONTAL} ${WHITE}-m, --menu${NC}      İnteraktif menüyü başlat"
+	echo -e "${TEE}${HORIZONTAL} ${WHITE}-l, --list${NC}      Profilleri listele"
+	echo -e "${TEE}${HORIZONTAL} ${WHITE}-s, --stats${NC}     Sistem istatistiklerini göster"
+	echo -e "${LAST_TEE}${HORIZONTAL} ${WHITE}-b, --backup${NC}    Aktif profili yedekle"
+	echo
+	echo -e "${PURPLE}${BOLD}AÇIKLAMA:${NC}"
+	echo -e "  Bu script NixOS sistem profillerini yönetir, karşılaştırır ve yedekler."
+	echo -e "  Profilleri görüntüleyebilir, silebilir, yedekleyebilir ve geri yükleyebilirsiniz."
+	echo
+	echo -e "${BLUE}${BOLD}ÖRNEKLER:${NC}"
+	echo -e "  $0              # İnteraktif menüyü başlat"
+	echo -e "  $0 --list       # Profilleri listele"
+	echo -e "  $0 --stats      # Sistem istatistiklerini göster"
+	echo -e "  $0 --backup     # Aktif profili yedekle"
+	echo
+	echo -e "${GRAY}${BOLD}DOSYALAR:${NC}"
+	echo -e "  Yapılandırma: ${ORANGE}$CONFIG_FILE${NC}"
+	echo -e "  Günlük: ${ORANGE}$CONFIG_DIR/profile-manager.log${NC}"
+	echo -e "  Yedekler: ${ORANGE}$BACKUP_DIR${NC}"
+	echo
+}
+
+# İstatistik Fonksiyonu
+print_stats() {
+	echo -e "${CYAN}${BOLD}📊 Sistem İstatistikleri${NC}"
+	echo
+
+	# Profil sayıları
+	local -a all_profiles
+	mapfile -t all_profiles < <(find "$SYSTEM_PROFILES" -maxdepth 1 -type l 2>/dev/null)
+	local -a valid_profiles
+	valid_profiles=($(filter_valid_profiles "${all_profiles[@]}"))
+	local broken_count=$((${#all_profiles[@]} - ${#valid_profiles[@]}))
+
+	echo -e "${GREEN}${BOLD}📦 Profil Bilgileri:${NC}"
+	echo -e "${TEE}${HORIZONTAL} Toplam Profil: ${BLUE}${#all_profiles[@]}${NC}"
+	echo -e "${TEE}${HORIZONTAL} Geçerli Profil: ${GREEN}${#valid_profiles[@]}${NC}"
+	echo -e "${TEE}${HORIZONTAL} Bozuk Profil: ${RED}${broken_count}${NC}"
+
+	# Disk kullanımı
+	if [ ${#valid_profiles[@]} -gt 0 ]; then
+		local total_size=0
+		local largest_size=0
+		local smallest_size=999999999999
+		local largest_profile=""
+		local smallest_profile=""
+
+		for profile in "${valid_profiles[@]}"; do
+			local target=$(readlink -f "$profile")
+			if [ -d "$target" ]; then
+				# du çıktısını temizle ve sadece sayısal değeri al
+				local size_bytes=$(du -sb "$target" 2>/dev/null | awk '{print $1}' | tr -d '\n\r ')
+
+				# Sadece sayısal değerler için işlem yap
+				if [[ "$size_bytes" =~ ^[0-9]+$ ]] && [ "$size_bytes" -gt 0 ]; then
+					total_size=$((total_size + size_bytes))
+
+					if [ "$size_bytes" -gt "$largest_size" ]; then
+						largest_size=$size_bytes
+						largest_profile=$(basename "$profile")
+					fi
+
+					if [ "$size_bytes" -lt "$smallest_size" ]; then
+						smallest_size=$size_bytes
+						smallest_profile=$(basename "$profile")
+					fi
+				fi
+			fi
+		done
+
+		if [ "$total_size" -gt 0 ]; then
+			local avg_size=$((total_size / ${#valid_profiles[@]}))
+
+			echo -e "${LAST_TEE}${HORIZONTAL} Ortalama Boyut: ${BLUE}$(numfmt --to=iec-i --suffix=B "$avg_size")${NC}"
+			echo
+			echo -e "${ORANGE}${BOLD}💾 Disk Kullanımı:${NC}"
+			echo -e "${TEE}${HORIZONTAL} Toplam Boyut: ${BLUE}$(numfmt --to=iec-i --suffix=B "$total_size")${NC}"
+
+			if [ -n "$largest_profile" ] && [ "$largest_size" -gt 0 ]; then
+				echo -e "${TEE}${HORIZONTAL} En Büyük: ${PURPLE}${largest_profile}${NC} (${BLUE}$(numfmt --to=iec-i --suffix=B "$largest_size")${NC})"
+			fi
+
+			if [ -n "$smallest_profile" ] && [ "$smallest_size" -lt 999999999999 ]; then
+				echo -e "${LAST_TEE}${HORIZONTAL} En Küçük: ${PURPLE}${smallest_profile}${NC} (${BLUE}$(numfmt --to=iec-i --suffix=B "$smallest_size")${NC})"
+			fi
+		else
+			echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Boyut bilgisi alınamadı${NC}"
+		fi
+	else
+		echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Geçerli profil bulunamadı${NC}"
+	fi
+
+	# Yedek bilgileri
+	echo
+	echo -e "${YELLOW}${BOLD}💾 Yedek Bilgileri:${NC}"
+	if [ -d "$BACKUP_DIR" ]; then
+		local -a backups
+		mapfile -t backups < <(find "$BACKUP_DIR" -name "*.tar.gz" 2>/dev/null)
+		local backup_count=${#backups[@]}
+
+		if [ $backup_count -gt 0 ]; then
+			local backup_total_size=0
+			local oldest_backup=""
+			local newest_backup=""
+			local oldest_time=9999999999
+			local newest_time=0
+
+			for backup in "${backups[@]}"; do
+				local backup_size=$(du -b "$backup" 2>/dev/null | cut -f1)
+				local backup_time=$(stat -c %Y "$backup" 2>/dev/null)
+
+				if [ -n "$backup_size" ]; then
+					backup_total_size=$((backup_total_size + backup_size))
+				fi
+
+				if [ -n "$backup_time" ]; then
+					if [ "$backup_time" -lt "$oldest_time" ]; then
+						oldest_time=$backup_time
+						oldest_backup=$(basename "$backup")
+					fi
+
+					if [ "$backup_time" -gt "$newest_time" ]; then
+						newest_time=$backup_time
+						newest_backup=$(basename "$backup")
+					fi
+				fi
+			done
+
+			echo -e "${TEE}${HORIZONTAL} Yedek Sayısı: ${BLUE}${backup_count}${NC}"
+			echo -e "${TEE}${HORIZONTAL} Toplam Boyut: ${BLUE}$(numfmt --to=iec-i --suffix=B "$backup_total_size")${NC}"
+			echo -e "${TEE}${HORIZONTAL} En Eski: ${GRAY}${oldest_backup}${NC}"
+			echo -e "${LAST_TEE}${HORIZONTAL} En Yeni: ${GRAY}${newest_backup}${NC}"
+		else
+			echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Yedek bulunamadı${NC}"
+		fi
+	else
+		echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Yedek dizini yok${NC}"
+	fi
+
+	# Sistem bilgileri
+	echo
+	echo -e "${PURPLE}${BOLD}⚙️  Sistem Bilgileri:${NC}"
+	local current_target=$(readlink -f "$SYSTEM_PROFILE")
+	local current_hash=$(basename "$current_target")
+	local uptime_info=$(uptime | sed 's/.*up \([^,]*\),.*/\1/' 2>/dev/null || echo "Bilinmiyor")
+	local kernel_version=$(uname -r)
+	local nix_version=$(nix --version 2>/dev/null | head -1 | cut -d' ' -f3 || echo "Bilinmiyor")
+
+	echo -e "${TEE}${HORIZONTAL} Aktif Hash: ${ORANGE}${current_hash:0:14}...${NC}"
+	echo -e "${TEE}${HORIZONTAL} Çalışma Süresi: ${BLUE}${uptime_info}${NC}"
+	echo -e "${TEE}${HORIZONTAL} Çekirdek: ${BLUE}${kernel_version}${NC}"
+	echo -e "${LAST_TEE}${HORIZONTAL} Nix Sürümü: ${BLUE}${nix_version}${NC}"
+
+	# Yapılandırma bilgileri
+	echo
+	echo -e "${CYAN}${BOLD}⚙️  Yapılandırma:${NC}"
+	echo -e "${TEE}${HORIZONTAL} Sıralama: ${ORANGE}${SORT_BY}${NC}"
+	echo -e "${TEE}${HORIZONTAL} Detaylar: ${ORANGE}$([ "$SHOW_DETAILS" = true ] && echo "Açık" || echo "Kapalı")${NC}"
+	echo -e "${TEE}${HORIZONTAL} Otomatik Yedekleme: ${ORANGE}$([ "$AUTO_BACKUP" = true ] && echo "Açık" || echo "Kapalı")${NC}"
+	echo -e "${TEE}${HORIZONTAL} Silme Onayı: ${ORANGE}$([ "$CONFIRM_DELETE" = true ] && echo "Açık" || echo "Kapalı")${NC}"
+	echo -e "${LAST_TEE}${HORIZONTAL} Maksimum Yedek: ${ORANGE}${MAX_BACKUPS}${NC}"
+	echo
+}
 
 # Ana Program işleme kısmı
 main() {
