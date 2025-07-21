@@ -89,17 +89,22 @@ function send_notification {
 	fi
 }
 
-# Şarkı bilgilerini alma fonksiyonu
+# Şarkı bilgilerini alma fonksiyonu - Düzeltilmiş
 function get_track_info {
 	local artist=$(playerctl -p "$PLAYER" metadata artist 2>/dev/null)
 	local title=$(playerctl -p "$PLAYER" metadata title 2>/dev/null)
 	local album=$(playerctl -p "$PLAYER" metadata album 2>/dev/null)
 
-	if [ -n "$artist" ] && [ -n "$title" ]; then
-		if [ -n "$album" ]; then
+	# En azından title varsa devam et
+	if [ -n "$title" ]; then
+		if [ -n "$artist" ] && [ -n "$album" ]; then
 			echo "$title - $artist ($album)"
-		else
+		elif [ -n "$artist" ]; then
 			echo "$title - $artist"
+		elif [ -n "$album" ]; then
+			echo "$title ($album)"
+		else
+			echo "$title" # Sadece başlık varsa bile göster (podcast için)
 		fi
 		return 0
 	else
@@ -316,23 +321,28 @@ function pause_music {
 	send_notification "Spotify" "⏸️ Duraklatıldı"
 }
 
-# Play/Pause işlevi
+# Play/Pause işlevi - Temiz Versiyon
 function toggle_playback {
 	check_spotify_running || return 1
 	check_spotify_ready || return 1
 
 	STATUS=$(playerctl -p "$PLAYER" status 2>/dev/null)
 
+	# Önce şarkı bilgisini al (her durumda)
+	track_info=$(get_track_info)
+
 	case $STATUS in
 	"Playing")
 		playerctl -p "$PLAYER" pause
-		send_notification "Spotify" "⏸️ Duraklatıldı"
+		if [ -n "$track_info" ]; then
+			send_notification "Spotify" "⏸️ Duraklatıldı: $track_info" "normal" 3000
+		else
+			send_notification "Spotify" "⏸️ Duraklatıldı"
+		fi
 		;;
 	"Paused")
 		playerctl -p "$PLAYER" play
-
-		# Şarkı bilgisini göster
-		if track_info=$(get_track_info); then
+		if [ -n "$track_info" ]; then
 			send_notification "Spotify" "▶️ Oynatılıyor: $track_info" "normal" 3000
 		else
 			send_notification "Spotify" "▶️ Oynatılıyor"
