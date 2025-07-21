@@ -1,93 +1,106 @@
 # modules/home/kitty/default.nix
 # ==============================================================================
-# Kitty Terminal Emülatör Konfigürasyonu
+# Kitty Terminal Emulator Configuration
 # ==============================================================================
 { pkgs, host, lib, ... }:
-let
-  # Tokyo Night tema renkleri
-  colors = {
-    base = "#24283b";
-    crust = "#1a1b26";
-    mantle = "#1f2335";
-    text = "#c0caf5";
-    surface1 = "#414868";
-    surface2 = "#565f89";
-    mauve = "#bb9af7";
-    sky = "#7dcfff";
-    yellow = "#e0af68";
-    red = "#f7768e";
-    green = "#9ece6a";
-    blue = "#7aa2f7";
-    pink = "#ff75a0";
-  };
 
-  # Font ayarları
-  fonts = {
-    terminal = {
-      family = "Hack Nerd Font";
+let
+  # Tokyo Night Color Palette
+  palette = {
+    # Base colors
+    bg = {
+      primary = "#1a1b26";    # crust
+      secondary = "#24283b";  # base  
+      tertiary = "#1f2335";   # mantle
+    };
+    fg = {
+      primary = "#c0caf5";    # text
+      muted = "#565f89";      # surface2
+      subtle = "#414868";     # surface1
+    };
+    accent = {
+      purple = "#bb9af7";     # mauve
+      cyan = "#7dcfff";       # sky
+      yellow = "#e0af68";
+      red = "#f7768e";
+      green = "#9ece6a";
+      blue = "#7aa2f7";
+      pink = "#ff75a0";
     };
   };
 
-  # Kitty tema konfigürasyonu
+  # Typography configuration
+  typography = {
+    family = "Hack Nerd Font";
+    size = 13.3;
+    features = [ "liga" "calt" ];
+  };
+
+  # Performance settings
+  performance = {
+    repaint_delay = 10;
+    input_delay = 3;
+    scrollback_lines = 10000;
+  };
+
+  # Theme configuration for settings.nix
   kittyTheme = {
     colors = {
-      background = colors.base;
-      foreground = colors.text;
-      selection_foreground = colors.crust;
-      selection_background = colors.mauve;
+      background = palette.bg.secondary;
+      foreground = palette.fg.primary;
+      selection_foreground = palette.bg.primary;
+      selection_background = palette.accent.purple;
       
-      cursor = colors.mauve;
-      cursor_text_color = colors.crust;
-      
-      url_color = colors.sky;
+      cursor = palette.accent.purple;
+      cursor_text_color = palette.bg.primary;
+      url_color = palette.accent.cyan;
       
       # Window borders
-      active_border_color = colors.mauve;
-      inactive_border_color = colors.surface1;
-      bell_border_color = colors.yellow;
+      active_border_color = palette.accent.purple;
+      inactive_border_color = palette.fg.subtle;
+      bell_border_color = palette.accent.yellow;
       
       # Tab bar
-      active_tab_foreground = colors.crust;
-      active_tab_background = colors.mauve;
-      inactive_tab_foreground = colors.text;
-      inactive_tab_background = colors.crust;
-      tab_bar_background = colors.mantle;
+      active_tab_foreground = palette.bg.primary;
+      active_tab_background = palette.accent.purple;
+      inactive_tab_foreground = palette.fg.primary;
+      inactive_tab_background = palette.bg.primary;
+      tab_bar_background = palette.bg.tertiary;
       
       # Marks
-      mark1_foreground = colors.crust;
-      mark1_background = colors.mauve;
-      mark2_foreground = colors.crust;
-      mark2_background = colors.pink;
-      mark3_foreground = colors.crust;
-      mark3_background = colors.sky;
+      mark1_foreground = palette.bg.primary;
+      mark1_background = palette.accent.purple;
+      mark2_foreground = palette.bg.primary;
+      mark2_background = palette.accent.pink;
+      mark3_foreground = palette.bg.primary;
+      mark3_background = palette.accent.cyan;
       
-      # Standard colors
-      color0 = colors.surface1;   # Black
-      color8 = colors.surface2;   # Bright Black
-      color1 = colors.red;        # Red
-      color9 = colors.red;        # Bright Red
-      color2 = colors.green;      # Green
-      color10 = colors.green;     # Bright Green
-      color3 = colors.yellow;     # Yellow
-      color11 = colors.yellow;    # Bright Yellow
-      color4 = colors.blue;       # Blue 
-      color12 = colors.blue;      # Bright Blue
-      color5 = colors.pink;       # Magenta
-      color13 = colors.pink;      # Bright Magenta
-      color6 = colors.sky;        # Cyan
-      color14 = colors.sky;       # Bright Cyan
-      color7 = colors.text;       # White
-      color15 = "#ffffff";        # Bright White
+      # ANSI Colors (0-15)
+      color0 = palette.fg.subtle;      # black
+      color1 = palette.accent.red;     # red
+      color2 = palette.accent.green;   # green
+      color3 = palette.accent.yellow;  # yellow
+      color4 = palette.accent.blue;    # blue
+      color5 = palette.accent.pink;    # magenta
+      color6 = palette.accent.cyan;    # cyan
+      color7 = palette.fg.primary;     # white
+      color8 = palette.fg.muted;       # bright black
+      color9 = palette.accent.red;     # bright red
+      color10 = palette.accent.green;  # bright green
+      color11 = palette.accent.yellow; # bright yellow
+      color12 = palette.accent.blue;   # bright blue
+      color13 = palette.accent.pink;   # bright magenta
+      color14 = palette.accent.cyan;   # bright cyan
+      color15 = "#ffffff";             # bright white
     };
   };
-in
-{
+
+in {
   imports = [
     (import ./settings.nix {
-      inherit kittyTheme colors fonts lib;
+      inherit kittyTheme palette typography performance lib;
     })
   ];
   
   programs.kitty.enable = true;
 }
-
