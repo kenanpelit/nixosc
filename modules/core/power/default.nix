@@ -11,7 +11,7 @@
 # Author: Kenan Pelit
 # Power Management Configuration - FIXED for Lid Suspend
 # ==============================================================================
-{ ... }:
+{ config, lib, pkgs, ... }:
 {
   services = {
     # UPower Configuration
