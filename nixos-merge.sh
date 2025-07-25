@@ -66,7 +66,8 @@ git checkout $TARGET_BRANCH
 
 # Source branch'dan tüm dosyaları getir (ama commit etme)
 echo -e "${BLUE}📥 $SOURCE_BRANCH branch'ındaki dosyalar getiriliyor...${NC}"
-git checkout $SOURCE_BRANCH -- .
+# Merge stratejisi kullan (dosya silme işlemlerini de yakalar)
+git merge --no-commit --no-ff $SOURCE_BRANCH || true
 
 # Exclude edilecek dosyaları unstage et ve eski hallerine döndür
 echo -e "${BLUE}🚫 Exclude edilecek dosyalar işleniyor...${NC}"
