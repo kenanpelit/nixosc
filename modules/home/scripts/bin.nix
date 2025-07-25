@@ -183,6 +183,9 @@ let
   osc-scrcpy = pkgs.writeShellScriptBin "osc-scrcpy" (
     builtins.readFile ./bin/osc-scrcpy.sh
   );
+  osc-sops = pkgs.writeShellScriptBin "osc-sops" (
+    builtins.readFile ./bin/osc-sops.sh
+  );
   osc-soundctl = pkgs.writeShellScriptBin "osc-soundctl" (
     builtins.readFile ./bin/osc-soundctl.sh
   );
@@ -444,6 +447,7 @@ in {
     osc-rsync_backup
     osc-rsync
     osc-scrcpy
+    osc-sops
     osc-soundctl
     osc-spotify
     osc-ssh
