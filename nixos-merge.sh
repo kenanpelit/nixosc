@@ -18,6 +18,8 @@ EXCLUDE_FILES=(
 	"modules/home/hyprland/config.nix"
 	"modules/core/power/default.nix"
 	"hosts/hay/hardware-configuration.nix"
+	"flake.json"
+	"flake.lock"
 )
 
 # Kaynak ve hedef branch'lar
