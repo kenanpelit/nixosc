@@ -140,6 +140,29 @@
         git checkout $(echo "$commit" | sed "s/ .*//")
       }
 
+      # Hızlı commit (tek satır İngilizce mesaj)
+      function gc() {
+        if [ -z "$1" ]; then
+          echo "Usage: gc <commit-message>"
+          echo "Example: gc 'fix: resolve login issue'"
+          return 1
+        fi
+        git add -A && git commit -m "$1"
+      }
+
+      # İnteraktif commit mesajı
+      function gci() {
+        git add -A
+        echo "Enter commit message (English, single line):"
+        read -r message
+        if [ -n "$message" ]; then
+          git commit -m "$message"
+        else
+          echo "Commit cancelled: empty message"
+          return 1
+        fi
+      }
+
       # =============================================================================
       # History temizleme fonksiyonu
       # =============================================================================
