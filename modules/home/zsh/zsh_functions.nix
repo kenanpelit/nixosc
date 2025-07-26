@@ -204,11 +204,12 @@
       # =============================================================================
       # Nix Temizleme Fonksiyonları
       # =============================================================================
+      
       # Hızlı Nix temizliği (alias)
       alias nxc="nix-collect-garbage -d && nix-store --gc"
 
-      # Detaylı Nix temizliği (GC roots dahil)
-      function           nixdeepclean() {
+      # Detaylı Nix temizliği fonksiyonu
+      function nix_clean() {
         echo "🧹 Nix detaylı temizlik başlıyor..."
         
         # GC roots temizliği
