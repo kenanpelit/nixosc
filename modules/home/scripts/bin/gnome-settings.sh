@@ -564,7 +564,7 @@ dconf write /org/gnome/shell/extensions/dash-to-panel/hotkeys-overlay-combo "'TE
 
 # Panel positions - JSON string
 dconf write /org/gnome/shell/extensions/dash-to-panel/panel-positions '"{\"CMN-0x00000000\":\"TOP\",\"DEL-KRXTR88N909L\":\"TOP\"}"'
-dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes '"{\"CMN-0x00000000\":22,\"DEL-KRXTR88N909L\":22}"'
+dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes '"{\"CMN-0x00000000\":28,\"DEL-KRXTR88N909L\":28}"'
 dconf write /org/gnome/shell/extensions/dash-to-panel/panel-lengths '"{\"CMN-0x00000000\":100,\"DEL-KRXTR88N909L\":100}"'
 dconf write /org/gnome/shell/extensions/dash-to-panel/panel-anchors '"{\"CMN-0x00000000\":\"MIDDLE\",\"DEL-KRXTR88N909L\":\"MIDDLE\"}"'
 

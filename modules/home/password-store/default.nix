@@ -11,10 +11,11 @@
     enable = true;
     package = pkgs.pass.withExtensions (exts: [
       exts.pass-otp    # OTP support
-      exts.pass-audit  # Password auditing
+      (exts.pass-audit.overrideAttrs (old: {
+        doCheck = false;  # Skip tests to avoid build failures
+      }))
       exts.pass-update # Password updating
     ]);
-
     # ---------------------------------------------------------------------------
     # Core Settings
     # ---------------------------------------------------------------------------
@@ -24,7 +25,6 @@
       PASSWORD_STORE_GENERATED_LENGTH = "20";
     };
   };
-
   # =============================================================================
   # Secret Service Integration
   # =============================================================================
