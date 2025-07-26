@@ -1,0 +1,18 @@
+: 1753528258:0;cd modules/home/zsh/
+: 1753528260:0;pwd
+: 1753528261:0;ls -all
+: 1753528270:30;vim zsh.nix
+: 1753528307:0;echo $HISTFILE\
+echo $ZDOTDIR\
+ls -la ~/.config/zsh/
+: 1753528333:0;source ~/.config/zsh/.zshrc
+: 1753528339:0;history
+: 1753528369:0;vim ~/.config/zsh/history
+: 1753528388:0;cat ~/.config/zsh/history | wc -l
+: 1753528415:0;fc -R ~/.config/zsh/history\
+echo "HISTSIZE: $HISTSIZE"\
+echo "SAVEHIST: $SAVEHIST"\
+history | wc -l
+: 1753528424:0;history
+: 1753529629:209;k
+: 1753529839:0;osc
