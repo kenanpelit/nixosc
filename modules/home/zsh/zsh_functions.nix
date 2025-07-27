@@ -140,6 +140,29 @@
         git checkout $(echo "$commit" | sed "s/ .*//")
       }
 
+      # Hızlı commit (tek satır İngilizce mesaj)
+      function gc() {
+        if [ -z "$1" ]; then
+          echo "Usage: gc <commit-message>"
+          echo "Example: gc 'fix: resolve login issue'"
+          return 1
+        fi
+        git add -A && git commit -m "$1"
+      }
+
+      # İnteraktif commit mesajı
+      function gci() {
+        git add -A
+        echo "Enter commit message (English, single line):"
+        read -r message
+        if [ -n "$message" ]; then
+          git commit -m "$message"
+        else
+          echo "Commit cancelled: empty message"
+          return 1
+        fi
+      }
+
       # =============================================================================
       # History temizleme fonksiyonu
       # =============================================================================
@@ -176,6 +199,103 @@
         
         echo -e "\nÇalışma zamanı bağımlılıkları:"
         nix-store -q --requisites $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
+      }
+
+      # =============================================================================
+      # Nix Temizleme Fonksiyonları
+      # =============================================================================
+      
+      # Hızlı Nix temizliği (alias)
+      alias nxc="nix-collect-garbage -d && nix-store --gc"
+
+      # Detaylı Nix temizliği fonksiyonu
+      function nix_clean() {
+        echo "🧹 Nix detaylı temizlik başlıyor..."
+        
+        # GC roots temizliği
+        echo "📂 Gereksiz GC root'ları temizleniyor..."
+        nix-store --gc --print-roots | \
+          egrep -v "^(/nix/var|/run/\w+-system|\{memory|/proc)" | \
+          awk '{ print $1 }' | \
+          grep -vE 'home-manager|flake-registry\.json' | \
+          xargs -L1 unlink 2>/dev/null || true
+        
+        # Garbage collection
+        echo "🗑️  Garbage collection çalışıyor..."
+        nix-collect-garbage -d
+        
+        # Store optimizasyonu
+        echo "⚡ Store optimize ediliyor..."
+        nix-store --optimise
+        
+        echo "✅ Detaylı temizlik tamamlandı!"
+        
+        # Temizlik sonrası bilgi
+        echo "📊 Temizlik sonrası durum:"
+        du -sh /nix/store 2>/dev/null || echo "Store boyutu hesaplanamadı"
+      }
+
+      # Güvenli Nix temizliği (önizleme ile)
+      function nix_clean_preview() {
+        echo "🔍 Silinecek GC root'ları önizleniyor..."
+        local roots_to_delete
+        roots_to_delete=$(nix-store --gc --print-roots | \
+          egrep -v "^(/nix/var|/run/\w+-system|\{memory|/proc)" | \
+          awk '{ print $1 }' | \
+          grep -vE 'home-manager|flake-registry\.json')
+        
+        if [[ -z "$roots_to_delete" ]]; then
+          echo "✅ Silinecek gereksiz GC root bulunamadı."
+        else
+          echo "📋 Silinecek GC roots:"
+          echo "$roots_to_delete"
+          echo ""
+        fi
+        
+        # Garbage collection önizlemesi
+        echo "🗑️  Garbage collection simülasyonu..."
+        nix-collect-garbage -d --dry-run
+        
+        echo ""
+        echo -n "🤔 Temizlik işlemini başlatmak istiyor musunuz? (y/N): "
+        read answer
+        if [[ $answer == "y" || $answer == "Y" ]]; then
+          nix_clean
+        else
+          echo "❌ Temizlik iptal edildi."
+        fi
+      }
+
+      # Nix store boyutu kontrolü
+      function nix_store_size() {
+        echo "📊 Nix Store Analizi:"
+        echo "├─ Store toplam boyutu: $(du -sh /nix/store 2>/dev/null | cut -f1 || echo 'Hesaplanamadı')"
+        echo "├─ Toplam paket sayısı: $(ls /nix/store | wc -l 2>/dev/null || echo 'Hesaplanamadı')"
+        echo "├─ GC root sayısı: $(nix-store --gc --print-roots | wc -l 2>/dev/null || echo 'Hesaplanamadı')"
+        echo "└─ Eski generasyon sayısı: $(nix-env --list-generations | wc -l 2>/dev/null || echo 'Hesaplanamadı')"
+      }
+
+      # Nix profil temizliği
+      function nix_profile_clean() {
+        echo "🔄 Nix profilleri temizleniyor..."
+        
+        # Kullanıcı profili generasyonları
+        echo "👤 Kullanıcı profili generasyonları:"
+        nix-env --list-generations
+        
+        echo -n "🤔 Eski generasyonları silmek istiyor musunuz? (y/N): "
+        read answer
+        if [[ $answer == "y" || $answer == "Y" ]]; then
+          nix-env --delete-generations old
+          echo "✅ Eski generasyonlar silindi."
+        fi
+        
+        # Sistem profili (eğer NixOS kullanıyorsa)
+        if command -v nixos-rebuild >/dev/null 2>&1; then
+          echo "🖥️  Sistem profili generasyonları temizleniyor..."
+          sudo nix-collect-garbage -d
+          echo "✅ Sistem profili temizlendi."
+        fi
       }
     '';
   };
