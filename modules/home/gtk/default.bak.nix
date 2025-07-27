@@ -1,6 +1,6 @@
 # modules/home/gtk/default.nix
 # ==============================================================================
-# GTK Theme and Configuration - Tokyo Night Storm
+# GTK Theme and Configuration
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
@@ -25,8 +25,8 @@ in
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
       cursor-size = 24;
-      cursor-theme = "Bibata-Modern-Classic";
-      gtk-theme = "Tokyonight-Dark";
+      cursor-theme = "catppuccin-mocha-lavender-cursors";
+      gtk-theme = "catppuccin-mocha-blue-standard";
       icon-theme = "a-candy-beauty-icon-theme";
       font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       text-scaling-factor = 1.0;
@@ -40,7 +40,7 @@ in
     # ---------------------------------------------------------------------------
     "org/gnome/desktop/wm/preferences" = {
       button-layout = "appmenu";
-      theme = "Tokyonight-Storm-BL";
+      theme = "catppuccin-mocha-blue-standard";
     };
   };
 
@@ -59,27 +59,34 @@ in
     };
     
     # ---------------------------------------------------------------------------
-    # Theme Settings - Tokyo Night Dark (gerçek tema adı)
+    # Theme Settings
     # ---------------------------------------------------------------------------
     theme = {
-      name = "Tokyonight-Dark";
-      package = pkgs.tokyonight-gtk-theme;
+      name = "catppuccin-mocha-blue-standard";
+      package = pkgs.catppuccin-gtk.override {
+        accents = [ "blue" ];
+        size = "standard";
+        variant = "mocha";
+      };
     };
     
     # ---------------------------------------------------------------------------
-    # Icon Theme Settings - BeautyLine (mevcut güzel temanız)
+    # Icon Theme Settings
     # ---------------------------------------------------------------------------
     iconTheme = {
       name = "a-candy-beauty-icon-theme";
-      # BeautyLine paketi zaten modules/home/candy/default.nix'de tanımlı
+      package = pkgs.catppuccin-papirus-folders.override {
+        flavor = "mocha";
+        accent = "blue";
+      };
     };
     
     # ---------------------------------------------------------------------------
-    # Cursor Theme Settings - Tokyo Night Storm Compatible
+    # Cursor Theme Settings
     # ---------------------------------------------------------------------------
     cursorTheme = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
+      name = "catppuccin-mocha-lavender-cursors";
+      package = pkgs.catppuccin-cursors.mochaLavender;
       size = 24;
     };
 
@@ -89,10 +96,10 @@ in
     gtk2 = {
       configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
       extraConfig = ''
-        gtk-theme-name = "Tokyonight-Storm-BL"
-        gtk-icon-theme-name = "Papirus-Dark"
+        gtk-theme-name = "catppuccin-mocha-blue-standard"
+        gtk-icon-theme-name = "a-candy-beauty-icon-theme"
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
-        gtk-cursor-theme-name = "Bibata-Modern-Classic"
+        gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors"
         gtk-cursor-theme-size = 24
         gtk-application-prefer-dark-theme = 1
         gtk-button-images = 1
@@ -112,10 +119,10 @@ in
     # GTK3 Specific Settings
     # ---------------------------------------------------------------------------
     gtk3.extraConfig = {
-              gtk-theme-name = "Tokyonight-Dark";
+      gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      gtk-cursor-theme-name = "Bibata-Modern-Classic";
+      gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -133,10 +140,10 @@ in
     # GTK4 Specific Settings
     # ---------------------------------------------------------------------------
     gtk4.extraConfig = {
-      gtk-theme-name = "Tokyonight-Dark";
+      gtk-theme-name = "catppuccin-mocha-blue-standard";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      gtk-cursor-theme-name = "Bibata-Modern-Classic";
+      gtk-cursor-theme-name = "catppuccin-mocha-lavender-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -156,29 +163,21 @@ in
   # =============================================================================
   home = {
     # ---------------------------------------------------------------------------
-    # Environment Variables - Tokyo Night Storm
+    # Environment Variables
     # ---------------------------------------------------------------------------
     sessionVariables = {
-      GTK_THEME = "Tokyonight-Dark";
+      GTK_THEME = "catppuccin-mocha-blue-standard";
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
-      XCURSOR_THEME = "Bibata-Modern-Classic";
+      XCURSOR_THEME = "catppuccin-mocha-lavender-cursors";
       XCURSOR_SIZE = "24";
     };
 
     # ---------------------------------------------------------------------------
-    # Package Installation - Tokyo Night Storm (BeautyLine korundu)
+    # Package Installation
     # ---------------------------------------------------------------------------
     packages = with pkgs; [
-      # Tokyo Night Theme
-      tokyonight-gtk-theme
-      
-      # Cursor theme
-      bibata-cursors
-      
-      # BeautyLine zaten modules/home/candy/default.nix'de tanımlı, burada tekrarlamıyoruz
-      
-      # Fonts (mevcut fontlarınız)
+      papirus-folders
       nerd-fonts.jetbrains-mono
       nerd-fonts.fira-code
       nerd-fonts.caskaydia-cove
@@ -194,8 +193,8 @@ in
     # Pointer Cursor Configuration
     # ---------------------------------------------------------------------------
     pointerCursor = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
+      name = "catppuccin-mocha-lavender-cursors";
+      package = pkgs.catppuccin-cursors.mochaLavender;
       size = 24;
       gtk.enable = true;
       x11.enable = true;

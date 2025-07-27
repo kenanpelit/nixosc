@@ -1,4 +1,4 @@
-# Hyprland Window Manager Configuration
+# Hyprland Window Manager Configuration - Tokyo Night Storm Theme
 # modules/home/hyprland/config.nix
 { config, lib, pkgs, ... }:
 {
@@ -25,8 +25,8 @@
         "wl-paste --type image --watch cliphist store"    # Store image content including screenshots 
         # Advanced clipboard manager with searchable history
         "copyq"
-        # Set system cursor theme and size
-        "hyprctl setcursor catppuccin-mocha-lavender-cursors 24"
+        # Set system cursor theme and size - Tokyo Night Storm
+        "hyprctl setcursor tokyo-night-cursor 24"
         # Initialize wallpaper daemon for dynamic wallpapers
         "swww-daemon"
         # Start wallpaper rotation/management service
@@ -44,7 +44,7 @@
       ];
 
       # =====================================================
-      # Environment Variables - Unified Configuration
+      # Environment Variables - Tokyo Night Storm Theme
       # =====================================================
       env = [
         # -----------------------------------------
@@ -80,15 +80,15 @@
         #"__GL_VRR_ALLOWED,0"                    # VRR devre dışı
 
         # -----------------------------------------
-        # GTK Tema ve Görünüm
+        # GTK Tema ve Görünüm - Tokyo Night Storm
         # -----------------------------------------
-        "GTK_THEME,catppuccin-mocha-blue-standard" # GTK teması
+        "GTK_THEME,Tokyonight-Dark"              # GTK teması
         "GTK_USE_PORTAL,1"                      # XDG portal kullanımı
         "GTK_APPLICATION_PREFER_DARK_THEME,1"   # Koyu tema tercihi
         "GDK_SCALE,1"                           # HiDPI ölçekleme
 
         # -----------------------------------------
-        # Qt/KDE Tema ve Görünüm
+        # Qt/KDE Tema ve Görünüm - Tokyo Night Storm
         # -----------------------------------------
         "QT_QPA_PLATFORM,wayland;xcb"           # Wayland öncelikli, XCB fallback
         "QT_QPA_PLATFORMTHEME,gtk3"             # GTK tema entegrasyonu
@@ -159,45 +159,55 @@
       };
 
       # =====================================================
-      # Genel Pencere Yöneticisi Ayarları
+      # Genel Pencere Yöneticisi Ayarları - Tokyo Night Storm
       # =====================================================
       general = {
-        "$mainMod" = "SUPER";                    # Ana modifikatör tuşu
-        gaps_in = 0;                             # İç boşluklar
-        gaps_out = 0;                            # Dış boşluklar
-        border_size = 2;                         # Border kalınlığı
-        "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-        "col.inactive_border" = "rgba(595959aa)";
-        layout = "master";                       # Layout
-        allow_tearing = false;                   # Tearing'e izin verme
-        resize_on_border = true;                 # Border'dan resize
-        extend_border_grab_area = 15;            # Border grab alanı
-        hover_icon_on_border = true;             # Border'da hover iconu
-        no_border_on_floating = false;           # Floating'de border
+        "$mainMod" = "SUPER";                                    # Ana modifikatör tuşu
+        gaps_in = 0;                                             # İç boşluklar
+        gaps_out = 0;                                            # Dış boşluklar
+        border_size = 2;                                         # Border kalınlığı
+        # Tokyo Night Storm: Aktif border - mavi ve teal gradient
+        "col.active_border" = "rgba(7aa2f7ee) rgba(2ac3deff) 45deg";
+        # Tokyo Night Storm: Pasif border - koyu gri
+        "col.inactive_border" = "rgba(414868aa)";
+        layout = "master";                                       # Layout
+        allow_tearing = false;                                   # Tearing'e izin verme
+        resize_on_border = true;                                 # Border'dan resize
+        extend_border_grab_area = 15;                            # Border grab alanı
+        hover_icon_on_border = true;                             # Border'da hover iconu
+        no_border_on_floating = false;                           # Floating'de border
       };
 
       # =====================================================
-      # Grup Ayarları
+      # Grup Ayarları - Tokyo Night Storm
       # =====================================================
       group = {
-        "col.border_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
-        "col.border_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
-        "col.border_locked_active" = "rgba(a855f7ee) rgba(9333eaee) 45deg";
-        "col.border_locked_inactive" = "rgba(b4befeaa) rgba(6c7086aa) 45deg";
+        # Tokyo Night Storm: Aktif grup border - mavi ve mor gradient
+        "col.border_active" = "rgba(7aa2f7ee) rgba(bb9af7ee) 45deg";
+        # Tokyo Night Storm: Pasif grup border - gri tonları
+        "col.border_inactive" = "rgba(565f89aa) rgba(414868aa) 45deg";
+        # Tokyo Night Storm: Kilitli aktif grup border
+        "col.border_locked_active" = "rgba(7aa2f7ee) rgba(bb9af7ee) 45deg";
+        # Tokyo Night Storm: Kilitli pasif grup border
+        "col.border_locked_inactive" = "rgba(565f89aa) rgba(414868aa) 45deg";
         
         groupbar = {
           render_titles = false;
           gradients = false;
           font_size = 10;
-          "col.active" = "rgba(a855f7ee)";
-          "col.inactive" = "rgba(6c7086aa)";
-          "col.locked_active" = "rgba(9333eaee)";
-          "col.locked_inactive" = "rgba(7aa2f7aa)";
+          # Tokyo Night Storm: Aktif groupbar - mavi
+          "col.active" = "rgba(7aa2f7ee)";
+          # Tokyo Night Storm: Pasif groupbar - gri
+          "col.inactive" = "rgba(565f89aa)";
+          # Tokyo Night Storm: Kilitli aktif groupbar - mor
+          "col.locked_active" = "rgba(bb9af7ee)";
+          # Tokyo Night Storm: Kilitli pasif groupbar - koyu gri
+          "col.locked_inactive" = "rgba(414868aa)";
         };
       };
 
       # =====================================================
-      # Çeşitli Ayarlar
+      # Çeşitli Ayarlar - Tokyo Night Storm
       # =====================================================
       misc = {
         # Görünüm ayarları
@@ -234,7 +244,8 @@
         close_special_on_empty = true;          # Boş special workspace'i kapat
         new_window_takes_over_fullscreen = 2;   # Yeni pencere fullscreen davranışı
         allow_session_lock_restore = true;      # Session lock restore
-        background_color = "rgba(11,18,48,1.0)"; # Arka plan rengi (hex düzeltildi)
+        # Tokyo Night Storm: Arka plan rengi - storm background
+        background_color = "rgba(24,28,47,1.0)";
       };
 
       # =====================================================
@@ -305,7 +316,7 @@
       };
 
       # =====================================================
-      # Görsel Efektler ve Dekorasyon
+      # Görsel Efektler ve Dekorasyon - Tokyo Night Storm
       # =====================================================
       decoration = {
         # Temel görünüm
@@ -320,7 +331,7 @@
         dim_inactive = true;                    # Pasif pencere karartma
         dim_strength = 0.15;                    # Karartma şiddeti
 
-        # Bulanıklık efektleri
+        # Bulanıklık efektleri - Tokyo Night Storm
         blur = {
           enabled = true;                       # Blur efekti aktif
           size = 8;                             # Blur boyutu
@@ -335,37 +346,39 @@
           popups_ignorealpha = 0.2;             # Popup blur eşiği
         };
 
-        # Gölge efektleri
+        # Gölge efektleri - Tokyo Night Storm
         shadow = {
           enabled = true;                       # Gölge efekti aktif
           ignore_window = true;                 # Pencere gölgesi
           offset = "0 4";                       # Gölge offset (x y)
           range = 25;                           # Gölge genişliği
           render_power = 2;                     # Gölge render gücü
-          color = "rgba(00000066)";             # Gölge rengi
+          # Tokyo Night Storm: Gölge rengi - koyu mavi ton
+          color = "rgba(15,17,28,66)";
           scale = 0.97;                         # Gölge ölçeği
         };
       };
 
       # =====================================================
-      # Animasyon Ayarları
+      # Animasyon Ayarları - Tokyo Night Storm
       # =====================================================
       animations = {
         enabled = true;                         # Animasyonları etkinleştir
 
-        # Bezier eğrileri
+        # Bezier eğrileri - Tokyo Night Storm smooth transitions
         bezier = [
           "fluent_decel, 0, 0.2, 0.4, 1"
           "easeOutCirc, 0, 0.55, 0.45, 1"
           "easeOutCubic, 0.33, 1, 0.68, 1"
+          "tokyoSmooth, 0.25, 0.1, 0.25, 1"
         ];
 
-        # Animasyon tanımları
+        # Animasyon tanımları - Tokyo Night Storm optimized
         animation = [
           "windows, 1, 2, easeOutCubic, slide"
           "windowsOut, 1, 2, easeOutCubic, slide"
           "fade, 1, 3, easeOutCirc"
-          "workspaces, 1, 3, easeOutCubic"
+          "workspaces, 1, 3, tokyoSmooth"
           "border, 1, 1, linear"
         ];
       };
@@ -905,3 +918,4 @@
     '';
   };
 }
+
