@@ -1,6 +1,6 @@
 # modules/home/nvim/defaults.nix
 # ==============================================================================
-# Neovim Configuration - LazyVim Edition with GNOME/Hyprland Clipboard Support
+# Neovim Configuration - LazyVim Edition with Catppuccin Theme
 # ==============================================================================
 { config, pkgs, ... }:
 {
@@ -42,7 +42,7 @@
    ];
 
    # =============================================================================
-   # Vim Configuration with Desktop Environment Detection
+   # Vim Configuration with Catppuccin Theme Fix
    # =============================================================================
    extraConfig = ''
      " Desktop environment-aware clipboard configuration
@@ -50,7 +50,6 @@
        " =======================================================================
        " GNOME Configuration
        " =======================================================================
-       " Use xclip for reliable clipboard in GNOME
        if executable('xclip')
          let g:clipboard = {
                \   'name': 'xclip-gnome',
@@ -64,10 +63,8 @@
                \   },
                \   'cache_enabled': 1,
                \ }
-         " Enable system clipboard integration with xclip
          set clipboard+=unnamedplus
        else
-         " Fallback: disable automatic clipboard to prevent freezing
          set clipboard=
          echom "Warning: xclip not found, clipboard disabled for GNOME"
        endif
@@ -83,7 +80,6 @@
        " =======================================================================
        " Hyprland/Sway Configuration (Non-GNOME)
        " =======================================================================
-       " Use wl-clipboard for proper Wayland integration
        set clipboard+=unnamedplus
        
        if executable('wl-copy')
@@ -100,7 +96,6 @@
                \   'cache_enabled': 0,
                \ }
        else
-         " Fallback to xclip if wl-clipboard not available
          if executable('xclip')
            let g:clipboard = {
                  \   'name': 'xclip-fallback',
@@ -121,20 +116,18 @@
        endif
      endif
 
-     " LazyVim bootstrap
+     " LazyVim bootstrap with Catppuccin fix
      lua << EOF
      -- Desktop environment detection in Lua
      local desktop_env = os.getenv("XDG_CURRENT_DESKTOP") or ""
      
      -- Additional GNOME-specific clipboard safety
      if desktop_env == "GNOME" then
-       -- Disable unnamedplus if wl-copy is somehow still being used
        local handle = io.popen("which wl-copy 2>/dev/null")
        local wl_copy_path = handle:read("*a")
        handle:close()
        
        if wl_copy_path ~= "" then
-         -- Force disable clipboard if wl-copy is present in GNOME
          vim.opt.clipboard = ""
          print("GNOME detected: Disabled automatic clipboard to prevent wl-copy conflicts")
        end
@@ -153,7 +146,7 @@
      end
      vim.opt.rtp:prepend(lazypath)
 
-     -- Plugin Configuration
+     -- Plugin Configuration with Catppuccin
      require("lazy").setup({
        spec = {
          { "LazyVim/LazyVim", import = "lazyvim.plugins" },
@@ -164,6 +157,71 @@
          { "williamboman/mason.nvim" },
          { "williamboman/mason-lspconfig.nvim" },
          { "neovim/nvim-lspconfig" },
+         
+         -- Catppuccin plugin explicit ekleme
+         {
+           "catppuccin/nvim",
+           name = "catppuccin",
+           priority = 1000,
+           config = function()
+             require("catppuccin").setup({
+               flavour = "mocha", -- latte, frappe, macchiato, mocha
+               background = {
+                 light = "latte",
+                 dark = "mocha",
+               },
+               transparent_background = false,
+               show_end_of_buffer = false,
+               term_colors = true,
+               dim_inactive = {
+                 enabled = false,
+                 shade = "dark",
+                 percentage = 0.15,
+               },
+               no_italic = false,
+               no_bold = false,
+               no_underline = false,
+               styles = {
+                 comments = { "italic" },
+                 conditionals = { "italic" },
+                 loops = {},
+                 functions = {},
+                 keywords = {},
+                 strings = {},
+                 variables = {},
+                 numbers = {},
+                 booleans = {},
+                 properties = {},
+                 types = {},
+                 operators = {},
+               },
+               color_overrides = {},
+               custom_highlights = {},
+               integrations = {
+                 cmp = true,
+                 gitsigns = true,
+                 nvimtree = true,
+                 treesitter = true,
+                 notify = false,
+                 mini = {
+                   enabled = true,
+                   indentscope_color = "",
+                 },
+                 -- LazyVim integrations
+                 alpha = true,
+                 dashboard = true,
+                 flash = true,
+                 leap = true,
+                 markdown = true,
+                 mason = true,
+                 neotree = true,
+                 noice = true,
+                 telescope = true,
+                 which_key = true,
+               },
+             })
+           end,
+         },
        },
        defaults = {
          lazy = false,
@@ -195,9 +253,9 @@
        automatic_installation = true,
      })
 
-     -- LazyVim Settings
+     -- LazyVim Settings - Tema ayarı kaldırıldı, çünkü plugin'de ayarlanıyor
      require("lazyvim.config").init({
-       colorscheme = "catppuccin-mocha",
+       -- colorscheme satırını kaldırdık, Catppuccin plugin'i otomatik aktifleşecek
        defaults = {
          autocmds = true,
          keymaps = true,
@@ -216,6 +274,13 @@
          },
        },
      })
+     
+     -- Tema ayarını en son yap - bu kesin çalışacak
+     vim.defer_fn(function()
+       vim.cmd.colorscheme("catppuccin-mocha")
+       -- Ekstra güvenlik için
+       vim.o.background = "dark"
+     end, 100)
      EOF
    '';
  };
