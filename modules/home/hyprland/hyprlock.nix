@@ -1,9 +1,9 @@
 # modules/home/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Configuration with Tokyo Night Storm Theme
+# Hyprlock Configuration with Catppuccin Mocha Theme
 # ==============================================================================
 # This configuration manages hyprlock screen locker including:
-# - Tokyo Night Storm color scheme
+# - Catppuccin Mocha color scheme
 # - Background and avatar configuration  
 # - Clock and system information display
 # - Authentication input field
@@ -12,41 +12,41 @@
 # ==============================================================================
 { pkgs, username, ... }:
 let
-  # Tokyo Night Storm Color Palette
+  # Catppuccin Mocha Color Palette
   colors = {
     # Background colors
-    base = "rgba(24, 28, 47, 1.0)";           # #181c2f - storm background
-    surface0 = "rgba(30, 35, 57, 0.8)";       # #1e2339 - storm surface
-    surface1 = "rgba(41, 46, 68, 0.9)";       # #292e44 - storm surface1
+    base = "rgba(30, 30, 46, 1.0)";           # #1e1e2e - mocha base
+    surface0 = "rgba(49, 50, 68, 0.8)";       # #313244 - mocha surface0
+    surface1 = "rgba(69, 71, 90, 0.9)";       # #45475a - mocha surface1
     
     # Text colors
-    text = "rgba(192, 202, 245, 0.95)";       # #c0caf5 - storm foreground
-    subtext0 = "rgba(169, 177, 214, 0.8)";    # #a9b1d6 - storm comment
-    subtext1 = "rgba(118, 124, 163, 0.7)";    # #767ba3 - muted text
+    text = "rgba(205, 214, 244, 0.95)";       # #cdd6f4 - mocha text
+    subtext0 = "rgba(166, 173, 200, 0.8)";    # #a6adc8 - mocha subtext0
+    subtext1 = "rgba(186, 194, 222, 0.7)";    # #bac2de - mocha subtext1
     
     # Accent colors
-    blue = "rgba(122, 162, 247, 0.9)";        # #7aa2f7 - storm blue
-    cyan = "rgba(42, 195, 222, 0.8)";         # #2ac3de - storm cyan
-    teal = "rgba(29, 233, 182, 0.7)";         # #1de9b6 - storm teal
-    purple = "rgba(187, 154, 247, 0.8)";      # #bb9af7 - storm purple
-    magenta = "rgba(199, 146, 234, 0.7)";     # #c792ea - storm magenta
+    blue = "rgba(137, 180, 250, 0.9)";        # #89b4fa - mocha blue
+    cyan = "rgba(137, 220, 235, 0.8)";        # #89dceb - mocha sky
+    teal = "rgba(148, 226, 213, 0.7)";        # #94e2d5 - mocha teal
+    purple = "rgba(203, 166, 247, 0.8)";      # #cba6f7 - mocha mauve
+    magenta = "rgba(203, 166, 247, 0.7)";     # #cba6f7 - mocha mauve
     
     # Status colors
-    green = "rgba(158, 206, 106, 0.9)";       # #9ece6a - storm green
-    yellow = "rgba(224, 175, 104, 0.8)";      # #e0af68 - storm yellow
-    orange = "rgba(255, 158, 100, 0.8)";      # #ff9e64 - storm orange
-    red = "rgba(247, 118, 142, 0.9)";         # #f7768e - storm red
+    green = "rgba(166, 227, 161, 0.9)";       # #a6e3a1 - mocha green
+    yellow = "rgba(249, 226, 175, 0.8)";      # #f9e2af - mocha yellow
+    orange = "rgba(250, 179, 135, 0.8)";      # #fab387 - mocha peach
+    red = "rgba(243, 139, 168, 0.9)";         # #f38ba8 - mocha pink
     
     # Special colors
-    border = "rgba(65, 72, 104, 0.8)";        # #414868 - storm border
-    overlay = "rgba(36, 40, 59, 0.6)";        # overlay background
+    border = "rgba(108, 112, 134, 0.8)";      # #6c7086 - mocha overlay0
+    overlay = "rgba(24, 24, 37, 0.6)";        # #181825 - mocha mantle
   };
 in
 {
   home.packages = [ pkgs.hyprlock ];
   
   xdg.configFile."hypr/hyprlock.conf".text = ''
-    # Background - Tokyo Night Storm
+    # Background - Catppuccin Mocha
     background {
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/nixos.png
@@ -64,7 +64,7 @@ in
       disable_loading_bar = true
     }
     
-    # Day of week - Storm Blue
+    # Day of week - Mocha Blue
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%A")"
@@ -76,7 +76,7 @@ in
       valign = center
     }
     
-    # Date - Storm Cyan
+    # Date - Mocha Sky (Cyan)
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%d %B %Y")"
@@ -88,7 +88,7 @@ in
       valign = center
     }
     
-    # Time - Storm Text
+    # Time - Mocha Text
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%H:%M")"
@@ -100,7 +100,7 @@ in
       valign = center
     }
     
-    # Avatar - Storm Purple Border
+    # Avatar - Mocha Mauve (Purple) Border
     image {
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/avatar.png
@@ -113,7 +113,7 @@ in
       valign = center
     }
     
-    # Username background - Storm Surface
+    # Username background - Mocha Surface1
     shape {
       monitor =
       size = 250, 50
@@ -124,7 +124,7 @@ in
       valign = center
     }
     
-    # Username - Storm Text
+    # Username - Mocha Text
     label {
       monitor =
       text = $USER
@@ -136,7 +136,7 @@ in
       valign = center
     }
     
-    # Password input - Storm Theme (HTML span tags kaldırıldı)
+    # Password input - Mocha Theme
     input-field {
       monitor =
       size = 250, 50
@@ -158,7 +158,7 @@ in
       valign = center
     }
     
-    # System uptime - Storm Subtext
+    # System uptime - Mocha Subtext0
     label {
       monitor =
       text = cmd[update:60000] echo "⏱ Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
@@ -170,7 +170,7 @@ in
       valign = center
     }
     
-    # Music status - Storm Teal
+    # Music status - Mocha Teal
     label {
       monitor =
       text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "🎵 $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "🎵 No Player"; fi
@@ -182,7 +182,7 @@ in
       valign = center
     }
     
-    # Battery status (if laptop) - Storm Orange
+    # Battery status (if laptop) - Mocha Peach (Orange)
     label {
       monitor =
       text = cmd[update:30000] if [ -f /sys/class/power_supply/BAT0/capacity ]; then echo "🔋 $(cat /sys/class/power_supply/BAT0/capacity)%"; else echo ""; fi
@@ -194,7 +194,7 @@ in
       valign = center
     }
     
-    # Bottom action icons - Storm Colors (HTML span tags kaldırıldı)
+    # Bottom action icons - Mocha Text
     label {
       monitor =
       text = 󰐥  󰜉  󰤄
@@ -206,7 +206,7 @@ in
       valign = bottom
     }
     
-    # Lock screen hint - Storm Purple
+    # Lock screen hint - Mocha Mauve (Purple)
     label {
       monitor =
       text = Press Enter to unlock
@@ -218,7 +218,7 @@ in
       valign = center
     }
     
-    # Weather info - Frankfurt - Storm Cyan
+    # Weather info - Istanbul - Mocha Sky (Cyan)
     label {
       monitor =
       text = cmd[update:300000] curl -s "wttr.in/Istanbul?format=3" 2>/dev/null | head -1 || echo "🌤 Weather unavailable"
@@ -231,3 +231,4 @@ in
     }
   '';
 }
+
