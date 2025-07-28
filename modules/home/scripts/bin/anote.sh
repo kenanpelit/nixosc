@@ -40,10 +40,13 @@ SCRATCH_FILE="$SCRATCH_DIR/$(date +%Y-%m).txt"
 HISTORY_FILE="$CACHE_DIR/history.json"
 CLEANUP_INTERVAL=$((7 * 24 * 60 * 60)) # 7 gün
 
-# Varsayılan fzf ayarları
+# Varsayılan fzf ayarları - Catppuccin Mocha Theme
 export FZF_DEFAULT_OPTS="-e -i --info=inline --layout=reverse --scroll-off=5 --tiebreak=index --no-unicode"
-FZF_DEFAULT_OPTS+=" --color=bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796,fg:#cad3f5"
-FZF_DEFAULT_OPTS+=" --color=header:#8aadf4,info:#c6a0f6,pointer:#f4dbd6,marker:#f4dbd6,prompt:#c6a0f6"
+FZF_DEFAULT_OPTS+=" --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8"
+FZF_DEFAULT_OPTS+=" --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc"
+FZF_DEFAULT_OPTS+=" --color=marker:#a6e3a1,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8"
+FZF_DEFAULT_OPTS+=" --color=border:#6c7086,label:#cdd6f4,query:#cdd6f4"
+FZF_DEFAULT_OPTS+=" --color=selected-bg:#313244,selected-fg:#cdd6f4"
 FZF_DEFAULT_OPTS+=" --bind 'home:first,end:last,ctrl-k:preview-page-up,ctrl-j:preview-page-down'"
 FZF_DEFAULT_OPTS+=" --bind 'ctrl-y:preview-up,ctrl-e:preview-down,ctrl-/:change-preview-window(hidden|)'"
 FZF_DEFAULT_OPTS+=" --bind 'ctrl-b:toggle-preview,ctrl-d:toggle-preview-wrap'"

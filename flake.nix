@@ -291,6 +291,7 @@
           permittedInsecurePackages = [
             # Allow specific insecure packages with known issues
             "ventoy-1.1.05"      # USB multi-boot tool with binary blobs
+            "libsoup-2.74.3"     # EOL library with CVEs, required by legacy GTK apps
           ];
         };
       };
@@ -347,7 +348,10 @@
             # Security exceptions for specific packages
             # This ensures insecure packages are permitted across the entire system
             {
-              nixpkgs.config.permittedInsecurePackages = [ "ventoy-1.1.05" ];
+              nixpkgs.config.permittedInsecurePackages = [ 
+                "ventoy-1.1.05"
+                "libsoup-2.74.3"        # EOL library with CVEs, required by legacy GTK apps
+              ];
             }
           ] ++ modules;  # Add machine-specific modules
           
@@ -356,7 +360,7 @@
             inherit self inputs username host system;
           };
         };
-        
+       
       # Setup for PyPrland packages
       inherit (inputs.poetry2nix.lib) mkPoetry2Nix;
       eachSystem = nixpkgs.lib.genAttrs (import systems);
