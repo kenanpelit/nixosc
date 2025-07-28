@@ -1,19 +1,19 @@
 # modules/home/media/cava/default.nix
 # ==============================================================================
-# Cava Audio Visualizer Configuration
+# Cava Audio Visualizer Configuration - Catppuccin Mocha
 # ==============================================================================
 { pkgs, ... }:
 let
-  # Tokyo Night tema renkleri
+  # Catppuccin Mocha tema renkleri
   colors = {
-    rosewater = "#f7768e";
-    flamingo = "#ff9e64";
-    pink = "#ff75a0";
-    mauve = "#bb9af7";
-    red = "#f7768e";
-    maroon = "#e0af68";
-    peach = "#ff9e64";
-    yellow = "#e0af68";
+    rosewater = "#f5e0dc";
+    flamingo = "#f2cdcd";
+    pink = "#f5c2e7";
+    mauve = "#cba6f7";
+    red = "#f38ba8";
+    maroon = "#eba0ac";
+    peach = "#fab387";
+    yellow = "#f9e2af";
   };
 in
 {
@@ -36,7 +36,7 @@ in
     overshoot = 0
     
     # ============================================================================
-    # Color Theme
+    # Color Theme - Catppuccin Mocha
     # ============================================================================
     [color]
     gradient = 1

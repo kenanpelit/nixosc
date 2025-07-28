@@ -1,6 +1,6 @@
 # modules/home/copyq/default.nix
 # ==============================================================================
-# CopyQ Clipboard Manager Configuration - Catppuccin Mocha
+# CopyQ Clipboard Manager Configuration
 # ==============================================================================
 {
   config,
@@ -137,7 +137,7 @@
     edit_fg=#cdd6f4
     edit_font="Hack,13,-1,5,50,0,0,0,0,0,Regular"
     fg=#cdd6f4
-    find_bg=#cba6f7
+    find_bg=#89b4fa
     find_fg=#1e1e2e
     find_font="Hack,12,-1,5,50,0,0,0,0,0"
     font="Hack,13,-1,5,50,0,0,0,0,0,Regular"
@@ -162,7 +162,7 @@
     num_margin=2
     search_bar="\n    ;background: ''${edit_bg}\n    ;color: ''${edit_fg}\n    ;border: 1px solid ''${alt_bg}\n    ;margin: 2px"
     search_bar_focused="\n    ;border: 1px solid ''${sel_bg}"
-    sel_bg=#cba6f7
+    sel_bg=#b4befe
     sel_fg=#1e1e2e
     sel_item_css=
     show_number=false
