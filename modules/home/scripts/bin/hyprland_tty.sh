@@ -250,8 +250,7 @@ setup_environment() {
 	debug_log "Wayland backend ayarları yapıldı"
 
 	# GTK ve Qt tema ayarları
-	#export GTK_THEME=catppuccin-mocha-blue-standard
-	export GTK_THEME=Tokyonight-Dark
+	export GTK_THEME=catppuccin-mocha-mauve-standard
 	export GTK_USE_PORTAL=1
 	export GTK_APPLICATION_PREFER_DARK_THEME=1
 	export QT_QPA_PLATFORMTHEME=gtk3

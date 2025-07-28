@@ -1,23 +1,23 @@
 # modules/home/wezterm/default.nix
 # ==============================================================================
-# WezTerm Terminal Emulator Configuration
+# WezTerm Terminal Emulator Configuration - Catppuccin Mocha
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
-  # Tokyo Night tema renkleri
+  # Catppuccin Mocha tema renkleri
   colors = {
-    base = "#24283b";
-    mantle = "#1f2335";
-    crust = "#1a1b26";
-    text = "#c0caf5";
-    surface1 = "#414868";
-    surface2 = "#565f89";
-    mauve = "#bb9af7";
-    pink = "#ff75a0";
-    red = "#f7768e";
-    green = "#9ece6a";
-    yellow = "#e0af68";
-    sky = "#7dcfff";
+    base = "#1e1e2e";
+    mantle = "#181825";
+    crust = "#11111b";
+    text = "#cdd6f4";
+    surface1 = "#45475a";
+    surface2 = "#585b70";
+    mauve = "#cba6f7";
+    pink = "#f5c2e7";
+    red = "#f38ba8";
+    green = "#a6e3a1";
+    yellow = "#f9e2af";
+    sky = "#89dceb";
   };
 
   # Font ve efekt ayarları
@@ -259,7 +259,7 @@ in
       config.unicode_version = 14
       config.freetype_load_target = "Light"
 
-      -- Color Scheme
+      -- Color Scheme - Catppuccin Mocha
       config.colors = {
         foreground = "${colors.text}",
         background = "${colors.base}",
@@ -296,7 +296,7 @@ in
           "${colors.mauve}",     -- Bright Blue
           "${colors.pink}",      -- Bright Magenta
           "${colors.sky}",       -- Bright Cyan
-          "#ffffff",             -- Bright White
+          "#f5e0dc",             -- Bright White (rosewater)
         },
       }
 
@@ -309,7 +309,7 @@ in
         QT_QPA_PLATFORM = "wayland",
         SDL_VIDEODRIVER = "wayland",
         CLUTTER_BACKEND = "wayland",
-        XDG_CURRENT_DESKTOP = "sway",
+        XDG_CURRENT_DESKTOP = "Hyprland",
         XDG_SESSION_TYPE = "wayland",
         MOZ_ENABLE_WAYLAND = "1",
         QT_AUTO_SCREEN_SCALE_FACTOR = "1",
@@ -327,4 +327,3 @@ in
     '';
   };
 }
-

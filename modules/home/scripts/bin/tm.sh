@@ -64,11 +64,10 @@ error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 status() { echo -e "${BLUE}[STATUS]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 
-# FZF theme setup - Consistent across all modes
+# FZF theme setup - Catppuccin Mocha - Consistent across all modes
 setup_fzf_theme() {
 	local prompt_text="${1:-Tmux}"
 	local header_text="${2:-CTRL-R: Yenile | ESC: Çık}"
-
 	export FZF_DEFAULT_OPTS="\
         -e -i \
         --info=default \
@@ -79,12 +78,12 @@ setup_fzf_theme() {
         --prompt='$prompt_text: ' \
         --pointer='❯' \
         --header='$header_text' \
-        --color='bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796,fg:#cad3f5' \
-        --color='header:#8aadf4,info:#c6a0f6,pointer:#f4dbd6,marker:#f4dbd6,prompt:#c6a0f6' \
+        --color='bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8,fg:#cdd6f4' \
+        --color='header:#89b4fa,info:#cba6f7,pointer:#f5e0dc,marker:#a6e3a1,prompt:#cba6f7' \
         --bind 'ctrl-j:preview-down,ctrl-k:preview-up' \
         --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up' \
         --bind 'ctrl-/:change-preview-window(hidden|)' \
-        --color='pointer:magenta' \
+        --color='pointer:#cba6f7' \
         --tiebreak=index"
 }
 
