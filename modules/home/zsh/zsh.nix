@@ -48,6 +48,10 @@
         # Application Paths
         export PATH=$PATH:$HOME/.iptv/bin
 
+        # zsh-you-should-use Configuration
+        export YSU_MESSAGE_POSITION="after"
+        #export YSU_HARDCORE=0
+
         # ZSH Directory Structure
         export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
         mkdir -p "$XDG_CACHE_HOME/zsh"
