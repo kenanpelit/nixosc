@@ -1,32 +1,32 @@
 # modules/home/kitty/default.nix
 # ==============================================================================
-# Kitty Terminal Emulator Configuration - Tokyo Night Moon
+# Kitty Terminal Emulator Configuration - Catppuccin Mocha
 # ==============================================================================
 { pkgs, host, lib, ... }:
 let
-  # Tokyo Night Moon Color Palette
+  # Catppuccin Mocha Color Palette
   palette = {
-    # Base colors - Moon theme
+    # Base colors - Mocha theme
     bg = {
-      primary = "#222436";    # Moon background
-      secondary = "#2f334d";  # Moon surface
-      tertiary = "#1e2030";   # Moon darker
+      primary = "#1e1e2e";    # Mocha base
+      secondary = "#313244";  # Mocha surface0
+      tertiary = "#181825";   # Mocha mantle
     };
     fg = {
-      primary = "#c8d3f5";    # Moon text
-      muted = "#636da6";      # Moon muted
-      subtle = "#444a73";     # Moon subtle
+      primary = "#cdd6f4";    # Mocha text
+      muted = "#6c7086";      # Mocha overlay0
+      subtle = "#45475a";     # Mocha surface1
     };
     accent = {
-      purple = "#c099ff";     # Moon purple
-      cyan = "#86e1fc";       # Moon cyan
-      yellow = "#ffc777";     # Moon yellow
-      red = "#ff757f";        # Moon red
-      green = "#c3e88d";      # Moon green
-      blue = "#82aaff";       # Moon blue
-      pink = "#fca7ea";       # Moon pink
-      orange = "#ff966c";     # Moon orange
-      teal = "#4fd6be";       # Moon teal
+      purple = "#cba6f7";     # Mocha mauve
+      cyan = "#89dceb";       # Mocha sky
+      yellow = "#f9e2af";     # Mocha yellow
+      red = "#f38ba8";        # Mocha pink
+      green = "#a6e3a1";      # Mocha green
+      blue = "#89b4fa";       # Mocha blue
+      pink = "#f5c2e7";       # Mocha pink
+      orange = "#fab387";     # Mocha peach
+      teal = "#94e2d5";       # Mocha teal
     };
   };
   
@@ -52,31 +52,31 @@ let
       selection_foreground = palette.bg.primary;
       selection_background = palette.accent.purple;
       
-      cursor = palette.accent.cyan;
+      cursor = palette.accent.teal;
       cursor_text_color = palette.bg.primary;
-      url_color = palette.accent.cyan;
+      url_color = palette.accent.blue;
       
       # Window borders
       active_border_color = palette.accent.purple;
       inactive_border_color = palette.fg.subtle;
       bell_border_color = palette.accent.yellow;
       
-      # Tab bar - Moon theme
+      # Tab bar - Mocha theme
       active_tab_foreground = palette.bg.primary;
-      active_tab_background = palette.accent.cyan;
+      active_tab_background = palette.accent.purple;
       inactive_tab_foreground = palette.fg.primary;
       inactive_tab_background = palette.bg.secondary;
       tab_bar_background = palette.bg.primary;
       
-      # Marks - Moon colors
+      # Marks - Mocha colors
       mark1_foreground = palette.bg.primary;
       mark1_background = palette.accent.purple;
       mark2_foreground = palette.bg.primary;
       mark2_background = palette.accent.pink;
       mark3_foreground = palette.bg.primary;
-      mark3_background = palette.accent.cyan;
+      mark3_background = palette.accent.teal;
       
-      # ANSI Colors (0-15) - Tokyo Night Moon
+      # ANSI Colors (0-15) - Catppuccin Mocha
       color0 = palette.fg.subtle;        # black
       color1 = palette.accent.red;       # red
       color2 = palette.accent.green;     # green
@@ -92,7 +92,7 @@ let
       color12 = palette.accent.blue;     # bright blue
       color13 = palette.accent.purple;   # bright magenta
       color14 = palette.accent.cyan;     # bright cyan
-      color15 = "#ffffff";               # bright white
+      color15 = "#f5e0dc";               # bright white (rosewater)
     };
   };
 in {
