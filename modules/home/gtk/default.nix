@@ -1,6 +1,6 @@
 # modules/home/gtk/default.nix
 # ==============================================================================
-# GTK Theme and Configuration - Tokyo Night Storm
+# GTK Theme and Configuration - Catppuccin Mocha
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
@@ -16,23 +16,18 @@ let
 in
 {
   # =============================================================================
-  # DConf Settings
+  # DConf Settings - Minimal to avoid conflicts with GTK
   # =============================================================================
   dconf.settings = with lib.hm.gvariant; {
     # ---------------------------------------------------------------------------
-    # Desktop Interface Settings
+    # Desktop Interface Settings - Only non-conflicting settings
     # ---------------------------------------------------------------------------
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
-      cursor-size = 24;
-      cursor-theme = "Bibata-Modern-Classic";
-      gtk-theme = "Tokyonight-Dark";
-      icon-theme = "a-candy-beauty-icon-theme";
-      font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      text-scaling-factor = 1.0;
-      enable-animations = true;
-      gtk-enable-primary-paste = true;
-      overlay-scrolling = true;
+      enable-animations = mkBoolean true;
+      gtk-enable-primary-paste = mkBoolean true;
+      overlay-scrolling = mkBoolean true;
+      text-scaling-factor = mkDouble 1.0;
     };
     
     # ---------------------------------------------------------------------------
@@ -40,7 +35,6 @@ in
     # ---------------------------------------------------------------------------
     "org/gnome/desktop/wm/preferences" = {
       button-layout = "appmenu";
-      theme = "Tokyonight-Storm-BL";
     };
   };
 
@@ -59,15 +53,20 @@ in
     };
     
     # ---------------------------------------------------------------------------
-    # Theme Settings - Tokyo Night Dark (gerçek tema adı)
+    # Theme Settings - Catppuccin Mocha (Hyprland uyumlu)
     # ---------------------------------------------------------------------------
     theme = {
-      name = "Tokyonight-Dark";
-      package = pkgs.tokyonight-gtk-theme;
+      name = "Catppuccin-Mocha-Dark";  # Hyprland ile uyumlu tema adı
+      package = pkgs.catppuccin-gtk.override {
+        accents = [ "mauve" ];
+        size = "standard";
+        tweaks = [ "normal" ];
+        variant = "mocha";
+      };
     };
     
     # ---------------------------------------------------------------------------
-    # Icon Theme Settings - BeautyLine (mevcut güzel temanız)
+    # Icon Theme Settings - BeautyLine (korundu)
     # ---------------------------------------------------------------------------
     iconTheme = {
       name = "a-candy-beauty-icon-theme";
@@ -75,11 +74,11 @@ in
     };
     
     # ---------------------------------------------------------------------------
-    # Cursor Theme Settings - Tokyo Night Storm Compatible
+    # Cursor Theme Settings - Catppuccin Mocha
     # ---------------------------------------------------------------------------
     cursorTheme = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
+      name = "catppuccin-mocha-dark-cursors";
+      package = pkgs.catppuccin-cursors.mochaDark;
       size = 24;
     };
 
@@ -89,10 +88,10 @@ in
     gtk2 = {
       configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
       extraConfig = ''
-        gtk-theme-name = "Tokyonight-Storm-BL"
-        gtk-icon-theme-name = "Papirus-Dark"
+        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
+        gtk-icon-theme-name = "a-candy-beauty-icon-theme"
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
-        gtk-cursor-theme-name = "Bibata-Modern-Classic"
+        gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors"
         gtk-cursor-theme-size = 24
         gtk-application-prefer-dark-theme = 1
         gtk-button-images = 1
@@ -112,10 +111,10 @@ in
     # GTK3 Specific Settings
     # ---------------------------------------------------------------------------
     gtk3.extraConfig = {
-              gtk-theme-name = "Tokyonight-Dark";
+      gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      gtk-cursor-theme-name = "Bibata-Modern-Classic";
+      gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -133,10 +132,10 @@ in
     # GTK4 Specific Settings
     # ---------------------------------------------------------------------------
     gtk4.extraConfig = {
-      gtk-theme-name = "Tokyonight-Dark";
+      gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      gtk-cursor-theme-name = "Bibata-Modern-Classic";
+      gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";
       gtk-cursor-theme-size = 24;
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -156,25 +155,39 @@ in
   # =============================================================================
   home = {
     # ---------------------------------------------------------------------------
-    # Environment Variables - Tokyo Night Storm
+    # Environment Variables - Catppuccin Mocha (Hyprland ile uyumlu)
     # ---------------------------------------------------------------------------
     sessionVariables = {
-      GTK_THEME = "Tokyonight-Dark";
+      GTK_THEME = "Catppuccin-Mocha-Dark";  # Hyprland config ile uyumlu
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
-      XCURSOR_THEME = "Bibata-Modern-Classic";
+      XCURSOR_THEME = "catppuccin-mocha-dark-cursors";
       XCURSOR_SIZE = "24";
+      GDK_SCALE = "1";
+      # Hyprland için ek ayarlar
+      QT_QPA_PLATFORMTHEME = "gtk3";
+      GDK_BACKEND = "wayland,x11";
+      QT_QPA_PLATFORM = "wayland;xcb";
+      CLUTTER_BACKEND = "wayland";
+      XDG_CURRENT_DESKTOP = "Hyprland";
+      XDG_SESSION_DESKTOP = "Hyprland";
+      XDG_SESSION_TYPE = "wayland";
     };
 
     # ---------------------------------------------------------------------------
-    # Package Installation - Tokyo Night Storm (BeautyLine korundu)
+    # Package Installation - Catppuccin Mocha
     # ---------------------------------------------------------------------------
     packages = with pkgs; [
-      # Tokyo Night Theme
-      tokyonight-gtk-theme
+      # Catppuccin GTK Theme
+      (catppuccin-gtk.override {
+        accents = [ "mauve" ];
+        size = "standard";
+        tweaks = [ "normal" ];  # "default" yerine "normal" kullanıyoruz
+        variant = "mocha";
+      })
       
-      # Cursor theme
-      bibata-cursors
+      # Catppuccin Cursors
+      catppuccin-cursors
       
       # BeautyLine zaten modules/home/candy/default.nix'de tanımlı, burada tekrarlamıyoruz
       
@@ -194,8 +207,8 @@ in
     # Pointer Cursor Configuration
     # ---------------------------------------------------------------------------
     pointerCursor = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
+      name = "catppuccin-mocha-dark-cursors";
+      package = pkgs.catppuccin-cursors.mochaDark;
       size = 24;
       gtk.enable = true;
       x11.enable = true;

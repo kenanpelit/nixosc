@@ -244,19 +244,27 @@ setup_environment() {
 	export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 	export GDK_BACKEND=wayland
 	export SDL_VIDEODRIVER=wayland
-	export JAVA_AWT_WM_NONREPARENTING=1 # FIX: * işareti kaldırıldı
+	export _JAVA_AWT_WM_NONREPARENTING=1 # Düzeltildi: _ eklendi
 	export CLUTTER_BACKEND=wayland
 	export OZONE_PLATFORM=wayland
 	debug_log "Wayland backend ayarları yapıldı"
 
-	# GTK ve Qt tema ayarları
-	export GTK_THEME=catppuccin-mocha-mauve-standard
+	# XDG Portals
+	export XDG_DESKTOP_PORTAL_DIR="/usr/share/xdg-desktop-portal/portals:/nix/store/*/share/xdg-desktop-portal/portals"
+	debug_log "XDG Portals ayarlandı"
+
+	# GTK ve Qt tema ayarları - Düzeltildi
+	export GTK_THEME=catppuccin-mocha-mauve-standard+normal # +normal eklendi
 	export GTK_USE_PORTAL=1
 	export GTK_APPLICATION_PREFER_DARK_THEME=1
 	export QT_QPA_PLATFORMTHEME=gtk3
 	export QT_STYLE_OVERRIDE=kvantum
 	export QT_AUTO_SCREEN_SCALE_FACTOR=1
-	debug_log "GTK ve Qt tema ayarları yapıldı"
+
+	# Cursor ayarları eklendi
+	export XCURSOR_THEME=catppuccin-mocha-dark-cursors
+	export XCURSOR_SIZE=24
+	debug_log "GTK, Qt ve cursor tema ayarları yapıldı"
 
 	# Türkçe F-klavye
 	export XKB_DEFAULT_LAYOUT=tr
@@ -264,10 +272,11 @@ setup_environment() {
 	export XKB_DEFAULT_OPTIONS=ctrl:nocaps
 	debug_log "Türkçe F-klavye ayarları yapıldı"
 
-	# Hyprland ayarları
+	# Hyprland ayarları - Genişletildi
 	export HYPRLAND_LOG_WLR=1
 	export HYPRLAND_NO_RT=1
 	export HYPRLAND_NO_SD_NOTIFY=1
+	export WLR_LOG=INFO # Log spam önleme
 	debug_log "Hyprland özel ayarları yapıldı"
 
 	# Varsayılan uygulamalar
@@ -278,8 +287,9 @@ setup_environment() {
 	export BROWSER=brave
 	debug_log "Varsayılan uygulamalar ayarlandı"
 
-	# Font rendering
+	# Font rendering - Genişletildi
 	export FREETYPE_PROPERTIES="truetype:interpreter-version=40"
+	export FONTCONFIG_FILE=/etc/fonts/fonts.conf
 	debug_log "Font rendering ayarları yapıldı"
 
 	info "Ortam değişkenleri ayarlandı"

@@ -197,7 +197,7 @@
 
      -- LazyVim Settings
      require("lazyvim.config").init({
-       colorscheme = "tokyonight",
+       colorscheme = "catppuccin-mocha",
        defaults = {
          autocmds = true,
          keymaps = true,

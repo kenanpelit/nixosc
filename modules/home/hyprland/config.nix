@@ -82,10 +82,12 @@
         # -----------------------------------------
         # GTK Tema ve Görünüm - Catppuccin Mocha
         # -----------------------------------------
-        "GTK_THEME,Catppuccin-Mocha-Dark"       # GTK teması
-        "GTK_USE_PORTAL,1"                      # XDG portal kullanımı
-        "GTK_APPLICATION_PREFER_DARK_THEME,1"   # Koyu tema tercihi
-        "GDK_SCALE,1"                           # HiDPI ölçekleme
+        "GTK_THEME,catppuccin-mocha-mauve-standard+normal"  # Home Manager ile uyumlu
+        "GTK_USE_PORTAL,1"                                  # XDG portal kullanımı
+        "GTK_APPLICATION_PREFER_DARK_THEME,1"               # Koyu tema tercihi
+        "GDK_SCALE,1"                                       # HiDPI ölçekleme
+        "XCURSOR_THEME,catppuccin-mocha-dark-cursors"       # Cursor teması
+        "XCURSOR_SIZE,24"                                   # Cursor boyutu
 
         # -----------------------------------------
         # Qt/KDE Tema ve Görünüm - Catppuccin Mocha
@@ -707,7 +709,8 @@
         "ALT, Space, exec, walker"                                                    # Walker
         "$mainMod ALT, Space, exec, ulauncher-toggle"                                 # Ulauncher
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"  # Terminal dosya yönetici
-        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
+        #"ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
+        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-mocha-mauve-standard+normal nemo'"
 
         # Medya ve Ses Kontrolü
         "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
