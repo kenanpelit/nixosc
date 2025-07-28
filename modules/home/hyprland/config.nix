@@ -1,4 +1,4 @@
-# Hyprland Window Manager Configuration - Tokyo Night Storm Theme
+# Hyprland Window Manager Configuration - Catppuccin Mocha Theme
 # modules/home/hyprland/config.nix
 { config, lib, pkgs, ... }:
 {
@@ -25,8 +25,8 @@
         "wl-paste --type image --watch cliphist store"    # Store image content including screenshots 
         # Advanced clipboard manager with searchable history
         "copyq"
-        # Set system cursor theme and size - Tokyo Night Storm
-        "hyprctl setcursor tokyo-night-cursor 24"
+        # Set system cursor theme and size - Catppuccin Mocha
+        "hyprctl setcursor catppuccin-mocha-cursor 24"
         # Initialize wallpaper daemon for dynamic wallpapers
         "swww-daemon"
         # Start wallpaper rotation/management service
@@ -44,7 +44,7 @@
       ];
 
       # =====================================================
-      # Environment Variables - Tokyo Night Storm Theme
+      # Environment Variables - Catppuccin Mocha Theme
       # =====================================================
       env = [
         # -----------------------------------------
@@ -80,15 +80,17 @@
         #"__GL_VRR_ALLOWED,0"                    # VRR devre dışı
 
         # -----------------------------------------
-        # GTK Tema ve Görünüm - Tokyo Night Storm
+        # GTK Tema ve Görünüm - Catppuccin Mocha
         # -----------------------------------------
-        "GTK_THEME,Tokyonight-Dark"              # GTK teması
-        "GTK_USE_PORTAL,1"                      # XDG portal kullanımı
-        "GTK_APPLICATION_PREFER_DARK_THEME,1"   # Koyu tema tercihi
-        "GDK_SCALE,1"                           # HiDPI ölçekleme
+        "GTK_THEME,catppuccin-mocha-mauve-standard+normal"  # Home Manager ile uyumlu
+        "GTK_USE_PORTAL,1"                                  # XDG portal kullanımı
+        "GTK_APPLICATION_PREFER_DARK_THEME,1"               # Koyu tema tercihi
+        "GDK_SCALE,1"                                       # HiDPI ölçekleme
+        "XCURSOR_THEME,catppuccin-mocha-dark-cursors"       # Cursor teması
+        "XCURSOR_SIZE,24"                                   # Cursor boyutu
 
         # -----------------------------------------
-        # Qt/KDE Tema ve Görünüm - Tokyo Night Storm
+        # Qt/KDE Tema ve Görünüm - Catppuccin Mocha
         # -----------------------------------------
         "QT_QPA_PLATFORM,wayland;xcb"           # Wayland öncelikli, XCB fallback
         "QT_QPA_PLATFORMTHEME,gtk3"             # GTK tema entegrasyonu
@@ -159,17 +161,17 @@
       };
 
       # =====================================================
-      # Genel Pencere Yöneticisi Ayarları - Tokyo Night Storm
+      # Genel Pencere Yöneticisi Ayarları - Catppuccin Mocha
       # =====================================================
       general = {
         "$mainMod" = "SUPER";                                    # Ana modifikatör tuşu
         gaps_in = 0;                                             # İç boşluklar
         gaps_out = 0;                                            # Dış boşluklar
         border_size = 2;                                         # Border kalınlığı
-        # Tokyo Night Storm: Aktif border - mavi ve teal gradient
-        "col.active_border" = "rgba(7aa2f7ee) rgba(2ac3deff) 45deg";
-        # Tokyo Night Storm: Pasif border - koyu gri
-        "col.inactive_border" = "rgba(414868aa)";
+        # Catppuccin Mocha: Aktif border - blue ve mauve gradient
+        "col.active_border" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
+        # Catppuccin Mocha: Pasif border - overlay0
+        "col.inactive_border" = "rgba(6c7086aa)";
         layout = "master";                                       # Layout
         allow_tearing = false;                                   # Tearing'e izin verme
         resize_on_border = true;                                 # Border'dan resize
@@ -179,35 +181,35 @@
       };
 
       # =====================================================
-      # Grup Ayarları - Tokyo Night Storm
+      # Grup Ayarları - Catppuccin Mocha
       # =====================================================
       group = {
-        # Tokyo Night Storm: Aktif grup border - mavi ve mor gradient
-        "col.border_active" = "rgba(7aa2f7ee) rgba(bb9af7ee) 45deg";
-        # Tokyo Night Storm: Pasif grup border - gri tonları
-        "col.border_inactive" = "rgba(565f89aa) rgba(414868aa) 45deg";
-        # Tokyo Night Storm: Kilitli aktif grup border
-        "col.border_locked_active" = "rgba(7aa2f7ee) rgba(bb9af7ee) 45deg";
-        # Tokyo Night Storm: Kilitli pasif grup border
-        "col.border_locked_inactive" = "rgba(565f89aa) rgba(414868aa) 45deg";
+        # Catppuccin Mocha: Aktif grup border - blue ve mauve gradient
+        "col.border_active" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
+        # Catppuccin Mocha: Pasif grup border - surface1 ve overlay0
+        "col.border_inactive" = "rgba(45475aaa) rgba(6c7086aa) 45deg";
+        # Catppuccin Mocha: Kilitli aktif grup border
+        "col.border_locked_active" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
+        # Catppuccin Mocha: Kilitli pasif grup border
+        "col.border_locked_inactive" = "rgba(45475aaa) rgba(6c7086aa) 45deg";
         
         groupbar = {
           render_titles = false;
           gradients = false;
           font_size = 10;
-          # Tokyo Night Storm: Aktif groupbar - mavi
-          "col.active" = "rgba(7aa2f7ee)";
-          # Tokyo Night Storm: Pasif groupbar - gri
-          "col.inactive" = "rgba(565f89aa)";
-          # Tokyo Night Storm: Kilitli aktif groupbar - mor
-          "col.locked_active" = "rgba(bb9af7ee)";
-          # Tokyo Night Storm: Kilitli pasif groupbar - koyu gri
-          "col.locked_inactive" = "rgba(414868aa)";
+          # Catppuccin Mocha: Aktif groupbar - blue
+          "col.active" = "rgba(89b4faee)";
+          # Catppuccin Mocha: Pasif groupbar - overlay0
+          "col.inactive" = "rgba(6c7086aa)";
+          # Catppuccin Mocha: Kilitli aktif groupbar - mauve
+          "col.locked_active" = "rgba(cba6f7ee)";
+          # Catppuccin Mocha: Kilitli pasif groupbar - surface1
+          "col.locked_inactive" = "rgba(45475aaa)";
         };
       };
 
       # =====================================================
-      # Çeşitli Ayarlar - Tokyo Night Storm
+      # Çeşitli Ayarlar - Catppuccin Mocha
       # =====================================================
       misc = {
         # Görünüm ayarları
@@ -244,8 +246,8 @@
         close_special_on_empty = true;          # Boş special workspace'i kapat
         new_window_takes_over_fullscreen = 2;   # Yeni pencere fullscreen davranışı
         allow_session_lock_restore = true;      # Session lock restore
-        # Tokyo Night Storm: Arka plan rengi - storm background
-        background_color = "rgba(24,28,47,1.0)";
+        # Catppuccin Mocha: Arka plan rengi - base
+        background_color = "rgba(30,30,46,1.0)";
       };
 
       # =====================================================
@@ -316,7 +318,7 @@
       };
 
       # =====================================================
-      # Görsel Efektler ve Dekorasyon - Tokyo Night Storm
+      # Görsel Efektler ve Dekorasyon - Catppuccin Mocha
       # =====================================================
       decoration = {
         # Temel görünüm
@@ -331,7 +333,7 @@
         dim_inactive = true;                    # Pasif pencere karartma
         dim_strength = 0.15;                    # Karartma şiddeti
 
-        # Bulanıklık efektleri - Tokyo Night Storm
+        # Bulanıklık efektleri - Catppuccin Mocha
         blur = {
           enabled = true;                       # Blur efekti aktif
           size = 8;                             # Blur boyutu
@@ -346,39 +348,39 @@
           popups_ignorealpha = 0.2;             # Popup blur eşiği
         };
 
-        # Gölge efektleri - Tokyo Night Storm
+        # Gölge efektleri - Catppuccin Mocha
         shadow = {
           enabled = true;                       # Gölge efekti aktif
           ignore_window = true;                 # Pencere gölgesi
           offset = "0 4";                       # Gölge offset (x y)
           range = 25;                           # Gölge genişliği
           render_power = 2;                     # Gölge render gücü
-          # Tokyo Night Storm: Gölge rengi - koyu mavi ton
-          color = "rgba(15,17,28,66)";
+          # Catppuccin Mocha: Gölge rengi - crust ile koyu ton
+          color = "rgba(17,17,27,66)";
           scale = 0.97;                         # Gölge ölçeği
         };
       };
 
       # =====================================================
-      # Animasyon Ayarları - Tokyo Night Storm
+      # Animasyon Ayarları - Catppuccin Mocha
       # =====================================================
       animations = {
         enabled = true;                         # Animasyonları etkinleştir
 
-        # Bezier eğrileri - Tokyo Night Storm smooth transitions
+        # Bezier eğrileri - Catppuccin Mocha smooth transitions
         bezier = [
           "fluent_decel, 0, 0.2, 0.4, 1"
           "easeOutCirc, 0, 0.55, 0.45, 1"
           "easeOutCubic, 0.33, 1, 0.68, 1"
-          "tokyoSmooth, 0.25, 0.1, 0.25, 1"
+          "catppuccinSmooth, 0.25, 0.1, 0.25, 1"
         ];
 
-        # Animasyon tanımları - Tokyo Night Storm optimized
+        # Animasyon tanımları - Catppuccin Mocha optimized
         animation = [
           "windows, 1, 2, easeOutCubic, slide"
           "windowsOut, 1, 2, easeOutCubic, slide"
           "fade, 1, 3, easeOutCirc"
-          "workspaces, 1, 3, tokyoSmooth"
+          "workspaces, 1, 3, catppuccinSmooth"
           "border, 1, 1, linear"
         ];
       };
@@ -707,7 +709,8 @@
         "ALT, Space, exec, walker"                                                    # Walker
         "$mainMod ALT, Space, exec, ulauncher-toggle"                                 # Ulauncher
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"  # Terminal dosya yönetici
-        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
+        #"ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
+        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-mocha-mauve-standard+normal nemo'"
 
         # Medya ve Ses Kontrolü
         "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
