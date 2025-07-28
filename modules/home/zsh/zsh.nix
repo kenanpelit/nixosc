@@ -14,7 +14,7 @@
     ".ssh/.keep".text = "";
 
     # Powerlevel10k theme configuration
-    ".config/zsh/p10k.zsh" = {
+    "${config.xdg.configHome}/zsh/p10k.zsh" = {
       enable = true;
       source = ../p10k/.p10k.zsh;
     };
@@ -25,7 +25,7 @@
   # ==============================================================================
   programs.zsh = {
     enable = true;
-    dotDir = ".config/zsh";
+    dotDir = "${config.xdg.configHome}/zsh";
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     enableCompletion = true;
@@ -103,7 +103,7 @@
         export HOSTALIASES="$XDG_CONFIG_HOME/hblock/hosts"
 
         # History Configuration - FIXED
-        export HISTFILE="$HOME/.config/zsh/history"
+        export HISTFILE="${config.xdg.configHome}/zsh/history"
     
         # History'i otomatik yükle
         if [[ -f "$HISTFILE" ]]; then
