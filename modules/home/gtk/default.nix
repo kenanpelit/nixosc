@@ -1,3 +1,4 @@
+
 # modules/home/gtk/default.nix
 # ==============================================================================
 # GTK Theme and Configuration - Catppuccin Mocha
@@ -53,10 +54,10 @@ in
     };
     
     # ---------------------------------------------------------------------------
-    # Theme Settings - Catppuccin Mocha (Hyprland uyumlu)
+    # Theme Settings - Catppuccin Mocha (Düzeltildi)
     # ---------------------------------------------------------------------------
     theme = {
-      name = "Catppuccin-Mocha-Dark";  # Hyprland ile uyumlu tema adı
+      name = "catppuccin-mocha-mauve-standard+normal";  # Doğru tema adı
       package = pkgs.catppuccin-gtk.override {
         accents = [ "mauve" ];
         size = "standard";
@@ -155,10 +156,10 @@ in
   # =============================================================================
   home = {
     # ---------------------------------------------------------------------------
-    # Environment Variables - Catppuccin Mocha (Hyprland ile uyumlu)
+    # Environment Variables - Catppuccin Mocha (Düzeltildi)
     # ---------------------------------------------------------------------------
     sessionVariables = {
-      GTK_THEME = "Catppuccin-Mocha-Dark";  # Hyprland config ile uyumlu
+      GTK_THEME = "catppuccin-mocha-mauve-standard+normal";  # Doğru tema adı
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
       XCURSOR_THEME = "catppuccin-mocha-dark-cursors";
@@ -215,4 +216,3 @@ in
     };
   };
 }
-
