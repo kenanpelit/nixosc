@@ -1,7 +1,7 @@
 # modules/home/zsh/zsh_plugins.nix
 # ==============================================================================
-# ZSH Plugin Configuration
-# Description: Plugin management and configuration for ZSH
+# ZSH Plugin Configuration - Updated 2025-07-29
+# Description: Plugin management and configuration for ZSH with latest versions
 # ==============================================================================
 { pkgs, ... }:
 {
@@ -12,8 +12,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "zdharma-continuum";
           repo = "fast-syntax-highlighting";
-          rev = "cf318e06a9b7c9f2219d78f41b46fa6e06011fd9";
-          sha256 = "1bmrb724vphw7y2gwn63rfssz3i8lp75ndjvlk5ns1g35ijzsma5";
+          rev = "3d574ccf48804b10dca52625df13da5edae7f553";
+          sha256 = "085132b1s114six9s4643ghgcmmn6allj2w1z1alymj0h8pm8a36";
         };
       }
       {
@@ -21,8 +21,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "zsh-users";
           repo = "zsh-autosuggestions";
-          rev = "0e810e5afa27acbd074398eefbe28d13005dbc15";
-          sha256 = "0y866dsm8l164afbyd9cafbl97yf9viqwms9bbn0799nwgsb15pk";
+          rev = "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5";
+          sha256 = "1885w3crr503h5n039kmg199sikb1vw1fvaidwr21sj9mn01fs9a";
         };
       }
       {
@@ -30,8 +30,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "Aloxaf";
           repo = "fzf-tab";
-          rev = "6aced3f35def61c5edf9d790e945e8bb4fe7b305";
-          sha256 = "1brljd9744wg8p9v3q39kdys33jb03d27pd0apbg1cz0a2r1wqqi";
+          rev = "fc6f0dcb2d5e41a4a685bfe9af2f2393dc39f689";
+          sha256 = "1nvvcjkbndyv7jva2qnx0dbglgpy0512qzip4p6nad78hr7f83fn";
         };
       }
       {
@@ -39,8 +39,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "romkatv";
           repo = "powerlevel10k";
-          rev = "3e2053a9341fe4cf5ab69909d3f39d53b1dfe772";
-          sha256 = "1gvbgw38wa0z1jvs3xqr5108aqsaajlw9xxha9lxyhb04rmsxmga";
+          rev = "36f3045d69d1ba402db09d09eb12b42eebe0fa3b";
+          sha256 = "1xjayg0qnm3pzi6ixydhql4w0l99h4wdfjgsi4b6ak50gwd744h5";
         };
         file = "powerlevel10k.zsh-theme";
       }
@@ -49,8 +49,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "zsh-users";
           repo = "zsh-completions";
-          rev = "a7f01622f7bc6941d1c6297be6995fe1bbc9d4de";
-          sha256 = "035hwnv1qik35lmy3wy8821jf6y3qvc0hqd18ks5a7nqq6l5ffcl";
+          rev = "5f24f3bc42c8a1ccbfa4260a3546590ae24fc843";
+          sha256 = "00pmyckblzsfdi6g5pb6l0k5dmy788bsp910zrxpiqpr5mlibsyn";
         };
       }
       {
