@@ -73,7 +73,7 @@
     # Core Hyprland Wayland compositor - pinned to specific commit for stability
     hyprland = {
       #url = "github:hyprwm/hyprland/c4a4c341568944bd4fb9cd503558b2de602c0213"; # 0716 - 6279 - 0.50.0 Commits
-      url = "github:hyprwm/hyprland/e1fff05d0db9c266679ec7ea1b5734c73d6b0a57"; # 0726 - 6314 Commits
+      url = "github:hyprwm/hyprland/c63d0003a1e5155248695f19778f815a8ad34c67"; # 0728 - 6317 Commits
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -291,6 +291,7 @@
           permittedInsecurePackages = [
             # Allow specific insecure packages with known issues
             "ventoy-1.1.05"      # USB multi-boot tool with binary blobs
+            "libsoup-2.74.3"     # EOL library with CVEs, required by legacy GTK apps
           ];
         };
       };
@@ -347,7 +348,10 @@
             # Security exceptions for specific packages
             # This ensures insecure packages are permitted across the entire system
             {
-              nixpkgs.config.permittedInsecurePackages = [ "ventoy-1.1.05" ];
+              nixpkgs.config.permittedInsecurePackages = [ 
+                "ventoy-1.1.05"
+                "libsoup-2.74.3"        # EOL library with CVEs, required by legacy GTK apps
+              ];
             }
           ] ++ modules;  # Add machine-specific modules
           
@@ -356,7 +360,7 @@
             inherit self inputs username host system;
           };
         };
-        
+       
       # Setup for PyPrland packages
       inherit (inputs.poetry2nix.lib) mkPoetry2Nix;
       eachSystem = nixpkgs.lib.genAttrs (import systems);

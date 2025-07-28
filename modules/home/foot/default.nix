@@ -1,22 +1,22 @@
 # modules/home/foot/default.nix
 # ==============================================================================
-# Foot Terminal Emulator Configuration
+# Foot Terminal Emulator Configuration - Catppuccin Mocha
 # ==============================================================================
 { config, pkgs, lib, ... }:
 let
-  # Tokyo Night tema renkleri
+  # Catppuccin Mocha tema renkleri
   colors = {
-    base = "#24283b";
-    crust = "#1a1b26";
-    text = "#c0caf5";
-    surface1 = "#414868";
-    surface2 = "#565f89";
-    mauve = "#bb9af7";
-    sky = "#7dcfff";
-    red = "#f7768e";
-    green = "#9ece6a";
-    yellow = "#e0af68";
-    pink = "#ff75a0";
+    base = "#1e1e2e";
+    crust = "#11111b";
+    text = "#cdd6f4";
+    surface1 = "#45475a";
+    surface2 = "#585b70";
+    mauve = "#cba6f7";
+    sky = "#89dceb";
+    red = "#f38ba8";
+    green = "#a6e3a1";
+    yellow = "#f9e2af";
+    pink = "#f5c2e7";
   };
 
   # Font ve efekt ayarları

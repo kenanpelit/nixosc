@@ -1,56 +1,56 @@
 # modules/home/waybar/default.nix
 { pkgs, config, lib, ... }:
 let
-  # Tokyo Night Storm - Premium dark theme with extended color palette
-  tokyo_night_storm = {
+  # Catppuccin Mocha - Premium dark theme with extended color palette
+  catppuccin_mocha = {
     # Background layers (darkest to lightest)
-    bg = "#24283b";
-    bg_dark = "#1f2335";
-    bg_float = "#1d202f";
-    bg_highlight = "#292e42";
-    bg_popup = "#1d202f";
-    bg_statusline = "#1d202f";
-    bg_visual = "#283457";
-    border = "#1d202f";
-    border_highlight = "#27a1b9";
+    bg = "#1e1e2e";         # Base - Primary background
+    bg_dark = "#181825";    # Mantle - Darker background
+    bg_float = "#11111b";   # Crust - Deepest background
+    bg_highlight = "#313244"; # Surface0 - Highlighted elements
+    bg_popup = "#181825";   # Mantle - Popup backgrounds
+    bg_statusline = "#181825"; # Mantle - Status line
+    bg_visual = "#313244";  # Surface0 - Visual selections
+    border = "#45475a";     # Surface1 - Default borders
+    border_highlight = "#89b4fa"; # Blue - Active borders
     
     # Text colors with better hierarchy
-    fg = "#c0caf5";
-    fg_dark = "#a9b1d6";
-    fg_gutter = "#3b4261";
-    comment = "#565f89";
-    dark3 = "#545c7e";
-    dark5 = "#737aa2";
+    fg = "#cdd6f4";         # Text - Primary text
+    fg_dark = "#bac2de";    # Subtext1 - Secondary text
+    fg_gutter = "#6c7086";  # Overlay0 - Gutter text
+    comment = "#6c7086";    # Overlay0 - Comments
+    dark3 = "#585b70";      # Surface2 - Dark elements
+    dark5 = "#7f849c";      # Overlay1 - Darker elements
     
     # Semantic colors - carefully chosen for accessibility
-    blue = "#7aa2f7";      # Primary actions, links
-    cyan = "#7dcfff";      # Info, highlights
-    green = "#9ece6a";     # Success, positive states
-    magenta = "#bb9af7";   # Special, focus states
-    purple = "#9d7cd8";    # Secondary accent
-    red = "#f7768e";       # Errors, warnings
-    orange = "#ff9e64";    # Alerts, notifications
-    yellow = "#e0af68";    # Cautions, pending states
-    teal = "#1abc9c";      # Network, connectivity
+    blue = "#89b4fa";       # Blue - Primary actions, links
+    cyan = "#89dceb";       # Sky - Info, highlights
+    green = "#a6e3a1";      # Green - Success, positive states
+    magenta = "#cba6f7";    # Mauve - Special, focus states
+    purple = "#cba6f7";     # Mauve - Secondary accent
+    red = "#f38ba8";        # Pink - Errors, warnings
+    orange = "#fab387";     # Peach - Alerts, notifications
+    yellow = "#f9e2af";     # Yellow - Cautions, pending states
+    teal = "#94e2d5";       # Teal - Network, connectivity
     
     # Extended semantic colors for better UX
-    pink = "#f7768e";      # Alternative accent
-    peach = "#ff9e64";     # Warm accent
-    lavender = "#bb9af7";  # Soft accent
-    sky = "#7dcfff";       # Light accent
+    pink = "#f5c2e7";       # Pink - Alternative accent
+    peach = "#fab387";      # Peach - Warm accent
+    lavender = "#b4befe";   # Lavender - Soft accent
+    sky = "#89dceb";        # Sky - Light accent
     
     # Surface layers for depth
-    surface0 = "#363a4f";
-    surface1 = "#414868";
-    surface2 = "#565f89";
+    surface0 = "#313244";   # Surface0 - Base surface
+    surface1 = "#45475a";   # Surface1 - Elevated surface
+    surface2 = "#585b70";   # Surface2 - Highest surface
     
     # Compatibility aliases
-    crust = "#1a1b26";
-    base = "#24283b";
-    mantle = "#16161e";
-    text = "#c0caf5";
-    subtext1 = "#a9b1d6";
-    subtext0 = "#9aa5ce";
+    crust = "#11111b";      # Crust - Deepest layer
+    base = "#1e1e2e";       # Base - Primary background
+    mantle = "#181825";     # Mantle - Secondary background
+    text = "#cdd6f4";       # Text - Primary text
+    subtext1 = "#bac2de";   # Subtext1 - Secondary text
+    subtext0 = "#a6adc8";   # Subtext0 - Tertiary text
   };
   
   # Enhanced configuration with responsive design
@@ -66,29 +66,29 @@ let
     font_weight_bold = "700";
     
     # Text colors with semantic meaning
-    text_color = tokyo_night_storm.fg;
-    text_secondary = tokyo_night_storm.fg_dark;
-    text_muted = tokyo_night_storm.comment;
-    text_disabled = tokyo_night_storm.dark3;
+    text_color = catppuccin_mocha.fg;
+    text_secondary = catppuccin_mocha.fg_dark;
+    text_muted = catppuccin_mocha.comment;
+    text_disabled = catppuccin_mocha.dark3;
     
     # Backward compatibility aliases
-    subtext_color = tokyo_night_storm.fg_dark;  # Legacy alias for text_secondary
+    subtext_color = catppuccin_mocha.fg_dark;  # Legacy alias for text_secondary
     
     # Background system with proper layering
-    background_0 = tokyo_night_storm.crust;      # Deepest layer
-    background_1 = tokyo_night_storm.base;       # Primary background
-    background_2 = tokyo_night_storm.mantle;     # Secondary background
-    background_3 = tokyo_night_storm.bg_dark;    # Elevated background
+    background_0 = catppuccin_mocha.crust;      # Deepest layer
+    background_1 = catppuccin_mocha.base;       # Primary background
+    background_2 = catppuccin_mocha.mantle;     # Secondary background
+    background_3 = catppuccin_mocha.bg_dark;    # Elevated background
     
     # Surface system for interactive elements
-    surface_0 = tokyo_night_storm.surface0;      # Base surface
-    surface_1 = tokyo_night_storm.surface1;      # Elevated surface
-    surface_2 = tokyo_night_storm.surface2;      # Highest surface
+    surface_0 = catppuccin_mocha.surface0;      # Base surface
+    surface_1 = catppuccin_mocha.surface1;      # Elevated surface
+    surface_2 = catppuccin_mocha.surface2;      # Highest surface
     
     # Border and spacing system
-    border_color = "rgba(69, 71, 90, 0.8)";
-    border_color_active = "rgba(122, 162, 247, 0.6)";
-    border_color_hover = "rgba(125, 207, 255, 0.4)";
+    border_color = "rgba(69, 71, 90, 0.8)";     # Surface1 with transparency
+    border_color_active = "rgba(137, 180, 250, 0.6)";  # Blue with transparency
+    border_color_hover = "rgba(137, 220, 235, 0.4)";   # Sky with transparency
     
     # Responsive design values
     opacity = "0.95";
@@ -112,33 +112,33 @@ let
     margin_md = "4px";
     
     # Semantic colors with consistent naming
-    red = tokyo_night_storm.red;
-    green = tokyo_night_storm.green;
-    yellow = tokyo_night_storm.yellow;
-    blue = tokyo_night_storm.blue;
-    magenta = tokyo_night_storm.magenta;
-    cyan = tokyo_night_storm.cyan;
-    orange = tokyo_night_storm.orange;
-    purple = tokyo_night_storm.purple;
-    teal = tokyo_night_storm.teal;
-    pink = tokyo_night_storm.pink;
+    red = catppuccin_mocha.red;
+    green = catppuccin_mocha.green;
+    yellow = catppuccin_mocha.yellow;
+    blue = catppuccin_mocha.blue;
+    magenta = catppuccin_mocha.magenta;
+    cyan = catppuccin_mocha.cyan;
+    orange = catppuccin_mocha.orange;
+    purple = catppuccin_mocha.purple;
+    teal = catppuccin_mocha.teal;
+    pink = catppuccin_mocha.pink;
     
     # State-based color system
-    accent_primary = tokyo_night_storm.blue;
-    accent_secondary = tokyo_night_storm.magenta;
-    accent_tertiary = tokyo_night_storm.cyan;
+    accent_primary = catppuccin_mocha.blue;
+    accent_secondary = catppuccin_mocha.magenta;
+    accent_tertiary = catppuccin_mocha.cyan;
     
     # Status colors
-    status_success = tokyo_night_storm.green;
-    status_warning = tokyo_night_storm.yellow;
-    status_error = tokyo_night_storm.red;
-    status_info = tokyo_night_storm.cyan;
-    status_neutral = tokyo_night_storm.fg_dark;
+    status_success = catppuccin_mocha.green;
+    status_warning = catppuccin_mocha.yellow;
+    status_error = catppuccin_mocha.red;
+    status_info = catppuccin_mocha.cyan;
+    status_neutral = catppuccin_mocha.fg_dark;
     
     # Interactive states
-    hover_overlay = "rgba(122, 162, 247, 0.1)";
-    active_overlay = "rgba(187, 154, 247, 0.15)";
-    focus_overlay = "rgba(125, 207, 255, 0.2)";
+    hover_overlay = "rgba(137, 180, 250, 0.1)";      # Blue hover
+    active_overlay = "rgba(203, 166, 247, 0.15)";    # Mauve active
+    focus_overlay = "rgba(137, 220, 235, 0.2)";      # Sky focus
   };
   
   # Utility function for consistent RGBA color generation
