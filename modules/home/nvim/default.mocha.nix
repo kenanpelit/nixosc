@@ -1,6 +1,6 @@
 # modules/home/nvim/defaults.nix
 # ==============================================================================
-# Neovim Configuration - LazyVim Edition with Tokyo Night Theme
+# Neovim Configuration - LazyVim Edition with Catppuccin Theme
 # ==============================================================================
 { config, pkgs, ... }:
 {
@@ -42,7 +42,7 @@
    ];
 
    # =============================================================================
-   # Vim Configuration with Tokyo Night Theme
+   # Vim Configuration with Catppuccin Theme Fix
    # =============================================================================
    extraConfig = ''
      " Desktop environment-aware clipboard configuration
@@ -116,7 +116,7 @@
        endif
      endif
 
-     " LazyVim bootstrap with Tokyo Night theme
+     " LazyVim bootstrap with Catppuccin fix
      lua << EOF
      -- Desktop environment detection in Lua
      local desktop_env = os.getenv("XDG_CURRENT_DESKTOP") or ""
@@ -146,7 +146,7 @@
      end
      vim.opt.rtp:prepend(lazypath)
 
-     -- Plugin Configuration with Tokyo Night
+     -- Plugin Configuration with Catppuccin
      require("lazy").setup({
        spec = {
          { "LazyVim/LazyVim", import = "lazyvim.plugins" },
@@ -158,87 +158,65 @@
          { "williamboman/mason-lspconfig.nvim" },
          { "neovim/nvim-lspconfig" },
          
-         -- Tokyo Night theme plugin
+         -- Catppuccin plugin explicit ekleme
          {
-           "folke/tokyonight.nvim",
-           name = "tokyonight",
+           "catppuccin/nvim",
+           name = "catppuccin",
            priority = 1000,
            config = function()
-             require("tokyonight").setup({
-               -- Style options: storm, moon, night, day
-               style = "storm", -- The theme comes in three styles, `storm`, `moon`, a darker variant `night` and `day`
-               light_style = "day", -- The theme is used when the background is set to light
-               transparent = false, -- Enable this to disable setting the background color
-               terminal_colors = true, -- Configure the colors used when opening a `:terminal` in Neovim
-               styles = {
-                 -- Style to be applied to different syntax groups
-                 -- Value is any valid attr-list value for `:help nvim_set_hl`
-                 comments = { italic = true },
-                 keywords = { italic = true },
-                 functions = {},
-                 variables = {},
-                 -- Background styles. Can be "dark", "transparent" or "normal"
-                 sidebars = "dark", -- style for sidebars, see below
-                 floats = "dark", -- style for floating windows
+             require("catppuccin").setup({
+               flavour = "mocha", -- latte, frappe, macchiato, mocha
+               background = {
+                 light = "latte",
+                 dark = "mocha",
                },
-               sidebars = { "qf", "help", "neo-tree", "Trouble" }, -- Set a darker background on sidebar-like windows
-               day_brightness = 0.3, -- Adjusts the brightness of the colors of the **Day** style
-               hide_inactive_statusline = false, -- Enabling this option, will hide inactive statuslines and replace them with a thin border instead
-               dim_inactive = false, -- dims inactive windows
-               lualine_bold = false, -- When `true`, section headers in the lualine theme will be bold
-               
-               --- You can override specific color groups to use other groups or a hex color
-               --- function will be called with a ColorScheme table
-               ---@param colors ColorScheme
-               on_colors = function(colors)
-                 -- Customize specific colors if needed
-                 -- colors.hint = colors.orange
-                 -- colors.error = "#ff0000"
-               end,
-               
-               --- You can override specific highlights to use other groups or a hex color
-               --- function will be called with a Highlights and ColorScheme table
-               ---@param highlights Highlights
-               ---@param colors ColorScheme
-               on_highlights = function(highlights, colors)
-                 -- Customize specific highlights
-                 -- highlights.Comment = { fg = colors.comment, style = { italic = true } }
-                 -- highlights.Keyword = { fg = colors.magenta, style = { italic = true } }
-               end,
-               
-               -- Plugin integrations
-               plugins = {
-                 -- enable all plugins when not using lazy.nvim
-                 -- set to false to manually enable/disable plugins
-                 all = package.loaded.lazy == nil,
-                 -- uses your plugin manager to automatically enable needed plugins
-                 -- currently only lazy.nvim is supported
-                 auto = true,
-                 -- add any plugins here that you want to enable
-                 -- for all plugins, see:
-                 -- https://github.com/folke/tokyonight.nvim#-plugin-support
-                 alpha = true,
+               transparent_background = false,
+               show_end_of_buffer = false,
+               term_colors = true,
+               dim_inactive = {
+                 enabled = false,
+                 shade = "dark",
+                 percentage = 0.15,
+               },
+               no_italic = false,
+               no_bold = false,
+               no_underline = false,
+               styles = {
+                 comments = { "italic" },
+                 conditionals = { "italic" },
+                 loops = {},
+                 functions = {},
+                 keywords = {},
+                 strings = {},
+                 variables = {},
+                 numbers = {},
+                 booleans = {},
+                 properties = {},
+                 types = {},
+                 operators = {},
+               },
+               color_overrides = {},
+               custom_highlights = {},
+               integrations = {
                  cmp = true,
+                 gitsigns = true,
+                 nvimtree = true,
+                 treesitter = true,
+                 notify = false,
+                 mini = {
+                   enabled = true,
+                   indentscope_color = "",
+                 },
+                 -- LazyVim integrations
+                 alpha = true,
                  dashboard = true,
                  flash = true,
-                 gitsigns = true,
-                 hop = true,
                  leap = true,
-                 lsp_trouble = true,
-                 mason = true,
                  markdown = true,
-                 mini = true,
-                 neo_tree = true,
-                 neorg = true,
+                 mason = true,
+                 neotree = true,
                  noice = true,
-                 notify = true,
-                 nvimtree = true,
-                 semantic_tokens = true,
                  telescope = true,
-                 treesitter = true,
-                 treesitter_context = true,
-                 ts_rainbow = true,
-                 ts_rainbow2 = true,
                  which_key = true,
                },
              })
@@ -275,8 +253,9 @@
        automatic_installation = true,
      })
 
-     -- LazyVim Settings
+     -- LazyVim Settings - Tema ayarı kaldırıldı, çünkü plugin'de ayarlanıyor
      require("lazyvim.config").init({
+       -- colorscheme satırını kaldırdık, Catppuccin plugin'i otomatik aktifleşecek
        defaults = {
          autocmds = true,
          keymaps = true,
@@ -296,13 +275,10 @@
        },
      })
      
-     -- Set Tokyo Night theme
+     -- Tema ayarını en son yap - bu kesin çalışacak
      vim.defer_fn(function()
-       vim.cmd.colorscheme("tokyonight-storm")
-       -- Alternative variants:
-       -- vim.cmd.colorscheme("tokyonight-night")  -- Darker variant
-       -- vim.cmd.colorscheme("tokyonight-moon")   -- Medium variant
-       -- vim.cmd.colorscheme("tokyonight-day")    -- Light variant
+       vim.cmd.colorscheme("catppuccin-mocha")
+       -- Ekstra güvenlik için
        vim.o.background = "dark"
      end, 100)
      EOF
