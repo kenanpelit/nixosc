@@ -117,13 +117,14 @@
     # =============================================================================
     # System Integration & Theming
     # =============================================================================
+    ./catppuccin    # Catppuccin theme configuration for all supported apps
     ./gtk           # GTK application theme and styling
     ./qt            # Qt application theme configuration
     ./xdg-dirs      # XDG user directory specification
     ./xdg-mimes     # MIME type associations and defaults
     ./xdg-portal    # Desktop portal configuration
     ./xserver       # X11 server configuration and settings
-    
+
     # =============================================================================
     # Input & Gestures
     # =============================================================================

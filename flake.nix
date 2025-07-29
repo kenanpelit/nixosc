@@ -62,6 +62,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
+    # === Theming ===
+    # Catppuccin theme for system-wide consistent theming
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    
     # === GRUB Theme ===
     # Custom themes for the GRUB bootloader
     distro-grub-themes = {
@@ -277,7 +284,7 @@
   # SYSTEM CONFIGURATION OUTPUTS
   # ============================================================================
   outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, 
-              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, ... }@inputs:
+              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, catppuccin, ... }@inputs:
     let
       # === Global Variables ===
       username = "kenan";        # Primary user account
@@ -310,6 +317,9 @@
             # GRUB theme module for all systems
             distro-grub-themes.nixosModules.${system}.default
             
+            # Catppuccin theming modules
+            inputs.catppuccin.nixosModules.catppuccin
+            
             # Home-manager integration
             inputs.home-manager.nixosModules.home-manager
             {
@@ -318,6 +328,12 @@
                 useUserPackages = true;     # Install packages to /etc/profiles
                 extraSpecialArgs = {
                   inherit inputs username host;
+                };
+                users.${username} = {
+                  imports = [
+                    inputs.catppuccin.homeModules.catppuccin
+                    ./modules/home
+                  ];
                 };
               };
             }

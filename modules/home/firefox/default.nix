@@ -140,12 +140,18 @@ in {
       nativeMessagingHosts = with pkgs; [fx-cast-bridge];
       
       profiles."${username}" = {
-        extensions.packages = extensionsList;
+        # FIXED: Added extensions.force = true
+        extensions = {
+          packages = extensionsList;
+          force = true;  # ADDED: This line fixes the assertion error
+        };
+        
         search = {
           force = true;
           default = cfg.defaultSearchEngine;
           engines = searchConfig;
         };
+        
         settings = {
           # File Picker Settings
           "widget.use-xdg-desktop-portal.file-picker" = 1;

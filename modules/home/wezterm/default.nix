@@ -1,23 +1,48 @@
 # modules/home/wezterm/default.nix
-# ==============================================================================
-# WezTerm Terminal Emulator Configuration - Catppuccin Mocha
-# ==============================================================================
 { config, lib, pkgs, ... }:
 let
   # Catppuccin Mocha tema renkleri
   colors = {
-    base = "#1e1e2e";
-    mantle = "#181825";
-    crust = "#11111b";
-    text = "#cdd6f4";
-    surface1 = "#45475a";
-    surface2 = "#585b70";
-    mauve = "#cba6f7";
-    pink = "#f5c2e7";
-    red = "#f38ba8";
-    green = "#a6e3a1";
-    yellow = "#f9e2af";
-    sky = "#89dceb";
+    foreground = "#cdd6f4";
+    background = "#1e1e2e";
+    cursor_bg = "#cba6f7";
+    cursor_fg = "#585b70";
+    selection_fg = "#11111b";
+    selection_bg = "#cba6f7";
+    
+    ansi = [
+      "#45475a"  # Black
+      "#f38ba8"  # Red
+      "#a6e3a1"  # Green
+      "#f9e2af"  # Yellow
+      "#cba6f7"  # Blue
+      "#f5c2e7"  # Magenta
+      "#89dceb"  # Cyan
+      "#cdd6f4"  # White
+    ];
+    
+    brights = [
+      "#585b70"  # Bright Black
+      "#f38ba8"  # Bright Red
+      "#a6e3a1"  # Bright Green
+      "#f9e2af"  # Bright Yellow
+      "#cba6f7"  # Bright Blue
+      "#f5c2e7"  # Bright Magenta
+      "#89dceb"  # Bright Cyan
+      "#f5e0dc"  # Bright White (rosewater)
+    ];
+
+    tab_bar = {
+      background = "#181825";
+      active_tab = {
+        bg_color = "#cba6f7";
+        fg_color = "#11111b";
+      };
+      inactive_tab = {
+        bg_color = "#11111b";
+        fg_color = "#cdd6f4";
+      };
+    };
   };
 
   # Font ve efekt ayarları
@@ -35,7 +60,9 @@ in
   programs.wezterm = {
     enable = true;
     
-    extraConfig = ''
+    extraConfig = let
+      colorStr = color: ''"${color}"'';
+    in ''
       local wezterm = require("wezterm")
       local act = wezterm.action
       local config = wezterm.config_builder()
@@ -229,7 +256,7 @@ in
       -- Status line updates
       wezterm.on("update-right-status", function(window, _)
         local SOLID_LEFT_ARROW = ""
-        local ARROW_FOREGROUND = { Foreground = { Color = "${colors.mauve}" } }
+        local ARROW_FOREGROUND = { Foreground = { Color = "${colors.cursor_bg}" } }
         local prefix = ""
 
         if window:leader_is_active() then
@@ -238,15 +265,15 @@ in
         end
 
         if window:active_tab():tab_id() ~= 0 then
-          ARROW_FOREGROUND = { Foreground = { Color = "${colors.crust}" } }
+          ARROW_FOREGROUND = { Foreground = { Color = "${colors.tab_bar.inactive_tab.bg_color}" } }
         end
 
         window:set_left_status(wezterm.format({
-          { Background = { Color = "${colors.pink}" } },
+          { Background = { Color = "${colors.tab_bar.active_tab.bg_color}" } },
           { Attribute = { Intensity = "Bold" } },
           { Text = prefix },
-          { Background = { Color = "${colors.mauve}" } },
-          { Foreground = { Color = "${colors.crust}" } },
+          { Background = { Color = "${colors.cursor_bg}" } },
+          { Foreground = { Color = "${colors.tab_bar.inactive_tab.bg_color}" } },
           { Text = " TERM " },
           ARROW_FOREGROUND,
           { Text = SOLID_LEFT_ARROW },
@@ -259,46 +286,77 @@ in
       config.unicode_version = 14
       config.freetype_load_target = "Light"
 
-      -- Color Scheme - Catppuccin Mocha
-      config.colors = {
-        foreground = "${colors.text}",
-        background = "${colors.base}",
-        cursor_bg = "${colors.mauve}",
-        cursor_fg = "${colors.surface2}",
-        selection_fg = "${colors.crust}",
-        selection_bg = "${colors.mauve}",
-        tab_bar = {
-          background = "${colors.mantle}",
-          active_tab = {
-            bg_color = "${colors.mauve}",
-            fg_color = "${colors.crust}",
+      -- Color Scheme
+      config.color_schemes = {
+        ["Catppuccin Mocha"] = {
+          foreground = ${colorStr colors.foreground},
+          background = ${colorStr colors.background},
+          cursor_bg = ${colorStr colors.cursor_bg},
+          cursor_fg = ${colorStr colors.cursor_fg},
+          selection_fg = ${colorStr colors.selection_fg},
+          selection_bg = ${colorStr colors.selection_bg},
+          ansi = {
+            ${colorStr (builtins.elemAt colors.ansi 0)},
+            ${colorStr (builtins.elemAt colors.ansi 1)},
+            ${colorStr (builtins.elemAt colors.ansi 2)},
+            ${colorStr (builtins.elemAt colors.ansi 3)},
+            ${colorStr (builtins.elemAt colors.ansi 4)},
+            ${colorStr (builtins.elemAt colors.ansi 5)},
+            ${colorStr (builtins.elemAt colors.ansi 6)},
+            ${colorStr (builtins.elemAt colors.ansi 7)},
           },
-          inactive_tab = {
-            bg_color = "${colors.crust}",
-            fg_color = "${colors.text}",
+          brights = {
+            ${colorStr (builtins.elemAt colors.brights 0)},
+            ${colorStr (builtins.elemAt colors.brights 1)},
+            ${colorStr (builtins.elemAt colors.brights 2)},
+            ${colorStr (builtins.elemAt colors.brights 3)},
+            ${colorStr (builtins.elemAt colors.brights 4)},
+            ${colorStr (builtins.elemAt colors.brights 5)},
+            ${colorStr (builtins.elemAt colors.brights 6)},
+            ${colorStr (builtins.elemAt colors.brights 7)},
           },
-        },
-        ansi = {
-          "${colors.surface1}",  -- Black
-          "${colors.red}",       -- Red
-          "${colors.green}",     -- Green
-          "${colors.yellow}",    -- Yellow
-          "${colors.mauve}",     -- Blue
-          "${colors.pink}",      -- Magenta
-          "${colors.sky}",       -- Cyan
-          "${colors.text}",      -- White
-        },
-        brights = {
-          "${colors.surface2}",  -- Bright Black
-          "${colors.red}",       -- Bright Red
-          "${colors.green}",     -- Bright Green
-          "${colors.yellow}",    -- Bright Yellow
-          "${colors.mauve}",     -- Bright Blue
-          "${colors.pink}",      -- Bright Magenta
-          "${colors.sky}",       -- Bright Cyan
-          "#f5e0dc",             -- Bright White (rosewater)
-        },
+          tab_bar = {
+            background = ${colorStr colors.tab_bar.background},
+            active_tab = {
+              bg_color = ${colorStr colors.tab_bar.active_tab.bg_color},
+              fg_color = ${colorStr colors.tab_bar.active_tab.fg_color},
+            },
+            inactive_tab = {
+              bg_color = ${colorStr colors.tab_bar.inactive_tab.bg_color},
+              fg_color = ${colorStr colors.tab_bar.inactive_tab.fg_color},
+            },
+          },
+        }
       }
+      config.color_scheme = "Catppuccin Mocha"
+
+      -- Status line updates
+      wezterm.on("update-right-status", function(window, _)
+        local SOLID_LEFT_ARROW = ""
+        local ARROW_FOREGROUND = { Foreground = { Color = ${colorStr colors.cursor_bg} } }
+        local prefix = ""
+
+        if window:leader_is_active() then
+          prefix = " " .. utf8.char(0x1f30a)
+          SOLID_LEFT_ARROW = utf8.char(0xe0b2)
+        end
+
+        if window:active_tab():tab_id() ~= 0 then
+          ARROW_FOREGROUND = { Foreground = { Color = ${colorStr colors.tab_bar.inactive_tab.bg_color} } }
+        end
+
+        window:set_left_status(wezterm.format({
+          { Background = { Color = ${colorStr colors.tab_bar.active_tab.bg_color} } },
+          { Attribute = { Intensity = "Bold" } },
+          { Text = prefix },
+          { Background = { Color = ${colorStr colors.cursor_bg} } },
+          { Foreground = { Color = ${colorStr colors.tab_bar.inactive_tab.bg_color} } },
+          { Text = " TERM " },
+          ARROW_FOREGROUND,
+          { Text = SOLID_LEFT_ARROW },
+        }))
+      end)
+
 
       -- Wayland Environment Variables
       config.set_environment_variables = {
@@ -327,3 +385,4 @@ in
     '';
   };
 }
+
