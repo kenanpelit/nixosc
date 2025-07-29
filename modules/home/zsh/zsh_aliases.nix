@@ -1,5 +1,8 @@
 # modules/home/zsh/zsh_aliases.nix
-{ hostname, config, pkgs, host, lib, ... }:
+# ==============================================================================
+# ZSH Shell Aliases - Core System Utilities Only
+# ==============================================================================
+{ hostname, config, pkgs, host, ... }:
 {
   programs.zsh = {
     shellAliases = {
@@ -14,7 +17,7 @@
       c = "clear";
       h = "history | tail -20";
       j = "jobs -l";
-      path = "echo -e ''${PATH//:/\\\\n}";
+      path = "echo -e \${PATH//:/\\\\n}";
       now = "date +'%T'";
       nowtime = "date +'%d-%m-%Y %T'";
       nowdate = "date +'%d-%m-%Y'";
@@ -27,9 +30,6 @@
       grep = "rg";                 # ripgrep
       find = "fd";                 # fd
       ps = "procs";                # procs (if available)
-      top = "btop";                # btop
-      htop = "btop";
-      du = "dust";                 # dust
       
       # File operations
       tt = "gtrash put";
@@ -61,33 +61,6 @@
       # Directory sizes
       lsize = "eza --icons -la --group-directories-first --total-size";
       ldot = "eza --icons -ld .*";  # List only dotfiles
-
-      # =============================================================================
-      # Git Shortcuts (Enhanced)
-      # =============================================================================
-      g = "git";
-      gs = "git status -sb";
-      ga = "git add";
-      gaa = "git add -A";
-      gc = "git commit -m";
-      gca = "git commit -am";
-      gp = "git push";
-      gpl = "git pull";
-      gl = "git log --oneline -10";
-      gd = "git diff";
-      gds = "git diff --staged";
-      gb = "git branch";
-      gco = "git checkout";
-      gcb = "git checkout -b";
-      gm = "git merge";
-      gr = "git remote -v";
-      gst = "git stash";
-      gstp = "git stash pop";
-      
-      # Advanced git
-      glog = "git log --graph --pretty=format:'%Cred%h%Creset %an: %s - %Creset %C(yellow)%d%Creset %Cgreen(%cr)%Creset' --abbrev-commit --date=relative";
-      gundo = "git reset --soft HEAD~1";
-      greset = "git reset --hard HEAD";
 
       # =============================================================================
       # System Information & Monitoring
@@ -130,8 +103,7 @@
       
       # Network info
       myip = "curl -s ifconfig.me";
-      localip = "ip route get 8.8.8.8 | awk '{print $7; exit}'";
-      ports = "netstat -tulanp";
+      localip = "ip route get 8.8.8.8 | awk '{print \$7; exit}'";
 
       # =============================================================================
       # Development Tools
@@ -145,15 +117,104 @@
       pipf = "pip freeze";
       pipr = "pip install -r requirements.txt";
       
-      # Docker (if available)
-      d = "docker";
-      dc = "docker-compose";
-      dps = "docker ps";
-      dpsa = "docker ps -a";
-      di = "docker images";
-      dex = "docker exec -it";
-      dlog = "docker logs -f";
+      # =============================================================================
+      # Podman Container Management
+      # =============================================================================
+      # Core Podman Commands
+      podman = "podman";
+      pod-compose = "podman-compose";
       
+      # Container Operations - Clear naming
+      pod-ps = "podman ps";                    # List running containers
+      pod-ps-all = "podman ps -a";             # List all containers
+      pod-run = "podman run";                  # Run container
+      pod-run-it = "podman run -it";           # Run interactive container
+      pod-run-rm = "podman run --rm";          # Run and remove after exit
+      pod-start = "podman start";              # Start container
+      pod-stop = "podman stop";                # Stop container
+      pod-restart = "podman restart";          # Restart container
+      pod-rm = "podman rm";                    # Remove container
+      pod-rm-force = "podman rm -f";           # Force remove container
+      
+      # Container Interaction - Descriptive names
+      pod-exec = "podman exec -it";            # Execute interactive command
+      pod-exec-cmd = "podman exec";            # Execute command in container
+      pod-logs = "podman logs -f";             # Follow container logs
+      pod-logs-show = "podman logs";           # Show container logs
+      pod-inspect = "podman inspect";          # Inspect container
+      pod-stats = "podman stats";              # Show container stats
+      pod-top = "podman top";                  # Show running processes
+      
+      # Image Operations - Clear purpose
+      pod-images = "podman images";            # List images
+      pod-images-all = "podman images -a";     # List all images
+      pod-pull = "podman pull";                # Pull image
+      pod-push = "podman push";                # Push image
+      pod-build = "podman build";              # Build image
+      pod-rmi = "podman rmi";                  # Remove image
+      pod-rmi-force = "podman rmi -f";         # Force remove image
+      pod-tag = "podman tag";                  # Tag image
+      
+      # System & Cleanup - Self-documenting
+      pod-system = "podman system";                    # System commands
+      pod-prune = "podman system prune -f";           # Clean unused resources
+      pod-prune-volumes = "podman volume prune -f";   # Clean unused volumes
+      pod-clean-all = "podman system prune -a -f --volumes"; # Nuclear cleanup
+      pod-info = "podman info";                       # System information
+      pod-version = "podman version";                 # Version information
+      pod-disk-usage = "podman system df";           # Show disk usage
+      
+      # Pod Operations (Podman's unique feature)
+      pods-list = "podman pod ls";                    # List pods
+      pods-create = "podman pod create";              # Create pod
+      pods-remove = "podman pod rm";                  # Remove pod
+      pods-start = "podman pod start";                # Start pod
+      pods-stop = "podman pod stop";                  # Stop pod
+      pods-restart = "podman pod restart";            # Restart pod
+      pods-inspect = "podman pod inspect";            # Inspect pod
+      pods-stats = "podman pod stats";                # Pod statistics
+      
+      # Volume Operations - Explicit naming
+      pod-volumes = "podman volume ls";               # List volumes
+      pod-volume-create = "podman volume create";     # Create volume
+      pod-volume-remove = "podman volume rm";         # Remove volume
+      pod-volume-inspect = "podman volume inspect";   # Inspect volume
+      
+      # Network Operations - Clear purpose
+      pod-networks = "podman network ls";             # List networks
+      pod-network-create = "podman network create";   # Create network
+      pod-network-remove = "podman network rm";       # Remove network
+      pod-network-inspect = "podman network inspect"; # Inspect network
+      
+      # Registry & Repository - Obvious function
+      pod-login = "podman login";                     # Login to registry
+      pod-logout = "podman logout";                   # Logout from registry
+      pod-search = "podman search";                   # Search images
+      
+      # Compose Operations - podman-compose prefix
+      pod-compose-up = "podman-compose up";           # Start services
+      pod-compose-up-bg = "podman-compose up -d";     # Start in background
+      pod-compose-down = "podman-compose down";       # Stop and remove
+      pod-compose-build = "podman-compose build";     # Build services
+      pod-compose-pull = "podman-compose pull";       # Pull service images
+      pod-compose-ps = "podman-compose ps";           # List services
+      pod-compose-logs = "podman-compose logs";       # Show logs
+      pod-compose-logs-follow = "podman-compose logs -f"; # Follow logs
+      pod-compose-restart = "podman-compose restart"; # Restart services
+      pod-compose-stop = "podman-compose stop";       # Stop services
+      pod-compose-start = "podman-compose start";     # Start services
+      
+      # Batch Operations - Descriptive names
+      pod-clean-containers = "podman container prune -f"; # Clean containers only
+      pod-clean-images = "podman image prune -f";         # Clean images only
+      pod-stop-all = "podman stop \$(podman ps -q)";      # Stop all containers
+      pod-remove-all = "podman rm \$(podman ps -aq)";     # Remove all containers
+      
+      # Inspection & Debugging - Clear intent
+      pod-history = "podman history";                 # Show image history
+      pod-diff = "podman diff";                       # Show container changes
+      pod-events = "podman events";                   # Show system events
+   
       # =============================================================================
       # Media & Download Tools
       # =============================================================================
@@ -167,26 +228,26 @@
       ytp-mp4 = "yt-dlp --yes-playlist -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4 -o '%(playlist_index)s-%(title)s.%(ext)s'";
 
       # =============================================================================
-      # NixOS Management (Enhanced)
+      # NixOS Management
       # =============================================================================
       osc = "cd ~/.nixosc";
       
       # Nix shell
       ns = "nom-shell --run zsh";
-      ndev = "nix develop --command zsh";  # Modern nix develop
+      ndev = "nix develop --command zsh";
       
       # System management
-      nix-switch = "nh os switch --ask";     # Ask before switching
+      nix-switch = "nh os switch --ask";
       nix-update = "nh os switch --update --ask";
       nix-test = "nh os test";
-      nix-boot = "nh os boot";               # Build but don't switch
+      nix-boot = "nh os boot";
       nix-clean = "nh clean all --keep 5";
       nix-cleanup = "nix-collect-garbage -d && nix-store --optimise";
       
       # Search and info
       nix-search = "nh search";
       nst = "nix-search-tv print | fzf --preview 'nix-search-tv preview {}'";
-      ninfo = "nix-info -m";                 # System info
+      ninfo = "nix-info -m";
       
       # Flake operations
       nix-update-flake = "nix flake update ~/.nixosc";
@@ -200,15 +261,16 @@
       # Utilities & Quality of Life
       # =============================================================================
       # Archive operations
-      extract = "aunpack";           # Use atool
+      extract = "aunpack";
       compress = "apack";
       
       # Quick edits
       zshrc = "nvim ~/.nixosc/modules/home/zsh/zsh.nix";
+      vimrc = "nvim ~/.config/nvim/init.lua";
       
       # Calendar and time
-      cal = "cal -3";                # Show 3 months
-      week = "date +%V";             # Week number
+      cal = "cal -3";
+      week = "date +%V";
       
       # Quick server
       serve = "python3 -m http.server 8000";
@@ -229,7 +291,7 @@
       usage = "du -h --max-depth=1 | sort -hr";
       
       # Colors test
-      colors = "for i in {0..255}; do print -Pn \"%K{$i}  %k%F{$i}$'{i:3d}'%f \" $'{i%16==15?\"\\n\":\"\"}'; done";
+      colors = "for i in {0..255}; do print -Pn \"%K{\$i}  %k%F{\$i}\$'{i:3d}'%f \" \$'{i%16==15?\"\\\\n\":\"\"}'; done";
     };
   };
 }
