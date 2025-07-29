@@ -40,13 +40,13 @@ in
   ];
 
   # =============================================================================
-  # Qt Base Configuration
+  # Qt Base Configuration - FIXED for Catppuccin compatibility
   # =============================================================================
   qt = {
     enable = true;
     platformTheme = {
-      name = "gtk3";
-      package = pkgs.libsForQt5.qtstyleplugins;
+      name = "kvantum";  # CHANGED: gtk3 -> kvantum for Catppuccin compatibility
+      package = pkgs.libsForQt5.qtstyleplugin-kvantum;
     };
     style = {
       name = "kvantum";
@@ -55,10 +55,10 @@ in
   };
 
   # =============================================================================
-  # Session Variables - Catppuccin Mocha için optimize
+  # Session Variables - Updated for Kvantum
   # =============================================================================
   home.sessionVariables = {
-    QT_QPA_PLATFORMTHEME = "gtk3";
+    QT_QPA_PLATFORMTHEME = "kvantum";  # CHANGED: gtk3 -> kvantum
     QT_STYLE_OVERRIDE = "kvantum";
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
     QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";

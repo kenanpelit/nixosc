@@ -66,32 +66,32 @@ in
       font-size = toString fonts.sizes.xl;
       
       # ---------------------------------------------------------------------------
-      # Color Theme
+      # Color Theme - FIXED: Added lib.mkDefault to allow Catppuccin override
       # ---------------------------------------------------------------------------
       # Highlight Colors
-      key-hl-color = "${colors.blue}ff";          # Blue accent
-      bs-hl-color = "${colors.red}ff";            # Red
+      key-hl-color = lib.mkDefault "${colors.blue}ff";          # Blue accent
+      bs-hl-color = lib.mkDefault "${colors.red}ff";            # Red - FIXED conflict
       
       # Ring Colors
-      ring-color = "${colors.crust}aa";            # Dark background
-      ring-clear-color = "${colors.yellow}ff";     # Orange
-      ring-caps-lock-color = "${colors.mauve}ff";  # Purple
-      ring-ver-color = "${colors.green}ff";        # Green
-      ring-wrong-color = "${colors.red}ff";        # Bright red
+      ring-color = lib.mkDefault "${colors.crust}aa";            # Dark background
+      ring-clear-color = lib.mkDefault "${colors.yellow}ff";     # Orange
+      ring-caps-lock-color = lib.mkDefault "${colors.mauve}ff";  # Purple
+      ring-ver-color = lib.mkDefault "${colors.green}ff";        # Green
+      ring-wrong-color = lib.mkDefault "${colors.red}ff";        # Bright red
       
       # Interior Colors
-      inside-color = "${colors.crust}cc";          # Darkest
-      inside-clear-color = "${colors.crust}dd";
-      inside-caps-lock-color = "${colors.crust}dd";
-      inside-ver-color = "${colors.crust}dd";
-      inside-wrong-color = "${colors.crust}dd";
+      inside-color = lib.mkDefault "${colors.crust}cc";          # Darkest
+      inside-clear-color = lib.mkDefault "${colors.crust}dd";
+      inside-caps-lock-color = lib.mkDefault "${colors.crust}dd";
+      inside-ver-color = lib.mkDefault "${colors.crust}dd";
+      inside-wrong-color = lib.mkDefault "${colors.crust}dd";
       
       # Text Colors
-      text-color = "${colors.text}ff";              # Light gray
-      text-clear-color = "${colors.yellow}ff";      # Orange
-      text-caps-lock-color = "${colors.mauve}ff";   # Purple
-      text-ver-color = "${colors.green}ff";         # Green
-      text-wrong-color = "${colors.red}ff";         # Red
+      text-color = lib.mkDefault "${colors.text}ff";              # Light gray
+      text-clear-color = lib.mkDefault "${colors.yellow}ff";      # Orange
+      text-caps-lock-color = lib.mkDefault "${colors.mauve}ff";   # Purple
+      text-ver-color = lib.mkDefault "${colors.green}ff";         # Green
+      text-wrong-color = lib.mkDefault "${colors.red}ff";         # Red
       
       # Transparent UI Elements
       separator-color = "00000000";
@@ -102,8 +102,8 @@ in
       line-wrong-color = "00000000";
       
       # Layout Settings
-      layout-bg-color = "${colors.crust}cc";        # Darkest shade
-      layout-text-color = "${colors.text}ff";       # Light blue
+      layout-bg-color = lib.mkDefault "${colors.crust}cc";        # Darkest shade
+      layout-text-color = lib.mkDefault "${colors.text}ff";       # Light blue
     };
     
     # ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 # modules/home/mako/default.nix
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 let
   # Catppuccin Mocha Colors - Tokyo Night yerine
   colors = {
@@ -54,10 +54,10 @@ in
       # Typography - consistent with system theme
       font = "Maple Mono NF 12";  # Tema ile uyumlu font
       
-      # Colors - Catppuccin Mocha theme
-      background-color = colors.base + "f0";     # 94% opacity
-      text-color = colors.text;
-      border-color = colors.mauve + "cc";        # Theme accent color
+      # Colors - Catppuccin Mocha theme - FIXED: Added lib.mkDefault to avoid conflicts
+      background-color = lib.mkDefault (colors.base + "f0");     # 94% opacity
+      text-color = lib.mkDefault colors.text;
+      border-color = lib.mkDefault (colors.mauve + "cc");        # Theme accent color
       
       # Dimensions - optimized
       width = 540;
@@ -70,7 +70,7 @@ in
       max-history = 50;
   
       # Visual enhancements
-      progress-color = "over " + colors.blue;
+      progress-color = lib.mkDefault ("over " + colors.blue);
       icons = 1;
       max-icon-size = 64;
       icon-location = "left";
