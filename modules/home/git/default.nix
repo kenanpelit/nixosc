@@ -410,7 +410,7 @@
     # ---------------------------------------------------------------------------
     lg = "lazygit";                        # Lazygit TUI
     lzg = "lazygit";                       # Alternative
-    gf = "onefetch --number-of-file-churns 0 --no-color-palette";  # Repository info
+    ginfo = "onefetch --number-of-file-churns 0 --no-color-palette";  # Repository info
     ghc = "gh repo create";                # GitHub create repo
     ghv = "gh repo view --web";            # View repo in browser
     
