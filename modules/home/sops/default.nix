@@ -57,14 +57,6 @@
         format = "binary";
       };
       
-      # Oh-My-Tmux configuration archive
-      "oh_my_tmux_config" = {
-        sopsFile = "${config.home.homeDirectory}/.nixosc/assets/oh-my-tmux.enc.tar.gz";
-        path = "${config.home.homeDirectory}/.backup/oh-my-tmux.tar.gz";
-        mode = "0600";
-        format = "binary";
-      };
-      
       # MPV configuration archive
       "mpv_config" = {
         sopsFile = "${config.home.homeDirectory}/.nixosc/assets/mpv.enc.tar.gz";

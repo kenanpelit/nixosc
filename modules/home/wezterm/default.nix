@@ -1,24 +1,11 @@
 # modules/home/wezterm/default.nix
-# ==============================================================================
-# WezTerm Terminal Emulator Configuration - Catppuccin Mocha
-# ==============================================================================
 { config, lib, pkgs, ... }:
 let
-  # Catppuccin Mocha tema renkleri
-  colors = {
-    base = "#1e1e2e";
-    mantle = "#181825";
-    crust = "#11111b";
-    text = "#cdd6f4";
-    surface1 = "#45475a";
-    surface2 = "#585b70";
-    mauve = "#cba6f7";
-    pink = "#f5c2e7";
-    red = "#f38ba8";
-    green = "#a6e3a1";
-    yellow = "#f9e2af";
-    sky = "#89dceb";
-  };
+  # Catppuccin modülünden otomatik renk alımı
+  inherit (config.catppuccin) sources;
+  
+  # WezTerm'in built-in catppuccin teması kullan
+  colorSchemeName = "Catppuccin ${lib.toSentenceCase config.catppuccin.flavor}";
 
   # Font ve efekt ayarları
   fonts = {
@@ -226,10 +213,12 @@ in
       config.use_fancy_tab_bar = false
       config.tab_and_split_indices_are_zero_based = true
 
+      -- CATPPUCCIN THEME - Built-in WezTerm theme kullan
+      config.color_scheme = "${colorSchemeName}"
+
       -- Status line updates
       wezterm.on("update-right-status", function(window, _)
         local SOLID_LEFT_ARROW = ""
-        local ARROW_FOREGROUND = { Foreground = { Color = "${colors.mauve}" } }
         local prefix = ""
 
         if window:leader_is_active() then
@@ -237,18 +226,10 @@ in
           SOLID_LEFT_ARROW = utf8.char(0xe0b2)
         end
 
-        if window:active_tab():tab_id() ~= 0 then
-          ARROW_FOREGROUND = { Foreground = { Color = "${colors.crust}" } }
-        end
-
         window:set_left_status(wezterm.format({
-          { Background = { Color = "${colors.pink}" } },
           { Attribute = { Intensity = "Bold" } },
           { Text = prefix },
-          { Background = { Color = "${colors.mauve}" } },
-          { Foreground = { Color = "${colors.crust}" } },
           { Text = " TERM " },
-          ARROW_FOREGROUND,
           { Text = SOLID_LEFT_ARROW },
         }))
       end)
@@ -258,47 +239,6 @@ in
       config.custom_block_glyphs = false
       config.unicode_version = 14
       config.freetype_load_target = "Light"
-
-      -- Color Scheme - Catppuccin Mocha
-      config.colors = {
-        foreground = "${colors.text}",
-        background = "${colors.base}",
-        cursor_bg = "${colors.mauve}",
-        cursor_fg = "${colors.surface2}",
-        selection_fg = "${colors.crust}",
-        selection_bg = "${colors.mauve}",
-        tab_bar = {
-          background = "${colors.mantle}",
-          active_tab = {
-            bg_color = "${colors.mauve}",
-            fg_color = "${colors.crust}",
-          },
-          inactive_tab = {
-            bg_color = "${colors.crust}",
-            fg_color = "${colors.text}",
-          },
-        },
-        ansi = {
-          "${colors.surface1}",  -- Black
-          "${colors.red}",       -- Red
-          "${colors.green}",     -- Green
-          "${colors.yellow}",    -- Yellow
-          "${colors.mauve}",     -- Blue
-          "${colors.pink}",      -- Magenta
-          "${colors.sky}",       -- Cyan
-          "${colors.text}",      -- White
-        },
-        brights = {
-          "${colors.surface2}",  -- Bright Black
-          "${colors.red}",       -- Bright Red
-          "${colors.green}",     -- Bright Green
-          "${colors.yellow}",    -- Bright Yellow
-          "${colors.mauve}",     -- Bright Blue
-          "${colors.pink}",      -- Bright Magenta
-          "${colors.sky}",       -- Bright Cyan
-          "#f5e0dc",             -- Bright White (rosewater)
-        },
-      }
 
       -- Wayland Environment Variables
       config.set_environment_variables = {
@@ -327,3 +267,4 @@ in
     '';
   };
 }
+

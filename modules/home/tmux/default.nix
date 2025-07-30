@@ -22,13 +22,13 @@ with lib;
     home.packages = with pkgs; [
       tmux      # Terminal multiplexer
     ];
-
+    
     # ---------------------------------------------------------------------------
     # Configuration Extraction Service
     # ---------------------------------------------------------------------------
     systemd.user.services.extract-tmux-config = {
       Unit = {
-        Description = "Extract tmux and oh-my-tmux configurations";
+        Description = "Extract tmux configuration";
         Requires = [ "sops-nix.service" ];
         After = [ "sops-nix.service" ];
       };
@@ -38,22 +38,20 @@ with lib;
         RemainAfterExit = true;
         ExecStart = let
           extractScript = pkgs.writeShellScript "extract-tmux-config" ''
-            # Check for backup files
-            if [ ! -f "/home/${config.home.username}/.backup/tmux.tar.gz" ] || [ ! -f "/home/${config.home.username}/.backup/oh-my-tmux.tar.gz" ]; then
-              echo "Required tar files are not ready yet..."
+            # Check for backup file
+            if [ ! -f "/home/${config.home.username}/.backup/tmux.tar.gz" ]; then
+              echo "Required tar file is not ready yet..."
               exit 1
             fi
            
-            echo "Cleaning up old configurations..."
-            rm -rf $HOME/.config/tmux $HOME/.config/oh-my-tmux
+            echo "Cleaning up old configuration..."
+            rm -rf $HOME/.config/tmux
            
-            echo "Creating directories..."
-            mkdir -p $HOME/.config/tmux $HOME/.config/oh-my-tmux
+            echo "Creating directory..."
+            mkdir -p $HOME/.config/tmux
            
             echo "Extracting tmux configuration..."
             ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/tmux.tar.gz -C $HOME/.config/
-            echo "Extracting oh-my-tmux configuration..."
-            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/oh-my-tmux.tar.gz -C $HOME/.config/
           '';
         in "${extractScript}";
       };
@@ -62,14 +60,12 @@ with lib;
         WantedBy = [ "default.target" ];
       };
     };
-
+    
     # ---------------------------------------------------------------------------
     # Disable home-manager tmux management
     # ---------------------------------------------------------------------------
     programs.tmux.enable = false;
-    xdg.configFile = {
-      "tmux".enable = false;
-      "oh-my-tmux".enable = false;
-    };
+    xdg.configFile."tmux".enable = false;
   };
 }
+

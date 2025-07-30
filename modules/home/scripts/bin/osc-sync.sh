@@ -59,7 +59,6 @@ REQUIRED_PACKAGES=(
 # Asset listesi
 ASSET_DIRS=(
 	"mpv"
-	"oh-my-tmux"
 	"tmux"
 )
 

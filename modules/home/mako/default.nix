@@ -1,7 +1,15 @@
 # modules/home/mako/default.nix
-{ pkgs, ... }:
+# ==============================================================================
+# Mako Notification Daemon Configuration - Catppuccin Mocha Themed
+# ==============================================================================
+# Basic colors managed by Catppuccin module, but custom formatting preserved
+# This module handles advanced app-specific formatting and behaviors
+#
+# Author: Kenan Pelit
+# ==============================================================================
+{ pkgs, lib, ... }:
 let
-  # Catppuccin Mocha Colors - Tokyo Night yerine
+  # Catppuccin Mocha Colors - for custom formatting only
   colors = {
     base = "#1e1e2e";        # Ana arka plan
     mantle = "#181825";      # Koyu arka plan
@@ -14,7 +22,7 @@ let
     overlay0 = "#6c7086";    # Overlay 0
     overlay1 = "#7f849c";    # Overlay 1
     
-    # Accent colors
+    # Accent colors for app-specific formatting
     rosewater = "#f5e0dc";
     flamingo = "#f2cdcd";
     pink = "#f5c2e7";
@@ -41,7 +49,7 @@ in
   ];
 
   # =============================================================================
-  # Mako Configuration - Catppuccin Mocha Themed
+  # Mako Configuration - Advanced Configuration
   # =============================================================================
   services.mako = {
     enable = true;
@@ -52,12 +60,10 @@ in
       margin = "15,20,0,0";
       
       # Typography - consistent with system theme
-      font = "Maple Mono NF 12";  # Tema ile uyumlu font
+      font = "Maple Mono NF 12";
       
-      # Colors - Catppuccin Mocha theme
-      background-color = colors.base + "f0";     # 94% opacity
-      text-color = colors.text;
-      border-color = colors.mauve + "cc";        # Theme accent color
+      # NOTE: Basic colors (background-color, text-color, border-color, progress-color) 
+      # are managed by Catppuccin module for consistency
       
       # Dimensions - optimized
       width = 540;
@@ -69,8 +75,7 @@ in
       # History settings
       max-history = 50;
   
-      # Visual enhancements
-      progress-color = "over " + colors.blue;
+      # Visual enhancements (non-conflicting)
       icons = 1;
       max-icon-size = 64;
       icon-location = "left";
@@ -84,21 +89,23 @@ in
       layer = "overlay";
       max-visible = 4;
      
-      # Enhanced format with Catppuccin colors
+      # Enhanced format with custom icons and colors
       markup = 1;
       format = ''<span color="${colors.blue}" size="12pt" weight="600">%a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="12pt">%b</span>'';
     };
     
-    # Enhanced styling - Catppuccin themed
+    # =============================================================================
+    # App-specific Custom Formatting - The Magic! ✨
+    # =============================================================================
     extraConfig = ''
-      # Grouped notifications
+      # Grouped notifications with custom styling
       [grouped]
       format=<span color="${colors.mauve}" size="11pt" weight="600">(%g) %a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="10pt">%b</span>
       border-size=3
       border-color=${colors.mauve}
       markup=1
       
-      # Urgency levels with Catppuccin colors
+      # Enhanced urgency levels with custom formatting
       [urgency=normal]
       background-color=${colors.base}f0
       text-color=${colors.text}
@@ -123,9 +130,9 @@ in
       default-timeout=5000
       markup=1
       
-      # App-specific configurations
+      # 🎨 Beautiful App-specific Formatting with Icons
       
-      # Ferdium - messaging apps
+      # 💬 Messaging Apps
       [app-name=ferdium]
       format=<span color="${colors.teal}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
@@ -137,7 +144,6 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Discord
       [app-name=discord]
       format=<span color="${colors.teal}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
@@ -147,7 +153,6 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # WebCord
       [app-name=WebCord]
       [app-name=webcord]
       format=<span color="${colors.teal}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
@@ -158,7 +163,7 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Spotify - music with green accent
+      # 🎵 Music Apps
       [app-name=Spotify]
       [app-name=spotify]
       format=<span color="${colors.green}" size="12pt" weight="600">🎵 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.green}" size="11pt" style="italic">%b</span>
@@ -171,14 +176,59 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # System notifications
-      [app-name="notify-send"]
-      format=<span color="${colors.blue}" size="12pt" weight="600">ℹ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      # 🌐 Browsers
+      [app-name=firefox]
+      format=<span color="${colors.peach}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
-      border-color=${colors.blue}99
+      border-color=${colors.peach}99
+      default-timeout=8000
+      markup=1
+      on-button-left=exec firefox
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      [app-name=brave]
+      [app-name=brave-browser]
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.yellow}99
+      default-timeout=8000
+      markup=1
+      on-button-left=exec brave
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      [app-name=Google-chrome]
+      [app-name=google-chrome]
+      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.yellow}99
+      default-timeout=8000
+      markup=1
+      on-button-left=exec google-chrome-stable
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
+      # ♫ Music/MPD
+      [category=mpd]
+      format=<span color="${colors.mauve}" size="12pt" weight="600">♫ Music</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.mauve}" size="11pt" style="italic">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.mauve}99
+      default-timeout=3000
+      group-by=category
       markup=1
       
-      # WhatsApp
+      # ✈️ Communication
+      [app-name=telegram]
+      [app-name=telegram-desktop]
+      format=<span color="${colors.sky}" size="12pt" weight="600">✈️ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.sky}99
+      markup=1
+      on-button-left=exec telegram-desktop
+      on-button-middle=dismiss
+      on-button-right=dismiss
+      
       [app-name=whatsapp-nativefier-d40211]
       [app-name=whatsapp]
       format=<span color="${colors.teal}" size="12pt" weight="600">💬 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
@@ -191,62 +241,7 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Firefox
-      [app-name=firefox]
-      format=<span color="${colors.peach}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
-      background-color=${colors.base}f0
-      border-color=${colors.peach}99
-      default-timeout=8000
-      markup=1
-      on-button-left=exec firefox
-      on-button-middle=dismiss
-      on-button-right=dismiss
-      
-      # Brave Browser
-      [app-name=brave]
-      [app-name=brave-browser]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
-      background-color=${colors.base}f0
-      border-color=${colors.yellow}99
-      default-timeout=8000
-      markup=1
-      on-button-left=exec brave
-      on-button-middle=dismiss
-      on-button-right=dismiss
-      
-      # Chrome
-      [app-name=Google-chrome]
-      [app-name=google-chrome]
-      format=<span color="${colors.yellow}" size="12pt" weight="600">🌐 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
-      background-color=${colors.base}f0
-      border-color=${colors.yellow}99
-      default-timeout=8000
-      markup=1
-      on-button-left=exec google-chrome-stable
-      on-button-middle=dismiss
-      on-button-right=dismiss
-      
-      # Music/MPD
-      [category=mpd]
-      format=<span color="${colors.mauve}" size="12pt" weight="600">♫ Music</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.mauve}" size="11pt" style="italic">%b</span>
-      background-color=${colors.base}f0
-      border-color=${colors.mauve}99
-      default-timeout=3000
-      group-by=category
-      markup=1
-      
-      # Telegram
-      [app-name=telegram]
-      [app-name=telegram-desktop]
-      format=<span color="${colors.sky}" size="12pt" weight="600">✈️ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
-      background-color=${colors.base}f0
-      border-color=${colors.sky}99
-      markup=1
-      on-button-left=exec telegram-desktop
-      on-button-middle=dismiss
-      on-button-right=dismiss
-      
-      # Slack
+      # 💼 Work Apps
       [app-name=slack]
       format=<span color="${colors.mauve}" size="12pt" weight="600">💼 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
@@ -256,7 +251,7 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Signal
+      # 🔒 Security
       [app-name=signal]
       [app-name=signal-desktop]
       format=<span color="${colors.blue}" size="12pt" weight="600">🔒 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
@@ -267,7 +262,7 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Email
+      # 📧 Email
       [app-name=thunderbird]
       format=<span color="${colors.blue}" size="12pt" weight="600">📧 %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
@@ -277,7 +272,7 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Battery notifications
+      # ⚡ System Notifications
       [summary~="Battery"]
       [summary~="Power"]
       format=<span color="${colors.yellow}" size="12pt" weight="600">⚡ Power</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
@@ -285,7 +280,6 @@ in
       border-color=${colors.yellow}99
       markup=1
       
-      # Network notifications
       [summary~="Network"]
       [summary~="WiFi"]
       [summary~="Connection"]
@@ -294,7 +288,6 @@ in
       border-color=${colors.sapphire}99
       markup=1
       
-      # System updates
       [summary~="Update"]
       [summary~="Upgrade"]
       format=<span color="${colors.green}" size="12pt" weight="600">⬆ System</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
@@ -303,7 +296,7 @@ in
       default-timeout=12000
       markup=1
       
-      # Kitty terminal
+      # ⌨ Development
       [app-name=kitty]
       format=<span color="${colors.overlay1}" size="12pt" weight="600">⌨ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
       background-color=${colors.base}f0
@@ -313,7 +306,6 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # VSCode/Codium
       [app-name=code]
       [app-name=codium]
       [app-name=vscode]
@@ -325,7 +317,14 @@ in
       on-button-middle=dismiss
       on-button-right=dismiss
       
-      # Modes
+      # ℹ System
+      [app-name="notify-send"]
+      format=<span color="${colors.blue}" size="12pt" weight="600">ℹ %a</span>\n<span color="${colors.text}" size="14pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="11pt">%b</span>
+      background-color=${colors.base}f0
+      border-color=${colors.blue}99
+      markup=1
+      
+      # Special modes
       [mode=away]
       default-timeout=0
       ignore-timeout=1
