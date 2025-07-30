@@ -25,80 +25,39 @@
   # ============================================================================
   catppuccin = {
     # === Terminal Applications ===
-    kitty.enable = lib.mkDefault true;     # GPU-accelerated terminal emulator
-    foot.enable = lib.mkDefault false;      # Lightweight Wayland terminal
+    kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal
+    foot.enable = lib.mkDefault false;        # Lightweight Wayland terminal
+    # wezterm - uses built-in Catppuccin, no module needed
     
     # === System Monitoring ===
-    btop.enable = lib.mkDefault true;      # Advanced system resource monitor
+    btop.enable = lib.mkDefault true;         # System resource monitor
+    # cava - manual config, could be enabled if module exists
     
     # === File Management & Utilities ===
-    bat.enable = lib.mkDefault true;       # Syntax-highlighted file viewer - RE-ENABLED with conflict fix
+    bat.enable = lib.mkDefault true;          # Syntax-highlighted file viewer
+    # fzf - you have custom dynamic config, could enable module
+    fzf.enable = lib.mkDefault true;          # Fuzzy finder (enable Catppuccin module)
+    yazi.enable = lib.mkDefault true;         # File manager (enable instead of manual theme)
     
     # === Development Tools ===
-    tmux.enable = lib.mkDefault true;      # Terminal multiplexer
+    tmux.enable = lib.mkDefault true;         # Terminal multiplexer
+    nvim.enable = lib.mkDefault true;         # Neovim (if you use it)
+    lazygit.enable = lib.mkDefault true;      # Git TUI
     
     # === Wayland/Hyprland Ecosystem ===
-    hyprland.enable = lib.mkDefault true;  # Wayland compositor
-    waybar.enable = lib.mkDefault true;    # Status bar
-    mako.enable = lib.mkDefault true;      # Notification daemon
-    rofi.enable = lib.mkDefault true;      # Application launcher
+    hyprland.enable = lib.mkDefault true;     # Wayland compositor
+    waybar.enable = lib.mkDefault true;       # Status bar
+    mako.enable = lib.mkDefault true;         # Notification daemon
+    rofi.enable = lib.mkDefault true;         # Application launcher
+    # swaylock - could enable if you want to replace Tokyo Night
+    swaylock.enable = lib.mkDefault true;     # Screen locker
     
     # === Media Applications ===
-    mpv.enable = lib.mkDefault true;       # Media player
+    mpv.enable = lib.mkDefault true;          # Media player
     
     # === Desktop Theming ===
-    gtk.enable = lib.mkDefault false;      # GTK theming disabled - handled by GTK module
-    cursors.enable = lib.mkDefault false;  # Cursor theming disabled - handled by GTK module
+    gtk.enable = lib.mkDefault false;         # GTK theming disabled - handled by GTK module
+    cursors.enable = lib.mkDefault false;     # Cursor theming disabled - handled by GTK module
   };
-
-  # ============================================================================
-  # ADVANCED THEMING CONFIGURATIONS
-  # ============================================================================
-  
-  # GTK specific Catppuccin customizations - DISABLED to avoid conflicts
-  # catppuccin.gtk = {
-  #   size = "standard";                     # Theme size variant (standard, compact)
-  #   tweaks = [ "rimless" ];               # Visual tweaks (black, rimless, normal, float)
-  #   icon = {
-  #     enable = true;                       # Enable Catppuccin icon theme
-  #     flavor = "mocha";                    # Icon theme flavor
-  #     accent = "mauve";                    # Icon accent color
-  #   };
-  # };
-
-  # ============================================================================
-  # CURSOR THEME CONFIGURATION - DISABLED
-  # ============================================================================
-  # Cursor configuration is handled by the GTK module to avoid conflicts
-  # See modules/home/gtk/default.nix for cursor settings
-  
-  # home.pointerCursor = lib.mkIf config.catppuccin.cursors.enable {
-  #   name = "catppuccin-mocha-mauve-cursors";
-  #   package = pkgs.catppuccin-cursors.mochaMauve;
-  #   size = 24;                             # Cursor size in pixels
-  #   gtk.enable = true;                     # Enable for GTK applications
-  #   x11.enable = true;                     # Enable for X11 applications
-  # };
-
-  # Environment variables for cursor theme
-  # home.sessionVariables = lib.mkIf config.catppuccin.cursors.enable {
-  #   XCURSOR_THEME = "catppuccin-mocha-mauve-cursors";
-  #   XCURSOR_SIZE = "24";
-  # };
-
-  # ============================================================================
-  # ADDITIONAL THEMING NOTES
-  # ============================================================================
-  # Applications without direct Catppuccin support can be themed manually:
-  # - fastfetch: No direct support yet
-  # - git: No direct support in catppuccin/nix
-  # - lazygit: No direct support yet
-  # - firefox: Requires manual theme installation
-  # - chrome/brave: Requires manual theme installation
-  # - discord: Requires BetterDiscord + Catppuccin theme
-  # - vscode: Available via extension marketplace
-  # 
-  # To disable any application theming, override in your host configuration:
-  # catppuccin.APPLICATION.enable = lib.mkForce false;
 }
 
