@@ -26,7 +26,7 @@
   catppuccin = {
     # === Terminal Applications ===
     kitty.enable = lib.mkDefault true;     # GPU-accelerated terminal emulator
-    foot.enable = lib.mkDefault true;      # Lightweight Wayland terminal
+    foot.enable = lib.mkDefault false;     # Lightweight Wayland terminal
     
     # === System Monitoring ===
     btop.enable = lib.mkDefault true;      # Advanced system resource monitor

@@ -1,6 +1,6 @@
-# modules/home/firefox/config.nix
+# modules/home/firefox/default.nix
 # ==============================================================================
-# Firefox Core Configuration
+# Firefox Core Configuration - Fixed for Home Manager Compatibility
 # ==============================================================================
 # This configuration manages Firefox browser setup including:
 # - Extension management and installation
@@ -11,7 +11,7 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, username ? "kenan", ... }:
 let
   cfg = config.my.browser.firefox;
   
@@ -39,35 +39,35 @@ let
       };
     };
     "Nix Packages" = {
-      inherit nix-icon;
+      icon = nix-icon;
       definedAliases = ["@np"];
       urls = lib.singleton {
         template = "https://search.nixos.org/packages?type=packages&query={searchTerms}";
       };
     };
     "NixOS Options" = {
-      inherit nix-icon;
+      icon = nix-icon;
       definedAliases = ["@no"];
       urls = lib.singleton {
         template = "https://search.nixos.org/options?type=packages&query={searchTerms}";
       };
     };
     "NixOS Wiki" = {
-      inherit nix-icon;
+      icon = nix-icon;
       definedAliases = ["@nw"];
       urls = lib.singleton {
         template = "https://wiki.nixos.org/w/index.php?search={searchTerms}";
       };
     };
     "Nixpkgs PR Tracker" = {
-      inherit nix-icon;
+      icon = nix-icon;
       definedAliases = ["@nprt"];
       urls = lib.singleton {
         template = "https://nixpk.gs/pr-tracker.html?pr={searchTerms}";
       };
     };
     "Noogle" = {
-      inherit nix-icon;
+      icon = nix-icon;
       definedAliases = ["@nog"];
       urls = lib.singleton {
         template = "https://noogle.dev/q?term={searchTerms}";
@@ -100,7 +100,7 @@ in {
   options.my.browser.firefox = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Enable Firefox browser with custom configuration";
     };
     
@@ -130,28 +130,34 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # Install Firefox
+    # Install Firefox package
     home.packages = [ cfg.package ];
 
-    # Firefox configuration
+    # Firefox configuration using Home Manager's firefox module
     programs.firefox = {
       enable = true;
       package = cfg.package;
-      nativeMessagingHosts = with pkgs; [fx-cast-bridge];
       
-      profiles."${username}" = {
-        # FIXED: Added extensions.force = true
-        extensions = {
-          packages = extensionsList;
-          force = true;  # ADDED: This line fixes the assertion error
-        };
+      # Native messaging hosts for extensions
+      nativeMessagingHosts = with pkgs; [ fx-cast-bridge ];
+      
+      # Profile configuration
+      profiles.${username} = {
+        id = 0;
+        name = username;
+        isDefault = true;
         
+        # Extensions configuration - FIXED: Use simple list format
+        extensions = extensionsList;
+        
+        # Search configuration
         search = {
           force = true;
           default = cfg.defaultSearchEngine;
           engines = searchConfig;
         };
         
+        # Firefox settings
         settings = {
           # File Picker Settings
           "widget.use-xdg-desktop-portal.file-picker" = 1;
@@ -182,10 +188,31 @@ in {
             url = "https://nixos.org";
           };
         };
+        
+        # User Chrome CSS for additional theming
+        userChrome = ''
+          /* Custom Firefox UI theming - compatible with Catppuccin */
+          :root {
+            --toolbar-bgcolor: #1e1e2e !important;
+            --toolbar-color: #cdd6f4 !important;
+            --tabs-border-color: #313244 !important;
+          }
+        '';
+        
+        # User Content CSS for web pages
+        userContent = ''
+          /* Custom web page theming if needed */
+          @-moz-document url-prefix(about:) {
+            body {
+              background-color: #1e1e2e !important;
+              color: #cdd6f4 !important;
+            }
+          }
+        '';
       };
     };
 
-    # Configure default application associations
+    # Configure default application associations if requested
     xdg.mimeApps = lib.mkIf cfg.setAsDefault {
       enable = true;
       defaultApplications = {
@@ -201,6 +228,13 @@ in {
         "x-scheme-handler/about" = ["firefox.desktop"];
         "x-scheme-handler/unknown" = ["firefox.desktop"];
       };
+    };
+
+    # Shell aliases for Firefox management
+    home.shellAliases = {
+      "firefox-profile" = "firefox -P";
+      "firefox-safe" = "firefox -safe-mode";
+      "firefox-new" = "firefox -new-instance";
     };
   };
 }
