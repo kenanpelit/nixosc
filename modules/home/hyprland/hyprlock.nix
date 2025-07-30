@@ -1,60 +1,69 @@
 # modules/home/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Configuration with Catppuccin Mocha Theme
+# Hyprlock Configuration with Dynamic Catppuccin Theme
 # ==============================================================================
 # This configuration manages hyprlock screen locker including:
-# - Catppuccin Mocha color scheme
+# - Dynamic Catppuccin color scheme (supports all flavors)
 # - Background and avatar configuration  
 # - Clock and system information display
 # - Authentication input field
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ pkgs, username, ... }:
+{ config, lib, pkgs, username, ... }:
 let
-  # Catppuccin Mocha Color Palette
-  colors = {
-    # Background colors
-    base = "rgba(30, 30, 46, 1.0)";           # #1e1e2e - mocha base
-    surface0 = "rgba(49, 50, 68, 0.8)";       # #313244 - mocha surface0
-    surface1 = "rgba(69, 71, 90, 0.9)";       # #45475a - mocha surface1
+  # Catppuccin modülünden otomatik renk alımı
+  inherit (config.catppuccin) sources;
+  
+  # Palette JSON'dan renkler - dinamik flavor desteği
+  colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
+  
+  # Convert RGB set to string and create RGBA
+  mkRgba = color: alpha: "rgba(${toString color.r}, ${toString color.g}, ${toString color.b}, ${toString alpha})";
+  
+  # Dynamic color palette based on current flavor
+  dynamicColors = {
+    # Background colors - adapts to flavor
+    base = mkRgba colors.base.rgb 1.0;
+    surface0 = mkRgba colors.surface0.rgb 0.8;
+    surface1 = mkRgba colors.surface1.rgb 0.9;
+    mantle = mkRgba colors.mantle.rgb 0.6;
     
-    # Text colors
-    text = "rgba(205, 214, 244, 0.95)";       # #cdd6f4 - mocha text
-    subtext0 = "rgba(166, 173, 200, 0.8)";    # #a6adc8 - mocha subtext0
-    subtext1 = "rgba(186, 194, 222, 0.7)";    # #bac2de - mocha subtext1
+    # Text colors - adapts to flavor (light/dark)
+    text = mkRgba colors.text.rgb 0.95;
+    subtext0 = mkRgba colors.subtext0.rgb 0.8;
+    subtext1 = mkRgba colors.subtext1.rgb 0.7;
     
-    # Accent colors
-    blue = "rgba(137, 180, 250, 0.9)";        # #89b4fa - mocha blue
-    cyan = "rgba(137, 220, 235, 0.8)";        # #89dceb - mocha sky
-    teal = "rgba(148, 226, 213, 0.7)";        # #94e2d5 - mocha teal
-    purple = "rgba(203, 166, 247, 0.8)";      # #cba6f7 - mocha mauve
-    magenta = "rgba(203, 166, 247, 0.7)";     # #cba6f7 - mocha mauve
+    # Accent colors - flavor dependent
+    blue = mkRgba colors.blue.rgb 0.9;
+    cyan = mkRgba colors.sky.rgb 0.8;
+    teal = mkRgba colors.teal.rgb 0.7;
+    purple = mkRgba colors.mauve.rgb 0.8;
     
     # Status colors
-    green = "rgba(166, 227, 161, 0.9)";       # #a6e3a1 - mocha green
-    yellow = "rgba(249, 226, 175, 0.8)";      # #f9e2af - mocha yellow
-    orange = "rgba(250, 179, 135, 0.8)";      # #fab387 - mocha peach
-    red = "rgba(243, 139, 168, 0.9)";         # #f38ba8 - mocha pink
+    green = mkRgba colors.green.rgb 0.9;
+    yellow = mkRgba colors.yellow.rgb 0.8;
+    orange = mkRgba colors.peach.rgb 0.8;
+    red = mkRgba colors.red.rgb 0.9;
     
     # Special colors
-    border = "rgba(108, 112, 134, 0.8)";      # #6c7086 - mocha overlay0
-    overlay = "rgba(24, 24, 37, 0.6)";        # #181825 - mocha mantle
+    border = mkRgba colors.overlay0.rgb 0.8;
+    overlay = mkRgba colors.mantle.rgb 0.6;
   };
 in
 {
   home.packages = [ pkgs.hyprlock ];
   
   xdg.configFile."hypr/hyprlock.conf".text = ''
-    # Background - Catppuccin Mocha
+    # Background - Dynamic Catppuccin
     background {
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/nixos.png
       blur_passes = 3
-      contrast = 0.85
-      brightness = 0.75
-      vibrancy = 0.15
-      color = ${colors.base}
+      contrast = ${if (config.catppuccin.flavor == "latte") then "1.1" else "0.85"}
+      brightness = ${if (config.catppuccin.flavor == "latte") then "1.1" else "0.75"}
+      vibrancy = ${if (config.catppuccin.flavor == "latte") then "0.2" else "0.15"}
+      color = ${dynamicColors.base}
     }
     
     # General settings
@@ -64,11 +73,11 @@ in
       disable_loading_bar = true
     }
     
-    # Day of week - Mocha Blue
+    # Day of week - Dynamic Blue
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%A")"
-      color = ${colors.blue}
+      color = ${dynamicColors.blue}
       font_size = 42
       font_family = Hack Nerd Font
       position = 0, 300
@@ -76,11 +85,11 @@ in
       valign = center
     }
     
-    # Date - Mocha Sky (Cyan)
+    # Date - Dynamic Sky/Cyan
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%d %B %Y")"
-      color = ${colors.cyan}
+      color = ${dynamicColors.cyan}
       font_size = 26
       font_family = Hack Nerd Font
       position = 0, 250
@@ -88,11 +97,11 @@ in
       valign = center
     }
     
-    # Time - Mocha Text
+    # Time - Dynamic Text Color
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%H:%M")"
-      color = ${colors.text}
+      color = ${dynamicColors.text}
       font_size = 22
       font_family = Hack Nerd Font
       position = 0, 200
@@ -100,12 +109,12 @@ in
       valign = center
     }
     
-    # Avatar - Mocha Mauve (Purple) Border
+    # Avatar - Dynamic Mauve/Purple Border
     image {
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/avatar.png
       border_size = 3
-      border_color = ${colors.purple}
+      border_color = ${dynamicColors.purple}
       size = 120
       rounding = 60
       position = 0, 50
@@ -113,22 +122,22 @@ in
       valign = center
     }
     
-    # Username background - Mocha Surface1
+    # Username background - Dynamic Surface1
     shape {
       monitor =
       size = 250, 50
-      color = ${colors.surface1}
+      color = ${dynamicColors.surface1}
       rounding = 12
       position = 0, -130
       halign = center
       valign = center
     }
     
-    # Username - Mocha Text
+    # Username - Dynamic Text
     label {
       monitor =
       text = $USER
-      color = ${colors.text}
+      color = ${dynamicColors.text}
       font_size = 16
       font_family = Hack Nerd Font
       position = 0, -130
@@ -136,7 +145,7 @@ in
       valign = center
     }
     
-    # Password input - Mocha Theme
+    # Password input - Dynamic Theme
     input-field {
       monitor =
       size = 250, 50
@@ -144,25 +153,25 @@ in
       dots_size = 0.2
       dots_spacing = 0.2
       dots_center = true
-      outer_color = ${colors.border}
-      inner_color = ${colors.surface0}
-      font_color = ${colors.text}
+      outer_color = ${dynamicColors.border}
+      inner_color = ${dynamicColors.surface0}
+      font_color = ${dynamicColors.text}
       fade_on_empty = true
       font_family = Hack Nerd Font
-      placeholder_text = Enter Password
-      check_color = ${colors.green}
-      fail_color = ${colors.red}
-      capslock_color = ${colors.yellow}
+      placeholder_text = <span foreground="${colors.subtext0.hex}">Enter Password</span>
+      check_color = ${dynamicColors.green}
+      fail_color = ${dynamicColors.red}
+      capslock_color = ${dynamicColors.yellow}
       position = 0, -200
       halign = center
       valign = center
     }
     
-    # System uptime - Mocha Subtext0
+    # System uptime - Dynamic Subtext0
     label {
       monitor =
       text = cmd[update:60000] echo "⏱ Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
-      color = ${colors.subtext0}
+      color = ${dynamicColors.subtext0}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -320
@@ -170,11 +179,11 @@ in
       valign = center
     }
     
-    # Music status - Mocha Teal
+    # Music status - Dynamic Teal
     label {
       monitor =
       text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "🎵 $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "🎵 No Player"; fi
-      color = ${colors.teal}
+      color = ${dynamicColors.teal}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -350
@@ -182,11 +191,11 @@ in
       valign = center
     }
     
-    # Battery status (if laptop) - Mocha Peach (Orange)
+    # Battery status (if laptop) - Dynamic Peach/Orange
     label {
       monitor =
       text = cmd[update:30000] if [ -f /sys/class/power_supply/BAT0/capacity ]; then echo "🔋 $(cat /sys/class/power_supply/BAT0/capacity)%"; else echo ""; fi
-      color = ${colors.orange}
+      color = ${dynamicColors.orange}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -380
@@ -194,11 +203,11 @@ in
       valign = center
     }
     
-    # Bottom action icons - Mocha Text
+    # Bottom action icons - Dynamic Text
     label {
       monitor =
       text = 󰐥  󰜉  󰤄
-      color = ${colors.text}
+      color = ${dynamicColors.text}
       font_size = 40
       font_family = Hack Nerd Font
       position = 0, 100
@@ -206,11 +215,11 @@ in
       valign = bottom
     }
     
-    # Lock screen hint - Mocha Mauve (Purple)
+    # Lock screen hint - Dynamic Purple/Mauve
     label {
       monitor =
       text = Press Enter to unlock
-      color = ${colors.purple}
+      color = ${dynamicColors.purple}
       font_size = 12
       font_family = Hack Nerd Font
       position = 0, -260
@@ -218,16 +227,28 @@ in
       valign = center
     }
     
-    # Weather info - Istanbul - Mocha Sky (Cyan)
+    # Weather info - Istanbul - Dynamic Sky/Cyan
     label {
       monitor =
       text = cmd[update:300000] curl -s "wttr.in/Istanbul?format=3" 2>/dev/null | head -1 || echo "🌤 Weather unavailable"
-      color = ${colors.cyan}
+      color = ${dynamicColors.cyan}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -410
       halign = center
       valign = center
+    }
+    
+    # Flavor indicator - Shows current Catppuccin flavor
+    label {
+      monitor =
+      text = Catppuccin ${lib.strings.toUpper config.catppuccin.flavor}
+      color = ${dynamicColors.subtext1}
+      font_size = 10
+      font_family = Hack Nerd Font
+      position = 20, 20
+      halign = left
+      valign = top
     }
   '';
 }
