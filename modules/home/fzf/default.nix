@@ -1,28 +1,34 @@
 # modules/home/fzf/default.nix
 # ==============================================================================
-# FZF (Fuzzy Finder) Configuration - Catppuccin Mocha Theme
+# FZF (Fuzzy Finder) Configuration - Auto Catppuccin Theme
 # ==============================================================================
 # This configuration manages FZF setup including:
 # - Advanced file and directory previews with multiple formats
-# - Catppuccin Mocha theme - tmux compatible
+# - Dynamic Catppuccin theme from central module
 # - Shell integration (Zsh)
 # - Custom preview handlers for images, PDFs, videos, archives
 # - Optimized search commands with fd integration
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ pkgs, inputs, lib, config, ... }:
+{ config, pkgs, lib, ... }:
 let
   cfg = config.my.tools.fzf;
   
-  # Catppuccin Mocha theme - Enhanced with tmux style
-  catppuccinMochaTheme = {
+  # Catppuccin modülünden otomatik renk alımı
+  inherit (config.catppuccin) sources;
+  
+  # Palette JSON'dan renkler
+  colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
+  
+  # Dynamic Catppuccin theme - flavor'a göre değişir
+  dynamicCatppuccinTheme = {
     colors = [
-      "--color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8"
-      "--color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc"
-      "--color=marker:#a6e3a1,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8"
-      "--color=border:#6c7086,label:#cdd6f4,query:#cdd6f4"
-      "--color=selected-bg:#313244,selected-fg:#cdd6f4"
+      "--color=bg+:${colors.surface0.hex},bg:${colors.base.hex},spinner:${colors.rosewater.hex},hl:${colors.red.hex}"
+      "--color=fg:${colors.text.hex},header:${colors.red.hex},info:${colors.mauve.hex},pointer:${colors.rosewater.hex}"
+      "--color=marker:${colors.green.hex},fg+:${colors.text.hex},prompt:${colors.mauve.hex},hl+:${colors.red.hex}"
+      "--color=border:${colors.overlay0.hex},label:${colors.text.hex},query:${colors.text.hex}"
+      "--color=selected-bg:${colors.surface0.hex},selected-fg:${colors.text.hex}"
     ];
     ui = [
       "--border=sharp" "--border-label=" "--preview-window=border-sharp"
@@ -36,12 +42,6 @@ in
       type = lib.types.bool;
       default = true;
       description = "Enable FZF fuzzy finder with advanced previews";
-    };
-    
-    theme = lib.mkOption {
-      type = lib.types.enum [ "catppuccin-mocha" "default" ];
-      default = "catppuccin-mocha";
-      description = "Color theme for FZF interface";
     };
     
     enableZshIntegration = lib.mkOption {
@@ -65,7 +65,7 @@ in
       # Basic search commands
       defaultCommand = "fd --hidden --strip-cwd-prefix --exclude .git";
       
-      # Advanced preview settings with Catppuccin Mocha colors
+      # Advanced preview settings
       fileWidgetOptions = [
         "--preview 'bat -n --color=always --line-range :500 {} 2>/dev/null || cat {}'"
         "--height=50%"
@@ -90,56 +90,39 @@ in
         "--tiebreak=index"
       ];
       
-      # Theme settings - Catppuccin Mocha
-      defaultOptions = 
-        if cfg.theme == "catppuccin-mocha" then 
-          (catppuccinMochaTheme.colors ++ catppuccinMochaTheme.ui ++ [
-            "--height=50%"
-            "--layout=reverse"
-            "--info=inline"
-            "--multi"
-            "--preview-window=right:50%:wrap"
-            "--bind=ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all"
-            "--bind=ctrl-u:preview-page-up,ctrl-d:preview-page-down"
-            "--bind=ctrl-f:page-down,ctrl-b:page-up"
-            "--cycle"
-          ])
-        else [
-          "--border=sharp" "--border-label=" "--preview-window=border-sharp"
-          "--prompt=❯ " "--marker=❯" "--pointer=❯" "--separator=─" "--scrollbar=│" "--info=right"
-          "--height=50%"
-          "--layout=reverse"
-          "--info=inline"
-          "--multi"
-          "--preview-window=right:50%:wrap"
-          "--bind=ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all"
-          "--bind=ctrl-u:preview-page-up,ctrl-d:preview-page-down"
-          "--bind=ctrl-f:page-down,ctrl-b:page-up"
-          "--cycle"
-        ];
+      # Dynamic Catppuccin theme - flavor'a göre otomatik değişir
+      defaultOptions = (dynamicCatppuccinTheme.colors ++ dynamicCatppuccinTheme.ui ++ [
+        "--height=50%"
+        "--layout=reverse"
+        "--info=inline"
+        "--multi"
+        "--preview-window=right:50%:wrap"
+        "--bind=ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all"
+        "--bind=ctrl-u:preview-page-up,ctrl-d:preview-page-down"
+        "--bind=ctrl-f:page-down,ctrl-b:page-up"
+        "--cycle"
+      ]);
     };
     
-    # Enhanced shell integration with Catppuccin Mocha colors
-    programs.zsh.initContent = lib.mkIf cfg.enableZshIntegration (
-      if cfg.theme == "catppuccin-mocha" then ''
-        # FZF Catppuccin Mocha Theme (Tmux Compatible)
-        export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
-          --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
-          --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
-          --color=marker:#a6e3a1,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
-          --color=border:#6c7086,label:#cdd6f4,query:#cdd6f4 \
-          --color=selected-bg:#313244,selected-fg:#cdd6f4"
-        
-        # Advanced search commands
-        export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
-        export FZF_CTRL_T_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
-        export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
-        
-        # Enhanced preview commands
-        export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always --line-range :500 {} 2>/dev/null || cat {}' --bind 'ctrl-/:change-preview-window(down|hidden|)'"
-        export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window up:3:hidden:wrap --bind 'ctrl-/:toggle-preview'"
-      '' else ""
-    );
+    # Enhanced shell integration with dynamic Catppuccin colors
+    programs.zsh.initContent = lib.mkIf cfg.enableZshIntegration ''
+      # FZF Dynamic Catppuccin Theme (${config.catppuccin.flavor})
+      export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
+        --color=bg+:${colors.surface0.hex},bg:${colors.base.hex},spinner:${colors.rosewater.hex},hl:${colors.red.hex} \
+        --color=fg:${colors.text.hex},header:${colors.red.hex},info:${colors.mauve.hex},pointer:${colors.rosewater.hex} \
+        --color=marker:${colors.green.hex},fg+:${colors.text.hex},prompt:${colors.mauve.hex},hl+:${colors.red.hex} \
+        --color=border:${colors.overlay0.hex},label:${colors.text.hex},query:${colors.text.hex} \
+        --color=selected-bg:${colors.surface0.hex},selected-fg:${colors.text.hex}"
+      
+      # Advanced search commands
+      export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
+      export FZF_CTRL_T_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
+      export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
+      
+      # Enhanced preview commands
+      export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always --line-range :500 {} 2>/dev/null || cat {}' --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+      export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window up:3:hidden:wrap --bind 'ctrl-/:toggle-preview'"
+    '';
     
     # Environment variables
     home.sessionVariables = {

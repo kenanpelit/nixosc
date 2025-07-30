@@ -1,35 +1,9 @@
 # modules/home/kitty/default.nix
 # ==============================================================================
-# Kitty Terminal Emulator Configuration - Catppuccin Mocha
+# Kitty Terminal Emulator Configuration - Pure Catppuccin Module
 # ==============================================================================
 { pkgs, host, lib, ... }:
 let
-  # Catppuccin Mocha Color Palette
-  palette = {
-    # Base colors - Mocha theme
-    bg = {
-      primary = "#1e1e2e";    # Mocha base
-      secondary = "#313244";  # Mocha surface0
-      tertiary = "#181825";   # Mocha mantle
-    };
-    fg = {
-      primary = "#cdd6f4";    # Mocha text
-      muted = "#6c7086";      # Mocha overlay0
-      subtle = "#45475a";     # Mocha surface1
-    };
-    accent = {
-      purple = "#cba6f7";     # Mocha mauve
-      cyan = "#89dceb";       # Mocha sky
-      yellow = "#f9e2af";     # Mocha yellow
-      red = "#f38ba8";        # Mocha pink
-      green = "#a6e3a1";      # Mocha green
-      blue = "#89b4fa";       # Mocha blue
-      pink = "#f5c2e7";       # Mocha pink
-      orange = "#fab387";     # Mocha peach
-      teal = "#94e2d5";       # Mocha teal
-    };
-  };
-  
   # Typography configuration
   typography = {
     family = "Hack Nerd Font";
@@ -43,65 +17,139 @@ let
     input_delay = 3;
     scrollback_lines = 10000;
   };
-  
-  # Theme configuration for settings.nix
-  kittyTheme = {
-    colors = {
-      background = palette.bg.primary;
-      foreground = palette.fg.primary;
-      selection_foreground = palette.bg.primary;
-      selection_background = palette.accent.purple;
+in {
+  programs.kitty = {
+    enable = true;
+    
+    # Font configuration
+    font = {
+      name = typography.family;
+      size = typography.size;
+    };
+    
+    # Core settings - Catppuccin modülü renkleri yönetecek
+    settings = {
+      # =======================================================================
+      # Terminal Configuration
+      # =======================================================================
+      term = "xterm-256color";
+      editor = "nvim";
       
-      cursor = palette.accent.teal;
-      cursor_text_color = palette.bg.primary;
-      url_color = palette.accent.blue;
+      # Font rendering
+      adjust_line_height = "2";
+      adjust_column_width = "0";
+      box_drawing_scale = "0.001, 1, 1.5, 2";
+      disable_ligatures = "never";
+      force_ltr = "no";
       
-      # Window borders
-      active_border_color = palette.accent.purple;
-      inactive_border_color = palette.fg.subtle;
-      bell_border_color = palette.accent.yellow;
+      # =======================================================================
+      # Cursor Configuration
+      # =======================================================================
+      cursor_shape = "block";
+      cursor_blink_interval = "0.5";
+      cursor_beam_thickness = "1.5";
       
-      # Tab bar - Mocha theme
-      active_tab_foreground = palette.bg.primary;
-      active_tab_background = palette.accent.purple;
-      inactive_tab_foreground = palette.fg.primary;
-      inactive_tab_background = palette.bg.secondary;
-      tab_bar_background = palette.bg.primary;
+      # =======================================================================
+      # Window & Layout
+      # =======================================================================
+      window_padding_width = "8";
+      scrollback_lines = toString performance.scrollback_lines;
+      wheel_scroll_multiplier = "5.0";
+      touch_scroll_multiplier = "1.0";
       
-      # Marks - Mocha colors
-      mark1_foreground = palette.bg.primary;
-      mark1_background = palette.accent.purple;
-      mark2_foreground = palette.bg.primary;
-      mark2_background = palette.accent.pink;
-      mark3_foreground = palette.bg.primary;
-      mark3_background = palette.accent.teal;
+      # =======================================================================
+      # Performance & Responsiveness
+      # =======================================================================
+      repaint_delay = toString performance.repaint_delay;
+      input_delay = toString performance.input_delay;
+      sync_to_monitor = "yes";
       
-      # ANSI Colors (0-15) - Catppuccin Mocha
-      color0 = palette.fg.subtle;        # black
-      color1 = palette.accent.red;       # red
-      color2 = palette.accent.green;     # green
-      color3 = palette.accent.yellow;    # yellow
-      color4 = palette.accent.blue;      # blue
-      color5 = palette.accent.purple;    # magenta
-      color6 = palette.accent.cyan;      # cyan
-      color7 = palette.fg.primary;       # white
-      color8 = palette.fg.muted;         # bright black
-      color9 = palette.accent.red;       # bright red
-      color10 = palette.accent.green;    # bright green
-      color11 = palette.accent.yellow;   # bright yellow
-      color12 = palette.accent.blue;     # bright blue
-      color13 = palette.accent.purple;   # bright magenta
-      color14 = palette.accent.cyan;     # bright cyan
-      color15 = "#f5e0dc";               # bright white (rosewater)
+      # =======================================================================
+      # Audio & Visual Feedback
+      # =======================================================================
+      enable_audio_bell = "no";
+      visual_bell_duration = "0.0";
+      window_alert_on_bell = "yes";
+      
+      # =======================================================================
+      # Tab Bar Styling
+      # =======================================================================
+      tab_bar_style = "powerline";
+      tab_powerline_style = "angled";
+      active_tab_font_style = "bold";
+      inactive_tab_font_style = "normal";
+      
+      # =======================================================================
+      # URL & Selection
+      # =======================================================================
+      url_style = "curly";
+      detect_urls = "yes";
+      copy_on_select = "yes";
+    };
+    
+    # ==========================================================================
+    # Advanced Font Configuration
+    # ==========================================================================
+    extraConfig = ''
+      # Font variants
+      bold_font        ${typography.family} Bold
+      italic_font      ${typography.family} Italic
+      bold_italic_font ${typography.family} Bold Italic
+      
+      # Icon and symbol fonts  
+      symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 ${typography.family}
+      symbol_map U+F000-U+F2E0 ${typography.family}
+      
+      # Font features
+      font_features ${lib.concatStringsSep "," (map (f: "+" + f) typography.features)}
+      
+      # Performance optimizations
+      input_delay ${toString performance.input_delay}
+      repaint_delay ${toString performance.repaint_delay}
+    '';
+    
+    # ==========================================================================
+    # Keyboard Shortcuts
+    # ==========================================================================
+    keybindings = {
+      # Tab navigation
+      "alt+1" = "goto_tab 1";
+      "alt+2" = "goto_tab 2";
+      "alt+3" = "goto_tab 3";
+      "alt+4" = "goto_tab 4";
+      "alt+5" = "goto_tab 5";
+      "alt+6" = "goto_tab 6";
+      "alt+7" = "goto_tab 7";
+      "alt+8" = "goto_tab 8";
+      "alt+9" = "goto_tab 9";
+      
+      # New tab/window
+      "ctrl+shift+t" = "new_tab";
+      "ctrl+shift+n" = "new_os_window";
+      
+      # Window management
+      "ctrl+shift+w" = "close_window";
+      "ctrl+shift+q" = "quit";
+      
+      # Text operations
+      "ctrl+shift+c" = "copy_to_clipboard";
+      "ctrl+shift+v" = "paste_from_clipboard";
+      
+      # Font size
+      "ctrl+shift+equal" = "increase_font_size";
+      "ctrl+shift+minus" = "decrease_font_size";
+      "ctrl+shift+backspace" = "restore_font_size";
+      
+      # Scrolling
+      "shift+page_up" = "scroll_page_up";
+      "shift+page_down" = "scroll_page_down";
+      "ctrl+shift+home" = "scroll_home";
+      "ctrl+shift+end" = "scroll_end";
+      
+      # Disable unwanted shortcuts
+      "ctrl+shift+left" = "no_op";
+      "ctrl+shift+right" = "no_op";
     };
   };
-in {
-  imports = [
-    (import ./settings.nix {
-      inherit kittyTheme palette typography performance lib;
-    })
-  ];
-  
-  programs.kitty.enable = true;
 }
 
