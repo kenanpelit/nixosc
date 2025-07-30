@@ -1,6 +1,32 @@
-# Hyprland Window Manager Configuration - Catppuccin Mocha Theme
+# Hyprland Window Manager Configuration - Dynamic Catppuccin Theme
 # modules/home/hyprland/config.nix
 { config, lib, pkgs, ... }:
+let
+  # Catppuccin modülünden otomatik renk alımı
+  inherit (config.catppuccin) sources;
+  
+  # Palette JSON'dan renkler - dinamik flavor desteği
+  colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
+  
+  # FIXED: Simpler color function for Hyprland - using direct hex format
+  mkColor = color: alpha:
+    let
+      hex = lib.removePrefix "#" color;
+      # Convert alpha to 0-255 range and format as hex
+      alphaInt = builtins.floor (alpha * 255);
+      alphaHex = if alphaInt < 16 then "0${lib.toHexString alphaInt}" else lib.toHexString alphaInt;
+    in "0x${alphaHex}${hex}";
+    
+  # Alternative: Simple rgba format that should work
+  mkRgba = color: alpha:
+    let
+      hex = lib.removePrefix "#" color;
+      r = lib.toInt "0x${builtins.substring 0 2 hex}";
+      g = lib.toInt "0x${builtins.substring 2 2 hex}";
+      b = lib.toInt "0x${builtins.substring 4 2 hex}";
+      a = toString (builtins.floor (alpha * 255));
+    in "rgba(${toString r}, ${toString g}, ${toString b}, ${a})";
+in
 {
   wayland.windowManager.hyprland = {
     settings = {
@@ -14,360 +40,311 @@
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
         # NetworkManagerApplet
         "nm-applet --indicator"
-        # Power management notifications (battery, lid, etc.)
-        #"poweralertd -s -S"
-        # Notification center for system-wide notifications
-        #"swaync"
         # Keep clipboard content persistent across program restarts
         "wl-clip-persist --clipboard both"
         # Enhanced clipboard management with cliphist
-        "wl-paste --type text --watch cliphist store"     # Store text content
-        "wl-paste --type image --watch cliphist store"    # Store image content including screenshots 
+        "wl-paste --type text --watch cliphist store"
+        "wl-paste --type image --watch cliphist store"
         # Advanced clipboard manager with searchable history
         "copyq"
-        # Set system cursor theme and size - Catppuccin Mocha
-        "hyprctl setcursor catppuccin-mocha-cursor 24"
+        # Set system cursor theme and size - Dynamic Catppuccin
+        "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-cursor 24"
         # Initialize wallpaper daemon for dynamic wallpapers
         "swww-daemon"
         # Start wallpaper rotation/management service
         "wallpaper-manager start"
-        # Python script runner for custom workspace management
-        #"pypr" # systemctl --user status pyprland.service
         # Initialize workspace layout
         "m2w2"
         # Start in service-mode application launcher
         "walker --gapplication-service"
         # Initialize screen locker for security
         "hyprlock"
-        # Set initial audio levels - microphone to 5% - speaker volume to 15%
+        # Set initial audio levels
         "osc-soundctl init"
       ];
 
       # =====================================================
-      # Environment Variables - Catppuccin Mocha Theme
+      # Environment Variables - Dynamic Catppuccin Theme
       # =====================================================
       env = [
-        # -----------------------------------------
-        # Wayland Temel Ayarları
-        # -----------------------------------------
-        "XDG_CURRENT_DESKTOP,Hyprland"          # Masaüstü ortamı
-        "XDG_SESSION_TYPE,wayland"              # Oturum tipi
-        "XDG_SESSION_DESKTOP,Hyprland"          # Masaüstü oturumu
+        # Wayland Core Settings
+        "XDG_CURRENT_DESKTOP,Hyprland"
+        "XDG_SESSION_TYPE,wayland"
+        "XDG_SESSION_DESKTOP,Hyprland"
 
-        # -----------------------------------------
-        # Wayland Backend ve Görüntü Ayarları
-        # -----------------------------------------
-        "GDK_BACKEND,wayland"                   # GTK uygulamaları için
-        "SDL_VIDEODRIVER,wayland"               # SDL uygulamaları için
-        "CLUTTER_BACKEND,wayland"               # Clutter uygulamaları için
-        "OZONE_PLATFORM,wayland"                # Electron uygulamaları için
+        # Wayland Backend Settings
+        "GDK_BACKEND,wayland"
+        "SDL_VIDEODRIVER,wayland"
+        "CLUTTER_BACKEND,wayland"
+        "OZONE_PLATFORM,wayland"
 
-        # -----------------------------------------
-        # Hyprland Özel Ayarları
-        # -----------------------------------------
-        "HYPRLAND_LOG_WLR,1"                    # WLRoots logging
-        "HYPRLAND_NO_RT,1"                      # RT scheduling devre dışı
-        "HYPRLAND_NO_SD_NOTIFY,1"               # Systemd bildirimleri devre dışı
+        # Hyprland Specific Settings
+        "HYPRLAND_LOG_WLR,1"
+        "HYPRLAND_NO_RT,1"
+        "HYPRLAND_NO_SD_NOTIFY,1"
 
-        # -----------------------------------------
-        # Intel Arc Graphics Crash Fix
-        # -----------------------------------------
-        #"WLR_DRM_NO_ATOMIC,1"                   # Atomic mode setting devre dışı
-        #"WLR_DRM_NO_ATOMIC_GAMMA,1"             # Atomic gamma devre dışı  
-        #"WLR_RENDERER,gles2"                    # OpenGL ES 2.0 renderer zorla
-        #"INTEL_DEBUG,norbc"                     # Intel debug ayarları
-        #"__GL_GSYNC_ALLOWED,0"                  # G-Sync devre dışı
-        #"__GL_VRR_ALLOWED,0"                    # VRR devre dışı
+        # Dynamic GTK Theme - Changes with flavor
+        "GTK_THEME,catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal"
+        "GTK_USE_PORTAL,1"
+        "GTK_APPLICATION_PREFER_DARK_THEME,${if (config.catppuccin.flavor == "latte") then "0" else "1"}"
+        "GDK_SCALE,1"
+        
+        # Dynamic Cursor Theme - Changes with flavor  
+        "XCURSOR_THEME,catppuccin-${config.catppuccin.flavor}-dark-cursors"
+        "XCURSOR_SIZE,24"
 
-        # -----------------------------------------
-        # GTK Tema ve Görünüm - Catppuccin Mocha
-        # -----------------------------------------
-        "GTK_THEME,catppuccin-mocha-mauve-standard+normal"  # Home Manager ile uyumlu
-        "GTK_USE_PORTAL,1"                                  # XDG portal kullanımı
-        "GTK_APPLICATION_PREFER_DARK_THEME,1"               # Koyu tema tercihi
-        "GDK_SCALE,1"                                       # HiDPI ölçekleme
-        "XCURSOR_THEME,catppuccin-mocha-dark-cursors"       # Cursor teması
-        "XCURSOR_SIZE,24"                                   # Cursor boyutu
+        # Qt/KDE Theme Settings
+        "QT_QPA_PLATFORM,wayland;xcb"
+        "QT_QPA_PLATFORMTHEME,gtk3"
+        "QT_STYLE_OVERRIDE,kvantum"
+        "QT_AUTO_SCREEN_SCALE_FACTOR,1"
+        "QT_WAYLAND_DISABLE_WINDOWDECORATION,1"
 
-        # -----------------------------------------
-        # Qt/KDE Tema ve Görünüm - Catppuccin Mocha
-        # -----------------------------------------
-        "QT_QPA_PLATFORM,wayland;xcb"           # Wayland öncelikli, XCB fallback
-        "QT_QPA_PLATFORMTHEME,gtk3"             # GTK tema entegrasyonu
-        "QT_STYLE_OVERRIDE,kvantum"             # Kvantum tema motoru
-        "QT_AUTO_SCREEN_SCALE_FACTOR,1"         # Otomatik HiDPI ölçekleme
-        "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Pencere dekorasyonları kapalı
+        # Firefox Settings
+        "MOZ_ENABLE_WAYLAND,1"
+        "MOZ_WEBRENDER,1"
+        "MOZ_USE_XINPUT2,1"
+        "MOZ_CRASHREPORTER_DISABLE,1"
 
-        # -----------------------------------------
-        # Firefox Özel Ayarları
-        # -----------------------------------------
-        "MOZ_ENABLE_WAYLAND,1"                  # Wayland native desteği
-        "MOZ_WEBRENDER,1"                       # WebRender grafik motoru
-        "MOZ_USE_XINPUT2,1"                     # Xinput2 desteği
-        "MOZ_CRASHREPORTER_DISABLE,1"           # Çökme raporlayıcı kapalı
-
-        # -----------------------------------------
-        # Font Rendering Ayarları
-        # -----------------------------------------
+        # Font Rendering
         "FREETYPE_PROPERTIES,truetype:interpreter-version=40"
 
-        # -----------------------------------------
-        # Temel Sistem Değişkenleri
-        # -----------------------------------------
-        "EDITOR,nvim"                           # Varsayılan metin düzenleyici
-        "VISUAL,nvim"                           # Varsayılan görsel düzenleyici
+        # System Variables
+        "EDITOR,nvim"
+        "VISUAL,nvim"
         "TERMINAL,kitty"
         "TERM,xterm-kitty"
-        "BROWSER,brave"                         # Varsayılan tarayıcı
+        "BROWSER,brave"
+        
+        # Debug: Show current flavor
+        "CATPPUCCIN_FLAVOR,${config.catppuccin.flavor}"
       ];
 
       # =====================================================
-      # Ecosystem Settings
-      # =====================================================
-      #ecosystem = {
-      #  no_update_news = true;           # Güncelleme bildirimlerini devre dışı bırak
-      #};
-
-      # =====================================================
-      # Giriş Aygıtları Yapılandırması
+      # Input Configuration
       # =====================================================
       input = {
-        kb_layout = "tr";                    # Klavye düzeni
-        kb_variant = "f";                    # F-klavye varyantı
-        kb_options = "ctrl:nocaps";          # Caps Lock -> Ctrl
-        repeat_rate = 35;                    # Tuş tekrar hızı (string'den int'e)
-        repeat_delay = 250;                  # Tuş tekrar gecikmesi (biraz daha hızlı)
-        sensitivity = 0.0;                   # Fare hassasiyeti (string'den float'a)
-        accel_profile = "flat";              # İvmelenme profili (gaming için daha iyi)
+        kb_layout = "tr";
+        kb_variant = "f";
+        kb_options = "ctrl:nocaps";
+        repeat_rate = 35;
+        repeat_delay = 250;
+        sensitivity = 0.0;
+        accel_profile = "flat";
 
-        # Touchpad ayarları
         touchpad = {
-          natural_scroll = false;            # Doğal kaydırma (boolean)
-          disable_while_typing = true;       # Yazarken devre dışı bırak (boolean)
-          tap-to-click = true;               # Dokunmatik tıklama (boolean)
-          drag_lock = true;                  # Sürükleme kilidi (boolean)
-          scroll_factor = 1.0;               # Kaydırma faktörü (standart)
-          clickfinger_behavior = true;       # Modern clickfinger davranışı
-          middle_button_emulation = true;    # Orta tuş emülasyonu
-          tap-and-drag = true;               # Tap ve sürükle
+          natural_scroll = false;
+          disable_while_typing = true;
+          tap-to-click = true;
+          drag_lock = true;
+          scroll_factor = 1.0;
+          clickfinger_behavior = true;
+          middle_button_emulation = true;
+          tap-and-drag = true;
         };
 
-        # Diğer giriş ayarları
-        numlock_by_default = false;          # NumLock varsayılan durumu (boolean)
-        left_handed = false;                 # Sol el modu (boolean)
-        follow_mouse = 1;                    # Fare odak davranışı (1 = sane default)
-        float_switch_override_focus = 2;     # Yüzen pencere odak geçişi (2 = better)
-        force_no_accel = true;               # Fare ivmelenmesini zorla kapat
+        numlock_by_default = false;
+        left_handed = false;
+        follow_mouse = 1;
+        float_switch_override_focus = 2;
+        force_no_accel = true;
       };
 
       # =====================================================
-      # Genel Pencere Yöneticisi Ayarları - Catppuccin Mocha
+      # General Settings - Dynamic Catppuccin Colors
       # =====================================================
       general = {
-        "$mainMod" = "SUPER";                                    # Ana modifikatör tuşu
-        gaps_in = 0;                                             # İç boşluklar
-        gaps_out = 0;                                            # Dış boşluklar
-        border_size = 2;                                         # Border kalınlığı
-        # Catppuccin Mocha: Aktif border - blue ve mauve gradient
-        "col.active_border" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
-        # Catppuccin Mocha: Pasif border - overlay0
-        "col.inactive_border" = "rgba(6c7086aa)";
-        layout = "master";                                       # Layout
-        allow_tearing = false;                                   # Tearing'e izin verme
-        resize_on_border = true;                                 # Border'dan resize
-        extend_border_grab_area = 15;                            # Border grab alanı
-        hover_icon_on_border = true;                             # Border'da hover iconu
-        no_border_on_floating = false;                           # Floating'de border
+        "$mainMod" = "SUPER";
+        gaps_in = 0;
+        gaps_out = 0;
+        border_size = 2;
+        
+        # Dynamic Catppuccin Colors - Using hex format instead of RGBA
+        "col.active_border" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
+        # Dynamic Catppuccin Colors - Inactive border with overlay0
+        "col.inactive_border" = mkColor colors.overlay0.hex 0.66;
+        
+        layout = "master";
+        allow_tearing = false;
+        resize_on_border = true;
+        extend_border_grab_area = 15;
+        hover_icon_on_border = true;
+        no_border_on_floating = false;
       };
 
       # =====================================================
-      # Grup Ayarları - Catppuccin Mocha
+      # Group Settings - Dynamic Catppuccin Colors
       # =====================================================
       group = {
-        # Catppuccin Mocha: Aktif grup border - blue ve mauve gradient
-        "col.border_active" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
-        # Catppuccin Mocha: Pasif grup border - surface1 ve overlay0
-        "col.border_inactive" = "rgba(45475aaa) rgba(6c7086aa) 45deg";
-        # Catppuccin Mocha: Kilitli aktif grup border
-        "col.border_locked_active" = "rgba(89b4faee) rgba(cba6f7ee) 45deg";
-        # Catppuccin Mocha: Kilitli pasif grup border
-        "col.border_locked_inactive" = "rgba(45475aaa) rgba(6c7086aa) 45deg";
+        # Dynamic active group border
+        "col.border_active" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
+        # Dynamic inactive group border
+        "col.border_inactive" = "${mkColor colors.surface1.hex 0.66} ${mkColor colors.overlay0.hex 0.66} 45deg";
+        # Dynamic locked active group border
+        "col.border_locked_active" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
+        # Dynamic locked inactive group border
+        "col.border_locked_inactive" = "${mkColor colors.surface1.hex 0.66} ${mkColor colors.overlay0.hex 0.66} 45deg";
         
         groupbar = {
           render_titles = false;
           gradients = false;
           font_size = 10;
-          # Catppuccin Mocha: Aktif groupbar - blue
-          "col.active" = "rgba(89b4faee)";
-          # Catppuccin Mocha: Pasif groupbar - overlay0
-          "col.inactive" = "rgba(6c7086aa)";
-          # Catppuccin Mocha: Kilitli aktif groupbar - mauve
-          "col.locked_active" = "rgba(cba6f7ee)";
-          # Catppuccin Mocha: Kilitli pasif groupbar - surface1
-          "col.locked_inactive" = "rgba(45475aaa)";
+          # Dynamic groupbar colors
+          "col.active" = mkColor colors.blue.hex 0.93;
+          "col.inactive" = mkColor colors.overlay0.hex 0.66;
+          "col.locked_active" = mkColor colors.mauve.hex 0.93;
+          "col.locked_inactive" = mkColor colors.surface1.hex 0.66;
         };
       };
 
       # =====================================================
-      # Çeşitli Ayarlar - Catppuccin Mocha
+      # Misc Settings - Dynamic Catppuccin Background
       # =====================================================
       misc = {
-        # Görünüm ayarları
-        disable_hyprland_logo = true;           # Logo gösterimini kapat
-        disable_splash_rendering = true;        # Açılış ekranını kapat
-        force_default_wallpaper = 0;            # Varsayılan duvar kağıdını zorla
+        # Appearance
+        disable_hyprland_logo = true;
+        disable_splash_rendering = true;
+        force_default_wallpaper = 0;
 
-        # Güç yönetimi
-        mouse_move_enables_dpms = true;         # Fare hareketi ekranı açar
-        key_press_enables_dpms = true;          # Tuş basımı ekranı açar
-        vrr = 1;                                # VRR/Adaptive sync
+        # Power Management
+        mouse_move_enables_dpms = true;
+        key_press_enables_dpms = true;
+        vrr = 1;
 
-        # Performans optimizasyonları
-        vfr = true;                             # Variable framerate
-        disable_autoreload = false;             # Config otomatik yeniden yükleme
+        # Performance
+        vfr = true;
+        disable_autoreload = false;
 
-        # Pencere davranışları
-        focus_on_activate = true;               # Aktif pencereye odaklan
-        always_follow_on_dnd = true;            # Sürükle-bırak takibi
-        layers_hog_keyboard_focus = true;       # Layer klavye odağı
-        animate_manual_resizes = true;          # Manuel resize animasyonları
-        animate_mouse_windowdragging = true;    # Pencere sürükleme animasyonları
+        # Window Behavior
+        focus_on_activate = true;
+        always_follow_on_dnd = true;
+        layers_hog_keyboard_focus = true;
+        animate_manual_resizes = true;
+        animate_mouse_windowdragging = true;
 
-        # Terminal swallow ayarları
-        enable_swallow = true;                  # Pencere yutma özelliği
+        # Terminal Swallow
+        enable_swallow = true;
         swallow_regex = "^(kitty|foot|alacritty|wezterm)$";
         swallow_exception_regex = "^(wev|Wayland-desktop)$";
 
-        # Monitör ve odak yönetimi
-        mouse_move_focuses_monitor = true;      # Fare monitör odağı
-        initial_workspace_tracking = 1;        # Başlangıç workspace takibi
+        # Monitor & Focus
+        mouse_move_focuses_monitor = true;
+        initial_workspace_tracking = 1;
 
-        # Özel özellikler
-        close_special_on_empty = true;          # Boş special workspace'i kapat
-        new_window_takes_over_fullscreen = 2;   # Yeni pencere fullscreen davranışı
-        allow_session_lock_restore = true;      # Session lock restore
-        # Catppuccin Mocha: Arka plan rengi - base
-        background_color = "rgba(30,30,46,1.0)";
+        # Special Features
+        close_special_on_empty = true;
+        new_window_takes_over_fullscreen = 2;
+        allow_session_lock_restore = true;
+        
+        # Dynamic background color - using hex format
+        background_color = mkColor colors.base.hex 1.0;
       };
 
       # =====================================================
-      # Gesture Ayarları - Touchpad & Touchscreen
+      # Gestures Configuration
       # =====================================================
       gestures = {
-        # Temel workspace swipe
-        workspace_swipe = false;                # Workspace swipe (kapalı)
-        workspace_swipe_fingers = 3;            # 3 parmak swipe
-        workspace_swipe_min_fingers = false;    # Min parmak kontrolü
-        workspace_swipe_distance = 200;         # Swipe mesafesi
-
-        # Touchscreen desteği
-        workspace_swipe_touch = false;          # Touchscreen swipe
-        workspace_swipe_touch_invert = false;   # Touchscreen yön
-
-        # Yön kontrolü
-        workspace_swipe_invert = true;          # Doğal yön
-
-        # İleri seviye ayarlar
-        workspace_swipe_min_speed_to_force = 20;     # Min hız eşiği
-        workspace_swipe_cancel_ratio = 0.3;          # İptal oranı
-        workspace_swipe_create_new = true;           # Yeni workspace oluştur
-        workspace_swipe_direction_lock = true;       # Yön kilidi
-        workspace_swipe_direction_lock_threshold = 15; # Yön kilidi eşiği
-        workspace_swipe_forever = false;             # Sınırsız swipe
-        workspace_swipe_use_r = false;               # 'r' prefix kullanma
+        workspace_swipe = false;
+        workspace_swipe_fingers = 3;
+        workspace_swipe_min_fingers = false;
+        workspace_swipe_distance = 200;
+        workspace_swipe_touch = false;
+        workspace_swipe_touch_invert = false;
+        workspace_swipe_invert = true;
+        workspace_swipe_min_speed_to_force = 20;
+        workspace_swipe_cancel_ratio = 0.3;
+        workspace_swipe_create_new = true;
+        workspace_swipe_direction_lock = true;
+        workspace_swipe_direction_lock_threshold = 15;
+        workspace_swipe_forever = false;
+        workspace_swipe_use_r = false;
       };
 
       # =====================================================
-      # Dwindle Layout Ayarları
+      # Layout Configurations
       # =====================================================
       dwindle = {
-        pseudotile = true;                      # Sahte döşeme
-        preserve_split = true;                  # Bölme konumunu koru
-        special_scale_factor = 0.8;             # Özel ölçekleme
-        force_split = 2;                        # Zorunlu bölme yönü
-        split_width_multiplier = 1.0;           # Bölme genişlik çarpanı
-        use_active_for_splits = true;           # Aktif pencere split
-        default_split_ratio = 1.0;              # Varsayılan split oranı
+        pseudotile = true;
+        preserve_split = true;
+        special_scale_factor = 0.8;
+        force_split = 2;
+        split_width_multiplier = 1.0;
+        use_active_for_splits = true;
+        default_split_ratio = 1.0;
       };
 
-      # =====================================================
-      # Master Layout Ayarları
-      # =====================================================
       master = {
-        new_on_top = false;                     # Yeni pencereler alta
-        new_status = "slave";                   # Yeni pencere durumu
-        mfact = 0.60;                           # Ana pencere oranı
-        orientation = "left";                   # Master pencere konumu
-        inherit_fullscreen = true;              # Fullscreen miras alma
-        smart_resizing = true;                  # Akıllı boyutlandırma
-        drop_at_cursor = false;                 # Cursor'a pencere bırakma
-        allow_small_split = false;              # Küçük split'lere izin
-        special_scale_factor = 0.8;             # Special workspace ölçeği
+        new_on_top = false;
+        new_status = "slave";
+        mfact = 0.60;
+        orientation = "left";
+        inherit_fullscreen = true;
+        smart_resizing = true;
+        drop_at_cursor = false;
+        allow_small_split = false;
+        special_scale_factor = 0.8;
       };
 
       # =====================================================
-      # Kısayol Tuşu Ayarları
+      # Keybinding Settings
       # =====================================================
       binds = {
-        pass_mouse_when_bound = true;           # Fare geçişine izin ver
-        workspace_back_and_forth = true;        # Workspace geri-ileri
-        allow_workspace_cycles = true;          # Workspace döngüsü
-        workspace_center_on = true;             # Merkeze hizalama
-        focus_preferred_method = 0;             # Odak yöntemi
-        ignore_group_lock = true;               # Grup kilidini yoksay
+        pass_mouse_when_bound = true;
+        workspace_back_and_forth = true;
+        allow_workspace_cycles = true;
+        workspace_center_on = true;
+        focus_preferred_method = 0;
+        ignore_group_lock = true;
       };
 
       # =====================================================
-      # Görsel Efektler ve Dekorasyon - Catppuccin Mocha
+      # Visual Effects - Dynamic Catppuccin Colors
       # =====================================================
       decoration = {
-        # Temel görünüm
-        rounding = 10;                          # Köşe yuvarlaklığı
+        rounding = 10;
 
-        # Opaklık ayarları
-        active_opacity = 1.0;                   # Aktif pencere tam opak
-        inactive_opacity = 0.95;                # Pasif pencereler hafif şeffaf
-        fullscreen_opacity = 1.0;               # Tam ekran opaklığı
+        # Opacity
+        active_opacity = 1.0;
+        inactive_opacity = 0.95;
+        fullscreen_opacity = 1.0;
 
-        # Karartma ayarları
-        dim_inactive = true;                    # Pasif pencere karartma
-        dim_strength = 0.15;                    # Karartma şiddeti
+        # Dimming
+        dim_inactive = true;
+        dim_strength = 0.15;
 
-        # Bulanıklık efektleri - Catppuccin Mocha
+        # Blur Effects
         blur = {
-          enabled = true;                       # Blur efekti aktif
-          size = 8;                             # Blur boyutu
-          passes = 2;                           # Blur geçiş sayısı
-          ignore_opacity = true;                # Opaklığı yoksay
-          new_optimizations = true;             # Yeni optimizasyonlar
-          xray = false;                         # X-ray efekti
-          vibrancy = 0.1696;                    # Glassmorphism efekti
-          vibrancy_darkness = 0.0;              # Vibrancy karartma
-          special = false;                      # Special workspace blur
-          popups = true;                        # Popup blur
-          popups_ignorealpha = 0.2;             # Popup blur eşiği
+          enabled = true;
+          size = 8;
+          passes = 2;
+          ignore_opacity = true;
+          new_optimizations = true;
+          xray = false;
+          vibrancy = 0.1696;
+          vibrancy_darkness = 0.0;
+          special = false;
+          popups = true;
+          popups_ignorealpha = 0.2;
         };
 
-        # Gölge efektleri - Catppuccin Mocha
+        # Dynamic Shadow - using crust color with transparency
         shadow = {
-          enabled = true;                       # Gölge efekti aktif
-          ignore_window = true;                 # Pencere gölgesi
-          offset = "0 4";                       # Gölge offset (x y)
-          range = 25;                           # Gölge genişliği
-          render_power = 2;                     # Gölge render gücü
-          # Catppuccin Mocha: Gölge rengi - crust ile koyu ton
-          color = "rgba(17,17,27,66)";
-          scale = 0.97;                         # Gölge ölçeği
+          enabled = true;
+          ignore_window = true;
+          offset = "0 4";
+          range = 25;
+          render_power = 2;
+          color = mkColor colors.crust.hex 0.26;
+          scale = 0.97;
         };
       };
 
       # =====================================================
-      # Animasyon Ayarları - Catppuccin Mocha
+      # Animations - Dynamic Catppuccin Smooth Transitions
       # =====================================================
       animations = {
-        enabled = true;                         # Animasyonları etkinleştir
+        enabled = true;
 
-        # Bezier eğrileri - Catppuccin Mocha smooth transitions
         bezier = [
           "fluent_decel, 0, 0.2, 0.4, 1"
           "easeOutCirc, 0, 0.55, 0.45, 1"
@@ -375,7 +352,6 @@
           "catppuccinSmooth, 0.25, 0.1, 0.25, 1"
         ];
 
-        # Animasyon tanımları - Catppuccin Mocha optimized
         animation = [
           "windows, 1, 2, easeOutCubic, slide"
           "windowsOut, 1, 2, easeOutCubic, slide"
@@ -386,11 +362,10 @@
       };
 
       # =====================================================
-      # Window Rules Section - Optimized & Organized
+      # Window Rules (keeping all your existing rules)
       # =====================================================
       windowrule = [
-        # ===== MEDIA APPLICATIONS =====
-        # MPV - Picture-in-Picture Video Player
+        # Media Applications
         "float,class:^(mpv)$"
         "size 19%,class:^(mpv)$"
         "move 1% 77%,class:^(mpv)$"
@@ -418,8 +393,7 @@
         "float,class:^(audacious)$"
         "workspace 5,class:^(Audacious)$"
 
-        # ===== PRODUCTIVITY APPLICATIONS =====
-        # Graphics & Design
+        # Productivity Applications
         "tile,class:^(Aseprite)$"
         "workspace 4,class:^(Aseprite)$"
         "opacity 1.0 override 1.0 override,class:^(Aseprite)$"
@@ -434,8 +408,7 @@
         # OBS Studio
         "workspace 8,class:^(com.obsproject.Studio)$"
 
-        # ===== SYSTEM UTILITIES =====
-        # Remote Desktop
+        # System Utilities
         "float,class:^(Vncviewer)$"
         "center,class:^(Vncviewer)$"
         "workspace 6,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
@@ -447,8 +420,7 @@
         "center,class:^(org.gnome.FileRoller)$"
         "size 850 500,class:^(org.gnome.FileRoller)$"
 
-        # ===== TERMINAL APPLICATIONS =====
-        # Terminal File Managers
+        # Terminal Applications
         "float,class:^(yazi)$"
         "center,class:^(yazi)$"
         "size 1920 1080,class:^(yazi)$"
@@ -468,8 +440,7 @@
         "size 75% 60%,class:^(kitty-scratch)$"
         "center,class:^(kitty-scratch)$"
 
-        # ===== COMMUNICATION =====
-        # Discord/WebCord
+        # Communication
         "workspace 5 silent,class:^(Discord)$"
         "workspace 5,class:^(WebCord)$"
         "workspace 5 silent,tile,class:^(discord)$"
@@ -491,8 +462,7 @@
         "workspace 4,title:^(Meet).*$"
         "center,title:^(Meet).*$"
 
-        # ===== WORKSPACE ASSIGNMENTS =====
-        # Browser Workspaces
+        # Workspace Assignments
         "workspace 1,class:^(zen)$"
         "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
         "workspace 6 silent,title:^(New Private Tab - Brave)$"
@@ -520,8 +490,7 @@
         "workspace 6 silent,class:^(qemu-system-x86_64)$"
         "workspace 6 silent,class:^(qemu)$"
 
-        # ===== LAUNCHER & SYSTEM TOOLS =====
-        # Application Launchers
+        # Launcher & System Tools
         "pin,class:^(rofi)$"
         "pin,class:^(waypaper)$"
 
@@ -552,14 +521,13 @@
         "move 0.5% 3%,class:^(dropdown)$"
         "workspace special:dropdown,class:^(dropdown)$"
 
-        # Shortwave Radio Player - Flexible
+        # Shortwave Radio Player
         "float,class:^(de.haeckerfelix.Shortwave)$"
         "size 30% 80%,class:^(de.haeckerfelix.Shortwave)$"
         "move 65% 10%,class:^(de.haeckerfelix.Shortwave)$"
         "workspace 8,class:^(de.haeckerfelix.Shortwave)$"
 
-        # ===== AUTHENTICATION & SECURITY =====
-        # OTP Client
+        # Authentication & Security
         "float,class:^(otpclient)$"
         "size 20%,class:^(otpclient)$"
         "move 79% 40%,class:^(otpclient)$"
@@ -575,8 +543,7 @@
         "animation fade,class:^(gcr-prompter)$"
         "opacity 0.95 0.95,class:^(gcr-prompter)$"
 
-        # ===== AUDIO CONTROL =====
-        # Volume Control
+        # Audio Control
         "float,title:^(Volume Control)$"
         "size 700 450,title:^(Volume Control)$"
         "move 40 55%,title:^(Volume Control)$"
@@ -585,7 +552,7 @@
         "animation popin,class:^(org.pulseaudio.pavucontrol)$"
         "dimaround,class:^(org.pulseaudio.pavucontrol)$"
 
-        # ===== NETWORK MANAGEMENT =====
+        # Network Management
         "float,class:^(org.twosheds.iwgtk)$"
         "size 1536 864,class:^(org.twosheds.iwgtk)$"
         "center,class:^(org.twosheds.iwgtk)$"
@@ -602,12 +569,11 @@
         "size 360 440,class:^(nm-applet)$"
         "center,class:^(nm-applet)$"
 
-        # ===== GAMING & EMULATION =====
+        # Gaming & Emulation
         "float,class:^(.sameboy-wrapped)$"
         "float,class:^(SoundWireServer)$"
 
-        # ===== GENERIC DIALOG RULES =====
-        # File Dialogs
+        # Generic Dialog Rules
         "float,title:^(Open File)$"
         "float,title:^(File Upload)$"
         "size 850 500,title:^(File Upload)$"
@@ -627,8 +593,7 @@
         "center,class:^(zenity)$"
         "size 850 500,class:^(zenity)$"
 
-        # ===== BROWSER SPECIFIC =====
-        # Firefox Sharing Indicator
+        # Browser Specific
         "float,title:^(Firefox — Sharing Indicator)$"
         "move 0 0,title:^(Firefox — Sharing Indicator)$"
         "idleinhibit fullscreen,class:^(firefox)$"
@@ -641,30 +606,29 @@
         "pin,title:^(Picture-in-Picture)$"
         "opacity 1.0 override 1.0 override,title:^(Picture-in-Picture)$"
 
-        # ===== XWAYLAND VIDEO BRIDGE =====
+        # XWayland Video Bridge
         "opacity 0.0 override,class:^(xwaylandvideobridge)$"
         "noanim,class:^(xwaylandvideobridge)$"
         "noinitialfocus,class:^(xwaylandvideobridge)$"
         "maxsize 1 1,class:^(xwaylandvideobridge)$"
         "noblur,class:^(xwaylandvideobridge)$"
 
-        # ===== CONTEXT MENU OPTIMIZATION =====
+        # Context Menu Optimization
         "opaque,class:^()$,title:^()$"
         "noshadow,class:^()$,title:^()$"
         "noblur,class:^()$,title:^()$"
 
-        # ===== TERMINAL OPACITY OVERRIDES =====
+        # Terminal Opacity Overrides
         "opacity 1.0 override 1.0 override,class:^(kitty)$"
         "opacity 1.0 override 1.0 override,class:^(foot)$"
         "opacity 1.0 override 1.0 override,class:^(Alacritty)$"
 
-        # ===== BROWSER OPACITY OVERRIDES =====
+        # Browser Opacity Overrides
         "opacity 1.0 override 1.0 override,class:^(zen)$"
 
-        # ===== GLOBAL LAYOUT RULES =====
-        # Floating olmayan pencereler için global kurallar
-        "bordersize 2, floating:0"      # Tüm tiled pencerelere border
-        "rounding 10, floating:0"       # Tüm tiled pencerelere rounding
+        # Global Layout Rules
+        "bordersize 2, floating:0"
+        "rounding 10, floating:0"
       ];
 
       # No gaps workspace rules
@@ -680,78 +644,72 @@
         "w[9], gapsout:0, gapsin:0"
       ];
 
-      # Key Bindings
+      # Key Bindings (keeping all your existing bindings)
       bind = [
         # show keybinds list
         "$mainMod, F1, exec, rofi-hypr-keybinds"
 
-        # Terminal Emülatörleri
-        "$mainMod, Return, exec, kitty"                                                 # Normal mod
-        "ALT, Return, exec, [float; center; size 950 650] kitty"                        # Yüzen mod
-        "$mainMod SHIFT, Return, exec, [fullscreen] kitty"                              # Tam ekran mod
-        #"$mainMod, Return, exec, wezterm"
-        #"ALT, Return, exec, [float; center; size 950 650] wezterm"
-        #"$mainMod SHIFT, Return, exec, [fullscreen] wezterm"
+        # Terminal Emulators
+        "$mainMod, Return, exec, kitty"
+        "ALT, Return, exec, [float; center; size 950 650] kitty"
+        "$mainMod SHIFT, Return, exec, [fullscreen] kitty"
 
-        # Temel Pencere Yönetimi
-        "$mainMod, Q, killactive"                                                     # Pencere kapat
-        "ALT, F4, killactive"                                                         # Alternatif kapat
-        "$mainMod SHIFT, F, fullscreen, 1"                                            # Sahte tam ekran
-        "$mainMod CTRL, F, fullscreen, 0"                                             # Gerçek tam ekran
-        "$mainMod, F, exec, toggle_float"                                             # Yüzen mod toggle
-        "$mainMod, P, pseudo,"                                                        # Pseudo mod
-        "$mainMod, X, togglesplit,"                                                   # Bölme toggle
-        "$mainMod, G, togglegroup"                                                    # Grup toggle
-        "$mainMod, T, exec, toggle_oppacity"                                          # Opaklık toggle
+        # Basic Window Management
+        "$mainMod, Q, killactive"
+        "ALT, F4, killactive"
+        "$mainMod SHIFT, F, fullscreen, 1"
+        "$mainMod CTRL, F, fullscreen, 0"
+        "$mainMod, F, exec, toggle_float"
+        "$mainMod, P, pseudo,"
+        "$mainMod, X, togglesplit,"
+        "$mainMod, G, togglegroup"
+        "$mainMod, T, exec, toggle_oppacity"
 
-        # Uygulama Başlatıcılar
-        "$mainMod, Space, exec, rofi-launcher || pkill rofi"                          # Rofi
-        "ALT, Space, exec, walker"                                                    # Walker
-        "$mainMod ALT, Space, exec, ulauncher-toggle"                                 # Ulauncher
-        "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"  # Terminal dosya yönetici
-        #"ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] nemo'"   # Dosya yönetici
-        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-mocha-mauve-standard+normal nemo'"
+        # Application Launchers
+        "$mainMod, Space, exec, rofi-launcher || pkill rofi"
+        "ALT, Space, exec, walker"
+        "$mainMod ALT, Space, exec, ulauncher-toggle"
+        "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
+        "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal nemo'"
 
-        # Medya ve Ses Kontrolü
-        "ALT, A, exec, osc-soundctl switch"                                           # Ses değiştirici
-        "ALT CTRL, A, exec, osc-soundctl switch-mic"                                  # Mikrofon değiştirici
-        "ALT, E, exec, osc-spotify"                                                   # Spotify toggle
-        "ALT CTRL, N, exec, osc-spotify next"                                         # spotifycli --next  # Spotify next
-        "ALT CTRL, B, exec, osc-spotify prev"                                         # spotifycli --prev  # Spotify prev 
-        "ALT CTRL, E, exec, mpc-control toggle"                                       # MPC kontrolü
-        #"ALT, i, exec, osc-vradio"                                                    # Virgin radio toggle
-        "ALT, i, exec, hypr-vlc_toggle"                                               # VLC toggle
+        # Media and Audio Control
+        "ALT, A, exec, osc-soundctl switch"
+        "ALT CTRL, A, exec, osc-soundctl switch-mic"
+        "ALT, E, exec, osc-spotify"
+        "ALT CTRL, N, exec, osc-spotify next"
+        "ALT CTRL, B, exec, osc-spotify prev"
+        "ALT CTRL, E, exec, mpc-control toggle"
+        "ALT, i, exec, hypr-vlc_toggle"
 
-        # MPV Yönetimi
-        "CTRL ALT, 1, exec, hypr-mpv-manager start"                                   # MPV başlat
-        "ALT, 1, exec, hypr-mpv-manager playback"                                     # Oynatma kontrolü
-        "ALT, 2, exec, hypr-mpv-manager play-yt"                                      # YouTube oynat
-        "ALT, 3, exec, hypr-mpv-manager stick"                                        # Yapıştır
-        "ALT, 4, exec, hypr-mpv-manager move"                                         # Taşı
-        "ALT, 5, exec, hypr-mpv-manager save-yt"                                      # YouTube kaydet
-        "ALT, 6, exec, hypr-mpv-manager wallpaper"                                    # Duvar kağıdı yap
+        # MPV Management
+        "CTRL ALT, 1, exec, hypr-mpv-manager start"
+        "ALT, 1, exec, hypr-mpv-manager playback"
+        "ALT, 2, exec, hypr-mpv-manager play-yt"
+        "ALT, 3, exec, hypr-mpv-manager stick"
+        "ALT, 4, exec, hypr-mpv-manager move"
+        "ALT, 5, exec, hypr-mpv-manager save-yt"
+        "ALT, 6, exec, hypr-mpv-manager wallpaper"
 
-        # Duvar Kağıdı Yönetimi
-        "$mainMod, W, exec, wallpaper-manager select"                                 # Duvar kağıdı seç
-        "ALT, 0, exec, wallpaper-manager"                                             # Rastgele duvar kağıdı
-        "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'" # Waypaper
+        # Wallpaper Management
+        "$mainMod, W, exec, wallpaper-manager select"
+        "ALT, 0, exec, wallpaper-manager"
+        "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'"
 
-        # Sistem Araçları
-        "ALT, L, exec, hyprlock"                                                     # Ekran kilidi
-        "$mainMod, backspace, exec, power-menu"                                      # Güç menüsü
-        "$mainMod, C, exec, hyprpicker -a"                                           # Renk seçici
-        #"$mainMod, N, exec, swaync-client -t -sw"                                   # Bildirim merkezi
-        "$mainMod, N, exec, makoctl restore"                                         # Bildirim merkezi
-        "$mainMod CTRL, N, exec, makoctl dismiss --all"                              # Bildirim merkezi
-        "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'" # Sistem monitörü
+        # System Tools
+        "ALT, L, exec, hyprlock"
+        "$mainMod, backspace, exec, power-menu"
+        "$mainMod, C, exec, hyprpicker -a"
+        "$mainMod, N, exec, makoctl restore"
+        "$mainMod CTRL, N, exec, makoctl dismiss --all"
+        "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"
 
-        # Monitör ve Ekran Yönetimi
-        "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"    # Monitör değiştir
-        "$mainMod, A, exec, hypr-ctl_focusmonitor"                                   # Monitör odakla
-        "$mainMod, E, exec, pypr shift_monitors +1"                                  # Monitör kaydır
-        "$mainMod SHIFT, B, exec, toggle_waybar"                                     # Waybar toggle
+        # Monitor and Display Management
+        "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"
+        "$mainMod, A, exec, hypr-ctl_focusmonitor"
+        "$mainMod, E, exec, pypr shift_monitors +1"
+        "$mainMod SHIFT, B, exec, toggle_waybar"
 
-        # Özel Uygulamalar
+        # Special Applications
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"
         "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 1 silent] start-brave-kenp'"
         "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 4 silent] start-brave-compecta'"
@@ -762,32 +720,29 @@
         "ALT CTRL, C, exec, start-mkenp"
         "$mainMod ALT, RETURN, exec, osc-start_hypr launch --daily"
 
-        # Sistem Fonksiyonları
-        ",F10, exec, hypr-bluetooth_toggle"                                         # Bluetooth toggle
-        "ALT, F12, exec, osc-mullvad toggle"                                        # VPN toggle
-        #"ALT, F9, exec, hypr-blue-gammastep-manager toggle"                         # Gammastep
-        #",F9, exec, hypr-blue-hyprsunset-manager toggle"                            # Hyprsunset
-        "$mainMod, M, exec, anotes"                               # Not yöneticisi
-        "$mainMod CTRL, M, exec, anotes -t"                       # Not yöneticisi
-        "$mainMod, B, exec, hypr-start-manager tcopyb"                              # Kopyalama yöneticisi
+        # System Functions
+        ",F10, exec, hypr-bluetooth_toggle"
+        "ALT, F12, exec, osc-mullvad toggle"
+        "$mainMod, M, exec, anotes"
+        "$mainMod CTRL, M, exec, anotes -t"
+        "$mainMod, B, exec, hypr-start-manager tcopyb"
 
-        # Screenshot v1.2.0 Kısayolları
-        ",Print, exec, screenshot ri"                  # Print: Bölge Interaktif (düzenleyicide açar)
-        "$mainMod SHIFT, Print, exec, screenshot rf"   # Super + Shift + Print: Bölge Dosya (dosyaya kaydeder)
-        "CTRL, Print, exec, screenshot rc"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
-        #"CTRL SHIFT, d, exec, screenshot d"             # Ctrl + Print: Bölge Kopyala (panoya kopyalar)
-        "$mainMod CTRL, Print, exec, screenshot rec"   # Super + Ctrl + Print: Bölge Düzenle ve Kopyala
-        "$mainMod, Print, exec, screenshot si"         # Super + Print: Ekran Interaktif (düzenleyicide açar)
-        "SHIFT, Print, exec, screenshot sf"            # Shift + Print: Ekran Dosya (dosyaya kaydeder)
-        "CTRL SHIFT, Print, exec, screenshot sc"       # Ctrl + Shift + Print: Ekran Kopyala (panoya kopyalar)
-        "$mainMod SHIFT CTRL, Print, exec, screenshot sec" # Super + Shift + Ctrl + Print: Ekran Düzenle ve Kopyala
-        "ALT, Print, exec, screenshot wi"              # Alt + Print: Pencere Interaktif (düzenleyicide açar)
-        "ALT SHIFT, Print, exec, screenshot wf"        # Alt + Shift + Print: Pencere Dosya (dosyaya kaydeder)
-        "ALT CTRL, Print, exec, screenshot wc"         # Alt + Ctrl + Print: Pencere Kopyala (panoya kopyalar)
-        "$mainMod ALT, Print, exec, screenshot p"      # Super + Alt + Print: Renk seçer
-        "$mainMod ALT CTRL, Print, exec, screenshot o" # Super + Alt + Ctrl + Print: Son ekran görüntüsünü açar
+        # Screenshot Shortcuts
+        ",Print, exec, screenshot ri"
+        "$mainMod SHIFT, Print, exec, screenshot rf"
+        "CTRL, Print, exec, screenshot rc"
+        "$mainMod CTRL, Print, exec, screenshot rec"
+        "$mainMod, Print, exec, screenshot si"
+        "SHIFT, Print, exec, screenshot sf"
+        "CTRL SHIFT, Print, exec, screenshot sc"
+        "$mainMod SHIFT CTRL, Print, exec, screenshot sec"
+        "ALT, Print, exec, screenshot wi"
+        "ALT SHIFT, Print, exec, screenshot wf"
+        "ALT CTRL, Print, exec, screenshot wc"
+        "$mainMod ALT, Print, exec, screenshot p"
+        "$mainMod ALT CTRL, Print, exec, screenshot o"
 
-        # switch focus
+        # Focus Movement
         "$mainMod, left, movefocus, l"
         "$mainMod, right, movefocus, r"
         "$mainMod, up, movefocus, u"
@@ -797,7 +752,7 @@
         "$mainMod, k, movefocus, u"
         "$mainMod, l, movefocus, r"
 
-        # switch workspace
+        # Workspace Switching
         "$mainMod, 1, workspace, 1"
         "$mainMod, 2, workspace, 2"
         "$mainMod, 3, workspace, 3"
@@ -808,7 +763,7 @@
         "$mainMod, 8, workspace, 8"
         "$mainMod, 9, workspace, 9"
 
-        # same as above, but switch to the workspace
+        # Move to Workspace
         "$mainMod SHIFT, 1, movetoworkspacesilent, 1"
         "$mainMod SHIFT, 2, movetoworkspacesilent, 2"
         "$mainMod SHIFT, 3, movetoworkspacesilent, 3"
@@ -820,7 +775,7 @@
         "$mainMod SHIFT, 9, movetoworkspacesilent, 9"
         "$mainMod CTRL, c, movetoworkspace, empty"
 
-        # window control
+        # Window Movement
         "$mainMod SHIFT, left, movewindow, l"
         "$mainMod SHIFT, right, movewindow, r"
         "$mainMod SHIFT, up, movewindow, u"
@@ -830,6 +785,7 @@
         "$mainMod SHIFT, k, movewindow, u"
         "$mainMod SHIFT, l, movewindow, r"
 
+        # Window Resizing
         "$mainMod CTRL, left, resizeactive, -80 0"
         "$mainMod CTRL, right, resizeactive, 80 0"
         "$mainMod CTRL, up, resizeactive, 0 -80"
@@ -839,6 +795,7 @@
         "$mainMod CTRL, k, resizeactive, 0 -80"
         "$mainMod CTRL, l, resizeactive, 80 0"
 
+        # Window Moving
         "$mainMod ALT, left, moveactive,  -80 0"
         "$mainMod ALT, right, moveactive, 80 0"
         "$mainMod ALT, up, moveactive, 0 -80"
@@ -848,45 +805,42 @@
         "$mainMod ALT, k, moveactive, 0 -80"
         "$mainMod ALT, l, moveactive, 80 0"
 
-        # media and volume controls
+        # Media Keys
         ",XF86AudioPlay,exec, playerctl play-pause"
         ",XF86AudioNext,exec, playerctl next"
         ",XF86AudioPrev,exec, playerctl previous"
         ",XF86AudioStop,exec, playerctl stop"
-
-        # Fn+F4 functionality using pamixer and LED brightness control
         ",XF86AudioMicMute, exec, toggle-mic"
 
+        # Mouse Wheel
         "$mainMod, mouse_down, workspace, e-1"
         "$mainMod, mouse_up, workspace, e+1"
 
-        # clipboard manager
+        # Clipboard Manager
         "$mainMod, V, exec, copyq toggle"
         "$mainMod CTRL, V, exec, chist all"
          
-        # Swap Layout
+        # Layout Management
         "$mainmod CTRL, J, exec, hypr-layout_toggle"
+        "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
 
-        # Ana Pencere Yönetimi
-        "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster" # Aktif pencereyi ana pencere ile takas et
+        # Workspace Navigation
+        "ALT, N, workspace, previous"
+        "ALT, Tab, workspace, e+1"
+        "ALT CTRL, tab, workspace, e-1"
 
-        # Temel Çalışma Alanı Navigasyonu
-        "ALT, N, workspace, previous"              # Önceki çalışma alanına dön
-        "ALT, Tab, workspace, e+1"                 # Bir sonraki çalışma alanına geç
-        "ALT CTRL, tab, workspace, e-1"            # Bir önceki çalışma alanına geç
+        # Cyclical Workspace Navigation
+        "$mainMod, page_up, exec, hypr-workspace-monitor -wl"
+        "$mainMod, page_down, exec, hypr-workspace-monitor -wr"
 
-        # Döngüsel Çalışma Alanı Gezinme
-        "$mainMod, page_up, exec, hypr-workspace-monitor -wl"   # Sola doğru döngüsel geçiş
-        "$mainMod, page_down, exec, hypr-workspace-monitor -wr" # Sağa doğru döngüsel geçiş
+        # Window Navigation
+        "$mainMod, Tab, cyclenext"
+        "$mainMod, Tab, bringactivetotop"
+        "$mainMod, Tab, changegroupactive"
 
-        # Pencere Navigasyonu ve Yönetimi
-        "$mainMod, Tab, cyclenext"                 # Aynı çalışma alanındaki bir sonraki pencereye geç
-        "$mainMod, Tab, bringactivetotop"          # Aktif pencereyi en üste getir
-        "$mainMod, Tab, changegroupactive"         # Pencere grubu içinde aktif pencereyi değiştir
-
-        # Pencere Bölme ve Boyutlandırma
-        "$mainMod ALT, left, exec, hyprctl dispatch splitratio -0.2"   # Sol bölme oranını azalt
-        "$mainMod ALT, right, exec, hyprctl dispatch splitratio +0.2"  # Sağ bölme oranını artır
+        # Window Splitting
+        "$mainMod ALT, left, exec, hyprctl dispatch splitratio -0.2"
+        "$mainMod ALT, right, exec, hyprctl dispatch splitratio +0.2"
       ];
 
       bindm = [
@@ -896,14 +850,14 @@
     };
 
     # =====================================================
-    # Ek Yapılandırma ve Monitor Ayarları
+    # Extra Configuration and Monitor Settings
     # =====================================================
     extraConfig = ''
-      # Monitor tanımlamaları
+      # Monitor definitions
       monitor=desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1
       monitor=desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1
 
-      # Çalışma alanı atamaları
+      # Workspace assignments
       workspace = 1, monitor:DELL UP2716D KRXTR88N909L,1, default:true
       workspace = 2, monitor:DELL UP2716D KRXTR88N909L,2
       workspace = 3, monitor:DELL UP2716D KRXTR88N909L,3
@@ -914,7 +868,7 @@
       workspace = 8, monitor:Chimei Innolux Corporation 0x143F,8
       workspace = 9, monitor:Chimei Innolux Corporation 0x143F,9
 
-      # XWayland ayarları
+      # XWayland settings
       xwayland {
         force_zero_scaling = true
       }

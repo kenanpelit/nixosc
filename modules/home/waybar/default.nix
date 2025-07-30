@@ -1,59 +1,24 @@
 # modules/home/waybar/default.nix
-{ pkgs, config, lib, ... }:
+{ config, pkgs, lib, ... }:
 let
-  # Catppuccin Mocha - Premium dark theme with extended color palette
-  catppuccin_mocha = {
-    # Background layers (darkest to lightest)
-    bg = "#1e1e2e";         # Base - Primary background
-    bg_dark = "#181825";    # Mantle - Darker background
-    bg_float = "#11111b";   # Crust - Deepest background
-    bg_highlight = "#313244"; # Surface0 - Highlighted elements
-    bg_popup = "#181825";   # Mantle - Popup backgrounds
-    bg_statusline = "#181825"; # Mantle - Status line
-    bg_visual = "#313244";  # Surface0 - Visual selections
-    border = "#45475a";     # Surface1 - Default borders
-    border_highlight = "#89b4fa"; # Blue - Active borders
-    
-    # Text colors with better hierarchy
-    fg = "#cdd6f4";         # Text - Primary text
-    fg_dark = "#bac2de";    # Subtext1 - Secondary text
-    fg_gutter = "#6c7086";  # Overlay0 - Gutter text
-    comment = "#6c7086";    # Overlay0 - Comments
-    dark3 = "#585b70";      # Surface2 - Dark elements
-    dark5 = "#7f849c";      # Overlay1 - Darker elements
-    
-    # Semantic colors - carefully chosen for accessibility
-    blue = "#89b4fa";       # Blue - Primary actions, links
-    cyan = "#89dceb";       # Sky - Info, highlights
-    green = "#a6e3a1";      # Green - Success, positive states
-    magenta = "#cba6f7";    # Mauve - Special, focus states
-    purple = "#cba6f7";     # Mauve - Secondary accent
-    red = "#f38ba8";        # Pink - Errors, warnings
-    orange = "#fab387";     # Peach - Alerts, notifications
-    yellow = "#f9e2af";     # Yellow - Cautions, pending states
-    teal = "#94e2d5";       # Teal - Network, connectivity
-    
-    # Extended semantic colors for better UX
-    pink = "#f5c2e7";       # Pink - Alternative accent
-    peach = "#fab387";      # Peach - Warm accent
-    lavender = "#b4befe";   # Lavender - Soft accent
-    sky = "#89dceb";        # Sky - Light accent
-    
-    # Surface layers for depth
-    surface0 = "#313244";   # Surface0 - Base surface
-    surface1 = "#45475a";   # Surface1 - Elevated surface
-    surface2 = "#585b70";   # Surface2 - Highest surface
-    
-    # Compatibility aliases
-    crust = "#11111b";      # Crust - Deepest layer
-    base = "#1e1e2e";       # Base - Primary background
-    mantle = "#181825";     # Mantle - Secondary background
-    text = "#cdd6f4";       # Text - Primary text
-    subtext1 = "#bac2de";   # Subtext1 - Secondary text
-    subtext0 = "#a6adc8";   # Subtext0 - Tertiary text
-  };
+  # Catppuccin modülünden otomatik renk alımı
+  inherit (config.catppuccin) sources;
   
-  # Enhanced configuration with responsive design
+  # Utility function for hex to RGBA conversion - SIMPLIFIED
+  mkRgba = color: alpha: 
+    let
+      # Remove # prefix 
+      hex = lib.removePrefix "#" color;
+      # Use fromTOML to parse hex values (more reliable than toInt)
+      r = lib.toInt (builtins.fromTOML "value = 0x${builtins.substring 0 2 hex}").value;
+      g = lib.toInt (builtins.fromTOML "value = 0x${builtins.substring 2 2 hex}").value;
+      b = lib.toInt (builtins.fromTOML "value = 0x${builtins.substring 4 2 hex}").value;
+    in "rgba(${toString r}, ${toString g}, ${toString b}, ${toString alpha})";
+
+  # Palette JSON'dan renkler - dinamik flavor desteği
+  colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
+  
+  # Enhanced configuration with dynamic Catppuccin colors
   custom = {
     # Typography with fallbacks
     font = "JetBrainsMono Nerd Font";
@@ -65,30 +30,30 @@ let
     font_weight_light = "400";
     font_weight_bold = "700";
     
-    # Text colors with semantic meaning
-    text_color = catppuccin_mocha.fg;
-    text_secondary = catppuccin_mocha.fg_dark;
-    text_muted = catppuccin_mocha.comment;
-    text_disabled = catppuccin_mocha.dark3;
+    # Dynamic text colors - flavor'a göre değişir
+    text_color = colors.text.hex;
+    text_secondary = colors.subtext1.hex;
+    text_muted = colors.overlay0.hex;
+    text_disabled = colors.surface2.hex;
     
     # Backward compatibility aliases
-    subtext_color = catppuccin_mocha.fg_dark;  # Legacy alias for text_secondary
+    subtext_color = colors.subtext1.hex;  # Legacy alias for text_secondary
     
-    # Background system with proper layering
-    background_0 = catppuccin_mocha.crust;      # Deepest layer
-    background_1 = catppuccin_mocha.base;       # Primary background
-    background_2 = catppuccin_mocha.mantle;     # Secondary background
-    background_3 = catppuccin_mocha.bg_dark;    # Elevated background
+    # Dynamic background system - flavor'a göre değişir
+    background_0 = colors.crust.hex;      # Deepest layer
+    background_1 = colors.base.hex;       # Primary background
+    background_2 = colors.mantle.hex;     # Secondary background
+    background_3 = colors.mantle.hex;     # Elevated background
     
-    # Surface system for interactive elements
-    surface_0 = catppuccin_mocha.surface0;      # Base surface
-    surface_1 = catppuccin_mocha.surface1;      # Elevated surface
-    surface_2 = catppuccin_mocha.surface2;      # Highest surface
+    # Dynamic surface system
+    surface_0 = colors.surface0.hex;      # Base surface
+    surface_1 = colors.surface1.hex;      # Elevated surface
+    surface_2 = colors.surface2.hex;      # Highest surface
     
-    # Border and spacing system
-    border_color = "rgba(69, 71, 90, 0.8)";     # Surface1 with transparency
-    border_color_active = "rgba(137, 180, 250, 0.6)";  # Blue with transparency
-    border_color_hover = "rgba(137, 220, 235, 0.4)";   # Sky with transparency
+    # Dynamic border colors - Simplified (no RGBA)
+    border_color = colors.surface1.hex;
+    border_color_active = colors.blue.hex;
+    border_color_hover = colors.sky.hex;
     
     # Responsive design values
     opacity = "0.95";
@@ -111,44 +76,46 @@ let
     margin_sm = "2px";
     margin_md = "4px";
     
-    # Semantic colors with consistent naming
-    red = catppuccin_mocha.red;
-    green = catppuccin_mocha.green;
-    yellow = catppuccin_mocha.yellow;
-    blue = catppuccin_mocha.blue;
-    magenta = catppuccin_mocha.magenta;
-    cyan = catppuccin_mocha.cyan;
-    orange = catppuccin_mocha.orange;
-    purple = catppuccin_mocha.purple;
-    teal = catppuccin_mocha.teal;
-    pink = catppuccin_mocha.pink;
+    # Dynamic semantic colors - flavor'a göre değişir
+    red = colors.red.hex;
+    green = colors.green.hex;
+    yellow = colors.yellow.hex;
+    blue = colors.blue.hex;
+    magenta = colors.mauve.hex;
+    cyan = colors.sky.hex;
+    orange = colors.peach.hex;
+    purple = colors.mauve.hex;
+    teal = colors.teal.hex;
+    pink = colors.pink.hex;
     
-    # State-based color system
-    accent_primary = catppuccin_mocha.blue;
-    accent_secondary = catppuccin_mocha.magenta;
-    accent_tertiary = catppuccin_mocha.cyan;
+    # Dynamic state-based color system
+    accent_primary = colors.blue.hex;
+    accent_secondary = colors.mauve.hex;
+    accent_tertiary = colors.sky.hex;
     
-    # Status colors
-    status_success = catppuccin_mocha.green;
-    status_warning = catppuccin_mocha.yellow;
-    status_error = catppuccin_mocha.red;
-    status_info = catppuccin_mocha.cyan;
-    status_neutral = catppuccin_mocha.fg_dark;
+    # Dynamic status colors
+    status_success = colors.green.hex;
+    status_warning = colors.yellow.hex;
+    status_error = colors.red.hex;
+    status_info = colors.sky.hex;
+    status_neutral = colors.subtext1.hex;
     
-    # Interactive states
-    hover_overlay = "rgba(137, 180, 250, 0.1)";      # Blue hover
-    active_overlay = "rgba(203, 166, 247, 0.15)";    # Mauve active
-    focus_overlay = "rgba(137, 220, 235, 0.2)";      # Sky focus
+    # Dynamic interactive states - Simplified (no RGBA)  
+    hover_overlay = colors.blue.hex;
+    active_overlay = colors.mauve.hex;
+    focus_overlay = colors.sky.hex;
+    
+    # Compatibility aliases for existing settings/style files
+    bg = colors.base.hex;
+    bg_dark = colors.mantle.hex;
+    bg_float = colors.crust.hex;
+    bg_highlight = colors.surface0.hex;
+    fg = colors.text.hex;
+    fg_dark = colors.subtext1.hex;
+    comment = colors.overlay0.hex;
+    border = colors.surface1.hex;
+    border_highlight = colors.blue.hex;
   };
-  
-  # Utility function for consistent RGBA color generation
-  mkRgba = color: alpha: 
-    let
-      # Extract RGB values from hex color
-      r = lib.toInt "0x${builtins.substring 1 2 color}";
-      g = lib.toInt "0x${builtins.substring 3 2 color}";
-      b = lib.toInt "0x${builtins.substring 5 2 color}";
-    in "rgba(${toString r}, ${toString g}, ${toString b}, ${toString alpha})";
 
 in
 {
@@ -179,7 +146,7 @@ in
       inherit custom;
     };
     
-    # Enhanced styling with design system
+    # Enhanced styling with dynamic design system
     style = import ./style.nix { 
       inherit custom;
     };
@@ -188,7 +155,7 @@ in
   # Systemd servis
   systemd.user.services.waybar = {
     Unit = {
-      Description = "Waybar - Modern Wayland bar";
+      Description = "Waybar - Modern Wayland bar with Dynamic Catppuccin Theme (${config.catppuccin.flavor})";
       Documentation = "https://github.com/Alexays/Waybar/wiki";
       After = ["hyprland-session.target" "graphical-session.target"];
       PartOf = ["hyprland-session.target"];
@@ -204,6 +171,7 @@ in
       Environment = [
         "XDG_CURRENT_DESKTOP=Hyprland"
         "XDG_SESSION_TYPE=wayland"
+        "CATPPUCCIN_FLAVOR=${config.catppuccin.flavor}"  # Debug için
       ];
     };
     Install = {
