@@ -109,7 +109,7 @@ in {
       TERMINAL = "kitty";                   # EKLENDI
       BROWSER = "brave";                    # EKLENDI
       PAGER = "most";
-      TERM = "xterm-kitty";                 # GÜNCELLENDI (xterm-256color -> xterm-kitty)
+      TERM = "xterm-256color";              # GÜNCELLENDI (xterm-256color)
       
       # Enhanced pager configuration
       MANPAGER = "sh -c 'col -bx | bat -l man -p'";   # Use bat for colorized man pages
@@ -145,7 +145,7 @@ in {
         export EDITOR="nvim"
         export VISUAL="nvim"
         export TERMINAL="kitty"
-        export TERM="xterm-kitty"
+        export TERM="xterm-256color"
         export BROWSER="brave"
         export PAGER="most"
 

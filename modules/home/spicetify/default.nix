@@ -1,7 +1,7 @@
 # modules/home/spicetify/default.nix
 # ==============================================================================
 # Spicetify Spotify Client Configuration
-# Customizes Spotify client with themes and extensions
+# Customizes Spotify client with Catppuccin theme and extensions
 # ==============================================================================
 { pkgs, lib, inputs, ... }:
 let
@@ -22,35 +22,58 @@ in
     enable = true;
     
     # ---------------------------------------------------------------------------
-    # Theme Configuration - TokyoNight
+    # Theme Configuration - Catppuccin
     # ---------------------------------------------------------------------------
-    theme = {
-      name = "TokyoNight";
-      src = pkgs.fetchFromGitHub {
-        owner = "kenanpelit";
-        repo = "Spotify-TokyoNight";
-        rev = "d88ca06eaeeb424d19e0d6f7f8e614e4bce962be";
-        sha256 = "02aw8kvk4m7radsywpl10gq8x5g23xj5gwspyiawf7mdrazzvf3h";
-      };
-      injectCss = true;        # Inject custom CSS
-      injectThemeJs = true;    # Inject theme's JavaScript
-      replaceColors = true;    # Replace Spotify's default colors
-      sidebarConfig = true;    # Apply theme to sidebar
-      homeConfig = true;       # Apply theme to home page
-      overwriteAssets = true;  # Override Spotify's assets
-    };
+    theme = spicePkgs.themes.catppuccin;
     
-    # Color scheme selection
-    colorScheme = "storm";
+    # Catppuccin color scheme options:
+    # - "mocha" (dark)
+    # - "macchiato" (dark)  
+    # - "frappe" (dark)
+    # - "latte" (light)
+    colorScheme = "mocha";
     
     # ---------------------------------------------------------------------------
     # Extensions Configuration
     # ---------------------------------------------------------------------------
     enabledExtensions = with spicePkgs.extensions; [
-      adblock       # Block advertisements
-      hidePodcasts  # Hide podcast recommendations
-      shuffle       # Enhanced shuffle functionality
+      # === Core Functionality ===
+      adblock              # Block advertisements
+      hidePodcasts         # Hide podcast recommendations  
+      shuffle              # Enhanced shuffle functionality
+      
+      # === UI Enhancements ===
+      fullAppDisplay       # Show full app in display
+      keyboardShortcut     # Additional keyboard shortcuts
+      
+      # === Additional Features ===
+      bookmark             # Bookmark songs and artists
+      copyToClipboard      # Copy song info to clipboard
+      history              # Show listening history
+      volumePercentage     # Show volume as percentage
+      
+      # === Quality of Life ===
+      skipStats            # Skip explicit/liked songs stats
+      trashbin             # Restore deleted playlists
     ];
+    
+    # ---------------------------------------------------------------------------
+    # Custom Apps (Optional)
+    # ---------------------------------------------------------------------------
+    enabledCustomApps = with spicePkgs.apps; [
+      # lyrics-plus        # Enhanced lyrics display
+      # marketplace        # Extension marketplace
+      # reddit             # Reddit integration
+    ];
+    
+    # ---------------------------------------------------------------------------
+    # Advanced Settings
+    # ---------------------------------------------------------------------------
+    # Custom CSS injection for additional tweaks
+    # injectCss = true;
+    
+    # Custom JavaScript injection
+    # injectThemeJs = true;
   };
 }
 

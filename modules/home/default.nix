@@ -64,7 +64,7 @@
     ./mpv           # Versatile media player configuration
     ./mpd           # Music Player Daemon setup
     ./cava          # Console-based audio visualizer
-    #./spicetify     # Spotify client customization
+    ./spicetify     # Spotify client customization
     #./radio         # Internet radio streaming
     
     # =============================================================================
@@ -99,7 +99,7 @@
     ./search        # File and content search utilities
     #./ulauncher     # Extensible application launcher
     #./walker        # Wayland application runner
-    ./iwmenu        # Interactive WiFi management menu
+    #./iwmenu        # Interactive WiFi management menu
     
     # =============================================================================
     # Remote & Network Tools
