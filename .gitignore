@@ -3,6 +3,7 @@ hay
 hay/*
 secrets/home-secrets.yaml
 secrets/wireless-secrets.yaml
+secrets/subliminal.toml
 secrets/nix.conf
 **/*.key
 **/*.pem
