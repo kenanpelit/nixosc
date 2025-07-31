@@ -87,7 +87,7 @@ in {
     };
     
     enableCompletion = true;
-    
+
     # Session variables - Essential environment configuration
     sessionVariables = {
       # Performance optimizations
@@ -103,14 +103,16 @@ in {
       YSU_MESSAGE_POSITION = "after";      # Show you-should-use messages after command
       YSU_HARDCORE = "0";                  # Gentle alias reminders
       
-      # Essential application defaults
+      # Essential application defaults - ENHANCED
       EDITOR = "nvim";
       VISUAL = "nvim";
+      TERMINAL = "kitty";                   # EKLENDI
+      BROWSER = "brave";                    # EKLENDI
       PAGER = "most";
-      TERM = "xterm-256color";
+      TERM = "xterm-kitty";                 # GÜNCELLENDI (xterm-256color -> xterm-kitty)
       
       # Enhanced pager configuration
-      MANPAGER = "sh -c 'col -bx | bat -l man -p'";  # Use bat for colorized man pages
+      MANPAGER = "sh -c 'col -bx | bat -l man -p'";   # Use bat for colorized man pages
       LESS = "-R --use-color -Dd+r -Du+b";            # Enhanced less with colors
       LESSHISTFILE = "-";                             # Disable less history for performance
       
@@ -138,6 +140,14 @@ in {
         export XDG_CACHE_HOME="$HOME/.cache"
         export XDG_DATA_HOME="$HOME/.local/share"
         export XDG_STATE_HOME="$HOME/.local/state"
+
+        # Essential application defaults - FORCED EXPORT (EKLE BURAYI)
+        export EDITOR="nvim"
+        export VISUAL="nvim"
+        export TERMINAL="kitty"
+        export TERM="xterm-kitty"
+        export BROWSER="brave"
+        export PAGER="most"
 
         # Smart PATH management - Avoid duplicates and ensure proper ordering
         typeset -U path PATH
