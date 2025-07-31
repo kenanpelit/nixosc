@@ -15,6 +15,8 @@
   catppuccin = {
     # === Global Settings ===
     enable = true;
+    #flavor = "macchiato";  # mocha -> macchiato değiştir
+    #accent = "blue";       # mauve -> blue değiştir
     flavor = "mocha";     # Dark theme variant (latte, frappe, macchiato, mocha)
     accent = "mauve";     # Accent color (rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue, lavender)
     
