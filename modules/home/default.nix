@@ -99,7 +99,7 @@
     ./search        # File and content search utilities
     #./ulauncher     # Extensible application launcher
     #./walker        # Wayland application runner
-    ./iwmenu        # Interactive WiFi management menu
+    #./iwmenu        # Interactive WiFi management menu
     
     # =============================================================================
     # Remote & Network Tools

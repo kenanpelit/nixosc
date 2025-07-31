@@ -1111,7 +1111,7 @@ in
       EDITOR = "nvim";
       VISUAL = "nvim";
       TERMINAL = "kitty";
-      TERM = "xterm-kitty";
+      TERM = "xterm-256color";
       BROWSER = "brave";
     };
 
