@@ -283,7 +283,7 @@ setup_environment() {
 	export EDITOR=nvim
 	export VISUAL=nvim
 	export TERMINAL=kitty
-	export TERM=xterm-kitty
+	export TERM=xterm-256color
 	export BROWSER=brave
 	debug_log "Varsayılan uygulamalar ayarlandı"
 
