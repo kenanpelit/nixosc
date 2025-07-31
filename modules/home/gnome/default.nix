@@ -1,6 +1,6 @@
 # modules/home/gnome/default.nix
 # ==============================================================================
-# GNOME Desktop Environment Configuration
+# GNOME Desktop Environment Configuration with Catppuccin Mocha Theme
 # ==============================================================================
 { config, lib, pkgs, ... }:
 
@@ -23,6 +23,36 @@ let
       md = 13;
       xl = 15;
     };
+  };
+
+  # Catppuccin Mocha Color Palette
+  mocha = {
+    base = "#1e1e2e";
+    mantle = "#181825";
+    crust = "#11111b";
+    text = "#cdd6f4";
+    subtext1 = "#bac2de";
+    subtext0 = "#a6adc8";
+    overlay2 = "#9399b2";
+    overlay1 = "#7f849c";
+    overlay0 = "#6c7086";
+    surface2 = "#585b70";
+    surface1 = "#45475a";
+    surface0 = "#313244";
+    mauve = "#cba6f7";
+    lavender = "#b4befe";
+    blue = "#89b4fa";
+    sapphire = "#74c7ec";
+    sky = "#89dceb";
+    teal = "#94e2d5";
+    green = "#a6e3a1";
+    yellow = "#f9e2af";
+    peach = "#fab387";
+    maroon = "#eba0ac";
+    red = "#f38ba8";
+    pink = "#f5c2e7";
+    flamingo = "#f2cdcd";
+    rosewater = "#f5e0dc";
   };
   
   cfg = config.modules.desktop.gnome or {};
@@ -60,6 +90,7 @@ in
         "disable-workspace-animation@ethnarque"
         "gsconnect@andyholmes.github.io"
         "mullvadindicator@pobega.github.com"
+        "user-theme@gnome-shell-extensions.gcampax.github.com"  # Shell tema için gerekli
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -67,7 +98,7 @@ in
 
   config = mkIf (cfg.enable or true) {
     # ==========================================================================
-    # Package Installation (Extended)
+    # Package Installation (Extended with Catppuccin Theme Support)
     # ==========================================================================
     home.packages = (
       with pkgs;
@@ -105,15 +136,66 @@ in
         copyq                       # Clipboard manager
         kitty                       # Terminal for keybindings
         nemo                        # Alternative file manager
+        
+        # Theme support packages
+        gtk3                        # GTK3 support
+        gtk4                        # GTK4 support
+        
+        # Icon and cursor themes (if available in nixpkgs)
+        # Note: Catppuccin themes might need manual installation
       ]
     );
 
     # ==========================================================================
-    # DConf Settings (Complete Configuration)
+    # GTK Configuration for Catppuccin Mocha
+    # ==========================================================================
+    gtk = {
+      enable = true;
+      
+      # Theme settings
+      theme = {
+        name = "catppuccin-mocha-mauve-standard+normal";
+        package = null; # Will be set manually or via overlay
+      };
+      
+      iconTheme = {
+        name = "a-candy-beauty-icon-theme";
+        package = null; # Will be set manually
+      };
+      
+      cursorTheme = {
+        name = "catppuccin-mocha-dark-cursors";
+        size = 24;
+        package = null; # Will be set manually
+      };
+
+      # GTK3 specific settings
+      gtk3.extraConfig = {
+        gtk-application-prefer-dark-theme = true;
+        gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";
+        gtk-cursor-theme-size = 24;
+        gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
+        gtk-icon-theme-name = "a-candy-beauty-icon-theme";
+        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
+      };
+
+      # GTK4 specific settings
+      gtk4.extraConfig = {
+        gtk-application-prefer-dark-theme = true;
+        gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";
+        gtk-cursor-theme-size = 24;
+        gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
+        gtk-icon-theme-name = "a-candy-beauty-icon-theme";
+        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
+      };
+    };
+
+    # ==========================================================================
+    # DConf Settings (Complete Configuration with Catppuccin)
     # ==========================================================================
     dconf.settings = {
       # ------------------------------------------------------------------------
-      # Text Editor Configuration (Original - Preserved)
+      # Text Editor Configuration (Enhanced with Catppuccin)
       # ------------------------------------------------------------------------
       "org/gnome/TextEditor" = {
         custom-font = "${fonts.editor.family} ${toString fonts.sizes.xl}";
@@ -123,7 +205,7 @@ in
         show-grid = false;
         show-line-numbers = true;
         show-right-margin = false;
-        style-scheme = "builder-dark";
+        style-scheme = "catppuccin-mocha"; # Updated for Catppuccin
         style-variant = "dark";
         tab-width = "uint32 4";
         use-system-font = false;
@@ -131,15 +213,21 @@ in
       };
       
       # ------------------------------------------------------------------------
-      # Interface Configuration (Extended from Original)
+      # Interface Configuration (Catppuccin Mocha Enhanced)
       # ------------------------------------------------------------------------
       "org/gnome/desktop/interface" = {
-        # Original font settings (preserved)
+        # Font settings (preserved)
         font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
         document-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
         monospace-font-name = "${fonts.terminal.family} ${toString fonts.sizes.sm}";
         
-        # Additional interface settings
+        # Catppuccin Mocha theme settings
+        gtk-theme = "catppuccin-mocha-mauve-standard+normal";
+        icon-theme = "a-candy-beauty-icon-theme";
+        cursor-theme = "catppuccin-mocha-dark-cursors";
+        cursor-size = 24;
+        
+        # Interface settings
         color-scheme = "prefer-dark";
         font-antialiasing = "grayscale";
         font-hinting = "slight";
@@ -147,6 +235,100 @@ in
         clock-show-weekday = true;
         clock-show-date = true;
         enable-animations = true;
+        
+        # GNOME 44+ accent color
+        accent-color = "purple";
+      };
+
+      # ------------------------------------------------------------------------
+      # Shell Theme Configuration
+      # ------------------------------------------------------------------------
+      "org/gnome/shell/extensions/user-theme" = {
+        name = "catppuccin-mocha-mauve-standard+normal";
+      };
+
+      # ------------------------------------------------------------------------
+      # Window Manager Preferences (Enhanced)
+      # ------------------------------------------------------------------------
+      "org/gnome/desktop/wm/preferences" = {
+        num-workspaces = 9;  # 9 fixed workspaces
+        workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
+        
+        # Theme settings
+        theme = "catppuccin-mocha-mauve-standard+normal";
+        titlebar-font = "${fonts.main.family} Bold ${toString fonts.sizes.sm}";
+        button-layout = "appmenu:minimize,maximize,close";
+
+        # Focus ayarları
+        focus-mode = "click";
+        focus-new-windows = "smart";
+        auto-raise = false;
+        raise-on-click = true;
+      };
+
+      # ------------------------------------------------------------------------
+      # Background/Wallpaper Settings (Catppuccin)
+      # ------------------------------------------------------------------------
+      "org/gnome/desktop/background" = {
+        # Fallback to solid color if wallpaper not found
+        color-shading-type = "solid";
+        primary-color = mocha.base;
+        picture-options = "zoom";
+        # picture-uri will be set by script if wallpaper exists
+        # picture-uri-dark will be set by script if wallpaper exists
+      };
+
+      "org/gnome/desktop/screensaver" = {
+        color-shading-type = "solid";
+        primary-color = mocha.mantle;
+        lock-enabled = true;
+        lock-delay = "uint32 0";
+        idle-activation-enabled = true;
+        # picture-uri will be set by script if lockscreen wallpaper exists
+      };
+
+      # ------------------------------------------------------------------------
+      # Terminal Configuration (Catppuccin Mocha)
+      # ------------------------------------------------------------------------
+      "org/gnome/terminal/legacy/profiles:/:catppuccin-mocha" = {
+        visible-name = "Catppuccin Mocha";
+        use-theme-colors = false;
+        use-theme-transparency = false;
+        use-transparent-background = true;
+        background-transparency-percent = 10;
+        
+        # Catppuccin Mocha colors
+        background-color = mocha.base;
+        foreground-color = mocha.text;
+        bold-color = mocha.text;
+        bold-color-same-as-fg = true;
+        cursor-colors-set = true;
+        cursor-background-color = mocha.rosewater;
+        cursor-foreground-color = mocha.base;
+        highlight-colors-set = true;
+        highlight-background-color = mocha.surface2;
+        highlight-foreground-color = mocha.text;
+        
+        # Terminal palette (16 colors)
+        palette = [
+          mocha.surface1 mocha.red mocha.green mocha.yellow
+          mocha.blue mocha.pink mocha.teal mocha.subtext1
+          mocha.surface2 mocha.red mocha.green mocha.yellow
+          mocha.blue mocha.pink mocha.teal mocha.subtext0
+        ];
+        
+        # Font settings
+        use-system-font = false;
+        font = "${fonts.terminal.family} ${toString fonts.sizes.md}";
+        cursor-shape = "block";
+        cursor-blink-mode = "on";
+        audible-bell = false;
+        scrollback-unlimited = true;
+      };
+
+      # Set default terminal profile
+      "org/gnome/terminal/legacy" = {
+        default-profile = "catppuccin-mocha";
       };
 
       # ------------------------------------------------------------------------
@@ -199,14 +381,14 @@ in
         move-to-workspace-up = ["<Super><Shift>Up"];
         move-to-workspace-down = ["<Super><Shift>Down"];
 
-        # Window movement within workspace - Hyprland style
-        move-window-left = ["<Super><Alt>Left" "<Super><Alt>h"];
-        move-window-right = ["<Super><Alt>Right" "<Super><Alt>l"];
-        move-window-up = ["<Super><Alt>Up" "<Super><Alt>k"];
-        move-window-down = ["<Super><Alt>Down" "<Super><Alt>j"];
+        # Window movement within workspace - REMOVED (conflicts with tiling)
+        # move-window-left = ["<Super><Alt>Left" "<Super><Alt>h"];
+        # move-window-right = ["<Super><Alt>Right" "<Super><Alt>l"];
+        # move-window-up = ["<Super><Alt>Up" "<Super><Alt>k"];
+        # move-window-down = ["<Super><Alt>Down" "<Super><Alt>j"];
       };
 
-      # Shell keybindings - Mevcut ayarlar korundu
+      # Shell keybindings
       "org/gnome/shell/keybindings" = {
         show-applications = ["<Super>a"];
         show-screenshot-ui = ["<Super>Print"];
@@ -225,7 +407,7 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Mutter (Window Manager) Settings - Optimized for Workspace Usage
+      # Mutter (Window Manager) Settings - Optimized
       # ------------------------------------------------------------------------
       "org/gnome/mutter" = {
         edge-tiling = true;
@@ -233,24 +415,10 @@ in
         workspaces-only-on-primary = false;
         center-new-windows = true;
   
-        # Focus ayarları - YENİ
+        # Focus ayarları
         focus-change-on-pointer-rest = true;
         auto-maximize = false;
         attach-modal-dialogs = true;
-      };
-
-      # ------------------------------------------------------------------------
-      # Desktop Workspace Settings - CRITICAL for fixed workspaces
-      # ------------------------------------------------------------------------
-      "org/gnome/desktop/wm/preferences" = {
-        num-workspaces = 9;  # 9 fixed workspaces
-        workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
-
-        # Focus ayarları - YENİ
-        focus-mode = "click";
-        focus-new-windows = "smart";
-        auto-raise = false;
-        raise-on-click = true;
       };
 
       # ------------------------------------------------------------------------
@@ -266,10 +434,10 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Extension Configurations - UPDATED & OPTIMIZED
+      # Extension Configurations - UPDATED & OPTIMIZED with Catppuccin
       # ------------------------------------------------------------------------
       
-      # Dash to Panel - Mevcut ayarlar korundu
+      # Dash to Panel - Enhanced with Catppuccin colors
       "org/gnome/shell/extensions/dash-to-panel" = {
         # Temel panel ayarları
         appicon-margin = 8;
@@ -280,16 +448,17 @@ in
         isolate-workspaces = false;
         group-apps = true;
         
-        # Panel pozisyon ve boyut (JSON string olarak)
-        panel-positions = ''{"CMN-0x00000000":"TOP","DEL-KRXTR88N909L":"TOP"}'';
-        panel-sizes = ''{"CMN-0x00000000":22,"DEL-KRXTR88N909L":22}'';
-        panel-lengths = ''{"CMN-0x00000000":100,"DEL-KRXTR88N909L":100}'';
+        # Panel boyut ayarları - Scripteki gibi 28px
+        panel-sizes = ''{"0":28}'';
+        panel-lengths = ''{"0":100}'';
+        panel-positions = ''{"0":"TOP"}'';
+        panel-anchors = ''{"0":"MIDDLE"}'';
         
-        # Panel element pozisyonları (mevcut ayarları korur)
-        panel-element-positions = ''{"CMN-0x00000000":[{"element":"showAppsButton","visible":false,"position":"stackedTL"},{"element":"activitiesButton","visible":false,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"stackedTL"},{"element":"dateMenu","visible":true,"position":"centered"},{"element":"centerBox","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":true,"position":"stackedBR"}],"DEL-KRXTR88N909L":[{"element":"showAppsButton","visible":false,"position":"stackedTL"},{"element":"activitiesButton","visible":false,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"stackedTL"},{"element":"dateMenu","visible":true,"position":"centered"},{"element":"centerBox","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":true,"position":"stackedBR"}]}'';
-        
-        # Panel anchor (ortalama)
-        panel-anchors = ''{"CMN-0x00000000":"MIDDLE","DEL-KRXTR88N909L":"MIDDLE"}'';
+        # Catppuccin tema ayarları
+        trans-use-custom-bg = true;
+        trans-bg-color = mocha.base;
+        trans-use-custom-opacity = true;
+        trans-panel-opacity = 0.95;
         
         # Diğer ayarlar
         dot-position = "BOTTOM";
@@ -300,9 +469,9 @@ in
         animate-appicon-hover-animation-extent = "{'RIPPLE': 4, 'PLANK': 4, 'SIMPLE': 1}";
       };
 
-      # Clipboard Indicator - Mevcut ayarlar korundu
+      # Clipboard Indicator
       "org/gnome/shell/extensions/clipboard-indicator" = {
-        toggle-menu = ["<Super>v"];  # Clipboard manager keybinding ile çakışır, custom keybinding kullanılıyor
+        toggle-menu = ["<Super>v"];
         clear-history = [];
         prev-entry = [];
         next-entry = [];
@@ -310,103 +479,91 @@ in
         display-mode = 0;
       };
 
-      # GSConnect - Mevcut ayarlar korundu
+      # GSConnect
       "org/gnome/shell/extensions/gsconnect" = {
         show-indicators = true;
         show-offline = false;
       };
 
-      # Bluetooth Quick Connect - Mevcut ayarlar korundu
+      # Bluetooth Quick Connect
       "org/gnome/shell/extensions/bluetooth-quick-connect" = {
         show-battery-icon-on = true;
         show-battery-value-on = true;
       };
 
-      # No Overview - Minimal config
-      "org/gnome/shell/extensions/no-overview" = {
-        # No Overview - Otomatik ayar, genelde config gerektirmez
-      };
-
       # VITALS - UPDATED: Network TX eklendi + optimizasyonlar
       "org/gnome/shell/extensions/vitals" = {
-        # GÜNCELLENMIŞ: RX + TX network monitoring
         hot-sensors = ["_processor_usage_" "_memory_usage_" "_network-rx_max_" "_network-tx_max_"];
         position-in-panel = 2;  # Center
         use-higher-precision = false;
         alphabetize = true;
         include-static-info = false;
-        
-        # YENİ: Ek optimizasyonlar
-        show-icons = true;          # Sensor ikonlarını göster
-        show-battery = true;        # Batarya bilgisini göster (laptop için)
-        unit-fahrenheit = false;    # Celsius kullan
-        memory-measurement = 0;     # Percentage olarak göster
-        network-speed-format = 1;   # Bit/s formatında
-        storage-measurement = 0;    # Percentage olarak göster
-        hide-zeros = true;          # Sıfır değerleri gizle (temiz görünüm)
-        menu-centered = false;      # Menu konumu
+        show-icons = true;
+        show-battery = true;
+        unit-fahrenheit = false;
+        memory-measurement = 0;
+        network-speed-format = 1;
+        storage-measurement = 0;
+        hide-zeros = true;
+        menu-centered = false;
       };
 
-      # TILINGSHELL - UPDATED: Windows Suggestions özelliği eklendi
+      # TILINGSHELL - UPDATED with Catppuccin colors and Windows Suggestions
       "org/gnome/shell/extensions/tilingshell" = {
-        # Temel tiling ayarları (mevcut)
+        # Temel tiling ayarları
         enable-tiling-system = true;
         auto-tile = true;
         snap-assist = true;
         
-        # Layout ayarları (mevcut)
+        # Layout ayarları
         default-layout = "split";
         inner-gaps = 4;
         outer-gaps = 4;
         
-        # YENİ: Windows Suggestions özelliği (2024-2025 güncellemesi)
-        enable-window-suggestions = true;           # Ana özellik aktif
-        window-suggestions-for-snap-assist = true; # Snap Assistant için öneriler
-        window-suggestions-for-edge-tiling = true; # Edge tiling için öneriler
-        window-suggestions-for-keybinding = true;  # Keybinding tiling için öneriler
+        # Windows Suggestions özelliği (2024-2025 güncellemesi)
+        enable-window-suggestions = true;
+        window-suggestions-for-snap-assist = true;
+        window-suggestions-for-edge-tiling = true;
+        window-suggestions-for-keybinding = true;
+        suggestions-timeout = 3000;
+        max-suggestions-to-show = 6;
+        enable-suggestions-scroll = true;
         
-        # YENİ: Suggestions ayarları
-        suggestions-timeout = 3000;                # 3 saniye göster
-        max-suggestions-to-show = 6;               # Maksimum 6 öneri göster
-        enable-suggestions-scroll = true;          # Çok öneri varsa scroll
-        
-        # Keybindings (mevcut korundu)
+        # Keybindings
         tile-left = ["<Super><Shift>Left"];
         tile-right = ["<Super><Shift>Right"];
         tile-up = ["<Super><Shift>Up"];
         tile-down = ["<Super><Shift>Down"];
-        
         toggle-tiling = ["<Super>t"];
         toggle-floating = ["<Super>f"];
         
-        # Window focus (mevcut korundu)
+        # Window focus
         focus-left = ["<Super>Left"];
         focus-right = ["<Super>Right"];
         focus-up = ["<Super>Up"];
         focus-down = ["<Super>Down"];
+        auto-focus-on-tile = true;
+        focus-follows-mouse = false;
+        respect-focus-hints = true;
 
-        # Focus ayarları ekle:
-        auto-focus-on-tile = true;        # Tile edildiğinde focus al
-        focus-follows-mouse = false;      # Mouse focus'u kapat (karışıklık olmasın)
-        respect-focus-hints = true;       # Uygulama focus taleplerini dinle
-
-        # Layout switching (mevcut korundu)
+        # Layout switching
         next-layout = ["<Super>Tab"];
         prev-layout = ["<Super><Shift>Tab"];
         
-        # Resize ayarları (mevcut korundu)
+        # Resize ayarları
         resize-step = 50;
         
-        # Visual ayarları (mevcut korundu)
+        # Visual ayarları - Catppuccin Mocha renkleri
         show-border = true;
         border-width = 2;
-        border-color = "rgba(66, 165, 245, 0.8)";
+        border-color = mocha.mauve;
+        active-window-border-color = mocha.lavender;
         
-        # Animation (mevcut korundu)
+        # Animation
         enable-animations = true;
         animation-duration = 150;
         
-        # Advanced settings (mevcut korundu)
+        # Advanced settings
         respect-workspaces = true;
         tile-dialogs = false;
         tile-modals = false;
@@ -414,77 +571,80 @@ in
         # Layout configurations (mevcut korundu)
         layouts-json = ''[{"id":"Layout 1","tiles":[{"x":0,"y":0,"width":0.22,"height":0.5,"groups":[1,2]},{"x":0,"y":0.5,"width":0.22,"height":0.5,"groups":[1,2]},{"x":0.22,"y":0,"width":0.56,"height":1,"groups":[2,3]},{"x":0.78,"y":0,"width":0.22,"height":0.5,"groups":[3,4]},{"x":0.78,"y":0.5,"width":0.22,"height":0.5,"groups":[3,4]}]},{"id":"Layout 2","tiles":[{"x":0,"y":0,"width":0.22,"height":1,"groups":[1]},{"x":0.22,"y":0,"width":0.56,"height":1,"groups":[1,2]},{"x":0.78,"y":0,"width":0.22,"height":1,"groups":[2]}]},{"id":"Layout 3","tiles":[{"x":0,"y":0,"width":0.33,"height":1,"groups":[1]},{"x":0.33,"y":0,"width":0.67,"height":1,"groups":[1]}]},{"id":"Layout 4","tiles":[{"x":0,"y":0,"width":0.67,"height":1,"groups":[1]},{"x":0.67,"y":0,"width":0.33,"height":1,"groups":[1]}]}]'';
         
-        # Selected layouts per workspace (mevcut korundu)
+        # Selected layouts per workspace
         selected-layouts = [["Layout 4" "Layout 4"] ["Layout 1" "Layout 1"] ["Layout 4" "Layout 4"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"] ["Layout 1" "Layout 1"]];
         
-        # System overrides (mevcut korundu)
-        overridden-settings = ''{"org.gnome.mutter.keybindings":{"toggle-tiled-right":"['<Super>Right']","toggle-tiled-left":"['<Super>Left']"},"org.gnome.desktop.wm.keybindings":{"maximize":"['<Super>Up']","unmaximize":"['<Super>Down', '<Alt>F5']"},"org.gnome.mutter":{"edge-tiling":"true"}}'';
-        
-        # Version info (mevcut korundu)
+        # Version info
         last-version-name-installed = "16.4";
       };
 
-      # SPOTIFY CONTROLS - UPDATED: Doğru UUID + kompakt mod
+      # SPOTIFY CONTROLS - UPDATED: Kompakt mod
       "org/gnome/shell/extensions/spotify-controls" = {
-        show-track-info = false;           # Mevcut ayarınız korundu
-        position = "middle-right";         # Mevcut ayarınız korundu
-        show-notifications = true;         # Bildirimler aktif
-        track-length = 30;                # Track adı uzunluğu
-        show-pause-icon = true;           # Pause ikonu
-        show-next-icon = true;            # Next ikonu
-        show-prev-icon = true;            # Previous ikonu
-        button-color = "default";         # Düğme rengi
-        hide-on-no-spotify = true;        # Spotify kapalıyken gizle
-        
-        # YENİ: Kompakt mod ve optimizasyonlar
-        show-volume-control = false;      # Ses kontrolü gösterme (daha temiz panel)
-        show-album-art = false;          # Album kapağı gösterme (küçük panel için)
-        compact-mode = true;             # Kompakt mod (daha az yer kaplar)
+        show-track-info = false;
+        position = "middle-right";
+        show-notifications = true;
+        track-length = 30;
+        show-pause-icon = true;
+        show-next-icon = true;
+        show-prev-icon = true;
+        button-color = "default";
+        hide-on-no-spotify = true;
+        show-volume-control = false;
+        show-album-art = false;
+        compact-mode = true;
       };
 
-      # Space Bar - Mevcut CSS korundu
+      # Space Bar - Enhanced Catppuccin Mocha CSS
       "org/gnome/shell/extensions/space-bar/appearance" = {
         application-styles = ''
           .space-bar {
             -natural-hpadding: 12px;
+            background-color: ${mocha.base};
           }
 
           .space-bar-workspace-label.active {
             margin: 0 4px;
-            background-color: rgba(255,255,255,0.3);
-            color: rgba(255,255,255,1);
-            border-color: rgba(0,0,0,0);
+            background-color: ${mocha.mauve};
+            color: ${mocha.base};
+            border-color: transparent;
             font-weight: 700;
-            border-radius: 4px;
+            border-radius: 6px;
             border-width: 0px;
-            padding: 3px 8px;
+            padding: 4px 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
           }
 
           .space-bar-workspace-label.inactive {
             margin: 0 4px;
-            background-color: rgba(0,0,0,0);
-            color: rgba(255,255,255,1);
-            border-color: rgba(0,0,0,0);
-            font-weight: 700;
-            border-radius: 4px;
+            background-color: ${mocha.surface0};
+            color: ${mocha.text};
+            border-color: transparent;
+            font-weight: 500;
+            border-radius: 6px;
             border-width: 0px;
-            padding: 3px 8px;
+            padding: 4px 10px;
+            transition: all 0.2s ease;
+          }
+
+          .space-bar-workspace-label.inactive:hover {
+            background-color: ${mocha.surface1};
+            color: ${mocha.subtext1};
           }
 
           .space-bar-workspace-label.inactive.empty {
             margin: 0 4px;
-            background-color: rgba(0,0,0,0);
-            color: rgba(255,255,255,0.5);
-            border-color: rgba(0,0,0,0);
-            font-weight: 700;
-            border-radius: 4px;
+            background-color: transparent;
+            color: ${mocha.overlay0};
+            border-color: transparent;
+            font-weight: 400;
+            border-radius: 6px;
             border-width: 0px;
-            padding: 3px 8px;
+            padding: 4px 10px;
           }
         '';
       };
 
-      # Auto Move Windows - Mevcut ayarlar korundu
+      # Auto Move Windows
       "org/gnome/shell/extensions/auto-move-windows" = {
         application-list = [
           "brave-browser.desktop:1"           # Browser → Workspace 1
@@ -492,13 +652,13 @@ in
           "discord.desktop:5"                 # Discord → Workspace 5
           "webcord.desktop:5"                 # Webcord → Workspace 5
           "whatsie.desktop:9"                 # WhatsApp → Workspace 9
-          "ferdium.desktop:9"                 # WhatsApp → Workspace 9
+          "ferdium.desktop:9"                 # Ferdium → Workspace 9
           "spotify.desktop:8"                 # Spotify → Workspace 8
           "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"  # Brave PWA → Workspace 7
         ];
       };
        
-      # App switcher settings - Mevcut ayarlar korundu
+      # App switcher settings
       "org/gnome/shell/app-switcher" = {
         current-workspace-only = false;  # Show apps from all workspaces
       };
@@ -508,7 +668,7 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Custom Keybindings - Hyprland Inspired Complete Set
+      # Custom Keybindings - Complete Set from Script (CONTINUATION)
       # ------------------------------------------------------------------------
       "org/gnome/settings-daemon/plugins/media-keys" = {
         custom-keybindings = [
@@ -557,8 +717,26 @@ in
       };
 
       # =======================================================================
-      # TERMINAL EMULATORS
+      # TERMINAL EMULATORS & FILE MANAGERS
       # =======================================================================
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0" = {
+        binding = "<Super>Return";
+        command = "kitty";
+        name = "Terminal";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1" = {
+        binding = "<Super>b";
+        command = "brave";
+        name = "Browser";
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2" = {
+        binding = "<Super>e";
+        command = "kitty --class floating-terminal -e yazi";
+        name = "Terminal File Manager (Floating)";
+      };
+
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3" = {
         binding = "<Alt><Ctrl>f";
         command = "nemo";
@@ -634,16 +812,14 @@ in
       # =======================================================================
       # WORKSPACE NAVIGATION
       # =======================================================================
-      # Previous Workspace - DEĞİŞTİR
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13" = {
-        binding = "<Super><Alt>Left";  # Daha mantıklı: Super+Alt+Sol ok
+        binding = "<Super><Alt>Left";
         command = "bash -c 'current=$(wmctrl -d | grep \"*\" | awk \"{print \\$1}\"); if [ $current -gt 0 ]; then wmctrl -s $((current - 1)); fi'";
         name = "Previous Workspace";
       };
 
-      # Next Workspace - DEĞİŞTİR (Alt+Tab yerine)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14" = {
-        binding = "<Super><Alt>Right";  # Daha mantıklı: Super+Alt+Sağ ok
+        binding = "<Super><Alt>Right";
         command = "bash -c 'current=$(wmctrl -d | grep \"*\" | awk \"{print \\$1}\"); total=$(wmctrl -d | wc -l); if [ $current -lt $((total - 1)) ]; then wmctrl -s $((current + 1)); fi'";
         name = "Next Workspace";
       };
@@ -736,7 +912,7 @@ in
       };
 
       # =======================================================================
-      # WORKSPACE SWITCHING WITH HISTORY SUPPORT
+      # WORKSPACE SWITCHING WITH HISTORY SUPPORT (1-9)
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28" = {
         binding = "<Super>1";
@@ -795,29 +971,24 @@ in
       # =======================================================================
       # POWER MANAGEMENT SHORTCUTS
       # =======================================================================
-
-      # Shutdown (Güçlü kombinasyon)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37" = {
         binding = "<Ctrl><Alt><Shift>s";
         command = "gnome-session-quit --power-off --no-prompt";
         name = "Shutdown Computer";
       };
 
-      # Restart (Güçlü kombinasyon)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38" = {
         binding = "<Ctrl><Alt>r";
         command = "gnome-session-quit --reboot --no-prompt";
         name = "Restart Computer";
       };
 
-      # Logout (Daha kolay erişim)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom39" = {
         binding = "<Ctrl><Alt>q";
         command = "gnome-session-quit --logout --no-prompt";
         name = "Logout";
       };
 
-      # Power Menu (Seçenekli)
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40" = {
         binding = "<Ctrl><Alt>p";
         command = "gnome-session-quit --power-off";
@@ -835,13 +1006,13 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Power Settings - UPDATED with Lid Close Action
+      # Power Settings
       # ------------------------------------------------------------------------
       "org/gnome/settings-daemon/plugins/power" = {
         sleep-inactive-ac-type = "suspend";
         sleep-inactive-ac-timeout = 3600; # 60 minutes
         sleep-inactive-battery-type = "suspend";
-        sleep-inactive-battery-timeout = 3600; # 30 minutes
+        sleep-inactive-battery-timeout = 3600; # 60 minutes
         power-button-action = "interactive";
         handle-lid-switch = false;
       };
@@ -850,17 +1021,8 @@ in
       # Session Settings - Screen Blank Disabled
       # ------------------------------------------------------------------------
       "org/gnome/desktop/session" = {
-        idle-delay = 0; # Screen blank DISABLED (changed from 15 minutes)
+        idle-delay = "uint32 0"; # Screen blank DISABLED
       };
-
-      ## ------------------------------------------------------------------------
-      ## Screensaver Settings - Keep lock but no auto-activation
-      ## ------------------------------------------------------------------------
-      #"org/gnome/desktop/screensaver" = {
-      #  lock-enabled = true;
-      #  lock-delay = 0;
-      #  idle-activation-enabled = false; # Screensaver auto-activation DISABLED
-      #};
 
       # ------------------------------------------------------------------------
       # Touchpad Settings - Traditional Scrolling + Faster Speed
@@ -868,11 +1030,11 @@ in
       "org/gnome/desktop/peripherals/touchpad" = {
         tap-to-click = true;
         two-finger-scrolling-enabled = true;
-        natural-scroll = false;  # Traditional scrolling (yukarı kaydır = yukarı git)
+        natural-scroll = false;  # Traditional scrolling
         disable-while-typing = true;
-        click-method = "fingers";  # Two-finger right click
+        click-method = "fingers";
         send-events = "enabled";
-        speed = 0.8;  # Biraz daha hızlı (0.0'dan 0.8'e)
+        speed = 0.8;  # Faster speed
         accel-profile = "default";
         scroll-method = "two-finger-scrolling";
         middle-click-emulation = false;
@@ -895,15 +1057,6 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Screensaver Settings
-      # ------------------------------------------------------------------------
-      "org/gnome/desktop/screensaver" = {
-        lock-enabled = true;
-        lock-delay = 0;
-        idle-activation-enabled = true;
-      };
-
-      # ------------------------------------------------------------------------
       # Nautilus (File Manager) Settings
       # ------------------------------------------------------------------------
       "org/gnome/nautilus/preferences" = {
@@ -919,21 +1072,13 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Terminal Settings (using your font theme)
+      # Notification Settings
       # ------------------------------------------------------------------------
-      "org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9" = {
-        visible-name = "Default";
-        background-color = "rgb(23,20,33)";
-        foreground-color = "rgb(208,207,204)";
-        use-theme-colors = false;
-        use-system-font = false;
-        font = "${fonts.terminal.family} ${toString fonts.sizes.md}";
-        cursor-shape = "block";
-        cursor-blink-mode = "on";
-        audible-bell = false;
-        scrollback-unlimited = true;
+      "org/gnome/desktop/notifications" = {
+        show-in-lock-screen = false;
+        show-banners = true;
       };
-    };
+    }; # dconf.settings sonu
 
     # ==========================================================================
     # XDG Settings
@@ -946,7 +1091,7 @@ in
         enable = true;
         defaultApplications = {
           "text/plain" = "org.gnome.TextEditor.desktop";
-          "text/html" = "firefox.desktop";
+          "text/html" = "brave-browser.desktop";
           "application/pdf" = "org.gnome.Evince.desktop";
           "image/jpeg" = "org.gnome.eog.desktop";
           "image/png" = "org.gnome.eog.desktop";
@@ -964,29 +1109,248 @@ in
     };
 
     # ==========================================================================
-    # Fix GSD Power Daemon for Lid Switch (Disable to let systemd handle)
-    # ==========================================================================
-    systemd.user.services.disable-gsd-power = {
-      Unit = {
-        Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
-        After = [ "gnome-session.target" ];
-      };
-      Service = {
-        Type = "oneshot";
-        ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
-        RemainAfterExit = true;
-      };
-      Install = {
-        WantedBy = [ "gnome-session.target" ];
-      };
-    };
-
-    # ==========================================================================
-    # Session Variables
+    # Session Variables (Enhanced with Catppuccin + System Variables)
     # ==========================================================================
     home.sessionVariables = {
-      GNOME_SESSION = "1";  # Indicate GNOME session
+      GNOME_SESSION = "1";
+      
+      # Catppuccin Mocha Theme Environment Variables
+      CATPPUCCIN_THEME = "mocha";
+      CATPPUCCIN_ACCENT = "mauve";
+      GTK_THEME = "catppuccin-mocha-mauve-standard+normal";
+      XCURSOR_THEME = "catppuccin-mocha-dark-cursors";
+      XCURSOR_SIZE = "24";
+      
+      # HiDPI cursor size adjustment
+      GDK_SCALE = mkDefault "1";
+      GDK_DPI_SCALE = mkDefault "1";
+      
+      # System Variables - ADDED
+      EDITOR = "nvim";
+      VISUAL = "nvim";
+      TERMINAL = "kitty";
+      TERM = "xterm-kitty";
+      BROWSER = "brave";
     };
-  };
-}
 
+    # ==========================================================================
+    # GTK CSS Configuration (Enhanced with Catppuccin)
+    # ==========================================================================
+    home.file.".config/gtk-3.0/gtk.css".text = ''
+      /* Catppuccin Mocha Nemo Customizations */
+      .nemo-window {
+          background-color: ${mocha.base};
+          color: ${mocha.text};
+      }
+
+      .nemo-window .toolbar {
+          background-color: ${mocha.mantle};
+          border-bottom: 1px solid ${mocha.surface0};
+      }
+
+      .nemo-window .sidebar {
+          background-color: ${mocha.mantle};
+          border-right: 1px solid ${mocha.surface0};
+      }
+
+      .nemo-window .view {
+          background-color: ${mocha.base};
+          color: ${mocha.text};
+      }
+
+      .nemo-window .view:selected {
+          background-color: ${mocha.mauve};
+          color: ${mocha.base};
+      }
+
+      /* Global GTK3 Catppuccin Customizations */
+      window {
+          background-color: ${mocha.base};
+          color: ${mocha.text};
+      }
+
+      .titlebar {
+          background-color: ${mocha.mantle};
+          color: ${mocha.text};
+      }
+
+      button {
+          background-color: ${mocha.surface0};
+          color: ${mocha.text};
+          border: 1px solid ${mocha.surface1};
+      }
+
+      button:hover {
+          background-color: ${mocha.surface1};
+      }
+
+      button:active {
+          background-color: ${mocha.mauve};
+          color: ${mocha.base};
+      }
+
+      entry {
+          background-color: ${mocha.surface0};
+          color: ${mocha.text};
+          border: 1px solid ${mocha.surface1};
+      }
+
+      entry:focus {
+          border-color: ${mocha.mauve};
+      }
+
+      .sidebar {
+          background-color: ${mocha.mantle};
+          color: ${mocha.text};
+      }
+
+      .sidebar:selected {
+          background-color: ${mocha.mauve};
+          color: ${mocha.base};
+      }
+    '';
+
+    # ==========================================================================
+    # GTK4 CSS Configuration
+    # ==========================================================================
+    home.file.".config/gtk-4.0/gtk.css".text = ''
+      /* Catppuccin Mocha GTK4 Customizations */
+      window {
+          background-color: ${mocha.base};
+          color: ${mocha.text};
+      }
+
+      .titlebar {
+          background-color: ${mocha.mantle};
+          color: ${mocha.text};
+      }
+
+      button {
+          background-color: ${mocha.surface0};
+          color: ${mocha.text};
+      }
+
+      button:hover {
+          background-color: ${mocha.surface1};
+      }
+
+      button:active {
+          background-color: ${mocha.mauve};
+          color: ${mocha.base};
+      }
+
+      entry {
+          background-color: ${mocha.surface0};
+          color: ${mocha.text};
+      }
+
+      entry:focus {
+          border-color: ${mocha.mauve};
+      }
+    '';
+
+    # ==========================================================================
+    # Systemd User Services (Enhanced)
+    # ==========================================================================
+    systemd.user.services = {
+      # Disable GSD Power Daemon for Lid Switch
+      disable-gsd-power = {
+        Unit = {
+          Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
+          After = [ "gnome-session.target" ];
+        };
+        Service = {
+          Type = "oneshot";
+          ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
+          RemainAfterExit = true;
+        };
+        Install = {
+          WantedBy = [ "gnome-session.target" ];
+        };
+      };
+
+      # Catppuccin Theme Validation Service
+      catppuccin-theme-validation = {
+        Unit = {
+          Description = "Validate Catppuccin Mocha Theme Installation";
+          After = [ "gnome-session.target" ];
+        };
+        Service = {
+          Type = "oneshot";
+          ExecStart = pkgs.writeShellScript "validate-catppuccin" ''
+            #!/bin/bash
+            # Check if Catppuccin theme is properly applied
+            current_gtk_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface gtk-theme)
+            if [[ "$current_gtk_theme" == *"catppuccin-mocha"* ]]; then
+              echo "✅ Catppuccin Mocha GTK theme is active"
+            else
+              echo "⚠️  Catppuccin Mocha GTK theme is not active: $current_gtk_theme"
+            fi
+            
+            current_icon_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface icon-theme)
+            if [[ "$current_icon_theme" == *"candy-beauty"* ]]; then
+              echo "✅ Candy Beauty icon theme is active"
+            else
+              echo "⚠️  Using default icon theme: $current_icon_theme"
+            fi
+          '';
+          RemainAfterExit = true;
+        };
+        Install = {
+          WantedBy = [ "gnome-session.target" ];
+        };
+      };
+    };
+
+    # ==========================================================================
+    # Development Note for Theme Installation
+    # ==========================================================================
+    home.file.".config/gnome-theme-setup.md".text = ''
+      # GNOME Catppuccin Mocha Theme Setup
+
+      This NixOS configuration includes Catppuccin Mocha theme settings, but the actual theme files
+      need to be installed manually or via overlays.
+
+      ## Required Theme Files:
+
+      ### GTK Theme:
+      - Name: catppuccin-mocha-mauve-standard+normal
+      - Location: ~/.themes/ or /usr/share/themes/
+      - Source: https://github.com/catppuccin/gtk
+
+      ### Icon Theme:
+      - Name: a-candy-beauty-icon-theme
+      - Location: ~/.icons/ or /usr/share/icons/
+      - Source: Various icon theme sources
+
+      ### Cursor Theme:
+      - Name: catppuccin-mocha-dark-cursors
+      - Location: ~/.icons/ or /usr/share/icons/
+      - Source: https://github.com/catppuccin/cursors
+
+      ## Installation Methods:
+
+      1. **Manual Installation:**
+         - Download themes from respective repositories
+         - Extract to appropriate directories
+         - Run: dconf update
+
+      2. **NixOS Overlay (Recommended):**
+         - Add Catppuccin overlay to your flake
+         - Include theme packages in home.packages
+
+      3. **Script Installation:**
+         - Run the included gnome-settings.sh script
+         - It will handle theme validation and setup
+
+      ## Verification:
+      - Check GTK theme: gsettings get org.gnome.desktop.interface gtk-theme
+      - Check icon theme: gsettings get org.gnome.desktop.interface icon-theme
+      - Check cursor theme: gsettings get org.gnome.desktop.interface cursor-theme
+
+      ## Custom Keybindings:
+      All custom keybindings from the script are included in this NixOS configuration.
+      Ensure the referenced applications (walker, osc-*, gnome-mpv-manager, etc.) are installed.
+    '';
+  }; # config sonu
+} # dosya sonu
