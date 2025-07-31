@@ -7,6 +7,7 @@
 # - Nix configuration secrets
 # - Gist tokens
 # - Tmux and Oh-My-Tmux configurations
+# - Subliminal configuration
 # - File permissions and ownership
 #
 # Author: Kenan Pelit
@@ -49,6 +50,14 @@
         mode = "0600";  # Only accessible by user
       };
       
+      # Subliminal configuration
+      "subliminal_config" = {
+        sopsFile = "${config.home.homeDirectory}/.nixosc/secrets/subliminal.enc.toml";
+        path = "${config.home.homeDirectory}/.config/subliminal/subliminal.toml";
+        mode = "0600";
+        format = "binary";
+      };
+      
       # Tmux configuration archive
       "tmux_config" = {
         sopsFile = "${config.home.homeDirectory}/.nixosc/assets/tmux.enc.tar.gz";
@@ -79,6 +88,9 @@
     
     # Nix configuration directory
     mkdir -p "${config.home.homeDirectory}/.config/nix"
+    
+    # Subliminal configuration directory
+    mkdir -p "${config.home.homeDirectory}/.config/subliminal"
     
     # Backup directory for encrypted files
     mkdir -p "${config.home.homeDirectory}/.backup"
