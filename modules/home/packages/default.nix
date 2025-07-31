@@ -154,7 +154,7 @@
     swappy          # Ekran görüntüsü editörü
     
     # Music & Entertainment
-    spotify         # Müzik servisi  
+    #spotify         # Müzik servisi  
     spotify-cli-linux # Command line interface to Spotify
     ani-cli         # Anime CLI
     rmpc            # Zengin MPD istemcisi
