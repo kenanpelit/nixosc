@@ -1,6 +1,6 @@
 # modules/home/gnome/default.nix
 # ==============================================================================
-# GNOME Desktop Environment Configuration with Catppuccin Mocha Theme
+# GNOME Desktop Environment Configuration with Catppuccin Integration
 # ==============================================================================
 { config, lib, pkgs, ... }:
 
@@ -25,34 +25,16 @@ let
     };
   };
 
-  # Catppuccin Mocha Color Palette
-  mocha = {
-    base = "#1e1e2e";
-    mantle = "#181825";
-    crust = "#11111b";
-    text = "#cdd6f4";
-    subtext1 = "#bac2de";
-    subtext0 = "#a6adc8";
-    overlay2 = "#9399b2";
-    overlay1 = "#7f849c";
-    overlay0 = "#6c7086";
-    surface2 = "#585b70";
-    surface1 = "#45475a";
-    surface0 = "#313244";
-    mauve = "#cba6f7";
-    lavender = "#b4befe";
-    blue = "#89b4fa";
-    sapphire = "#74c7ec";
-    sky = "#89dceb";
-    teal = "#94e2d5";
-    green = "#a6e3a1";
-    yellow = "#f9e2af";
-    peach = "#fab387";
-    maroon = "#eba0ac";
-    red = "#f38ba8";
-    pink = "#f5c2e7";
-    flamingo = "#f2cdcd";
-    rosewater = "#f5e0dc";
+  # Catppuccin dinamik renk sistemi
+  inherit (config.catppuccin) flavor accent;
+  colors = config.lib.catppuccin.mkColors flavor;
+  
+  # Dinamik tema isimlendirmesi
+  themeNames = {
+    gtk = "catppuccin-${flavor}-${accent}-standard+normal";
+    shell = "catppuccin-${flavor}-${accent}-standard+normal";
+    icon = "a-candy-beauty-icon-theme";
+    cursor = "catppuccin-${flavor}-dark-cursors";
   };
   
   cfg = config.modules.desktop.gnome or {};
@@ -147,55 +129,55 @@ in
     );
 
     # ==========================================================================
-    # GTK Configuration for Catppuccin Mocha
+    # GTK Configuration with Dynamic Catppuccin
     # ==========================================================================
     gtk = {
       enable = true;
       
-      # Theme settings
+      # Dinamik tema ayarları
       theme = {
-        name = "catppuccin-mocha-mauve-standard+normal";
+        name = themeNames.gtk;
         package = null; # Will be set manually or via overlay
       };
       
       iconTheme = {
-        name = "a-candy-beauty-icon-theme";
+        name = themeNames.icon;
         package = null; # Will be set manually
       };
       
       cursorTheme = {
-        name = "catppuccin-mocha-dark-cursors";
+        name = themeNames.cursor;
         size = 24;
         package = null; # Will be set manually
       };
 
-      # GTK3 specific settings
+      # GTK3 specific settings with dynamic colors
       gtk3.extraConfig = {
         gtk-application-prefer-dark-theme = true;
-        gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";
+        gtk-cursor-theme-name = themeNames.cursor;
         gtk-cursor-theme-size = 24;
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-        gtk-icon-theme-name = "a-candy-beauty-icon-theme";
-        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
+        gtk-icon-theme-name = themeNames.icon;
+        gtk-theme-name = themeNames.gtk;
       };
 
-      # GTK4 specific settings
+      # GTK4 specific settings with dynamic colors
       gtk4.extraConfig = {
         gtk-application-prefer-dark-theme = true;
-        gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";
+        gtk-cursor-theme-name = themeNames.cursor;
         gtk-cursor-theme-size = 24;
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-        gtk-icon-theme-name = "a-candy-beauty-icon-theme";
-        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
+        gtk-icon-theme-name = themeNames.icon;
+        gtk-theme-name = themeNames.gtk;
       };
-    };
+    };i
 
     # ==========================================================================
-    # DConf Settings (Complete Configuration with Catppuccin)
+    # DConf Settings (Complete Configuration with Dynamic Catppuccin)
     # ==========================================================================
     dconf.settings = {
       # ------------------------------------------------------------------------
-      # Text Editor Configuration (Enhanced with Catppuccin)
+      # Text Editor Configuration (Enhanced with Dynamic Catppuccin)
       # ------------------------------------------------------------------------
       "org/gnome/TextEditor" = {
         custom-font = "${fonts.editor.family} ${toString fonts.sizes.xl}";
@@ -205,7 +187,7 @@ in
         show-grid = false;
         show-line-numbers = true;
         show-right-margin = false;
-        style-scheme = "catppuccin-mocha"; # Updated for Catppuccin
+        style-scheme = "catppuccin-${flavor}"; # Dynamic Catppuccin scheme
         style-variant = "dark";
         tab-width = "uint32 4";
         use-system-font = false;
@@ -213,7 +195,7 @@ in
       };
       
       # ------------------------------------------------------------------------
-      # Interface Configuration (Catppuccin Mocha Enhanced)
+      # Interface Configuration (Dynamic Catppuccin)
       # ------------------------------------------------------------------------
       "org/gnome/desktop/interface" = {
         # Font settings (preserved)
@@ -221,10 +203,10 @@ in
         document-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
         monospace-font-name = "${fonts.terminal.family} ${toString fonts.sizes.sm}";
         
-        # Catppuccin Mocha theme settings
-        gtk-theme = "catppuccin-mocha-mauve-standard+normal";
-        icon-theme = "a-candy-beauty-icon-theme";
-        cursor-theme = "catppuccin-mocha-dark-cursors";
+        # Dynamic Catppuccin theme settings
+        gtk-theme = themeNames.gtk;
+        icon-theme = themeNames.icon;
+        cursor-theme = themeNames.cursor;
         cursor-size = 24;
         
         # Interface settings
@@ -236,15 +218,21 @@ in
         clock-show-date = true;
         enable-animations = true;
         
-        # GNOME 44+ accent color
-        accent-color = "purple";
+        # Dynamic accent color based on Catppuccin accent
+        accent-color = if accent == "mauve" then "purple"
+                      else if accent == "blue" then "blue"
+                      else if accent == "green" then "green"
+                      else if accent == "red" then "red"
+                      else if accent == "yellow" then "yellow"
+                      else if accent == "pink" then "pink"
+                      else "purple"; # fallback
       };
 
       # ------------------------------------------------------------------------
-      # Shell Theme Configuration
+      # Shell Theme Configuration (Dynamic)
       # ------------------------------------------------------------------------
       "org/gnome/shell/extensions/user-theme" = {
-        name = "catppuccin-mocha-mauve-standard+normal";
+        name = themeNames.shell;
       };
 
       # ------------------------------------------------------------------------
@@ -254,8 +242,8 @@ in
         num-workspaces = 9;  # 9 fixed workspaces
         workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
         
-        # Theme settings
-        theme = "catppuccin-mocha-mauve-standard+normal";
+        # Dynamic theme settings
+        theme = themeNames.gtk;
         titlebar-font = "${fonts.main.family} Bold ${toString fonts.sizes.sm}";
         button-layout = "appmenu:minimize,maximize,close";
 
@@ -267,12 +255,12 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Background/Wallpaper Settings (Catppuccin)
+      # Background/Wallpaper Settings (Dynamic Catppuccin Colors)
       # ------------------------------------------------------------------------
       "org/gnome/desktop/background" = {
-        # Fallback to solid color if wallpaper not found
+        # Dynamic fallback colors
         color-shading-type = "solid";
-        primary-color = mocha.base;
+        primary-color = colors.base.hex;
         picture-options = "zoom";
         # picture-uri will be set by script if wallpaper exists
         # picture-uri-dark will be set by script if wallpaper exists
@@ -280,7 +268,7 @@ in
 
       "org/gnome/desktop/screensaver" = {
         color-shading-type = "solid";
-        primary-color = mocha.mantle;
+        primary-color = colors.mantle.hex;
         lock-enabled = true;
         lock-delay = "uint32 0";
         idle-activation-enabled = true;
@@ -288,33 +276,33 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Terminal Configuration (Catppuccin Mocha)
+      # Terminal Configuration (Dynamic Catppuccin)
       # ------------------------------------------------------------------------
-      "org/gnome/terminal/legacy/profiles:/:catppuccin-mocha" = {
-        visible-name = "Catppuccin Mocha";
+      "org/gnome/terminal/legacy/profiles:/:catppuccin-${flavor}" = {
+        visible-name = "Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor}";
         use-theme-colors = false;
         use-theme-transparency = false;
         use-transparent-background = true;
         background-transparency-percent = 10;
         
-        # Catppuccin Mocha colors
-        background-color = mocha.base;
-        foreground-color = mocha.text;
-        bold-color = mocha.text;
+        # Dynamic Catppuccin colors
+        background-color = colors.base.hex;
+        foreground-color = colors.text.hex;
+        bold-color = colors.text.hex;
         bold-color-same-as-fg = true;
         cursor-colors-set = true;
-        cursor-background-color = mocha.rosewater;
-        cursor-foreground-color = mocha.base;
+        cursor-background-color = colors.rosewater.hex;
+        cursor-foreground-color = colors.base.hex;
         highlight-colors-set = true;
-        highlight-background-color = mocha.surface2;
-        highlight-foreground-color = mocha.text;
+        highlight-background-color = colors.surface2.hex;
+        highlight-foreground-color = colors.text.hex;
         
-        # Terminal palette (16 colors)
+        # Terminal palette (16 colors) - Dynamic
         palette = [
-          mocha.surface1 mocha.red mocha.green mocha.yellow
-          mocha.blue mocha.pink mocha.teal mocha.subtext1
-          mocha.surface2 mocha.red mocha.green mocha.yellow
-          mocha.blue mocha.pink mocha.teal mocha.subtext0
+          colors.surface1.hex colors.red.hex colors.green.hex colors.yellow.hex
+          colors.blue.hex colors.pink.hex colors.teal.hex colors.subtext1.hex
+          colors.surface2.hex colors.red.hex colors.green.hex colors.yellow.hex
+          colors.blue.hex colors.pink.hex colors.teal.hex colors.subtext0.hex
         ];
         
         # Font settings
@@ -326,9 +314,9 @@ in
         scrollback-unlimited = true;
       };
 
-      # Set default terminal profile
+      # Set default terminal profile (dynamic)
       "org/gnome/terminal/legacy" = {
-        default-profile = "catppuccin-mocha";
+        default-profile = "catppuccin-${flavor}";
       };
 
       # ------------------------------------------------------------------------
@@ -380,12 +368,6 @@ in
         move-to-workspace-right = ["<Super><Shift>Right"];
         move-to-workspace-up = ["<Super><Shift>Up"];
         move-to-workspace-down = ["<Super><Shift>Down"];
-
-        # Window movement within workspace - REMOVED (conflicts with tiling)
-        # move-window-left = ["<Super><Alt>Left" "<Super><Alt>h"];
-        # move-window-right = ["<Super><Alt>Right" "<Super><Alt>l"];
-        # move-window-up = ["<Super><Alt>Up" "<Super><Alt>k"];
-        # move-window-down = ["<Super><Alt>Down" "<Super><Alt>j"];
       };
 
       # Shell keybindings
@@ -434,10 +416,10 @@ in
       };
 
       # ------------------------------------------------------------------------
-      # Extension Configurations - UPDATED & OPTIMIZED with Catppuccin
+      # Extension Configurations - UPDATED & OPTIMIZED with Dynamic Catppuccin
       # ------------------------------------------------------------------------
       
-      # Dash to Panel - Enhanced with Catppuccin colors
+      # Dash to Panel - Enhanced with Dynamic Catppuccin colors
       "org/gnome/shell/extensions/dash-to-panel" = {
         # Temel panel ayarları
         appicon-margin = 8;
@@ -454,9 +436,9 @@ in
         panel-positions = ''{"0":"TOP"}'';
         panel-anchors = ''{"0":"MIDDLE"}'';
         
-        # Catppuccin tema ayarları
+        # Dynamic Catppuccin tema ayarları
         trans-use-custom-bg = true;
-        trans-bg-color = mocha.base;
+        trans-bg-color = colors.base.hex;
         trans-use-custom-opacity = true;
         trans-panel-opacity = 0.95;
         
@@ -507,8 +489,8 @@ in
         hide-zeros = true;
         menu-centered = false;
       };
-
-      # TILINGSHELL - UPDATED with Catppuccin colors and Windows Suggestions
+      
+      # TILINGSHELL - UPDATED with Dynamic Catppuccin colors and Windows Suggestions
       "org/gnome/shell/extensions/tilingshell" = {
         # Temel tiling ayarları
         enable-tiling-system = true;
@@ -553,11 +535,11 @@ in
         # Resize ayarları
         resize-step = 50;
         
-        # Visual ayarları - Catppuccin Mocha renkleri
+        # Visual ayarları - Dynamic Catppuccin renkleri
         show-border = true;
         border-width = 2;
-        border-color = mocha.mauve;
-        active-window-border-color = mocha.lavender;
+        border-color = colors.${accent}.hex;
+        active-window-border-color = colors.lavender.hex;
         
         # Animation
         enable-animations = true;
@@ -594,18 +576,18 @@ in
         compact-mode = true;
       };
 
-      # Space Bar - Enhanced Catppuccin Mocha CSS
+      # Space Bar - Enhanced Dynamic Catppuccin CSS
       "org/gnome/shell/extensions/space-bar/appearance" = {
         application-styles = ''
           .space-bar {
             -natural-hpadding: 12px;
-            background-color: ${mocha.base};
+            background-color: ${colors.base.hex};
           }
 
           .space-bar-workspace-label.active {
             margin: 0 4px;
-            background-color: ${mocha.mauve};
-            color: ${mocha.base};
+            background-color: ${colors.${accent}.hex};
+            color: ${colors.base.hex};
             border-color: transparent;
             font-weight: 700;
             border-radius: 6px;
@@ -616,8 +598,8 @@ in
 
           .space-bar-workspace-label.inactive {
             margin: 0 4px;
-            background-color: ${mocha.surface0};
-            color: ${mocha.text};
+            background-color: ${colors.surface0.hex};
+            color: ${colors.text.hex};
             border-color: transparent;
             font-weight: 500;
             border-radius: 6px;
@@ -627,14 +609,14 @@ in
           }
 
           .space-bar-workspace-label.inactive:hover {
-            background-color: ${mocha.surface1};
-            color: ${mocha.subtext1};
+            background-color: ${colors.surface1.hex};
+            color: ${colors.subtext1.hex};
           }
 
           .space-bar-workspace-label.inactive.empty {
             margin: 0 4px;
             background-color: transparent;
-            color: ${mocha.overlay0};
+            color: ${colors.overlay0.hex};
             border-color: transparent;
             font-weight: 400;
             border-radius: 6px;
@@ -1109,16 +1091,16 @@ in
     };
 
     # ==========================================================================
-    # Session Variables (Enhanced with Catppuccin + System Variables)
+    # Session Variables (Enhanced with Dynamic Catppuccin + System Variables)
     # ==========================================================================
     home.sessionVariables = {
       GNOME_SESSION = "1";
       
-      # Catppuccin Mocha Theme Environment Variables
-      CATPPUCCIN_THEME = "mocha";
-      CATPPUCCIN_ACCENT = "mauve";
-      GTK_THEME = "catppuccin-mocha-mauve-standard+normal";
-      XCURSOR_THEME = "catppuccin-mocha-dark-cursors";
+      # Dynamic Catppuccin Theme Environment Variables
+      CATPPUCCIN_THEME = flavor;
+      CATPPUCCIN_ACCENT = accent;
+      GTK_THEME = themeNames.gtk;
+      XCURSOR_THEME = themeNames.cursor;
       XCURSOR_SIZE = "24";
       
       # HiDPI cursor size adjustment
@@ -1134,118 +1116,118 @@ in
     };
 
     # ==========================================================================
-    # GTK CSS Configuration (Enhanced with Catppuccin)
+    # GTK CSS Configuration (Enhanced with Dynamic Catppuccin)
     # ==========================================================================
     home.file.".config/gtk-3.0/gtk.css".text = ''
-      /* Catppuccin Mocha Nemo Customizations */
+      /* Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} Nemo Customizations */
       .nemo-window {
-          background-color: ${mocha.base};
-          color: ${mocha.text};
+          background-color: ${colors.base.hex};
+          color: ${colors.text.hex};
       }
 
       .nemo-window .toolbar {
-          background-color: ${mocha.mantle};
-          border-bottom: 1px solid ${mocha.surface0};
+          background-color: ${colors.mantle.hex};
+          border-bottom: 1px solid ${colors.surface0.hex};
       }
 
       .nemo-window .sidebar {
-          background-color: ${mocha.mantle};
-          border-right: 1px solid ${mocha.surface0};
+          background-color: ${colors.mantle.hex};
+          border-right: 1px solid ${colors.surface0.hex};
       }
 
       .nemo-window .view {
-          background-color: ${mocha.base};
-          color: ${mocha.text};
+          background-color: ${colors.base.hex};
+          color: ${colors.text.hex};
       }
 
       .nemo-window .view:selected {
-          background-color: ${mocha.mauve};
-          color: ${mocha.base};
+          background-color: ${colors.${accent}.hex};
+          color: ${colors.base.hex};
       }
 
-      /* Global GTK3 Catppuccin Customizations */
+      /* Global GTK3 Dynamic Catppuccin Customizations */
       window {
-          background-color: ${mocha.base};
-          color: ${mocha.text};
+          background-color: ${colors.base.hex};
+          color: ${colors.text.hex};
       }
 
       .titlebar {
-          background-color: ${mocha.mantle};
-          color: ${mocha.text};
+          background-color: ${colors.mantle.hex};
+          color: ${colors.text.hex};
       }
 
       button {
-          background-color: ${mocha.surface0};
-          color: ${mocha.text};
-          border: 1px solid ${mocha.surface1};
+          background-color: ${colors.surface0.hex};
+          color: ${colors.text.hex};
+          border: 1px solid ${colors.surface1.hex};
       }
 
       button:hover {
-          background-color: ${mocha.surface1};
+          background-color: ${colors.surface1.hex};
       }
 
       button:active {
-          background-color: ${mocha.mauve};
-          color: ${mocha.base};
+          background-color: ${colors.${accent}.hex};
+          color: ${colors.base.hex};
       }
 
       entry {
-          background-color: ${mocha.surface0};
-          color: ${mocha.text};
-          border: 1px solid ${mocha.surface1};
+          background-color: ${colors.surface0.hex};
+          color: ${colors.text.hex};
+          border: 1px solid ${colors.surface1.hex};
       }
 
       entry:focus {
-          border-color: ${mocha.mauve};
+          border-color: ${colors.${accent}.hex};
       }
 
       .sidebar {
-          background-color: ${mocha.mantle};
-          color: ${mocha.text};
+          background-color: ${colors.mantle.hex};
+          color: ${colors.text.hex};
       }
 
       .sidebar:selected {
-          background-color: ${mocha.mauve};
-          color: ${mocha.base};
+          background-color: ${colors.${accent}.hex};
+          color: ${colors.base.hex};
       }
     '';
 
     # ==========================================================================
-    # GTK4 CSS Configuration
+    # GTK4 CSS Configuration (Dynamic)
     # ==========================================================================
     home.file.".config/gtk-4.0/gtk.css".text = ''
-      /* Catppuccin Mocha GTK4 Customizations */
+      /* Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} GTK4 Customizations */
       window {
-          background-color: ${mocha.base};
-          color: ${mocha.text};
+          background-color: ${colors.base.hex};
+          color: ${colors.text.hex};
       }
 
       .titlebar {
-          background-color: ${mocha.mantle};
-          color: ${mocha.text};
+          background-color: ${colors.mantle.hex};
+          color: ${colors.text.hex};
       }
 
       button {
-          background-color: ${mocha.surface0};
-          color: ${mocha.text};
+          background-color: ${colors.surface0.hex};
+          color: ${colors.text.hex};
       }
 
       button:hover {
-          background-color: ${mocha.surface1};
+          background-color: ${colors.surface1.hex};
       }
 
       button:active {
-          background-color: ${mocha.mauve};
-          color: ${mocha.base};
+          background-color: ${colors.${accent}.hex};
+          color: ${colors.base.hex};
       }
 
       entry {
-          background-color: ${mocha.surface0};
-          color: ${mocha.text};
+          background-color: ${colors.surface0.hex};
+          color: ${colors.text.hex};
       }
 
       entry:focus {
-          border-color: ${mocha.mauve};
+          border-color: ${colors.${accent}.hex};
       }
     '';
 
@@ -1269,22 +1251,24 @@ in
         };
       };
 
-      # Catppuccin Theme Validation Service
+      # Dynamic Catppuccin Theme Validation Service
       catppuccin-theme-validation = {
         Unit = {
-          Description = "Validate Catppuccin Mocha Theme Installation";
+          Description = "Validate Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} Theme Installation";
           After = [ "gnome-session.target" ];
         };
         Service = {
           Type = "oneshot";
           ExecStart = pkgs.writeShellScript "validate-catppuccin" ''
             #!/bin/bash
-            # Check if Catppuccin theme is properly applied
+            # Check if Dynamic Catppuccin theme is properly applied
             current_gtk_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface gtk-theme)
-            if [[ "$current_gtk_theme" == *"catppuccin-mocha"* ]]; then
-              echo "✅ Catppuccin Mocha GTK theme is active"
+            expected_theme="catppuccin-${flavor}-${accent}"
+            if [[ "$current_gtk_theme" == *"$expected_theme"* ]]; then
+              echo "✅ Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} GTK theme is active"
             else
-              echo "⚠️  Catppuccin Mocha GTK theme is not active: $current_gtk_theme"
+              echo "⚠️  Dynamic Catppuccin theme is not active: $current_gtk_theme"
+              echo "Expected: $expected_theme"
             fi
             
             current_icon_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface icon-theme)
@@ -1293,6 +1277,9 @@ in
             else
               echo "⚠️  Using default icon theme: $current_icon_theme"
             fi
+            
+            echo "🎨 Current flavor: ${flavor}"
+            echo "🎯 Current accent: ${accent}"
           '';
           RemainAfterExit = true;
         };
@@ -1303,54 +1290,7 @@ in
     };
 
     # ==========================================================================
-    # Development Note for Theme Installation
+    # Development Note for Dynamic Theme Installation
     # ==========================================================================
-    home.file.".config/gnome-theme-setup.md".text = ''
-      # GNOME Catppuccin Mocha Theme Setup
-
-      This NixOS configuration includes Catppuccin Mocha theme settings, but the actual theme files
-      need to be installed manually or via overlays.
-
-      ## Required Theme Files:
-
-      ### GTK Theme:
-      - Name: catppuccin-mocha-mauve-standard+normal
-      - Location: ~/.themes/ or /usr/share/themes/
-      - Source: https://github.com/catppuccin/gtk
-
-      ### Icon Theme:
-      - Name: a-candy-beauty-icon-theme
-      - Location: ~/.icons/ or /usr/share/icons/
-      - Source: Various icon theme sources
-
-      ### Cursor Theme:
-      - Name: catppuccin-mocha-dark-cursors
-      - Location: ~/.icons/ or /usr/share/icons/
-      - Source: https://github.com/catppuccin/cursors
-
-      ## Installation Methods:
-
-      1. **Manual Installation:**
-         - Download themes from respective repositories
-         - Extract to appropriate directories
-         - Run: dconf update
-
-      2. **NixOS Overlay (Recommended):**
-         - Add Catppuccin overlay to your flake
-         - Include theme packages in home.packages
-
-      3. **Script Installation:**
-         - Run the included gnome-settings.sh script
-         - It will handle theme validation and setup
-
-      ## Verification:
-      - Check GTK theme: gsettings get org.gnome.desktop.interface gtk-theme
-      - Check icon theme: gsettings get org.gnome.desktop.interface icon-theme
-      - Check cursor theme: gsettings get org.gnome.desktop.interface cursor-theme
-
-      ## Custom Keybindings:
-      All custom keybindings from the script are included in this NixOS configuration.
-      Ensure the referenced applications (walker, osc-*, gnome-mpv-manager, etc.) are installed.
-    '';
   }; # config sonu
 } # dosya sonu
