@@ -62,6 +62,7 @@
     # =============================================================================
     ./audacious     # Lightweight audio player
     ./mpv           # Versatile media player configuration
+    ./vlc           # Versatile media player configuration
     ./mpd           # Music Player Daemon setup
     ./cava          # Console-based audio visualizer
     ./spicetify     # Spotify client customization

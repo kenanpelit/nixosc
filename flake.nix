@@ -80,7 +80,7 @@
     # Core Hyprland Wayland compositor - pinned to specific commit for stability
     hyprland = {
       #url = "github:hyprwm/hyprland/c4a4c341568944bd4fb9cd503558b2de602c0213"; # 0716 - 6279 - 0.50.0 Commits
-      url = "github:hyprwm/hyprland/38e13282cd5521a27a6e6dfe27109e93c64d049e"; # 0729 - 6325 Commits
+      url = "github:hyprwm/hyprland/9607e3b5a88f22017af64ab1ba360a39169a4bf7"; # 0731 - 6330 Commits
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
