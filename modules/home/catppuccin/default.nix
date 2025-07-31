@@ -7,23 +7,17 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { config, lib, pkgs, ... }:
-
 {
   # ============================================================================
-  # GLOBAL CATPPUCCIN CONFIGURATION
+  # GLOBAL CATPPUCCIN CONFIGURATION & APPLICATION-SPECIFIC ENABLEMENT
   # ============================================================================
   catppuccin = {
+    # === Global Settings ===
     enable = true;
     flavor = "mocha";     # Dark theme variant (latte, frappe, macchiato, mocha)
     accent = "mauve";     # Accent color (rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue, lavender)
-  };
-
-  # ============================================================================
-  # APPLICATION-SPECIFIC CATPPUCCIN ENABLEMENT
-  # ============================================================================
-  catppuccin = {
+    
     # === Terminal Applications ===
     kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal
     foot.enable = lib.mkDefault false;        # Lightweight Wayland terminal
@@ -35,7 +29,6 @@
     
     # === File Management & Utilities ===
     bat.enable = lib.mkDefault true;          # Syntax-highlighted file viewer
-    # fzf - you have custom dynamic config, could enable module
     fzf.enable = lib.mkDefault true;          # Fuzzy finder (enable Catppuccin module)
     yazi.enable = lib.mkDefault true;         # File manager (enable instead of manual theme)
     
@@ -49,15 +42,14 @@
     waybar.enable = lib.mkDefault true;       # Status bar
     mako.enable = lib.mkDefault true;         # Notification daemon
     rofi.enable = lib.mkDefault true;         # Application launcher
-    # swaylock - could enable if you want to replace Tokyo Night
     swaylock.enable = lib.mkDefault true;     # Screen locker
     
     # === Media Applications ===
     mpv.enable = lib.mkDefault true;          # Media player
     
     # === Desktop Theming ===
-    gtk.enable = lib.mkDefault false;         # GTK theming disabled - handled by GTK module
-    cursors.enable = lib.mkDefault false;     # Cursor theming disabled - handled by GTK module
+    gtk.enable = lib.mkDefault false;         # GTK theming disabled - handled by GTK module (deprecated upstream)
+    cursors.enable = lib.mkDefault true;      # Cursor theming enabled - works fine
   };
 }
 

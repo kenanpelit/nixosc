@@ -53,33 +53,24 @@ in
     };
     
     # ---------------------------------------------------------------------------
-    # Theme Settings - Catppuccin Mocha (Düzeltildi)
+    # Theme Settings - Catppuccin Mocha (Lower priority to avoid conflicts)
     # ---------------------------------------------------------------------------
     theme = {
-      name = "catppuccin-mocha-mauve-standard+normal";  # Doğru tema adı
-      package = pkgs.catppuccin-gtk.override {
+      name = lib.mkDefault "catppuccin-mocha-mauve-standard+normal";
+      package = lib.mkDefault (pkgs.catppuccin-gtk.override {
         accents = [ "mauve" ];
         size = "standard";
         tweaks = [ "normal" ];
         variant = "mocha";
-      };
+      });
     };
     
     # ---------------------------------------------------------------------------
-    # Icon Theme Settings - BeautyLine (korundu)
+    # Icon Theme Settings - BeautyLine
     # ---------------------------------------------------------------------------
     iconTheme = {
       name = "a-candy-beauty-icon-theme";
       # BeautyLine paketi zaten modules/home/candy/default.nix'de tanımlı
-    };
-    
-    # ---------------------------------------------------------------------------
-    # Cursor Theme Settings - RE-ENABLED for Catppuccin compatibility
-    # ---------------------------------------------------------------------------
-    cursorTheme = {
-      name = "catppuccin-mocha-mauve-cursors";  # CHANGED: dark -> mauve for consistency
-      package = pkgs.catppuccin-cursors.mochaMauve;  # CHANGED: mochaDark -> mochaMauve
-      size = 24;
     };
 
     # ---------------------------------------------------------------------------
@@ -91,8 +82,6 @@ in
         gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
         gtk-icon-theme-name = "a-candy-beauty-icon-theme"
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
-        # gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors"  # Disabled
-        # gtk-cursor-theme-size = 24  # Disabled
         gtk-application-prefer-dark-theme = 1
         gtk-button-images = 1
         gtk-menu-images = 1
@@ -114,8 +103,6 @@ in
       gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      # gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";  # Disabled
-      # gtk-cursor-theme-size = 24;  # Disabled
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
       gtk-menu-images = 1;
@@ -135,8 +122,6 @@ in
       gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
       gtk-icon-theme-name = "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      # gtk-cursor-theme-name = "catppuccin-mocha-dark-cursors";  # Disabled
-      # gtk-cursor-theme-size = 24;  # Disabled
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
       gtk-menu-images = 1;
@@ -155,17 +140,14 @@ in
   # =============================================================================
   home = {
     # ---------------------------------------------------------------------------
-    # Environment Variables - Catppuccin Mocha (Cursor variables disabled)
+    # Environment Variables - Catppuccin Mocha (Lower priority)
     # ---------------------------------------------------------------------------
     sessionVariables = {
-      GTK_THEME = "catppuccin-mocha-mauve-standard+normal";  # Doğru tema adı
+      GTK_THEME = lib.mkDefault "catppuccin-mocha-mauve-standard+normal";
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
-      # XCURSOR_THEME = "catppuccin-mocha-dark-cursors";  # Disabled - handled by Catppuccin module
-      # XCURSOR_SIZE = "24";  # Disabled - handled by Catppuccin module
       GDK_SCALE = "1";
       # Hyprland için ek ayarlar
-      # QT_QPA_PLATFORMTHEME = "gtk3";  # DISABLED - handled by QT module to avoid conflicts
       GDK_BACKEND = "wayland,x11";
       QT_QPA_PLATFORM = "wayland;xcb";
       CLUTTER_BACKEND = "wayland";
@@ -175,23 +157,18 @@ in
     };
 
     # ---------------------------------------------------------------------------
-    # Package Installation - Catppuccin Mocha
+    # Package Installation - GTK Theme and Fonts
     # ---------------------------------------------------------------------------
     packages = with pkgs; [
       # Catppuccin GTK Theme
       (catppuccin-gtk.override {
         accents = [ "mauve" ];
         size = "standard";
-        tweaks = [ "normal" ];  # "default" yerine "normal" kullanıyoruz
+        tweaks = [ "normal" ];
         variant = "mocha";
       })
       
-      # Catppuccin Cursors - moved to Catppuccin module
-      # catppuccin-cursors
-      
-      # BeautyLine zaten modules/home/candy/default.nix'de tanımlı, burada tekrarlamıyoruz
-      
-      # Fonts (mevcut fontlarınız)
+      # Fonts
       nerd-fonts.jetbrains-mono
       nerd-fonts.fira-code
       nerd-fonts.caskaydia-cove
@@ -202,17 +179,6 @@ in
       maple-mono.NF
       font-awesome
     ];
-    
-    # ---------------------------------------------------------------------------
-    # Pointer Cursor Configuration - RE-ENABLED with Mauve cursor
-    # ---------------------------------------------------------------------------
-    pointerCursor = {
-      name = "catppuccin-mocha-mauve-cursors";  # CHANGED: dark -> mauve
-      package = pkgs.catppuccin-cursors.mochaMauve;  # CHANGED: mochaDark -> mochaMauve
-      size = 24;
-      gtk.enable = true;
-      x11.enable = true;
-    };
   };
 }
 
