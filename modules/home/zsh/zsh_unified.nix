@@ -1,4 +1,4 @@
-# modules/home/zsh/zsh.nix
+# modules/home/zsh/zsh_unified.nix
 { lib, pkgs, config, host, ... }:
 {
   programs.zsh = {
@@ -258,6 +258,62 @@
       hm-build = "home-manager build --flake ~/.nixosc";
 
       # =============================================================================
+      # Transmission CLI Management
+      # =============================================================================
+      # Core Transmission commands
+      tsm = "tsm";
+      tsm-list = "tsm list";
+      tsm-add = "tsm add";
+      tsm-info = "tsm info";
+      tsm-speed = "tsm speed";
+      tsm-files = "tsm files";
+      tsm-config = "tsm config";
+      
+      # Torrent search functionality
+      tsm-search = "tsm search";
+      tsm-search-cat = "tsm search -l";                # List categories
+      tsm-search-recent = "tsm search -R";             # Recent torrents (48h)
+      
+      # Individual torrent management
+      tsm-start = "tsm start";
+      tsm-stop = "tsm stop";
+      tsm-remove = "tsm remove";
+      tsm-purge = "tsm purge";                         # Remove torrent + files
+      
+      # Batch torrent operations
+      tsm-start-all = "tsm start all";
+      tsm-stop-all = "tsm stop all";
+      tsm-remove-all = "tsm remove all";
+      tsm-purge-all = "tsm purge all";
+      
+      # Advanced torrent management
+      tsm-health = "tsm health";                       # Health check
+      tsm-stats = "tsm stats";                         # Detailed statistics
+      tsm-disk = "tsm disk-check";                     # Disk usage check
+      tsm-tracker = "tsm tracker";                     # Tracker information
+      tsm-limit = "tsm limit";                         # Speed limits
+      tsm-auto-remove = "tsm auto-remove";             # Auto-remove daemon
+      tsm-remove-done = "tsm remove-done";             # Remove completed
+      
+      # Priority management
+      tsm-priority-high = "tsm priority high";
+      tsm-priority-normal = "tsm priority normal";
+      tsm-priority-low = "tsm priority low";
+      
+      # Scheduling and organization
+      tsm-schedule = "tsm schedule";                   # Schedule start/stop
+      tsm-tag = "tsm tag";                             # Manual tagging
+      tsm-auto-tag = "tsm auto-tag";                   # Auto-tag by content
+      
+      # List sorting and filtering
+      tsm-list-sort-name = "tsm list --sort-by=name";
+      tsm-list-sort-size = "tsm list --sort-by=size";
+      tsm-list-sort-status = "tsm list --sort-by=status";
+      tsm-list-sort-progress = "tsm list --sort-by=progress";
+      tsm-list-filter-size = "tsm list --filter=\"size>1GB\"";
+      tsm-list-filter-complete = "tsm list --filter=\"progress=100\"";
+
+      # =============================================================================
       # Utilities & Quality of Life
       # =============================================================================
       # Archive operations
@@ -279,17 +335,13 @@
       copy = "xclip -selection clipboard";
       paste = "xclip -selection clipboard -o";
       
-      # =============================================================================
       # Session Management Functions (Sesh)
-      # =============================================================================
       sesh-c = "sesh connect";
       sesh-l = "sesh list";
       sesh-k = "sesh kill";
       sesh-r = "sesh last";
 
-      # =============================================================================
       # Fun & Useful
-      # =============================================================================
       weather = "curl wttr.in";
       moon = "curl wttr.in/moon";
       news = "curl getnews.tech";
@@ -302,18 +354,24 @@
       colors = "for i in {0..255}; do print -Pn \"%K{\$i}  %k%F{\$i}\$'{i:3d}'%f \" \$'{i%16==15?\"\\\\n\":\"\"}'; done";
     };
 
-    initContent = ''
-      # ---------------------------------------------------------------------------
-      # Enhanced Vi Mode Setup
-      # ---------------------------------------------------------------------------
+initContent = ''
+      # =============================================================================
+      # Environment Variables and Core Setup
+      # =============================================================================
+      # Transmission script location for CLI access
+      export TSM_SCRIPT="tsm"
+      
+      # =============================================================================
+      # Enhanced Vi Mode Configuration
+      # =============================================================================
       bindkey -v
       export KEYTIMEOUT=1
       
-      # Smart word characters for better navigation
+      # Smart word characters for enhanced navigation
       WORDCHARS='~!#$%^&*(){}[]<>?.+;-'
       MOTION_WORDCHARS='~!#$%^&*(){}[]<>?.+;'
       
-      # Enhanced word movement
+      # Enhanced word movement functions
       function smart-backward-word() {
         local WORDCHARS="''${MOTION_WORDCHARS}"
         zle backward-word
@@ -325,16 +383,16 @@
       zle -N smart-backward-word
       zle -N smart-forward-word
 
-      # ---------------------------------------------------------------------------
-      # Enhanced Vi Mode Visual Feedback
-      # ---------------------------------------------------------------------------
+      # =============================================================================
+      # Enhanced Vi Mode Visual Feedback System
+      # =============================================================================
       function zle-keymap-select {
         case $KEYMAP in
           vicmd|NORMAL)
-            echo -ne '\e[1 q'  # Block cursor
+            echo -ne '\e[1 q'  # Block cursor for command mode
             ;;
           viins|INSERT|main)
-            echo -ne '\e[5 q'  # Beam cursor
+            echo -ne '\e[5 q'  # Beam cursor for insert mode
             ;;
         esac
       }
@@ -346,14 +404,14 @@
       zle -N zle-keymap-select
       zle -N zle-line-init
 
-      # ---------------------------------------------------------------------------
-      # Smart History Navigation
-      # ---------------------------------------------------------------------------
+      # =============================================================================
+      # Smart History Navigation System
+      # =============================================================================
       autoload -U up-line-or-beginning-search down-line-or-beginning-search
       zle -N up-line-or-beginning-search
       zle -N down-line-or-beginning-search
       
-      # Vi mode history
+      # Vi mode history navigation
       bindkey -M vicmd "k" up-line-or-beginning-search
       bindkey -M vicmd "j" down-line-or-beginning-search
       bindkey -M vicmd '?' history-incremental-search-backward
@@ -361,48 +419,48 @@
       bindkey -M vicmd 'n' history-search-forward
       bindkey -M vicmd 'N' history-search-backward
       
-      # Insert mode history (arrow keys)
+      # Insert mode history (arrow keys and Ctrl shortcuts)
       bindkey -M viins "^[[A" up-line-or-beginning-search
       bindkey -M viins "^[[B" down-line-or-beginning-search
       bindkey -M viins "^P" up-line-or-beginning-search
       bindkey -M viins "^N" down-line-or-beginning-search
 
-      # ---------------------------------------------------------------------------
-      # Enhanced Navigation Bindings
-      # ---------------------------------------------------------------------------
-      # Line movement
+      # =============================================================================
+      # Enhanced Navigation Key Bindings
+      # =============================================================================
+      # Line movement shortcuts
       bindkey -M vicmd 'H' beginning-of-line
       bindkey -M vicmd 'L' end-of-line
       bindkey -M viins '^A' beginning-of-line
       bindkey -M viins '^E' end-of-line
       
-      # Word movement (Ctrl+arrows)
+      # Word movement (Ctrl+arrows for both modes)
       bindkey -M vicmd '^[[1;5C' smart-forward-word
       bindkey -M viins '^[[1;5C' smart-forward-word
       bindkey -M vicmd '^[[1;5D' smart-backward-word
       bindkey -M viins '^[[1;5D' smart-backward-word
       
-      # Alt+arrows for word movement
+      # Alt+arrows for word movement alternative
       bindkey -M viins '^[f' smart-forward-word
       bindkey -M viins '^[b' smart-backward-word
 
-      # ---------------------------------------------------------------------------
-      # Enhanced Editing Bindings
-      # ---------------------------------------------------------------------------
+      # =============================================================================
+      # Enhanced Editing Key Bindings
+      # =============================================================================
       # Vi mode enhancements
       bindkey -M vicmd 'Y' vi-yank-eol
       bindkey -M vicmd 'v' edit-command-line
       bindkey -M vicmd 'gg' beginning-of-buffer-or-history
       bindkey -M vicmd 'G' end-of-buffer-or-history
       
-      # Insert mode editing
+      # Insert mode editing shortcuts
       bindkey -M viins '^?' backward-delete-char
       bindkey -M viins '^H' backward-delete-char
       bindkey -M viins '^U' backward-kill-line
       bindkey -M viins '^K' kill-line
       bindkey -M viins '^Y' yank
       
-      # Smart word deletion
+      # Smart word deletion function
       function smart-backward-kill-word() {
         local WORDCHARS="''${WORDCHARS//:}"
         WORDCHARS="''${WORDCHARS//\/}"
@@ -418,37 +476,90 @@
       bindkey -M viins '^F' autosuggest-accept
       bindkey -M viins '^L' autosuggest-accept
       bindkey -M viins '^[[Z' autosuggest-execute  # Shift+Tab
-      
-      # ---------------------------------------------------------------------------
-      # FZF Integration Bindings
-      # ---------------------------------------------------------------------------
+
+      # =============================================================================
+      # FZF Integration Key Bindings
+      # =============================================================================
       if command -v fzf > /dev/null; then
-        # Enhanced FZF bindings
+        # Enhanced FZF bindings for both modes
         bindkey -M viins '^T' fzf-file-widget       # Ctrl+T: Files
         bindkey -M viins '^R' fzf-history-widget    # Ctrl+R: History
         bindkey -M viins '^[c' fzf-cd-widget        # Alt+C: Directories
         
-        # Vi mode FZF bindings
+        # Vi command mode FZF bindings
         bindkey -M vicmd '^T' fzf-file-widget
         bindkey -M vicmd '^R' fzf-history-widget
         bindkey -M vicmd '^[c' fzf-cd-widget
       fi
 
-      # ---------------------------------------------------------------------------
-      # Terminal Integration
-      # ---------------------------------------------------------------------------
-      # Clear screen
+      # =============================================================================
+      # Terminal Integration Key Bindings
+      # =============================================================================
+      # Clear screen for both modes
       bindkey -M viins '^L' clear-screen
       bindkey -M vicmd '^L' clear-screen
       
-      # Suspend/Resume
+      # Suspend/Resume functionality
       bindkey -M viins '^Z' push-input
       bindkey -M vicmd '^Z' push-input
 
       # =============================================================================
-      # Dosya Yöneticisi Fonksiyonları
+      # ZSH Completion System for Transmission CLI
       # =============================================================================
-      # Yazi sarmalayıcı fonksiyonu
+      _tsm_completions() {
+          local commands=(
+              # Core transmission commands
+              "list:Display torrent list with status information"
+              "add:Add new torrent from file or magnet link"
+              "info:Show detailed information about specific torrent"
+              "speed:Display current download/upload speeds"
+              "files:List files contained in torrent"
+              "config:Configure authentication credentials"
+              
+              # Search and discovery commands
+              "search:Search for torrents by keyword"
+              "search-cat:List available torrent categories"
+              "search-recent:Search in recent torrents (last 48 hours)"
+              
+              # Individual torrent management
+              "start:Start downloading specified torrent"
+              "stop:Stop downloading specified torrent"
+              "remove:Remove torrent from client (keep files)"
+              "purge:Remove torrent and delete all files"
+              
+              # Batch operation commands
+              "start-all:Start all torrents in queue"
+              "stop-all:Stop all active torrents"
+              "remove-all:Remove all torrents (keep files)"
+              "purge-all:Remove all torrents and delete files"
+              
+              # Advanced management features
+              "health:Check torrent health and connectivity"
+              "stats:Show detailed client statistics"
+              "disk:Check disk usage and available space"
+              "tracker:Display tracker information and status"
+              "limit:Set speed limits for downloads/uploads"
+              "auto-remove:Enable automatic removal of completed torrents"
+              "remove-done:Remove all completed torrents"
+              
+              # Priority and scheduling
+              "priority:Set torrent priority (high/normal/low)"
+              "schedule:Schedule torrent start/stop times"
+              "tag:Add custom tags to torrents"
+              "auto-tag:Automatically tag torrents by content type"
+              
+              # List management and filtering
+              "list-sort:Sort torrent list by criteria"
+              "list-filter:Filter torrents by specific conditions"
+          )
+          _describe 'tsm commands' commands
+      }
+      compdef _tsm_completions tsm
+
+      # =============================================================================
+      # File Manager Functions (Yazi Integration)
+      # =============================================================================
+      # Main Yazi wrapper function with directory change support
       function y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
         yazi "$@" --cwd-file="$tmp"
@@ -458,7 +569,7 @@
         rm -f -- "$tmp"
       }
 
-      # Alternatif Yazi fonksiyonu (k komutu ile)
+      # Alternative Yazi function with 'k' command
       function k() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
         yazi "$@" --cwd-file="$tmp"
@@ -469,22 +580,25 @@
       }
 
       # =============================================================================
-      # Ağ Fonksiyonları
+      # Network Utility Functions
       # =============================================================================
-      # Dış IP kontrol fonksiyonu
+      # Multi-source external IP detection function
       function wanip() {
         local ip
+        # Try Mullvad first (privacy-focused)
         ip=$(curl -s https://am.i.mullvad.net/ip 2>/dev/null) && echo "Mullvad IP: $ip" && return 0
+        # Fallback to OpenDNS
         ip=$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null) && echo "OpenDNS IP: $ip" && return 0
+        # Fallback to Google DNS
         ip=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"') && echo "Google DNS IP: $ip" && return 0
-        echo "Hata: IP adresi belirlenemedi"
+        echo "Error: Could not determine external IP address"
         return 1
       }
 
-      # Dosya transfer fonksiyonu
+      # File transfer function using transfer.sh service
       function transfer() {  
         if [ -z "$1" ]; then
-          echo "Kullanım: transfer TRANSFER_EDILECEK_DOSYA"
+          echo "Usage: transfer FILE_TO_TRANSFER"
           return 1
         fi
         tmpfile=$(mktemp -t transferXXX)
@@ -494,13 +608,13 @@
       }
 
       # =============================================================================
-      # Dosya Düzenleme Fonksiyonları
+      # File Editing Utility Functions
       # =============================================================================
-      # Hızlı dosya düzenleyici
+      # Quick file editor with automatic creation and permissions
       function v() {
         local file="$1"
         if [[ -z "$file" ]]; then
-          echo "Hata: Dosya adı gerekli."
+          echo "Error: Filename required."
           return 1
         fi
         [[ ! -f "$file" ]] && touch "$file"
@@ -508,26 +622,26 @@
         vim -c "set paste" "$file"
       }
 
-      # Komut yolu düzenleme
+      # Edit command by path (which-edit)
       function vw() {
         local file
         if [[ -n "$1" ]]; then
           file=$(which "$1" 2>/dev/null)
           if [[ -n "$file" ]]; then
-            echo "Dosya bulundu: $file"
+            echo "File found: $file"
             vim "$file"
           else
-            echo "Dosya bulunamadı: $1"
+            echo "File not found: $1"
           fi
         else
-          echo "Kullanım: vwhich <dosya-adı>"
+          echo "Usage: vw <command-name>"
         fi
       }
 
       # =============================================================================
-      # Arşiv Yönetimi Fonksiyonları
+      # Archive Management Functions
       # =============================================================================
-      # Evrensel arşiv çıkarıcı
+      # Universal archive extraction function
       function ex() {
         if [ -f $1 ] ; then
           case $1 in
@@ -545,24 +659,24 @@
             *.deb)       ar x $1      ;;
             *.tar.xz)    tar xf $1    ;;
             *.tar.zst)   tar xf $1    ;;
-            *)           echo "'$1' ex() ile çıkarılamıyor" ;;
+            *)           echo "'$1' cannot be extracted with ex()" ;;
           esac
         else
-          echo "'$1' geçerli bir dosya değil"
+          echo "'$1' is not a valid file"
         fi
       }
 
       # =============================================================================
-      # FZF Gelişmiş Fonksiyonları
+      # FZF Enhanced Search Functions
       # =============================================================================
-      # Dosya içeriği arama
+      # File content search with preview
       function fif() {
-        if [ ! "$#" -gt 0 ]; then echo "Arama terimi gerekli"; return 1; fi
+        if [ ! "$#" -gt 0 ]; then echo "Search term required"; return 1; fi
         fd --type f --hidden --follow --exclude .git \
         | fzf -m --preview="bat --style=numbers --color=always {} 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
       }
 
-      # Dizin geçmişi arama
+      # Directory history search
       function fcd() {
         local dir
         dir=$(dirs -v | fzf --height 40% --reverse | cut -f2-)
@@ -571,7 +685,7 @@
         fi
       }
 
-      # Git commit arama
+      # Git commit search and checkout
       function fgco() {
         local commits commit
         commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
@@ -579,7 +693,7 @@
         git checkout $(echo "$commit" | sed "s/ .*//")
       }
 
-      # Hızlı commit (tek satır İngilizce mesaj)
+      # Quick commit function (English single-line message)
       function gc() {
         if [ -z "$1" ]; then
           echo "Usage: gc <commit-message>"
@@ -589,7 +703,7 @@
         git add -A && git commit -m "$1"
       }
 
-      # İnteraktif commit mesajı
+      # Interactive commit message function
       function gci() {
         git add -A
         echo "Enter commit message (English, single line):"
@@ -603,18 +717,18 @@
       }
 
       # =============================================================================
-      # History temizleme fonksiyonu
+      # History Management Function
       # =============================================================================
       function cleanhistory() {
-        print -z $( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +m --height 50% --reverse --border --header="DEL tuşu ile seçili komutu sil, ESC ile çık" \
+        print -z $( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +m --height 50% --reverse --border --header="DEL key to delete selected command, ESC to exit" \
         --bind="del:execute(sed -i '/{}/d' $HISTFILE)+reload(fc -R; ([ -n "$ZSH_NAME" ] && fc -l 1 || history))" \
         --preview="echo {}" --preview-window=up:3:hidden:wrap --bind="?:toggle-preview")
       }
 
-      # ---------------------------------------------------------------------------
-      # Session Management Bindings (Sesh)
-      # ---------------------------------------------------------------------------
-      # Sesh session manager function (if not already defined elsewhere)
+      # =============================================================================
+      # Session Management Functions (Sesh Integration)
+      # =============================================================================
+      # Enhanced session manager with FZF integration
       if ! typeset -f sesh-sessions > /dev/null; then
         function sesh-sessions() {
           {
@@ -630,78 +744,78 @@
         zle -N sesh-sessions
       fi
       
-      # Sesh keybindings - Alt+S for session picker
+      # Sesh session management key bindings
       bindkey -M viins '^[s' sesh-sessions    # Alt+S in insert mode
       bindkey -M vicmd '^[s' sesh-sessions    # Alt+S in command mode
       bindkey -M viins '\es' sesh-sessions    # Alternative Alt+S binding
       bindkey -M vicmd '\es' sesh-sessions    # Alternative Alt+S binding
 
       # =============================================================================
-      # Nix Paket Yönetimi Fonksiyonları
+      # Nix Package Management Functions
       # =============================================================================
-      # Basit bağımlılık görüntüleyici
+      # Simple dependency viewer for Nix packages
       function nix_depends() {
         if [ -z "$1" ]; then
-          echo "Kullanım: nix_depends <paket-adı>"
+          echo "Usage: nix_depends <package-name>"
           return 1
         fi
         nix-store --query --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
       }
 
-      # Detaylı bağımlılık görüntüleyici
+      # Detailed dependency analysis for Nix packages
       function nix_deps() {
         if [ -z "$1" ]; then
-          echo "Kullanım: nix_deps <paket-adı>"
+          echo "Usage: nix_deps <package-name>"
           return 1
         fi
         
-        echo "Doğrudan bağımlılıklar:"
+        echo "Direct dependencies:"
         nix-store -q --references $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
         
-        echo -e "\nTers bağımlılıklar (bu pakete bağımlı paketler):"
+        echo -e "\nReverse dependencies (packages depending on this):"
         nix-store -q --referrers $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
         
-        echo -e "\nÇalışma zamanı bağımlılıkları:"
+        echo -e "\nRuntime dependencies:"
         nix-store -q --requisites $(which "$1" 2>/dev/null || echo "/run/current-system/sw/bin/$1")
       }
 
       # =============================================================================
-      # Nix Temizleme Fonksiyonları
+      # Nix Cleanup and Maintenance Functions
       # =============================================================================
       
-      # Hızlı Nix temizliği (alias)
+      # Quick Nix cleanup alias
       alias nxc="nix-collect-garbage -d && nix-store --gc"
 
-      # Detaylı Nix temizliği fonksiyonu
+      # Comprehensive Nix cleanup function
       function nix_clean() {
-        echo "🧹 Nix detaylı temizlik başlıyor..."
+        echo "🧹 Starting comprehensive Nix cleanup..."
         
-        # GC roots temizliği
-        echo "📂 Gereksiz GC root'ları temizleniyor..."
+        # Clean unnecessary GC roots
+        echo "📂 Cleaning unnecessary GC roots..."
         nix-store --gc --print-roots | \
           egrep -v "^(/nix/var|/run/\w+-system|\{memory|/proc)" | \
           awk '{ print $1 }' | \
           grep -vE 'home-manager|flake-registry\.json' | \
           xargs -L1 unlink 2>/dev/null || true
         
-        # Garbage collection
-        echo "🗑️  Garbage collection çalışıyor..."
+        # Run garbage collection
+        echo "🗑️  Running garbage collection..."
         nix-collect-garbage -d
         
-        # Store optimizasyonu
-        echo "⚡ Store optimize ediliyor..."
+        # Optimize store
+        echo "⚡ Optimizing store..."
         nix-store --optimise
         
-        echo "✅ Detaylı temizlik tamamlandı!"
+        echo "✅ Comprehensive cleanup completed!"
         
-        # Temizlik sonrası bilgi
-        echo "📊 Temizlik sonrası durum:"
-        du -sh /nix/store 2>/dev/null || echo "Store boyutu hesaplanamadı"
+        # Post-cleanup information
+        echo "📊 Post-cleanup status:"
+        du -sh /nix/store 2>/dev/null || echo "Store size calculation failed"
       }
 
-      # Güvenli Nix temizliği (önizleme ile)
+      # Safe Nix cleanup with preview
       function nix_clean_preview() {
-        echo "🔍 Silinecek GC root'ları önizleniyor..."
+        echo "🔍 Previewing GC roots to be deleted..."
         local roots_to_delete
         roots_to_delete=$(nix-store --gc --print-roots | \
           egrep -v "^(/nix/var|/run/\w+-system|\{memory|/proc)" | \
@@ -709,59 +823,58 @@
           grep -vE 'home-manager|flake-registry\.json')
         
         if [[ -z "$roots_to_delete" ]]; then
-          echo "✅ Silinecek gereksiz GC root bulunamadı."
+          echo "✅ No unnecessary GC roots found for deletion."
         else
-          echo "📋 Silinecek GC roots:"
+          echo "📋 GC roots to be deleted:"
           echo "$roots_to_delete"
           echo ""
         fi
         
-        # Garbage collection önizlemesi
-        echo "🗑️  Garbage collection simülasyonu..."
+        # Garbage collection preview
+        echo "🗑️  Garbage collection simulation..."
         nix-collect-garbage -d --dry-run
         
         echo ""
-        echo -n "🤔 Temizlik işlemini başlatmak istiyor musunuz? (y/N): "
+        echo -n "🤔 Do you want to proceed with cleanup? (y/N): "
         read answer
         if [[ $answer == "y" || $answer == "Y" ]]; then
           nix_clean
         else
-          echo "❌ Temizlik iptal edildi."
+          echo "❌ Cleanup cancelled."
         fi
       }
 
-      # Nix store boyutu kontrolü
+      # Nix store size analysis
       function nix_store_size() {
-        echo "📊 Nix Store Analizi:"
-        echo "├─ Store toplam boyutu: $(du -sh /nix/store 2>/dev/null | cut -f1 || echo 'Hesaplanamadı')"
-        echo "├─ Toplam paket sayısı: $(ls /nix/store | wc -l 2>/dev/null || echo 'Hesaplanamadı')"
-        echo "├─ GC root sayısı: $(nix-store --gc --print-roots | wc -l 2>/dev/null || echo 'Hesaplanamadı')"
-        echo "└─ Eski generasyon sayısı: $(nix-env --list-generations | wc -l 2>/dev/null || echo 'Hesaplanamadı')"
+        echo "📊 Nix Store Analysis:"
+        echo "├─ Total store size: $(du -sh /nix/store 2>/dev/null | cut -f1 || echo 'Cannot calculate')"
+        echo "├─ Total package count: $(ls /nix/store | wc -l 2>/dev/null || echo 'Cannot calculate')"
+        echo "├─ GC root count: $(nix-store --gc --print-roots | wc -l 2>/dev/null || echo 'Cannot calculate')"
+        echo "└─ Old generation count: $(nix-env --list-generations | wc -l 2>/dev/null || echo 'Cannot calculate')"
       }
 
-      # Nix profil temizliği
+      # Nix profile cleanup
       function nix_profile_clean() {
-        echo "🔄 Nix profilleri temizleniyor..."
+        echo "🔄 Cleaning Nix profiles..."
         
-        # Kullanıcı profili generasyonları
-        echo "👤 Kullanıcı profili generasyonları:"
+        # User profile generations
+        echo "👤 User profile generations:"
         nix-env --list-generations
         
-        echo -n "🤔 Eski generasyonları silmek istiyor musunuz? (y/N): "
+        echo -n "🤔 Do you want to delete old generations? (y/N): "
         read answer
         if [[ $answer == "y" || $answer == "Y" ]]; then
           nix-env --delete-generations old
-          echo "✅ Eski generasyonlar silindi."
+          echo "✅ Old generations deleted."
         fi
         
-        # Sistem profili (eğer NixOS kullanıyorsa)
+        # System profile (if NixOS)
         if command -v nixos-rebuild >/dev/null 2>&1; then
-          echo "🖥️  Sistem profili generasyonları temizleniyor..."
+          echo "🖥️  Cleaning system profile generations..."
           sudo nix-collect-garbage -d
-          echo "✅ Sistem profili temizlendi."
+          echo "✅ System profile cleaned."
         fi
       }
     '';
   };
 }
-

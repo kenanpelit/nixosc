@@ -21,7 +21,5 @@
     ./zsh_plugins.nix      # Plugin management and settings
     ./zsh_profile.nix
     
-    # Application Specific (load last)
-    ./zsh_tsm.nix         # Transmission CLI configuration
   ];
 }
