@@ -11,56 +11,39 @@
 # Author: Kenan Pelit
 # Power Management Configuration - FIXED for Lid Suspend
 # ==============================================================================
+# modules/core/power/default.nix
 { config, lib, pkgs, ... }:
 {
   services = {
-    # UPower Configuration
     upower = {
       enable = true;
-      criticalPowerAction = "Hibernate";  # Hibernate when battery critically low
+      criticalPowerAction = "Hibernate";
     };
     
-    # Power Management (logind) - FIXED for lid suspend
     logind = {
-      lidSwitch = "suspend";              # Suspend when laptop lid closed
-      lidSwitchDocked = "suspend";        # Suspend when lid closed while docked  
-      lidSwitchExternalPower = "suspend"; # Suspend when lid closed on AC power
+      lidSwitch = "suspend";
+      lidSwitchDocked = "suspend";  
+      lidSwitchExternalPower = "suspend";
       extraConfig = ''
-        HandlePowerKey=ignore             # Ignore power button (prevent accidental shutdown)
-        HandleSuspendKey=suspend          # Suspend when suspend key pressed
-        HandleHibernateKey=hibernate      # Hibernate when hibernate key pressed
-        HandleLidSwitch=suspend           # EXPLICIT: Suspend on lid close
-        HandleLidSwitchDocked=suspend     # EXPLICIT: Suspend on lid close when docked
-        HandleLidSwitchExternalPower=suspend # EXPLICIT: Suspend on lid close on AC
-        IdleAction=ignore                 # FIXED: Don't compete with GNOME idle management
-        # IdleActionSec removed - let GNOME handle idle
+        HandlePowerKey=ignore
+        HandleSuspendKey=suspend
+        HandleHibernateKey=hibernate
+        HandleLidSwitch=suspend
+        HandleLidSwitchDocked=suspend
+        HandleLidSwitchExternalPower=suspend
+        IdleAction=ignore
       '';
     };
     
-    # TLP - Keep disabled to avoid conflicts
     tlp.enable = false;
-    
-    # FIXED: Disable power-profiles-daemon to avoid conflict with GNOME
-    power-profiles-daemon.enable = false;  # This may conflict with GNOME power management
-    
-    # Thermal Management
+    power-profiles-daemon.enable = false;
     thermald.enable = true;
     
-    # System Logging Configuration
-    journald = {
-      extraConfig = ''
-        SystemMaxUse=5G
-        SystemMaxFileSize=500M
-        MaxRetentionSec=1month
-      '';
-    };
+    journald.extraConfig = ''
+      SystemMaxUse=5G
+      SystemMaxFileSize=500M
+      MaxRetentionSec=1month
+    '';
   };
-  
-  # ADDITION: Ensure systemd-logind has priority over other power managers
-  systemd.extraConfig = ''
-    [Login]
-    HandleLidSwitch=suspend
-    HandleLidSwitchDocked=suspend
-    HandleLidSwitchExternalPower=suspend
-  '';
 }
+
