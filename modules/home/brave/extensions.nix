@@ -4,16 +4,14 @@
 # ==============================================================================
 # This configuration manages Brave browser extensions through NixOS
 # Extensions are automatically installed and managed declaratively
+# Now includes Catppuccin theme integration
 #
 # Author: Kenan Pelit
 # ==============================================================================
 { inputs, pkgs, config, lib, ... }:
-
 {
   config = lib.mkIf config.my.browser.brave.enable {
     programs.chromium = {
-      enable = true;
-      package = config.my.browser.brave.package;
       extensions = [
         # Çeviri Araçları
         { id = "aapbdbdomjkkjkaonfhkkikfgjllcleb"; } # Google Translate
@@ -38,8 +36,13 @@
         # Sistem Entegrasyonu
         { id = "gphhapmejobijbbhgpjhcjognlahblep"; } # GNOME Shell integration
         
-        # Tema
-        { id = "olhelnoplefjdmncknfphenjclimckaf"; } # Catppuccin Chrome Theme - Frappe
+        # ========================================================================
+        # TEMA - Catppuccin (theme.nix dosyasından dinamik olarak eklenir)
+        # ========================================================================
+        # Not: Catppuccin tema extension'ı theme.nix'te merkezi konfigürasyona
+        # göre dinamik olarak ekleniyor
+        
+        # Dark Reader ve Stylus da theme.nix'te ekleniyor
         
         # Kripto Cüzdanları
         { id = "acmacodkjbdgmoleebolmdjonilkdbch"; } # Rabby Wallet
@@ -59,3 +62,4 @@
     };
   };
 }
+
