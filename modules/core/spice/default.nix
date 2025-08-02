@@ -34,13 +34,9 @@
     '';
   };
   
-  # Security Configuration
-  security.wrappers.spice-client-glib-usb-acl-helper = {
-    source = "${pkgs.spice-gtk}/bin/spice-client-glib-usb-acl-helper";
-    capabilities = "cap_fowner+ep";
-    owner = "root";
-    group = "root";
-  };
+  # Security Configuration  
+  security.wrappers.spice-client-glib-usb-acl-helper.source = 
+    "${pkgs.spice-gtk}/bin/spice-client-glib-usb-acl-helper";
   
   # SPICE packages
   environment.systemPackages = with pkgs; [
