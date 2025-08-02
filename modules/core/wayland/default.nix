@@ -1,16 +1,17 @@
 # modules/core/wayland/default.nix
 # ==============================================================================
-# Wayland Configuration - Single Source of Truth
+# Wayland Configuration - Hyprland Focused
 # ==============================================================================
-# This configuration manages ALL Wayland settings including:
-# - Hyprland compositor setup
-# - XDG portal integration  
-# - Environment variables (centralized)
-# - Wayland-specific optimizations
+# This configuration manages Hyprland-specific Wayland settings:
+# - Hyprland compositor setup only
+# - Hyprland-specific environment variables
+#
+# Note: XDG Portal config in modules/core/xdg
+# Note: General Wayland env vars handled by individual modules
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ inputs, pkgs, lib, ... }:
+{ inputs, pkgs, ... }:
 {
   # Hyprland Compositor
   programs.hyprland = {
@@ -19,44 +20,7 @@
     portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   };
   
-  # Note: XDG Portal configuration is handled in modules/core/xdg
-  
-  # Centralized Wayland Environment Variables
-  environment.sessionVariables = {
-    # Wayland Core
-    XDG_SESSION_TYPE = "wayland";
-    XDG_SESSION_DESKTOP = "Hyprland";
-    XDG_CURRENT_DESKTOP = "Hyprland";
-    
-    # Wayland Backend Settings
-    GDK_BACKEND = "wayland,x11";
-    SDL_VIDEODRIVER = "wayland";
-    CLUTTER_BACKEND = "wayland";
-    OZONE_PLATFORM = "wayland";
-    
-    # Application-specific Wayland
-    NIXOS_OZONE_WL = "1";           # Chromium/Electron apps
-    MOZ_ENABLE_WAYLAND = "1";       # Firefox
-    MOZ_WEBRENDER = "1";            # Firefox hardware acceleration
-    MOZ_USE_XINPUT2 = "1";          # Firefox touch input
-    
-    # Qt Wayland
-    QT_QPA_PLATFORM = "wayland;xcb";
-    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
-    
-    # Java AWT (for Java applications)
-    _JAVA_AWT_WM_NONREPARENTING = "1";
-    
-    # Hyprland specific
-    WLR_NO_HARDWARE_CURSORS = "1";  # Intel Arc/NVIDIA compatibility
-    HYPRLAND_LOG_WLR = "1";
-    
-    # Default applications
-    TERMINAL = "kitty";
-    BROWSER = "brave";
-    EDITOR = "nvim";
-    VISUAL = "nvim";
-  };
+  # Note: Environment variables managed by TTY-specific profile scripts
+  # This avoids conflicts between GNOME and Hyprland sessions
 }
 
