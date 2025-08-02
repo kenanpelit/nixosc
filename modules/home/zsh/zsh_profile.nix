@@ -232,18 +232,11 @@
             fi
             
         else
-            # Display server already running - show current environment
-            echo "=== Desktop Environment Already Running ==="
-            echo "WAYLAND_DISPLAY: ''${WAYLAND_DISPLAY:-not set}"
-            echo "DISPLAY: ''${DISPLAY:-not set}"
-            echo "XDG_CURRENT_DESKTOP: ''${XDG_CURRENT_DESKTOP:-not set}"
-            echo "XDG_SESSION_DESKTOP: ''${XDG_SESSION_DESKTOP:-not set}"
-            echo "DESKTOP_SESSION: ''${DESKTOP_SESSION:-not set}"
-            echo "TTY: ''${XDG_VTNR:-unknown}"
+            # Don't show environment info in non-login shells
+            :  # Do nothing silently
         fi
       '';
       executable = true;
     };
   };
 }
-
