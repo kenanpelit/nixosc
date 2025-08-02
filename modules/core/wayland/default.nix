@@ -10,7 +10,7 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ inputs, pkgs, ... }:
+{ inputs, pkgs, lib, ... }:
 {
   # Hyprland Compositor
   programs.hyprland = {
@@ -19,19 +19,7 @@
     portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   };
   
-  # XDG Desktop Portal Configuration
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk  # For file picker fallback
-    ];
-    config = {
-      common = {
-        default = [ "hyprland" ];
-        "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
-      };
-    };
-  };
+  # Note: XDG Portal configuration is handled in modules/core/xdg
   
   # Centralized Wayland Environment Variables
   environment.sessionVariables = {
