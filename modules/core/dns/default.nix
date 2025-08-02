@@ -26,8 +26,9 @@
      
      # Mullvad DNS servers when VPN is enabled
      (lib.mkIf config.services.mullvad-vpn.enable [
-       "193.138.218.74"  # Mullvad DNS
-       "1.1.1.1"         # Cloudflare DNS (fallback)
+       "194.242.2.2"  # Mullvad DNS Primary
+       "194.242.2.3"  # Mullvad DNS Secondary
+       "1.1.1.1"      # Cloudflare DNS (fallback)
      ])
    ];
  };
