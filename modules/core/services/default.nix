@@ -34,9 +34,6 @@
     hblock.enable = true;      # Ad blocking service
     fwupd.enable = true;       # Firmware update daemon
     
-    # Power Management
-    power-profiles-daemon.enable = true;  # Power profile management
-    
     # Thumbnail Generation
     tumbler.enable = true;     # Thumbnail service for file managers
     
