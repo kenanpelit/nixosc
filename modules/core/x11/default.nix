@@ -5,27 +5,15 @@
 # This configuration manages display server settings including:
 # - X Server setup (also needed for Wayland)
 # - Display manager configuration (GDM for GNOME + Hyprland)
-# - Input device settings
+# - Desktop environment setup
 # - Session management
 #
 # Author: Kenan Pelit
-# Modified: 2025-07-02 (GNOME + Hyprland support)
+# Modified: 2025-08-02 (Cleaned conflicts)
 # ==============================================================================
 { username, inputs, pkgs, ... }:
 {
   services = {
-    # ==========================================================================
-    # D-Bus Configuration - DÜZELTME (sadece eksik paketler eklendi)
-    # ==========================================================================
-    dbus = {
-      enable = true;
-      packages = with pkgs; [
-        gnome-settings-daemon
-        gnome-session
-        gnome-keyring  # Secret service için
-      ];
-    };
-
     # X Server Settings
     xserver = {
       enable = true;
@@ -55,7 +43,7 @@
     # Input Device Settings
     libinput.enable = true;
     
-    # GNOME Keyring (secret service için)
+    # GNOME Keyring service
     gnome.gnome-keyring.enable = true;
   };
   
@@ -77,41 +65,9 @@
     '';
   };
   
-  # Session Variables for Wayland
-  environment.sessionVariables = {
-    # Wayland-specific variables
-    NIXOS_OZONE_WL = "1";
-    MOZ_ENABLE_WAYLAND = "1";
-    
-    # Qt applications
-    QT_QPA_PLATFORM = "wayland;xcb";
-    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-    
-    # GTK applications
-    GDK_BACKEND = "wayland,x11";
-    
-    # SDL applications
-    SDL_VIDEODRIVER = "wayland";
-    
-    # Cursor theme
-    XCURSOR_THEME = "Adwaita";
-    XCURSOR_SIZE = "24";
-  };
-  
-  # Audio Configuration
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
-  
-  # PAM for GNOME Keyring
-  security.pam.services = {
-    gdm.enableGnomeKeyring = true;
-    login.enableGnomeKeyring = true;
-  };
+  # Note: Audio config in modules/core/audio
+  # Note: D-Bus config in modules/core/services  
+  # Note: PAM config in modules/core/pam
+  # Note: Wayland environment variables in modules/core/wayland
 }
 
