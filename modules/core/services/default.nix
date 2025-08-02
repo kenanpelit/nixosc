@@ -7,29 +7,45 @@
 # - SSD optimization
 # - D-Bus configuration
 # - Input device services
+# - System maintenance
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { pkgs, ... }:
 {
   services = {
+    # Filesystem Services
     gvfs.enable = true;       # Virtual filesystem support
     fstrim.enable = true;     # SSD optimization service
     
     # D-Bus Configuration
     dbus = {
       enable = true;
-      packages = [ pkgs.gcr ];  # GPG and encryption infrastructure
+      packages = with pkgs; [ 
+        gcr           # GPG and encryption infrastructure
+        gnome.gnome-keyring  # Keyring support
+      ];
     };
     
     # Input Device Services
-    touchegg.enable = false;    # Touchscreen gesture service
+    touchegg.enable = false;    # Touchscreen gesture service (disabled)
     
-    # Ad Blocking
-    hblock.enable = true;      # Enable hBlock for ad blocking
-
-    # Firmware Update Service
-    fwupd.enable = true;       # Enable firmware update daemon
+    # System Security & Maintenance
+    hblock.enable = true;      # Ad blocking service
+    fwupd.enable = true;       # Firmware update daemon
+    
+    # Power Management
+    power-profiles-daemon.enable = true;  # Power profile management
+    
+    # Thumbnail Generation
+    tumbler.enable = true;     # Thumbnail service for file managers
+    
+    # Print Support (optional - enable if needed)
+    printing.enable = false;   # CUPS printing system
+    avahi = {                 # Network discovery
+      enable = false;         # Enable if you use network printers
+      nssmdns4 = false;
+    };
   };
 }
+

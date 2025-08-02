@@ -9,7 +9,6 @@
 #
 # Author: Kenan Pelit
 # ==============================================================================
-
 { ... }:
 {
   security = {
@@ -18,10 +17,17 @@
     
     # PAM Service Configuration
     pam.services = {
-      # Screen Locker Integration
-      swaylock.enableGnomeKeyring = true;
-      hyprlock.enableGnomeKeyring = true;
+      # Login and Authentication
       login.enableGnomeKeyring = true;
+      
+      # Screen Lockers
+      swaylock.enableGnomeKeyring = true;   # Sway screen locker
+      hyprlock.enableGnomeKeyring = true;   # Hyprland screen locker
+      
+      # System Authentication
+      sudo.enableGnomeKeyring = true;       # Sudo operations
+      polkit-1.enableGnomeKeyring = true;   # PolicyKit (GNOME privileges)
     };
   };
 }
+
