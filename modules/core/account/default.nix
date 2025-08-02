@@ -33,19 +33,18 @@
        "networkmanager"  # Network management permissions
        "wheel"           # Sudo access
        "input"           # Input device access
+       "audio"           # Audio device access
+       "video"           # Video device access
+       "storage"         # Storage device access
+       "libvirtd"        # Virtualization
+       "kvm"             # KVM virtualization
      ];
      shell = pkgs.zsh;
      uid = config.my.user.uid;
    };
    
-   # Passwordless sudo configuration
-   security.sudo.extraRules = [{
-     users = [ username ];
-     commands = [{
-       command = "ALL";     # Allow all commands
-       options = [ "NOPASSWD" ];  # No password required
-     }];
-   }];
+   # Passwordless sudo for wheel group members only
+   security.sudo.wheelNeedsPassword = false;
  };
 }
 
