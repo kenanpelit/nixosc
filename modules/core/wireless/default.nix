@@ -4,26 +4,26 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
-  # NetworkManager yapılandırması - en basit haliyle
+  # NetworkManager yapılandırması
   networking = {
     enableIPv6 = false;
-    wireless.enable = false;
+    wireless.enable = false;  # wpa_supplicant devre dışı (NetworkManager kullanıyor)
     
     networkmanager = {
       enable = true;
       wifi = {
         backend = "wpa_supplicant";
-        scanRandMacAddress = true;
-        powersave = false;
+        scanRandMacAddress = true;  # Privacy için MAC randomization
+        powersave = false;          # Performance için power save kapalı
       };
+      
+      # DNS management - delegate to systemd-resolved
+      dns = "systemd-resolved";
     };
   };
   
-  # DNS çözümleme servisi
-  services.resolved = {
-    enable = true;
-    dnssec = "false";
-    fallbackDns = [ "1.1.1.1" "8.8.8.8" ];
-  };
+  # Note: DNS configuration handled in modules/core/dns
+  # systemd-resolved basic setup for NetworkManager integration
+  services.resolved.enable = true;
 }
 
