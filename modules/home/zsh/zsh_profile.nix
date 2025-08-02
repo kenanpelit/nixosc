@@ -13,8 +13,8 @@
         # TTY4-6: QEMU VMs with Sway
         # =============================================================================
 
-        # Only run auto-start if no display server is already running
-        if [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ]; then
+        # Only run if this is a login shell and no desktop is running
+        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
             
             # ==========================================================================
             # TTY1: Hyprland Wayland Compositor
