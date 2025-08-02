@@ -50,7 +50,7 @@
     mpv.enable = lib.mkDefault true;          # Media player
     
     # === Desktop Theming ===
-    gtk.enable = lib.mkDefault false;         # GTK theming disabled - handled by GTK module (deprecated upstream)
+    # gtk.enable = lib.mkDefault false;       # DEPRECATED: GTK theming disabled - upstream archived, manual GTK config used instead
     cursors.enable = lib.mkDefault true;      # Cursor theming enabled - works fine
   };
 }
