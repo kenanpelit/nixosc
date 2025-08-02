@@ -22,23 +22,23 @@
     dbus = {
       enable = true;
       packages = with pkgs; [ 
-        gcr           # GPG and encryption infrastructure
-        gnome.gnome-keyring  # Keyring support
+        gcr                   # GPG and encryption infrastructure
+        gnome-keyring         # Keyring support
       ];
     };
     
     # Input Device Services
-    touchegg.enable = false;    # Touchscreen gesture service (disabled)
+    touchegg.enable = false;  # Touchscreen gesture service (disabled)
     
     # System Security & Maintenance
-    hblock.enable = true;      # Ad blocking service
-    fwupd.enable = true;       # Firmware update daemon
+    hblock.enable = true;     # Ad blocking service
+    fwupd.enable = true;      # Firmware update daemon
     
     # Thumbnail Generation
-    tumbler.enable = true;     # Thumbnail service for file managers
+    tumbler.enable = true;    # Thumbnail service for file managers
     
     # Print Support (optional - enable if needed)
-    printing.enable = false;   # CUPS printing system
+    printing.enable = false;  # CUPS printing system
     avahi = {                 # Network discovery
       enable = false;         # Enable if you use network printers
       nssmdns4 = false;
