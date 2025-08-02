@@ -69,7 +69,7 @@ in
     # Icon Theme Settings - BeautyLine
     # ---------------------------------------------------------------------------
     iconTheme = {
-      name = "a-candy-beauty-icon-theme";
+      name = lib.mkForce "a-candy-beauty-icon-theme";
       # BeautyLine paketi zaten modules/home/candy/default.nix'de tanımlı
     };
 
@@ -101,7 +101,7 @@ in
     # ---------------------------------------------------------------------------
     gtk3.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
-      gtk-icon-theme-name = "a-candy-beauty-icon-theme";
+      gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
@@ -120,7 +120,7 @@ in
     # ---------------------------------------------------------------------------
     gtk4.extraConfig = {
       gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
-      gtk-icon-theme-name = "a-candy-beauty-icon-theme";
+      gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       gtk-application-prefer-dark-theme = 1;
       gtk-button-images = 1;
