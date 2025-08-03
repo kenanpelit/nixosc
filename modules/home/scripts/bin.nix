@@ -156,6 +156,9 @@ let
   osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
     builtins.readFile ./bin/osc-gpg_unlock.sh
   );
+  osc-hypr-update = pkgs.writeShellScriptBin "osc-hypr-update" (
+    builtins.readFile ./bin/osc-hypr-update.sh
+  );
   osc-mullvad = pkgs.writeShellScriptBin "osc-mullvad" (
     builtins.readFile ./bin/osc-mullvad.sh
   );
@@ -438,6 +441,7 @@ in {
     osc-generate_nix
     osc-gist
     osc-gpg_unlock
+    osc-hypr-update
     osc-mullvad
     osc-nix-cleanup-script
     osc-pass-tool
