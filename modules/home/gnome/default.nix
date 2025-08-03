@@ -1232,61 +1232,64 @@ in
     '';
 
     # ==========================================================================
-    # Systemd User Services (Enhanced)
+    # Systemd User Services (Enhanced) - TEMPORARILY DISABLED FOR PERFORMANCE
     # ==========================================================================
     systemd.user.services = {
-      # Disable GSD Power Daemon for Lid Switch
-      disable-gsd-power = {
-        Unit = {
-          Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
-          After = [ "gnome-session.target" ];
-        };
-        Service = {
-          Type = "oneshot";
-          ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
-          RemainAfterExit = true;
-        };
-        Install = {
-          WantedBy = [ "gnome-session.target" ];
-        };
-      };
-
-      # Dynamic Catppuccin Theme Validation Service
-      catppuccin-theme-validation = {
-        Unit = {
-          Description = "Validate Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} Theme Installation";
-          After = [ "gnome-session.target" ];
-        };
-        Service = {
-          Type = "oneshot";
-          ExecStart = pkgs.writeShellScript "validate-catppuccin" ''
-            #!/bin/bash
-            # Check if Dynamic Catppuccin theme is properly applied
-            current_gtk_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface gtk-theme)
-            expected_theme="catppuccin-${flavor}-${accent}"
-            if [[ "$current_gtk_theme" == *"$expected_theme"* ]]; then
-              echo "✅ Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} GTK theme is active"
-            else
-              echo "⚠️  Dynamic Catppuccin theme is not active: $current_gtk_theme"
-              echo "Expected: $expected_theme"
-            fi
-            
-            current_icon_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface icon-theme)
-            if [[ "$current_icon_theme" == *"candy-beauty"* ]]; then
-              echo "✅ Candy Beauty icon theme is active"
-            else
-              echo "⚠️  Using default icon theme: $current_icon_theme"
-            fi
-            
-            echo "🎨 Current flavor: ${flavor}"
-            echo "🎯 Current accent: ${accent}"
-          '';
-          RemainAfterExit = true;
-        };
-        Install = {
-          WantedBy = [ "gnome-session.target" ];
-        };
-      };
+     # NOTE: These services are commented out to improve GNOME startup time
+     # They were causing ~8-10 second delay during login
+     
+     # Disable GSD Power Daemon for Lid Switch
+     # disable-gsd-power = {
+     #   Unit = {
+     #     Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
+     #     After = [ "gnome-session.target" ];
+     #   };
+     #   Service = {
+     #     Type = "oneshot";
+     #     ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
+     #     RemainAfterExit = true;
+     #   };
+     #   Install = {
+     #     WantedBy = [ "gnome-session.target" ];
+     #   };
+     # };
+     
+     # Dynamic Catppuccin Theme Validation Service
+     # catppuccin-theme-validation = {
+     #   Unit = {
+     #     Description = "Validate Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} Theme Installation";
+     #     After = [ "gnome-session.target" ];
+     #   };
+     #   Service = {
+     #     Type = "oneshot";
+     #     ExecStart = pkgs.writeShellScript "validate-catppuccin" ''
+     #       #!/bin/bash
+     #       # Check if Dynamic Catppuccin theme is properly applied
+     #       current_gtk_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface gtk-theme)
+     #       expected_theme="catppuccin-${flavor}-${accent}"
+     #       if [[ "$current_gtk_theme" == *"$expected_theme"* ]]; then
+     #         echo "✅ Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} GTK theme is active"
+     #       else
+     #         echo "⚠️  Dynamic Catppuccin theme is not active: $current_gtk_theme"
+     #         echo "Expected: $expected_theme"
+     #       fi
+     #       
+     #       current_icon_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface icon-theme)
+     #       if [[ "$current_icon_theme" == *"candy-beauty"* ]]; then
+     #         echo "✅ Candy Beauty icon theme is active"
+     #       else
+     #         echo "⚠️  Using default icon theme: $current_icon_theme"
+     #       fi
+     #       
+     #       echo "🎨 Current flavor: ${flavor}"
+     #       echo "🎯 Current accent: ${accent}"
+     #     '';
+     #     RemainAfterExit = true;
+     #   };
+     #   Install = {
+     #     WantedBy = [ "gnome-session.target" ];
+     #   };
+     # };
     };
 
     # ==========================================================================
