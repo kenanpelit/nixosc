@@ -392,6 +392,7 @@ in
       # Mutter (Window Manager) Settings - Optimized
       # ------------------------------------------------------------------------
       "org/gnome/mutter" = {
+        overlay-key = "";  # Super tuşunu boşalt
         edge-tiling = true;
         dynamic-workspaces = false;
         workspaces-only-on-primary = false;
@@ -412,6 +413,8 @@ in
           "kitty.desktop"
         ];
         enabled-extensions = cfg.extensions;
+        # Hot corner'ı kapat
+        enable-hot-corners = false;           # ✅ Sol üst köşe tetiklemez
         disabled-extensions = [];
       };
 
@@ -429,6 +432,7 @@ in
         show-window-previews = true;
         isolate-workspaces = false;
         group-apps = true;
+        show-overview-on-startup = false;
         
         # Panel boyut ayarları - Scripteki gibi 28px
         panel-sizes = ''{"0":28}'';
