@@ -74,6 +74,8 @@ in
         "gsconnect@andyholmes.github.io"
         "mullvadindicator@pobega.github.com"
         "user-theme@gnome-shell-extensions.gcampax.github.com"  # Shell tema için gerekli
+        "freon@UshakovVasilii_Github.yahoo.com"         # Sistem sıcaklık monitörü
+        "trayIconsReloaded@selfmade.pl"                 # System tray icon desteği
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -426,6 +428,36 @@ in
       # ------------------------------------------------------------------------
       # Extension Configurations - UPDATED & OPTIMIZED with Dynamic Catppuccin
       # ------------------------------------------------------------------------
+      
+      # Freon (Sıcaklık Monitörü) ayarları
+      "org/gnome/shell/extensions/freon" = {
+        hot-sensors = ["__average__"];        # Ortalama CPU sıcaklığı
+        show-decimal-value = false;           # Ondalık gösterme
+        show-fan-rpm = false;                 # Fan RPM gösterme (gereksiz)
+        show-voltage = false;                 # Voltaj gösterme (gereksiz)
+        position-in-panel = 0;               # Left position (vitals sağda)
+        show-icon-on-panel = true;           # İkon göster
+        unit = "celsius";                    # Celsius kullan
+        update-time = 3;                     # 3 saniye güncelleme
+      };
+
+      # Tray Icons Reloaded ayarları  
+      "org/gnome/shell/extensions/trayIconsReloaded" = {
+        icon-brightness = 0;                 # Icon parlaklığı (0=normal)
+        icon-contrast = 0;                   # Icon kontrastı (0=normal)
+        icon-margin-horizontal = 4;          # Yatay margin
+        icon-margin-vertical = 0;            # Dikey margin
+        icon-padding-horizontal = 8;         # Yatay padding
+        icon-padding-vertical = 0;           # Dikey padding
+        icon-saturation = 0;                 # Icon doygunluk (0=normal)
+        icon-size = 16;                      # Icon boyutu (kompakt)
+        icons-limit = 5;                     # Maksimum icon sayısı
+        invoke-to-workspace = false;         # Workspace'e çağırma
+        position-weight = 1;                 # Panel pozisyon ağırlığı
+        tray-margin-left = 0;               # Sol margin
+        tray-margin-right = 4;              # Sağ margin (vitals'dan ayrı)
+        tray-position = "right";            # Sağ tarafta konumlandır
+      };
 
       # Just Perfection ayarları
       "org/gnome/shell/extensions/just-perfection" = {
