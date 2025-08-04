@@ -1,15 +1,19 @@
 # modules/core/nix/default.nix
 # ==============================================================================
-# Nix Settings Configuration - Simplified
+# Nix Ecosystem Configuration
 # ==============================================================================
-# This configuration manages core Nix settings including:
-# - Store optimization
-# - Garbage collection
+# This configuration manages Nix system settings including:
+# - Core Nix daemon and store optimization
+# - NH (Nix Helper) tool configuration
+# - Nixpkgs configuration and overlays
+# - Garbage collection and maintenance
+# - Package permissions and experimental features
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, inputs, username, ... }:
 {
+  # Core Nix Configuration
   nix = {
     settings = {
       # User Access Settings
@@ -36,13 +40,31 @@
       dates = [ "03:00" ];
     };
     
-    # Experimental Features - Always set, to make sure it's effective
+    # Experimental Features
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
   };
+
+  # Nixpkgs Configuration
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+    };
+    overlays = [ inputs.nur.overlays.default ];
+  };
+
+  # NH (Nix Helper) Configuration
+  programs.nh = {
+    enable = true;
+    clean = {
+      enable = true;
+      extraArgs = "--keep-since 7d --keep 5";  # Retention policy
+    };
+    flake = "/home/${username}/.nixosc";
+  };
   
-  # Add only essential Nix utilities 
+  # Nix Utilities
   environment.systemPackages = with pkgs; [
     nix-tree
   ];
