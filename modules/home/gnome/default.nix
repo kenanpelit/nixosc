@@ -61,6 +61,7 @@ in
         "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
         "bluetooth-quick-connect@bjarosze.gmail.com"
         "no-overview@fthx"
+        "just-perfection@jrahmatzadeh.gmail.com"  # Daha kapsamlı overview kontrolü
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
         "weatheroclock@CleoMenezesJr.github.io"
@@ -73,6 +74,9 @@ in
         "gsconnect@andyholmes.github.io"
         "mullvadindicator@pobega.github.com"
         "user-theme@gnome-shell-extensions.gcampax.github.com"  # Shell tema için gerekli
+        "freon@UshakovVasilii_Github.yahoo.com"         # Sistem sıcaklık monitörü
+        "trayIconsReloaded@selfmade.pl"                 # System tray icon desteği
+        "dual-monitor-toggle@poka-it.github.io"         # YENİ: İkinci monitör toggle
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -217,7 +221,10 @@ in
         clock-show-weekday = true;
         clock-show-date = true;
         enable-animations = true;
-        
+
+        # HOT CORNERS'I BURADA KAPAT
+        enable-hot-corners = false;           # ✅ Sol üst köşe tetiklemez
+
         # Dynamic accent color based on Catppuccin accent
         accent-color = if accent == "mauve" then "purple"
                       else if accent == "blue" then "blue"
@@ -374,7 +381,8 @@ in
       "org/gnome/shell/keybindings" = {
         show-applications = ["<Super>a"];
         show-screenshot-ui = ["<Super>Print"];
-        toggle-overview = ["<Super>s"];
+        #toggle-overview = ["<Super>s"];
+        toggle-overview = [""];
         
         # Application switching keybinding'larını kapat (workspace çakışması için)
         switch-to-application-1 = [];
@@ -392,10 +400,12 @@ in
       # Mutter (Window Manager) Settings - Optimized
       # ------------------------------------------------------------------------
       "org/gnome/mutter" = {
+        overlay-key = "";  # Super tuşunu boşalt
         edge-tiling = true;
         dynamic-workspaces = false;
         workspaces-only-on-primary = false;
         center-new-windows = true;
+        workspaces-only-on-primary = false;   # Tek monitörde workspace
   
         # Focus ayarları
         focus-change-on-pointer-rest = true;
@@ -412,6 +422,7 @@ in
           "kitty.desktop"
         ];
         enabled-extensions = cfg.extensions;
+        # Hot corner'ı kapat
         disabled-extensions = [];
       };
 
@@ -419,6 +430,88 @@ in
       # Extension Configurations - UPDATED & OPTIMIZED with Dynamic Catppuccin
       # ------------------------------------------------------------------------
       
+      # Dual Monitor Toggle ayarları
+      "org/gnome/shell/extensions/dual-monitor-toggle" = {
+        show-in-quick-settings = true;       # Quick settings'te göster
+        show-notification = true;            # Değişimde bildirim göster
+        auto-detect-monitors = true;         # Monitörleri otomatik algıla
+        toggle-primary-only = false;         # Sadece primary'yi değiştirme
+      };
+
+      # Multi Monitors Add-On ayarları
+      "org/gnome/shell/extensions/multi-monitors-add-on" = {
+        show-panel = true;                   # Her monitörde panel göster
+        show-activities-button = false;      # Activities button sadece primary'de
+        show-app-menu = false;              # App menu sadece primary'de
+        show-date-time = true;              # Her monitörde saat göster
+        show-indicator = true;              # Her monitörde indicator'lar
+      };     
+
+      # Freon (Sıcaklık Monitörü) ayarları
+      "org/gnome/shell/extensions/freon" = {
+        hot-sensors = ["__average__"];        # Ortalama CPU sıcaklığı
+        show-decimal-value = false;           # Ondalık gösterme
+        show-fan-rpm = false;                 # Fan RPM gösterme (gereksiz)
+        show-voltage = false;                 # Voltaj gösterme (gereksiz)
+        position-in-panel = 0;               # Left position (vitals sağda)
+        show-icon-on-panel = true;           # İkon göster
+        unit = "celsius";                    # Celsius kullan
+        update-time = 3;                     # 3 saniye güncelleme
+      };
+
+      # Tray Icons Reloaded ayarları  
+      "org/gnome/shell/extensions/trayIconsReloaded" = {
+        icon-brightness = 0;                 # Icon parlaklığı (0=normal)
+        icon-contrast = 0;                   # Icon kontrastı (0=normal)
+        icon-margin-horizontal = 4;          # Yatay margin
+        icon-margin-vertical = 0;            # Dikey margin
+        icon-padding-horizontal = 8;         # Yatay padding
+        icon-padding-vertical = 0;           # Dikey padding
+        icon-saturation = 0;                 # Icon doygunluk (0=normal)
+        icon-size = 16;                      # Icon boyutu (kompakt)
+        icons-limit = 5;                     # Maksimum icon sayısı
+        invoke-to-workspace = false;         # Workspace'e çağırma
+        position-weight = 1;                 # Panel pozisyon ağırlığı
+        tray-margin-left = 0;               # Sol margin
+        tray-margin-right = 4;              # Sağ margin (vitals'dan ayrı)
+        tray-position = "right";            # Sağ tarafta konumlandır
+      };
+
+      # Just Perfection ayarları
+      "org/gnome/shell/extensions/just-perfection" = {
+      # Core - Overview tamamen kapat
+        overview = false;
+        activities-button = false;
+        show-apps-button = false;
+        workspace-switcher-should-show = false;
+        startup-status = 0;                 # Desktop'ta başla
+  
+        # Interface - Gereksizleri gizle
+        search = true;                      # Walker kullanıyorsun zaten
+        dash = false;                       # Dash-to-panel varken gereksiz
+        accessibility-menu = false;         # Kullanmıyorsan kapat
+        keyboard-layout = false;            # Tek dil kullanıyorsan kapat
+  
+        # Performance - Hızlandır
+        animation = 1;                      # Animasyonları hızlandır
+        workspace-wrap-around = true;       # Döngüsel workspace geçişi
+        window-demands-attention-focus = true; # Otomatik focus
+  
+        # Notifications - Optimize et  
+        #notification-banner-position = 1;   # 0=top, 1=bottom, 2=top-center
+        notification-banner-position = 2;   # Top-center (cleaner look)
+        osd = true;                        # Ses/parlaklık göstergesi aç
+  
+        # Keep useful stuff
+        panel = true;                      # Top panel'i koru
+        quick-settings = true;             # Hızlı ayarlar koru
+        clock-menu = true;                 # Saat menüsü koru
+        calendar = true;                   # Takvim koru
+  
+        # Disable theme override
+        theme = false;                     # Catppuccin temasını bozmasın
+      };
+
       # Dash to Panel - Enhanced with Dynamic Catppuccin colors
       "org/gnome/shell/extensions/dash-to-panel" = {
         # Temel panel ayarları
@@ -429,6 +522,7 @@ in
         show-window-previews = true;
         isolate-workspaces = false;
         group-apps = true;
+        show-overview-on-startup = false;
         
         # Panel boyut ayarları - Scripteki gibi 28px
         panel-sizes = ''{"0":28}'';
@@ -1232,61 +1326,64 @@ in
     '';
 
     # ==========================================================================
-    # Systemd User Services (Enhanced)
+    # Systemd User Services (Enhanced) - TEMPORARILY DISABLED FOR PERFORMANCE
     # ==========================================================================
     systemd.user.services = {
-      # Disable GSD Power Daemon for Lid Switch
-      disable-gsd-power = {
-        Unit = {
-          Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
-          After = [ "gnome-session.target" ];
-        };
-        Service = {
-          Type = "oneshot";
-          ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
-          RemainAfterExit = true;
-        };
-        Install = {
-          WantedBy = [ "gnome-session.target" ];
-        };
-      };
-
-      # Dynamic Catppuccin Theme Validation Service
-      catppuccin-theme-validation = {
-        Unit = {
-          Description = "Validate Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} Theme Installation";
-          After = [ "gnome-session.target" ];
-        };
-        Service = {
-          Type = "oneshot";
-          ExecStart = pkgs.writeShellScript "validate-catppuccin" ''
-            #!/bin/bash
-            # Check if Dynamic Catppuccin theme is properly applied
-            current_gtk_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface gtk-theme)
-            expected_theme="catppuccin-${flavor}-${accent}"
-            if [[ "$current_gtk_theme" == *"$expected_theme"* ]]; then
-              echo "✅ Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} GTK theme is active"
-            else
-              echo "⚠️  Dynamic Catppuccin theme is not active: $current_gtk_theme"
-              echo "Expected: $expected_theme"
-            fi
-            
-            current_icon_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface icon-theme)
-            if [[ "$current_icon_theme" == *"candy-beauty"* ]]; then
-              echo "✅ Candy Beauty icon theme is active"
-            else
-              echo "⚠️  Using default icon theme: $current_icon_theme"
-            fi
-            
-            echo "🎨 Current flavor: ${flavor}"
-            echo "🎯 Current accent: ${accent}"
-          '';
-          RemainAfterExit = true;
-        };
-        Install = {
-          WantedBy = [ "gnome-session.target" ];
-        };
-      };
+     # NOTE: These services are commented out to improve GNOME startup time
+     # They were causing ~8-10 second delay during login
+     
+     # Disable GSD Power Daemon for Lid Switch
+     # disable-gsd-power = {
+     #   Unit = {
+     #     Description = "Disable GNOME Settings Daemon Power Plugin for lid switch";
+     #     After = [ "gnome-session.target" ];
+     #   };
+     #   Service = {
+     #     Type = "oneshot";
+     #     ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && ${pkgs.procps}/bin/pkill -f gsd-power || true'";
+     #     RemainAfterExit = true;
+     #   };
+     #   Install = {
+     #     WantedBy = [ "gnome-session.target" ];
+     #   };
+     # };
+     
+     # Dynamic Catppuccin Theme Validation Service
+     # catppuccin-theme-validation = {
+     #   Unit = {
+     #     Description = "Validate Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} Theme Installation";
+     #     After = [ "gnome-session.target" ];
+     #   };
+     #   Service = {
+     #     Type = "oneshot";
+     #     ExecStart = pkgs.writeShellScript "validate-catppuccin" ''
+     #       #!/bin/bash
+     #       # Check if Dynamic Catppuccin theme is properly applied
+     #       current_gtk_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface gtk-theme)
+     #       expected_theme="catppuccin-${flavor}-${accent}"
+     #       if [[ "$current_gtk_theme" == *"$expected_theme"* ]]; then
+     #         echo "✅ Dynamic Catppuccin ${lib.strings.toUpper (lib.substring 0 1 flavor)}${lib.substring 1 (-1) flavor} ${lib.strings.toUpper (lib.substring 0 1 accent)}${lib.substring 1 (-1) accent} GTK theme is active"
+     #       else
+     #         echo "⚠️  Dynamic Catppuccin theme is not active: $current_gtk_theme"
+     #         echo "Expected: $expected_theme"
+     #       fi
+     #       
+     #       current_icon_theme=$(${pkgs.glib}/bin/gsettings get org.gnome.desktop.interface icon-theme)
+     #       if [[ "$current_icon_theme" == *"candy-beauty"* ]]; then
+     #         echo "✅ Candy Beauty icon theme is active"
+     #       else
+     #         echo "⚠️  Using default icon theme: $current_icon_theme"
+     #       fi
+     #       
+     #       echo "🎨 Current flavor: ${flavor}"
+     #       echo "🎯 Current accent: ${accent}"
+     #     '';
+     #     RemainAfterExit = true;
+     #   };
+     #   Install = {
+     #     WantedBy = [ "gnome-session.target" ];
+     #   };
+     # };
     };
 
     # ==========================================================================
