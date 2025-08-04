@@ -61,6 +61,7 @@ in
         "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
         "bluetooth-quick-connect@bjarosze.gmail.com"
         "no-overview@fthx"
+        "just-perfection@jrahmatzadeh.gmail.com"  # Daha kapsamlı overview kontrolü
         "Vitals@CoreCoding.com"
         "tilingshell@ferrarodomenico.com"
         "weatheroclock@CleoMenezesJr.github.io"
@@ -217,7 +218,10 @@ in
         clock-show-weekday = true;
         clock-show-date = true;
         enable-animations = true;
-        
+
+        # HOT CORNERS'I BURADA KAPAT
+        enable-hot-corners = false;           # ✅ Sol üst köşe tetiklemez
+
         # Dynamic accent color based on Catppuccin accent
         accent-color = if accent == "mauve" then "purple"
                       else if accent == "blue" then "blue"
@@ -374,7 +378,8 @@ in
       "org/gnome/shell/keybindings" = {
         show-applications = ["<Super>a"];
         show-screenshot-ui = ["<Super>Print"];
-        toggle-overview = ["<Super>s"];
+        #toggle-overview = ["<Super>s"];
+        toggle-overview = [""];
         
         # Application switching keybinding'larını kapat (workspace çakışması için)
         switch-to-application-1 = [];
@@ -397,6 +402,7 @@ in
         dynamic-workspaces = false;
         workspaces-only-on-primary = false;
         center-new-windows = true;
+        workspaces-only-on-primary = true;   # Tek monitörde workspace
   
         # Focus ayarları
         focus-change-on-pointer-rest = true;
@@ -414,14 +420,47 @@ in
         ];
         enabled-extensions = cfg.extensions;
         # Hot corner'ı kapat
-        enable-hot-corners = false;           # ✅ Sol üst köşe tetiklemez
         disabled-extensions = [];
       };
 
       # ------------------------------------------------------------------------
       # Extension Configurations - UPDATED & OPTIMIZED with Dynamic Catppuccin
       # ------------------------------------------------------------------------
-      
+
+      # Just Perfection ayarları
+      "org/gnome/shell/extensions/just-perfection" = {
+      # Core - Overview tamamen kapat
+        overview = false;
+        activities-button = false;
+        show-apps-button = false;
+        workspace-switcher-should-show = false;
+        startup-status = 0;                 # Desktop'ta başla
+  
+        # Interface - Gereksizleri gizle
+        search = true;                      # Walker kullanıyorsun zaten
+        dash = false;                       # Dash-to-panel varken gereksiz
+        accessibility-menu = false;         # Kullanmıyorsan kapat
+        keyboard-layout = false;            # Tek dil kullanıyorsan kapat
+  
+        # Performance - Hızlandır
+        animation = 1;                      # Animasyonları hızlandır
+        workspace-wrap-around = true;       # Döngüsel workspace geçişi
+        window-demands-attention-focus = true; # Otomatik focus
+  
+        # Notifications - Optimize et  
+        notification-banner-position = 2;   # Top-center (cleaner look)
+        osd = true;                        # Ses/parlaklık göstergesi aç
+  
+        # Keep useful stuff
+        panel = true;                      # Top panel'i koru
+        quick-settings = true;             # Hızlı ayarlar koru
+        clock-menu = true;                 # Saat menüsü koru
+        calendar = true;                   # Takvim koru
+  
+        # Disable theme override
+        theme = false;                     # Catppuccin temasını bozmasın
+      };
+
       # Dash to Panel - Enhanced with Dynamic Catppuccin colors
       "org/gnome/shell/extensions/dash-to-panel" = {
         # Temel panel ayarları
