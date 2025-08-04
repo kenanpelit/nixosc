@@ -73,15 +73,12 @@
     # =============================================================================
     # Virtualization & Containers
     # =============================================================================
-    ./containers    # Container registry and runtime configuration
-    ./podman        # Podman container engine and Docker compatibility
-    ./spice         # SPICE guest services and USB redirection
-    ./vm            # Virtual machine configuration and management
+    ./virtualisation # Container runtime (Podman), VM engine (LibvirtD/QEMU), and virtualisation services
+    ./spice          # SPICE guest services and USB redirection
     
     # =============================================================================
     # Gaming & Performance
     # =============================================================================
-    ./gamescope     # Gaming compositor and performance optimization
-    ./steam         # Steam gaming platform and compatibility layers
+    ./gaming        # Steam platform, Gamescope compositor, and gaming performance optimization
   ];
 }
