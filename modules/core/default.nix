@@ -40,7 +40,6 @@
     ./x11           # X11 display server configuration
     ./xdg           # Desktop portals and integration
     ./audio         # Audio system, PipeWire, and sound management
-    ./bluetooth     # Bluetooth device management and protocols
     
     # =============================================================================
     # Network & Connectivity
