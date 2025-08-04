@@ -22,7 +22,7 @@ readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/gnome"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
-readonly DEFAULT_WAIT_TIME=3
+readonly DEFAULT_WAIT_TIME=2
 
 # Colors
 if [[ -t 1 ]]; then
