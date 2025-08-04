@@ -7,12 +7,19 @@
 # - SSD optimization
 # - D-Bus configuration
 # - Input device services
+# - Bluetooth support
 # - System maintenance
 #
 # Author: Kenan Pelit
 # ==============================================================================
 { pkgs, ... }:
 {
+  # Hardware Configuration
+  hardware.bluetooth = {
+    enable = true;        # Enable Bluetooth support
+    powerOnBoot = true;   # Auto-start on boot
+  };
+
   services = {
     # Filesystem Services
     gvfs.enable = true;       # Virtual filesystem support
@@ -26,6 +33,9 @@
         gnome-keyring         # Keyring support
       ];
     };
+    
+    # Bluetooth Management
+    blueman.enable = true;    # Bluetooth management interface
     
     # Input Device Services
     touchegg.enable = false;  # Touchscreen gesture service (disabled)
