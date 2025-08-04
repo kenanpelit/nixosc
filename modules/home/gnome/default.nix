@@ -76,6 +76,7 @@ in
         "user-theme@gnome-shell-extensions.gcampax.github.com"  # Shell tema için gerekli
         "freon@UshakovVasilii_Github.yahoo.com"         # Sistem sıcaklık monitörü
         "trayIconsReloaded@selfmade.pl"                 # System tray icon desteği
+        "dual-monitor-toggle@poka-it.github.io"         # YENİ: İkinci monitör toggle
       ];
       description = "List of GNOME Shell extension UUIDs to enable by default";
     };
@@ -404,7 +405,7 @@ in
         dynamic-workspaces = false;
         workspaces-only-on-primary = false;
         center-new-windows = true;
-        workspaces-only-on-primary = true;   # Tek monitörde workspace
+        workspaces-only-on-primary = false;   # Tek monitörde workspace
   
         # Focus ayarları
         focus-change-on-pointer-rest = true;
@@ -429,6 +430,23 @@ in
       # Extension Configurations - UPDATED & OPTIMIZED with Dynamic Catppuccin
       # ------------------------------------------------------------------------
       
+      # Dual Monitor Toggle ayarları
+      "org/gnome/shell/extensions/dual-monitor-toggle" = {
+        show-in-quick-settings = true;       # Quick settings'te göster
+        show-notification = true;            # Değişimde bildirim göster
+        auto-detect-monitors = true;         # Monitörleri otomatik algıla
+        toggle-primary-only = false;         # Sadece primary'yi değiştirme
+      };
+
+      # Multi Monitors Add-On ayarları
+      "org/gnome/shell/extensions/multi-monitors-add-on" = {
+        show-panel = true;                   # Her monitörde panel göster
+        show-activities-button = false;      # Activities button sadece primary'de
+        show-app-menu = false;              # App menu sadece primary'de
+        show-date-time = true;              # Her monitörde saat göster
+        show-indicator = true;              # Her monitörde indicator'lar
+      };     
+
       # Freon (Sıcaklık Monitörü) ayarları
       "org/gnome/shell/extensions/freon" = {
         hot-sensors = ["__average__"];        # Ortalama CPU sıcaklığı
@@ -480,6 +498,7 @@ in
         window-demands-attention-focus = true; # Otomatik focus
   
         # Notifications - Optimize et  
+        #notification-banner-position = 1;   # 0=top, 1=bottom, 2=top-center
         notification-banner-position = 2;   # Top-center (cleaner look)
         osd = true;                        # Ses/parlaklık göstergesi aç
   
