@@ -13,72 +13,65 @@
 # ==============================================================================
 { inputs, nixpkgs, self, username, host, lib, ... }:
 {
-  imports = [
-    # =============================================================================
-    # System Foundation
-    # =============================================================================
-    ./account       # User account management and configuration
-    ./boot          # Boot loader and kernel configuration
-    ./hardware      # Hardware-specific settings and drivers
-    ./system        # Core system settings and configuration
-    ./power         # Power management and thermal control
-    
-    # =============================================================================
-    # Package Management & Development
-    # =============================================================================
-    ./nix           # Nix daemon settings and store optimization
-    ./nixpkgs       # Package configuration, overlays, and unfree packages
-    ./packages      # System-wide package management
-    ./cache         # Build cache and substituter configuration
-    ./nh            # Nix Helper tool for easier system management
-    
-    # =============================================================================
-    # Desktop Environment & Media
-    # =============================================================================
-    ./fonts         # Font configuration and rendering optimization
-    ./wayland       # Wayland compositor and protocols
-    ./x11           # X11 display server configuration
-    ./xdg           # Desktop portals and integration
-    ./audio         # Audio system, PipeWire, and sound management
-    
-    # =============================================================================
-    # Network & Connectivity
-    # =============================================================================
-    ./dns           # DNS configuration and nameserver management
-    ./firewall      # Firewall rules and network security
-    ./powersave     # Network power optimization and WiFi tuning
-    ./ssh           # SSH server and client configuration
-    ./tcp           # TCP optimization and network performance
-    ./vpn           # VPN client configuration and routing
-    ./wireless      # WiFi management and wireless networking
-    
-    # =============================================================================
-    # Security & Authentication
-    # =============================================================================
-    ./keyring       # Credential storage and GNOME keyring integration
-    ./pam           # Pluggable Authentication Modules
-    ./security      # System security policies and hardening
-    ./sops          # Secrets management and encryption
-    ./hblock        # DNS-based ad blocking and filtering
-    
-    # =============================================================================
-    # Services & Applications
-    # =============================================================================
-    ./services      # Core system services and daemons
-    ./flatpak       # Flatpak application sandboxing and management
-    ./transmission  # BitTorrent client and network configuration
-    ./home          # Home directory management and user environment
-    ./programs      # Core program defaults and system-wide settings
-    
-    # =============================================================================
-    # Virtualization & Containers
-    # =============================================================================
-    ./virtualisation # Container runtime (Podman), VM engine (LibvirtD/QEMU), and virtualisation services
-    ./spice          # SPICE guest services and USB redirection
-    
-    # =============================================================================
-    # Gaming & Performance
-    # =============================================================================
-    ./gaming        # Steam platform, Gamescope compositor, and gaming performance optimization
-  ];
+ imports = [
+   # =============================================================================
+   # System Foundation
+   # =============================================================================
+   ./account       # User account management, authentication, and keyring integration
+   ./boot          # Boot loader and kernel configuration
+   ./hardware      # Hardware-specific settings and drivers
+   ./system        # Core system settings and configuration
+   ./power         # Power management, thermal control, and WiFi optimization
+   
+   # =============================================================================
+   # Package Management & Development
+   # =============================================================================
+   ./nix           # Nix daemon settings and store optimization
+   ./nixpkgs       # Package configuration, overlays, and unfree packages
+   ./packages      # System-wide package management
+   ./cache         # Build cache and substituter configuration
+   ./nh            # Nix Helper tool for easier system management
+   
+   # =============================================================================
+   # Desktop Environment & Media
+   # =============================================================================
+   ./fonts         # Font configuration and rendering optimization
+   ./display       # X11, Wayland, GDM, GNOME, and Hyprland configuration
+   ./xdg           # Desktop portals and integration
+   ./audio         # Audio system, PipeWire, and sound management
+   
+   # =============================================================================
+   # Network & Connectivity
+   # =============================================================================
+   ./networking    # DNS, WiFi, VPN (Mullvad), and network management
+   ./tcp           # TCP optimization and network performance
+   
+   # =============================================================================
+   # Security & Authentication
+   # =============================================================================
+   ./security      # Firewall, PAM, SSH, PolicyKit, and system security hardening
+   ./sops          # Secrets management and encryption
+   ./hblock        # DNS-based ad blocking and filtering
+   
+   # =============================================================================
+   # Services & Applications
+   # =============================================================================
+   ./services      # Core system services, Bluetooth, and daemons
+   ./flatpak       # Flatpak application sandboxing and management
+   ./transmission  # BitTorrent client and network configuration
+   ./home          # Home directory management and user environment
+   ./programs      # Core program defaults and system-wide settings
+   
+   # =============================================================================
+   # Virtualization & Containers
+   # =============================================================================
+   ./virtualisation # Container runtime (Podman), VM engine (LibvirtD/QEMU), and virtualisation services
+   ./spice          # SPICE guest services and USB redirection
+   
+   # =============================================================================
+   # Gaming & Performance
+   # =============================================================================
+   ./gaming        # Steam platform, Gamescope compositor, and gaming performance optimization
+ ];
 }
+

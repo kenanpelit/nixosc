@@ -1,20 +1,27 @@
-# modules/core/x11/default.nix
+# modules/core/display/default.nix
 # ==============================================================================
-# X Server & Display Manager Configuration
+# Display System Configuration
 # ==============================================================================
-# This configuration manages display server settings including:
-# - X Server setup (also needed for Wayland)
-# - Display manager configuration (GDM for GNOME + Hyprland)
-# - Desktop environment setup
-# - Session management
+# This configuration manages display server and compositor settings including:
+# - X Server setup (for compatibility and fallback)
+# - Wayland compositor (Hyprland) configuration
+# - Display manager setup (GDM for GNOME + Hyprland)
+# - Desktop environment configuration (GNOME)
+# - Session management and input devices
 #
 # Author: Kenan Pelit
-# Modified: 2025-08-02 (Cleaned conflicts)
 # ==============================================================================
 { username, inputs, pkgs, ... }:
 {
+  # Wayland Compositor - Hyprland
+  programs.hyprland = {
+    enable = true;
+    package = inputs.hyprland.packages.${pkgs.system}.default;
+    portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  };
+
   services = {
-    # X Server Settings
+    # X Server Settings (needed for compatibility)
     xserver = {
       enable = true;
       
@@ -65,9 +72,10 @@
     '';
   };
   
+  # Note: Environment variables managed by TTY-specific profile scripts
+  # This avoids conflicts between GNOME and Hyprland sessions
   # Note: Audio config in modules/core/audio
   # Note: D-Bus config in modules/core/services  
-  # Note: PAM config in modules/core/pam
-  # Note: Wayland environment variables in modules/core/wayland
+  # Note: PAM config in modules/core/security
 }
 
