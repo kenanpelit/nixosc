@@ -26,11 +26,9 @@
    # =============================================================================
    # Package Management & Development
    # =============================================================================
-   ./nix           # Nix daemon settings and store optimization
-   ./nixpkgs       # Package configuration, overlays, and unfree packages
+   ./nix           # Nix ecosystem: daemon, store optimization, NH helper, and nixpkgs configuration
    ./packages      # System-wide package management
    ./cache         # Build cache and substituter configuration
-   ./nh            # Nix Helper tool for easier system management
    
    # =============================================================================
    # Desktop Environment & Media
@@ -65,8 +63,7 @@
    # =============================================================================
    # Virtualization & Containers
    # =============================================================================
-   ./virtualisation # Container runtime (Podman), VM engine (LibvirtD/QEMU), and virtualisation services
-   ./spice          # SPICE guest services and USB redirection
+   ./virtualisation # Container runtime (Podman), VM engine (LibvirtD/QEMU), and virtualisation services, SPICE guest services and USB redirection
    
    # =============================================================================
    # Gaming & Performance
