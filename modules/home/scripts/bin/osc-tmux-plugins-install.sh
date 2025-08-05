@@ -1,91 +1,128 @@
 #!/usr/bin/env bash
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# ❱❱❱ Tmux Plugin Installer Script
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#######################################
+#
+# Version: 1.0.0
+# Date: 2024-12-12
+# Author: Kenan Pelit
+# Repository: github.com/kenanpelit/dotfiles
+# Description: TmuxPluginManager - Tmux Plugin Yönetim Aracı
+#
+# Bu script tmux plugin'lerini yönetmek için tasarlanmış bir araçtır.
+# Temel özellikleri:
+# - Plugin dizinini otomatik oluşturma
+# - Önceden tanımlı plugin'leri kurma/güncelleme
+# - TPM (Tmux Plugin Manager) kurulumu
+# - Kurulum durumunu renkli loglar ile raporlama
+# - Tmux config'i otomatik yeniden yükleme
+#
+# Desteklenen Pluginler:
+# - Oturum yönetimi (resurrect, continuum, sessionist)
+# - Pencere yönetimi (window-name, nerd-font-window-name)
+# - Sistem bilgisi (net-speed, ssh-status, online-status)
+# - Arayüz geliştirmeleri (sensible, prefix-highlight)
+# - FZF entegrasyonları (fzf, fzf-url, fuzzback)
+# - Medya kontrolü (spotify-info, playerctl)
+#
+# Kurulum Dizini: ~/.config/tmux/plugins/
+#
+# License: MIT
+#
+#######################################
 
-PLUGIN_DIR="$HOME/.config/tmux/plugins"
-TPM_DIR="$PLUGIN_DIR/tpm"
+# Tmux plugin dizini
+TMUX_PLUGIN_DIR="$HOME/.config/tmux/plugins"
 
-# Plugin listesi
-PLUGINS=(
-	'tmux-plugins/tpm'
-	'tmux-plugins/tmux-sensible'
-	'tmux-plugins/tmux-open'
-	'kenanpelit/tmux-fzf-url'
-	'tmux-plugins/tmux-prefix-highlight'
-	'tmux-plugins/tmux-online-status'
-	'sainnhe/tmux-fzf'
-	'kenanpelit/tmux-ssh-status'
-	'lljbash/tmux-update-display'
-	'roosta/tmux-fuzzback'
-	'joshmedeski/tmux-nerd-font-window-name'
-	'vascomfnunes/tmux-kripto'
-	'TheSast/tmux-nav-master'
-	'omerxx/tmux-sessionx'
-	'richin13/tmux-plugin-playerctl'
-	'tmux-plugins/tmux-resurrect'
-	'tmux-plugins/tmux-continuum'
-	'tmux-plugins/tmux-sessionist'
-	'fcsonline/tmux-thumbs'
-	'tmux-plugins/tmux-yank'
-	'tmux-plugins/tmux-pain-control'
-	'tmux-plugins/tmux-copycat'
-)
-
-# Renkli çıktı
+# Renk kodları
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-check_tmux() {
-	if [ -z "$TMUX" ]; then
-		echo -e "${RED}❌ Bu script tmux oturumu içinde çalıştırılmalı!${NC}"
-		echo -e "${YELLOW}💡 Çözüm: tmux new-session${NC}"
-		exit 1
-	fi
+# Log fonksiyonları
+log_info() {
+	echo -e "${GREEN}[INFO]${NC} $1"
 }
 
-install_plugins() {
-	echo -e "${BLUE}🔄 Plugin kurulumu başlıyor...${NC}"
-
-	# Environment setup
-	tmux set-environment -g TMUX_PLUGIN_MANAGER_PATH "$PLUGIN_DIR"
-
-	# Plugin listesini oluştur
-	local plugin_string=$(
-		IFS=' '
-		echo "${PLUGINS[*]}"
-	)
-	tmux set -g @tpm_plugins "$plugin_string"
-
-	# Her plugin için ayrı ayrı set et
-	for plugin in "${PLUGINS[@]}"; do
-		tmux set -g @plugin "$plugin"
-	done
-
-	echo -e "${GREEN}✅ ${#PLUGINS[@]} plugin tmux'a tanımlandı${NC}"
-
-	# TPM kontrolü
-	if [ ! -f "$TPM_DIR/bin/install_plugins" ]; then
-		echo -e "${RED}❌ TPM bulunamadı!${NC}"
-		return 1
-	fi
-
-	# Pluginleri yükle
-	echo -e "${BLUE}📦 Pluginler indiriliyor...${NC}"
-	"$TPM_DIR/bin/install_plugins"
-
-	# Pluginleri aktif et
-	echo -e "${BLUE}🔌 Pluginler aktif ediliyor...${NC}"
-	"$TPM_DIR/tpm"
-
-	echo -e "${GREEN}🎉 Plugin kurulumu tamamlandı!${NC}"
-	echo -e "${YELLOW}💡 Yeni tmux oturumu açarak değişiklikleri görebilirsiniz.${NC}"
+log_warn() {
+	echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
-# Ana işlem
-check_tmux
-install_plugins
+log_error() {
+	echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Plugin dizinini oluştur
+mkdir -p "$TMUX_PLUGIN_DIR"
+
+# Plugin listesi
+declare -A plugins=(
+	["tpm"]="tmux-plugins/tpm"
+	["tmux-sensible"]="tmux-plugins/tmux-sensible"
+	["tmux-open"]="tmux-plugins/tmux-open"
+	["tmux-fzf-url"]="kenanpelit/tmux-fzf-url"
+	["tmux-prefix-highlight"]="tmux-plugins/tmux-prefix-highlight"
+	["tmux-online-status"]="tmux-plugins/tmux-online-status"
+	["tmux-fzf"]="sainnhe/tmux-fzf"
+	["tmux-ssh-status"]="kenanpelit/tmux-ssh-status"
+	["tmux-update-display"]="lljbash/tmux-update-display"
+	["tmux-fuzzback"]="roosta/tmux-fuzzback"
+	["tmux-nerd-font-window-name"]="joshmedeski/tmux-nerd-font-window-name"
+	["tmux-kripto"]="vascomfnunes/tmux-kripto"
+	["tmux-nav-master"]="TheSast/tmux-nav-master"
+	["tmux-sessionx"]="omerxx/tmux-sessionx"
+	["tmux-plugin-playerctl"]="richin13/tmux-plugin-playerctl"
+	["tmux-resurrect"]="tmux-plugins/tmux-resurrect"
+	["tmux-continuum"]="tmux-plugins/tmux-continuum"
+	["tmux-sessionist"]="tmux-plugins/tmux-sessionist"
+	["tmux-thumbs"]="fcsonline/tmux-thumbs"
+	["tmux-yank"]="tmux-plugins/tmux-yank"
+	#["tmux-pain-control"]="tmux-plugins/tmux-pain-control"
+	["tmux-copycat"]="tmux-plugins/tmux-copycat"
+)
+
+# Her bir plugin için
+for plugin_name in "${!plugins[@]}"; do
+	plugin_path="$TMUX_PLUGIN_DIR/$plugin_name"
+	plugin_repo="${plugins[$plugin_name]}"
+
+	# Plugin zaten var mı kontrol et
+	if [ -d "$plugin_path" ]; then
+		log_warn "Plugin $plugin_name zaten mevcut. Güncelleniyor..."
+		cd "$plugin_path" || continue
+		if git pull; then
+			log_info "$plugin_name güncellendi"
+		else
+			log_error "$plugin_name güncellenemedi"
+		fi
+	else
+		log_info "Plugin $plugin_name yükleniyor..."
+		if git clone "https://github.com/$plugin_repo.git" "$plugin_path"; then
+			log_info "$plugin_name başarıyla yüklendi"
+		else
+			log_error "$plugin_name yüklenemedi"
+		fi
+	fi
+done
+
+# TPM'i yükle (eğer yoksa)
+TPM_PATH="$TMUX_PLUGIN_DIR/tpm"
+if [ ! -d "$TPM_PATH" ]; then
+	log_info "TPM yükleniyor..."
+	if git clone https://github.com/tmux-plugins/tpm "$TPM_PATH"; then
+		log_info "TPM başarıyla yüklendi"
+	else
+		log_error "TPM yüklenemedi"
+	fi
+else
+	log_warn "TPM zaten mevcut"
+fi
+
+# Tmux'u yeniden yükle (eğer çalışıyorsa)
+if pgrep tmux >/dev/null; then
+	log_info "Tmux oturumları yeniden yükleniyor..."
+	tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null || log_warn "Tmux config yenilenemedi"
+fi
+
+log_info "Kurulum tamamlandı!"
+log_info "Tmux'u başlatın ve prefix + I tuşlarına basarak pluginleri başlatın"
