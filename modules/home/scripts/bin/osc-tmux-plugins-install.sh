@@ -27,6 +27,10 @@ PLUGINS=(
 	'tmux-plugins/tmux-resurrect'
 	'tmux-plugins/tmux-continuum'
 	'tmux-plugins/tmux-sessionist'
+	'fcsonline/tmux-thumbs'
+	'tmux-plugins/tmux-yank'
+	'tmux-plugins/tmux-pain-control'
+	'tmux-plugins/tmux-copycat'
 )
 
 # Renkli çıktı
