@@ -209,7 +209,7 @@
     [[session]]
     name = "Podman 󰡨 "
     path = "~/"
-    startup_command = "pordman ps -a"
+    startup_command = "podman ps -a"
     
     [[session]]
     name = "API Test 󰜏 "
