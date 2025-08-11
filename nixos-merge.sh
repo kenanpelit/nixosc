@@ -17,6 +17,7 @@ NC='\033[0m' # No Color
 EXCLUDE_FILES=(
 	"modules/home/hyprland/config.nix"
 	"modules/core/power/default.nix"
+	"modules/core/tcp/default.nix"
 	"hosts/hay/hardware-configuration.nix"
 	"flake.json"
 	"flake.lock"
