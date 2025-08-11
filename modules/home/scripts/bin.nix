@@ -216,6 +216,9 @@ let
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./bin/osc-test.sh
   );
+  osc-tmux-plugins-install = pkgs.writeShellScriptBin "osc-tmux-plugins-install" (
+    builtins.readFile ./bin/osc-tmux-plugins-install.sh
+  );
   osc-tv-splitter = pkgs.writeShellScriptBin "osc-tv-splitter" (
     builtins.readFile ./bin/osc-tv-splitter.sh
   );
@@ -461,6 +464,7 @@ in {
     osc-symlink_manager
     osc-sync
     osc-test
+    osc-tmux-plugins-install
     osc-tv-splitter
     osc-ulauncher_ext
     osc-video-converter
