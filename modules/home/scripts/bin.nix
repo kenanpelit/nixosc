@@ -87,6 +87,9 @@ let
   hypr-layout_toggle = pkgs.writeShellScriptBin "hypr-layout_toggle" (
     builtins.readFile ./bin/hypr-layout_toggle.sh
   );
+  hypr_move_app_from_workspace = pkgs.writeShellScriptBin "hypr_move_app_from_workspace" (
+    builtins.readFile ./bin/hypr_move_app_from_workspace.sh
+  );
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
   );
@@ -421,6 +424,7 @@ in {
     hyprland_tty_all
     hyprland_tty
     hypr-layout_toggle
+    hypr_move_app_from_workspace
     hypr-mpv-manager
     hypr-start-batteryd
     hypr-start-disable_wifi_power_save
