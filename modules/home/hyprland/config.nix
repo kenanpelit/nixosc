@@ -742,6 +742,17 @@ in
         "$mainMod ALT, Print, exec, screenshot p"
         "$mainMod ALT CTRL, Print, exec, screenshot o"
 
+        # Move apps from specific workspaces to current workspace
+        "$mainMod CTRL, 1, exec, hypr_move_app_from_workspace 1"
+        "$mainMod CTRL, 2, exec, hypr_move_app_from_workspace 2"
+        "$mainMod CTRL, 3, exec, hypr_move_app_from_workspace 3"
+        "$mainMod CTRL, 4, exec, hypr_move_app_from_workspace 4"
+        "$mainMod CTRL, 5, exec, hypr_move_app_from_workspace 5"
+        "$mainMod CTRL, 6, exec, hypr_move_app_from_workspace 6"
+        "$mainMod CTRL, 7, exec, hypr_move_app_from_workspace 7"
+        "$mainMod CTRL, 8, exec, hypr_move_app_from_workspace 8"
+        "$mainMod CTRL, 9, exec, hypr_move_app_from_workspace 9"
+
         # Focus Movement
         "$mainMod, left, movefocus, l"
         "$mainMod, right, movefocus, r"
