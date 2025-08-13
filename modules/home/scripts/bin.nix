@@ -30,9 +30,6 @@ let
   clustergit = pkgs.writeShellScriptBin "clustergit" (
     builtins.readFile ./bin/clustergit.sh
   );
-  container-engine-manager = pkgs.writeShellScriptBin "container-engine-manager" (
-    builtins.readFile ./bin/container-engine-manager.sh
-  );
   cosmic-workspace-monitor = pkgs.writeShellScriptBin "cosmic-workspace-monitor" (
     builtins.readFile ./bin/cosmic-workspace-monitor.sh
   );
@@ -393,7 +390,6 @@ in {
     chroot_manager
     clearam
     clustergit
-    container-engine-manager
     cosmic-workspace-monitor
     crypto-manager
     gitgo
