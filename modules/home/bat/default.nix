@@ -1,6 +1,5 @@
-# modules/home/bat/default.nix
 # ==============================================================================
-# Bat (Cat Clone) Configuration
+# Bat (Cat Clone) Configuration - ÇAKIŞMA DÜZELTMESİ
 # ==============================================================================
 { pkgs, lib, ... }:
 {
@@ -11,15 +10,21 @@
     enable = true;
     config = {
       pager = "less -FR";
-      theme = lib.mkDefault "Catppuccin-mocha";  # FIXED: Added lib.mkDefault to avoid conflicts
+      theme = "Catppuccin Mocha";
     };
+    
     # =============================================================================
-    # Theme Configuration
+    # Theme Configuration - Çakışmayı önlemek için lib.mkForce kullanıyoruz
     # =============================================================================
     themes = {
-      Catppuccin-mocha = {
-        src = ./theme;  # Tema dosyasının bulunduğu dizin
-        file = "Catppuccin-mocha.tmTheme";  # Tema dosyasının adı
+      "Catppuccin Mocha" = lib.mkForce {
+        src = pkgs.fetchFromGitHub {
+          owner = "catppuccin";
+          repo = "bat";
+          rev = "d3feec47b16a8e99eabb34cdfbaa115541d374fc";
+          sha256 = "sha256-s1Ay5n8/H5hy2Vgp6jM8Y9M0CpIXi9LAj1h2TcoBZW0=";
+        };
+        file = "themes/Catppuccin Mocha.tmTheme";
       };
     };
   };
