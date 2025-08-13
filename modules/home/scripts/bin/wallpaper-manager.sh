@@ -495,7 +495,7 @@ show_stats() {
 
 show_usage() {
 	cat <<EOF
-${CYAN}Duvar Kağıdı Değiştirici v2.0${NC}
+Duvar Kağıdı Değiştirici v2.0
 
 KULLANIM:
     $SCRIPT_NAME [KOMUT] [SEÇENEKLER]

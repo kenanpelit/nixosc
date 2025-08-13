@@ -79,7 +79,6 @@
     # =============================================================================
     ./nemo          # Graphical file manager
     ./yazi          # Terminal-based file manager
-    #./bat           # Syntax-highlighted file viewer
     ./fzf           # Fuzzy finder for files and commands
     ./rsync         # File synchronization and backup
     ./ytdlp         # YouTube and media downloader
