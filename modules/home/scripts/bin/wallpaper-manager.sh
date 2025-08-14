@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =================================================================
-# Gelişmiş Duvar Kağıdı Değiştirici v2.0
+# Gelişmiş Duvar Kağıdı Değiştirici v2.1 (Düzeltilmiş)
 # Temiz ve Basit Versiyon
 # =================================================================
 
@@ -23,7 +23,8 @@ SUPPORTED_EXTENSIONS=("jpg" "jpeg" "png" "webp" "bmp")
 # =================================================================
 
 PID_FILE="/tmp/wallpaper-changer.pid"
-LOCK_FILE="/tmp/wallpaper-changer.lock"
+SERVICE_LOCK_FILE="/tmp/wallpaper-changer-service.lock"
+MANUAL_LOCK_FILE="/tmp/wallpaper-changer-manual.lock"
 HISTORY_DIR="$HOME/.cache/wallpapers"
 HISTORY_FILE="$HISTORY_DIR/history.txt"
 TOTAL_FILE="$HISTORY_DIR/total_wallpapers.txt"
@@ -75,24 +76,39 @@ log() {
 	echo "[$timestamp] [$level] $message" >>"$LOG_FILE" 2>/dev/null || true
 }
 
-# Lock dosyası ile güvenli işlem
+# Lock dosyası ile güvenli işlem (farklı lock dosyaları kullanır)
 acquire_lock() {
-	local timeout=${1:-10}
+	local lock_type="${1:-manual}"
+	local timeout=${2:-10}
 	local count=0
+	local lock_file
+
+	case "$lock_type" in
+	"service") lock_file="$SERVICE_LOCK_FILE" ;;
+	"manual") lock_file="$MANUAL_LOCK_FILE" ;;
+	*) lock_file="$MANUAL_LOCK_FILE" ;;
+	esac
 
 	while [ $count -lt $timeout ]; do
 		if (
 			set -C
-			echo $$ >"$LOCK_FILE"
+			echo $$ >"$lock_file"
 		) 2>/dev/null; then
-			trap 'rm -f "$LOCK_FILE"' EXIT
+			trap "rm -f \"$lock_file\"" EXIT
+			log DEBUG "Lock alındı: $lock_file"
 			return 0
 		fi
 		sleep 1
 		((count++))
 	done
 
-	log ERROR "İşlem zaten çalışıyor. Lütfen bekleyin."
+	if [[ "$lock_type" == "service" ]]; then
+		log ERROR "Servis lock'u alınamadı. Başka bir servis çalışıyor olabilir."
+	else
+		log WARN "Manuel işlem için lock alınamadı. Servis çalışıyor, ancak yine de devam ediliyor."
+		# Manuel işlemlerde lock alamasak bile devam edelim
+		return 0
+	fi
 	return 1
 }
 
@@ -219,7 +235,15 @@ cleanup_history() {
 
 # Ana duvar kağıdı değiştirme fonksiyonu
 change_wallpaper() {
-	acquire_lock || return 1
+	local lock_type="${1:-manual}"
+
+	# Servis modu dışında lock alma zorunlu değil
+	if [[ "$lock_type" == "service" ]]; then
+		acquire_lock "service" || return 1
+	else
+		# Manuel işlemde lock alamasak bile devam et
+		acquire_lock "manual" 3 || log DEBUG "Manuel lock alınamadı, devam ediliyor"
+	fi
 
 	init_history
 	update_wallpaper_cache
@@ -342,7 +366,7 @@ start_service() {
 	# Ana döngü
 	(
 		while true; do
-			if ! change_wallpaper; then
+			if ! change_wallpaper "service"; then
 				log ERROR "Duvar kağıdı değiştirilemedi, 60 saniye bekleniyor"
 				sleep 60
 			else
@@ -404,7 +428,7 @@ stop_service() {
 		log WARN "Servis zaten durmuş"
 	fi
 
-	rm -f "$PID_FILE"
+	rm -f "$PID_FILE" "$SERVICE_LOCK_FILE"
 	return 0
 }
 
@@ -489,13 +513,19 @@ show_stats() {
 	fi
 }
 
+# Manuel duvar kağıdı değiştirme (servis çalışırken bile)
+manual_change() {
+	log INFO "Manuel duvar kağıdı değişimi başlatılıyor..."
+	change_wallpaper "manual"
+}
+
 # =================================================================
 # YARDIM VE ANA FONKSİYONLAR
 # =================================================================
 
 show_usage() {
 	cat <<EOF
-Duvar Kağıdı Değiştirici v2.0
+Duvar Kağıdı Değiştirici v2.1
 
 KULLANIM:
     $SCRIPT_NAME [KOMUT] [SEÇENEKLER]
@@ -508,6 +538,7 @@ KOMUTLAR:
     stats            İstatistikleri gösterir
     select           Rofi ile duvar kağıdı seç
     test             Tek seferlik test değişimi
+    now              Servis çalışırken bile manuel değişim
     (boş)            Tek seferlik rastgele duvar kağıdı değişimi
 
 SEÇENEKLER:
@@ -519,6 +550,7 @@ SEÇENEKLER:
     $SCRIPT_NAME start 300        # 5 dakikada bir değişir
     $SCRIPT_NAME -v start         # Ayrıntılı mod ile başlat
     $SCRIPT_NAME select           # Rofi ile seç
+    $SCRIPT_NAME now              # Servis çalışırken manuel değişim
     $SCRIPT_NAME stats            # İstatistikleri göster
 
 DOSYALAR:
@@ -582,12 +614,16 @@ main() {
 			select_wallpaper_rofi
 			exit $?
 			;;
+		now)
+			manual_change
+			exit $?
+			;;
 		test)
 			if check_status true; then
 				log ERROR "Test modu için önce servisi durdurun"
 				exit 1
 			fi
-			change_wallpaper
+			change_wallpaper "manual"
 			exit $?
 			;;
 		*)
@@ -604,8 +640,8 @@ main() {
 		esac
 	done
 
-	# Parametre yoksa tek değişim
-	change_wallpaper
+	# Parametre yoksa manuel değişim
+	manual_change
 }
 
 # Script'i çalıştır
