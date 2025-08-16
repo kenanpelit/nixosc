@@ -31,8 +31,6 @@ in {
   imports = [
     ./extensions.nix
     ./theme.nix
-    ./policies.nix
-    ./settings.nix
   ];
   
   options.my.browser.brave = {
