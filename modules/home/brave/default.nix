@@ -18,11 +18,11 @@ let
   system = pkgs.system;
   
   # Detect if we're using Wayland
-  isWayland = config.my.desktop.wayland.enable or 
-              config.services.xserver.displayManager.gdm.wayland or 
-              (builtins.getEnv "XDG_SESSION_TYPE" == "wayland") or 
+  isWayland = (config.my.desktop.wayland.enable or false) || 
+              (config.services.xserver.displayManager.gdm.wayland or false) || 
+              (builtins.getEnv "XDG_SESSION_TYPE" == "wayland") || 
               true; # Default to wayland for modern setups
-              
+  
   # Detect desktop environment for optimizations
   isHyprland = config.my.desktop.hyprland.enable or false;
   isGnome = config.services.xserver.desktopManager.gnome.enable or false;
