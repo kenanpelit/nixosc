@@ -79,20 +79,8 @@
     # === Desktop Environment - Hyprland Ecosystem ===
     # Core Hyprland Wayland compositor - pinned to specific commit for stability
     hyprland = {
-      #      url = "github:hyprwm/hyprland/00da4450db9bab1abfda169eefec8dab98f63a0b"; # 0810 - Updated Commits
-      url = "github:hyprwm/hyprland/edc473e8b0c14e768445422080af9978d132bff6"; # 0816 - Updated Commits
-      #      url = "github:hyprwm/hyprland/aaedce596ec27742ea8f00a20607913e8a3e83db"; # 0815 - Updated Commits
-      #      url = "github:hyprwm/hyprland/60d769a89908c29e19100059985db15a7b6bab6a"; # 0814 - Updated Commits
-      #      url = "github:hyprwm/hyprland/aa6a78f0a4e17c49ed4aff8b58c3f7ec7ef0408f"; # 0813 - Updated Commits
-      #      url = "github:hyprwm/hyprland/2b6e2ceb2e66407e80b98015eb9f559f06405b2f"; # 0812 - Updated Commits
-      #      url = "github:hyprwm/hyprland/cb6589db98325705cef5dcaf92ccdf41ab21386d"; # 0812 - Updated Commits
-      #      url = "github:hyprwm/hyprland/584b844aaf72cd7ea6851117f1bd598b7467ffc1"; # 0811 - Updated Commits
-      #      url = "github:hyprwm/hyprland/afbd8796859775a50687daacb254cdd1ba22328f"; # 0807 - Updated Commits
-      #      url = "github:hyprwm/hyprland/ec26b753a253bf92ad7451b685b95cbddcb75403"; # 0806 - Updated Commits
-      #      url = "github:hyprwm/hyprland/0c317f25080972c949139460e1e6c8a63daaf05a"; # 0806 - Updated Commits
-      #      url = "github:hyprwm/hyprland/3c6536d9328280b1811a2dbcc4596c1cafb80abd"; # 0805 - Updated Commits
-      #      url = "github:hyprwm/hyprland/2be309de1df5e4262175fbcc58e6dd8de4e0e6d3"; # 0805 - Updated Commits
-      #      url = "github:hyprwm/hyprland/549f5e8dff5263530645f3aa6567f6f7a2ddad24"; # 0803 - Updated Commits
+      url = "github:hyprwm/hyprland/251288ec5942b3544ad31de1299569284d80f0d7"; # 0817 - Updated Commits
+      #      url = "github:hyprwm/hyprland/3d4dc19412921864c25cd25e0cbffd6e1693c43c"; # 0816 - Updated Commits
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
