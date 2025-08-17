@@ -12,7 +12,11 @@
     # Video Quality and Format Settings
     # ---------------------------------------------------------------------------
     --format "(bestvideo[vcodec^=av01][height>=1080][fps>30]/bestvideo[vcodec^=vp9.2][height>=1080][fps>30]/bestvideo[vcodec^=vp9][height>=1080][fps>30]/bestvideo[vcodec^=avc1][height>=1080][fps>30]/bestvideo[height>=1080][fps>30]/bestvideo[vcodec^=av01][height>=1080]/bestvideo[vcodec^=vp9.2][height>=1080]/bestvideo[vcodec^=vp9][height>=1080]/bestvideo[vcodec^=avc1][height>=1080]/bestvideo[height>=1080]/bestvideo)+(bestaudio[acodec^=opus]/bestaudio)/best"
-
+    # ---------------------------------------------------------------------------
+    # YouTube Client Settings
+    # ---------------------------------------------------------------------------
+    --extractor-args "youtube:player_client=web_creator"
+    --no-impersonate
     # ---------------------------------------------------------------------------
     # Output Settings
     # ---------------------------------------------------------------------------
@@ -22,7 +26,6 @@
     --no-mtime
     --no-overwrites
     --no-playlist
-
     # ---------------------------------------------------------------------------
     # Subtitle Settings
     # ---------------------------------------------------------------------------
@@ -31,7 +34,6 @@
     --sub-langs "tur,tr,eng,en"
     --sub-format "ass/srt/best"
     --embed-subs
-
     # ---------------------------------------------------------------------------
     # Metadata Settings
     # ---------------------------------------------------------------------------
@@ -39,7 +41,6 @@
     --embed-chapters
     --embed-thumbnail
     --convert-thumbnails webp
-
     # ---------------------------------------------------------------------------
     # Download Settings
     # ---------------------------------------------------------------------------
@@ -50,13 +51,11 @@
     --socket-timeout 30
     --extractor-retries 3
     --fragment-retries 3
-
     # ---------------------------------------------------------------------------
     # Interface Settings
     # ---------------------------------------------------------------------------
     --console-title
     --progress
-
     # ---------------------------------------------------------------------------
     # Browser Integration
     # ---------------------------------------------------------------------------
@@ -64,3 +63,4 @@
     --cookies-from-browser brave:/home/${username}/.config/BraveSoftware/Brave-Browser/Default
   '';
 }
+
