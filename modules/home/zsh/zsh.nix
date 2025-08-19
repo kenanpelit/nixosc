@@ -275,8 +275,8 @@ in {
     # History Configuration - Optimized for large history management
     # -----------------------------------------------------------------------------
     history = {
-      size = 110000;                      # Large in-memory history for better suggestions
-      save = 100000;                      # Substantial persistent history
+      size = 150000;                      # Large in-memory history for better suggestions
+      save = 120000;                      # Substantial persistent history
       path = "${zshDir}/history";         # Use modular history configuration
       ignoreDups = true;                  # Ignore immediate duplicates
       ignoreAllDups = true;               # Remove all duplicate entries
