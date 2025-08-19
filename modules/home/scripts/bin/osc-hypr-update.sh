@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-# Hyprland Commit Updater Script
+# Hyprland Commit Updater Script - Improved Version
 set -euo pipefail
 
 # Renkler
@@ -11,6 +10,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 FLAKE_PATH="$HOME/.nixosc/flake.nix"
+MAX_HISTORY=5 # Kaç tane eski commit tutulsun
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
@@ -20,7 +20,6 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 get_latest_commit() {
 	local response
 	response=$(curl -s --max-time 30 "https://api.github.com/repos/hyprwm/Hyprland/commits/main")
-
 	if [[ -z "$response" ]]; then
 		log_error "GitHub API'ye erişim başarısız"
 		exit 1
@@ -28,19 +27,16 @@ get_latest_commit() {
 
 	local commit_hash
 	commit_hash=$(echo "$response" | sed -n 's/.*"sha":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-
 	if [[ -z "$commit_hash" ]]; then
 		log_error "Commit hash alınamadı"
 		exit 1
 	fi
-
 	echo "${commit_hash:0:40}"
 }
 
 # Mevcut commit'i flake.nix'ten al
 get_current_commit() {
 	local current_hash
-
 	# Aktif URL'i ara
 	current_hash=$(command grep 'url = "github:hyprwm/hyprland/' "$FLAKE_PATH" | command grep -v '^[[:space:]]*#' | head -1 | sed 's/.*\/\([^"]*\)".*/\1/')
 
@@ -48,11 +44,10 @@ get_current_commit() {
 	if [[ -z "$current_hash" ]]; then
 		current_hash=$(command grep '#.*url = "github:hyprwm/hyprland/' "$FLAKE_PATH" | tail -1 | sed 's/.*\/\([^"]*\)".*/\1/')
 	fi
-
 	echo "${current_hash:-unknown}"
 }
 
-# Flake.nix'i güncelle
+# Flake.nix'i güncelle - Düzenli sıralama ile
 update_flake() {
 	local new_commit="$1"
 	local today=$(date +%m%d)
@@ -64,9 +59,10 @@ update_flake() {
 	cp "$FLAKE_PATH" "$HOME/.nixosb/flake.nix.backup.$(date +%Y%m%d_%H%M%S)"
 	log_info "Backup oluşturuldu: $HOME/.nixosb/"
 
-	# Python ile güncelle
+	# Python ile düzenli güncelle
 	python3 -c "
 import re
+from datetime import datetime
 
 with open('$FLAKE_PATH', 'r') as f:
     content = f.read()
@@ -74,26 +70,41 @@ with open('$FLAKE_PATH', 'r') as f:
 lines = content.split('\n')
 new_lines = []
 in_hyprland = False
-url_added = False
+url_lines = []
 
 for line in lines:
     if 'hyprland = {' in line:
         in_hyprland = True
         new_lines.append(line)
     elif in_hyprland and 'url = \"github:hyprwm/hyprland/' in line:
-        if not line.strip().startswith('#'):
-            new_lines.append('      #' + line)
-        else:
-            new_lines.append(line)
-        if not url_added:
-            new_lines.append('      url = \"github:hyprwm/hyprland/$new_commit\"; # $today - Updated Commits')
-            url_added = True
+        # Mevcut URL'leri topla
+        url_lines.append(line.strip())
     elif in_hyprland and line.strip() == '};':
-        if not url_added:
-            new_lines.append('      url = \"github:hyprwm/hyprland/$new_commit\"; # $today - Updated Commits')
+        # URL'leri düzenli şekilde ekle
+        
+        # Yeni URL'i en üste ekle
+        new_lines.append('      url = \"github:hyprwm/hyprland/$new_commit\"; # $today - Updated Commits')
+        
+        # Eski URL'leri comment olarak ekle (en fazla $MAX_HISTORY tane)
+        count = 0
+        for url_line in url_lines:
+            if count >= $MAX_HISTORY:
+                break
+            
+            # Eğer zaten comment ise, # sayısını kontrol et
+            if url_line.startswith('#'):
+                # Çok fazla # varsa temizle
+                cleaned = re.sub(r'^#+\s*', '#      ', url_line)
+                new_lines.append(cleaned)
+            else:
+                # Aktif URL'i comment yap
+                new_lines.append('#      ' + url_line)
+            count += 1
+        
         new_lines.append(line)
         in_hyprland = False
-    else:
+        url_lines = []
+    elif not (in_hyprland and 'url = \"github:hyprwm/hyprland/' in line):
         new_lines.append(line)
 
 with open('$FLAKE_PATH', 'w') as f:
