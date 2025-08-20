@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hyprland Commit Updater Script - Improved Version
+# Hyprland Commit Updater Script - Improved Version with Git Auto-Commit
 set -euo pipefail
 
 # Renkler
@@ -10,11 +10,13 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 FLAKE_PATH="$HOME/.nixosc/flake.nix"
+NIXOS_PATH="$HOME/.nixosc"
 MAX_HISTORY=5 # Kaç tane eski commit tutulsun
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 # GitHub'dan son commit hash'ini al
 get_latest_commit() {
@@ -45,6 +47,48 @@ get_current_commit() {
 		current_hash=$(command grep '#.*url = "github:hyprwm/hyprland/' "$FLAKE_PATH" | tail -1 | sed 's/.*\/\([^"]*\)".*/\1/')
 	fi
 	echo "${current_hash:-unknown}"
+}
+
+# Git durumunu kontrol et
+check_git_repo() {
+	if [[ ! -d "$NIXOS_PATH/.git" ]]; then
+		log_warning "Git repository bulunamadı. Git init yapılıyor..."
+		cd "$NIXOS_PATH"
+		git init
+		git add .
+		git commit -m "Initial commit"
+		log_success "Git repository oluşturuldu"
+	fi
+}
+
+# Git commit yap
+git_commit_changes() {
+	local commit_date=$(date +%m%d) # MMDD formatında
+	local commit_msg="Updated to Hyprland $commit_date"
+
+	cd "$NIXOS_PATH"
+
+	# Değişiklikleri kontrol et
+	if git diff --quiet "$FLAKE_PATH"; then
+		log_info "Git'te değişiklik yok, commit atlanıyor"
+		return
+	fi
+
+	log_info "Git commit yapılıyor..."
+
+	# Flake.nix'i stage'e ekle
+	git add "$FLAKE_PATH"
+
+	# Commit yap
+	if git commit -m "$commit_msg"; then
+		log_success "Git commit başarılı: $commit_msg"
+
+		# Son 3 commit'i göster
+		log_info "Son commit'ler:"
+		git log --oneline -3 --color=always
+	else
+		log_error "Git commit başarısız!"
+	fi
 }
 
 # Flake.nix'i güncelle - Düzenli sıralama ile
@@ -121,6 +165,9 @@ main() {
 		exit 1
 	fi
 
+	# Git repository kontrolü
+	check_git_repo
+
 	local current_commit
 	current_commit=$(get_current_commit)
 	log_info "Mevcut commit: $current_commit"
@@ -140,9 +187,16 @@ main() {
 		log_success "Flake.nix başarıyla güncellendi!"
 		log_info "Eski: $current_commit"
 		log_info "Yeni: $latest_commit"
+
+		# Git commit yap
+		git_commit_changes
+
 		echo
 		log_info "Rebuild için:"
 		echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#$(hostname)${NC}"
+		echo
+		log_info "Push için:"
+		echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
 	else
 		log_error "Güncelleme başarısız!"
 		exit 1
