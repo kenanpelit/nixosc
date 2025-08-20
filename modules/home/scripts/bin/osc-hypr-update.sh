@@ -64,7 +64,7 @@ check_git_repo() {
 # Git commit yap
 git_commit_changes() {
 	local commit_date=$(date +%m%d) # MMDD formatında
-	local commit_msg="Updated to Hyprland $commit_date"
+	local commit_msg="hyprland: update to latest $commit_date"
 
 	cd "$NIXOS_PATH"
 
