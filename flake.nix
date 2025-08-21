@@ -302,8 +302,12 @@
             "libsoup-2.74.3"     # EOL library with CVEs, required by legacy GTK apps
           ];
         };
+        overlays = [
+          inputs.nur.overlay
+        ]; 
       };
-      
+
+
       # Import nixpkgs library for helper functions
       lib = nixpkgs.lib;
       
