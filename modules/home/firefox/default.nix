@@ -100,7 +100,7 @@ in {
   options.my.browser.firefox = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = false;
+      default = true;
       description = "Enable Firefox browser with custom configuration";
     };
     
