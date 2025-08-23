@@ -141,9 +141,10 @@ in
     poweralertd        # Güç yönetimi bildirimleri
     
     # Thermal Management Tools (Yeni eklenenler)
+    lm_sensors         # Hardware sıcaklık sensörleri
     stress-ng          # CPU/RAM stres testi için
-    turbostat          # Intel CPU turbo durumlarını izleme
-    cpupower           # CPU güç yönetimi araçları
+    linuxPackages.turbostat  # Intel CPU turbo durumlarını izleme
+    linuxPackages.cpupower   # CPU güç yönetimi araçları
     auto-cpufreq       # Otomatik CPU frekans yönetimi
     
     # Hardware Management
