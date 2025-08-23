@@ -25,7 +25,7 @@
 # - Undervolt: Conservative -80mV for stability
 #
 # Author: Kenan Pelit
-# Modified: 2025-08-23 (Final optimization for X1 Carbon 6th)
+# Modified: 2025-08-24 (Final optimization for X1 Carbon 6th)
 # ==============================================================================
 { pkgs, ... }:
 {
@@ -239,7 +239,7 @@
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           # Wait for RAPL interface
           sleep 2
           
@@ -283,7 +283,7 @@
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "fix-leds" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           # Set LED triggers for audio integration
           if [ -d /sys/class/leds/platform::micmute ]; then
             echo "audio-micmute" > /sys/class/leds/platform::micmute/trigger 2>/dev/null || true
@@ -313,7 +313,7 @@
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "battery-threshold" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           # Set battery charge thresholds (if supported)
           BAT_PATH="/sys/class/power_supply/BAT0"
           
@@ -338,7 +338,7 @@
       serviceConfig = {
         Type = "simple";
         ExecStart = pkgs.writeShellScript "thermal-monitor" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           WARNING_THRESHOLD=85
           CRITICAL_THRESHOLD=90
           
@@ -350,11 +350,11 @@
               
               # Log based on temperature thresholds
               if [ "$TEMP_C" -gt "$CRITICAL_THRESHOLD" ]; then
-                echo "CRITICAL: CPU temperature: ${TEMP_C}°C - System throttling active"
-                logger -p user.crit -t thermal-monitor "Critical CPU temperature: ${TEMP_C}°C"
+                echo "CRITICAL: CPU temperature: $${TEMP_C}°C - System throttling active"
+                logger -p user.crit -t thermal-monitor "Critical CPU temperature: $${TEMP_C}°C"
               elif [ "$TEMP_C" -gt "$WARNING_THRESHOLD" ]; then
-                echo "WARNING: High CPU temperature: ${TEMP_C}°C"
-                logger -p user.warning -t thermal-monitor "High CPU temperature: ${TEMP_C}°C"
+                echo "WARNING: High CPU temperature: $${TEMP_C}°C"
+                logger -p user.warning -t thermal-monitor "High CPU temperature: $${TEMP_C}°C"
               fi
             fi
             
@@ -365,4 +365,37 @@
         Restart = "always";
         RestartSec = 10;
       };
+    };
+  };
+  
+  # ==============================================================================
+  # Udev Rules
+  # ==============================================================================
+  services.udev.extraRules = ''
+    # Fix microphone LED permissions and initial state
+    SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::micmute/brightness"
+    SUBSYSTEM=="leds", KERNEL=="platform::mute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::mute/brightness"
+    
+    # ThinkPad specific LED permissions
+    SUBSYSTEM=="leds", KERNEL=="tpacpi::lid_logo_dot", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/tpacpi::lid_logo_dot/brightness"
+    SUBSYSTEM=="leds", KERNEL=="tpacpi::power", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/tpacpi::power/brightness"
+    
+    # Dynamic CPU governor switching based on power source
+    # Use powersave on battery, powersave on AC for quiet operation
+    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.linuxPackages.cpupower}/bin/cpupower frequency-set -g powersave"
+    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.linuxPackages.cpupower}/bin/cpupower frequency-set -g powersave"
+    
+    # Adjust RAPL power limits on power source change
+    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
+    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
+    
+    # PCI power management
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
+    
+    # USB autosuspend for power saving (except input devices)
+    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", DRIVER=="usbhid", ATTR{power/control}="on"
+  '';
+}
 

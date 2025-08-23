@@ -155,7 +155,7 @@
     };
 
     # Intel thermal daemon - disabled due to Meteor Lake compatibility issues
-    #thermald.enable = false; # modules/core/power
+    thermald.enable = false;
 
     # Disable power-profiles-daemon to avoid conflicts with auto-cpufreq
     power-profiles-daemon.enable = false;
@@ -231,7 +231,7 @@
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           # Wait for RAPL interface to be available
           sleep 2
           
@@ -273,7 +273,7 @@
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "fix-leds" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           # Configure LED triggers for proper audio integration
           if [ -d /sys/class/leds/platform::micmute ]; then
             echo "audio-micmute" > /sys/class/leds/platform::micmute/trigger 2>/dev/null || true
@@ -297,7 +297,7 @@
       serviceConfig = {
         Type = "simple";
         ExecStart = pkgs.writeShellScript "thermal-monitor" ''
-          #!/bin/sh
+          #!/usr/bin/env sh
           WARNING_THRESHOLD=88
           CRITICAL_THRESHOLD=95
           
