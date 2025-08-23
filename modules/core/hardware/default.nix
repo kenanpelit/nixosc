@@ -342,8 +342,9 @@
     SUBSYSTEM=="leds", KERNEL=="platform::mute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::mute/brightness"
     
     # Set CPU governor to powersave when on battery
-    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.cpupower}/bin/cpupower frequency-set -g powersave"
-    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.cpupower}/bin/cpupower frequency-set -g powersave"
+    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.linuxPackages.cpupower}/bin/cpupower frequency-set -g powersave"
+    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.linuxPackages.cpupower}/bin/cpupower frequency-set -g powersave"
   '';
   
 }
+
