@@ -65,7 +65,7 @@
     ./vlc           # Versatile media player configuration
     ./mpd           # Music Player Daemon setup
     ./cava          # Console-based audio visualizer
-    ./spicetify     # Spotify client customization
+    #./spicetify     # Spotify client customization
     #./radio         # Internet radio streaming
     
     # =============================================================================
@@ -79,7 +79,6 @@
     # =============================================================================
     ./nemo          # Graphical file manager
     ./yazi          # Terminal-based file manager
-    ./bat           # Syntax-highlighted file viewer
     ./fzf           # Fuzzy finder for files and commands
     ./rsync         # File synchronization and backup
     ./ytdlp         # YouTube and media downloader

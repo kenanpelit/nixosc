@@ -18,9 +18,6 @@ let
   cdiff = pkgs.writeShellScriptBin "cdiff" (
     builtins.readFile ./bin/cdiff.sh
   );
-  check_images = pkgs.writeShellScriptBin "check_images" (
-    builtins.readFile ./bin/check_images.sh
-  );
   chist = pkgs.writeShellScriptBin "chist" (
     builtins.readFile ./bin/chist.sh
   );
@@ -32,9 +29,6 @@ let
   );
   clustergit = pkgs.writeShellScriptBin "clustergit" (
     builtins.readFile ./bin/clustergit.sh
-  );
-  container-engine-manager = pkgs.writeShellScriptBin "container-engine-manager" (
-    builtins.readFile ./bin/container-engine-manager.sh
   );
   cosmic-workspace-monitor = pkgs.writeShellScriptBin "cosmic-workspace-monitor" (
     builtins.readFile ./bin/cosmic-workspace-monitor.sh
@@ -87,6 +81,9 @@ let
   hypr-layout_toggle = pkgs.writeShellScriptBin "hypr-layout_toggle" (
     builtins.readFile ./bin/hypr-layout_toggle.sh
   );
+  hypr_move_app_from_workspace = pkgs.writeShellScriptBin "hypr_move_app_from_workspace" (
+    builtins.readFile ./bin/hypr_move_app_from_workspace.sh
+  );
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
   );
@@ -96,23 +93,11 @@ let
   hypr-start-disable_wifi_power_save = pkgs.writeShellScriptBin "hypr-start-disable_wifi_power_save" (
     builtins.readFile ./bin/hypr-start-disable_wifi_power_save.sh
   );
-  hypr-start-manager = pkgs.writeShellScriptBin "hypr-start-manager" (
-    builtins.readFile ./bin/hypr-start-manager.sh
-  );
-  hypr-start-semsumo-all = pkgs.writeShellScriptBin "hypr-start-semsumo-all" (
-    builtins.readFile ./bin/hypr-start-semsumo-all.sh
-  );
-  hypr-startup-manager = pkgs.writeShellScriptBin "hypr-startup-manager" (
-    builtins.readFile ./bin/hypr-startup-manager.sh
-  );
   hypr-vlc_toggle = pkgs.writeShellScriptBin "hypr-vlc_toggle" (
     builtins.readFile ./bin/hypr-vlc_toggle.sh
   );
   hypr-workspace-monitor = pkgs.writeShellScriptBin "hypr-workspace-monitor" (
     builtins.readFile ./bin/hypr-workspace-monitor.sh
-  );
-  image-deduplicator = pkgs.writeShellScriptBin "image-deduplicator" (
-    builtins.readFile ./bin/image-deduplicator.sh
   );
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
@@ -158,6 +143,9 @@ let
   );
   osc-hypr-update = pkgs.writeShellScriptBin "osc-hypr-update" (
     builtins.readFile ./bin/osc-hypr-update.sh
+  );
+  osc-imagekeeper = pkgs.writeShellScriptBin "osc-imagekeeper" (
+    builtins.readFile ./bin/osc-imagekeeper.sh
   );
   osc-mullvad = pkgs.writeShellScriptBin "osc-mullvad" (
     builtins.readFile ./bin/osc-mullvad.sh
@@ -398,12 +386,10 @@ in {
     brave_killer
     bulk_rename
     cdiff
-    check_images
     chist
     chroot_manager
     clearam
     clustergit
-    container-engine-manager
     cosmic-workspace-monitor
     crypto-manager
     gitgo
@@ -421,15 +407,12 @@ in {
     hyprland_tty_all
     hyprland_tty
     hypr-layout_toggle
+    hypr_move_app_from_workspace
     hypr-mpv-manager
     hypr-start-batteryd
     hypr-start-disable_wifi_power_save
-    hypr-start-manager
-    hypr-start-semsumo-all
-    hypr-startup-manager
     hypr-vlc_toggle
     hypr-workspace-monitor
-    image-deduplicator
     lofi
     m2w2
     mako-status
@@ -445,6 +428,7 @@ in {
     osc-gist
     osc-gpg_unlock
     osc-hypr-update
+    osc-imagekeeper
     osc-mullvad
     osc-nix-cleanup-script
     osc-pass-tool

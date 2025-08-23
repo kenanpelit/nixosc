@@ -21,7 +21,6 @@ let
     return-youtube-dislikes
     darkreader
     plasma-integration
-    enhancer-for-youtube
     indie-wiki-buddy
     stylus
     canvasblocker
@@ -100,7 +99,7 @@ in {
   options.my.browser.firefox = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = false;
+      default = true;
       description = "Enable Firefox browser with custom configuration";
     };
     
@@ -147,8 +146,11 @@ in {
         name = username;
         isDefault = true;
         
-        # Extensions configuration - FIXED: Use simple list format
-        extensions = extensionsList;
+        # Extensions configuration - Use new API format with force flag
+        extensions = {
+          packages = extensionsList;
+          force = true;
+        };
         
         # Search configuration
         search = {

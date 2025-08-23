@@ -27,7 +27,7 @@
       cat = "bat --paging=never";  # bat with no pager for short files
       less = "bat --paging=always"; # bat with pager for long files
       diff = "delta --side-by-side";
-      grep = "rg";                 # ripgrep
+      #grep = "rg";                 # ripgrep
       find = "fd";                 # fd
       ps = "procs";                # procs (if available)
       
