@@ -140,10 +140,17 @@ in
     powertop           # Güç izleme
     poweralertd        # Güç yönetimi bildirimleri
     
+    # Thermal Management Tools (Yeni eklenenler)
+    stress-ng          # CPU/RAM stres testi için
+    turbostat          # Intel CPU turbo durumlarını izleme
+    cpupower           # CPU güç yönetimi araçları
+    auto-cpufreq       # Otomatik CPU frekans yönetimi
+    
     # Hardware Management
     ddcutil            # Monitor settings
     fwupd              # Firmware güncelleyici
     android-tools      # adb (sistem seviyesi)
+    smartmontools      # Disk sağlık durumu izleme (SMART)
     
     # Input Devices
     fusuma             # Çoklu dokunma
@@ -174,6 +181,7 @@ in
     # Commented Out / Optional Packages
     # ==============================================================================
     # iwgtk              # Kablosuz yapılandırma
+    # intel-undervolt    # Undervolting aracı (Meteor Lake'de çalışmayabilir)
   ];
 }
 
