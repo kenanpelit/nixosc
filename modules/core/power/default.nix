@@ -42,7 +42,7 @@
     power-profiles-daemon.enable = false;
     
     # Thermal Management
-    thermald.enable = true;
+    thermald.enable = false;
     
     # System Logging Configuration
     journald.extraConfig = ''
