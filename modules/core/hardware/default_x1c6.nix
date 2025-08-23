@@ -139,8 +139,10 @@
     };
 
     # ThinkPad fan control - optimized for quiet X1 Carbon operation
+    # NOTE: Disabled due to configuration issues. throttled + auto-cpufreq + thermald
+    # provides sufficient thermal management. Enable if manual fan control needed.
     thinkfan = {
-      enable = true;
+      enable = false;  # Disabled - using throttled + auto-cpufreq + thermald instead
       smartSupport = true;
       
       # Conservative fan curve for quiet operation

@@ -135,8 +135,10 @@
     };
 
     # ThinkPad fan control with optimized cooling curve
+    # NOTE: Disabled due to configuration issues. throttled + auto-cpufreq provides
+    # sufficient thermal management. Enable and configure if manual fan control needed.
     thinkfan = {
-      enable = true;  # IMPORTANT: Enable thinkfan for active cooling
+      enable = false;  # Disabled - using throttled + auto-cpufreq instead
       smartSupport = true;
       
       # Optimized fan curve for E14 Gen 6
