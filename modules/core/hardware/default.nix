@@ -129,7 +129,7 @@
           governor = "powersave";      # Use powersave for thermal management
           scaling_min_freq = 400000;   # 400 MHz minimum frequency
           scaling_max_freq = 3800000;  # 3.8 GHz maximum on AC (balanced)
-          turbo = "auto";              # Allow turbo with thermal limits
+          turbo = "always";            # Always enable turbo on AC
         };
       };
     };
