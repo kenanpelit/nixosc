@@ -156,6 +156,9 @@ let
   osc-pass-tool = pkgs.writeShellScriptBin "osc-pass-tool" (
     builtins.readFile ./bin/osc-pass-tool.sh
   );
+  osc-perf-mode = pkgs.writeShellScriptBin "osc-perf-mode" (
+    builtins.readFile ./bin/osc-perf-mode.sh
+  );
   osc-profiles = pkgs.writeShellScriptBin "osc-profiles" (
     builtins.readFile ./bin/osc-profiles.sh
   );
@@ -432,6 +435,7 @@ in {
     osc-mullvad
     osc-nix-cleanup-script
     osc-pass-tool
+    osc-perf-mode
     osc-profiles
     osc-proxy
     osc-radio
