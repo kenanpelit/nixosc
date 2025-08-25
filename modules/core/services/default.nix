@@ -14,11 +14,6 @@
 # ==============================================================================
 { pkgs, ... }:
 {
-  # Hardware Configuration
-  hardware.bluetooth = {
-    enable = true;        # Enable Bluetooth support
-    powerOnBoot = true;   # Auto-start on boot
-  };
 
   services = {
     # Filesystem Services
