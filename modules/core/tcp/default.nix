@@ -8,13 +8,13 @@
 # - Laptop-specific optimizations
 #
 # Supported Systems:
-# - ThinkPad X1 Carbon 6th (Intel Core i7-8650U, 16GB RAM)
-# - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, 64GB RAM)
+# - ThinkPad X1 Carbon 6th (Intel Core i7-8650U, 16GB RAM): Conservative tuning
+# - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, 64GB RAM): Aggressive tuning
 #
 # Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, ... }:
- 
+
 let
   # Komutların tam yollarını tanımla
   awk = "${pkgs.gawk}/bin/awk";
@@ -31,109 +31,81 @@ let
     echo "$TOTAL_MB"
   '';
   
-  # Runtime'da bellek miktarını kontrol et ve 32GB üzerindeyse high memory system say
-  memCheckScript = ''
-    TOTAL_MB=$(${detectMemoryScript})
-    if [ "$TOTAL_MB" -ge 32768 ]; then
-      echo "true"
-    else  
-      echo "false"
-    fi
-  '';
-  
-  # Statik olarak her iki konfigürasyonu da tanımla
-  # Runtime'da hangisinin kullanılacağına karar verilecek
+  # 64GB RAM için optimizasyon (E14 Gen 6) - Daha agresif
   highMemConfig = {
-    # 64GB RAM için optimizasyon (E14 Gen 6)
-    rmem = "4096 131072 12582912";      # min: 4KB, default: 128KB, max: 12MB
-    wmem = "4096 131072 12582912";      # min: 4KB, default: 128KB, max: 12MB
-    rmem_max = 12582912;                # 12MB maksimum receive buffer
-    wmem_max = 12582912;                # 12MB maksimum send buffer
-    rmem_default = 262144;              # 256KB varsayılan receive buffer
-    wmem_default = 262144;              # 256KB varsayılan send buffer
-    netdev_max_backlog = 4000;          # Daha yüksek paket kuyruğu
-    somaxconn = 768;                    # Daha fazla eşzamanlı bağlantı
-    tcp_max_syn_backlog = 1536;         # Daha büyük SYN kuyruğu
-    tcp_mem = "786432 1048576 3145728"; # 3GB-4GB-12GB (sayfa cinsinden)
-    udp_mem = "393216 524288 1572864";  # 1.5GB-2GB-6GB (sayfa cinsinden)
+    rmem = "4096 131072 6291456";      # min: 4KB, default: 128KB, max: 6MB (12MB -> 6MB)
+    wmem = "4096 131072 6291456";      # min: 4KB, default: 128KB, max: 6MB (12MB -> 6MB)
+    rmem_max = 6291456;                # 6MB maksimum receive buffer (12MB -> 6MB)
+    wmem_max = 6291456;                # 6MB maksimum send buffer (12MB -> 6MB)
+    rmem_default = 262144;             # 256KB varsayılan receive buffer
+    wmem_default = 262144;             # 256KB varsayılan send buffer
+    netdev_max_backlog = 3000;         # Daha yüksek paket kuyruğu (4000 -> 3000)
+    somaxconn = 512;                   # Eşzamanlı bağlantı (768 -> 512)
+    tcp_max_syn_backlog = 1024;        # SYN kuyruğu (1536 -> 1024)
+    tcp_mem = "196608 262144 524288";  # 768MB-1GB-2GB (daha konservatif)
+    udp_mem = "98304 131072 262144";   # 384MB-512MB-1GB (daha konservatif)
   };
   
+  # 16GB RAM için optimizasyon (X1 Carbon 6th) - Daha konservatif
   standardMemConfig = {
-    # 16GB RAM için optimizasyon (X1 Carbon 6th)
-    rmem = "4096 87380 8388608";        # min: 4KB, default: 85KB, max: 8MB
-    wmem = "4096 87380 8388608";        # min: 4KB, default: 85KB, max: 8MB
-    rmem_max = 8388608;                 # 8MB maksimum receive buffer
-    wmem_max = 8388608;                 # 8MB maksimum send buffer
-    rmem_default = 131072;              # 128KB varsayılan receive buffer
-    wmem_default = 131072;              # 128KB varsayılan send buffer
-    netdev_max_backlog = 2500;          # Standart paket kuyruğu
-    somaxconn = 512;                    # Orta seviye bağlantı sayısı
-    tcp_max_syn_backlog = 1024;         # Standart SYN kuyruğu
-    tcp_mem = "196608 262144 786432";   # 768MB-1GB-3GB (sayfa cinsinden)
-    udp_mem = "98304 131072 393216";    # 384MB-512MB-1.5GB (sayfa cinsinden)
+    rmem = "4096 87380 4194304";       # min: 4KB, default: 85KB, max: 4MB (8MB -> 4MB)
+    wmem = "4096 87380 4194304";       # min: 4KB, default: 85KB, max: 4MB (8MB -> 4MB)
+    rmem_max = 4194304;                # 4MB maksimum receive buffer (8MB -> 4MB)
+    wmem_max = 4194304;                # 4MB maksimum send buffer (8MB -> 4MB)
+    rmem_default = 131072;             # 128KB varsayılan receive buffer
+    wmem_default = 131072;             # 128KB varsayılan send buffer
+    netdev_max_backlog = 2000;         # Standart paket kuyruğu (2500 -> 2000)
+    somaxconn = 256;                   # Orta seviye bağlantı sayısı (512 -> 256)
+    tcp_max_syn_backlog = 512;         # Standart SYN kuyruğu (1024 -> 512)
+    tcp_mem = "98304 131072 262144";   # 384MB-512MB-1GB (daha küçük)
+    udp_mem = "49152 65536 131072";    # 192MB-256MB-512MB (daha küçük)
   };
   
-  # Her iki konfigürasyon için güç tasarrufu ayarları
+  # Güç tasarrufu ayarları
   highMemPowerSettings = {
-    tcp_keepalive_time = 900;     # 15dk
-    tcp_keepalive_intvl = 75;     # 75s
+    tcp_keepalive_time = 720;     # 12dk (15dk -> 12dk)
+    tcp_keepalive_intvl = 60;     # 60s (75s -> 60s)
     tcp_keepalive_probes = 3;
     tcp_orphan_retries = 1;
     tcp_fin_timeout = 15;
-    tcp_retries2 = 8;
+    tcp_retries2 = 5;             # 8 -> 5 (daha agresif timeout)
   };
   
   standardMemPowerSettings = {
     tcp_keepalive_time = 600;     # 10dk
-    tcp_keepalive_intvl = 60;     # 60s
+    tcp_keepalive_intvl = 45;     # 45s (60s -> 45s)
     tcp_keepalive_probes = 3;
     tcp_orphan_retries = 1;
     tcp_fin_timeout = 20;
-    tcp_retries2 = 8;
+    tcp_retries2 = 5;             # 8 -> 5
   };
   
-  # WiFi ve mobil ağ optimizasyonları (laptop için önemli)
+  # WiFi optimizasyonları
   wifiOptimizations = {
-    tcp_no_metrics_save = 1;            # WiFi için metrik kaydetme
-    tcp_moderate_rcvbuf = 1;            # Otomatik buffer ayarlama
-    tcp_abc = 1;                        # Appropriate Byte Counting
-    tcp_frto = 2;                        # Forward RTO-Recovery (WiFi packet loss için)
-    tcp_mtu_probing = 1;                # Path MTU Discovery etkin
-    tcp_low_latency = 0;                # Latency yerine throughput öncelikli
+    tcp_no_metrics_save = 1;
+    tcp_moderate_rcvbuf = 1;
+    tcp_abc = 1;
+    tcp_frto = 2;
+    tcp_mtu_probing = 1;
+    tcp_low_latency = 0;
   };
 in
 {
-  # ==============================================================================
-  # Kernel Sysctl Parametreleri
-  # ==============================================================================
   boot.kernel.sysctl = {
-    # ============================================================================
-    # TCP Congestion Control (BBR)
-    # ============================================================================
-    # BBR (Bottleneck Bandwidth and RTT) modern congestion control algoritması
-    "net.core.default_qdisc" = "fq";                    # Fair Queue (BBR için gerekli)
-    "net.ipv4.tcp_congestion_control" = "bbr";          # BBR algoritması
+    # Temel TCP ayarları
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
     
-    # ============================================================================
-    # TCP Performans Ayarları
-    # ============================================================================
-    # TCP Fast Open - 3-way handshake optimizasyonu
-    "net.ipv4.tcp_fastopen" = 3;                        # Hem client hem server için etkin
+    # TCP performans
+    "net.ipv4.tcp_fastopen" = 3;
+    "net.ipv4.tcp_slow_start_after_idle" = 0;
+    "net.ipv4.tcp_window_scaling" = 1;
+    "net.ipv4.tcp_sack" = 1;
+    "net.ipv4.tcp_fack" = 1;
+    "net.ipv4.tcp_timestamps" = 1;
+    "net.ipv4.tcp_dsack" = 1;
     
-    # Idle connection optimizasyonu
-    "net.ipv4.tcp_slow_start_after_idle" = 0;          # Idle sonrası yavaş başlama kapalı
-    
-    # TCP Window Scaling ve SACK (Selective Acknowledgment)
-    "net.ipv4.tcp_window_scaling" = 1;                 # Büyük pencereler için
-    "net.ipv4.tcp_sack" = 1;                          # Selective ACK etkin
-    "net.ipv4.tcp_fack" = 1;                          # Forward ACK etkin
-    "net.ipv4.tcp_timestamps" = 1;                    # Timestamp etkin (RTT ölçümü için)
-    "net.ipv4.tcp_dsack" = 1;                         # Duplicate SACK etkin
-    
-    # ============================================================================
-    # TCP Memory ve Buffer Ayarları (Varsayılan - runtime'da değişecek)
-    # ============================================================================
-    # Başlangıçta güvenli varsayılan değerler, systemd servisi ile güncellenir
+    # Varsayılan buffer ayarları (X1 Carbon için optimize)
     "net.ipv4.tcp_rmem" = lib.mkDefault standardMemConfig.rmem;
     "net.core.rmem_max" = lib.mkDefault standardMemConfig.rmem_max;
     "net.core.rmem_default" = lib.mkDefault standardMemConfig.rmem_default;
@@ -146,28 +118,19 @@ in
     "net.ipv4.udp_mem" = lib.mkDefault standardMemConfig.udp_mem;
     
     "net.core.netdev_max_backlog" = lib.mkDefault standardMemConfig.netdev_max_backlog;
-    
-    # ============================================================================
-    # Connection Management
-    # ============================================================================
-    # Maksimum eşzamanlı bağlantı sayısı (varsayılan - runtime'da değişecek)
     "net.core.somaxconn" = lib.mkDefault standardMemConfig.somaxconn;
     "net.ipv4.tcp_max_syn_backlog" = lib.mkDefault standardMemConfig.tcp_max_syn_backlog;
     
-    # Bağlantı yaşam döngüsü
+    # Bağlantı yönetimi
     "net.ipv4.tcp_fin_timeout" = lib.mkDefault standardMemPowerSettings.tcp_fin_timeout;
-    "net.ipv4.tcp_tw_reuse" = 1;                       # TIME-WAIT socket'leri yeniden kullan
+    "net.ipv4.tcp_tw_reuse" = 1;
     
-    # ============================================================================
-    # Keep-alive Ayarları (Güç tasarrufu optimize - varsayılan)
-    # ============================================================================
+    # Keep-alive
     "net.ipv4.tcp_keepalive_time" = lib.mkDefault standardMemPowerSettings.tcp_keepalive_time;
     "net.ipv4.tcp_keepalive_intvl" = lib.mkDefault standardMemPowerSettings.tcp_keepalive_intvl;
     "net.ipv4.tcp_keepalive_probes" = lib.mkDefault standardMemPowerSettings.tcp_keepalive_probes;
     
-    # ============================================================================
-    # WiFi ve Mobil Ağ Optimizasyonları
-    # ============================================================================
+    # WiFi optimizasyonları
     "net.ipv4.tcp_no_metrics_save" = wifiOptimizations.tcp_no_metrics_save;
     "net.ipv4.tcp_moderate_rcvbuf" = wifiOptimizations.tcp_moderate_rcvbuf;
     "net.ipv4.tcp_abc" = wifiOptimizations.tcp_abc;
@@ -175,84 +138,62 @@ in
     "net.ipv4.tcp_mtu_probing" = wifiOptimizations.tcp_mtu_probing;
     "net.ipv4.tcp_low_latency" = wifiOptimizations.tcp_low_latency;
     
-    # ECN (Explicit Congestion Notification) - WiFi için faydalı
-    "net.ipv4.tcp_ecn" = 1;                            # ECN etkin
-    "net.ipv4.tcp_ecn_fallback" = 1;                  # ECN başarısız olursa geri dön
+    # ECN
+    "net.ipv4.tcp_ecn" = 1;
+    "net.ipv4.tcp_ecn_fallback" = 1;
     
-    # ============================================================================
-    # Güç Tasarrufu Optimizasyonları
-    # ============================================================================
+    # Güç tasarrufu
     "net.ipv4.tcp_orphan_retries" = lib.mkDefault standardMemPowerSettings.tcp_orphan_retries;
     "net.ipv4.tcp_retries2" = lib.mkDefault standardMemPowerSettings.tcp_retries2;
-    "net.ipv4.tcp_synack_retries" = 3;                 # SYN-ACK retry sayısı
-    "net.ipv4.tcp_syn_retries" = 3;                    # SYN retry sayısı
+    "net.ipv4.tcp_synack_retries" = 2;                 # 3 -> 2
+    "net.ipv4.tcp_syn_retries" = 2;                    # 3 -> 2
     
-    # ============================================================================
-    # Güvenlik Ayarları
-    # ============================================================================
-    # SYN flood koruması
-    "net.ipv4.tcp_syncookies" = 1;                     # SYN cookie etkin
-    "net.ipv4.tcp_max_orphans" = 32768;                # Maksimum orphan socket
+    # Güvenlik
+    "net.ipv4.tcp_syncookies" = 1;
+    "net.ipv4.tcp_max_orphans" = 16384;                # 32768 -> 16384
     
-    # Reverse Path Filtering (spoofing koruması)
+    # Reverse Path Filtering
     "net.ipv4.conf.all.rp_filter" = 1;
     "net.ipv4.conf.default.rp_filter" = 1;
     
-    # ICMP yönlendirmeleri reddet
-    "net.ipv4.conf.all.accept_redirects" = 0;
-    "net.ipv4.conf.default.accept_redirects" = 0;
-    "net.ipv4.conf.all.secure_redirects" = 0;
-    "net.ipv4.conf.default.secure_redirects" = 0;
-    "net.ipv4.conf.all.send_redirects" = 0;
-    "net.ipv4.conf.default.send_redirects" = 0;
+    # ICMP security
+    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
+    "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
+    "net.ipv4.icmp_errors_use_inbound_ifaddr" = 1;
     
-    # Kaynak yönlendirme reddet
-    "net.ipv4.conf.all.accept_source_route" = 0;
-    "net.ipv4.conf.default.accept_source_route" = 0;
-    
-    # ICMP güvenlik
-    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;       # Broadcast ping'leri yoksay
-    "net.ipv4.icmp_ignore_bogus_error_responses" = 1; # Hatalı ICMP yanıtlarını yoksay
-    "net.ipv4.icmp_errors_use_inbound_ifaddr" = 1;    # ICMP hata mesajları için doğru kaynak IP
-    
-    # IPv6 güvenlik
+    # IPv6 security
     "net.ipv6.conf.all.accept_redirects" = 0;
     "net.ipv6.conf.default.accept_redirects" = 0;
     "net.ipv6.conf.all.accept_source_route" = 0;
     "net.ipv6.conf.default.accept_source_route" = 0;
-    "net.ipv6.conf.all.forwarding" = 0;                # Laptop'ta forwarding kapalı
-    "net.ipv6.conf.all.accept_ra" = 0;                 # Router Advertisement güvenlik
+    "net.ipv6.conf.all.forwarding" = 0;
+    "net.ipv6.conf.all.accept_ra" = 0;
     "net.ipv6.conf.default.accept_ra" = 0;
     
-    # ============================================================================
-    # VPN Optimizasyonları (WireGuard/OpenVPN için)
-    # ============================================================================
-    "net.core.netdev_budget" = 600;                    # Paket işleme bütçesi
-    "net.core.netdev_budget_usecs" = 5000;             # Paket işleme zaman limiti (5ms)
+    # VPN optimizasyon
+    "net.core.netdev_budget" = 500;                    # 600 -> 500
+    "net.core.netdev_budget_usecs" = 4000;             # 5000 -> 4000
     
-    # ============================================================================
-    # Ek Performans Ayarları
-    # ============================================================================
-    # TCP algoritma seçenekleri
-    "net.ipv4.tcp_reordering" = 3;                     # Packet reordering threshold
-    "net.ipv4.tcp_max_reordering" = 300;               # Maksimum reordering
-    "net.ipv4.tcp_app_win" = 31;                       # Reserved window for application
-    "net.ipv4.tcp_adv_win_scale" = 2;                  # Window scaling factor
+    # Performans
+    "net.ipv4.tcp_reordering" = 3;
+    "net.ipv4.tcp_max_reordering" = 300;
+    "net.ipv4.tcp_app_win" = 31;
+    "net.ipv4.tcp_adv_win_scale" = 1;                  # 2 -> 1 (daha konservatif)
     
-    # TCP timer ayarları
-    "net.ipv4.tcp_rfc1337" = 1;                        # TIME-WAIT assassination hazards koruması
-    "net.ipv4.tcp_abort_on_overflow" = 0;              # Overflow durumunda bağlantıyı kesme
+    # TCP timer
+    "net.ipv4.tcp_rfc1337" = 1;
+    "net.ipv4.tcp_abort_on_overflow" = 0;
     
-    # IP fragment ayarları
-    "net.ipv4.ipfrag_high_thresh" = 4194304;           # 4MB high threshold
-    "net.ipv4.ipfrag_low_thresh" = 3145728;            # 3MB low threshold
-    "net.ipv4.ipfrag_time" = 30;                       # Fragment timeout (30 saniye)
+    # IP fragment
+    "net.ipv4.ipfrag_high_thresh" = 3145728;           # 4MB -> 3MB
+    "net.ipv4.ipfrag_low_thresh" = 2097152;            # 3MB -> 2MB
+    "net.ipv4.ipfrag_time" = 30;
     
-    # Neighbor table ayarları
-    "net.ipv4.neigh.default.gc_thresh1" = 128;         # Minimum neighbor entries
-    "net.ipv4.neigh.default.gc_thresh2" = 512;         # Soft maximum
-    "net.ipv4.neigh.default.gc_thresh3" = 1024;        # Hard maximum
-    
+    # Neighbor table
+    "net.ipv4.neigh.default.gc_thresh1" = 128;
+    "net.ipv4.neigh.default.gc_thresh2" = 512;
+    "net.ipv4.neigh.default.gc_thresh3" = 1024;
+   
     # ============================================================================
     # Debugging ve Monitoring (opsiyonel, kapalı)
     # ============================================================================
