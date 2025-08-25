@@ -1,101 +1,109 @@
 # modules/core/hardware/default.nix
 # ==============================================================================
-# Hardware Configuration for ThinkPad E14 Gen 6
+# ThinkPad E14 Gen 6 için Kapsamlı Donanım Konfigürasyonu
 # ==============================================================================
-# This configuration manages hardware settings including:
-# - ThinkPad-specific ACPI and advanced thermal management
-# - Intel Arc Graphics drivers and hardware acceleration
-# - NVMe storage optimizations for dual-drive setup
-# - Intel Core Ultra 7 155H CPU thermal and power management
-# - LED control and function key management
-# - TrackPoint and touchpad configuration
-# - Optimized thermal throttling for stable operation
+# Bu konfigürasyon şu özellikleri yönetir:
+# - ThinkPad'e özel ACPI ve gelişmiş termal yönetim
+# - Intel Arc Graphics sürücüleri ve donanım hızlandırması
+# - Çift NVMe kurulumu için depolama optimizasyonları
+# - Intel Core Ultra 7 155H CPU termal ve güç yönetimi
+# - LED kontrolü ve fonksiyon tuşu yönetimi
+# - TrackPoint ve touchpad konfigürasyonu
+# - Kararlı çalışma için optimize edilmiş termal throttling
+# - Gelişmiş güç tasarrufu özellikleri
+# - Dinamik performans ölçeklendirmesi
 #
-# Target Hardware:
+# Hedef Donanım:
 # - ThinkPad E14 Gen 6 (21M7006LTX)
-# - Intel Core Ultra 7 155H (16-core hybrid architecture)
+# - Intel Core Ultra 7 155H (16 çekirdek hibrit mimari)
 # - Intel Arc Graphics (Meteor Lake-P)
 # - 64GB DDR5 RAM
-# - Dual NVMe setup: Transcend TS2TMTE400S + Timetec 35TT2280GEN4E-2TB
+# - Çift NVMe kurulumu: Transcend TS2TMTE400S + Timetec 35TT2280GEN4E-2TB
 #
-# Performance Targets:
-# - CPU Temperature: 75-85°C under load
-# - Fan Noise: Balanced (progressive curve)
-# - Power Consumption: 35W sustained, 45W burst
+# Performans Hedefleri:
+# - CPU Sıcaklığı: Yük altında 75-83°C
+# - Fan Gürültüsü: Dengeli (aşamalı eğri)
+# - Güç Tüketimi: AC'de 30W sürekli/40W burst, Pilde 18W sürekli/28W burst
+# - Pil Ömrü: %25-30 iyileşme hedefi
 #
-# Author: Kenan Pelit
-# Modified: 2025-08-23 (Final thermal optimization for E14 Gen 6)
+# Yazar: Kenan Pelit
+# Değiştirilme: 2025-08-25 (E14 Gen 6 için final optimize versiyon)
 # ==============================================================================
 { pkgs, ... }:
 {
   # ==============================================================================
-  # Hardware Configuration
+  # Temel Donanım Konfigürasyonu
   # ==============================================================================
   hardware = {
-    # Enable TrackPoint for ThinkPad
+    # ThinkPad'lerin klasik TrackPoint özelliğini etkinleştir
+    # Kırmızı nokta ile hassas cursor kontrolü sağlar
     trackpoint.enable = true;
     
-    # Intel Arc Graphics configuration for Meteor Lake
+    # Intel Arc Graphics (Meteor Lake-P) için kapsamlı sürücü desteği
     graphics = {
-      enable = true;
+      enable = true;  # Grafik sürücülerini etkinleştir
       extraPackages = with pkgs; [
-        intel-media-driver      # VA-API implementation
-        vaapiVdpau             # VDPAU backend for VA-API
-        libvdpau-va-gl         # VDPAU driver with OpenGL/VAAPI backend
-        mesa                   # OpenGL implementation
-        intel-compute-runtime  # OpenCL runtime for Intel GPUs
-        intel-ocl             # OpenCL implementation
+        intel-media-driver      # VA-API implementasyonu - video decode/encode için
+        vaapiVdpau             # VDPAU backend - eski uygulamalar için VA-API köprüsü
+        libvdpau-va-gl         # OpenGL/VAAPI ile VDPAU sürücüsü
+        mesa                   # Ana OpenGL implementasyonu - 3D rendering
+        intel-compute-runtime  # Intel GPU'lar için OpenCL runtime
+        intel-ocl             # Intel OpenCL implementasyonu - GPU hesaplama
       ];
     };
     
-    # Firmware configuration
-    enableRedistributableFirmware = true;
-    enableAllFirmware = true;
-    cpu.intel.updateMicrocode = true;
+    # Firmware ve mikrocode güncellemeleri
+    enableRedistributableFirmware = true;  # Üçüncü parti firmware'leri etkinleştir
+    enableAllFirmware = true;              # Tüm firmware'leri yükle (WiFi, Bluetooth vb.)
+    cpu.intel.updateMicrocode = true;      # Intel CPU mikrocode güncellemelerini etkinleştir
   };
   
   # ==============================================================================
-  # Thermal and Power Management Services
+  # Gelişmiş Güç Yönetimi Servisleri
   # ==============================================================================
   services = {
-    # Lenovo throttling fix with optimized thermal management
+    # Lenovo throttling düzeltmesi - optimize edilmiş termal yönetim
     throttled = {
-      enable = true;
+      enable = true;  # Lenovo BIOS throttling sorunlarını düzelt
       extraConfig = ''
         [GENERAL]
-        # Enable throttling fix
+        # Throttling düzeltmesini etkinleştir
         Enabled: True
-        # Path to check AC power status
+        # AC güç durumunu kontrol etmek için sistem yolu
         Sysfs_Power_Path: /sys/class/power_supply/AC*/online
-        # Auto-reload config on changes
+        # Konfigürasyon değişikliklerinde otomatik yeniden yükleme
         Autoreload: True
 
         [BATTERY]
-        # Update rate for battery mode (seconds)
-        Update_Rate_s: 30
-        # Long-term power limit (Watts) - balanced for battery life
-        PL1_Tdp_W: 25
-        PL1_Duration_s: 28
-        # Short-term power limit (Watts)
-        PL2_Tdp_W: 35
-        PL2_Duration_S: 0.002
-        # Temperature threshold for throttling (Celsius)
-        Trip_Temp_C: 80
+        # Pil modunda güncelleme hızı (saniye) - daha hızlı response
+        Update_Rate_s: 15
+        # Uzun vadeli güç limiti (Watt) - pil ömrü için optimize
+        PL1_Tdp_W: 18
+        # PL1 süre penceresi (saniye)
+        PL1_Duration_s: 30
+        # Kısa vadeli güç limiti (Watt) - burst performansı için
+        PL2_Tdp_W: 28
+        # PL2 süre penceresi (saniye) - daha uzun burst süresi
+        PL2_Duration_S: 0.004
+        # Throttling başlangıç sıcaklığı (Celsius) - daha düşük threshold
+        Trip_Temp_C: 78
 
         [AC]
-        # Update rate for AC mode (seconds)
-        Update_Rate_s: 5
-        # Long-term power limit (Watts) - balanced performance
-        PL1_Tdp_W: 35
-        PL1_Duration_s: 28
-        # Short-term power limit (Watts)
-        PL2_Tdp_W: 45
-        PL2_Duration_S: 0.002
-        # Temperature threshold for throttling (Celsius)
-        Trip_Temp_C: 85
+        # AC modunda güncelleme hızı (saniye) - çok hızlı response
+        Update_Rate_s: 3
+        # Uzun vadeli güç limiti (Watt) - sürdürülebilir performans
+        PL1_Tdp_W: 30
+        # PL1 süre penceresi (saniye)
+        PL1_Duration_s: 25
+        # Kısa vadeli güç limiti (Watt) - burst performansı
+        PL2_Tdp_W: 40
+        # PL2 süre penceresi (saniye)
+        PL2_Duration_S: 0.005
+        # Throttling başlangıç sıcaklığı (Celsius) - optimum sıcaklık
+        Trip_Temp_C: 83
 
         [UNDERVOLT.BATTERY]
-        # Meteor Lake doesn't support undervolting
+        # Meteor Lake undervolting desteklemiyor - tüm değerler 0
         CORE: 0
         GPU: 0
         CACHE: 0
@@ -103,7 +111,7 @@
         ANALOGIO: 0
 
         [UNDERVOLT.AC]
-        # Meteor Lake doesn't support undervolting
+        # Meteor Lake undervolting desteklemiyor - tüm değerler 0
         CORE: 0
         GPU: 0
         CACHE: 0
@@ -112,238 +120,337 @@
       '';
     };
 
-    # TLP disabled in favor of auto-cpufreq for modern CPU management
+    # TLP'yi devre dışı bırak - auto-cpufreq ile çakışma önlemek için
     tlp.enable = false;
     
-    # Modern CPU frequency management with balanced thermal controls
+    # Modern CPU frekans yönetimi - akıllı güç ve performans dengesi
     auto-cpufreq = {
-      enable = true;
+      enable = true;  # Otomatik CPU frekans scaling etkinleştir
       settings = {
         battery = {
-          governor = "powersave";
-          scaling_min_freq = 400000;   # 400 MHz minimum frequency
-          scaling_max_freq = 2800000;  # 2.8 GHz maximum on battery
-          turbo = "never";             # Disable turbo boost on battery
+          # Pil modunda maksimum güç tasarrufu
+          governor = "powersave";           # En düşük güç tüketimi için powersave governor
+          scaling_min_freq = 400000;        # 400 MHz minimum frekans
+          scaling_max_freq = 2200000;       # 2.2 GHz maksimum - agresif pil tasarrufu
+          turbo = "never";                  # Turbo boost'u tamamen kapat
+          energy_perf_bias = "power";       # Güç tasarrufu odaklı bias
+          balance_performance = 30;         # Düşük performans hedefi (0-100 arası)
         };
         charger = {
-          governor = "powersave";      # Use powersave for thermal management
-          scaling_min_freq = 400000;   # 400 MHz minimum frequency
-          scaling_max_freq = 3800000;  # 3.8 GHz maximum on AC (balanced)
-          turbo = "always";            # Always enable turbo on AC
+          # AC modunda dengeli performans
+          governor = "powersave";           # schedutil yerine powersave - daha kararlı
+          scaling_min_freq = 400000;        # 400 MHz minimum frekans
+          scaling_max_freq = 3400000;       # 3.4 GHz maksimum - termal için konservatif
+          turbo = "auto";                   # Akıllı turbo boost - gerektiğinde devreye gir
+          energy_perf_bias = "balance_performance"; # Dengeli performans bias
+          balance_performance = 70;         # Orta-yüksek performans hedefi
         };
       };
     };
 
-    # ThinkPad fan control with optimized cooling curve
-    # NOTE: Disabled due to configuration issues. throttled + auto-cpufreq provides
-    # sufficient thermal management. Enable and configure if manual fan control needed.
-    thinkfan = {
-      enable = false;  # Disabled - using throttled + auto-cpufreq instead
-      smartSupport = true;
-      
-      # Optimized fan curve for E14 Gen 6
-      levels = [
-        # [fan_level temp_low temp_high]
-        [ 0  0   60 ]          # Fan off below 60°C (quiet operation)
-        [ 1  58  65 ]          # Level 1: 58-65°C (barely audible)
-        [ 2  63  70 ]          # Level 2: 63-70°C (quiet)
-        [ 3  68  75 ]          # Level 3: 68-75°C (noticeable)
-        [ 4  73  78 ]          # Level 4: 73-78°C (moderate)
-        [ 5  77  82 ]          # Level 5: 77-82°C (loud)
-        [ 6  81  85 ]          # Level 6: 81-85°C (very loud)
-        [ 7  84  88 ]          # Level 7: 84-88°C (maximum normal)
-        [ "level full-speed"  87  32767 ]  # Full speed above 87°C (emergency)
-      ];
+    # PowerTOP otomatik optimizasyonları - sistem çapında güç tasarrufu
+    powertop.enable = true;
+
+    # Intel termal daemon - Meteor Lake için yeniden etkinleştirildi
+    thermald = {
+      enable = true;      # Termal yönetim daemon'unu etkinleştir
+      adaptive = true;    # Adaptif termal yönetim - iş yüküne göre ayarlama
     };
 
-    # Intel thermal daemon - disabled due to Meteor Lake compatibility issues
-    thermald.enable = false;
-
-    # Disable power-profiles-daemon to avoid conflicts with auto-cpufreq
+    # Power-profiles-daemon'u devre dışı bırak - çakışma önlemek için
     power-profiles-daemon.enable = false;
+    
+    # Sistem güç yönetimi ayarları
+    logind = {
+      # Kapak kapatıldığında suspend
+      lidSwitch = "suspend";
+      # Docked iken kapak kapatma eylemini yok say
+      lidSwitchDocked = "ignore";
+      # Harici güçte de kapak kapatınca suspend
+      lidSwitchExternalPower = "suspend";
+      # Güç tuşuna kısa basışta suspend
+      powerKey = "suspend";
+      # Güç tuşuna uzun basışta kapat
+      powerKeyLongPress = "poweroff";
+      # Suspend tuşu davranışı
+      handleSuspendKey = "suspend";
+      # 20 dakika idle sonrası otomatik suspend
+      idleAction = "suspend";
+      idleActionSec = "20min";
+    };
   };
   
   # ==============================================================================
-  # Boot Configuration
+  # Gelişmiş Boot Konfigürasyonu
   # ==============================================================================
   boot = {
-    # Essential kernel modules for hardware monitoring and control
+    # Donanım izleme ve kontrol için gerekli kernel modülleri
     kernelModules = [ 
-      "thinkpad_acpi"  # ThinkPad ACPI extras (fan control, LEDs, etc.)
-      "coretemp"       # CPU temperature monitoring
-      "intel_rapl"     # Intel RAPL power capping interface
-      "msr"            # Model-specific register access
+      "thinkpad_acpi"      # ThinkPad ACPI ekstreleri (fan kontrolü, LED'ler vb.)
+      "coretemp"           # CPU sıcaklık sensörleri
+      "intel_rapl"         # Intel RAPL güç sınırlama arayüzü
+      "msr"                # Model-specific register erişimi
+      "acpi_call"          # ACPI call desteği - gelişmiş ACPI fonksiyonları
     ];
     
-    # Module options for ThinkPad-specific features
+    # Modül seçenekleri - ThinkPad ve Intel CPU optimizasyonları
     extraModprobeConfig = ''
-      # ThinkPad ACPI configuration
-      options thinkpad_acpi fan_control=1      # Enable manual fan control
-      options thinkpad_acpi brightness_mode=1   # Improved brightness control
-      options thinkpad_acpi volume_mode=1       # Better volume key handling
-      options thinkpad_acpi experimental=1      # Enable experimental features
+      # ThinkPad ACPI konfigürasyonu
+      options thinkpad_acpi fan_control=1      # Manuel fan kontrolünü etkinleştir
+      options thinkpad_acpi brightness_mode=1   # Gelişmiş parlaklık kontrolü
+      options thinkpad_acpi volume_mode=1       # Daha iyi ses tuşu kontrolü
+      options thinkpad_acpi experimental=1      # Deneysel özellikleri etkinleştir
       
-      # Intel P-state driver options for better power management
-      options intel_pstate hwp_dynamic_boost=0  # Disable dynamic boost for stability
+      # Intel P-state sürücü optimizasyonları
+      options intel_pstate hwp_dynamic_boost=0  # Kararlılık için dinamik boost'u kapat
+      options intel_pstate disable_acpi_ppc=1   # ACPI PPC'yi devre dışı bırak
+      
+      # Ses güç yönetimi
+      options snd_hda_intel power_save=1        # Ses kartı güç tasarrufu
+      options snd_ac97_codec power_save=1       # AC97 codec güç tasarrufu
     '';
     
-    # Kernel parameters for optimized thermal and power management
+    # Kernel parametreleri - sistem çapında optimizasyonlar
     kernelParams = [
-      # NVMe optimization - disable ACPI for better performance
+      # NVMe optimizasyonu - daha iyi performans için ACPI'yi kapat
       "nvme.noacpi=1"
       
-      # IOMMU for better device isolation and security
-      "intel_iommu=on"
-      "iommu=pt"                    # Pass-through mode for better performance
+      # IOMMU - cihaz izolasyonu ve güvenlik
+      "intel_iommu=on"          # Intel IOMMU'yu etkinleştir
+      "iommu=pt"                # Pass-through modu - daha iyi performans
       
-      # CPU power management settings
-      "intel_pstate=passive"        # Passive mode for governor-based control
-      "processor.max_cstate=3"      # Limit deep C-states for responsiveness
-      "intel_idle.max_cstate=3"     # Limit idle states
+      # CPU güç yönetimi optimizasyonları
+      "intel_pstate=active"     # Aktif P-state sürücüsü - daha iyi kontrol
+      "processor.max_cstate=7"  # Derin C-state'leri etkinleştir - güç tasarrufu
+      "intel_idle.max_cstate=7" # Intel idle sürücüsü için C-state limiti
       
-      # Intel Arc Graphics power saving and performance
-      "i915.enable_guc=3"           # Enable GuC and HuC firmware
-      "i915.enable_fbc=1"           # Frame buffer compression
-      "i915.enable_psr=2"           # Panel self refresh v2
-      "i915.enable_dc=2"            # Display C-states
-      "i915.fastboot=1"             # Faster graphics initialization
+      # Intel Arc Graphics optimizasyonları
+      "i915.enable_guc=3"       # GuC ve HuC firmware'leri etkinleştir
+      "i915.enable_fbc=1"       # Frame buffer sıkıştırması - güç tasarrufu
+      "i915.enable_psr=2"       # Panel self refresh v2 - ekran güç tasarrufu
+      "i915.enable_dc=4"        # Display C-states (maksimum güç tasarrufu)
+      "i915.fastboot=1"         # Hızlı grafik başlatması
+      "i915.panel_use_ssc=0"    # SSC'yi kapat - güç tasarrufu
+      "i915.modeset=1"          # KMS'yi etkinleştir
+      "i915.enable_dpcd_backlight=1" # eDP arkaplan ışığı kontrolü
       
-      # Thermal management settings
-      "thermal.off=0"               # Ensure thermal management is enabled
-      "thermal.act=-1"              # ACPI thermal control (automatic)
-      "thermal.nocrt=0"             # Enable critical temperature actions
-      "thermal.psv=-1"              # Automatic passive cooling
+      # Termal yönetim ayarları
+      "thermal.off=0"           # Termal yönetimini etkinleştir
+      "thermal.act=-1"          # ACPI termal kontrolü (otomatik)
+      "thermal.nocrt=0"         # Kritik sıcaklık eylemlerini etkinleştir
+      "thermal.psv=-1"          # Otomatik pasif soğutma
       
-      # Memory and performance
-      "transparent_hugepage=madvise" # Optimize memory usage
-      "mitigations=auto"            # Keep security mitigations enabled
+      # Güç yönetimi eklemeleri
+      "acpi_osi=Linux"          # ACPI uyumluluğunu artır
+      "pcie_aspm=force"         # PCIe Active State Power Management zorla
+      "ahci.mobile_lpm_policy=3" # SATA güç yönetimi (en agresif)
+      "snd_hda_intel.power_save=1" # Ses kartı güç tasarrufu
+      "usbcore.autosuspend=2"   # USB cihazları 2 saniye sonra suspend
+      "iwlwifi.power_save=1"    # WiFi güç tasarrufu etkinleştir
+      "iwlwifi.uapsd_disable=0" # WiFi uAPSD etkin (güç tasarrufu)
+      
+      # Bellek ve performans optimizasyonları
+      "transparent_hugepage=madvise" # Büyük sayfa optimizasyonu
+      "mitigations=auto"        # Güvenlik önlemlerini otomatik uygula
     ];
   };
   
   # ==============================================================================
-  # System Services
+  # Gelişmiş Sistem Servisleri
   # ==============================================================================
   systemd.services = {
-    # CPU power limit service for thermal control
+    # Dinamik CPU güç sınırı servisi - RAPL arayüzü üzerinden
     cpu-power-limit = {
-      description = "Set Intel RAPL power limits for thermal management";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "sysinit.target" ];
+      description = "Dinamik Intel RAPL güç sınırları";
+      wantedBy = [ "multi-user.target" ];    # Sistem başlangıcında otomatik başlat
+      after = [ "sysinit.target" ];          # Sistem başlatma sonrası çalıştır
       serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
+        Type = "oneshot";                     # Bir kez çalışıp bitecek servis
+        RemainAfterExit = true;               # Çıktıktan sonra aktif olarak işaretle
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
           #!/usr/bin/env sh
-          # Wait for RAPL interface to be available
-          sleep 2
+          # RAPL arayüzünün hazır olmasını bekle
+          sleep 3
           
-          # Check if RAPL interface is available
+          # RAPL arayüzü mevcut mu kontrol et
           if [ -d /sys/class/powercap/intel-rapl:0 ]; then
-            # Detect power source
+            # Güç kaynağını tespit et (AC veya pil)
             ON_AC=0
-            if [ -f /sys/class/power_supply/AC/online ]; then
-              ON_AC=$(cat /sys/class/power_supply/AC/online)
-            fi
+            # Hem AC hem de DP (DisplayPort) güç kaynaklarını kontrol et
+            for ac in /sys/class/power_supply/A{C,DP}*; do
+              [ -f "$ac/online" ] && [ "$(cat "$ac/online")" = "1" ] && ON_AC=1 && break
+            done
             
             if [ "$ON_AC" = "1" ]; then
-              # AC Power: Higher limits for performance
-              echo 35000000 > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-              echo 45000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-              echo "Intel RAPL power limits set (AC): PL1=35W, PL2=45W"
+              # AC Güç: Dengeli performans profili
+              echo 30000000 > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw  # PL1: 30W
+              echo 40000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw  # PL2: 40W
+              echo 25000000 > /sys/class/powercap/intel-rapl:0/constraint_0_time_window_us  # PL1 süre: 25s
+              echo 5000 > /sys/class/powercap/intel-rapl:0/constraint_1_time_window_us      # PL2 süre: 5ms
+              echo "RAPL: AC Modu - PL1=30W, PL2=40W"
             else
-              # Battery: Lower limits for efficiency
-              echo 25000000 > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-              echo 35000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-              echo "Intel RAPL power limits set (Battery): PL1=25W, PL2=35W"
+              # Pil: Maksimum verimlilik profili
+              echo 18000000 > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw  # PL1: 18W
+              echo 28000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw  # PL2: 28W
+              echo 30000000 > /sys/class/powercap/intel-rapl:0/constraint_0_time_window_us  # PL1 süre: 30s
+              echo 4000 > /sys/class/powercap/intel-rapl:0/constraint_1_time_window_us      # PL2 süre: 4ms
+              echo "RAPL: Pil Modu - PL1=18W, PL2=28W"
             fi
-            
-            # Set time windows
-            echo 28000000 > /sys/class/powercap/intel-rapl:0/constraint_0_time_window_us
-            echo 2500 > /sys/class/powercap/intel-rapl:0/constraint_1_time_window_us
           else
-            echo "Intel RAPL interface not available - skipping power limit configuration"
+            echo "Intel RAPL arayüzü bulunamadı - güç sınırı konfigürasyonu atlanıyor"
           fi
         '';
       };
     };
     
-    # Fix LED state on boot for ThinkPad E14 Gen 6
+    # ThinkPad LED durumlarını düzeltme servisi
     fix-led-state = {
-      description = "Fix ThinkPad LED states on boot";
+      description = "ThinkPad LED durumlarını boot'ta düzelt";
       wantedBy = [ "multi-user.target" ];
-      after = [ "systemd-udev-settle.service" ];
+      after = [ "systemd-udev-settle.service" ];  # udev kuralları yüklendikten sonra
       serviceConfig = {
         Type = "oneshot";
+        RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "fix-leds" ''
           #!/usr/bin/env sh
-          # Configure LED triggers for proper audio integration
-          if [ -d /sys/class/leds/platform::micmute ]; then
-            echo "audio-micmute" > /sys/class/leds/platform::micmute/trigger 2>/dev/null || true
-            echo 0 > /sys/class/leds/platform::micmute/brightness 2>/dev/null || true
-          fi
-          
-          if [ -d /sys/class/leds/platform::mute ]; then
-            echo "audio-mute" > /sys/class/leds/platform::mute/trigger 2>/dev/null || true
-            echo 0 > /sys/class/leds/platform::mute/brightness 2>/dev/null || true
-          fi
+          # Ses ile ilgili LED'leri yapılandır
+          for led in /sys/class/leds/platform::*mute; do
+            if [ -d "$led" ]; then
+              # LED'in trigger'ını ses durumuna bağla
+              echo "audio-$(basename "$led" | sed 's/.*:://')" > "$led/trigger" 2>/dev/null || true
+              # Başlangıçta LED'i kapat
+              echo 0 > "$led/brightness" 2>/dev/null || true
+            fi
+          done
         '';
-        RemainAfterExit = true;
       };
     };
     
-    # Thermal monitoring service with adaptive warnings
+    # Gelişmiş termal izleme servisi - performans ölçeklendirmeli
     thermal-monitor = {
-      description = "Monitor system thermal status and log warnings";
+      description = "Performans ölçeklendirmeli gelişmiş termal izleme";
       wantedBy = [ "multi-user.target" ];
       after = [ "multi-user.target" ];
       serviceConfig = {
-        Type = "simple";
+        Type = "simple";                      # Sürekli çalışan servis
         ExecStart = pkgs.writeShellScript "thermal-monitor" ''
           #!/usr/bin/env sh
-          WARNING_THRESHOLD=88
-          CRITICAL_THRESHOLD=95
+          # Log dosyası yolu
+          TEMP_LOG="/var/log/thermal-monitor.log"
+          touch "$TEMP_LOG"
           
           while true; do
-            # Get highest temperature from all thermal zones
-            TEMP=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -rn | head -1)
-            if [ -n "$TEMP" ]; then
-              TEMP_C=$((TEMP / 1000))
+            # Sistemdeki en yüksek sıcaklığı al
+            MAX_TEMP=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -rn | head -1)
+            
+            if [ -n "$MAX_TEMP" ]; then
+              TEMP_C=$((MAX_TEMP / 1000))
+              TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
               
-              # Log based on temperature thresholds
-              if [ "$TEMP_C" -gt "$CRITICAL_THRESHOLD" ]; then
-                echo "CRITICAL: CPU temperature: $${TEMP_C}°C - System may throttle severely"
-                logger -p user.crit -t thermal-monitor "Critical CPU temperature: $${TEMP_C}°C"
-              elif [ "$TEMP_C" -gt "$WARNING_THRESHOLD" ]; then
-                echo "WARNING: High CPU temperature: $${TEMP_C}°C - Performance may be reduced"
-                logger -p user.warning -t thermal-monitor "High CPU temperature: $${TEMP_C}°C"
+              # Sıcaklık bazlı eylem matrisi
+              if [ "$TEMP_C" -gt 90 ]; then
+                # KRITIK: Acil müdahale gerekli
+                echo "$TIMESTAMP CRITICAL: $TEMP_C°C - Acil throttling başlatılıyor" | tee -a "$TEMP_LOG"
+                logger -p user.crit -t thermal-monitor "Acil durum: $TEMP_C°C"
+                # Tüm CPU çekirdeklerini powersave moduna geçir
+                echo powersave > /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null || true
+              elif [ "$TEMP_C" -gt 85 ]; then
+                # UYARI: Yüksek sıcaklık
+                echo "$TIMESTAMP WARNING: $TEMP_C°C - Yüksek sıcaklık tespit edildi" | tee -a "$TEMP_LOG"
+                logger -p user.warning -t thermal-monitor "Yüksek sıcaklık: $TEMP_C°C"
+              elif [ "$TEMP_C" -lt 70 ]; then
+                # Normal sıcaklığa dönüş - performans modunu geri yükle
+                systemctl is-active auto-cpufreq >/dev/null && systemctl restart auto-cpufreq 2>/dev/null || true
               fi
             fi
             
-            # Check every 30 seconds
-            sleep 30
+            # Her 15 saniyede bir kontrol et (hızlı response için)
+            sleep 15
           done
         '';
-        Restart = "always";
-        RestartSec = 10;
+        Restart = "always";                   # Servis durduğunda otomatik yeniden başlat
+        RestartSec = 5;                       # 5 saniye bekleyip yeniden başlat
+      };
+    };
+    
+    # Otomatik WiFi güç yönetimi servisi
+    wifi-powersave = {
+      description = "WiFi güç yönetimini etkinleştir";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" ];            # Ağ servisleri başladıktan sonra
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = pkgs.writeShellScript "wifi-powersave" ''
+          #!/usr/bin/env sh
+          # Tüm wireless arayüzlerini bul ve güç tasarrufunu etkinleştir
+          for iface in $(ls /sys/class/net/ | grep -E '^wl'); do
+            if [ -d "/sys/class/net/$iface/wireless" ]; then
+              # iw komutu ile power save modunu etkinleştir
+              ${pkgs.iw}/bin/iw dev "$iface" set power_save on 2>/dev/null || true
+              echo "$iface için WiFi güç tasarrufu etkinleştirildi"
+            fi
+          done
+        '';
       };
     };
   };
   
   # ==============================================================================
-  # Udev Rules
+  # Gelişmiş Udev Kuralları - Otomatik Donanım Yönetimi
   # ==============================================================================
   services.udev.extraRules = ''
-    # Fix microphone LED permissions and initial state
-    SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::micmute/brightness"
-    SUBSYSTEM=="leds", KERNEL=="platform::mute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/platform::mute/brightness"
+    # LED izinleri - kullanıcı erişimi için
+    SUBSYSTEM=="leds", KERNEL=="platform::*mute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 %S%p/brightness"
     
-    # Dynamic CPU governor switching based on power source
-    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.linuxPackages.cpupower}/bin/cpupower frequency-set -g powersave"
-    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.linuxPackages.cpupower}/bin/cpupower frequency-set -g powersave"
+    # Güç kaynağı değişikliklerinde otomatik servis yeniden başlatma
+    # Pil/AC geçişlerinde güç profilleri otomatik güncellenir
+    SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service auto-cpufreq.service"
+    SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service auto-cpufreq.service"
     
-    # Adjust RAPL power limits on power source change
-    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
-    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
+    # USB cihazları için otomatik güç yönetimi
+    # Takılır takılmaz otomatik suspend moduna geç
+    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
+    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/autosuspend" ATTR{power/autosuspend}="2"
+    
+    # SATA bağlantı güç yönetimi - SSD'ler için optimize
+    # Orta güç tasarrufu modu - performans/güç dengesi
+    ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="med_power_with_dipm"
   '';
+  
+  # ==============================================================================
+  # Sistem Çapında Optimizasyonlar
+  # ==============================================================================
+  
+  ## Zram konfigürasyonu - RAM'i daha verimli kullanma
+  #zramSwap = {
+  #  enable = true;                            # Zram swap'ı etkinleştir
+  #  algorithm = "lz4";                        # Hızlı sıkıştırma algoritması
+  #  memoryPercent = 30;                       # RAM'in %30'u kadar zram kullan
+  #};
+  
+  # Kernel sysctl optimizasyonları - donanıma özgü sistem parametreleri
+  boot.kernel.sysctl = {
+    # VM (Sanal Bellek) optimizasyonları - SSD ve güç tasarrufu için
+    "vm.dirty_ratio" = 5;                     # Kirli sayfalar için %5 sınır (SSD için düşük)
+    "vm.dirty_background_ratio" = 2;          # Arkaplan temizleme %2'de başlasın
+    "vm.dirty_expire_centisecs" = 1500;       # Kirli sayfalar 15 saniye sonra yazılsın
+    "vm.dirty_writeback_centisecs" = 500;     # Her 5 saniyede bir temizlik yap
+    "vm.swappiness" = 10;                     # Düşük swap kullanımı (RAM öncelikli)
+    
+    # Güç ve donanım ile ilgili optimizasyonlar
+    "kernel.nmi_watchdog" = 0;                # NMI watchdog'u kapat - güç tasarrufu
+    
+    # Memory management optimizations for 64GB RAM
+    "vm.vfs_cache_pressure" = 50;             # VFS cache'ini daha az temizle (64GB RAM avantajı)
+    "vm.min_free_kbytes" = 131072;            # 128MB free memory reserve (64GB için optimum)
+    
+    # Scheduler optimizations for hybrid CPU (P+E cores)
+    "kernel.sched_energy_aware" = 1;          # Energy Aware Scheduling etkinleştir
+    "kernel.sched_autogroup_enabled" = 1;     # Otomatik process gruplandırma
+    
+    # I/O scheduler optimizations for NVMe SSDs
+    "vm.page_lock_unfairness" = 1;            # SSD'ler için sayfa kilidi optimizasyonu
+  };
 }
 
