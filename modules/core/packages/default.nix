@@ -177,6 +177,7 @@ in
     # Sistem Görevleri ve Zamanlama
     # ==============================================================================
     at                 # job scheduling command
+    logger
 
     # ==============================================================================
     # Commented Out / Optional Packages
