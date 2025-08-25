@@ -2,6 +2,77 @@
 # ==============================================================================
 # Unified Hardware and Power Management Configuration
 # ==============================================================================
+# This configuration provides comprehensive hardware optimization and power
+# management tailored for ThinkPad laptops with different CPU architectures.
+#
+# Key Features:
+# - Dynamic CPU-specific power management (Meteor Lake vs Kaby Lake R)
+# - Intelligent thermal throttling based on CPU generation
+# - Battery health optimization with configurable charge thresholds
+# - GPU acceleration and media decoding support
+# - Advanced power saving without performance compromise
+# - Real-time thermal monitoring and alerts
+# - Automatic configuration based on detected hardware
+#
+# CPU Architecture Support:
+# - Meteor Lake (Intel Core Ultra 7 155H): Advanced power management with
+#   higher thermal thresholds and optimized performance profiles
+# - Kaby Lake R (Intel Core i7-8650U): Conservative power management with
+#   lower thermal limits for older architecture stability
+#
+# System Specific Optimizations:
+# - ThinkPad X1 Carbon 6th (Kaby Lake R): Balanced performance with emphasis
+#   on battery life and thermal management
+# - ThinkPad E14 Gen 6 (Meteor Lake): Performance-oriented tuning with
+#   higher power limits and advanced feature utilization
+#
+# Power Management Layers:
+# 1. Intel RAPL (Running Average Power Limit) - Hardware-level power control
+# 2. auto-cpufreq - CPU frequency scaling and governor management
+# 3. throttled - Temperature-based throttling and undervolting (where supported)
+# 4. thermald - Thermal daemon for proactive temperature management
+# 5. Custom systemd services for runtime adaptation
+#
+# Thermal Management Strategy:
+# - Multi-zone temperature monitoring (CPU, GPU, motherboard)
+# - Progressive throttling with configurable trip points
+# - Critical temperature protection with system alerts
+# - Adaptive cooling based on power source (AC vs battery)
+#
+# Battery Health Features:
+# - Configurable charge thresholds (60-80% for Meteor Lake, 75-80% for Kaby Lake R)
+# - Smart charging based on usage patterns
+# - Battery preservation mode for extended lifespan
+#
+# Performance Profiles:
+# - Battery Mode: Power-saving governors, reduced frequency limits
+# - AC Mode: Balanced performance with intelligent boost management
+# - Custom per-CPU optimization based on architectural capabilities
+#
+# Hardware Support Matrix:
+# - Intel Integrated Graphics (iGPU) with full VA-API acceleration
+# - NVMe SSD power management and optimization
+# - WiFi power saving modes (iwlwifi)
+# - Audio power management (snd_hda_intel)
+# - USB device power control with exception handling for HID devices
+# - PCIe ASPM (Active State Power Management) for peripheral power savings
+#
+# Safety Features:
+# - Fallback to conservative settings on hardware detection failure
+# - Graceful degradation of features on unsupported hardware
+# - Comprehensive logging and monitoring capabilities
+# - User-configurable thresholds through NixOS options
+#
+# Monitoring and Diagnostics:
+# - Real-time thermal monitoring with systemd service
+# - Power usage reporting through powertop integration
+# - Battery health tracking and reporting
+# - Performance profiling tools and shell aliases
+#
+# Author: Kenan Pelit
+# Version: 2.0.0
+# Last Updated: 2025-08-25
+# ==============================================================================
 { config, lib, pkgs, ... }:
 
 let
