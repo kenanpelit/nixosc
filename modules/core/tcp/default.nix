@@ -14,14 +14,18 @@
 # Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, ... }:
-
+ 
 let
+  # Komutların tam yollarını tanımla
+  awk = "${pkgs.gawk}/bin/awk";
+  grep = "${pkgs.gnugrep}/bin/grep";
+  sysctl = "${pkgs.procps}/bin/sysctl";
+  
   # Sistem RAM miktarını tespit et
-  # /proc/meminfo'dan okuma yaparak gerçek RAM miktarını al
   detectMemoryScript = pkgs.writeShellScript "detect-memory" ''
     #!/usr/bin/env bash
     # Total memory in KB from /proc/meminfo
-    TOTAL_KB=$(grep "^MemTotal:" /proc/meminfo | awk '{print $2}')
+    TOTAL_KB=$(${grep} "^MemTotal:" /proc/meminfo | ${awk} '{print $2}')
     # Convert to MB
     TOTAL_MB=$((TOTAL_KB / 1024))
     echo "$TOTAL_MB"
@@ -295,47 +299,46 @@ in
           # High Memory System (64GB) ayarları
           echo "Applying TCP settings for High Memory System"
           
-          # TCP buffer ayarları
-          sysctl -w net.ipv4.tcp_rmem="${highMemConfig.rmem}"
-          sysctl -w net.ipv4.tcp_wmem="${highMemConfig.wmem}"
-          sysctl -w net.core.rmem_max=${toString highMemConfig.rmem_max}
-          sysctl -w net.core.wmem_max=${toString highMemConfig.wmem_max}
-          sysctl -w net.core.rmem_default=${toString highMemConfig.rmem_default}
-          sysctl -w net.core.wmem_default=${toString highMemConfig.wmem_default}
-          sysctl -w net.core.netdev_max_backlog=${toString highMemConfig.netdev_max_backlog}
-          sysctl -w net.core.somaxconn=${toString highMemConfig.somaxconn}
-          sysctl -w net.ipv4.tcp_max_syn_backlog=${toString highMemConfig.tcp_max_syn_backlog}
-          sysctl -w net.ipv4.tcp_mem="${highMemConfig.tcp_mem}"
-          sysctl -w net.ipv4.udp_mem="${highMemConfig.udp_mem}"
+          # TCP buffer ayarları - sysctl komutunu tam yoluyla kullan
+          ${sysctl} -w net.ipv4.tcp_rmem="${highMemConfig.rmem}"
+          ${sysctl} -w net.ipv4.tcp_wmem="${highMemConfig.wmem}"
+          ${sysctl} -w net.core.rmem_max=${toString highMemConfig.rmem_max}
+          ${sysctl} -w net.core.wmem_max=${toString highMemConfig.wmem_max}
+          ${sysctl} -w net.core.rmem_default=${toString highMemConfig.rmem_default}
+          ${sysctl} -w net.core.wmem_default=${toString highMemConfig.wmem_default}
+          ${sysctl} -w net.core.netdev_max_backlog=${toString highMemConfig.netdev_max_backlog}
+          ${sysctl} -w net.core.somaxconn=${toString highMemConfig.somaxconn}
+          ${sysctl} -w net.ipv4.tcp_max_syn_backlog=${toString highMemConfig.tcp_max_syn_backlog}
+          ${sysctl} -w net.ipv4.tcp_mem="${highMemConfig.tcp_mem}"
+          ${sysctl} -w net.ipv4.udp_mem="${highMemConfig.udp_mem}"
           
           # Power settings
-          sysctl -w net.ipv4.tcp_keepalive_time=${toString highMemPowerSettings.tcp_keepalive_time}
-          sysctl -w net.ipv4.tcp_keepalive_intvl=${toString highMemPowerSettings.tcp_keepalive_intvl}
-          sysctl -w net.ipv4.tcp_fin_timeout=${toString highMemPowerSettings.tcp_fin_timeout}
+          ${sysctl} -w net.ipv4.tcp_keepalive_time=${toString highMemPowerSettings.tcp_keepalive_time}
+          ${sysctl} -w net.ipv4.tcp_keepalive_intvl=${toString highMemPowerSettings.tcp_keepalive_intvl}
+          ${sysctl} -w net.ipv4.tcp_fin_timeout=${toString highMemPowerSettings.tcp_fin_timeout}
         else
           # Standard Memory System (16GB) ayarları
           echo "Applying TCP settings for Standard Memory System"
           
           # TCP buffer ayarları
-          sysctl -w net.ipv4.tcp_rmem="${standardMemConfig.rmem}"
-          sysctl -w net.ipv4.tcp_wmem="${standardMemConfig.wmem}"
-          sysctl -w net.core.rmem_max=${toString standardMemConfig.rmem_max}
-          sysctl -w net.core.wmem_max=${toString standardMemConfig.wmem_max}
-          sysctl -w net.core.rmem_default=${toString standardMemConfig.rmem_default}
-          sysctl -w net.core.wmem_default=${toString standardMemConfig.wmem_default}
-          sysctl -w net.core.netdev_max_backlog=${toString standardMemConfig.netdev_max_backlog}
-          sysctl -w net.core.somaxconn=${toString standardMemConfig.somaxconn}
-          sysctl -w net.ipv4.tcp_max_syn_backlog=${toString standardMemConfig.tcp_max_syn_backlog}
-          sysctl -w net.ipv4.tcp_mem="${standardMemConfig.tcp_mem}"
-          sysctl -w net.ipv4.udp_mem="${standardMemConfig.udp_mem}"
+          ${sysctl} -w net.ipv4.tcp_rmem="${standardMemConfig.rmem}"
+          ${sysctl} -w net.ipv4.tcp_wmem="${standardMemConfig.wmem}"
+          ${sysctl} -w net.core.rmem_max=${toString standardMemConfig.rmem_max}
+          ${sysctl} -w net.core.wmem_max=${toString standardMemConfig.wmem_max}
+          ${sysctl} -w net.core.rmem_default=${toString standardMemConfig.rmem_default}
+          ${sysctl} -w net.core.wmem_default=${toString standardMemConfig.wmem_default}
+          ${sysctl} -w net.core.netdev_max_backlog=${toString standardMemConfig.netdev_max_backlog}
+          ${sysctl} -w net.core.somaxconn=${toString standardMemConfig.somaxconn}
+          ${sysctl} -w net.ipv4.tcp_max_syn_backlog=${toString standardMemConfig.tcp_max_syn_backlog}
+          ${sysctl} -w net.ipv4.tcp_mem="${standardMemConfig.tcp_mem}"
+          ${sysctl} -w net.ipv4.udp_mem="${standardMemConfig.udp_mem}"
           
           # Power settings
-          sysctl -w net.ipv4.tcp_keepalive_time=${toString standardMemPowerSettings.tcp_keepalive_time}
-          sysctl -w net.ipv4.tcp_keepalive_intvl=${toString standardMemPowerSettings.tcp_keepalive_intvl}
-          sysctl -w net.ipv4.tcp_fin_timeout=${toString standardMemPowerSettings.tcp_fin_timeout}
+          ${sysctl} -w net.ipv4.tcp_keepalive_time=${toString standardMemPowerSettings.tcp_keepalive_time}
+          ${sysctl} -w net.ipv4.tcp_keepalive_intvl=${toString standardMemPowerSettings.tcp_keepalive_intvl}
+          ${sysctl} -w net.ipv4.tcp_fin_timeout=${toString standardMemPowerSettings.tcp_fin_timeout}
         fi
       '';
     };
   };
 }
-
