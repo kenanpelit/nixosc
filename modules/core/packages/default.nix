@@ -140,9 +140,10 @@ in
     powertop           # Güç izleme
     poweralertd        # Güç yönetimi bildirimleri
     
-    # Thermal Management Tools (Yeni eklenenler)
+    # Thermal Management Tools
     lm_sensors         # Hardware sıcaklık sensörleri
     stress-ng          # CPU/RAM stres testi için
+    s-tui              # Terminal tabanlı CPU stres monitörü
     linuxPackages.turbostat  # Intel CPU turbo durumlarını izleme
     linuxPackages.cpupower   # CPU güç yönetimi araçları
     auto-cpufreq       # Otomatik CPU frekans yönetimi
@@ -152,6 +153,10 @@ in
     fwupd              # Firmware güncelleyici
     android-tools      # adb (sistem seviyesi)
     smartmontools      # Disk sağlık durumu izleme (SMART)
+    nvme-cli           # NVMe SSD yönetim araçları
+    dmidecode          # DMI/SMBIOS sistem bilgileri
+    usbutils           # USB cihaz listesi ve bilgileri (lsusb)
+    intel-gpu-tools    # Intel GPU teşhis ve test araçları
     
     # Input Devices
     fusuma             # Çoklu dokunma
