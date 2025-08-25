@@ -17,29 +17,30 @@ ASKPASS_SCRIPT="askpass" # Askpass scriptini ~/scripts/ altına koyacağız
 # Check if performance script exists in PATH
 check_script() {
 	if ! command -v "$PERF_SCRIPT" &>/dev/null; then
-		echo -e "${RED}Performance script not found in PATH: $PERF_SCRIPT${NC}"
+		echo "Performance script not found in PATH: $PERF_SCRIPT"
 		echo "Please ensure perf-control.sh is in one of these directories:"
 		echo $PATH | tr ':' '\n'
 		exit 1
 	fi
 }
 
-# Get current status for display
+# Remove color codes from text
+remove_colors() {
+	sed -E 's/\x1B\[[0-9;]*[mK]//g'
+}
+
+# Get current status for display (without colors)
 get_display_status() {
 	local status
-	status=$($PERF_SCRIPT status 2>/dev/null | head -12)
+	status=$($PERF_SCRIPT status 2>/dev/null | remove_colors | head -12)
 	echo "$status"
 }
 
 # Show notification with status
 show_notification() {
-	local title="$1"
-	local message="$2"
-
-	# Get current status for notification
+	local message="$1"
 	local status=$(get_display_status)
 
-	# Show notification with rofi
 	rofi -e "$message\n\n=== Current Status ===\n$status" \
 		-theme-str 'window { width: 65%; height: 50%; }' \
 		-theme-str 'listview { lines: 15; }'
@@ -52,9 +53,9 @@ run_sudo() {
 
 	export SUDO_ASKPASS="$ASKPASS_SCRIPT"
 	if sudo -A bash -c "$cmd"; then
-		show_notification "Success" "✅ $message"
+		show_notification "✅ $message"
 	else
-		show_notification "Error" "❌ Failed to execute: $message"
+		show_notification "❌ Failed to execute: $message"
 	fi
 }
 
@@ -66,19 +67,17 @@ show_main_menu() {
 # Detailed status view
 show_status_detail() {
 	local status
-	status=$($PERF_SCRIPT status)
+	status=$($PERF_SCRIPT status 2>/dev/null | remove_colors)
 
-	# Show in rofi with scrollable view
 	echo "$status" | rofi -dmenu -p "System Status" -l 20 \
 		-theme-str 'window { width: 75%; height: 60%; }' \
-		-theme-str 'entry { enabled: false; }' \
-		-theme-str 'element-text { highlight: none; }'
+		-theme-str 'entry { enabled: false; }'
 }
 
 # Show help information
 show_help() {
 	local help_text
-	help_text=$($PERF_SCRIPT --help)
+	help_text=$($PERF_SCRIPT --help 2>/dev/null | remove_colors)
 
 	echo "$help_text" | rofi -dmenu -p "Help" -l 15 \
 		-theme-str 'window { width: 70%; height: 50%; }' \
@@ -94,13 +93,13 @@ show_custom_menu() {
 set_power_limits() {
 	local pl1 pl2
 
-	pl1=$(rofi -dmenu -p "PL1 (Watts):" -theme-str 'entry { placeholder: "e.g., 40 for Meteor Lake"; }')
-	pl2=$(rofi -dmenu -p "PL2 (Watts):" -theme-str 'entry { placeholder: "e.g., 55 for Meteor Lake"; }')
+	pl1=$(rofi -dmenu -p "PL1 (Watts):" -theme-str 'entry { placeholder: "e.g., 40"; }')
+	pl2=$(rofi -dmenu -p "PL2 (Watts):" -theme-str 'entry { placeholder: "e.g., 55"; }')
 
 	if [[ $pl1 =~ ^[0-9]+$ ]] && [[ $pl2 =~ ^[0-9]+$ ]]; then
 		run_sudo "$PERF_SCRIPT custom --pl1 $pl1 --pl2 $pl2" "Power limits set to ${pl1}W/${pl2}W"
 	else
-		show_notification "Error" "❌ Invalid power values. Please enter numbers only."
+		show_notification "❌ Invalid power values. Please enter numbers only."
 	fi
 }
 
@@ -108,8 +107,8 @@ set_power_limits() {
 set_frequency() {
 	local max_freq min_freq
 
-	max_freq=$(rofi -dmenu -p "Max Frequency:" -theme-str 'entry { placeholder: "e.g., 4.8GHz (leave empty for no limit)"; }')
-	min_freq=$(rofi -dmenu -p "Min Frequency:" -theme-str 'entry { placeholder: "e.g., 800MHz (leave empty for no limit)"; }')
+	max_freq=$(rofi -dmenu -p "Max Frequency:" -theme-str 'entry { placeholder: "e.g., 4.8GHz"; }')
+	min_freq=$(rofi -dmenu -p "Min Frequency:" -theme-str 'entry { placeholder: "e.g., 800MHz"; }')
 
 	local cmd="$PERF_SCRIPT custom"
 	[ -n "$max_freq" ] && cmd+=" --max-freq \"$max_freq\""
@@ -118,7 +117,7 @@ set_frequency() {
 	if [ -n "$max_freq" ] || [ -n "$min_freq" ]; then
 		run_sudo "$cmd" "Frequency limits updated"
 	else
-		show_notification "Info" "No frequency limits were set"
+		show_notification "No frequency limits were set"
 	fi
 }
 
@@ -140,19 +139,19 @@ handle_selection() {
 		show_status_detail
 		;;
 	"⚡ Performance Mode")
-		run_sudo "$PERF_SCRIPT performance" "Performance mode activated 🚀"
+		run_sudo "$PERF_SCRIPT performance" "Performance mode activated"
 		;;
 	"⚖️ Balanced Mode")
-		run_sudo "$PERF_SCRIPT balanced" "Balanced mode activated ⚖️"
+		run_sudo "$PERF_SCRIPT balanced" "Balanced mode activated"
 		;;
 	"🔋 Power Save Mode")
-		run_sudo "$PERF_SCRIPT powersave" "Power save mode activated 🔋"
+		run_sudo "$PERF_SCRIPT powersave" "Power save mode activated"
 		;;
 	"🎛️ Custom Settings")
 		show_custom_submenu
 		;;
 	"🔄 Reset to Default")
-		run_sudo "$PERF_SCRIPT reset" "Reset to default settings 🔄"
+		run_sudo "$PERF_SCRIPT reset" "Reset to default settings"
 		;;
 	"❓ Help")
 		show_help
@@ -172,19 +171,19 @@ show_custom_submenu() {
 
 		case "$custom_choice" in
 		"🚀 Set Governor: Performance")
-			run_sudo "$PERF_SCRIPT custom --governor performance" "Governor set to performance 🚀"
+			run_sudo "$PERF_SCRIPT custom --governor performance" "Governor set to performance"
 			;;
 		"🐢 Set Governor: Power Save")
-			run_sudo "$PERF_SCRIPT custom --governor powersave" "Governor set to powersave 🐢"
+			run_sudo "$PERF_SCRIPT custom --governor powersave" "Governor set to powersave"
 			;;
 		"⚡ Set Governor: schedutil")
-			run_sudo "$PERF_SCRIPT custom --governor schedutil" "Governor set to schedutil ⚡"
+			run_sudo "$PERF_SCRIPT custom --governor schedutil" "Governor set to schedutil"
 			;;
 		"🔥 Enable Turbo Boost")
-			run_sudo "$PERF_SCRIPT custom --turbo enable" "Turbo boost enabled 🔥"
+			run_sudo "$PERF_SCRIPT custom --turbo enable" "Turbo boost enabled"
 			;;
 		"❄️ Disable Turbo Boost")
-			run_sudo "$PERF_SCRIPT custom --turbo disable" "Turbo boost disabled ❄️"
+			run_sudo "$PERF_SCRIPT custom --turbo disable" "Turbo boost disabled"
 			;;
 		"📊 Set Power Limits")
 			set_power_limits
@@ -199,19 +198,16 @@ show_custom_submenu() {
 			return
 			;;
 		*)
-			# Exit if user pressed ESC or closed the menu
 			return
 			;;
 		esac
 
-		# Small delay to show notification
 		sleep 0.5
 	done
 }
 
 # Main function
 main() {
-	# Check if performance script exists
 	check_script
 
 	while true; do
@@ -245,8 +241,5 @@ main() {
 	done
 }
 
-# Handle script interrupts
-trap 'echo -e "${RED}Script interrupted.${NC}"; exit 1' INT TERM
-
-# Run main function
+trap 'exit 1' INT TERM
 main "$@"
