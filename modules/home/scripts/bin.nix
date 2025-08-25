@@ -9,6 +9,9 @@ let
   ascii = pkgs.writeShellScriptBin "ascii" (
     builtins.readFile ./bin/ascii.sh
   );
+  askpass = pkgs.writeShellScriptBin "askpass" (
+    builtins.readFile ./bin/askpass.sh
+  );
   brave_killer = pkgs.writeShellScriptBin "brave_killer" (
     builtins.readFile ./bin/brave_killer.sh
   );
@@ -264,6 +267,9 @@ let
   rofi-launcher = pkgs.writeShellScriptBin "rofi-launcher" (
     builtins.readFile ./bin/rofi-launcher.sh
   );
+  rofi-performance = pkgs.writeShellScriptBin "rofi-performance" (
+    builtins.readFile ./bin/rofi-performance.sh
+  );
   rofi-power-menu = pkgs.writeShellScriptBin "rofi-power-menu" (
     builtins.readFile ./bin/rofi-power-menu.sh
   );
@@ -386,6 +392,7 @@ in {
     anote
     anotes
     ascii
+    askpass
     brave_killer
     bulk_rename
     cdiff
@@ -471,6 +478,7 @@ in {
     rofi-hypr-keybinds
     rofi-iwmenu
     rofi-launcher
+    rofi-performance
     rofi-power-menu
     rofi-power
     rofi-wifi
