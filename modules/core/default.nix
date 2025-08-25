@@ -19,9 +19,8 @@
    # =============================================================================
    ./account       # User account management, authentication, and keyring integration
    ./boot          # Boot loader and kernel configuration
-   #./hardware      # Hardware-specific settings and drivers
+   ./hardware      # Hardware-specific settings, power management, thermal control, and optimization
    ./system        # Core system settings and configuration
-   ./power         # Power management, thermal control, and WiFi optimization
    
    # =============================================================================
    # Package Management & Development

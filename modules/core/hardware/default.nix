@@ -1,35 +1,50 @@
-# modules/core/hardware/default.nix
+# modules/core/power/default.nix
 # ==============================================================================
-# Hardware Configuration for ThinkPad E14 Gen 6
+# ThinkPad E14 Gen 6 Kapsamlı Donanım ve Güç Yönetimi
 # ==============================================================================
-# This configuration manages hardware settings including:
-# - ThinkPad-specific ACPI and advanced thermal management
-# - Intel Arc Graphics drivers and hardware acceleration
-# - NVMe storage optimizations for dual-drive setup
-# - Intel Core Ultra 7 155H CPU thermal and power management
-# - LED control and function key management
-# - TrackPoint and touchpad configuration
-# - Optimized thermal throttling for stable operation
+# Bu modül ThinkPad E14 Gen 6 için optimize edilmiş donanım ve güç yönetimi sağlar:
 #
-# Target Hardware:
+# Donanım Özellikleri:
+# - ThinkPad-spesifik ACPI ve termal yönetim
+# - Intel Arc Graphics sürücüleri ve hardware acceleration
+# - NVMe depolama optimizasyonları (dual-drive setup)
+# - Intel Core Ultra 7 155H CPU termal ve güç yönetimi
+# - LED kontrol ve fonksiyon tuş yönetimi
+# - TrackPoint ve touchpad konfigürasyonu
+#
+# Güç Yönetimi Özellikleri:
+# - Akıllı pil yönetimi ve şarj eşikleri (60-80%)
+# - Adaptif WiFi güç tasarrufu (AC/battery modları)
+# - USB auto-suspend ve güç optimizasyonu
+# - Logind ile kullanıcı etkileşimi yönetimi
+# - Sistem geneli güç politikaları
+# - Bluetooth güç tasarrufu
+#
+# Hedef Donanım:
 # - ThinkPad E14 Gen 6 (21M7006LTX)
 # - Intel Core Ultra 7 155H (16-core hybrid architecture)
 # - Intel Arc Graphics (Meteor Lake-P)
 # - 64GB DDR5 RAM
-# - Dual NVMe setup: Transcend TS2TMTE400S + Timetec 35TT2280GEN4E-2TB
+# - Dual NVMe: Transcend TS2TMTE400S + Timetec 35TT2280GEN4E-2TB
 #
-# Performance Targets:
-# - CPU Temperature: 75-85°C under load
-# - Fan Noise: Balanced (progressive curve)
-# - Power Consumption: 35W sustained, 45W burst
+# Performans Hedefleri:
+# - CPU Sıcaklık: 75-85°C yük altında
+# - Fan Gürültüsü: Dengeli (progressive curve)
+# - Güç Tüketimi: 35W sürekli, 45W burst
 #
-# Author: Kenan Pelit
-# Modified: 2025-08-23 (Final thermal optimization for E14 Gen 6)
+# Yazar: Kenan Pelit
+# Son Güncelleme: 2025-08-25 (Birleştirilmiş ve optimize edilmiş versiyon)
 # ==============================================================================
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
+
+let
+  # Kullanıcı UID'sini dinamik al
+  mainUser = builtins.head (builtins.attrNames config.users.users);
+  userUid = toString config.users.users.${mainUser}.uid;
+in
 {
   # ==============================================================================
-  # Hardware Configuration
+  # Donanım Konfigürasyonu
   # ==============================================================================
   hardware = {
     # Enable TrackPoint for ThinkPad
@@ -55,7 +70,7 @@
   };
   
   # ==============================================================================
-  # Thermal and Power Management Services
+  # Termal ve Güç Yönetimi Servisleri
   # ==============================================================================
   services = {
     # Lenovo throttling fix with optimized thermal management
@@ -63,39 +78,27 @@
       enable = true;
       extraConfig = ''
         [GENERAL]
-        # Enable throttling fix
         Enabled: True
-        # Path to check AC power status
         Sysfs_Power_Path: /sys/class/power_supply/AC*/online
-        # Auto-reload config on changes
         Autoreload: True
 
         [BATTERY]
-        # Update rate for battery mode (seconds)
         Update_Rate_s: 30
-        # Long-term power limit (Watts) - balanced for battery life
         PL1_Tdp_W: 25
         PL1_Duration_s: 28
-        # Short-term power limit (Watts)
         PL2_Tdp_W: 35
         PL2_Duration_S: 0.002
-        # Temperature threshold for throttling (Celsius)
         Trip_Temp_C: 80
 
         [AC]
-        # Update rate for AC mode (seconds)
         Update_Rate_s: 5
-        # Long-term power limit (Watts) - balanced performance
         PL1_Tdp_W: 35
         PL1_Duration_s: 28
-        # Short-term power limit (Watts)
         PL2_Tdp_W: 45
         PL2_Duration_S: 0.002
-        # Temperature threshold for throttling (Celsius)
         Trip_Temp_C: 85
 
         [UNDERVOLT.BATTERY]
-        # Meteor Lake doesn't support undervolting
         CORE: 0
         GPU: 0
         CACHE: 0
@@ -103,7 +106,6 @@
         ANALOGIO: 0
 
         [UNDERVOLT.AC]
-        # Meteor Lake doesn't support undervolting
         CORE: 0
         GPU: 0
         CACHE: 0
@@ -112,116 +114,129 @@
       '';
     };
 
-    # TLP disabled in favor of auto-cpufreq for modern CPU management
-    tlp.enable = false;
-    
     # Modern CPU frequency management with balanced thermal controls
     auto-cpufreq = {
       enable = true;
       settings = {
         battery = {
           governor = "powersave";
-          scaling_min_freq = 400000;   # 400 MHz minimum frequency
-          scaling_max_freq = 2800000;  # 2.8 GHz maximum on battery
-          turbo = "never";             # Disable turbo boost on battery
+          scaling_min_freq = 400000;
+          scaling_max_freq = 2800000;
+          turbo = "never";
         };
         charger = {
-          governor = "powersave";      # Use powersave for thermal management
-          scaling_min_freq = 400000;   # 400 MHz minimum frequency
-          scaling_max_freq = 3800000;  # 3.8 GHz maximum on AC (balanced)
-          turbo = "auto";              # Allow turbo with thermal limits
+          governor = "powersave";
+          scaling_min_freq = 400000;
+          scaling_max_freq = 3800000;
+          turbo = "auto";
         };
       };
     };
 
-    # ThinkPad fan control with optimized cooling curve
-    # NOTE: Disabled due to configuration issues. throttled + auto-cpufreq provides
-    # sufficient thermal management. Enable and configure if manual fan control needed.
-    thinkfan = {
-      enable = false;  # Disabled - using throttled + auto-cpufreq instead
-      smartSupport = true;
-      
-      # Optimized fan curve for E14 Gen 6
-      levels = [
-        # [fan_level temp_low temp_high]
-        [ 0  0   60 ]          # Fan off below 60°C (quiet operation)
-        [ 1  58  65 ]          # Level 1: 58-65°C (barely audible)
-        [ 2  63  70 ]          # Level 2: 63-70°C (quiet)
-        [ 3  68  75 ]          # Level 3: 68-75°C (noticeable)
-        [ 4  73  78 ]          # Level 4: 73-78°C (moderate)
-        [ 5  77  82 ]          # Level 5: 77-82°C (loud)
-        [ 6  81  85 ]          # Level 6: 81-85°C (very loud)
-        [ 7  84  88 ]          # Level 7: 84-88°C (maximum normal)
-        [ "level full-speed"  87  32767 ]  # Full speed above 87°C (emergency)
-      ];
-    };
-
-    # Intel thermal daemon - disabled due to Meteor Lake compatibility issues
+    # ThinkPad fan control - disabled, using throttled + auto-cpufreq
+    thinkfan.enable = false;
+    
+    # Intel thermal daemon - disabled due to Meteor Lake compatibility
     thermald.enable = false;
 
-    # Disable power-profiles-daemon to avoid conflicts with auto-cpufreq
+    # Power management services
     power-profiles-daemon.enable = false;
+    tlp.enable = false;
+
+    # UPower konfigürasyonu - akıllı pil yönetimi
+    upower = {
+      enable = true;
+      criticalPowerAction = "Hibernate";
+      percentageLow = 20;
+      percentageCritical = 5;
+      percentageAction = 3;
+      usePercentageForPolicy = true;
+    };
+    
+    # Logind - kullanıcı etkileşimi ve güç olayları yönetimi
+    logind = {
+      lidSwitch = "suspend";
+      lidSwitchDocked = "suspend";  
+      lidSwitchExternalPower = "suspend";
+      
+      extraConfig = ''
+        HandlePowerKey=ignore
+        HandleSuspendKey=suspend
+        HandleHibernateKey=hibernate
+        HandleLidSwitch=suspend
+        HandleLidSwitchDocked=suspend
+        HandleLidSwitchExternalPower=suspend
+        IdleAction=ignore
+        IdleActionSec=30min
+        InhibitDelayMaxSec=5
+        HandleSuspendLock=delay
+        KillUserProcesses=no
+        RemoveIPC=yes
+      '';
+    };
+    
+    # Bluetooth güç yönetimi
+    blueman.enable = true;
+    
+    # Sistem günlük yönetimi - güç odaklı
+    journald.extraConfig = ''
+      SystemMaxUse=3G
+      SystemMaxFileSize=200M
+      MaxRetentionSec=2weeks
+      SyncIntervalSec=60
+      RateLimitIntervalSec=10
+      RateLimitBurst=200
+    '';
+    
+    # D-Bus optimizasyonları
+    dbus.implementation = "broker";
   };
   
   # ==============================================================================
-  # Boot Configuration
+  # Boot Konfigürasyonu
   # ==============================================================================
   boot = {
     # Essential kernel modules for hardware monitoring and control
     kernelModules = [ 
-      "thinkpad_acpi"  # ThinkPad ACPI extras (fan control, LEDs, etc.)
-      "coretemp"       # CPU temperature monitoring
-      "intel_rapl"     # Intel RAPL power capping interface
-      "msr"            # Model-specific register access
+      "thinkpad_acpi"
+      "coretemp"
+      "intel_rapl"
+      "msr"
     ];
     
     # Module options for ThinkPad-specific features
     extraModprobeConfig = ''
-      # ThinkPad ACPI configuration
-      options thinkpad_acpi fan_control=1      # Enable manual fan control
-      options thinkpad_acpi brightness_mode=1   # Improved brightness control
-      options thinkpad_acpi volume_mode=1       # Better volume key handling
-      options thinkpad_acpi experimental=1      # Enable experimental features
-      
-      # Intel P-state driver options for better power management
-      options intel_pstate hwp_dynamic_boost=0  # Disable dynamic boost for stability
+      options thinkpad_acpi fan_control=1
+      options thinkpad_acpi brightness_mode=1
+      options thinkpad_acpi volume_mode=1
+      options thinkpad_acpi experimental=1
+      options intel_pstate hwp_dynamic_boost=0
     '';
     
     # Kernel parameters for optimized thermal and power management
     kernelParams = [
-      # NVMe optimization - disable ACPI for better performance
       "nvme.noacpi=1"
-      
-      # IOMMU for better device isolation and security
       "intel_iommu=on"
-      "iommu=pt"                    # Pass-through mode for better performance
-      
-      # CPU power management settings
-      "intel_pstate=passive"        # Passive mode for governor-based control
-      "processor.max_cstate=3"      # Limit deep C-states for responsiveness
-      "intel_idle.max_cstate=3"     # Limit idle states
-      
-      # Intel Arc Graphics power saving and performance
-      "i915.enable_guc=3"           # Enable GuC and HuC firmware
-      "i915.enable_fbc=1"           # Frame buffer compression
-      "i915.enable_psr=2"           # Panel self refresh v2
-      "i915.enable_dc=2"            # Display C-states
-      "i915.fastboot=1"             # Faster graphics initialization
-      
-      # Thermal management settings
-      "thermal.off=0"               # Ensure thermal management is enabled
-      "thermal.act=-1"              # ACPI thermal control (automatic)
-      "thermal.nocrt=0"             # Enable critical temperature actions
-      "thermal.psv=-1"              # Automatic passive cooling
-      
-      # Memory and performance
-      "transparent_hugepage=madvise" # Optimize memory usage
-      "mitigations=auto"            # Keep security mitigations enabled
+      "iommu=pt"
+      "intel_pstate=passive"
+      "processor.max_cstate=3"
+      "intel_idle.max_cstate=3"
+      "i915.enable_guc=3"
+      "i915.enable_fbc=1"
+      "i915.enable_psr=2"
+      "i915.enable_dc=2"
+      "i915.fastboot=1"
+      "thermal.off=0"
+      "thermal.act=-1"
+      "thermal.nocrt=0"
+      "thermal.psv=-1"
+      "transparent_hugepage=madvise"
+      "mitigations=auto"
     ];
   };
   
   # ==============================================================================
-  # System Services
+  # Systemd Servisleri
   # ==============================================================================
   systemd.services = {
     # CPU power limit service for thermal control
@@ -234,34 +249,28 @@
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
           #!/usr/bin/env sh
-          # Wait for RAPL interface to be available
           sleep 2
           
-          # Check if RAPL interface is available
           if [ -d /sys/class/powercap/intel-rapl:0 ]; then
-            # Detect power source
             ON_AC=0
             if [ -f /sys/class/power_supply/AC/online ]; then
               ON_AC=$(cat /sys/class/power_supply/AC/online)
             fi
             
             if [ "$ON_AC" = "1" ]; then
-              # AC Power: Higher limits for performance
               echo 35000000 > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
               echo 45000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
               echo "Intel RAPL power limits set (AC): PL1=35W, PL2=45W"
             else
-              # Battery: Lower limits for efficiency
               echo 25000000 > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
               echo 35000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
               echo "Intel RAPL power limits set (Battery): PL1=25W, PL2=35W"
             fi
             
-            # Set time windows
             echo 28000000 > /sys/class/powercap/intel-rapl:0/constraint_0_time_window_us
             echo 2500 > /sys/class/powercap/intel-rapl:0/constraint_1_time_window_us
           else
-            echo "Intel RAPL interface not available - skipping power limit configuration"
+            echo "Intel RAPL interface not available"
           fi
         '';
       };
@@ -276,7 +285,6 @@
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "fix-leds" ''
           #!/usr/bin/env sh
-          # Configure LED triggers for proper audio integration
           if [ -d /sys/class/leds/platform::micmute ]; then
             echo "audio-micmute" > /sys/class/leds/platform::micmute/trigger 2>/dev/null || true
             echo 0 > /sys/class/leds/platform::micmute/brightness 2>/dev/null || true
@@ -304,12 +312,10 @@
           CRITICAL_THRESHOLD=95
           
           while true; do
-            # Get highest temperature from all thermal zones
             TEMP=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -rn | head -1)
             if [ -n "$TEMP" ]; then
               TEMP_C=$((TEMP / 1000))
               
-              # Log based on temperature thresholds
               if [ "$TEMP_C" -gt "$CRITICAL_THRESHOLD" ]; then
                 echo "CRITICAL: CPU temperature: $${TEMP_C}°C - System may throttle severely"
                 logger -p user.crit -t thermal-monitor "Critical CPU temperature: $${TEMP_C}°C"
@@ -319,7 +325,6 @@
               fi
             fi
             
-            # Check every 30 seconds
             sleep 30
           done
         '';
@@ -327,10 +332,212 @@
         RestartSec = 10;
       };
     };
+
+    # WiFi güç yönetimi - AC/pil durumuna göre
+    adaptive-wifi-power-save = {
+      description = "Adaptive WiFi power management based on power source";
+      after = [ "NetworkManager.service" "multi-user.target" ];
+      wants = [ "NetworkManager.service" ];
+      wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [ networkmanager iw coreutils util-linux ];
+      
+      script = ''
+        WIFI_INTERFACE=$(ls /sys/class/net/ | grep -E '^(wl|wlan)' | head -1)
+        if [ -z "$WIFI_INTERFACE" ]; then
+          echo "WiFi interface bulunamadı"
+          exit 0
+        fi
+        
+        ON_AC=0
+        for ac_path in /sys/class/power_supply/A{C,DP}*; do
+          [ -f "$ac_path/online" ] && [ "$(cat "$ac_path/online" 2>/dev/null)" = "1" ] && ON_AC=1 && break
+        done
+        
+        if [ "$ON_AC" = "1" ]; then
+          ${pkgs.networkmanager}/bin/nmcli connection modify type wifi wifi.powersave 2 2>/dev/null || true
+          ${pkgs.iw}/bin/iw dev "$WIFI_INTERFACE" set power_save off 2>/dev/null || true
+          echo "AC Mode: WiFi power save disabled for performance"
+        else
+          ${pkgs.networkmanager}/bin/nmcli connection modify type wifi wifi.powersave 3 2>/dev/null || true
+          ${pkgs.iw}/bin/iw dev "$WIFI_INTERFACE" set power_save on 2>/dev/null || true
+          echo "Battery Mode: WiFi power save enabled for efficiency"
+        fi
+      '';
+      
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "root";
+        Restart = "on-failure";
+        RestartSec = "30s";
+      };
+    };
+    
+    # ThinkPad pil eşikleri
+    thinkpad-battery-thresholds = {
+      description = "Set ThinkPad battery charge thresholds for longevity";
+      after = [ "multi-user.target" ];
+      wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [ coreutils util-linux ];
+      
+      script = ''
+        BATTERY_PATH="/sys/class/power_supply/BAT0"
+        
+        if [ -d "$BATTERY_PATH" ]; then
+          if [ -w "$BATTERY_PATH/charge_control_start_threshold" ]; then
+            echo 60 > "$BATTERY_PATH/charge_control_start_threshold" 2>/dev/null || true
+            echo "ThinkPad pil başlangıç eşiği: 60%"
+          fi
+          
+          if [ -w "$BATTERY_PATH/charge_control_end_threshold" ]; then
+            echo 80 > "$BATTERY_PATH/charge_control_end_threshold" 2>/dev/null || true  
+            echo "ThinkPad pil bitiş eşiği: 80%"
+          fi
+          
+          if [ -f "$BATTERY_PATH/capacity" ]; then
+            BATTERY_LEVEL=$(cat "$BATTERY_PATH/capacity")
+            BATTERY_STATUS=$(cat "$BATTERY_PATH/status" 2>/dev/null || echo "Unknown")
+            echo "Pil durumu: %$BATTERY_LEVEL ($BATTERY_STATUS)"
+          fi
+        else
+          echo "ThinkPad pil yönetimi bulunamadı"
+        fi
+      '';
+      
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "root";
+      };
+    };
+    
+    # USB güç yönetimi
+    usb-power-management = {
+      description = "Enable USB auto-suspend for all devices";
+      after = [ "multi-user.target" ];
+      wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [ coreutils ];
+      
+      script = ''
+        for usb_device in /sys/bus/usb/devices/*/power/control; do
+          if [ -w "$usb_device" ]; then
+            echo "auto" > "$usb_device" 2>/dev/null || true
+          fi
+        done
+        
+        for usb_device in /sys/bus/usb/devices/*/power/autosuspend_delay_ms; do
+          if [ -w "$usb_device" ]; then
+            echo "2000" > "$usb_device" 2>/dev/null || true
+          fi
+        done
+        
+        echo "USB auto-suspend enabled for all devices"
+      '';
+      
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "root";
+      };
+    };
+    
+    # Güç kaynağı değişiklik izleyicisi
+    power-source-monitor = {
+      description = "Monitor power source changes and adjust system accordingly";
+      after = [ "multi-user.target" ];
+      wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [ coreutils systemd ];
+      
+      script = ''
+        LAST_STATE=""
+        
+        while true; do
+          CURRENT_STATE="BATTERY"
+          for ac_path in /sys/class/power_supply/A{C,DP}*; do
+            if [ -f "$ac_path/online" ] && [ "$(cat "$ac_path/online" 2>/dev/null)" = "1" ]; then
+              CURRENT_STATE="AC"
+              break
+            fi
+          done
+          
+          if [ "$CURRENT_STATE" != "$LAST_STATE" ]; then
+            echo "Power source changed: $LAST_STATE -> $CURRENT_STATE"
+            systemctl restart adaptive-wifi-power-save.service 2>/dev/null || true
+            LAST_STATE="$CURRENT_STATE"
+          fi
+          
+          sleep 30
+        done
+      '';
+      
+      serviceConfig = {
+        Type = "simple";
+        Restart = "always";
+        RestartSec = "10s";
+        User = "root";
+      };
+    };
+  };
+
+  systemd.user.services = {
+    # Kullanıcı servisleri - bildirimler
+    power-status-notifications = {
+      description = "Power status notifications for user";
+      after = [ "graphical-session.target" ];
+      bindsTo = [ "graphical-session.target" ];
+      wantedBy = [ "graphical-session.target" ];
+      
+      environment = {
+        WAYLAND_DISPLAY = "wayland-1";
+        XDG_RUNTIME_DIR = "/run/user/${userUid}";
+        DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/${userUid}/bus";
+      };
+      
+      path = with pkgs; [ libnotify coreutils ];
+      
+      script = ''
+        sleep 5
+        
+        if [ -f /sys/class/power_supply/BAT0/capacity ]; then
+          BATTERY_LEVEL=$(cat /sys/class/power_supply/BAT0/capacity)
+          BATTERY_STATUS=$(cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo "Unknown")
+          
+          POWER_SOURCE="Pil"
+          for ac_path in /sys/class/power_supply/A{C,DP}*; do
+            if [ -f "$ac_path/online" ] && [ "$(cat "$ac_path/online" 2>/dev/null)" = "1" ]; then
+              POWER_SOURCE="AC Adaptör"
+              break
+            fi
+          done
+          
+          WIFI_STATUS="Unknown"
+          WIFI_INTERFACE=$(ls /sys/class/net/ 2>/dev/null | grep -E '^(wl|wlan)' | head -1)
+          if [ -n "$WIFI_INTERFACE" ] && command -v iw >/dev/null 2>&1; then
+            if iw dev "$WIFI_INTERFACE" get power_save 2>/dev/null | grep -q "Power save: on"; then
+              WIFI_PS="Etkin"
+            else
+              WIFI_PS="Devre Dışı"
+            fi
+            WIFI_STATUS="WiFi güç tasarrufu: $WIFI_PS"
+          fi
+          
+          notify-send -t 8000 -i battery "Güç Yönetimi Başlatıldı" \
+            "🔋 Pil: %$BATTERY_LEVEL ($BATTERY_STATUS)
+⚡ Kaynak: $POWER_SOURCE
+📡 $WIFI_STATUS
+🔧 Optimize güç profili aktif"
+        fi
+      '';
+      
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+    };
   };
   
   # ==============================================================================
-  # Udev Rules
+  # Udev Kuralları
   # ==============================================================================
   services.udev.extraRules = ''
     # Fix microphone LED permissions and initial state
@@ -344,6 +551,43 @@
     # Adjust RAPL power limits on power source change
     SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
     SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
+    
+    # Pil eşiklerini güç kaynağı değişikliklerinde güncelle
+    SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart thinkpad-battery-thresholds.service"
+    SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart thinkpad-battery-thresholds.service"
+    
+    # WiFi güç yönetimini güç kaynağı değişikliklerinde ayarla
+    SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart adaptive-wifi-power-save.service"
+    SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart adaptive-wifi-power-save.service"
+    
+    # USB cihaz takıldığında otomatik power management
+    ACTION=="add", SUBSYSTEM=="usb", RUN+="${pkgs.systemd}/bin/systemctl restart usb-power-management.service"
+    
+    # Bluetooth cihazlar için güç yönetimi
+    ACTION=="add", SUBSYSTEM=="bluetooth", ATTR{power/control}="auto"
+    
+    # ThinkPad özel tuşlar için güç yönetimi
+    ACTION=="add", SUBSYSTEM=="platform", DRIVER=="thinkpad_acpi", RUN+="${pkgs.systemd}/bin/systemctl restart thinkpad-battery-thresholds.service"
   '';
+  
+  # ==============================================================================
+  # Ek Konfigürasyonlar
+  # ==============================================================================
+  environment.shellAliases = {
+    battery-status = "upower -i /org/freedesktop/UPower/devices/battery_BAT0";
+    power-usage = "sudo powertop --html=power-report.html --time=10";
+    thermal-status = "sensors && cat /sys/class/thermal/thermal_zone*/temp";
+  };
+  
+  services.logrotate.settings."power-management" = {
+    files = [ "/var/log/power-*.log" ];
+    frequency = "weekly";
+    rotate = 4;
+    compress = true;
+    delaycompress = true;
+    missingok = true;
+    notifempty = true;
+    create = "644 root root";
+  };
 }
 
