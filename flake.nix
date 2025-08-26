@@ -92,87 +92,54 @@
     # Language parsing library for Hyprland configuration
     hyprlang = {
       url = "github:hyprwm/hyprlang";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Utility libraries for Hyprland
     hyprutils = {
       url = "github:hyprwm/hyprutils";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Wayland protocol definitions specific to Hyprland
     hyprland-protocols = {
       url = "github:hyprwm/hyprland-protocols";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # XDG Desktop Portal implementation for Hyprland (application integration)
     xdph = {
       url = "github:hyprwm/xdg-desktop-portal-hyprland";
-      inputs = {
-        hyprland-protocols.follows = "hyprland-protocols";
-        hyprlang.follows = "hyprlang";
-        hyprutils.follows = "hyprutils";
-        hyprwayland-scanner.follows = "hyprwayland-scanner";
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    hyprwayland-scanner = {
+      url = "github:hyprwm/hyprwayland-scanner";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Hyprland cursor library for custom cursors
     hyprcursor = {
       url = "github:hyprwm/hyprcursor";
-      inputs = {
-        hyprlang.follows = "hyprlang";
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
-    };
-
-    # Wayland protocol scanner for Hyprland
-    hyprwayland-scanner = {
-      url = "github:hyprwm/hyprwayland-scanner";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Graphics library for Hyprland
     hyprgraphics = {
       url = "github:hyprwm/hyprgraphics";
-      inputs = {
-        hyprutils.follows = "hyprutils";
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Qt integration for Hyprland
     hyprland-qtutils = {
       url = "github:hyprwm/hyprland-qtutils";
-      inputs = {
-        hyprlang.follows = "hyprlang";
-        nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # --- Hyprland Plugins and Extensions ---
     # Official Hyprland plugins collection
     hyprland-plugins = {
       url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     
     # Additional community utilities for Hyprland
@@ -307,6 +274,9 @@
         };
         overlays = [
           inputs.nur.overlay
+          (final: prev: {
+            gcc12Stdenv = prev.gcc13Stdenv;  # gcc12 isteyenlere gcc13 ver
+          })
         ]; 
       };
 

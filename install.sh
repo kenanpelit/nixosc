@@ -1,659 +1,777 @@
 #!/usr/bin/env bash
-
 # ==============================================================================
-# NixOS Installation Script
-# Author: kenanpelit (Enhanced version)
-# Description: Complete script for NixOS installation and management
-# Features:
-#   - Automated installation for both laptop and VM configurations
-#   - Multi-monitor wallpaper management
-#   - Profile-based system management
-#   - Advanced backup and restore capabilities
-#   - Enhanced error handling and logging
-#   - Progress visualization
-#   - System health monitoring
+# NixOS Installation Script v3.0.0
+# Complete, modular, and powerful NixOS installation tool
+# Location: /home/kenan/.nixosc/install.sh
 # ==============================================================================
 
-VERSION="2.3.0"
-SCRIPT_NAME=$(basename "$0")
-
-# Konfigürasyon Flagleri
-DEBUG=false
-SILENT=false
-AUTO=false
-UPDATE_FLAKE=false
-UPDATE_MODULE=""
-BACKUP_ONLY=false
-PROFILE_NAME=""
-PRE_INSTALL=false
-
-# Sistem Konfigürasyonu
-CURRENT_USERNAME='kenan'
-DEFAULT_USERNAME='kenan'
-CONFIG_DIR="$HOME/.config/nixos"
-WALLPAPER_DIR="$HOME/Pictures/wallpapers"
-BUILD_CORES=0 # CPU çekirdeklerini otomatik algıla
-NIX_CONF_DIR="$HOME/.config/nix"
-NIX_CONF_FILE="$NIX_CONF_DIR/nix.conf"
-BACKUP_DIR="$HOME/.nixosb"
-FLAKE_LOCK="flake.lock"
-LOG_FILE="$HOME/.nixosb/nixos-install.log"
-
-# Önbellekleme Konfigürasyonu
-CACHE_DIR="$HOME/.nixos-cache" # Önbellek dizini
-CACHE_ENABLED=true             # Önbellekleme açık/kapalı
-CACHE_EXPIRY=604800            # 7 gün (saniye cinsinden)
-MAX_CACHE_SIZE=10240           # 10GB (MB cinsinden)
+#set -euo pipefail
 
 # ==============================================================================
-# Terminal Renk Desteği
+# PART 1: CORE LIBRARY
 # ==============================================================================
-init_colors() {
-	if [[ -t 1 ]]; then
-		NORMAL=$(tput sgr0)
-		WHITE=$(tput setaf 7)
-		BLACK=$(tput setaf 0)
-		RED=$(tput setaf 1)
-		GREEN=$(tput setaf 2)
-		YELLOW=$(tput setaf 3)
-		BLUE=$(tput setaf 4)
-		MAGENTA=$(tput setaf 5)
-		CYAN=$(tput setaf 6)
-		BRIGHT=$(tput bold)
-		UNDERLINE=$(tput smul)
-		BG_BLACK=$(tput setab 0)
-		BG_GREEN=$(tput setab 2)
+
+# Version and metadata
+readonly VERSION="3.0.0"
+readonly SCRIPT_NAME="${0##*/}"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# System Configuration (from old script)
+readonly CURRENT_USERNAME='kenan'
+readonly DEFAULT_USERNAME='kenan'
+readonly CONFIG_DIR="$HOME/.config/nixos"
+readonly WALLPAPER_DIR="$HOME/Pictures/wallpapers"
+readonly BUILD_CORES=0 # Auto-detect CPU cores
+readonly NIX_CONF_DIR="$HOME/.config/nix"
+readonly NIX_CONF_FILE="$NIX_CONF_DIR/nix.conf"
+readonly BACKUP_DIR="$HOME/.nixosb"
+readonly FLAKE_LOCK="flake.lock"
+readonly LOG_FILE="$HOME/.nixosb/nixos-install.log"
+
+# Cache Configuration (from old script)
+readonly CACHE_DIR="$HOME/.nixos-cache"
+readonly CACHE_ENABLED=true
+readonly CACHE_EXPIRY=604800  # 7 days in seconds
+readonly MAX_CACHE_SIZE=10240 # 10GB in MB
+
+# Additional paths for compatibility
+readonly NIXOS_CONFIG="$CONFIG_DIR"
+readonly NIXOS_CACHE="$CACHE_DIR"
+readonly NIXOS_BACKUP="$BACKUP_DIR"
+readonly NIXOS_LOG="$(dirname "$LOG_FILE")"
+
+# Working directory (where script is located)
+readonly WORK_DIR="/home/kenan/.nixosc"
+
+# Terminal capabilities detection
+if [[ -t 1 ]] && command -v tput &>/dev/null; then
+	readonly TERM_COLORS=$(tput colors 2>/dev/null || echo 0)
+	readonly TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
+	# UTF-8 detection fix
+	if [[ "${LANG##*.}" == "UTF-8" ]] || [[ "${LANG,,}" == *utf*8* ]]; then
+		readonly HAS_UTF8=true
 	else
-		NORMAL=""
-		WHITE=""
-		BLACK=""
-		RED=""
-		GREEN=""
-		YELLOW=""
-		BLUE=""
-		MAGENTA=""
-		CYAN=""
-		BRIGHT=""
-		UNDERLINE=""
-		BG_BLACK=""
-		BG_GREEN=""
+		readonly HAS_UTF8=false
 	fi
+else
+	readonly TERM_COLORS=0
+	readonly TERM_WIDTH=80
+	readonly HAS_UTF8=false
+fi
+
+# Color definitions (adaptive)
+if ((TERM_COLORS >= 256)); then
+	# 256 color support
+	readonly C_RESET='\033[0m'
+	readonly C_BOLD='\033[1m'
+	readonly C_DIM='\033[2m'
+	readonly C_RED='\033[38;5;196m'
+	readonly C_GREEN='\033[38;5;46m'
+	readonly C_YELLOW='\033[38;5;226m'
+	readonly C_BLUE='\033[38;5;33m'
+	readonly C_MAGENTA='\033[38;5;201m'
+	readonly C_CYAN='\033[38;5;51m'
+	readonly C_WHITE='\033[38;5;255m'
+	readonly C_GRAY='\033[38;5;244m'
+elif ((TERM_COLORS >= 8)); then
+	# Basic colors
+	readonly C_RESET='\033[0m'
+	readonly C_BOLD='\033[1m'
+	readonly C_DIM='\033[2m'
+	readonly C_RED='\033[31m'
+	readonly C_GREEN='\033[32m'
+	readonly C_YELLOW='\033[33m'
+	readonly C_BLUE='\033[34m'
+	readonly C_MAGENTA='\033[35m'
+	readonly C_CYAN='\033[36m'
+	readonly C_WHITE='\033[37m'
+	readonly C_GRAY='\033[90m'
+else
+	# No colors
+	readonly C_RESET='' C_BOLD='' C_DIM=''
+	readonly C_RED='' C_GREEN='' C_YELLOW=''
+	readonly C_BLUE='' C_MAGENTA='' C_CYAN=''
+	readonly C_WHITE='' C_GRAY=''
+fi
+
+# Unicode symbols (with fallback)
+if [[ $HAS_UTF8 == true ]]; then
+	readonly S_SUCCESS="✓"
+	readonly S_ERROR="✗"
+	readonly S_WARNING="⚠"
+	readonly S_INFO="ℹ"
+	readonly S_ARROW="→"
+	readonly S_BULLET="•"
+	readonly S_ELLIPSIS="…"
+	readonly SPINNER=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+	readonly PROGRESS_FULL="█"
+	readonly PROGRESS_EMPTY="░"
+else
+	readonly S_SUCCESS="[OK]"
+	readonly S_ERROR="[ERROR]"
+	readonly S_WARNING="[WARN]"
+	readonly S_INFO="[INFO]"
+	readonly S_ARROW="->"
+	readonly S_BULLET="*"
+	readonly S_ELLIPSIS="..."
+	readonly SPINNER=(- \\ \| /)
+	readonly PROGRESS_FULL="#"
+	readonly PROGRESS_EMPTY="."
+fi
+
+# Logging System
+log::init() {
+	local log_level="${1:-INFO}"
+	local log_file="${2:-$LOG_FILE}"
+
+	mkdir -p "$(dirname "$log_file")"
+
+	export LOG_LEVEL="$log_level"
+	export LOG_FILE_PATH="$log_file" # Use different variable name
+	export LOG_FD=3
+
+	exec 3>>"$log_file"
+
+	# Keep last 10 log files
+	find "$(dirname "$log_file")" -name "nixos-install*.log" -mtime +10 -delete 2>/dev/null || true
 }
 
-# ==============================================================================
-# Loglama Sistemi
-# ==============================================================================
-setup_logging() {
-	mkdir -p "$(dirname "$LOG_FILE")"
-	touch "$LOG_FILE"
-	log "INFO" "🚀 NixOS kurulum betiği v$VERSION başlatılıyor"
-}
+declare -A LOG_LEVELS=(
+	[TRACE]=0 [DEBUG]=1 [INFO]=2 [WARN]=3 [ERROR]=4 [FATAL]=5
+)
 
 log() {
-	local level=$1
+	local level="${1:-INFO}"
 	shift
-	local message=$*
+	local message="$*"
 	local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-	local symbol=""
-	local color=""
+	local caller_func="${FUNCNAME[2]:-main}"
 
+	local current_level="${LOG_LEVELS[${LOG_LEVEL:-INFO}]}"
+	local message_level="${LOG_LEVELS[$level]}"
+
+	[[ $message_level -lt $current_level ]] && return 0
+
+	local color symbol
 	case "$level" in
-	"INFO")
-		symbol="ℹ"
-		color=$CYAN
-		;;
-	"WARN")
-		symbol="⚠"
-		color=$YELLOW
-		;;
-	"ERROR")
-		symbol="✖"
-		color=$RED
-		;;
-	"DEBUG")
-		[[ $DEBUG != true ]] && return
-		symbol="🔍"
-		color=$BLUE
-		;;
-	"OK")
-		symbol="✔"
-		color=$GREEN
-		;;
-	"STEP")
-		symbol="→"
-		color=$MAGENTA
-		;;
+	TRACE) color="$C_GRAY" symbol="$S_BULLET" ;;
+	DEBUG) color="$C_BLUE" symbol="$S_INFO" ;;
+	INFO) color="$C_CYAN" symbol="$S_INFO" ;;
+	WARN) color="$C_YELLOW" symbol="$S_WARNING" ;;
+	ERROR) color="$C_RED" symbol="$S_ERROR" ;;
+	FATAL) color="$C_BOLD$C_RED" symbol="$S_ERROR" ;;
 	esac
 
-	printf "%b%s %-7s%b %s - %s\n" "$color" "$symbol" "$level" "$NORMAL" "$timestamp" "$message"
-	echo "[$level] $timestamp - $message" >>"$LOG_FILE"
-}
-
-# ==============================================================================
-# Gelişmiş İlerleme Göstergesi Fonksiyonları
-# ==============================================================================
-# Terminal genişliğini alarak ilerleme çubuğunun ekrana sığmasını sağlar
-get_terminal_width() {
-	if command -v tput >/dev/null 2>&1; then
-		tput cols
+	if [[ -t 1 ]]; then
+		printf "${color}%s %-5s${C_RESET} ${C_DIM}[%s]${C_RESET} %s\n" \
+			"$symbol" "$level" "$caller_func" "$message" >&2
 	else
-		echo 80 # Varsayılan değer
+		printf "%s %-5s [%s] %s\n" "$symbol" "$level" "$caller_func" "$message" >&2
 	fi
+
+	if [[ -n "${LOG_FD:-}" ]]; then
+		printf "[%s] %-5s [%s] %s\n" "$timestamp" "$level" "$caller_func" "$message" >&${LOG_FD}
+	fi
+
+	[[ "$level" == "FATAL" ]] && exit 1
 }
 
-# Gelişmiş ilerleme göstergesi - hem görsel hem de bilgilendirici
-# Kullanım: show_progress 3 10 "Paketler kuruluyor"
-show_progress() {
-	local current=$1
-	local total=$2
-	local message="${3:-"İşlem yapılıyor..."}"
-	local percentage=$((current * 100 / total))
-	local term_width=$(get_terminal_width)
-	local progress_width=$((term_width > 60 ? 40 : term_width / 2))
-	local completed_width=$((percentage * progress_width / 100))
-	local spinner_chars=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-	local spinner=${spinner_chars[current % ${#spinner_chars[@]}]}
+# Progress and UI Functions
+declare -g PROGRESS_START_TIME
+declare -g PROGRESS_CURRENT=0
+declare -g PROGRESS_TOTAL=0
 
-	# Kalan süre tahmini için zaman başlangıcını kaydet
-	if [[ -z "$progress_start_time" && $current -eq 1 ]]; then
-		progress_start_time=$(date +%s)
-	fi
+progress::init() {
+	PROGRESS_CURRENT=0
+	PROGRESS_TOTAL="${1:-0}"
+	PROGRESS_START_TIME=$(date +%s)
+}
 
-	# Kalan süreyi hesapla ve formatla
-	local time_estimate=""
-	if [[ $current -gt 1 && $percentage -lt 100 ]]; then
-		local current_time=$(date +%s)
-		local elapsed=$((current_time - progress_start_time))
-		local estimated_total=$((elapsed * total / current))
-		local remaining=$((estimated_total - elapsed))
+progress::update() {
+	local current="${1:-$((++PROGRESS_CURRENT))}"
+	local total="${2:-$PROGRESS_TOTAL}"
+	local message="${3:-Processing...}"
+
+	[[ $total -eq 0 ]] && return
+
+	local percent=$((current * 100 / total))
+	local filled=$((percent * 40 / 100))
+	local empty=$((40 - filled))
+
+	local eta=""
+	if [[ $current -gt 0 && $percent -lt 100 ]]; then
+		local elapsed=$(($(date +%s) - PROGRESS_START_TIME))
+		local estimated=$((elapsed * total / current))
+		local remaining=$((estimated - elapsed))
 
 		if [[ $remaining -gt 0 ]]; then
-			if [[ $remaining -ge 60 ]]; then
-				time_estimate="(~$((remaining / 60))m kaldı)"
+			if [[ $remaining -ge 3600 ]]; then
+				eta=" ETA: $((remaining / 3600))h$((remaining % 3600 / 60))m"
+			elif [[ $remaining -ge 60 ]]; then
+				eta=" ETA: $((remaining / 60))m$((remaining % 60))s"
 			else
-				time_estimate="(~${remaining}s kaldı)"
+				eta=" ETA: ${remaining}s"
 			fi
 		fi
 	fi
 
-	# İlerleme çubuğunu oluştur
-	printf "\r${spinner} [" >&2
-	printf "%${completed_width}s" | tr ' ' '█' >&2
-	printf "%$((progress_width - completed_width))s" | tr ' ' '░' >&2
-	printf "] %3d%% %-30s %s" "$percentage" "${message:0:30}" "$time_estimate" >&2
+	printf "\r${C_CYAN}[" >&2
+	printf "%${filled}s" | tr ' ' "$PROGRESS_FULL" >&2
+	printf "%${empty}s" | tr ' ' "$PROGRESS_EMPTY" >&2
+	printf "] ${C_BOLD}%3d%%${C_RESET} %-30s%s" "$percent" "${message:0:30}" "$eta" >&2
 
-	# İşlem tamamlandıysa yeni satır ve zaman değişkenini temizle
-	if [[ $current -eq $total ]]; then
-		echo "" >&2
-		unset progress_start_time
-	fi
+	[[ $percent -eq 100 ]] && echo >&2
 }
 
-# Alt adımlar için ilerleme çubuğu - ana ilerleme çubuğu altında gösterilir
-show_substep_progress() {
-	local current=$1
-	local total=$2
-	local message="${3:-"Alt işlem..."}"
-	local term_width=$(get_terminal_width)
-	local max_message_width=$((term_width > 80 ? 50 : term_width / 2))
+spinner() {
+	local pid="${1:-$$}"
+	local message="${2:-Working...}"
+	local frames=("${SPINNER[@]}")
 
-	# Mesajı kısalt (çok uzunsa)
-	if [[ ${#message} -gt $max_message_width ]]; then
-		message="${message:0:$((max_message_width - 3))}..."
-	fi
-
-	# Alt adım ilerleme çubuğu
-	printf "\r  ↳ %-${max_message_width}s [" "$message" >&2
-	for ((i = 0; i < current; i++)); do
-		printf "#" >&2
-	done
-	for ((i = current; i < total; i++)); do
-		printf "." >&2
-	done
-	printf "] %d/%d" "$current" "$total" >&2
-
-	# İşlem tamamlandıysa yeni satır
-	if [[ $current -eq $total ]]; then
-		echo "" >&2
-	fi
-}
-
-# Uzun süren işlemler için animasyonlu gösterge
-# Kullanım:
-#   sleep 10 & # Arka planda çalışacak işlem
-#   show_animated_progress $! "Yükleniyor"
-show_animated_progress() {
-	local pid=$1
-	local message="${2:-"İşlem yapılıyor..."}"
-	local frames=('⣾' '⣽' '⣻' '⢿' '⡿' '⣟' '⣯' '⣷')
-	local start_time=$(date +%s)
-
-	echo -en "\n" >&2
-
-	# İşlem bitene kadar dönen animasyon göster
-	while kill -0 $pid 2>/dev/null; do
+	while kill -0 "$pid" 2>/dev/null; do
 		for frame in "${frames[@]}"; do
-			local current_time=$(date +%s)
-			local elapsed=$((current_time - start_time))
-
-			# Geçen süreyi dakika:saniye formatında göster
-			if [[ $elapsed -ge 60 ]]; then
-				local minutes=$((elapsed / 60))
-				local seconds=$((elapsed % 60))
-				time_display=$(printf "%02d:%02d" $minutes $seconds)
-			else
-				time_display=$(printf "%02ds" $elapsed)
-			fi
-
-			printf "\r${frame} ${message} [${time_display}]" >&2
+			printf "\r${C_CYAN}%s${C_RESET} %s" "$frame" "$message" >&2
 			sleep 0.1
 		done
 	done
-
-	# İşlem tamamlandığında checkmark göster
-	printf "\r✓ ${message} tamamlandı [${time_display}]     \n" >&2
+	printf "\r${C_GREEN}%s${C_RESET} %s\n" "$S_SUCCESS" "$message" >&2
 }
 
-# ==============================================================================
-# Önbellekleme Sistemi Desteği
-# ==============================================================================
-# Önbellekleme sistemini başlat ve gerekli dizinleri oluştur
-init_cache() {
-	[[ $CACHE_ENABLED != true ]] && return 0
+# Cache Management System (declare without -g for initial declaration)
+CACHE_ENABLED_VAR=$CACHE_ENABLED
+CACHE_TTL_VAR=$CACHE_EXPIRY
+CACHE_MAX_SIZE_VAR=$MAX_CACHE_SIZE
 
-	# Önbellek dizinlerini oluştur
-	mkdir -p "$CACHE_DIR/packages"  # Paket önbelleği
-	mkdir -p "$CACHE_DIR/downloads" # İndirme önbelleği
-	mkdir -p "$CACHE_DIR/metadata"  # Meta veri önbelleği
+cache::init() {
+	[[ $CACHE_ENABLED_VAR != true ]] && return 0
 
-	# Önbellek boyutunu kontrol et ve gerekirse temizle
-	check_cache_size
+	mkdir -p "$CACHE_DIR"/{packages,metadata,downloads}
 
-	# Önbellek meta bilgisini oluştur (yoksa)
-	if [[ ! -f "$CACHE_DIR/metadata/info.json" ]]; then
-		cat >"$CACHE_DIR/metadata/info.json" <<EOL
-{
-  "created": "$(date +%s)",
-  "version": "$VERSION",
-  "last_cleaned": "$(date +%s)"
-}
-EOL
+	local meta_file="$CACHE_DIR/metadata.json"
+	if [[ ! -f "$meta_file" ]]; then
+		cat >"$meta_file" <<-EOF
+			{
+			  "version": "$VERSION",
+			  "created": $(date +%s),
+			  "last_cleaned": $(date +%s)
+			}
+		EOF
 	fi
 
-	log "DEBUG" "Önbellekleme sistemi başlatıldı: $CACHE_DIR"
-	return 0
+	cache::cleanup
 }
 
-# Önbellekten veri al - belirtilen anahtarla eşleşen dosyayı belirtilen hedefe kopyala
-# Kullanım: get_from_cache "paket-adı-v1.2.3" "/hedef/dizin/paket"
-get_from_cache() {
-	local cache_key=$1
-	local destination=$2
-
-	[[ $CACHE_ENABLED != true ]] && return 1
-
-	local cache_file="$CACHE_DIR/packages/${cache_key}.tar.gz"
-
-	if [[ -f "$cache_file" ]]; then
-		# Önbellek öğesi var mı kontrol et
-		local file_time=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file")
-		local current_time=$(date +%s)
-
-		# Öğe süresi dolmuş mu?
-		if [[ $((current_time - file_time)) -gt $CACHE_EXPIRY ]]; then
-			log "DEBUG" "Önbellek süresi dolmuş: $cache_key"
-			rm -f "$cache_file"
-			return 1
-		fi
-
-		# Dosyayı önbellekten çıkar hedef konuma
-		log "DEBUG" "Önbellekten alınıyor: $cache_key"
-		tar -xzf "$cache_file" -C "$(dirname "$destination")"
-		touch "$cache_file" # Erişim zamanını güncelle
-		return 0
-	fi
-
-	return 1
+cache::key() {
+	echo "$*" | sha256sum | cut -d' ' -f1
 }
 
-# Veriyi önbelleğe kaydet - belirtilen kaynağı sıkıştırarak önbellekte sakla
-# Kullanım: save_to_cache "paket-adı-v1.2.3" "/kaynak/dosya/veya/dizin"
-save_to_cache() {
-	local cache_key=$1
-	local source=$2
+cache::get() {
+	local key="$1"
+	local dest="${2:-}"
 
-	[[ $CACHE_ENABLED != true ]] && return 1
-	[[ ! -e "$source" ]] && return 1
+	[[ $CACHE_ENABLED_VAR != true ]] && return 1
 
-	local cache_file="$CACHE_DIR/packages/${cache_key}.tar.gz"
+	local cache_file="$CACHE_DIR/packages/${key}"
+	[[ -f "$cache_file" ]] || return 1
 
-	# Önbellekleme dizini oluştur
-	mkdir -p "$(dirname "$cache_file")"
+	local age=$(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file")))
+	[[ $age -gt $CACHE_TTL_VAR ]] && return 1
 
-	# Dosyayı önbelleğe al (sıkıştırarak)
-	if [[ -d "$source" ]]; then
-		tar -czf "$cache_file" -C "$(dirname "$source")" "$(basename "$source")"
+	if [[ -n "$dest" ]]; then
+		cp "$cache_file" "$dest"
 	else
-		# Tek dosya
-		tar -czf "$cache_file" -C "$(dirname "$source")" "$(basename "$source")"
+		cat "$cache_file"
 	fi
 
-	log "DEBUG" "Önbelleğe kaydedildi: $cache_key"
-
-	# Önbellek boyutunu kontrol et ve gerekirse temizle
-	check_cache_size
-
+	log DEBUG "Cache hit: $key"
 	return 0
 }
 
-# Önbellek anahtar değeri oluştur - tutarlı ve benzersiz anahtarlar için
-# Kullanım: key=$(generate_cache_key "paket-adı-v1.2.3")
-generate_cache_key() {
-	local input=$1
-	echo "$input" | sha256sum | cut -d' ' -f1
-}
+cache::set() {
+	local key="$1"
+	local source="${2:-/dev/stdin}"
 
-# Önbellek boyutunu kontrol et ve gerekirse temizle
-check_cache_size() {
-	[[ $CACHE_ENABLED != true ]] && return 0
+	[[ $CACHE_ENABLED_VAR != true ]] && return 0
 
-	# Önbellek boyutunu hesapla (MB cinsinden)
-	local cache_size=$(du -sm "$CACHE_DIR" 2>/dev/null | cut -f1)
+	local cache_file="$CACHE_DIR/packages/${key}"
 
-	if [[ $cache_size -gt $MAX_CACHE_SIZE ]]; then
-		log "WARN" "Önbellek boyutu limiti aştı: ${cache_size}MB/${MAX_CACHE_SIZE}MB"
-		clean_cache
+	if [[ -f "$source" ]]; then
+		cp "$source" "$cache_file"
+	else
+		cat >"$cache_file"
 	fi
 
-	return 0
+	log DEBUG "Cache store: $key"
+	cache::cleanup
 }
 
-# Önbelleği temizle - eski ve kullanılmayan dosyaları sil
-clean_cache() {
-	[[ $CACHE_ENABLED != true ]] && return 0
+cache::cleanup() {
+	[[ $CACHE_ENABLED_VAR != true ]] && return 0
 
-	log "STEP" "Önbellek temizleniyor"
-	show_animated_progress "$$" "Önbellek temizleniyor" &
-	local animation_pid=$!
+	find "$CACHE_DIR/packages" -type f -mtime +$((CACHE_TTL_VAR / 86400)) -delete 2>/dev/null || true
 
-	# İlk adım: Eski dosyaları bul ve sil (son erişim zamanına göre)
-	find "$CACHE_DIR/packages" -type f -atime +$((CACHE_EXPIRY / 86400)) -delete
-
-	# İkinci adım: Boyut hala limitin üzerindeyse, en eski dosyaları sil
-	local cache_size=$(du -sm "$CACHE_DIR" 2>/dev/null | cut -f1)
-	if [[ $cache_size -gt $MAX_CACHE_SIZE ]]; then
-		log "INFO" "Eski önbellek öğeleri siliniyor"
+	local size=$(du -sm "$CACHE_DIR" 2>/dev/null | cut -f1)
+	if [[ ${size:-0} -gt $CACHE_MAX_SIZE_VAR ]]; then
+		log WARN "Cache size exceeded: ${size}MB > ${CACHE_MAX_SIZE_VAR}MB"
 		find "$CACHE_DIR/packages" -type f -printf '%T@ %p\n' |
-			sort -n |
-			head -n 100 |
-			cut -d' ' -f2- |
-			xargs rm -f
+			sort -n | head -n 20 | cut -d' ' -f2- | xargs rm -f
 	fi
-
-	# Önbellek meta bilgisini güncelle
-	local metadata_file="$CACHE_DIR/metadata/info.json"
-	if [[ -f "$metadata_file" ]]; then
-		tmp=$(mktemp)
-		jq ".last_cleaned = $(date +%s)" "$metadata_file" >"$tmp" && mv "$tmp" "$metadata_file"
-	fi
-
-	# Animasyon işlemini sonlandır
-	kill $animation_pid 2>/dev/null
-	log "OK" "Önbellek temizlendi"
-
-	return 0
 }
 
-# Önbellek kullanımını göster - önbellekle ilgili bilgileri ekrana yazdır
-show_cache_usage() {
-	[[ $CACHE_ENABLED != true ]] && {
-		echo "Önbellekleme devre dışı."
-		return 0
+# Backup System
+backup::create() {
+	local source="$1"
+	local name="${2:-backup}"
+	local timestamp=$(date +%Y%m%d_%H%M%S)
+	local backup_dir="$BACKUP_DIR/${name}"
+	local backup_file="${backup_dir}/${name}-${timestamp}.tar.gz"
+
+	mkdir -p "$backup_dir"
+
+	tar -czf "$backup_file" -C "$(dirname "$source")" "$(basename "$source")" 2>/dev/null
+
+	cat >"${backup_file}.meta" <<-EOF
+		{
+		  "timestamp": $(date +%s),
+		  "source": "$source",
+		  "size": $(stat -c %s "$backup_file" 2>/dev/null || stat -f %z "$backup_file"),
+		  "checksum": "$(sha256sum "$backup_file" | cut -d' ' -f1)"
+		}
+	EOF
+
+	ls -t "${backup_dir}"/*.tar.gz 2>/dev/null | tail -n +11 | xargs -r rm -f
+
+	log INFO "Backup created: $backup_file"
+	echo "$backup_file"
+}
+
+backup::restore() {
+	local name="${1:-backup}"
+	local dest="${2:-}"
+	local backup_dir="$BACKUP_DIR/${name}"
+
+	local latest=$(ls -t "${backup_dir}"/*.tar.gz 2>/dev/null | head -n1)
+	[[ -z "$latest" ]] && {
+		log ERROR "No backup found for: $name"
+		return 1
 	}
 
-	# Önbellek istatistiklerini hesapla
-	local cache_size=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1)
-	local pkg_count=$(find "$CACHE_DIR/packages" -type f | wc -l)
-	local last_cleaned="Hiç"
+	if [[ -f "${latest}.meta" ]]; then
+		local stored_checksum=$(grep -o '"checksum": "[^"]*"' "${latest}.meta" | cut -d'"' -f4)
+		local actual_checksum=$(sha256sum "$latest" | cut -d' ' -f1)
 
-	# Son temizleme zamanını oku
-	local metadata_file="$CACHE_DIR/metadata/info.json"
-	if [[ -f "$metadata_file" ]]; then
-		if command -v jq >/dev/null 2>&1; then
-			local cleaned_ts=$(jq -r ".last_cleaned" "$metadata_file")
-			last_cleaned=$(date -d "@$cleaned_ts" "+%Y-%m-%d %H:%M:%S" 2>/dev/null ||
-				date -r "$cleaned_ts" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+		if [[ "$stored_checksum" != "$actual_checksum" ]]; then
+			log ERROR "Backup checksum mismatch!"
+			return 1
 		fi
 	fi
 
-	# İstatistikleri göster
-	echo -e "${BLUE}=== Önbellek Kullanımı ===${NORMAL}"
-	echo -e "Dizin: $CACHE_DIR"
-	echo -e "Boyut: $cache_size"
-	echo -e "Paket sayısı: $pkg_count"
-	echo -e "Son temizleme: $last_cleaned"
-	echo -e "Maksimum boyut: $MAX_CACHE_SIZE MB"
-	echo -e "Süre aşımı: $((CACHE_EXPIRY / 86400)) gün"
+	if [[ -n "$dest" ]]; then
+		tar -xzf "$latest" -C "$dest"
+	else
+		tar -xzf "$latest"
+	fi
 
+	log INFO "Restored from: $latest"
 	return 0
 }
 
-# ==============================================================================
-# Yardımcı Fonksiyonlar
-# ==============================================================================
-print_header() {
-	echo -E "$CYAN
- ═══════════════════════════════════════
-   ███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗
-   ████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝
-   ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗
-   ██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║
-   ██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║
-   ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
- ═══════════════════════════════════════
-
- $BLUE Kurulum Betiği v$VERSION $RED
-  ! Düzgün kurulum için root olarak çalıştırmayın !$GREEN
-  → $SCRIPT_NAME $NORMAL
-    "
+# Utility Functions
+has_command() {
+	command -v "$1" &>/dev/null
 }
 
-print_help() {
-	cat <<EOF
-${BRIGHT}${GREEN}NixOS Kurulum Betiği${NORMAL}
-Sürüm: $VERSION
+require_commands() {
+	local missing=()
+	for cmd in "$@"; do
+		has_command "$cmd" || missing+=("$cmd")
+	done
 
-${BRIGHT}Kullanım:${NORMAL}
-    $SCRIPT_NAME [seçenekler]
+	if [[ ${#missing[@]} -gt 0 ]]; then
+		log FATAL "Missing required commands: ${missing[*]}"
+	fi
+}
 
-${BRIGHT}Seçenekler:${NORMAL}
-    -h, --help              Bu yardım mesajını göster
-    -v, --version           Betik sürümünü göster
-    -s, --silent            Sessiz modda çalıştır
-    -d, --debug             Hata ayıklama modunda çalıştır
-    -a, --auto HOST         Varsayılanlarla çalıştır (hay/vhay)
-    -u, --update-flake      flake.lock dosyasını güncelle
-    -m, --update-module     Belirli bir modülü güncelle
-    -b, --backup            Sadece flake.lock dosyasını yedekle
-    -r, --restore           Son yedekten geri yükle
-    -p, --profile NAME      Profil adı belirt
-    --pre-install           İlk sistem kurulumu
-    -hc, --health-check     Sistem sağlık kontrolü
-    
-    # Önbellekleme seçenekleri
-    --cache                 Önbelleklemeyi etkinleştir (varsayılan)
-    --no-cache              Önbelleklemeyi devre dışı bırak
-    --cache-dir DIR         Önbellek dizinini ayarla
-    --cache-clear           Önbelleği temizle
-    --cache-status          Önbellek durumunu göster
-    
-${BRIGHT}Örnekler:${NORMAL}
-    $SCRIPT_NAME -a hay    # Otomatik dizüstü kurulumu
-    $SCRIPT_NAME -p S1     # S1 profili ile derleme
-    $SCRIPT_NAME --cache-status # Önbellek durumunu göster
-    $SCRIPT_NAME --no-cache -u # Önbellekleme olmadan flake güncelle
-EOF
+run() {
+	local cmd="$1"
+	shift
+	log DEBUG "Running: $cmd $*"
+
+	if output=$("$cmd" "$@" 2>&1); then
+		log TRACE "Output: $output"
+		return 0
+	else
+		log ERROR "Command failed: $cmd $*"
+		log DEBUG "Error output: $output"
+		return 1
+	fi
 }
 
 confirm() {
-	[[ $SILENT == true || $AUTO == true ]] && return 0
-	echo -en "${BRIGHT}[${GREEN}y${NORMAL}/${RED}n${NORMAL}]${NORMAL} "
-	read -r -n 1
-	echo
-	[[ $REPLY =~ ^[Yy]$ ]]
+	local message="${1:-Continue?}"
+	local default="${2:-n}"
+
+	[[ "${CONFIG[AUTO_MODE]:-false}" == "true" ]] && return 0
+	[[ "${CONFIG[SILENT_MODE]:-false}" == "true" ]] && return 0
+	[[ -t 0 ]] || return 0
+
+	local prompt
+	case "${default,,}" in
+	y) prompt="[Y/n]" ;;
+	n) prompt="[y/N]" ;;
+	*) prompt="[y/n]" ;;
+	esac
+
+	printf "${C_YELLOW}%s${C_RESET} %s " "$message" "$prompt" >&2
+	read -r -n1 response
+	echo >&2
+
+	case "${response,,}" in
+	y) return 0 ;;
+	n) return 1 ;;
+	"") [[ "${default,,}" == "y" ]] ;;
+	*) return 1 ;;
+	esac
 }
 
 # ==============================================================================
-# Sistem Kontrol Fonksiyonları
+# PART 2: CORE INSTALLATION MODULE
 # ==============================================================================
-check_root() {
-	if [[ $EUID -eq 0 ]]; then
-		log "ERROR" "Bu betik root olarak çalıştırılmamalıdır!"
-		exit 1
-	fi
-}
 
-check_system_health() {
-	log "STEP" "Sistem sağlık kontrolü yapılıyor"
+declare -A CONFIG=(
+	[USERNAME]="$DEFAULT_USERNAME"
+	[CURRENT_USERNAME]="$CURRENT_USERNAME"
+	[HOSTNAME]=""
+	[PROFILE]=""
+	[FLAKE_DIR]="$WORK_DIR"
+	[WALLPAPER_DIR]="$WALLPAPER_DIR"
+	[BUILD_CORES]=$(nproc)
+	[UPDATE_FLAKE]=false
+	[UPDATE_MODULE]=""
+	[PRE_INSTALL]=false
+	[AUTO_MODE]=false
+	[SILENT_MODE]=false
+)
 
-	# Bellek kontrolü
-	local total_mem=$(free -m | awk '/^Mem:/{print $2}')
-	local used_mem=$(free -m | awk '/^Mem:/{print $3}')
-	local mem_percent=$((used_mem * 100 / total_mem))
+config::load() {
+	local config_file="${1:-${CONFIG_DIR}/config.json}"
 
-	log "INFO" "Bellek Kullanımı: ${mem_percent}%"
-	[[ $mem_percent -gt 90 ]] && log "WARN" "Yüksek bellek kullanımı tespit edildi"
-
-	# CPU yük kontrolü
-	local cpu_load=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1)
-	log "INFO" "CPU Yükü: $cpu_load"
-	[[ $(echo "$cpu_load > 2" | bc) -eq 1 ]] && log "WARN" "Yüksek CPU yükü"
-
-	log "OK" "Sistem sağlık kontrolü tamamlandı"
-}
-
-# ==============================================================================
-# Yedekleme Yönetimi
-# ==============================================================================
-backup_flake() {
-	local backup_file="$BACKUP_DIR/flake.lock.$(date +%Y%m%d_%H%M%S)"
-	mkdir -p "$BACKUP_DIR"
-
-	if [[ -f $FLAKE_LOCK ]]; then
-		cp "$FLAKE_LOCK" "$backup_file"
-		log "OK" "flake.lock yedeklemesi oluşturuldu: $backup_file"
-
-		# Sadece son 5 yedeği tut
-		ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | tail -n +6 | xargs -r rm
-		return 0
-	else
-		log "ERROR" "flake.lock bulunamadı"
-		return 1
-	fi
-}
-
-restore_flake_backup() {
-	local latest_backup=$(ls -t "$BACKUP_DIR"/flake.lock.* 2>/dev/null | head -n1)
-
-	if [[ -n "$latest_backup" ]]; then
-		cp "$latest_backup" "$FLAKE_LOCK"
-		log "OK" "flake.lock yedekten geri yüklendi: $latest_backup"
-		return 0
-	else
-		log "ERROR" "Geri yüklenecek yedek bulunamadı"
-		return 1
-	fi
-}
-
-# ==============================================================================
-# Flake Yönetimi
-# ==============================================================================
-update_single_module() {
-	if [[ -z "$UPDATE_MODULE" ]]; then
-		log "ERROR" "Güncelleme için modül belirtilmedi"
-		return 1
-	fi
-
-	log "STEP" "Modül güncelleniyor: $UPDATE_MODULE"
-	backup_flake
-
-	if nix flake lock --update-input "$UPDATE_MODULE"; then
-		log "OK" "Modül başarıyla güncellendi: $UPDATE_MODULE"
-		return 0
-	else
-		log "ERROR" "Modül güncellemesi başarısız oldu: $UPDATE_MODULE"
-		return 1
-	fi
-}
-
-list_available_modules() {
-	log "INFO" "Flake içindeki kullanılabilir modüller:"
-	if ! nix flake metadata 2>/dev/null | grep -A 100 "Inputs:" | grep -v "Inputs:" | awk '{print $1}' | grep -v "^$" | sort; then
-		log "ERROR" "Modüller listelenirken hata oluştu"
-		exit 1
-	fi
-}
-
-setup_nix_conf() {
-	# Symlink kontrolü eklendi: -f (dosya) VEYA -L (symlink)
-	if [[ ! -f "$NIX_CONF_FILE" && ! -L "$NIX_CONF_FILE" ]]; then
-		mkdir -p "$NIX_CONF_DIR"
-		echo "experimental-features = nix-command flakes" >"$NIX_CONF_FILE"
-		log "OK" "flakes desteği ile nix.conf oluşturuldu"
-	else
-		# Dosya var (normal dosya veya symlink) - içeriği kontrol et
-		if [[ -r "$NIX_CONF_FILE" ]] && ! grep -q "experimental-features.*=.*flakes" "$NIX_CONF_FILE"; then
-			echo "experimental-features = nix-command flakes" >>"$NIX_CONF_FILE"
-			log "OK" "Mevcut nix.conf dosyasına flakes desteği eklendi"
-		elif [[ ! -r "$NIX_CONF_FILE" ]]; then
-			# Symlink var ama hedef dosya yok - uyarı ver
-			log "WARN" "nix.conf symlink mevcut ama hedef dosya okunamıyor"
+	if [[ -f "$config_file" ]]; then
+		log DEBUG "Loading config from: $config_file"
+		if has_command jq; then
+			while IFS='=' read -r key value; do
+				CONFIG[$key]="$value"
+			done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' "$config_file")
 		else
-			log "DEBUG" "nix.conf mevcut ve flakes desteği zaten var"
+			while IFS=':' read -r key value; do
+				key=$(echo "$key" | tr -d '"{} \t')
+				value=$(echo "$value" | tr -d '", \t')
+				[[ -n "$key" && -n "$value" ]] && CONFIG[$key]="$value"
+			done <"$config_file"
 		fi
 	fi
 }
 
-# Önbellekli flake güncelleme
-update_flake_with_cache() {
-	if [[ $UPDATE_FLAKE == true ]]; then
-		log "STEP" "Flake yapılandırması güncelleniyor"
-		backup_flake
-		setup_nix_conf
+config::save() {
+	local config_file="${1:-${CONFIG_DIR}/config.json}"
 
-		# Günlük önbellek anahtarı oluştur
-		local cache_key=$(generate_cache_key "flake-$(date +%Y%m%d)")
-		local flake_json="flake.json"
+	mkdir -p "$(dirname "$config_file")"
 
-		# Günlük bir önbellek var mı kontrol et
-		if [[ $CACHE_ENABLED == true ]] && get_from_cache "$cache_key" "$flake_json"; then
-			log "INFO" "Günlük flake önbelleği kullanılıyor"
-			if nix flake update; then
-				log "OK" "Flake güncellemesi tamamlandı"
-				return 0
-			fi
+	{
+		echo "{"
+		local first=true
+		for key in "${!CONFIG[@]}"; do
+			[[ $first == true ]] && first=false || echo ","
+			printf '  "%s": "%s"' "$key" "${CONFIG[$key]}"
+		done
+		echo -e "\n}"
+	} >"$config_file"
+
+	log DEBUG "Config saved to: $config_file"
+}
+
+config::get() {
+	echo "${CONFIG[$1]:-}"
+}
+
+config::set() {
+	CONFIG[$1]="$2"
+}
+
+system::detect() {
+	local system_type="unknown"
+
+	if systemd-detect-virt --quiet 2>/dev/null; then
+		system_type="vm"
+		log INFO "Virtual machine detected"
+	else
+		if [[ -d /sys/class/power_supply/BAT* ]] || [[ -f /sys/class/dmi/id/chassis_type ]]; then
+			local chassis_type=$(cat /sys/class/dmi/id/chassis_type 2>/dev/null || echo 0)
+			case $chassis_type in
+			8 | 9 | 10 | 14) system_type="laptop" ;;
+			3 | 4 | 5 | 6 | 7) system_type="desktop" ;;
+			*) system_type="unknown" ;;
+			esac
+		fi
+	fi
+
+	log INFO "System type detected: $system_type"
+	echo "$system_type"
+}
+
+system::validate() {
+	local errors=()
+
+	if [[ ! -f /etc/nixos/configuration.nix ]] && [[ ! -d /etc/nixos ]]; then
+		errors+=("Not a NixOS system")
+	fi
+
+	local free_space=$(df -BG "$WORK_DIR" | awk 'NR==2 {print int($4)}')
+	if [[ $free_space -lt 10 ]]; then
+		errors+=("Insufficient disk space: ${free_space}GB < 10GB")
+	fi
+
+	local total_mem=$(free -g | awk '/^Mem:/ {print int($2)}')
+	if [[ $total_mem -lt 2 ]]; then
+		errors+=("Insufficient memory: ${total_mem}GB < 2GB")
+	fi
+
+	local required_cmds=(nix nixos-rebuild git)
+	for cmd in "${required_cmds[@]}"; do
+		has_command "$cmd" || errors+=("Missing command: $cmd")
+	done
+
+	if [[ ${#errors[@]} -gt 0 ]]; then
+		for error in "${errors[@]}"; do
+			log ERROR "$error"
+		done
+		return 1
+	fi
+
+	log INFO "System validation passed"
+	return 0
+}
+
+system::health_check() {
+	log INFO "Running system health check..."
+
+	# Memory usage
+	local mem_info=$(free -h | awk '/^Mem:/ {printf "Total: %s, Used: %s, Free: %s", $2, $3, $4}')
+	log INFO "Memory: $mem_info"
+
+	# CPU load
+	local cpu_load=$(uptime | awk -F'load average:' '{print $2}')
+	log INFO "CPU Load:$cpu_load"
+
+	# Disk usage
+	while IFS= read -r line; do
+		log INFO "Disk: $line"
+	done < <(df -h / /home /nix/store 2>/dev/null | awk 'NR>1 {printf "%s: %s used of %s (%s)\n", $6, $3, $2, $5}')
+
+	# Nix store size
+	if has_command nix-store; then
+		local store_size=$(du -sh /nix/store 2>/dev/null | cut -f1)
+		log INFO "Nix store size: ${store_size:-unknown}"
+	fi
+
+	# Network connectivity
+	if ping -c 1 -W 2 1.1.1.1 &>/dev/null; then
+		log INFO "Network: Connected"
+	else
+		log WARN "Network: No internet connection"
+	fi
+
+	# System details
+	log INFO "Hostname: $(hostname)"
+	log INFO "Kernel: $(uname -r)"
+	log INFO "Uptime: $(uptime -p 2>/dev/null || uptime)"
+
+	# NixOS specific
+	if [[ -f /etc/os-release ]]; then
+		local nixos_version=$(grep "^VERSION=" /etc/os-release | cut -d'"' -f2)
+		log INFO "NixOS Version: ${nixos_version:-unknown}"
+	fi
+
+	# Current generation
+	if has_command nixos-version; then
+		local current_gen=$(readlink /nix/var/nix/profiles/system | grep -oP 'system-\K[0-9]+' || echo "unknown")
+		log INFO "Current generation: $current_gen"
+	fi
+
+	return 0
+}
+
+flake::init() {
+	local flake_dir="${1:-$(config::get FLAKE_DIR)}"
+
+	cd "$flake_dir" || {
+		log ERROR "Cannot access flake directory: $flake_dir"
+		return 1
+	}
+
+	if [[ ! -f flake.nix ]]; then
+		log ERROR "No flake.nix found in: $flake_dir"
+		return 1
+	fi
+
+	local nix_conf="$HOME/.config/nix/nix.conf"
+	if [[ ! -f "$nix_conf" ]] || ! grep -q "experimental-features.*flakes" "$nix_conf"; then
+		mkdir -p "$(dirname "$nix_conf")"
+		echo "experimental-features = nix-command flakes" >>"$nix_conf"
+		log INFO "Enabled flakes support"
+	fi
+
+	return 0
+}
+
+flake::update() {
+	local module="${1:-}"
+
+	if [[ -f flake.lock ]]; then
+		backup::create flake.lock "flake-lock"
+	fi
+
+	if [[ -n "$module" ]]; then
+		log INFO "Updating flake input: $module"
+		if run nix flake lock --update-input "$module"; then
+			log INFO "Successfully updated: $module"
 		else
-			# Önbellekte yoksa güncelleme işlemini göster
-			show_animated_progress "$$" "Flake güncelleniyor" &
-			local animation_pid=$!
+			log ERROR "Failed to update: $module"
+			backup::restore "flake-lock" "."
+			return 1
+		fi
+	else
+		log INFO "Updating all flake inputs"
+		if run nix flake update; then
+			log INFO "Successfully updated all inputs"
+		else
+			log ERROR "Failed to update flake"
+			backup::restore "flake-lock" "."
+			return 1
+		fi
+	fi
 
-			if nix flake update; then
-				kill $animation_pid 2>/dev/null
-				log "OK" "Flake güncellemesi tamamlandı"
+	return 0
+}
 
-				if [[ $CACHE_ENABLED == true ]]; then
-					# Günlük flake durumunu önbelleğe al
-					nix flake metadata --json >"$flake_json"
-					save_to_cache "$cache_key" "$flake_json"
-					rm -f "$flake_json"
-				fi
+flake::list_inputs() {
+	if has_command nix; then
+		nix flake metadata --json 2>/dev/null |
+			jq -r '.locks.nodes | to_entries[] | select(.key != "root") | .key' 2>/dev/null ||
+			nix flake metadata 2>/dev/null | grep -A 100 "Inputs:" | grep "^├" | awk '{print $2}'
+	fi
+}
 
-				return 0
-			else
-				kill $animation_pid 2>/dev/null
-				log "ERROR" "Flake güncellemesi başarısız oldu"
-				return 1
+flake::build() {
+	local hostname="${1:-$(config::get HOSTNAME)}"
+	local profile="${2:-$(config::get PROFILE)}"
+	local cores="${3:-$(config::get BUILD_CORES)}"
+
+	[[ -z "$hostname" ]] && {
+		log ERROR "Hostname not specified"
+		return 1
+	}
+
+	local build_cmd="sudo nixos-rebuild switch"
+	build_cmd+=" --flake .#${hostname}"
+	build_cmd+=" --cores ${cores}"
+	build_cmd+=" --accept-flake-config"
+	build_cmd+=" --option warn-dirty false"
+
+	[[ -n "$profile" ]] && build_cmd+=" --profile-name ${profile}"
+
+	if [[ -d "$NIXOS_CACHE" ]]; then
+		build_cmd+=" --option extra-substituters file://${NIXOS_CACHE}"
+	fi
+
+	log INFO "Building system: $hostname"
+	log DEBUG "Build command: $build_cmd"
+
+	if eval "$build_cmd"; then
+		log INFO "System build successful"
+
+		if [[ $CACHE_ENABLED_VAR == true ]]; then
+			local cache_key=$(cache::key "build-${hostname}-$(date +%Y%m%d)")
+			echo "$(date +%s)" | cache::set "$cache_key"
+		fi
+
+		return 0
+	else
+		log ERROR "System build failed"
+		return 1
+	fi
+}
+
+user::setup() {
+	local username="${1:-$(config::get USERNAME)}"
+	local current_user="${2:-$CURRENT_USERNAME}"
+
+	if [[ -z "$username" ]]; then
+		if [[ $(config::get AUTO_MODE) == true ]]; then
+			username="$current_user"
+		else
+			printf "${C_YELLOW}Enter username:${C_RESET} "
+			read -r username
+		fi
+	fi
+
+	if ! [[ "$username" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+		log ERROR "Invalid username format: $username"
+		return 1
+	fi
+
+	config::set USERNAME "$username"
+
+	if [[ "$username" != "$current_user" ]]; then
+		log INFO "Updating configuration files for user: $username"
+
+		local files_updated=0
+		while IFS= read -r -d '' file; do
+			if grep -q "$current_user" "$file"; then
+				cp "$file" "${file}.bak"
+				sed -i "s/${current_user}/${username}/g" "$file"
+				((files_updated++))
 			fi
+		done < <(find "$WORK_DIR" -type f \( -name "*.nix" -o -name "*.conf" -o -name "*.yaml" \) -print0)
+
+		log INFO "Updated $files_updated configuration files"
+	fi
+
+	return 0
+}
+
+host::setup() {
+	local hostname="${1:-$(config::get HOSTNAME)}"
+
+	if [[ -z "$hostname" ]]; then
+		local system_type=$(system::detect)
+
+		if [[ $(config::get AUTO_MODE) == true ]]; then
+			case "$system_type" in
+			laptop) hostname="hay" ;;
+			vm) hostname="vhay" ;;
+			*) hostname="nixos" ;;
+			esac
+		else
+			printf "${C_YELLOW}Enter hostname (hay/vhay):${C_RESET} "
+			read -r hostname
+		fi
+	fi
+
+	if ! [[ "$hostname" =~ ^[a-zA-Z][a-zA-Z0-9-]*$ ]]; then
+		log ERROR "Invalid hostname format: $hostname"
+		return 1
+	fi
+
+	config::set HOSTNAME "$hostname"
+
+	local hw_config="/etc/nixos/hardware-configuration.nix"
+	local target="$WORK_DIR/hosts/${hostname}/hardware-configuration.nix"
+
+	if [[ -f "$hw_config" ]] && [[ -d "$(dirname "$target")" ]]; then
+		if [[ ! -f "$target" ]] || ! cmp -s "$hw_config" "$target"; then
+			cp "$hw_config" "$target"
+			log INFO "Hardware configuration copied for: $hostname"
 		fi
 	fi
 
@@ -661,702 +779,842 @@ update_flake_with_cache() {
 }
 
 # ==============================================================================
-# Kullanıcı ve Ana Bilgisayar Yönetimi
+# PART 3: MAIN INSTALLATION SCRIPT
 # ==============================================================================
-print_question() {
-	local question=$1
-	echo
-	echo -e "${BLUE}┌─────────────────────────── ? ───────────────────────────┐${NORMAL}"
-	echo -e "${BLUE}│${NORMAL} $question"
-	echo -e "${BLUE}└──────────────────────────────────────────────────────────┘${NORMAL}"
+
+show_help() {
+	echo -e "${C_CYAN}NixOS Installation Script v${VERSION}${C_RESET}
+
+${C_BOLD}USAGE:${C_RESET}
+    $(basename "$0") [COMMAND] [OPTIONS]
+
+${C_BOLD}COMMANDS:${C_RESET}
+    install             Full system installation
+    update              Update flake inputs
+    build               Build NixOS configuration
+    switch              Switch to new configuration
+    rollback            Rollback to previous configuration
+    health              System health check
+    cache               Cache management
+    backup              Backup management
+    profile             Profile management
+    
+${C_BOLD}OPTIONS:${C_RESET}
+    -h, --help          Show this help message
+    -v, --version       Show version information
+    -c, --config FILE   Use custom configuration file
+    -d, --debug         Enable debug logging
+    -s, --silent        Silent mode (no prompts)
+    -a, --auto          Automatic mode
+    -H, --host NAME     Set hostname
+    -u, --update        Update flake before building
+    -U, --user NAME     Set username
+    -p, --profile NAME  Set profile name
+    --pre-install       Run pre-installation setup
+    --no-cache          Disable caching
+    --no-backup         Skip backups
+    
+${C_BOLD}EXAMPLES:${C_RESET}
+    # Pre-installation (first time setup)
+    $(basename "$0") -a hay --pre-install
+    $(basename "$0") -a vhay --pre-install
+    
+    # Interactive installation
+    $(basename "$0") install
+    
+    # Automatic installation for laptop with profile
+    $(basename "$0") install --auto --host hay --profile T1
+    
+    # Old style command (still works)
+    $(basename "$0") -u -a hay -p T1_20250826
+    
+    # Update specific flake input
+    $(basename "$0") update home-manager
+    
+    # Build with custom profile
+    $(basename "$0") build --host hay --profile development
+    
+    # System health check
+    $(basename "$0") health
+
+${C_BOLD}CONFIGURATION:${C_RESET}
+    Working dir: ${WORK_DIR}
+    Config file: ${CONFIG_DIR}/config.json
+    Cache dir:   ${CACHE_DIR}
+    Backup dir:  ${BACKUP_DIR}
+    Log file:    ${LOG_FILE}
+
+For more information, visit: https://github.com/kenanpelit/nixosc"
 }
 
-get_username() {
-	if [[ $AUTO == true ]]; then
-		username=$DEFAULT_USERNAME
-		log "INFO" "Varsayılan kullanıcı adı kullanılıyor: $username"
-		return 0
+parse_args() {
+	local command=""
+	local args=()
+
+	# Check for old-style command first
+	if [[ "$1" == "-u" || "$1" == "-a" || "$1" == "-p" ]]; then
+		# Old style command, assume install
+		command="install"
+		config::set AUTO_MODE true
 	fi
 
-	log "STEP" "Kullanıcı adı ayarlanıyor"
-	print_question "${GREEN}Kullanıcı adınızı${NORMAL} girin: ${YELLOW}"
-	read -r username
-	echo -en "${NORMAL}"
-
-	print_question "${GREEN}Kullanıcı adı${NORMAL} olarak ${YELLOW}$username${NORMAL} kullanılsın mı?"
-	if confirm; then
-		log "DEBUG" "Kullanıcı adı ayarlandı: $username"
-		return 0
-	fi
-	exit 1
-}
-
-# Kullanıcı adı değişikliği için yeni yedekleme yönetimi
-set_username() {
-	log "STEP" "Konfigürasyon dosyaları kullanıcı adı ile güncelleniyor"
-
-	# Güvenli dosya uzantıları ve dizinler
-	local safe_files=("*.nix" "configuration.yml" "config.toml" "*.conf")
-	local exclude_dirs=(".git" "result" ".direnv" "*.cache")
-
-	# Kullanıcı adı formatı kontrolü
-	if ! [[ "$username" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
-		log "ERROR" "Geçersiz kullanıcı adı formatı - Küçük harfler, sayılar, - ve _ kullanın"
-		return 1
-	fi
-
-	# Mevcut kullanıcı adı kontrolü
-	if [[ -z "$CURRENT_USERNAME" ]]; then
-		log "ERROR" "Mevcut kullanıcı adı tanımlanmamış"
-		return 1
-	fi
-
-	# Yedekleme dizini ve log dosyası hazırlama
-	local backup_timestamp=$(date +%Y%m%d_%H%M%S)
-	local backup_path="$BACKUP_DIR/username_changes/$backup_timestamp"
-	local backup_log="$backup_path/backup.log"
-
-	mkdir -p "$backup_path"
-
-	# Değiştirilecek dosyaları bul
-	local files_to_change=()
-	for ext in "${safe_files[@]}"; do
-		while IFS= read -r -d $'\0' file; do
-			if grep -q "$CURRENT_USERNAME" "$file"; then
-				files_to_change+=("$file")
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		install | update | build | switch | rollback | health | cache | backup | profile)
+			[[ -z "$command" ]] && command="$1"
+			shift
+			;;
+		-h | --help)
+			show_help
+			exit 0
+			;;
+		-v | --version)
+			echo "NixOS Installation Script v${VERSION}"
+			exit 0
+			;;
+		-c | --config)
+			shift
+			config::load "$1"
+			shift
+			;;
+		-d | --debug)
+			export LOG_LEVEL="DEBUG"
+			shift
+			;;
+		-s | --silent)
+			config::set SILENT_MODE true
+			shift
+			;;
+		-a | --auto)
+			config::set AUTO_MODE true
+			config::set SILENT_MODE true
+			# Check if next arg is hostname (old style)
+			if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
+				shift
+				config::set HOSTNAME "$1"
 			fi
-		done < <(find . -type f -name "$ext" $(printf "! -path '*/%s/*' " "${exclude_dirs[@]}") -print0)
+			shift
+			;;
+		--pre-install)
+			config::set PRE_INSTALL true
+			command="pre-install"
+			shift
+			;;
+		-u | --update | --update-flake)
+			config::set UPDATE_FLAKE true
+			shift
+			;;
+		-H | --host)
+			shift
+			config::set HOSTNAME "$1"
+			shift
+			;;
+		-U | --user)
+			shift
+			config::set USERNAME "$1"
+			shift
+			;;
+		-p | --profile)
+			shift
+			config::set PROFILE "$1"
+			shift
+			;;
+		--no-cache)
+			CACHE_ENABLED_VAR=false
+			shift
+			;;
+		--no-backup)
+			BACKUP_ENABLED=false
+			shift
+			;;
+		*)
+			args+=("$1")
+			shift
+			;;
+		esac
 	done
 
-	# Dosya kontrolü
-	if [ ${#files_to_change[@]} -eq 0 ]; then
-		log "WARN" "Güncellenecek dosya bulunamadı"
-		return 0
-	fi
+	# Default to install if old style args were used
+	[[ -z "$command" && $(config::get AUTO_MODE) == true ]] && command="install"
 
-	# Değiştirilecek dosyaları göster
-	log "INFO" "Güncellenecek dosyalar:"
-	printf '%s\n' "${files_to_change[@]}"
-
-	# Onay al
-	echo -en "\n'${CURRENT_USERNAME}' kullanıcı adını '${username}' olarak değiştir? "
-	if ! confirm; then
-		log "INFO" "İşlem kullanıcı tarafından iptal edildi"
-		return 1
-	fi
-
-	# Yedekleme log başlangıcı
-	{
-		echo "Kullanıcı Adı Değişikliği Yedekleme Logu"
-		echo "=========================="
-		echo "Zaman: $backup_timestamp"
-		echo "Eski Kullanıcı Adı: $CURRENT_USERNAME"
-		echo "Yeni Kullanıcı Adı: $username"
-		echo -e "\nYedeklenen dosyalar:"
-	} >"$backup_log"
-
-	# Dosyaları yedekle ve güncelle
-	local success=0
-	for file in "${files_to_change[@]}"; do
-		# Yedekleme dizin yapısını oluştur
-		local relative_path=${file#./}
-		local backup_file="$backup_path/$relative_path"
-		mkdir -p "$(dirname "$backup_file")"
-
-		# Dosyayı yedekle
-		if cp "$file" "$backup_file"; then
-			# Yedekleme loguna kaydet
-			echo "- $relative_path" >>"$backup_log"
-
-			# Dosyayı güncelle
-			if sed -i "s/${CURRENT_USERNAME}/${username}/g" "$file"; then
-				log "DEBUG" "Güncellendi ve yedeklendi: $file → $backup_file"
-			else
-				log "ERROR" "Güncelleme başarısız: $file"
-				cp "$backup_file" "$file" # Hata durumunda geri al
-				success=1
-			fi
-		else
-			log "ERROR" "Yedekleme başarısız: $file"
-			success=1
-		fi
-	done
-
-	# Yedekleme özeti loguna ekle
-	{
-		echo -e "\nİşlem Özeti"
-		echo "================="
-		echo "Toplam işlenen dosya: ${#files_to_change[@]}"
-		echo "Durum: $([[ $success -eq 0 ]] && echo "BAŞARILI" || echo "BAŞARISIZ")"
-		echo "Yedekleme konumu: $backup_path"
-	} >>"$backup_log"
-
-	if [ $success -eq 0 ]; then
-		log "OK" "Kullanıcı adı güncellemesi tamamlandı - Yedek: $backup_path"
+	if [[ -n "$command" ]]; then
+		"cmd_${command}" "${args[@]}"
 	else
-		log "ERROR" "Kullanıcı adı güncellemesi başarısız oldu - Yedek: $backup_path"
+		show_menu
 	fi
-
-	return $success
 }
 
-get_host() {
-	if [[ $AUTO == true ]]; then
-		log "INFO" "Belirtilen ana bilgisayar kullanılıyor: $HOST"
-		return 0
-	fi
+# Pre-installation command
+cmd_pre-install() {
+	local hostname="${1:-$(config::get HOSTNAME)}"
 
-	log "STEP" "Ana bilgisayar türü seçiliyor"
-	print_question "Ana bilgisayar türünü seçin - [${YELLOW}H${NORMAL}]ay (Dizüstü) veya [${YELLOW}V${NORMAL}]hay (VM): "
-	read -n 1 -r
-	echo
-
-	case ${REPLY,,} in
-	h) HOST='hay' ;;
-	v) HOST='vhay' ;;
-	*)
-		log "ERROR" "Geçersiz ana bilgisayar türü"
+	[[ -z "$hostname" ]] && {
+		log ERROR "Hostname required for pre-install"
+		echo "Usage: $0 --pre-install --host <hostname>"
 		exit 1
-		;;
-	esac
+	}
 
-	print_question "${GREEN}Ana bilgisayar${NORMAL} olarak ${YELLOW}$HOST${NORMAL} kullanılsın mı?"
-	if confirm; then
-		log "DEBUG" "Ana bilgisayar türü ayarlandı: $HOST"
-		return 0
+	echo -e "${C_CYAN}Starting pre-installation for ${hostname}...${C_RESET}\n"
+
+	# Check if running as current user (not root)
+	if [[ $EUID -eq 0 ]]; then
+		echo -e "${C_RED}Error: Do not run pre-install as root!${C_RESET}"
+		exit 1
 	fi
-	exit 1
+
+	# Check if user is in wheel group
+	if ! groups | grep -q '\bwheel\b'; then
+		echo -e "${C_YELLOW}Warning: Current user should be in wheel group${C_RESET}"
+		echo "Run: sudo usermod -aG wheel $USER"
+		exit 1
+	fi
+
+	# Create initial configuration template
+	local template_dir="$WORK_DIR/hosts/${hostname}/templates"
+	local initial_config="$template_dir/initial-configuration.nix"
+
+	if [[ ! -f "$initial_config" ]]; then
+		echo -e "${C_YELLOW}Creating initial configuration template...${C_RESET}"
+		mkdir -p "$template_dir"
+
+		# Create a basic initial configuration
+		cat >"$initial_config" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  imports = [ ./hardware-configuration.nix ];
+
+  # Boot loader
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # Networking
+  networking.hostName = "nixos-temp";
+  networking.networkmanager.enable = true;
+
+  # Time zone
+  time.timeZone = "Europe/Berlin";
+
+  # Locale
+  i18n.defaultLocale = "en_US.UTF-8";
+  
+  # Users
+  users.users.kenan = {
+    isNormalUser = true;
+    description = "Kenan";
+    extraGroups = [ "networkmanager" "wheel" ];
+  };
+
+  # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
+
+  # Essential packages
+  environment.systemPackages = with pkgs; [
+    vim
+    git
+    wget
+    curl
+  ];
+
+  # Enable flakes
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  system.stateVersion = "24.11";
+}
+EOF
+	fi
+
+	# Backup existing configuration
+	if [[ -f /etc/nixos/configuration.nix ]]; then
+		local backup="/etc/nixos/configuration.nix.backup-$(date +%Y%m%d_%H%M%S)"
+		echo -e "${C_YELLOW}Backing up existing configuration to: $backup${C_RESET}"
+		sudo cp /etc/nixos/configuration.nix "$backup"
+	fi
+
+	# Copy initial configuration
+	echo -e "${C_CYAN}Installing initial configuration...${C_RESET}"
+	sudo cp "$initial_config" /etc/nixos/configuration.nix
+	sudo chown root:root /etc/nixos/configuration.nix
+	sudo chmod 644 /etc/nixos/configuration.nix
+
+	# Copy hardware configuration if it doesn't exist
+	if [[ ! -f /etc/nixos/hardware-configuration.nix ]]; then
+		echo -e "${C_YELLOW}Generating hardware configuration...${C_RESET}"
+		sudo nixos-generate-config --root /
+	fi
+
+	# Build initial system
+	echo -e "${C_CYAN}Building initial system (profile: start)...${C_RESET}"
+	if sudo nixos-rebuild switch --profile-name start; then
+		echo -e "${C_GREEN}Pre-installation completed successfully!${C_RESET}"
+		echo ""
+		echo -e "${C_YELLOW}Next steps:${C_RESET}"
+		echo -e "1. Reboot the system: ${C_CYAN}sudo reboot${C_RESET}"
+		echo -e "2. After reboot, run: ${C_CYAN}$0 install --auto --host ${hostname}${C_RESET}"
+		echo ""
+		echo -e "${C_GREEN}Initial system is ready!${C_RESET}"
+	else
+		echo -e "${C_RED}Pre-installation failed!${C_RESET}"
+		exit 1
+	fi
 }
 
-# Önbellekleme Destekli Sistem Derlemesi
-build_system_with_cache() {
-	log "STEP" "Sistem derlemesi başlatılıyor"
-	echo -en "Sistem derlemesi başlasın mı? "
-	if confirm; then
-		local build_command="sudo nixos-rebuild switch --cores $BUILD_CORES --flake \".#${HOST}\" --option warn-dirty false"
+# Command Implementations
+cmd_install() {
+	log INFO "Starting NixOS installation"
 
-		[[ -n "$PROFILE_NAME" ]] && {
-			build_command+=" --profile-name \"$PROFILE_NAME\""
-			log "INFO" "Profil kullanılıyor: $PROFILE_NAME"
-		}
+	# Debug: Show what we're doing
+	echo -e "${C_CYAN}Starting installation process...${C_RESET}"
+	echo -e "Host: ${C_YELLOW}$(config::get HOSTNAME)${C_RESET}"
+	echo -e "Profile: ${C_YELLOW}$(config::get PROFILE)${C_RESET}"
+	echo -e "Auto mode: ${C_YELLOW}$(config::get AUTO_MODE)${C_RESET}\n"
 
-		# Flake config güven ayarını ekle
-		build_command+=" --accept-flake-config"
+	# System validation
+	echo -e "${C_CYAN}Validating system...${C_RESET}"
+	if ! system::validate; then
+		echo -e "${C_RED}System validation failed!${C_RESET}"
+		exit 1
+	fi
+	echo -e "${C_GREEN}System validation passed${C_RESET}\n"
 
-		# Önbellekleme için ek flagler - sadece gerçek önbellek varsa
-		if [[ $CACHE_ENABLED == true && -d "$CACHE_DIR" ]]; then
-			# Binary cache store URL'ini düzelt
-			local cache_store_url="file://$CACHE_DIR"
-			build_command+=" --option extra-substituters \"$cache_store_url\""
-			build_command+=" --option extra-trusted-public-keys \"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=\""
-			log "DEBUG" "Önbellek kullanılıyor: $cache_store_url"
-		fi
+	# Initialize subsystems
+	echo -e "${C_CYAN}Initializing...${C_RESET}"
+	cache::init
+	flake::init || {
+		echo -e "${C_RED}Failed to initialize flake directory${C_RESET}"
+		exit 1
+	}
 
-		log "INFO" "Çalıştırılıyor: $build_command"
+	local steps=(
+		"Setting up user configuration"
+		"Setting up host configuration"
+		"Creating directory structure"
+		"Copying wallpapers"
+		"Building system configuration"
+	)
 
-		# Derleme işlemi animasyonu
-		show_animated_progress "$$" "Sistem derleniyor" &
-		local animation_pid=$!
+	# Add flake update step if needed
+	if [[ $(config::get UPDATE_FLAKE) == true ]]; then
+		steps=("Updating flake inputs" "${steps[@]}")
+	fi
 
-		if eval "$build_command"; then
-			kill $animation_pid 2>/dev/null
-			log "OK" "Sistem başarıyla derlendi"
-			[[ -n "$PROFILE_NAME" ]] && log "OK" "Profil oluşturuldu: $PROFILE_NAME"
+	progress::init ${#steps[@]}
 
-			# Derleme sonrası önbellekleme işlemleri
-			if [[ $CACHE_ENABLED == true ]]; then
-				log "DEBUG" "Derleme çıktıları önbelleğe alınıyor"
-				local build_cache_key=$(generate_cache_key "build-${HOST}-$(date +%Y%m%d)")
-				save_to_cache "$build_cache_key" "/nix/var/nix/profiles/system"
-			fi
+	for step in "${steps[@]}"; do
+		echo -e "\n${C_CYAN}Step: ${step}${C_RESET}"
+		progress::update "" "" "$step"
 
-			return 0
-		else
-			kill $animation_pid 2>/dev/null
-			log "ERROR" "Derleme başarısız oldu"
+		case "$step" in
+		"Setting up user configuration")
+			user::setup || return 1
+			;;
+		"Setting up host configuration")
+			host::setup || return 1
+			;;
+		"Creating directory structure")
+			setup_directories
+			;;
+		"Copying wallpapers")
+			setup_wallpapers
+			;;
+		"Updating flake inputs")
+			flake::update
+			;;
+		"Building system configuration")
+			flake::build || return 1
+			;;
+		esac
+	done
+
+	config::save
+
+	echo -e "\n${C_GREEN}Installation completed successfully!${C_RESET}"
+	show_summary
+}
+
+cmd_update() {
+	local module="${1:-}"
+
+	log INFO "Updating flake configuration"
+
+	cd "$WORK_DIR" || {
+		log ERROR "Cannot access work directory: $WORK_DIR"
+		return 1
+	}
+
+	flake::init || return 1
+
+	if [[ -n "$module" ]]; then
+		flake::update "$module"
+	else
+		local inputs=($(flake::list_inputs))
+
+		if [[ ${#inputs[@]} -eq 0 ]]; then
+			log WARN "No flake inputs found"
 			return 1
 		fi
-	else
-		log "ERROR" "Derleme kullanıcı tarafından iptal edildi"
-		exit 1
+
+		if [[ $(config::get AUTO_MODE) == true ]]; then
+			flake::update
+		else
+			echo -e "${C_CYAN}Available inputs:${C_RESET}"
+			local i=1
+			for input in "${inputs[@]}"; do
+				echo "  $i) $input"
+				((i++))
+			done
+			echo "  a) Update all"
+			echo "  q) Cancel"
+
+			printf "${C_YELLOW}Select input to update:${C_RESET} "
+			read -r choice
+
+			case "$choice" in
+			a | A) flake::update ;;
+			q | Q) return 0 ;;
+			[0-9]*)
+				if [[ $choice -le ${#inputs[@]} ]]; then
+					flake::update "${inputs[$((choice - 1))]}"
+				else
+					log ERROR "Invalid selection"
+					return 1
+				fi
+				;;
+			*) log ERROR "Invalid choice" ;;
+			esac
+		fi
 	fi
 }
 
-# ==============================================================================
-# Kurulum Fonksiyonları
-# ==============================================================================
-# Gelişmiş Dizin Oluşturma - önbellekleme uyumlu
+cmd_build() {
+	log INFO "Building NixOS configuration"
+
+	cd "$WORK_DIR" || {
+		log ERROR "Cannot access work directory: $WORK_DIR"
+		return 1
+	}
+
+	flake::init || return 1
+	host::setup || return 1
+
+	flake::build
+}
+
+cmd_switch() {
+	cmd_build "$@"
+}
+
+cmd_rollback() {
+	log INFO "Rolling back to previous configuration"
+
+	if confirm "Rollback to previous configuration?"; then
+		if sudo nixos-rebuild switch --rollback; then
+			log INFO "Rollback successful"
+		else
+			log ERROR "Rollback failed"
+			return 1
+		fi
+	fi
+}
+
+cmd_health() {
+	# Make sure logging is properly initialized
+	[[ -z "${LOG_FD:-}" ]] && log::init "INFO"
+
+	# Run the health check and display directly to console
+	echo -e "\n${C_CYAN}=== System Health Check ===${C_RESET}\n"
+
+	# Memory
+	local mem_info=$(free -h | awk '/^Mem:/ {printf "Total: %s, Used: %s, Free: %s", $2, $3, $4}')
+	echo -e "${C_GREEN}Memory:${C_RESET} $mem_info"
+
+	# CPU
+	local cpu_load=$(uptime | awk -F'load average:' '{print $2}')
+	echo -e "${C_GREEN}CPU Load:${C_RESET}$cpu_load"
+
+	# Disk usage
+	echo -e "${C_GREEN}Disk Usage:${C_RESET}"
+	df -h / /home /nix/store 2>/dev/null | awk 'NR>1 {printf "  %s: %s used of %s (%s)\n", $6, $3, $2, $5}'
+
+	# Nix store
+	if has_command nix-store; then
+		local store_size=$(du -sh /nix/store 2>/dev/null | cut -f1)
+		echo -e "${C_GREEN}Nix Store:${C_RESET} ${store_size:-unknown}"
+	fi
+
+	# Network
+	if ping -c 1 -W 2 1.1.1.1 &>/dev/null; then
+		echo -e "${C_GREEN}Network:${C_RESET} Connected"
+	else
+		echo -e "${C_YELLOW}Network:${C_RESET} No internet connection"
+	fi
+
+	# System info
+	echo -e "${C_GREEN}Hostname:${C_RESET} $(hostname)"
+	echo -e "${C_GREEN}Kernel:${C_RESET} $(uname -r)"
+	echo -e "${C_GREEN}Uptime:${C_RESET} $(uptime -p 2>/dev/null || uptime | awk -F'up' '{print $2}' | awk -F',' '{print $1}')"
+
+	# NixOS version
+	if [[ -f /etc/os-release ]]; then
+		local nixos_version=$(grep "^VERSION=" /etc/os-release | cut -d'"' -f2)
+		echo -e "${C_GREEN}NixOS Version:${C_RESET} ${nixos_version:-unknown}"
+	fi
+
+	# Current generation
+	if [[ -d /nix/var/nix/profiles ]]; then
+		local current_gen=$(readlink /nix/var/nix/profiles/system 2>/dev/null | grep -oP 'system-\K[0-9]+' || echo "unknown")
+		echo -e "${C_GREEN}Current Generation:${C_RESET} $current_gen"
+	fi
+
+	echo -e "\n${C_CYAN}=== Health Check Complete ===${C_RESET}\n"
+}
+
+cmd_cache() {
+	local action="${1:-status}"
+
+	case "$action" in
+	status)
+		local cache_size=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1 || echo "0")
+		local cache_files=$(find "$CACHE_DIR" -type f 2>/dev/null | wc -l)
+
+		echo -e "${C_CYAN}Cache Status:${C_RESET}"
+		echo "  Location: $CACHE_DIR"
+		echo "  Size: $cache_size"
+		echo "  Files: $cache_files"
+		echo "  TTL: $((CACHE_TTL_VAR / 86400)) days"
+		echo "  Max size: $((CACHE_MAX_SIZE_VAR / 1024))GB"
+		;;
+	clean | clear)
+		if confirm "Clear cache?"; then
+			rm -rf "$CACHE_DIR"/*
+			log INFO "Cache cleared"
+		fi
+		;;
+	*)
+		log ERROR "Unknown cache action: $action"
+		echo "Usage: cache [status|clean]"
+		return 1
+		;;
+	esac
+}
+
+cmd_backup() {
+	local action="${1:-list}"
+	local target="${2:-}"
+
+	case "$action" in
+	create)
+		if [[ -z "$target" ]]; then
+			# Backup flake.lock by default
+			if [[ -f "$WORK_DIR/$FLAKE_LOCK" ]]; then
+				backup::create "$WORK_DIR/$FLAKE_LOCK" "flake-lock"
+			else
+				backup::create "$WORK_DIR" "full-config"
+			fi
+		else
+			backup::create "$target" "$(basename "$target")"
+		fi
+		;;
+	restore)
+		backup::restore "${target:-flake-lock}" "$WORK_DIR"
+		;;
+	list)
+		echo -e "${C_CYAN}Available backups:${C_RESET}"
+		find "$BACKUP_DIR" -name "*.tar.gz" -type f \
+			-printf "%T+ %p\n" 2>/dev/null | sort -r |
+			while read -r date file; do
+				size=$(du -h "$file" | cut -f1)
+				echo "  $(basename "$file") ($size) - $date"
+			done
+		;;
+	*)
+		log ERROR "Unknown backup action: $action"
+		echo "Usage: backup [create|restore|list] [target]"
+		return 1
+		;;
+	esac
+}
+
+cmd_profile() {
+	local action="${1:-list}"
+
+	case "$action" in
+	list)
+		echo -e "${C_CYAN}System profiles:${C_RESET}"
+		sudo nix-env --list-generations -p /nix/var/nix/profiles/system
+		;;
+	switch)
+		local generation="${2:-}"
+		[[ -z "$generation" ]] && {
+			log ERROR "Generation number required"
+			return 1
+		}
+		sudo nix-env --switch-generation "$generation" -p /nix/var/nix/profiles/system
+		;;
+	delete)
+		local generation="${2:-}"
+		[[ -z "$generation" ]] && {
+			log ERROR "Generation number required"
+			return 1
+		}
+		sudo nix-env --delete-generations "$generation" -p /nix/var/nix/profiles/system
+		;;
+	gc)
+		if confirm "Run garbage collection?"; then
+			sudo nix-collect-garbage -d
+		fi
+		;;
+	*)
+		log ERROR "Unknown profile action: $action"
+		echo "Usage: profile [list|switch|delete|gc] [generation]"
+		return 1
+		;;
+	esac
+}
+
+# Helper Functions
 setup_directories() {
-	log "STEP" "Gerekli dizinler oluşturuluyor"
 	local dirs=(
 		"$HOME/Pictures/wallpapers/others"
 		"$HOME/Pictures/wallpapers/nixos"
 		"$CONFIG_DIR"
+		"$CACHE_DIR"
+		"$BACKUP_DIR"
+		"$(dirname "$LOG_FILE")"
 	)
-
-	# Her bir dizin için alt ilerleme göstergesi
-	local total=${#dirs[@]}
-	local current=0
 
 	for dir in "${dirs[@]}"; do
-		((current++))
-		echo "Dizin oluşturuluyor: $dir" # Alt ilerleme için çıktı
 		mkdir -p "$dir"
-		log "DEBUG" "Oluşturuldu: $dir"
+		log DEBUG "Created directory: $dir"
 	done
 }
 
-# Önbellekleme Destekli Duvar Kağıdı Kopyalama
-copy_wallpapers() {
-	log "STEP" "Duvar kağıtları ayarlanıyor"
+setup_wallpapers() {
+	local wallpaper_src="$WORK_DIR/wallpapers"
+	local wallpaper_dst="$WALLPAPER_DIR"
 
-	# Duvar kağıdı önbelleği için anahtar
-	local cache_key=$(generate_cache_key "wallpapers-$(date +%Y%m%d)")
-	local wallpaper_temp="$HOME/.wallpaper-temp"
+	if [[ -d "$wallpaper_src" ]]; then
+		local cache_key=$(cache::key "wallpapers-$(date +%Y%m%d)")
 
-	# Duvar kağıtları önbellekten alınabilir mi?
-	if [[ $CACHE_ENABLED == true ]] && get_from_cache "$cache_key" "$wallpaper_temp"; then
-		log "INFO" "Duvar kağıtları önbellekten alınıyor"
-
-		# Önbellekten alınan duvar kağıtlarını kopyala
-		if [[ -d "$wallpaper_temp" ]]; then
-			cp -r "$wallpaper_temp/"* "$WALLPAPER_DIR/"
-			log "OK" "Duvar kağıtları önbellekten kopyalandı"
-			rm -rf "$wallpaper_temp"
-			return 0
+		if ! cache::get "$cache_key" >/dev/null; then
+			cp -r "$wallpaper_src"/* "$wallpaper_dst/" 2>/dev/null || true
+			tar -czf - -C "$wallpaper_dst" . | cache::set "$cache_key"
+		else
+			cache::get "$cache_key" | tar -xzf - -C "$wallpaper_dst"
 		fi
-	fi
 
-	# Önbellekte yoksa normal kopyalama yap
-	mkdir -p "$wallpaper_temp/others" "$wallpaper_temp/nixos"
-	cp -r wallpapers/wallpaper.png "$wallpaper_temp/"
-	cp -r wallpapers/others/* "$wallpaper_temp/others/"
-	cp -r wallpapers/nixos/* "$wallpaper_temp/nixos/"
-
-	# Duvar kağıtlarını hedef dizine kopyala
-	cp -r "$wallpaper_temp/"* "$WALLPAPER_DIR/"
-
-	# Önbelleğe kaydet
-	if [[ $CACHE_ENABLED == true ]]; then
-		save_to_cache "$cache_key" "$wallpaper_temp"
-	fi
-
-	# Geçici dizini temizle
-	rm -rf "$wallpaper_temp"
-
-	log "OK" "Duvar kağıtları başarıyla kopyalandı"
-	return 0
-}
-
-# Donanım Konfigürasyonu Kopyalama - önbellekleme uyumlu
-copy_hardware_config() {
-	local source="/etc/nixos/hardware-configuration.nix"
-	local target="hosts/${HOST}/hardware-configuration.nix"
-
-	if [[ ! -f "$source" ]]; then
-		log "ERROR" "Donanım konfigürasyonu bulunamadı: $source"
-		exit 1
-	fi
-
-	log "STEP" "Donanım konfigürasyonu kopyalanıyor"
-
-	# Değişiklik var mı kontrol et
-	if [[ -f "$target" ]] && cmp -s "$source" "$target"; then
-		log "INFO" "Donanım konfigürasyonu güncel, kopyalamaya gerek yok"
-		return 0
-	fi
-
-	# Değişiklik varsa kopyala
-	cp "$source" "$target"
-	log "OK" "Donanım konfigürasyonu kopyalandı: $HOST"
-
-	return 0
-}
-
-# ==============================================================================
-# Profil Yönetimi
-# ==============================================================================
-list_profiles() {
-	log "STEP" "NixOS profilleri listeleniyor"
-	if output=$(nix profile list); then
-		echo "$output"
-		local count=$(echo "$output" | wc -l)
-		log "INFO" "$count profil bulundu"
+		log INFO "Wallpapers configured"
 	else
-		log "ERROR" "Profiller listelenirken hata oluştu"
-		return 1
+		log WARN "Wallpaper source not found: $wallpaper_src"
 	fi
-}
-
-delete_profile() {
-	local profile_id=$1
-	[[ -z "$profile_id" ]] && {
-		log "ERROR" "Profil ID belirtilmedi"
-		return 1
-	}
-
-	log "STEP" "Profil siliniyor: $profile_id"
-	if nix profile remove "$profile_id"; then
-		log "OK" "Profil silindi: $profile_id"
-		return 0
-	else
-		log "ERROR" "Profil silinirken hata oluştu: $profile_id"
-		return 1
-	fi
-}
-
-get_profile_name() {
-	if [[ -z "$PROFILE_NAME" && $SILENT == false ]]; then
-		echo # Yeni satır
-		print_question "Bir profil adı belirtmek ister misiniz?"
-		if confirm; then
-			print_question "Profil adını girin: ${YELLOW}"
-			read -r PROFILE_NAME
-			echo -en "$NORMAL"
-			log "DEBUG" "Profil adı: $PROFILE_NAME"
-		fi
-	fi
-}
-
-# ==============================================================================
-# Ön Kurulum Ayarları
-# ==============================================================================
-setup_initial_config() {
-	local host_type=$1
-	log "STEP" "$host_type için ilk konfigürasyon ayarlanıyor"
-
-	local template="hosts/${host_type}/templates/initial-configuration.nix"
-	local config="/etc/nixos/configuration.nix"
-
-	# Önkoşulları doğrula
-	[[ ! -f "$template" ]] && {
-		log "ERROR" "Şablon bulunamadı: $template"
-		return 1
-	}
-
-	groups | grep -q '\bwheel\b' || {
-		log "ERROR" "Mevcut kullanıcı wheel grubunda olmalıdır"
-		return 1
-	}
-
-	# Mevcut konfigürasyonu yedekle
-	[[ -f "$config" ]] && {
-		local backup="${config}.backup-$(date +%Y%m%d_%H%M%S)"
-		log "INFO" "Yedekleniyor: $config → $backup"
-		command sudo cp "$config" "$backup"
-	}
-
-	# Yeni konfigürasyonu uygula
-	if command sudo cp "$template" "$config" &&
-		command sudo chown root:root "$config" &&
-		command sudo chmod 644 "$config"; then
-		log "OK" "İlk konfigürasyon tamamlandı"
-		return 0
-	else
-		log "ERROR" "Konfigürasyon ayarlaması başarısız oldu"
-		return 1
-	fi
-}
-
-pre_install() {
-	local host_type=$1
-	log "STEP" "$host_type için ön kurulum başlatılıyor"
-
-	setup_initial_config "$host_type" || {
-		log "ERROR" "İlk konfigürasyon başarısız oldu"
-		return 1
-	}
-
-	log "STEP" "Sistem yeniden derleniyor"
-	if sudo nixos-rebuild switch --profile-name start; then
-		log "OK" "Ön kurulum tamamlandı"
-		echo -e "\n${GREEN}İlk kurulum tamamlandı.${NORMAL}"
-		echo -e "Lütfen ${YELLOW}yeniden başlatın${NORMAL} ve şu komutu çalıştırın:"
-		echo -e "${BLUE}$SCRIPT_NAME${NORMAL} ana kurulum için"
-		return 0
-	else
-		log "ERROR" "Sistem derlemesi başarısız oldu"
-		return 1
-	fi
-}
-
-# ==============================================================================
-# Ana Kurulum Süreci ve İlerleme Göstergeleri
-# ==============================================================================
-install() {
-	# Sadece belirli işlemler istenmişse onları yap ve çık
-	[[ $BACKUP_ONLY == true ]] && {
-		backup_flake
-		exit $?
-	}
-
-	[[ -n "$UPDATE_MODULE" ]] && {
-		update_single_module
-		exit $?
-	}
-
-	[[ $PRE_INSTALL == true ]] && {
-		pre_install "$HOST"
-		exit $?
-	}
-
-	# Önbellekleme sistemini başlat
-	init_cache
-
-	# Ana kurulum adımları ve görüntülenecek mesajlar
-	local steps=(
-		"Dizin yapısı oluşturuluyor"          # 1. adım
-		"Duvar kağıtları kopyalanıyor"        # 2. adım
-		"Donanım konfigürasyonu kopyalanıyor" # 3. adım
-		"Profil adı alınıyor"                 # 4. adım
-	)
-
-	# Flake güncellemesi isteniyorsa ekle
-	[[ $UPDATE_FLAKE == true ]] && steps+=("Flake yapılandırması güncelleniyor")
-	# Son adım her zaman sistem derlemesi
-	steps+=("Sistem derleniyor")
-
-	# Adımlara karşılık gelen fonksiyonlar
-	local total=${#steps[@]}
-	local current=0
-	local step_functions=(
-		"setup_directories"
-		"copy_wallpapers"
-		"copy_hardware_config"
-		"get_profile_name"
-	)
-
-	# Flake güncellemesi isteniyorsa fonksiyonu da ekle
-	[[ $UPDATE_FLAKE == true ]] && step_functions+=("update_flake_with_cache")
-	# Son fonksiyon her zaman sistem derlemesi
-	step_functions+=("build_system_with_cache")
-
-	# İlerleme göstergesi için başlangıç zamanı
-	progress_start_time=$(date +%s)
-
-	echo -e "\n${CYAN}Kurulum başlatılıyor...${NORMAL}\n"
-
-	# Tüm adımları sırayla işle
-	for i in "${!step_functions[@]}"; do
-		local step=${step_functions[$i]}
-		local step_name=${steps[$i]}
-		((current++))
-
-		# Ana ilerleme göstergesini göster
-		show_progress $current $total "$step_name"
-
-		# Her adım için özel işlem
-		case "$step" in
-		# Dizin yapısı oluşturma adımı için alt ilerleme göstergesi
-		"setup_directories")
-			setup_directories | while read -r line; do
-				show_substep_progress $((++substep_count)) 3 "$line"
-				sleep 0.2
-			done
-			substep_count=0
-			;;
-		# Flake güncellemesi için önbellekli versiyonu kullan
-		"update_flake_with_cache")
-			update_flake_with_cache
-			;;
-		# Derleme için önbellekli versiyonu kullan
-		"build_system_with_cache")
-			build_system_with_cache
-			;;
-		# Diğer adımlar için normal fonksiyonları çağır
-		*)
-			$step || {
-				log "ERROR" "$step adımında hata oluştu"
-				exit 1
-			}
-			;;
-		esac
-	done
-
-	echo -e "\n${GREEN}Kurulum tamamlandı!${NORMAL}\n"
 }
 
 show_summary() {
-	log "INFO" "Kurulum Özeti"
-	local items=(
-		"Kullanıcı Adı|$username"
-		"Ana Bilgisayar|$HOST"
-		"Konfigürasyon|/etc/nixos"
-		"Ev Dizini|$HOME"
-	)
-
-	[[ -n "$PROFILE_NAME" ]] && items+=("Profil Adı|$PROFILE_NAME")
-	[[ $UPDATE_FLAKE == true ]] && items+=("Flake Durumu|Güncellendi")
-	[[ -n "$UPDATE_MODULE" ]] && items+=("Güncellenen Modül|$UPDATE_MODULE")
-	[[ $CACHE_ENABLED == true ]] && items+=("Önbellekleme|Etkin")
-
-	for item in "${items[@]}"; do
-		local key=${item%|*}
-		local value=${item#*|}
-		echo -e "${GREEN}✓${NORMAL} ${key}: ${YELLOW}${value}${NORMAL}"
-	done
-
-	log "OK" "Kurulum başarıyla tamamlandı!"
+	echo
+	echo -e "${C_GREEN}╔════════════════════════════════════╗${C_RESET}"
+	echo -e "${C_GREEN}║  Installation Summary              ║${C_RESET}"
+	echo -e "${C_GREEN}╠════════════════════════════════════╣${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Username: ${C_YELLOW}$(config::get USERNAME)${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Hostname: ${C_YELLOW}$(config::get HOSTNAME)${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Profile:  ${C_YELLOW}$(config::get PROFILE || "default")${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Config:   ${C_YELLOW}${CONFIG_DIR}${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Work Dir: ${C_YELLOW}${WORK_DIR}${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Cache:    ${C_YELLOW}${CACHE_DIR}${C_RESET}"
+	echo -e "${C_GREEN}║${C_RESET} Backup:   ${C_YELLOW}${BACKUP_DIR}${C_RESET}"
+	echo -e "${C_GREEN}╚════════════════════════════════════╝${C_RESET}"
 }
 
-# ==============================================================================
-# Ana Menü ve Kullanıcı Arayüzü
-# ==============================================================================
-main_menu() {
+show_menu() {
+	clear
+	echo -e "${C_CYAN}"
+	cat <<'EOF'
+    ╔╗╔╦═╗ ╦╔═╗╔═╗
+    ║║║║╔╩╦╝║ ║╚═╗
+    ╝╚╝╩╩ ╚═╚═╝╚═╝
+    Installation Tool v3.0
+EOF
+	echo -e "${C_RESET}"
+
 	local options=(
-		"1) Sistem kur"
-		"2) Flake güncelle"
-		"3) Modül güncelle"
-		"4) Yedekleme yap"
-		"5) Önbellek durumunu göster"
-		"6) Önbelleği temizle"
-		"0) Çıkış"
+		"1) Install System"
+		"2) Update Flake"
+		"3) Build Configuration"
+		"4) Health Check"
+		"5) Cache Management"
+		"6) Backup Management"
+		"7) Profile Management"
+		"8) Advanced Options"
+		"0) Exit"
 	)
 
-	echo -e "\n${CYAN}NixOS Kurulum Aracı${NORMAL}"
-	echo -e "${BLUE}================${NORMAL}\n"
-
-	# Menü seçeneklerini göster
+	echo -e "${C_CYAN}Main Menu:${C_RESET}\n"
 	for opt in "${options[@]}"; do
-		echo -e "$opt"
+		echo "  $opt"
 	done
 
-	# Kullanıcı seçimini al
-	echo -en "\nSeçiminiz: "
+	printf "\n${C_YELLOW}Select option:${C_RESET} "
 	read -r choice
 
-	# Seçime göre işlem yap
-	case $choice in
-	1) install ;;
-	2) update_flake_with_cache ;;
-	3)
-		echo -en "Güncellenecek modül adı: "
-		read -r UPDATE_MODULE
-		update_single_module
-		;;
-	4) backup_flake ;;
-	5) show_cache_usage ;;
-	6) clean_cache ;;
+	case "$choice" in
+	1) cmd_install ;;
+	2) cmd_update ;;
+	3) cmd_build ;;
+	4) cmd_health ;;
+	5) show_cache_menu ;;
+	6) show_backup_menu ;;
+	7) show_profile_menu ;;
+	8) show_advanced_menu ;;
 	0) exit 0 ;;
-	*) echo "Geçersiz seçim" ;;
+	*)
+		log ERROR "Invalid option"
+		sleep 2
+		show_menu
+		;;
+	esac
+
+	printf "\n${C_YELLOW}Press Enter to continue...${C_RESET}"
+	read -r
+	show_menu
+}
+
+show_cache_menu() {
+	clear
+	echo -e "${C_CYAN}Cache Management${C_RESET}\n"
+	echo "  1) Show status"
+	echo "  2) Clear cache"
+	echo "  3) Back"
+
+	printf "\n${C_YELLOW}Select option:${C_RESET} "
+	read -r choice
+
+	case "$choice" in
+	1) cmd_cache status ;;
+	2) cmd_cache clear ;;
+	3) return ;;
+	*) log ERROR "Invalid option" ;;
 	esac
 }
 
-# ==============================================================================
-# Komut Satırı Argümanlarını İşleme
-# ==============================================================================
-process_args() {
-	while [[ $# -gt 0 ]]; do
-		case $1 in
-		--pre-install) PRE_INSTALL=true ;;
-		--list-profiles)
-			list_profiles
-			exit
-			;;
-		--delete-profile)
-			shift
-			delete_profile "$1"
-			exit
-			;;
-		-h | --help)
-			print_help
-			exit
-			;;
-		-v | --version)
-			echo "v$VERSION"
-			exit
-			;;
-		-s | --silent) SILENT=true ;;
-		-d | --debug) DEBUG=true ;;
-		-p | --profile)
-			shift
-			PROFILE_NAME="$1"
-			;;
-		-u | --update-flake) UPDATE_FLAKE=true ;;
-		-m | --update-module)
-			shift
-			UPDATE_MODULE="$1"
-			;;
-		-b | --backup) BACKUP_ONLY=true ;;
-		-r | --restore)
-			restore_flake_backup
-			exit
-			;;
-		-l | --list-modules)
-			list_available_modules
-			exit
-			;;
-		-hc | --health-check)
-			check_system_health
-			exit
-			;;
-		-a | --auto)
-			AUTO=true
-			SILENT=true
-			shift
-			if [[ -n "$1" && "$1" =~ ^(hay|vhay)$ ]]; then
-				HOST="$1"
-			else
-				log "ERROR" "Geçersiz ana bilgisayar (hay/vhay kullanın)"
-				exit 1
-			fi
-			;;
-		--cache)
-			CACHE_ENABLED=true
-			;;
-		--no-cache)
-			CACHE_ENABLED=false
-			;;
-		--cache-dir)
-			shift
-			CACHE_DIR="$1"
-			;;
-		--cache-clear)
-			clean_cache
-			exit
-			;;
-		--cache-status)
-			show_cache_usage
-			exit
-			;;
-		*)
-			log "ERROR" "Bilinmeyen seçenek: $1"
-			print_help
-			exit 1
-			;;
-		esac
-		shift
-	done
+show_backup_menu() {
+	clear
+	echo -e "${C_CYAN}Backup Management${C_RESET}\n"
+	echo "  1) List backups"
+	echo "  2) Create backup"
+	echo "  3) Restore backup"
+	echo "  4) Back"
+
+	printf "\n${C_YELLOW}Select option:${C_RESET} "
+	read -r choice
+
+	case "$choice" in
+	1) cmd_backup list ;;
+	2) cmd_backup create ;;
+	3)
+		cmd_backup list
+		printf "\n${C_YELLOW}Enter backup name:${C_RESET} "
+		read -r name
+		cmd_backup restore "$name"
+		;;
+	4) return ;;
+	*) log ERROR "Invalid option" ;;
+	esac
 }
 
-# ==============================================================================
-# Ana Giriş Noktası
-# ==============================================================================
+show_profile_menu() {
+	clear
+	echo -e "${C_CYAN}Profile Management${C_RESET}\n"
+	echo "  1) List profiles"
+	echo "  2) Switch profile"
+	echo "  3) Delete profile"
+	echo "  4) Garbage collection"
+	echo "  5) Back"
+
+	printf "\n${C_YELLOW}Select option:${C_RESET} "
+	read -r choice
+
+	case "$choice" in
+	1) cmd_profile list ;;
+	2)
+		cmd_profile list
+		printf "\n${C_YELLOW}Enter generation number:${C_RESET} "
+		read -r gen
+		cmd_profile switch "$gen"
+		;;
+	3)
+		cmd_profile list
+		printf "\n${C_YELLOW}Enter generation to delete:${C_RESET} "
+		read -r gen
+		cmd_profile delete "$gen"
+		;;
+	4) cmd_profile gc ;;
+	5) return ;;
+	*) log ERROR "Invalid option" ;;
+	esac
+}
+
+show_advanced_menu() {
+	clear
+	echo -e "${C_CYAN}Advanced Options${C_RESET}\n"
+	echo "  1) System validation"
+	echo "  2) Rollback system"
+	echo "  3) Edit configuration"
+	echo "  4) View logs"
+	echo "  5) Back"
+
+	printf "\n${C_YELLOW}Select option:${C_RESET} "
+	read -r choice
+
+	case "$choice" in
+	1) system::validate ;;
+	2) cmd_rollback ;;
+	3)
+		config::save
+		${EDITOR:-nano} "${CONFIG_DIR}/config.json"
+		config::load
+		;;
+	4)
+		if [[ -f "$LOG_FILE" ]]; then
+			less +G "$LOG_FILE"
+		else
+			log WARN "No log file found at: $LOG_FILE"
+		fi
+		;;
+	5) return ;;
+	*) log ERROR "Invalid option" ;;
+	esac
+}
+
+# Main Entry Point
 main() {
-	init_colors         # Terminal renk desteğini başlat
-	setup_logging       # Loglama sistemini kur
-	process_args "$@"   # Komut satırı argümanlarını işle
-	check_root          # Root kullanıcısı kontrolü
-	check_system_health # Sistem sağlık kontrolü
-
-	# Auto mod değilse başlık göster
-	[[ $AUTO == false ]] && print_header
-
-	# Interaktif veya otomatik mod
-	if [[ $AUTO == false && $SILENT == false ]]; then
-		main_menu
-	else
-		# Otomatik mod için zorunlu işlemler
-		get_username
-		set_username
-		get_host
-		install
+	# Check if running as root
+	if [[ $EUID -eq 0 ]]; then
+		echo -e "${C_RED}Error: Do not run as root!${C_RESET}" >&2
+		exit 1
 	fi
 
-	# Kurulum sonrası özet
-	show_summary
+	# Ensure we're in the correct directory
+	cd "$WORK_DIR" 2>/dev/null || {
+		echo -e "${C_RED}Error: Cannot access work directory: $WORK_DIR${C_RESET}" >&2
+		echo "Please ensure you're running this script from the correct location."
+		exit 1
+	}
+
+	# Initialize logging FIRST
+	log::init "${LOG_LEVEL:-INFO}"
+
+	# Load configuration
+	config::load
+
+	# Parse arguments or show menu
+	if [[ $# -gt 0 ]]; then
+		parse_args "$@"
+	else
+		show_menu
+	fi
 }
 
-# Betiğin çalıştırılması
+# Handle signals
+trap 'echo -e "\n${C_YELLOW}Interrupted!${C_RESET}"; exit 130' INT TERM
+
+# Run main
 main "$@"
-exit 0
