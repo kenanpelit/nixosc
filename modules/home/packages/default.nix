@@ -308,7 +308,7 @@
     # Document Conversion
     odt2txt        # ODT dönüştürücü
     catdoc         # DOC görüntüleyici
-    gnumeric       # Hesap tablosu
+    #gnumeric       # Hesap tablosu
     
     # Media Information
     exiftool       # Meta veri aracı
