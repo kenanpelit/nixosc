@@ -28,7 +28,7 @@
     # ---------------------------------------------------------------------------
     # Enhancement Tools
     # ---------------------------------------------------------------------------
-    inputs.hyprmag.packages.${pkgs.system}.hyprmag # Screen magnifier
+    #inputs.hyprmag.packages.${pkgs.system}.hyprmag # Screen magnifier
     wl-clip-persist    # Clipboard manager
     cliphist           # Clipboard history
   ];
