@@ -27,7 +27,7 @@ let
     libtmux        # Tmux için Python API
     pip            # Paket yükleyici
     pipx           # İzole ortam yükleyici
-    subliminal     # Altyazı indirici
+    #subliminal     # Altyazı indirici
   ]);
 in
 {
