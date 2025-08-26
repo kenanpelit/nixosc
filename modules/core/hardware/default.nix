@@ -261,27 +261,26 @@ in
     
     # Login manager configuration
     logind = {
-      lidSwitch = "suspend";
-      lidSwitchDocked = "suspend";
-      lidSwitchExternalPower = "suspend";
-      extraConfig = ''
-        HandlePowerKey=ignore
-        HandlePowerKeyLongPress=poweroff
-        HandleSuspendKey=suspend
-        HandleHibernateKey=hibernate
-        HandleLidSwitch=suspend
-        HandleLidSwitchDocked=suspend
-        HandleLidSwitchExternalPower=suspend
-        IdleAction=ignore
-        IdleActionSec=30min
-        InhibitDelayMaxSec=5
-        InhibitorsMax=8192
-        UserTasksMax=33%
-        RuntimeDirectorySize=50%
-        RemoveIPC=yes
-      '';
+      settings = {
+        Login = {
+          HandlePowerKey = "ignore";
+          HandlePowerKeyLongPress = "poweroff";
+          HandleSuspendKey = "suspend";
+          HandleHibernateKey = "hibernate";
+          HandleLidSwitch = "suspend";           # Buraya taşındı
+          HandleLidSwitchDocked = "suspend";     # Buraya taşındı
+          HandleLidSwitchExternalPower = "suspend"; # Buraya taşındı
+          IdleAction = "ignore";
+          IdleActionSec = "30min";
+          InhibitDelayMaxSec = "5";
+          InhibitorsMax = "8192";
+          UserTasksMax = "33%";
+          RuntimeDirectorySize = "50%";
+          RemoveIPC = "yes";
+        };
+      };
     };
-    
+   
     # System logging configuration
     journald.extraConfig = ''
       SystemMaxUse=2G
