@@ -28,7 +28,7 @@ let
  
  # Memory detection script
  detectMemoryScript = pkgs.writeShellScript "detect-memory" ''
-   #!/usr/bin/env bash
+   #!${pkgs.bash}/bin/bash
    # Get total memory in KB from /proc/meminfo
    TOTAL_KB=$(${grep} "^MemTotal:" /proc/meminfo | ${awk} '{print $2}')
    # Convert to MB
@@ -233,7 +233,7 @@ in
      Type = "oneshot";
      RemainAfterExit = true;
      ExecStart = pkgs.writeShellScript "apply-tcp-tuning" ''
-       #!/usr/bin/env bash
+       #!${pkgs.bash}/bin/bash
        set -euo pipefail
        
        # Detect total memory
