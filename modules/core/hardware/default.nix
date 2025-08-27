@@ -375,6 +375,9 @@ in
       # Network optimizations
       "ipv6.disable=0"
       "net.ifnames=1"
+
+      "iwlwifi.debug=0x00000000"        # WiFi hata mesajlarını gizle
+
     ];
     
     # I/O scheduler configuration
