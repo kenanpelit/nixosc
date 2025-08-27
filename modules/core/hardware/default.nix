@@ -180,17 +180,17 @@ in
       settings = {
         battery = {
           governor = "schedutil";           # Better than powersave for responsiveness
-          scaling_min_freq = lib.mkDefault 1200000;
-          scaling_max_freq = lib.mkDefault 3200000;
+          scaling_min_freq = 1200000;
+          scaling_max_freq = 3200000;
           turbo = "auto";                   # Let system decide based on thermal
           energy_performance_preference = "power";  # Intel P-state preference
         };
         charger = {
           governor = "schedutil";           # Balanced performance
-          scaling_min_freq = lib.mkDefault 1600000;
-          scaling_max_freq = lib.mkDefault 4800000;
+          scaling_min_freq = 1600000;
+          scaling_max_freq = 4800000;
           turbo = "always";
-          #energy_performance_preference = "balance_performance";
+          energy_performance_preference = "balance_performance";
         };
       };
     };
