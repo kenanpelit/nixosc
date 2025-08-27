@@ -9,185 +9,142 @@
 # - ThinkPad X1 Carbon 6th (Intel Core i7-8650U, 16GB RAM)
 # - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, 64GB RAM)
 #
-# Version: 3.0.0
-# Author: Kenan Pelit
-# Last Updated: 2025-08-25
+# Versiyon: 3.1.0
+# Yazar:    Kenan Pelit
+# Tarih:    2025-08-27
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 
 let
-  # ==============================================================================
-  # CPU Detection and Configuration
-  # ==============================================================================
-  
-  # Runtime CPU detection script
+  # ----------------------------------------------------------------------------
+  # CPU algılama (daha sağlam): lscpu çıktısından model adına göre sınıflandır.
+  # Dönüş: "meteorlake" (Core Ultra 155H vb.) | "kabylaker" (i7-8650U vb.)
+  # ----------------------------------------------------------------------------
   detectCpuScript = pkgs.writeShellScript "detect-cpu" ''
     #!${pkgs.bash}/bin/bash
-    # Read CPU information from /proc/cpuinfo
-    CPU_INFO=$(cat /proc/cpuinfo 2>/dev/null || echo "")
-    
-    # Detect Meteor Lake (Intel Core Ultra series)
-    if echo "$CPU_INFO" | grep -qE "155H|Ultra|Meteor Lake"; then
-      echo "meteolake"
-    # Detect Kaby Lake R (8th gen U series)
-    elif echo "$CPU_INFO" | grep -qE "8650U|8550U|8250U|8350U|Kaby Lake"; then
+    set -euo pipefail
+
+    # Model adını al (boşlukları sadeleştir)
+    MODEL="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/tr -s ' ' | ${pkgs.coreutils}/bin/tr -d '\n')"
+
+    if echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core *Ultra|155H|Meteor *Lake'; then
+      echo "meteorlake"
+    elif echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby *Lake'; then
       echo "kabylaker"
     else
-      # Default to conservative settings for unknown CPUs
+      # Bilinmeyen ise güvenli varsayılan
       echo "kabylaker"
     fi
   '';
 
-  # Meteor Lake (Core Ultra) configuration profile
-  meteorLakeConfig = {
-    # Power limits in Watts - optimized for modern 28W TDP CPU
+  # ----------------------------------------------------------------------------
+  # CPU profilleri (PL1/PL2 Watt, ısıl eşikler, pil eşikleri, vb.)
+  # Not: PL değerleri microwatt olarak sysfs’e yazılacağı için servis içinde
+  # * 1_000_000 yapılıyor. Aşağıdaki değerler Watt cinsinden.
+  # ----------------------------------------------------------------------------
+  meteorLake = {
     battery = {
-      pl1 = 28;          # Sustained power limit (increased from 25W)
-      pl2 = 40;          # Burst power limit (increased from 35W)
-      maxFreq = 3200000; # 3.2GHz max on battery (increased from 2.8GHz)
-      minFreq = 600000;  # 600MHz minimum for better idle efficiency
+      pl1 = 28; pl2 = 40;
+      # Not: frekans sınırları auto-cpufreq tarafından yönetiliyor;
+      # burada sadece referans olarak korunuyor.
+      maxFreq = 3200000; minFreq = 600000;
     };
     ac = {
-      pl1 = 40;          # Sustained power on AC (increased from 35W)
-      pl2 = 55;          # Burst power on AC (increased from 45W)
-      maxFreq = 4200000; # 4.2GHz max on AC (increased from 3.8GHz)
-      minFreq = 800000;  # 800MHz minimum on AC
+      pl1 = 40; pl2 = 55;
+      maxFreq = 4200000; minFreq = 800000;
     };
-    # Thermal thresholds in Celsius - adjusted for modern CPUs
     thermal = {
-      trip = 85;         # Throttle start on battery (increased from 80°C)
-      tripAc = 90;       # Throttle start on AC (increased from 85°C)
-      warning = 92;      # Warning threshold (increased from 88°C)
-      critical = 100;    # Critical shutdown (increased from 95°C - Intel spec)
+      trip = 85; tripAc = 90; warning = 92; critical = 100;
     };
-    # Battery charge thresholds for longevity
-    battery_threshold = {
-      start = 60;        # Start charging at 60%
-      stop = 80;         # Stop charging at 80%
-    };
-    # Undervolt settings (Meteor Lake doesn't support undervolting)
-    undervolt = {
-      core = 0;
-      gpu = 0;
-      cache = 0;
-      uncore = 0;
-      analogio = 0;
-    };
+    battery_threshold = { start = 60; stop = 80; };
+    undervolt = { core = 0; gpu = 0; cache = 0; uncore = 0; analogio = 0; };
   };
 
-  # Kaby Lake R (8th gen) configuration profile
-  kabyLakeRConfig = {
-    # Power limits in Watts - conservative for 15W TDP CPU
+  kabyLakeR = {
     battery = {
-      pl1 = 15;          # Sustained power limit
-      pl2 = 25;          # Burst power limit
-      maxFreq = 2400000; # 2.4GHz max on battery (increased from 2.2GHz)
-      minFreq = 400000;  # 400MHz minimum
+      pl1 = 15; pl2 = 25; maxFreq = 2400000; minFreq = 400000;
     };
     ac = {
-      pl1 = 25;          # Sustained power on AC (increased from 20W)
-      pl2 = 35;          # Burst power on AC (increased from 30W)
-      maxFreq = 3800000; # 3.8GHz max on AC (increased from 3.5GHz)
-      minFreq = 400000;  # 400MHz minimum
+      pl1 = 25; pl2 = 35; maxFreq = 3800000; minFreq = 400000;
     };
-    # Thermal thresholds - more conservative for older architecture
     thermal = {
-      trip = 78;         # Throttle start on battery (increased from 75°C)
-      tripAc = 82;       # Throttle start on AC (increased from 80°C)
-      warning = 85;      # Warning threshold
-      critical = 90;     # Critical shutdown
+      trip = 78; tripAc = 82; warning = 85; critical = 90;
     };
-    # Battery thresholds - optimized for older battery technology
-    battery_threshold = {
-      start = 75;        # Start charging at 75%
-      stop = 80;         # Stop charging at 80%
-    };
-    # Undervolt settings for better thermals (if stable)
-    undervolt = {
-      core = -80;        # Core voltage offset in mV
-      gpu = -60;         # GPU voltage offset
-      cache = -80;       # Cache voltage offset
-      uncore = -40;      # System Agent offset
-      analogio = -25;    # Analog I/O offset
-    };
+    battery_threshold = { start = 75; stop = 80; };
+    undervolt = { core = -80; gpu = -60; cache = -80; uncore = -40; analogio = -25; };
   };
 
+  # udev ile AC değişiminde servisi tetiklemek için küçük yardımcı binary’ler
+  systemctl = "${pkgs.systemd}/bin/systemctl";
 in
 {
-  # ==============================================================================
-  # Hardware Configuration
-  # ==============================================================================
-  
+  # =============================================================================
+  # Donanım
+  # =============================================================================
   hardware = {
-    # TrackPoint configuration for ThinkPads
+    # ThinkPad TrackPoint
     trackpoint = {
       enable = true;
-      speed = 200;        # Speed setting (0-255)
-      sensitivity = 200;  # Sensitivity setting (0-255)
-      emulateWheel = true; # Middle button scroll
+      speed = 200;          # 0–255
+      sensitivity = 200;    # 0–255
+      emulateWheel = true;  # orta tuş ile kaydırma
     };
-    
-    # Intel graphics acceleration stack
+
+    # Intel grafik yığını (modern çekirdeklerle sade & uyumlu)
     graphics = {
       enable = true;
-      enable32Bit = true;  # 32-bit support for Steam/Wine
+      enable32Bit = true;   # Steam/Wine için 32-bit
       extraPackages = with pkgs; [
-        intel-media-driver      # VA-API driver for Broadwell+
-        intel-vaapi-driver      # Legacy VA-API driver
-        vaapiVdpau             # VA-API to VDPAU wrapper
-        libvdpau-va-gl         # VDPAU backend for VA-API
-        mesa                   # OpenGL/Vulkan implementation
-        intel-compute-runtime  # OpenCL runtime
-        intel-ocl             # OpenCL loader
-        vaapiIntel            # Additional VA-API support
+        intel-media-driver      # VA-API iHD (Gen8+)
+        mesa                    # OpenGL/Vulkan
+        vaapiVdpau              # VAAPI→VDPAU sarmalayıcı
+        libvdpau-va-gl          # VDPAU backend
+        intel-compute-runtime   # OpenCL (NEO)
+        intel-graphics-compiler
+        level-zero              # (opsiyonel) oneAPI/Level Zero
       ];
-      # 32-bit packages for compatibility
-      extraPackages32 = with pkgs.pkgsi686Linux; [
-        intel-media-driver
-        intel-vaapi-driver
-        vaapiVdpau
-        libvdpau-va-gl
-      ];
+      # 32-bit tarafta genelde iHD yeterli; sorun görmezsen boş bırakılabilir.
+      extraPackages32 = with pkgs.pkgsi686Linux; [ intel-media-driver ];
     };
-    
-    # Firmware configuration
+
+    # Firmware & mikrocode
     enableRedistributableFirmware = true;
     enableAllFirmware = true;
     cpu.intel.updateMicrocode = true;
-    
-    # Bluetooth configuration
+
+    # Bluetooth – pil dostu varsayılanlar (yorumla uyumlu)
     bluetooth = {
       enable = true;
-      powerOnBoot = true;  # Don't power on at boot to save battery
-      settings = {
-        General = {
-          FastConnectable = true;
-          ReconnectAttempts = 7;
-          ReconnectIntervals = "1,2,4,8,16,32,64";
-        };
+      powerOnBoot = false;          # Boot’ta açma → pil tasarrufu
+      settings.General = {
+        FastConnectable = false;    # Gerekmedikçe kapalı tut
+        ReconnectAttempts = 7;
+        ReconnectIntervals = "1,2,4,8,16,32,64";
       };
     };
   };
-  
-  # ==============================================================================
-  # Power Management Services
-  # ==============================================================================
-  
+
+  # =============================================================================
+  # Servisler (Güç & Termal)
+  # =============================================================================
   services = {
-    # Automatic CPU frequency scaling
+    # CPU freq otomasyonu (schedutil + passive P-state ile uyumlu)
     auto-cpufreq = {
       enable = true;
       settings = {
+        # Not: Buradaki sınırlar konservatif. CPU profiline göre
+        # daha agresif/farklı değerleri istersen servis tarafında set edebiliriz.
         battery = {
-          governor = "schedutil";           # Better than powersave for responsiveness
-          scaling_min_freq = 1200000;
+          governor = "schedutil";
+          scaling_min_freq = 800000;
           scaling_max_freq = 3200000;
-          turbo = "auto";                   # Let system decide based on thermal
-          energy_performance_preference = "power";  # Intel P-state preference
+          turbo = "auto";
+          energy_performance_preference = "power";
         };
         charger = {
-          governor = "schedutil";           # Balanced performance
-          scaling_min_freq = 1600000;
+          governor = "schedutil";
+          scaling_min_freq = 1200000;
           scaling_max_freq = 4800000;
           turbo = "always";
           energy_performance_preference = "balance_performance";
@@ -195,19 +152,15 @@ in
       };
     };
 
-    # Thermal management
+    # Isıl yönetim
     thermald.enable = true;
-    
-    # ThinkPad fan control (disabled - thermald handles it)
+
+    # thinkfan/power-profiles-daemon/TLP devre dışı (çakışmayı önlemek için)
     thinkfan.enable = false;
-    
-    # Power profiles daemon (disabled - conflicts with auto-cpufreq)
     power-profiles-daemon.enable = false;
-    
-    # TLP power management (disabled - conflicts with auto-cpufreq)
     tlp.enable = false;
 
-    # Power management daemon
+    # UPower – kritik eşikler (polling’i açık bırakmayalım → gereksiz uyanma olmasın)
     upower = {
       enable = true;
       criticalPowerAction = "Hibernate";
@@ -215,32 +168,28 @@ in
       percentageCritical = 5;
       percentageAction = 3;
       usePercentageForPolicy = true;
-      noPollBatteries = false;  # Enable battery polling for accurate readings
+      # noPollBatteries varsayılanı true; gereksiz uyandırmaları azaltır.
     };
-    
-    # Login manager configuration
-    logind = {
-      settings = {
-        Login = {
-          HandlePowerKey = "ignore";
-          HandlePowerKeyLongPress = "poweroff";
-          HandleSuspendKey = "suspend";
-          HandleHibernateKey = "hibernate";
-          HandleLidSwitch = "suspend";           # Buraya taşındı
-          HandleLidSwitchDocked = "suspend";     # Buraya taşındı
-          HandleLidSwitchExternalPower = "suspend"; # Buraya taşındı
-          IdleAction = "ignore";
-          IdleActionSec = "30min";
-          InhibitDelayMaxSec = "5";
-          InhibitorsMax = "8192";
-          UserTasksMax = "33%";
-          RuntimeDirectorySize = "50%";
-          RemoveIPC = "yes";
-        };
-      };
+
+    # logind – kapak davranışları
+    logind.settings.Login = {
+      HandlePowerKey = "ignore";
+      HandlePowerKeyLongPress = "poweroff";
+      HandleSuspendKey = "suspend";
+      HandleHibernateKey = "hibernate";
+      HandleLidSwitch = "suspend";
+      HandleLidSwitchDocked = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
+      IdleAction = "ignore";
+      IdleActionSec = "30min";
+      InhibitDelayMaxSec = "5";
+      InhibitorsMax = "8192";
+      UserTasksMax = "33%";
+      RuntimeDirectorySize = "50%";
+      RemoveIPC = "yes";
     };
-   
-    # System logging configuration
+
+    # journald – disk kullanımını sınırlı tut
     journald.extraConfig = ''
       SystemMaxUse=2G
       SystemMaxFileSize=100M
@@ -252,121 +201,92 @@ in
       Compress=yes
       ForwardToSyslog=no
     '';
-    
-    # DBus configuration
+
+    # DBus – broker ile verimli ileti aktarımı
     dbus = {
-      implementation = "broker";  # More efficient than dbus-daemon
+      implementation = "broker";
       packages = [ pkgs.dconf ];
     };
   };
-  
-  # ==============================================================================
-  # Boot Configuration
-  # ==============================================================================
-  
+
+  # =============================================================================
+  # Boot & Kernel
+  # =============================================================================
   boot = {
-    # Essential kernel modules
-    kernelModules = [ 
-      "thinkpad_acpi"    # ThinkPad ACPI extras
-      "coretemp"         # Temperature monitoring
-      "intel_rapl"       # Power capping framework
-      "msr"              # Model Specific Registers
-      "kvm-intel"        # KVM virtualization
-      "i915"             # Intel graphics
+    kernelModules = [
+      "thinkpad_acpi" "coretemp" "intel_rapl" "msr" "kvm-intel" "i915"
     ];
-    
-    # Module configuration
+
     extraModprobeConfig = ''
-      # ThinkPad ACPI configuration
+      # ThinkPad ACPI ekstra davranışlar
       options thinkpad_acpi fan_control=1 brightness_mode=1 volume_mode=1 experimental=1
-      
-      # Intel P-state configuration
+
+      # Intel P-state
       options intel_pstate hwp_dynamic_boost=0
-      
-      # Audio power saving (10 second timeout)
+
+      # Ses güç tasarrufu
       options snd_hda_intel power_save=10 power_save_controller=Y
-      
-      # WiFi power saving
+
+      # Wi-Fi güç tasarrufu
       options iwlwifi power_save=1 power_level=3
       options iwlmvm power_scheme=3
-      
+
       # USB autosuspend
       options usbcore autosuspend=5
     '';
-    
-    # Kernel parameters optimized for laptops
+
+    # Modern, güvenli ve minimal kernel parametreleri
     kernelParams = [
-      # IOMMU configuration
-      "intel_iommu=on"
-      "iommu=pt"
-      
-      # CPU power management
-      "intel_pstate=passive"             # Passive P-state for schedutil governor
-      
-      # Thermal management
-      "thermal.off=0"
-      "thermal.act=-1"
-      "thermal.nocrt=0"
-      "thermal.psv=-1"
-      
-      # Memory management
-      "transparent_hugepage=madvise"
-      "mitigations=auto"
-      
-      # NVMe power management
-      "nvme_core.default_ps_max_latency_us=5500"  # 5.5ms latency (was 0)
-      
-      # Intel GPU optimizations
-      "i915.enable_guc=3"
-      "i915.enable_fbc=1"
-      "i915.enable_psr=3"                # PSR2 with selective update (was 2)
-      "i915.enable_dc=2"
-      "i915.fastboot=1"
-      "i915.modeset=1"
-      "i915.enable_sagv=1"              # System Agent Gelivolt (new)
-      
-      # PCIe power management
-      "pcie_aspm=default"               # Default ASPM (was force)
-      "pcie_port_pm=on"
-      
-      # Network optimizations
-      "ipv6.disable=0"
-      "net.ifnames=1"
+      # IOMMU
+      "intel_iommu=on" "iommu=pt"
 
-      # Suppress iwlwifi firmware debug messages that appear as red warnings during boot
-      # This doesn't affect WiFi functionality, only reduces console noise
-      "iwlwifi.debug=0x00000000"        # WiFi hata mesajlarını gizle
+      # P-state’i schedutil ile uyumlu çalıştır
+      "intel_pstate=passive"
 
+      # NVMe güç/latency dengesi
+      "nvme_core.default_ps_max_latency_us=5500"
+
+      # Intel i915 – güvenli minimal set
+      "i915.enable_guc=3"   # GuC/HuC (fw varsa)
+      "i915.enable_fbc=1"   # Framebuffer compression
+      "i915.enable_psr=1"   # Panel Self Refresh
+      "i915.fastboot=1"     # Hızlı mod set
+      "i915.enable_sagv=1"  # Sorun görürsen kaldır
+
+      # PCIe güç yönetimi
+      "pcie_aspm=default"
+
+      # Aşırı gürültülü iwlwifi debug mesajlarını kapat
+      "iwlwifi.debug=0x0"
     ];
-    
-    # I/O scheduler configuration
+
+    # Sysctl – çekirdek genel ayarları
     kernel.sysctl = {
-      # Memory management
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
       "vm.dirty_writeback_centisecs" = 1500;
       "vm.dirty_background_ratio" = 5;
       "vm.dirty_ratio" = 10;
       "vm.laptop_mode" = 5;
-      "vm.page-cluster" = 0;              # Better for SSD
+      "vm.page-cluster" = 0;  # SSD için
       "vm.compact_unevictable_allowed" = 1;
-      
-      # Kernel behavior
+
       "kernel.nmi_watchdog" = 0;
       "kernel.sched_autogroup_enabled" = 1;
       "kernel.sched_cfs_bandwidth_slice_us" = 3000;
-      
     };
   };
-  
-  # ==============================================================================
-  # System Services
-  # ==============================================================================
-  
+
+  # =============================================================================
+  # systemd servisleri
+  # =============================================================================
   systemd.services = {
-    # Dynamic CPU power limit configuration
+    # --------------------------------------------------------------------------
+    # RAPL güç limitleri – CPU profilini ve güç kaynağını dikkate al.
+    # AC↔︎Batarya her değiştiğinde yeniden uygula (udev tetikleyici aşağıda).
+    # --------------------------------------------------------------------------
     cpu-power-limit = {
-      description = "Configure Intel RAPL power limits based on CPU type";
+      description = "Apply Intel RAPL power limits per CPU profile & power source";
       wantedBy = [ "multi-user.target" ];
       after = [ "sysinit.target" ];
       serviceConfig = {
@@ -374,95 +294,89 @@ in
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
           #!${pkgs.bash}/bin/bash
-          set -u
-          
-          # Wait for system initialization
-          sleep 2
-          
-          # Detect CPU type
-          CPU_TYPE=$(${detectCpuScript})
-          echo "Detected CPU type: $CPU_TYPE"
-          
-          # Check for Intel RAPL interface
-          if [ ! -d /sys/class/powercap/intel-rapl:0 ]; then
-            echo "Intel RAPL interface not available"
+          set -euo pipefail
+          sleep 2  # sysfs hazır olsun
+
+          CPU_TYPE="$(${detectCpuScript})"
+          echo "Detected CPU: $CPU_TYPE"
+
+          RAPL="/sys/class/powercap/intel-rapl:0"
+          if [[ ! -d "$RAPL" ]]; then
+            echo "RAPL not available; skipping."
             exit 0
           fi
-          
-          # Detect power source
+
+          # Güç kaynağını tespit et
           ON_AC=0
-          for PS in /sys/class/power_supply/A{C,C0,DP1}/online; do
-            [ -f "$PS" ] && ON_AC=$(cat "$PS") && break
+          for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
+            [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
           done
-          
-          # Apply CPU-specific power limits
-          if [ "$CPU_TYPE" = "meteolake" ]; then
-            if [ "$ON_AC" = "1" ]; then
-              # Meteor Lake on AC
-              echo ${toString (meteorLakeConfig.ac.pl1 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-              echo ${toString (meteorLakeConfig.ac.pl2 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-              echo "Meteor Lake AC: PL1=${toString meteorLakeConfig.ac.pl1}W, PL2=${toString meteorLakeConfig.ac.pl2}W"
+
+          # Yardımcı fonksiyon: PL1/PL2 yaz
+          apply_limits () {
+            local PL1_W="$1"
+            local PL2_W="$2"
+            local TW1_US="$3"   # PL1 time window (µs)
+            local TW2_US="$4"   # PL2 time window (µs)
+            echo $(( PL1_W * 1000000 )) > "$RAPL/constraint_0_power_limit_uw"
+            echo $(( PL2_W * 1000000 )) > "$RAPL/constraint_1_power_limit_uw"
+            echo "$TW1_US" > "$RAPL/constraint_0_time_window_us"
+            echo "$TW2_US" > "$RAPL/constraint_1_time_window_us"
+            echo "Applied: PL1=${PL1_W}W PL2=${PL2_W}W TW1=${TW1_US}us TW2=${TW2_US}us"
+          }
+
+          if [[ "$CPU_TYPE" == "meteorlake" ]]; then
+            if [[ "$ON_AC" == "1" ]]; then
+              apply_limits ${toString meteorLake.ac.pl1} ${toString meteorLake.ac.pl2} 28000000 10000
             else
-              # Meteor Lake on battery
-              echo ${toString (meteorLakeConfig.battery.pl1 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-              echo ${toString (meteorLakeConfig.battery.pl2 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-              echo "Meteor Lake Battery: PL1=${toString meteorLakeConfig.battery.pl1}W, PL2=${toString meteorLakeConfig.battery.pl2}W"
+              apply_limits ${toString meteorLake.battery.pl1} ${toString meteorLake.battery.pl2} 28000000 10000
             fi
           else
-            if [ "$ON_AC" = "1" ]; then
-              # Kaby Lake R on AC
-              echo ${toString (kabyLakeRConfig.ac.pl1 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-              echo ${toString (kabyLakeRConfig.ac.pl2 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-              echo "Kaby Lake R AC: PL1=${toString kabyLakeRConfig.ac.pl1}W, PL2=${toString kabyLakeRConfig.ac.pl2}W"
+            if [[ "$ON_AC" == "1" ]]; then
+              apply_limits ${toString kabyLakeR.ac.pl1} ${toString kabyLakeR.ac.pl2} 28000000 10000
             else
-              # Kaby Lake R on battery
-              echo ${toString (kabyLakeRConfig.battery.pl1 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-              echo ${toString (kabyLakeRConfig.battery.pl2 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-              echo "Kaby Lake R Battery: PL1=${toString kabyLakeRConfig.battery.pl1}W, PL2=${toString kabyLakeRConfig.battery.pl2}W"
+              apply_limits ${toString kabyLakeR.battery.pl1} ${toString kabyLakeR.battery.pl2} 28000000 10000
             fi
           fi
-          
-          # Set time windows
-          echo 28000000 > /sys/class/powercap/intel-rapl:0/constraint_0_time_window_us
-          echo 2500 > /sys/class/powercap/intel-rapl:0/constraint_1_time_window_us
         '';
       };
     };
-    
-    # ThinkPad LED management
+
+    # ThinkPad LED durumları – sadece ilgili LED’lere sınırlı yetki
     fix-led-state = {
       description = "Configure ThinkPad LED states";
       wantedBy = [ "multi-user.target" ];
       after = [ "systemd-udev-settle.service" ];
       serviceConfig = {
         Type = "oneshot";
+        RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "fix-leds" ''
           #!${pkgs.bash}/bin/bash
-          
-          # Configure microphone mute LED
-          if [ -d /sys/class/leds/platform::micmute ]; then
+          set -euo pipefail
+
+          # Mic mute LED
+          if [[ -d /sys/class/leds/platform::micmute ]]; then
             echo "audio-micmute" > /sys/class/leds/platform::micmute/trigger 2>/dev/null || true
             echo 0 > /sys/class/leds/platform::micmute/brightness 2>/dev/null || true
           fi
-          
-          # Configure audio mute LED
-          if [ -d /sys/class/leds/platform::mute ]; then
+
+          # Speaker mute LED
+          if [[ -d /sys/class/leds/platform::mute ]]; then
             echo "audio-mute" > /sys/class/leds/platform::mute/trigger 2>/dev/null || true
             echo 0 > /sys/class/leds/platform::mute/brightness 2>/dev/null || true
           fi
-          
-          # Turn off logo LED to save power
-          if [ -d /sys/class/leds/tpacpi::lid_logo_dot ]; then
+
+          # Logo LED kapalı (tasarruf)
+          if [[ -d /sys/class/leds/tpacpi::lid_logo_dot ]]; then
             echo 0 > /sys/class/leds/tpacpi::lid_logo_dot/brightness 2>/dev/null || true
           fi
         '';
-        RemainAfterExit = true;
       };
     };
-    
-    # Battery charge threshold management
+
+    # Pil şarj eşiği yönetimi (BAT0 destekliyse uygula)
     battery-charge-threshold = {
-      description = "Configure battery charge thresholds if needed";
+      description = "Configure battery charge thresholds (BAT0)";
       wantedBy = [ "multi-user.target" ];
       after = [ "multi-user.target" ];
       serviceConfig = {
@@ -471,130 +385,111 @@ in
         ExecStart = pkgs.writeShellScript "battery-threshold" ''
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
-          
-          # Battery threshold configuration path
-          BAT_PATH="/sys/class/power_supply/BAT0"
-          
-          # Check if battery exists
-          [ ! -d "$BAT_PATH" ] && echo "Battery not found" && exit 0
-          
-          # Detect CPU type for appropriate thresholds
-          CPU_TYPE=$(${detectCpuScript})
-          
-          # Set thresholds based on CPU type
-          if [ "$CPU_TYPE" = "meteolake" ]; then
-            DESIRED_START=${toString meteorLakeConfig.battery_threshold.start}
-            DESIRED_STOP=${toString meteorLakeConfig.battery_threshold.stop}
+          BAT="/sys/class/power_supply/BAT0"
+          [[ -d "$BAT" ]] || { echo "Battery not found."; exit 0; }
+
+          CPU_TYPE="$(${detectCpuScript})"
+          if [[ "$CPU_TYPE" == "meteorlake" ]]; then
+            START=${toString meteorLake.battery_threshold.start}
+            STOP=${toString meteorLake.battery_threshold.stop}
           else
-            DESIRED_START=${toString kabyLakeRConfig.battery_threshold.start}
-            DESIRED_STOP=${toString kabyLakeRConfig.battery_threshold.stop}
+            START=${toString kabyLakeR.battery_threshold.start}
+            STOP=${toString kabyLakeR.battery_threshold.stop}
           fi
-          
-          # Read current thresholds
-          CURRENT_START=$(cat "$BAT_PATH/charge_control_start_threshold" 2>/dev/null || echo "0")
-          CURRENT_STOP=$(cat "$BAT_PATH/charge_control_end_threshold" 2>/dev/null || echo "100")
-          
-          # Only update if different from desired values
-          if [ "$CURRENT_START" != "$DESIRED_START" ]; then
-            echo "$DESIRED_START" > "$BAT_PATH/charge_control_start_threshold"
-            echo "Battery start threshold updated: $${DESIRED_START}%"
+
+          CUR_START="$(cat "$BAT/charge_control_start_threshold" 2>/dev/null || echo 0)"
+          CUR_STOP="$(cat "$BAT/charge_control_end_threshold" 2>/dev/null || echo 100)"
+
+          if [[ "$CUR_START" != "$START" ]]; then
+            echo "$START" > "$BAT/charge_control_start_threshold" || true
+            echo "Updated start threshold: ${START}%"
           fi
-          
-          if [ "$CURRENT_STOP" != "$DESIRED_STOP" ]; then
-            echo "$DESIRED_STOP" > "$BAT_PATH/charge_control_end_threshold"
-            echo "Battery stop threshold updated: $${DESIRED_STOP}%"
+          if [[ "$CUR_STOP" != "$STOP" ]]; then
+            echo "$STOP" > "$BAT/charge_control_end_threshold" || true
+            echo "Updated stop threshold: ${STOP}%"
           fi
-          
-          echo "Battery thresholds for $CPU_TYPE: Start=$${DESIRED_START}%, Stop=$${DESIRED_STOP}%"
+
+          echo "Battery thresholds → Start=${START}% Stop=${STOP}%"
         '';
       };
     };
   };
-  
-  # ==============================================================================
-  # Udev Rules
-  # ==============================================================================
-  
-  services.udev.extraRules = ''
-    # LED permissions for user control
-    SUBSYSTEM=="leds", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/%k/brightness"
-  
-    # USB power management with exceptions
+
+  # =============================================================================
+  # Udev kuralları
+  # =============================================================================
+  services.udev.extraRules = lib.mkAfter ''
+    # LED parlaklığı için geniş 666 yerine sadece ilgili LED’lere 664:
+    SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
+    SUBSYSTEM=="leds", KERNEL=="platform::mute",    ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
+
+    # USB autosuspend: varsayılan auto; belirli vendor/driver için açık tut
     ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", DRIVER=="usbhid", ATTR{power/control}="on"
+
+    # AC adaptör durumu değişince RAPL limitlerini yeniden uygula
+    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", RUN+="${systemctl} start cpu-power-limit.service"
   '';
-  
-  # ==============================================================================
-  # Environment Configuration
-  # ==============================================================================
-  
+
+  # =============================================================================
+  # Ortam (alias & değişkenler)
+  # =============================================================================
   environment = {
-    # Shell aliases for system management
     shellAliases = {
-      # Battery information
+      # Pil durumu
       battery-status = "upower -i /org/freedesktop/UPower/devices/battery_BAT0";
       battery-info = ''
         echo "=== Battery Status ===" && \
         upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E "state|percentage|time to|capacity" && \
         echo -e "\n=== Charge Thresholds ===" && \
         echo "Start: $(cat /sys/class/power_supply/BAT0/charge_control_start_threshold 2>/dev/null || echo 'N/A')%" && \
-        echo "Stop: $(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null || echo 'N/A')%"
+        echo "Stop:  $(cat /sys/class/power_supply/BAT0/charge_control_end_threshold   2>/dev/null || echo 'N/A')%"
       '';
-      
-      # Power management
+
+      # Güç tüketimi raporu
       power-report = "sudo powertop --html=power-report.html --time=10 && echo 'Report saved to power-report.html'";
-      power-usage = "sudo powertop";
-      
-      # Thermal monitoring
+      power-usage  = "sudo powertop";
+
+      # Isıl durum
       thermal-status = ''
-        echo "=== Thermal Status ===" && \
-        sensors 2>/dev/null || echo "lm-sensors not installed" && \
-        echo -e "\n=== CPU Temperatures ===" && \
-        for zone in /sys/class/thermal/thermal_zone*/temp; do \
-          if [ -r "$zone" ]; then \
-            TEMP=$(cat "$zone"); \
-            TEMP_C=$((TEMP / 1000)); \
-            ZONE_NAME=$(basename $(dirname "$zone")); \
-            echo "$ZONE_NAME: $${TEMP_C}°C"; \
-          fi; \
+        echo "=== Thermal Status ==="
+        sensors 2>/dev/null || echo "lm-sensors not installed"
+        echo
+        echo "=== Thermal Zones ==="
+        for z in /sys/class/thermal/thermal_zone*/temp; do
+          [[ -r "$z" ]] || continue
+          t=$(cat "$z"); printf "%s: %s°C\n" "$(basename "$(dirname "$z")")" "$((t/1000))"
         done
       '';
-      
-      # CPU information
-      cpu-freq = ''
-        echo "=== CPU Frequency ===" && \
-        grep "cpu MHz" /proc/cpuinfo | awk '{print "Core " NR-1 ": " $4 " MHz"}'
-      '';
-      
+
+      # CPU
+      cpu-freq = ''echo "=== CPU Frequency ==="; grep "cpu MHz" /proc/cpuinfo | awk '{print "Core " NR-1 ": " $4 " MHz"}' '';
       cpu-type = "${detectCpuScript}";
-      
-      # Performance summary
+
+      # Kısa performans özeti
       perf-summary = ''
-        echo "=== System Performance ===" && \
-        echo -e "\nCPU: $(${detectCpuScript})" && \
-        echo "Governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)" && \
-        echo "Memory: $(free -h | grep "^Mem:" | awk '{print $3 " / " $2}')" && \
+        echo "=== System Performance ==="
+        echo "CPU: $(${detectCpuScript})"
+        echo "Governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)"
+        echo "Memory: $(free -h | awk "/^Mem:/ {print \$3 \" / \" \$2}")"
         echo "Load: $(uptime | awk -F'load average:' '{print $2}')"
       '';
     };
-    
-    # Environment variables
+
     variables = {
       VDPAU_DRIVER = "va_gl";
       LIBVA_DRIVER_NAME = "iHD";
     };
   };
-  
-  # ==============================================================================
-  # Zram Configuration
-  # ==============================================================================
-  
+
+  # =============================================================================
+  # Zram
+  # =============================================================================
   zramSwap = {
     enable = true;
     priority = 5000;
     algorithm = "zstd";
-    memoryPercent = lib.mkDefault 30;  # Can be overridden by host config
+    memoryPercent = lib.mkDefault 30;  # Host bazlı override etmeye devam
   };
 }
-
