@@ -375,6 +375,11 @@ in
       # Network optimizations
       "ipv6.disable=0"
       "net.ifnames=1"
+
+      # Suppress iwlwifi firmware debug messages that appear as red warnings during boot
+      # This doesn't affect WiFi functionality, only reduces console noise
+      "iwlwifi.debug=0x00000000"        # WiFi hata mesajlarını gizle
+
     ];
     
     # I/O scheduler configuration
@@ -412,7 +417,7 @@ in
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
           #!/usr/bin/env bash
-          set -euo pipefail
+          set -u
           
           # Wait for system initialization
           sleep 2
@@ -594,9 +599,9 @@ in
     # Dynamic auto-cpufreq configuration
     update-cpufreq-config = {
       description = "Configure auto-cpufreq based on CPU type";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
-      before = [ "auto-cpufreq.service" ];
+      wantedBy = [ "default.target" ];
+      before = [ "graphical-session.target" ];
+      after = [ "local-fs.target" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
@@ -654,32 +659,11 @@ in
   services.udev.extraRules = ''
     # LED permissions for user control
     SUBSYSTEM=="leds", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 666 /sys/class/leds/%k/brightness"
-    
-    # Power supply change handling
-    SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
-    SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service"
-    
-    # I/O scheduler optimization
-    ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"
-    ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="mq-deadline"
-    
-    # NVMe power management
-    ACTION=="add", SUBSYSTEM=="nvme", ATTR{power/pm_qos_latency_tolerance_us}="5500"
-    
-    # PCI power management
-    ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
-    
+  
     # USB power management with exceptions
     ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", DRIVER=="usbhid", ATTR{power/control}="on"
-    
-    # Audio power management
-    ACTION=="add", SUBSYSTEM=="pci", DRIVER=="snd_hda_intel", ATTR{power/control}="auto"
-    
-    # Network power management
-    ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp*", RUN+="${pkgs.ethtool}/bin/ethtool -s %k wol d"
-    ACTION=="add", SUBSYSTEM=="net", KERNEL=="wlp*", RUN+="${pkgs.iw}/bin/iw dev %k set power_save on"
   '';
   
   # ==============================================================================
