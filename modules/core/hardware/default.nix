@@ -487,48 +487,95 @@ in
   # ===========================================================================
   # fancontrol kurulum (lm_sensors ile): /etc/fancontrol dosyası + systemd servis
   # ===========================================================================
-  # Notlar:
-  # - hwmon indexleri her boot değişebileceği için isimle eşliyoruz (DEVNAME).
-  # - sensör kaynakları senin sistemine göre: coretemp (Package id 0),
-  #   thinkpad (pwm1/fan1_input).
-  environment.etc."fancontrol".text = ''
-    INTERVAL=5
-
-    # hwmon indeksine değil, isme bağla
-    DEVNAME=hwmon0=coretemp hwmon1=thinkpad
-
-    # ThinkPad fan PWM ve tach eşlemesi
-    FCFANS=hwmon1/pwm1=hwmon1/fan1_input
-
-    # Sıcaklık kaynağı: CPU Package (genelde temp1_input)
-    # Eğer Package id 0 farklı tempX ise burayı tempX_input yap.
-    FCTEMPS=hwmon1/pwm1=hwmon0/temp1_input
-
-    # Eşikler
-    MINTEMP=hwmon1/pwm1=45
-    MAXTEMP=hwmon1/pwm1=80
-
-    # Histerezis
-    MINSTART=hwmon1/pwm1=120
-    MINSTOP=hwmon1/pwm1=80
-
-    # PWM sınırları (0–255)
-    MINPWM=hwmon1/pwm1=70
-    MAXPWM=hwmon1/pwm1=255
-  '';
-
-  # fancontrol servisi
+  # /etc/fancontrol artık gerekmiyor; istersen kaldır.
+  # Dinamik fancontrol servisi: doğru hwmon path’lerini bulup /run/fancontrol.conf üretir.
   systemd.services.fancontrol = {
-    description = "Software fan speed control (lm_sensors fancontrol)";
+    description = "Software fan speed control (lm_sensors fancontrol, dynamic config)";
     wantedBy = [ "multi-user.target" ];
     after = [ "sysinit.target" ];
     serviceConfig = {
       Type = "simple";
-      ExecStart = "${pkgs.lm_sensors}/bin/fancontrol";
+
+      # 1) thinkpad PWM'i manual moda al
+      ExecStartPre = ''
+        ${pkgs.bash}/bin/bash -euo pipefail -c '
+          ok=0
+          for d in /sys/class/hwmon/*; do
+            if [ "$(cat "$d/name" 2>/dev/null)" = "thinkpad" ]; then
+              if [ -w "$d/pwm1_enable" ]; then
+                echo 1 > "$d/pwm1_enable" || true
+                # Bazı çekirdeklerde 0->1 sekansı gerekebilir
+                if [ "$(cat "$d/pwm1_enable")" != "1" ]; then
+                  echo 0 > "$d/pwm1_enable" || true
+                  echo 1 > "$d/pwm1_enable" || true
+                fi
+                [ "$(cat "$d/pwm1_enable")" = "1" ] && ok=1
+              fi
+            fi
+          done
+          [ "$ok" = 1 ] || { echo "thinkpad pwm1_enable=1 yapılamadı"; exit 1; }
+        '
+      '';
+
+      # 2) /run/fancontrol.conf oluştur
+      ExecStartPre = [
+        ''
+          ${pkgs.bash}/bin/bash -euo pipefail -c '
+            by_name() {
+              for d in /sys/class/hwmon/*; do
+                [ "$(cat "$d/name" 2>/dev/null)" = "$1" ] && basename "$d" && return 0
+              done
+              return 1
+            }
+
+            HWMON_CORETEMP="$(by_name coretemp)"
+            HWMON_THINKPAD="$(by_name thinkpad)"
+  
+            [ -n "$HWMON_CORETEMP" ] || { echo "coretemp hwmon bulunamadı"; exit 1; }
+            [ -n "$HWMON_THINKPAD" ] || { echo "thinkpad hwmon bulunamadı"; exit 1; }
+  
+            # CPU Package için doğru tempX_input’ı bul (label “Package” olan)
+            TEMP_IN="temp1_input"
+            for f in /sys/class/hwmon/"$HWMON_CORETEMP"/temp*_label; do
+              [ -e "$f" ] || continue
+              if grep -qi package "$f"; then
+                X="$(basename "$f" | sed -E s/temp\\([0-9]+\\)_label/\\1/)"
+                if [ -r "/sys/class/hwmon/$HWMON_CORETEMP/temp${X}_input" ]; then
+                  TEMP_IN="temp${X}_input"
+                  break
+                fi
+              fi
+            done
+  
+            # fancontrol’ın “yeni” formatı: DEVPATH + DEVNAME mutlaka olmalı
+            cat > /run/fancontrol.conf <<EOF
+  INTERVAL=5
+  DEVPATH=hwmonC=/sys/class/hwmon/$HWMON_CORETEMP hwmonT=/sys/class/hwmon/$HWMON_THINKPAD
+  DEVNAME=hwmonC=coretemp hwmonT=thinkpad
+  FCTEMPS=hwmonT/pwm1=hwmonC/$TEMP_IN
+  FCFANS=hwmonT/pwm1=hwmonT/fan1_input
+  MINTEMP=hwmonT/pwm1=45
+  MAXTEMP=hwmonT/pwm1=80
+  MINSTART=hwmonT/pwm1=120
+  MINSTOP=hwmonT/pwm1=80
+  MINPWM=hwmonT/pwm1=70
+  MAXPWM=hwmonT/pwm1=255
+  EOF
+
+            echo "Generated /run/fancontrol.conf:"
+            cat /run/fancontrol.conf
+          '
+        ''
+      ];
+
+      # 3) fancontrol’ı dinamik dosya ile başlat
+      ExecStart = "${pkgs.lm_sensors}/bin/fancontrol /run/fancontrol.conf";
+
       Restart = "on-failure";
+      RestartSec = 2;
     };
   };
- 
+
   # =============================================================================
   # Zram
   # =============================================================================
