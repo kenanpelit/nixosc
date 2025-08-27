@@ -300,6 +300,9 @@ in
 
       # Wi-Fi debug kapalı
       "iwlwifi.debug=0x0"
+
+      # deep suspend
+      "mem_sleep_default=deep"
     ];
 
     kernel.sysctl = {
@@ -459,6 +462,58 @@ in
           [[ "$CUR_STOP"  = "$STOP"  ]] || { echo "$STOP"  > "$BAT/charge_control_end_threshold"  || true; }
 
           echo "Battery thresholds → Start=$START% Stop=$STOP%"
+        '';
+      };
+    };
+
+    # --------------------------------------------------------------------------
+    # Sleep hook'ları: s2idle sırasında fanın dönmesini engelle
+    #   - PRE: thinkfan'ı durdur, fanı BIOS/ACPI otomatik moda al
+    #   - POST: thinkfan'ı geri başlat, RAPL + governor/EPP'yi yeniden uygula
+    # --------------------------------------------------------------------------
+    thinkfan-sleep-pre = {
+      description = "Prepare fans before suspend/hibernate (stop thinkfan, set auto)";
+      wantedBy = [ "sleep.target" ];
+      before   = [ "sleep.target" ];
+      unitConfig.DefaultDependencies = false;   # sleep.target'tan önce koşabilsin
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "thinkfan-sleep-pre" ''
+          #!${pkgs.bash}/bin/bash
+          set -euo pipefail
+          # thinkfan'ı durdur (varsa)
+          ${pkgs.systemd}/bin/systemctl stop thinkfan.service 2>/dev/null || true
+          ${pkgs.systemd}/bin/systemctl stop thinkfan-custom.service 2>/dev/null || true
+          # fanı ACPI otomatik moda al
+          if [[ -w /proc/acpi/ibm/fan ]]; then
+            echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
+          fi
+          # Intel P-state: turbo kapat (opsiyonel; s2idle'da gereksiz boost'ları önler)
+          echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+        '';
+      };
+    };
+
+    thinkfan-sleep-post = {
+      description = "Restore fans after resume (start thinkfan, reapply RAPL/governor)";
+      wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+      after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+      unitConfig.DefaultDependencies = false;   # resume aşamasında çalışsın
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "thinkfan-sleep-post" ''
+          #!${pkgs.bash}/bin/bash
+          set -euo pipefail
+          # Turbo geri aç
+          echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+          # RAPL + governor/EPP ayarlarını tekrar uygula
+          ${pkgs.systemd}/bin/systemctl start cpu-power-limit.service 2>/dev/null || true
+          # thinkfan'ı geri başlat
+          if ${pkgs.systemd}/bin/systemctl is-enabled thinkfan-custom.service >/dev/null 2>&1; then
+            ${pkgs.systemd}/bin/systemctl restart thinkfan-custom.service || true
+          elif ${pkgs.systemd}/bin/systemctl is-enabled thinkfan.service >/dev/null 2>&1; then
+            ${pkgs.systemd}/bin/systemctl restart thinkfan.service || true
+          fi
         '';
       };
     };

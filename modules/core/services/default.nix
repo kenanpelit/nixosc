@@ -49,5 +49,10 @@
       nssmdns4 = false;
     };
   };
+  
+  systemd.maskedServices = [
+    "thinkfan-sleep.service"
+    "thinkfan-wakeup.service"
+  ];
 }
 
