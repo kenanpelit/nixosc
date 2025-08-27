@@ -116,7 +116,7 @@ in
     # Bluetooth – pil dostu varsayılanlar (yorumla uyumlu)
     bluetooth = {
       enable = true;
-      powerOnBoot = false;          # Boot’ta açma → pil tasarrufu
+      powerOnBoot = true;           # Boot’ta aç
       settings.General = {
         FastConnectable = false;    # Gerekmedikçe kapalı tut
         ReconnectAttempts = 7;
