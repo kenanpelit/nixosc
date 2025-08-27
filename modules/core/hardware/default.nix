@@ -155,25 +155,6 @@ in
     # Isıl yönetim
     thermald.enable = true;
 
-    # fancontrol - thinkfan yerine daha modern ve esnek çözüm
-    # Hem CPU hem GPU sıcaklığını dikkate alır, daha iyi termal kontrol sağlar
-    fancontrol = {
-      enable = true;
-      config = ''
-        INTERVAL=10
-        DEVPATH=hwmon0=devices/platform/coretemp.0 hwmon1=devices/platform/thinkpad_hwmon
-        DEVNAME=hwmon0=coretemp hwmon1=thinkpad
-        FCTEMPS=hwmon1/pwm1=hwmon0/temp1_input
-        FCFANS=hwmon1/pwm1=hwmon1/fan1_input
-        MINTEMP=hwmon1/pwm1=45
-        MAXTEMP=hwmon1/pwm1=80
-        MINSTART=hwmon1/pwm1=120
-        MINSTOP=hwmon1/pwm1=80
-        MINPWM=hwmon1/pwm1=70
-        MAXPWM=hwmon1/pwm1=255
-      '';
-    };
-
     # Eski çözümleri devre dışı bırak (çakışmayı önlemek için)
     thinkfan.enable = false;
     power-profiles-daemon.enable = false;
@@ -361,36 +342,6 @@ in
       };
     };
 
-    # Hem CPU hem GPU sıcaklığını dikkate alır, daha iyi termal kontrol sağlar
-    services.fancontrol = {
-      enable = true;
-      config = ''
-        INTERVAL=5
-
-        # hwmon indeksine değil, isme bağla (boot’ta kaymaz)
-        DEVNAME=hwmon0=coretemp hwmon1=thinkpad
-
-        # ThinkPad fan PWM ve tach eşlemesi
-        FCFANS=hwmon1/pwm1=hwmon1/fan1_input
-
-        # Sıcaklık kaynağı: CPU Package (coretemp → genelde temp1_input)
-        # Eğer Package id 0 farklı bir tempX ise, onu yaz.
-        FCTEMPS=hwmon1/pwm1=hwmon0/temp1_input
-
-        # Eşikler
-        MINTEMP=hwmon1/pwm1=45
-        MAXTEMP=hwmon1/pwm1=80
-
-        # Histerezis
-        MINSTART=hwmon1/pwm1=120
-        MINSTOP=hwmon1/pwm1=80
-
-        # PWM sınırları (0–255)
-        MINPWM=hwmon1/pwm1=70
-        MAXPWM=hwmon1/pwm1=255
-      '';
-    };
-
     # ThinkPad LED durumları – sadece ilgili LED'lere sınırlı yetki
     fix-led-state = {
       description = "Configure ThinkPad LED states";
@@ -532,6 +483,52 @@ in
     };
   };
 
+
+  # ===========================================================================
+  # fancontrol kurulum (lm_sensors ile): /etc/fancontrol dosyası + systemd servis
+  # ===========================================================================
+  # Notlar:
+  # - hwmon indexleri her boot değişebileceği için isimle eşliyoruz (DEVNAME).
+  # - sensör kaynakları senin sistemine göre: coretemp (Package id 0),
+  #   thinkpad (pwm1/fan1_input).
+  environment.etc."fancontrol".text = ''
+    INTERVAL=5
+
+    # hwmon indeksine değil, isme bağla
+    DEVNAME=hwmon0=coretemp hwmon1=thinkpad
+
+    # ThinkPad fan PWM ve tach eşlemesi
+    FCFANS=hwmon1/pwm1=hwmon1/fan1_input
+
+    # Sıcaklık kaynağı: CPU Package (genelde temp1_input)
+    # Eğer Package id 0 farklı tempX ise burayı tempX_input yap.
+    FCTEMPS=hwmon1/pwm1=hwmon0/temp1_input
+
+    # Eşikler
+    MINTEMP=hwmon1/pwm1=45
+    MAXTEMP=hwmon1/pwm1=80
+
+    # Histerezis
+    MINSTART=hwmon1/pwm1=120
+    MINSTOP=hwmon1/pwm1=80
+
+    # PWM sınırları (0–255)
+    MINPWM=hwmon1/pwm1=70
+    MAXPWM=hwmon1/pwm1=255
+  '';
+
+  # fancontrol servisi
+  systemd.services.fancontrol = {
+    description = "Software fan speed control (lm_sensors fancontrol)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "sysinit.target" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.lm_sensors}/bin/fancontrol";
+      Restart = "on-failure";
+    };
+  };
+ 
   # =============================================================================
   # Zram
   # =============================================================================
