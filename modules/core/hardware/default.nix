@@ -41,20 +41,66 @@ let
   '';
 
   # ----------------------------------------------------------------------------
-  # CPU PROFİLLERİ (Watt cinsinden PL1/PL2 + pil eşikleri)
+  # CPU PROFİLLERİ (Watt cinsinden PL1/PL2 + termal eşikler + pil yönetimi)
+  # 
+  # PL1: Sürekli güç limiti (Sustained Power Limit)
+  # PL2: Kısa süreli boost limiti (Turbo Power Limit) 
+  # trip: Fan devreye girme sıcaklığı (°C)
+  # tripAc: AC'de daha agresif termal limit (performans odaklı)
+  # warning: Kullanıcı uyarı seviyesi
+  # critical: Donanım koruması (emergency shutdown)
   # ----------------------------------------------------------------------------
+  
   meteorLake = {
-    battery = { pl1 = 28; pl2 = 40; };
-    ac      = { pl1 = 40; pl2 = 55; };
-    thermal = { trip = 85; tripAc = 90; warning = 92; critical = 100; };
-    battery_threshold = { start = 60; stop = 80; };
+    # Güç limitleri - Intel Core Ultra 7 155H profili
+    battery = { 
+      pl1 = 28;  # Bataryada dengeli performans (28W sürekli)
+      pl2 = 42;  # Boost durumunda 42W'a kadar (40W → 42W artırıldı)
+    };
+    ac = { 
+      pl1 = 42;  # AC'de daha agresif (40W → 42W artırıldı)
+      pl2 = 58;  # Maximum turbo boost (55W → 58W artırıldı)
+    };
+    
+    # Termal yönetim - Modern CPU için optimize
+    thermal = { 
+      trip = 82;     # Erken müdahale (85°C → 82°C) - TVB koruması
+      tripAc = 88;   # AC'de biraz daha toleranslı (90°C → 88°C)  
+      warning = 92;  # Kullanıcı uyarısı
+      critical = 100; # Emergency shutdown
+    };
+    
+    # Pil ömrü optimizasyonu - Modern Li-ion için
+    battery_threshold = { 
+      start = 65;  # Şarj başlangıcı (60% → 65%) - daha iyi döngü ömrü
+      stop = 85;   # Şarj durması (80% → 85%) - günlük kullanım dengesi
+    };
   };
 
   kabyLakeR = {
-    battery = { pl1 = 15; pl2 = 25; };
-    ac      = { pl1 = 25; pl2 = 35; };
-    thermal = { trip = 78; tripAc = 82; warning = 85; critical = 90; };
-    battery_threshold = { start = 75; stop = 80; };
+    # Güç limitleri - Intel Core i7-8650U profili  
+    battery = { 
+      pl1 = 15;  # Düşük güç tüketimi (verimlilik odaklı)
+      pl2 = 25;  # Kısa boost'lar için yeterli
+    };
+    ac = { 
+      pl1 = 25;  # AC'de daha yüksek sürekli performans
+      pl2 = 35;  # Maximum turbo capacity
+    };
+    
+    # Termal yönetim - Eski nesil CPU için konservatif
+    thermal = { 
+      trip = 78;     # Erken koruma (düşük TDP için uygun)
+      tripAc = 82;   # AC'de biraz daha toleranslı
+      warning = 85;  # Erkenci uyarı  
+      critical = 95; # Güvenli shutdown (90°C → 95°C, daha az false alarm)
+    };
+    
+    # Pil eşikleri - Eski ThinkPad'ler için konservatif
+    battery_threshold = { 
+      start = 75;  # Yüksek başlangıç (pil yaşlanması daha az)
+      stop = 80;   # Düşük üst limit (maksimum ömür)
+    };
   };
 
   systemctl = "${pkgs.systemd}/bin/systemctl";
@@ -100,76 +146,118 @@ in
   # SERVİSLER (Güç & Termal)
   # =============================================================================
   services = {
-    # Termal yönetim (fanı thinkfan yönetiyor)
+    # ----------------------------------------------------------------------------
+    # TERMAL YÖNETİM
+    # thermald: Intel CPU termal yönetimi (turbo boost kontrolü, sıcaklık bazlı throttling)
+    # thinkfan: Fan hız kontrolü (thermald ile uyumlu çalışır, farklı görevler)
+    # ----------------------------------------------------------------------------
     thermald.enable = true;
-
-    # Çakışma önle: sadece thinkfan + thermald
+    
+    # ----------------------------------------------------------------------------
+    # ÇAKIŞAN SERVİSLER (kapalı tutulması gerekir)
+    # power-profiles-daemon: GNOME güç profilleri - TLP/manual yönetimle çakışır
+    # tlp: Otomatik güç yönetimi - manual RAPL/governor kontrolümüzle çakışır
+    # ----------------------------------------------------------------------------
     power-profiles-daemon.enable = false;
     tlp.enable = false;
-
-    # ThinkFan – istikrarlı ThinkPad fan kontrolü
+    
+    # ----------------------------------------------------------------------------
+    # THINKFAN - Akıllı Fan Kontrolü
+    # Histerezis mantığı: Her seviye örtüşür, fan titremesini önler
+    # Örnek: 52°C'de Level 2'ye çıkar, 48°C'ye düşene kadar Level 2'de kalır
+    # ----------------------------------------------------------------------------
     thinkfan = {
       enable = true;
-      smartSupport = true;  # NVMe/disk sensörlerini de kullanabilir
-      # Dengeli & sessiz, ısı yükselince çevik
+      smartSupport = true;  # NVMe/SATA sıcaklık sensörlerini kullan
+      
+      # Fan seviyeleri - Histerezis için örtüşen sıcaklık aralıkları
+      # [fan_level  min_temp  max_temp]
+      # min_temp: Bu seviyeye GERİ DÖNÜŞ sıcaklığı (aşağı inerken)
+      # max_temp: Bir sonraki seviyeye ÇIKIŞ sıcaklığı (yukarı çıkarken)
       levels = [
-        # [fan_level  lower°C  upper°C]
-        [0  0   45]
-        [1  42  52]
-        [2  48  58]
-        [3  54  64]
-        [4  60  70]
-        [5  66  76]
-        [6  72  82]
-        [7  78  32767]
+        [0  0   45]    # Level 0: Tamamen sessiz, 45°C'ye kadar
+        [1  42  52]    # Level 1: 52°C'de Level 2'ye çık, 42°C'de Level 0'a dön (3°C histerezis)
+        [2  48  58]    # Level 2: 58°C'de Level 3'e çık, 48°C'de Level 1'e dön (4°C histerezis)
+        [3  54  64]    # Level 3: 64°C'de Level 4'e çık, 54°C'de Level 2'ye dön (4°C histerezis)
+        [4  60  70]    # Level 4: 70°C'de Level 5'e çık, 60°C'de Level 3'e dön (4°C histerezis)
+        [5  66  76]    # Level 5: 76°C'de Level 6'ya çık, 66°C'de Level 4'e dön (4°C histerezis)
+        [6  72  82]    # Level 6: 82°C'de Level 7'ye çık, 72°C'de Level 5'e dön (4°C histerezis)
+        [7  78  32767] # Level 7: Maksimum hız, 78°C'de Level 6'ya dön
       ];
+      
+      # Sensör düzeltmeleri (opsiyonel - gerekirse eklenebilir)
+      # sensors = [
+      #   { type = "hwmon"; query = "/sys/class/hwmon"; indices = [1]; correction = [-5]; }
+      # ];
     };
-
-    # Pil – güvenli eşikler
+    
+    # ----------------------------------------------------------------------------
+    # UPOWER - Pil Yönetimi
+    # Kritik seviyeler ve eylemler
+    # ----------------------------------------------------------------------------
     upower = {
-      enable = true;
-      criticalPowerAction = "Hibernate";
-      percentageLow = 20;
-      percentageCritical = 5;
-      percentageAction = 3;
-      usePercentageForPolicy = true;
+     enable = true;
+      criticalPowerAction = "Hibernate";     # %3'te hibernate (veri kaybını önle)
+      percentageLow = 20;                     # Düşük pil uyarısı
+      percentageCritical = 5;                 # Kritik pil uyarısı
+      percentageAction = 3;                   # Hibernate tetikleme seviyesi
+      usePercentageForPolicy = true;          # Yüzde bazlı politika kullan
     };
-
-    # logind – kapak/tuş davranışları
+    
+    # ----------------------------------------------------------------------------
+    # LOGIND - Sistem Davranışları
+    # Güç tuşları, kapak ve idle yönetimi
+    # ----------------------------------------------------------------------------
     logind.settings.Login = {
-      HandlePowerKey = "ignore";
-      HandlePowerKeyLongPress = "poweroff";
-      HandleSuspendKey = "suspend";
-      HandleHibernateKey = "hibernate";
-      HandleLidSwitch = "suspend";
-      HandleLidSwitchDocked = "suspend";
-      HandleLidSwitchExternalPower = "suspend";
-      IdleAction = "ignore";
-      IdleActionSec = "30min";
-      InhibitDelayMaxSec = "5";
-      InhibitorsMax = "8192";
-      UserTasksMax = "33%";
-      RuntimeDirectorySize = "50%";
-      RemoveIPC = "yes";
+      # Güç tuşu davranışları
+      HandlePowerKey = "ignore";              # Kısa basma: yoksay (yanlışlıkla kapanma önlenir)
+      HandlePowerKeyLongPress = "poweroff";   # Uzun basma: kapat
+      HandleSuspendKey = "suspend";           # Suspend tuşu
+      HandleHibernateKey = "hibernate";       # Hibernate tuşu
+     
+      # Kapak davranışları (her durumda suspend - tutarlılık için)
+      HandleLidSwitch = "suspend";            # Kapak kapanınca
+      HandleLidSwitchDocked = "suspend";      # Dock'tayken kapak kapanınca
+      HandleLidSwitchExternalPower = "suspend"; # Şarjdayken kapak kapanınca
+      
+      # Idle (boşta) yönetimi
+      IdleAction = "ignore";                  # 30 dakika sonra eylem (ignore: hiçbir şey yapma)
+      IdleActionSec = "30min";                # Idle süresi
+      
+      # Sistem limitleri ve optimizasyonlar
+      InhibitDelayMaxSec = "5";               # Maksimum inhibit gecikmesi (hızlı suspend/shutdown)
+      InhibitorsMax = "8192";                 # Maksimum inhibitor sayısı
+      UserTasksMax = "33%";                   # Kullanıcı başına maksimum task (sistem kaynaklarının %33'ü)
+      RuntimeDirectorySize = "50%";           # /run/user boyutu (RAM'in %50'si)
+      RemoveIPC = "yes";                      # Logout'ta IPC objelerini temizle (bellek sızıntısı önleme)
     };
-
-    # journald – SSD dostu sınırlar
+    
+    # ----------------------------------------------------------------------------
+    # JOURNALD - Sistem Günlükleri
+    # SSD ömrünü korumak için optimize edilmiş
+    # ----------------------------------------------------------------------------
     journald.extraConfig = ''
-      SystemMaxUse=2G
-      SystemMaxFileSize=100M
-      MaxRetentionSec=1week
-      MaxFileSec=1day
-      SyncIntervalSec=30
-      RateLimitIntervalSec=30
-      RateLimitBurst=1000
-      Compress=yes
-      ForwardToSyslog=no
+      SystemMaxUse=2G                         # Maksimum disk kullanımı
+      SystemMaxFileSize=100M                  # Tek dosya maksimum boyutu
+      MaxRetentionSec=1week                   # Maksimum saklama süresi
+      MaxFileSec=1day                         # Dosya rotasyon süresi
+      SyncIntervalSec=30                      # Disk'e yazma aralığı (SSD koruması)
+      RateLimitIntervalSec=30                 # Rate limit penceresi
+      RateLimitBurst=1000                     # Rate limit burst sayısı
+      Compress=yes                            # Sıkıştırma (disk tasarrufu)
+      ForwardToSyslog=no                      # Syslog'a iletme (gereksiz)
     '';
-
-    # Daha modern DBus
-    dbus = { implementation = "broker"; packages = [ pkgs.dconf ]; };
+    
+    # ----------------------------------------------------------------------------
+    # DBUS - Sistem Mesajlaşma
+    # dbus-broker: Klasik dbus'tan daha hızlı ve verimli
+    # ----------------------------------------------------------------------------
+    dbus = { 
+      implementation = "broker";              # Modern D-Bus implementasyonu
+      packages = [ pkgs.dconf ];              # GNOME/GTK uygulamaları için gerekli
+    };
   };
-
+ 
   # =============================================================================
   # BOOT & KERNEL
   # =============================================================================
