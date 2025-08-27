@@ -417,7 +417,7 @@ in
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
           #!/usr/bin/env bash
-          set -euo pipefail
+          set -u
           
           # Wait for system initialization
           sleep 2
