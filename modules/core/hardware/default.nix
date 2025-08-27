@@ -361,6 +361,36 @@ in
       };
     };
 
+    # Hem CPU hem GPU sıcaklığını dikkate alır, daha iyi termal kontrol sağlar
+    services.fancontrol = {
+      enable = true;
+      config = ''
+        INTERVAL=5
+
+        # hwmon indeksine değil, isme bağla (boot’ta kaymaz)
+        DEVNAME=hwmon0=coretemp hwmon1=thinkpad
+
+        # ThinkPad fan PWM ve tach eşlemesi
+        FCFANS=hwmon1/pwm1=hwmon1/fan1_input
+
+        # Sıcaklık kaynağı: CPU Package (coretemp → genelde temp1_input)
+        # Eğer Package id 0 farklı bir tempX ise, onu yaz.
+        FCTEMPS=hwmon1/pwm1=hwmon0/temp1_input
+
+        # Eşikler
+        MINTEMP=hwmon1/pwm1=45
+        MAXTEMP=hwmon1/pwm1=80
+
+        # Histerezis
+        MINSTART=hwmon1/pwm1=120
+        MINSTOP=hwmon1/pwm1=80
+
+        # PWM sınırları (0–255)
+        MINPWM=hwmon1/pwm1=70
+        MAXPWM=hwmon1/pwm1=255
+      '';
+    };
+
     # ThinkPad LED durumları – sadece ilgili LED'lere sınırlı yetki
     fix-led-state = {
       description = "Configure ThinkPad LED states";
