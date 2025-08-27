@@ -311,6 +311,7 @@ in
           for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
             [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
           done
+<<<<<<< HEAD
 
           # Yardımcı fonksiyon: PL1/PL2 yaz
           apply_limits () {
@@ -328,6 +329,34 @@ in
           if [[ "$CPU_TYPE" == "meteorlake" ]]; then
             if [[ "$ON_AC" == "1" ]]; then
               apply_limits ${toString meteorLake.ac.pl1} ${toString meteorLake.ac.pl2} 28000000 10000
+||||||| f00eaa2
+          
+          # Apply CPU-specific power limits
+          if [ "$CPU_TYPE" = "meteolake" ]; then
+            if [ "$ON_AC" = "1" ]; then
+              # Meteor Lake on AC
+              echo ${toString (meteorLakeConfig.ac.pl1 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
+              echo ${toString (meteorLakeConfig.ac.pl2 * 1000000)} > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
+              echo "Meteor Lake AC: PL1=${toString meteorLakeConfig.ac.pl1}W, PL2=${toString meteorLakeConfig.ac.pl2}W"
+=======
+
+          # Yardımcı fonksiyon: PL1/PL2 yaz
+          apply_limits () {
+            local PL1_W="$1"
+            local PL2_W="$2"
+            local TW1_US="$3"   # PL1 time window (µs)
+            local TW2_US="$4"   # PL2 time window (µs)
+            echo $(( PL1_W * 1000000 )) > "$RAPL/constraint_0_power_limit_uw"
+            echo $(( PL2_W * 1000000 )) > "$RAPL/constraint_1_power_limit_uw"
+            echo "$TW1_US" > "$RAPL/constraint_0_time_window_us"
+            echo "$TW2_US" > "$RAPL/constraint_1_time_window_us"
+            echo "Applied: PL1=$PL1_W W PL2=$PL2_W W TW1=$TW1_US us TW2=$TW2_US us"
+          }
+
+          if [[ "$CPU_TYPE" == "meteorlake" ]]; then
+            if [[ "$ON_AC" == "1" ]]; then
+              apply_limits ${toString meteorLake.ac.pl1} ${toString meteorLake.ac.pl2} 28000000 10000
+>>>>>>> e14u7
             else
               apply_limits ${toString meteorLake.battery.pl1} ${toString meteorLake.battery.pl2} 28000000 10000
             fi
@@ -396,6 +425,7 @@ in
             START=${toString kabyLakeR.battery_threshold.start}
             STOP=${toString kabyLakeR.battery_threshold.stop}
           fi
+<<<<<<< HEAD
 
           CUR_START="$(cat "$BAT/charge_control_start_threshold" 2>/dev/null || echo 0)"
           CUR_STOP="$(cat "$BAT/charge_control_end_threshold" 2>/dev/null || echo 100)"
@@ -403,13 +433,51 @@ in
           if [[ "$CUR_START" != "$START" ]]; then
             echo "$START" > "$BAT/charge_control_start_threshold" || true
             echo "Updated start threshold: ${START}%"
+||||||| f00eaa2
+          
+          # Read current thresholds
+          CURRENT_START=$(cat "$BAT_PATH/charge_control_start_threshold" 2>/dev/null || echo "0")
+          CURRENT_STOP=$(cat "$BAT_PATH/charge_control_end_threshold" 2>/dev/null || echo "100")
+          
+          # Only update if different from desired values
+          if [ "$CURRENT_START" != "$DESIRED_START" ]; then
+            echo "$DESIRED_START" > "$BAT_PATH/charge_control_start_threshold"
+            echo "Battery start threshold updated: $${DESIRED_START}%"
+=======
+
+          CUR_START="$(cat "$BAT/charge_control_start_threshold" 2>/dev/null || echo 0)"
+          CUR_STOP="$(cat "$BAT/charge_control_end_threshold" 2>/dev/null || echo 100)"
+
+          if [[ "$CUR_START" != "$START" ]]; then
+            echo "$START" > "$BAT/charge_control_start_threshold" || true
+            echo "Updated start threshold: $START%"
+>>>>>>> e14u7
           fi
+<<<<<<< HEAD
           if [[ "$CUR_STOP" != "$STOP" ]]; then
             echo "$STOP" > "$BAT/charge_control_end_threshold" || true
             echo "Updated stop threshold: ${STOP}%"
+||||||| f00eaa2
+          
+          if [ "$CURRENT_STOP" != "$DESIRED_STOP" ]; then
+            echo "$DESIRED_STOP" > "$BAT_PATH/charge_control_end_threshold"
+            echo "Battery stop threshold updated: $${DESIRED_STOP}%"
+=======
+          if [[ "$CUR_STOP" != "$STOP" ]]; then
+            echo "$STOP" > "$BAT/charge_control_end_threshold" || true
+            echo "Updated stop  threshold: $STOP%"
+>>>>>>> e14u7
           fi
+<<<<<<< HEAD
 
           echo "Battery thresholds → Start=${START}% Stop=${STOP}%"
+||||||| f00eaa2
+          
+          echo "Battery thresholds for $CPU_TYPE: Start=$${DESIRED_START}%, Stop=$${DESIRED_STOP}%"
+=======
+
+          echo "Battery thresholds → Start=$START% Stop=$STOP%"
+>>>>>>> e14u7
         '';
       };
     };
