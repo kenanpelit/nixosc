@@ -22,7 +22,7 @@ let
   
   # Runtime CPU detection script
   detectCpuScript = pkgs.writeShellScript "detect-cpu" ''
-    #!/usr/bin/env bash
+    #!${pkgs.bash}/bin/bash
     # Read CPU information from /proc/cpuinfo
     CPU_INFO=$(cat /proc/cpuinfo 2>/dev/null || echo "")
     
@@ -416,7 +416,7 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
-          #!/usr/bin/env bash
+          #!${pkgs.bash}/bin/bash
           set -u
           
           # Wait for system initialization
@@ -480,7 +480,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "fix-leds" ''
-          #!/usr/bin/env bash
+          #!${pkgs.bash}/bin/bash
           
           # Configure microphone mute LED
           if [ -d /sys/class/leds/platform::micmute ]; then
@@ -512,7 +512,7 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "battery-threshold" ''
-          #!/usr/bin/env bash
+          #!${pkgs.bash}/bin/bash
           set -euo pipefail
           
           # Detect CPU type
@@ -552,7 +552,7 @@ in
       serviceConfig = {
         Type = "simple";
         ExecStart = pkgs.writeShellScript "thermal-monitor" ''
-          #!/usr/bin/env bash
+          #!${pkgs.bash}/bin/bash
           set -euo pipefail
           
           # Detect CPU type
@@ -606,7 +606,7 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "update-cpufreq" ''
-          #!/usr/bin/env bash
+          #!${pkgs.bash}/bin/bash
           set -euo pipefail
           
           # Detect CPU type
