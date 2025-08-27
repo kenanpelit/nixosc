@@ -9,16 +9,22 @@
 # - ThinkPad X1 Carbon 6th (Intel Core i7-8650U, 16GB RAM)
 # - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, 64GB RAM)
 #
-# Versiyon: 3.4.0
-# Yazar:    Kenan Pelit
-# Tarih:    2025-08-27
+# Version: 3.7.0
+# Author:  Kenan Pelit
+# Date:    2025-08-27
+#
+# Özet:
+# - Fan kontrol: thinkfan (güvenilir & ThinkPad’e uygun)
+# - CPU RAPL limitleri: model + güç kaynağına göre
+# - Governor/EPP: AC’de agresif, bataryada dengeli
+# - Termal, pil eşikleri ve günlükler optimize
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
 
 let
   # ----------------------------------------------------------------------------
-  # CPU algılama: lscpu çıktısından model adına göre sınıflandır.
+  # CPU ALGILAMA (güvenli, sade)
   # Dönüş: "meteorlake" | "kabylaker"
   # ----------------------------------------------------------------------------
   detectCpuScript = pkgs.writeShellScript "detect-cpu" ''
@@ -30,40 +36,35 @@ let
     elif echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby *Lake'; then
       echo "kabylaker"
     else
-      echo "kabylaker"
+      echo "kabylaker"  # güvenli varsayılan
     fi
   '';
 
-  # CPU profilleri (Watt cinsinden)
+  # ----------------------------------------------------------------------------
+  # CPU PROFİLLERİ (Watt cinsinden PL1/PL2 + pil eşikleri)
+  # ----------------------------------------------------------------------------
   meteorLake = {
-    battery = { pl1 = 28; pl2 = 40; maxFreq = 3200000; minFreq = 600000; };
-    ac      = { pl1 = 40; pl2 = 55; maxFreq = 4200000; minFreq = 800000; };
+    battery = { pl1 = 28; pl2 = 40; };
+    ac      = { pl1 = 40; pl2 = 55; };
     thermal = { trip = 85; tripAc = 90; warning = 92; critical = 100; };
     battery_threshold = { start = 60; stop = 80; };
-    undervolt = { core = 0; gpu = 0; cache = 0; uncore = 0; analogio = 0; };
   };
 
   kabyLakeR = {
-    battery = { pl1 = 15; pl2 = 25; maxFreq = 2400000; minFreq = 400000; };
-    ac      = { pl1 = 25; pl2 = 35; maxFreq = 3800000; minFreq = 400000; };
+    battery = { pl1 = 15; pl2 = 25; };
+    ac      = { pl1 = 25; pl2 = 35; };
     thermal = { trip = 78; tripAc = 82; warning = 85; critical = 90; };
     battery_threshold = { start = 75; stop = 80; };
-    undervolt = { core = -80; gpu = -60; cache = -80; uncore = -40; analogio = -25; };
   };
 
   systemctl = "${pkgs.systemd}/bin/systemctl";
 in
 {
   # =============================================================================
-  # Donanım
+  # DONANIM
   # =============================================================================
   hardware = {
-    trackpoint = {
-      enable = true;
-      speed = 200;
-      sensitivity = 200;
-      emulateWheel = true;
-    };
+    trackpoint = { enable = true; speed = 200; sensitivity = 200; emulateWheel = true; };
 
     graphics = {
       enable = true;
@@ -96,58 +97,35 @@ in
   };
 
   # =============================================================================
-  # Servisler (Güç & Termal)
+  # SERVİSLER (Güç & Termal)
   # =============================================================================
   services = {
-    # CPU freq otomasyonu (schedutil + passive P-state ile uyumlu)
-    auto-cpufreq = {
-      enable = true;
-      settings = {
-        battery = {
-          governor = "schedutil";
-          scaling_min_freq = 800000;
-          scaling_max_freq = 3200000;
-          turbo = "auto";
-          energy_performance_preference = "power";
-        };
-        charger = {
-          governor = "schedutil";
-          scaling_min_freq = 1200000;
-          scaling_max_freq = 4800000;
-          turbo = "always";
-          energy_performance_preference = "balance_performance";
-        };
-      };
-    };
-
-    # Isıl yönetim (PL, DVFS vb. için – fan kontrolünü thinkfan yapacak)
+    # Termal yönetim (fanı thinkfan yönetiyor)
     thermald.enable = true;
 
-    # ThinkFan – güvenilir fan kontrolü (ThinkPad)
-    thinkfan = {
-      enable = true;
-      # smart* sensörlerini de kullanabilsin (NVMe, disk vb.)
-      smartSupport = true;
-
-      # Sessizlik odaklı fakat yüksüz-kısa yüklerde de reaktif kademeler.
-      # [fan_level  lower°C  upper°C]
-      # 0 en sessiz; 7 en hızlı. Son satır "level auto" Acpi’nin acil durum mantığını devreye sokar.
-      levels = [
-        [0  0   50]   # fan kapalı, 50°C’ye kadar pasif
-        [1  48  55]
-        [2  53  60]
-        [3  58  65]
-        [4  63  70]
-        [5  68  75]
-        [6  73  80]
-        [7  78  32767]  # tam devir
-      ];
-    };
-
+    # Çakışma önle: sadece thinkfan + thermald
     power-profiles-daemon.enable = false;
     tlp.enable = false;
 
-    # UPower – kritik eşikler
+    # ThinkFan – istikrarlı ThinkPad fan kontrolü
+    thinkfan = {
+      enable = true;
+      smartSupport = true;  # NVMe/disk sensörlerini de kullanabilir
+      # Dengeli & sessiz, ısı yükselince çevik
+      levels = [
+        # [fan_level  lower°C  upper°C]
+        [0  0   45]
+        [1  42  52]
+        [2  48  58]
+        [3  54  64]
+        [4  60  70]
+        [5  66  76]
+        [6  72  82]
+        [7  78  32767]
+      ];
+    };
+
+    # Pil – güvenli eşikler
     upower = {
       enable = true;
       criticalPowerAction = "Hibernate";
@@ -157,7 +135,7 @@ in
       usePercentageForPolicy = true;
     };
 
-    # logind – kapak ve güç tuşu davranışları
+    # logind – kapak/tuş davranışları
     logind.settings.Login = {
       HandlePowerKey = "ignore";
       HandlePowerKeyLongPress = "poweroff";
@@ -175,7 +153,7 @@ in
       RemoveIPC = "yes";
     };
 
-    # journald – log hacmini sınırlı tut
+    # journald – SSD dostu sınırlar
     journald.extraConfig = ''
       SystemMaxUse=2G
       SystemMaxFileSize=100M
@@ -188,21 +166,18 @@ in
       ForwardToSyslog=no
     '';
 
-    # DBus – broker
-    dbus = {
-      implementation = "broker";
-      packages = [ pkgs.dconf ];
-    };
+    # Daha modern DBus
+    dbus = { implementation = "broker"; packages = [ pkgs.dconf ]; };
   };
 
   # =============================================================================
-  # Boot & Kernel
+  # BOOT & KERNEL
   # =============================================================================
   boot = {
     kernelModules = [ "thinkpad_acpi" "coretemp" "intel_rapl" "msr" "kvm-intel" "i915" ];
 
     extraModprobeConfig = ''
-      # ThinkPad ACPI – fan kontrolünü user space’e bırak
+      # ThinkPad ACPI – kullanıcı alanı fan kontrolü
       options thinkpad_acpi fan_control=1 brightness_mode=1 volume_mode=1 experimental=1
 
       # Intel P-state
@@ -220,16 +195,27 @@ in
     '';
 
     kernelParams = [
+      # IOMMU
       "intel_iommu=on" "iommu=pt"
-      "intel_pstate=passive"
+
+      # intel_pstate = active → governor/EPP çalışır
+      "intel_pstate=active"
+
+      # NVMe dengesi
       "nvme_core.default_ps_max_latency_us=5500"
+
+      # i915 iyileştirmeler
       "i915.enable_guc=3" "i915.enable_fbc=1" "i915.enable_psr=1" "i915.fastboot=1" "i915.enable_sagv=1"
+
+      # PCIe güç
       "pcie_aspm=default"
+
+      # Wi-Fi debug kapalı
       "iwlwifi.debug=0x0"
     ];
 
-    # Sysctl ayarları
     kernel.sysctl = {
+      # Bellek
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
       "vm.dirty_writeback_centisecs" = 1500;
@@ -238,6 +224,8 @@ in
       "vm.laptop_mode" = 5;
       "vm.page-cluster" = 0;
       "vm.compact_unevictable_allowed" = 1;
+
+      # Planlayıcı / genel
       "kernel.nmi_watchdog" = 0;
       "kernel.sched_autogroup_enabled" = 1;
       "kernel.sched_cfs_bandwidth_slice_us" = 3000;
@@ -245,10 +233,13 @@ in
   };
 
   # =============================================================================
-  # systemd servisleri
+  # systemd SERVİSLER – RAPL + Governor/EPP + LED + Pil eşikleri
   # =============================================================================
   systemd.services = {
-    # RAPL güç limitleri (AC/Battery durumuna göre)
+    # --------------------------------------------------------------------------
+    # RAPL LIMIT + GOVERNOR/EPP AYARI
+    # AC↔︎Batarya değişiminde udev tetikliyor (aşağıya bak)
+    # --------------------------------------------------------------------------
     cpu-power-limit = {
       description = "Apply Intel RAPL power limits per CPU profile & power source";
       wantedBy = [ "multi-user.target" ];
@@ -259,44 +250,72 @@ in
         ExecStart = pkgs.writeShellScript "cpu-power-limit" ''
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
-          sleep 2
+          sleep 2  # sysfs sakinleşsin
+
           CPU_TYPE="$(${detectCpuScript})"
-          echo "Detected CPU: $CPU_TYPE"
           RAPL="/sys/class/powercap/intel-rapl:0"
-          if [[ ! -d "$RAPL" ]]; then
-            echo "RAPL not available; skipping."
-            exit 0
-          fi
+          [[ -d "$RAPL" ]] || { echo "RAPL not available"; exit 0; }
+
+          # Güç kaynağı (AC=1 / Batarya=0)
           ON_AC=0
           for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
             [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
           done
+
+          # RAPL yazıcı
           apply_limits () {
-            local PL1_W="$1"; local PL2_W="$2"; local TW1_US="$3"; local TW2_US="$4"
-            echo $(( PL1_W * 1000000 )) > "$RAPL/constraint_0_power_limit_uw"
-            echo $(( PL2_W * 1000000 )) > "$RAPL/constraint_1_power_limit_uw"
-            echo "$TW1_US" > "$RAPL/constraint_0_time_window_us"
-            echo "$TW2_US" > "$RAPL/constraint_1_time_window_us"
-            echo "Applied: PL1=$PL1_W W PL2=$PL2_W W TW1=$TW1_US us TW2=$TW2_US us"
+            local PL1_W="$1" PL2_W="$2" TW1_US="$3" TW2_US="$4"
+            echo $(( PL1_W * 1000000 )) > "$RAPL/constraint_0_power_limit_uw" || true
+            echo $(( PL2_W * 1000000 )) > "$RAPL/constraint_1_power_limit_uw" || true
+            echo "$TW1_US" > "$RAPL/constraint_0_time_window_us" || true
+            echo "$TW2_US" > "$RAPL/constraint_1_time_window_us" || true
+            echo "RAPL set: PL1=''${PL1_W}W PL2=''${PL2_W}W (AC=$ON_AC)"
           }
+
+          # Governor & EPP (intel_pstate=active)
+          set_governor_epp () {
+            local GOV="$1" EPP="$2" MIN="$3"
+            for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+              echo "$GOV" > "$g" 2>/dev/null || true
+            done
+            for p in /sys/devices/system/cpu/cpufreq/policy*; do
+              echo "$EPP" > "$p/energy_performance_preference" 2>/dev/null || true
+              if [[ -n "$MIN" ]]; then
+                echo "$MIN" > "$p/scaling_min_freq" 2>/dev/null || true
+              fi
+              if [[ -f "$p/cpuinfo_max_freq" ]]; then
+                cat "$p/cpuinfo_max_freq" > "$p/scaling_max_freq" 2>/dev/null || true
+              fi
+            done
+            # Turbo açık (0 = turbo enabled)
+            echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+          }
+
+          # Model + güç kaynağına göre uygula
           if [[ "$CPU_TYPE" == "meteorlake" ]]; then
             if [[ "$ON_AC" == "1" ]]; then
               apply_limits ${toString meteorLake.ac.pl1} ${toString meteorLake.ac.pl2} 28000000 10000
+              set_governor_epp performance balance_performance 1600000
             else
               apply_limits ${toString meteorLake.battery.pl1} ${toString meteorLake.battery.pl2} 28000000 10000
+              set_governor_epp performance balance_power 800000
             fi
           else
             if [[ "$ON_AC" == "1" ]]; then
               apply_limits ${toString kabyLakeR.ac.pl1} ${toString kabyLakeR.ac.pl2} 28000000 10000
+              set_governor_epp performance balance_performance 1400000
             else
               apply_limits ${toString kabyLakeR.battery.pl1} ${toString kabyLakeR.battery.pl2} 28000000 10000
+              set_governor_epp powersave power 800000
             fi
           fi
+
+          echo "Governor/EPP applied (AC=$ON_AC, CPU=$CPU_TYPE)"
         '';
       };
     };
 
-    # ThinkPad LED durumları
+    # LED durumları
     fix-led-state = {
       description = "Configure ThinkPad LED states";
       wantedBy = [ "multi-user.target" ];
@@ -322,7 +341,7 @@ in
       };
     };
 
-    # Pil şarj eşiği yönetimi
+    # Pil şarj eşikleri
     battery-charge-threshold = {
       description = "Configure battery charge thresholds (BAT0)";
       wantedBy = [ "multi-user.target" ];
@@ -334,7 +353,8 @@ in
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
           BAT="/sys/class/power_supply/BAT0"
-          [[ -d "$BAT" ]] || { echo "Battery not found."; exit 0; }
+          [[ -d "$BAT" ]] || { echo "Battery not found"; exit 0; }
+
           CPU_TYPE="$(${detectCpuScript})"
           if [[ "$CPU_TYPE" == "meteorlake" ]]; then
             START=${toString meteorLake.battery_threshold.start}
@@ -343,16 +363,13 @@ in
             START=${toString kabyLakeR.battery_threshold.start}
             STOP=${toString kabyLakeR.battery_threshold.stop}
           fi
+
           CUR_START="$(cat "$BAT/charge_control_start_threshold" 2>/dev/null || echo 0)"
           CUR_STOP="$(cat "$BAT/charge_control_end_threshold" 2>/dev/null || echo 100)"
-          if [[ "$CUR_START" != "$START" ]]; then
-            echo "$START" > "$BAT/charge_control_start_threshold" || true
-            echo "Updated start threshold: $START%"
-          fi
-          if [[ "$CUR_STOP" != "$STOP" ]]; then
-            echo "$STOP" > "$BAT/charge_control_end_threshold" || true
-            echo "Updated stop  threshold: $STOP%"
-          fi
+
+          [[ "$CUR_START" = "$START" ]] || { echo "$START" > "$BAT/charge_control_start_threshold" || true; }
+          [[ "$CUR_STOP"  = "$STOP"  ]] || { echo "$STOP"  > "$BAT/charge_control_end_threshold"  || true; }
+
           echo "Battery thresholds → Start=$START% Stop=$STOP%"
         '';
       };
@@ -360,29 +377,25 @@ in
   };
 
   # =============================================================================
-  # Udev kuralları
+  # UDEV KURALLARI – AC değişiminde RAPL/governor’i uygula
   # =============================================================================
   services.udev.extraRules = lib.mkAfter ''
-    # LED parlaklığı izinleri
     SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
     SUBSYSTEM=="leds", KERNEL=="platform::mute",    ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
 
-    # USB autosuspend – bazı cihazları hariç tut
     ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", DRIVER=="usbhid", ATTR{power/control}="on"
 
-    # AC değişiminde RAPL limitlerini yeniden uygula
+    # AC adaptör online/offline → cpu-power-limit koşsun
     SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", RUN+="${systemctl} start cpu-power-limit.service"
   '';
 
   # =============================================================================
-  # Ortam / yardımcı araçlar
+  # ORTAM & ARAÇLAR
   # =============================================================================
   environment = {
-    systemPackages = with pkgs; [
-      lm_sensors
-    ];
+    systemPackages = with pkgs; [ lm_sensors powertop intel-gpu-tools ];
 
     shellAliases = {
       battery-status = "upower -i /org/freedesktop/UPower/devices/battery_BAT0";
@@ -393,11 +406,16 @@ in
         echo "Start: $(cat /sys/class/power_supply/BAT0/charge_control_start_threshold 2>/dev/null || echo 'N/A')%" && \
         echo "Stop:  $(cat /sys/class/power_supply/BAT0/charge_control_end_threshold   2>/dev/null || echo 'N/A')%"
       '';
-      power-report = "sudo powertop --html=power-report.html --time=10 && echo 'Report saved to power-report.html'";
+
+      power-report = "sudo powertop --html=power-report-$(date +%Y%m%d-%H%M).html --time=10 && echo 'Power report saved'";
       power-usage  = "sudo powertop";
+
       thermal-status = ''
         echo "=== Thermal Status ==="
-        sensors 2>/dev/null || echo "lm-sensors not installed"
+        sensors 2>/dev/null || echo "lm-sensors not available"
+        echo
+        echo "=== ACPI Thermal ==="
+        cat /proc/acpi/ibm/thermal 2>/dev/null || echo "ThinkPad ACPI thermal not available"
         echo
         echo "=== Thermal Zones ==="
         for z in /sys/class/thermal/thermal_zone*/temp; do
@@ -405,13 +423,24 @@ in
           t=$(cat "$z"); printf "%s: %s°C\n" "$(basename "$(dirname "$z")")" "$((t/1000))"
         done
       '';
-      cpu-freq = ''echo "=== CPU Frequency ==="; grep "cpu MHz" /proc/cpuinfo | awk '{print "Core " NR-1 ": " $4 " MHz"}' '';
+
+      cpu-freq = ''
+        echo "=== CPU Frequency ==="
+        grep "cpu MHz" /proc/cpuinfo | awk '{print "Core " NR-1 ": " $4 " MHz"}'
+        echo
+        echo "=== Governor ==="
+        cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || true
+      '';
+
       cpu-type = "${detectCpuScript}";
 
-      # thinkfan yardımcıları
-      thinkfan-status = "systemctl status thinkfan --no-pager";
-      thinkfan-restart = "sudo systemctl restart thinkfan";
-      thinkfan-log = "journalctl -u thinkfan -b --no-pager";
+      perf-summary = ''
+        echo "=== System Performance ==="
+        echo "CPU: $(${detectCpuScript})"
+        echo "Governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)"
+        echo "Memory: $(free -h | awk "/^Mem:/ {print \$3 \" / \" \$2}")"
+        echo "Load: $(uptime | awk -F'load average:' '{print $2}')"
+      '';
     };
 
     variables = {
@@ -419,12 +448,12 @@ in
       LIBVA_DRIVER_NAME = "iHD";
     };
 
-    # fancontrol ile ilgili /etc kaydı tutmuyoruz
+    # fancontrol kullanılmıyor
     etc.fancontrol.enable = false;
   };
 
   # =============================================================================
-  # Zram
+  # ZRAM
   # =============================================================================
   zramSwap = {
     enable = true;
