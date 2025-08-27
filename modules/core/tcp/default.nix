@@ -190,7 +190,7 @@ in
 
         TOTAL_MB=$(${detectMemoryScript})
         TOTAL_GB=$((TOTAL_MB / 1024))
-        echo "System RAM: ${TOTAL_GB}GB"
+        echo "System RAM: $TOTAL_GB GB"
 
         if [[ "$TOTAL_MB" -ge 32768 ]]; then
           echo "Applying HIGH memory TCP profile (32GB+)..."
