@@ -376,6 +376,8 @@ in
       "ipv6.disable=0"
       "net.ifnames=1"
 
+      # Suppress iwlwifi firmware debug messages that appear as red warnings during boot
+      # This doesn't affect WiFi functionality, only reduces console noise
       "iwlwifi.debug=0x00000000"        # WiFi hata mesajlarını gizle
 
     ];
@@ -597,9 +599,9 @@ in
     # Dynamic auto-cpufreq configuration
     update-cpufreq-config = {
       description = "Configure auto-cpufreq based on CPU type";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
-      before = [ "auto-cpufreq.service" ];
+      wantedBy = [ "default.target" ];
+      before = [ "graphical-session.target" ];
+      after = [ "local-fs.target" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
