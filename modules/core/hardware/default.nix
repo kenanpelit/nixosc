@@ -9,7 +9,7 @@
 # - ThinkPad X1 Carbon 6th (Intel Core i7-8650U, 16GB RAM)
 # - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, 64GB RAM)
 #
-# Versiyon: 3.1.0
+# Versiyon: 3.2.0
 # Yazar:    Kenan Pelit
 # Tarih:    2025-08-27
 # ==============================================================================
@@ -40,7 +40,7 @@ let
 
   # ----------------------------------------------------------------------------
   # CPU profilleri (PL1/PL2 Watt, ısıl eşikler, pil eşikleri, vb.)
-  # Not: PL değerleri microwatt olarak sysfs’e yazılacağı için servis içinde
+  # Not: PL değerleri microwatt olarak sysfs'e yazılacağı için servis içinde
   # * 1_000_000 yapılıyor. Aşağıdaki değerler Watt cinsinden.
   # ----------------------------------------------------------------------------
   meteorLake = {
@@ -75,7 +75,7 @@ let
     undervolt = { core = -80; gpu = -60; cache = -80; uncore = -40; analogio = -25; };
   };
 
-  # udev ile AC değişiminde servisi tetiklemek için küçük yardımcı binary’ler
+  # udev ile AC değişiminde servisi tetiklemek için küçük yardımcı binary'ler
   systemctl = "${pkgs.systemd}/bin/systemctl";
 in
 {
@@ -116,7 +116,7 @@ in
     # Bluetooth – pil dostu varsayılanlar (yorumla uyumlu)
     bluetooth = {
       enable = true;
-      powerOnBoot = true;           # Boot’ta aç
+      powerOnBoot = true;           # Boot'ta aç
       settings.General = {
         FastConnectable = false;    # Gerekmedikçe kapalı tut
         ReconnectAttempts = 7;
@@ -155,12 +155,31 @@ in
     # Isıl yönetim
     thermald.enable = true;
 
-    # thinkfan/power-profiles-daemon/TLP devre dışı (çakışmayı önlemek için)
+    # fancontrol - thinkfan yerine daha modern ve esnek çözüm
+    # Hem CPU hem GPU sıcaklığını dikkate alır, daha iyi termal kontrol sağlar
+    fancontrol = {
+      enable = true;
+      config = ''
+        INTERVAL=10
+        DEVPATH=hwmon0=devices/platform/coretemp.0 hwmon1=devices/platform/thinkpad_hwmon
+        DEVNAME=hwmon0=coretemp hwmon1=thinkpad
+        FCTEMPS=hwmon1/pwm1=hwmon0/temp1_input
+        FCFANS=hwmon1/pwm1=hwmon1/fan1_input
+        MINTEMP=hwmon1/pwm1=45
+        MAXTEMP=hwmon1/pwm1=80
+        MINSTART=hwmon1/pwm1=120
+        MINSTOP=hwmon1/pwm1=80
+        MINPWM=hwmon1/pwm1=70
+        MAXPWM=hwmon1/pwm1=255
+      '';
+    };
+
+    # Eski çözümleri devre dışı bırak (çakışmayı önlemek için)
     thinkfan.enable = false;
     power-profiles-daemon.enable = false;
     tlp.enable = false;
 
-    # UPower – kritik eşikler (polling’i açık bırakmayalım → gereksiz uyanma olmasın)
+    # UPower – kritik eşikler (polling'i açık bırakmayalım → gereksiz uyanma olmasın)
     upower = {
       enable = true;
       criticalPowerAction = "Hibernate";
@@ -240,7 +259,7 @@ in
       # IOMMU
       "intel_iommu=on" "iommu=pt"
 
-      # P-state’i schedutil ile uyumlu çalıştır
+      # P-state'i schedutil ile uyumlu çalıştır
       "intel_pstate=passive"
 
       # NVMe güç/latency dengesi
@@ -342,7 +361,7 @@ in
       };
     };
 
-    # ThinkPad LED durumları – sadece ilgili LED’lere sınırlı yetki
+    # ThinkPad LED durumları – sadece ilgili LED'lere sınırlı yetki
     fix-led-state = {
       description = "Configure ThinkPad LED states";
       wantedBy = [ "multi-user.target" ];
@@ -419,7 +438,7 @@ in
   # Udev kuralları
   # =============================================================================
   services.udev.extraRules = lib.mkAfter ''
-    # LED parlaklığı için geniş 666 yerine sadece ilgili LED’lere 664:
+    # LED parlaklığı için geniş 666 yerine sadece ilgili LED'lere 664:
     SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
     SUBSYSTEM=="leds", KERNEL=="platform::mute",    ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
 
@@ -493,3 +512,4 @@ in
     memoryPercent = lib.mkDefault 30;  # Host bazlı override etmeye devam
   };
 }
+
