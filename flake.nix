@@ -274,9 +274,9 @@
         };
         overlays = [
           inputs.nur.overlay
-          (final: prev: {
-            gcc12Stdenv = prev.gcc13Stdenv;  # gcc12 isteyenlere gcc13 ver
-          })
+        #  (final: prev: {
+        #    gcc12Stdenv = prev.gcc13Stdenv;  # gcc12 isteyenlere gcc13 ver
+        #  })
         ]; 
       };
 
