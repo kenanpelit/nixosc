@@ -270,6 +270,7 @@
             # Allow specific insecure packages with known issues
             "ventoy-1.1.05"      # USB multi-boot tool with binary blobs
             "libsoup-2.74.3"     # EOL library with CVEs, required by legacy GTK apps
+            "qtwebengine-5.15.19"
           ];
         };
         overlays = [
@@ -345,6 +346,7 @@
               nixpkgs.config.permittedInsecurePackages = [ 
                 "ventoy-1.1.05"
                 "libsoup-2.74.3"        # EOL library with CVEs, required by legacy GTK apps
+                "qtwebengine-5.15.19"
               ];
             }
           ] ++ modules;  # Add machine-specific modules
