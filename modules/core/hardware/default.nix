@@ -322,7 +322,7 @@ in
             echo $(( PL2_W * 1000000 )) > "$RAPL/constraint_1_power_limit_uw"
             echo "$TW1_US" > "$RAPL/constraint_0_time_window_us"
             echo "$TW2_US" > "$RAPL/constraint_1_time_window_us"
-            echo "Applied: PL1=${PL1_W}W PL2=${PL2_W}W TW1=${TW1_US}us TW2=${TW2_US}us"
+            echo "Applied: PL1=$PL1_W W PL2=$PL2_W W TW1=$TW1_US us TW2=$TW2_US us"
           }
 
           if [[ "$CPU_TYPE" == "meteorlake" ]]; then
@@ -402,14 +402,14 @@ in
 
           if [[ "$CUR_START" != "$START" ]]; then
             echo "$START" > "$BAT/charge_control_start_threshold" || true
-            echo "Updated start threshold: ${START}%"
+            echo "Updated start threshold: $START%"
           fi
           if [[ "$CUR_STOP" != "$STOP" ]]; then
             echo "$STOP" > "$BAT/charge_control_end_threshold" || true
-            echo "Updated stop threshold: ${STOP}%"
+            echo "Updated stop  threshold: $STOP%"
           fi
 
-          echo "Battery thresholds → Start=${START}% Stop=${STOP}%"
+          echo "Battery thresholds → Start=$START% Stop=$STOP%"
         '';
       };
     };
