@@ -174,47 +174,6 @@ in
   # ==============================================================================
   
   services = {
-    # CPU frequency and voltage management
-    throttled = {
-      enable = true;
-      extraConfig = ''
-        [GENERAL]
-        Enabled: True
-        Sysfs_Power_Path: /sys/class/power_supply/AC*/online
-        Autoreload: True
-        
-        [BATTERY]
-        Update_Rate_s: 30
-        PL1_Tdp_W: ${toString kabyLakeRConfig.battery.pl1}
-        PL1_Duration_s: 28
-        PL2_Tdp_W: ${toString kabyLakeRConfig.battery.pl2}
-        PL2_Duration_S: 0.002
-        Trip_Temp_C: ${toString kabyLakeRConfig.thermal.trip}
-        
-        [AC]
-        Update_Rate_s: 5
-        PL1_Tdp_W: ${toString kabyLakeRConfig.ac.pl1}
-        PL1_Duration_s: 28
-        PL2_Tdp_W: ${toString kabyLakeRConfig.ac.pl2}
-        PL2_Duration_S: 0.002
-        Trip_Temp_C: ${toString kabyLakeRConfig.thermal.tripAc}
-        
-        [UNDERVOLT.BATTERY]
-        CORE: ${toString kabyLakeRConfig.undervolt.core}
-        GPU: ${toString kabyLakeRConfig.undervolt.gpu}
-        CACHE: ${toString kabyLakeRConfig.undervolt.cache}
-        UNCORE: ${toString kabyLakeRConfig.undervolt.uncore}
-        ANALOGIO: ${toString kabyLakeRConfig.undervolt.analogio}
-        
-        [UNDERVOLT.AC]
-        CORE: ${toString kabyLakeRConfig.undervolt.core}
-        GPU: ${toString kabyLakeRConfig.undervolt.gpu}
-        CACHE: ${toString kabyLakeRConfig.undervolt.cache}
-        UNCORE: ${toString kabyLakeRConfig.undervolt.uncore}
-        ANALOGIO: ${toString kabyLakeRConfig.undervolt.analogio}
-      '';
-    };
-
     # Automatic CPU frequency scaling
     auto-cpufreq = {
       enable = true;
@@ -342,8 +301,6 @@ in
       "iommu=pt"
       
       # CPU power management
-      "processor.max_cstate=4"           # Allow deeper C-states (was 3)
-      "intel_idle.max_cstate=4"          # Intel idle states (was 3)
       "intel_pstate=passive"             # Passive P-state for schedutil governor
       
       # Thermal management
@@ -505,7 +462,7 @@ in
     
     # Battery charge threshold management
     battery-charge-threshold = {
-      description = "Configure battery charge thresholds";
+      description = "Configure battery charge thresholds if needed";
       wantedBy = [ "multi-user.target" ];
       after = [ "multi-user.target" ];
       serviceConfig = {
@@ -515,138 +472,40 @@ in
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
           
-          # Detect CPU type
-          CPU_TYPE=$(${detectCpuScript})
-          echo "Setting battery thresholds for: $CPU_TYPE"
-          
+          # Battery threshold configuration path
           BAT_PATH="/sys/class/power_supply/BAT0"
           
-          # Check battery path
+          # Check if battery exists
           [ ! -d "$BAT_PATH" ] && echo "Battery not found" && exit 0
           
-          # Set charge start threshold
-          if [ -f "$BAT_PATH/charge_control_start_threshold" ]; then
-            if [ "$CPU_TYPE" = "meteolake" ]; then
-              echo ${toString meteorLakeConfig.battery_threshold.start} > "$BAT_PATH/charge_control_start_threshold"
-              echo "Start threshold: ${toString meteorLakeConfig.battery_threshold.start}%"
-            else
-              echo ${toString kabyLakeRConfig.battery_threshold.start} > "$BAT_PATH/charge_control_start_threshold"
-              echo "Start threshold: ${toString kabyLakeRConfig.battery_threshold.start}%"
-            fi
-          fi
-          
-          # Set charge stop threshold
-          if [ -f "$BAT_PATH/charge_control_end_threshold" ]; then
-            echo 80 > "$BAT_PATH/charge_control_end_threshold"
-            echo "Stop threshold: 80%"
-          fi
-        '';
-      };
-    };
-    
-    # Thermal monitoring service
-    thermal-monitor = {
-      description = "Monitor system thermal status";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = pkgs.writeShellScript "thermal-monitor" ''
-          #!${pkgs.bash}/bin/bash
-          set -euo pipefail
-          
-          # Detect CPU type
+          # Detect CPU type for appropriate thresholds
           CPU_TYPE=$(${detectCpuScript})
-          echo "Thermal monitor started for: $CPU_TYPE"
           
           # Set thresholds based on CPU type
           if [ "$CPU_TYPE" = "meteolake" ]; then
-            WARNING=${toString meteorLakeConfig.thermal.warning}
-            CRITICAL=${toString meteorLakeConfig.thermal.critical}
+            DESIRED_START=${toString meteorLakeConfig.battery_threshold.start}
+            DESIRED_STOP=${toString meteorLakeConfig.battery_threshold.stop}
           else
-            WARNING=${toString kabyLakeRConfig.thermal.warning}
-            CRITICAL=${toString kabyLakeRConfig.thermal.critical}
+            DESIRED_START=${toString kabyLakeRConfig.battery_threshold.start}
+            DESIRED_STOP=${toString kabyLakeRConfig.battery_threshold.stop}
           fi
           
-          echo "Thresholds - Warning: $${WARNING}°C, Critical: $${CRITICAL}°C"
+          # Read current thresholds
+          CURRENT_START=$(cat "$BAT_PATH/charge_control_start_threshold" 2>/dev/null || echo "0")
+          CURRENT_STOP=$(cat "$BAT_PATH/charge_control_end_threshold" 2>/dev/null || echo "100")
           
-          # Monitor loop
-          while true; do
-            # Get highest temperature
-            TEMP=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -rn | head -1)
-            
-            if [ -n "$TEMP" ]; then
-              TEMP_C=$((TEMP / 1000))
-              
-              # Check temperature levels
-              if [ "$TEMP_C" -gt "$CRITICAL" ]; then
-                echo "CRITICAL: CPU temperature: $${TEMP_C}°C"
-                logger -p user.crit -t thermal-monitor "Critical temperature: $${TEMP_C}°C"
-              elif [ "$TEMP_C" -gt "$WARNING" ]; then
-                echo "WARNING: CPU temperature: $${TEMP_C}°C"
-                logger -p user.warning -t thermal-monitor "High temperature: $${TEMP_C}°C"
-              fi
-            fi
-            
-            sleep 30
-          done
-        '';
-        Restart = "always";
-        RestartSec = 10;
-      };
-    };
-    
-    # Dynamic auto-cpufreq configuration
-    update-cpufreq-config = {
-      description = "Configure auto-cpufreq based on CPU type";
-      wantedBy = [ "default.target" ];
-      before = [ "graphical-session.target" ];
-      after = [ "local-fs.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "update-cpufreq" ''
-          #!${pkgs.bash}/bin/bash
-          set -euo pipefail
-          
-          # Detect CPU type
-          CPU_TYPE=$(${detectCpuScript})
-          echo "Configuring auto-cpufreq for: $CPU_TYPE"
-          
-          CONFIG_FILE="/etc/auto-cpufreq.conf"
-          
-          # Generate CPU-specific configuration
-          if [ "$CPU_TYPE" = "meteolake" ]; then
-            cat > "$CONFIG_FILE" <<EOF
-          [battery]
-          governor = schedutil
-          scaling_min_freq = ${toString meteorLakeConfig.battery.minFreq}
-          scaling_max_freq = ${toString meteorLakeConfig.battery.maxFreq}
-          turbo = auto
-          
-          [charger]
-          governor = schedutil
-          scaling_min_freq = ${toString meteorLakeConfig.ac.minFreq}
-          scaling_max_freq = ${toString meteorLakeConfig.ac.maxFreq}
-          turbo = auto
-          EOF
-          else
-            cat > "$CONFIG_FILE" <<EOF
-          [battery]
-          governor = schedutil
-          scaling_min_freq = ${toString kabyLakeRConfig.battery.minFreq}
-          scaling_max_freq = ${toString kabyLakeRConfig.battery.maxFreq}
-          turbo = auto
-          
-          [charger]
-          governor = schedutil
-          scaling_min_freq = ${toString kabyLakeRConfig.ac.minFreq}
-          scaling_max_freq = ${toString kabyLakeRConfig.ac.maxFreq}
-          turbo = auto
-          EOF
+          # Only update if different from desired values
+          if [ "$CURRENT_START" != "$DESIRED_START" ]; then
+            echo "$DESIRED_START" > "$BAT_PATH/charge_control_start_threshold"
+            echo "Battery start threshold updated: $${DESIRED_START}%"
           fi
           
-          echo "Configuration updated"
+          if [ "$CURRENT_STOP" != "$DESIRED_STOP" ]; then
+            echo "$DESIRED_STOP" > "$BAT_PATH/charge_control_end_threshold"
+            echo "Battery stop threshold updated: $${DESIRED_STOP}%"
+          fi
+          
+          echo "Battery thresholds for $CPU_TYPE: Start=$${DESIRED_START}%, Stop=$${DESIRED_STOP}%"
         '';
       };
     };
