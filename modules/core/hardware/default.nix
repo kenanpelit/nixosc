@@ -162,27 +162,27 @@ in
     tlp.enable = false;
     
     # ----------------------------------------------------------------------------
-    # THINKFAN - Akıllı Fan Kontrolü
+    # THINKFAN - Akıllı Fan Kontrolü (Ultra Sessiz Profil)
     # Histerezis mantığı: Her seviye örtüşür, fan titremesini önler
-    # Örnek: 52°C'de Level 2'ye çıkar, 48°C'ye düşene kadar Level 2'de kalır
+    # Örnek: 57°C'de Level 1'e çıkar, 50°C'ye düşene kadar Level 1'de kalır
     # ----------------------------------------------------------------------------
     thinkfan = {
       enable = true;
       smartSupport = true;  # NVMe/SATA sıcaklık sensörlerini kullan
       
-      # Fan seviyeleri - Histerezis için örtüşen sıcaklık aralıkları
+      # Fan seviyeleri - Maksimum sessizlik için optimize edilmiş
       # [fan_level  min_temp  max_temp]
       # min_temp: Bu seviyeye GERİ DÖNÜŞ sıcaklığı (aşağı inerken)
       # max_temp: Bir sonraki seviyeye ÇIKIŞ sıcaklığı (yukarı çıkarken)
       levels = [
-        [0  0   45]    # Level 0: Tamamen sessiz, 45°C'ye kadar
-        [1  42  52]    # Level 1: 52°C'de Level 2'ye çık, 42°C'de Level 0'a dön (3°C histerezis)
-        [2  48  58]    # Level 2: 58°C'de Level 3'e çık, 48°C'de Level 1'e dön (4°C histerezis)
-        [3  54  64]    # Level 3: 64°C'de Level 4'e çık, 54°C'de Level 2'ye dön (4°C histerezis)
-        [4  60  70]    # Level 4: 70°C'de Level 5'e çık, 60°C'de Level 3'e dön (4°C histerezis)
-        [5  66  76]    # Level 5: 76°C'de Level 6'ya çık, 66°C'de Level 4'e dön (4°C histerezis)
-        [6  72  82]    # Level 6: 82°C'de Level 7'ye çık, 72°C'de Level 5'e dön (4°C histerezis)
-        [7  78  32767] # Level 7: Maksimum hız, 78°C'de Level 6'ya dön
+        [0  0   52]    # Level 0: Tamamen sessiz, 52°C'ye kadar (7°C artırıldı)
+        [1  48  59]    # Level 1: 59°C'de Level 2'ye çık, 48°C'de Level 0'a dön (4°C histerezis)
+        [2  55  65]    # Level 2: 65°C'de Level 3'e çık, 55°C'de Level 1'e dön (4°C histerezis)
+        [3  61  71]    # Level 3: 71°C'de Level 4'e çık, 61°C'de Level 2'ye dön (4°C histerezis)
+        [4  67  77]    # Level 4: 77°C'de Level 5'e çık, 67°C'de Level 3'e dön (4°C histerezis)
+        [5  73  83]    # Level 5: 83°C'de Level 6'ya çık, 73°C'de Level 4'e dön (4°C histerezis)
+        [6  79  89]    # Level 6: 89°C'de Level 7'ye çık, 79°C'de Level 5'e dön (4°C histerezis)
+        [7  85  32767] # Level 7: Maksimum hız, sadece 85°C üstünde
       ];
       
       # Sensör düzeltmeleri (opsiyonel - gerekirse eklenebilir)
@@ -190,7 +190,7 @@ in
       #   { type = "hwmon"; query = "/sys/class/hwmon"; indices = [1]; correction = [-5]; }
       # ];
     };
-    
+   
     # ----------------------------------------------------------------------------
     # UPOWER - Pil Yönetimi
     # Kritik seviyeler ve eylemler
