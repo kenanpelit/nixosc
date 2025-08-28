@@ -295,7 +295,8 @@ in
       "intel_iommu=on" "iommu=pt"
 
       # intel_pstate = active → governor/EPP çalışır
-      "intel_pstate=active"
+      #"intel_pstate=active"
+      "intel_pstate=passive"
 
       # NVMe güç optimizasyonu
       "nvme_core.default_ps_max_latency_us=5500"  # APST için maksimum gecikme
