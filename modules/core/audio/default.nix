@@ -34,9 +34,11 @@
     
     pulse.enable = true;
     wireplumber.enable = true;
-    
-    # Sadece bu küçük ekleme - daha iyi ses kalitesi için
-    config.pipewire = {
+  };
+  
+  # PipeWire ses kalitesi optimizasyonu
+  services.pipewire.extraConfig.pipewire = {
+    "92-low-latency" = {
       "context.properties" = {
         "default.clock.rate" = 48000;
         "default.clock.quantum" = 256;
