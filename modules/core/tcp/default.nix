@@ -2,17 +2,14 @@
 # ==============================================================================
 # Optimized TCP/IP Stack Configuration for NixOS
 # ==============================================================================
-# Streamlined TCP/IP configuration with dynamic memory detection and
-# adaptive tuning for laptop/desktop systems.
+# Goal:
+# - Keep defaults modern & safe (BBR + fq, sane buffers, ECN with fallback)
+# - Scale up on RAM-rich systems without hurting latency
+# - Avoid fragile/legacy toggles; prefer kernel defaults where they’re smart
 #
-# Key Features:
-# - BBR congestion control for optimal throughput
-# - Dynamic buffer sizing based on available RAM
-# - Security hardening without breaking functionality
-# - Minimal, effective configuration
-#
-# Versiyon: 4.1.0
-# Tarih:    2025-08-27
+# Version: 4.2.0
+# Date:    2025-08-28
+# Author:  Kenan Pelit
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
@@ -29,7 +26,7 @@ let
     echo $((TOTAL_KB / 1024))  # MB
   '';
 
-  # 32GB+ için yüksek profil
+  # High-RAM profile (>=32GB): generous caps, still reasonable for a client
   high = {
     rmem               = "4096 262144 16777216";
     wmem               = "4096 262144 16777216";
@@ -46,7 +43,7 @@ let
     conntrack_max      = 262144;
   };
 
-  # 16GB ve altı için standart profil
+  # Standard profile (<32GB): moderate caps (safe on laptops)
   std = {
     rmem               = "4096 131072 8388608";
     wmem               = "4096 131072 8388608";
@@ -65,121 +62,122 @@ let
 in
 {
   # ============================================================================
-  # Çekirdek sysctl – modern ve etkili varsayılanlar
+  # Kernel sysctl — modern, minimal, and effective defaults
   # ============================================================================
   boot.kernel.sysctl = {
-    # Çekirdek kuyruğu & BBR
-    "net.core.default_qdisc" = "fq";
+    # Queueing & Congestion Control
+    "net.core.default_qdisc" = "fq";   # pacing-friendly; good with BBR on Wi-Fi
     "net.ipv4.tcp_congestion_control" = "bbr";
 
-    # Maks. socket buffer’ları (std profilden gelen mkDefault)
+    # Increase ephemeral port range for busy client workloads (browsers, VPN)
+    "net.ipv4.ip_local_port_range" = "1024 65535";
+
+    # Socket buffer caps (mkDefault; high profile may override at boot)
     "net.core.rmem_max"     = lib.mkDefault std.rmem_max;
     "net.core.rmem_default" = lib.mkDefault std.rmem_default;
     "net.core.wmem_max"     = lib.mkDefault std.wmem_max;
     "net.core.wmem_default" = lib.mkDefault std.wmem_default;
 
-    # Aygıt backlog
+    # Device backlog / scheduler budgets
     "net.core.netdev_max_backlog" = lib.mkDefault std.netdev_max_backlog;
     "net.core.netdev_budget"      = 300;
 
-    # listen() backlog
+    # listen() backlog (server-ish apps / local proxies benefit)
     "net.core.somaxconn" = lib.mkDefault std.somaxconn;
 
-    # eBPF JIT (sertleştirme açık)
+    # eBPF JIT hardening
     "net.core.bpf_jit_enable" = 1;
-    "net.core.bpf_jit_harden" = 1;
+    "net.core.bpf_jit_harden" = 1;  # 1 is hardened, 2 is extra cost; 1 is good
 
-    # TCP Fast Open (client+server)
+    # TCP Fast Open (client + server)
     "net.ipv4.tcp_fastopen" = 3;
 
-    # TCP/UDP bufferları & memory basıncı
+    # TCP/UDP windows & memory pressure
     "net.ipv4.tcp_rmem" = lib.mkDefault std.rmem;
     "net.ipv4.tcp_wmem" = lib.mkDefault std.wmem;
     "net.ipv4.tcp_mem"  = lib.mkDefault std.tcp_mem;
     "net.ipv4.udp_mem"  = lib.mkDefault std.udp_mem;
 
-    # Seçmeli ACK ayarları (fack kaldırıldı; dsack yeterli)
+    # Selective ACKs (modern defaults; fack is gone; dsack is enough)
     "net.ipv4.tcp_dsack" = 1;
 
-    # TCP performans
+    # Sensible latency/throughput defaults:
     "net.ipv4.tcp_slow_start_after_idle" = 0;
     "net.ipv4.tcp_moderate_rcvbuf"       = 1;
-    # "net.ipv4.tcp_notsent_lowat" = 16384;  # Ölçerek fayda görürsen aç
 
-    # Erken yeniden iletim
-    "net.ipv4.tcp_early_retrans"         = 3;
-    "net.ipv4.tcp_thin_linear_timeouts"  = 1;
+    # Not-sent low water mark: cap large app buffers (helps HTTP/2, browsers)
+    # Safe, conservative default. Comment out if you prefer kernel default.
+    "net.ipv4.tcp_notsent_lowat" = 16384;
 
-    # Path MTU Discovery & MSS tabanı (PMTU açık; base MSS ayarını minimal tut)
+    # Let kernel handle early retrans & thin-stream heuristics (defaults are best)
+    # (Removed explicit tcp_early_retrans / tcp_thin_linear_timeouts)
+
+    # Path MTU: probe blackholes, keep conservative base MSS optional
     "net.ipv4.tcp_mtu_probing" = 1;
-    # "net.ipv4.tcp_base_mss"    = 1200;     # İstersen etkinleştir
+    # "net.ipv4.tcp_base_mss"    = 1200;  # only if you consistently hit tunnels
 
-    # Bağlantı yönetimi
+    # Connection management
     "net.ipv4.tcp_keepalive_time"   = 300;
     "net.ipv4.tcp_keepalive_intvl"  = 30;
     "net.ipv4.tcp_keepalive_probes" = 3;
     "net.ipv4.tcp_fin_timeout"      = 30;
     "net.ipv4.tcp_max_tw_buckets"   = lib.mkDefault std.tcp_max_tw_buckets;
 
-    # Retransmission
+    # Retransmission knobs (keep near defaults)
     "net.ipv4.tcp_retries2"      = 8;
     "net.ipv4.tcp_syn_retries"   = 3;
     "net.ipv4.tcp_synack_retries"= 3;
 
-    # SYN Cookies & backlog
-    "net.ipv4.tcp_syncookies"     = 1;
-    "net.ipv4.tcp_max_syn_backlog"= lib.mkDefault std.tcp_max_syn_backlog;
+    # SYN & backlog protection
+    "net.ipv4.tcp_syncookies"      = 1;
+    "net.ipv4.tcp_max_syn_backlog" = lib.mkDefault std.tcp_max_syn_backlog;
 
-    # Paket yeniden sıralama toleransı
+    # Reordering tolerance (keep conservative)
     "net.ipv4.tcp_reordering" = 3;
 
-    # ECN (geri düşüş açık)
-    "net.ipv4.tcp_ecn"           = 1;
-    "net.ipv4.tcp_ecn_fallback"  = 1;
+    # ECN with fallback (best of both worlds)
+    "net.ipv4.tcp_ecn"          = 1;
+    "net.ipv4.tcp_ecn_fallback" = 1;
 
-    # FRTO ve RFC1337 koruması
-    "net.ipv4.tcp_frto"   = 2;
-    "net.ipv4.tcp_rfc1337"= 1;
+    # FRTO & RFC1337 fix
+    "net.ipv4.tcp_frto"    = 2;
+    "net.ipv4.tcp_rfc1337" = 1;
 
-    # Güvenlik – rp_filter (VPN/tethering uyumlu loose mod)
+    # rp_filter loose (VPN/tether friendly)
     "net.ipv4.conf.all.rp_filter"     = 2;
     "net.ipv4.conf.default.rp_filter" = 2;
 
-    # ICMP redirect’ler kapalı
+    # ICMP redirects/source routes off (hardening)
     "net.ipv4.conf.all.accept_redirects"     = 0;
     "net.ipv4.conf.default.accept_redirects" = 0;
     "net.ipv4.conf.all.secure_redirects"     = 0;
     "net.ipv4.conf.default.secure_redirects" = 0;
     "net.ipv4.conf.all.send_redirects"       = 0;
-
-    # Source routing kapalı
     "net.ipv4.conf.all.accept_source_route"     = 0;
     "net.ipv4.conf.default.accept_source_route" = 0;
+    "net.ipv4.icmp_echo_ignore_broadcasts"      = 1;
+    "net.ipv4.icmp_ignore_bogus_error_responses"= 1;
 
-    # ICMP güvenlikleri
-    "net.ipv4.icmp_echo_ignore_broadcasts"   = 1;
-    "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
-
-    # IPv6 redirect/source-route kapalı
+    # IPv6 hardening
     "net.ipv6.conf.all.accept_redirects"     = 0;
     "net.ipv6.conf.default.accept_redirects" = 0;
     "net.ipv6.conf.all.accept_source_route"  = 0;
 
-    # Conntrack
+    # Conntrack (only matters if nf_conntrack loaded / firewall active)
     "net.netfilter.nf_conntrack_max"                         = lib.mkDefault std.conntrack_max;
-    "net.netfilter.nf_conntrack_tcp_timeout_established"     = 432000;  # 5 gün
+    "net.netfilter.nf_conntrack_tcp_timeout_established"     = 432000;  # 5 days
     "net.netfilter.nf_conntrack_tcp_timeout_time_wait"       = 30;
     "net.netfilter.nf_conntrack_tcp_timeout_fin_wait"        = 30;
     "net.netfilter.nf_conntrack_generic_timeout"             = 600;
   };
 
   # ============================================================================
-  # RAM’e göre dinamik tuning – yüksek profil gerekiyorsa üzerine yaz
+  # Dynamic tuning at boot — if RAM >= 32GB, lift ceilings
   # ============================================================================
   systemd.services.dynamic-tcp-tuning = {
     description = "Apply dynamic TCP tuning based on total system memory";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-pre.target" ];
+    wantedBy = [ "network-online.target" ];
+    after = [ "network-pre.target" "network-online.target" ];
     before = [ "network.target" ];
     serviceConfig = {
       Type = "oneshot";
@@ -218,7 +216,7 @@ in
     };
   };
 
-  # İzleme/diagnostic aracı (ek bilgi satırları eklendi)
+  # Small diagnostic helper
   environment.systemPackages = with pkgs; [
     (writeScriptBin "tcp-status" ''
       #!${pkgs.bash}/bin/bash
@@ -233,7 +231,9 @@ in
       echo "  Congestion Control: $(${sysctl} -n net.ipv4.tcp_congestion_control)"
       echo "  Queue Discipline:   $(${sysctl} -n net.core.default_qdisc)"
       echo "  TCP Fast Open:      $(${sysctl} -n net.ipv4.tcp_fastopen)"
+      echo "  ECN:                $(${sysctl} -n net.ipv4.tcp_ecn) (fallback: $(${sysctl} -n net.ipv4.tcp_ecn_fallback))"
       echo "  MTU Probing:        $(${sysctl} -n net.ipv4.tcp_mtu_probing)"
+      echo "  notsent_lowat:      $(${sysctl} -n net.ipv4.tcp_notsent_lowat 2>/dev/null || echo N/A)"
       echo
       echo "Buffers:"
       echo "  rmem_max: $(${sysctl} -n net.core.rmem_max)"
@@ -246,8 +246,8 @@ in
       echo "  somaxconn:          $(${sysctl} -n net.core.somaxconn)"
       echo "  nf_conntrack_max:   $(${sysctl} -n net.netfilter.nf_conntrack_max 2>/dev/null || echo N/A)"
       echo
-      echo "Interfaces (MTU):"
-      ${pkgs.iproute2}/bin/ip -br link | ${pkgs.gawk}/bin/awk '{print "  " $1 ": " $3}'
+      echo "Interfaces (STATE/MTU):"
+      ${pkgs.iproute2}/bin/ip -br link | ${pkgs.gawk}/bin/awk '{printf("  %-16s  %s\n",$1,$3)}'
       echo
       echo "Connections:"
       echo -n "  TCP total:     "; ${pkgs.iproute2}/bin/ss -s | ${pkgs.gnugrep}/bin/grep -oP 'TCP:\s+\K\d+'
@@ -255,4 +255,3 @@ in
     '')
   ];
 }
-
