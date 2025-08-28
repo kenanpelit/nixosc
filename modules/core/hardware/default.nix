@@ -185,14 +185,14 @@ in
       # min_temp: Bu seviyeye GERİ DÖNÜŞ sıcaklığı (aşağı inerken)
       # max_temp: Bir sonraki seviyeye ÇIKIŞ sıcaklığı (yukarı çıkarken)
       levels = [
-        [0  0   52]    # Level 0: Tamamen sessiz, 52°C'ye kadar
-        [1  48  59]    # Level 1: 59°C'de Level 2'ye çık, 48°C'de Level 0'a dön (4°C histerezis)
-        [2  55  65]    # Level 2: 65°C'de Level 3'e çık, 55°C'de Level 1'e dön (4°C histerezis)
-        [3  61  71]    # Level 3: 71°C'de Level 4'e çık, 61°C'de Level 2'ye dön (4°C histerezis)
-        [4  67  77]    # Level 4: 77°C'de Level 5'e çık, 67°C'de Level 3'e dön (4°C histerezis)
-        [5  73  83]    # Level 5: 83°C'de Level 6'ya çık, 73°C'de Level 4'e dön (4°C histerezis)
-        [6  79  89]    # Level 6: 89°C'de Level 7'ye çık, 79°C'de Level 5'e dön (4°C histerezis)
-        [7  85  32767] # Level 7: Maksimum hız, sadece 85°C üstünde
+        [0  0   54]    # Level 0: Tamamen sessiz, 52°C'ye kadar
+        [1  50  61]    # Level 1: 59°C'de Level 2'ye çık, 48°C'de Level 0'a dön (4°C histerezis)
+        [2  57  67]    # Level 2: 65°C'de Level 3'e çık, 55°C'de Level 1'e dön (4°C histerezis)
+        [3  63  73]    # Level 3: 71°C'de Level 4'e çık, 61°C'de Level 2'ye dön (4°C histerezis)
+        [4  69  79]    # Level 4: 77°C'de Level 5'e çık, 67°C'de Level 3'e dön (4°C histerezis)
+        [5  75  85]    # Level 5: 83°C'de Level 6'ya çık, 73°C'de Level 4'e dön (4°C histerezis)
+        [6  81  90]    # Level 6: 89°C'de Level 7'ye çık, 79°C'de Level 5'e dön (4°C histerezis)
+        [7  86  32767] # Level 7: Maksimum hız, sadece 85°C üstünde
       ];
     };
    
@@ -295,8 +295,8 @@ in
       "intel_iommu=on" "iommu=pt"
 
       # intel_pstate = active → governor/EPP çalışır
-      #"intel_pstate=active"
-      "intel_pstate=passive"
+      "intel_pstate=active"
+      #"intel_pstate=passive"
 
       # NVMe güç optimizasyonu
       "nvme_core.default_ps_max_latency_us=5500"  # APST için maksimum gecikme
@@ -567,7 +567,7 @@ in
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnBootSec = "30s";
-      OnUnitActiveSec = "5min";  # Her 5 dakikada bir tekrarla
+      OnUnitActiveSec = "15min";  # Her 15 dakikada bir tekrarla
       Persistent = true;
     };
   };
