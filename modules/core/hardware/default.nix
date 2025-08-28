@@ -246,7 +246,7 @@ in
       SystemMaxFileSize=100M                  # Tek dosya maksimum boyutu
       MaxRetentionSec=1week                   # Maksimum saklama süresi
       MaxFileSec=1day                         # Dosya rotasyon süresi
-      SyncIntervalSec=30                      # Disk'e yazma aralığı (SSD koruması)
+      SyncIntervalSec=300                     # Disk'e yazma aralığı (SSD koruması)
       RateLimitIntervalSec=30                 # Rate limit penceresi
       RateLimitBurst=1000                     # Rate limit burst sayısı
       Compress=yes                            # Sıkıştırma (disk tasarrufu)
@@ -413,7 +413,7 @@ in
               set_governor_epp performance balance_performance 1600000
             else
               apply_limits ${toString meteorLake.battery.pl1} ${toString meteorLake.battery.pl2} 28000000 10000
-              set_governor_epp performance balance_power 800000
+              set_governor_epp performance balance_power 1200000
             fi
           else
             if [[ "$ON_AC" == "1" ]]; then
@@ -421,7 +421,7 @@ in
               set_governor_epp performance balance_performance 1400000
             else
               apply_limits ${toString kabyLakeR.battery.pl1} ${toString kabyLakeR.battery.pl2} 28000000 10000
-              set_governor_epp powersave power 800000
+              set_governor_epp powersave power 1200000
             fi
           fi
 
