@@ -176,8 +176,8 @@ in
   # ============================================================================
   systemd.services.dynamic-tcp-tuning = {
     description = "Apply dynamic TCP tuning based on total system memory";
-    wantedBy = [ "network-online.target" ];
-    after = [ "network-pre.target" "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    after = [ "sysinit.target" "network-pre.target" ];
     before = [ "network.target" ];
     serviceConfig = {
       Type = "oneshot";
