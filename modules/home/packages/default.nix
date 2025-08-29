@@ -327,8 +327,8 @@
     openvpn                   # VPN istemcisi
     openconnect               # VPN istemcisi
     openfortivpn              # VPN istemcisi
-    mullvad-vpn          # Mullvad GUI
-    wireguard-tools      # wg, wg-quick
+    mullvad-vpn               # Mullvad GUI
+    wireguard-tools           # wg, wg-quick
 
     # ==============================================================================
     # Üretkenlik ve Zaman Yönetimi
