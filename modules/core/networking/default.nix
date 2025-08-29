@@ -32,18 +32,6 @@
       
       # Let systemd-resolved handle DNS
       dns = "systemd-resolved";
-      
-      # Connection settings
-      settings = {
-        # Randomize MAC on every connection
-        "device.wifi.scan-rand-mac-address" = true;
-        "connection.wifi.cloned-mac-address" = "random";
-        "connection.ethernet.cloned-mac-address" = "random";
-        
-        # Connectivity check (can be disabled for privacy)
-        "connectivity.enabled" = true;
-        "connectivity.uri" = "http://nmcheck.gnome.org/check_network_status.txt";
-      };
     };
     
     # WireGuard for VPN
