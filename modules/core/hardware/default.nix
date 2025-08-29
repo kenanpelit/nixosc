@@ -344,7 +344,7 @@ in
               if [[ "$ON_AC" == "1" ]]; then
                 # AC: Aggressive limits + high floor for responsiveness
                 apply_limits ${toString meteorLake.ac.pl1} ${toString meteorLake.ac.pl2} 28000000 10000
-                set_governor_epp performance performance 70
+                set_governor_epp performance performance 80
               else
                 # Battery: Balanced limits + moderate floor
                 apply_limits ${toString meteorLake.battery.pl1} ${toString meteorLake.battery.pl2} 28000000 10000
