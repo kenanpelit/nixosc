@@ -127,8 +127,8 @@ in
         done
 
         # Olmadıysa, protokol/konumu gevşetip tekrar dene
-        "$CLI" relay set tunnel-protocol any || true
-        "$CLI" relay set location any || true
+        #"$CLI" relay set tunnel-protocol any || true
+        #"$CLI" relay set location any || true
         "$CLI" connect || true
 
         exit 0
@@ -159,5 +159,3 @@ in
     dns-leak = "curl -s https://mullvad.net/en/check | sed -n '1,120p'";
   };
 }
-
-
