@@ -2,14 +2,13 @@
 # ==============================================================================
 # Network Configuration
 # ==============================================================================
-# This configuration manages networking settings including:
-# - Hostname and basic network setup
-# - WiFi and NetworkManager configuration with nmcli support
-# - DNS resolution with systemd-resolved
-# - Mullvad VPN and WireGuard setup
+# - Hostname ve temel ağ ayarları
+# - NetworkManager + nmcli
+# - systemd-resolved ile DNS (VPN ile uyumlu)
+# - Mullvad VPN (daemon + CLI) ve WireGuard
+# - Boot’ta ağ hazır olana kadar bekleme (NetworkManager-wait-online)
 #
-# NOTE: Firewall rules are managed in security/default.nix
-#
+# Not: Güvenlik/Firewall kuralları security/default.nix altında
 # Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, host, ... }:
@@ -23,11 +22,10 @@ in
   networking = {
     hostName = "${host}";
 
-    # Not: Mullvad IPv6 sızıntı koruması sağlıyor ama host tarafında IPv6
-    # açıkken bazı ağlarda (özellikle captive/şirket ağları) ilk el sıkışma
-    # sorunları görülebiliyor. Çalışan yapıdaki gibi kapatalım.
+    # IPv6 bazı ağlarda ilk el sıkışmaları bozabiliyor; stabil sonrası açılabilir.
     enableIPv6 = false;
 
+    # Wi-Fi yönetimini NM’ye bırakıyoruz
     wireless.enable = false;
 
     networkmanager = {
@@ -35,19 +33,17 @@ in
       wifi = {
         backend = "wpa_supplicant";
         scanRandMacAddress = true;
-        # Pil yerine stabilite/çekiş için powersave kapalı tutmak genelde
-        # VPN bağlantı stabilitesine yardım ediyor.
+        # Stabilite için powersave kapalı (isteğe göre açılabilir)
         powersave = false;
       };
-      # DNS’i systemd-resolved’a devrediyoruz.
+      # DNS’i systemd-resolved’a devret
       dns = "systemd-resolved";
     };
 
-    # Mullvad (WG/OVPN) için WireGuard çekirdek modülü
+    # Mullvad’ın WG tünelleri için kernel modülü
     wireguard.enable = true;
 
-    # Basit/güvenli: VPN açık/kapalı durumuna göre isim sunucuları.
-    # (resolved bunu kaynak alır)
+    # VPN açık/kapalıya göre isim sunucuları
     nameservers = lib.mkMerge [
       (lib.mkIf (!hasMullvad) [
         "1.1.1.1"
@@ -67,35 +63,32 @@ in
   # Services
   ##############################################################################
   services = {
-    # Modern DNS yöneti mi
+    # Modern DNS resolution
     resolved = {
       enable = true;
-
-      # DNSSEC'i uyumluluk için allow-downgrade tutalım.
-      dnssec = "allow-downgrade";
-
-      # Aşırı özelleştirilmiş extraConfig kaldırıldı.
-      # DNSOverTLS gibi seçenekler Mullvad ile çakışabiliyordu.
+      dnssec = "allow-downgrade"; # uyumluluk
+      # Mullvad ile çakışabilecek aşırı özelleştirmeleri kapattık
       extraConfig = "";
     };
 
-    # Mullvad daemon + GUI paketi (daemon bununla gelir)
+    # Mullvad daemon + GUI (daemon bununla gelir)
     mullvad-vpn = {
       enable = true;
       package = pkgs.mullvad-vpn;
     };
-
-    # Ağ hazır olana kadar beklet
-    NetworkManager-wait-online.enable = true;
   };
+
+  ##############################################################################
+  # Ağ gerçekten hazır olana kadar bekle (IP alana dek)
+  ##############################################################################
+  systemd.services."NetworkManager-wait-online".enable = true;
 
   ##############################################################################
   # Mullvad otomatizasyonu (race fix)
   #
-  # postStart yerine ayrı, bağımlılıkları doğru tanımlanmış bir oneshot servis.
-  # - Daemon ve ağ hazır olana kadar bekler.
-  # - Sonra güvenli şekilde autoconnect + DNS reklam/izleyici bloklamayı ayarlar.
-  # - İsteğe göre "any" relay seçer ve bağlanır (ilk koklaşmada tekrar dener).
+  # - Daemon ve network-online hazır olana kadar bekler
+  # - Autoconnect + DNS blocker ayarlarını yapar
+  # - Bağlantıyı birkaç kez dener, sonra protokol/relay’i gevşetip tekrar dener
   ##############################################################################
   systemd.services."mullvad-autoconnect" = {
     description = "Configure and connect Mullvad once daemon socket is ready";
@@ -133,7 +126,7 @@ in
           sleep 2
         done
 
-        # Olmadı, farklı relay dene
+        # Olmadıysa, protokol/konumu gevşetip tekrar dene
         "$CLI" relay set tunnel-protocol any || true
         "$CLI" relay set location any || true
         "$CLI" connect || true
@@ -144,22 +137,27 @@ in
     };
   };
 
-  # Kabuk kısayolları
   environment.shellAliases = {
+    # WiFi yönetimi
     wifi-list = "nmcli device wifi list";
     wifi-connect = "nmcli device wifi connect";
     wifi-disconnect = "nmcli connection down";
     wifi-saved = "nmcli connection show";
 
+    # Ağ bilgisi
     net-status = "nmcli general status";
     net-connections = "nmcli connection show --active";
 
+    # VPN kısayolları
     vpn-status = "mullvad status";
     vpn-connect = "mullvad connect";
     vpn-disconnect = "mullvad disconnect";
     vpn-relay = "mullvad relay list";
 
+    # DNS testleri
     dns-test = "resolvectl status";
     dns-leak = "curl -s https://mullvad.net/en/check | sed -n '1,120p'";
   };
 }
+
+
