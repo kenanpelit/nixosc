@@ -219,6 +219,7 @@ in
 
       # Keep intel_pstate active to use EPP/min_perf_pct properly
       "intel_pstate=active"
+      "intel_pstate.hwp_dynamic_boost=1"
 
       # NVMe tuning
       "nvme_core.default_ps_max_latency_us=5500"
@@ -370,6 +371,8 @@ in
               ;;
           esac
 
+          # HWP Dynamic Boost: runtime da açık olsun (built-in pstate'te garanti)
+          echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
           echo "Governor/EPP floor applied (AC=$ON_AC, CPU=$CPU_TYPE)"
         '';
       };
