@@ -244,9 +244,9 @@ in
       # Gestures Configuration
       # =====================================================
       gestures = {
-        workspace_swipe = false;
-        workspace_swipe_fingers = 3;
-        workspace_swipe_min_fingers = false;
+      #  workspace_swipe = false;
+      #  workspace_swipe_fingers = 3;
+      #  workspace_swipe_min_fingers = false;
         workspace_swipe_distance = 200;
         workspace_swipe_touch = false;
         workspace_swipe_touch_invert = false;
