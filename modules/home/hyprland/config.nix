@@ -255,9 +255,9 @@
       # =====================================================
       gestures = {
         # Temel workspace swipe
-        workspace_swipe = false;                # Workspace swipe (kapalı)
-        workspace_swipe_fingers = 3;            # 3 parmak swipe
-        workspace_swipe_min_fingers = false;    # Min parmak kontrolü
+        #workspace_swipe = false;                # Workspace swipe (kapalı)
+        #workspace_swipe_fingers = 3;            # 3 parmak swipe
+        #workspace_swipe_min_fingers = false;    # Min parmak kontrolü
         workspace_swipe_distance = 200;         # Swipe mesafesi
 
         # Touchscreen desteği
