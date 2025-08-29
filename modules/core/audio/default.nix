@@ -17,7 +17,7 @@
 # - Integrated speakers and microphone array
 #
 # Author: Kenan Pelit
-# Modified: 2025-05-23 (E14 Gen 6 optimization)
+# Modified: 2025-01-28 (Minimal optimization)
 # ==============================================================================
 { pkgs, ... }:
 {
@@ -36,6 +36,16 @@
     wireplumber.enable = true;
   };
   
+  # PipeWire ses kalitesi optimizasyonu
+  services.pipewire.extraConfig.pipewire = {
+    "92-low-latency" = {
+      "context.properties" = {
+        "default.clock.rate" = 48000;
+        "default.clock.quantum" = 256;
+      };
+    };
+  };
+  
   boot.extraModprobeConfig = ''
     options snd-intel-dspcfg dsp_driver=1
     options snd-sof-pci-intel-mtl enable=1
@@ -48,6 +58,9 @@
     options snd-sof sof_debug=0
     options snd-sof-intel-hda-common hda_model=thinkpad
   '';
+  
+  # Tek satırlık kernel parametresi eklentisi
+  boot.kernelParams = [ "snd_hda_intel.power_save=1" ];
   
   environment.systemPackages = with pkgs; [
     pulseaudioFull
@@ -66,3 +79,4 @@
     SUBSYSTEM=="sound", ATTRS{id}=="HDMI", ATTR{power/control}="auto"
   '';
 }
+
