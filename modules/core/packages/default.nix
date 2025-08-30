@@ -4,12 +4,12 @@
 # ==============================================================================
 #
 # Sistem seviyesinde gerekli temel paketlerin yapılandırması:
-# - Sistem yönetimi ve temel araçlar
-# - Sistem güvenliği ve servisler
-# - Donanım ve sürücü yönetimi
-# - Ağ altyapısı ve güvenliği
-# - Sanallaştırma ve container
-# - Sistem entegrasyonu
+# - Kritik sistem servisleri ve daemon'lar
+# - Güvenlik ve kimlik doğrulama altyapısı
+# - Donanım yönetimi ve firmware
+# - Kernel modülleri ve sürücüler
+# - Sanallaştırma altyapısı
+# - Sistem kütüphaneleri
 #
 # Bu paketler sistem genelinde kurulur ve tüm kullanıcılar tarafından erişilebilir.
 #
@@ -18,177 +18,139 @@
 
 { pkgs, ... }:
 
-let
-  # ==============================================================================
-  # Python Ortam Yapılandırması
-  # ==============================================================================
-  customPython = pkgs.python3.withPackages (ps: with ps; [
-    ipython        # Gelişmiş Python shell
-    libtmux        # Tmux için Python API
-    pip            # Paket yükleyici
-    pipx           # İzole ortam yükleyici
-    #subliminal     # Altyazı indirici
-  ]);
-in
 {
   environment.systemPackages = with pkgs; [
     # ==============================================================================
     # Temel Sistem Araçları ve Kütüphaneler
     # ==============================================================================
     # Core System Tools
-    coreutils          # GNU temel araçları
-    procps             # Süreç izleme
-    sysstat            # Sistem performans
-    acl                # Erişim kontrol
-    lsb-release        # Dağıtım bilgisi
-    man-pages          # Sistem kılavuzları
-    gzip               # Sıkıştırma
-    gnutar             # Arşivleyici
+    coreutils          # GNU temel araçları (sistem için kritik)
+    procps             # Süreç yönetimi araçları
+    sysstat            # Sistem performans monitörü
+    acl                # Dosya erişim kontrol listeleri
+    lsb-release        # Linux Standard Base bilgisi
+    man-pages          # Sistem manual sayfaları
+    gzip               # Temel sıkıştırma (sistem logları)
+    gnutar             # Arşivleme (sistem yedekleme)
     
-    # Build Tools
-    gcc                # GNU derleyici
-    gnumake            # İnşa otomasyon
+    # Build Tools (Kernel modülleri için)
+    gcc                # GNU C derleyici
+    gnumake            # Make build sistemi
     
     # System Libraries
-    libdrm             # Direct Rendering Manager library and headers
-    libinput           # Giriş aygıtı yönetimi
-    libnotify          # Masaüstü bildirim
+    libdrm             # Direct Rendering Manager (GPU)
+    libinput           # Input device yönetimi
+    libnotify          # Sistem bildirimleri altyapısı
+    openssl            # SSL/TLS kütüphanesi (sistem servisleri)
 
     # ==============================================================================
     # Boot ve Sistem Yönetimi
     # ==============================================================================
     # Boot Management
     grub2              # GRUB bootloader
-    catppuccin-grub    # GRUB teması
-    ventoy             # New bootable USB solution
+    catppuccin-grub    # GRUB tema dosyaları
     
     # System Management
     home-manager       # Kullanıcı ortam yönetimi
-    dconf              # Yapılandırma sistemi
+    dconf              # Sistem yapılandırma veritabanı
     dconf-editor       # dconf editörü
     
-    # Language Support
-    perl                      # Temel Perl kurulumu
-    perlPackages.FilePath     # File::Path modülü (rmtree için)
+    # Firmware Updates
+    fwupd              # UEFI/BIOS firmware güncellemeleri
+    
+    # Language Support (Sistem scriptleri için)
+    perl               # Sistem scriptleri
+    perlPackages.FilePath  # File::Path modülü
 
     # ==============================================================================
     # Sistem Güvenliği ve Şifreleme
     # ==============================================================================
     # System Security
-    openssl            # SSL/TLS araçları (sistem kütüphanesi)
-    sops               # Gizli yönetimi
-    gnupg              # GNU Privacy Guard
+    sops               # Sistem sırları yönetimi
+    gnupg              # GPG şifreleme (paket imzaları)
     
-    # GNOME Security Services
-    gcr                # GNOME kriptografi
-    gnome-keyring      # Parola yönetimi
-    pinentry-gnome3    # PIN girişi
+    # GNOME Security Services (Sistem servisi olarak)
+    gcr                # Sertifika ve anahtar yönetimi
+    gnome-keyring      # Sistem geneli parola deposu
+    pinentry-gnome3    # GNOME için PIN girişi
     
     # Network Security
-    iptables           # Güvenlik duvarı
-    hblock             # Reklam engelleyici
+    iptables           # Kernel firewall yönetimi
+    hblock             # Host-based ad blocker
 
     # ==============================================================================
     # Ağ Altyapısı ve Bağlantı
     # ==============================================================================
     # Network Management
-    networkmanagerapplet
-    iwd                # Kablosuz daemon
-    iw                 # Kablosuz araçları
-    
-    # Network Analysis & Monitoring (System Level)
-    tcpdump            # Paket analizi
-    nethogs            # Bant genişliği izleme
-    iftop              # Ağ kullanım izleme
+    networkmanagerapplet  # NetworkManager sistem tray
+    iwd                # Intel Wireless Daemon
+    iw                 # Wireless kernel araçları
     
     # Network Services
-    bind               # DNS araçları
+    bind               # DNS server araçları
+    openssh            # SSH daemon ve istemci
+    autossh            # Otomatik SSH tünel yönetimi
+    
+    # System Network Tools
     impala             # Ağ sorgu motoru
-    dig                # DNS sorgu aracı (sistem seviyesi)
-    
-    # Data Transfer (System Services)
-    rsync              # Dosya senkronizasyon
-    socat              # Çok amaçlı relay
-    
-    # SSH Services
-    openssh            # SSH istemci/sunucu
-    autossh            # SSH sessions and tunnels
+    socat              # Çok amaçlı relay (sistem servisleri)
+    rsync              # Dosya senkronizasyon (sistem yedekleme)
 
     # ==============================================================================
     # Sanallaştırma ve Container Teknolojileri
     # ==============================================================================
     # Virtual Machine Management
-    virt-manager       # VM yönetim GUI
-    virt-viewer        # VM görüntüleyici
-    qemu               # Makine emülatörü
+    virt-manager       # Libvirt GUI yönetici
+    virt-viewer        # SPICE/VNC görüntüleyici
+    qemu               # QEMU hypervisor
     
     # VM Support Tools
-    spice-gtk          # Uzak görüntüleme
-    win-virtio         # Windows sürücüleri
-    win-spice          # Windows konuk araçları
-    swtpm              # TPM emülatörü
+    spice-gtk          # SPICE protokol desteği
+    win-virtio         # VirtIO Windows sürücüleri
+    win-spice          # SPICE Windows araçları
+    swtpm              # Software TPM emülatörü
     
     # Container Technology
-    podman             # Container motoru
+    podman             # Container daemon (rootless)
 
     # ==============================================================================
     # Güç Yönetimi ve Donanım
     # ==============================================================================
     # Power Management
-    upower             # Güç yönetim servisi
-    acpi               # ACPI araçları
-    powertop           # Güç izleme
-    poweralertd        # Güç yönetimi bildirimleri
+    upower             # Güç yönetimi daemon'ı
+    acpi               # ACPI kernel arayüzü
+    powertop           # Intel güç optimizasyonu
+    poweralertd        # Güç olayları daemon'ı
     
-    # Thermal Management Tools
-    lm_sensors         # Hardware sıcaklık sensörleri
-    stress-ng          # CPU/RAM stres testi için
-    s-tui              # Terminal tabanlı CPU stres monitörü
-    linuxPackages.turbostat  # Intel CPU turbo durumlarını izleme
-    linuxPackages.cpupower   # CPU güç yönetimi araçları
-    auto-cpufreq       # Otomatik CPU frekans yönetimi
+    # Thermal Management
+    lm_sensors         # Donanım sensör sürücüleri
+    linuxPackages.turbostat  # Intel Turbo Boost monitör
+    linuxPackages.cpupower   # CPU güç yönetimi (kernel)
+    auto-cpufreq       # CPU frekans daemon'ı
     
     # Hardware Management
-    ddcutil            # Monitor settings
+    ddcutil            # DDC/CI monitör kontrolü
     fwupd              # Firmware güncelleyici
-    android-tools      # adb (sistem seviyesi)
-    smartmontools      # Disk sağlık durumu izleme (SMART)
-    nvme-cli           # NVMe SSD yönetim araçları
-    dmidecode          # DMI/SMBIOS sistem bilgileri
-    usbutils           # USB cihaz listesi ve bilgileri (lsusb)
-    intel-gpu-tools    # Intel GPU teşhis ve test araçları
-    
-    # Input Devices
-    fusuma             # Çoklu dokunma
-    touchegg           # Hareket tanıma
+    android-tools      # ADB/Fastboot (udev kuralları)
+    smartmontools      # Disk S.M.A.R.T. daemon
+    nvme-cli           # NVMe kernel sürücü arayüzü
+    dmidecode          # BIOS/UEFI DMI bilgileri
+    usbutils           # USB bus yönetimi
+    intel-gpu-tools    # Intel GPU kernel araçları
 
     # ==============================================================================
     # Masaüstü Entegrasyonu ve Servisler
     # ==============================================================================
-    # Desktop Integration
-    xdg-utils          # Masaüstü entegrasyonu
-    xdg-desktop-portal # Masaüstü entegrasyon
-    xdg-desktop-portal-gtk # GTK arka uç
-    
-    # Application Management
-    flatpak            # Uygulama sanal ortam
-
-    # ==============================================================================
-    # Python Ortamı (Sistem Seviyesi)
-    # ==============================================================================
-    customPython       # Özel Python kurulumu
+    # Desktop Integration Services
+    xdg-utils          # XDG spesifikasyon araçları
+    xdg-desktop-portal # Portal servisi
+    xdg-desktop-portal-gtk # GTK portal backend
 
     # ==============================================================================
     # Sistem Görevleri ve Zamanlama
     # ==============================================================================
-    at                 # job scheduling command
-    logger
-
-    # ==============================================================================
-    # Commented Out / Optional Packages
-    # ==============================================================================
-    # iwgtk              # Kablosuz yapılandırma
-    # intel-undervolt    # Undervolting aracı (Meteor Lake'de çalışmayabilir)
+    at                 # Sistem görev zamanlayıcı
+    logger             # Syslog mesaj gönderici
   ];
 }
 
