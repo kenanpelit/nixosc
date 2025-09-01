@@ -9,20 +9,20 @@
 # - HWP Dynamic Boost enabled (snappier boosts on Intel)
 # - Smart fan control (thinkfan), thermald, sleep hooks
 # - Battery charge thresholds, journal, dbus-broker, udev triggers
+# - Enhanced suspend/resume recovery for Meteor Lake (fixes stuck 400MHz issue)
 #
 # Supported (tested profiles):
 # - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, a.k.a. Meteor Lake)
 # - ThinkPad X1 Carbon 6th (Intel i7-8650U, Kaby Lake-R)
 #
-# Notes:
-# - This module prefers *responsiveness* on AC by setting a higher minimum
-#   performance percent, so cores don’t sit at 600–700 MHz when the system is idle.
-# - On battery, it keeps a reasonable floor to maintain snappy UX without
-#   wasting power.
+# Known Issues Fixed:
+# - CPU stuck at 400MHz after suspend (Meteor Lake)
+# - EPP showing "default" instead of proper performance mode
+# - Power limits not properly restored after resume
 #
-# Version: 4.3.0
+# Version: 5.0.0
 # Author:  Kenan Pelit
-# Date:    2025-08-29
+# Date:    2025-09-01
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
@@ -56,10 +56,11 @@ let
 
   # ----------------------------------------------------------------------------
   # CPU PROFILES (Watts for PL1/PL2 + thermal + battery thresholds)
+  # Enhanced for better performance and recovery
   # ----------------------------------------------------------------------------
   meteorLake = {
     battery = { pl1 = 28; pl2 = 42; };  # balanced on battery
-    ac      = { pl1 = 42; pl2 = 58; };  # aggressive on AC
+    ac      = { pl1 = 42; pl2 = 64; };  # more aggressive on AC (increased PL2)
     thermal = { trip = 82; tripAc = 88; warning = 92; critical = 100; };
     battery_threshold = { start = 65; stop = 85; };
   };
@@ -148,7 +149,7 @@ in
       usePercentageForPolicy = true;
     };
 
-    # ---------- Logind behavior (kept structured for your setup) ----------
+    # ---------- Logind behavior ----------
     logind.settings.Login = {
       HandlePowerKey = "ignore";
       HandlePowerKeyLongPress = "poweroff";
@@ -217,9 +218,13 @@ in
       # IOMMU
       "intel_iommu=on" "iommu=pt"
 
-      # Keep intel_pstate active to use EPP/min_perf_pct properly
+      # Intel pstate - use active mode for better control
       "intel_pstate=active"
       "intel_pstate.hwp_dynamic_boost=1"
+      
+      # C-state control for better resume behavior
+      "intel_idle.max_cstate=9"
+      "processor.max_cstate=9"
 
       # NVMe tuning
       "nvme_core.default_ps_max_latency_us=5500"
@@ -240,6 +245,10 @@ in
 
       # Prefer deep sleep (if platform supports)
       "mem_sleep_default=deep"
+      
+      # ACPI improvements for better suspend/resume
+      "acpi_osi=Linux"
+      "acpi_enforce_resources=lax"
     ];
 
     kernel.sysctl = {
@@ -264,7 +273,7 @@ in
   systemd.services = {
     # --------------------------------------------------------------------------
     # CPU POWER LIMITS + GOVERNOR/EPP + MIN PERF FLOOR
-    # Timer triggers this service; no WantedBy here.
+    # Enhanced with better EPP handling and Meteor Lake fixes
     # --------------------------------------------------------------------------
     cpu-power-limit = {
       description = "Apply per-CPU power limits and performance floors (AC/Battery aware)";
@@ -305,20 +314,40 @@ in
           }
 
           set_governor_epp () {
+            # Enhanced EPP handling to prevent "default" state
             # Usage: set_governor_epp <GOV> <EPP> <MIN_PCT>
-            # GOV: performance|powersave
-            # EPP: performance|balance_performance|balance_power|power
-            # MIN_PCT: 0..100 -> min performance percent floor
             local GOV="$1" EPP="$2" MIN_PCT="$3"
+            
+            # First, ensure pstate driver is active
+            echo "active" > /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || true
+            
+            # Enable HWP dynamic boost
+            echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
 
             # Scale governors
             for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
               echo "$GOV" > "$g" 2>/dev/null || true
             done
 
-            # EPP + min/max freq per policy
+            # EPP with reset mechanism to avoid "default" state
             for p in /sys/devices/system/cpu/cpufreq/policy*; do
+              # Reset EPP by cycling through states
+              echo "balance_performance" > "$p/energy_performance_preference" 2>/dev/null || true
+              sleep 0.05
               echo "$EPP" > "$p/energy_performance_preference" 2>/dev/null || true
+              
+              # Verify EPP was set
+              ACTUAL_EPP=$(cat "$p/energy_performance_preference" 2>/dev/null || echo "unknown")
+              if [[ "$ACTUAL_EPP" == "default" ]]; then
+                # Force reset if still default
+                echo "balance_power" > "$p/energy_performance_preference" 2>/dev/null || true
+                sleep 0.1
+                echo "$EPP" > "$p/energy_performance_preference" 2>/dev/null || true
+              fi
+            done
+
+            # Set min/max frequencies
+            for p in /sys/devices/system/cpu/cpufreq/policy*; do
               if [[ -f "$p/cpuinfo_max_freq" ]] && [[ "$MIN_PCT" =~ ^[0-9]+$ ]]; then
                 MAX=$(cat "$p/cpuinfo_max_freq")
                 MIN=$(( MAX * MIN_PCT / 100 ))
@@ -327,53 +356,109 @@ in
               fi
             done
 
-            # Global *min performance percent* (Intel & AMD pstate)
+            # Global min performance percent (Intel & AMD pstate)
             if [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]]; then
               echo "$MIN_PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
             elif [[ -w /sys/devices/system/cpu/amd_pstate/min_perf_pct ]]; then
               echo "$MIN_PCT" > /sys/devices/system/cpu/amd_pstate/min_perf_pct 2>/dev/null || true
             fi
 
-            # Keep turbo enabled (0 = turbo on) if Intel
+            # Ensure turbo is enabled
             echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+            
+            echo "Governor/EPP applied: $GOV/$EPP with min_perf=$MIN_PCT%"
           }
 
           # --- Policy application ----------------------------------------------
           case "$CPU_TYPE" in
-            meteorlake|raptorlake|kabylaker)
+            meteorlake)
               if [[ "$ON_AC" == "1" ]]; then
-                # AC: Aggressive limits + high floor for responsiveness
+                # AC: Maximum performance with aggressive limits
                 apply_limits ${toString meteorLake.ac.pl1} ${toString meteorLake.ac.pl2} 28000000 10000
-                set_governor_epp performance performance 80
+                
+                # Special handling for Meteor Lake EPP issues
+                for i in {0..15}; do  # Up to 16 cores/threads
+                  policy="/sys/devices/system/cpu/cpufreq/policy$i"
+                  if [[ -d "$policy" ]]; then
+                    # Force clear default state
+                    echo "balance_performance" > "$policy/energy_performance_preference" 2>/dev/null || true
+                    sleep 0.02
+                    echo "performance" > "$policy/energy_performance_preference" 2>/dev/null || true
+                  fi
+                done
+                
+                # Set governor to performance
+                for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+                  echo "performance" > "$g" 2>/dev/null || true
+                done
+                
+                # High minimum performance floor
+                echo 85 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
+                
               else
-                # Battery: Balanced limits + moderate floor
+                # Battery: Balanced with reasonable performance
                 apply_limits ${toString meteorLake.battery.pl1} ${toString meteorLake.battery.pl2} 28000000 10000
+                set_governor_epp powersave balance_performance 45
+              fi
+              ;;
+              
+            raptorlake)
+              if [[ "$ON_AC" == "1" ]]; then
+                apply_limits 35 55 28000000 10000
+                set_governor_epp performance performance 75
+              else
+                apply_limits 20 35 28000000 10000
                 set_governor_epp powersave balance_performance 40
               fi
               ;;
-            amdzen4|amdzen3)
-              # No Intel RAPL; just governor/EPP floors
-              if [[ "$ON_AC" == "1" ]]; then
-                set_governor_epp performance performance 60
-              else
-                set_governor_epp powersave balance_power 35
-              fi
-              ;;
-            *)
-              # Fallback behaves like Kaby Lake-R
+              
+            kabylaker)
               if [[ "$ON_AC" == "1" ]]; then
                 apply_limits ${toString kabyLakeR.ac.pl1} ${toString kabyLakeR.ac.pl2} 28000000 10000
-                set_governor_epp performance performance 60
+                set_governor_epp performance balance_performance 65
               else
                 apply_limits ${toString kabyLakeR.battery.pl1} ${toString kabyLakeR.battery.pl2} 28000000 10000
                 set_governor_epp powersave balance_power 35
               fi
               ;;
+              
+            amdzen4|amdzen3)
+              # No Intel RAPL; just governor/EPP floors
+              if [[ "$ON_AC" == "1" ]]; then
+                set_governor_epp performance performance 70
+              else
+                set_governor_epp powersave balance_power 40
+              fi
+              ;;
+              
+            *)
+              # Fallback
+              if [[ "$ON_AC" == "1" ]]; then
+                apply_limits 25 35 28000000 10000
+                set_governor_epp performance balance_performance 60
+              else
+                apply_limits 15 25 28000000 10000
+                set_governor_epp powersave balance_power 35
+              fi
+              ;;
           esac
 
-          # HWP Dynamic Boost: runtime da açık olsun (built-in pstate'te garanti)
-          echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
-          echo "Governor/EPP floor applied (AC=$ON_AC, CPU=$CPU_TYPE)"
+          # Final verification for Meteor Lake
+          if [[ "$CPU_TYPE" == "meteorlake" ]] && [[ "$ON_AC" == "1" ]]; then
+            sleep 0.5
+            # Double-check EPP isn't stuck at default
+            for p in /sys/devices/system/cpu/cpufreq/policy*; do
+              EPP_CHECK=$(cat "$p/energy_performance_preference" 2>/dev/null || echo "unknown")
+              if [[ "$EPP_CHECK" == "default" ]]; then
+                echo "WARNING: EPP stuck at default for $p, forcing reset..."
+                echo "balance_power" > "$p/energy_performance_preference" 2>/dev/null || true
+                sleep 0.1
+                echo "performance" > "$p/energy_performance_preference" 2>/dev/null || true
+              fi
+            done
+          fi
+
+          echo "CPU power configuration completed (AC=$ON_AC, CPU=$CPU_TYPE)"
         '';
       };
     };
@@ -444,10 +529,10 @@ in
     };
 
     # --------------------------------------------------------------------------
-    # Sleep hooks — pre/post
+    # Sleep hooks — Enhanced for Meteor Lake
     # --------------------------------------------------------------------------
     thinkfan-sleep-pre = {
-      description = "Prepare fans before suspend/hibernate (stop thinkfan, set auto)";
+      description = "Prepare system before suspend/hibernate";
       wantedBy = [ "sleep.target" ];
       before   = [ "sleep.target" ];
       unitConfig.DefaultDependencies = false;
@@ -457,18 +542,28 @@ in
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
 
+          # Stop thinkfan service
           ${pkgs.systemd}/bin/systemctl stop thinkfan.service 2>/dev/null || true
+          
+          # Set fan to auto mode
           if [[ -w /proc/acpi/ibm/fan ]]; then
             echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
           fi
-          # Temporarily disable turbo pre-suspend
-          echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+          
+          # Save current EPP state for comparison after resume
+          for p in /sys/devices/system/cpu/cpufreq/policy*; do
+            if [[ -r "$p/energy_performance_preference" ]]; then
+              cat "$p/energy_performance_preference" > "/tmp/epp_$(basename $p)_pre_suspend" 2>/dev/null || true
+            fi
+          done
+          
+          echo "System prepared for suspend"
         '';
       };
     };
 
     thinkfan-sleep-post = {
-      description = "Restore fans after resume (restart thinkfan, reapply RAPL/governor)";
+      description = "Restore system after resume (enhanced recovery)";
       wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
       after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
       unitConfig.DefaultDependencies = false;
@@ -477,38 +572,112 @@ in
         ExecStart = pkgs.writeShellScript "thinkfan-sleep-post" ''
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
-
+          
+          echo "Starting system restore after resume..."
+          
+          # Reload MSR module for CPU control
+          ${pkgs.kmod}/bin/modprobe -r msr 2>/dev/null || true
+          sleep 0.2
+          ${pkgs.kmod}/bin/modprobe msr 2>/dev/null || true
+          
+          # Ensure Intel pstate is active
+          echo "active" > /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || true
+          
+          # Re-enable HWP dynamic boost
+          echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
+          
           # Re-enable turbo
           echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
-          # Reapply power limits + governor/EPP floor
-          ${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service 2>/dev/null || true
-          # Restart thinkfan if enabled
+          
+          # Wait for sysfs to stabilize
+          sleep 1
+          
+          # Force EPP reset if stuck at default (Meteor Lake specific)
+          CPU_TYPE="$(${detectCpuScript})"
+          if [[ "$CPU_TYPE" == "meteorlake" ]]; then
+            echo "Applying Meteor Lake specific EPP recovery..."
+            
+            # Check AC status
+            ON_AC=0
+            for PS in /sys/class/power_supply/AC*/online; do
+              [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+            done
+            
+            if [[ "$ON_AC" == "1" ]]; then
+              # Force performance mode on all policies
+              for p in /sys/devices/system/cpu/cpufreq/policy*; do
+                if [[ -d "$p" ]]; then
+                  # Triple-reset to ensure EPP takes effect
+                  echo "balance_power" > "$p/energy_performance_preference" 2>/dev/null || true
+                  sleep 0.05
+                  echo "balance_performance" > "$p/energy_performance_preference" 2>/dev/null || true
+                  sleep 0.05
+                  echo "performance" > "$p/energy_performance_preference" 2>/dev/null || true
+                fi
+              done
+              
+              # Force performance governor
+              for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+                echo "performance" > "$g" 2>/dev/null || true
+              done
+              
+              # Set high minimum performance
+              echo 85 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
+            fi
+          fi
+          
+          # Restart CPU power limit service (applies full configuration)
+          ${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service || true
+          
+          # Wait for power service to complete
+          sleep 2
+          
+          # Verify EPP recovery
+          RECOVERY_NEEDED=0
+          for p in /sys/devices/system/cpu/cpufreq/policy*; do
+            if [[ -r "$p/energy_performance_preference" ]]; then
+              EPP=$(cat "$p/energy_performance_preference")
+              if [[ "$EPP" == "default" ]]; then
+                echo "WARNING: $p still at default EPP, forcing recovery..."
+                RECOVERY_NEEDED=1
+              fi
+            fi
+          done
+          
+          if [[ "$RECOVERY_NEEDED" == "1" ]]; then
+            # Emergency recovery
+            ${pkgs.systemd}/bin/systemctl restart cpu-power-limit.service || true
+          fi
+          
+          # Restart thinkfan
           if ${pkgs.systemd}/bin/systemctl is-enabled thinkfan.service >/dev/null 2>&1; then
             ${pkgs.systemd}/bin/systemctl restart thinkfan.service || true
           fi
+          
+          echo "System restore completed after resume"
         '';
       };
     };
   };
 
   # =============================================================================
-  # systemd TIMERS — delayed enforcement + periodic refresh
+  # systemd TIMERS — periodic enforcement
   # =============================================================================
   systemd.timers.cpu-power-limit = {
     description = "Timer for CPU power limit application";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec = "30s";       # Let the system settle a bit after boot
-      OnUnitActiveSec = "15min";
+      OnBootSec = "30s";       # Initial delay after boot
+      OnUnitActiveSec = "10min";  # Reapply every 10 minutes (more frequent)
       Persistent = true;
     };
   };
 
   # =============================================================================
-  # UDEV RULES — AC change triggers reapply; misc power niceties
+  # UDEV RULES — AC change triggers and hardware events
   # =============================================================================
   services.udev.extraRules = lib.mkAfter ''
-    # LED perms
+    # LED permissions
     SUBSYSTEM=="leds", KERNEL=="platform::micmute", ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
     SUBSYSTEM=="leds", KERNEL=="platform::mute",    ACTION=="add", RUN+="${pkgs.coreutils}/bin/chmod 664 /sys/class/leds/%k/brightness"
 
@@ -517,12 +686,15 @@ in
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", DRIVER=="usbhid", ATTR{power/control}="on"
 
-    # AC adapter online/offline → reapply limits & floors
+    # AC adapter online/offline → immediately reapply power limits
     SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", RUN+="${systemctl} restart cpu-power-limit.service"
+    
+    # Lid events → ensure proper power state
+    SUBSYSTEM=="button", KERNEL=="lid", ACTION=="open", RUN+="${systemctl} restart cpu-power-limit.service"
   '';
 
   # =============================================================================
-  # ENV & TOOLS
+  # ENV & TOOLS (Enhanced with recovery scripts)
   # =============================================================================
   environment = {
     systemPackages = with pkgs; [
@@ -530,9 +702,132 @@ in
       powertop
       intel-gpu-tools
       bc
+      
+      # Emergency CPU fix script for manual intervention
+      (pkgs.writeScriptBin "fix-cpu-stuck" ''
+        #!${pkgs.bash}/bin/bash
+        echo "🔧 Fixing stuck CPU frequencies..."
+        
+        # Detect CPU type
+        CPU_TYPE="$(${detectCpuScript})"
+        echo "CPU Type: $CPU_TYPE"
+        
+        # Reload MSR module
+        echo "Reloading MSR module..."
+        sudo ${pkgs.kmod}/bin/modprobe -r msr 2>/dev/null || true
+        sudo ${pkgs.kmod}/bin/modprobe msr 2>/dev/null || true
+        
+        # Force Intel pstate active
+        echo "Activating Intel pstate..."
+        sudo bash -c "echo active > /sys/devices/system/cpu/intel_pstate/status" 2>/dev/null || true
+        
+        # Enable HWP and turbo
+        sudo bash -c "echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost" 2>/dev/null || true
+        sudo bash -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo" 2>/dev/null || true
+        
+        # Check AC status
+        ON_AC=0
+        for PS in /sys/class/power_supply/AC*/online; do
+          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+        done
+        echo "Power source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
+        
+        # Force EPP reset for all policies
+        echo "Resetting EPP for all CPU policies..."
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do
+          if [[ -d "$p" ]]; then
+            # Cycle through states to force reset
+            sudo bash -c "echo balance_power > $p/energy_performance_preference" 2>/dev/null || true
+            sleep 0.05
+            sudo bash -c "echo balance_performance > $p/energy_performance_preference" 2>/dev/null || true
+            sleep 0.05
+            
+            if [[ "$ON_AC" == "1" ]]; then
+              sudo bash -c "echo performance > $p/energy_performance_preference" 2>/dev/null || true
+            else
+              sudo bash -c "echo balance_performance > $p/energy_performance_preference" 2>/dev/null || true
+            fi
+          fi
+        done
+        
+        # Set governor
+        echo "Setting CPU governor..."
+        if [[ "$ON_AC" == "1" ]]; then
+          for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            sudo bash -c "echo performance > $g" 2>/dev/null || true
+          done
+          sudo bash -c "echo 85 > /sys/devices/system/cpu/intel_pstate/min_perf_pct" 2>/dev/null || true
+        else
+          for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            sudo bash -c "echo powersave > $g" 2>/dev/null || true
+          done
+          sudo bash -c "echo 45 > /sys/devices/system/cpu/intel_pstate/min_perf_pct" 2>/dev/null || true
+        fi
+        
+        # Restart power service
+        echo "Restarting power management service..."
+        sudo systemctl restart cpu-power-limit.service
+        
+        # Wait and verify
+        sleep 2
+        
+        echo ""
+        echo "✅ Recovery complete! Current status:"
+        echo "=================================="
+        
+        # Show current frequencies
+        echo "CPU Frequencies:"
+        grep "cpu MHz" /proc/cpuinfo | head -4 | awk '{print "  Core " NR-1 ": " $4 " MHz"}'
+        
+        # Show EPP status
+        echo ""
+        echo "EPP Status:"
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do
+          if [[ -r "$p/energy_performance_preference" ]]; then
+            EPP=$(cat "$p/energy_performance_preference")
+            echo "  $(basename $p): $EPP"
+          fi
+        done | head -4
+        
+        # Show governor
+        echo ""
+        echo "Governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo 'N/A')"
+        echo "Min Performance: $(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo 'N/A')%"
+        
+        echo ""
+        echo "💡 If frequencies are still stuck at 400MHz, try:"
+        echo "   1. Run this command again"
+        echo "   2. Manually set: sudo cpupower frequency-set -g performance"
+        echo "   3. Reboot if the issue persists"
+      '')
+      
+      # Performance mode script
+      (pkgs.writeScriptBin "performance-mode" ''
+        #!${pkgs.bash}/bin/bash
+        echo "🚀 Forcing maximum performance mode..."
+        
+        # Set all cores to performance
+        for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          sudo bash -c "echo performance > $g" 2>/dev/null || true
+        done
+        
+        # Set EPP to performance
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do
+          sudo bash -c "echo performance > $p/energy_performance_preference" 2>/dev/null || true
+        done
+        
+        # Maximum performance floor
+        sudo bash -c "echo 100 > /sys/devices/system/cpu/intel_pstate/min_perf_pct" 2>/dev/null || true
+        
+        # Enable turbo
+        sudo bash -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo" 2>/dev/null || true
+        
+        echo "✅ Performance mode activated!"
+      '')
     ];
 
     shellAliases = {
+      # Battery management
       battery-status = "upower -i /org/freedesktop/UPower/devices/battery_BAT0";
       battery-info = ''
         echo "=== Battery Status ===" && \
@@ -542,10 +837,16 @@ in
         echo "Stop:  $(cat /sys/class/power_supply/BAT0/charge_control_end_threshold   2>/dev/null || echo 'N/A')%"
       '';
 
+      # Power management
       power-report = "sudo powertop --html=power-report-$(date +%Y%m%d-%H%M).html --time=10 && echo 'Power report saved'";
       power-usage  = "sudo powertop";
-      fix-power    = "sudo systemctl restart cpu-power-limit && echo 'Power limits & floors reapplied'";
+      fix-power    = "sudo systemctl restart cpu-power-limit && echo 'Power limits reapplied'";
+      
+      # CPU stuck fix (quick access)
+      fix-cpu = "fix-cpu-stuck";
+      perf-mode = "performance-mode";
 
+      # Thermal monitoring
       thermal-status = ''
         echo "=== Thermal Status ===" && sensors 2>/dev/null || echo "lm-sensors not available"; echo; \
         echo "=== ACPI Thermal ===" && cat /proc/acpi/ibm/thermal 2>/dev/null || echo "ThinkPad ACPI thermal not available"; echo; \
@@ -556,32 +857,57 @@ in
         done
       '';
 
+      # CPU frequency and power state
       cpu-freq = ''
         echo "=== CPU Frequency ==="; \
         grep "cpu MHz" /proc/cpuinfo | awk '{print "Core " NR-1 ": " $4 " MHz"}'; echo; \
         echo "=== Governor ==="; \
         cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || true; echo; \
-        echo "=== EPP ==="; \
-        cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || true; echo; \
-        echo "=== min_perf_pct (intel/amd) ==="; \
-        cat /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || cat /sys/devices/system/cpu/amd_pstate/min_perf_pct 2>/dev/null || echo "N/A"
+        echo "=== EPP (Energy Performance Preference) ==="; \
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do \
+          if [[ -r "$p/energy_performance_preference" ]]; then \
+            EPP=$(cat "$p/energy_performance_preference"); \
+            echo "$(basename $p): $EPP"; \
+          fi; \
+        done | head -4; echo; \
+        echo "=== Min Performance % ==="; \
+        cat /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo "N/A"
       '';
 
       cpu-type = "${detectCpuScript}";
 
+      # Complete performance summary
       perf-summary = ''
-        echo "=== System Performance ==="; \
+        echo "=== System Performance Summary ==="; \
         echo "CPU: $(${detectCpuScript})"; \
+        echo "Power: $([ "$(cat /sys/class/power_supply/AC*/online 2>/dev/null | head -1)" = "1" ] && echo "AC" || echo "Battery")"; \
         echo "Governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)"; \
         echo "EPP: $(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo 'N/A')"; \
+        echo "Min Perf: $(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo 'N/A')%"; \
+        echo "Turbo: $([ "$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null)" = "0" ] && echo "Enabled" || echo "Disabled")"; \
         echo "Memory: $(free -h | awk "/^Mem:/ {print \$3 \" / \" \$2}")"; \
         echo "Load: $(uptime | awk -F'load average:' '{print $2}')"; \
         echo; \
-        echo "=== Power Limits ==="; \
+        echo "=== Power Limits (RAPL) ==="; \
         PL1=$(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0); \
         PL2=$(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0); \
         echo "PL1: $((PL1/1000000))W"; \
-        echo "PL2: $((PL2/1000000))W"
+        echo "PL2: $((PL2/1000000))W"; \
+        echo; \
+        echo "=== Current CPU Frequencies ==="; \
+        grep "cpu MHz" /proc/cpuinfo | head -4 | awk '{print "Core " NR-1 ": " $4 " MHz"}'
+      '';
+      
+      # Quick status check
+      cpu-status = "perf-summary";
+      
+      # Suspend/resume test
+      test-suspend = ''
+        echo "Testing suspend/resume cycle..."; \
+        echo "Current EPP before suspend:"; \
+        cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null; \
+        echo "Suspending in 5 seconds... (Ctrl+C to cancel)"; \
+        sleep 5 && sudo systemctl suspend
       '';
     };
 
@@ -601,3 +927,4 @@ in
     memoryPercent = lib.mkDefault 30;
   };
 }
+
