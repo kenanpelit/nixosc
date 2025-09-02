@@ -1,136 +1,139 @@
 # ============================================================================
 # modules/core/hardware/default.nix
 # ----------------------------------------------------------------------------
-# Advanced Hardware & Power Management (ThinkPad-optimized) — v4.6.2
+# Advanced Hardware & Power Management (ThinkPad‑optimized) — v7.0 STABLE
 # ----------------------------------------------------------------------------
-# - i915 PSR/SAGV/FBC kapalı (çoklu monitör + Wayland akıcılık)
-# - AC/Batarya sade profiller + MTL RAPL
-# - Min CPU frekansı tabanı: 2000 MHz (her zaman)  ← burayı istersen değiştir
-# - Lid kapatınca suspend (docked/AC’deyken de)
-# - Boot + her 10 dakikada bir + AC değişiminde + resume sonrası otomatik uygula
+# • Tek otorite: auto-cpufreq (frekans tavan/tabanları burada)
+# • EPP & HWP ayarları: sağlam uygulama (governor kilidinde EPP için fallback)
+# • Meteor Lake (Core Ultra 7 155H) & Kaby Lake odaklı; çakışma yok
+# • AC/Batarya otomatik profil geçişi, AC’de güçlü taban (saplanma yok)
+# • i915 PSR/SAGV/FBC kapalı (Wayland + çoklu monitör akıcılık)
+# • ThinkPad fan & batarya eşikleri
 # ----------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 
-let
-  systemctl = "${pkgs.systemd}/bin/systemctl";
+{
+  # ======================== CPU FREKANS YÖNETİMİ ========================
+  # Tek yönetici: auto-cpufreq
+  services.tlp.enable = false;
+  services.power-profiles-daemon.enable = false;
 
-  # --------- PARAMETRE: Min frekans tabanı (Hz) ---------
-  minFloorHz = 2000000;  # 2.0 GHz
+  services.auto-cpufreq = {
+    enable = true;
+    settings = {
+      # ---------------------------- AC MODU ----------------------------
+      charger = {
+        governor = "performance";
+        turbo = "auto";
+        scaling_min_freq = 1600000;   # 1.6 GHz taban (AC)
+        scaling_max_freq = 4800000;   # 4.8 GHz tavan
+        energy_performance_preference = "performance";  # EPP → güçlü
+      };
 
-  detectCpuScript = pkgs.writeShellScript "detect-cpu" ''
-    #!${pkgs.bash}/bin/bash
-    set -euo pipefail
-    MODEL="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/tr -s ' ' | ${pkgs.coreutils}/bin/tr -d '\n')"
-    echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core *Ultra|155H|Meteor *Lake' && { echo meteorlake; exit 0; }
-    echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '13th *Gen|Raptor *Lake' && { echo raptorlake; exit 0; }
-    echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Ryzen.*7040|Ryzen.*7840|Phoenix' && { echo amdzen4; exit 0; }
-    echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Ryzen.*6000|Ryzen.*5000|Rembrandt|Cezanne' && { echo amdzen3; exit 0; }
-    echo kabylaker
-  '';
-
-  meteorLake = {
-    battery = { pl1 = 28; pl2 = 42; };
-    ac      = { pl1 = 42; pl2 = 60; };
-    battery_threshold = { start = 65; stop = 85; };
+      # -------------------------- BATARYA MODU ------------------------
+      battery = {
+        governor = "powersave";
+        turbo = "auto";
+        scaling_min_freq = 800000;    # 0.8 GHz taban (Batarya)
+        scaling_max_freq = 3500000;   # 3.5 GHz tavan (Batarya)
+        energy_performance_preference = "balance_power"; # EPP → tasarruf
+      };
+    };
   };
 
-  cpuApplyScript = pkgs.writeShellScript "cpu-power-limit-apply" ''
-    #!${pkgs.bash}/bin/bash
-    set -euo pipefail
+  # ================== CPU TİPİNE ÖZEL (ÇAKIŞMASIZ) AYAR ==================
+  # Not: intel_pstate min/max yüzdeleri sadece taban güvenliği için ayarlanır.
+  # EPP yazımı governor=performance altında kilitlenebileceği için fallback içerir.
+  systemd.services.cpu-type-optimizer = {
+    description = "CPU type specific optimizations (EPP/HWP/turbo + safe floor)";
+    after = [ "auto-cpufreq.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "cpu-type-optimizer" ''
+        #!${pkgs.bash}/bin/bash
+        set -euo pipefail
+        export PATH="${pkgs.util-linux}/bin:${pkgs.gnugrep}/bin:${pkgs.coreutils}/bin:$PATH"
 
-    CPU_TYPE="$(${detectCpuScript})"
+        # Güç kaynağı tespiti
+        ON_AC=0
+        for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
+          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+        done
 
-    # AC/Batarya tespiti
-    ON_AC=0
-    for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
-      [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
-    done
-
-    apply_rapl() {
-      local PL1_W="$1" PL2_W="$2"
-      local RAPL="/sys/class/powercap/intel-rapl:0"
-      [[ -d "$RAPL" ]] || return 0
-      echo $(( PL1_W * 1000000 )) > "$RAPL/constraint_0_power_limit_uw" 2>/dev/null || true
-      echo $(( PL2_W * 1000000 )) > "$RAPL/constraint_1_power_limit_uw" 2>/dev/null || true
-    }
-
-    set_policy() {
-      local GOV="$1" EPP="$2" MIN_PCT="$3" MAX_PCT="$4"
-      # Governor
-      for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-        echo "$GOV" > "$g" 2>/dev/null || true
-      done
-      # EPP (tüm policy’lere yaz)
-      for p in /sys/devices/system/cpu/cpufreq/policy*; do
-        [[ -f "$p/energy_performance_preference" ]] && echo "$EPP" > "$p/energy_performance_preference" 2>/dev/null || true
-      done
-      # intel_pstate yüzdeleri
-      if [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]]; then
-        echo "$MIN_PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
-      fi
-      if [[ -w /sys/devices/system/cpu/intel_pstate/max_perf_pct ]]; then
-        echo "$MAX_PCT" > /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || true
-      fi
-      # Turbo / HWP boost açık
-      echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
-      echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
-    }
-
-    set_min_floor() {
-      # Her policy için min/max frekansları ayarla
-      for p in /sys/devices/system/cpu/cpufreq/policy*; do
-        [[ -f "$p/cpuinfo_max_freq" ]] || continue
-        MAX=$(cat "$p/cpuinfo_max_freq")
-        MIN='${builtins.toString minFloorHz}'
-        [[ "$MIN" -ge "$MAX" ]] && MIN=$((MAX - 1))
-        echo "$MIN" > "$p/scaling_min_freq" 2>/dev/null || true
-        echo "$MAX" > "$p/scaling_max_freq" 2>/dev/null || true
-      done
-
-      # min_perf_pct'i minFloorHz'e göre hesapla (yaklaşık)
-      if [[ -r /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq ]]; then
-        P0MAX=$(cat /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq)
-        PCT=$(( ${builtins.toString minFloorHz} * 100 / P0MAX ))
-        (( PCT < 1 )) && PCT=1
-        (( PCT > 100 )) && PCT=100
-        [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && echo "$PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
-      fi
-    }
-
-    case "$CPU_TYPE" in
-      meteorlake|raptorlake)
+        # Hedef EPP & taban yüzdesi
         if [[ "$ON_AC" == "1" ]]; then
-          apply_rapl ${builtins.toString meteorLake.ac.pl1} ${builtins.toString meteorLake.ac.pl2}
-          set_policy performance performance 70 100
+          EPP="performance"; MIN_PCT=50; MAX_PCT=100; FLOOR=1600000
         else
-          apply_rapl ${builtins.toString meteorLake.battery.pl1} ${builtins.toString meteorLake.battery.pl2}
-          set_policy powersave balance_performance 50 85
+          EPP="balance_power"; MIN_PCT=15; MAX_PCT=80;  FLOOR=800000
         fi
-        ;;
-      *)
-        if [[ "$ON_AC" == "1" ]]; then
-          set_policy performance performance 70 100
-        else
-          set_policy powersave balance_power 50 85
+
+        # ----- EPP sağlam yazımı (governor kilidi varsa powersave geçişi) -----
+        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+          PREF="$policy/energy_performance_preference"
+          GOV="$policy/scaling_governor"
+          if [[ -w "$PREF" ]]; then
+            if ! echo "$EPP" > "$PREF" 2>/dev/null; then
+              # Governor kilitliyse geçici powersave → EPP yaz → geri al
+              if [[ -w "$GOV" ]]; then
+                CURGOV="$(cat "$GOV" 2>/dev/null || echo unknown)"
+                echo powersave > "$GOV" 2>/dev/null || true
+                echo "$EPP" > "$PREF" 2>/dev/null || true
+                # AC'de performance'a geri; bataryada powersave kalsın
+                if [[ "$ON_AC" == "1" ]]; then
+                  echo performance > "$GOV" 2>/dev/null || true
+                fi
+              fi
+            fi
+          fi
+        done
+
+        # ----- intel_pstate güvenli taban -----
+        if [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]]; then
+          echo "$MIN_PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
+          echo "$MAX_PCT" > /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || true
         fi
-        ;;
-    esac
 
-    set_min_floor
+        # ----- Ek emniyet: policy bazında min freq -----
+        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$policy/scaling_min_freq" ]] && echo "$FLOOR" > "$policy/scaling_min_freq" 2>/dev/null || true
+        done
 
-    # Kısa dürtme: bazı firmware’lerde HWP’nin “uyanması” için işe yarıyor
-    timeout 0.3 dd if=/dev/zero of=/dev/null bs=1M count=50 2>/dev/null || true
+        # Turbo + HWP Dynamic Boost
+        echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+        echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
 
-    echo "Applied: AC=$ON_AC CPU=$CPU_TYPE; min_freq_floor=${builtins.toString minFloorHz}Hz"
+        # Tanılama
+        STATUS_FILE=/sys/devices/system/cpu/intel_pstate/status
+        [[ -r "$STATUS_FILE" ]] && echo "intel_pstate status: $(cat $STATUS_FILE)" | systemd-cat -t cpu-type-optimizer || true
+        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+          PREF="$policy/energy_performance_preference"
+          CUR="$policy/scaling_cur_freq"; MIN="$policy/scaling_min_freq"; MAX="$policy/scaling_max_freq"; GOV="$policy/scaling_governor"
+          echo "$(basename $policy) GOV=$(cat $GOV 2>/dev/null) EPP=$(cat $PREF 2>/dev/null) cur=$(cat $CUR 2>/dev/null) min=$(cat $MIN 2>/dev/null) max=$(cat $MAX 2>/dev/null)" | systemd-cat -t cpu-type-optimizer || true
+        done
+
+        echo "cpu-type-optimizer: AC=$ON_AC EPP=$EPP min_pct=$MIN_PCT turbo=on hwp_boost=on"
+      '';
+    };
+  };
+
+  # AC/DC değişiminde ve pil olaylarında optimizer'ı tekrar çalıştır
+  services.udev.extraRules = ''
+    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
+    SUBSYSTEM=="power_supply", ATTR{status}=="Discharging", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
+    SUBSYSTEM=="power_supply", ATTR{status}=="Charging", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
   '';
 
-in
-{
-  # ------------------------ Donanım ------------------------
+  # ======================== DONANIM YÖNETİMİ ========================
   hardware = {
+    # TrackPoint
     trackpoint = { enable = true; speed = 200; sensitivity = 200; emulateWheel = true; };
 
+    # Intel Graphics
     graphics = {
       enable = true;
       enable32Bit = true;
@@ -149,119 +152,125 @@ in
     enableRedistributableFirmware = true;
     enableAllFirmware = true;
     cpu.intel.updateMicrocode = true;
-
     bluetooth.enable = true;
   };
 
-  # ------------------------ Servisler ------------------------
+  # ======================== SİSTEM SERVİSLERİ ========================
   services = {
     thermald.enable = true;
-    power-profiles-daemon.enable = false;
-    tlp.enable = false;
     upower.enable = true;
 
+    # ThinkFan
+    thinkfan = {
+      enable = true;
+      levels = [
+        ["level auto" 0 55]
+        [1 55 65]
+        [3 65 75]
+        [7 75 85]
+      ];
+    };
+
+    # logind davranışları
     logind.settings.Login = {
       HandlePowerKey = "ignore";
       HandlePowerKeyLongPress = "poweroff";
       HandleSuspendKey = "suspend";
       HandleHibernateKey = "hibernate";
-
       HandleLidSwitch = "suspend";
       HandleLidSwitchDocked = "suspend";
       HandleLidSwitchExternalPower = "suspend";
-
       IdleAction = "ignore";
       IdleActionSec = "30min";
       InhibitDelayMaxSec = "5";
     };
   };
 
-  # -------------------- Boot & Kernel -----------------------
+  # ======================== KERNEL YÖNETİMİ ========================
   boot = {
     kernelModules = [ "thinkpad_acpi" "coretemp" "intel_rapl" "i915" ];
 
     extraModprobeConfig = ''
+      # Intel P-State dynamic boost
       options intel_pstate hwp_dynamic_boost=1
+      # Audio güç tasarrufu
       options snd_hda_intel power_save=10 power_save_controller=Y
+      # WiFi güç
       options iwlwifi power_save=1 power_level=3
+      # USB & NVMe
       options usbcore autosuspend=5
       options nvme_core default_ps_max_latency_us=5500
     '';
 
+    # Çakışmasız kernel parametreleri (minimal)
     kernelParams = [
       "intel_pstate=active"
       "intel_pstate.hwp_dynamic_boost=1"
+
+      # P-State min/max burada YAZMA → saplanma riskini önle
+
+      # Güç yönetimi
+      "pcie_aspm=off"
+
+      # GPU (çoklu monitör + Wayland stabil)
       "i915.enable_guc=3"
       "i915.enable_fbc=0"
       "i915.enable_psr=0"
       "i915.enable_sagv=0"
+
+      # Uyku & NVMe
       "nvme_core.default_ps_max_latency_us=5500"
-      "mem_sleep_default=deep"  # Sende yoksa kernel yok sayar; diğer makinede aktif
+      "mem_sleep_default=deep"
     ];
 
+    # Sadelestirilmiş sysctl
     kernel.sysctl = {
       "vm.swappiness" = 10;
-      "kernel.sched_autogroup_enabled" = 1;
+      "vm.vfs_cache_pressure" = 50;
     };
   };
 
-  # -------------- systemd servisleri + timer ---------------
-  systemd.services = {
-    # İSİM UYUMU: osc-perf-mode 'cpu-power-limit' bekliyor
-    cpu-power-limit = {
-      description = "Apply CPU power limits, EPP and min frequency floor (>=2.0GHz)";
-      wantedBy = lib.mkForce [ ];  # Timer yönetecek
-      after = [ "multi-user.target" "systemd-udev-settle.service" "thermald.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = cpuApplyScript;
-      };
-    };
-
-    # Resume sonrası geri uygula
-    system-resume-post = {
-      description = "Restore CPU policy after resume";
-      wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-      after = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-      unitConfig = { DefaultDependencies = false; };
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = cpuApplyScript;
-      };
-    };
-
-    # deep’i sadece destekleyen makinelerde zorla (sende s2idle tek; diğerinde çalışır)
-    mem-sleep-deep = {
-      description = "Force mem_sleep=deep when available";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = pkgs.writeShellScript "force-mem-sleep-deep" ''
-          #!${pkgs.bash}/bin/bash
-          set -euo pipefail
-          if [[ -w /sys/power/mem_sleep ]] && grep -q 'deep' /sys/power/mem_sleep; then
-            echo deep > /sys/power/mem_sleep || true
-          fi
-        '';
-      };
+  # ======================== THİNKPAD ÖZEL AYARLAR ========================
+  systemd.services.thinkpad-battery-thresholds = {
+    description = "ThinkPad battery charge thresholds";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "set-battery-thresholds" ''
+        #!${pkgs.bash}/bin/bash
+        if [[ -w /sys/class/power_supply/BAT0/charge_start_threshold ]]; then
+          echo 65 > /sys/class/power_supply/BAT0/charge_start_threshold
+          echo "Battery start threshold: 65%"
+        fi
+        if [[ -w /sys/class/power_supply/BAT0/charge_stop_threshold ]]; then
+          echo 85 > /sys/class/power_supply/BAT0/charge_stop_threshold
+          echo "Battery stop threshold: 85%"
+        fi
+        # Eski ThinkPad yolları (yoksa sessiz geç)
+        echo 65 > /sys/devices/platform/smapi/BAT0/start_charge_thresh 2>/dev/null || true
+        echo 85 > /sys/devices/platform/smapi/BAT0/stop_charge_thresh 2>/dev/null || true
+      '';
     };
   };
 
-  # Timer: boot’tan 1 sn sonra ve her 10 dk’da bir tekrar uygula
-  systemd.timers.cpu-power-limit = {
-    description = "Timer: apply CPU power policy periodically";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "1s";
-      OnUnitActiveSec = "10min";
-      Persistent = true;
+  # Derin uyku zorlaması (destek varsa)
+  systemd.services.mem-sleep-deep = {
+    description = "Force deep sleep mode when available";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "set-deep-sleep" ''
+        #!${pkgs.bash}/bin/bash
+        if [[ -w /sys/power/mem_sleep ]] && grep -q 'deep' /sys/power/mem_sleep; then
+          echo deep > /sys/power/mem_sleep
+          echo "mem_sleep set to deep"
+        else
+          echo "mem_sleep: deep not available"
+        fi
+      '';
     };
   };
-
-  # AC tak/çıkar olduğunda hemen uygula
-  services.udev.extraRules = lib.mkAfter ''
-    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", RUN+="${systemctl} start cpu-power-limit.service"
-  '';
 }
