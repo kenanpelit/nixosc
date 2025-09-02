@@ -51,7 +51,7 @@ let
     # AMD aileleri
     elif echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Ryzen.*7040|Ryzen.*7840|Phoenix'; then
       echo "amdzen4"
-    elif echo "$MODEL" | ${pkks.gnugrep:-${pkgs.gnugrep}}/bin/grep -qiE 'Ryzen.*6000|Ryzen.*5000|Rembrandt|Cezanne' <<<"$MODEL"; then
+    elif echo "$MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Ryzen.*6000|Ryzen.*5000|Rembrandt|Cezanne' <<<"$MODEL"; then
       echo "amdzen3"
     else
       # Güvenli varsayılan: düşük TDP’li Kaby Lake‑R sınıfı gibi davran.
@@ -744,4 +744,5 @@ in
     };
   };
 }
+
 
