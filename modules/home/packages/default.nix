@@ -14,181 +14,196 @@
 # ==============================================================================
 
 { inputs, pkgs, ... }:
+
+let
+  # Python Ortamı (Kullanıcı için)
+  customPython = pkgs.python3.withPackages (ps: with ps; [
+    ipython        # Gelişmiş Python shell
+    libtmux        # Tmux için Python API
+    pip            # Paket yükleyici
+    pipx           # İzole ortam yükleyici
+    #subliminal     # Altyazı indirici
+  ]);
+in
 {
   home.packages = with pkgs; [
     # ==============================================================================
     # Dosya Yönetimi ve Navigasyon
     # ==============================================================================
     caligula      # Vim benzeri dosya yöneticisi
-    duf           # Disk kullanım analizi (modern df)
+    duf           # Modern disk kullanım gösterici
     eza           # Modern ls alternatifi
-    fd            # Hızlı dosya bulucu (find alternatifi)
+    fd            # Hızlı dosya bulucu
     file          # Dosya türü tanımlayıcı
-    gtrash        # GNOME çöp yöneticisi
+    gtrash        # GNOME çöp kutusu yönetimi
     lsd           # Renkli ls alternatifi
-    ncdu          # Disk kullanım analizi (interactive)
+    ncdu          # İnteraktif disk kullanım analizi
     tree          # Dizin ağacı görüntüleyici
-    trash-cli     # Çöp CLI yöneticisi
-    unzip         # Arşiv açıcı
+    trash-cli     # Çöp kutusu CLI
+    unzip         # ZIP arşiv açıcı
     fdupes        # Yinelenen dosya bulucu
-    czkawka       # Yinelenen dosya bulucu GUI
-    tdf           # Dosya yöneticisi
-    mlocate       # Dosya konumlandırıcı
+    czkawka       # Gelişmiş temizlik aracı GUI
+    tdf           # Terminal dosya yöneticisi
+    mlocate       # Hızlı dosya konumlandırıcı
     detox         # Dosya adı temizleyici
-    atool         # Arşiv aracı
-    p7zip         # Sıkıştırma
-    lftp          # FTP clients
-    scrcpy        # Android devices over USB or TCP/IP
+    atool         # Evrensel arşiv aracı
+    p7zip         # 7-Zip sıkıştırma
+    lftp          # FTP istemcisi
+    scrcpy        # Android ekran yansıtma
 
     # ==============================================================================
     # Geliştirme Araçları
     # ==============================================================================
     # Version Control
-    git           # Versiyon kontrol
-    lazygit       # Git TUI
+    git           # Versiyon kontrol sistemi
+    lazygit       # Terminal Git GUI
     tig           # Git metin arayüzü
     
     # Language Servers & Formatters
     lua-language-server    # Lua LSP
     nixd                   # Nix LSP
-    nixfmt-rfc-style       # Nix biçimlendirici
+    nixfmt-rfc-style       # Nix kod biçimlendirici
     nil                    # Nix dil araçları
-    shellcheck            # Kabuk analizci
-    shfmt                 # Kabuk biçimlendirici
+    shellcheck            # Shell script analizi
+    shfmt                 # Shell biçimlendirici
     stylua                # Lua biçimlendirici
     treefmt               # Çoklu dil biçimlendirici
     inputs.alejandra.defaultPackage.${pkgs.system} # Nix biçimlendirici
     
     # Binary Analysis & Debugging
-    binsider               # İkili analizci
-    bitwise                # Bit manipülasyonu
+    binsider               # İkili dosya analizci
+    bitwise                # Bit manipülasyon aracı
     hexdump                # Hex görüntüleyici
     xxd                   # Hex editör
-    programmer-calculator  # Geliştirici hesap makinesi
-    psmisc                 # Süreç araçları
+    programmer-calculator  # Programcı hesap makinesi
+    psmisc                 # Süreç yönetim araçları
     strace                # Sistem çağrı izleyici
     gdb                   # GNU hata ayıklayıcı
     
     # Development Tools
     tree-sitter           # Parser üreteci
     nix-search-tv         # Nix paket arayıcı
-    gist                  # GitHub gist aracı
+    gist                  # GitHub gist CLI
     
-    # Nix Development Tools
-    nvd                # Nix versiyon diff
-    cachix             # İkili önbellek
-    nix-output-monitor # Nix inşa izleyici
+    # Nix Development
+    nvd                # Nix versiyon karşılaştırma
+    cachix             # İkili önbellek servisi
+    nix-output-monitor # Nix build monitörü
     
-    # Programming Languages & Runtimes
-    go                 # Go çalışma zamanı
+    # Programming Languages
+    go                 # Go programlama dili
+    customPython       # Özelleştirilmiş Python
     
     # AI/ML Tools
-    ollama             # LLM çalıştırıcı
+    ollama             # Lokal LLM çalıştırıcı
 
     # ==============================================================================
     # Terminal Araçları
     # ==============================================================================
     # Terminal Management
     tmux            # Terminal çoklayıcı
+    wezterm         # Modern terminal emülatörü
     
     # Text Processing
     bc              # Hesap makinesi
     jq              # JSON işlemci
     yq              # YAML/JSON işlemci
-    gawk            # Metin işleme
-    bat             # Gelişmiş cat
-    ripgrep         # Metin arama (grep alternatifi)
+    gawk            # Metin işleme aracı
+    bat             # Sözdizimi vurgulu cat
+    ripgrep         # Hızlı metin arama
     most            # Sayfalayıcı
     glow            # Markdown görüntüleyici
     
     # System Utilities
-    killall         # Süreç sonlandırıcı
-    entr            # Dosya izleyici
-    pv              # Boru görüntüleyici
-    pwgen           # Password generator
-    tldr            # Basit man sayfaları
+    killall         # İsme göre süreç sonlandırma
+    entr            # Dosya değişiklik izleyici
+    pv              # Pipe progress görüntüleyici
+    pwgen           # Parola üreteci
+    tldr            # Basitleştirilmiş man sayfaları
     mimeo           # MIME işleyici
     
     # Navigation & Session
-    zoxide          # Dizin atlayıcı
-    sesh            # Oturum yöneticisi
-    wezterm         # Terminal emülatörü
+    zoxide          # Akıllı dizin atlayıcı
+    sesh            # Terminal oturum yöneticisi
     
     # Clipboard & Utilities
-    wl-clipboard    # Wayland pano
+    wl-clipboard    # Wayland pano araçları
     docfd           # Belge bulucu
     translate-shell # Çeviri aracı
-    wmctrl
+    wmctrl          # Pencere yönetimi
     
-    # Network & Download Tools
-    curl            # URL veri transfer
-    wget            # Ağ dosya indirme
+    # Network & Download
+    curl            # URL transfer aracı
+    wget            # Web dosya indirici
+    dig             # DNS sorgu aracı
     
-    # User Security Tools
-    age             # Şifreleme
+    # Security Tools
+    age             # Modern şifreleme aracı
 
     # ==============================================================================
     # Medya Araçları
     # ==============================================================================
     # Video/Audio Players
-    mpv             # Medya oynatıcı
-    vlc             # Medya oynatıcı
+    mpv             # Minimal medya oynatıcı
+    vlc             # Çok amaçlı medya oynatıcı
     
     # Image Viewers
-    imv             # Resim görüntüleyici
-    qview           # Hızlı görüntüleyici
+    imv             # Minimal resim görüntüleyici
+    qview           # Hızlı resim görüntüleyici
     
     # Audio Control
-    pamixer         # Ses karıştırıcı
-    pavucontrol     # Ses kontrolü
-    playerctl       # Medya kontrolü
+    pamixer         # PulseAudio CLI mixer
+    pavucontrol     # PulseAudio ses kontrolü
+    playerctl       # MPRIS medya kontrolü
     
     # Media Processing
-    ffmpeg          # Medya dönüştürücü
-    gifsicle       # GIF editör
-    imagemagick     # Image manager
-    yt-dlp          # Video indirici
+    ffmpeg          # Medya dönüştürme araçları
+    gifsicle       # GIF optimizasyon
+    imagemagick     # Resim işleme araçları
+    yt-dlp          # YouTube/video indirici
     
     # Screenshot Tools
-    satty           # Ekran görüntüsü
-    swappy          # Ekran görüntüsü editörü
+    satty           # Ekran görüntüsü annotasyon
+    swappy          # Wayland ekran görüntüsü editörü
     
     # Music & Entertainment
-    spotify         # Müzik servisi  
-    spotify-cli-linux # Command line interface to Spotify
-    ani-cli         # Anime CLI
-    rmpc            # Zengin MPD istemcisi
-    mpc-cli         # MPD istemcisi
-    #radiotray-ng    # İnternet radyosu
-    soundwireserver # Ses akışı
+    spotify         # Müzik streaming
+    spotify-cli-linux # Spotify CLI kontrolü
+    ani-cli         # Anime streaming CLI
+    rmpc            # Modern MPD istemcisi
+    mpc-cli         # Minimal MPD istemcisi
+    #radiotray-ng    # İnternet radyo oynatıcı
+    soundwireserver # Ses streaming sunucusu
     
     # Torrent
-    transmission_4   # Torrent istemcisi
-    pirate-get       # Torrent arama
+    transmission_4   # BitTorrent istemcisi
+    pirate-get       # Pirate Bay CLI
 
     # ==============================================================================
     # Sistem İzleme ve Performans
     # ==============================================================================
     # System Monitors
-    atop            # Sistem monitörü
-    glances         # Sistem monitörü
-    resources       # Kaynak monitörü
+    atop            # Gelişmiş sistem monitörü
+    glances         # Cross-platform sistem monitörü
+    resources       # GNOME sistem kaynakları
     nmon            # Performans monitörü
-    iotop           # I/O monitörü
-    dool            # Sistem istatistikleri
+    iotop           # I/O kullanım monitörü
+    dool            # Sistem istatistikleri (dstat fork)
+    stress-ng       # Sistem stres test aracı
+    s-tui           # Terminal stres monitörü
     
     # Process Management
-    cpulimit        # CPU sınırlayıcı
+    cpulimit        # CPU kullanım sınırlayıcı
     lsof            # Açık dosya listeleyici
     
     # Hardware Info
-    lshw            # Donanım listeleyici
-    pciutils        # PCI araçları
-    inxi            # Sistem bilgisi
+    lshw            # Detaylı donanım bilgisi
+    pciutils        # PCI aygıt araçları
+    inxi            # Sistem bilgi özeti
     
-    # System Info
-    neofetch        # Sistem bilgisi
-    nitch           # Sistem bilgisi
+    # System Info Display
+    neofetch        # Sistem bilgi banner
+    nitch           # Minimal sistem bilgisi
     onefetch        # Git repo bilgisi
 
     # ==============================================================================
@@ -197,163 +212,167 @@
     # Network Monitoring
     bmon            # Bant genişliği monitörü
     iptraf-ng       # IP trafik monitörü
-    vnstat          # Ağ monitörü
+    vnstat          # Ağ kullanım istatistikleri
+    tcpdump         # Paket yakalama aracı
+    nethogs         # Süreç bazlı bant genişliği
+    iftop           # Ağ arayüzü monitörü
     
     # Network Analysis & Testing
-    mtr             # Ağ teşhis
-    nmap            # Ağ keşif
+    mtr             # Traceroute + ping kombini
+    nmap            # Ağ keşif ve güvenlik tarama
     speedtest-cli   # İnternet hız testi
-    iperf           # Ağ performans
-    fping           # Hızlı ping
-    traceroute      # Ağ izleyici
+    iperf           # Ağ performans testi
+    fping           # Paralel ping aracı
+    traceroute      # Ağ yolu izleme
     
     # Network Tools
-    aria2           # İndirme yöneticisi
-    ethtool         # Ethernet aracı
+    aria2           # Çoklu protokol indirme
+    ethtool         # Ethernet arayüz kontrolü
     
-    # Remote Access & SSH
-    assh            # SSH yapılandırma
+    # Remote Access
+    assh            # SSH wrapper ve manager
     pssh            # Paralel SSH
-    tigervnc        # VNC uygulaması
+    tigervnc        # VNC istemci/sunucu
     anydesk         # Uzak masaüstü
     
     # Network Management
-    rofi-network-manager
+    rofi-network-manager  # Rofi NetworkManager GUI
+    
+    # Input Tools
+    fusuma          # Çoklu dokunma hareketi
+    touchegg        # Dokunmatik hareket tanıma
 
     # ==============================================================================
     # Masaüstü Uygulamaları
     # ==============================================================================
     # Office & Productivity
     libreoffice      # Ofis paketi
-    libqalculate     # Gelişmiş hesap makinesi kitaplığı
-    qalculate-gtk    # Hesap makinesi
-    calcurse        # Takvim
+    libqalculate     # Gelişmiş hesap makinesi kütüphanesi
+    qalculate-gtk    # Bilimsel hesap makinesi
+    calcurse        # Terminal takvim
     
     # PDF Tools
-    pdftk            # PDF araçları
-    zathura          # PDF görüntüleyici
-    evince           # PDF görüntüleyici
-    poppler_utils    # PDF araçları
+    pdftk            # PDF araç seti
+    zathura          # Minimal PDF görüntüleyici
+    evince           # GNOME belge görüntüleyici
+    poppler_utils    # PDF komut satırı araçları
     
     # Communication
-    discord          # Sohbet platformu
-    whatsie          # WhatsApp
-    whatsapp-for-linux # WhatsApp
-    ferdium          # Services in one place
+    discord          # Oyuncu sohbet platformu
+    whatsie          # WhatsApp masaüstü
+    whatsapp-for-linux # Alternatif WhatsApp
+    ferdium          # Çoklu servis yöneticisi
     
     # Security & Authentication
-    ente-auth        # Kimlik doğrulama
+    ente-auth        # 2FA kimlik doğrulama
     keepassxc        # Parola yöneticisi
-    gopass           # Parola CLI
+    gopass           # CLI parola yöneticisi
     
     # System Management
     bleachbit        # Sistem temizleyici
-    gparted           # Disk bölümü editörü
+    gparted          # Disk bölümleme GUI
+    flatpak          # Uygulama sandboxing
+    ventoy           # Çoklu ISO USB aracı
     
     # Clipboard Management
-    copyq            # Pano yöneticisi
-    xclip
-    cliphist         # Pano yöneticisi
+    copyq            # Gelişmiş pano yöneticisi
+    xclip            # X11 pano aracı
+    cliphist         # Wayland pano geçmişi
     clipman          # Pano yöneticisi
 
     # ==============================================================================
     # Hyprland & Wayland Araçları
     # ==============================================================================
     # Window Management
-    sway             # Pencere yöneticisi
-    pyprland         # Hyprland araçları
-    woomer           # Pencere yöneticisi
+    sway             # i3 uyumlu Wayland WM
+    pyprland         # Hyprland Python araçları
+    woomer           # Pencere büyütme aracı
     
     # System Control
-    hyprsunset       # Renk sıcaklığı
-    hypridle         # Boşta yöneticisi
-    brightnessctl    # Parlaklık kontrolü
+    hyprsunset       # Ekran renk sıcaklığı
+    hypridle         # Boşta kalma yöneticisi
+    brightnessctl    # Ekran parlaklığı kontrolü
     
     # Wallpaper & Themes
-    wpaperd          # Duvar kağıdı 
+    wpaperd          # Wayland duvar kağıdı daemon
     candy-icons      # Simge teması
-    beauty-line-icon-theme # Simgeler
+    beauty-line-icon-theme # Alternatif simge seti
     
     # Input Simulation
-    wtype            # Tuş simülatörü
-    ydotool          # Tuş simülatörü
+    wtype            # Wayland klavye simülatörü
+    ydotool          # Evrensel input simülatörü
     
     # Media Control
-    waybar-mpris     # Medya kontrolü
+    waybar-mpris     # Waybar MPRIS entegrasyonu
     
     # Dialogs & Notifications
-    zenity           # GTK diyalogları
+    zenity           # GTK dialog kutuları
     
     # Extensions
-    gnomeExtensions.gsconnect # KDE Connect
+    gnomeExtensions.gsconnect # Telefon entegrasyonu
 
     # ==============================================================================
     # Tarayıcılar
     # ==============================================================================
     # Text Browsers
-    lynx            # Metin tarayıcı
-    links2          # Metin tarayıcı
-    elinks          # Metin tarayıcı
-    w3m             # Metin tarayıcı
+    lynx            # Klasik metin tarayıcı
+    links2          # Gelişmiş metin tarayıcı
+    elinks          # Özellikli metin tarayıcı
+    w3m             # Inline görüntü destekli
 
     # ==============================================================================
-    # Önizleme Araçları
+    # Önizleme Araçları (LF için)
     # ==============================================================================
-    # Text & Code Preview
-    jq             # JSON aracı
-    bat            # Kod görüntüleyici
-    glow           # Markdown görüntüleyici
-    eza            # Dosya listeleyici
-    
     # Document Conversion
-    odt2txt        # ODT dönüştürücü
-    catdoc         # DOC görüntüleyici
-    #gnumeric       # Hesap tablosu
+    odt2txt        # ODT metin dönüştürücü
+    catdoc         # DOC metin çıkarıcı
+    #gnumeric       # Hesap tablosu görüntüleyici
     
     # Media Information
-    exiftool       # Meta veri aracı
-    chafa          # Resim görüntüleyici
-    mediainfo      # Medya bilgisi
-    ffmpegthumbnailer # Küçük resimler
-    
+    exiftool       # Metadata okuyucu
+    chafa          # Terminal resim görüntüleyici
+    mediainfo      # Medya dosyası bilgileri
+   ffmpegthumbnailer # Video küçük resim üretici
+   
     # CD/DVD Tools
-    libcdio        # CD/DVD aracı
+    libcdio        # CD/DVD erişim kütüphanesi
 
     # ==============================================================================
     # VPN Araçları
     # ==============================================================================
-    gpauth                    # GlobalProtect
-    globalprotect-openconnect # VPN istemcisi
-    openvpn                   # VPN istemcisi
-    openconnect               # VPN istemcisi
-    openfortivpn              # VPN istemcisi
-    mullvad-vpn               # Mullvad GUI
-    wireguard-tools           # wg, wg-quick
-
+    gpauth                    # GlobalProtect authenticator
+    globalprotect-openconnect # GlobalProtect VPN istemcisi
+    openvpn                   # OpenVPN istemcisi
+    openconnect               # Cisco AnyConnect uyumlu
+    openfortivpn              # Fortinet VPN istemcisi
+    mullvad-vpn               # Mullvad VPN GUI
+    wireguard-tools           # WireGuard CLI araçları
+ 
     # ==============================================================================
     # Üretkenlik ve Zaman Yönetimi
     # ==============================================================================
-    gtt               # Zaman takibi
-    todo              # Yapılacaklar yöneticisi
-    toipe             # Yazma öğretici
-    ttyper            # Yazma oyunu
-
+    gtt               # Grafik zaman takibi
+    todo              # Görev yöneticisi
+    toipe             # Terminal yazma pratiği
+    ttyper            # Yazma hızı oyunu
+ 
     # ==============================================================================
     # Eğlence ve Terminal Oyunları
     # ==============================================================================
-    cbonsai          # Bonsai ağacı
-    cmatrix          # Matrix efekti
-    figlet           # ASCII sanatı
-    pipes            # Borular ekran koruyucu
-    sl               # Buhar lokomotifi
-    toilet           # ASCII sanatı
+    cbonsai          # ASCII bonsai ağacı
+    cmatrix          # Matrix yağmur efekti
+    figlet           # ASCII banner üretici
+    pipes            # Boru animasyonu
+    sl               # Tren animasyonu
+    toilet           # Renkli ASCII sanatı
     tty-clock        # Terminal saati
-
+ 
     # ==============================================================================
     # Commented Out / Optional Packages
     # ==============================================================================
     # python312Packages.subliminal # Altyazı indirici
     # walker           # Uygulama başlatıcı
+    # iwgtk            # Kablosuz yapılandırma GUI
+    # intel-undervolt  # CPU undervolting (Meteor Lake uyumsuz)
   ];
 }
-
