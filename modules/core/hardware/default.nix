@@ -305,4 +305,48 @@
       '';
     };
   };
+
+  # ======================== SUSPEND ÖNCESİ/SONRASI FAN ========================
+  # Suspend öncesi thinkfan'ı durdur ve fanı otomatiğe al; resume sonrası geri başlat.
+  systemd.services."suspend-pre-fan" = {
+    description = "Stop thinkfan before suspend & set auto";
+    wantedBy = [ "sleep.target" ];
+    before = [ "sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "suspend-pre-fan" ''
+        #!${pkgs.bash}/bin/bash
+        set -euo pipefail
+        # thinkfan varsa durdur
+        ${pkgs.systemd}/bin/systemctl stop thinkfan.service 2>/dev/null || true
+        # Fanı otomatik moda al (ThinkPad ACPI)
+        if [[ -w /proc/acpi/ibm/fan ]]; then
+          echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
+        fi
+      '';
+    };
+  };
+
+  systemd.services."resume-post-fan" = {
+    description = "Start thinkfan after resume";
+    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    after = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "resume-post-fan" ''
+        #!${pkgs.bash}/bin/bash
+        set -euo pipefail
+        # Kısa gecikme: sensörler/topoloji otursun
+        sleep 0.8
+        if ${pkgs.systemd}/bin/systemctl is-enabled thinkfan.service >/dev/null 2>&1; then
+          ${pkgs.systemd}/bin/systemctl start thinkfan.service 2>/dev/null || true
+        else
+          # thinkfan kullanılmıyorsa fanı yine otomatikte bırak
+          if [[ -w /proc/acpi/ibm/fan ]]; then
+            echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
+          fi
+        fi
+      '';
+    };
+  };
 }
