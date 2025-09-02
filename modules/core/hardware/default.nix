@@ -273,4 +273,36 @@
       '';
     };
   };
+
+  # ======================== THINKPAD MUTE LED FIX ========================
+  # Bootta ve uykudan dönünce micmute/mute LED'lerini kapat.
+  systemd.services."thinkpad-led-fix" = {
+    description = "Turn off stuck ThinkPad mute LEDs";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "disable-thinkpad-mute-leds" ''
+        #!${pkgs.bash}/bin/bash
+        for led in /sys/class/leds/platform::micmute /sys/class/leds/platform::mute; do
+          [[ -w "$led/brightness" ]] && echo 0 > "$led/brightness"
+        done
+      '';
+    };
+  };
+
+  # Uykudan (suspend/hibernate) uyanınca da LED'leri söndür
+  systemd.services."thinkpad-led-fix-resume" = {
+    description = "Turn off ThinkPad mute LEDs on resume";
+    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" "sleep.target" ];
+    after = [ "sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "disable-thinkpad-mute-leds-resume" ''
+        #!${pkgs.bash}/bin/bash
+        for led in /sys/class/leds/platform::micmute /sys/class/leds/platform::mute; do
+          [[ -w "$led/brightness" ]] && echo 0 > "$led/brightness"
+        done
+      '';
+    };
+  };
 }
