@@ -144,21 +144,21 @@ in
     tlp.enable = false;
     upower.enable = true;
 
-    # LID → suspend (docked ve AC’deyken de), güç tuşu davranışları
-    logind.extraConfig = ''
-      HandlePowerKey=ignore
-      HandlePowerKeyLongPress=poweroff
-      HandleSuspendKey=suspend
-      HandleHibernateKey=hibernate
+    # ✅ YENİ: systemd-logind ayarları
+    logind.settings.Login = {
+      HandlePowerKey = "ignore";
+      HandlePowerKeyLongPress = "poweroff";
+      HandleSuspendKey = "suspend";
+      HandleHibernateKey = "hibernate";
 
-      HandleLidSwitch=suspend
-      HandleLidSwitchDocked=suspend
-      HandleLidSwitchExternalPower=suspend
+      HandleLidSwitch = "suspend";
+      HandleLidSwitchDocked = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
 
-      IdleAction=ignore
-      IdleActionSec=30min
-      InhibitDelayMaxSec=5
-    '';
+      IdleAction = "ignore";
+      IdleActionSec = "30min";
+      InhibitDelayMaxSec = "5";
+    };
   };
 
   # Boot & Kernel (video akıcılık için güvenli set)
