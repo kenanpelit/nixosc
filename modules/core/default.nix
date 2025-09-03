@@ -1,73 +1,75 @@
 # modules/core/default.nix
 # ==============================================================================
-# Core System Configuration
+# Core System Configuration (Consolidated Imports)
 # ==============================================================================
-# This configuration manages the import of all core system modules including:
-# - System foundation and hardware management
-# - Desktop environment and multimedia support
-# - Network and security configurations
-# - Virtualization and gaming services
-# - Development and user environment
+# AMAÇ:
+#   Tüm çekirdek modülleri tek yerden, tutarlı bir sıra ile içe aktarmak.
+#   Bu dosya SADECE "ne nereden geliyor?" bilgisini taşır; asıl ayarlar
+#   ilgili modüllerin kendi default.nix dosyalarındadır.
+#
+# TEK OTORİTE İLKELERİ (çok önemli):
+#   - Güvenlik duvarı/portlar →  modules/core/security  (başka yerde TANIMLAMA)
+#   - TCP/IP kernel ayarları →  modules/core/networking (eski tcp birleşik)
+#   - Sanallaştırma + Oyun + Flatpak →  modules/core/services  (tek yerde)
+#
+# SIRALAMA:
+#   Aşağıdaki import sırası, pratik bağımlılıkları gözetir:
+#   1) Kimlik/hesap ve temel sistem (system)
+#   2) Nix ekosistemi (nix) ve temel paketler (packages)
+#   3) Görsel yığın (display) — (Wayland/Hyprland/Fonts/XDG)
+#   4) Ağ (networking) — (NM/resolved/VPN + TCP sysctl)
+#   5) Güvenlik (security/sops) — (firewall tek otorite)
+#   6) Servis ekosistemi (services) — (flatpak + virt + gaming)
+#   7) Home/program defaults (home/programs)
+#
+# KULLANIM İPUÇLARI:
+#   - Port açacaksanız: SADECE ./security altında yapın.
+#   - TCP tuningi değiştirecekseniz: SADECE ./networking altında yapın.
+#   - Flatpak/Steam/Libvirt/Podman ayarları: SADECE ./services altında.
 #
 # Author: Kenan Pelit
+# Last updated: 2025-09-03
 # ==============================================================================
 { inputs, nixpkgs, self, username, host, lib, ... }:
 {
- imports = [
-   # =============================================================================
-   # System Foundation
-   # =============================================================================
-   ./account       # User account management, authentication, and keyring integration
-   ./boot          # Boot loader and kernel configuration
-   ./hardware      # Hardware-specific settings, power management, thermal control, and optimization
-   ./system        # Core system settings and configuration
-   
-   # =============================================================================
-   # Package Management & Development
-   # =============================================================================
-   ./nix           # Nix ecosystem: daemon, store optimization, NH helper, and nixpkgs configuration
-   ./packages      # System-wide package management
-   ./cache         # Build cache and substituter configuration
-   
-   # =============================================================================
-   # Desktop Environment & Media
-   # =============================================================================
-   ./fonts         # Font configuration and rendering optimization
-   ./display       # X11, Wayland, GDM, GNOME, and Hyprland configuration
-   ./xdg           # Desktop portals and integration
-   ./audio         # Audio system, PipeWire, and sound management
-   
-   # =============================================================================
-   # Network & Connectivity
-   # =============================================================================
-   ./networking    # DNS, WiFi, VPN (Mullvad), and network management
-   ./tcp           # TCP optimization and network performance
-   
-   # =============================================================================
-   # Security & Authentication
-   # =============================================================================
-   ./security      # Firewall, PAM, SSH, PolicyKit, and system security hardening
-   ./sops          # Secrets management and encryption
-   ./hblock        # DNS-based ad blocking and filtering
-   
-   # =============================================================================
-   # Services & Applications
-   # =============================================================================
-   ./services      # Core system services, Bluetooth, and daemons
-   ./flatpak       # Flatpak application sandboxing and management
-   ./transmission  # BitTorrent client and network configuration
-   ./home          # Home directory management and user environment
-   ./programs      # Core program defaults and system-wide settings
-   
-   # =============================================================================
-   # Virtualization & Containers
-   # =============================================================================
-   ./virtualisation # Container runtime (Podman), VM engine (LibvirtD/QEMU), and virtualisation services, SPICE guest services and USB redirection
-   
-   # =============================================================================
-   # Gaming & Performance
-   # =============================================================================
-   ./gaming        # Steam platform, Gamescope compositor, and gaming performance optimization
- ];
-}
+  imports = [
+    # ==========================================================================
+    # 1) System Foundation
+    # ==========================================================================
+    ./account       # Kullanıcı hesabı, yetkilendirme, keyring entegrasyonları
+    ./system        # Çekirdek sistem: (boot + donanım + termal + güç yönetimi)
 
+    # ==========================================================================
+    # 2) Package Management & Development
+    # ==========================================================================
+    ./nix           # Nix daemon/GC/optimize, NUR overlay, NH, substituter’lar
+    ./packages      # Sistem çapında temel araçlar ve kütüphaneler
+
+    # ==========================================================================
+    # 3) Desktop Environment & Media
+    # ==========================================================================
+    ./display       # X11/Wayland/Hyprland, GDM/GNOME, fonts & XDG portal seti
+
+    # ==========================================================================
+    # 4) Network & Connectivity
+    # ==========================================================================
+    ./networking    # NM + resolved + Mullvad/WG + DNS; TCP sysctl’ler (eski tcp)
+
+    # ==========================================================================
+    # 5) Security & Authentication
+    # ==========================================================================
+    ./security      # Firewall (TEK otorite), PAM/Polkit, AppArmor, SSH, hBlock
+    ./sops          # Secrets yönetimi (sops-nix, yaşama döngüsü/anahtarlar)
+
+    # ==========================================================================
+    # 6) Services & Applications
+    # ==========================================================================
+    ./services      # Flatpak (inputs.nix-flatpak), Podman/Libvirt/SPICE, Steam/Gamescope
+
+    # ==========================================================================
+    # 7) Home & Program Defaults
+    # ==========================================================================
+    ./home          # Home-manager kullanıcı ortamı (uygulama profilleri)
+    ./programs      # dconf, zsh, nix-ld vb. program toggles/ayarlar
+  ];
+}
