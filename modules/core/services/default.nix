@@ -12,11 +12,18 @@
 # 2) **Flatpak**: inputs tabanlı modül import’u (nix-flatpak), Wayland-first.
 # 3) **Gaming**: Steam + Gamescope (düşük gecikme argümanları ile).
 # 4) **Sanallaştırma**: Podman (dockerCompat), Libvirt+QEMU (TPM/OVMF), SPICE.
+# 5) **Core Programs**: dconf/zsh/nix-ld gibi çekirdek program toggles’ları da
+#    burada — çünkü pratikte desktop ekosistemi ve servislerle birlikte ele alınıyor.
 #
 # ÖNEMLİ NOTLAR:
-# - `users.users.<username>.extraGroups` başka yerde de genişletiliyorsa, Nix
-#   listeleri birleştireceği için çakışma olmaz.
-# - NixOS’ta “servisi mask’la” için `systemd.services.<name>.enable = mkForce false`.
+# - Firewall/port yönetimi **security** modülünde (TEK otorite). Burada port açmayız.
+# - hBlock **security** modülünde; burada enable etmiyoruz (çifte tanımı önlemek için).
+#   listeleri birleştirir (append); çakışma olmaz.
+# - NixOS’ta “servisi mask’la” için `systemd.services.<name>.enable = lib.mkForce false`.
+#
+# BAĞIMLILIK:
+# - Bu dosya `inputs.nix-flatpak.nixosModules.nix-flatpak` modülünü import eder.
+# - Flake’te `specialArgs = { inherit inputs username host; };` verilmiş olmalı.
 #
 # Author: Kenan Pelit
 # Last merged: 2025-09-03
@@ -31,17 +38,6 @@
   # import edip yapılandırıyoruz. Wayland-first politika uygulanır.
   # ============================================================================
   imports = [ inputs.nix-flatpak.nixosModules.nix-flatpak ];
-
-  # ============================================================================
-  # KULLANICI GRUPLARI — Sanallaştırma erişimleri
-  # NEDEN: libvirt yönetimi, KVM erişimi ve docker uyumluluğu için gerekli.
-  # Not: Başka yerde de extraGroups veriyorsan Nix birleştirir (append).
-  # ============================================================================
-  users.users.${username}.extraGroups = [
-    "libvirtd"  # Virtual machine management
-    "kvm"       # KVM access
-    "docker"    # Container-like araçlar için uyumluluk
-  ];
 
   # ============================================================================
   # TEMEL SİSTEM SERVİSLERİ
@@ -109,17 +105,16 @@
   systemd.services.flatpak-managed-install.enable = false;
 
   # ============================================================================
-  # OYUN — Steam + Gamescope (düşük gecikme ve uyumluluk)
+  # PROGRAMS — Gaming (Steam/Gamescope) + Core Toggles (dconf, zsh, nix-ld)
   # ============================================================================
   programs = {
+    # ------------------ Gaming stack ------------------------------------------
     steam = {
       enable = true;
       remotePlay.openFirewall      = true;  # Remote Play için gerekli portlar
       dedicatedServer.openFirewall = false; # Sunucu portlarını açma
-      gamescopeSession.enable      = true;  # Steam’i Gamescope oturumunda başlatma
-      extraCompatPackages = [
-        pkgs.proton-ge-bin                 # Ek Proton sürümleri (community GE)
-      ];
+      gamescopeSession.enable      = true;  # Steam’i Gamescope oturumunda çalıştır
+      extraCompatPackages = [ pkgs.proton-ge-bin ]; # Ek Proton sürümleri (GE)
     };
 
     gamescope = {
@@ -127,12 +122,50 @@
       capSysNice = true;    # Proses önceliği için yetki (daha stabil FPS/latency)
       # Latency/VRR odaklı başlatma argümanları:
       args = [
-        "--rt"               # Realtime priority (oyun/dvm kararlı çerçeveler)
+        "--rt"               # Realtime priority
         "--expose-wayland"   # Wayland compositing
         "--adaptive-sync"    # VRR / freesync
         "--immediate-flips"  # Input gecikmesini azalt
         "--force-grab-cursor"
       ];
+    };
+
+    # ------------------ Core program toggles ----------------------------------
+    # NEDEN BURADA?
+    # - dconf/zsh/nix-ld gibi çekirdek program davranışları, servis ekosistemiyle
+    #   birlikte ele alındığında (özellikle desktop ve third-party binary’lerle)
+    #   daha kolay yönetilir. Tek yerden “programs.*” görünürlüğü sağlar.
+    dconf.enable = true;   # GNOME/GTK ayar veritabanı – birçok app buna yaslanır
+    zsh.enable   = true;   # Sistem kabuğu olarak Zsh (home-manager tarafı ayrı)
+
+    # Sistem editörlerini kapatma (tercih bilinçli): kullanıcı-level editor kullan
+    vim.enable  = false;
+    nano.enable = false;
+
+    # ------------------ nix-ld: foreign/portable binary’ler için çözüm --------
+    # Yabancı binary’ler (ör. prebuilt CLI’lar) eksik .so yüzünden patlamasın diye
+    # “makul” bir kütüphane tabanı sağlıyoruz. İhtiyaca göre bu listeyi
+    # genişletebilirsin; burada “genel geçer” bir çekirdek var.
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [ ];
+    #  libraries = with pkgs; [
+    #    # C/C++ runtime
+    #    stdenv.cc.cc           # libstdc++, libgcc_s içeriği
+    #    zlib
+    #    bzip2
+    #    xz
+    #    zstd
+    #    util-linux             # libuuid vb.
+    #    libudev-zero           # udev bağımlılıklarına “null” sağlayıcı (bazı CLI’lar)
+    #    libxcrypt
+    #    attr                   # libattr
+    #    acl                    # libacl
+    #    expat
+    #    libxml2
+    #     glib
+    #     pcre2
+    #  ];
     };
   };
 
@@ -213,5 +246,3 @@
     virt-viewer
   ];
 }
-
-

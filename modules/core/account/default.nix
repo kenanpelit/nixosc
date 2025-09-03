@@ -1,67 +1,103 @@
 # modules/core/account/default.nix
 # ==============================================================================
-# User Account and Authentication Configuration
-# ==============================================================================
-# This configuration manages user account settings including:
-# - User account options and privileges 
-# - Group memberships and shell configuration
-# - Sudo access rules
-# - GNOME Keyring and credential storage
-# - Authentication service integration
+# NİYET:
+# - Kullanıcı hesabı, gruplar, sudo yetkileri TEK YERDEN yönetilsin.
+# - Kullanıcıya bağlı home-manager profili aynı modülde tanımlansın.
+# - DBus/Keyring gibi sistem servisleri account’a değil, `services` modülüne ait.
+#
+# TEK OTORİTE İLKELERİ:
+# - users.users / sudo      → BURADA (account)
 #
 # Author: Kenan Pelit
+# Last updated: 2025-09-03
 # ==============================================================================
-{ pkgs, lib, username, config, ... }: 
+
+{ pkgs, lib, username, config, inputs, host, ... }:
+
 {
+  # ----------------------------------------------------------------------------
+  # Modül opsiyonları — İstersen UID’i host’a göre override edebilirsin.
+  # ----------------------------------------------------------------------------
   options.my.user = {
     name = lib.mkOption {
       type = lib.types.str;
       default = username;
-      description = "The name of the primary user account";
+      description = "The primary user account name.";
     };
     uid = lib.mkOption {
       type = lib.types.int;
       default = 1000;
-      description = "The user's UID";
+      description = "UID for the primary user.";
     };
   };
-  
+
   config = {
-    # Primary user account configuration
+    # ==========================================================================
+    # Kullanıcı hesabı ve gruplar — TEK otorite
+    # ==========================================================================
     users.users.${username} = {
       isNormalUser = true;
-      description = "${username}";
+      description  = username;
+      uid          = config.my.user.uid;
+      shell        = pkgs.zsh;
+
+      # NOT: Bu liste, daha önce services/default.nix içinde de ekleniyordu.
+      # Artık grupların TEK otoritesi burası; services içindeki extraGroups satırını sil.
       extraGroups = [
-        "networkmanager"  # Network management permissions
-        "wheel"           # Sudo access
-        "input"           # Input device access
-        "audio"           # Audio device access
-        "video"           # Video device access
-        "storage"         # Storage device access
-        "libvirtd"        # Virtualization
-        "kvm"             # KVM virtualization
+        # Sistem / yönetim
+        "wheel"            # sudo
+        "networkmanager"   # NM izinleri
+        "storage"
+
+        # Donanım / I/O
+        "input"
+        "audio"
+        "video"
+
+        # Sanallaştırma
+        "libvirtd"
+        "kvm"
+        "docker"
       ];
-      shell = pkgs.zsh;
-      uid = config.my.user.uid;
     };
-    
-    # Sudo Configuration
+
+    # ==========================================================================
+    # Sudo — wheel parolasız (bilinçli tercih)
+    # ==========================================================================
     security.sudo.wheelNeedsPassword = false;
-    
-    # Credential Storage Services
-    services = {
-      gnome.gnome-keyring.enable = true;
-      dbus = {
-        enable = true;
-        packages = [ pkgs.gcr ];
+
+    # ==========================================================================
+    # Home-Manager — kullanıcı profili
+    # ==========================================================================
+    # NEDEN BURADA?: Kullanıcıyı tanımladığın yerde HM profilini de bağlamak
+    # pratik. HM’nin import ettiği ./modules/home dizini kullanıcı ortamını
+    # (rofi, kitty, waybar, vs.) yönetiyor.
+    home-manager = {
+      useUserPackages      = true;
+      useGlobalPkgs        = true;
+      backupFileExtension  = "backup";
+      extraSpecialArgs     = { inherit inputs username host; };
+
+      users.${username} = {
+        # Bu import, senin repo yapına göre: modules/home (iki düzey yukarı).
+        # Mevcut yapında zaten buraya işaret ediyor.
+        imports = [ ../../home ];
+        home = {
+          username     = username;
+          homeDirectory= "/home/${username}";
+          stateVersion = "25.11";
+        };
       };
     };
-    
-    # Authentication Environment
-    environment.sessionVariables = {
-      GCR_PKCS11_MODULE = "${pkgs.gcr}/lib/pkcs11/gcr-pkcs11.so";
-      GCR_PROVIDER_PRIORITY = "1";
-    };
+
+    # ----------------------------------------------------------------------------
+    # DİKKAT: DBus/Keyring gibi servisleri account’a koymuyoruz.
+    # Bunlar `modules/core/services/default.nix` içinde:
+    #   services.dbus.enable = true;
+    #   services.dbus.packages = [ pkgs.gcr gnome-keyring ];
+    #   (GNOME Keyring enable, display modülünde ya da services’te yönetilebilir)
+    # ----------------------------------------------------------------------------
   };
 }
+
 
