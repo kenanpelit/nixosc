@@ -1,22 +1,23 @@
 # modules/core/system/default.nix
 # ==============================================================================
-# Base System + Boot + Hardware (Merged)
+# Base System + Boot + Hardware (Merged) — TLP Edition
 # ==============================================================================
-# Bu modül; temel sistem ayarlarını, önyükleme (GRUB + kernel) yapılandırmasını
-# ve donanım/ güç/ termal optimizasyonlarını **tek dosyada** toplar.
+# Bu modül; temel sistem + önyükleme + donanım/güç/termal optimizasyonlarını
+# **tek dosyada** toplar. Güç yönetimi artık TLP ile yapılır.
 #
 # Kapsam:
 # - Zaman dilimi, yerel ayarlar, klavye düzeni (base system)
 # - GRUB + EFI/BIOS seçimi, tema ve kernel paketleri (boot)
-# - CPU frekans yönetimi (auto-cpufreq + ek güvenli tabanlar)
-# - EPP/HWP, intel_pstate, turbo, RAPL limitleri
-# - ThinkPad odaklı fan, batarya eşikleri, LED düzeltmeleri
-# - i915 için stabil çoklu monitör/Wayland ayarları
-# - UDEV tetikleyicileri (AC/DC geçişinde optimizer & RAPL tazeleme)
+# - CPU/EPP/Turbo + platform_profile + cihaz güç tasarrufu (TLP)
+# - Kaby Lake-R için RAPL PL1/PL2 limitleri (X1 Carbon 6th güvenli profil)
+# - ThinkPad fan (thinkfan), batarya eşikleri, LED düzeltmeleri
+# - i915 için stabil çoklu monitör/Wayland parametreleri
+# - UDEV: AC/DC değişiminde RAPL tazeleme
 #
 # Notlar:
-# - Bu modül, eski `core/boot` ve `core/hardware` içeriklerini **kapsar**.
-# - `imports` sırasında bu dosyayı **bir kez** eklemeniz yeterlidir.
+# - Önceki auto-cpufreq/power-profiles-daemon devre dışı bırakıldı.
+# - TLP; intel_pstate (active) + EPP + turbo + platform_profile’ı yönetir.
+# - Ayarlar Meteor Lake (E14 Gen 6) ve Kaby Lake-R (X1C6) ile uyumludur.
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -24,35 +25,31 @@
 { pkgs, config, lib, inputs, system, ... }:
 
 let
-  # Host adına göre fiziksel/VM ayrımı (GRUB device ve EFI için kullanılıyor)
   hostname = config.networking.hostName or "";
-  isPhysicalMachine = hostname == "hay";
+  isPhysicalMachine = true; # İki cihaz da fiziksel; istersen hostname == "hay" yaparsın.
 in
 {
   # =============================================================================
   # BASE SYSTEM
   # =============================================================================
 
-  # Time Zone
   time.timeZone = "Europe/Istanbul";
 
-  # Locale Configuration
   i18n = {
     defaultLocale = "en_US.UTF-8";
     extraLocaleSettings = {
-      LC_ADDRESS       = "tr_TR.UTF-8";
-      LC_IDENTIFICATION= "tr_TR.UTF-8";
-      LC_MEASUREMENT   = "tr_TR.UTF-8";
-      LC_MONETARY      = "tr_TR.UTF-8";
-      LC_NAME          = "tr_TR.UTF-8";
-      LC_NUMERIC       = "tr_TR.UTF-8";
-      LC_PAPER         = "tr_TR.UTF-8";
-      LC_TELEPHONE     = "tr_TR.UTF-8";
-      LC_TIME          = "tr_TR.UTF-8";
+      LC_ADDRESS        = "tr_TR.UTF-8";
+      LC_IDENTIFICATION = "tr_TR.UTF-8";
+      LC_MEASUREMENT    = "tr_TR.UTF-8";
+      LC_MONETARY       = "tr_TR.UTF-8";
+      LC_NAME           = "tr_TR.UTF-8";
+      LC_NUMERIC        = "tr_TR.UTF-8";
+      LC_PAPER          = "tr_TR.UTF-8";
+      LC_TELEPHONE      = "tr_TR.UTF-8";
+      LC_TIME           = "tr_TR.UTF-8";
     };
   };
 
-  # Keyboard Configuration (X11/Wayland + konsol)
   services.xserver.xkb = {
     layout = "tr";
     variant = "f";
@@ -60,17 +57,14 @@ in
   };
   console.keyMap = "trf";
 
-  # System Version (NixOS state version)
   system.stateVersion = "25.11";
 
   # =============================================================================
   # BOOT (GRUB + Kernel)
   # =============================================================================
   boot = {
-    # Kernel paketleri (güncel kararlı)
     kernelPackages = pkgs.linuxPackages_latest;
 
-    # Kernel modülleri ve ayarları
     kernelModules = [ "thinkpad_acpi" "coretemp" "intel_rapl" "i915" ];
 
     extraModprobeConfig = ''
@@ -85,13 +79,13 @@ in
       options nvme_core default_ps_max_latency_us=5500
     '';
 
-    # Çakışmasız kernel parametreleri (stabil çoklu monitör/Wayland odağı)
+    # i915 için Wayland/çoklu monitör stabilite odaklı parametreler
     kernelParams = [
       "intel_pstate=active"
       "intel_pstate.hwp_dynamic_boost=1"
-      # Güç yönetimi
-      "pcie_aspm=off"
-      # GPU (i915) – stabil görüntü için bazı özellikleri kapat
+      # Güç yönetimi: TLP yönetsin diye default
+      "pcie_aspm=default"
+      # i915: bazı agresif özellikleri kapat (stabilite için)
       "i915.enable_guc=3"
       "i915.enable_fbc=0"
       "i915.enable_psr=0"
@@ -101,38 +95,23 @@ in
       "mem_sleep_default=deep"
     ];
 
-    # Basit sysctl (gereksiz scheduler hack yok)
     kernel.sysctl = {
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
     };
 
-    # GRUB yapılandırması (fiziksel makine/VM koşullu)
     loader = {
       grub = {
         enable = true;
-
-        # Fiziksel makinede EFI (nodev), sanalda /dev/vda
         device = lib.mkForce (if isPhysicalMachine then "nodev" else "/dev/vda");
-
-        # Fiziksel makinede EFI desteği
         efiSupport = isPhysicalMachine;
-
-        # Çoklu OS tespiti
         useOSProber = true;
-
-        # Eski girişleri sınırla
         configurationLimit = 10;
-
-        # Görsel (tema + çözünürlük)
         gfxmodeEfi  = "1920x1200";
         gfxmodeBios = "1920x1200";
         theme = inputs.distro-grub-themes.packages.${system}.nixos-grub-theme;
-        # Alternatif:
-        # theme = inputs.distro-grub-themes.packages.${system}.thinkpad-grub-theme;
       };
 
-      # EFI özgü ayarlar (yalnız fiziksel makine)
       efi = lib.mkIf isPhysicalMachine {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
@@ -141,121 +120,79 @@ in
   };
 
   # =============================================================================
-  # HARDWARE & POWER (ThinkPad-optimized)
+  # HARDWARE & POWER (ThinkPad-optimized, TLP kontrollü)
   # =============================================================================
 
-  # Çakışmayı önlemek için tek güç yöneticisi: auto-cpufreq
-  services.tlp.enable = false;
+  services.auto-cpufreq.enable = false;
   services.power-profiles-daemon.enable = false;
 
-  services.auto-cpufreq = {
+  services.tlp = {
     enable = true;
+
     settings = {
-      # ---------------------------- AC MODU ----------------------------
-      charger = {
-        governor = "performance";
-        turbo = "auto";
-        scaling_min_freq = 1600000;   # 1.6 GHz taban (AC): 400 MHz'e kilitlenmeyi önler
-        scaling_max_freq = 4800000;   # modele göre güvenli üst sınır
-        energy_performance_preference = "performance";
-      };
-      # -------------------------- BATARYA MODU ------------------------
-      battery = {
-        governor = "powersave";
-        turbo = "auto";
-        scaling_min_freq = 800000;
-        scaling_max_freq = 3500000;
-        energy_performance_preference = "balance_power";
-      };
+      # CPU sürücü modu: intel_pstate (active)
+      CPU_DRIVER_OPMODE = "active";
+
+      # Governor + EPP
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
+
+      # Min/Max performans yüzdeleri
+      CPU_MIN_PERF_ON_AC = 50;
+      CPU_MAX_PERF_ON_AC = 100;
+      CPU_MIN_PERF_ON_BAT = 15;
+      CPU_MAX_PERF_ON_BAT = 80;
+
+      # Intel HWP Dynamic Boost (ek turbo; AC=on, Batarya=off)
+      CPU_HWP_DYN_BOOST_ON_AC = 1;
+      CPU_HWP_DYN_BOOST_ON_BAT = 0;
+
+      # Turbo/Boost
+      CPU_BOOST_ON_AC = 1;
+      CPU_BOOST_ON_BAT = "auto";
+
+      # Platform profile
+      PLATFORM_PROFILE_ON_AC = "performance";
+      PLATFORM_PROFILE_ON_BAT = "balanced";
+
+      # PCIe ASPM: TLP yönetiyor
+      PCIE_ASPM_ON_AC = "default";
+      PCIE_ASPM_ON_BAT = "powersave";
+
+      # Runtime PM
+      RUNTIME_PM_ON_AC = "auto";
+      RUNTIME_PM_ON_BAT = "auto";
+      RUNTIME_PM_DRIVER_BLACKLIST = "nouveau radeon";
+
+      # USB autosuspend (girdi cihazları hariç)
+      USB_AUTOSUSPEND = 1;
+      USB_BLACKLIST = "usbhid";
+
+      # Ses güç tasarrufu
+      SOUND_POWER_SAVE_ON_AC = 1;
+      SOUND_POWER_SAVE_ON_BAT = 1;
+      SOUND_POWER_SAVE_CONTROLLER = "Y";
+
+      # iwlwifi güç politikası
+      WIFI_PWR_ON_AC = "on";
+      WIFI_PWR_ON_BAT = "on";
+
+      # ThinkPad batarya eşikleri
+      START_CHARGE_THRESH_BAT0 = 40;
+      STOP_CHARGE_THRESH_BAT0  = 80;
+      START_CHARGE_THRESH_BAT1 = 40;
+      STOP_CHARGE_THRESH_BAT1  = 80;
+
+      # Disk/APM (SATA)
+      DISK_APM_LEVEL_ON_AC = "254 254";
+      DISK_APM_LEVEL_ON_BAT = "128 128";
     };
+
+    extraConfig = "";
   };
 
-  # CPU türüne özel EPP/HWP/turbo + güvenli floor uygulayıcı
-  systemd.services.cpu-type-optimizer = {
-    description = "CPU type specific optimizations (EPP/HWP/turbo + safe floor)";
-    after = [ "auto-cpufreq.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = pkgs.writeShellScript "cpu-type-optimizer" ''
-        #!${pkgs.bash}/bin/bash
-        set -euo pipefail
-        export PATH="${pkgs.util-linux}/bin:${pkgs.gnugrep}/bin:${pkgs.coreutils}/bin:$PATH"
-
-        # Güç kaynağı tespiti
-        ON_AC=0
-        for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
-          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
-        done
-
-        # Hedef EPP & taban yüzdesi
-        if [[ "$ON_AC" == "1" ]]; then
-          EPP="performance"; MIN_PCT=50; MAX_PCT=100; FLOOR=1600000
-        else
-          EPP="balance_power"; MIN_PCT=15; MAX_PCT=80;  FLOOR=800000
-        fi
-
-        # ----- EPP sağlam yazımı (governor kilitliyse powersave → yaz → geri) -----
-        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
-          PREF="$policy/energy_performance_preference"
-          GOV="$policy/scaling_governor"
-          if [[ -w "$PREF" ]]; then
-            if ! echo "$EPP" > "$PREF" 2>/dev/null; then
-              if [[ -w "$GOV" ]]; then
-                CURGOV="$(cat "$GOV" 2>/dev/null || echo unknown)"
-                echo powersave > "$GOV" 2>/dev/null || true
-                echo "$EPP" > "$PREF" 2>/dev/null || true
-                [[ "$ON_AC" == "1" ]] && echo performance > "$GOV" 2>/dev/null || true
-              fi
-            fi
-          fi
-        done
-
-        # ----- intel_pstate güvenli taban -----
-        if [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]]; then
-          echo "$MIN_PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
-          echo "$MAX_PCT" > /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || true
-        fi
-
-        # ----- Ek emniyet: policy bazında min freq (floor) -----
-        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$policy/scaling_min_freq" ]] && echo "$FLOOR" > "$policy/scaling_min_freq" 2>/dev/null || true
-        done
-
-        # Turbo + HWP Dynamic Boost
-        echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
-        echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
-
-        # Tanılama (journald)
-        STATUS_FILE=/sys/devices/system/cpu/intel_pstate/status
-        [[ -r "$STATUS_FILE" ]] && echo "intel_pstate status: $(cat $STATUS_FILE)" | systemd-cat -t cpu-type-optimizer || true
-        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
-          PREF="$policy/energy_performance_preference"
-          CUR="$policy/scaling_cur_freq"; MIN="$policy/scaling_min_freq"; MAX="$policy/scaling_max_freq"; GOV="$policy/scaling_governor"
-          echo "$(basename $policy) GOV=$(cat $GOV 2>/dev/null) EPP=$(cat $PREF 2>/dev/null) cur=$(cat $CUR 2>/dev/null) min=$(cat $MIN 2>/dev/null) max=$(cat $MAX 2>/dev/null)" | systemd-cat -t cpu-type-optimizer || true
-        done
-
-        echo "cpu-type-optimizer: AC=$ON_AC EPP=$EPP min_pct=$MIN_PCT turbo=on hwp_boost=on"
-      '';
-    };
-  };
-
-  # UDEV — tek blok (aynı anahtarı iki kez tanımlamadan tetikleyicileri birleştir)
-  services.udev.extraRules = ''
-    # AC/DC değişimi → optimizer tetikle
-    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
-      RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
-    SUBSYSTEM=="power_supply", ATTR{status}=="Discharging", ACTION=="change", \
-      RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
-    SUBSYSTEM=="power_supply", ATTR{status}=="Charging", ACTION=="change", \
-      RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
-
-    # AC değişimi → RAPL limitlerini yeniden uygula
-    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
-      RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
-  '';
-
-  # Donanım
   hardware = {
     trackpoint = { enable = true; speed = 200; sensitivity = 200; emulateWheel = true; };
 
@@ -280,12 +217,10 @@ in
     bluetooth.enable = true;
   };
 
-  # Sistem servisleri
   services = {
-    thermald.enable = true;  # Intel termal sürüş
+    thermald.enable = true;
     upower.enable = true;
 
-    # ThinkFan: basit fan eğrisi
     thinkfan = {
       enable = true;
       levels = [
@@ -296,7 +231,6 @@ in
       ];
     };
 
-    # logind (laptop davranışları)
     logind.settings.Login = {
       HandlePowerKey = "ignore";
       HandlePowerKeyLongPress = "poweroff";
@@ -312,7 +246,7 @@ in
   };
 
   # =============================================================================
-  # RAPL (Kaby Lake-R güvenli profil) ve resume tetikleyicisi
+  # RAPL (Kaby Lake-R güvenli profil) + tazeleme tetikleyicisi
   # =============================================================================
   systemd.services."rapl-power-limits" = {
     description = "Apply RAPL PL1/PL2 limits (Kaby Lake-R safe profile)";
@@ -324,33 +258,45 @@ in
         set -euo pipefail
 
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/tr -d '\n')"
-        if ! echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby *Lake'; then
-          echo "Non-KabyLakeR CPU detected; skipping RAPL limits"; exit 0;
+        if ! echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby *Lake|Whiskey *Lake|Coffee *Lake'; then
+          echo "Non-KabyLakeR family; skipping RAPL limits"; exit 0;
         fi
 
-        # Hedefler (Watt)
-        PL1_W=18
-        PL2_W=28
-        TW1_US=28000000   # 28s
-        TW2_US=10000      # 10ms (PL2 kısa patlama)
+        # Güç kaynağı tespiti (AC/ADP yollarını dene)
+        ON_AC=0
+        for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
+        done
+
+        if [[ "$ON_AC" == "1" ]]; then
+          PL1_W=25   # AC: daha yüksek sürekli güç
+          PL2_W=35   # AC: daha yüksek kısa patlama
+        else
+          PL1_W=15   # Batarya: serin ve dengeli
+          PL2_W=25
+        fi
+
+        TW1_US=28000000   # 28s (sustained)
+        TW2_US=2440000    # ~2.44s (short turbo)
 
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
-          [[ -w "$R/constraint_0_power_limit_uw" ]] || continue
-          echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
-          echo $TW1_US > "$R/constraint_0_time_window_us" 2>/dev/null || true
+          if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
+            echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
+            echo $TW1_US > "$R/constraint_0_time_window_us" 2>/dev/null || true
+          fi
           if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
             echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
             echo $TW2_US > "$R/constraint_1_time_window_us" 2>/dev/null || true
           fi
         done
 
-        # Tanılama: uygulanan değerleri log’a yaz
+        # Tanılama
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
           PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
           PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
-          echo "$(basename $R): PL1=$((PL1/1000000))W PL2=$((PL2/1000000))W" | ${pkgs.systemd}/bin/systemd-cat -t rapl-power
+          echo "$(basename $R): PL1=$((PL1/1000000))W PL2=$((PL2/1000000))W (AC=$ON_AC)" | ${pkgs.systemd}/bin/systemd-cat -t rapl-power
         done
       '';
     };
@@ -370,7 +316,6 @@ in
   # THINKPAD LED/FAN YARDIMCILARI
   # =============================================================================
 
-  # Boot ve uykudan dönünce micmute/mute LED fix
   systemd.services."thinkpad-led-fix" = {
     description = "Turn off stuck ThinkPad mute LEDs";
     wantedBy = [ "multi-user.target" ];
@@ -400,7 +345,6 @@ in
     };
   };
 
-  # Suspend öncesi/sonrası thinkfan yönetimi
   systemd.services."suspend-pre-fan" = {
     description = "Stop thinkfan before suspend & set auto";
     wantedBy = [ "sleep.target" ];
@@ -427,7 +371,7 @@ in
       ExecStart = pkgs.writeShellScript "resume-post-fan" ''
         #!${pkgs.bash}/bin/bash
         set -euo pipefail
-        sleep 0.8  # sensörler otursun
+        sleep 0.8
         if ${pkgs.systemd}/bin/systemctl is-enabled thinkfan.service >/dev/null 2>&1; then
           ${pkgs.systemd}/bin/systemctl start thinkfan.service 2>/dev/null || true
         else
@@ -439,14 +383,6 @@ in
     };
   };
 
-  # ============================================================================
-  # Legacy thinkfan helper units — mask them to avoid double-handling suspend
-  # NEDEN: Suspend öncesi/sonrası fan yönetimini bu modülde biz yapıyoruz
-  # (suspend-pre-fan / resume-post-fan). Bazı dağıtımların getirdiği
-  # "thinkfan-sleep/wakeup" yardımcı servisleri aynı işi ikinci kez deniyor.
-  # Burada sert biçimde mask’layıp (enable = mkForce false) ve WantedBy’yi
-  # boşaltıp sleep target’a symlink oluşturulmasını engelliyoruz.
-  # ============================================================================
   systemd.services."thinkfan-sleep" = {
     enable   = lib.mkForce false;
     wantedBy = lib.mkForce [ ];
@@ -455,4 +391,13 @@ in
     enable   = lib.mkForce false;
     wantedBy = lib.mkForce [ ];
   };
+
+  # =============================================================================
+  # UDEV — AC/DC değişiminde sadece RAPL’i tazele (TLP kendi işini yapar)
+  # =============================================================================
+  services.udev.extraRules = ''
+    SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl restart rapl-power-limits.service"
+    SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl restart rapl-power-limits.service"
+  '';
 }
+
