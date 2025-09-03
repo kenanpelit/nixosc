@@ -1,7 +1,7 @@
 # ============================================================================
 # modules/core/hardware/default.nix
 # ----------------------------------------------------------------------------
-# Advanced Hardware & Power Management (ThinkPad‑optimized) — v7.0 STABLE
+# Advanced Hardware & Power Management (ThinkPad-optimized) — v7.0 STABLE
 # ----------------------------------------------------------------------------
 # • Tek otorite: auto-cpufreq (frekans tavan/tabanları burada)
 # • EPP & HWP ayarları: sağlam uygulama (governor kilidinde EPP için fallback)
@@ -15,7 +15,7 @@
 
 {
   # ======================== CPU FREKANS YÖNETİMİ ========================
-  # Tek yönetici: auto-cpufreq
+  # Tek yönetici: auto-cpufreq (çakışmayı önlemek için tlp ve ppd kapalı)
   services.tlp.enable = false;
   services.power-profiles-daemon.enable = false;
 
@@ -26,25 +26,26 @@
       charger = {
         governor = "performance";
         turbo = "auto";
-        scaling_min_freq = 1600000;   # 1.6 GHz taban (AC)
-        scaling_max_freq = 4800000;   # 4.8 GHz tavan
-        energy_performance_preference = "performance";  # EPP → güçlü
+        scaling_min_freq = 1600000;   # 1.6 GHz taban (AC): 400 MHz'e kilitlenme riskini engeller
+        scaling_max_freq = 4800000;   # 4.8 GHz tavan (modeline göre güvenli)
+        energy_performance_preference = "performance";  # EPP → güçlü tepki
       };
 
       # -------------------------- BATARYA MODU ------------------------
       battery = {
         governor = "powersave";
         turbo = "auto";
-        scaling_min_freq = 800000;    # 0.8 GHz taban (Batarya)
-        scaling_max_freq = 3500000;   # 3.5 GHz tavan (Batarya)
-        energy_performance_preference = "balance_power"; # EPP → tasarruf
+        scaling_min_freq = 800000;    # 0.8 GHz taban (bataryada sessizlik/ömrü iyileştirir)
+        scaling_max_freq = 3500000;   # 3.5 GHz tavan (ısıl/pil kazancı)
+        energy_performance_preference = "balance_power"; # EPP → tasarruf odaklı
       };
     };
   };
 
   # ================== CPU TİPİNE ÖZEL (ÇAKIŞMASIZ) AYAR ==================
-  # Not: intel_pstate min/max yüzdeleri sadece taban güvenliği için ayarlanır.
-  # EPP yazımı governor=performance altında kilitlenebileceği için fallback içerir.
+  # Not: intel_pstate min/max yüzdeleri sadece "güvenli taban" için dokunuluyor.
+  # EPP yazımı bazı çekirdek/BIOS kombinasyonlarında governor yüzünden başarısız olabildiği
+  # için, geçici 'powersave' flip ile fallback içerir.
   systemd.services.cpu-type-optimizer = {
     description = "CPU type specific optimizations (EPP/HWP/turbo + safe floor)";
     after = [ "auto-cpufreq.service" ];
@@ -69,21 +70,17 @@
           EPP="balance_power"; MIN_PCT=15; MAX_PCT=80;  FLOOR=800000
         fi
 
-        # ----- EPP sağlam yazımı (governor kilidi varsa powersave geçişi) -----
+        # ----- EPP sağlam yazımı (governor kilitliyse powersave → yaz → geri) -----
         for policy in /sys/devices/system/cpu/cpufreq/policy*; do
           PREF="$policy/energy_performance_preference"
           GOV="$policy/scaling_governor"
           if [[ -w "$PREF" ]]; then
             if ! echo "$EPP" > "$PREF" 2>/dev/null; then
-              # Governor kilitliyse geçici powersave → EPP yaz → geri al
               if [[ -w "$GOV" ]]; then
                 CURGOV="$(cat "$GOV" 2>/dev/null || echo unknown)"
                 echo powersave > "$GOV" 2>/dev/null || true
                 echo "$EPP" > "$PREF" 2>/dev/null || true
-                # AC'de performance'a geri; bataryada powersave kalsın
-                if [[ "$ON_AC" == "1" ]]; then
-                  echo performance > "$GOV" 2>/dev/null || true
-                fi
+                [[ "$ON_AC" == "1" ]] && echo performance > "$GOV" 2>/dev/null || true
               fi
             fi
           fi
@@ -95,7 +92,7 @@
           echo "$MAX_PCT" > /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || true
         fi
 
-        # ----- Ek emniyet: policy bazında min freq -----
+        # ----- Ek emniyet: policy bazında min freq (floor) -----
         for policy in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ -w "$policy/scaling_min_freq" ]] && echo "$FLOOR" > "$policy/scaling_min_freq" 2>/dev/null || true
         done
@@ -104,7 +101,7 @@
         echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
         echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || true
 
-        # Tanılama
+        # Tanılama (journald)
         STATUS_FILE=/sys/devices/system/cpu/intel_pstate/status
         [[ -r "$STATUS_FILE" ]] && echo "intel_pstate status: $(cat $STATUS_FILE)" | systemd-cat -t cpu-type-optimizer || true
         for policy in /sys/devices/system/cpu/cpufreq/policy*; do
@@ -118,14 +115,24 @@
     };
   };
 
-  # AC/DC değişiminde ve pil olaylarında optimizer'ı tekrar çalıştır
+  # ======================== UDEV — TEK BLOK (ÇAKIŞMASIZ) ========================
+  # Burada iki farklı ihtiyacı TEK extraRules içinde birleştiriyoruz:
+  # 1) AC/DC değişiminde EPP/floor yeniden uygula (cpu-type-optimizer)
+  # 2) RAPL PL1/PL2 limitlerini AC değişiminde yeniden uygula
+  # Böylece dosya içinde aynı anahtarı ikinci kez tanımlayıp "attribute ... already defined"
+  # hatasına düşmüyoruz.
   services.udev.extraRules = ''
+    # AC/DC değişimi → optimizer tetikle
     SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
       RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
     SUBSYSTEM=="power_supply", ATTR{status}=="Discharging", ACTION=="change", \
       RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
     SUBSYSTEM=="power_supply", ATTR{status}=="Charging", ACTION=="change", \
       RUN+="${pkgs.systemd}/bin/systemctl start cpu-type-optimizer.service"
+
+    # AC değişimi → RAPL limitlerini yeniden uygula (Kaby Lake-R güvenli profili)
+    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
   '';
 
   # ======================== DONANIM YÖNETİMİ ========================
@@ -133,7 +140,7 @@
     # TrackPoint
     trackpoint = { enable = true; speed = 200; sensitivity = 200; emulateWheel = true; };
 
-    # Intel Graphics
+    # Intel Graphics (Wayland çoklu monitör için kararlı seçenekler yukarıda kernelParams’ta)
     graphics = {
       enable = true;
       enable32Bit = true;
@@ -157,10 +164,10 @@
 
   # ======================== SİSTEM SERVİSLERİ ========================
   services = {
-    thermald.enable = true;
+    thermald.enable = true;  # Intel termal sürüş: throttle davranışını iyileştirir
     upower.enable = true;
 
-    # ThinkFan
+    # ThinkFan: basit fan eğrisi (yükte hızlan, boşta sessiz)
     thinkfan = {
       enable = true;
       levels = [
@@ -171,7 +178,7 @@
       ];
     };
 
-    # logind davranışları
+    # logind davranışları (dizüstü odaklı)
     logind.settings.Login = {
       HandlePowerKey = "ignore";
       HandlePowerKeyLongPress = "poweroff";
@@ -202,12 +209,12 @@
       options nvme_core default_ps_max_latency_us=5500
     '';
 
-    # Çakışmasız kernel parametreleri (minimal)
+    # Çakışmasız kernel parametreleri (minimal ama etkili)
     kernelParams = [
       "intel_pstate=active"
       "intel_pstate.hwp_dynamic_boost=1"
 
-      # P-State min/max burada YAZMA → saplanma riskini önle
+      # P-State min/max burada YAZMA → 400 MHz kilitlenme riskini önler
 
       # Güç yönetimi
       "pcie_aspm=off"
@@ -223,7 +230,7 @@
       "mem_sleep_default=deep"
     ];
 
-    # Sadelestirilmiş sysctl
+    # Sade sysctl (gereksiz scheduler hack yok)
     kernel.sysctl = {
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
@@ -255,7 +262,7 @@
     };
   };
 
-  # Derin uyku zorlaması (destek varsa)
+  # Derin uyku zorlaması (destek varsa): s2idle yerine deep kullanmayı dener
   systemd.services.mem-sleep-deep = {
     description = "Force deep sleep mode when available";
     wantedBy = [ "multi-user.target" ];
@@ -275,7 +282,7 @@
   };
 
   # ======================== THINKPAD MUTE LED FIX ========================
-  # Bootta ve uykudan dönünce micmute/mute LED'lerini kapat.
+  # Bootta ve uykudan dönünce micmute/mute LED'lerini kapat (takılı kalma bug'ı için).
   systemd.services."thinkpad-led-fix" = {
     description = "Turn off stuck ThinkPad mute LEDs";
     wantedBy = [ "multi-user.target" ];
@@ -290,7 +297,6 @@
     };
   };
 
-  # Uykudan (suspend/hibernate) uyanınca da LED'leri söndür
   systemd.services."thinkpad-led-fix-resume" = {
     description = "Turn off ThinkPad mute LEDs on resume";
     wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" "sleep.target" ];
@@ -307,7 +313,8 @@
   };
 
   # ======================== SUSPEND ÖNCESİ/SONRASI FAN ========================
-  # Suspend öncesi thinkfan'ı durdur ve fanı otomatiğe al; resume sonrası geri başlat.
+  # Suspend öncesi thinkfan'ı durdurup fanı otomatiğe al; resume sonrası thinkfan'ı geri başlat.
+  # Neden: Uykuda fan açık kalma/manuel modda takılı kalma sorunlarını engeller.
   systemd.services."suspend-pre-fan" = {
     description = "Stop thinkfan before suspend & set auto";
     wantedBy = [ "sleep.target" ];
@@ -317,9 +324,7 @@
       ExecStart = pkgs.writeShellScript "suspend-pre-fan" ''
         #!${pkgs.bash}/bin/bash
         set -euo pipefail
-        # thinkfan varsa durdur
         ${pkgs.systemd}/bin/systemctl stop thinkfan.service 2>/dev/null || true
-        # Fanı otomatik moda al (ThinkPad ACPI)
         if [[ -w /proc/acpi/ibm/fan ]]; then
           echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
         fi
@@ -336,12 +341,10 @@
       ExecStart = pkgs.writeShellScript "resume-post-fan" ''
         #!${pkgs.bash}/bin/bash
         set -euo pipefail
-        # Kısa gecikme: sensörler/topoloji otursun
-        sleep 0.8
+        sleep 0.8  # sensörler otursun
         if ${pkgs.systemd}/bin/systemctl is-enabled thinkfan.service >/dev/null 2>&1; then
           ${pkgs.systemd}/bin/systemctl start thinkfan.service 2>/dev/null || true
         else
-          # thinkfan kullanılmıyorsa fanı yine otomatikte bırak
           if [[ -w /proc/acpi/ibm/fan ]]; then
             echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
           fi
@@ -352,7 +355,7 @@
 
   # ======================== KABY LAKE-R RAPL POWER LIMITS ====================
   # X1 Carbon 6th (i7-8650U) için güvenli limitler: PL1=18W, PL2=28W.
-  # Bootta, AC/DC değişiminde ve uykudan dönünce yeniden uygular.
+  # Neden: Yük altında ısı ve fan gürültüsünü makul seviyede tutarken performansı dengeler.
   systemd.services."rapl-power-limits" = {
     description = "Apply RAPL PL1/PL2 limits (Kaby Lake-R safe profile)";
     wantedBy = [ "multi-user.target" ];
@@ -371,7 +374,7 @@
         PL1_W=18
         PL2_W=28
         TW1_US=28000000   # 28s
-        TW2_US=10000      # 10ms
+        TW2_US=10000      # 10ms (PL2 kısa patlama)
 
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
@@ -384,6 +387,7 @@
           fi
         done
 
+        # Tanılama: uygulanan değerleri log’a yaz
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
           PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
@@ -394,13 +398,7 @@
     };
   };
 
-  # AC/DC değişiminde yeniden uygula
-  services.udev.extraRules = lib.mkAfter ''
-    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
-      RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
-  '';
-
-  # Uykudan dönünce yeniden uygula
+  # Uykudan dönünce RAPL’i tazele (separate unit, tetik: suspend/hibernate)
   systemd.services."rapl-power-limits-resume" = {
     description = "Re-apply RAPL limits after resume";
     wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
