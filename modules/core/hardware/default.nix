@@ -349,4 +349,65 @@
       '';
     };
   };
+
+  # ======================== KABY LAKE-R RAPL POWER LIMITS ====================
+  # X1 Carbon 6th (i7-8650U) için güvenli limitler: PL1=18W, PL2=28W.
+  # Bootta, AC/DC değişiminde ve uykudan dönünce yeniden uygular.
+  systemd.services."rapl-power-limits" = {
+    description = "Apply RAPL PL1/PL2 limits (Kaby Lake-R safe profile)";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "set-rapl-limits" ''
+        #!${pkgs.bash}/bin/bash
+        set -euo pipefail
+
+        CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/tr -d '\n')"
+        if ! echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby *Lake'; then
+          echo "Non-KabyLakeR CPU detected; skipping RAPL limits"; exit 0;
+        fi
+
+        # Hedefler (Watt)
+        PL1_W=18
+        PL2_W=28
+        TW1_US=28000000   # 28s
+        TW2_US=10000      # 10ms
+
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          [[ -w "$R/constraint_0_power_limit_uw" ]] || continue
+          echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
+          echo $TW1_US > "$R/constraint_0_time_window_us" 2>/dev/null || true
+          if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
+            echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
+            echo $TW2_US > "$R/constraint_1_time_window_us" 2>/dev/null || true
+          fi
+        done
+
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+          PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
+          echo "$(basename $R): PL1=$((PL1/1000000))W PL2=$((PL2/1000000))W" | ${pkgs.systemd}/bin/systemd-cat -t rapl-power
+        done
+      '';
+    };
+  };
+
+  # AC/DC değişiminde yeniden uygula
+  services.udev.extraRules = lib.mkAfter ''
+    SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
+  '';
+
+  # Uykudan dönünce yeniden uygula
+  systemd.services."rapl-power-limits-resume" = {
+    description = "Re-apply RAPL limits after resume";
+    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    after = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/systemctl start rapl-power-limits.service";
+    };
+  };
 }
