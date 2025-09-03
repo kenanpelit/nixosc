@@ -385,15 +385,15 @@
       
       scroll-step = 5;                          # Volume adjustment step
       max-volume = 100;                         # Maximum volume limit
-      on-click = "pactl set-sink-mute @DEFAULT_SINK@ toggle";           # Toggle mute
-      on-click-middle = "pactl set-sink-volume @DEFAULT_SINK@ 50%";     # Set to 50%
+      on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";          # Toggle mute
+      on-click-middle = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 50%";    # Set to 50%
       on-click-right = "pavucontrol";                                   # Audio control panel
-      on-scroll-down = "pactl set-sink-volume @DEFAULT_SINK@ -1%";      # Volume down
-      on-scroll-up = "pactl set-sink-volume @DEFAULT_SINK@ +1%";        # Volume up
+      on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 1%-";     # Volume down
+      on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 1%+";       # Volume up
       tooltip = true;
       tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\n󱎫 Sol: Mute Toggle\n󰦝 Orta: Set 50%\n󰑐 Sağ: Audio Control";
     };
-
+    
     # 🎤 Audio Input (Microphone)
     "pulseaudio#source" = {
       format = "{format_source}";
@@ -401,11 +401,11 @@
       format-source-muted = "<span foreground='${red}'>󰍭</span>";  # Muted microphone
       max-volume = 40;                          # Reasonable microphone limit
       scroll-step = 5;                          # Volume adjustment step
-      on-click = "pactl set-source-mute @DEFAULT_SOURCE@ toggle";       # Toggle mute
-      on-click-middle = "pactl set-source-volume @DEFAULT_SOURCE@ 40%"; # Set to 40%
+      on-click = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";        # Toggle mute
+      on-click-middle = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 40%";  # Set to 40%
       on-click-right = "pavucontrol";                                   # Audio control panel
-      on-scroll-down = "pactl set-source-volume @DEFAULT_SOURCE@ -1%";  # Volume down
-      on-scroll-up = "pactl set-source-volume @DEFAULT_SOURCE@ +1%";    # Volume up
+      on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 1%-";   # Volume down
+      on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 1%+";     # Volume up
       tooltip = true;
       tooltip-format = "Microphone: {volume}%\nDevice: {source_desc}\n\n󱎫 Sol: Mute Toggle\n󰦝 Orta: Set 40%\n󰑐 Sağ: Audio Control";
     };
