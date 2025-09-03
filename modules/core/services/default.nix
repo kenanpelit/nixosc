@@ -2,40 +2,32 @@
 # ==============================================================================
 # Base System Services (Merged: services + virtualisation + gaming + flatpak)
 # ==============================================================================
-# AMAÇ (Neden tek dosya?):
-# - “Servis ekosistemi”ni tek yerde yönetmek: sistem servisleri, Flatpak, oyun
-#   yığını (Steam/Gamescope) ve sanallaştırma (Podman/Libvirt/SPICE).
-# - “Nerede ne vardı?” sorusunu bitirmek ve çakışmaları önlemek.
+# AMAÇ:
+# - Sistem servisleri, Flatpak, oyun yığını ve sanallaştırmayı **tek dosyada**
+#   birleştirip çakışmaları azaltmak ve bakımını kolaylaştırmak.
 #
-# TASARIM İLKELERİ:
-# 1) **Temel servisler**: GVFS, TRIM, D-Bus + keyring, Bluetooth, fwupd, tumbler.
-# 2) **Flatpak**: inputs tabanlı modül import’u (nix-flatpak), Wayland-first.
-# 3) **Gaming**: Steam + Gamescope (düşük gecikme argümanları ile).
-# 4) **Sanallaştırma**: Podman (dockerCompat), Libvirt+QEMU (TPM/OVMF), SPICE.
-# 5) **Core Programs**: dconf/zsh/nix-ld gibi çekirdek program toggles’ları da
-#    burada — çünkü pratikte desktop ekosistemi ve servislerle birlikte ele alınıyor.
+# İÇERİK:
+# - Temel servisler: GVFS, TRIM, D-Bus+keyring, Bluetooth, fwupd, tumbler
+# - Flatpak (inputs.nix-flatpak modülü, Wayland-first overrides)
+# - Gaming: Steam + Gamescope (düşük gecikme argümanları)
+# - Sanallaştırma: Podman (dockerCompat), Libvirt/QEMU (TPM/OVMF), SPICE
+# - Core programs: dconf, zsh, nix-ld
+# - TLP CLI (PATH’e ek) + switch sırasında sürüm log’u
+# - SPICE udev kuralları ve wrapper
 #
-# ÖNEMLİ NOTLAR:
-# - Firewall/port yönetimi **security** modülünde (TEK otorite). Burada port açmayız.
-# - hBlock **security** modülünde; burada enable etmiyoruz (çifte tanımı önlemek için).
-#   listeleri birleştirir (append); çakışma olmaz.
-# - NixOS’ta “servisi mask’la” için `systemd.services.<name>.enable = lib.mkForce false`.
-#
-# BAĞIMLILIK:
-# - Bu dosya `inputs.nix-flatpak.nixosModules.nix-flatpak` modülünü import eder.
-# - Flake’te `specialArgs = { inherit inputs username host; };` verilmiş olmalı.
+# NOTLAR:
+# - Güvenlik/firewall port işleri **security** modülünde. Burada port açmıyoruz.
+# - Bu dosyada `environment.systemPackages` **tek kez** tanımlıdır (önceki hata buydu).
 #
 # Author: Kenan Pelit
-# Last merged: 2025-09-03
+# Last merged: 2025-09-04
 # ==============================================================================
 
-{ lib, pkgs, inputs, username, ... }:
+{ lib, pkgs, inputs, username, system, ... }:
 
 {
   # ============================================================================
-  # FLATPAK — inputs üzerinden modül import’u
-  # NEDEN: nix-flatpak kendi NixOS modülünü sağlar; bu dosyada tek noktadan
-  # import edip yapılandırıyoruz. Wayland-first politika uygulanır.
+  # FLATPAK — Modül import’u (Wayland-first yaklaşım)
   # ============================================================================
   imports = [ inputs.nix-flatpak.nixosModules.nix-flatpak ];
 
@@ -43,41 +35,39 @@
   # TEMEL SİSTEM SERVİSLERİ
   # ============================================================================
   services = {
-    # ------------------ Dosya sistemi / depolama ------------------------------
-    gvfs.enable   = true;    # Sanal dosya sistemi (MTP, smb, Google Drive vb.)
-    fstrim.enable = true;    # Haftalık TRIM (SSD ömrü ve performans)
+    # Dosya sistemi / depolama
+    gvfs.enable   = true;   # MTP, SMB, Google Drive, archive, vs.
+    fstrim.enable = true;   # Haftalık TRIM
 
-    # ------------------ D-Bus & Keyring --------------------------------------
+    # D-Bus & Keyring
     dbus = {
       enable = true;
       packages = with pkgs; [
-        gcr            # crypto/GPG entegrasyon yardımcıları
-        gnome-keyring  # birçok uygulama tarafından kullanılan secrets depoları
+        gcr
+        gnome-keyring
       ];
     };
 
-    # ------------------ Bluetooth --------------------------------------------
-    blueman.enable = true;   # BlueZ ile iyi çalışan GUI yöneticisi
+    # Bluetooth GUI
+    blueman.enable = true;
 
-    # ------------------ Giriş jestleri ----------------------------------------
-    touchegg.enable = false; # Varsayılan kapalı; ihtiyaç varsa aç
+    # Giriş jestleri (ihtiyaç olursa açarsın)
+    touchegg.enable = false;
 
-    # ------------------ Güvenlik & bakım -------------------------------------
-    fwupd.enable  = true;    # LVFS üzerinden firmware güncellemeleri
+    # Firmware güncellemeleri
+    fwupd.enable = true;
 
-    # ------------------ Küçük ama yararlı ------------------------------------
-    tumbler.enable = true;   # Thumbnails (Nemo/Thunar vb. dosya yöneticileri)
+    # Thumbnailer
+    tumbler.enable = true;
 
-    # ------------------ Yazdırma (isteğe bağlı) -------------------------------
-    printing.enable = false; # Gerçekten yazıcı kullanıyorsan true yap
+    # Yazdırma (isteğe bağlı)
+    printing.enable = false;
     avahi = {
-      enable   = false;      # mDNS/Bonjour (ağ yazıcı keşfi)
+      enable   = false; # ağ yazıcı keşfi
       nssmdns4 = false;
     };
 
-    # ==========================================================================
-    # FLATPAK — Wayland-first yapılandırma
-    # ==========================================================================
+    # ---------------- Flatpak ----------------
     flatpak = {
       enable = true;
 
@@ -86,13 +76,12 @@
         location = "https://dl.flathub.org/repo/flathub.flatpakrepo";
       }];
 
-      # Varsayılan kurulumlar — örnekler korundu
       packages = [
-        "com.github.tchx84.Flatseal"   # Flatpak izin yöneticisi
-        "io.github.everestapi.Olympus" # Celeste mod loader
+        "com.github.tchx84.Flatseal"
+        "io.github.everestapi.Olympus"
       ];
 
-      # Global Wayland-first bağlamı
+      # Wayland-first
       overrides.global.Context.sockets = [
         "wayland"
         "!x11"
@@ -101,92 +90,84 @@
     };
   };
 
-  # Flatpak’ın “managed-install” servisinin otomatik kurulumunu kapat
+  # Flatpak “managed-install” servisinin otomatik kurulumunu kapat
   systemd.services.flatpak-managed-install.enable = false;
 
   # ============================================================================
-  # PROGRAMS — Gaming (Steam/Gamescope) + Core Toggles (dconf, zsh, nix-ld)
+  # PROGRAMS — Gaming + Core toggles
   # ============================================================================
   programs = {
-    # ------------------ Gaming stack ------------------------------------------
+    # Steam / Gamescope
     steam = {
       enable = true;
-      remotePlay.openFirewall      = true;  # Remote Play için gerekli portlar
-      dedicatedServer.openFirewall = false; # Sunucu portlarını açma
-      gamescopeSession.enable      = true;  # Steam’i Gamescope oturumunda çalıştır
-      extraCompatPackages = [ pkgs.proton-ge-bin ]; # Ek Proton sürümleri (GE)
+      remotePlay.openFirewall      = true;
+      dedicatedServer.openFirewall = false;
+      gamescopeSession.enable      = true;
+      extraCompatPackages = [ pkgs.proton-ge-bin ];
     };
 
     gamescope = {
       enable = true;
-      capSysNice = true;    # Proses önceliği için yetki (daha stabil FPS/latency)
-      # Latency/VRR odaklı başlatma argümanları:
+      capSysNice = true;
       args = [
-        "--rt"               # Realtime priority
-        "--expose-wayland"   # Wayland compositing
-        "--adaptive-sync"    # VRR / freesync
-        "--immediate-flips"  # Input gecikmesini azalt
+        "--rt"
+        "--expose-wayland"
+        "--adaptive-sync"
+        "--immediate-flips"
         "--force-grab-cursor"
       ];
     };
 
-    # ------------------ Core program toggles ----------------------------------
-    # NEDEN BURADA?
-    # - dconf/zsh/nix-ld gibi çekirdek program davranışları, servis ekosistemiyle
-    #   birlikte ele alındığında (özellikle desktop ve third-party binary’lerle)
-    #   daha kolay yönetilir. Tek yerden “programs.*” görünürlüğü sağlar.
-    dconf.enable = true;   # GNOME/GTK ayar veritabanı – birçok app buna yaslanır
-    zsh.enable   = true;   # Sistem kabuğu olarak Zsh (home-manager tarafı ayrı)
+    # GNOME/GTK ayar veritabanı
+    dconf.enable = true;
 
-    # Sistem editörlerini kapatma (tercih bilinçli): kullanıcı-level editor kullan
-    vim.enable  = false;
-    nano.enable = false;
+    # Sistem kabuğu (home tarafı ayrı)
+    zsh.enable = true;
 
-    # ------------------ nix-ld: foreign/portable binary’ler için çözüm --------
-    # Yabancı binary’ler (ör. prebuilt CLI’lar) eksik .so yüzünden patlamasın diye
-    # “makul” bir kütüphane tabanı sağlıyoruz. İhtiyaca göre bu listeyi
-    # genişletebilirsin; burada “genel geçer” bir çekirdek var.
+    # Yabancı binary’ler için kütüphaneler
     nix-ld = {
       enable = true;
       libraries = with pkgs; [ ];
-    #  libraries = with pkgs; [
-    #    # C/C++ runtime
-    #    stdenv.cc.cc           # libstdc++, libgcc_s içeriği
-    #    zlib
-    #    bzip2
-    #    xz
-    #    zstd
-    #    util-linux             # libuuid vb.
-    #    libudev-zero           # udev bağımlılıklarına “null” sağlayıcı (bazı CLI’lar)
-    #    libxcrypt
-    #    attr                   # libattr
-    #    acl                    # libacl
-    #    expat
-    #    libxml2
-    #     glib
-    #     pcre2
-    #  ];
     };
   };
+
+  # ============================================================================
+  # PAKETLER — Tek noktadan ekle (TLP + SPICE araçları)
+  # (ÖNEMLİ: Bu dosyada environment.systemPackages **TEK** kez tanımlanır.)
+  # ============================================================================
+  environment.systemPackages = with pkgs; [
+    # Güç yönetimi CLI
+    tlp
+
+    # SPICE araçları
+    spice-gtk
+    spice-protocol
+    virt-viewer
+  ];
+
+  # Switch sırasında TLP sürümünü logla (hızlı doğrulama)
+  system.activationScripts.tlpVersion = ''
+    echo "[nixos-switch] $(date -Is) TLP: $(${pkgs.tlp}/bin/tlp --version || true)"
+  '';
 
   # ============================================================================
   # SANALLAŞTIRMA — Container + VM katmanı
   # ============================================================================
   virtualisation = {
-    # ------------------ Container altyapısı -----------------------------------
+    # Containers
     containers = {
       enable = true;
       registries = {
         search   = [ "docker.io" "quay.io" ];
-        insecure = [];
-        block    = [];
+        insecure = [ ];
+        block    = [ ];
       };
     };
 
     # Podman (Docker uyumluluğu)
     podman = {
       enable = true;
-      dockerCompat = true;  # `docker` CLI ile uyumluluk (alias/compat)
+      dockerCompat = true;
       defaultNetwork.settings.dns_enabled = true;
 
       autoPrune = {
@@ -195,36 +176,31 @@
         dates  = "weekly";
       };
 
-      extraPackages = with pkgs; [
-        runc
-        conmon
-        skopeo
-        slirp4netns
-      ];
+      extraPackages = with pkgs; [ runc conmon skopeo slirp4netns ];
     };
 
-    # ------------------ VM altyapısı -----------------------------------------
+    # Libvirt/QEMU (UEFI + TPM)
     libvirtd = {
       enable = true;
       qemu = {
-        swtpm.enable = true;  # TPM emülasyonu (Windows/BitLocker vb. için)
+        swtpm.enable = true;
         ovmf = {
           enable   = true;
-          packages = [ pkgs.OVMFFull.fd ];  # UEFI firmware
+          packages = [ pkgs.OVMFFull.fd ];
         };
       };
     };
 
-    # SPICE USB yönlendirme (guest içinde USB passthrough)
+    # SPICE USB yönlendirme
     spiceUSBRedirection.enable = true;
   };
 
-  # ------------------ SPICE guest agent --------------------------------------
+  # Guest agent
   services.spice-vdagentd.enable = true;
 
-  # ------------------ Sanallaştırma için udev kuralları ----------------------
+  # Udev kuralları (SPICE / VFIO / KVM)
   services.udev.extraRules = ''
-    # Genel USB cihazlarını libvirtd grubuna ata (virt misafire aktarım için)
+    # Genel USB cihazlarını libvirtd grubuna ata (guest passthrough için)
     SUBSYSTEM=="usb", ATTR{idVendor}=="*", ATTR{idProduct}=="*", GROUP="libvirtd"
 
     # VFIO cihazları (GPU passthrough hazırlığı)
@@ -235,14 +211,7 @@
     SUBSYSTEM=="misc", KERNEL=="vhost-net", GROUP="kvm", MODE="0664"
   '';
 
-  # ------------------ SPICE güvenlik wrapper’ı --------------------------------
+  # SPICE güvenlik wrapper’ı
   security.wrappers.spice-client-glib-usb-acl-helper.source =
     "${pkgs.spice-gtk}/bin/spice-client-glib-usb-acl-helper";
-
-  # ------------------ Sanallaştırma araçları ---------------------------------
-  environment.systemPackages = with pkgs; [
-    spice-gtk
-    spice-protocol
-    virt-viewer
-  ];
 }
