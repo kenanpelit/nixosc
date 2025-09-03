@@ -1,69 +1,104 @@
 # modules/core/sops/default.nix
 # ==============================================================================
-# SOPS System Level Configuration
+# SOPS (Secrets OPerationS) — Sistem Seviyesi Parola/Sır Yönetimi
 # ==============================================================================
-# This configuration manages system-level secrets including:
-# - Age encryption key configuration
-# - Wireless network passwords
-# - System secret management
-# - File permissions and ownership
-# - User-level sops-nix service for home-manager compatibility
+# NİYET (Ne ve Neden?):
+# - Makine üzerinde *şifrelenmiş* sır dosyalarını güvenle versiyonlamak
+#   (git’te tutmak) ve NixOS aktivasyonunda *şeffaf* şekilde çözmek.
+# - Nix ekosistemine doğal entegre (sops-nix modülü) bir akış sağlamak.
+#
+# TASARIM:
+# - Şifreleme mekanizması olarak **age** kullanıyoruz (GPG yok).
+# - Varsayılan SOPS dosyası: `~/.nixosc/secrets/wireless-secrets.enc.yaml`
+# - Age anahtarı:          `~/.config/sops/age/keys.txt`
+# - NetworkManager gibi servislerin ihtiyaç duyduğu sırları **system-level**
+#   nesnelere indiriyoruz (owner/grup/mode doğru ayarlanır).
+# - Build safhasında “dosya yok” hatalarına düşmemek için **validate kapalı**;
+#   dizin ve dosya varlığı aktivasyon anında kontrol edilir.
+#
+# ÖN KOŞUL (tek seferlik):
+#   $ mkdir -p ~/.config/sops/age
+#   $ age-keygen -o ~/.config/sops/age/keys.txt
+#   (Public key’i .sops.yaml’da kullan; repo’deki .sops.yaml zaten ayarlıysa dokunma)
+#
+# DİKKAT:
+# - `builtins.pathExists` çalışma makinesinin dosya sistemine bakar.
+#   Sair sistemlerde repo farklı kullanıcı altında uygulanıyorsa path’leri
+#   host’a göre güncellemen gerekir.
+# - Burada sadece **kablosuz ağ parolaları** şifrelenmiş örnek olarak ele alındı.
+#   SOPS nesnelerine **başka sırları** da rahatça ekleyebilirsin (SSH, API key vs.).
 #
 # Author: Kenan Pelit
+# Last updated: 2025-09-03
 # ==============================================================================
+
 { config, lib, pkgs, inputs, username, ... }:
+
 {
-  # SOPS NixOS module'ünü içe aktarma
+  # ============================================================================
+  # Modül import’u — sops-nix NixOS modülü
+  # ============================================================================
   imports = [
     inputs.sops-nix.nixosModules.sops
   ];
 
-  # =============================================================================
-  # SOPS Configuration for System Level Secrets
-  # =============================================================================
+  # ============================================================================
+  # SOPS Global Yapılandırması
+  # ============================================================================
   sops = {
-    # Default SOPS file - you can override per secret
+    # Varsayılan SOPS dosyası (tek dosyada çok anahtar saklayabilirsin)
     defaultSopsFile = "/home/${username}/.nixosc/secrets/wireless-secrets.enc.yaml";
-    
-    # Age key for encryption/decryption
+
+    # GPG yerine age kullanıyoruz; age key dosyasının yolu:
     age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
-    
-    # Validate SOPS files exist before trying to use them
-    validateSopsFiles = false;  # Set to false to avoid build-time validation
-    
-    # Enable SOPS for nixos
-    gnupg.sshKeyPaths = [];  # We're using age, not GPG
-    
-    # System level secrets - only include if files exist
+
+    # Build anında şifreli dosyanın *varlığını* doğrulama (false = daha esnek)
+    # NEDEN: İlk kurulumda dosyalar henüz yokken build başarısız olmasın.
+    validateSopsFiles = false;
+
+    # GPG kullanılmadığı için ek SSH anahtar yolu tanımlamıyoruz
+    gnupg.sshKeyPaths = [ ];
+
+    # --------------------------------------------------------------------------
+    # System-level secrets
+    # --------------------------------------------------------------------------
+    # NOT: `mkIf (pathExists …)` ile sır dosyası yoksa bu blok tamamen devre dışı kalır.
+    # Böylece “ilk kurulumda” dosya yoksa build kırılmaz.
     secrets = lib.mkIf (builtins.pathExists /home/${username}/.nixosc/secrets/wireless-secrets.enc.yaml) {
-      # Ken_5 ağı parolası
+
+      # ÖRNEK 1 — Ken_5 SSID parolası
+      # - “key” alanı şifreli YAML dosyasındaki yol/anahtardır.
+      # - NM servis grubuna veriyoruz ki sadece NetworkManager erişsin.
       "wireless_ken_5_password" = {
         sopsFile = "/home/${username}/.nixosc/secrets/wireless-secrets.enc.yaml";
-        key = "ken_5_password";
-        owner = "root";
-        group = "networkmanager";
-        mode = "0640";
-        # Restart NetworkManager when this secret changes
+        key      = "ken_5_password";
+        owner    = "root";
+        group    = "networkmanager";
+        mode     = "0640";
+        # Sır değişirse NM’yi yeniden başlat (aktif ilişkili servisi tazelemek için)
         restartUnits = [ "NetworkManager.service" ];
       };
-      
-      # Ken_2_4 ağı parolası
+
+      # ÖRNEK 2 — Ken_2_4 SSID parolası
       "wireless_ken_2_4_password" = {
         sopsFile = "/home/${username}/.nixosc/secrets/wireless-secrets.enc.yaml";
-        key = "ken_2_4_password";
-        owner = "root";
-        group = "networkmanager";
-        mode = "0640";
-        # Restart NetworkManager when this secret changes
+        key      = "ken_2_4_password";
+        owner    = "root";
+        group    = "networkmanager";
+        mode     = "0640";
         restartUnits = [ "NetworkManager.service" ];
       };
+
+      # İPUCU:
+      # - Başka sır eklerken: key adını şifreli YAML içindeki hiyerarşine göre ver.
+      # - İlgili servisi restartUnits ile bağlarsan değişiklikler atomik olur.
     };
   };
 
-  # =============================================================================
-  # Directory Structure and Permissions
-  # =============================================================================
-  # Ensure the secrets directory exists with proper permissions
+  # ============================================================================
+  # Dizin Yapısı ve İzinler — İlk kurulum dostu
+  # ============================================================================
+  # Aktivasyon sırasında gerekli dizinlerin var olduğundan emin ol, izinleri düzelt.
   systemd.tmpfiles.rules = [
     "d /home/${username}/.nixosc 0755 ${username} users -"
     "d /home/${username}/.nixosc/secrets 0750 ${username} users -"
@@ -72,78 +107,75 @@
     "d /home/${username}/.config/sops/age 0700 ${username} users -"
   ];
 
-  # =============================================================================
-  # System Packages
-  # =============================================================================
-  # Ensure age and sops are available system-wide
+  # ============================================================================
+  # Yardımcı Paketler — age ve sops CLI’ları sistemde bulunsun
+  # ============================================================================
   environment.systemPackages = with pkgs; [
     age
     sops
   ];
 
-  # =============================================================================
-  # System Services Configuration
-  # =============================================================================
-  # Enable the system-level sops-nix service
+  # ============================================================================
+  # Sistem Servisi — Aktivasyon esnasında yönlendirici kontroller
+  # ============================================================================
+  # Not: sops-nix kendi aktivasyonunu zaten yapar; bu servis “rehber/diagnostic”
+  # amaçlıdır. Anahtar/dizin varlığı ile ilgili *yardımcı uyarılar* üretir.
   systemd.services.sops-nix = {
-    description = "SOPS secrets activation";
+    description = "SOPS secrets activation (system helper)";
     wantedBy = [ "multi-user.target" ];
-    after = [ "local-fs.target" ];
-    
+    after    = [ "local-fs.target" ];
+
     serviceConfig = {
-      Type = "oneshot";
+      Type            = "oneshot";
       RemainAfterExit = true;
-      User = "root";
-      Group = "root";
+      User            = "root";
+      Group           = "root";
     };
-    
+
     script = ''
-      # Ensure directories exist
+      # Dizinleri garanti altına al
       mkdir -p /home/${username}/.config/sops/age
       chown ${username}:users /home/${username}/.config/sops/age
       chmod 700 /home/${username}/.config/sops/age
-      
-      # Check if age key exists
+
+      # Age anahtarı var mı?
       if [ ! -f "/home/${username}/.config/sops/age/keys.txt" ]; then
-        echo "Warning: Age key not found at /home/${username}/.config/sops/age/keys.txt"
-        echo "Please generate an age key first."
+        echo "[SOPS] Age key not found at ~/.config/sops/age/keys.txt"
+        echo "[SOPS] Generate one:  age-keygen -o ~/.config/sops/age/keys.txt"
       else
-        echo "Age key found - SOPS system service ready"
+        echo "[SOPS] Age key found — system-level SOPS ready."
       fi
     '';
   };
 
-  # =============================================================================
-  # User Services Configuration
-  # =============================================================================
-  # Create user-level sops-nix service that other home-manager services can depend on
+  # ============================================================================
+  # Kullanıcı Servisi — Home-Manager bağımlılıkları için “hazır” sinyali
+  # ============================================================================
+  # NEDEN: Bazı HM servislerini sırların hazır olmasına bağlamak isteyebilirsin.
+  # Bu küçük user-service basit bir “ready” sinyali üretir (opsiyonel).
   systemd.user.services.sops-nix = {
-    description = "SOPS secrets activation (user-level)";
+    description = "SOPS secrets activation (user-level helper)";
     wantedBy = [ "default.target" ];
-    after = [ "graphical-session.target" ];
-    
+    after    = [ "graphical-session.target" ];
+
     serviceConfig = {
-      Type = "oneshot";
+      Type            = "oneshot";
       RemainAfterExit = true;
     };
-    
+
     script = ''
-      # Simple user-level sops service
-      echo "SOPS user-level service activated"
-      
-      # Ensure user directories exist
       mkdir -p /home/${username}/.config/sops/age
-      
-      # Check if age key exists
+
       if [ -f "/home/${username}/.config/sops/age/keys.txt" ]; then
-        echo "Age key found - SOPS user service ready"
+        echo "[SOPS][user] Age key present — user-level SOPS ready."
       else
-        echo "Warning: Age key not found at /home/${username}/.config/sops/age/keys.txt"
+        echo "[SOPS][user] Warning: no age key at ~/.config/sops/age/keys.txt"
       fi
-      
-      # Signal that SOPS is ready for other services
+
+      # HM tarafında istersen bu dosyaya PartOf/Requires ile bağlanabilirsin
       touch /tmp/sops-user-ready
     '';
   };
 }
+
 
