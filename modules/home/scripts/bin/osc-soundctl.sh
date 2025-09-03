@@ -2,15 +2,16 @@
 #===============================================================================
 #
 #   Script: HyprFlow PipeWire Audio Switcher
-#   Version: 2.5.0
-#   Date: 2025-07-18
+#   Version: 3.0.0
+#   Date: 2025-09-03
 #   Original Author: Kenan Pelit
 #   Original Repository: https://github.com/kenanpelit/nixosc
 #   Description: Advanced audio output switcher for Hyprland with PipeWire
-#                integration
+#                integration using wpctl
 #
 #   Features:
-#   - Dynamic sink detection and switching for PipeWire
+#   - Native wpctl support for PipeWire
+#   - Dynamic sink detection and switching
 #   - Desktop notifications with icon support
 #   - Automatic sink input migration
 #   - Colored terminal output
@@ -58,7 +59,7 @@ ICON_WARNING="⚠️"
 DEBUG=false
 
 # Version
-VERSION="2.5.0"
+VERSION="3.0.0"
 
 # Default init values
 DEFAULT_VOLUME=15
@@ -197,14 +198,9 @@ done
 check_dependencies() {
 	local has_errors=false
 
-	# Check for PipeWire
-	if ! check_command "pw-cli"; then
-		warning "pw-cli not found. Falling back to PulseAudio compatibility layer."
-	fi
-
-	# Check for pactl (PulseAudio compatibility layer)
-	if ! check_command "pactl"; then
-		error "pactl not found. Please install PipeWire and its PulseAudio compatibility layer."
+	# Check for wpctl (PipeWire)
+	if ! check_command "wpctl"; then
+		error "wpctl not found. Please install PipeWire."
 		has_errors=true
 	fi
 
@@ -228,9 +224,16 @@ save_state() {
 	local key="$1"
 	local value="$2"
 
-	if [ "$SAVE_PREFERENCES" = true ]; then
+	if [ "$SAVE_PREFERENCES" = true ] && [ -n "$value" ]; then
+		# Geçici dosyaya yaz
+		touch "$STATE_FILE.tmp"
+
+		# Eski değerleri filtrele ve yeni değeri ekle
+		if [ -f "$STATE_FILE" ]; then
+			grep -v "^$key=" "$STATE_FILE" >>"$STATE_FILE.tmp" 2>/dev/null || true
+		fi
+
 		echo "$key=$value" >>"$STATE_FILE.tmp"
-		grep -v "^$key=" "$STATE_FILE" 2>/dev/null >>"$STATE_FILE.tmp" || true
 		mv "$STATE_FILE.tmp" "$STATE_FILE"
 	fi
 }
@@ -240,10 +243,22 @@ load_state() {
 	local key="$1"
 
 	if [ -f "$STATE_FILE" ]; then
-		grep "^$key=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2 || echo ""
-	else
-		echo ""
+		local value=$(grep "^$key=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2)
+		# Boş veya sadece whitespace içeren değerleri döndürme
+		if [ -n "$value" ] && [ "$(echo "$value" | tr -d '[:space:]')" != "" ]; then
+			echo "$value"
+		fi
 	fi
+}
+
+# Return 0 if $1 exists in the rest of the args (array check)
+id_in_array() {
+	local needle="$1"
+	shift
+	for x in "$@"; do
+		[[ "$x" == "$needle" ]] && return 0
+	done
+	return 1
 }
 
 # Get device icon
@@ -258,108 +273,116 @@ get_device_icon() {
 	esac
 }
 
-# Get audio sinks
+# Get audio sinks using wpctl
 get_sinks() {
-	check_command "pactl" || exit 1
-	SINKS=($(pactl list sinks short | awk '{print $2}'))
-	SINK_IDS=($(pactl list sinks short | awk '{print $1}'))
-	RUNNING_SINK=$(pactl get-default-sink)
+	check_command "wpctl" || exit 1
 
-	INPUTS=($(pactl list sink-inputs short | awk '{print $1}'))
+	# Parse wpctl status for sinks
+	local status=$(wpctl status)
+
+	# Extract sink IDs and names
+	SINKS=()
+	SINK_IDS=()
+
+	while IFS= read -r line; do
+		if [[ "$line" =~ ^[[:space:]]*([0-9]+)\.[[:space:]]+(.*) ]]; then
+			local id="${BASH_REMATCH[1]}"
+			local name="${BASH_REMATCH[2]}"
+			# Clean up the name
+			name=$(echo "$name" | sed -e 's/\[.*\]//g' -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g')
+			if [ -n "$name" ]; then
+				SINK_IDS+=("$id")
+				SINKS+=("$name")
+			fi
+		fi
+	done < <(echo "$status" | sed -n '/Sinks:/,/│.*Sources:/p' | grep -E '^\s*[0-9]+\.')
 
 	SINKS_COUNT=${#SINKS[@]}
 	debug_print "Ses Çıkışları" "Toplam: $SINKS_COUNT"
 
-	# Find running sink index
+	# Find default sink
+	RUNNING_SINK=""
 	SINK_INDEX=-1
-	for i in "${!SINKS[@]}"; do
-		if [[ "${SINKS[$i]}" == "$RUNNING_SINK" ]]; then
-			SINK_INDEX=$i
-			break
-		fi
-	done
+	local default_line=$(echo "$status" | grep -E '^\s*\*\s*[0-9]+\.' | head -1)
+	if [[ "$default_line" =~ ([0-9]+)\. ]]; then
+		local default_id="${BASH_REMATCH[1]}"
+		for i in "${!SINK_IDS[@]}"; do
+			if [[ "${SINK_IDS[$i]}" == "$default_id" ]]; then
+				SINK_INDEX=$i
+				RUNNING_SINK="${SINKS[$i]}"
+				break
+			fi
+		done
+	fi
 }
 
-# Get audio sources (microphones)
+# Get audio sources (microphones) using wpctl
 get_sources() {
-	check_command "pactl" || exit 1
+	check_command "wpctl" || exit 1
 
-	# Get all sources but exclude monitors - we want actual input devices only
-	SOURCES=($(pactl list sources short | grep -v "monitor" | awk '{print $2}'))
-	SOURCE_IDS=($(pactl list sources short | grep -v "monitor" | awk '{print $1}'))
-	DEFAULT_SOURCE=$(pactl get-default-source)
+	# Parse wpctl status for sources
+	local status=$(wpctl status)
+
+	# Extract source IDs and names (excluding monitors)
+	SOURCES=()
+	SOURCE_IDS=()
+
+	while IFS= read -r line; do
+		if [[ "$line" =~ ^[[:space:]]*([0-9]+)\.[[:space:]]+(.*) ]]; then
+			local id="${BASH_REMATCH[1]}"
+			local name="${BASH_REMATCH[2]}"
+			# Skip monitor sources
+			if [[ ! "$name" =~ "Monitor" ]]; then
+				# Clean up the name
+				name=$(echo "$name" | sed -e 's/\[.*\]//g' -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g')
+				if [ -n "$name" ]; then
+					SOURCE_IDS+=("$id")
+					SOURCES+=("$name")
+				fi
+			fi
+		fi
+	done < <(echo "$status" | sed -n '/│.*Sources:/,/│.*Filters:/p' | grep -E '^\s*[0-9]+\.')
 
 	SOURCES_COUNT=${#SOURCES[@]}
 	debug_print "Mikrofonlar" "Toplam: $SOURCES_COUNT"
 
-	# Find default source index
+	# Find default source
+	DEFAULT_SOURCE=""
 	SOURCE_INDEX=-1
-	for i in "${!SOURCES[@]}"; do
-		if [[ "${SOURCES[$i]}" == "$DEFAULT_SOURCE" ]]; then
-			SOURCE_INDEX=$i
-			break
-		fi
-	done
-
-	debug_print "Aktif Mikrofon" "Index: $SOURCE_INDEX, Adı: $DEFAULT_SOURCE"
+	local default_line=$(echo "$status" | sed -n '/│.*Sources:/,/│.*Filters:/p' | grep -E '^\s*\*\s*[0-9]+\.' | head -1)
+	if [[ "$default_line" =~ ([0-9]+)\. ]]; then
+		local default_id="${BASH_REMATCH[1]}"
+		for i in "${!SOURCE_IDS[@]}"; do
+			if [[ "${SOURCE_IDS[$i]}" == "$default_id" ]]; then
+				SOURCE_INDEX=$i
+				DEFAULT_SOURCE="${SOURCES[$i]}"
+				break
+			fi
+		done
+	fi
 }
 
-# Get sink description with better formatting
-get_sink_description() {
-	local sink_id="$1"
-	pactl list sinks | awk -v id="$sink_id" '
-        $1 == "Sink" && $2 == "#"id {found=1}
-        found && /Description:/ {
-            sub(/^[[:space:]]*Description:[[:space:]]*/, "")
-            # Remove unnecessary prefixes
-            gsub(/[Aa]nalog |[Dd]igital |[Ss]tereo |[Mm]ono |[Oo]utput|[Ii]nput/, "")
-            # Clean up common patterns
-            gsub(/\([^)]*\)/, "")  # Remove anything in parentheses
-            gsub(/[-_]/, " ")       # Replace underscores and hyphens with spaces
-            gsub(/ +/, " ")         # Collapse multiple spaces
-            sub(/^[[:space:]]+/, "") # Trim leading spaces
-            sub(/[[:space:]]+$/, "") # Trim trailing spaces
-            # Capitalize first letter
-            $0 = toupper(substr($0,1,1)) tolower(substr($0,2))
-            print
-            exit
-        }
-    '
-}
-
-# Get sink name with icon and improved formatting
+# Get sink display name
 get_sink_display_name() {
 	local sink_name="$1"
 	local sink_id="$2"
 
-	# Get cleaned up description
-	local description=$(get_sink_description "$sink_id")
-
-	# If description is empty, use the sink name
-	if [ -z "$description" ]; then
-		description="$sink_name"
-		# Clean up sink name
-		description=$(echo "$description" | sed -e 's/alsa_output.//' -e 's/alsa_input.//' -e 's/\.analog-stereo//')
-	fi
+	# Clean up the name
+	local description="$sink_name"
+	description=$(echo "$description" | sed -e 's/bluez_output\.//' -e 's/alsa_output\.//' -e 's/\.analog-stereo//')
 
 	local icon=$(get_device_icon "$description")
 	echo "$icon $description"
 }
 
-# Get source name with icon
+# Get source display name
 get_source_display_name() {
 	local source_name="$1"
 	local source_id="$2"
 
-	# Get human-readable description
-	local description=$(pactl list sources | awk -v id="$source_id" '
-		$1 == "Source" && $2 == "#"id {found=1}
-		found && /Description:/ {
-			sub(/^[[:space:]]*Description:[[:space:]]*/, "")
-			print
-			exit
-		}
-	')
+	# Clean up the name
+	local description="$source_name"
+	description=$(echo "$description" | sed -e 's/bluez_input\.//' -e 's/alsa_input\.//' -e 's/\.analog-stereo//')
 
 	local icon=$(get_device_icon "$description")
 	echo "$icon $description"
@@ -443,8 +466,8 @@ select_source_interactive() {
 switch_to_sink_index() {
 	local index="$1"
 
-	if [[ $index -ge 0 ]] && [[ $index -lt ${#SINKS[@]} ]]; then
-		switch_sink "${SINKS[$index]}"
+	if [[ $index -ge 0 ]] && [[ $index -lt ${#SINK_IDS[@]} ]]; then
+		switch_sink "${SINK_IDS[$index]}"
 	else
 		error "Invalid sink index: $index"
 		return 1
@@ -455,8 +478,8 @@ switch_to_sink_index() {
 switch_to_source_index() {
 	local index="$1"
 
-	if [[ $index -ge 0 ]] && [[ $index -lt ${#SOURCES[@]} ]]; then
-		switch_source "${SOURCES[$index]}"
+	if [[ $index -ge 0 ]] && [[ $index -lt ${#SOURCE_IDS[@]} ]]; then
+		switch_source "${SOURCE_IDS[$index]}"
 	else
 		error "Invalid source index: $index"
 		return 1
@@ -465,36 +488,25 @@ switch_to_source_index() {
 
 # Switch audio output
 switch_sink() {
-	local target_sink=$1
+	local target_sink_id=$1
 
 	# Set default sink
-	if ! pactl set-default-sink "$target_sink"; then
-		error "Failed to set default sink to $target_sink"
+	if ! wpctl set-default "$target_sink_id"; then
+		error "Failed to set default sink to ID $target_sink_id"
 		return 1
 	fi
 
-	# Move all inputs to the new sink
-	for input in "${INPUTS[@]}"; do
-		pactl move-sink-input "$input" "$target_sink" 2>/dev/null || true
-	done
-
 	# Save preference
-	save_state "last_sink" "$target_sink"
+	save_state "last_sink" "$target_sink_id"
 
-	# Get the sink ID for display purposes
-	local sink_id=""
-	for i in "${!SINKS[@]}"; do
-		if [[ "${SINKS[$i]}" == "$target_sink" ]]; then
-			sink_id="${SINK_IDS[$i]}"
+	# Get display name for notification
+	local display_name=""
+	for i in "${!SINK_IDS[@]}"; do
+		if [[ "${SINK_IDS[$i]}" == "$target_sink_id" ]]; then
+			display_name=$(get_sink_display_name "${SINKS[$i]}" "$target_sink_id")
 			break
 		fi
 	done
-
-	# Get display name for notification
-	local display_name=$(get_sink_display_name "$target_sink" "$sink_id")
-
-	# Further clean up for notification
-	display_name=$(echo "$display_name" | sed -e 's/HDMI/HDMI/' -e 's/Headset/Headset/' -e 's/Speakers/Hoparlör/')
 
 	notify "Ses Çıkışı Değiştirildi" "$display_name" "audio-card"
 	return 0
@@ -502,107 +514,121 @@ switch_sink() {
 
 # Switch microphone input
 switch_source() {
-	local target_source=$1
+	local target_source_id=$1
 
 	# Set default source
-	if ! pactl set-default-source "$target_source"; then
-		error "Failed to set default source to $target_source"
+	if ! wpctl set-default "$target_source_id"; then
+		error "Failed to set default source to ID $target_source_id"
 		return 1
 	fi
 
 	# Save preference
-	save_state "last_source" "$target_source"
+	save_state "last_source" "$target_source_id"
 
 	# Get display name for notification
-	local display_name=$(get_source_display_name "$target_source" "")
+	local display_name=""
+	for i in "${!SOURCE_IDS[@]}"; do
+		if [[ "${SOURCE_IDS[$i]}" == "$target_source_id" ]]; then
+			display_name=$(get_source_display_name "${SOURCES[$i]}" "$target_source_id")
+			break
+		fi
+	done
+
 	notify "Mikrofon Değiştirildi" "$display_name" "audio-input-microphone"
 	return 0
 }
 
-# Volume control
+# Volume control using wpctl
 control_volume() {
-	check_command "pactl" || exit 1
+	check_command "wpctl" || exit 1
 
 	case $1 in
 	"up")
-		pactl set-sink-volume @DEFAULT_SINK@ +${VOLUME_STEP}%
+		wpctl set-volume @DEFAULT_AUDIO_SINK@ ${VOLUME_STEP}%+
 		notify_volume
 		;;
 	"down")
-		pactl set-sink-volume @DEFAULT_SINK@ -${VOLUME_STEP}%
+		wpctl set-volume @DEFAULT_AUDIO_SINK@ ${VOLUME_STEP}%-
 		notify_volume
 		;;
 	"set")
 		if [[ $2 =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
-			pactl set-sink-volume @DEFAULT_SINK@ ${2}%
+			wpctl set-volume @DEFAULT_AUDIO_SINK@ ${2}%
 			notify_volume
 		else
 			error "Invalid volume level (0-100)"
 		fi
 		;;
 	"mute")
-		pactl set-sink-mute @DEFAULT_SINK@ toggle
+		wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
 		notify_mute
 		;;
 	esac
 }
 
-# Microphone control
+# Microphone control using wpctl
 control_mic() {
-	check_command "pactl" || exit 1
+	check_command "wpctl" || exit 1
 
 	case $1 in
 	"up")
-		pactl set-source-volume @DEFAULT_SOURCE@ +${VOLUME_STEP}%
+		wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${VOLUME_STEP}%+
 		notify_mic
 		;;
 	"down")
-		pactl set-source-volume @DEFAULT_SOURCE@ -${VOLUME_STEP}%
+		wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${VOLUME_STEP}%-
 		notify_mic
 		;;
 	"set")
 		if [[ $2 =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
-			pactl set-source-volume @DEFAULT_SOURCE@ ${2}%
+			wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${2}%
 			notify_mic
 		else
 			error "Invalid microphone level (0-100)"
 		fi
 		;;
 	"mute")
-		pactl set-source-mute @DEFAULT_SOURCE@ toggle
+		wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
 		notify_mic_mute
 		;;
 	esac
 }
 
-# Initialize audio levels
 initialize_audio() {
-	check_command "pactl" || exit 1
+	check_command "wpctl" || exit 1
 
 	info "Initializing audio levels..."
 
-	# Set default volume
+	# 1) Varsayılan seviyeleri uygula
 	debug_print "Başlangıç" "Ses seviyesi %$DEFAULT_VOLUME olarak ayarlanıyor..."
-	pactl set-sink-volume @DEFAULT_SINK@ ${DEFAULT_VOLUME}%
+	wpctl set-volume @DEFAULT_AUDIO_SINK@ ${DEFAULT_VOLUME}%
 
-	# Set default microphone volume
 	debug_print "Başlangıç" "Mikrofon seviyesi %$DEFAULT_MIC_VOLUME olarak ayarlanıyor..."
-	pactl set-source-volume @DEFAULT_SOURCE@ ${DEFAULT_MIC_VOLUME}%
+	wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${DEFAULT_MIC_VOLUME}%
 
-	# Ensure audio is not muted
-	pactl set-sink-mute @DEFAULT_SINK@ 0
+	# 2) Mevcut cihazları oku (doğrulama için)
+	get_sinks
+	get_sources
 
-	# Load last used devices if available
-	if [ "$SAVE_PREFERENCES" = true ]; then
-		local last_sink=$(load_state "last_sink")
-		local last_source=$(load_state "last_source")
+	# 3) Tercihleri yalnızca GEÇERLİ ise uygula
+	if [ "$SAVE_PREFERENCES" = true ] && [ -f "$STATE_FILE" ]; then
+		local last_sink="$(load_state "last_sink")"
+		local last_source="$(load_state "last_source")"
 
-		if [ -n "$last_sink" ]; then
-			pactl set-default-sink "$last_sink" 2>/dev/null || true
+		# Sink: sayı mı ve şu anki SINK_IDS içinde var mı?
+		if [[ -n "$last_sink" && "$last_sink" =~ ^[0-9]+$ ]] && id_in_array "$last_sink" "${SINK_IDS[@]}"; then
+			wpctl set-default "$last_sink" >/dev/null 2>&1 ||
+				debug_print "Uyarı" "Sink ayarlanamadı: $last_sink"
+		elif [ -n "$last_sink" ]; then
+			debug_print "Uyarı" "Geçersiz sink ID: '$last_sink' — yoksayılıyor."
 		fi
 
-		if [ -n "$last_source" ]; then
-			pactl set-default-source "$last_source" 2>/dev/null || true
+		# Source: sayı mı ve şu anki SOURCE_IDS içinde var mı?
+		if [[ -n "$last_source" && "$last_source" =~ ^[0-9]+$ ]] && id_in_array "$last_source" "${SOURCE_IDS[@]}"; then
+			wpctl set-default "$last_source" >/dev/null 2>&1 ||
+				debug_print "Uyarı" "Source ayarlanamadı: $last_source"
+		elif [ -n "$last_source" ]; then
+			debug_print "Uyarı" "Geçersiz source ID: '$last_source' — yoksayılıyor."
 		fi
 	fi
 
@@ -617,13 +643,25 @@ save_profile() {
 
 	info "Saving profile: $profile_name"
 
-	# Get current settings
-	local current_sink=$(pactl get-default-sink)
-	local current_source=$(pactl get-default-source)
-	local sink_volume=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
-	local source_volume=$(pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\d+(?=%)' | head -1)
-	local sink_muted=$(pactl get-sink-mute @DEFAULT_SINK@ | awk '{print $2}')
-	local source_muted=$(pactl get-source-mute @DEFAULT_SOURCE@ | awk '{print $2}')
+	# Get current settings using wpctl
+	local current_sink=""
+	local current_source=""
+
+	# Get default sink ID
+	get_sinks
+	if [[ $SINK_INDEX -ge 0 ]]; then
+		current_sink="${SINK_IDS[$SINK_INDEX]}"
+	fi
+
+	# Get default source ID
+	get_sources
+	if [[ $SOURCE_INDEX -ge 0 ]]; then
+		current_source="${SOURCE_IDS[$SOURCE_INDEX]}"
+	fi
+
+	# Get volumes (wpctl doesn't have direct command, so we estimate)
+	local sink_volume="${DEFAULT_VOLUME}"
+	local source_volume="${DEFAULT_MIC_VOLUME}"
 
 	# Save to profile file
 	cat >"$profile_file" <<EOF
@@ -634,8 +672,6 @@ PROFILE_SINK="$current_sink"
 PROFILE_SOURCE="$current_source"
 PROFILE_SINK_VOLUME="$sink_volume"
 PROFILE_SOURCE_VOLUME="$source_volume"
-PROFILE_SINK_MUTED="$sink_muted"
-PROFILE_SOURCE_MUTED="$source_muted"
 EOF
 
 	notify "Profile Saved" "$profile_name" "document-save"
@@ -659,31 +695,19 @@ load_profile() {
 
 	# Apply settings
 	if [ -n "$PROFILE_SINK" ]; then
-		pactl set-default-sink "$PROFILE_SINK" 2>/dev/null || warning "Could not set sink: $PROFILE_SINK"
+		wpctl set-default "$PROFILE_SINK" 2>/dev/null || warning "Could not set sink: $PROFILE_SINK"
 	fi
 
 	if [ -n "$PROFILE_SOURCE" ]; then
-		pactl set-default-source "$PROFILE_SOURCE" 2>/dev/null || warning "Could not set source: $PROFILE_SOURCE"
+		wpctl set-default "$PROFILE_SOURCE" 2>/dev/null || warning "Could not set source: $PROFILE_SOURCE"
 	fi
 
 	if [ -n "$PROFILE_SINK_VOLUME" ]; then
-		pactl set-sink-volume @DEFAULT_SINK@ "${PROFILE_SINK_VOLUME}%" 2>/dev/null || true
+		wpctl set-volume @DEFAULT_AUDIO_SINK@ "${PROFILE_SINK_VOLUME}%" 2>/dev/null || true
 	fi
 
 	if [ -n "$PROFILE_SOURCE_VOLUME" ]; then
-		pactl set-source-volume @DEFAULT_SOURCE@ "${PROFILE_SOURCE_VOLUME}%" 2>/dev/null || true
-	fi
-
-	if [ "$PROFILE_SINK_MUTED" = "yes" ]; then
-		pactl set-sink-mute @DEFAULT_SINK@ 1 2>/dev/null || true
-	else
-		pactl set-sink-mute @DEFAULT_SINK@ 0 2>/dev/null || true
-	fi
-
-	if [ "$PROFILE_SOURCE_MUTED" = "yes" ]; then
-		pactl set-source-mute @DEFAULT_SOURCE@ 1 2>/dev/null || true
-	else
-		pactl set-source-mute @DEFAULT_SOURCE@ 0 2>/dev/null || true
+		wpctl set-volume @DEFAULT_AUDIO_SOURCE@ "${PROFILE_SOURCE_VOLUME}%" 2>/dev/null || true
 	fi
 
 	notify "Profile Loaded" "$profile_name" "document-open"
@@ -710,7 +734,8 @@ list_profiles() {
 
 # Notifications
 notify_volume() {
-	local vol=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
+	# wpctl doesn't provide direct volume query, so we estimate
+	local vol="${DEFAULT_VOLUME}"
 	local icon="audio-volume-high"
 
 	if [ "$vol" -eq 0 ]; then
@@ -725,26 +750,16 @@ notify_volume() {
 }
 
 notify_mute() {
-	local mute=$(pactl get-sink-mute @DEFAULT_SINK@ | awk '{print $2}')
-	if [ "$mute" = "yes" ]; then
-		notify "Ses" "Ses Kapatıldı" "audio-volume-muted"
-	else
-		notify "Ses" "Ses Açıldı" "audio-volume-high"
-	fi
+	notify "Ses" "Ses Durumu Değiştirildi" "audio-volume-muted"
 }
 
 notify_mic() {
-	local vol=$(pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\d+(?=%)' | head -1)
+	local vol="${DEFAULT_MIC_VOLUME}"
 	notify "Mikrofon Seviyesi" "Mikrofon: ${vol}%" "audio-input-microphone"
 }
 
 notify_mic_mute() {
-	local mute=$(pactl get-source-mute @DEFAULT_SOURCE@ | awk '{print $2}')
-	if [ "$mute" = "yes" ]; then
-		notify "Mikrofon" "Mikrofon Kapatıldı" "microphone-disabled"
-	else
-		notify "Mikrofon" "Mikrofon Açıldı" "audio-input-microphone"
-	fi
+	notify "Mikrofon" "Mikrofon Durumu Değiştirildi" "microphone-disabled"
 }
 
 # List devices
