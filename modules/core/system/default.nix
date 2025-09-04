@@ -382,7 +382,7 @@ in
           [[ -w "$R/constraint_1_time_window_us" ]] && echo 2440000  > "$R/constraint_1_time_window_us" 2>/dev/null || true
         done
 
-        echo "RAPL applied (PL1=${PL1_W}W PL2=${PL2_W}W; AC=${ON_AC})."
+        echo "RAPL applied (PL1=''${PL1_W}W PL2=''${PL2_W}W; AC=''${ON_AC})."
       '';
     };
   };
