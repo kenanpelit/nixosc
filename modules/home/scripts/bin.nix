@@ -324,6 +324,9 @@ let
   ter = pkgs.writeShellScriptBin "ter" (
     builtins.readFile ./bin/ter.sh
   );
+  tlp-status = pkgs.writeShellScriptBin "tlp-status" (
+    builtins.readFile ./bin/tlp-status.sh
+  );
   tm = pkgs.writeShellScriptBin "tm" (
     builtins.readFile ./bin/tm.sh
   );
@@ -497,6 +500,7 @@ in {
     svmubuntu
     tarchiver
     ter
+    tlp-status
     tm
     toggle_blur
     toggle_float
