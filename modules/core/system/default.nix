@@ -332,7 +332,7 @@ in
   # =============================================================================
   # Notlar:
   # - Servis TIMER ile tetiklenir → boot ordering döngüsü yok.
-  # - Meteor/Arrow/Lunar Lake ve "Core Ultra" algılanırsa RAPL "skip".
+  # - Meteor/Arrow/Lunar Lake ve "Core Ultra" algılanırsa RAPL "skip". # ignore
   # - X1C6 gibi U-serisi CPU'da AC: PL1=25W/PL2=35W, BAT: PL1=15W/PL2=25W.
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Apply RAPL power limits for Intel CPUs";
@@ -348,16 +348,36 @@ in
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
           | ${pkgs.coreutils}/bin/tr -d '\n' \
-          | ${pkgs.gnused}/bin/sed 's/^ *//')"
+          | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 
-        # Modern Intel ise native power management yeterli → RAPL skip
-        # "Core(TM) Ultra" pattern'i Intel Core Ultra serisi için
+        # Modern Intel için makul limitler (Meteor Lake vb.)
         if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
-          echo "RAPL: modern Intel CPU detected ('$CPU_MODEL'); skipping."
+          echo "RAPL: Meteor Lake detected, applying conservative limits for '$CPU_MODEL'"
+          
+          # AC mi kontrol et
+          ON_AC=0
+          for PS in /sys/class/power_supply/A{C,DP}*/online; do
+            [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
+          done
+          
+          if [[ "$ON_AC" == "1" ]]; then
+            PL1_W=28; PL2_W=35  # E14 TDP'sine uygun
+          else
+            PL1_W=20; PL2_W=28  # Bataryada konservatif
+          fi
+          
+          # RAPL uygula ve çık
+          for R in /sys/class/powercap/intel-rapl:*; do
+            [[ -d "$R" ]] || continue
+            [[ -w "$R/constraint_0_power_limit_uw" ]] && echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
+            [[ -w "$R/constraint_1_power_limit_uw" ]] && echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
+          done
+          
+          echo "RAPL applied for Meteor Lake (PL1=''${PL1_W}W PL2=''${PL2_W}W; AC=''${ON_AC})."
           exit 0
         fi
 
-        # powercap/rapl var mi?
+        # powercap/rapl var mı?
         shopt -s nullglob
         have_rapl=0
         for R in /sys/class/powercap/intel-rapl:*; do
@@ -368,16 +388,16 @@ in
           exit 0
         fi
 
-        # AC mi?
+        # AC mi? (eski CPU'lar için)
         ON_AC=0
         for PS in /sys/class/power_supply/A{C,DP}*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
         done
 
         if [[ "$ON_AC" == "1" ]]; then
-          PL1_W=25; PL2_W=35
+          PL1_W=25; PL2_W=35  # X1C6 gibi eski CPU'lar için AC değerleri
         else
-          PL1_W=15; PL2_W=25
+          PL1_W=15; PL2_W=25  # X1C6 gibi eski CPU'lar için BAT değerleri
         fi
 
         for R in /sys/class/powercap/intel-rapl:*; do
@@ -430,7 +450,8 @@ in
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
-          | ${pkgs.coreutils}/bin/tr -d '\n')"
+          | ${pkgs.coreutils}/bin/tr -d '\n')" \
+          | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 
         # Varsayilan (modern CPU'lar icin iyi)
         EPP_ON_AC="balance_performance"
@@ -604,7 +625,7 @@ in
         fi
 
         show_status() {
-          CPU_TYPE="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/sed 's/^ *//')"
+          CPU_TYPE="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           GOV="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo n/a)"
           EPP="$(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo n/a)"
           TURBO="$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null | ${pkgs.coreutils}/bin/tr '01' 'OffOn' || echo n/a)"
