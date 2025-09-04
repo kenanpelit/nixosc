@@ -1,4 +1,3 @@
-# modules/core/system/default.nix
 # ==============================================================================
 # NixOS Sistem Yapılandırması - Temel Sistem, Boot, Donanım ve Güç Yönetimi
 # ==============================================================================
@@ -7,31 +6,31 @@
 #  - Temel sistem ve boot ayarları,
 #  - Donanım hızlandırma,
 #  - Akıllı güç yönetimi (TLP + HWP/EPP),
-#  - RAPL (eski Intel’de nazikçe PL1/PL2; Meteor Lake ve üstünde otomatik bypass),
+#  - RAPL (eski Intel'de nazikçe PL1/PL2; Meteor Lake ve üstünde otomatik bypass),
 #  - ThinkPad termal/fan/batarya eşikleri,
 #  - AC/DC ve suspend/resume tetikleyicileri,
-#  - “Aynı hostname ile iki farklı donanım” durumunda **runtime** CPU algılayıp
-#    EPP/min_perf’i doğru sete çekecek servis,
-#  - VM için gereksiz ajanları (host’ta) kapatmayı
+#  - "Aynı hostname ile iki farklı donanım" durumunda **runtime** CPU algılayıp
+#    EPP/min_perf'i doğru sete çekecek servis,
+#  - VM için gereksiz ajanları (host'ta) kapatmayı
 # bir araya getirir.
 #
 # DESTEK:
 # - ThinkPad X1 Carbon 6th (i7-8650U, Kaby Lake-R, 15W TDP)  → RAPL faydalı
-# - ThinkPad E14 Gen 6 (Core Ultra 7 155H, Meteor Lake, 28W) → native PM yeterli; RAPL’i atla
-# - Sanal makine (hostname: “vhay”)
+# - ThinkPad E14 Gen 6 (Core Ultra 7 155H, Meteor Lake, 28W) → native PM yeterli; RAPL'i atla
+# - Sanal makine (hostname: "vhay")
 #
 # Tasarım Notları:
 # - TLP, auto-cpufreq ve power-profiles-daemon ile çakışır → ikincisi devre dışı.
-# - i915’de PSR/FBC/SAGV sorun çıkardığı için kapalı (stabilite/tearing).
-# - iGPU frekanslarını TLP ile **zorlamıyoruz** (modern kernel’de bu knob’lar ya yok ya da
+# - i915'de PSR/FBC/SAGV sorun çıkardığı için kapalı (stabilite/tearing).
+# - iGPU frekanslarını TLP ile **zorlamıyoruz** (modern kernel'de bu knob'lar ya yok ya da
 #   anlamsız; log kirliliği yaratıyor).
 # - RAPL servisinde **timer** kullanarak boot ordering döngülerini kırdık.
 # - İki fiziksel makine **aynı hostname** kullandığı için ayrımı **boot zamanı** CPU model
 #   algısıyla yapıyoruz (EPP & min_perf otomasyonu).
 #
 # Author: Kenan Pelit
-# Version: 2.2
-# Last Updated: 2025-09-04
+# Version: 2.3
+# Last Updated: 2025-01-04
 # ==============================================================================
 
 { pkgs, config, lib, inputs, system, ... }:
@@ -121,7 +120,7 @@ in
       "nvme_core.default_ps_max_latency_us=5500"
     ];
 
-    # Hafif sysctl’ler (VM/sunucu değil, dizüstü optimizasyonları)
+    # Hafif sysctl'ler (VM/sunucu değil, dizüstü optimizasyonları)
     kernel.sysctl = {
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
@@ -132,7 +131,7 @@ in
     loader = {
       grub = {
         enable = true;
-        # VM’de gerçek disk cihazına yaz; fizikselde NixOS varsayılanı (nodev/EFI)
+        # VM'de gerçek disk cihazına yaz; fizikselde NixOS varsayılanı (nodev/EFI)
         device = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
         efiSupport = isPhysicalMachine;
         useOSProber = true;
@@ -194,16 +193,16 @@ in
       TLP_DEFAULT_MODE       = "AC";
       TLP_PERSISTENT_DEFAULT = 0;
 
-      # HWP aktif: AC’de performance, BAT’ta powersave governoru
+      # HWP aktif: AC'de performance, BAT'ta powersave governoru
       CPU_DRIVER_OPMODE           = "active";
       CPU_SCALING_GOVERNOR_ON_AC  = "performance";
       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
 
-      # “Taban konfor”: AC’de minimum 1.0 GHz. (1.2GHz daha sıcak, 0.8 bazı işte gecikme yaratır)
+      # "Taban konfor": AC'de minimum 1.0 GHz. (1.2GHz daha sıcak, 0.8 bazı işte gecikme yaratır)
       CPU_SCALING_MIN_FREQ_ON_AC  = 1000000;
       CPU_SCALING_MAX_FREQ_ON_AC  = 4800000;
 
-      # BAT’ta min freq ZORLAMIYORUZ → HWP/EPP serbestçe düşürsün.
+      # BAT'ta min freq ZORLAMIYORUZ → HWP/EPP serbestçe düşürsün.
       # CPU_SCALING_MIN_FREQ_ON_BAT = 800000;   # ← bilinçli olarak kapalı
       CPU_SCALING_MAX_FREQ_ON_BAT  = 3500000;
 
@@ -215,16 +214,16 @@ in
       CPU_MAX_PERF_ON_BAT = 80;
 
       # EPP (Energy Performance Preference):
-      # AC’de “balance_performance” → MTL’de serin, X1C6’da da akıcı.
-      # X1C6 için daha atak istiyorsan runtime servis bunu “performance” yapacak (aşağıda).
+      # AC'de "balance_performance" → MTL'de serin, X1C6'da da akıcı.
+      # X1C6 için daha atak istiyorsan runtime servis bunu "performance" yapacak (aşağıda).
       CPU_ENERGY_PERF_POLICY_ON_AC  = "balance_performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
 
-      # HWP dinamik boost: AC’de açık; BAT’ta kapalı
+      # HWP dinamik boost: AC'de açık; BAT'ta kapalı
       CPU_HWP_DYN_BOOST_ON_AC = 1;
       CPU_HWP_DYN_BOOST_ON_BAT = 0;
 
-      # Turbo: AC’de açık; BAT’ta cihaz karar versin
+      # Turbo: AC'de açık; BAT'ta cihaz karar versin
       CPU_BOOST_ON_AC = 1;
       CPU_BOOST_ON_BAT = "auto";
 
@@ -232,7 +231,7 @@ in
       PLATFORM_PROFILE_ON_AC = "performance";
       PLATFORM_PROFILE_ON_BAT = "balanced";
 
-      # ÖNEMLİ: iGPU frekanslarını TLP ile ZORLAMIYORUZ → modern i915’de gereksiz/hatalı.
+      # ÖNEMLİ: iGPU frekanslarını TLP ile ZORLAMIYORUZ → modern i915'de gereksiz/hatalı.
       # INTEL_GPU_* anahtarları kasıtlı olarak yok.
 
       # PCIe ASPM
@@ -324,17 +323,17 @@ in
       HandleHibernateKey           = "hibernate";
     };
 
-    # SPICE guest agent yalnızca VM’de (host’ta gereksiz/hata üretir)
+    # SPICE guest agent yalnızca VM'de (host'ta gereksiz/hata üretir)
     spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
   };
 
   # =============================================================================
-  # RAPL POWER LIMITS (X1C6’da anlamlı; Meteor Lake’te BYPASS)
+  # RAPL POWER LIMITS (X1C6'da anlamlı; Meteor Lake'te BYPASS)
   # =============================================================================
   # Notlar:
   # - Servis TIMER ile tetiklenir → boot ordering döngüsü yok.
-  # - Meteor/Arrow/Lunar Lake ve “Core Ultra” algılanırsa RAPL "skip".
-  # - X1C6 gibi U-serisi CPU’da AC: PL1=25W/PL2=35W, BAT: PL1=15W/PL2=25W.
+  # - Meteor/Arrow/Lunar Lake ve "Core Ultra" algılanırsa RAPL "skip".
+  # - X1C6 gibi U-serisi CPU'da AC: PL1=25W/PL2=35W, BAT: PL1=15W/PL2=25W.
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Apply RAPL power limits for Intel CPUs";
     after = [ "tlp.service" ];
@@ -431,7 +430,7 @@ in
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
           | ${pkgs.coreutils}/bin/tr -d '\n')"
 
-        # Varsayilan (modern CPU’lar icin iyi)
+        # Varsayilan (modern CPU'lar icin iyi)
         EPP_ON_AC="balance_performance"
         MIN_PERF=20
 
@@ -441,7 +440,7 @@ in
           MIN_PERF=25
         fi
 
-        # EPP’yi tum policy*’lere uygula
+        # EPP'yi tum policy*'lere uygula
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ -w "$pol/energy_performance_preference" ]] && \
             echo "$EPP_ON_AC" > "$pol/energy_performance_preference" 2>/dev/null || true
@@ -452,7 +451,7 @@ in
           echo "$MIN_PERF" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
         fi
 
-        echo "cpu-epp-autotune: CPU='$CPU_MODEL' -> EPP='${EPP_ON_AC}', min_perf_pct='${MIN_PERF}'"
+        echo "cpu-epp-autotune: CPU='$CPU_MODEL' -> EPP='$EPP_ON_AC', min_perf_pct='$MIN_PERF'"
       '';
     };
   };
@@ -596,7 +595,11 @@ in
       (writeScriptBin "osc-perf-mode" ''
         #!${bash}/bin/bash
         set -euo pipefail
-        cmd="\${1:-status}"
+        if [ $# -ge 1 ]; then
+          cmd="$1"
+        else
+          cmd="status"
+        fi
 
         show_status() {
           CPU_TYPE="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/sed 's/^ *//')"
@@ -608,12 +611,12 @@ in
           TEMP="$( ${pkgs.lm_sensors}/bin/sensors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -m1 -E 'Package id 0|Tctl' | ${pkgs.gawk}/bin/awk '{print $3}' || echo n/a)"
 
           echo "=== Current System Status ==="
-          echo "CPU: ${CPU_TYPE}"
-          echo "Power Source: ${PWR}"
-          echo "Governor: ${GOV}"
-          echo "EPP: ${EPP}"
-          echo "Turbo: ${TURBO}"
-          echo "mem_sleep: ${MEMS}"
+          echo "CPU: $CPU_TYPE"
+          echo "Power Source: $PWR"
+          echo "Governor: $GOV"
+          echo "EPP: $EPP"
+          echo "Turbo: $TURBO"
+          echo "mem_sleep: $MEMS"
           echo
           echo "CPU Frequencies:"
           for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
@@ -630,11 +633,11 @@ in
             [ "$pl2" != "0" ] && echo "PL2: $((pl2/1000000))W"
           fi
           echo
-          echo "CPU Temp: ${TEMP}"
+          echo "CPU Temp: $TEMP"
           if [ -r /sys/class/power_supply/BAT0/charge_control_start_threshold ]; then
             s=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold)
             e=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold)
-            echo "Battery Thresholds: Start: ${s}% | Stop: ${e}%"
+            echo "Battery Thresholds: Start: ''${s}% | Stop: ''${e}%"
           fi
         }
 
