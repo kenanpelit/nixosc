@@ -3,41 +3,43 @@
 # NixOS Sistem Yapılandırması - Temel Sistem, Boot, Donanım ve Güç Yönetimi
 # ==============================================================================
 #
-# Bu modül, geleneksel olarak ayrı dosyalarda tutulan sistem bileşenlerini tek
-# bir bütünleşik yapıda toplar. Temel sistem servisleri, önyükleme süreci,
-# donanım desteği ve gelişmiş güç yönetimini kapsamlı şekilde yönetir.
+# Bu modül tek bir dosyada:
+#  - Temel sistem ve boot ayarları,
+#  - Donanım hızlandırma,
+#  - Akıllı güç yönetimi (TLP + HWP/EPP),
+#  - RAPL (eski Intel’de nazikçe PL1/PL2; Meteor Lake ve üstünde otomatik bypass),
+#  - ThinkPad termal/fan/batarya eşikleri,
+#  - AC/DC ve suspend/resume tetikleyicileri,
+#  - “Aynı hostname ile iki farklı donanım” durumunda **runtime** CPU algılayıp
+#    EPP/min_perf’i doğru sete çekecek servis,
+#  - VM için gereksiz ajanları (host’ta) kapatmayı
+# bir araya getirir.
 #
-# DESTEKLENEN DONANIM:
-# - ThinkPad X1 Carbon 6th Gen (Intel Core i7-8650U, Kaby Lake-R, 15W TDP)
-#   → Ultra-taşınabilir; RAPL limitleri faydalı.
-# - ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, Meteor Lake, 28W TDP)
-#   → Modern mimari; native güç yönetimi iyi, RAPL’e gerek yok (bypass).
-# - Sanal Makineler (hostname “vhay” ile tespit)
+# DESTEK:
+# - ThinkPad X1 Carbon 6th (i7-8650U, Kaby Lake-R, 15W TDP)  → RAPL faydalı
+# - ThinkPad E14 Gen 6 (Core Ultra 7 155H, Meteor Lake, 28W) → native PM yeterli; RAPL’i atla
+# - Sanal makine (hostname: “vhay”)
 #
-# Öne Çıkanlar:
-# 1) Akıllı güç yönetimi (TLP + HWP/EPP + platform profilleri)
-# 2) X1C6 için RAPL limitleri; Meteor Lake’te otomatik “skip”
-# 3) ThinkFan tabanlı termal yönetim + suspend/resume yardımcıları
-# 4) i915 için stabil kernel parametreleri (PSR/FBC/SAGV kapalı)
-# 5) GRUB teması, mikrocode ve donanım hızlandırma paketleri
-#
-# Notlar:
-# - TLP; auto-cpufreq ve power-profiles-daemon ile çakıştığı için ikisi devre dışı.
-# - RAPL, modern Intel (Core Ultra/Meteor Lake ve sonrası) için anlamlı değil → skip.
-# - SPICE guest agent yalnızca VM’de açık (host’ta gereksiz log kirliliğini keser).
+# Tasarım Notları:
+# - TLP, auto-cpufreq ve power-profiles-daemon ile çakışır → ikincisi devre dışı.
+# - i915’de PSR/FBC/SAGV sorun çıkardığı için kapalı (stabilite/tearing).
+# - iGPU frekanslarını TLP ile **zorlamıyoruz** (modern kernel’de bu knob’lar ya yok ya da
+#   anlamsız; log kirliliği yaratıyor).
+# - RAPL servisinde **timer** kullanarak boot ordering döngülerini kırdık.
+# - İki fiziksel makine **aynı hostname** kullandığı için ayrımı **boot zamanı** CPU model
+#   algısıyla yapıyoruz (EPP & min_perf otomasyonu).
 #
 # Author: Kenan Pelit
-# Version: 2.1
+# Version: 2.2
 # Last Updated: 2025-09-04
 # ==============================================================================
 
 { pkgs, config, lib, inputs, system, ... }:
 
 let
-  hostname = config.networking.hostName or "";
-  # hay = fiziksel ThinkPad, vhay = sanal makine
-  isPhysicalMachine = hostname == "hay";
-  isVirtualMachine  = hostname == "vhay";
+  hostname          = config.networking.hostName or "";
+  isPhysicalMachine = hostname == "hay";   # her iki gerçek ThinkPad de "hay"
+  isVirtualMachine  = hostname == "vhay";  # sanal makine ise "vhay"
 in
 {
   # =============================================================================
@@ -61,7 +63,7 @@ in
     };
   };
 
-  # Türkçe F klavye düzeni + Caps Lock → Ctrl
+  # Türkçe F klavye + CapsLock -> Ctrl
   services.xserver.xkb = {
     layout  = "tr";
     variant = "f";
@@ -69,7 +71,7 @@ in
   };
   console.keyMap = "trf";
 
-  # Sistem sürüm kilidi (yükseltmelerde uyum için)
+  # Yükseltmelerde uyumluluk için sistem sürüm kilidi
   system.stateVersion = "25.11";
 
   # =============================================================================
@@ -78,13 +80,12 @@ in
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
 
-    # Yükletilecek modüller:
-    # - intel_rapl’ı BİLEREK eklemiyoruz → bazı kernel’lerde yok/gömülü; uyarıyı kes.
+    # Not: "intel_rapl" modülünü özellikle eklemiyoruz (bazı çekirdeklerde
+    # ayrı modül değil; yoksa "Failed to find module 'intel_rapl'" uyarısı olur).
     kernelModules =
       [ "coretemp" "i915" ]
       ++ lib.optionals isPhysicalMachine [ "thinkpad_acpi" ];
 
-    # Modprobe seçenekleri: HWP boost, NVMe latency sınırı, vb.
     extraModprobeConfig = ''
       # Intel P-State: HWP dynamic boost
       options intel_pstate hwp_dynamic_boost=1
@@ -92,13 +93,13 @@ in
       # Ses güç tasarrufu
       options snd_hda_intel power_save=10 power_save_controller=Y
 
-      # Wi-Fi güç optimizasyonu
+      # Wi-Fi güç ayarı (bataryada tasarruf)
       options iwlwifi power_save=1 power_level=3
 
       # USB autosuspend (saniye)
       options usbcore autosuspend=5
 
-      # NVMe güç yönetimi (maks. latency)
+      # NVMe güç yönetimi: maksimum kabul edilebilir latency
       options nvme_core default_ps_max_latency_us=5500
 
       ${lib.optionalString isPhysicalMachine ''
@@ -107,7 +108,7 @@ in
       ''}
     '';
 
-    # Kernel parametreleri: i915 stabilite ve güç ayarları
+    # i915 stabilite/tearing için PSR/FBC/SAGV kapalı; HWP boost açık
     kernelParams = [
       "intel_pstate=active"
       "intel_pstate.hwp_dynamic_boost=1"
@@ -116,11 +117,11 @@ in
       "i915.enable_fbc=0"
       "i915.enable_psr=0"
       "i915.enable_sagv=0"
-      "mem_sleep_default=deep"
+      "mem_sleep_default=deep"            # FW destekliyorsa deep; değilse s2idle kalır
       "nvme_core.default_ps_max_latency_us=5500"
     ];
 
-    # Hafif kernel sysctl’leri
+    # Hafif sysctl’ler (VM/sunucu değil, dizüstü optimizasyonları)
     kernel.sysctl = {
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
@@ -128,10 +129,10 @@ in
       "kernel.nmi_watchdog" = 0;
     };
 
-    # GRUB: host/VM cihaz farkı + tema
     loader = {
       grub = {
         enable = true;
+        # VM’de gerçek disk cihazına yaz; fizikselde NixOS varsayılanı (nodev/EFI)
         device = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
         efiSupport = isPhysicalMachine;
         useOSProber = true;
@@ -158,7 +159,7 @@ in
       emulateWheel = true;
     };
 
-    # Donanım hızlandırma paketleri (Intel iGPU + medya + compute)
+    # Intel iGPU + medya + compute
     graphics = {
       enable = true;
       enable32Bit = true;
@@ -181,114 +182,114 @@ in
   };
 
   # =============================================================================
-  # POWER MANAGEMENT (TLP)
+  # POWER MANAGEMENT (TLP + HWP/EPP)
   # =============================================================================
-  services.auto-cpufreq.enable           = false; # TLP ile çakışır
-  services.power-profiles-daemon.enable  = false; # TLP ile çakışır
+  services.auto-cpufreq.enable          = false; # TLP ile çakışır
+  services.power-profiles-daemon.enable = false; # TLP ile çakışır
 
   services.tlp = lib.mkIf isPhysicalMachine {
     enable = true;
     settings = {
-      # Varsayılan mod: AC; kalıcı değil (AC/BAT olayıyla otomatik geçsin)
-      TLP_DEFAULT_MODE        = "AC";
-      TLP_PERSISTENT_DEFAULT  = 0;
+      # Varsayılan mod: AC (kalıcı değil; AC/BAT olaylarıyla otomatik geçsin)
+      TLP_DEFAULT_MODE       = "AC";
+      TLP_PERSISTENT_DEFAULT = 0;
 
-      # CPU: HWP aktif. AC’de performans, BAT’ta powersave.
-      CPU_DRIVER_OPMODE               = "active";
-      CPU_SCALING_GOVERNOR_ON_AC      = "performance";
-      CPU_SCALING_GOVERNOR_ON_BAT     = "powersave";
+      # HWP aktif: AC’de performance, BAT’ta powersave governoru
+      CPU_DRIVER_OPMODE           = "active";
+      CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
 
-      # “Taban konfor”: AC’de 1.2 GHz. (1.6 fazla sıcak; 1.0 bazı işlerde cırt)
-      #CPU_SCALING_MIN_FREQ_ON_AC      = 1200000;
-      CPU_SCALING_MIN_FREQ_ON_AC      = 1000000;
-      CPU_SCALING_MAX_FREQ_ON_AC      = 4800000;
+      # “Taban konfor”: AC’de minimum 1.0 GHz. (1.2GHz daha sıcak, 0.8 bazı işte gecikme yaratır)
+      CPU_SCALING_MIN_FREQ_ON_AC  = 1000000;
+      CPU_SCALING_MAX_FREQ_ON_AC  = 4800000;
 
-      # BAT’ta taban frekansı ZORLAMIYORUZ → HWP/EPP özgürce düşürsün.
-      # CPU_SCALING_MIN_FREQ_ON_BAT   = 800000;   # ← bilinçli olarak kapalı
-      CPU_SCALING_MAX_FREQ_ON_BAT     = 3500000;
+      # BAT’ta min freq ZORLAMIYORUZ → HWP/EPP serbestçe düşürsün.
+      # CPU_SCALING_MIN_FREQ_ON_BAT = 800000;   # ← bilinçli olarak kapalı
+      CPU_SCALING_MAX_FREQ_ON_BAT  = 3500000;
 
-      # HWP min perf yüzdeleri: AC’de 20–100; BAT’ta 10–80
-      CPU_MIN_PERF_ON_AC              = 20;
-      CPU_MAX_PERF_ON_AC              = 100;
-      CPU_MIN_PERF_ON_BAT             = 10;
-      CPU_MAX_PERF_ON_BAT             = 80;
+      # HWP min perf yüzdeleri (intel_pstate/min_perf_pct):
+      # AC: 20–100 → akıcı & ısı kontrollü; BAT: 10–80 → tasarruf
+      CPU_MIN_PERF_ON_AC = 20;
+      CPU_MAX_PERF_ON_AC = 100;
+      CPU_MIN_PERF_ON_BAT = 10;
+      CPU_MAX_PERF_ON_BAT = 80;
 
-      # EPP: AC = performance, BAT = balance_power
-      CPU_ENERGY_PERF_POLICY_ON_AC    = "balance_performance";
-      #CPU_ENERGY_PERF_POLICY_ON_AC    = "performance";
-      CPU_ENERGY_PERF_POLICY_ON_BAT   = "balance_power";
+      # EPP (Energy Performance Preference):
+      # AC’de “balance_performance” → MTL’de serin, X1C6’da da akıcı.
+      # X1C6 için daha atak istiyorsan runtime servis bunu “performance” yapacak (aşağıda).
+      CPU_ENERGY_PERF_POLICY_ON_AC  = "balance_performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
 
-      # HWP dyn boost: AC’de açık, BAT’ta kapalı
-      CPU_HWP_DYN_BOOST_ON_AC         = 1;
-      CPU_HWP_DYN_BOOST_ON_BAT        = 0;
+      # HWP dinamik boost: AC’de açık; BAT’ta kapalı
+      CPU_HWP_DYN_BOOST_ON_AC = 1;
+      CPU_HWP_DYN_BOOST_ON_BAT = 0;
 
-      # Turbo: AC’de açık, BAT’ta cihaz karar versin
-      CPU_BOOST_ON_AC                 = 1;
-      CPU_BOOST_ON_BAT                = "auto";
+      # Turbo: AC’de açık; BAT’ta cihaz karar versin
+      CPU_BOOST_ON_AC = 1;
+      CPU_BOOST_ON_BAT = "auto";
 
-      # Platform profile (FW destekliyorsa)
-      PLATFORM_PROFILE_ON_AC          = "performance";
-      PLATFORM_PROFILE_ON_BAT         = "balanced";
+      # Platform profili (FW destekliyorsa)
+      PLATFORM_PROFILE_ON_AC = "performance";
+      PLATFORM_PROFILE_ON_BAT = "balanced";
 
-      # --- ÖNEMLİ: iGPU frekanslarını TLP ile zorlamıyoruz. ---
-      # TLP 1.8 + modern i915’de bu anahtarlar hata/uygunsuzluk üretebiliyor.
-      # INTEL_GPU_* satırları bilerek kaldırıldı.
+      # ÖNEMLİ: iGPU frekanslarını TLP ile ZORLAMIYORUZ → modern i915’de gereksiz/hatalı.
+      # INTEL_GPU_* anahtarları kasıtlı olarak yok.
 
       # PCIe ASPM
-      PCIE_ASPM_ON_AC                 = "default";
-      PCIE_ASPM_ON_BAT                = "powersupersave";
+      PCIE_ASPM_ON_AC = "default";
+      PCIE_ASPM_ON_BAT = "powersupersave";
 
       # Runtime PM
-      RUNTIME_PM_ON_AC                = "on";
-      RUNTIME_PM_ON_BAT               = "auto";
-      RUNTIME_PM_DRIVER_DENYLIST      = "nouveau radeon";
+      RUNTIME_PM_ON_AC = "on";
+      RUNTIME_PM_ON_BAT = "auto";
+      RUNTIME_PM_DRIVER_DENYLIST = "nouveau radeon";
 
-      # USB autosuspend istisnaları
-      USB_AUTOSUSPEND                 = 1;
-      USB_DENYLIST                    = "17ef:6047";  # Özel cihaz (örnek)
-      USB_EXCLUDE_AUDIO               = 1;
-      USB_EXCLUDE_BTUSB               = 0;
-      USB_EXCLUDE_PHONE               = 1;
-      USB_EXCLUDE_PRINTER             = 1;
-      USB_EXCLUDE_WWAN                = 0;
+      # USB autosuspend istisnaları (örnek vid:pid eklendi)
+      USB_AUTOSUSPEND     = 1;
+      USB_DENYLIST        = "17ef:6047";
+      USB_EXCLUDE_AUDIO   = 1;
+      USB_EXCLUDE_BTUSB   = 0;
+      USB_EXCLUDE_PHONE   = 1;
+      USB_EXCLUDE_PRINTER = 1;
+      USB_EXCLUDE_WWAN    = 0;
 
-      # ThinkPad batarya eşikleri
-      START_CHARGE_THRESH_BAT0        = 75;
-      STOP_CHARGE_THRESH_BAT0         = 80;
-      START_CHARGE_THRESH_BAT1        = 75;
-      STOP_CHARGE_THRESH_BAT1         = 80;
-      RESTORE_THRESHOLDS_ON_BAT       = 1;
+      # ThinkPad batarya eşikleri (ömür için %75–80 bandı)
+      START_CHARGE_THRESH_BAT0 = 75;
+      STOP_CHARGE_THRESH_BAT0  = 80;
+      START_CHARGE_THRESH_BAT1 = 75;
+      STOP_CHARGE_THRESH_BAT1  = 80;
+      RESTORE_THRESHOLDS_ON_BAT = 1;
 
       # Disk güç yönetimi
-      DISK_IDLE_SECS_ON_AC            = 0;
-      DISK_IDLE_SECS_ON_BAT           = 2;
-      MAX_LOST_WORK_SECS_ON_AC        = 15;
-      MAX_LOST_WORK_SECS_ON_BAT       = 60;
-      DISK_APM_LEVEL_ON_AC            = "255";
-      DISK_APM_LEVEL_ON_BAT           = "128";
-      DISK_APM_CLASS_DENYLIST         = "usb ieee1394";
-      DISK_IOSCHED                     = "mq-deadline";
+      DISK_IDLE_SECS_ON_AC = 0;
+      DISK_IDLE_SECS_ON_BAT = 2;
+      MAX_LOST_WORK_SECS_ON_AC = 15;
+      MAX_LOST_WORK_SECS_ON_BAT = 60;
+      DISK_APM_LEVEL_ON_AC = "255";
+      DISK_APM_LEVEL_ON_BAT = "128";
+      DISK_APM_CLASS_DENYLIST = "usb ieee1394";
+      DISK_IOSCHED = "mq-deadline";
 
-      # SATA link güç yönetimi
-      SATA_LINKPWR_ON_AC              = "max_performance";
-      SATA_LINKPWR_ON_BAT             = "med_power_with_dipm";
+      # SATA link pwr
+      SATA_LINKPWR_ON_AC = "max_performance";
+      SATA_LINKPWR_ON_BAT = "med_power_with_dipm";
 
       # Wi-Fi & WOL
-      WIFI_PWR_ON_AC                  = "off";
-      WIFI_PWR_ON_BAT                 = "on";
-      WOL_DISABLE                     = "Y";
+      WIFI_PWR_ON_AC = "off";
+      WIFI_PWR_ON_BAT = "on";
+      WOL_DISABLE = "Y";
 
       # Ses güç tasarrufu
-      SOUND_POWER_SAVE_ON_AC          = 0;
-      SOUND_POWER_SAVE_ON_BAT         = 10;
-      SOUND_POWER_SAVE_CONTROLLER     = "Y";
+      SOUND_POWER_SAVE_ON_AC = 0;
+      SOUND_POWER_SAVE_ON_BAT = 10;
+      SOUND_POWER_SAVE_CONTROLLER = "Y";
 
       # Radyo cihazları
-      DEVICES_TO_DISABLE_ON_STARTUP   = "";
-      DEVICES_TO_ENABLE_ON_STARTUP    = "bluetooth wifi";
-      DEVICES_TO_DISABLE_ON_SHUTDOWN  = "";
-      DEVICES_TO_ENABLE_ON_AC         = "bluetooth wifi wwan";
-      DEVICES_TO_DISABLE_ON_BAT       = "";
+      DEVICES_TO_DISABLE_ON_STARTUP = "";
+      DEVICES_TO_ENABLE_ON_STARTUP  = "bluetooth wifi";
+      DEVICES_TO_DISABLE_ON_SHUTDOWN = "";
+      DEVICES_TO_ENABLE_ON_AC = "bluetooth wifi wwan";
+      DEVICES_TO_DISABLE_ON_BAT = "";
       DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE = "wwan";
     };
   };
@@ -297,41 +298,43 @@ in
   # SYSTEM SERVICES
   # =============================================================================
   services = {
-    thermald.enable = true; # Intel termal sürücüleriyle uyumlu
-    upower.enable   = true; # Kullanışlı raporlama/uygulama entegrasyonu
+    thermald.enable = true; # Intel termal sürücüleriyle uyumlu; hotspotları yumuşatır
+    upower.enable   = true; # GUI/CLI araçları için batarya/enerji raporu
 
-    # ThinkFan: 5 kademeli sade eğri
+    # ThinkFan: sade 5 kademeli eğri (ThinkPad ACPI fan arayüzü ile)
     thinkfan = lib.mkIf isPhysicalMachine {
       enable = true;
       levels = [
-        [ "level auto"      0  55 ]
-        [ 1                55  65 ]
-        [ 3                65  75 ]
-        [ 7                75  85 ]
+        [ "level auto"        0  55 ]
+        [ 1                  55  65 ]
+        [ 3                  65  75 ]
+        [ 7                  75  85 ]
         [ "level full-speed" 85 32767 ]
       ];
     };
 
-    # Laptop lid switch (yeni format)
+    # Lid/tuş davranışları
     logind.settings.Login = {
-      HandleLidSwitch               = "suspend";
-      HandleLidSwitchDocked         = "suspend";
-      HandleLidSwitchExternalPower  = "suspend";
-      HandlePowerKey                = "ignore";
-      HandlePowerKeyLongPress       = "poweroff";
-      HandleSuspendKey              = "suspend";
-      HandleHibernateKey            = "hibernate";
+      HandleLidSwitch              = "suspend";
+      HandleLidSwitchDocked        = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
+      HandlePowerKey               = "ignore";
+      HandlePowerKeyLongPress      = "poweroff";
+      HandleSuspendKey             = "suspend";
+      HandleHibernateKey           = "hibernate";
     };
 
-    # SPICE agent: sadece VM’de gerekli (host’ta hata/uyarı üretebiliyor)
+    # SPICE guest agent yalnızca VM’de (host’ta gereksiz/hata üretir)
     spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
   };
 
   # =============================================================================
-  # RAPL POWER LIMITS (X1C6’da aktif; Meteor Lake’te otomatik “skip”)
+  # RAPL POWER LIMITS (X1C6’da anlamlı; Meteor Lake’te BYPASS)
   # =============================================================================
-
-  # Not: Boot ordering döngüsünü kırmak için servis yerine TIMER ile tetikliyoruz.
+  # Notlar:
+  # - Servis TIMER ile tetiklenir → boot ordering döngüsü yok.
+  # - Meteor/Arrow/Lunar Lake ve “Core Ultra” algılanırsa RAPL "skip".
+  # - X1C6 gibi U-serisi CPU’da AC: PL1=25W/PL2=35W, BAT: PL1=15W/PL2=25W.
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Apply RAPL power limits for Intel CPUs";
     after = [ "tlp.service" ];
@@ -344,16 +347,16 @@ in
 
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
-          | ${pkgs.coreutils}/bin/cut -d: -f2- \
+          | ${pkks.coreutils or pkgs.coreutils}/bin/cut -d: -f2- \
           | ${pkgs.coreutils}/bin/tr -d '\n')"
 
-        # Modern: Core Ultra / Meteor/Arrow/Lunar → native PM var, RAPL atla
+        # Modern Intel ise native power management yeterli → RAPL skip
         if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
           echo "RAPL: modern Intel CPU detected; skipping."
           exit 0
         fi
 
-        # RAPL arayüzü yoksa sessizce çık
+        # powercap/rapl var mi?
         shopt -s nullglob
         have_rapl=0
         for R in /sys/class/powercap/intel-rapl:*; do
@@ -364,7 +367,7 @@ in
           exit 0
         fi
 
-        # X1C6 ve benzerleri için hafif PL1/PL2
+        # AC mi?
         ON_AC=0
         for PS in /sys/class/power_supply/A{C,DP}*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
@@ -378,10 +381,10 @@ in
 
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
-          [[ -w "$R/constraint_0_power_limit_uw" ]] && echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
-          [[ -w "$R/constraint_0_time_window_us" ]] && echo 28000000 > "$R/constraint_0_time_window_us" 2>/dev/null || true
-          [[ -w "$R/constraint_1_power_limit_uw" ]] && echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
-          [[ -w "$R/constraint_1_time_window_us" ]] && echo 2440000  > "$R/constraint_1_time_window_us" 2>/dev/null || true
+          [[ -w "$R/constraint_0_power_limit_uw"  ]] && echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw"  2>/dev/null || true
+          [[ -w "$R/constraint_0_time_window_us"  ]] && echo 28000000 > "$R/constraint_0_time_window_us" 2>/dev/null || true
+          [[ -w "$R/constraint_1_power_limit_uw"  ]] && echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw"  2>/dev/null || true
+          [[ -w "$R/constraint_1_time_window_us"  ]] && echo 2440000  > "$R/constraint_1_time_window_us" 2>/dev/null || true
         done
 
         echo "RAPL applied (PL1=''${PL1_W}W PL2=''${PL2_W}W; AC=''${ON_AC})."
@@ -390,15 +393,14 @@ in
   };
 
   systemd.timers.rapl-power-limits = lib.mkIf isPhysicalMachine {
+    description = "Timer: apply RAPL power limits shortly after boot";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec  = "45s";   # TLP/diğer servisler otursun, sonra uygula
+      OnBootSec  = "45s";   # TLP/thermald otursun, sonra uygula
       Persistent = true;
     };
   };
 
-  # Resume sonrası yeniden uygulatmak için timer tetiklenmesi yeterli;
-  # istersen aşağıdaki basit helper’la da garantiye alabilirsin.
   systemd.services.rapl-power-limits-resume = lib.mkIf isPhysicalMachine {
     description = "Re-apply RAPL limits after resume";
     wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
@@ -410,9 +412,75 @@ in
   };
 
   # =============================================================================
-  # THINKPAD HELPERS (LED/fan; suspend/resume düzeltmeleri)
+  # CPU-EPP/MIN_PERF OTOMATİĞİ (aynı hostname ile iki farklı donanım için)
   # =============================================================================
+  # - Meteor Lake (Core Ultra 7 155H) → EPP=balance_performance, min_perf=20
+  # - X1C6 (i7-8650U ve benzeri U-serisi) → EPP=performance, min_perf=25
+  systemd.services.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
+    description = "CPU modeline gore EPP ve min_perf ayarla";
+    after = [ "tlp.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "cpu-epp-autotune" ''
+        #!${pkgs.bash}/bin/bash
+        set -euo pipefail
 
+        CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
+          | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
+          | ${pkgs.coreutils}/bin/cut -d: -f2- \
+          | ${pkgs.coreutils}/bin/tr -d '\n')"
+
+        # Varsayilan (modern CPU’lar icin iyi)
+        EPP_ON_AC="balance_performance"
+        MIN_PERF=20
+
+        # X1C6 / Kaby/Whiskey/Coffee U serisi ise daha atak
+        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby|Whiskey|Coffee'; then
+          EPP_ON_AC="performance"
+          MIN_PERF=25
+        fi
+
+        # EPP’yi tum policy*’lere uygula
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/energy_performance_preference" ]] && \
+            echo "$EPP_ON_AC" > "$pol/energy_performance_preference" 2>/dev/null || true
+        done
+
+        # intel_pstate HWP min perf
+        if [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]]; then
+          echo "$MIN_PERF" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
+        fi
+
+        echo "cpu-epp-autotune: CPU='$CPU_MODEL' -> EPP='${EPP_ON_AC}', min_perf_pct='${MIN_PERF}'"
+      '';
+    };
+  };
+
+  systemd.services.cpu-epp-autotune-resume = lib.mkIf isPhysicalMachine {
+    description = "Resume sonrasi EPP/min_perf yeniden uygula";
+    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service";
+    };
+  };
+
+  # =============================================================================
+  # UDEV RULES (AC/DC degisimi tetikleyicileri)
+  # =============================================================================
+  services.udev.extraRules = lib.mkIf isPhysicalMachine ''
+    # AC/DC değişince RAPL ve CPU-EPP otomatik yeniden uygulansın
+    SUBSYSTEM=="power_supply", KERNEL=="A{C,DP}*", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
+    SUBSYSTEM=="power_supply", KERNEL=="A{C,DP}*", ACTION=="change", \
+      RUN+="${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service"
+  '';
+
+  # =============================================================================
+  # THINKPAD YARDIMCILARI (LED/fan, suspend düzeltmeleri)
+  # =============================================================================
   systemd.services.thinkpad-led-fix = lib.mkIf isPhysicalMachine {
     description = "Turn off ThinkPad mute LEDs";
     wantedBy = [ "multi-user.target" ];
@@ -474,18 +542,9 @@ in
     };
   };
 
-  # Eski ad-hoc sleep/wakeup servislerini kapat
+  # Eski ad-hoc sleep/wakeup servislerini kapat (temizlik)
   systemd.services.thinkfan-sleep  = lib.mkIf isPhysicalMachine { enable = lib.mkForce false; wantedBy = lib.mkForce [ ]; };
   systemd.services.thinkfan-wakeup = lib.mkIf isPhysicalMachine { enable = lib.mkForce false; wantedBy = lib.mkForce [ ]; };
-
-  # =============================================================================
-  # UDEV RULES
-  # =============================================================================
-  # AC/DC değişiminde RAPL’i nazikçe yeniden uygula (timer/servis tetiklenir)
-  services.udev.extraRules = lib.mkIf isPhysicalMachine ''
-    SUBSYSTEM=="power_supply", KERNEL=="A{C,DP}*", ACTION=="change", \
-      RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
-  '';
 
   # =============================================================================
   # USER-FACING YARDIMCI KOMUTLAR
@@ -494,25 +553,31 @@ in
     lib.optionals isPhysicalMachine [
       tlp
 
+      # Hızlı profil geçişleri (TLP + governor)
       (writeScriptBin "performance-mode" ''
         #!${bash}/bin/bash
+        set -e
         echo "🚀 Performance mode..."
         sudo ${tlp}/bin/tlp ac
         for cpu in /sys/devices/system/cpu/cpu*/cpufreq; do
           echo performance | sudo tee "$cpu/scaling_governor" >/dev/null 2>&1
         done
+        sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
         echo "✅ Done!"
       '')
 
       (writeScriptBin "balanced-mode" ''
         #!${bash}/bin/bash
+        set -e
         echo "⚖️ Balanced mode..."
         sudo ${tlp}/bin/tlp start
+        sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
         echo "✅ Done!"
       '')
 
       (writeScriptBin "eco-mode" ''
         #!${bash}/bin/bash
+        set -e
         echo "🍃 Eco mode..."
         sudo ${tlp}/bin/tlp bat
         for cpu in /sys/devices/system/cpu/cpu*/cpufreq; do
@@ -524,7 +589,62 @@ in
       (writeScriptBin "power-status" ''
         #!${bash}/bin/bash
         echo "==== Power Status ===="
-        sudo ${tlp}/bin/tlp-stat -s -c -p | head -20
+        sudo ${tlp}/bin/tlp-stat -s -c -p | head -40
+      '')
+
+      # Küçük durum aracı: osc-perf-mode (status|perf|bal|eco)
+      (writeScriptBin "osc-perf-mode" ''
+        #!${bash}/bin/bash
+        set -euo pipefail
+        cmd="${1:-status}"
+
+        show_status() {
+          CPU_TYPE="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/sed 's/^ *//')"
+          GOV="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo n/a)"
+          EPP="$(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo n/a)"
+          TURBO="$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null | ${pkgs.coreutils}/bin/tr '01' 'OffOn' || echo n/a)"
+          MEMS="$(cat /sys/power/mem_sleep 2>/dev/null || echo n/a)"
+          PWR="BAT"; for PS in /sys/class/power_supply/A{C,DP}*/online; do [ -f "$PS" ] && [ "$(cat "$PS")" = "1" ] && PWR="AC" && break; done
+          TEMP="$( ${pkgs.lm_sensors}/bin/sensors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -m1 -E 'Package id 0|Tctl' | ${pkgs.gawk}/bin/awk '{print $3}' || echo n/a)"
+
+          echo "=== Current System Status ==="
+          echo "CPU: ${CPU_TYPE}"
+          echo "Power Source: ${PWR}"
+          echo "Governor: ${GOV}"
+          echo "EPP: ${EPP}"
+          echo "Turbo: ${TURBO}"
+          echo "mem_sleep: ${MEMS}"
+          echo
+          echo "CPU Frequencies:"
+          for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
+            [ -f "$f" ] || continue
+            cpu="$(basename "$(dirname "$f")")"
+            mhz="$(( $(cat "$f") / 1000 ))"
+            printf "  %-5s: %s MHz\n" "$cpu" "$mhz"
+          done | head -n 16
+          echo
+          if [ -d /sys/class/powercap/intel-rapl:0 ]; then
+            pl1="$(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0)"
+            pl2="$(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0)"
+            [ "$pl1" != "0" ] && echo "PL1: $((pl1/1000000))W"
+            [ "$pl2" != "0" ] && echo "PL2: $((pl2/1000000))W"
+          fi
+          echo
+          echo "CPU Temp: ${TEMP}"
+          if [ -r /sys/class/power_supply/BAT0/charge_control_start_threshold ]; then
+            s=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold)
+            e=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold)
+            echo "Battery Thresholds: Start: ${s}% | Stop: ${e}%"
+          fi
+        }
+
+        case "$cmd" in
+          status) show_status ;;
+          perf)   performance-mode ;;
+          bal)    balanced-mode ;;
+          eco)    eco-mode ;;
+          *) echo "usage: osc-perf-mode {status|perf|bal|eco}" ; exit 2 ;;
+        esac
       '')
     ];
 }
