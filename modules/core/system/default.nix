@@ -199,21 +199,23 @@ in
       CPU_SCALING_GOVERNOR_ON_BAT     = "powersave";
 
       # “Taban konfor”: AC’de 1.2 GHz. (1.6 fazla sıcak; 1.0 bazı işlerde cırt)
-      CPU_SCALING_MIN_FREQ_ON_AC      = 1200000;
+      #CPU_SCALING_MIN_FREQ_ON_AC      = 1200000;
+      CPU_SCALING_MIN_FREQ_ON_AC      = 1000000;
       CPU_SCALING_MAX_FREQ_ON_AC      = 4800000;
 
       # BAT’ta taban frekansı ZORLAMIYORUZ → HWP/EPP özgürce düşürsün.
       # CPU_SCALING_MIN_FREQ_ON_BAT   = 800000;   # ← bilinçli olarak kapalı
       CPU_SCALING_MAX_FREQ_ON_BAT     = 3500000;
 
-      # HWP min perf yüzdeleri: AC’de 25–100; BAT’ta 10–80
-      CPU_MIN_PERF_ON_AC              = 25;
+      # HWP min perf yüzdeleri: AC’de 20–100; BAT’ta 10–80
+      CPU_MIN_PERF_ON_AC              = 20;
       CPU_MAX_PERF_ON_AC              = 100;
       CPU_MIN_PERF_ON_BAT             = 10;
       CPU_MAX_PERF_ON_BAT             = 80;
 
       # EPP: AC = performance, BAT = balance_power
-      CPU_ENERGY_PERF_POLICY_ON_AC    = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_AC    = "balance_performance";
+      #CPU_ENERGY_PERF_POLICY_ON_AC    = "performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT   = "balance_power";
 
       # HWP dyn boost: AC’de açık, BAT’ta kapalı
