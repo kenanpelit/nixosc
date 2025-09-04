@@ -626,7 +626,7 @@ in
 
         sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
         echo "✅ Done!"
-      ''')
+      '')
 
       (writeScriptBin "eco-mode" ''
         #!${bash}/bin/bash
