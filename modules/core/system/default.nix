@@ -347,11 +347,13 @@ in
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
-          | ${pkgs.coreutils}/bin/tr -d '\n')"
+          | ${pkgs.coreutils}/bin/tr -d '\n' \
+          | ${pkgs.gnused}/bin/sed 's/^ *//')"
 
         # Modern Intel ise native power management yeterli → RAPL skip
-        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
-          echo "RAPL: modern Intel CPU detected; skipping."
+        # "Core(TM) Ultra" pattern'i Intel Core Ultra serisi için
+        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
+          echo "RAPL: modern Intel CPU detected ('$CPU_MODEL'); skipping."
           exit 0
         fi
 
