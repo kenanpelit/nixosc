@@ -116,7 +116,7 @@ in
       "i915.enable_guc=3"
       "i915.enable_fbc=0"
       "i915.enable_psr=0"
-      "i915.enable_sagv=0"
+      "i915.enable_sagv=1"
       "mem_sleep_default=deep"            # FW destekliyorsa deep; değilse s2idle kalır
       "nvme_core.default_ps_max_latency_us=5500"
     ];
@@ -196,7 +196,8 @@ in
 
       # HWP aktif: AC'de performance, BAT'ta powersave governoru
       CPU_DRIVER_OPMODE           = "active";
-      CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+      #CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+      CPU_SCALING_GOVERNOR_ON_AC  = "powersave";
       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
 
       # "Taban konfor": AC'de minimum 1.0 GHz. (1.2GHz daha sıcak, 0.8 bazı işte gecikme yaratır)
@@ -209,7 +210,7 @@ in
 
       # HWP min perf yüzdeleri (intel_pstate/min_perf_pct):
       # AC: 20–100 → akıcı & ısı kontrollü; BAT: 10–80 → tasarruf
-      CPU_MIN_PERF_ON_AC = 20;
+      CPU_MIN_PERF_ON_AC = 25;
       CPU_MAX_PERF_ON_AC = 100;
       CPU_MIN_PERF_ON_BAT = 10;
       CPU_MAX_PERF_ON_BAT = 80;
@@ -456,7 +457,7 @@ in
 
         # Varsayilan (modern CPU'lar icin iyi)
         EPP_ON_AC="balance_performance"
-        MIN_PERF=20
+        MIN_PERF=25
 
         # X1C6 / Kaby/Whiskey/Coffee U serisi ise daha atak
         if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby|Whiskey|Coffee'; then
