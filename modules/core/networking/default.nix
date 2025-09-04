@@ -2,7 +2,7 @@
 # ==============================================================================
 # Kapsam:
 # - Hostname, NetworkManager, systemd-resolved, Mullvad VPN, WireGuard
-# - Ağ hazır olana kadar bekleme (NM-wait-online)
+# - Ağ hazır olana kadar bekleme (NM-wait-online) → kapalı: boot takozunu azalt
 # - TCP/IP stack optimizasyonları (BBR + fq, buffer sınırları, ECN, vs.)
 # - RAM’e göre dinamik TCP tavanları (>=32GB için "high" profil)
 # - Teşhis araçları ve alias’lar
@@ -12,7 +12,7 @@
 # - Mullvad DNS / nameserver seçimi VPN aktifliğine göre mkMerge ile belirleniyor.
 #
 # Author: Kenan Pelit
-# Last merged: 2025-09-03
+# Last merged: 2025-09-04
 # ==============================================================================
 
 { config, lib, pkgs, host, ... }:
@@ -94,16 +94,14 @@ in
     wireguard.enable = true;
 
     # VPN açık/kapalıya göre isim sunucuları
+    # Mullvad AÇIKKEN statik nameserver YAZMIYORUZ → Mullvad kendi DNS’ini verir.
     nameservers = mkMerge [
       (mkIf (!hasMullvad) [
         "1.1.1.1"
         "1.0.0.1"
         "9.9.9.9"
       ])
-      (mkIf hasMullvad [
-        "194.242.2.2" # Mullvad
-        "194.242.2.3" # Mullvad
-      ])
+      (mkIf hasMullvad [ ])
     ];
 
     # Firewall’u burada sadece açıyoruz; kurallar security/default.nix’te.
@@ -118,7 +116,18 @@ in
     resolved = {
       enable = true;
       dnssec = "allow-downgrade"; # uyumluluk
-      extraConfig = "";           # Mullvad ile çakışabilecek özelleştirmeleri boş bırak
+      extraConfig = ''
+        # Yerel multicast ve LLMNR kapalı (gerekmiyorsa kapatmak iyi pratik)
+        LLMNR=no
+        MulticastDNS=no
+        # Önbellek açık, stub listener açık
+        Cache=yes
+        DNSStubListener=yes
+        # Mullvad tünel içi DNS'te DoT gereksiz; çakışmayı önlemek için kapalı
+        DNSOverTLS=no
+        # resolved'ı varsayılan olarak işaretle
+        Domains=~.
+      '';
     };
 
     # Mullvad daemon + GUI
@@ -129,26 +138,28 @@ in
   };
 
   ##############################################################################
-  # Ağ hazır olana kadar bekle (IP alana dek)
+  # Ağ hazır bekleme (boot takozunu azaltmak için kapalı)
   ##############################################################################
-  systemd.services."NetworkManager-wait-online".enable = true;
+  systemd.services."NetworkManager-wait-online".enable = false;
 
   ##############################################################################
-  # Mullvad otomatizasyonu (race fix)
+  # Mullvad otomatizasyonu (race fix, socket polling)
   ##############################################################################
   systemd.services."mullvad-autoconnect" = {
     description = "Configure and connect Mullvad once daemon socket is ready";
     wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" "mullvad-daemon.service" ];
-    requires = [ "mullvad-daemon.service" "network-online.target" ];
+    # network-online yerine daha erken: NM ve daemon geldikten sonra çalışır.
+    after = [ "network.target" "NetworkManager.service" "mullvad-daemon.service" ];
+    requires = [ "mullvad-daemon.service" ];
+    wants = [ "NetworkManager.service" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = lib.getExe (pkgs.writeShellScriptBin "mullvad-autoconnect" ''
         set -euo pipefail
 
-        CLI="${pkgs.mullvad}/bin/mullvad"
+        CLI="${pkgs.mullvad-vpn}/bin/mullvad"
 
-        # Daemon soketi hazır olana kadar bekle
+        # Daemon soketi hazır olana kadar bekle (max 30s)
         tries=0
         until "$CLI" status >/dev/null 2>&1; do
           tries=$((tries+1))
@@ -203,6 +214,8 @@ in
     # Aygıt backlog / scheduler bütçeleri
     "net.core.netdev_max_backlog" = mkDefault std.netdev_max_backlog;
     "net.core.netdev_budget"      = 300;
+    # Ağ yoğunluğunda latency’i yumuşatır (opsiyonel iyileştirme)
+    "net.core.netdev_budget_usecs" = 8000;
 
     # listen() backlog
     "net.core.somaxconn" = mkDefault std.somaxconn;
@@ -232,7 +245,8 @@ in
 
     # Path MTU probing
     "net.ipv4.tcp_mtu_probing" = 1;
-    # "net.ipv4.tcp_base_mss"    = 1200; # tünellerde sürekli sorun varsa aç
+    # Sürekli MTU/MSS problemi varsa aç (tünellerde):
+    # "net.ipv4.tcp_base_mss"    = 1200;
 
     # Keepalive / FIN / TW
     "net.ipv4.tcp_keepalive_time"   = 300;
@@ -293,8 +307,9 @@ in
   systemd.services.dynamic-tcp-tuning = {
     description = "Apply dynamic TCP tuning based on total system memory";
     wantedBy = [ "multi-user.target" ];
-    after = [ "sysinit.target" "network-pre.target" ];
-    before = [ "network.target" ];
+    # Ağ servislerinden ÖNCE çalışsın
+    after  = [ "sysinit.target" ];
+    before = [ "NetworkManager.service" "mullvad-daemon.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -364,6 +379,12 @@ in
       echo
       echo "Interfaces (STATE/MTU):"
       ${pkgs.iproute2}/bin/ip -br link | ${pkgs.gawk}/bin/awk '{printf("  %-16s  %s\n",$1,$3)}'
+      echo
+      echo "DNS:"
+      ${pkgs.systemd}/bin/resolvectl dns | sed -n '1,80p'
+      echo
+      echo "Default route:"
+      ${pkgs.iproute2}/bin/ip route show default
       echo
       echo "Connections:"
       echo -n "  TCP total:     "; ${pkgs.iproute2}/bin/ss -s | ${pkgs.gnugrep}/bin/grep -oP 'TCP:\s+\K\d+'
