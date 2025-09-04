@@ -455,14 +455,28 @@ in
           | ${pkgs.coreutils}/bin/tr -d '\n' \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 
-        # Varsayilan (modern CPU'lar icin iyi)
+        # Varsayilan (modern CPU'lar icin)
         EPP_ON_AC="balance_performance"
         MIN_PERF=25
+
+        # AC mi kontrol et
+        ON_AC=0
+        for PS in /sys/class/power_supply/A{C,DP}*/online; do
+          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
+        done
+
+        if [[ "$ON_AC" == "1" ]]; then
+          # AC: daha atak
+          MIN_PERF=30
+        else
+          # BAT: daha tasarruflu
+          MIN_PERF=10
+        fi
 
         # X1C6 / Kaby/Whiskey/Coffee U serisi ise daha atak
         if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby|Whiskey|Coffee'; then
           EPP_ON_AC="performance"
-          MIN_PERF=25
+          # AC’de yine 30, BAT’ta 10 kalıyor
         fi
 
         # EPP'yi tum policy*'lere uygula
@@ -476,7 +490,7 @@ in
           echo "$MIN_PERF" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
         fi
 
-        echo "cpu-epp-autotune: CPU='$CPU_MODEL' -> EPP='$EPP_ON_AC', min_perf_pct='$MIN_PERF'"
+        echo "cpu-epp-autotune: CPU='$CPU_MODEL' (AC=$ON_AC) -> EPP='$EPP_ON_AC', min_perf_pct='$MIN_PERF'"
       '';
     };
   };
