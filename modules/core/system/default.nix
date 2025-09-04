@@ -326,6 +326,7 @@ in
 
     # SPICE guest agent yalnızca VM'de (host'ta gereksiz/hata üretir)
     spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
+    #spice-vdagentd.enable = lib.mkForce false;
   };
 
   # =============================================================================
@@ -441,7 +442,6 @@ in
   systemd.services.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
     description = "CPU modeline gore EPP ve min_perf ayarla";
     after = [ "tlp.service" ];
-    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = pkgs.writeShellScript "cpu-epp-autotune" ''
@@ -477,6 +477,16 @@ in
 
         echo "cpu-epp-autotune: CPU='$CPU_MODEL' -> EPP='$EPP_ON_AC', min_perf_pct='$MIN_PERF'"
       '';
+    };
+  };
+
+  systemd.timers.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
+    description = "Timer: EPP/min_perf uygula (TLP sonrasi)";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "30s";
+      Persistent = true;
+      Unit = "cpu-epp-autotune.service";
     };
   };
 
