@@ -347,7 +347,7 @@ in
 
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
-          | ${pkks.coreutils or pkgs.coreutils}/bin/cut -d: -f2- \
+          | ${pkgs.coreutils}/bin/cut -d: -f2- \
           | ${pkgs.coreutils}/bin/tr -d '\n')"
 
         # Modern Intel ise native power management yeterli → RAPL skip
@@ -596,7 +596,7 @@ in
       (writeScriptBin "osc-perf-mode" ''
         #!${bash}/bin/bash
         set -euo pipefail
-        cmd="${1:-status}"
+        cmd="\${1:-status}"
 
         show_status() {
           CPU_TYPE="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/sed 's/^ *//')"
