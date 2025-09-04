@@ -202,7 +202,7 @@ in
 
       # "Taban konfor": AC'de minimum 1.0 GHz. (1.2GHz daha sıcak, 0.8 bazı işte gecikme yaratır)
       CPU_SCALING_MIN_FREQ_ON_AC  = 1000000;
-      CPU_SCALING_MAX_FREQ_ON_AC  = 4800000;
+      CPU_SCALING_MAX_FREQ_ON_AC  = 4500000;
 
       # BAT'ta min freq ZORLAMIYORUZ → HWP/EPP serbestçe düşürsün.
       # CPU_SCALING_MIN_FREQ_ON_BAT = 800000;   # ← bilinçli olarak kapalı
@@ -306,11 +306,11 @@ in
     thinkfan = lib.mkIf isPhysicalMachine {
       enable = true;
       levels = [
-        [ "level auto"        0  55 ]
-        [ 1                  55  65 ]
-        [ 3                  65  75 ]
-        [ 7                  75  85 ]
-        [ "level full-speed" 85 32767 ]
+        [ "level auto"        0  58 ]
+        [ 1                  58  68 ]
+        [ 3                  68  78 ]
+        [ 7                  78  88 ]
+        [ "level full-speed" 88 32767 ]
       ];
     };
 
@@ -587,15 +587,25 @@ in
     lib.optionals isPhysicalMachine [
       tlp
 
-      # Hızlı profil geçişleri (TLP + governor)
+      # Hızlı profil geçişleri (TLP + HWP/EPP odaklı)
       (writeScriptBin "performance-mode" ''
         #!${bash}/bin/bash
         set -e
-        echo "🚀 Performance mode..."
+        echo "🚀 Performance mode (HWP)…"
         sudo ${tlp}/bin/tlp ac
-        for cpu in /sys/devices/system/cpu/cpu*/cpufreq; do
-          echo performance | sudo tee "$cpu/scaling_governor" >/dev/null 2>&1
+
+        # EPP=performance, min_perf_pct=30 → daha atak
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/energy_performance_preference" ]] && \
+            echo performance | sudo tee "$pol/energy_performance_preference" >/dev/null || true
         done
+        [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
+          echo 30 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+
+        # Turbo açık kalsın (intel_pstate/no_turbo=0)
+        [[ -w /sys/devices/system/cpu/intel_pstate/no_turbo ]] && \
+          echo 0 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null || true
+
         sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
         echo "✅ Done!"
       '')
@@ -603,8 +613,17 @@ in
       (writeScriptBin "balanced-mode" ''
         #!${bash}/bin/bash
         set -e
-        echo "⚖️ Balanced mode..."
+        echo "⚖️ Balanced mode (HWP)…"
         sudo ${tlp}/bin/tlp start
+
+        # EPP=balance_performance, min_perf_pct=25 → “sessiz ama anında tepki”
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/energy_performance_preference" ]] && \
+            echo balance_performance | sudo tee "$pol/energy_performance_preference" >/dev/null || true
+        done
+        [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
+          echo 25 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+
         sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
         echo "✅ Done!"
       '')
@@ -612,11 +631,17 @@ in
       (writeScriptBin "eco-mode" ''
         #!${bash}/bin/bash
         set -e
-        echo "🍃 Eco mode..."
+        echo "🍃 Eco mode (HWP)…"
         sudo ${tlp}/bin/tlp bat
-        for cpu in /sys/devices/system/cpu/cpu*/cpufreq; do
-          echo powersave | sudo tee "$cpu/scaling_governor" >/dev/null 2>&1
+
+        # EPP=balance_power, min_perf_pct=10 → pil odağı
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/energy_performance_preference" ]] && \
+            echo balance_power | sudo tee "$pol/energy_performance_preference" >/dev/null || true
         done
+        [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
+          echo 10 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+
         echo "✅ Done!"
       '')
 
