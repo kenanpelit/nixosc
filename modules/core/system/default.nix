@@ -1,3 +1,4 @@
+# modules/core/system/default.nix
 # ==============================================================================
 # NixOS Sistem Yapılandırması - Temel Sistem, Boot, Donanım ve Güç Yönetimi
 # ==============================================================================
@@ -450,7 +451,7 @@ in
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
-          | ${pkgs.coreutils}/bin/tr -d '\n')" \
+          | ${pkgs.coreutils}/bin/tr -d '\n' \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 
         # Varsayilan (modern CPU'lar icin iyi)
