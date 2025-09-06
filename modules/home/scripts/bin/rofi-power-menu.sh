@@ -1,221 +1,311 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# power-menu (Hyprland friendly) - Rofi mode
+# Version: 2.2.0
+# Author: you + ChatGPT
+#
+# Özellikler:
+# - Reboot/Shutdown/Hibernate öncesi "nazik kapatma": Brave vb. süreçlere SIGTERM,
+#   kısa bekleme, hâlâ yaşıyorsa (nadir) SIGKILL.
+# - Brave “crash restore” balonunu tetikleyen bayrakları bir kez temizler.
+# - Kapatmadan hemen önce `systemctl --user exit` ile user-session servislerini
+#   düzgün kapatır (pipewire/portal vs.).
+# - Onay mekanizması (reboot/shutdown/hibernate için).
+# - Renkli/ikonlu çıktı (rofi markup), --no-symbols / --no-text destekli.
+# - --dry-run ile ne yapacağını gösterir.
+#
+# Rofi entegrasyonu:
+# rofi -show power -modi "power:~/bin/power-menu"
+# ==============================================================================
 
-# This script defines a power menu mode for rofi
-set -e
-set -u
+#set -euo pipefail
 
-# All supported choices
-all=(shutdown reboot suspend hibernate lockscreen)
+# ----------------------------- Ayarlar ---------------------------------------
+# Nazik kapatma listesi (process adları - pgrep -x ile eşleşir)
+GRACE_APPS=("brave" "brave-browser" "brave-browser-stable")
 
-# By default, show all choices
-show=("${all[@]}")
+# Bekleme süreleri
+SOFT_TIMEOUT=10 # SIGTERM sonrası bekleme (saniye)
+HARD_DELAY=0.5  # Rofi’nin kapanmasına fırsat (saniye)
 
-declare -A texts
-texts[lockscreen]="Lock"
-texts[switchuser]="Switch"
-texts[logout]="Logout"
-texts[suspend]="Suspend"
-texts[hibernate]="Hibernate"
-texts[reboot]="Reboot"
-texts[shutdown]="Shutdown"
+# Brave “crash balonu” flag fix (bir defa çalıştırmak genelde yeterli)
+FIX_BRAVE=true
 
-declare -A icons
-icons[lockscreen]="\Uf033e"
-icons[switchuser]="\Uf0019"
-icons[logout]="\Uf0343"
-icons[suspend]="\Uf04b2"
-icons[hibernate]="\Uf02ca"
-icons[reboot]="\Uf0709"
-icons[shutdown]="\Uf0425"
-icons[cancel]="\Uf0156"
+# User session’ı düzgün kapat (tavsiye edilir)
+CLOSE_USER_SESSION=true
 
-declare -A actions
-actions[lockscreen]="swaylock"
-actions[logout]="sway exit"
-actions[suspend]="systemctl suspend -i"
-actions[hibernate]="systemctl hibernate"
-actions[reboot]="systemctl reboot -i"
-actions[shutdown]="systemctl poweroff -i"
+# ----------------------------- UI Metin/İkon ---------------------------------
+declare -A TEXT ICON CMD
+ALL=(shutdown reboot suspend hibernate lockscreen logout)
 
-# Actions that require confirmation
-confirmations=(reboot shutdown hibernate)
+TEXT[lockscreen]="Lock"
+TEXT[logout]="Logout"
+TEXT[suspend]="Suspend"
+TEXT[hibernate]="Hibernate"
+TEXT[reboot]="Reboot"
+TEXT[shutdown]="Shutdown"
 
-# Default settings
-dryrun=false
-showsymbols=true
-showtext=true
+ICON[lockscreen]="\Uf033e"
+ICON[logout]="\Uf0343"
+ICON[suspend]="\Uf04b2"
+ICON[hibernate]="\Uf02ca"
+ICON[reboot]="\Uf0709"
+ICON[shutdown]="\Uf0425"
+ICON[cancel]="\Uf0156"
 
-function check_valid {
-	option="$1"
-	shift 1
-	for entry in "${@}"; do
-		if [ -z "${actions[$entry]+x}" ]; then
-			echo "Invalid choice in $1: $entry" >&2
-			exit 1
-		fi
-	done
+# Komutlar (Hyprland/Sway uyumlu)
+CMD[lockscreen]="hyprlock || swaylock"
+CMD[logout]="hyprctl dispatch exit || swaymsg exit || true"
+CMD[suspend]="systemctl suspend -i"
+CMD[hibernate]="systemctl hibernate"
+CMD[reboot]="systemctl reboot -i"
+CMD[shutdown]="systemctl poweroff -i"
+
+CONFIRM=(reboot shutdown hibernate)
+
+# ----------------------------- CLI seçenekleri --------------------------------
+DRYRUN=false
+SHOW_SYMBOLS=true
+SHOW_TEXT=true
+SHOW=("${ALL[@]}")
+SYMFONT=""
+
+usage() {
+	cat <<EOF
+power-menu – rofi modu
+Kullanım: power-menu [--choices a/b/c] [--confirm a/b] [--dry-run]
+                   [--symbols|--no-symbols] [--text|--no-text]
+                   [--symbols-font 'Font Name']
+
+Ör: rofi -show power -modi "power:$0"
+EOF
 }
 
-# Parse command-line options
-parsed=$(getopt --options=h --longoptions=help,dry-run,confirm:,choices:,choose:,symbols,no-symbols,text,no-text,symbols-font: --name "$0" -- "$@")
-if [ $? -ne 0 ]; then
-	echo 'Terminating...' >&2
+parsed=$(getopt -o h --long help,dry-run,confirm:,choices:,choose:,symbols,no-symbols,text,no-text,symbols-font: -- "$@") || {
+	echo "Arg parse error"
 	exit 1
-fi
+}
 eval set -- "$parsed"
 unset parsed
 
+if ! declare -F printf >/dev/null; then
+	echo "bash gerekli" >&2
+	exit 1
+fi
+
+choose_id=""
 while true; do
 	case "$1" in
-	"-h" | "--help")
-		echo "rofi-power-menu - a power menu mode for Rofi"
-		echo
-		echo "Usage: rofi-power-menu [--choices CHOICES] [--confirm CHOICES]"
-		# ... (help text remains the same)
+	-h | --help)
+		usage
 		exit 0
 		;;
-	"--dry-run")
-		dryrun=true
-		shift 1
+	--dry-run)
+		DRYRUN=true
+		shift
 		;;
-	"--confirm")
-		IFS='/' read -ra confirmations <<<"$2"
-		check_valid "$1" "${confirmations[@]}"
+	--confirm)
+		IFS=/ read -r -a CONFIRM <<<"$2"
 		shift 2
 		;;
-	"--choices")
-		IFS='/' read -ra show <<<"$2"
-		check_valid "$1" "${show[@]}"
+	--choices)
+		IFS=/ read -r -a SHOW <<<"$2"
 		shift 2
 		;;
-	"--choose")
-		check_valid "$1" "$2"
-		selectionID="$2"
+	--choose)
+		choose_id="$2"
 		shift 2
 		;;
-	"--symbols")
-		showsymbols=true
-		shift 1
+	--symbols)
+		SHOW_SYMBOLS=true
+		shift
 		;;
-	"--no-symbols")
-		showsymbols=false
-		shift 1
+	--no-symbols)
+		SHOW_SYMBOLS=false
+		shift
 		;;
-	"--text")
-		showtext=true
-		shift 1
+	--text)
+		SHOW_TEXT=true
+		shift
 		;;
-	"--no-text")
-		showtext=false
-		shift 1
+	--no-text)
+		SHOW_TEXT=false
+		shift
 		;;
-	"--symbols-font")
-		symbols_font="$2"
+	--symbols-font)
+		SYMFONT="$2"
 		shift 2
 		;;
-	"--")
+	--)
 		shift
 		break
 		;;
 	*)
-		echo "Internal error" >&2
+		echo "Internal arg error"
 		exit 1
 		;;
 	esac
 done
 
-if [ "$showsymbols" = "false" -a "$showtext" = "false" ]; then
-	echo "Invalid options: cannot have --no-symbols and --no-text enabled at the same time." >&2
+if ! $SHOW_SYMBOLS && ! $SHOW_TEXT; then
+	echo "Hem --no-symbols hem --no-text olamaz." >&2
 	exit 1
 fi
 
-function write_message {
-	if [ -z ${symbols_font+x} ]; then
-		icon="<span font_size=\"medium\">$1</span>"
+# --------------------------- Yardımcı Fonksiyonlar ----------------------------
+wmsg() { # rofi markup satırı üret
+	local ic="$1" tx="$2" icon="<span font_size=\"medium\">$ic</span>"
+	[ -n "$SYMFONT" ] && icon="<span font=\"$SYMFONT\" font_size=\"medium\">$ic</span>"
+	local text="<span font_size=\"medium\">$tx</span>"
+	if $SHOW_SYMBOLS && $SHOW_TEXT; then
+		printf "\u200e%s \u2068%s\u2069" "$icon" "$text"
+	elif $SHOW_SYMBOLS; then
+		printf "%s" "$icon"
 	else
-		icon="<span font=\"${symbols_font}\" font_size=\"medium\">$1</span>"
+		printf "%s" "$text"
 	fi
-	text="<span font_size=\"medium\">$2</span>"
-	if [ "$showsymbols" = "true" ]; then
-		if [ "$showtext" = "true" ]; then
-			echo -n "\u200e$icon \u2068$text\u2069"
-		else
-			echo -n "\u200e$icon"
+}
+
+print_sel() { echo -e "$1" | (
+	read -r -d '' e
+	echo "echo $e"
+); }
+
+notify() { command -v notify-send >/dev/null && notify-send -t 2500 "Power" "$*"; }
+
+graceful_shutdown() {
+	# Uygulamaları nazikçe kapat (SIGTERM) ve bekle; hâlâ varsa SIGKILL
+	local alive=false
+	for a in "${GRACE_APPS[@]}"; do
+		if pgrep -x "$a" >/dev/null; then
+			echo "[power] $a -> SIGTERM"
+			$DRYRUN || pkill -TERM -x "$a" || true
 		fi
+	done
+
+	for ((i = 0; i < SOFT_TIMEOUT; i++)); do
+		sleep 1
+		alive=false
+		for a in "${GRACE_APPS[@]}"; do
+			if pgrep -x "$a" >/dev/null; then
+				alive=true
+				break
+			fi
+		done
+		$alive || break
+	done
+
+	for a in "${GRACE_APPS[@]}"; do
+		if pgrep -x "$a" >/div/null; then
+			echo "[power] $a hala çalışıyor -> SIGKILL"
+			$DRYRUN || pkill -KILL -x "$a" || true
+		fi
+	done
+}
+
+fix_brave_flags() {
+	$FIX_BRAVE || return 0
+	local base="$HOME/.config/BraveSoftware/Brave-Browser"
+	local local_state="$base/Local State"
+	local prefs="$base/Default/Preferences"
+
+	if $DRYRUN; then
+		echo "[dry-run] Brave flag fix"
+		return 0
+	fi
+
+	if command -v jq >/dev/null 2>&1; then
+		[ -f "$local_state" ] && jq '.profile.exited_cleanly=true' "$local_state" >"${local_state}.tmp" 2>/dev/null && mv "${local_state}.tmp" "$local_state" || true
+		[ -f "$prefs" ] && jq '.profile.exit_type="Normal"' "$prefs" >"${prefs}.tmp" 2>/dev/null && mv "${prefs}.tmp" "$prefs" || true
 	else
-		echo -n "$text"
+		[ -f "$local_state" ] && sed -i 's/"exited_cleanly":[ ]*false/"exited_cleanly": true/g' "$local_state" || true
+		[ -f "$prefs" ] && sed -i 's/"exit_type":[ ]*"Crashed"/"exit_type":"Normal"/g' "$prefs" || true
 	fi
 }
 
-function print_selection {
-	echo -e "$1" | $(
-		read -r -d '' entry
-		echo "echo $entry"
-	)
-}
-
-# Execute the selected action safely
-function execute_action {
-	local action=$1
-	if [ $dryrun = true ]; then
-		echo "Selected: $action" >&2
-	else
-		# Launch the action in background
-		eval "${actions[$action]}" &
-		# Small delay to ensure action starts
-		sleep 0.5
-		# Gracefully close rofi
-		pkill rofi
+pre_power_phase() {
+	graceful_shutdown
+	fix_brave_flags
+	if $CLOSE_USER_SESSION; then
+		echo "[power] systemctl --user exit"
+		$DRYRUN || systemctl --user exit || true
+		sleep 0.3
 	fi
 }
 
-declare -A messages
-declare -A confirmationMessages
-for entry in "${all[@]}"; do
-	messages[$entry]=$(write_message "${icons[$entry]}" "${texts[$entry]^}")
-done
-for entry in "${all[@]}"; do
-	confirmationMessages[$entry]=$(write_message "${icons[$entry]}" "Yes, ${texts[$entry]}")
-done
-confirmationMessages[cancel]=$(write_message "${icons[cancel]}" "No, cancel")
+do_action() {
+	local act="$1"
+	if $DRYRUN; then
+		echo "Selected: $act"
+		return 0
+	fi
 
-if [ $# -gt 0 ]; then
-	selection="${@}"
-elif [ -n "${selectionID+x}" ]; then
-	selection="${messages[$selectionID]}"
-fi
+	case "$act" in
+	reboot | shutdown | hibernate)
+		pre_power_phase
+		;;
+	suspend)
+		# suspend’te user exit yapma (uykudan dönüşte ortamı korumak isteyebilirsin)
+		;;
+	esac
 
-# Don't allow custom entries
+	# Rofi’yi nazikçe kapatıp komutu uygula
+	eval "${CMD[$act]}" &
+	sleep "$HARD_DELAY"
+	pkill rofi || true
+}
+
+# ------------------------------ Rofi Protokolü -------------------------------
+declare -A MSG CFM
+for e in "${ALL[@]}"; do
+	MSG[$e]=$(wmsg "${ICON[$e]}" "${TEXT[$e]^}")
+done
+for e in "${ALL[@]}"; do
+	CFM[$e]=$(wmsg "${ICON[$e]}" "Yes, ${TEXT[$e]}")
+done
+CFM[cancel]=$(wmsg "${ICON[cancel]}" "No, cancel")
+
+# En üst başlıklar
 echo -e "\0no-custom\x1ftrue"
-# Use markup
 echo -e "\0markup-rows\x1ftrue"
 
-if [ -z "${selection+x}" ]; then
+selection=""
+if [ $# -gt 0 ]; then
+	selection="$*"
+elif [ -n "${choose_id:-}" ]; then selection="${MSG[$choose_id]}"; fi
+
+if [ -z "$selection" ]; then
 	echo -e "\0prompt\x1fPower menu"
-	for entry in "${show[@]}"; do
-		echo -e "${messages[$entry]}\0icon\x1f${icons[$entry]}"
+	for e in "${SHOW[@]}"; do
+		echo -e "${MSG[$e]}\0icon\x1f${ICON[$e]}"
 	done
-else
-	for entry in "${show[@]}"; do
-		if [ "$selection" = "$(print_selection "${messages[$entry]}")" ]; then
-			for confirmation in "${confirmations[@]}"; do
-				if [ "$entry" = "$confirmation" ]; then
-					echo -e "\0prompt\x1fAre you sure"
-					echo -e "${confirmationMessages[$entry]}\0icon\x1f${icons[$entry]}"
-					echo -e "${confirmationMessages[cancel]}\0icon\x1f${icons[cancel]}"
-					exit 0
-				fi
-			done
-			selection=$(print_selection "${confirmationMessages[$entry]}")
-		fi
-		if [ "$selection" = "$(print_selection "${confirmationMessages[$entry]}")" ]; then
-			execute_action "$entry"
-			exit 0
-		fi
-		if [ "$selection" = "$(print_selection "${confirmationMessages[cancel]}")" ]; then
-			exit 0
-		fi
-	done
-	echo "Invalid selection: $selection" >&2
-	exit 1
+	exit 0
 fi
+
+# Seçim/Onay akışı
+for e in "${SHOW[@]}"; do
+	if [ "$selection" = "$(print_sel "${MSG[$e]}")" ]; then
+		for c in "${CONFIRM[@]}"; do
+			if [ "$e" = "$c" ]; then
+				echo -e "\0prompt\x1fAre you sure"
+				echo -e "${CFM[$e]}\0icon\x1f${ICON[$e]}"
+				echo -e "${CFM[cancel]}\0icon\x1f${ICON[cancel]}"
+				exit 0
+			fi
+		done
+		selection="$(print_sel "${CFM[$e]}")"
+	fi
+
+	if [ "$selection" = "$(print_sel "${CFM[$e]}")" ]; then
+		notify "${TEXT[$e]}…"
+		do_action "$e"
+		exit 0
+	fi
+	if [ "$selection" = "$(print_sel "${CFM[cancel]}")" ]; then
+		notify "Canceled"
+		exit 0
+	fi
+done
+
+echo "Invalid selection: $selection" >&2
+exit 1
