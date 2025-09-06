@@ -223,6 +223,13 @@ progress::update() {
 	[[ $percent -eq 100 ]] && echo >&2
 }
 
+# NEW: substep helper (spinner'dan önce)
+progress::substep_show() {
+	local message="${1:-}"
+	[[ -z "$message" ]] && return 0
+	printf "\n${C_DIM}%s %s${C_RESET}\n" "$S_ARROW" "$message" >&2
+}
+
 spinner() {
 	local pid="${1:-$$}"
 	local message="${2:-Working...}"
@@ -316,6 +323,13 @@ cache::cleanup() {
 		find "$CACHE_DIR/packages" -type f -printf '%T@ %p\n' |
 			sort -n | head -n 20 | cut -d' ' -f2- | xargs rm -f
 	fi
+
+	# NEW: update metadata.last_cleaned
+	local meta="$CACHE_DIR/metadata.json"
+	if [[ -f "$meta" ]]; then
+		# sed ile last_cleaned güncelle (jq bağımlılığı olmadan)
+		sed -i -E 's/"last_cleaned": *[0-9]+/"last_cleaned": '"$(date +%s)"'/' "$meta" 2>/dev/null || true
+	fi
 }
 
 # Backup System
@@ -350,15 +364,20 @@ backup::restore() {
 	local dest="${2:-}"
 	local backup_dir="$BACKUP_DIR/${name}"
 
-	local latest=$(ls -t "${backup_dir}"/*.tar.gz 2>/dev/null | head -n1)
-	[[ -z "$latest" ]] && {
+	# En yeni .tar.gz yedeği bul
+	local latest
+	latest=$(ls -t "${backup_dir}"/*.tar.gz 2>/dev/null | head -n1 || true)
+
+	if [[ -z "$latest" ]]; then
 		log ERROR "No backup found for: $name"
 		return 1
-	}
+	fi
 
+	# Varsa checksum doğrula
 	if [[ -f "${latest}.meta" ]]; then
-		local stored_checksum=$(grep -o '"checksum": "[^"]*"' "${latest}.meta" | cut -d'"' -f4)
-		local actual_checksum=$(sha256sum "$latest" | cut -d' ' -f1)
+		local stored_checksum actual_checksum
+		stored_checksum=$(grep -o '"checksum": "[^"]*"' "${latest}.meta" | cut -d'"' -f4)
+		actual_checksum=$(sha256sum "$latest" | cut -d' ' -f1)
 
 		if [[ "$stored_checksum" != "$actual_checksum" ]]; then
 			log ERROR "Backup checksum mismatch!"
@@ -366,7 +385,9 @@ backup::restore() {
 		fi
 	fi
 
+	# Çıkarma
 	if [[ -n "$dest" ]]; then
+		mkdir -p "$dest"
 		tar -xzf "$latest" -C "$dest"
 	else
 		tar -xzf "$latest"
@@ -702,6 +723,7 @@ flake::build() {
 	fi
 }
 
+# NEW: güvenli kullanıcı adı değiştirme
 user::setup() {
 	local username="${1:-$(config::get USERNAME)}"
 	local current_user="${2:-$CURRENT_USERNAME}"
@@ -726,15 +748,28 @@ user::setup() {
 		log INFO "Updating configuration files for user: $username"
 
 		local files_updated=0
+		local failed=0
+		local changed_files=()
+
 		while IFS= read -r -d '' file; do
 			if grep -q "$current_user" "$file"; then
-				cp "$file" "${file}.bak"
-				sed -i "s/${current_user}/${username}/g" "$file"
-				((files_updated++))
+				cp -f "$file" "${file}.bak" || {
+					((failed++))
+					continue
+				}
+				if sed -i "s/${current_user}/${username}/g" "$file"; then
+					((files_updated++))
+					changed_files+=("$file")
+				else
+					# geri al
+					cp -f "${file}.bak" "$file" 2>/dev/null || true
+					((failed++))
+				fi
 			fi
 		done < <(find "$WORK_DIR" -type f \( -name "*.nix" -o -name "*.conf" -o -name "*.yaml" \) -print0)
 
 		log INFO "Updated $files_updated configuration files"
+		((failed > 0)) && log WARN "Replacements failed on $failed files (restored from .bak)"
 	fi
 
 	return 0
@@ -1010,16 +1045,26 @@ cmd_pre-install() {
 
   # Essential packages
   environment.systemPackages = with pkgs; [
-    vim
-    git
-    wget
-    curl
+    wget        # File downloader
+    vim         # Text editor
+    git         # Version control
+    htop        # System monitor
+    tmux        # Terminal multiplexer
+    sops        # Secrets management
+    age         # File encryption
+    assh        # SSH config manager
+    ncurses     # Terminal UI library
+    pv          # Pipe viewer
+    file        # File type identifier
+    bc          # GNU software calculator
+    gnupg       # GNU Privacy Guard
+    openssl     # SSL/TLS toolkit
   ];
 
   # Enable flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.11";
 }
 EOF
 	fi
@@ -1383,7 +1428,12 @@ setup_directories() {
 		"$(dirname "$LOG_FILE")"
 	)
 
+	local total=${#dirs[@]}
+	local idx=0
+
 	for dir in "${dirs[@]}"; do
+		((idx++))
+		progress::substep_show "Creating directory ($idx/$total): $dir"
 		mkdir -p "$dir"
 		log DEBUG "Created directory: $dir"
 	done
@@ -1529,7 +1579,7 @@ show_profile_menu() {
 	echo "  4) Garbage collection"
 	echo "  5) Back"
 
-	printf "\n${C_YELLOW}Select option:${C_RESET} "
+	printf "\n${C_YELLOW}Select option:${CRESET} "
 	read -r choice
 
 	case "$choice" in
