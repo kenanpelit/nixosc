@@ -177,6 +177,9 @@ let
   osc-rsync = pkgs.writeShellScriptBin "osc-rsync" (
     builtins.readFile ./bin/osc-rsync.sh
   );
+  osc-safe-reboot = pkgs.writeShellScriptBin "osc-safe-reboot" (
+    builtins.readFile ./bin/osc-safe-reboot.sh
+  );
   osc-scrcpy = pkgs.writeShellScriptBin "osc-scrcpy" (
     builtins.readFile ./bin/osc-scrcpy.sh
   );
@@ -448,6 +451,7 @@ in {
     osc-radio
     osc-rsync_backup
     osc-rsync
+    osc-safe-reboot
     osc-scrcpy
     osc-sops
     osc-soundctl
