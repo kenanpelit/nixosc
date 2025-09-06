@@ -9,8 +9,8 @@ set -euo pipefail
 
 #--- Ayarlar -------------------------------------------------------------------
 GRACE_APPS=("brave" "brave-browser" "brave-browser-stable" "chromium")
-SOFT_TIMEOUT=10 # SIGTERM sonrası bekleme (saniye)
-HARD_DELAY=0.5  # KILL öncesi küçük bekleme
+SOFT_TIMEOUT=5 # SIGTERM sonrası bekleme (saniye)
+HARD_DELAY=0.5 # KILL öncesi küçük bekleme
 
 #--- Brave/Chromium fix fonksiyonu ---------------------------------------------
 fix_browser_flags() {
