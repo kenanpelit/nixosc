@@ -42,17 +42,18 @@ fix_browser_flags() {
 graceful_shutdown() {
 	echo "[INFO] SIGTERM gönderiliyor: ${GRACE_APPS[*]}"
 	for a in "${GRACE_APPS[@]}"; do
-		pkill -TERM -x "$a" || true
+		if pgrep -f -x "$a" >/dev/null 2>&1; then
+			pkill -TERM -f -x "$a" 2>/dev/null || true
+		fi
 	done
 
 	echo "[INFO] ${SOFT_TIMEOUT}s bekleniyor..."
 	sleep "$SOFT_TIMEOUT"
 
-	# hala açık olan varsa SIGKILL
 	for a in "${GRACE_APPS[@]}"; do
-		if pgrep -x "$a" >/dev/null; then
+		if pgrep -f -x "$a" >/dev/null 2>&1; then
 			echo "[WARN] $a hala açık, SIGKILL..."
-			pkill -KILL -x "$a" || true
+			pkill -KILL -f -x "$a" 2>/dev/null || true
 			sleep "$HARD_DELAY"
 		fi
 	done
