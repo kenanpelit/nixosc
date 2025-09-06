@@ -998,7 +998,7 @@ cmd_pre-install() {
 	fi
 
 	# Check if user is in wheel group
-	if ! groups | grep -q '\bwheel\b'; then
+	if ! id -nG | grep -qw wheel; then
 		echo -e "${C_YELLOW}Warning: Current user should be in wheel group${C_RESET}"
 		echo "Run: sudo usermod -aG wheel $USER"
 		exit 1
@@ -1012,39 +1012,109 @@ cmd_pre-install() {
 		echo -e "${C_YELLOW}Creating initial configuration template...${C_RESET}"
 		mkdir -p "$template_dir"
 
-		# Create a basic initial configuration
-		cat >"$initial_config" <<'EOF'
+		# Create a basic initial configuration (host-specific, richer template)
+		# You can tweak these defaults here or pass --host to the script.
+		local tz="Europe/Istanbul"
+		local default_locale="en_US.UTF-8"
+		local tr_locale="tr_TR.UTF-8"
+		local xkb_layout="tr"
+		local xkb_variant="f"
+		local console_keymap="trf"
+
+		cat >"$initial_config" <<EOF
+# hosts/${hostname}/templates/initial-configuration.nix
+# ==============================================================================
+# !!! IMPORTANT - PLEASE READ BEFORE PROCEEDING !!!
+# Before building your system, make sure to adjust the following settings
+# according to your preferences and location:
+#
+# 1. Time Zone: Currently set to "${tz}"
+# 2. System Language: Currently set to "${default_locale}"
+# 3. Regional Settings: Currently configured for Turkish (${tr_locale})
+# 4. Keyboard Layout: Currently set to Turkish-F layout
+#
+# You can find your timezone from: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+# For keyboard layouts: run 'localectl list-x11-keymap-layouts' for available options
+# ==============================================================================
 { config, pkgs, ... }:
-
 {
-  imports = [ ./hardware-configuration.nix ];
+  imports = [
+    ./hardware-configuration.nix
+  ];
 
-  # Boot loader
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
-  # Networking
-  networking.hostName = "nixos-temp";
-  networking.networkmanager.enable = true;
-
-  # Time zone
-  time.timeZone = "Europe/Berlin";
-
-  # Locale
-  i18n.defaultLocale = "en_US.UTF-8";
-  
-  # Users
-  users.users.kenan = {
-    isNormalUser = true;
-    description = "Kenan";
-    extraGroups = [ "networkmanager" "wheel" ];
+  # =============================================================================
+  # Bootloader Configuration
+  # =============================================================================
+  boot.loader.systemd-boot.enable = false;
+  boot.loader.grub = {
+    enable = true;
+    device = "nodev";          # Install GRUB without specific device (EFI)
+    useOSProber = true;        # Enable OS prober for multi-boot
+    efiSupport = true;         # Enable EFI support
+  };
+  boot.loader.efi = {
+    canTouchEfiVariables = true;
+    efiSysMountPoint = "/boot";
   };
 
-  # Allow unfree packages
+  # Use latest kernel packages
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # =============================================================================
+  # Networking Configuration
+  # =============================================================================
+  networking = {
+    hostName = "${hostname}";
+    networkmanager.enable = true;
+  };
+
+  # =============================================================================
+  # Timezone and Localization
+  # =============================================================================
+  time.timeZone = "${tz}";
+  i18n.defaultLocale = "${default_locale}";
+  i18n.extraLocaleSettings = {
+    LC_ADDRESS        = "${tr_locale}";
+    LC_IDENTIFICATION = "${tr_locale}";
+    LC_MEASUREMENT    = "${tr_locale}";
+    LC_MONETARY       = "${tr_locale}";
+    LC_NAME           = "${tr_locale}";
+    LC_NUMERIC        = "${tr_locale}";
+    LC_PAPER          = "${tr_locale}";
+    LC_TELEPHONE      = "${tr_locale}";
+    LC_TIME           = "${tr_locale}";
+  };
+
+  # =============================================================================
+  # Keyboard Configuration
+  # =============================================================================
+  services.xserver.xkb = {
+    layout  = "${xkb_layout}";
+    variant = "${xkb_variant}";
+    options = "ctrl:nocaps";
+  };
+  console.keyMap = "${console_keymap}";
+
+  # =============================================================================
+  # User Account Configuration
+  # =============================================================================
+  users.users.kenan = {
+    isNormalUser = true;
+    description  = "Kenan Pelit";
+    extraGroups  = [ "networkmanager" "wheel" ];
+    packages     = with pkgs; [ ];
+  };
+
+  # =============================================================================
+  # Package Management Configuration
+  # =============================================================================
   nixpkgs.config.allowUnfree = true;
 
-  # Essential packages
+  # =============================================================================
+  # System Packages
+  # =============================================================================
   environment.systemPackages = with pkgs; [
+    # System tools
     wget        # File downloader
     vim         # Text editor
     git         # Version control
@@ -1057,16 +1127,33 @@ cmd_pre-install() {
     pv          # Pipe viewer
     file        # File type identifier
     bc          # GNU software calculator
+    # Security and encryption
     gnupg       # GNU Privacy Guard
     openssl     # SSL/TLS toolkit
   ];
 
-  # Enable flakes
+  # =============================================================================
+  # Program Configurations
+  # =============================================================================
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = true;
+  };
+
+  # =============================================================================
+  # Flakes (optional: keep enabled at system level)
+  # =============================================================================
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
+  # =============================================================================
+  # System Version
+  # =============================================================================
+  # IMPORTANT: Set this to the NixOS release you initially install.
+  # If you're on unstable right now, change accordingly.
   system.stateVersion = "25.11";
 }
 EOF
+
 	fi
 
 	# Backup existing configuration
@@ -1579,7 +1666,7 @@ show_profile_menu() {
 	echo "  4) Garbage collection"
 	echo "  5) Back"
 
-	printf "\n${C_YELLOW}Select option:${CRESET} "
+	printf "\n${C_YELLOW}Select option:${C_RESET} "
 	read -r choice
 
 	case "$choice" in
