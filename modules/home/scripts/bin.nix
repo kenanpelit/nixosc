@@ -270,9 +270,6 @@ let
   rofi-performance = pkgs.writeShellScriptBin "rofi-performance" (
     builtins.readFile ./bin/rofi-performance.sh
   );
-  rofi-power-menu = pkgs.writeShellScriptBin "rofi-power-menu" (
-    builtins.readFile ./bin/rofi-power-menu.sh
-  );
   rofi-power = pkgs.writeShellScriptBin "rofi-power" (
     builtins.readFile ./bin/rofi-power.sh
   );
@@ -482,7 +479,6 @@ in {
     rofi-iwmenu
     rofi-launcher
     rofi-performance
-    rofi-power-menu
     rofi-power
     rofi-wifi
     rsync_backup
