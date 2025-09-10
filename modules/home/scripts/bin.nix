@@ -177,6 +177,9 @@ let
   osc-rsync = pkgs.writeShellScriptBin "osc-rsync" (
     builtins.readFile ./bin/osc-rsync.sh
   );
+  osc-safe-reboot = pkgs.writeShellScriptBin "osc-safe-reboot" (
+    builtins.readFile ./bin/osc-safe-reboot.sh
+  );
   osc-scrcpy = pkgs.writeShellScriptBin "osc-scrcpy" (
     builtins.readFile ./bin/osc-scrcpy.sh
   );
@@ -269,9 +272,6 @@ let
   );
   rofi-performance = pkgs.writeShellScriptBin "rofi-performance" (
     builtins.readFile ./bin/rofi-performance.sh
-  );
-  rofi-power-menu = pkgs.writeShellScriptBin "rofi-power-menu" (
-    builtins.readFile ./bin/rofi-power-menu.sh
   );
   rofi-power = pkgs.writeShellScriptBin "rofi-power" (
     builtins.readFile ./bin/rofi-power.sh
@@ -451,6 +451,7 @@ in {
     osc-radio
     osc-rsync_backup
     osc-rsync
+    osc-safe-reboot
     osc-scrcpy
     osc-sops
     osc-soundctl
@@ -482,7 +483,6 @@ in {
     rofi-iwmenu
     rofi-launcher
     rofi-performance
-    rofi-power-menu
     rofi-power
     rofi-wifi
     rsync_backup

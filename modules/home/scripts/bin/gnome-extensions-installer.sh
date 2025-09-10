@@ -2,13 +2,14 @@
 
 #===============================================================================
 #
-#   Script: GNOME Extensions Auto Installer
-#   Version: 1.0.0
-#   Description: Automatically install and enable GNOME Shell extensions
+#   Script: GNOME Extensions Auto Installer + Updater
+#   Version: 2.0.0
+#   Description: Install, update, and (optionally) reinstall GNOME Shell extensions
 #
 #===============================================================================
 
-set -e
+#set -x
+#set -euo pipefail
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -19,6 +20,9 @@ readonly PURPLE='\033[0;35m'
 readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m'
+
+# Modes: install (default), update, reinstall
+MODE="install"
 
 # Extension list from your config
 declare -a EXTENSIONS=(
@@ -44,151 +48,340 @@ declare -a EXTENSIONS=(
 
 log() {
 	local level="$1"
-	local message="$2"
+	shift
+	local message="$*"
 	local color=""
-
 	case "$level" in
 	"INFO") color=$BLUE ;;
 	"SUCCESS") color=$GREEN ;;
 	"WARN") color=$YELLOW ;;
 	"ERROR") color=$RED ;;
+	*) color=$NC ;;
 	esac
-
 	echo -e "${color}${BOLD}[$level]${NC} $message"
+}
+
+usage() {
+	cat <<EOF
+${BOLD}Usage:${NC} $(basename "$0") [options]
+
+Options:
+  -i, --install     Install missing extensions only (default)
+  -u, --update      Update installed extensions to latest compatible version
+  -r, --reinstall   Force reinstall all listed extensions
+  -h, --help        Show this help
+
+Examples:
+  $(basename "$0")                 # install missing
+  $(basename "$0") --update        # update installed
+  $(basename "$0") -r              # reinstall all
+EOF
+}
+
+parse_args() {
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-i | --install)
+			MODE="install"
+			shift
+			;;
+		-u | --update)
+			MODE="update"
+			shift
+			;;
+		-r | --reinstall)
+			MODE="reinstall"
+			shift
+			;;
+		-h | --help)
+			usage
+			exit 0
+			;;
+		*)
+			log "WARN" "Unknown arg: $1"
+			usage
+			exit 1
+			;;
+		esac
+	done
 }
 
 check_dependencies() {
 	log "INFO" "Checking dependencies..."
 
-	# Check if GNOME Shell is running (check for gnome-shell binary)
-	if ! pgrep -f "gnome-shell" >/dev/null; then
+	if ! pgrep -f "gnome-shell" >/dev/null 2>&1; then
 		log "ERROR" "GNOME Shell is not running!"
 		log "INFO" "Current desktop: ${XDG_CURRENT_DESKTOP:-unknown}"
 		exit 1
 	fi
-
 	log "SUCCESS" "GNOME Shell is running!"
 
-	# Check if gnome-extensions command exists
-	if ! command -v gnome-extensions &>/dev/null; then
-		log "ERROR" "gnome-extensions command not found!"
-		log "INFO" "Install with: sudo apt install gnome-shell-extension-prefs"
-		exit 1
+	for bin in gnome-extensions curl unzip; do
+		if ! command -v "$bin" &>/dev/null; then
+			log "ERROR" "'$bin' not found!"
+			case "$bin" in
+			gnome-extensions) log "INFO" "Install: sudo apt install gnome-shell-extension-prefs  (Debian/Ubuntu)" ;;
+			curl) log "INFO" "Install: sudo apt install curl" ;;
+			unzip) log "INFO" "Install: sudo apt install unzip" ;;
+			esac
+			exit 1
+		fi
+	done
+
+	# jq is optional; we fall back to grep/sed if missing
+	if command -v jq >/dev/null 2>&1; then
+		JQ_AVAILABLE=1
+	else
+		JQ_AVAILABLE=0
 	fi
 
-	# Check if curl exists for downloading
-	if ! command -v curl &>/dev/null; then
-		log "ERROR" "curl command not found!"
-		log "INFO" "Install with: sudo apt install curl"
-		exit 1
-	fi
-
-	# Check if unzip exists
-	if ! command -v unzip &>/dev/null; then
-		log "ERROR" "unzip command not found!"
-		log "INFO" "Install with: sudo apt install unzip"
-		exit 1
-	fi
-
-	log "SUCCESS" "All dependencies found!"
+	log "SUCCESS" "All mandatory dependencies found!"
 }
 
 get_gnome_version() {
-	gnome-shell --version | grep -oP '\d+\.\d+' | head -1
+	gnome-shell --version | grep -oE '[0-9]+\.[0-9]+' | head -1
 }
 
-install_extension() {
-	local extension_uuid="$1"
-	local count="$2"
-	local total="$3"
+extensions_dir_for_uuid() {
+	echo "$HOME/.local/share/gnome-shell/extensions/$1"
+}
 
-	log "INFO" "[$count/$total] Installing: $extension_uuid"
-
-	# Check if already installed
-	if gnome-extensions list | grep -q "^$extension_uuid$"; then
-		log "WARN" "Already installed: $extension_uuid"
-		return 0
-	fi
-
-	# Get GNOME Shell version
-	local gnome_version=$(get_gnome_version)
-
-	# Create temp directory
-	local temp_dir=$(mktemp -d)
-
-	# Try to download from extensions.gnome.org
-	local extension_name=$(echo "$extension_uuid" | cut -d'@' -f1)
-	local download_url="https://extensions.gnome.org/extension-data/${extension_name}.v1.shell-extension.zip"
-
-	log "INFO" "Downloading from: $download_url"
-
-	if curl -L -o "$temp_dir/extension.zip" "$download_url" 2>/dev/null; then
-		# Extract to extensions directory
-		local extensions_dir="$HOME/.local/share/gnome-shell/extensions/$extension_uuid"
-		mkdir -p "$extensions_dir"
-
-		if unzip -q "$temp_dir/extension.zip" -d "$extensions_dir"; then
-			log "SUCCESS" "Downloaded and extracted: $extension_uuid"
-		else
-			log "ERROR" "Failed to extract: $extension_uuid"
-			rm -rf "$temp_dir"
-			return 1
-		fi
+current_local_version() {
+	# Echo local "version" from metadata.json or empty
+	local uuid="$1"
+	local dir
+	dir="$(extensions_dir_for_uuid "$uuid")"
+	local meta="$dir/metadata.json"
+	[[ -f "$meta" ]] || {
+		echo ""
+		return
+	}
+	# Pull "version": value (number or string)
+	if command -v jq >/dev/null 2>&1; then
+		jq -r 'try (.version|tostring) catch ""' "$meta"
 	else
-		log "WARN" "Could not download automatically: $extension_uuid"
-		log "INFO" "Please install manually from: https://extensions.gnome.org/"
-		rm -rf "$temp_dir"
+		# naive extract number/string
+		grep -oE '"version"\s*:\s*[^,]+' "$meta" | sed -E 's/.*:\s*"?([^",}]+)"?/\1/' || true
+	fi
+}
+
+# Query GNOME Extensions API for a UUID + shell version.
+query_remote_info() {
+	local uuid="$1"
+	local shell_ver="$2"
+	local api="https://extensions.gnome.org/extension-info/?uuid=${uuid}&shell_version=${shell_ver}"
+	local json
+	if ! json="$(
+		curl -fsSL --http1.1 \
+			--retry 3 --retry-delay 1 \
+			--connect-timeout 5 --max-time 15 \
+			-H 'Accept: application/json' \
+			-H 'User-Agent: gext-installer/2.0 (+local)' \
+			"$api"
+	)"; then
+		return 1
+	fi
+	local remote_version version_tag download_url
+	if command -v jq >/dev/null 2>&1; then
+		remote_version="$(jq -r 'try (.version|tostring) catch ""' <<<"$json")"
+		version_tag="$(jq -r 'try (.version_tag|tostring) catch ""' <<<"$json")"
+		download_url="$(jq -r 'try .download_url catch ""' <<<"$json")"
+	else
+		remote_version="$(printf "%s" "$json" | grep -oE '"version"\s*:\s*[^,]+' | sed -E 's/.*:\s*"?([^",}]+)"?/\1/' | head -1)"
+		version_tag="$(printf "%s" "$json" | grep -oE '"version_tag"\s*:\s*[^,]+' | sed -E 's/.*:\s*"?([^",}]+)"?/\1/' | head -1)"
+		download_url="$(printf "%s" "$json" | grep -oE '"download_url"\s*:\s*"[^"]+"' | sed -E 's/.*:\s*"([^"]+)".*/\1/' | head -1)"
+	fi
+	[[ "$download_url" =~ ^/ ]] && download_url="https://extensions.gnome.org${download_url}"
+	printf '%s\n%s\n%s\n' "$remote_version" "$version_tag" "$download_url"
+}
+
+install_from_zip() {
+	local zip_path="$1"
+	# --force will update if already installed
+	if gnome-extensions install --force "$zip_path" >/dev/null 2>&1; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+enable_extension() {
+	local uuid="$1"
+	if gnome-extensions enable "$uuid" >/dev/null 2>&1; then
+		log "SUCCESS" "Enabled: $uuid"
+	else
+		log "WARN" "Could not enable automatically: $uuid (try relog or Alt+F2 → r on X11)"
+	fi
+}
+
+download_and_install() {
+	local uuid="$1"
+	local shell_ver="$2"
+	local mode_label="$3"
+
+	local -a info
+	if ! mapfile -t info < <(query_remote_info "$uuid" "$shell_ver"); then
+		log "WARN" "No API info for: $uuid (shell $shell_ver). Install manually from https://extensions.gnome.org"
+		return 1
+	fi
+	local remote_version="${info[0]}"
+	local version_tag="${info[1]}"
+	local download_url="${info[2]}"
+
+	if [[ -z "$download_url" ]]; then
+		log "WARN" "Download URL missing for: $uuid (shell $shell_ver)"
 		return 1
 	fi
 
-	# Cleanup
-	rm -rf "$temp_dir"
+	local tmpdir
+	tmpdir="$(mktemp -d)"
+	local zip_path="$tmpdir/extension.zip"
 
-	# Enable the extension
-	if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
-		log "SUCCESS" "Enabled: $extension_uuid"
+	log "INFO" "$mode_label → fetching $uuid (remote v$remote_version, tag $version_tag)"
+	if ! curl -fsSL --http1.1 \
+		--retry 3 --retry-delay 1 \
+		--connect-timeout 5 --max-time 15 \
+		-H 'Accept: application/zip' \
+		-H 'User-Agent: gext-installer/2.0 (+local)' \
+		-o "$zip_path" "$download_url"; then
+		log "ERROR" "Download failed for: $uuid"
+		rm -rf "$tmpdir"
+		return 1
+	fi
+
+	if gnome-extensions install --force "$zip_path" >/dev/null 2>&1; then
+		log "SUCCESS" "$mode_label complete: $uuid → v$remote_version"
+		enable_extension "$uuid"
+		rm -rf "$tmpdir"
+		return 0
 	else
-		log "WARN" "Could not enable automatically: $extension_uuid"
-		log "INFO" "You may need to restart GNOME Shell or enable manually"
+		log "ERROR" "$mode_label failed for: $uuid"
+		rm -rf "$tmpdir"
+		return 1
+	fi
+}
+
+install_extension_if_missing() {
+	local uuid="$1"
+	local shell_ver="$2"
+	if gnome-extensions list | grep -qx "$uuid"; then
+		log "WARN" "Already installed: $uuid"
+		return 0
+	fi
+	download_and_install "$uuid" "$shell_ver" "Install"
+}
+
+reinstall_extension() {
+	local uuid="$1"
+	local shell_ver="$2"
+	download_and_install "$uuid" "$shell_ver" "Reinstall"
+}
+
+update_extension_if_available() {
+	local uuid="$1"
+	local shell_ver="$2"
+
+	if ! gnome-extensions list | grep -qx "$uuid"; then
+		log "WARN" "Not installed (skipping update): $uuid"
+		return 0
+	fi
+
+	local local_ver
+	local_ver="$(current_local_version "$uuid")"
+	[[ -z "$local_ver" ]] && local_ver="unknown"
+
+	local -a info
+	if ! mapfile -t info < <(query_remote_info "$uuid" "$shell_ver"); then
+		log "WARN" "Could not query remote for: $uuid (shell $shell_ver)"
+		return 1
+	fi
+	local remote_version="${info[0]}"
+	local version_tag="${info[1]}"
+	local download_url="${info[2]}"
+
+	if [[ -z "$remote_version" ]]; then
+		log "WARN" "No remote version for: $uuid (shell $shell_ver)"
+		return 1
+	fi
+
+	if [[ "$local_ver" == "$remote_version" ]]; then
+		log "INFO" "Up-to-date: $uuid (v$local_ver)"
+		return 0
+	else
+		log "INFO" "Update available: $uuid local v$local_ver → remote v$remote_version"
+		download_and_install "$uuid" "$shell_ver" "Update"
 	fi
 }
 
 install_all_extensions() {
 	log "INFO" "Installing ${#EXTENSIONS[@]} GNOME Shell extensions..."
-	echo
+	local count=1 success=0 failed=0
+	local shell_ver
+	shell_ver="$(get_gnome_version)"
 
-	local count=1
-	local failed=0
-	local success=0
-
-	for extension in "${EXTENSIONS[@]}"; do
-		if install_extension "$extension" "$count" "${#EXTENSIONS[@]}"; then
+	for uuid in "${EXTENSIONS[@]}"; do
+		log "INFO" "[$count/${#EXTENSIONS[@]}] $uuid"
+		if install_extension_if_missing "$uuid" "$shell_ver"; then
 			((success++))
 		else
 			((failed++))
 		fi
-		echo
 		((count++))
-		sleep 1 # Small delay to avoid overwhelming the system
+		sleep 0.5
 	done
-
 	echo
-	log "INFO" "Installation Summary:"
-	log "SUCCESS" "Successfully installed: $success"
-	if [[ $failed -gt 0 ]]; then
-		log "WARN" "Failed to install: $failed"
-	fi
+	log "INFO" "Install summary → success: $success, failed: $failed"
+	[[ $failed -eq 0 ]]
+}
+
+reinstall_all_extensions() {
+	log "INFO" "Reinstalling ${#EXTENSIONS[@]} GNOME Shell extensions..."
+	local count=1 success=0 failed=0
+	local shell_ver
+	shell_ver="$(get_gnome_version)"
+
+	for uuid in "${EXTENSIONS[@]}"; do
+		log "INFO" "[$count/${#EXTENSIONS[@]}] $uuid"
+		if reinstall_extension "$uuid" "$shell_ver"; then
+			((success++))
+		else
+			((failed++))
+		fi
+		((count++))
+		sleep 0.5
+	done
+	echo
+	log "INFO" "Reinstall summary → success: $success, failed: $failed"
+	[[ $failed -eq 0 ]]
+}
+
+update_all_extensions() {
+	log "INFO" "Updating ${#EXTENSIONS[@]} GNOME Shell extensions..."
+	local count=1 success=0 failed=0
+	local shell_ver
+	shell_ver="$(get_gnome_version)"
+
+	for uuid in "${EXTENSIONS[@]}"; do
+		log "INFO" "[$count/${#EXTENSIONS[@]}] $uuid"
+		if update_extension_if_available "$uuid" "$shell_ver"; then
+			((success++))
+		else
+			((failed++))
+		fi
+		((count++))
+		sleep 0.5
+	done
+	echo
+	log "INFO" "Update summary → success: $success, failed: $failed"
+	[[ $failed -eq 0 ]]
 }
 
 restart_gnome_shell() {
 	log "INFO" "Restarting GNOME Shell to apply changes..."
-
-	# For Wayland, we can't restart shell directly, user needs to logout/login
-	if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
-		log "WARN" "You're using Wayland. Please logout and login to restart GNOME Shell."
-		log "INFO" "Or run: Alt+F2 → type 'r' → Enter (if on X11)"
+	if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
+		log "WARN" "Wayland oturumunda GNOME Shell doğrudan yeniden başlatılamaz. Çıkış yapıp tekrar giriş yapın."
+		log "INFO" "X11 için: Alt+F2 → 'r' → Enter"
 	else
-		# For X11, we can restart shell
 		if command -v gnome-shell &>/dev/null; then
 			nohup gnome-shell --replace &>/dev/null &
 			disown
@@ -199,49 +392,58 @@ restart_gnome_shell() {
 
 show_installed_extensions() {
 	log "INFO" "Currently installed extensions:"
-	gnome-extensions list | while read extension; do
-		local status=$(gnome-extensions info "$extension" | grep -i state | awk '{print $2}')
-		if [[ "$status" == "ENABLED" ]]; then
-			echo -e "  ${GREEN}✓${NC} $extension"
+	gnome-extensions list | while read -r extension; do
+		# State
+		local state
+		state="$(gnome-extensions info "$extension" | awk -F': ' '/State/{print $2}')"
+		# Version
+		local ver
+		ver="$(current_local_version "$extension")"
+		if [[ "$state" == "ENABLED" ]]; then
+			echo -e "  ${GREEN}✓${NC} $extension (v${ver:-?})"
 		else
-			echo -e "  ${RED}✗${NC} $extension"
+			echo -e "  ${RED}✗${NC} $extension (v${ver:-?})"
 		fi
 	done
 }
 
 main() {
-	echo -e "${BOLD}${CYAN}GNOME Extensions Auto Installer${NC}"
-	echo -e "${BOLD}Installing extensions from your NixOS config${NC}"
+	parse_args "$@"
+
+	echo -e "${BOLD}${CYAN}GNOME Extensions Installer/Updater${NC}"
+	echo -e "${BOLD}Mode:${NC} $MODE"
 	echo
 
 	check_dependencies
 	echo
 
-	log "INFO" "GNOME Shell version: $(get_gnome_version)"
+	local shell_ver
+	shell_ver="$(get_gnome_version)"
+	log "INFO" "GNOME Shell version: $shell_ver"
 	log "INFO" "Session type: ${XDG_SESSION_TYPE:-unknown}"
 	echo
 
-	install_all_extensions
+	case "$MODE" in
+	install) install_all_extensions ;;
+	update) update_all_extensions ;;
+	reinstall) reinstall_all_extensions ;;
+	esac
 
-	echo
-	log "INFO" "Installation completed!"
-
-	# Show current status
 	echo
 	show_installed_extensions
 
 	echo
-	log "INFO" "Manual installation links for failed extensions:"
-	log "INFO" "• GNOME Extensions website: https://extensions.gnome.org/"
-	log "INFO" "• Extension Manager: flatpak install flathub com.mattjakeman.ExtensionManager"
+	log "INFO" "Manual options:"
+	log "INFO" "• GNOME Extensions: https://extensions.gnome.org/"
+	log "INFO" "• Extension Manager (Flatpak): flatpak install flathub com.mattjakeman.ExtensionManager"
 
 	echo
 	log "WARN" "Some extensions may require GNOME Shell restart to work properly."
 
-	# Ask if user wants to restart shell
-	if [[ "$XDG_SESSION_TYPE" != "wayland" ]]; then
+	# Offer restart on X11
+	if [[ "${XDG_SESSION_TYPE:-}" != "wayland" ]]; then
 		echo
-		read -p "Do you want to restart GNOME Shell now? (y/N): " -n 1 -r
+		read -rp "Do you want to restart GNOME Shell now? (y/N): " -n 1 REPLY
 		echo
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
 			restart_gnome_shell
@@ -252,5 +454,4 @@ main() {
 	log "SUCCESS" "Done! Enjoy your GNOME extensions! 🎉"
 }
 
-# Run main function
 main "$@"

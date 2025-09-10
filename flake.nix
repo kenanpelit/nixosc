@@ -80,12 +80,12 @@
     # Core Hyprland Wayland compositor - pinned to specific commit for stability
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/4e785d12a91117cd5b255052799d1a051d9976c0"; # 0906 - Updated Commits
-#      url = "github:hyprwm/hyprland/127aab815908ecbd3db4d23f127d2e96b79855f9"; # 0902 - Updated Commits
-#      url = "github:hyprwm/hyprland/5bb8adbc3228901d199e8d22d6f712bd1d7d4e15"; # 0901 - Updated Commits
-#      url = "github:hyprwm/hyprland/ea42041f936d5810c5cfa45d6bece12dde2fd9b6"; # 0831 - Updated Commits
-#      url = "github:hyprwm/hyprland/05a1c0aa7395d19213e587c83089ecbd7b92085c"; # 0829 - Updated Commits
-#      url = "github:hyprwm/hyprland/378e130f1426648d8d734049800128f9882805bf"; # 0828 - Updated Commits
+      url = "github:hyprwm/hyprland/150d693fe794a01aab762a18d2d8a2c8bc54b43c"; # 0909 - Updated Commits
+#      url = "github:hyprwm/hyprland/1e3a06560fa6b2d906f8ecc9ec41b50e9b034cef"; # 0908 - Updated Commits
+#      url = "github:hyprwm/hyprland/b619f39555b96c70330f4a933dedde7e897e0d81"; # 0908 - Updated Commits
+#      url = "github:hyprwm/hyprland/bce43f74eb8e4570d0d043f5fc8257eef7a57399"; # 0906 - Updated Commits
+#      url = "github:hyprwm/hyprland/56dd1124ab30dbc949b1f76e9dc6bbc9c74ef853"; # 0906 - Updated Commits
+#      url = "github:hyprwm/hyprland/4e785d12a91117cd5b255052799d1a051d9976c0"; # 0906 - Updated Commits
     };
 
     # --- Hyprland Dependencies and Extensions ---
