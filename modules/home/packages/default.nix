@@ -91,7 +91,7 @@ in
     nix-output-monitor # Nix build monitörü
     
     # Programming Languages
-    go                 # Go programlama dili
+    go_1_25                 # Go programlama dili
     customPython       # Özelleştirilmiş Python
     
     # AI/ML Tools
