@@ -196,8 +196,8 @@ in
 
       # HWP aktif: AC'de performance, BAT'ta powersave governoru
       CPU_DRIVER_OPMODE           = "active";
-      #CPU_SCALING_GOVERNOR_ON_AC  = "performance";
-      CPU_SCALING_GOVERNOR_ON_AC  = "powersave";
+      CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+      #CPU_SCALING_GOVERNOR_ON_AC  = "powersave";
       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
 
       # "Taban konfor": AC'de minimum 1.0 GHz. (1.2GHz daha sıcak, 0.8 bazı işte gecikme yaratır)
@@ -210,7 +210,7 @@ in
 
       # HWP min perf yüzdeleri (intel_pstate/min_perf_pct):
       # AC: 20–100 → akıcı & ısı kontrollü; BAT: 10–80 → tasarruf
-      CPU_MIN_PERF_ON_AC = 25;
+      CPU_MIN_PERF_ON_AC = 35;
       CPU_MAX_PERF_ON_AC = 100;
       CPU_MIN_PERF_ON_BAT = 10;
       CPU_MAX_PERF_ON_BAT = 80;
@@ -218,7 +218,8 @@ in
       # EPP (Energy Performance Preference):
       # AC'de "balance_performance" → MTL'de serin, X1C6'da da akıcı.
       # X1C6 için daha atak istiyorsan runtime servis bunu "performance" yapacak (aşağıda).
-      CPU_ENERGY_PERF_POLICY_ON_AC  = "balance_performance";
+      #CPU_ENERGY_PERF_POLICY_ON_AC  = "balance_performance";
+      CPU_ENERGY_PERF_POLICY_ON_AC  = "performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
 
       # HWP dinamik boost: AC'de açık; BAT'ta kapalı
@@ -329,6 +330,23 @@ in
     spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
     #spice-vdagentd.enable = lib.mkForce false;
   };
+
+  ## =============================================================================
+  ## Lid/tuş davranışları → systemd settings arayüzü (TOP-LEVEL!)
+  ## =============================================================================
+
+  ## Lid/tuş davranışları → systemd settings arayüzü
+  #systemd.settings.logind = {
+  #  Login = {
+  #    HandleLidSwitch              = "suspend";
+  #    HandleLidSwitchDocked        = "suspend";
+  #    HandleLidSwitchExternalPower = "suspend";
+  #    HandlePowerKey               = "ignore";
+  #    HandlePowerKeyLongPress      = "poweroff";
+  #    HandleSuspendKey             = "suspend";
+  #    HandleHibernateKey           = "hibernate";
+  #  };
+  #};
 
   # =============================================================================
   # RAPL POWER LIMITS (X1C6'da anlamlı; Meteor Lake'te BYPASS)
@@ -452,34 +470,38 @@ in
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
-          | ${pkgs.coreutils}/bin/tr -d '\n' \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 
         # Varsayilan (modern CPU'lar icin)
         EPP_ON_AC="balance_performance"
         MIN_PERF=25
 
-        # AC mi kontrol et
+        # Güç kaynağı
         ON_AC=0
         for PS in /sys/class/power_supply/A{C,DP}*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
         done
-
+  
         if [[ "$ON_AC" == "1" ]]; then
-          # AC: daha atak
           MIN_PERF=30
         else
-          # BAT: daha tasarruflu
           MIN_PERF=10
         fi
 
-        # X1C6 / Kaby/Whiskey/Coffee U serisi ise daha atak
+        # X1C6 / Kaby/Whiskey/Coffee U serisi ise AC'de daha atak
         if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby|Whiskey|Coffee'; then
           EPP_ON_AC="performance"
-          # AC’de yine 30, BAT’ta 10 kalıyor
         fi
 
-        # EPP'yi tum policy*'lere uygula
+        # *** MTL / Core Ultra ailesi icin: AC'de tam performans + %35 taban ***
+        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Lunar Lake|Arrow Lake'; then
+          if [[ "$ON_AC" == "1" ]]; then
+            EPP_ON_AC="performance"
+            MIN_PERF=35
+          fi
+        fi
+
+        # EPP'yi tüm policy*'lere uygula
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ -w "$pol/energy_performance_preference" ]] && \
             echo "$EPP_ON_AC" > "$pol/energy_performance_preference" 2>/dev/null || true
