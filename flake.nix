@@ -285,6 +285,16 @@
             ];
           });
         })
+
+        # Qt5 to Qt6 migration overlay
+        # globalprotect-openconnect Qt6 fix
+        (final: prev: {
+          globalprotect-openconnect = prev.globalprotect-openconnect.override {
+            qtbase = final.qt6.qtbase;
+            qtwebsockets = final.qt6.qtwebsockets;
+            qtwebengine = final.qt6.qtwebengine;
+          };
+        })
       ];
 
       # ------------------------------------------------------------------------
@@ -300,7 +310,7 @@
         permittedInsecurePackages = [
           "ventoy-1.1.07"       # Binary blobs for multiboot USB creation
           "libsoup-2.74.3"      # EOL GTK dependency - phase out when possible
-          "qtwebengine-5.15.19" # Legacy QtWebEngine - migrate when viable
+          #"qtwebengine-5.15.19" # Legacy QtWebEngine - migrate when viable
         ];
       };
 
