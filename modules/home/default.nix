@@ -135,6 +135,7 @@
     # AI & Machine Learning
     # =============================================================================
     #./ollama        # Local large language model management
+    ./ai            # Yeni AI modülü
     
     # =============================================================================
     # Document & Archive Management

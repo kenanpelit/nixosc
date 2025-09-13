@@ -1,313 +1,351 @@
 # ==============================================================================
+# NixOS System Configuration Flake
+# ==============================================================================
 #
-#   NixOS System Configuration Flake
-#   Project: NixOS Configuration Suite (nixosc)
-#   Version: 3.0.0
-#   Date: 2025-05-12
-#   Author: Kenan Pelit
-#   Repository: https://github.com/kenanpelit/nixosc
+# Project: NixOS Configuration Suite (nixosc)
+# Version: 4.0.0
+# Date:    2025-09-13
+# Author:  Kenan Pelit
+# Repo:    https://github.com/kenanpelit/nixosc
+# License: MIT
 #
-#   Description: Comprehensive NixOS system configuration management suite
-#   This flake defines the complete NixOS system configuration, including:
-#   - Package management and overlays
-#   - User environment (via home-manager) 
-#   - System services and settings
-#   - Hardware-specific configurations
-#   - VPN-aware workspace session management
-#   - Automated backup and restoration tools
-#   - Dynamic admin script generation
+# Overview:
+#   - Full-stack NixOS configuration (system + home-manager)
+#   - Modular, host-aware, theme-enabled, and battery-included
+#   - Single source of truth for overlays & nixpkgs configuration
+#   - Reproducible builds with pinned dependencies via flake.lock
 #
-#   Features:
-#   - Modular configuration structure
-#   - Hybrid workspace session management
-#   - Automated backup systems
-#   - VPN-aware application launching
-#   - Custom admin tooling generation
-#   - Home-manager integration
-#   - Hardware-specific optimizations
+# Architecture & Design Principles:
+#   
+#   1. Unified Overlay Management:
+#      One overlay list (overlaysCommon) is consistently injected into:
+#      • Top-level pkgs (import nixpkgs …)
+#      • nixosSystem via a tiny module (nixpkgs.overlays = overlaysCommon)
+#      • pkgsFor (packages/devShells multi-system world)
+#      → This eliminates the "works here, breaks there" class of overlay bugs
 #
-#   License: MIT
+#   2. Temporary Compatibility Bridge:
+#      buildGo123Module → buildGoModule (Go 1.25)
+#      → Why: nixpkgs removed buildGo123Module (Go 1.23 is EOL)
+#      → Some external flakes still call it; this shim keeps builds green
+#      → TODO: Remove once dependencies stop calling buildGo123Module
+#
+#   3. Central Configuration:
+#      Single nixpkgs config (allowUnfree + permittedInsecurePackages)
+#      → Declared once, reused everywhere to avoid divergence
+#      → Ensures consistent behavior across all contexts
+#
+# Important Notes:
+#   - External flakes often build with their own nixpkgs; your overlays may not
+#     affect them. If a package fails inside a foreign flake, pin or patch that
+#     flake instead of trying to overlay it here.
+#   - Use `nix flake update` to update all inputs, or `nix flake lock --update-input <name>`
+#     to update specific inputs.
 #
 # ==============================================================================
+
 {
   description = "Kenan's NixOS Configuration";
- 
+
   # ============================================================================
-  # INPUT SOURCES AND DEPENDENCIES
+  # INPUTS - External Dependencies
   # ============================================================================
-  # Each input represents a source for packages, modules, or configurations
-  # Dependencies are pinned in flake.lock for reproducibility
+  # All dependencies are pinned through flake.lock for reproducibility.
+  # We use `follows = "nixpkgs"` where practical to ensure ABI alignment
+  # and reduce closure size.
+  
   inputs = {
-    # === Core System Packages ===
-    # Main Nixpkgs repository (unstable channel for latest packages)
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # --------------------------------------------------------------------------
+    # Core Dependencies
+    # --------------------------------------------------------------------------
     
-    # === User Environment Management ===
-    # Home-manager for user-specific configurations  
+    # Primary package collection (nixos-unstable for fresh software)
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Emergency rollback template (uncomment to pin to specific revision):
+    # nixpkgs.url = "github:NixOS/nixpkgs/b5d4232";
+
+    # User environment management with declarative configuration
     home-manager = {
       url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";  # Use the same nixpkgs as above for compatibility
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # --------------------------------------------------------------------------
+    # Package Repositories & Extensions
+    # --------------------------------------------------------------------------
     
-    # Community package repository (NUR) for additional user-contributed packages
+    # Nix User Repository - Community-maintained packages
     nur = {
       url = "github:nix-community/NUR";
-      inputs.nixpkgs.follows = "nixpkgs";  # Ensure version compatibility
+      inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    # === Security and Secrets Management ===
-    # SOPS for encrypted secrets in the configuration
+
+    # Secret management with SOPS (encrypted secrets in git)
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # --------------------------------------------------------------------------
+    # Theming & Aesthetics
+    # --------------------------------------------------------------------------
     
-    # === Theming ===
-    # Catppuccin theme for system-wide consistent theming
+    # Catppuccin theme framework for consistent theming
     catppuccin = {
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    # === GRUB Theme ===
-    # Custom themes for the GRUB bootloader
+
+    # GRUB bootloader themes for visual customization
     distro-grub-themes = {
       url = "github:AdisonCavani/distro-grub-themes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-   
-    # === Desktop Environment - Hyprland Ecosystem ===
-    # Core Hyprland Wayland compositor - pinned to specific commit for stability
+
+    # --------------------------------------------------------------------------
+    # Hyprland Ecosystem (Wayland Compositor)
+    # --------------------------------------------------------------------------
+    # All Hyprland-related packages pinned for stability and compatibility
+    
+    # Core Hyprland compositor (pinned to specific commit for stability)
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/46174f78b374b6cea669c48880877a8bdcf7802f"; # 0910 - Updated Commits
-#      url = "github:hyprwm/hyprland/150d693fe794a01aab762a18d2d8a2c8bc54b43c"; # 0909 - Updated Commits
-#      url = "github:hyprwm/hyprland/1e3a06560fa6b2d906f8ecc9ec41b50e9b034cef"; # 0908 - Updated Commits
-#      url = "github:hyprwm/hyprland/b619f39555b96c70330f4a933dedde7e897e0d81"; # 0908 - Updated Commits
-#      url = "github:hyprwm/hyprland/bce43f74eb8e4570d0d043f5fc8257eef7a57399"; # 0906 - Updated Commits
-#      url = "github:hyprwm/hyprland/56dd1124ab30dbc949b1f76e9dc6bbc9c74ef853"; # 0906 - Updated Commits
-    };
-
-    # --- Hyprland Dependencies and Extensions ---
-    # Language parsing library for Hyprland configuration
-    hyprlang = {
-      url = "github:hyprwm/hyprlang";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Utility libraries for Hyprland
-    hyprutils = {
-      url = "github:hyprwm/hyprutils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Wayland protocol definitions specific to Hyprland
-    hyprland-protocols = {
-      url = "github:hyprwm/hyprland-protocols";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    xdph = {
-      url = "github:hyprwm/xdg-desktop-portal-hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    hyprwayland-scanner = {
-      url = "github:hyprwm/hyprwayland-scanner";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Hyprland cursor library for custom cursors
-    hyprcursor = {
-      url = "github:hyprwm/hyprcursor";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Graphics library for Hyprland
-    hyprgraphics = {
-      url = "github:hyprwm/hyprgraphics";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Qt integration for Hyprland
-    hyprland-qtutils = {
-      url = "github:hyprwm/hyprland-qtutils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # --- Hyprland Plugins and Extensions ---
-    # Official Hyprland plugins collection
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:hyprwm/hyprland/adbf7c8663cfbc91fca78d3504fa8f73ce4bd23a"; # 2025-09-13 stable
+      # Previous stable: github:hyprwm/hyprland/46174f78b374b6cea669c48880877a8bdcf7802f
     };
     
-    # Additional community utilities for Hyprland
-    hypr-contrib = {
-      url = "github:hyprwm/contrib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    
-    # Color picker utility for Hyprland
-    hyprpicker = {
-      url = "github:hyprwm/hyprpicker";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    
-    # Screen magnifier for Hyprland
-    hyprmag = {
-      url = "github:SIMULATAN/hyprmag";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    
-    # === Hyprland Python Plugin Framework ===
-    # PyPrland - Python plugin system enabling scriptable extensions
+    # Hyprland dependencies and utilities
+    hyprlang            = { url = "github:hyprwm/hyprlang";                      inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprutils           = { url = "github:hyprwm/hyprutils";                     inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprland-protocols  = { url = "github:hyprwm/hyprland-protocols";            inputs.nixpkgs.follows = "nixpkgs"; };
+    xdph                = { url = "github:hyprwm/xdg-desktop-portal-hyprland";   inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprwayland-scanner = { url = "github:hyprwm/hyprwayland-scanner";           inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprcursor          = { url = "github:hyprwm/hyprcursor";                    inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprgraphics        = { url = "github:hyprwm/hyprgraphics";                  inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprland-qtutils    = { url = "github:hyprwm/hyprland-qtutils";              inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprland-plugins    = { url = "github:hyprwm/hyprland-plugins";              inputs.nixpkgs.follows = "nixpkgs"; };
+    hypr-contrib        = { url = "github:hyprwm/contrib";                       inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprpicker          = { url = "github:hyprwm/hyprpicker";                    inputs.nixpkgs.follows = "nixpkgs"; };
+    hyprmag             = { url = "github:SIMULATAN/hyprmag";                    inputs.nixpkgs.follows = "nixpkgs"; };
+
+    # Hyprland Python plugin framework for extensibility
     pyprland = {
       url = "github:hyprland-community/pyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # --------------------------------------------------------------------------
+    # Development Tools & Build Systems
+    # --------------------------------------------------------------------------
     
-    # Poetry2nix for Python dependency management
+    # Poetry2nix - Build Python applications from poetry.lock
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    # Systems definitions for multi-platform support
+
+    # Multi-system support for Linux architectures
     systems = {
       url = "github:nix-systems/default-linux";
     };
-    
-    # Flake compatibility layer for non-flake users
+
+    # Compatibility layer for non-flake Nix tooling
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
+
+    # --------------------------------------------------------------------------
+    # Applications & Integrations
+    # --------------------------------------------------------------------------
     
-    # === Development Tools ===
-    # Nix code formatter and linter
-    alejandra = {
-      url = "github:kamadorueda/alejandra/3.1.0";
-      inputs.nixpkgs.follows = "nixpkgs";
+    # Code formatter for Nix
+    alejandra = { 
+      url = "github:kamadorueda/alejandra/3.1.0"; 
+      inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
-    # === Application Customization ===
     # Spotify customization framework
-    spicetify-nix = {
-      url = "github:gerg-l/spicetify-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+    spicetify-nix = { 
+      url = "github:gerg-l/spicetify-nix"; 
+      inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
-    # === System Integration and Tools ===
-    # Flatpak integration for additional software support
-    nix-flatpak = {
-      url = "github:gmodena/nix-flatpak";
+    # Flatpak integration for NixOS
+    nix-flatpak = { 
+      url = "github:gmodena/nix-flatpak"; 
     };
     
-    # Enhanced browser configuration framework
-    zen-browser = {
-      url = "github:0xc000022070/zen-browser-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
+    # Alternative browsers
+    zen-browser = { 
+      url = "github:0xc000022070/zen-browser-flake"; 
+      inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
-    # Chrome browser preview packages
-    browser-previews = {
-      url = "github:nix-community/browser-previews";
-      inputs.nixpkgs.follows = "nixpkgs";
+    browser-previews = { 
+      url = "github:nix-community/browser-previews"; 
+      inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
-    # Binary cache management tools
-    cachix-pkgs = {
-      url = "github:cachix/cachix";
-      inputs.nixpkgs.follows = "nixpkgs";
+    # Cachix binary cache tools
+    cachix-pkgs = { 
+      url = "github:cachix/cachix"; 
+      inputs.nixpkgs.follows = "nixpkgs"; 
     };
+
+    # --------------------------------------------------------------------------
+    # Data Sources (Non-flake inputs)
+    # --------------------------------------------------------------------------
     
-    # === Terminal and File Management ===
-    # Terminal file manager plugins (raw source)
+    # Yazi file manager plugins (raw source, used as data)
     yazi-plugins = {
       url = "github:yazi-rs/plugins";
-      flake = false;  # Raw source, not a Nix flake
+      flake = false;
     };
-    
-    # === Package Search Tools ===
-    # Interactive package search utility with TUI
+
+    # Nix package search tool (may use its own nixpkgs)
     nix-search-tv = {
       url = "github:3timeslazy/nix-search-tv";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    # === Application Launcher & Tools ===
-    # Fast application launcher for Wayland
-    #walker = {
-    #  url = "github:abenz1267/walker/v0.12.39";
-    #  inputs.nixpkgs.follows = "nixpkgs";
-    #};
 
-    # === COSMIC Desktop Environment ===
-    # COSMIC desktop for NixOS - COMMENTED OUT
+    # --------------------------------------------------------------------------
+    # Optional/Experimental (Currently Disabled)
+    # --------------------------------------------------------------------------
+    
+    # COSMIC desktop environment (keep for future testing)
     # nixos-cosmic = {
     #   url = "github:lilyinstarlight/nixos-cosmic";
-    #   inputs.nixpkgs.follows = "nixpkgs"; # Use the same nixpkgs as above
+    #   inputs.nixpkgs.follows = "nixpkgs";
     # };
   };
- 
+
   # ============================================================================
-  # SYSTEM CONFIGURATION OUTPUTS
+  # OUTPUTS - System Configurations & Packages
   # ============================================================================
-  outputs = { nixpkgs, self, home-manager, sops-nix, distro-grub-themes, poetry2nix, systems, pyprland, 
-              hyprland, hyprlang, hyprutils, hyprland-protocols, xdph, hyprcursor, catppuccin, ... }@inputs:
+  # This section defines what this flake produces: NixOS configurations,
+  # packages, and development shells. Everything is built with consistent
+  # overlays and configuration.
+  
+  outputs = { 
+    nixpkgs, 
+    self, 
+    home-manager, 
+    sops-nix, 
+    distro-grub-themes, 
+    poetry2nix, 
+    systems, 
+    pyprland,
+    hyprland, 
+    hyprlang, 
+    hyprutils, 
+    hyprland-protocols, 
+    xdph, 
+    hyprcursor, 
+    catppuccin, 
+    ... 
+  }@inputs:
     let
-      # === Global Variables ===
-      username = "kenan";        # Primary user account
-      system = "x86_64-linux";   # System architecture
+      # ------------------------------------------------------------------------
+      # Global Configuration Variables
+      # ------------------------------------------------------------------------
       
-      # Configure nixpkgs with system-wide settings
-      pkgs = import nixpkgs {
-        inherit system;
-        config = {
-          allowUnfree = true;    # Enable proprietary software
-          permittedInsecurePackages = [
-            # Allow specific insecure packages with known issues
-            "ventoy-1.1.07"      # USB multi-boot tool with binary blobs
-            "libsoup-2.74.3"     # EOL library with CVEs, required by legacy GTK apps
-            "qtwebengine-5.15.19"
-          ];
-        };
-        overlays = [
-          inputs.nur.overlay
-        #  (final: prev: {
-        #    gcc12Stdenv = prev.gcc13Stdenv;  # gcc12 isteyenlere gcc13 ver
-        #  })
-        ]; 
+      username = "kenan";        # Primary user account
+      system   = "x86_64-linux"; # Target architecture
+      
+      # ------------------------------------------------------------------------
+      # Overlay Configuration - Single Source of Truth
+      # ------------------------------------------------------------------------
+      # These overlays are applied consistently everywhere to avoid
+      # "works in one place, breaks in another" issues.
+      
+      overlaysCommon = [
+        # NUR overlay (Community packages)
+        # Note: NUR changed its API; correct usage is inputs.nur.overlays.default
+        inputs.nur.overlays.default
+
+        # Temporary compatibility shim for buildGo123Module
+        # Background: nixpkgs removed buildGo123Module when Go 1.23 reached EOL
+        # This delegates to buildGoModule with Go 1.25 for backward compatibility
+        # TODO: Remove once all external dependencies are updated
+        (final: prev: {
+          buildGo123Module = args:
+            prev.buildGoModule (args // { go = prev.go_1_25; });
+        })
+
+        # TigerVNC build fix
+        # Provides autoreconf tooling for nested autoreconf calls
+        # without forcing autoreconfPhase at repository root
+        (final: prev: {
+          tigervnc = prev.tigervnc.overrideAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [
+              prev.autoconf
+              prev.automake
+              prev.libtool
+            ];
+          });
+        })
+      ];
+
+      # ------------------------------------------------------------------------
+      # Nixpkgs Configuration - Applied Everywhere
+      # ------------------------------------------------------------------------
+      # Central configuration ensures consistent behavior across all contexts
+      
+      nixpkgsConfigCommon = {
+        allowUnfree = true;
+        
+        # Security exceptions (use sparingly and document reasons)
+        # TODO: Audit and remove these as soon as alternatives are available
+        permittedInsecurePackages = [
+          "ventoy-1.1.07"       # Binary blobs for multiboot USB creation
+          "libsoup-2.74.3"      # EOL GTK dependency - phase out when possible
+          "qtwebengine-5.15.19" # Legacy QtWebEngine - migrate when viable
+        ];
       };
 
-
-      # Import nixpkgs library for helper functions
-      lib = nixpkgs.lib;
+      # ------------------------------------------------------------------------
+      # Package Set Creation
+      # ------------------------------------------------------------------------
       
-      # === System Configuration Helper ===
-      # Function to create a complete NixOS system configuration
-      mkSystem = { system, host, modules }: 
-        nixpkgs.lib.nixosSystem {
+      # Top-level package set for ad-hoc usage and scripting
+      # Note: nixosSystem uses its own unless explicitly passed
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = overlaysCommon;
+        config   = nixpkgsConfigCommon;
+      };
+
+      # Convenience shorthand for nixpkgs library functions
+      lib = nixpkgs.lib;
+
+      # ------------------------------------------------------------------------
+      # System Builder Function (DRY Pattern)
+      # ------------------------------------------------------------------------
+      # Constructs a NixOS system with consistent configuration injection
+      
+      mkSystem = { system, host, modules }:
+        lib.nixosSystem {
           inherit system;
-          
-          # Add default and machine-specific modules
+
           modules = [
-            # GRUB theme module for all systems
-            distro-grub-themes.nixosModules.${system}.default
-            
-            # Catppuccin theming modules
-            inputs.catppuccin.nixosModules.catppuccin
-            
-            # Home-manager integration
+            # Step 1: Inject overlays and config into the NixOS module system
+            {
+              nixpkgs.overlays = overlaysCommon;
+              nixpkgs.config   = nixpkgsConfigCommon;
+            }
+
+            # Step 2: System-wide theming modules
+            inputs.distro-grub-themes.nixosModules.${system}.default  # GRUB themes
+            inputs.catppuccin.nixosModules.catppuccin                # Catppuccin theme
+
+            # Step 3: Home-manager integration with shared package universe
             inputs.home-manager.nixosModules.home-manager
             {
               home-manager = {
-                useGlobalPkgs = true;       # Use global pkgs instance
-                useUserPackages = true;     # Install packages to /etc/profiles
-                extraSpecialArgs = {
-                  inherit inputs username host;
-                };
+                useGlobalPkgs   = true;  # Reuse NixOS pkgs for consistency
+                useUserPackages = true;  # Install to /etc/profiles
+                extraSpecialArgs = { inherit inputs username host; };
                 users.${username} = {
                   imports = [
                     inputs.catppuccin.homeModules.catppuccin
@@ -316,113 +354,128 @@
                 };
               };
             }
-            
-            # COSMIC Desktop Environment module - COMMENTED OUT
-            # inputs.nixos-cosmic.nixosModules.default
-            
-            # Cachix binary cache for COSMIC - COMMENTED OUT
-            # {
-            #   nix.settings = {
-            #     substituters = [ 
-            #       "https://cosmic.cachix.org/" 
-            #     ];
-            #     trusted-public-keys = [ 
-            #       "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" 
-            #     ];
-            #   };
-            # }
-            
-            # Global system packages
+
+            # Step 4: Optional global packages from external flakes
+            # Warning: These may use their own nixpkgs and ignore our overlays
             {
               environment.systemPackages = [
-                inputs.nix-search-tv.packages.${system}.default
-                #inputs.walker.packages.${system}.default
+                # inputs.nix-search-tv.packages.${system}.default
+                # inputs.walker.packages.${system}.default
               ];
             }
-            
-            # Security exceptions for specific packages
-            # This ensures insecure packages are permitted across the entire system
+
+            # Step 5: Safety net - mirror insecure package permissions
             {
-              nixpkgs.config.permittedInsecurePackages = [ 
-                "ventoy-1.1.07"
-                "libsoup-2.74.3"        # EOL library with CVEs, required by legacy GTK apps
-                "qtwebengine-5.15.19"
-              ];
+              nixpkgs.config.permittedInsecurePackages = 
+                nixpkgsConfigCommon.permittedInsecurePackages;
             }
-          ] ++ modules;  # Add machine-specific modules
-          
-          # Pass additional arguments to all modules
-          specialArgs = {
-            inherit self inputs username host system;
-          };
+          ] ++ modules;
+
+          # Pass useful context to all modules
+          specialArgs = { inherit self inputs username host system; };
         };
-       
-      # Setup for PyPrland packages
+
+      # ------------------------------------------------------------------------
+      # Poetry2nix Helper Functions
+      # ------------------------------------------------------------------------
+      
       inherit (inputs.poetry2nix.lib) mkPoetry2Nix;
-      eachSystem = nixpkgs.lib.genAttrs (import systems);
-      pkgsFor = eachSystem (sys: import nixpkgs {localSystem = sys;});
+
+      # ------------------------------------------------------------------------
+      # Multi-system Support Infrastructure
+      # ------------------------------------------------------------------------
+      
+      # Generate attributes for each supported system
+      eachSystem = lib.genAttrs (import systems);
+
+      # Per-system package sets with consistent configuration
+      pkgsFor = eachSystem (sys:
+        import nixpkgs {
+          localSystem = sys;
+          overlays    = overlaysCommon;
+          config      = nixpkgsConfigCommon;
+        }
+      );
     in
     {
-      # === Machine Configurations ===
+      # ========================================================================
+      # NixOS Host Configurations
+      # ========================================================================
+      # Define your machines here. Add new hosts by creating a new entry
+      # with the appropriate host-specific module.
+      
       nixosConfigurations = {
-        # Personal laptop configuration
-        hay = mkSystem {
-          inherit system;
-          host = "hay";
-          modules = [ ./hosts/hay ];
+        # Physical machine configuration
+        hay = mkSystem { 
+          inherit system; 
+          host = "hay"; 
+          modules = [ ./hosts/hay ]; 
         };
         
-        # Development VM configuration
-        vhay = mkSystem {
-          inherit system;
-          host = "vhay";
-          modules = [ ./hosts/vhay ];
+        # Virtual machine configuration
+        vhay = mkSystem { 
+          inherit system; 
+          host = "vhay"; 
+          modules = [ ./hosts/vhay ]; 
         };
       };
-      
-      # === PyPrland packages and shells ===
-      # Make PyPrland available as a package
-      packages = eachSystem (sys: let
-        inherit (mkPoetry2Nix {pkgs = pkgsFor.${sys};}) mkPoetryApplication;
-      in {
-        pyprland = mkPoetryApplication {
-          projectDir = nixpkgs.lib.cleanSource "${pyprland}";
-          checkGroups = [];
-        };
-      });
-      
-      # Development shells for PyPrland
-      devShells = eachSystem (sys: let
-        inherit (mkPoetry2Nix {pkgs = pkgsFor.${sys};}) mkPoetryEnv;
-      in {
-        pyprland = pkgsFor.${sys}.mkShellNoCC {
-          packages = with pkgsFor.${sys}; [
-            (mkPoetryEnv {projectDir = "${pyprland}";})
-            poetry
-          ];
-        };
-      });
-      
-      # Additional outputs can be defined here:
-      # - Development shells
-      # - Custom packages
-      # - NixOS modules
-      # - Home-manager modules
-    };
-    
-    # ============================================================================
-    # BINARY CACHE CONFIGURATION
-    # ============================================================================
-    # Improve build times by using pre-built binaries from Cachix
-    nixConfig = {
-      extra-substituters = [
-        "https://hyprland-community.cachix.org"
-        # "https://cosmic.cachix.org/"  # COSMIC cache commented out
-      ];
-      extra-trusted-public-keys = [
-        "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
-        # "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="  # COSMIC key commented out
-      ];
-    };
-}
 
+      # ========================================================================
+      # Packages (Multi-system)
+      # ========================================================================
+      # Custom packages built by this flake
+      # Usage: nix build .#pyprland
+      
+      packages = eachSystem (sys:
+        let 
+          inherit (mkPoetry2Nix { pkgs = pkgsFor.${sys}; }) mkPoetryApplication;
+        in {
+          # Pyprland - Hyprland Python plugin framework
+          pyprland = mkPoetryApplication {
+            projectDir  = nixpkgs.lib.cleanSource "${pyprland}";
+            checkGroups = []; # Skip optional test dependencies for faster builds
+          };
+        }
+      );
+
+      # ========================================================================
+      # Development Shells
+      # ========================================================================
+      # Reproducible development environments
+      # Usage: nix develop .#pyprland
+      
+      devShells = eachSystem (sys:
+        let 
+          inherit (mkPoetry2Nix { pkgs = pkgsFor.${sys}; }) mkPoetryEnv;
+        in {
+          # Pyprland development environment with Poetry
+          pyprland = pkgsFor.${sys}.mkShellNoCC {
+            packages = with pkgsFor.${sys}; [
+              (mkPoetryEnv { projectDir = "${pyprland}"; })
+              poetry
+            ];
+          };
+        }
+      );
+    };
+
+  # ============================================================================
+  # Binary Cache Configuration
+  # ============================================================================
+  # These settings tell Nix where to look for pre-built binaries
+  # to avoid unnecessary compilation.
+  
+  nixConfig = {
+    # Additional binary caches
+    extra-substituters = [
+      "https://hyprland-community.cachix.org"
+      # "https://cosmic.cachix.org"  # Uncomment when using COSMIC
+    ];
+    
+    # Public keys for cache verification
+    extra-trusted-public-keys = [
+      "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+      # "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+    ];
+  };
+}
