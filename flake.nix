@@ -83,8 +83,9 @@
 
     # Hyprland ecosystem (pinned for stability)
     hyprland = {
-      url = "github:hyprwm/hyprland/46174f78b374b6cea669c48880877a8bdcf7802f";
       inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:hyprwm/hyprland/adbf7c8663cfbc91fca78d3504fa8f73ce4bd23a"; # 0913 - Updated Commits
+#      url = "github:hyprwm/hyprland/46174f78b374b6cea669c48880877a8bdcf7802f";
     };
     hyprlang              = { url = "github:hyprwm/hyprlang";                   inputs.nixpkgs.follows = "nixpkgs"; };
     hyprutils             = { url = "github:hyprwm/hyprutils";                  inputs.nixpkgs.follows = "nixpkgs"; };
