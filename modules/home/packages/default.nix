@@ -259,7 +259,7 @@ in
     
     # Communication
     discord          # Oyuncu sohbet platformu
-    whatsie          # WhatsApp masaüstü
+    #whatsie          # WhatsApp masaüstü - qtwebengine-5
     whatsapp-for-linux # Alternatif WhatsApp
     ferdium          # Çoklu servis yöneticisi
     
@@ -332,7 +332,7 @@ in
     exiftool       # Metadata okuyucu
     chafa          # Terminal resim görüntüleyici
     mediainfo      # Medya dosyası bilgileri
-   ffmpegthumbnailer # Video küçük resim üretici
+    ffmpegthumbnailer # Video küçük resim üretici
    
     # CD/DVD Tools
     libcdio        # CD/DVD erişim kütüphanesi
@@ -340,8 +340,8 @@ in
     # ==============================================================================
     # VPN Araçları
     # ==============================================================================
-    gpauth                    # GlobalProtect authenticator
-    globalprotect-openconnect # GlobalProtect VPN istemcisi
+    #gpauth                    # GlobalProtect authenticator - qtwebengine-5
+    #globalprotect-openconnect # GlobalProtect VPN istemcisi - qtwebengine-5
     openvpn                   # OpenVPN istemcisi
     openconnect               # Cisco AnyConnect uyumlu
     openfortivpn              # Fortinet VPN istemcisi
