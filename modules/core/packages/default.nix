@@ -36,6 +36,7 @@
     # Build Tools (Kernel modülleri için)
     gcc                # GNU C derleyici
     gnumake            # Make build sistemi
+    nodejs             # Node.js runtime 
     
     # System Libraries
     libdrm             # Direct Rendering Manager (GPU)

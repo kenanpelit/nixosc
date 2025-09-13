@@ -44,6 +44,10 @@
       modules = {
         tmux.enable = true;  # Terminal multiplexer
         mpv.enable = true;   # Media player
+        home.ai = {          # AI araçları
+          enable = true;
+          claude-cli.enable = true;
+        };
       };
     };
   };
