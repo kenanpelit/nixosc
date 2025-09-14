@@ -1,103 +1,134 @@
 # modules/core/account/default.nix
 # ==============================================================================
-# NİYET:
-# - Kullanıcı hesabı, gruplar, sudo yetkileri TEK YERDEN yönetilsin.
-# - Kullanıcıya bağlı home-manager profili aynı modülde tanımlansın.
-# - DBus/Keyring gibi sistem servisleri account’a değil, `services` modülüne ait.
+# User Account Management Module
+# ==============================================================================
 #
-# TEK OTORİTE İLKELERİ:
-# - users.users / sudo      → BURADA (account)
-#
+# Purpose: Centralized user account, groups, and sudo privilege management
+# Module: modules/core/account
 # Author: Kenan Pelit
-# Last updated: 2025-09-03
+# Date:   2025-09-03
+#
+# Design Principles:
+#   - Single source of truth for user configuration
+#   - User-linked home-manager profile defined in same module
+#   - System services (DBus/Keyring) belong to services module, not here
+#
+# Ownership Map:
+#   - users.users.*     → THIS MODULE (account)
+#   - sudo config       → THIS MODULE (account)
+#   - home-manager      → THIS MODULE (account)
+#   - DBus/Keyring      → services module
+#   - Display services  → display module
+#
 # ==============================================================================
 
 { pkgs, lib, username, config, inputs, host, ... }:
 
 {
-  # ----------------------------------------------------------------------------
-  # Modül opsiyonları — İstersen UID’i host’a göre override edebilirsin.
-  # ----------------------------------------------------------------------------
+  # ============================================================================
+  # Module Options
+  # ============================================================================
+  # Configurable options for user account management.
+  # These can be overridden per-host if needed.
+  
   options.my.user = {
     name = lib.mkOption {
       type = lib.types.str;
       default = username;
-      description = "The primary user account name.";
+      description = "The primary user account name";
     };
+    
     uid = lib.mkOption {
       type = lib.types.int;
       default = 1000;
-      description = "UID for the primary user.";
+      description = "UID for the primary user account";
     };
   };
 
   config = {
     # ==========================================================================
-    # Kullanıcı hesabı ve gruplar — TEK otorite
+    # User Account Configuration
     # ==========================================================================
+    # Primary user account definition with all necessary groups.
+    # This is the SINGLE authority for user groups - no duplication elsewhere.
+    
     users.users.${username} = {
       isNormalUser = true;
       description  = username;
       uid          = config.my.user.uid;
       shell        = pkgs.zsh;
-
-      # NOT: Bu liste, daha önce services/default.nix içinde de ekleniyordu.
-      # Artık grupların TEK otoritesi burası; services içindeki extraGroups satırını sil.
+      
+      # Complete group membership list
+      # NOTE: Previously duplicated in services/default.nix - now centralized here
       extraGroups = [
-        # Sistem / yönetim
-        "wheel"            # sudo
-        "networkmanager"   # NM izinleri
-        "storage"
-
-        # Donanım / I/O
-        "input"
-        "audio"
-        "video"
-
-        # Sanallaştırma
-        "libvirtd"
-        "kvm"
-        "docker"
+        # System administration
+        "wheel"            # sudo privileges
+        "networkmanager"   # Network Manager permissions
+        "storage"          # Storage device access
+        
+        # Hardware & I/O access
+        "input"            # Input device access
+        "audio"            # Audio subsystem
+        "video"            # Video/GPU access
+        
+        # Virtualization & containers
+        "libvirtd"         # QEMU/KVM virtualization
+        "kvm"              # Direct KVM access
+        "docker"           # Docker container management
       ];
     };
 
     # ==========================================================================
-    # Sudo — wheel parolasız (bilinçli tercih)
+    # Sudo Configuration
     # ==========================================================================
+    # Passwordless sudo for wheel group (conscious security trade-off)
+    
     security.sudo.wheelNeedsPassword = false;
 
     # ==========================================================================
-    # Home-Manager — kullanıcı profili
+    # Home-Manager Integration
     # ==========================================================================
-    # NEDEN BURADA?: Kullanıcıyı tanımladığın yerde HM profilini de bağlamak
-    # pratik. HM’nin import ettiği ./modules/home dizini kullanıcı ortamını
-    # (rofi, kitty, waybar, vs.) yönetiyor.
+    # User environment management through home-manager.
+    # Defined here because user account and user environment are tightly coupled.
+    
     home-manager = {
-      useUserPackages      = true;
-      useGlobalPkgs        = true;
-      backupFileExtension  = "backup";
-      extraSpecialArgs     = { inherit inputs username host; };
-
+      useUserPackages      = true;   # Install packages to user profile
+      useGlobalPkgs        = true;   # Use system-wide nixpkgs instance
+      backupFileExtension  = "backup"; # Backup extension for existing files
+      
+      # Pass these variables to all home-manager modules
+      extraSpecialArgs = { 
+        inherit inputs username host; 
+      };
+      
       users.${username} = {
-        # Bu import, senin repo yapına göre: modules/home (iki düzey yukarı).
-        # Mevcut yapında zaten buraya işaret ediyor.
+        # Import user environment configuration
+        # Path: ./modules/home (relative to repo root)
         imports = [ ../../home ];
+        
+        # Basic home directory setup
         home = {
-          username     = username;
-          homeDirectory= "/home/${username}";
-          stateVersion = "25.11";
+          username      = username;
+          homeDirectory = "/home/${username}";
+          stateVersion  = "25.11";  # Home-manager state version
         };
       };
     };
 
-    # ----------------------------------------------------------------------------
-    # DİKKAT: DBus/Keyring gibi servisleri account’a koymuyoruz.
-    # Bunlar `modules/core/services/default.nix` içinde:
-    #   services.dbus.enable = true;
-    #   services.dbus.packages = [ pkgs.gcr gnome-keyring ];
-    #   (GNOME Keyring enable, display modülünde ya da services’te yönetilebilir)
-    # ----------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Service Boundaries
+    # --------------------------------------------------------------------------
+    # IMPORTANT: The following services are NOT managed here:
+    #
+    # DBus & Keyring Services → modules/core/services/default.nix
+    #   - services.dbus.enable = true;
+    #   - services.dbus.packages = [ pkgs.gcr gnome-keyring ];
+    #   
+    # GNOME Keyring → Can be in either services or display module
+    #   - services.gnome.gnome-keyring.enable = true;
+    #
+    # This separation ensures clean module boundaries and single responsibility.
+    # --------------------------------------------------------------------------
   };
 }
-
 

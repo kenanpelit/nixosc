@@ -1,31 +1,44 @@
 # modules/core/networking/default.nix
 # ==============================================================================
-# Kapsam:
-# - Hostname, NetworkManager, systemd-resolved, Mullvad VPN, WireGuard
-# - Ağ hazır olana kadar bekleme (NM-wait-online) → kapalı: boot takozunu azalt
-# - TCP/IP stack optimizasyonları (BBR + fq, buffer sınırları, ECN, vs.)
-# - RAM’e göre dinamik TCP tavanları (>=32GB için "high" profil)
-# - Teşhis araçları ve alias’lar
+# Networking & TCP/IP Stack Configuration Module
+# ==============================================================================
 #
-# Not:
-# - Firewall kuralları security/default.nix’te. Burada sadece enable=true kalırsa çakışma olmaz.
-# - Mullvad DNS / nameserver seçimi VPN aktifliğine göre mkMerge ile belirleniyor.
-#
+# Module: modules/core/networking
 # Author: Kenan Pelit
-# Last merged: 2025-09-04
+# Date:   2025-09-04
+#
+# Scope:
+#   - Hostname, NetworkManager, systemd-resolved
+#   - Mullvad VPN & WireGuard integration
+#   - TCP/IP stack optimizations (BBR + FQ, buffer tuning, ECN)
+#   - Dynamic TCP tuning based on system memory (>=32GB gets high profile)
+#   - Network diagnostic tools and aliases
+#
+# Design Notes:
+#   - Firewall rules belong in security/default.nix (only enable here)
+#   - NM-wait-online disabled to reduce boot blocking
+#   - Mullvad DNS handled via mkMerge based on VPN state
+#   - IPv6 disabled by default (can cause handshake issues on some networks)
+#
 # ==============================================================================
 
 { config, lib, pkgs, host, ... }:
+
 let
   inherit (lib) mkIf mkMerge mkDefault;
   toString = builtins.toString;
 
+  # VPN state detection
   hasMullvad = config.services.mullvad-vpn.enable or false;
 
-  # ---- TCP profil parametreleri (high/std) ------------------------------------
+  # --------------------------------------------------------------------------
+  # TCP Profile Parameters
+  # --------------------------------------------------------------------------
+  # High-performance profile for systems with >=32GB RAM
+  
   high = {
-    rmem               = "4096 262144 16777216";
-    wmem               = "4096 262144 16777216";
+    rmem               = "4096 262144 16777216";  # 16MB max receive buffer
+    wmem               = "4096 262144 16777216";  # 16MB max send buffer
     rmem_max           = 16777216;
     wmem_max           = 16777216;
     rmem_default       = 524288;
@@ -39,9 +52,10 @@ let
     conntrack_max      = 262144;
   };
 
+  # Standard profile for systems with <32GB RAM
   std = {
-    rmem               = "4096 131072 8388608";
-    wmem               = "4096 131072 8388608";
+    rmem               = "4096 131072 8388608";   # 8MB max receive buffer
+    wmem               = "4096 131072 8388608";   # 8MB max send buffer
     rmem_max           = 8388608;
     wmem_max           = 8388608;
     rmem_default       = 262144;
@@ -55,111 +69,133 @@ let
     conntrack_max      = 131072;
   };
 
-  # Araç yolları
+  # Tool paths
   awk    = "${pkgs.gawk}/bin/awk";
   grep   = "${pkgs.gnugrep}/bin/grep";
   sysctl = "${pkgs.procps}/bin/sysctl";
 
+  # Memory detection script
   detectMemoryScript = pkgs.writeShellScript "detect-memory" ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
     TOTAL_KB=$(${grep} "^MemTotal:" /proc/meminfo | ${awk} '{print $2}')
-    echo $((TOTAL_KB / 1024))  # MB
+    echo $((TOTAL_KB / 1024))  # Return MB
   '';
 in
 {
-  ##############################################################################
-  # Base networking
-  ##############################################################################
+  # ============================================================================
+  # Base Networking Configuration
+  # ============================================================================
+  
   networking = {
     hostName = "${host}";
-
-    # IPv6 bazı ağlarda ilk el sıkışmaları bozabiliyor; stabil sonrası açılabilir.
+    
+    # IPv6 disabled (can cause handshake issues on some networks)
     enableIPv6 = false;
-
-    # Wi-Fi yönetimini NM’ye bırak
+    
+    # Wi-Fi managed by NetworkManager
     wireless.enable = false;
 
+    # --------------------------------------------------------------------------
+    # NetworkManager Configuration
+    # --------------------------------------------------------------------------
     networkmanager = {
       enable = true;
       wifi = {
         backend = "wpa_supplicant";
-        scanRandMacAddress = true;
-        powersave = false; # stabilite için kapalı (isteğe göre aç)
+        scanRandMacAddress = true;     # Privacy: randomize MAC during scans
+        powersave = false;             # Stability over power saving
       };
-      dns = "systemd-resolved"; # DNS’i resolved’a devret
+      dns = "systemd-resolved";        # Delegate DNS to resolved
     };
 
-    # Mullvad’ın WireGuard tüneli için kernel modülü
+    # WireGuard kernel module for VPN tunnels
     wireguard.enable = true;
 
-    # VPN açık/kapalıya göre isim sunucuları
-    # Mullvad AÇIKKEN statik nameserver YAZMIYORUZ → Mullvad kendi DNS’ini verir.
+    # --------------------------------------------------------------------------
+    # DNS Configuration
+    # --------------------------------------------------------------------------
+    # When Mullvad is active, it provides its own DNS
+    # Otherwise, use privacy-focused public DNS
+    
     nameservers = mkMerge [
       (mkIf (!hasMullvad) [
-        "1.1.1.1"
-        "1.0.0.1"
-        "9.9.9.9"
+        "1.1.1.1"    # Cloudflare
+        "1.0.0.1"    # Cloudflare backup
+        "9.9.9.9"    # Quad9
       ])
-      (mkIf hasMullvad [ ])
+      (mkIf hasMullvad [ ])  # Empty when Mullvad is active
     ];
 
-    # Firewall’u burada sadece açıyoruz; kurallar security/default.nix’te.
+    # Firewall enabled here, rules in security/default.nix
     firewall.enable = true;
   };
 
-  ##############################################################################
-  # Services
-  ##############################################################################
+  # ============================================================================
+  # System Services
+  # ============================================================================
+  
   services = {
-    # Modern DNS çözümleyici (VPN dostu)
+    # --------------------------------------------------------------------------
+    # systemd-resolved - Modern DNS Resolver
+    # --------------------------------------------------------------------------
     resolved = {
       enable = true;
-      dnssec = "allow-downgrade"; # uyumluluk
+      dnssec = "allow-downgrade";     # Compatibility mode
       extraConfig = ''
-        # Yerel multicast ve LLMNR kapalı (gerekmiyorsa kapatmak iyi pratik)
+        # Disable local multicast protocols (security)
         LLMNR=no
         MulticastDNS=no
-        # Önbellek açık, stub listener açık
+        
+        # Enable caching and stub listener
         Cache=yes
         DNSStubListener=yes
-        # Mullvad tünel içi DNS'te DoT gereksiz; çakışmayı önlemek için kapalı
+        
+        # No DoT when using VPN (prevents conflicts)
         DNSOverTLS=no
-        # resolved'ı varsayılan olarak işaretle
+        
+        # Mark as default resolver
         Domains=~.
       '';
     };
 
-    # Mullvad daemon + GUI
+    # --------------------------------------------------------------------------
+    # Mullvad VPN
+    # --------------------------------------------------------------------------
     mullvad-vpn = {
       enable = true;
       package = pkgs.mullvad-vpn;
     };
   };
 
-  ##############################################################################
-  # Ağ hazır bekleme (boot takozunu azaltmak için kapalı)
-  ##############################################################################
+  # ============================================================================
+  # Systemd Services
+  # ============================================================================
+  
+  # Disable network-wait to reduce boot time
   systemd.services."NetworkManager-wait-online".enable = false;
 
-  ##############################################################################
-  # Mullvad otomatizasyonu (race fix, socket polling)
-  ##############################################################################
+  # --------------------------------------------------------------------------
+  # Mullvad Auto-connect Service
+  # --------------------------------------------------------------------------
+  # Waits for daemon socket and configures VPN with safe defaults
+  
   systemd.services."mullvad-autoconnect" = {
     description = "Configure and connect Mullvad once daemon socket is ready";
     wantedBy = [ "multi-user.target" ];
-    # network-online yerine daha erken: NM ve daemon geldikten sonra çalışır.
     after = [ "network.target" "NetworkManager.service" "mullvad-daemon.service" ];
     requires = [ "mullvad-daemon.service" ];
     wants = [ "NetworkManager.service" ];
+    
     serviceConfig = {
       Type = "oneshot";
+      RemainAfterExit = true;
       ExecStart = lib.getExe (pkgs.writeShellScriptBin "mullvad-autoconnect" ''
         set -euo pipefail
 
         CLI="${pkgs.mullvad-vpn}/bin/mullvad"
 
-        # Daemon soketi hazır olana kadar bekle (max 30s)
+        # Wait for daemon socket (max 30s)
         tries=0
         until "$CLI" status >/dev/null 2>&1; do
           tries=$((tries+1))
@@ -170,12 +206,12 @@ in
           sleep 1
         done
 
-        # Güvenli varsayılanlar
+        # Configure safe defaults
         "$CLI" auto-connect set on || true
         "$CLI" dns set default --block-ads --block-trackers || true
         "$CLI" relay set location any || true
 
-        # Bağlantı denemeleri (3 kez)
+        # Try connecting (3 attempts)
         for i in 1 2 3; do
           if "$CLI" connect; then
             exit 0
@@ -183,133 +219,24 @@ in
           sleep 2
         done
 
-        # Olmadıysa, protokol/konumu gevşetip tekrar dene (isteğe bağlı)
-        # "$CLI" relay set tunnel-protocol any || true
-        # "$CLI" relay set location any || true
+        # Final attempt with relaxed settings
         "$CLI" connect || true
-
         exit 0
       '');
-      RemainAfterExit = true;
     };
   };
 
-  ##############################################################################
-  # TCP/IP STACK — Sabit ve dinamik ayarlar (eski tcp/default.nix birleşti)
-  ##############################################################################
-  boot.kernel.sysctl = {
-    # Kuyruk & tıkanıklık kontrolü
-    "net.core.default_qdisc" = "fq";   # pacing için iyi; Wi-Fi’da BBR ile uyumlu
-    "net.ipv4.tcp_congestion_control" = "bbr";
-
-    # Ephemeral port aralığı (yoğun client iş yükleri için)
-    "net.ipv4.ip_local_port_range" = "1024 65535";
-
-    # Varsayılan buffer tavanları (std profil — high profil boot’ta override eder)
-    "net.core.rmem_max"     = mkDefault std.rmem_max;
-    "net.core.rmem_default" = mkDefault std.rmem_default;
-    "net.core.wmem_max"     = mkDefault std.wmem_max;
-    "net.core.wmem_default" = mkDefault std.wmem_default;
-
-    # Aygıt backlog / scheduler bütçeleri
-    "net.core.netdev_max_backlog" = mkDefault std.netdev_max_backlog;
-    "net.core.netdev_budget"      = 300;
-    # Ağ yoğunluğunda latency’i yumuşatır (opsiyonel iyileştirme)
-    "net.core.netdev_budget_usecs" = 8000;
-
-    # listen() backlog
-    "net.core.somaxconn" = mkDefault std.somaxconn;
-
-    # eBPF JIT hardening
-    "net.core.bpf_jit_enable" = 1;
-    "net.core.bpf_jit_harden" = 1;  # 1: hardened, 2: ek maliyetli
-
-    # TCP Fast Open (client + server)
-    "net.ipv4.tcp_fastopen" = 3;
-
-    # TCP/UDP pencereleri & memory pressure
-    "net.ipv4.tcp_rmem" = mkDefault std.rmem;
-    "net.ipv4.tcp_wmem" = mkDefault std.wmem;
-    "net.ipv4.tcp_mem"  = mkDefault std.tcp_mem;
-    "net.ipv4.udp_mem"  = mkDefault std.udp_mem;
-
-    # Seçmeli ACK
-    "net.ipv4.tcp_dsack" = 1;
-
-    # Gecikme/throughput dengesi:
-    "net.ipv4.tcp_slow_start_after_idle" = 0;
-    "net.ipv4.tcp_moderate_rcvbuf"       = 1;
-
-    # Not-sent low water mark (büyük app bufferlarını sınırla)
-    "net.ipv4.tcp_notsent_lowat" = 16384;
-
-    # Path MTU probing
-    "net.ipv4.tcp_mtu_probing" = 1;
-    # Sürekli MTU/MSS problemi varsa aç (tünellerde):
-    # "net.ipv4.tcp_base_mss"    = 1200;
-
-    # Keepalive / FIN / TW
-    "net.ipv4.tcp_keepalive_time"   = 300;
-    "net.ipv4.tcp_keepalive_intvl"  = 30;
-    "net.ipv4.tcp_keepalive_probes" = 3;
-    "net.ipv4.tcp_fin_timeout"      = 30;
-    "net.ipv4.tcp_max_tw_buckets"   = mkDefault std.tcp_max_tw_buckets;
-
-    # Retrans & SYN
-    "net.ipv4.tcp_retries2"       = 8;
-    "net.ipv4.tcp_syn_retries"    = 3;
-    "net.ipv4.tcp_synack_retries" = 3;
-
-    # SYN/backlog korumaları
-    "net.ipv4.tcp_syncookies"      = 1;
-    "net.ipv4.tcp_max_syn_backlog" = mkDefault std.tcp_max_syn_backlog;
-
-    # Reordering toleransı
-    "net.ipv4.tcp_reordering" = 3;
-
-    # ECN + fallback
-    "net.ipv4.tcp_ecn"          = 1;
-    "net.ipv4.tcp_ecn_fallback" = 1;
-
-    # FRTO & RFC1337
-    "net.ipv4.tcp_frto"    = 2;
-    "net.ipv4.tcp_rfc1337" = 1;
-
-    # rp_filter loose (VPN/tether dostu)
-    "net.ipv4.conf.all.rp_filter"     = 2;
-    "net.ipv4.conf.default.rp_filter" = 2;
-
-    # ICMP redirects/source routes kapalı (hardening)
-    "net.ipv4.conf.all.accept_redirects"     = 0;
-    "net.ipv4.conf.default.accept_redirects" = 0;
-    "net.ipv4.conf.all.secure_redirects"     = 0;
-    "net.ipv4.conf.default.secure_redirects" = 0;
-    "net.ipv4.conf.all.send_redirects"       = 0;
-    "net.ipv4.conf.all.accept_source_route"     = 0;
-    "net.ipv4.conf.default.accept_source_route" = 0;
-    "net.ipv4.icmp_echo_ignore_broadcasts"      = 1;
-    "net.ipv4.icmp_ignore_bogus_error_responses"= 1;
-
-    # IPv6 hardening
-    "net.ipv6.conf.all.accept_redirects"     = 0;
-    "net.ipv6.conf.default.accept_redirects" = 0;
-    "net.ipv6.conf.all.accept_source_route"  = 0;
-
-    # Conntrack (firewall varsa anlamlı)
-    "net.netfilter.nf_conntrack_max"                         = mkDefault std.conntrack_max;
-    "net.netfilter.nf_conntrack_tcp_timeout_established"     = 432000;  # 5 gün
-    "net.netfilter.nf_conntrack_tcp_timeout_time_wait"       = 30;
-    "net.netfilter.nf_conntrack_tcp_timeout_fin_wait"        = 30;
-    "net.netfilter.nf_conntrack_generic_timeout"             = 600;
-  };
-
-  # RAM’e göre dinamik tavanlar (>=32GB ise high profil uygulansın)
+  # --------------------------------------------------------------------------
+  # Dynamic TCP Tuning Service
+  # --------------------------------------------------------------------------
+  # Applies high-performance settings on systems with >=32GB RAM
+  
   systemd.services.dynamic-tcp-tuning = {
     description = "Apply dynamic TCP tuning based on total system memory";
     wantedBy = [ "multi-user.target" ];
-    # Ağ servislerinden ÖNCE çalışsın
     after  = [ "sysinit.target" ];
     before = [ "NetworkManager.service" "mullvad-daemon.service" ];
+    
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -347,8 +274,137 @@ in
     };
   };
 
-  # Teşhis yardımcıları
+  # ============================================================================
+  # TCP/IP Stack Kernel Parameters
+  # ============================================================================
+  
+  boot.kernel.sysctl = {
+    # --------------------------------------------------------------------------
+    # Queue Management & Congestion Control
+    # --------------------------------------------------------------------------
+    "net.core.default_qdisc" = "fq";              # Fair queuing for pacing
+    "net.ipv4.tcp_congestion_control" = "bbr";    # BBR congestion control
+
+    # Ephemeral port range (for high client workloads)
+    "net.ipv4.ip_local_port_range" = "1024 65535";
+
+    # --------------------------------------------------------------------------
+    # Buffer Defaults (overridden by dynamic tuning if >=32GB RAM)
+    # --------------------------------------------------------------------------
+    "net.core.rmem_max"     = mkDefault std.rmem_max;
+    "net.core.rmem_default" = mkDefault std.rmem_default;
+    "net.core.wmem_max"     = mkDefault std.wmem_max;
+    "net.core.wmem_default" = mkDefault std.wmem_default;
+
+    # --------------------------------------------------------------------------
+    # Network Device Settings
+    # --------------------------------------------------------------------------
+    "net.core.netdev_max_backlog" = mkDefault std.netdev_max_backlog;
+    "net.core.netdev_budget"      = 300;
+    "net.core.netdev_budget_usecs" = 8000;        # Smooths latency under load
+
+    # Listen backlog
+    "net.core.somaxconn" = mkDefault std.somaxconn;
+
+    # --------------------------------------------------------------------------
+    # Security & Performance
+    # --------------------------------------------------------------------------
+    # eBPF JIT hardening
+    "net.core.bpf_jit_enable" = 1;
+    "net.core.bpf_jit_harden" = 1;
+
+    # TCP Fast Open (client + server)
+    "net.ipv4.tcp_fastopen" = 3;
+
+    # --------------------------------------------------------------------------
+    # TCP/UDP Memory Management
+    # --------------------------------------------------------------------------
+    "net.ipv4.tcp_rmem" = mkDefault std.rmem;
+    "net.ipv4.tcp_wmem" = mkDefault std.wmem;
+    "net.ipv4.tcp_mem"  = mkDefault std.tcp_mem;
+    "net.ipv4.udp_mem"  = mkDefault std.udp_mem;
+
+    # --------------------------------------------------------------------------
+    # TCP Features & Optimizations
+    # --------------------------------------------------------------------------
+    "net.ipv4.tcp_dsack" = 1;                     # Selective ACK
+    "net.ipv4.tcp_slow_start_after_idle" = 0;     # Keep cwnd after idle
+    "net.ipv4.tcp_moderate_rcvbuf"       = 1;     # Auto-tune receive buffer
+    "net.ipv4.tcp_notsent_lowat" = 16384;         # Limit app buffer bloat
+    
+    # Path MTU discovery
+    "net.ipv4.tcp_mtu_probing" = 1;
+    # Enable if tunnels cause MTU issues:
+    # "net.ipv4.tcp_base_mss" = 1200;
+
+    # --------------------------------------------------------------------------
+    # Connection Management
+    # --------------------------------------------------------------------------
+    "net.ipv4.tcp_keepalive_time"   = 300;
+    "net.ipv4.tcp_keepalive_intvl"  = 30;
+    "net.ipv4.tcp_keepalive_probes" = 3;
+    "net.ipv4.tcp_fin_timeout"      = 30;
+    "net.ipv4.tcp_max_tw_buckets"   = mkDefault std.tcp_max_tw_buckets;
+
+    # Retransmission settings
+    "net.ipv4.tcp_retries2"       = 8;
+    "net.ipv4.tcp_syn_retries"    = 3;
+    "net.ipv4.tcp_synack_retries" = 3;
+
+    # SYN flood protection
+    "net.ipv4.tcp_syncookies"      = 1;
+    "net.ipv4.tcp_max_syn_backlog" = mkDefault std.tcp_max_syn_backlog;
+
+    # Packet reordering tolerance
+    "net.ipv4.tcp_reordering" = 3;
+
+    # ECN support with fallback
+    "net.ipv4.tcp_ecn"          = 1;
+    "net.ipv4.tcp_ecn_fallback" = 1;
+
+    # F-RTO & RFC1337
+    "net.ipv4.tcp_frto"    = 2;
+    "net.ipv4.tcp_rfc1337" = 1;
+
+    # --------------------------------------------------------------------------
+    # IP Security Hardening
+    # --------------------------------------------------------------------------
+    # Reverse path filtering (loose mode for VPN/tethering)
+    "net.ipv4.conf.all.rp_filter"     = 2;
+    "net.ipv4.conf.default.rp_filter" = 2;
+
+    # Disable ICMP redirects and source routing
+    "net.ipv4.conf.all.accept_redirects"     = 0;
+    "net.ipv4.conf.default.accept_redirects" = 0;
+    "net.ipv4.conf.all.secure_redirects"     = 0;
+    "net.ipv4.conf.default.secure_redirects" = 0;
+    "net.ipv4.conf.all.send_redirects"       = 0;
+    "net.ipv4.conf.all.accept_source_route"     = 0;
+    "net.ipv4.conf.default.accept_source_route" = 0;
+    "net.ipv4.icmp_echo_ignore_broadcasts"      = 1;
+    "net.ipv4.icmp_ignore_bogus_error_responses"= 1;
+
+    # IPv6 hardening
+    "net.ipv6.conf.all.accept_redirects"     = 0;
+    "net.ipv6.conf.default.accept_redirects" = 0;
+    "net.ipv6.conf.all.accept_source_route"  = 0;
+
+    # --------------------------------------------------------------------------
+    # Connection Tracking (Netfilter)
+    # --------------------------------------------------------------------------
+    "net.netfilter.nf_conntrack_max"                     = mkDefault std.conntrack_max;
+    "net.netfilter.nf_conntrack_tcp_timeout_established" = 432000;  # 5 days
+    "net.netfilter.nf_conntrack_tcp_timeout_time_wait"   = 30;
+    "net.netfilter.nf_conntrack_tcp_timeout_fin_wait"    = 30;
+    "net.netfilter.nf_conntrack_generic_timeout"         = 600;
+  };
+
+  # ============================================================================
+  # Diagnostic Tools & Utilities
+  # ============================================================================
+  
   environment.systemPackages = with pkgs; [
+    # TCP/IP stack status reporter
     (writeScriptBin "tcp-status" ''
       #!${pkgs.bash}/bin/bash
       set -euo pipefail
@@ -392,28 +448,29 @@ in
     '')
   ];
 
-  ##############################################################################
-  # Shell alias’lar
-  ##############################################################################
+  # ============================================================================
+  # Shell Aliases
+  # ============================================================================
+  
   environment.shellAliases = {
-    # WiFi
-    wifi-list = "nmcli device wifi list";
-    wifi-connect = "nmcli device wifi connect";
+    # WiFi management
+    wifi-list       = "nmcli device wifi list";
+    wifi-connect    = "nmcli device wifi connect";
     wifi-disconnect = "nmcli connection down";
-    wifi-saved = "nmcli connection show";
+    wifi-saved      = "nmcli connection show";
 
-    # Ağ
-    net-status = "nmcli general status";
+    # Network status
+    net-status      = "nmcli general status";
     net-connections = "nmcli connection show --active";
 
-    # VPN
-    vpn-status = "mullvad status";
-    vpn-connect = "mullvad connect";
-    vpn-disconnect = "mullvad disconnect";
-    vpn-relay = "mullvad relay list";
+    # VPN controls
+    vpn-status      = "mullvad status";
+    vpn-connect     = "mullvad connect";
+    vpn-disconnect  = "mullvad disconnect";
+    vpn-relay       = "mullvad relay list";
 
-    # DNS
-    dns-test = "resolvectl status";
-    dns-leak = "curl -s https://mullvad.net/en/check | sed -n '1,120p'";
+    # DNS diagnostics
+    dns-test        = "resolvectl status";
+    dns-leak        = "curl -s https://mullvad.net/en/check | sed -n '1,120p'";
   };
 }
