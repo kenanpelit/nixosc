@@ -1,145 +1,164 @@
 # modules/core/display/default.nix
 # ==============================================================================
-# AMAÇ (Neden tek dosya?):
-# - Masaüstüyle ilgili **dağıtık** ayarları (görüntü, portal, font, ses) tek
-#   yerde toplamak; böylece “nerede ne vardı?” araması bitti.
-# - GNOME (GDM+Wayland) ve Hyprland’i **yan yana** kullanırken tipik çakışmaları
-#   (özellikle XDG portal ve font/emoji sorunları) **baştan önlemek**.
+# Display & Desktop Environment Module
+# ==============================================================================
 #
-# TASARIM İLKELERİ:
-# 1) **Hyprland öncelikli portal**: Hyprland oturumunda hyprland portalı aktif,
-#    ortak durumlarda GTK portal varsayılan. Böylece `xdg-open` ve ekran paylaşımı
-#    gibi çağrılar doğru backend’e gider (Wayland ekran paylaşımı için kritik).
-# 2) **Xorg açık ama “uyumluluk için”**: GNOME + Hyprland Wayland’la çalışır;
-#    Xorg sadece “bazı uygulamalar” için fallback’tir (NixOS dünyasında olağan).
-# 3) **PipeWire merkezi ses yığını**: ALSA/Pulse uyumluluğu PipeWire üzerinden
-#    sağlanır; JACK devre dışı (ihtiyaç varsa açarsın). `rtkit` güvenlik modülünde
-#    aktif olduğundan gecikme/öncelikler düzgün çalışır.
-# 4) **Fontconfig “temkinli”**: Uygulamalara sans/serif seçimini bırakıp,
-#    **monospace** ve **emoji** tarafını net şekilde yönetiyoruz. `localConf` yok,
-#    çünkü Mako bildirimlerinde emoji’lerle çakışma yaşanmıştı (kanıtlı).
-# 5) **Yorumlar canlı belge**: Her bloğun “NEDEN/NASIL” açıklaması var; bakıp
-#    hızlıca karar verebilirsin (örn. JACK açma, portal değiştirme vb.)
-#
-# KAYNAK ÇAKIŞMALARINI ÖNLEME:
-# - Hyprland portalı **programs.hyprland.portalPackage** ile verildi; ayrıca
-#   `extraPortals`’a eklemedik (çifte kayıt ve rasgele seçim olmasın).
-# - GNOME keyring ve libinput burada; PAM/Güvenlik ayarları **security** modülünde.
-# - Font env değişkenleri hem sistem hem HM katmanında **aynı** (debug kolaylığı).
-#
-# SONUÇ:
-# - “display + fonts + xdg + audio” üç farklı dosya yerine **tek modül**.
-# - `modules/core/default.nix` içinden `./fonts`, `./xdg`, `./audio` import’larını
-#   kaldır; **sadece `./display`** kalsın.
-#
+# Module: modules/core/display
 # Author: Kenan Pelit
-# Last merged: 2025-09-03
+# Date:   2025-09-03
+#
+# Purpose: Unified management of display, audio, fonts, and desktop portals
+# 
+# Why Single File?
+#   - Consolidates scattered desktop settings (display, portal, fonts, audio)
+#   - Eliminates "where was that setting?" searches
+#   - Prevents common conflicts when running GNOME + Hyprland side-by-side
+#
+# Design Principles:
+#
+#   1. Hyprland-First Portal Strategy
+#      - Hyprland portal active in Hyprland sessions
+#      - GTK portal as fallback for common cases
+#      - Ensures xdg-open and screen sharing use correct backend
+#
+#   2. Xorg Compatibility Layer
+#      - GNOME + Hyprland primarily use Wayland
+#      - Xorg enabled only as fallback for legacy applications
+#
+#   3. PipeWire Central Audio Stack
+#      - ALSA/Pulse compatibility through PipeWire
+#      - JACK disabled by default (enable if needed)
+#      - rtkit in security module handles latency/priorities
+#
+#   4. Conservative Fontconfig
+#      - Let apps choose their sans/serif preferences
+#      - Explicitly manage monospace and emoji fonts
+#      - No localConf to avoid Mako emoji conflicts
+#
+#   5. Living Documentation
+#      - Each block has WHY/HOW explanations
+#      - Quick decision support (e.g., enabling JACK, changing portals)
+#
+# Conflict Prevention:
+#   - Hyprland portal via programs.hyprland.portalPackage (no duplication)
+#   - GNOME keyring here; PAM/Security in security module
+#   - Font env vars identical in system and home-manager layers
+#
+# Module Consolidation:
+#   - Replaces: ./fonts, ./xdg, ./audio modules
+#   - Single import: ./display in modules/core/default.nix
+#
 # ==============================================================================
 
 { username, inputs, pkgs, lib, ... }:
+
 let
-  # Hyprland paketleri (flake input'undan). Neden input?
-  # - Sistemdeki hyprland versiyonunu kilitlemek, portal eşleşmesini garanti etmek.
+  # Hyprland packages from flake input
+  # Locked versions ensure portal compatibility
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.default;
   hyprPortal  = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
 in
 {
-  # =============================================================================
-  # WAYLAND COMPOSITOR — HYPRLAND
-  # =============================================================================
-  # NEDEN: Hyprland modern bir Wayland compositor. GNOME ile birlikte kurulduğunda,
-  # portal önceliklerinin doğru yönlenmesi (özellikle ekran paylaşımı ve xdg-open)
-  # kritik hale gelir. Burada portal paketi doğrudan Hyprland tarafında tanımlı.
+  # ============================================================================
+  # Wayland Compositor - Hyprland
+  # ============================================================================
+  # Modern Wayland compositor with proper portal integration.
+  # Critical for screen sharing and xdg-open when running alongside GNOME.
+  
   programs.hyprland = {
     enable = true;
     package = hyprlandPkg;
-    portalPackage = hyprPortal;  # HYPRLAND PORTALI BURADA — extraPortals’a da koyma.
+    portalPackage = hyprPortal;  # Portal defined HERE - don't add to extraPortals
   };
 
-  # =============================================================================
-  # GÖRÜNTÜ YIĞINI + DM/DE + GİRİŞ CİHAZLARI + KEYRING
-  # =============================================================================
-  # NEDEN: GNOME (DE) ve GDM (DM) Wayland’da sorunsuz; Xorg uyumluluk için açık.
-  # libinput genel giriş cihazı sürücüsü. GNOME Keyring oturum gizli anahtarları
-  # için standart (SSH/GPG entegrasyonlarıyla uyumlu).
+  # ============================================================================
+  # Display Stack Configuration
+  # ============================================================================
+  
   services = {
-    # Xorg (fallback)
+    # --------------------------------------------------------------------------
+    # X11 Server (Legacy Compatibility)
+    # --------------------------------------------------------------------------
     xserver = {
       enable = true;
       xkb = {
-        layout = "tr";        # Tutarlılık için masaüstü ve konsol aynı harita
-        variant = "f";        # TR-F
-        options = "ctrl:nocaps";  # Caps'i Control yap — kas hafızası için ideal
+        layout = "tr";              # Turkish layout
+        variant = "f";              # TR-F variant
+        options = "ctrl:nocaps";    # Caps Lock → Control (ergonomics)
       };
     };
 
-    # Display Manager (GDM) — Wayland açık
+    # --------------------------------------------------------------------------
+    # Display Manager - GDM with Wayland
+    # --------------------------------------------------------------------------
     displayManager = {
       gdm = {
         enable = true;
-        wayland = true;       # GNOME + Wayland birincil
+        wayland = true;             # Wayland-first approach
       };
-      autoLogin.enable = false; # Güvenlik için otomatik giriş kapalı (isteğe bağlı)
+      autoLogin.enable = false;     # Security: no auto-login
     };
 
-    # Masaüstü ortamı: GNOME (Wayland)
+    # --------------------------------------------------------------------------
+    # Desktop Environment - GNOME
+    # --------------------------------------------------------------------------
     desktopManager.gnome.enable = true;
 
-    # Giriş cihazları (touchpad/klavye/scroll vs.)
-    libinput.enable = true;
+    # --------------------------------------------------------------------------
+    # Input Management
+    # --------------------------------------------------------------------------
+    libinput.enable = true;         # Modern input device handling
 
-    # Oturum anahtarlığı/kimlik kasası
-    gnome.gnome-keyring.enable = true;
+    # --------------------------------------------------------------------------
+    # Session Security - Keyring
+    # --------------------------------------------------------------------------
+    gnome.gnome-keyring.enable = true;  # Session secrets management
 
-    # -----------------------------------------------------------------------------
-    # SES YIĞINI — PIPEWIRE
-    # -----------------------------------------------------------------------------
-    # NEDEN: PipeWire modern ses/video yöneticisi; PulseAudio/ALSA ile uyumlu.
-    # JACK devre dışı (gerektikçe aç), aksi takdirde stüdyo dışı kullanımda
-    # karmaşıklık katar. rtkit security modülünde açık → düşük gecikme/öncelik.
+    # --------------------------------------------------------------------------
+    # Audio Stack - PipeWire
+    # --------------------------------------------------------------------------
+    # Modern audio/video server with broad compatibility
+    
     pipewire = {
       enable = true;
-
-      # ALSA katmanı (native + 32-bit)
+      
+      # ALSA support (native + 32-bit for games)
       alsa.enable = true;
       alsa.support32Bit = true;
-
-      # PulseAudio uyumluluğu
+      
+      # PulseAudio compatibility layer
       pulse.enable = true;
-
-      # Stüdyo amaçlı değilse JACK kapalı; DAW kullanıyorsan true yap.
+      
+      # JACK disabled (enable for DAW/studio use)
       jack.enable = false;
     };
   };
 
-  # =============================================================================
-  # XDG PORTALS — “Doğru Uygulama, Doğru Portal”
-  # =============================================================================
-  # NEDEN: xdg-desktop-portal, uygulamaların (Flatpak/native) ekran paylaşımı,
-  # dosya seçimi, dış link açma gibi işleri “oturuma uygun” arka uçla yapmasını
-  # sağlar. Hyprland oturumunda hyprland portalı, diğer durumda GTK varsayılan.
+  # ============================================================================
+  # XDG Desktop Portals
+  # ============================================================================
+  # Portal routing ensures applications use the correct backend for
+  # screen sharing, file selection, and external link handling.
+  
   xdg.portal = {
     enable = true;
-    xdgOpenUsePortal = true; # `xdg-open` → portal üzerinden aç (Wayland’da güvenli)
+    xdgOpenUsePortal = true;  # Route xdg-open through portal (Wayland-safe)
 
-    # Varsayılanlar: hyprland oturumunda "hyprland" portalı devreye girer.
+    # Portal priority configuration
     config = {
       common.default = [ "gtk" ];
-      hyprland.default = [ "gtk" "hyprland" ];
+      hyprland.default = [ "gtk" "hyprland" ];  # Hyprland session uses both
     };
 
-    # Hyprland portalını **programs.hyprland.portalPackage** sağlıyor.
-    # Buraya sadece GTK portalını ekliyoruz.
-    extraPortals = [
-      pkgs.xdg-desktop-portal-gtk
-    ];
+    # Only GTK portal here (Hyprland portal provided by programs.hyprland)
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
-  # =============================================================================
-  # GNOME WAYLAND SESSION DOSYALARI — LAUNCHER/SESSION TANIMLARI
-  # =============================================================================
-  # NEDEN: Bazı kurulumlarda GNOME Wayland session dosyalarını açıkça koymak
-  # oturum seçicide tutarlılık sağlar (özellikle custom DM/kurulum varyantlarında).
+  # ============================================================================
+  # GNOME Wayland Session Files
+  # ============================================================================
+  # Explicit session definitions for consistency across different DM setups
+  
   environment.etc = {
     "wayland-sessions/gnome.desktop".text = ''
       [Desktop Entry]
@@ -157,16 +176,14 @@ in
     '';
   };
 
-  # =============================================================================
-  # FONTLAR (Sistem) — “Önce Monospace & Emoji” Stratejisi
-  # =============================================================================
-  # NEDEN: Uygulamaların çoğu kendi sans/serif tercihleriyle geliyor. Biz
-  # monospace ve emoji’yi garanti altına alıp, geniş kapsayıcı paketlerle
-  # (Noto + CJK + Emoji) “her karakter görünsün” hedefliyoruz. Mako testleri
-  # maplenf/hack/emoji kombinasyonunun sorunsuz olduğunu doğruladı.
+  # ============================================================================
+  # Font Configuration
+  # ============================================================================
+  # Strategy: Monospace & Emoji first, comprehensive Unicode coverage
+  
   fonts = {
     packages = with pkgs; [
-      # ÇEKİRDEK (Mako ile test edildi)
+      # Core fonts (tested with Mako notifications)
       maple-mono.NF
       nerd-fonts.hack
       noto-fonts
@@ -178,15 +195,15 @@ in
       cascadia-code
       inter
       font-awesome
-
-      # Güvenli genişleme
+      
+      # Extended coverage
       source-code-pro
       dejavu_fonts
       noto-fonts-cjk-serif
       noto-fonts-extra
       material-design-icons
-
-      # Modern favoriler
+      
+      # Modern favorites
       jetbrains-mono
       ubuntu_font_family
       roboto
@@ -194,7 +211,7 @@ in
     ];
 
     fontconfig = {
-      # Varsayılanlar: monospace ve emoji’yi sağlamlaştır, diğerlerini makul tut.
+      # Font priorities by category
       defaultFonts = {
         monospace = [
           "Maple Mono NF"
@@ -210,59 +227,54 @@ in
         sansSerif = [ "Liberation Sans" "Inter" "Noto Sans" "DejaVu Sans" ];
       };
 
-      # Subpixel/LCD filtre — çoğu modern panelde “rgb” en net sonuç verir.
+      # Subpixel rendering for LCD panels
       subpixel = {
         rgba = "rgb";
         lcdfilter = "default";
       };
 
-      # Hinting — “slight” modern ekranlarda güzel denge.
+      # Hinting configuration
       hinting = {
         enable = true;
-        autohint = false;  # Otomatik değil; fontun kendi hint’leri tercih.
-        style = "slight";
+        autohint = false;     # Use font's built-in hints
+        style = "slight";     # Best for modern displays
       };
 
       antialias = true;
-
-      # ÖNEMLİ: localConf kapalı. Mako emoji rendering’ini bozabiliyor. Eğer
-      # XML ile özelleştirme yapman gerekirse, önce Mako testi çalıştır:
-      #  $ mako-emoji-test
-      # ve değişikliği geri almayı kolaylaştıracak şekilde küçük adımlarla ilerle.
-      # localConf = '' ... '';
+      # localConf disabled - can break Mako emoji rendering
     };
 
-    enableDefaultPackages = true; # Nixpkgs varsayılan font ekleri
-    fontDir.enable = true;        # Font dizinlerinin sisteme linklenmesi
+    enableDefaultPackages = true;
+    fontDir.enable = true;
   };
 
-  # =============================================================================
-  # SİSTEM ORTAMI — Fontlar için yararlı env değişkenleri
-  # =============================================================================
-  # NEDEN: Bazı uygulamalar/kitaplıklar explicit env değişkenleri arıyor; debug
-  # ve deterministik davranış için sistemde sabitliyoruz. (HM’de de ayna değerler.)
+  # ============================================================================
+  # System Environment Variables
+  # ============================================================================
+  # Font-related environment variables for consistency and debugging
+  
   environment = {
     variables = {
-      FONTCONFIG_PATH = "/etc/fonts";                    # Sistem fontconf yolu
-      LC_ALL = "en_US.UTF-8";                            # Emoji/çoklu dil güvenliği
-      FREETYPE_PROPERTIES = "truetype:interpreter-version=40"; # Render tutarlılığı
-      FONTCONFIG_FILE = "/etc/fonts/fonts.conf";         # Ana fontconf
+      FONTCONFIG_PATH = "/etc/fonts";
+      LC_ALL = "en_US.UTF-8";
+      FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
+      FONTCONFIG_FILE = "/etc/fonts/fonts.conf";
     };
 
     systemPackages = with pkgs; [
-      fontconfig     # fc-list, fc-match vb.
-      font-manager   # GUI’yle hızlı göz atma
+      fontconfig      # Font utilities (fc-list, fc-match)
+      font-manager    # GUI font browser
     ];
   };
 
-  # =============================================================================
-  # HOME-MANAGER — Kullanıcı tarafı ayarlar/araçlar
-  # =============================================================================
-  # NEDEN: Kullanıcı oturumunda font debug/test ve launcherlarda tutarlılık.
-  # Rofi’de fontu net veriyoruz; terminali kitty olarak işaretliyoruz.
+  # ============================================================================
+  # Home-Manager User Configuration
+  # ============================================================================
+  # User-specific font settings and diagnostic tools
+  
   home-manager.users.${username} = {
     home.stateVersion = "25.11";
-
+    
     fonts.fontconfig.enable = true;
 
     programs.rofi = {
@@ -270,22 +282,23 @@ in
       terminal = "${pkgs.kitty}/bin/kitty";
     };
 
+    # Diagnostic and testing aliases
     home.shellAliases = {
-      # Hızlı teşhis
+      # Quick diagnostics
       "font-list"        = "fc-list";
       "font-emoji"       = "fc-list | grep -i emoji";
       "font-nerd"        = "fc-list | grep -i 'nerd\\|hack\\|maple'";
       "font-maple"       = "fc-list | grep -i maple";
       "font-reload"      = "fc-cache -f -v";
 
-      # Hızlı görsel testler
+      # Visual tests
       "font-test"        = "echo 'Font Test: Hack Nerd Font with ★ ♪ ● ⚡ ▲ symbols and emoji support'";
       "emoji-test"       = "echo '🎵 📱 💬 🔥 ⭐ 🚀 - Color emoji test'";
       "mako-emoji-test"  = "notify-send 'Emoji Test 🚀' 'Mako notification with emojis: 📱 💬 🔥 ⭐ 🎵'";
       "mako-font-test"   = "notify-send 'Font Test' 'Maple Mono NF with symbols: ★ ♪ ● ⚡ ▲'";
-      "mako-icons-test"  = "notify-send 'Icon Test' 'Nerd Font icons:     󰈹 󰍛'";
+      "mako-icons-test"  = "notify-send 'Icon Test' 'Nerd Font icons:     󰈹 󰍛'";
 
-      # Derin teşhis
+      # Deep diagnostics
       "font-info"        = "fc-match -v";
       "font-debug"       = "fc-match -s monospace | head -5";
       "font-mono"        = "fc-list : family | grep -i mono | sort";
@@ -293,20 +306,22 @@ in
       "font-cache-clean" = "fc-cache -f -r -v";
       "font-render-test" = "echo 'Rendering Test: ABCDabcd1234 ★♪●⚡▲ 🚀📱💬'";
       "font-ligature-test" = "echo 'Ligature Test: -> => != === >= <= && || /* */ //'";
-      "font-nerd-icons"  = "echo 'Nerd Icons:     󰈹 󰍛'";
+      "font-nerd-icons"  = "echo 'Nerd Icons:     󰈹 󰍛'";
     };
 
+    # Session variables (mirror system for consistency)
     home.sessionVariables = {
-      # Sistemle aynı; debugging kolaylığı
       LC_ALL = "en_US.UTF-8";
       FONTCONFIG_FILE = "${pkgs.fontconfig.out}/etc/fonts/fonts.conf";
       FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
       FONTCONFIG_PATH = "/etc/fonts:~/.config/fontconfig";
     };
 
+    # Font utilities
     home.packages = with pkgs; [
-      fontpreview
-      gucharmap
+      fontpreview    # Preview fonts quickly
+      gucharmap      # Character map GUI
     ];
   };
 }
+

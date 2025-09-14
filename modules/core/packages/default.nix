@@ -3,155 +3,175 @@
 # System Core Packages Configuration
 # ==============================================================================
 #
-# Sistem seviyesinde gerekli temel paketlerin yapılandırması:
-# - Kritik sistem servisleri ve daemon'lar
-# - Güvenlik ve kimlik doğrulama altyapısı
-# - Donanım yönetimi ve firmware
-# - Kernel modülleri ve sürücüler
-# - Sanallaştırma altyapısı
-# - Sistem kütüphaneleri
-#
-# Bu paketler sistem genelinde kurulur ve tüm kullanıcılar tarafından erişilebilir.
-#
+# Module: modules/core/packages
 # Author: Kenan Pelit
+#
+# Purpose: System-level essential packages for NixOS infrastructure
+#
+# Categories:
+#   - Critical system services and daemons
+#   - Security and authentication infrastructure
+#   - Hardware management and firmware
+#   - Kernel modules and drivers
+#   - Virtualization infrastructure
+#   - System libraries and dependencies
+#
+# Note: These packages are installed system-wide and accessible to all users
+#
 # ==============================================================================
 
 { pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
-    # ==============================================================================
-    # Temel Sistem Araçları ve Kütüphaneler
-    # ==============================================================================
-    # Core System Tools
-    coreutils          # GNU temel araçları (sistem için kritik)
-    procps             # Süreç yönetimi araçları
-    sysstat            # Sistem performans monitörü
-    acl                # Dosya erişim kontrol listeleri
-    lsb-release        # Linux Standard Base bilgisi
-    man-pages          # Sistem manual sayfaları
-    gzip               # Temel sıkıştırma (sistem logları)
-    gnutar             # Arşivleme (sistem yedekleme)
+    # ============================================================================
+    # Core System Utilities
+    # ============================================================================
     
-    # Build Tools (Kernel modülleri için)
-    gcc                # GNU C derleyici
-    gnumake            # Make build sistemi
-    nodejs             # Node.js runtime 
+    # Essential GNU/Linux Tools
+    coreutils                    # GNU core utilities (critical for system)
+    procps                       # Process management tools
+    sysstat                      # System performance monitoring
+    acl                          # File access control lists
+    lsb-release                  # Linux Standard Base information
+    man-pages                    # System manual pages
+    gzip                         # Compression (system logs)
+    gnutar                       # Archiving (system backups)
     
-    # System Libraries
-    libdrm             # Direct Rendering Manager (GPU)
-    libinput           # Input device yönetimi
-    libnotify          # Sistem bildirimleri altyapısı
-    openssl            # SSL/TLS kütüphanesi (sistem servisleri)
+    # Build Essentials (for kernel modules)
+    gcc                          # GNU C compiler
+    gnumake                      # Make build system
+    nodejs                       # Node.js runtime
+    
+    # Core System Libraries
+    libdrm                       # Direct Rendering Manager (GPU interface)
+    libinput                     # Input device management library
+    libnotify                    # System notifications infrastructure
+    openssl                      # SSL/TLS library (system services)
 
-    # ==============================================================================
-    # Boot ve Sistem Yönetimi
-    # ==============================================================================
-    # Boot Management
-    grub2              # GRUB bootloader
-    catppuccin-grub    # GRUB tema dosyaları
+    # ============================================================================
+    # Boot & System Management
+    # ============================================================================
     
-    # System Management
-    home-manager       # Kullanıcı ortam yönetimi
-    dconf              # Sistem yapılandırma veritabanı
-    dconf-editor       # dconf editörü
+    # Boot Infrastructure
+    grub2                        # GRUB bootloader
+    catppuccin-grub             # GRUB theme files
     
-    # Firmware Updates
-    fwupd              # UEFI/BIOS firmware güncellemeleri
+    # System Configuration
+    home-manager                 # User environment management
+    dconf                        # System configuration database
+    dconf-editor                 # GUI for dconf
     
-    # Language Support (Sistem scriptleri için)
-    perl               # Sistem scriptleri
-    perlPackages.FilePath  # File::Path modülü
+    # Firmware Management
+    fwupd                        # UEFI/BIOS firmware updates
+    
+    # Scripting Support
+    perl                         # System scripts runtime
+    perlPackages.FilePath        # File::Path module for scripts
 
-    # ==============================================================================
-    # Sistem Güvenliği ve Şifreleme
-    # ==============================================================================
-    # System Security
-    sops               # Sistem sırları yönetimi
-    gnupg              # GPG şifreleme (paket imzaları)
+    # ============================================================================
+    # Security & Encryption
+    # ============================================================================
     
-    # GNOME Security Services (Sistem servisi olarak)
-    gcr                # Sertifika ve anahtar yönetimi
-    gnome-keyring      # Sistem geneli parola deposu
-    pinentry-gnome3    # GNOME için PIN girişi
+    # Core Security
+    sops                         # Secrets management
+    gnupg                        # GPG encryption (package signatures)
+    
+    # GNOME Security Services
+    gcr                          # Certificate and key management
+    gnome-keyring               # System-wide password store
+    pinentry-gnome3             # PIN entry for GNOME
     
     # Network Security
-    iptables           # Kernel firewall yönetimi
-    hblock             # Host-based ad blocker
+    iptables                     # Kernel firewall management
+    hblock                       # Host-based ad blocker
 
-    # ==============================================================================
-    # Ağ Altyapısı ve Bağlantı
-    # ==============================================================================
+    # ============================================================================
+    # Network Infrastructure
+    # ============================================================================
+    
     # Network Management
-    networkmanagerapplet  # NetworkManager sistem tray
-    iwd                # Intel Wireless Daemon
-    iw                 # Wireless kernel araçları
+    networkmanagerapplet         # NetworkManager system tray
+    iwd                          # Intel Wireless Daemon
+    iw                           # Wireless kernel tools
     
     # Network Services
-    bind               # DNS server araçları
-    openssh            # SSH daemon ve istemci
-    autossh            # Otomatik SSH tünel yönetimi
+    bind                         # DNS server utilities
+    openssh                      # SSH daemon and client
+    autossh                      # Automatic SSH tunnel management
     
-    # System Network Tools
-    impala             # Ağ sorgu motoru
-    socat              # Çok amaçlı relay (sistem servisleri)
-    rsync              # Dosya senkronizasyon (sistem yedekleme)
+    # Network Tools
+    impala                       # Network query engine
+    socat                        # Multipurpose relay for services
+    rsync                        # File synchronization (backups)
 
-    # ==============================================================================
-    # Sanallaştırma ve Container Teknolojileri
-    # ==============================================================================
+    # ============================================================================
+    # Virtualization & Containers
+    # ============================================================================
+    
     # Virtual Machine Management
-    virt-manager       # Libvirt GUI yönetici
-    virt-viewer        # SPICE/VNC görüntüleyici
-    qemu               # QEMU hypervisor
+    virt-manager                 # Libvirt GUI manager
+    virt-viewer                  # SPICE/VNC viewer
+    qemu                         # QEMU hypervisor
     
-    # VM Support Tools
-    spice-gtk          # SPICE protokol desteği
-    win-virtio         # VirtIO Windows sürücüleri
-    win-spice          # SPICE Windows araçları
-    swtpm              # Software TPM emülatörü
+    # VM Support Infrastructure
+    spice-gtk                    # SPICE protocol support
+    win-virtio                   # VirtIO Windows drivers
+    win-spice                    # SPICE Windows tools
+    swtpm                        # Software TPM emulator
     
-    # Container Technology
-    podman             # Container daemon (rootless)
+    # Container Runtime
+    podman                       # Rootless container daemon
 
-    # ==============================================================================
-    # Güç Yönetimi ve Donanım
-    # ==============================================================================
+    # ============================================================================
+    # Power & Thermal Management
+    # ============================================================================
+    
     # Power Management
-    upower             # Güç yönetimi daemon'ı
-    acpi               # ACPI kernel arayüzü
-    powertop           # Intel güç optimizasyonu
-    poweralertd        # Güç olayları daemon'ı
+    upower                       # Power management daemon
+    acpi                         # ACPI kernel interface
+    powertop                     # Intel power optimization
+    poweralertd                  # Power events daemon
     
-    # Thermal Management
-    lm_sensors         # Donanım sensör sürücüleri
-    linuxPackages.turbostat  # Intel Turbo Boost monitör
-    linuxPackages.cpupower   # CPU güç yönetimi (kernel)
-    auto-cpufreq       # CPU frekans daemon'ı
+    # Thermal Control
+    lm_sensors                   # Hardware sensor drivers
+    linuxPackages.turbostat      # Intel Turbo Boost monitor
+    linuxPackages.cpupower       # CPU power management (kernel)
+    auto-cpufreq                 # CPU frequency scaling daemon
     
+    # ============================================================================
     # Hardware Management
-    ddcutil            # DDC/CI monitör kontrolü
-    fwupd              # Firmware güncelleyici
-    android-tools      # ADB/Fastboot (udev kuralları)
-    smartmontools      # Disk S.M.A.R.T. daemon
-    nvme-cli           # NVMe kernel sürücü arayüzü
-    dmidecode          # BIOS/UEFI DMI bilgileri
-    usbutils           # USB bus yönetimi
-    intel-gpu-tools    # Intel GPU kernel araçları
+    # ============================================================================
+    
+    # Display & Graphics
+    ddcutil                      # DDC/CI monitor control
+    intel-gpu-tools              # Intel GPU kernel tools
+    
+    # Storage
+    smartmontools                # Disk S.M.A.R.T. daemon
+    nvme-cli                     # NVMe kernel driver interface
+    
+    # System Information
+    dmidecode                    # BIOS/UEFI DMI information
+    
+    # USB & Peripherals
+    usbutils                     # USB bus management
+    android-tools                # ADB/Fastboot (udev rules)
 
-    # ==============================================================================
-    # Masaüstü Entegrasyonu ve Servisler
-    # ==============================================================================
-    # Desktop Integration Services
-    xdg-utils          # XDG spesifikasyon araçları
-    xdg-desktop-portal # Portal servisi
-    xdg-desktop-portal-gtk # GTK portal backend
+    # ============================================================================
+    # Desktop Integration
+    # ============================================================================
+    
+    # XDG Desktop Standards
+    xdg-utils                    # XDG specification tools
+    xdg-desktop-portal           # Portal service
+    xdg-desktop-portal-gtk       # GTK portal backend
 
-    # ==============================================================================
-    # Sistem Görevleri ve Zamanlama
-    # ==============================================================================
-    at                 # Sistem görev zamanlayıcı
-    logger             # Syslog mesaj gönderici
+    # ============================================================================
+    # System Services & Scheduling
+    # ============================================================================
+    
+    at                           # System task scheduler
+    logger                       # Syslog message sender
   ];
 }
-
