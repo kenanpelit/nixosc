@@ -110,8 +110,9 @@
     # Core Hyprland compositor (pinned to specific commit for stability)
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/adbf7c8663cfbc91fca78d3504fa8f73ce4bd23a"; # 2025-09-13 stable
       # Previous stable: github:hyprwm/hyprland/46174f78b374b6cea669c48880877a8bdcf7802f
+      url = "github:hyprwm/hyprland/559024c3314e4b1180b10b80fce4e9f20bad14c8"; # 0915 - Updated Commits
+#      url = "github:hyprwm/hyprland/adbf7c8663cfbc91fca78d3504fa8f73ce4bd23a"; # 2025-09-13 stable
     };
     
     # Hyprland dependencies and utilities
