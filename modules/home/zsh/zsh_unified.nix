@@ -228,6 +228,110 @@
       ytp-mp4 = "yt-dlp --yes-playlist -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4 -o '%(playlist_index)s-%(title)s.%(ext)s'";
 
       # =============================================================================
+      # Pipe Viewer (YouTube TUI) — Hızlı ve Anlaşılır Kısayollar
+      # =============================================================================
+      pv = "pipe-viewer";                                  # Varsayılan (arama/oynat)
+      pv-help = "pipe-viewer --help";                      # Yardım
+      pv-tricks = "pipe-viewer --tricks";                  # Gizli püf noktaları
+      pv-examples = "pipe-viewer --examples";              # Kullanım örnekleri
+
+      # --- Hızlı Arama / Oynatma ---------------------------------------------------
+      pv-search = "pipe-viewer --search-videos";           # Video ara (varsayılan mod)
+      pv-play = "pipe-viewer --best --player=mpv";         # En iyi kaliteyi mpv ile oynat
+      pv-audio = "pipe-viewer -n -a --audio-quality=best"; # Sadece ses (podcast/müzik)
+      pv-related = "pipe-viewer -rv";                      # İlgili videolar (ID/URL ver)
+      pv-info = "pipe-viewer -i";                          # Video bilgisi (ID/URL ver)
+      pv-comments = "pipe-viewer --comments";              # Yorumları göster (ID/URL ver)
+      pv-comments-new = "pipe-viewer --comments --comments-order=time"; # En yeni yorumlar
+
+      # --- Çözünürlük / Biçim ------------------------------------------------------
+      pv-240 = "pipe-viewer -2";
+      pv-360 = "pipe-viewer -3";
+      pv-480 = "pipe-viewer -4";
+      pv-720 = "pipe-viewer -7";
+      pv-1080 = "pipe-viewer -1";
+      pv-4k = "pipe-viewer --resolution=2160p";            # 4K tercih
+      pv-best = "pipe-viewer --best";                      # En iyi kalite
+      pv-mp4 = "pipe-viewer --prefer-mp4 --ignore-av1";    # MP4’ü ve AVC’yi tercih et
+      pv-av1 = "pipe-viewer --prefer-av1";                 # AV1’i tercih et
+      pv-m4a = "pipe-viewer --prefer-m4a";                 # AAC/M4A sesi tercih et
+      pv-hfr = "pipe-viewer --hfr";                        # Yüksek FPS videolara öncelik
+
+      # --- Filtreler (zaman/süre/sıralama/özellik) --------------------------------
+      pv-short = "pipe-viewer --duration=short";           # Kısa videolar
+      pv-long = "pipe-viewer --duration=long";             # Uzun videolar
+      pv-today = "pipe-viewer --time=today";               # Bugün yayımlananlar
+      pv-week = "pipe-viewer --time=week";                 # Bu hafta
+      pv-month = "pipe-viewer --time=month";               # Bu ay
+      pv-order-new = "pipe-viewer --order=upload_date";    # Yeniden eskiye
+      pv-order-views = "pipe-viewer --order=view_count";   # Görüntülenmeye göre
+      pv-cc = "pipe-viewer --captions";                    # Altyazılı videolar
+      pv-live = "pipe-viewer --live";                      # Canlı yayınlar
+      pv-hdr = "pipe-viewer --hdr";                        # HDR videolar
+      pv-360deg = "pipe-viewer --360";                     # 360° videolar
+      pv-3d = "pipe-viewer --dimension=3d";                # 3D videolar
+
+      # --- Kanal / Çalma Listesi ---------------------------------------------------
+      pv-ch = "pipe-viewer -sc";                           # Kanal ara
+      pv-uploads = "pipe-viewer -uv";                      # Kanal yüklemeleri (kanal adı/ID ver)
+      pv-streams = "pipe-viewer -us";                      # Kanal canlı yayınları
+      pv-shorts = "pipe-viewer --shorts";                  # Kanal shorts listesi
+      pv-pl-search = "pipe-viewer -sp";                    # Çalma listesi ara
+      pv-pl = "pipe-viewer --pid";                         # Belirli playlist’i listele (ID ver)
+      pv-pl-play = "pipe-viewer --pp";                     # Playlist(ler)i oynat (ID(ler) ver)
+
+      # --- Trendler / Bölge --------------------------------------------------------
+      pv-tr = "pipe-viewer --region=TR";                   # Bölgeyi TR olarak ayarla (komuta ekle)
+      pv-trend = "pipe-viewer --trending:popular";         # Trendler (genel)
+      pv-trend-music = "pipe-viewer --trending:music";     # Trend Müzik
+      pv-trend-gaming = "pipe-viewer --trending:gaming";   # Trend Oyun
+      pv-trend-news = "pipe-viewer --trending:news";       # Trend Haber
+      pv-trend-movies = "pipe-viewer --trending:movies";   # Trend Filmler
+
+      # --- Oynatıcı / Davranış -----------------------------------------------------
+      pv-mpv = "pipe-viewer --player=mpv";
+      pv-vlc = "pipe-viewer --player=vlc";
+      pv-fs = "pipe-viewer --fullscreen";                  # Tam ekran
+      pv-shuffle = "pipe-viewer --shuffle";                # Karıştır
+      pv-all = "pipe-viewer --all";                        # Sonuçları sırayla oynat
+      pv-backwards = "pipe-viewer --backwards";            # Ters sırada oynat
+      pv-auto = "pipe-viewer --autoplay";                  # Otomatik bağıl video oynat
+      pv-interactive = "pipe-viewer --interactive";        # Etkileşimli mod (soru sorar)
+
+      # --- İndirme / Dönüştürme ----------------------------------------------------
+      pv-dl = "pipe-viewer -d";                            # İndirme modu
+      pv-dl-mp4 = "pipe-viewer -d --prefer-mp4 --mkv-merge";   # MP4 ağırlıklı, MKV birleştir
+      pv-dl-audio = "pipe-viewer -d -n -a --convert-to=mp3";    # Sadece ses indir → MP3’e çevir
+      pv-dl-skip = "pipe-viewer -d --skip-if-exists";      # Varsa atla
+      pv-dl-subdir = "pipe-viewer -d --dl-in-subdir";      # Alt klasörlere indir
+      pv-dl-name = "pipe-viewer -d --filename='%T - %t.%e'";    # Dosya adı formatı
+      pv-dl-yt = "pipe-viewer --ytdl --ytdl-cmd=yt-dlp";   # yt-dlp kullanarak indir/oynat
+
+      # --- Yerel Kayıtlar / Abonelikler -------------------------------------------
+      pv-favs = "pipe-viewer -F";                          # Favori videoları listele
+      pv-likes = "pipe-viewer -L";                         # Beğenilen videolar
+      pv-dislikes = "pipe-viewer -D";                      # Beğenilmeyen videolar
+      pv-subs = "pipe-viewer -S";                          # Abone olunan kanallar
+      pv-saved = "pipe-viewer -lc";                        # Kaydedilen kanallar
+      pv-playlists = "pipe-viewer -P";                     # Yerel çalma listeleri
+      pv-like = "pipe-viewer --like";                      # Video beğen (URL/ID ekle)
+      pv-dislike = "pipe-viewer --dislike";                # Video beğenme (URL/ID ekle)
+      pv-fav = "pipe-viewer --favorite";                   # Favoriye ekle (URL/ID ekle)
+      pv-save = "pipe-viewer --save";                      # Kanal kaydet (kanal adı/ID ekle)
+      pv-sub = "pipe-viewer --subscribe";                  # Kanala abone ol (ad/ID ekle)
+
+      # --- İnvidious / API / Proxy -------------------------------------------------
+      pv-inv = "pipe-viewer --invidious --api=auto";       # İnvidious ile dene (rasgele instance)
+      pv-api = "pipe-viewer --api";                        # Özel invidious API hostu (ekle)
+      pv-proxy = "pipe-viewer --proxy";                    # Proxy ayarla (ekle: proto://host:port)
+      pv-cookies = "pipe-viewer --cookies";                # Cookies dosyası kullan (ekle: path)
+
+      # --- Sessizlik/Çıkış Biçimi --------------------------------------------------
+      pv-quiet = "pipe-viewer -q";                         # Uyarıları kapat
+      pv-rquiet = "pipe-viewer --really-quiet";            # Tamamen sessiz
+      pv-vinfo = "pipe-viewer --video-info";               # Oynatmadan önce bilgi göster
+
+      # =============================================================================
       # NixOS Management
       # =============================================================================
       osc = "cd ~/.nixosc";
