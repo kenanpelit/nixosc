@@ -158,10 +158,10 @@ in
     
     # Media Processing
     ffmpeg          # Medya dönüştürme araçları
-    gifsicle       # GIF optimizasyon
+    gifsicle        # GIF optimizasyon
     imagemagick     # Resim işleme araçları
     yt-dlp          # YouTube/video indirici
-    
+    pipe-viewer     # A lightweight YouTube client
     # Screenshot Tools
     satty           # Ekran görüntüsü annotasyon
     swappy          # Wayland ekran görüntüsü editörü
@@ -249,7 +249,7 @@ in
     libreoffice      # Ofis paketi
     libqalculate     # Gelişmiş hesap makinesi kütüphanesi
     qalculate-gtk    # Bilimsel hesap makinesi
-    calcurse        # Terminal takvim
+    calcurse         # Terminal takvim
     
     # PDF Tools
     pdftk            # PDF araç seti
