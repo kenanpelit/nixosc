@@ -871,6 +871,174 @@ initContent = ''
       }
 
       # =============================================================================
+      # Pipe Viewer — Akıllı Fonksiyonlar (fallback'lı, Nix-safe)
+      # =============================================================================
+      export PV_CMD="pipe-viewer"
+
+      # pv-tr <kategori> [bölge]
+      # kategori: popular | music | gaming | news | movies
+      pv-tr() {
+        local cat="$1"
+        local region="$2"
+        [ -z "$cat" ] && cat="popular"
+        [ -z "$region" ] && region="TR"
+
+        "$PV_CMD" --invidious --api=auto --trending="$cat" --region="$region" \
+        || "$PV_CMD" --no-invidious --ytdl --trending="$cat" --region="$region"
+      }
+
+      # pv-find "anahtar kelimeler" [ek pipe-viewer argümanları...]
+      pv-find() {
+        if [ -z "$1" ]; then
+          echo "Usage: pv-find \"keywords\" [extra pipe-viewer opts]"; return 1
+        fi
+        local q="$1"; shift
+        "$PV_CMD" --no-invidious --ytdl --search-videos "$q" "$@"
+      }
+
+      # pv-playx [--best | --resolution=720p | ...] "<url|keywords>" [ek opsiyonlar...]
+      # URL ise direkt oynatır; değilse arayıp listeler.
+      pv-playx() {
+        local opts=()
+        while [ -n "$1" ] && printf "%s" "$1" | grep -qE '^--'; do
+          opts+=( "$1" )
+          shift
+        done
+
+        if [ -z "$1" ]; then
+          echo "Usage: pv-playx [--best|--resolution=...] <url|keywords> [extra opts]"; return 1
+        fi
+
+        local input="$1"; shift
+        if printf "%s" "$input" | grep -qE '^https?://|(^| )youtu(\.be|be\.com)'; then
+          "$PV_CMD" --no-invidious --ytdl "''${opts[@]}" "$input" "$@"
+        else
+          "$PV_CMD" --no-invidious --ytdl --search-videos "''${opts[@]}" "$input" "$@"
+        fi
+      }
+
+      # pv-audiox "<url|keywords>" [--audio-quality=best|medium|low]
+      pv-audiox() {
+        if [ -z "$1" ]; then
+          echo "Usage: pv-audiox <url|keywords> [--audio-quality=best|medium|low]"; return 1
+        fi
+        local input="$1"; shift
+        if printf "%s" "$input" | grep -qE '^https?://'; then
+          "$PV_CMD" --no-invidious --ytdl -n -a --audio-quality=best "$input" "$@"
+        else
+          "$PV_CMD" --no-invidious --ytdl -n -a --audio-quality=best --search-videos "$input" "$@"
+        fi
+      }
+
+      # pv-dlx [--dir="..."] [--name="%T - %t.%e"] <url|keywords>
+      # Ör: pv-dlx --dir="$HOME/Videos" --name="%T - %t.%e" "linux news"
+      pv-dlx() {
+        local dldir="."
+        local namefmt="%T - %t.%e"
+        local args=()
+
+        while [ -n "$1" ] && printf "%s" "$1" | grep -qE '^--'; do
+          case "$1" in
+            --dir=*)
+              dldir="$(printf "%s" "$1" | sed 's/^--dir=//')"
+              ;;
+            --name=*)
+              namefmt="$(printf "%s" "$1" | sed 's/^--name=//')"
+              ;;
+            *)
+              args+=( "$1" )
+              ;;
+          esac
+          shift
+        done
+
+        if [ -z "$1" ]; then
+          echo "Usage: pv-dlx [--dir=DIR] [--name=FMT] <url|keywords>"; return 1
+        fi
+
+        local input="$1"; shift
+        mkdir -p "$dldir"
+
+        if printf "%s" "$input" | grep -qE '^https?://'; then
+          "$PV_CMD" --no-invidious --ytdl -d --skip-if-exists --dl-in-subdir \
+            --downloads-dir="$dldir" --filename="$namefmt" "$input" "$@" "''${args[@]}"
+        else
+          "$PV_CMD" --no-invidious --ytdl -d --skip-if-exists --dl-in-subdir \
+            --downloads-dir="$dldir" --filename="$namefmt" --search-videos "$input" "$@" "''${args[@]}"
+        fi
+      }
+
+      # pv-commentsx <id|url> [relevance|time]
+      pv-commentsx() {
+        if [ -z "$1" ]; then
+          echo "Usage: pv-commentsx <video-id|url> [relevance|time]"; return 1
+        fi
+        local target="$1"
+        local order="$2"
+        [ -z "$order" ] && order="relevance"
+
+        "$PV_CMD" --comments="$target" --comments-order="$order" \
+        || "$PV_CMD" --ytdl --comments="$target" --comments-order="$order"
+      }
+
+      # pv-plx list|play <playlist-id>
+      pv-plx() {
+        if [ "$1" != "list" ] && [ "$1" != "play" ]; then
+          echo "Usage: pv-plx list|play <playlist-id>"; return 1
+        fi
+        local mode="$1"; shift
+        local pid="$1"
+
+        if [ -z "$pid" ]; then
+          echo "Missing <playlist-id>"; return 1
+        fi
+
+        if [ "$mode" = "list" ]; then
+          "$PV_CMD" --pid="$pid"
+        else
+          "$PV_CMD" --no-invidious --ytdl --pp="$pid"
+        fi
+      }
+
+      # pv-chx <channel|@handle> uploads|streams|shorts|popular|pstreams|pshorts
+      pv-chx() {
+        if [ -z "$1" ] || [ -z "$2" ]; then
+          echo "Usage: pv-chx <channel> <uploads|streams|shorts|popular|pstreams|pshorts>"; return 1
+        fi
+        local ch="$1"
+        local mode="$2"
+
+        case "$mode" in
+          uploads)   "$PV_CMD" -uv "$ch" ;;
+          streams)   "$PV_CMD" -us "$ch" ;;
+          shorts)    "$PV_CMD" --shorts "$ch" ;;
+          popular)   "$PV_CMD" -pv "$ch" ;;
+          pstreams)  "$PV_CMD" -ps "$ch" ;;
+          pshorts)   "$PV_CMD" --pshorts "$ch" ;;
+          *) echo "Invalid mode: $mode"; return 1 ;;
+        esac
+      }
+
+      # pv-reg <ISO-REGION>  (ör: pv-reg TR)
+      pv-reg() {
+        if [ -z "$1" ]; then
+          echo "Usage: pv-reg <REGION>"; return 1
+        fi
+        local region="$1"
+        "$PV_CMD" --no-invidious --ytdl --trending=popular --region="$region" \
+        || "$PV_CMD" --invidious --api=auto --trending=popular --region="$region"
+      }
+
+      # pv-open ...  → pipe-viewer'a argümanları doğrudan geçir
+      pv-open() {
+        if [ "$#" -eq 0 ]; then
+          "$PV_CMD" --help
+          return 0
+        fi
+        "$PV_CMD" "$@"
+      }
+
+      # =============================================================================
       # File Editing Utility Functions
       # =============================================================================
       # Quick file editor with automatic creation and permissions
