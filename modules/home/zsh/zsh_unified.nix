@@ -230,7 +230,7 @@
       # =============================================================================
       # Pipe Viewer (YouTube TUI) — Hızlı ve Anlaşılır Kısayollar
       # =============================================================================
-      pv = "pipe-viewer";                                  # Varsayılan (arama/oynat)
+      pv-v = "pipe-viewer";                                  # Varsayılan (arama/oynat)
       pv-help = "pipe-viewer --help";                      # Yardım
       pv-tricks = "pipe-viewer --tricks";                  # Gizli püf noktaları
       pv-examples = "pipe-viewer --examples";              # Kullanım örnekleri
