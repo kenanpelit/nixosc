@@ -426,8 +426,10 @@ in
   systemd.services.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
     description = "CPU EPP optimization for performance + thermal balance";
     after = [ "tlp.service" ];
+    wantedBy = [ "multi-user.target" ];  # Timer yerine direkt başlat
     serviceConfig = {
       Type = "oneshot";
+      RemainAfterExit = true;  # Servis aktif kalsın
       ExecStart = pkgs.writeShellScript "cpu-epp-autotune" ''
         #!${pkgs.bash}/bin/bash
         set -euo pipefail
@@ -435,6 +437,7 @@ in
         # Detect CPU model
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu \
           | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
+          | ${pkgs.coreutils}/bin/cut -d: -f2- \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
         
         # Check power source
@@ -448,18 +451,22 @@ in
           if [[ "$ON_AC" == "1" ]]; then
             EPP_ON_AC="balance_performance"  # Balanced, not aggressive
             MIN_PERF=40  # 40% minimum for responsiveness
+            MIN_FREQ=1800000  # 1.8 GHz minimum
           else
             EPP_ON_AC="balance_power"
             MIN_PERF=20
+            MIN_FREQ=1200000  # 1.2 GHz on battery
           fi
         else
           # Other CPUs
           if [[ "$ON_AC" == "1" ]]; then
             EPP_ON_AC="balance_performance"
             MIN_PERF=35
+            MIN_FREQ=1800000
           else
             EPP_ON_AC="balance_power"
             MIN_PERF=15
+            MIN_FREQ=1000000
           fi
         fi
         
@@ -474,19 +481,14 @@ in
           echo "$MIN_PERF" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
         fi
         
-        echo "EPP: Applied EPP='$EPP_ON_AC', min_perf=$MIN_PERF%"
+        # Force minimum frequency on all cores
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/scaling_min_freq" ]] && \
+            echo "$MIN_FREQ" > "$pol/scaling_min_freq" 2>/dev/null || true
+        done
+        
+        echo "EPP: Applied EPP='$EPP_ON_AC', min_perf=$MIN_PERF%, min_freq=$((MIN_FREQ/1000))MHz"
       '';
-    };
-  };
-  
-  # Timer for EPP auto-tuning
-  systemd.timers.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
-    description = "Timer: EPP/min_perf adjustment after TLP";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "30s";
-      Persistent = true;
-      Unit = "cpu-epp-autotune.service";
     };
   };
   
@@ -500,7 +502,7 @@ in
       ExecStart = "${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service";
     };
   };
-
+ 
   # ============================================================================
   # Udev Rules for AC/DC Switching
   # ============================================================================
