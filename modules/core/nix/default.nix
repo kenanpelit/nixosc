@@ -1,61 +1,71 @@
 # modules/core/nix/default.nix
 # ==============================================================================
-# AMAÇ:
-# - Nix daemon, GC/optimizasyon, deneysel özellikler, Nixpkgs ayarları **ve**
-#   binary cache/substituter yapılandırmasını **tek dosyada** toplamak.
+# Nix Daemon & Package Management Configuration
+# ==============================================================================
 #
-# TASARIM NOTLARI:
-# - "Cache" (substituters + public keys) doğrudan `nix.settings` altındadır;
-#   Nix'in gerçek okuma noktası zaten burasıdır. Ayrı modüle gerek yok.
-# - `programs.nh.clean.enable` açık olduğunda, iki ayrı GC zamanlayıcısı
-#   çakışmasın diye `nix.gc.automatic`'i otomatik kapatıyoruz (mkIf ile).
-# - Overlays ve unfree izinleri `nixpkgs` altında net.
-#
-# KAPSAM:
-# - Daemon ayarları (allowed-users/trusted-users, sandboxing, keep-* bayrakları)
-# - GC zamanlama & optimizasyon (nh ile entegre)
-# - Deneysel özellikler (nix-command + flakes)
-# - Nixpkgs config & overlays
-# - Substituters & trusted-public-keys & connect-timeout
-# - NH (Nix Helper) ayarları
-# - Faydalı araçlar (nix-tree)
-#
+# Module: modules/core/nix
 # Author: Kenan Pelit
-# Last merged: 2025-09-03
+# Date:   2025-09-03
+#
+# Purpose: Centralized Nix daemon, GC, caching, and package management config
+#
+# Scope:
+#   - Nix daemon settings (users, sandboxing, store flags)
+#   - Garbage collection & optimization (nh integration)
+#   - Experimental features (nix-command + flakes)
+#   - Nixpkgs configuration & overlays
+#   - Binary caches (substituters & trusted keys)
+#   - NH (Nix Helper) configuration
+#   - Diagnostic tools
+#
+# Design Notes:
+#   - Cache configuration merged here (no separate cache module needed)
+#   - When nh.clean is enabled, nix.gc.automatic disabled to prevent conflicts
+#   - All substituters and keys in one place for easier management
+#
 # ==============================================================================
 
 { config, lib, pkgs, inputs, username, ... }:
+
 {
-  # =============================================================================
-  # NIX DAEMON & STORE AYARLARI
-  # =============================================================================
+  # ============================================================================
+  # Nix Daemon & Store Configuration
+  # ============================================================================
+  
   nix = {
     settings = {
-      # Kullanıcı erişimleri — root ve ana kullanıcı güvenilir olsun
+      # --------------------------------------------------------------------------
+      # User Access Control
+      # --------------------------------------------------------------------------
+      # Root and primary user have full Nix access
+      
       allowed-users = [ "${username}" "root" ];
       trusted-users = [ "${username}" "root" ];
 
-      # Mağaza & sandbox tutarlılığı
-      auto-optimise-store = true;   # dedup & store optimizasyonu
-      keep-outputs       = true;    # output GC koruması
-      keep-derivations   = true;    # drv GC koruması
-      sandbox            = true;    # reproducible build'ler
+      # --------------------------------------------------------------------------
+      # Store Management
+      # --------------------------------------------------------------------------
+      
+      auto-optimise-store = true;    # Deduplication & store optimization
+      keep-outputs       = true;      # Protect outputs from GC
+      keep-derivations   = true;      # Protect .drv files from GC
+      sandbox            = true;      # Enable build sandboxing for reproducibility
 
-      # ------------------------------------------------------------------------
-      # CACHE (ÖNCEKİ modules/core/cache/default.nix BURAYA TAŞINDI)
-      # ------------------------------------------------------------------------
-      # Ağ zaman aşımı (uzak cache'e yavaş bağlanan ağlarda faydalı)
+      # --------------------------------------------------------------------------
+      # Binary Cache Configuration
+      # --------------------------------------------------------------------------
+      # Network timeout for slow connections to remote caches
       connect-timeout = 100;
 
-      # Substituters — binary cache kaynakları
+      # Binary cache sources (in priority order)
       substituters = [
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
-        "https://hyprland.cachix.org"
-        "https://nix-gaming.cachix.org"
+        "https://cache.nixos.org"              # Official NixOS cache
+        "https://nix-community.cachix.org"     # Community packages
+        "https://hyprland.cachix.org"          # Hyprland and related
+        "https://nix-gaming.cachix.org"        # Gaming-related packages
       ];
 
-      # Güvenilen public key'ler (sırasıyle cache kaynaklarına karşılık gelir)
+      # Public keys for cache verification (matches substituters order)
       trusted-public-keys = [
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
@@ -64,58 +74,76 @@
       ];
     };
 
-    # Çöp toplama — nh temizliği açıksa iki kez koşmasın
+    # --------------------------------------------------------------------------
+    # Garbage Collection
+    # --------------------------------------------------------------------------
+    # Automatic GC disabled when NH clean is enabled (prevents double runs)
+    
     gc = {
       automatic = lib.mkIf (!config.programs.nh.clean.enable) true;
       dates     = "weekly";
       options   = "--delete-older-than 30d";
     };
 
-    # Store optimizasyon cron’u
+    # --------------------------------------------------------------------------
+    # Store Optimization
+    # --------------------------------------------------------------------------
+    # Scheduled deduplication for disk space savings
+    
     optimise = {
       automatic = true;
-      dates = [ "03:00" ];
+      dates = [ "03:00" ];    # Run at 3 AM to avoid peak usage
     };
 
-    # Deneysel özellikler — flakes + yeni komut seti
+    # --------------------------------------------------------------------------
+    # Experimental Features
+    # --------------------------------------------------------------------------
+    # Enable flakes and new CLI commands
+    
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
   };
 
-  # =============================================================================
-  # NIXPKGS AYARLARI (unfree + overlays)
-  # =============================================================================
+  # ============================================================================
+  # Nixpkgs Configuration
+  # ============================================================================
+  
   nixpkgs = {
     config = {
-      allowUnfree = true;  # Spotify, Chrome gibi paketler için
+      allowUnfree = true;     # Allow proprietary packages (Spotify, Chrome, etc.)
     };
+    
     overlays = [
-      inputs.nur.overlays.default  # NUR overlay
-      # Başka overlay'lerin varsa buraya ekleyebilirsin.
+      inputs.nur.overlays.default    # NUR (Nix User Repository) overlay
+      # Add custom overlays here as needed
     ];
   };
 
-  # =============================================================================
-  # NH (Nix Helper) — Flake yolu ve temizlik politikası
-  # =============================================================================
+  # ============================================================================
+  # NH (Nix Helper) Configuration
+  # ============================================================================
+  # Modern CLI for Nix operations with better UX
+  
   programs.nh = {
     enable = true;
+    
+    # Automatic cleanup policy
     clean = {
       enable = true;
-      # Son 7 günden beri kullanılan profilleri sakla, en az 5 profil tut.
+      # Keep profiles used in last 7 days, minimum 5 profiles
       extraArgs = "--keep-since 7d --keep 5";
     };
-    # Flake kökünü sabitle — CLI’de kolaylık sağlar (nh os switch vb.)
+    
+    # Set flake root for convenience (enables `nh os switch` etc.)
     flake = "/home/${username}/.nixosc";
   };
 
-  # =============================================================================
-  # Faydalı araçlar
-  # =============================================================================
+  # ============================================================================
+  # Diagnostic & Management Tools
+  # ============================================================================
+  
   environment.systemPackages = with pkgs; [
-    nix-tree  # dependency graph keşfi için
+    nix-tree      # Visualize dependency graphs
   ];
 }
-
-
