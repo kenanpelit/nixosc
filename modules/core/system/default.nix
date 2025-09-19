@@ -5,8 +5,8 @@
 #
 # Module: modules/core/system
 # Author: Kenan Pelit
-# Version: 2.3
-# Date:    2025-01-04
+# Version: 3.0
+# Date:    2025-01-18
 #
 # Purpose: Unified system configuration for ThinkPad laptops and VMs
 #
@@ -17,11 +17,12 @@
 #
 # Features:
 #   - Intelligent power management (TLP + HWP/EPP)
-#   - RAPL power limits (legacy Intel CPUs, bypassed on Meteor Lake+)
+#   - RAPL power limits optimized for thermal balance
 #   - ThinkPad thermal/fan/battery threshold management
 #   - Runtime CPU detection for dual-hardware single-hostname setup
 #   - AC/DC and suspend/resume triggers
 #   - VM-specific optimizations
+#   - Aggressive fan curves for better cooling
 #
 # Design Notes:
 #   - TLP conflicts with auto-cpufreq and power-profiles-daemon (disabled)
@@ -29,6 +30,7 @@
 #   - iGPU frequencies not forced via TLP (causes errors on modern kernels)
 #   - RAPL service uses timer to avoid boot ordering cycles
 #   - EPP & min_perf auto-tuning based on CPU model detection
+#   - Optimized for ~70°C target temperature under load
 #
 # ==============================================================================
 
@@ -118,6 +120,9 @@ in
       "i915.enable_sagv=1"
       "mem_sleep_default=deep"  # Deep sleep if supported
       "nvme_core.default_ps_max_latency_us=5500"
+
+      "intel_idle.max_cstate=1"   # Derin uyku modlarını kapat
+      "processor.max_cstate=1"    # CPU C1'de kalsın
     ];
     
     # Sysctl optimizations for laptops
@@ -187,14 +192,14 @@ in
   };
 
   # ============================================================================
-  # Power Management (TLP + HWP/EPP)
+  # Power Management (TLP + HWP/EPP) - OPTIMIZED FOR THERMAL BALANCE
   # ============================================================================
   
   # Disable conflicting services
   services.auto-cpufreq.enable          = false;
   services.power-profiles-daemon.enable = false;
   
-  # TLP power management
+  # TLP power management - Optimized settings
   services.tlp = lib.mkIf isPhysicalMachine {
     enable = true;
     settings = {
@@ -204,22 +209,23 @@ in
       
       # CPU driver and governor
       CPU_DRIVER_OPMODE           = "active";
-      CPU_SCALING_GOVERNOR_ON_AC  = "performance";
+      CPU_SCALING_GOVERNOR_ON_AC  = "performance";  # Quick response
       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
       
-      # CPU frequency limits
-      CPU_SCALING_MIN_FREQ_ON_AC  = 1000000;  # 1.0 GHz minimum for responsiveness
-      CPU_SCALING_MAX_FREQ_ON_AC  = 4500000;  # 4.5 GHz max
-      # Note: MIN_FREQ_ON_BAT not set - let HWP/EPP decide
-      CPU_SCALING_MAX_FREQ_ON_BAT = 3500000;  # 3.5 GHz max on battery
+      # CPU frequency limits - High minimum for responsiveness
+      CPU_SCALING_MIN_FREQ_ON_AC  = 1800000;  # 1.8 GHz minimum - prevents lag
+      CPU_SCALING_MAX_FREQ_ON_AC  = 4200000;  # 4.2 GHz max - thermal headroom
+      CPU_SCALING_MIN_FREQ_ON_BAT = 1200000;  # 1.2 GHz battery mode
+      CPU_SCALING_MAX_FREQ_ON_BAT = 3200000;  # 3.2 GHz max on battery
       
-      # HWP performance percentages
-      CPU_MIN_PERF_ON_AC  = 35;
-      CPU_MAX_PERF_ON_AC  = 100;
-      CPU_MIN_PERF_ON_BAT = 10;
-      CPU_MAX_PERF_ON_BAT = 80;
+      # HWP performance percentages - Balanced for thermal
+      CPU_MIN_PERF_ON_AC  = 40;   # 40% minimum - good responsiveness
+      CPU_MAX_PERF_ON_AC  = 90;   # 90% maximum - thermal headroom
+      CPU_MIN_PERF_ON_BAT = 20;
+      CPU_MAX_PERF_ON_BAT = 75;
       
-      # Energy Performance Preference
+      # Energy Performance Preference - Balanced
+      #CPU_ENERGY_PERF_POLICY_ON_AC  = "balance_performance";
       CPU_ENERGY_PERF_POLICY_ON_AC  = "performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
       
@@ -231,12 +237,9 @@ in
       CPU_BOOST_ON_AC  = 1;
       CPU_BOOST_ON_BAT = "auto";
       
-      # Platform profile (if firmware supports)
-      PLATFORM_PROFILE_ON_AC  = "performance";
+      # Platform profile - Balanced for thermal management
+      PLATFORM_PROFILE_ON_AC  = "balanced";
       PLATFORM_PROFILE_ON_BAT = "balanced";
-      
-      # Note: iGPU frequency control (INTEL_GPU_*) intentionally omitted
-      # Modern i915 drivers handle this automatically
       
       # PCIe power management
       PCIE_ASPM_ON_AC  = "default";
@@ -305,15 +308,19 @@ in
     thermald.enable = true;  # Intel thermal management
     upower.enable   = true;  # Battery/power reporting
     
-    # ThinkFan (5-level fan curve for ThinkPads)
+    # ThinkFan - AGGRESSIVE COOLING for ~70°C target
     thinkfan = lib.mkIf isPhysicalMachine {
       enable = true;
       levels = [
-        [ "level auto"        0  58 ]
-        [ 1                  58  68 ]
-        [ 3                  68  78 ]
-        [ 7                  78  88 ]
-        [ "level full-speed" 88 32767 ]
+        # More aggressive fan curve - starts earlier, ramps faster
+        [ "level auto"        0  45 ]   # 45°C'ye kadar auto
+        [ 1                  43  52 ]   # 43-52°C: Level 1 (quiet start)
+        [ 2                  50  58 ]   # 50-58°C: Level 2 (light noise)
+        [ 3                  56  63 ]   # 56-63°C: Level 3 (medium)
+        [ 4                  61  67 ]   # 61-67°C: Level 4 (medium-high)
+        [ 5                  65  71 ]   # 65-71°C: Level 5 (high)
+        [ 7                  69  75 ]   # 69-75°C: Level 7 (very high)
+        [ "level full-speed" 73 32767 ] # 73°C+: maximum speed
       ];
     };
     
@@ -333,14 +340,11 @@ in
   };
 
   # ============================================================================
-  # RAPL Power Limits Service
+  # RAPL Power Limits Service - THERMAL OPTIMIZED
   # ============================================================================
-  # Intel Running Average Power Limit configuration
-  # - Meaningful for older CPUs (X1C6)
-  # - Bypassed on Meteor Lake and newer
   
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
-    description = "Apply RAPL power limits for Intel CPUs";
+    description = "Apply thermal-optimized RAPL power limits";
     after = [ "tlp.service" ];
     serviceConfig = {
       Type = "oneshot";
@@ -356,66 +360,44 @@ in
           | ${pkgs.coreutils}/bin/tr -d '\n' \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
         
-        # Modern Intel CPUs (Meteor Lake+)
-        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
-          echo "RAPL: Meteor Lake detected, applying conservative limits for '$CPU_MODEL'"
-          
-          # Check AC power
-          ON_AC=0
-          for PS in /sys/class/power_supply/A{C,DP}*/online; do
-            [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
-          done
-          
-          if [[ "$ON_AC" == "1" ]]; then
-            PL1_W=28; PL2_W=35  # E14 TDP-appropriate
-          else
-            PL1_W=20; PL2_W=28  # Conservative on battery
-          fi
-          
-          # Apply RAPL and exit
-          for R in /sys/class/powercap/intel-rapl:*; do
-            [[ -d "$R" ]] || continue
-            [[ -w "$R/constraint_0_power_limit_uw" ]] && echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
-            [[ -w "$R/constraint_1_power_limit_uw" ]] && echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
-          done
-          
-          echo "RAPL applied for Meteor Lake (PL1=''${PL1_W}W PL2=''${PL2_W}W; AC=''${ON_AC})."
-          exit 0
-        fi
-        
-        # Check for RAPL interface
-        shopt -s nullglob
-        have_rapl=0
-        for R in /sys/class/powercap/intel-rapl:*; do
-          [[ -d "$R" ]] && have_rapl=1 && break
-        done
-        if [[ "$have_rapl" -eq 0 ]]; then
-          echo "RAPL: no powercap interface; skipping."
-          exit 0
-        fi
-        
-        # Check AC power (for older CPUs)
+        # Check AC power
         ON_AC=0
         for PS in /sys/class/power_supply/A{C,DP}*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
         done
         
-        if [[ "$ON_AC" == "1" ]]; then
-          PL1_W=25; PL2_W=35  # X1C6-like older CPUs AC values
+        # Meteor Lake / Core Ultra - Thermal optimized values
+        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
+          echo "RAPL: Meteor Lake detected, applying thermal-optimized limits"
+          
+          if [[ "$ON_AC" == "1" ]]; then
+            PL1_W=22  # 22W sustained - balanced for ~70°C
+            PL2_W=30  # 30W burst - controlled boost
+          else
+            PL1_W=18  # 18W on battery
+            PL2_W=25  # 25W burst on battery
+          fi
         else
-          PL1_W=15; PL2_W=25  # X1C6-like older CPUs BAT values
+          # Older CPUs (X1C6 etc)
+          if [[ "$ON_AC" == "1" ]]; then
+            PL1_W=20
+            PL2_W=28
+          else
+            PL1_W=15
+            PL2_W=22
+          fi
         fi
         
         # Apply RAPL limits
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
-          [[ -w "$R/constraint_0_power_limit_uw"  ]] && echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw"  2>/dev/null || true
-          [[ -w "$R/constraint_0_time_window_us"  ]] && echo 28000000 > "$R/constraint_0_time_window_us" 2>/dev/null || true
-          [[ -w "$R/constraint_1_power_limit_uw"  ]] && echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw"  2>/dev/null || true
-          [[ -w "$R/constraint_1_time_window_us"  ]] && echo 2440000  > "$R/constraint_1_time_window_us" 2>/dev/null || true
+          [[ -w "$R/constraint_0_power_limit_uw" ]] && echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
+          [[ -w "$R/constraint_0_time_window_us" ]] && echo 28000000 > "$R/constraint_0_time_window_us" 2>/dev/null || true
+          [[ -w "$R/constraint_1_power_limit_uw" ]] && echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
+          [[ -w "$R/constraint_1_time_window_us" ]] && echo 2440000 > "$R/constraint_1_time_window_us" 2>/dev/null || true
         done
         
-        echo "RAPL applied (PL1=''${PL1_W}W PL2=''${PL2_W}W; AC=''${ON_AC})."
+        echo "RAPL: Applied PL1=''${PL1_W}W PL2=''${PL2_W}W (AC=''${ON_AC})"
       '';
     };
   };
@@ -442,17 +424,16 @@ in
   };
 
   # ============================================================================
-  # CPU EPP/Min_Perf Auto-tuning Service
+  # CPU EPP/Min_Perf Auto-tuning Service - THERMAL BALANCED
   # ============================================================================
-  # Detects CPU model and adjusts EPP and min_perf for optimal performance
-  # - Meteor Lake: EPP=balance_performance, min_perf=20
-  # - X1C6: EPP=performance, min_perf=25
   
   systemd.services.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
-    description = "CPU model-based EPP and min_perf adjustment";
+    description = "CPU EPP optimization for performance + thermal balance";
     after = [ "tlp.service" ];
+    wantedBy = [ "multi-user.target" ];  # Timer yerine direkt başlat
     serviceConfig = {
       Type = "oneshot";
+      RemainAfterExit = true;  # Servis aktif kalsın
       ExecStart = pkgs.writeShellScript "cpu-epp-autotune" ''
         #!${pkgs.bash}/bin/bash
         set -euo pipefail
@@ -463,32 +444,33 @@ in
           | ${pkgs.coreutils}/bin/cut -d: -f2- \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
         
-        # Defaults (for modern CPUs)
-        EPP_ON_AC="balance_performance"
-        MIN_PERF=25
-        
         # Check power source
         ON_AC=0
         for PS in /sys/class/power_supply/A{C,DP}*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
         done
         
-        if [[ "$ON_AC" == "1" ]]; then
-          MIN_PERF=30
-        else
-          MIN_PERF=10
-        fi
-        
-        # X1C6 / Kaby/Whiskey/Coffee U series - more aggressive on AC
-        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE '8650U|8550U|8350U|8250U|Kaby|Whiskey|Coffee'; then
-          EPP_ON_AC="performance"
-        fi
-        
-        # Meteor Lake / Core Ultra - full performance on AC with 35% floor
+        # Meteor Lake / Core Ultra - Balanced for thermal
         if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Lunar Lake|Arrow Lake'; then
+          if [[ "$ON_AC" == "1" ]]; then
+            EPP_ON_AC="performance"  # Balanced, not aggressive
+            MIN_PERF=40  # 40% minimum for responsiveness
+            MIN_FREQ=1800000  # 1.8 GHz minimum
+          else
+            EPP_ON_AC="balance_power"
+            MIN_PERF=20
+            MIN_FREQ=1200000  # 1.2 GHz on battery
+          fi
+        else
+          # Other CPUs
           if [[ "$ON_AC" == "1" ]]; then
             EPP_ON_AC="performance"
             MIN_PERF=35
+            MIN_FREQ=1800000
+          else
+            EPP_ON_AC="balance_power"
+            MIN_PERF=15
+            MIN_FREQ=1000000
           fi
         fi
         
@@ -503,19 +485,14 @@ in
           echo "$MIN_PERF" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
         fi
         
-        echo "cpu-epp-autotune: CPU='$CPU_MODEL' (AC=$ON_AC) -> EPP='$EPP_ON_AC', min_perf_pct='$MIN_PERF'"
+        # Force minimum frequency on all cores
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/scaling_min_freq" ]] && \
+            echo "$MIN_FREQ" > "$pol/scaling_min_freq" 2>/dev/null || true
+        done
+        
+        echo "EPP: Applied EPP='$EPP_ON_AC', min_perf=$MIN_PERF%, min_freq=$((MIN_FREQ/1000))MHz"
       '';
-    };
-  };
-  
-  # Timer for EPP auto-tuning
-  systemd.timers.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
-    description = "Timer: EPP/min_perf adjustment after TLP";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "30s";
-      Persistent = true;
-      Unit = "cpu-epp-autotune.service";
     };
   };
   
@@ -529,7 +506,7 @@ in
       ExecStart = "${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service";
     };
   };
-
+ 
   # ============================================================================
   # Udev Rules for AC/DC Switching
   # ============================================================================
@@ -608,77 +585,100 @@ in
       '';
     };
   };
-  
-  # Disable old ad-hoc services (cleanup)
-  systemd.services.thinkfan-sleep  = lib.mkIf isPhysicalMachine { enable = lib.mkForce false; wantedBy = lib.mkForce [ ]; };
-  systemd.services.thinkfan-wakeup = lib.mkIf isPhysicalMachine { enable = lib.mkForce false; wantedBy = lib.mkForce [ ]; };
 
   # ============================================================================
-  # User-facing Power Management Tools
+  # User-facing Power Management Tools - THREE MODES
   # ============================================================================
   
   environment.systemPackages = with pkgs;
     lib.optionals isPhysicalMachine [
       tlp
+      lm_sensors
       
-      # Performance mode script
+      # Performance mode - Maximum performance (when needed)
       (writeScriptBin "performance-mode" ''
         #!${bash}/bin/bash
         set -e
-        echo "🚀 Performance mode (HWP)…"
+        echo "🚀 Performance mode (controlled thermal)…"
         sudo ${tlp}/bin/tlp ac
         
-        # EPP=performance, min_perf_pct=30
-        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$pol/energy_performance_preference" ]] && \
-            echo performance | sudo tee "$pol/energy_performance_preference" >/dev/null || true
-        done
-        [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
-          echo 30 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
-        
-        # Enable turbo
-        [[ -w /sys/devices/system/cpu/intel_pstate/no_turbo ]] && \
-          echo 0 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null || true
-        
-        sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
-        echo "✅ Done!"
-      '')
-      
-      # Balanced mode script
-      (writeScriptBin "balanced-mode" ''
-        #!${bash}/bin/bash
-        set -e
-        echo "⚖️ Balanced mode (HWP)…"
-        sudo ${tlp}/bin/tlp start
-        
-        # EPP=balance_performance, min_perf_pct=25
+        # EPP and performance settings
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ -w "$pol/energy_performance_preference" ]] && \
             echo balance_performance | sudo tee "$pol/energy_performance_preference" >/dev/null || true
         done
         [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
-          echo 25 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+          echo 45 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+        [[ -w /sys/devices/system/cpu/intel_pstate/max_perf_pct ]] && \
+          echo 100 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct >/dev/null || true
         
-        sudo ${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service || true
-        echo "✅ Done!"
+        # RAPL: 25W/32W for short burst performance
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          [[ -w "$R/constraint_0_power_limit_uw" ]] && \
+            echo 25000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null || true
+          [[ -w "$R/constraint_1_power_limit_uw" ]] && \
+            echo 32000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null || true
+        done
+        
+        echo "✅ Performance mode active (PL1=25W, PL2=32W)"
       '')
       
-      # Eco mode script
-      (writeScriptBin "eco-mode" ''
+      # Balanced mode - Daily use (default)
+      (writeScriptBin "balanced-mode" ''
         #!${bash}/bin/bash
         set -e
-        echo "🍃 Eco mode (HWP)…"
-        sudo ${tlp}/bin/tlp bat
+        echo "⚖️ Balanced mode (thermal optimized ~70°C)…"
+        sudo ${tlp}/bin/tlp start
         
-        # EPP=balance_power, min_perf_pct=10
+        # EPP and limits
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/energy_performance_preference" ]] && \
+            echo balance_performance | sudo tee "$pol/energy_performance_preference" >/dev/null || true
+        done
+        [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
+          echo 40 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+        [[ -w /sys/devices/system/cpu/intel_pstate/max_perf_pct ]] && \
+          echo 90 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct >/dev/null || true
+        
+        # RAPL: 22W/30W balanced
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          [[ -w "$R/constraint_0_power_limit_uw" ]] && \
+            echo 22000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null || true
+          [[ -w "$R/constraint_1_power_limit_uw" ]] && \
+            echo 30000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null || true
+        done
+        
+        echo "✅ Balanced mode active (PL1=22W, PL2=30W)"
+      '')
+      
+      # Cool mode - Maximum cooling, quiet operation
+      (writeScriptBin "cool-mode" ''
+        #!${bash}/bin/bash
+        set -e
+        echo "❄️ Cool mode (quiet & cool ~65°C)…"
+        
+        # EPP power saving
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ -w "$pol/energy_performance_preference" ]] && \
             echo balance_power | sudo tee "$pol/energy_performance_preference" >/dev/null || true
         done
         [[ -w /sys/devices/system/cpu/intel_pstate/min_perf_pct ]] && \
-          echo 10 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+          echo 30 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null || true
+        [[ -w /sys/devices/system/cpu/intel_pstate/max_perf_pct ]] && \
+          echo 80 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct >/dev/null || true
         
-        echo "✅ Done!"
+        # RAPL: 18W/25W low power
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          [[ -w "$R/constraint_0_power_limit_uw" ]] && \
+            echo 18000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null || true
+          [[ -w "$R/constraint_1_power_limit_uw" ]] && \
+            echo 25000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null || true
+        done
+        
+        echo "✅ Cool mode active (PL1=18W, PL2=25W)"
       '')
       
       # Power status script
@@ -688,8 +688,8 @@ in
         sudo ${tlp}/bin/tlp-stat -s -c -p | head -40
       '')
       
-      # Comprehensive performance mode tool
-      (writeScriptBin "osc-perf-mode" ''
+      # Comprehensive performance status tool
+      (writeScriptBin "perf-mode" ''
         #!${bash}/bin/bash
         set -euo pipefail
         
@@ -700,45 +700,68 @@ in
         fi
         
         show_status() {
-          CPU_TYPE="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          CPU_MODEL="$(${util-linux}/bin/lscpu \
+            | ${gnugrep}/bin/grep -F 'Model name' \
+            | ${coreutils}/bin/cut -d: -f2- \
+            | ${gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           GOV="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo n/a)"
           EPP="$(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo n/a)"
-          TURBO="$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null | ${pkgs.coreutils}/bin/tr '01' 'OnOff' || echo n/a)"
-          MEMS="$(cat /sys/power/mem_sleep 2>/dev/null || echo n/a)"
-          PWR="BAT"; for PS in /sys/class/power_supply/A{C,DP}*/online; do [ -f "$PS" ] && [ "$(cat "$PS")" = "1" ] && PWR="AC" && break; done
-          TEMP="$( ${pkgs.lm_sensors}/bin/sensors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -m1 -E 'Package id 0|Tctl' | ${pkgs.gawk}/bin/awk '{print $3}' || echo n/a)"
+          MIN_PERF="$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo n/a)"
+          MAX_PERF="$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo n/a)"
+          TURBO="$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null | tr '01' 'YesNo' || echo n/a)"
+          PWR="BAT"; for PS in /sys/class/power_supply/A{C,DP}*/online; do
+            [ -f "$PS" ] && [ "$(cat "$PS")" = "1" ] && PWR="AC" && break
+          done
           
-          echo "=== Current System Status ==="
-          echo "CPU: $CPU_TYPE"
+          echo "╭─────────────────────────────────────────╮"
+          echo "│         System Power Status              │"
+          echo "╰─────────────────────────────────────────╯"
+          echo "CPU Model: $CPU_MODEL"
           echo "Power Source: $PWR"
-          echo "Governor: $GOV"
-          echo "EPP: $EPP"
-          echo "Turbo: $TURBO"
-          echo "mem_sleep: $MEMS"
-          echo
-          echo "CPU Frequencies:"
+          echo ""
+          echo "┌─── CPU Configuration ───┐"
+          echo "  Governor: $GOV"
+          echo "  EPP: $EPP"
+          echo "  Min Perf: ''${MIN_PERF}%"
+          echo "  Max Perf: ''${MAX_PERF}%"
+          echo "  Turbo: $TURBO"
+          echo ""
+          
+          # Current frequencies
+          echo "┌─── Current Frequencies ───┐"
           for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
             [ -f "$f" ] || continue
             cpu="$(basename "$(dirname "$(dirname "$f")")")"
             mhz="$(( $(cat "$f") / 1000 ))"
-            printf "  %-5s: %s MHz\n" "$cpu" "$mhz"
-          done | head -n 16
-          echo
+            printf "  %-5s: %4d MHz\n" "$cpu" "$mhz"
+          done | head -n 9
+          echo ""
           
+          # Power limits
           if [ -d /sys/class/powercap/intel-rapl:0 ]; then
+            echo "┌─── Power Limits (RAPL) ───┐"
             pl1="$(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0)"
             pl2="$(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0)"
-            [ "$pl1" != "0" ] && echo "PL1: $((pl1/1000000))W"
-            [ "$pl2" != "0" ] && echo "PL2: $((pl2/1000000))W"
+            [ "$pl1" != "0" ] && echo "  PL1 (Sustained): $((pl1/1000000))W"
+            [ "$pl2" != "0" ] && echo "  PL2 (Burst): $((pl2/1000000))W"
+            echo ""
           fi
-          echo
           
-          echo "CPU Temp: $TEMP"
+          # Temperature
+          echo "┌─── Thermal Status ───┐"
+          TEMP="$(${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep -m1 -E 'Package id 0|Tctl' | ${gawk}/bin/awk '{print $4}' || echo n/a)"
+          FAN="$(${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep -m1 'fan1' | ${gawk}/bin/awk '{print $2}' || echo n/a)"
+          echo "  CPU Temp: $TEMP"
+          echo "  Fan Speed: $FAN RPM"
+          echo ""
           
+          # Battery thresholds
           if [ -r /sys/class/power_supply/BAT0/charge_control_start_threshold ]; then
+            echo "┌─── Battery Management ───┐"
             s=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold)
             e=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold)
-            echo "Battery Thresholds: Start: ''${s}% | Stop: ''${e}%"
+            echo "  Start charging: ''${s}%"
+            echo "  Stop charging: ''${e}%"
           fi
         }
         
@@ -746,9 +769,30 @@ in
           status) show_status ;;
           perf)   performance-mode ;;
           bal)    balanced-mode ;;
-          eco)    eco-mode ;;
-          *) echo "usage: osc-perf-mode {status|perf|bal|eco}" ; exit 2 ;;
+          cool)   cool-mode ;;
+          *) 
+            echo "Usage: perf-mode {status|perf|bal|cool}"
+            echo ""
+            echo "Modes:"
+            echo "  status - Show current system status"
+            echo "  perf   - Performance mode (~75°C, max performance)"
+            echo "  bal    - Balanced mode (~70°C, daily use)"
+            echo "  cool   - Cool mode (~65°C, quiet operation)"
+            exit 2
+            ;;
         esac
+      '')
+      
+      # Thermal monitor script
+      (writeScriptBin "thermal-monitor" ''
+        #!${bash}/bin/bash
+        echo "Monitoring thermals... (Ctrl+C to stop)"
+        echo ""
+        watch -n 1 '${lm_sensors}/bin/sensors | ${gnugrep}/bin/grep -E "Package|Core 0:|fan" && echo && \
+          for f in /sys/class/powercap/intel-rapl:0/constraint_*_power_limit_uw; do \
+            [ -f "$f" ] && echo "$(basename $f | cut -d_ -f1-2): $(($(cat $f)/1000000))W"; \
+          done'
       '')
     ];
 }
+
