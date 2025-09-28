@@ -4,84 +4,54 @@
 # ==============================================================================
 #
 # Module: modules/core/system
-# Author: Kenan Pelit
-# Version: 4.0 FINAL (Production-Ready)
-# Date:    2025-01-19
+# Version: 5.0 - Meteor Lake Optimized
+# Date:    2025-01-20
 #
 # PURPOSE:
 # --------
-# Provides enterprise-grade power and thermal management for NixOS systems,
-# optimizing for performance, thermal efficiency, and battery longevity across
-# diverse hardware configurations.
+# Enterprise-grade power and thermal management for NixOS systems with
+# specific optimizations for Intel Meteor Lake architecture, providing
+# guaranteed minimum frequencies and responsive performance.
 #
 # SUPPORTED HARDWARE:
 # -------------------
-# - ThinkPad X1 Carbon Gen 6 (i7-8650U, Kaby Lake-R, 15W TDP)
 # - ThinkPad E14 Gen 6 (Core Ultra 7 155H, Meteor Lake, 28W TDP)
+# - ThinkPad X1 Carbon Gen 6 (i7-8650U, Kaby Lake-R, 15W TDP)
 # - QEMU/KVM Virtual Machines (hostname: vhay)
 #
 # KEY FEATURES:
 # -------------
-# ✓ Intelligent CPU frequency scaling with guaranteed minimums
-# ✓ Adaptive thermal limits based on CPU generation and power source
+# ✓ Guaranteed minimum CPU frequencies (2.0 GHz on AC)
+# ✓ Intelligent governor selection (performance/schedutil/powersave)
+# ✓ Platform profile management (performance/balanced/low-power)
+# ✓ Adaptive thermal limits based on CPU generation
 # ✓ Multi-tier fan control with temperature hysteresis
-# ✓ Battery charge threshold management for longevity
+# ✓ Battery charge threshold management (75-80%)
 # ✓ Automatic reconfiguration on AC/DC transitions
-# ✓ Persistent settings across suspend/resume cycles
-# ✓ VM-specific optimizations and guest agent support
+# ✓ Three power modes: Performance, Balanced, Cool
 #
 # PERFORMANCE TARGETS:
 # --------------------
 # - Idle: < 45°C with minimal fan activity
-# - Load: 68-72°C sustained without throttling
-# - Responsiveness: < 1ms frequency ramp-up
-# - Battery: 5-8 hours typical usage
-# - Fan noise: < 35 dBA typical, < 45 dBA peak
-#
-# TECHNICAL APPROACH:
-# -------------------
-# 1. CPU Governor: Passive Intel P-State + Schedutil
-#    - OS-controlled frequency selection
-#    - Scheduler-aware decision making
-#    - Configurable ramp rates
-#
-# 2. Power Limits: RAPL + TLP coordination
-#    - Hardware-enforced power budgets
-#    - Software-guided frequency ranges
-#    - Dynamic adjustment based on thermal headroom
-#
-# 3. Thermal Control: ThinkFan + Thermald
-#    - Progressive fan curves with hysteresis
-#    - Predictive thermal management
-#    - Emergency throttle prevention
-#
-# 4. State Management: SystemD + Udev
-#    - Event-driven reconfiguration
-#    - Atomic setting application
-#    - Graceful error handling
-#
-# DESIGN DECISIONS:
-# -----------------
-# - TLP chosen over auto-cpufreq for ThinkPad-specific features
-# - Schedutil over powersave for superior interactive performance
-# - Passive P-State for finer OS control vs active hardware autonomy
-# - RAPL limits tuned per-CPU generation for optimal thermals
-# - Timer-based service startup to avoid boot race conditions
+# - Load: 65-72°C sustained without throttling
+# - Minimum frequency: 2.0 GHz (AC) / 1.4 GHz (Battery)
+# - Response time: < 500μs frequency scaling
+# - Battery life: 5-8 hours typical usage
 #
 # ==============================================================================
 
 { pkgs, config, lib, inputs, system, ... }:
 
 let
-  # System identification for conditional configuration
+  # System identification
   hostname          = config.networking.hostName or "";
-  isPhysicalMachine = hostname == "hay";    # Physical ThinkPad
-  isVirtualMachine  = hostname == "vhay";   # Virtual machine
+  isPhysicalMachine = hostname == "hay";
+  isVirtualMachine  = hostname == "vhay";
   
-  # Helper for creating robust shell scripts with proper error handling
+  # Helper for creating robust shell scripts
   mkRobustScript = name: content: pkgs.writeShellScript name ''
     #!${pkgs.bash}/bin/bash
-    set -euo pipefail  # Exit on error, undefined vars, pipe failures
+    set -euo pipefail
     ${content}
   '';
 in
@@ -89,13 +59,11 @@ in
   # ============================================================================
   # LOCALIZATION & TIMEZONE
   # ============================================================================
-  # Istanbul timezone with mixed English/Turkish locale for optimal compatibility
   time.timeZone = "Europe/Istanbul";
 
   i18n = {
-    defaultLocale = "en_US.UTF-8";  # System messages in English
+    defaultLocale = "en_US.UTF-8";
     extraLocaleSettings = {
-      # Turkish locale for regional formats (dates, currency, etc.)
       LC_ADDRESS        = "tr_TR.UTF-8";
       LC_IDENTIFICATION = "tr_TR.UTF-8";
       LC_MEASUREMENT    = "tr_TR.UTF-8";
@@ -108,11 +76,11 @@ in
     };
   };
 
-  # Turkish F-keyboard layout with Caps Lock remapped to Ctrl
+  # Turkish F-keyboard layout with Caps Lock as Control
   services.xserver.xkb = {
     layout  = "tr";
     variant = "f";
-    options = "ctrl:nocaps";  # Ergonomic: Caps Lock becomes Control
+    options = "ctrl:nocaps";
   };
   console.keyMap = "trf";
 
@@ -123,7 +91,7 @@ in
   # BOOT CONFIGURATION
   # ============================================================================
   boot = {
-    # Latest stable kernel for hardware support
+    # Latest kernel for best hardware support
     kernelPackages = pkgs.linuxPackages_latest;
 
     # Essential kernel modules
@@ -131,76 +99,77 @@ in
       "coretemp"        # CPU temperature monitoring
       "i915"            # Intel graphics driver
     ] ++ lib.optionals isPhysicalMachine [
-      "thinkpad_acpi"   # ThinkPad-specific features (fan, battery, etc.)
+      "thinkpad_acpi"   # ThinkPad-specific features
     ];
 
-    # Kernel module parameters for power optimization
+    # Kernel module parameters
     extraModprobeConfig = ''
-      # Intel P-State: Enable hardware-guided performance scaling
-      # hwp_dynamic_boost=1 allows CPU to exceed base frequency dynamically
+      # Intel P-State: Enable hardware-guided performance
       options intel_pstate hwp_dynamic_boost=1
 
-      # Audio: Power down after 10 seconds idle
+      # Audio: Power save after 10 seconds
       options snd_hda_intel power_save=10 power_save_controller=Y
 
-      # WiFi: Enable power saving with medium latency tolerance
+      # WiFi: Power saving with medium latency
       options iwlwifi power_save=1 power_level=3
 
-      # USB: Auto-suspend after 5 seconds idle
+      # USB: Auto-suspend after 5 seconds
       options usbcore autosuspend=5
 
-      # NVMe: Allow 5.5ms latency for deeper power states
+      # NVMe: 5.5ms latency for deeper power states
       options nvme_core default_ps_max_latency_us=5500
 
       ${lib.optionalString isPhysicalMachine ''
-        # ThinkPad: Enable manual fan control and experimental features
+        # ThinkPad: Enable manual fan control
         options thinkpad_acpi fan_control=1 experimental=1
       ''}
     '';
 
     # Kernel command line parameters
     kernelParams = [
-      # CPU: Use OS-controlled frequency scaling for better responsiveness
-      "intel_pstate=passive"
+      # IMPORTANT: Active mode for Meteor Lake HWP support
+      "intel_pstate=active"
       
-      # PCIe: Default ASPM for balanced power/performance
+      # PCIe power management
       "pcie_aspm=default"
       
-      # Graphics: Enable GuC firmware, disable unstable features
-      "i915.enable_guc=3"     # GuC/HuC firmware for better scheduling
-      "i915.enable_fbc=0"     # Disable framebuffer compression (causes artifacts)
-      "i915.enable_psr=0"     # Disable panel self-refresh (causes flicker)
-      "i915.enable_sagv=1"    # Enable system agent voltage/frequency scaling
+      # Intel graphics optimizations
+      "i915.enable_guc=3"
+      "i915.enable_fbc=0"
+      "i915.enable_psr=0"
+      "i915.enable_sagv=1"
       
-      # System: Deep sleep for better battery life
+      # Deep sleep for better battery
       "mem_sleep_default=deep"
       
-      # NVMe: Reiterate power saving latency tolerance
+      # NVMe power saving
       "nvme_core.default_ps_max_latency_us=5500"
+
+      # Audit
+      "audit_backlog_limit=16384"
     ];
 
-    # Kernel sysctls for performance and power optimization
+    # Kernel sysctls for performance
     kernel.sysctl = {
-      "vm.swappiness" = 10;                # Prefer RAM over swap
-      "vm.vfs_cache_pressure" = 50;        # Balanced inode/dentry cache
-      "vm.dirty_writeback_centisecs" = 1500; # 15s writeback interval
-      "kernel.nmi_watchdog" = 0;           # Disable NMI watchdog (saves power)
+      "vm.swappiness" = 10;
+      "vm.vfs_cache_pressure" = 50;
+      "vm.dirty_writeback_centisecs" = 1500;
+      "kernel.nmi_watchdog" = 0;
     };
 
-    # GRUB bootloader configuration
+    # GRUB bootloader
     loader = {
       grub = {
         enable = true;
         device = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
         efiSupport = isPhysicalMachine;
-        useOSProber = true;  # Detect other operating systems
-        configurationLimit = 10;  # Keep 10 generations
-        gfxmodeEfi  = "1920x1200";  # Native ThinkPad resolution
+        useOSProber = true;
+        configurationLimit = 10;
+        gfxmodeEfi  = "1920x1200";
         gfxmodeBios = if isVirtualMachine then "1920x1080" else "1920x1200";
         theme = inputs.distro-grub-themes.packages.${system}.nixos-grub-theme;
       };
       
-      # EFI configuration for physical machines
       efi = lib.mkIf isPhysicalMachine {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
@@ -212,243 +181,230 @@ in
   # HARDWARE CONFIGURATION
   # ============================================================================
   hardware = {
-    # TrackPoint configuration (ThinkPad pointer)
+    # ThinkPad TrackPoint
     trackpoint = lib.mkIf isPhysicalMachine {
       enable = true;
-      speed = 200;         # Pointer speed
-      sensitivity = 200;   # Pointer sensitivity
-      emulateWheel = true; # Middle button scrolling
+      speed = 200;
+      sensitivity = 200;
+      emulateWheel = true;
     };
 
-    # Intel graphics configuration
+    # Intel graphics
     graphics = {
       enable = true;
-      enable32Bit = true;  # 32-bit support for Steam/Wine
+      enable32Bit = true;
       
-      # Comprehensive Intel graphics stack
       extraPackages = with pkgs; [
-        intel-media-driver       # VA-API implementation
-        mesa                     # OpenGL/Vulkan
-        vaapiVdpau              # VDPAU backend for VA-API
-        libvdpau-va-gl          # VDPAU implementation
-        intel-compute-runtime   # OpenCL runtime
-        intel-graphics-compiler # Graphics compiler
-        level-zero              # oneAPI Level Zero support
+        intel-media-driver
+        mesa
+        vaapiVdpau
+        libvdpau-va-gl
+        intel-compute-runtime
+        intel-graphics-compiler
+        level-zero
       ];
       
       extraPackages32 = with pkgs.pkgsi686Linux; [
-        intel-media-driver      # 32-bit VA-API
+        intel-media-driver
       ];
     };
 
-    # Firmware and microcode updates
-    enableRedistributableFirmware = true;  # Non-free firmware
-    enableAllFirmware             = true;  # All available firmware
-    cpu.intel.updateMicrocode     = true;  # CPU security updates
-    bluetooth.enable              = true;  # Bluetooth support
+    # Firmware and microcode
+    enableRedistributableFirmware = true;
+    enableAllFirmware             = true;
+    cpu.intel.updateMicrocode     = true;
+    bluetooth.enable              = true;
   };
 
   # ============================================================================
   # POWER MANAGEMENT (TLP)
   # ============================================================================
-  # Disable conflicting power managers
   services.auto-cpufreq.enable          = false;
   services.power-profiles-daemon.enable = false;
 
-  # TLP - Advanced Linux Power Management
   services.tlp = lib.mkIf isPhysicalMachine {
     enable = true;
     settings = {
-      # Default mode and persistence
-      TLP_DEFAULT_MODE       = "AC";   # Default to AC mode
-      TLP_PERSISTENT_DEFAULT = 0;       # Auto-detect AC/BAT
+      # Default mode
+      TLP_DEFAULT_MODE       = "AC";
+      TLP_PERSISTENT_DEFAULT = 0;
 
-      # CPU frequency scaling - Passive mode with schedutil governor
-      CPU_DRIVER_OPMODE           = "passive";    # OS-controlled
-      CPU_SCALING_GOVERNOR_ON_AC  = "schedutil";  # Scheduler-aware
-      CPU_SCALING_GOVERNOR_ON_BAT = "schedutil";  # Consistent behavior
+      # CPU driver mode - Active for Meteor Lake HWP
+      CPU_DRIVER_OPMODE           = "active";
+      CPU_SCALING_GOVERNOR_ON_AC  = "performance";  # Guaranteed minimum freq
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";    # Power efficient
 
-      # Frequency limits (Hz)
-      # AC: 1.8-4.2 GHz for smooth performance
-      # Battery: 1.2-3.2 GHz for efficiency
-      CPU_SCALING_MIN_FREQ_ON_AC  = 1800000;  # 1.8 GHz minimum
-      CPU_SCALING_MAX_FREQ_ON_AC  = 4200000;  # 4.2 GHz maximum
-      CPU_SCALING_MIN_FREQ_ON_BAT = 1200000;  # 1.2 GHz minimum
-      CPU_SCALING_MAX_FREQ_ON_BAT = 3200000;  # 3.2 GHz maximum
+      # Frequency limits (Hz) - Meteor Lake Core Ultra 7 155H
+      CPU_SCALING_MIN_FREQ_ON_AC  = 2000000;  # 2.0 GHz minimum on AC
+      CPU_SCALING_MAX_FREQ_ON_AC  = 4800000;  # 4.8 GHz maximum
+      CPU_SCALING_MIN_FREQ_ON_BAT = 1400000;  # 1.4 GHz minimum on battery
+      CPU_SCALING_MAX_FREQ_ON_BAT = 3800000;  # 3.8 GHz maximum
 
-      # Intel HWP performance hints (works with passive mode)
-      CPU_MIN_PERF_ON_AC  = 40;   # 40% minimum performance
-      CPU_MAX_PERF_ON_AC  = 92;   # 92% maximum performance
-      CPU_MIN_PERF_ON_BAT = 20;   # 20% minimum performance
-      CPU_MAX_PERF_ON_BAT = 80;   # 80% maximum performance
+      # Intel HWP performance hints
+      CPU_MIN_PERF_ON_AC  = 60;   # 60% minimum performance
+      CPU_MAX_PERF_ON_AC  = 100;  # 100% maximum performance
+      CPU_MIN_PERF_ON_BAT = 30;   # 30% minimum on battery
+      CPU_MAX_PERF_ON_BAT = 80;   # 80% maximum on battery
 
       # Energy Performance Preference
-      CPU_ENERGY_PERF_POLICY_ON_AC  = "performance";    # Favor performance
-      CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";  # Favor efficiency
+      CPU_ENERGY_PERF_POLICY_ON_AC  = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
 
-      # CPU turbo boost
-      CPU_HWP_DYN_BOOST_ON_AC  = 1;      # Dynamic boost on AC
-      CPU_HWP_DYN_BOOST_ON_BAT = 0;      # No dynamic boost on battery
-      CPU_BOOST_ON_AC  = 1;              # Turbo always on AC
-      CPU_BOOST_ON_BAT = "auto";         # Turbo when needed on battery
+      # Platform profile
+      PLATFORM_PROFILE_ON_AC  = "performance";  # Maximum performance on AC
+      PLATFORM_PROFILE_ON_BAT = "balanced";     # Balanced on battery
 
-      # Platform profile (firmware hints)
-      PLATFORM_PROFILE_ON_AC  = "balanced";  # Balanced platform behavior
-      PLATFORM_PROFILE_ON_BAT = "balanced";  # Consistent across power states
+      # CPU features
+      CPU_HWP_DYN_BOOST_ON_AC  = 1;
+      CPU_HWP_DYN_BOOST_ON_BAT = 0;
+      CPU_BOOST_ON_AC  = 1;
+      CPU_BOOST_ON_BAT = 1;
 
-      # PCIe Active State Power Management
-      PCIE_ASPM_ON_AC  = "default";        # Default ASPM on AC
-      PCIE_ASPM_ON_BAT = "powersupersave"; # Aggressive ASPM on battery
+      # PCIe ASPM
+      PCIE_ASPM_ON_AC  = "default";
+      PCIE_ASPM_ON_BAT = "powersupersave";
 
-      # Runtime Power Management
-      RUNTIME_PM_ON_AC  = "on";            # No runtime PM on AC
-      RUNTIME_PM_ON_BAT = "auto";          # Auto runtime PM on battery
-      RUNTIME_PM_DRIVER_DENYLIST = "nouveau radeon";  # Exclude problematic drivers
+      # Runtime PM
+      RUNTIME_PM_ON_AC  = "on";
+      RUNTIME_PM_ON_BAT = "auto";
+      RUNTIME_PM_DRIVER_DENYLIST = "nouveau radeon";
 
-      # USB power management
-      USB_AUTOSUSPEND     = 1;             # Enable USB autosuspend
-      USB_DENYLIST        = "17ef:6047";   # ThinkPad dock exception
-      USB_EXCLUDE_AUDIO   = 1;             # Don't suspend audio devices
-      USB_EXCLUDE_BTUSB   = 0;             # Allow Bluetooth suspend
-      USB_EXCLUDE_PHONE   = 1;             # Don't suspend phones
-      USB_EXCLUDE_PRINTER = 1;             # Don't suspend printers
-      USB_EXCLUDE_WWAN    = 0;             # Allow WWAN suspend
+      # USB
+      USB_AUTOSUSPEND     = 1;
+      USB_DENYLIST        = "17ef:6047";
+      USB_EXCLUDE_AUDIO   = 1;
+      USB_EXCLUDE_BTUSB   = 0;
+      USB_EXCLUDE_PHONE   = 1;
+      USB_EXCLUDE_PRINTER = 1;
+      USB_EXCLUDE_WWAN    = 0;
 
-      # Battery charge thresholds (75-80% for longevity)
-      START_CHARGE_THRESH_BAT0 = 75;  # Start charging at 75%
-      STOP_CHARGE_THRESH_BAT0 = 80;   # Stop charging at 80%
-      START_CHARGE_THRESH_BAT1 = 75;  # External battery start
-      STOP_CHARGE_THRESH_BAT1 = 80;   # External battery stop
-      RESTORE_THRESHOLDS_ON_BAT = 1;  # Restore on battery
+      # Battery thresholds for longevity
+      START_CHARGE_THRESH_BAT0 = 75;
+      STOP_CHARGE_THRESH_BAT0 = 80;
+      START_CHARGE_THRESH_BAT1 = 75;
+      STOP_CHARGE_THRESH_BAT1 = 80;
+      RESTORE_THRESHOLDS_ON_BAT = 1;
 
-      # Disk power management
-      DISK_IDLE_SECS_ON_AC       = 0;    # No idle spindown on AC
-      DISK_IDLE_SECS_ON_BAT      = 2;    # 2s idle spindown on battery
-      MAX_LOST_WORK_SECS_ON_AC   = 15;   # 15s writeback on AC
-      MAX_LOST_WORK_SECS_ON_BAT  = 60;   # 60s writeback on battery
-      DISK_APM_LEVEL_ON_AC       = "255"; # No APM on AC (max performance)
-      DISK_APM_LEVEL_ON_BAT      = "128"; # Medium APM on battery
-      DISK_APM_CLASS_DENYLIST    = "usb ieee1394"; # No APM for external
-      DISK_IOSCHED               = "mq-deadline";  # I/O scheduler
+      # Disk
+      DISK_IDLE_SECS_ON_AC       = 0;
+      DISK_IDLE_SECS_ON_BAT      = 2;
+      MAX_LOST_WORK_SECS_ON_AC   = 15;
+      MAX_LOST_WORK_SECS_ON_BAT  = 60;
+      DISK_APM_LEVEL_ON_AC       = "255";
+      DISK_APM_LEVEL_ON_BAT      = "128";
+      DISK_APM_CLASS_DENYLIST    = "usb ieee1394";
+      DISK_IOSCHED               = "mq-deadline";
 
-      # SATA link power management
-      SATA_LINKPWR_ON_AC  = "max_performance";      # No SATA PM on AC
-      SATA_LINKPWR_ON_BAT = "med_power_with_dipm";  # DIPM on battery
+      # SATA
+      SATA_LINKPWR_ON_AC  = "max_performance";
+      SATA_LINKPWR_ON_BAT = "med_power_with_dipm";
 
-      # WiFi power saving
-      WIFI_PWR_ON_AC  = "off";  # No WiFi power save on AC
-      WIFI_PWR_ON_BAT = "on";   # WiFi power save on battery
-      WOL_DISABLE     = "Y";    # Disable Wake-on-LAN
+      # WiFi
+      WIFI_PWR_ON_AC  = "off";
+      WIFI_PWR_ON_BAT = "on";
+      WOL_DISABLE     = "Y";
 
-      # Audio power saving
-      SOUND_POWER_SAVE_ON_AC  = 0;   # No audio power save on AC
-      SOUND_POWER_SAVE_ON_BAT = 10;  # 10s timeout on battery
-      SOUND_POWER_SAVE_CONTROLLER = "Y"; # Controller power save
+      # Audio
+      SOUND_POWER_SAVE_ON_AC  = 0;
+      SOUND_POWER_SAVE_ON_BAT = 10;
+      SOUND_POWER_SAVE_CONTROLLER = "Y";
 
-      # Radio device management
-      DEVICES_TO_ENABLE_ON_STARTUP  = "bluetooth wifi";      # Enable on boot
-      DEVICES_TO_ENABLE_ON_AC       = "bluetooth wifi wwan"; # Enable on AC
-      DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE = "wwan";        # Disable WWAN on battery
+      # Radio devices
+      DEVICES_TO_ENABLE_ON_STARTUP  = "bluetooth wifi";
+      DEVICES_TO_ENABLE_ON_AC       = "bluetooth wifi wwan";
+      DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE = "wwan";
     };
   };
 
   # ============================================================================
-  # THERMAL MANAGEMENT SERVICES
+  # THERMAL MANAGEMENT
   # ============================================================================
   services = {
-    # Intel thermal daemon for dynamic thermal management
     thermald.enable = true;
-    
-    # UPower for battery status
     upower.enable = true;
 
     # ThinkFan - Temperature-based fan control
-    # Target: 68-72°C under load with minimal noise
     thinkfan = lib.mkIf isPhysicalMachine {
       enable = true;
       levels = [
-        # [Fan Level] [Low Temp] [High Temp]
-        [ "level auto"        0  46 ]  # BIOS auto control up to 46°C
-        [ 1                  44  54 ]  # Level 1: 44-54°C (quiet)
-        [ 2                  52  60 ]  # Level 2: 52-60°C (audible)
-        [ 3                  58  66 ]  # Level 3: 58-66°C (moderate)
-        [ 5                  64  72 ]  # Level 5: 64-72°C (loud)
-        [ 7                  70  78 ]  # Level 7: 70-78°C (very loud)
-        [ "level full-speed" 76 32767 ] # Maximum: >76°C (emergency)
+        [ "level auto"        0  46 ]
+        [ 1                  44  54 ]
+        [ 2                  52  60 ]
+        [ 3                  58  66 ]
+        [ 5                  64  72 ]
+        [ 7                  70  78 ]
+        [ "level full-speed" 76 32767 ]
       ];
     };
 
-    # Login manager settings
+    # Login manager
     logind.settings.Login = {
-      HandleLidSwitch              = "suspend";     # Suspend on lid close
-      HandleLidSwitchDocked        = "suspend";     # Even when docked
-      HandleLidSwitchExternalPower = "suspend";     # Even on AC power
-      HandlePowerKey               = "ignore";      # Ignore short press
-      HandlePowerKeyLongPress      = "poweroff";    # Shutdown on long press
-      HandleSuspendKey             = "suspend";     # Suspend button
-      HandleHibernateKey           = "hibernate";   # Hibernate button
+      HandleLidSwitch              = "suspend";
+      HandleLidSwitchDocked        = "suspend";
+      HandleLidSwitchExternalPower = "suspend";
+      HandlePowerKey               = "ignore";
+      HandlePowerKeyLongPress      = "poweroff";
+      HandleSuspendKey             = "suspend";
+      HandleHibernateKey           = "hibernate";
     };
 
-    # SPICE guest agent for VMs
+    # SPICE for VMs
     spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
   };
 
   # ============================================================================
-  # RAPL POWER LIMITS SERVICE
+  # SYSTEM SERVICES
   # ============================================================================
-  # Applies CPU power limits based on model and power source
-  # Meteor Lake and newer use different limits due to hybrid architecture
+  
+  # RAPL Power Limits Service
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
-    description = "Apply thermal-optimized RAPL power limits";
+    description = "Apply Meteor Lake optimized RAPL power limits";
     after = [ "tlp.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ConditionPathExists = "/sys/class/powercap/intel-rapl:0";
       ExecStart = mkRobustScript "set-rapl-limits" ''
-        # Detect CPU model for generation-specific limits
+        # Detect CPU model
         CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' \
           | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.coreutils}/bin/tr -d '\n' \
           | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
 
-        # Detect AC/DC power state
+        # Check AC/DC state
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
         done
 
-        # Set power limits based on CPU generation
-        # Meteor Lake and newer: Higher base power, better efficiency
-        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|Meteor Lake|Arrow Lake|Lunar Lake'; then
+        # Initialize default values
+        PL1_W=20
+        PL2_W=28
+
+        # Meteor Lake Core Ultra 7 155H specific limits
+        if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE 'Core\(TM\) Ultra|155H|Meteor Lake'; then
           if [[ "$ON_AC" == "1" ]]; then
-            PL1_W=22; PL2_W=30  # AC: 22W sustained, 30W burst
+            PL1_W=28; PL2_W=64  # AC: 28W sustained, 64W burst
           else
-            PL1_W=18; PL2_W=25  # Battery: 18W sustained, 25W burst
+            PL1_W=20; PL2_W=35  # Battery: 20W sustained, 35W burst
           fi
         else
-          # Legacy Intel Core (Kaby Lake, Coffee Lake, etc.)
+          # Legacy Intel Core
           if [[ "$ON_AC" == "1" ]]; then
-            PL1_W=20; PL2_W=28  # AC: 20W sustained, 28W burst
+            PL1_W=20; PL2_W=28
           else
-            PL1_W=15; PL2_W=22  # Battery: 15W sustained, 22W burst
+            PL1_W=15; PL2_W=22
           fi
         fi
 
-        # Apply limits to all RAPL domains
+        # Apply RAPL limits
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
           
-          # PL1: Long-term power limit (28s window)
-          [[ -w "$R/constraint_0_power_limit_uw" ]] && \
-            echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null || true
-          [[ -w "$R/constraint_0_time_window_us" ]] && \
-            echo 28000000 > "$R/constraint_0_time_window_us" 2>/dev/null || true
-          
-          # PL2: Short-term power limit (2.44s window)
-          [[ -w "$R/constraint_1_power_limit_uw" ]] && \
-            echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
-          [[ -w "$R/constraint_1_time_window_us" ]] && \
-            echo 2440000 > "$R/constraint_1_time_window_us" 2>/dev/null || true
+          if [[ -r "$R/name" ]] && grep -q "package" "$R/name" 2>/dev/null; then
+            [[ -w "$R/constraint_0_power_limit_uw" ]] && \
+              echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" || true
+            [[ -w "$R/constraint_1_power_limit_uw" ]] && \
+              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" || true
+          fi
         done
 
         echo "RAPL: PL1=''${PL1_W}W PL2=''${PL2_W}W (AC=''${ON_AC})"
@@ -456,129 +412,172 @@ in
     };
   };
 
-  # Timer to apply RAPL limits after boot (avoids race conditions)
   systemd.timers.rapl-power-limits = lib.mkIf isPhysicalMachine {
-    description = "Timer: apply RAPL power limits shortly after boot";
+    description = "Timer for RAPL power limits";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec = "45s";        # 45s after boot
-      Persistent = true;        # Run if missed
+      OnBootSec = "45s";
+      Persistent = true;
       Unit = "rapl-power-limits.service";
     };
   };
 
-  # Re-apply RAPL limits after resume from sleep
-  systemd.services.rapl-power-limits-resume = lib.mkIf isPhysicalMachine {
-    description = "Re-apply RAPL limits after resume";
-    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ConditionPathExists = "/sys/class/powercap/intel-rapl:0";
-      ExecStart = "${pkgs.systemd}/bin/systemctl start rapl-power-limits.service";
-    };
-  };
-
-  # ============================================================================
-  # CPU AUTOTUNE SERVICE
-  # ============================================================================
-  # Ensures optimal CPU frequency settings and schedutil tuning
-  systemd.services.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
-    description = "CPU autotune (governor, schedutil ramp, min_freq guarantee)";
+# Platform Performance Service
+  systemd.services.platform-performance = lib.mkIf isPhysicalMachine {
+    description = "Set platform profile based on power source";
     after = [ "tlp.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ConditionPathExists = "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor";
-      ExecStart = mkRobustScript "cpu-epp-autotune" ''
-        # Select best available governor (prefer schedutil)
-        GOVS="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null || echo "")"
-        target="powersave"  # Fallback to powersave
-        echo "$GOVS" | ${pkgs.gnugrep}/bin/grep -qw schedutil && target="schedutil"
-        
-        # Apply governor to all policies
-        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$pol/scaling_governor" ]] && echo "$target" > "$pol/scaling_governor" || true
-        done
-
-        # Detect power state for frequency tuning
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "platform-performance" ''
+        # Check AC/DC state
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
         done
 
-        # Set minimum frequency based on power state
         if [[ "$ON_AC" == "1" ]]; then
-          MIN_FREQ=1800000   # 1.8 GHz on AC for smoothness
-        else
-          MIN_FREQ=1200000   # 1.2 GHz on battery (guaranteed minimum)
-        fi
-
-        # Apply frequency limits and schedutil tuning
-        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
-          # Set minimum frequency
-          [[ -w "$pol/scaling_min_freq" ]] && echo "$MIN_FREQ" > "$pol/scaling_min_freq" || true
-          
-          # Tune schedutil parameters if available
-          if [[ -d "$pol/schedutil" ]]; then
-            # Fast ramp up (1ms), slower ramp down (5ms)
-            [[ -w "$pol/schedutil/up_rate_limit_us"    ]] && echo 1000  > "$pol/schedutil/up_rate_limit_us"    || true
-            [[ -w "$pol/schedutil/down_rate_limit_us"  ]] && echo 5000  > "$pol/schedutil/down_rate_limit_us"  || true
-            # Enable I/O wait boost for better interactivity
-            [[ -w "$pol/schedutil/iowait_boost_enable" ]] && echo 1     > "$pol/schedutil/iowait_boost_enable" || true
+          # Set platform profile to performance on AC
+          if [[ -w "/sys/firmware/acpi/platform_profile" ]]; then
+            echo "performance" > /sys/firmware/acpi/platform_profile
+            echo "Platform profile: performance (AC)"
           fi
-        done
-
-        echo "autotune: governor=$target, min_freq>=''$((MIN_FREQ/1000)) MHz (AC=$ON_AC)"
+        else
+          # Set platform profile to balanced on battery
+          if [[ -w "/sys/firmware/acpi/platform_profile" ]]; then
+            echo "balanced" > /sys/firmware/acpi/platform_profile
+            echo "Platform profile: balanced (Battery)"
+          fi
+        fi
       '';
     };
   };
 
-  # Timer for CPU autotune (after TLP)
-  systemd.timers.cpu-epp-autotune = lib.mkIf isPhysicalMachine {
-    description = "Timer: autotune after TLP";
+  # Timer: platform-performance (boot tetiklemesi)
+  systemd.timers.platform-performance = lib.mkIf isPhysicalMachine {
+    description = "Timer for platform-performance";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec = "30s";        # 30s after boot
+      OnBootSec = "30s";
+      Unit = "platform-performance.service";
       Persistent = true;
-      Unit = "cpu-epp-autotune.service";
     };
   };
 
-  # Re-apply autotune after resume
-  systemd.services.cpu-epp-autotune-resume = lib.mkIf isPhysicalMachine {
-    description = "Re-apply autotune after resume";
-    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+  # CPU Frequency Enforcement Service
+  systemd.services.cpu-freq-enforce = lib.mkIf isPhysicalMachine {
+    description = "Enforce minimum CPU frequencies";
+    after = [ "tlp.service" "platform-performance.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service";
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "cpu-freq-enforce" ''
+        # Wait for TLP to settle
+        sleep 2
+
+        # Check AC/DC state
+        ON_AC=0
+        for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
+        done
+
+        if [[ "$ON_AC" == "1" ]]; then
+          MIN_FREQ=2000000      # 2.0 GHz on AC
+          GOVERNOR="performance"
+          EPP="performance"
+        else
+          MIN_FREQ=1400000      # 1.4 GHz on battery
+          GOVERNOR="powersave"
+          EPP="balance_power"
+        fi
+
+        # Set governor
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ -w "$pol/scaling_governor" ]] && \
+            echo "$GOVERNOR" > "$pol/scaling_governor" 2>/dev/null || true
+        done
+
+        # Set frequency limits
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          if [[ -w "$pol/scaling_min_freq" ]]; then
+            # Set max first to avoid min > max error
+            [[ -w "$pol/scaling_max_freq" ]] && \
+              echo 4800000 > "$pol/scaling_max_freq" 2>/dev/null || true
+
+            # Set minimum frequency
+            echo "$MIN_FREQ" > "$pol/scaling_min_freq" 2>/dev/null || true
+          fi
+
+          # Set EPP
+          [[ -w "$pol/energy_performance_preference" ]] && \
+            echo "$EPP" > "$pol/energy_performance_preference" 2>/dev/null || true
+        done
+
+        # Set Intel pstate percentages
+        if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+          if [[ "$ON_AC" == "1" ]]; then
+            echo 60 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+            echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+          else
+            echo 30 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+            echo 80 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+          fi
+        fi
+
+        echo "Enforced: gov=$GOVERNOR, min=$((MIN_FREQ/1000))MHz, epp=$EPP"
+      '';
     };
   };
 
-  # ============================================================================
-  # UDEV RULES FOR AC/DC TRANSITIONS
-  # ============================================================================
-  # Automatically reconfigure system when power adapter is connected/disconnected
-  services.udev.extraRules = lib.mkIf isPhysicalMachine ''
-    # Trigger on AC adapter state change
-    SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
-    SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service"
-    SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
-    SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-epp-autotune.service"
-  '';
+  # Timer: cpu-freq-enforce (platform-performance’dan biraz sonra)
+  systemd.timers.cpu-freq-enforce = lib.mkIf isPhysicalMachine {
+    description = "Timer for cpu-freq-enforce";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "35s";
+      Unit = "cpu-freq-enforce.service";
+      Persistent = true;
+    };
+  };
 
-  # ============================================================================
-  # THINKPAD-SPECIFIC SERVICES
-  # ============================================================================
-  
-  # Disable ThinkPad mute LEDs (they stay on unnecessarily)
+  # Resume services
+  systemd.services.rapl-power-limits-resume = lib.mkIf isPhysicalMachine {
+    description = "Re-apply RAPL limits after resume";
+    wantedBy = [ "suspend.target" "hibernate.target" ];
+    after    = [ "suspend.target" "hibernate.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/systemctl start rapl-power-limits.service";
+    };
+  };
+
+  systemd.services.platform-performance-resume = lib.mkIf isPhysicalMachine {
+    description = "Re-apply platform profile after resume";
+    wantedBy = [ "suspend.target" "hibernate.target" ];
+    after    = [ "suspend.target" "hibernate.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/systemctl start platform-performance.service";
+    };
+  };
+
+  systemd.services.cpu-freq-enforce-resume = lib.mkIf isPhysicalMachine {
+    description = "Re-enforce CPU frequencies after resume";
+    wantedBy = [ "suspend.target" "hibernate.target" ];
+    after    = [ "suspend.target" "hibernate.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/systemctl start cpu-freq-enforce.service";
+    };
+  };
+
+  # ThinkPad LED fix
   systemd.services.thinkpad-led-fix = lib.mkIf isPhysicalMachine {
     description = "Turn off ThinkPad mute LEDs";
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = mkRobustScript "disable-mute-leds" ''
-        # Turn off both mute and mic-mute LEDs
         for led in /sys/class/leds/platform::{mute,micmute}/brightness; do
           [[ -w "$led" ]] && echo 0 > "$led" 2>/dev/null || true
         done
@@ -586,22 +585,7 @@ in
     };
   };
 
-  # Re-apply LED fix after resume
-  systemd.services.thinkpad-led-fix-resume = lib.mkIf isPhysicalMachine {
-    description = "Turn off ThinkPad mute LEDs after resume";
-    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = mkRobustScript "disable-mute-leds-resume" ''
-        for led in /sys/class/leds/platform::{mute,micmute}/brightness; do
-          [[ -w "$led" ]] && echo 0 > "$led" 2>/dev/null || true
-        done
-      '';
-    };
-  };
-
-  # Fan control during suspend/resume cycle
+  # Fan control during suspend
   systemd.services.suspend-pre-fan = lib.mkIf isPhysicalMachine {
     description = "Stop thinkfan before suspend";
     wantedBy = [ "sleep.target" ];
@@ -609,9 +593,7 @@ in
     serviceConfig = {
       Type = "oneshot";
       ExecStart = mkRobustScript "suspend-pre-fan" ''
-        # Stop thinkfan service to prevent conflicts
         ${pkgs.systemd}/bin/systemctl stop thinkfan.service 2>/dev/null || true
-        # Set fan to auto mode
         [[ -w /proc/acpi/ibm/fan ]] && echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
       '';
     };
@@ -619,44 +601,41 @@ in
 
   systemd.services.resume-post-fan = lib.mkIf isPhysicalMachine {
     description = "Restart thinkfan after resume";
-    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    after    = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    wantedBy = [ "suspend.target" "hibernate.target" ];
+    after    = [ "suspend.target" "hibernate.target" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = mkRobustScript "resume-post-fan" ''
-        # Wait for system to stabilize
         sleep 1
-        # Restart thinkfan if it was enabled
         if ${pkgs.systemd}/bin/systemctl is-enabled thinkfan.service >/dev/null 2>&1; then
           ${pkgs.systemd}/bin/systemctl restart thinkfan.service 2>/dev/null || true
         else
-          # Fallback to auto mode if thinkfan is disabled
           [[ -w /proc/acpi/ibm/fan ]] && echo "level auto" > /proc/acpi/ibm/fan 2>/dev/null || true
         fi
       '';
     };
   };
 
-  # Disable legacy fan services if they exist
-  systemd.services.thinkfan-sleep  = lib.mkIf isPhysicalMachine { 
-    enable = lib.mkForce false; 
-    wantedBy = lib.mkForce [ ]; 
-  };
-  systemd.services.thinkfan-wakeup = lib.mkIf isPhysicalMachine { 
-    enable = lib.mkForce false; 
-    wantedBy = lib.mkForce [ ]; 
-  };
+  # UDEV rules for AC/DC transitions
+  services.udev.extraRules = lib.mkIf isPhysicalMachine ''
+    # Re-apply settings on power adapter change
+    SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
+    SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start platform-performance.service"
+    SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-freq-enforce.service"
+    SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start rapl-power-limits.service"
+    SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start platform-performance.service"
+    SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-freq-enforce.service"
+  '';
 
   # ============================================================================
   # USER UTILITY SCRIPTS
   # ============================================================================
-  # Convenient commands for manual power management
   environment.systemPackages = with pkgs;
     lib.optionals isPhysicalMachine [
-      tlp          # TLP commands
-      lm_sensors   # Temperature monitoring
+      tlp
+      lm_sensors
 
-      # Performance mode: Maximum performance, higher thermals
+      # Performance mode: Maximum performance (2 GHz minimum)
       (writeScriptBin "performance-mode" ''
         #!${bash}/bin/bash
         set -e
@@ -665,40 +644,64 @@ in
         # Activate TLP AC mode
         sudo ${tlp}/bin/tlp ac
         
-        # Set governor (prefer schedutil)
-        GOVS="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null || echo "")"
-        target="powersave"
-        echo "$GOVS" | ${gnugrep}/bin/grep -qw schedutil && target="schedutil"
+        # Set platform profile to performance
+        if [[ -w "/sys/firmware/acpi/platform_profile" ]]; then
+          echo "performance" | sudo tee /sys/firmware/acpi/platform_profile >/dev/null
+        fi
         
+        # Force performance governor
         for p in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$p/scaling_governor" ]] && echo "$target" | sudo tee "$p/scaling_governor" >/dev/null || true
+          echo "performance" | sudo tee "$p/scaling_governor" >/dev/null 2>&1 || true
         done
         
-        # Set minimum frequency to 1.8 GHz for responsiveness
+        # Set minimum frequency to 2 GHz
         for p in /sys/devices/system/cpu/cpufreq/policy*; do
-          if [[ -w "$p/scaling_min_freq" ]]; then
-            echo 1800000 | sudo tee "$p/scaling_min_freq" >/dev/null || true
-          fi
-          
-          # Tune schedutil for performance
-          if [[ -d "$p/schedutil" ]]; then
-            echo 1000 | sudo tee "$p/schedutil/up_rate_limit_us" >/dev/null || true
-            echo 5000 | sudo tee "$p/schedutil/down_rate_limit_us" >/dev/null || true
-            echo 1    | sudo tee "$p/schedutil/iowait_boost_enable" >/dev/null || true
-          fi
+          echo 4800000 | sudo tee "$p/scaling_max_freq" >/dev/null 2>&1 || true
+          echo 2000000 | sudo tee "$p/scaling_min_freq" >/dev/null 2>&1 || true
         done
         
-        # Set aggressive RAPL limits: 25W/32W
+        # Set EPP to performance
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do
+          echo "performance" | sudo tee "$p/energy_performance_preference" >/dev/null 2>&1 || true
+        done
+        
+        # Intel pstate percentages
+        if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+          echo 60 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null
+          echo 100 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct >/dev/null
+        fi
+        
+        # RAPL limits for Meteor Lake
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
-          [[ -w "$R/constraint_0_power_limit_uw" ]] && echo 25000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null || true
-          [[ -w "$R/constraint_1_power_limit_uw" ]] && echo 32000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null || true
+          if [[ -r "$R/name" ]] && grep -q "package" "$R/name" 2>/dev/null; then
+            echo 28000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null 2>&1 || true
+            echo 64000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null 2>&1 || true
+          fi
         done
         
-        echo "✅ Performance mode active: governor=$target, min_freq≥1800 MHz, RAPL 25/32W"
+        # Enable turbo boost
+        if [[ -w "/sys/devices/system/cpu/cpufreq/boost" ]]; then
+          echo 1 | sudo tee /sys/devices/system/cpu/cpufreq/boost >/dev/null
+        fi
+        
+        echo "✅ Performance mode active!"
+        echo "  Governor: performance"
+        echo "  Min Freq: 2000 MHz"
+        echo "  Platform: performance"
+        echo "  RAPL: 28W/64W"
+        
+        # Show current frequencies
+        sleep 1
+        echo ""
+        echo "Current frequencies:"
+        for i in {0..7}; do
+          FREQ=$(cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq 2>/dev/null || echo 0)
+          echo "  Core $i: $((FREQ/1000)) MHz"
+        done
       '')
 
-      # Balanced mode: Default configuration
+      # Balanced mode: Default TLP settings (1.8 GHz minimum)
       (writeScriptBin "balanced-mode" ''
         #!${bash}/bin/bash
         set -e
@@ -707,77 +710,102 @@ in
         # Restart TLP with default settings
         sudo ${tlp}/bin/tlp start
         
-        # Set governor
-        GOVS="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null || echo "")"
-        target="powersave"
-        echo "$GOVS" | ${gnugrep}/bin/grep -qw schedutil && target="schedutil"
+        # Set platform profile to balanced
+        if [[ -w "/sys/firmware/acpi/platform_profile" ]]; then
+          echo "balanced" | sudo tee /sys/firmware/acpi/platform_profile >/dev/null
+        fi
         
+        # Set schedutil governor
         for p in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$p/scaling_governor" ]] && echo "$target" | sudo tee "$p/scaling_governor" >/dev/null || true
+          echo "schedutil" | sudo tee "$p/scaling_governor" >/dev/null 2>&1 || true
         done
         
-        # Set minimum frequency to 1.8 GHz on AC
+        # Set minimum frequency to 1.8 GHz
         for p in /sys/devices/system/cpu/cpufreq/policy*; do
-          if [[ -w "$p/scaling_min_freq" ]]; then
-            echo 1800000 | sudo tee "$p/scaling_min_freq" >/dev/null || true
-          fi
-          
-          # Balanced schedutil tuning
-          if [[ -d "$p/schedutil" ]]; then
-            echo 1000 | sudo tee "$p/schedutil/up_rate_limit_us" >/dev/null || true
-            echo 5000 | sudo tee "$p/schedutil/down_rate_limit_us" >/dev/null || true
-            echo 1    | sudo tee "$p/schedutil/iowait_boost_enable" >/dev/null || true
-          fi
+          echo 4200000 | sudo tee "$p/scaling_max_freq" >/dev/null 2>&1 || true
+          echo 1800000 | sudo tee "$p/scaling_min_freq" >/dev/null 2>&1 || true
         done
         
-        # Set balanced RAPL limits: 22W/30W
+        # Set EPP to balance_performance
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do
+          echo "balance_performance" | sudo tee "$p/energy_performance_preference" >/dev/null 2>&1 || true
+        done
+        
+        # Intel pstate percentages
+        if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+          echo 40 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null
+          echo 92 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct >/dev/null
+        fi
+        
+        # RAPL limits - balanced
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
-          [[ -w "$R/constraint_0_power_limit_uw" ]] && echo 22000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null || true
-          [[ -w "$R/constraint_1_power_limit_uw" ]] && echo 30000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null || true
+          if [[ -r "$R/name" ]] && grep -q "package" "$R/name" 2>/dev/null; then
+            echo 22000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null 2>&1 || true
+            echo 30000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null 2>&1 || true
+          fi
         done
         
-        echo "✅ Balanced mode active: governor=$target, min_freq≥1800 MHz, RAPL 22/30W"
+        echo "✅ Balanced mode active!"
+        echo "  Governor: schedutil"
+        echo "  Min Freq: 1800 MHz"
+        echo "  Platform: balanced"
+        echo "  RAPL: 22W/30W"
       '')
 
-      # Cool mode: Prioritize thermals and battery life
+      # Cool mode: Power saving (1.2 GHz minimum)
       (writeScriptBin "cool-mode" ''
         #!${bash}/bin/bash
         set -e
         echo "❄️ Switching to Cool mode..."
         
-        # Set governor
-        GOVS="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null || echo "")"
-        target="powersave"
-        echo "$GOVS" | ${gnugrep}/bin/grep -qw schedutil && target="schedutil"
+        # Activate TLP battery mode
+        sudo ${tlp}/bin/tlp bat
         
+        # Set platform profile to low-power
+        if [[ -w "/sys/firmware/acpi/platform_profile" ]]; then
+          echo "low-power" | sudo tee /sys/firmware/acpi/platform_profile >/dev/null
+        fi
+        
+        # Set powersave governor
         for p in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$p/scaling_governor" ]] && echo "$target" | sudo tee "$p/scaling_governor" >/dev/null || true
+          echo "powersave" | sudo tee "$p/scaling_governor" >/dev/null 2>&1 || true
         done
         
-        # Lower minimum frequency to 1.2 GHz
+        # Set minimum frequency to 1.2 GHz
         for p in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ -w "$p/scaling_min_freq" ]] && echo 1200000 | sudo tee "$p/scaling_min_freq" >/dev/null || true
-          
-          # Conservative schedutil tuning
-          if [[ -d "$p/schedutil" ]]; then
-            echo 1000 | sudo tee "$p/schedutil/up_rate_limit_us" >/dev/null || true
-            echo 7000 | sudo tee "$p/schedutil/down_rate_limit_us" >/dev/null || true
-            echo 1    | sudo tee "$p/schedutil/iowait_boost_enable" >/dev/null || true
+          echo 3200000 | sudo tee "$p/scaling_max_freq" >/dev/null 2>&1 || true
+          echo 1200000 | sudo tee "$p/scaling_min_freq" >/dev/null 2>&1 || true
+        done
+        
+        # Set EPP to balance_power
+        for p in /sys/devices/system/cpu/cpufreq/policy*; do
+          echo "balance_power" | sudo tee "$p/energy_performance_preference" >/dev/null 2>&1 || true
+        done
+        
+        # Intel pstate percentages
+        if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+          echo 20 | sudo tee /sys/devices/system/cpu/intel_pstate/min_perf_pct >/dev/null
+          echo 80 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct >/dev/null
+        fi
+        
+        # RAPL limits - conservative
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          if [[ -r "$R/name" ]] && grep -q "package" "$R/name" 2>/dev/null; then
+            echo 18000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null 2>&1 || true
+            echo 25000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null 2>&1 || true
           fi
         done
         
-        # Set conservative RAPL limits: 18W/25W
-        for R in /sys/class/powercap/intel-rapl:*; do
-          [[ -d "$R" ]] || continue
-          [[ -w "$R/constraint_0_power_limit_uw" ]] && echo 18000000 | sudo tee "$R/constraint_0_power_limit_uw" >/dev/null || true
-          [[ -w "$R/constraint_1_power_limit_uw" ]] && echo 25000000 | sudo tee "$R/constraint_1_power_limit_uw" >/dev/null || true
-        done
-        
-        echo "✅ Cool mode active: governor=$target, min_freq=1200 MHz, RAPL 18/25W"
+        echo "✅ Cool mode active!"
+        echo "  Governor: powersave"
+        echo "  Min Freq: 1200 MHz"
+        echo "  Platform: low-power"
+        echo "  RAPL: 18W/25W"
       '')
 
-      # Power status: Quick overview of power settings
+      # Power status: Quick overview
       (writeScriptBin "power-status" ''
         #!${bash}/bin/bash
         echo "==== Power Status ===="
@@ -788,13 +816,16 @@ in
         echo "CPU Governor:"
         cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "N/A"
         echo ""
+        echo "Platform Profile:"
+        cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo "N/A"
+        echo ""
         echo "RAPL Limits:"
         for R in /sys/class/powercap/intel-rapl:0/constraint_*_power_limit_uw; do
           [ -f "$R" ] && echo "$(basename "$R" | cut -d_ -f1-2): $(($(cat "$R")/1000000))W"
         done
       '')
 
-      # Performance monitoring: Comprehensive system status
+      # Performance mode status: Comprehensive monitoring
       (writeScriptBin "perf-mode" ''
         #!${bash}/bin/bash
         set -euo pipefail
@@ -807,6 +838,9 @@ in
           # Governor
           GOV="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo n/a)"
           
+          # Platform profile
+          PROFILE="$(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo n/a)"
+          
           # Power source
           PWR="BAT"
           for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
@@ -816,8 +850,9 @@ in
           echo "CPU: $CPU"
           echo "Power: $PWR"
           echo "Governor: $GOV"
+          echo "Platform: $PROFILE"
           echo ""
-          echo "CPU Frequencies (first 12 cores):"
+          echo "CPU Frequencies (first 8 cores):"
           
           # Show current frequencies
           i=0
@@ -826,8 +861,22 @@ in
             mhz=$(( $(cat "$f") / 1000 ))
             printf "  Core %02d: %4d MHz\n" "$i" "$mhz"
             i=$((i+1))
-            [ $i -ge 12 ] && break
+            [ $i -ge 8 ] && break
           done
+          
+          echo ""
+          # Frequency limits
+          if [ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq ]; then
+            MIN=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq)
+            MAX=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq)
+            echo "Limits: $((MIN/1000))-$((MAX/1000)) MHz"
+          fi
+          
+          # EPP
+          if [ -f /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference ]; then
+            EPP=$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference)
+            echo "EPP: $EPP"
+          fi
           
           echo ""
           # RAPL limits
@@ -855,9 +904,9 @@ in
             echo "Usage: perf-mode {status|perf|bal|cool}"
             echo ""
             echo "  status - Show current power/thermal status"
-            echo "  perf   - Switch to performance mode"
-            echo "  bal    - Switch to balanced mode"
-            echo "  cool   - Switch to cool/quiet mode"
+            echo "  perf   - Switch to performance mode (2.0 GHz min)"
+            echo "  bal    - Switch to balanced mode (1.8 GHz min)"
+            echo "  cool   - Switch to cool/quiet mode (1.2 GHz min)"
             exit 2
             ;;
         esac
@@ -873,18 +922,43 @@ in
           echo "=== CPU Thermals ==="
           ${pkgs.lm_sensors}/bin/sensors | ${pkgs.gnugrep}/bin/grep -E "Package|Tctl|fan"
           echo ""
+          echo "=== Power Info ==="
+          echo -n "Governor: "
+          cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "N/A"
+          echo -n "Platform: "
+          cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo "N/A"
+          echo ""
           echo "=== Power Limits ==="
           for f in /sys/class/powercap/intel-rapl:0/constraint_*_power_limit_uw; do
             [ -f "$f" ] && echo "$(basename "$f" | cut -d_ -f1-2): $(($(cat "$f")/1000000))W"
           done
           echo ""
-          echo "=== CPU Frequencies ==="
+          echo "=== CPU Frequencies (MHz) ==="
           echo -n "Current: "
           for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
             [ -f "$f" ] && echo -n "$(($(cat "$f")/1000)) "
           done | cut -d" " -f1-8
-          echo " MHz"
+          echo ""
         '
+      '')
+
+      # Return to default mode script
+      (writeScriptBin "default-mode" ''
+        #!${bash}/bin/bash
+        set -e
+        echo "↩️ Returning to default power settings..."
+        
+        # Restart TLP to apply default configuration
+        sudo ${tlp}/bin/tlp start
+        
+        # Let systemd services handle the rest
+        sudo systemctl restart platform-performance.service
+        sudo systemctl restart cpu-freq-enforce.service
+        sudo systemctl restart rapl-power-limits.service
+        
+        echo "✅ Default power settings restored"
+        echo ""
+        perf-mode status
       '')
     ];
 
@@ -893,36 +967,42 @@ in
   # ============================================================================
   # This configuration provides:
   #
-  # 1. AUTOMATIC POWER MANAGEMENT
-  #    - TLP handles most power settings automatically
-  #    - Adaptive RAPL limits based on CPU generation
-  #    - Dynamic frequency scaling with guaranteed minimums
+  # 1. THREE POWER MODES:
+  #    - Performance: 2.0 GHz min, performance governor, 28W/64W RAPL
+  #    - Balanced: 1.8 GHz min, schedutil governor, 22W/30W RAPL  
+  #    - Cool: 1.2 GHz min, powersave governor, 18W/25W RAPL
   #
-  # 2. THERMAL OPTIMIZATION
-  #    - Multi-tier fan curves with hysteresis
-  #    - Preventive thermal management via thermald
-  #    - Target: 68-72°C under sustained load
+  # 2. AUTOMATIC MANAGEMENT:
+  #    - TLP handles base power settings
+  #    - Platform profile switches based on AC/DC
+  #    - CPU frequencies enforced per power source
+  #    - RAPL limits adapt to CPU generation
   #
-  # 3. BATTERY PRESERVATION
-  #    - 75-80% charge thresholds
-  #    - Aggressive power saving on battery
-  #    - Component-level optimization
+  # 3. METEOR LAKE OPTIMIZATIONS:
+  #    - Active P-State mode for proper HWP support
+  #    - Performance governor on AC for guaranteed minimums
+  #    - Higher RAPL limits (28W/64W) for 155H
+  #    - Platform profile integration
   #
-  # 4. USER CONTROL
-  #    - Manual performance modes (performance/balanced/cool)
-  #    - Real-time monitoring tools
-  #    - Comprehensive status reporting
+  # 4. USER COMMANDS:
+  #    - performance-mode: Maximum performance (2 GHz min)
+  #    - balanced-mode: Default balanced (1.8 GHz min)
+  #    - cool-mode: Power saving (1.2 GHz min)
+  #    - default-mode: Return to automatic management
+  #    - perf-mode: Status and quick switching
+  #    - power-status: TLP and power information
+  #    - thermal-monitor: Live thermal monitoring
   #
-  # 5. ROBUSTNESS
-  #    - Automatic reconfiguration on AC/DC transitions
-  #    - Persistent settings across sleep states
-  #    - Graceful error handling
+  # 5. ROBUSTNESS:
+  #    - Settings persist across sleep/resume
+  #    - Automatic adjustment on AC/DC changes
+  #    - Error handling and fallback options
+  #    - Service dependencies properly ordered
   #
-  # The system automatically adapts to power state changes and maintains
-  # optimal performance while preventing thermal throttling. Manual
-  # intervention is rarely needed, but comprehensive tools are provided
-  # for users who want fine-grained control.
-  #
+  # The system intelligently manages power based on context while
+  # allowing manual override when needed. Meteor Lake specific
+  # optimizations ensure proper frequency scaling and thermal
+  # management for the Core Ultra 7 155H processor.
   # ============================================================================
 }
 
