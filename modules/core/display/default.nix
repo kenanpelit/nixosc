@@ -5,14 +5,14 @@
 #
 # Module: modules/core/display
 # Author: Kenan Pelit
-# Date:   2025-09-03
+# Date:   2025-10-01
 #
 # Purpose: Unified management of display, audio, fonts, and desktop portals
 # 
 # Why Single File?
 #   - Consolidates scattered desktop settings (display, portal, fonts, audio)
 #   - Eliminates "where was that setting?" searches
-#   - Prevents common conflicts when running GNOME + Hyprland side-by-side
+#   - Prevents common conflicts when running GNOME + Hyprland + COSMIC side-by-side
 #
 # Design Principles:
 #
@@ -43,11 +43,11 @@
 #   6. Multi-Desktop Support
 #      - GNOME: Traditional desktop with Wayland
 #      - Hyprland: Tiling compositor for power users
-#      - COSMIC: Next-gen Rust-based desktop (experimental)
+#      - COSMIC: Next-gen Rust-based desktop (Beta - from nixpkgs)
 #
 # Conflict Prevention:
 #   - Hyprland portal via programs.hyprland.portalPackage (no duplication)
-#   - COSMIC portal via xdg.portal.extraPortals (COSMIC uses services.desktopManager)
+#   - COSMIC portal automatically provided by services.desktopManager.cosmic
 #   - GNOME keyring here; PAM/Security in security module
 #   - Font env vars identical in system and home-manager layers
 #
@@ -65,9 +65,8 @@ let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.default;
   hyprPortal  = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   
-  # COSMIC packages from flake input
-  # COSMIC is experimental - portal integration may evolve
-  # NOTE: COSMIC portal is provided by the nixos-cosmic module automatically
+  # COSMIC packages from nixpkgs unstable
+  # COSMIC portal is automatically provided by services.desktopManager.cosmic
 in
 {
   # ============================================================================
@@ -100,20 +99,25 @@ in
     };
 
     # --------------------------------------------------------------------------
-    # Display Manager - GDM with Wayland
+    # Display Manager - COSMIC Greeter (Primary)
     # --------------------------------------------------------------------------
-    # GDM provides session selection for GNOME, Hyprland, and COSMIC
-    # Alternative: Use cosmic-greeter when COSMIC is primary desktop
+    # COSMIC greeter provides session selection for GNOME, Hyprland, and COSMIC
+    # Alternative: Use GDM by commenting cosmic-greeter and uncommenting gdm
     
     displayManager = {
-      gdm = {
-        enable = true;
-        wayland = true;             # Wayland-first approach
-      };
-      autoLogin.enable = false;     # Security: no auto-login
+      # COSMIC Greeter (Primary - supports all desktop sessions)
+      cosmic-greeter.enable = true;
       
-      # COSMIC Greeter (alternative to GDM - uncomment to use)
-      # cosmic-greeter.enable = true;
+      # GDM (Alternative - uncomment to use instead of cosmic-greeter)
+      # gdm = {
+      #   enable = true;
+      #   wayland = true;             # Wayland-first approach
+      # };
+      
+      # Default session selection
+      defaultSession = "cosmic";
+      
+      autoLogin.enable = false;     # Security: no auto-login
     };
 
     # --------------------------------------------------------------------------
@@ -124,7 +128,7 @@ in
     
     desktopManager = {
       gnome.enable = true;          # GNOME - Traditional desktop
-      cosmic.enable = true;         # COSMIC - Experimental Rust desktop
+      cosmic.enable = true;         # COSMIC - Rust-based desktop (Beta)
     };
 
     # --------------------------------------------------------------------------
@@ -174,10 +178,14 @@ in
       common.default = [ "gtk" ];
       hyprland.default = [ "gtk" "hyprland" ];  # Hyprland session uses both
       cosmic.default = [ "cosmic" "gtk" ];      # COSMIC session prefers cosmic portal
+      gnome.default = [ "gnome" "gtk" ];        # GNOME session uses gnome portal
     };
 
-    # Only GTK portal here (Desktop-specific portals via programs.hyprland or cosmic module)
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    # GTK and GNOME portals (Desktop-specific portals via programs.hyprland or cosmic module)
+    extraPortals = [ 
+      pkgs.xdg-desktop-portal-gtk 
+      pkgs.xdg-desktop-portal-gnome
+    ];
   };
 
   # ============================================================================
