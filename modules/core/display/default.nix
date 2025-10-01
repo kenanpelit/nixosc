@@ -19,10 +19,11 @@
 #   1. Hyprland-First Portal Strategy
 #      - Hyprland portal active in Hyprland sessions
 #      - GTK portal as fallback for common cases
+#      - COSMIC portal for COSMIC sessions
 #      - Ensures xdg-open and screen sharing use correct backend
 #
 #   2. Xorg Compatibility Layer
-#      - GNOME + Hyprland primarily use Wayland
+#      - GNOME + Hyprland + COSMIC primarily use Wayland
 #      - Xorg enabled only as fallback for legacy applications
 #
 #   3. PipeWire Central Audio Stack
@@ -39,8 +40,14 @@
 #      - Each block has WHY/HOW explanations
 #      - Quick decision support (e.g., enabling JACK, changing portals)
 #
+#   6. Multi-Desktop Support
+#      - GNOME: Traditional desktop with Wayland
+#      - Hyprland: Tiling compositor for power users
+#      - COSMIC: Next-gen Rust-based desktop (experimental)
+#
 # Conflict Prevention:
 #   - Hyprland portal via programs.hyprland.portalPackage (no duplication)
+#   - COSMIC portal via xdg.portal.extraPortals (COSMIC uses services.desktopManager)
 #   - GNOME keyring here; PAM/Security in security module
 #   - Font env vars identical in system and home-manager layers
 #
@@ -57,6 +64,10 @@ let
   # Locked versions ensure portal compatibility
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.default;
   hyprPortal  = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  
+  # COSMIC packages from flake input
+  # COSMIC is experimental - portal integration may evolve
+  # NOTE: COSMIC portal is provided by the nixos-cosmic module automatically
 in
 {
   # ============================================================================
@@ -91,18 +102,30 @@ in
     # --------------------------------------------------------------------------
     # Display Manager - GDM with Wayland
     # --------------------------------------------------------------------------
+    # GDM provides session selection for GNOME, Hyprland, and COSMIC
+    # Alternative: Use cosmic-greeter when COSMIC is primary desktop
+    
     displayManager = {
       gdm = {
         enable = true;
         wayland = true;             # Wayland-first approach
       };
       autoLogin.enable = false;     # Security: no auto-login
+      
+      # COSMIC Greeter (alternative to GDM - uncomment to use)
+      # cosmic-greeter.enable = true;
     };
 
     # --------------------------------------------------------------------------
-    # Desktop Environment - GNOME
+    # Desktop Environments
     # --------------------------------------------------------------------------
-    desktopManager.gnome.enable = true;
+    # Multiple desktops enabled for flexibility
+    # User can select at login screen
+    
+    desktopManager = {
+      gnome.enable = true;          # GNOME - Traditional desktop
+      cosmic.enable = true;         # COSMIC - Experimental Rust desktop
+    };
 
     # --------------------------------------------------------------------------
     # Input Management
@@ -139,18 +162,21 @@ in
   # ============================================================================
   # Portal routing ensures applications use the correct backend for
   # screen sharing, file selection, and external link handling.
+  # Each desktop environment gets its optimal portal configuration.
+  # NOTE: COSMIC portal is automatically provided by services.desktopManager.cosmic
   
   xdg.portal = {
     enable = true;
     xdgOpenUsePortal = true;  # Route xdg-open through portal (Wayland-safe)
 
-    # Portal priority configuration
+    # Portal priority configuration per desktop session
     config = {
       common.default = [ "gtk" ];
       hyprland.default = [ "gtk" "hyprland" ];  # Hyprland session uses both
+      cosmic.default = [ "cosmic" "gtk" ];      # COSMIC session prefers cosmic portal
     };
 
-    # Only GTK portal here (Hyprland portal provided by programs.hyprland)
+    # Only GTK portal here (Desktop-specific portals via programs.hyprland or cosmic module)
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
@@ -324,4 +350,3 @@ in
     ];
   };
 }
-
