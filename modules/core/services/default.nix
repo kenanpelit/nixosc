@@ -151,7 +151,7 @@
   
   environment.systemPackages = with pkgs; [
     # Power management
-    tlp                          # TLP power manager CLI
+    #tlp                          # TLP power manager CLI
     
     # SPICE/Virtualization tools
     spice-gtk                    # SPICE GTK client
@@ -159,10 +159,10 @@
     virt-viewer                  # Virtual machine viewer
   ];
   
-  # Log TLP version on system switch (for verification)
-  system.activationScripts.tlpVersion = ''
-    echo "[nixos-switch] $(date -Is) TLP: $(${pkgs.tlp}/bin/tlp --version || true)"
-  '';
+  ## Log TLP version on system switch (for verification)
+  #system.activationScripts.tlpVersion = ''
+  #  echo "[nixos-switch] $(date -Is) TLP: $(${pkgs.tlp}/bin/tlp --version || true)"
+  #'';
 
   # ============================================================================
   # Virtualization Stack
