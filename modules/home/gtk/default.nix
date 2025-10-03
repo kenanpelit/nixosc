@@ -78,9 +78,9 @@ in
     # ---------------------------------------------------------------------------
     gtk2 = {
       configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
-      extraConfig = ''
-        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
+      extraConfig = lib.mkForce ''
         gtk-icon-theme-name = "a-candy-beauty-icon-theme"
+        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
         gtk-application-prefer-dark-theme = 1
         gtk-button-images = 1
