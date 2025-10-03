@@ -5,7 +5,7 @@
 #
 # Module: modules/core/display
 # Author: Kenan Pelit
-# Date:   2025-10-01
+# Date:   2025-10-03
 #
 # Purpose: Unified management of display, audio, fonts, and desktop portals
 # 
@@ -16,11 +16,12 @@
 #
 # Design Principles:
 #
-#   1. Hyprland-First Portal Strategy
-#      - Hyprland portal active in Hyprland sessions
-#      - GTK portal as fallback for common cases
-#      - COSMIC portal for COSMIC sessions
-#      - Ensures xdg-open and screen sharing use correct backend
+#   1. Desktop-Specific Portal Strategy
+#      - Each desktop uses its own portal implementation
+#      - COSMIC portal for COSMIC sessions with screenshot support
+#      - Hyprland portal for Hyprland sessions
+#      - GNOME portal for GNOME sessions
+#      - GTK portal as universal fallback
 #
 #   2. Xorg Compatibility Layer
 #      - GNOME + Hyprland + COSMIC primarily use Wayland
@@ -159,6 +160,20 @@ in
       # JACK disabled (enable for DAW/studio use)
       jack.enable = false;
     };
+
+    # --------------------------------------------------------------------------
+    # D-Bus Configuration - Portal Support
+    # --------------------------------------------------------------------------
+    # Ensure portal packages are registered with D-Bus
+    dbus = {
+      enable = true;
+      packages = with pkgs; [ 
+        xdg-desktop-portal 
+        xdg-desktop-portal-cosmic
+        xdg-desktop-portal-gtk
+        xdg-desktop-portal-gnome
+      ];
+    };
   };
 
   # ============================================================================
@@ -167,25 +182,83 @@ in
   # Portal routing ensures applications use the correct backend for
   # screen sharing, file selection, and external link handling.
   # Each desktop environment gets its optimal portal configuration.
+  #
+  # CRITICAL: COSMIC screenshot fix
+  # The cosmic portal must be explicitly set for Screenshot and ScreenCast
+  # interfaces to make cosmic-screenshot work properly.
+  #
   # NOTE: COSMIC portal is automatically provided by services.desktopManager.cosmic
+  # Hyprland portal is provided by programs.hyprland.portalPackage
   
   xdg.portal = {
     enable = true;
     xdgOpenUsePortal = true;  # Route xdg-open through portal (Wayland-safe)
 
     # Portal priority configuration per desktop session
+    # Format: desktop_name.interface = [ "preferred_impl" "fallback_impl" ];
     config = {
+      # Common fallback for all desktops
       common.default = [ "gtk" ];
-      hyprland.default = [ "gtk" "hyprland" ];  # Hyprland session uses both
-      cosmic.default = [ "cosmic" "gtk" ];      # COSMIC session prefers cosmic portal
-      gnome.default = [ "gnome" "gtk" ];        # GNOME session uses gnome portal
+      
+      # Hyprland session - uses hyprland portal with gtk fallback
+      hyprland.default = [ "gtk" "hyprland" ];
+      
+      # COSMIC session - uses cosmic portal with explicit screenshot support
+      cosmic = {
+        default = [ "cosmic" "gtk" ];
+        # CRITICAL: These lines fix cosmic-screenshot
+        "org.freedesktop.impl.portal.Screenshot" = [ "cosmic" ];
+        "org.freedesktop.impl.portal.ScreenCast" = [ "cosmic" ];
+        "org.freedesktop.impl.portal.FileChooser" = [ "cosmic" ];
+      };
+      
+      # GNOME session - uses gnome portal with gtk fallback
+      gnome.default = [ "gnome" "gtk" ];
     };
 
-    # GTK and GNOME portals (Desktop-specific portals via programs.hyprland or cosmic module)
+    # GTK and GNOME portals explicitly added
+    # Desktop-specific portals (cosmic, hyprland) are provided by their respective modules
     extraPortals = [ 
       pkgs.xdg-desktop-portal-gtk 
       pkgs.xdg-desktop-portal-gnome
+      pkgs.xdg-desktop-portal-cosmic 
     ];
+  };
+
+  # ============================================================================
+  # Systemd User Services - COSMIC Portal (FIXED)
+  # ============================================================================
+  # Fixed service definition with proper dependencies
+  # Key changes:
+  # - after = graphical-session.target (wait for Wayland)
+  # - Removed 'before' directive (was creating circular dependency)
+  # - Added RestartSec for stability
+  
+  systemd.user.services.xdg-desktop-portal-cosmic = {
+    description = "Portal service (COSMIC implementation)";
+    
+    # Wait for graphical session to be ready (Wayland display available)
+    after = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    wantedBy = [ "xdg-desktop-portal.service" ];
+    
+    serviceConfig = {
+      Type = "dbus";
+      BusName = "org.freedesktop.impl.portal.desktop.cosmic";
+      ExecStart = "${pkgs.xdg-desktop-portal-cosmic}/libexec/xdg-desktop-portal-cosmic";
+      Restart = "on-failure";
+      RestartSec = "2s";           # Wait 2 seconds before restart
+      Slice = "session.slice";
+      
+      # Timeout configuration
+      TimeoutStartSec = "30s";     # Give portal 30 seconds to start
+      TimeoutStopSec = "10s";      # 10 seconds to stop gracefully
+    };
+    
+    environment = {
+      # Ensure portal knows it's running in COSMIC
+      XDG_CURRENT_DESKTOP = "COSMIC";
+    };
   };
 
   # ============================================================================
@@ -358,3 +431,4 @@ in
     ];
   };
 }
+
