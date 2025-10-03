@@ -20,6 +20,7 @@
     # =============================================================================
     ./hyprland      # Hyprland Wayland compositor configuration
     ./sway          # Sway tiling window manager
+    ./cosmic        # Cosmic tiling desktop
     ./waybar        # Wayland status bar and system information
     ./rofi          # Application launcher and menu system
     ./swaylock      # Screen locker for Wayland sessions
