@@ -33,6 +33,9 @@ let
   clustergit = pkgs.writeShellScriptBin "clustergit" (
     builtins.readFile ./bin/clustergit.sh
   );
+  cosmic_tty = pkgs.writeShellScriptBin "cosmic_tty" (
+    builtins.readFile ./bin/cosmic_tty.sh
+  );
   cosmic-workspace-monitor = pkgs.writeShellScriptBin "cosmic-workspace-monitor" (
     builtins.readFile ./bin/cosmic-workspace-monitor.sh
   );
@@ -53,6 +56,9 @@ let
   );
   gnome-settings = pkgs.writeShellScriptBin "gnome-settings" (
     builtins.readFile ./bin/gnome-settings.sh
+  );
+  gnome_tty = pkgs.writeShellScriptBin "gnome_tty" (
+    builtins.readFile ./bin/gnome_tty.sh
   );
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
@@ -400,6 +406,7 @@ in {
     chroot_manager
     clearam
     clustergit
+    cosmic_tty
     cosmic-workspace-monitor
     crypto-manager
     gitgo
@@ -407,6 +414,7 @@ in {
     gnome-flow
     gnome-mpv-manager
     gnome-settings
+    gnome_tty
     hypr-airplane_mode
     hypr-blue-gammastep-manager
     hypr-blue-hyprsunset-manager
