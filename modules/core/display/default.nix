@@ -5,7 +5,7 @@
 #
 # Module: modules/core/display
 # Author: Kenan Pelit
-# Date:   2025-10-03
+# Date:   2025-10-04
 #
 # Purpose: Unified management of display, audio, fonts, and desktop portals
 # 
@@ -47,7 +47,7 @@
 #      - COSMIC: Next-gen Rust-based desktop (Beta - from nixpkgs)
 #
 #   7. Session Selection Strategy
-#      - TTY1: cosmic-greeter provides graphical session selection
+#      - GDM provides graphical session selection with proper XDG discovery
 #      - TTY2: Direct hyprland_tty launch with full optimizations
 #      - Both methods supported - user can choose workflow preference
 #
@@ -108,9 +108,10 @@ in
     # Display Manager - GDM (GNOME Display Manager)
     # --------------------------------------------------------------------------
     # GDM provides robust session selection with full XDG portal support
-    # Automatically discovers sessions from both:
+    # Automatically discovers sessions from:
+    #   - services.displayManager.sessionPackages (custom sessions)
     #   - /run/current-system/sw/share/wayland-sessions/ (system packages)
-    #   - /etc/wayland-sessions/ (custom NixOS configurations)
+    #   - /etc/wayland-sessions/ (fallback)
     #
     # Why GDM over cosmic-greeter?
     #   - Mature, well-tested with comprehensive session discovery
@@ -119,9 +120,40 @@ in
     #   - Reliable multi-session support (GNOME + Hyprland + COSMIC)
     #
     # Note: cosmic-greeter currently only scans system package paths,
-    # missing custom sessions defined via environment.etc
+    # missing custom sessions defined via sessionPackages or environment.etc
     
     displayManager = {
+        # --------------------------------------------------------------------------
+        # Custom Session Packages
+        # --------------------------------------------------------------------------
+        # Register custom desktop sessions with display manager
+        # This makes sessions discoverable by GDM and other display managers
+        # CRITICAL: This is the proper NixOS way to add custom sessions
+        
+        sessionPackages = [
+          # Custom Hyprland Optimized session
+          (pkgs.writeTextFile rec {
+            name = "hyprland-optimized-session";
+            destination = "/share/wayland-sessions/hyprland-optimized.desktop";
+            text = ''
+              [Desktop Entry]
+              Name=Hyprland (Optimized)
+              Comment=Hyprland with Intel Arc optimizations and Catppuccin theme support
+              Exec=hyprland_tty
+              Type=Application
+              DesktopNames=Hyprland
+              Keywords=wayland;wm;tiling;catppuccin;
+            '';
+            
+            # CRITICAL: providedSessions tells NixOS which session names this package provides
+            passthru.providedSessions = [ "hyprland-optimized" ];
+          })
+        ];
+        
+        # --------------------------------------------------------------------------
+        # GDM Configuration
+        # --------------------------------------------------------------------------
+        
         gdm = {
             enable = true;
             wayland = true;             # Wayland-first approach
@@ -136,29 +168,6 @@ in
         # Security: no auto-login
         autoLogin.enable = false;
     };
-
-    # --------------------------------------------------------------------------
-    # Display Manager - COSMIC Greeter (Primary)
-    # --------------------------------------------------------------------------
-    # COSMIC greeter provides session selection for GNOME, Hyprland, and COSMIC
-    # Alternative: Use GDM by commenting cosmic-greeter and uncommenting gdm
-    
-    #displayManager = {
-    #  # COSMIC Greeter (Primary - supports all desktop sessions)
-    #  cosmic-greeter.enable = true;
-    #  
-    #  # GDM (Alternative - uncomment to use instead of cosmic-greeter)
-    #  # gdm = {
-    #  #   enable = true;
-    #  #   wayland = true;             # Wayland-first approach
-    #  # };
-    #  
-    #  # Default session selection
-    #  # Options: "hyprland", "hyprland-optimized", "cosmic", "gnome"
-    #  defaultSession = "cosmic";
-    #  
-    #  autoLogin.enable = false;     # Security: no auto-login
-    #};
 
     # --------------------------------------------------------------------------
     # Desktop Environments
@@ -303,9 +312,15 @@ in
   # ============================================================================
   # Wayland Session Files - Desktop Entry Definitions
   # ============================================================================
-  # Explicit session definitions for display manager integration.
-  # These files allow cosmic-greeter (or any display manager) to discover
-  # and launch desktop sessions.
+  # Session registration strategy:
+  #   1. hyprland-optimized: Registered via services.displayManager.sessionPackages
+  #      (This is the proper NixOS way and ensures GDM discovery)
+  #   2. Other sessions: Defined here in environment.etc for compatibility
+  #
+  # Why both methods?
+  #   - sessionPackages is the official NixOS method (GDM sees it)
+  #   - environment.etc provides fallback and documentation
+  #   - TTY2 can use these files directly without display manager
   #
   # Session File Strategy:
   #   - Standard sessions (GNOME, COSMIC): Use desktop environment defaults
@@ -326,7 +341,7 @@ in
   #      - Recommended for daily use
   #
   # Choosing at Login:
-  #   - cosmic-greeter will show both options
+  #   - GDM will show all available sessions
   #   - Select "Hyprland (Optimized)" for best experience
   #   - Standard "Hyprland" available as fallback
   #
@@ -375,10 +390,14 @@ in
     '';
 
     # --------------------------------------------------------------------------
-    # Hyprland Session (Optimized)
+    # Hyprland Session (Optimized) - Fallback Definition
     # --------------------------------------------------------------------------
-    # Launch via hyprland_tty script with full optimizations
-    # Recommended for: daily use, Intel Arc graphics, Catppuccin theming
+    # This is a fallback/documentation copy
+    # The actual registration is done via services.displayManager.sessionPackages
+    # Keeping this here ensures:
+    #   - TTY2 direct launch can find it
+    #   - Documentation is in one place
+    #   - Fallback if sessionPackages has issues
     #
     # Features enabled by hyprland_tty:
     #   - Intel Arc Graphics compatibility (WLR_DRM_NO_ATOMIC, etc.)

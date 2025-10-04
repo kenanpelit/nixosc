@@ -1,6 +1,6 @@
 # modules/home/hyprland/hypridle.nix
 # ==============================================================================
-# Hypridle Configuration (Screen & Power Management) - Fixed Suspend Issues
+# Hypridle Configuration (Screen & Power Management) - Fixed Lid Switch
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
@@ -13,10 +13,20 @@
     # ---------------------------------------------------------------------------
     general {
         lock_cmd = pidof hyprlock || hyprlock
-        before_sleep_cmd = loginctl lock-session && sleep 1
-        after_sleep_cmd = hyprctl dispatch dpms on && sleep 2 # && pkill -SIGUSR1 hyprlock
-        ignore_dbus_inhibit = false            # DBus inhibit'leri dinle (media player vs.)
-        ignore_systemd_inhibit = false         # Systemd inhibit'leri dinle
+        # WORKAROUND: Kill existing hyprlock first, then start new one without screenshot
+        before_sleep_cmd = pkill hyprlock; sleep 0.5; hyprlock --grace 0 & sleep 2
+        after_sleep_cmd = hyprctl dispatch dpms on && sleep 2
+        ignore_dbus_inhibit = false
+        ignore_systemd_inhibit = false
+    }
+   
+    # ---------------------------------------------------------------------------
+    # Keyboard backlight off (5 minutes) - Klavye ışığı tasarrufu
+    # ---------------------------------------------------------------------------
+    listener {
+        timeout = 300
+        on-timeout = brightnessctl -sd platform::kbd_backlight set 0
+        on-resume = brightnessctl -rd platform::kbd_backlight
     }
     
     # ---------------------------------------------------------------------------
@@ -52,15 +62,6 @@
         timeout = 3600
         on-timeout = systemctl suspend -i
         on-resume = hyprctl dispatch dpms on && sleep 1
-    }
-    
-    # ---------------------------------------------------------------------------
-    # Keyboard backlight off (5 minutes) - Klavye ışığı tasarrufu
-    # ---------------------------------------------------------------------------
-    listener {
-        timeout = 300
-        on-timeout = brightnessctl -sd platform::kbd_backlight set 0
-        on-resume = brightnessctl -rd platform::kbd_backlight
     }
   '';
   

@@ -255,6 +255,9 @@ let
   renew_env = pkgs.writeShellScriptBin "renew_env" (
     builtins.readFile ./bin/renew_env.sh
   );
+  rofi-custom-launcher = pkgs.writeShellScriptBin "rofi-custom-launcher" (
+    builtins.readFile ./bin/rofi-custom-launcher.sh
+  );
   rofi-frecency = pkgs.writeShellScriptBin "rofi-frecency" (
     builtins.readFile ./bin/rofi-frecency.sh
   );
@@ -471,6 +474,7 @@ in {
     publicip
     record
     renew_env
+    rofi-custom-launcher
     rofi-frecency
     rofi-hypr-keybinds
     rofi-iwmenu

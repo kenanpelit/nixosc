@@ -1,61 +1,83 @@
 # modules/home/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Configuration with Dynamic Catppuccin Theme
+# Hyprlock Screen Locker - Dynamic Catppuccin Theme Support
 # ==============================================================================
-# This configuration manages hyprlock screen locker including:
-# - Dynamic Catppuccin color scheme (supports all flavors)
-# - Background and avatar configuration  
-# - Clock and system information display
-# - Authentication input field
+# 
+# FEATURES:
+#   - Dynamic Catppuccin theming (auto-adapts to flavor changes)
+#   - Static wallpaper background (no screenshot to avoid screencopy bugs)
+#   - System information display (uptime, battery, weather, music)
+#   - Secure password input with visual feedback
+#   - Responsive to light/dark flavor variants
+#
+# USAGE:
+#   - Lock manually: hyprlock
+#   - Lock with no grace period: hyprlock --grace 0
+#   - Config regenerates on flavor change via home-manager
+#
+# REQUIREMENTS:
+#   - Wallpaper: /home/${username}/Pictures/wallpapers/nixos/nixos.png
+#   - Avatar: /home/${username}/Pictures/wallpapers/nixos/avatar.png
+#   - Font: Hack Nerd Font (installed via system config)
 #
 # Author: Kenan Pelit
+# Date:   2025-10-04
 # ==============================================================================
+
 { config, lib, pkgs, username, ... }:
+
 let
-  # Catppuccin modülünden otomatik renk alımı
+  # Import Catppuccin palette for dynamic theming
   inherit (config.catppuccin) sources;
-  
-  # Palette JSON'dan renkler - dinamik flavor desteği
   colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
   
-  # Convert RGB set to string and create RGBA
-  mkRgba = color: alpha: "rgba(${toString color.r}, ${toString color.g}, ${toString color.b}, ${toString alpha})";
+  # Helper function: Convert RGB values to RGBA string
+  # Usage: mkRgba colors.base.rgb 1.0 → "rgba(30, 30, 46, 1.0)"
+  mkRgba = color: alpha: 
+    "rgba(${toString color.r}, ${toString color.g}, ${toString color.b}, ${toString alpha})";
   
-  # Dynamic color palette based on current flavor
+  # Dynamic color palette - adapts to current Catppuccin flavor
+  # Alpha values tuned for optimal visibility and aesthetics
   dynamicColors = {
-    # Background colors - adapts to flavor
-    base = mkRgba colors.base.rgb 1.0;
-    surface0 = mkRgba colors.surface0.rgb 0.8;
-    surface1 = mkRgba colors.surface1.rgb 0.9;
-    mantle = mkRgba colors.mantle.rgb 0.6;
+    # Base colors - background and surfaces
+    base      = mkRgba colors.base.rgb 1.0;      # Main background
+    surface0  = mkRgba colors.surface0.rgb 0.8;  # Input field background
+    surface1  = mkRgba colors.surface1.rgb 0.9;  # Username background
+    mantle    = mkRgba colors.mantle.rgb 0.6;    # Overlay effects
     
-    # Text colors - adapts to flavor (light/dark)
-    text = mkRgba colors.text.rgb 0.95;
-    subtext0 = mkRgba colors.subtext0.rgb 0.8;
-    subtext1 = mkRgba colors.subtext1.rgb 0.7;
+    # Text colors - automatically inverted for light/dark flavors
+    text      = mkRgba colors.text.rgb 0.95;     # Primary text
+    subtext0  = mkRgba colors.subtext0.rgb 0.8;  # Secondary text
+    subtext1  = mkRgba colors.subtext1.rgb 0.7;  # Tertiary text
     
-    # Accent colors - flavor dependent
-    blue = mkRgba colors.blue.rgb 0.9;
-    cyan = mkRgba colors.sky.rgb 0.8;
-    teal = mkRgba colors.teal.rgb 0.7;
-    purple = mkRgba colors.mauve.rgb 0.8;
+    # Accent colors - flavor-specific highlights
+    blue      = mkRgba colors.blue.rgb 0.9;      # Day of week
+    cyan      = mkRgba colors.sky.rgb 0.8;       # Date & weather
+    teal      = mkRgba colors.teal.rgb 0.7;      # Music info
+    purple    = mkRgba colors.mauve.rgb 0.8;     # Hints & borders
     
-    # Status colors
-    green = mkRgba colors.green.rgb 0.9;
-    yellow = mkRgba colors.yellow.rgb 0.8;
-    orange = mkRgba colors.peach.rgb 0.8;
-    red = mkRgba colors.red.rgb 0.9;
+    # Status colors - visual feedback
+    green     = mkRgba colors.green.rgb 0.9;     # Success state
+    yellow    = mkRgba colors.yellow.rgb 0.8;    # Caps Lock warning
+    orange    = mkRgba colors.peach.rgb 0.8;     # Battery info
+    red       = mkRgba colors.red.rgb 0.9;       # Error state
     
-    # Special colors
-    border = mkRgba colors.overlay0.rgb 0.8;
-    overlay = mkRgba colors.mantle.rgb 0.6;
+    # UI elements
+    border    = mkRgba colors.overlay0.rgb 0.8;  # Input borders
   };
 in
 {
+  # Install hyprlock package
   home.packages = [ pkgs.hyprlock ];
   
+  # Generate hyprlock configuration with dynamic colors
   xdg.configFile."hypr/hyprlock.conf".text = ''
-    # Background - Dynamic Catppuccin
+    # ==========================================================================
+    # BACKGROUND
+    # ==========================================================================
+    # Uses static wallpaper instead of screenshot to avoid screencopy protocol
+    # issues with Hyprland. Contrast/brightness adapt to light/dark flavors.
+    
     background {
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/nixos.png
@@ -66,14 +88,12 @@ in
       color = ${dynamicColors.base}
     }
     
-    # General settings
-    general {
-      no_fade_in = false
-      grace = 0
-      disable_loading_bar = true
-    }
+    # ==========================================================================
+    # DATE & TIME DISPLAY
+    # ==========================================================================
+    # Updates every second for accurate time display
     
-    # Day of week - Dynamic Blue
+    # Day of week - Large, prominent display
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%A")"
@@ -85,7 +105,7 @@ in
       valign = center
     }
     
-    # Date - Dynamic Sky/Cyan
+    # Full date - Month name and year
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%d %B %Y")"
@@ -97,7 +117,7 @@ in
       valign = center
     }
     
-    # Time - Dynamic Text Color
+    # Current time - 24-hour format
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%H:%M")"
@@ -109,7 +129,11 @@ in
       valign = center
     }
     
-    # Avatar - Dynamic Mauve/Purple Border
+    # ==========================================================================
+    # USER AVATAR
+    # ==========================================================================
+    # Circular avatar with dynamic purple border matching flavor
+    
     image {
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/avatar.png
@@ -122,7 +146,12 @@ in
       valign = center
     }
     
-    # Username background - Dynamic Surface1
+    # ==========================================================================
+    # USERNAME DISPLAY
+    # ==========================================================================
+    # Username with background shape for better visibility
+    
+    # Background shape behind username
     shape {
       monitor =
       size = 250, 50
@@ -133,7 +162,7 @@ in
       valign = center
     }
     
-    # Username - Dynamic Text
+    # Username text - automatically shows current user
     label {
       monitor =
       text = $USER
@@ -145,7 +174,12 @@ in
       valign = center
     }
     
-    # Password input - Dynamic Theme
+    # ==========================================================================
+    # PASSWORD INPUT FIELD
+    # ==========================================================================
+    # Secure password entry with visual state feedback
+    # Colors change based on: idle, typing, success, failure, caps lock
+    
     input-field {
       monitor =
       size = 250, 50
@@ -159,63 +193,15 @@ in
       fade_on_empty = true
       font_family = Hack Nerd Font
       placeholder_text = <span foreground="${colors.subtext0.hex}">Enter Password</span>
-      check_color = ${dynamicColors.green}
-      fail_color = ${dynamicColors.red}
-      capslock_color = ${dynamicColors.yellow}
+      check_color = ${dynamicColors.green}      # Correct password
+      fail_color = ${dynamicColors.red}         # Wrong password
+      capslock_color = ${dynamicColors.yellow}  # Caps Lock active
       position = 0, -200
       halign = center
       valign = center
     }
     
-    # System uptime - Dynamic Subtext0
-    label {
-      monitor =
-      text = cmd[update:60000] echo "⏱ Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
-      color = ${dynamicColors.subtext0}
-      font_size = 14
-      font_family = Hack Nerd Font
-      position = 0, -320
-      halign = center
-      valign = center
-    }
-    
-    # Music status - Dynamic Teal
-    label {
-      monitor =
-      text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "🎵 $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "🎵 No Player"; fi
-      color = ${dynamicColors.teal}
-      font_size = 14
-      font_family = Hack Nerd Font
-      position = 0, -350
-      halign = center
-      valign = center
-    }
-    
-    # Battery status (if laptop) - Dynamic Peach/Orange
-    label {
-      monitor =
-      text = cmd[update:30000] if [ -f /sys/class/power_supply/BAT0/capacity ]; then echo "🔋 $(cat /sys/class/power_supply/BAT0/capacity)%"; else echo ""; fi
-      color = ${dynamicColors.orange}
-      font_size = 14
-      font_family = Hack Nerd Font
-      position = 0, -380
-      halign = center
-      valign = center
-    }
-    
-    # Bottom action icons - Dynamic Text
-    label {
-      monitor =
-      text = 󰐥  󰜉  󰤄
-      color = ${dynamicColors.text}
-      font_size = 40
-      font_family = Hack Nerd Font
-      position = 0, 100
-      halign = center
-      valign = bottom
-    }
-    
-    # Lock screen hint - Dynamic Purple/Mauve
+    # Hint text below password field
     label {
       monitor =
       text = Press Enter to unlock
@@ -227,7 +213,51 @@ in
       valign = center
     }
     
-    # Weather info - Istanbul - Dynamic Sky/Cyan
+    # ==========================================================================
+    # SYSTEM INFORMATION
+    # ==========================================================================
+    # Dynamic system stats with varying update intervals for efficiency
+    
+    # System uptime - Updates every minute
+    label {
+      monitor =
+      text = cmd[update:60000] echo "⏱ Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
+      color = ${dynamicColors.subtext0}
+      font_size = 14
+      font_family = Hack Nerd Font
+      position = 0, -320
+      halign = center
+      valign = center
+    }
+    
+    # Currently playing music - Updates every 5 seconds
+    # Checks for Spotify player, shows title or status
+    label {
+      monitor =
+      text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "🎵 $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "🎵 No Player"; fi
+      color = ${dynamicColors.teal}
+      font_size = 14
+      font_family = Hack Nerd Font
+      position = 0, -350
+      halign = center
+      valign = center
+    }
+    
+    # Battery percentage - Updates every 30 seconds
+    # Only shown if battery exists (laptops)
+    label {
+      monitor =
+      text = cmd[update:30000] if [ -f /sys/class/power_supply/BAT0/capacity ]; then echo "🔋 $(cat /sys/class/power_supply/BAT0/capacity)%"; else echo ""; fi
+      color = ${dynamicColors.orange}
+      font_size = 14
+      font_family = Hack Nerd Font
+      position = 0, -380
+      halign = center
+      valign = center
+    }
+    
+    # Weather for Istanbul - Updates every 5 minutes
+    # Uses wttr.in API for current conditions
     label {
       monitor =
       text = cmd[update:300000] curl -s "wttr.in/Istanbul?format=3" 2>/dev/null | head -1 || echo "🌤 Weather unavailable"
@@ -239,7 +269,24 @@ in
       valign = center
     }
     
-    # Flavor indicator - Shows current Catppuccin flavor
+    # ==========================================================================
+    # FOOTER ELEMENTS
+    # ==========================================================================
+    
+    # Action icons - Symbolic representation of lock/power/network
+    label {
+      monitor =
+      text = 󰐥  󰜉  󰤄
+      color = ${dynamicColors.text}
+      font_size = 40
+      font_family = Hack Nerd Font
+      position = 0, 100
+      halign = center
+      valign = bottom
+    }
+    
+    # Current Catppuccin flavor indicator - Top left corner
+    # Useful for debugging theme issues
     label {
       monitor =
       text = Catppuccin ${lib.strings.toUpper config.catppuccin.flavor}
