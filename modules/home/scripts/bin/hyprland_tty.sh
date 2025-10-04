@@ -268,9 +268,9 @@ setup_environment() {
 	# Temel Wayland Ayarları
 	# -------------------------------------------------------------------------
 	export XDG_SESSION_TYPE="wayland"
-	export XDG_SESSION_DESKTOP="hyprland"
-	export XDG_CURRENT_DESKTOP="HYPRLAND"
-	export DESKTOP_SESSION="hyprland"
+	export XDG_SESSION_DESKTOP="Hyprland"
+	export XDG_CURRENT_DESKTOP="Hyprland"
+	export DESKTOP_SESSION="Hyprland"
 	debug_log "Temel Wayland değişkenleri: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP / $DESKTOP_SESSION"
 
 	# -------------------------------------------------------------------------
