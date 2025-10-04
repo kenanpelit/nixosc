@@ -4,8 +4,8 @@
 #  ╠═╝║ ║║║║║╣ ╠╦╝  ║║║║╣ ║║║║ ║
 #  ╩  ╚═╝╚╩╝╚═╝╩╚═  ╩ ╩╚═╝╝╚╝╚═╝
 #  Hyprland-Friendly Power Menu for Rofi
-#  Version: 3.0.0
-#  Author: Enhanced Edition
+#  Version: 3.1.0
+#  Enhanced: Better error handling, caching, browser support
 #═══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -13,18 +13,26 @@ set -euo pipefail
 #│                              CONFIGURATION                                   │
 #╰──────────────────────────────────────────────────────────────────────────────╯
 
-# Grace period settings for application shutdown
-readonly GRACE_APPS=("brave" "brave-browser" "brave-browser-stable" "firefox" "chromium")
-readonly SOFT_TIMEOUT=10
-readonly HARD_DELAY=0.5
-readonly FIX_BRAVE=true
-readonly CLOSE_USER_SESSION=true
+# Graceful shutdown configuration
+readonly GRACE_BROWSERS=("brave" "brave-browser" "firefox" "chromium" "google-chrome" "vivaldi" "opera")
+readonly GRACE_APPS=("code" "codium" "discord" "slack" "telegram-desktop")
+readonly ALL_GRACE_APPS=("${GRACE_BROWSERS[@]}" "${GRACE_APPS[@]}")
+
+# Timing configuration
+: "${SOFT_TIMEOUT:=15}"  # Graceful shutdown wait time (seconds)
+: "${HARD_DELAY:=0.5}"   # Delay before force kill (seconds)
+: "${ACTION_DELAY:=0.3}" # Delay before executing action (seconds)
+
+# Feature flags
+: "${FIX_BROWSERS:=true}"         # Fix browser crash flags
+: "${CLOSE_USER_SESSION:=true}"   # Close systemd user session
+: "${ENABLE_NOTIFICATIONS:=true}" # Show desktop notifications
 
 # Define available actions
 declare -A TEXT ICON CMD COLOR
 readonly ALL_ACTIONS=(shutdown reboot suspend hibernate lockscreen logout)
 
-# Action definitions with enhanced icons and colors
+# Action definitions with Nerd Font icons
 TEXT[lockscreen]="Lock Screen"
 ICON[lockscreen]="󰍁"
 COLOR[lockscreen]="#7aa2f7"
@@ -33,7 +41,7 @@ CMD[lockscreen]="hyprlock || swaylock || loginctl lock-session"
 TEXT[logout]="Sign Out"
 ICON[logout]="󰗼"
 COLOR[logout]="#bb9af7"
-CMD[logout]="hyprctl dispatch exit || swaymsg exit || loginctl terminate-session ${XDG_SESSION_ID}"
+CMD[logout]="hyprctl dispatch exit || swaymsg exit || loginctl terminate-session \${XDG_SESSION_ID:-}"
 
 TEXT[suspend]="Sleep"
 ICON[suspend]="󰒲"
@@ -43,7 +51,7 @@ CMD[suspend]="systemctl suspend -i"
 TEXT[hibernate]="Hibernate"
 ICON[hibernate]="󰜗"
 COLOR[hibernate]="#9ece6a"
-CMD[hibernate]="systemctl hibernate"
+CMD[hibernate]="systemctl hibernate -i"
 
 TEXT[reboot]="Restart"
 ICON[reboot]="󰜉"
@@ -55,16 +63,15 @@ ICON[shutdown]="󰐥"
 COLOR[shutdown]="#f7768e"
 CMD[shutdown]="systemctl poweroff -i"
 
-# Confirmation dialog
+# Confirmation and cancel
 ICON[cancel]="󰜺"
 COLOR[cancel]="#565f89"
 readonly CONFIRM_ACTIONS=(reboot shutdown hibernate)
 
 #╭──────────────────────────────────────────────────────────────────────────────╮
-#│                              THEME GENERATION                                │
+#│                              THEME CONFIGURATION                             │
 #╰──────────────────────────────────────────────────────────────────────────────╯
 
-# UI Configuration
 : "${POWER_MENU_LINES:=6}"
 : "${POWER_MENU_WIDTH_CH:=32}"
 : "${POWER_MENU_FONT:=JetBrainsMono Nerd Font 12}"
@@ -72,9 +79,15 @@ readonly CONFIRM_ACTIONS=(reboot shutdown hibernate)
 : "${POWER_MENU_PADDING:=12}"
 : "${POWER_MENU_THEME:=modern}" # modern, minimal, glass
 
+# Theme cache directory
+readonly THEME_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/rofi-power-menu"
+readonly THEME_CACHE_FILE="${THEME_CACHE_DIR}/theme-${POWER_MENU_THEME}.rasi"
+
 _generate_theme() {
-	local theme_file
-	theme_file="$(mktemp /tmp/power-menu-theme.XXXXXX.rasi)"
+	local theme_file="${1:-$THEME_CACHE_FILE}"
+
+	# Create cache directory if needed
+	mkdir -p "$(dirname "$theme_file")"
 
 	case "${POWER_MENU_THEME}" in
 	"glass")
@@ -357,17 +370,20 @@ EOF
 
 if [[ -z "${ROFI_RETV:-}" && -z "${ROFI_INSIDE:-}" ]]; then
 	self="$(readlink -f "${BASH_SOURCE[0]}")"
-	theme_file="$(_generate_theme)"
 
-	# Clean up theme file on exit
-	trap "rm -f '${theme_file}'" EXIT
+	# Use cached theme or generate new one
+	if [[ -f "$THEME_CACHE_FILE" ]]; then
+		theme_file="$THEME_CACHE_FILE"
+	else
+		theme_file="$(_generate_theme)"
+	fi
 
 	exec rofi -show power \
 		-modi "power:${self}" \
 		-theme "${theme_file}" \
 		-show-icons \
 		-icon-theme "Papirus" \
-		-display-power " Power" \
+		-display-power "󰐥 Power" \
 		-kb-custom-1 "Alt+s" \
 		-kb-custom-2 "Alt+r" \
 		-kb-custom-3 "Alt+l"
@@ -404,19 +420,27 @@ OPTIONS:
     --symbols-font <name>  Set icon font
     --choose <id>          Auto-select action
     --theme <name>         Set theme (modern/minimal/glass)
+    --regen-theme          Regenerate theme cache
     -h, --help             Show this help message
 
 EXAMPLES:
     power-menu --choices shutdown/reboot/suspend
-    power-menu --theme glass
+    power-menu --theme glass --regen-theme
     power-menu --dry-run --choose shutdown
+
+ENVIRONMENT VARIABLES:
+    SOFT_TIMEOUT           Graceful shutdown timeout (default: 15s)
+    HARD_DELAY             Force kill delay (default: 0.5s)
+    FIX_BROWSERS           Fix browser crash flags (default: true)
+    CLOSE_USER_SESSION     Close systemd session (default: true)
+    ENABLE_NOTIFICATIONS   Show notifications (default: true)
 
 EOF
 }
 
 # Parse command line arguments
-parsed="$(getopt -o h --long help,dry-run,confirm:,choices:,choose:,symbols,no-symbols,text,no-text,symbols-font:,theme: -- "$@")" || {
-	echo "❌ Argument parsing failed"
+parsed="$(getopt -o h --long help,dry-run,confirm:,choices:,choose:,symbols,no-symbols,text,no-text,symbols-font:,theme:,regen-theme -- "$@")" || {
+	echo "ERROR: Argument parsing failed" >&2
 	exit 1
 }
 
@@ -469,12 +493,16 @@ while true; do
 		POWER_MENU_THEME="${2}"
 		shift 2
 		;;
+	--regen-theme)
+		rm -f "${THEME_CACHE_DIR}/"*.rasi 2>/dev/null || true
+		shift
+		;;
 	--)
 		shift
 		break
 		;;
 	*)
-		echo "❌ Internal argument error"
+		echo "ERROR: Internal argument error" >&2
 		exit 1
 		;;
 	esac
@@ -482,7 +510,7 @@ done
 
 # Validate options
 $SHOW_SYMBOLS || $SHOW_TEXT || {
-	echo "❌ Cannot disable both symbols and text" >&2
+	echo "ERROR: Cannot disable both symbols and text" >&2
 	exit 1
 }
 
@@ -492,13 +520,15 @@ $SHOW_SYMBOLS || $SHOW_TEXT || {
 
 # Send desktop notification
 notify() {
+	$ENABLE_NOTIFICATIONS || return 0
+
 	local title="$1"
 	local message="$2"
 	local urgency="${3:-normal}"
 	local icon="${4:-system-shutdown}"
 
 	if command -v notify-send >/dev/null 2>&1; then
-		notify-send -t 3000 -u "$urgency" -i "$icon" "$title" "$message"
+		notify-send -t 3000 -u "$urgency" -i "$icon" "$title" "$message" 2>/dev/null || true
 	fi
 }
 
@@ -539,149 +569,174 @@ contains_label() {
 
 # Gracefully close applications
 graceful_shutdown() {
-	echo "🔄 Gracefully closing applications..."
-	local app alive
+	local app alive apps_found=()
 
-	# Send TERM signal to grace apps
-	for app in "${GRACE_APPS[@]}"; do
-		if pgrep -x "$app" >/dev/null; then
-			$DRYRUN || pkill -TERM -x "$app" 2>/dev/null || true
-			echo "  📤 Sent TERM signal to $app"
+	# Find running apps
+	for app in "${ALL_GRACE_APPS[@]}"; do
+		if pgrep -x "$app" >/dev/null 2>&1; then
+			apps_found+=("$app")
 		fi
 	done
 
-	# Wait for apps to close gracefully
+	# Nothing to close
+	[[ ${#apps_found[@]} -eq 0 ]] && return 0
+
+	if $DRYRUN; then
+		echo "[DRY-RUN] Would gracefully close: ${apps_found[*]}"
+		return 0
+	fi
+
+	echo "Gracefully closing applications: ${apps_found[*]}"
+
+	# Send TERM signal
+	for app in "${apps_found[@]}"; do
+		pkill -TERM -x "$app" 2>/dev/null || true
+	done
+
+	# Wait for graceful shutdown
 	for ((i = 0; i < SOFT_TIMEOUT; i++)); do
 		sleep 1
 		alive=false
 
-		for app in "${GRACE_APPS[@]}"; do
-			if pgrep -x "$app" >/dev/null; then
+		for app in "${apps_found[@]}"; do
+			if pgrep -x "$app" >/dev/null 2>&1; then
 				alive=true
 				break
 			fi
 		done
 
 		$alive || break
-		echo -n "  ⏳ Waiting for apps to close... ($((SOFT_TIMEOUT - i))s)"
-		echo -ne "\r"
 	done
 
-	echo ""
-
-	# Force kill if still running
-	for app in "${GRACE_APPS[@]}"; do
-		if pgrep -x "$app" >/dev/null; then
-			$DRYRUN || pkill -KILL -x "$app" 2>/dev/null || true
-			echo "  ⚠️  Force killed $app"
+	# Force kill remaining processes
+	for app in "${apps_found[@]}"; do
+		if pgrep -x "$app" >/dev/null 2>&1; then
+			pkill -KILL -x "$app" 2>/dev/null || true
+			echo "Force killed: $app"
 		fi
 	done
 }
 
-# Fix Brave browser crash flags
-fix_brave_flags() {
-	$FIX_BRAVE || return 0
+# Fix browser crash flags
+fix_browser_flags() {
+	$FIX_BROWSERS || return 0
 
-	local brave_base="${HOME}/.config/BraveSoftware/Brave-Browser"
-	local local_state="${brave_base}/Local State"
-	local prefs="${brave_base}/Default/Preferences"
+	local browser_configs=(
+		"$HOME/.config/BraveSoftware/Brave-Browser"
+		"$HOME/.config/google-chrome"
+		"$HOME/.config/chromium"
+		"$HOME/.mozilla/firefox"
+	)
 
-	if $DRYRUN; then
-		echo "🔧 [dry-run] Would fix Brave browser flags"
-		return 0
-	fi
+	local config fixed=false
 
-	echo "🔧 Fixing Brave browser flags..."
+	for config in "${browser_configs[@]}"; do
+		[[ -d "$config" ]] || continue
 
-	if command -v jq >/dev/null 2>&1; then
-		# Use jq for proper JSON manipulation
+		local local_state="$config/Local State"
+		local prefs="$config/Default/Preferences"
+
+		# Fix Chromium-based browsers
 		if [[ -f "$local_state" ]]; then
-			jq '.profile.exited_cleanly=true' "$local_state" >"${local_state}.tmp" 2>/dev/null &&
-				mv "${local_state}.tmp" "$local_state" &&
-				echo "  ✅ Fixed Local State" || true
+			if $DRYRUN; then
+				echo "[DRY-RUN] Would fix: $local_state"
+			elif command -v jq >/dev/null 2>&1; then
+				jq '.profile.exited_cleanly=true' "$local_state" >"${local_state}.tmp" 2>/dev/null &&
+					mv "${local_state}.tmp" "$local_state" && fixed=true
+			else
+				sed -i 's/"exited_cleanly":[[:space:]]*false/"exited_cleanly": true/g' "$local_state" 2>/dev/null && fixed=true
+			fi
 		fi
 
 		if [[ -f "$prefs" ]]; then
-			jq '.profile.exit_type="Normal"' "$prefs" >"${prefs}.tmp" 2>/dev/null &&
-				mv "${prefs}.tmp" "$prefs" &&
-				echo "  ✅ Fixed Preferences" || true
+			if $DRYRUN; then
+				echo "[DRY-RUN] Would fix: $prefs"
+			elif command -v jq >/dev/null 2>&1; then
+				jq '.profile.exit_type="Normal"' "$prefs" >"${prefs}.tmp" 2>/dev/null &&
+					mv "${prefs}.tmp" "$prefs" && fixed=true
+			else
+				sed -i 's/"exit_type":[[:space:]]*"Crashed"/"exit_type":"Normal"/g' "$prefs" 2>/dev/null && fixed=true
+			fi
 		fi
-	else
-		# Fallback to sed
-		if [[ -f "$local_state" ]]; then
-			sed -i 's/"exited_cleanly":[ ]*false/"exited_cleanly": true/g' "$local_state" &&
-				echo "  ✅ Fixed Local State (sed)" || true
-		fi
+	done
 
-		if [[ -f "$prefs" ]]; then
-			sed -i 's/"exit_type":[ ]*"Crashed"/"exit_type":"Normal"/g' "$prefs" &&
-				echo "  ✅ Fixed Preferences (sed)" || true
-		fi
-	fi
+	$fixed && echo "Browser crash flags fixed"
 }
 
 # Pre-power phase cleanup
 pre_power_phase() {
-	echo "🚀 Preparing system for power action..."
+	local action="$1"
 
-	# Gracefully close applications
+	echo "Preparing system for ${TEXT[$action]}..."
+
+	# Graceful app shutdown
 	graceful_shutdown
 
 	# Fix browser flags
-	fix_brave_flags
+	fix_browser_flags
 
-	# Close user session if configured
+	# Close user session
 	if $CLOSE_USER_SESSION; then
-		if ! $DRYRUN; then
-			echo "  🔒 Closing user session..."
-			systemctl --user exit 2>/dev/null || true
-			sleep 0.3
+		if $DRYRUN; then
+			echo "[DRY-RUN] Would close user session"
 		else
-			echo "  🔒 [dry-run] Would close user session"
+			systemctl --user exit 2>/dev/null || true
+			sleep "$ACTION_DELAY"
 		fi
 	fi
 
-	echo "✅ System prepared for power action"
+	echo "System ready for ${TEXT[$action]}"
 }
 
 # Execute power action
 do_action() {
 	local action="$1"
 
+	# Validate action
+	local valid=false
+	for a in "${ALL_ACTIONS[@]}"; do
+		[[ "$a" == "$action" ]] && {
+			valid=true
+			break
+		}
+	done
+
+	if ! $valid; then
+		echo "ERROR: Invalid action: $action" >&2
+		return 1
+	fi
+
 	if $DRYRUN; then
-		echo "🎯 [DRY-RUN] Selected action: ${action}"
-		echo "📝 Would execute: ${CMD[$action]}"
+		echo "[DRY-RUN] Selected: ${TEXT[$action]}"
+		echo "[DRY-RUN] Command: ${CMD[$action]}"
 		return 0
 	fi
 
-	# Show notification
-	notify "Power Menu" "Executing ${TEXT[$action]}..." "normal" "system-${action}"
+	# Notification
+	notify "Power Menu" "${TEXT[$action]}..." "normal" "system-${action}"
 
 	# Pre-power phase for critical actions
 	case "$action" in
 	reboot | shutdown | hibernate)
-		pre_power_phase
-		;;
-	suspend)
-		echo "💤 Preparing to suspend..."
-		;;
-	lockscreen)
-		echo "🔒 Locking screen..."
-		;;
-	logout)
-		echo "👋 Logging out..."
+		pre_power_phase "$action"
 		;;
 	esac
 
-	# Execute the action
-	echo "⚡ Executing: ${CMD[$action]}"
-	eval "${CMD[$action]}" &
+	# Execute action
+	echo "Executing: ${CMD[$action]}"
 
-	# Brief delay before closing rofi
-	sleep "$HARD_DELAY"
+	# Expand variables in command and execute
+	local expanded_cmd
+	expanded_cmd=$(eval echo "${CMD[$action]}")
 
-	# Close rofi
-	pkill rofi 2>/dev/null || true
+	if eval "$expanded_cmd" 2>/dev/null; then
+		sleep "$HARD_DELAY"
+		pkill rofi 2>/dev/null || true
+	else
+		echo "ERROR: Action failed: $action" >&2
+		notify "Power Menu Error" "Failed to ${TEXT[$action]}" "critical" "dialog-error"
+		return 1
+	fi
 }
 
 #╭──────────────────────────────────────────────────────────────────────────────╮
@@ -689,13 +744,11 @@ do_action() {
 #╰──────────────────────────────────────────────────────────────────────────────╯
 
 # Build menu items
-declare -A MENU_ITEMS CONFIRM_YES CONFIRM_NO
-
+declare -A MENU_ITEMS CONFIRM_YES
 for action in "${ALL_ACTIONS[@]}"; do
 	MENU_ITEMS[$action]="$(format_item "${ICON[$action]}" "${TEXT[$action]}" "${COLOR[$action]}")"
 	CONFIRM_YES[$action]="$(format_item "${ICON[$action]}" "Yes, ${TEXT[$action]}" "${COLOR[$action]}")"
 done
-
 CONFIRM_NO="$(format_item "${ICON[cancel]}" "No, cancel" "${COLOR[cancel]}")"
 
 # Configure rofi mode
@@ -703,21 +756,19 @@ echo -e "\0no-custom\x1ftrue"
 echo -e "\0markup-rows\x1ftrue"
 echo -e "\0urgent\x1f2,4"
 
-# Get selection from rofi
+# Get selection
 selection="${*:-}"
-if [[ -z "$selection" ]] && ! [ -t 0 ]; then
-	selection="$(cat)"
-fi
+[[ -z "$selection" ]] && ! [ -t 0 ] && selection="$(cat)"
 
 # Handle auto-choose
 if [[ -n "$choose_id" && -z "$selection" ]]; then
 	do_action "$choose_id"
-	exit 0
+	exit $?
 fi
 
-# Display menu if no selection
+# Display menu
 if [[ -z "$selection" ]]; then
-	echo -e "\0prompt\x1f Power"
+	echo -e "\0prompt\x1f󰐥 Power"
 	echo -e "\0message\x1fWhat would you like to do?"
 
 	for action in "${SHOW[@]}"; do
@@ -726,22 +777,19 @@ if [[ -z "$selection" ]]; then
 	exit 0
 fi
 
-# Handle confirmation
+# Handle confirmation response
 if contains_label "$selection" "Yes,"; then
 	for action in "${ALL_ACTIONS[@]}"; do
 		if contains_label "$selection" "${TEXT[$action]}"; then
 			do_action "$action"
-			exit 0
+			exit $?
 		fi
 	done
-	echo "❌ Invalid selection: $selection"
 	exit 1
 fi
 
 # Handle cancel
-if contains_label "$selection" "cancel"; then
-	exit 0
-fi
+contains_label "$selection" "cancel" && exit 0
 
 # Handle action selection
 for action in "${SHOW[@]}"; do
@@ -749,7 +797,7 @@ for action in "${SHOW[@]}"; do
 		# Check if confirmation needed
 		for confirm_action in "${CONFIRM_ACTIONS[@]}"; do
 			if [[ "$action" == "$confirm_action" ]]; then
-				echo -e "\0prompt\x1f Confirm"
+				echo -e "\0prompt\x1f󰀪 Confirm"
 				echo -e "\0message\x1fAre you sure you want to ${TEXT[$action]}?"
 				echo -e "${CONFIRM_YES[$action]}\0icon\x1f${ICON[$action]}\0urgent\x1ftrue"
 				echo -e "${CONFIRM_NO}\0icon\x1f${ICON[cancel]}"
@@ -757,12 +805,12 @@ for action in "${SHOW[@]}"; do
 			fi
 		done
 
-		# Execute action directly
+		# Execute directly
 		do_action "$action"
-		exit 0
+		exit $?
 	fi
 done
 
 # Invalid selection
-echo "❌ Invalid selection: $selection" >&2
+echo "ERROR: Invalid selection: $selection" >&2
 exit 1
