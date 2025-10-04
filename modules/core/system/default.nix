@@ -92,7 +92,12 @@ in
     variant = "f";
     options = "ctrl:nocaps";
   };
-  console.keyMap = "trf";
+
+  console = {
+    keyMap = "trf";
+    font = "ter-v20b";
+    packages = [ pkgs.terminus_font ];
+  };
 
   # NixOS state version - DO NOT change after initial installation
   system.stateVersion = "25.11";
