@@ -16,7 +16,6 @@
         #   TTY3: GNOME (gnome-session ile)
         #   TTY4: COSMIC (cosmic-session ile)
         #   TTY5: Ubuntu VM (Sway)
-        #   TTY6: NixOS VM (Sway)
         # =============================================================================
 
         # Sadece login shell ve henüz aktif desktop yoksa çalıştır
@@ -224,36 +223,6 @@
                     exec sway -c ~/.config/sway/qemu_vmubuntu
                 else
                     echo "ERROR: Sway config not found: ~/.config/sway/qemu_vmubuntu"
-                    echo "Please create the configuration file first"
-                    sleep 5
-                    return
-                fi
-            
-            # ==========================================================================
-            # TTY6: NixOS VM in Sway
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "6" ]; then
-                echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY6: Starting NixOS VM in Sway                          ║"
-                echo "╚════════════════════════════════════════════════════════════╝"
-                
-                # Environment temizliği
-                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
-                
-                # Sway environment
-                export XDG_SESSION_TYPE=wayland
-                export XDG_SESSION_DESKTOP=sway
-                export XDG_CURRENT_DESKTOP=sway
-                export DESKTOP_SESSION=sway
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
-                echo "Environment: Sway compositor for NixOS VM"
-                
-                # Sway config kontrolü
-                if [ -f ~/.config/sway/qemu_vmnixos ]; then
-                    exec sway -c ~/.config/sway/qemu_vmnixos
-                else
-                    echo "ERROR: Sway config not found: ~/.config/sway/qemu_vmnixos"
                     echo "Please create the configuration file first"
                     sleep 5
                     return
