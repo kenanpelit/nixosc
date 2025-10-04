@@ -43,8 +43,13 @@
 #
 #   6. Multi-Desktop Support
 #      - GNOME: Traditional desktop with Wayland
-#      - Hyprland: Tiling compositor for power users
+#      - Hyprland: Tiling compositor for power users with custom optimizations
 #      - COSMIC: Next-gen Rust-based desktop (Beta - from nixpkgs)
+#
+#   7. Session Selection Strategy
+#      - TTY1: cosmic-greeter provides graphical session selection
+#      - TTY2: Direct hyprland_tty launch with full optimizations
+#      - Both methods supported - user can choose workflow preference
 #
 # Conflict Prevention:
 #   - Hyprland portal via programs.hyprland.portalPackage (no duplication)
@@ -100,26 +105,60 @@ in
     };
 
     # --------------------------------------------------------------------------
+    # Display Manager - GDM (GNOME Display Manager)
+    # --------------------------------------------------------------------------
+    # GDM provides robust session selection with full XDG portal support
+    # Automatically discovers sessions from both:
+    #   - /run/current-system/sw/share/wayland-sessions/ (system packages)
+    #   - /etc/wayland-sessions/ (custom NixOS configurations)
+    #
+    # Why GDM over cosmic-greeter?
+    #   - Mature, well-tested with comprehensive session discovery
+    #   - Proper XDG standards compliance (crucial for custom sessions)
+    #   - Better integration with GNOME components (keyring, portals)
+    #   - Reliable multi-session support (GNOME + Hyprland + COSMIC)
+    #
+    # Note: cosmic-greeter currently only scans system package paths,
+    # missing custom sessions defined via environment.etc
+    
+    displayManager = {
+        gdm = {
+            enable = true;
+            wayland = true;             # Wayland-first approach
+            autoSuspend = false;        # Prevent auto-suspend on login screen
+        };
+        
+        # Default session selection
+        # Available options: "hyprland", "hyprland-optimized", "cosmic", "gnome"
+        # "hyprland-optimized" uses hyprland_tty script with Intel Arc optimizations
+        defaultSession = "hyprland-optimized";
+        
+        # Security: no auto-login
+        autoLogin.enable = false;
+    };
+
+    # --------------------------------------------------------------------------
     # Display Manager - COSMIC Greeter (Primary)
     # --------------------------------------------------------------------------
     # COSMIC greeter provides session selection for GNOME, Hyprland, and COSMIC
     # Alternative: Use GDM by commenting cosmic-greeter and uncommenting gdm
     
-    displayManager = {
-      # COSMIC Greeter (Primary - supports all desktop sessions)
-      cosmic-greeter.enable = true;
-      
-      # GDM (Alternative - uncomment to use instead of cosmic-greeter)
-      # gdm = {
-      #   enable = true;
-      #   wayland = true;             # Wayland-first approach
-      # };
-      
-      # Default session selection
-      defaultSession = "cosmic";
-      
-      autoLogin.enable = false;     # Security: no auto-login
-    };
+    #displayManager = {
+    #  # COSMIC Greeter (Primary - supports all desktop sessions)
+    #  cosmic-greeter.enable = true;
+    #  
+    #  # GDM (Alternative - uncomment to use instead of cosmic-greeter)
+    #  # gdm = {
+    #  #   enable = true;
+    #  #   wayland = true;             # Wayland-first approach
+    #  # };
+    #  
+    #  # Default session selection
+    #  # Options: "hyprland", "hyprland-optimized", "cosmic", "gnome"
+    #  defaultSession = "cosmic";
+    #  
+    #  autoLogin.enable = false;     # Security: no auto-login
+    #};
 
     # --------------------------------------------------------------------------
     # Desktop Environments
@@ -262,11 +301,47 @@ in
   };
 
   # ============================================================================
-  # GNOME Wayland Session Files
+  # Wayland Session Files - Desktop Entry Definitions
   # ============================================================================
-  # Explicit session definitions for consistency across different DM setups
+  # Explicit session definitions for display manager integration.
+  # These files allow cosmic-greeter (or any display manager) to discover
+  # and launch desktop sessions.
+  #
+  # Session File Strategy:
+  #   - Standard sessions (GNOME, COSMIC): Use desktop environment defaults
+  #   - Optimized Hyprland: Uses hyprland_tty script with custom setup
+  #   - All sessions properly set XDG_CURRENT_DESKTOP for portal routing
+  #
+  # Why Two Hyprland Entries?
+  #   1. "Hyprland" - Standard launch via Hyprland binary
+  #      - Quick, minimal setup
+  #      - Uses default Hyprland configuration
+  #      - Good for testing or fallback
+  #
+  #   2. "Hyprland (Optimized)" - Launch via hyprland_tty script
+  #      - Full Intel Arc Graphics optimizations
+  #      - Dynamic Catppuccin theme support
+  #      - Advanced logging and error handling
+  #      - Proper systemd/D-Bus integration
+  #      - Recommended for daily use
+  #
+  # Choosing at Login:
+  #   - cosmic-greeter will show both options
+  #   - Select "Hyprland (Optimized)" for best experience
+  #   - Standard "Hyprland" available as fallback
+  #
+  # TTY2 Direct Launch:
+  #   - zsh_profile.nix already configured for TTY2
+  #   - Runs hyprland_tty automatically
+  #   - Bypasses display manager completely
+  #   - Useful for debugging or minimal boot
   
   environment.etc = {
+    # --------------------------------------------------------------------------
+    # GNOME Session
+    # --------------------------------------------------------------------------
+    # Traditional GNOME desktop with Wayland support
+    
     "wayland-sessions/gnome.desktop".text = ''
       [Desktop Entry]
       Name=GNOME
@@ -280,6 +355,56 @@ in
       [GNOME Session]
       Name=GNOME
       RequiredComponents=org.gnome.Shell;org.gnome.SettingsDaemon.A11ySettings;org.gnome.SettingsDaemon.Color;org.gnome.SettingsDaemon.Datetime;org.gnome.SettingsDaemon.Housekeeping;org.gnome.SettingsDaemon.Keyboard;org.gnome.SettingsDaemon.MediaKeys;org.gnome.SettingsDaemon.Power;org.gnome.SettingsDaemon.PrintNotifications;org.gnome.SettingsDaemon.Rfkill;org.gnome.SettingsDaemon.ScreensaverProxy;org.gnome.SettingsDaemon.Sharing;org.gnome.SettingsDaemon.Smartcard;org.gnome.SettingsDaemon.Sound;org.gnome.SettingsDaemon.UsbProtection;org.gnome.SettingsDaemon.Wacom;org.gnome.SettingsDaemon.XSettings;
+    '';
+
+    # --------------------------------------------------------------------------
+    # Hyprland Session (Standard)
+    # --------------------------------------------------------------------------
+    # Direct Hyprland launch without custom script
+    # Use this for: testing, debugging, fallback
+    # Note: programs.hyprland.enable already provides a default session file,
+    # but we define it explicitly here for consistency and documentation
+    
+    "wayland-sessions/hyprland.desktop".text = ''
+      [Desktop Entry]
+      Name=Hyprland
+      Comment=Hyprland Wayland compositor (standard launch)
+      Exec=Hyprland
+      Type=Application
+      DesktopNames=Hyprland
+    '';
+
+    # --------------------------------------------------------------------------
+    # Hyprland Session (Optimized)
+    # --------------------------------------------------------------------------
+    # Launch via hyprland_tty script with full optimizations
+    # Recommended for: daily use, Intel Arc graphics, Catppuccin theming
+    #
+    # Features enabled by hyprland_tty:
+    #   - Intel Arc Graphics compatibility (WLR_DRM_NO_ATOMIC, etc.)
+    #   - Dynamic Catppuccin theme support (CATPPUCCIN_FLAVOR/ACCENT)
+    #   - Enhanced logging (rotation, debug modes)
+    #   - Proper systemd user session integration
+    #   - Turkish F-keyboard layout
+    #   - Comprehensive environment variable setup
+    #
+    # Theme Selection:
+    #   Set before login or in ~/.zshrc:
+    #     export CATPPUCCIN_FLAVOR=mocha    # latte, frappe, macchiato, mocha
+    #     export CATPPUCCIN_ACCENT=mauve    # rosewater, flamingo, pink, mauve, etc.
+    #
+    # Debug Mode:
+    #   From TTY: hyprland_tty -d
+    #   From DM: Not available (use TTY2 for debugging)
+    
+    "wayland-sessions/hyprland-optimized.desktop".text = ''
+      [Desktop Entry]
+      Name=Hyprland (Optimized)
+      Comment=Hyprland with Intel Arc optimizations and Catppuccin theme support
+      Exec=hyprland_tty
+      Type=Application
+      DesktopNames=Hyprland
+      Keywords=wayland;wm;tiling;catppuccin;
     '';
   };
 
