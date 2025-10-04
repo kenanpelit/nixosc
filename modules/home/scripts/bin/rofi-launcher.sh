@@ -12,12 +12,6 @@
 # - Favori uygulamalar için frekans tabanlı sıralama (frecency)
 # ==============================================================================
 
-# Bağımlılıkları kontrol et
-if ! command -v rofi &>/dev/null; then
-	echo "Hata: rofi yüklü değil. Lütfen yükleyin: 'sudo apt install rofi' veya dağıtımınıza uygun komut."
-	exit 1
-fi
-
 if ! command -v rofi-frecency &>/dev/null; then
 	echo "Uyarı: rofi-frecency bulunamadı. Frekans özelliği çalışmayabilir."
 fi
