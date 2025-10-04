@@ -68,9 +68,10 @@ in
       # =====================================================
       env = [
         # Wayland Core Settings
-        "XDG_CURRENT_DESKTOP,Hyprland"
         "XDG_SESSION_TYPE,wayland"
-        "XDG_SESSION_DESKTOP,Hyprland"
+        "XDG_SESSION_DESKTOP,hyprland"
+        "XDG_CURRENT_DESKTOP,HYPRLAND"
+	      "DESKTOP_SESSION,hyprland"
 
         # Wayland Backend Settings
         "GDK_BACKEND,wayland"

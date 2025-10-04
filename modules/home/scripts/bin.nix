@@ -75,9 +75,6 @@ let
   hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
     builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
   );
-  hyprland_tty_all = pkgs.writeShellScriptBin "hyprland_tty_all" (
-    builtins.readFile ./bin/hyprland_tty_all.sh
-  );
   hyprland_tty = pkgs.writeShellScriptBin "hyprland_tty" (
     builtins.readFile ./bin/hyprland_tty.sh
   );
@@ -303,9 +300,6 @@ let
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
   );
-  startup-manager = pkgs.writeShellScriptBin "startup-manager" (
-    builtins.readFile ./bin/startup-manager.sh
-  );
   st = pkgs.writeShellScriptBin "st" (
     builtins.readFile ./bin/st.sh
   );
@@ -417,7 +411,6 @@ in {
     hypr-colorpicker
     hypr-ctl_focusmonitor
     hypr-ctl_setup_dual_monitors
-    hyprland_tty_all
     hyprland_tty
     hypr-layout_toggle
     hypr_move_app_from_workspace
@@ -493,7 +486,6 @@ in {
     sil_ayni_mp4
     smart-suspend
     ssh-launcher
-    startup-manager
     st
     svmarch
     svmnixos
