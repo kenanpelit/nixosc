@@ -11,7 +11,7 @@
 #   gnome_tty --dry-run    - Sadece kontroller, başlatma
 # =============================================================================
 
-#set -euo pipefail
+set -euo pipefail
 
 # =============================================================================
 # Sabit Değişkenler
@@ -204,18 +204,12 @@ check_system() {
 		error "gnome-session binary bulunamadı! PATH: $PATH"
 	fi
 
-	if ! command -v gnome-shell &>/dev/null; then
-		warn "gnome-shell binary bulunamadı, bazı özellikler çalışmayabilir"
+	# GNOME version bilgisi - hata yoksayılacak şekilde
+	local gnome_version="Unknown"
+	if command -v gnome-shell &>/dev/null; then
+		gnome_version=$(gnome-shell --version 2>/dev/null || echo "Unknown")
 	fi
-
-	# GNOME version bilgisi
-	local gnome_version=$(gnome-shell --version 2>&1 | head -n1 || echo "Unknown")
 	info "GNOME version: $gnome_version"
-
-	# Mutter (window manager) kontrolü
-	if ! command -v mutter &>/dev/null; then
-		warn "mutter binary bulunamadı"
-	fi
 
 	info "Sistem kontrolleri tamamlandı"
 }
@@ -262,6 +256,8 @@ setup_environment() {
 	export XDG_SESSION_DESKTOP="gnome"
 	export XDG_CURRENT_DESKTOP="GNOME"
 	export DESKTOP_SESSION="gnome"
+	export XDG_SESSION_CLASS="user"
+	export XDG_SEAT="seat0"
 	debug_log "Temel GNOME değişkenleri: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP / $DESKTOP_SESSION"
 
 	# -------------------------------------------------------------------------
@@ -429,16 +425,15 @@ setup_dbus() {
 
 	info "D-Bus session başlatılıyor..."
 
-	# dbus-run-session kullanarak başlat
-	if command -v dbus-run-session &>/dev/null; then
-		debug_log "dbus-run-session kullanılacak"
-		export DBUS_LAUNCH_METHOD="dbus-run-session"
-	else
+	# dbus-launch kullanarak başlat
+	if command -v dbus-launch &>/dev/null; then
 		debug_log "dbus-launch kullanılacak"
-		eval $(dbus-launch --sh-syntax --exit-with-session)
+		eval $(dbus-launch --sh-syntax --exit-with-session 2>/dev/null)
 		export DBUS_SESSION_BUS_ADDRESS
 		export DBUS_SESSION_BUS_PID
-		info "D-Bus session başlatıldı (PID: $DBUS_SESSION_BUS_PID)"
+		info "D-Bus session başlatıldı (PID: ${DBUS_SESSION_BUS_PID:-unknown})"
+	else
+		warn "dbus-launch bulunamadı, GNOME kendi başlatacak"
 	fi
 }
 
@@ -523,14 +518,17 @@ start_gnome() {
 
 	debug_log "GNOME session başlatılıyor"
 
-	# dbus-run-session ile başlat
-	if [[ "${DBUS_LAUNCH_METHOD:-}" == "dbus-run-session" ]]; then
+	# Log dosyasını truncate et
+	>"$GNOME_LOG"
+
+	# .zprofile'daki çalışan yöntemi kullan
+	if command -v dbus-run-session &>/dev/null; then
+		debug_log "dbus-run-session wrapper ile başlatılıyor"
 		exec dbus-run-session -- gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
 	else
+		debug_log "Direkt gnome-session başlatılıyor (dbus-run-session yok)"
 		exec gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
 	fi
-
-	error "GNOME exec başarısız oldu!"
 }
 
 # =============================================================================
@@ -547,7 +545,7 @@ KULLANIM:
   $SCRIPT_NAME [SEÇENEKLER]
 
 SEÇENEKLER:
-  -h, --help       Bu yardım mesajını göster
+  -h, --help       Bu yardımı göster
   -d, --debug      Debug modu (detaylı log)
   --dry-run        Sadece kontroller, başlatma yapma
   -v, --version    Version bilgisini göster
