@@ -172,40 +172,60 @@
 
     # 🌤️ Weather Information for Istanbul
     "custom/weather" = {
-      # Fetch weather from wttr.in with custom icon mapping
+      # Fetch weather from wttr.in with custom icon mapping and caching
       exec = ''
-        weather=$(curl -s --connect-timeout 5 'wttr.in/Istanbul?format=%c+%t' 2>/dev/null)
-        if [ -z "$weather" ]; then
-          echo "󰔏 N/A"
+        cache_file="/tmp/waybar_weather_cache"
+        cache_time=1800  # 30 minutes in seconds
+        
+        # Check if cache exists and is fresh
+        if [ -f "$cache_file" ] && [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -lt $cache_time ]; then
+          cat "$cache_file"
         else
-          # Map weather emoji to nerd font icons
-          if [[ "$weather" == *"☀"* ]]; then
-            icon="󰖙"    # Sunny
-          elif [[ "$weather" == *"⛅"* ]]; then
-            icon="󰖕"    # Partly cloudy
-          elif [[ "$weather" == *"☁"* ]]; then
-            icon="󰖐"    # Cloudy
-          elif [[ "$weather" == *"🌧"* ]]; then
-            icon="󰖖"    # Rainy
-          elif [[ "$weather" == *"⛈"* ]]; then
-            icon="󰙾"    # Thunderstorm
-          elif [[ "$weather" == *"🌨"* ]]; then
-            icon="󰖘"    # Snowy
-          elif [[ "$weather" == *"🌫"* ]]; then
-            icon="󰖑"    # Foggy
+          # Fetch new weather data with condition code
+          weather=$(curl -s --connect-timeout 5 'wttr.in/Istanbul?format=%c+%t+%C' 2>/dev/null)
+          
+          if [ -z "$weather" ]; then
+            echo "󰔏 N/A"
           else
-            icon="󰔏"    # Unknown/Default
+            # Extract condition text (lowercase for matching)
+            condition=$(echo "$weather" | awk '{print tolower($NF)}')
+            
+            # Map weather condition to nerd font icons
+            case "$condition" in
+              *sunny*|*clear*)
+                icon="󰖙" ;;  # Sunny
+              *partly*|*cloudy*)
+                icon="󰖕" ;;  # Partly cloudy
+              *overcast*|*cloud*)
+                icon="󰖐" ;;  # Cloudy
+              *rain*|*drizzle*|*shower*)
+                icon="󰖖" ;;  # Rainy
+              *thunder*|*storm*)
+                icon="󰙾" ;;  # Thunderstorm
+              *snow*|*sleet*|*ice*)
+                icon="󰖘" ;;  # Snowy
+              *fog*|*mist*|*haze*)
+                icon="󰖑" ;;  # Foggy
+              *)
+                icon="󰔏" ;;  # Unknown/Default
+            esac
+            
+            # Extract temperature
+            temp=$(echo "$weather" | grep -oP '[+-]?\d+°[CF]' | head -1)
+            output="$icon $temp"
+            
+            # Save to cache
+            echo "$output" > "$cache_file"
+            echo "$output"
           fi
-          # Extract temperature and format output
-          temp=$(echo "$weather" | sed 's/^[^+]*\(+[^°]*°[CF]\)/\1/')
-          echo "$icon $temp"
         fi
       '';
-      interval = 3600;          # Update every 30 minutes
+      interval = 1800;          # Update every 30 minutes
       format = "{}";
       on-click = "xdg-open 'https://wttr.in/Istanbul'";  # Detailed forecast
+      on-click-right = "rm -f /tmp/waybar_weather_cache && pkill -RTMIN+8 waybar";  # Force refresh
       tooltip = true;
-      tooltip-format = "Hava Durumu - Istanbul\nTıkla: Detaylı tahmin";
+      tooltip-format = "Hava Durumu - Istanbul\n󱎫 Sol: Detaylı tahmin\n󰑐 Sağ: Yenile";
     };
 
     # ┌─ Right Section: System Monitoring ───────────────────────────────────────────────────────┐
