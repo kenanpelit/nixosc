@@ -209,7 +209,7 @@ in
         # Configure safe defaults
         "$CLI" auto-connect set on || true
         "$CLI" dns set default --block-ads --block-trackers || true
-        "$CLI" relay set location any || true
+        #"$CLI" relay set location any || true
 
         # Try connecting (3 attempts)
         for i in 1 2 3; do
