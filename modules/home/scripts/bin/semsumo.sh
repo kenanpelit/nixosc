@@ -2,20 +2,19 @@
 
 #===============================================================================
 #
-#   Script: Semsumo - Enhanced Application Launcher & Generator
-#   Version: 7.1.0
+#   Script: Semsumo Unified - Enhanced Application Launcher & Generator
+#   Version: 8.0.0
 #   Date: 2025-10-05
-#   Description: Unified system for launching applications and generating
-#                startup scripts with multi-browser support and app verification
+#   Description: Unified system for launching applications with automatic
+#                window manager detection (Hyprland/GNOME/Generic)
 #
 #   Features:
-#   - Direct application launching with workspace management
-#   - Application startup verification with timeout
+#   - Automatic window manager detection (Hyprland, GNOME, generic Wayland/X11)
+#   - Application startup verification with timeout (Hyprland)
 #   - Startup script generation for all profiles
 #   - Multi-browser support (Brave, Zen, Chrome)
 #   - VPN bypass/secure mode support
 #   - Terminal session management
-#   - Parallel startup capabilities
 #   - Config-free operation (no external config files needed)
 #
 #===============================================================================
@@ -25,13 +24,13 @@
 #-------------------------------------------------------------------------------
 
 readonly SCRIPT_NAME=$(basename "$0")
-readonly VERSION="7.1.0"
+readonly VERSION="8.0.0"
 readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
 readonly DEFAULT_WAIT_TIME=3
-readonly DEFAULT_APP_TIMEOUT=10
+readonly DEFAULT_APP_TIMEOUT=7
 readonly DEFAULT_CHECK_INTERVAL=1
 
 # Colors
@@ -68,6 +67,9 @@ BROWSER_ONLY=false
 LAUNCH_DAILY=false
 APP_TIMEOUT=$DEFAULT_APP_TIMEOUT
 CHECK_INTERVAL=$DEFAULT_CHECK_INTERVAL
+
+# Window Manager Detection
+WM_TYPE=""
 
 # Daily/Essential profiles list
 declare -A DAILY_PROFILES=(
@@ -138,6 +140,26 @@ declare -A APPS=(
 )
 
 #-------------------------------------------------------------------------------
+# Window Manager Detection
+#-------------------------------------------------------------------------------
+
+detect_window_manager() {
+	if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
+		WM_TYPE="hyprland"
+		log "INFO" "DETECT" "Detected Hyprland window manager"
+	elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
+		WM_TYPE="gnome"
+		log "INFO" "DETECT" "Detected GNOME desktop environment"
+	elif [[ -n "$WAYLAND_DISPLAY" ]]; then
+		WM_TYPE="wayland"
+		log "INFO" "DETECT" "Detected generic Wayland session"
+	else
+		WM_TYPE="x11"
+		log "INFO" "DETECT" "Detected X11 session"
+	fi
+}
+
+#-------------------------------------------------------------------------------
 # Helper Functions
 #-------------------------------------------------------------------------------
 
@@ -167,6 +189,21 @@ log() {
 	fi
 }
 
+setup_external_monitor() {
+	if [[ "$DRY_RUN" == "true" ]]; then
+		return 0
+	fi
+
+	if [[ "$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
+		local external_monitor=$(xrandr --query | grep " connected" | grep -v "eDP" | head -1 | awk '{print $1}')
+		if [[ -n "$external_monitor" ]]; then
+			log "INFO" "DISPLAY" "Setting external monitor $external_monitor as primary..."
+			xrandr --output "$external_monitor" --primary
+			sleep 1
+		fi
+	fi
+}
+
 switch_workspace() {
 	local workspace="$1"
 
@@ -174,27 +211,44 @@ switch_workspace() {
 		return 0
 	fi
 
-	if command -v hyprctl &>/dev/null; then
-		local current=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
-
-		if [[ "$current" != "$workspace" ]]; then
-			log "INFO" "WORKSPACE" "Switching to workspace $workspace"
-			hyprctl dispatch workspace "$workspace"
+	case "$WM_TYPE" in
+	hyprland)
+		if command -v hyprctl &>/dev/null; then
+			local current=$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+			if [[ "$current" != "$workspace" ]]; then
+				log "INFO" "WORKSPACE" "Switching to workspace $workspace (Hyprland)"
+				hyprctl dispatch workspace "$workspace"
+				sleep 1
+			fi
+		fi
+		;;
+	gnome)
+		if command -v wmctrl >/dev/null 2>&1; then
+			local target_workspace=$((workspace - 1))
+			log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME)"
+			wmctrl -s "$target_workspace"
 			sleep 1
 		else
-			log "DEBUG" "WORKSPACE" "Already on workspace $workspace"
+			log "WARN" "WORKSPACE" "wmctrl not found - install for workspace switching"
 		fi
-	fi
+		;;
+	*)
+		if command -v wmctrl >/dev/null 2>&1; then
+			local target_workspace=$((workspace - 1))
+			log "INFO" "WORKSPACE" "Switching to workspace $workspace (wmctrl)"
+			wmctrl -s "$target_workspace"
+			sleep 1
+		fi
+		;;
+	esac
 }
 
 is_app_running() {
 	local app_name="$1"
 	local search_pattern="${2:-$app_name}"
-
 	pgrep -f "$search_pattern" &>/dev/null
 }
 
-# New function: Check if window exists on workspace
 check_window_on_workspace() {
 	local workspace="$1"
 	local class_pattern="$2"
@@ -205,8 +259,14 @@ check_window_on_workspace() {
 		return 0
 	fi
 
-	if ! command -v hyprctl &>/dev/null; then
-		log "WARN" "VERIFY" "hyprctl not available, skipping window verification"
+	# Only Hyprland has window verification
+	if [[ "$WM_TYPE" != "hyprland" ]]; then
+		sleep "$WAIT_TIME"
+		return 0
+	fi
+
+	if ! command -v hyprctl &>/dev/null || ! command -v jq &>/dev/null; then
+		log "WARN" "VERIFY" "hyprctl or jq not available, skipping window verification"
 		sleep "$WAIT_TIME"
 		return 0
 	fi
@@ -215,7 +275,6 @@ check_window_on_workspace() {
 	log "INFO" "VERIFY" "Waiting for window (class: $class_pattern) on workspace $workspace (timeout: ${timeout}s)"
 
 	while [[ $elapsed -lt $timeout ]]; do
-		# Check if window with matching class exists on the workspace
 		if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.workspace.id == $workspace and (.class | test(\"$class_pattern\"; \"i\")))" >/dev/null 2>&1; then
 			log "SUCCESS" "VERIFY" "Window found on workspace $workspace after ${elapsed}s"
 			return 0
@@ -224,7 +283,6 @@ check_window_on_workspace() {
 		sleep "$interval"
 		((elapsed += interval))
 
-		# Show progress every 3 seconds
 		if ((elapsed % 3 == 0)); then
 			log "DEBUG" "VERIFY" "Still waiting... (${elapsed}/${timeout}s)"
 		fi
@@ -234,24 +292,20 @@ check_window_on_workspace() {
 	return 1
 }
 
-# New function: Get class pattern from profile
 get_class_pattern() {
 	local profile="$1"
 	local args="$2"
 
-	# Extract class from args if specified with --class
 	if [[ "$args" =~ --class[=\ ]([^\ ]+) ]]; then
 		echo "${BASH_REMATCH[1]}"
 		return 0
 	fi
 
-	# Try to extract from -T or --title
 	if [[ "$args" =~ (-T|--title)[=\ ]([^\ ]+) ]]; then
 		echo "${BASH_REMATCH[2]}"
 		return 0
 	fi
 
-	# Default patterns based on profile name
 	case "$profile" in
 	brave-*) echo "brave" ;;
 	zen-*) echo "zen" ;;
@@ -270,12 +324,35 @@ make_fullscreen() {
 		return 0
 	fi
 
-	if command -v hyprctl &>/dev/null; then
-		log "INFO" "FULLSCREEN" "Making window fullscreen"
-		sleep 1
-		hyprctl dispatch fullscreen 1
-		sleep 1
-	fi
+	case "$WM_TYPE" in
+	hyprland)
+		if command -v hyprctl &>/dev/null; then
+			log "INFO" "FULLSCREEN" "Making window fullscreen (Hyprland)"
+			sleep 1
+			hyprctl dispatch fullscreen 1
+			sleep 1
+		fi
+		;;
+	gnome)
+		if command -v gdbus >/dev/null 2>&1; then
+			log "INFO" "FULLSCREEN" "Making window fullscreen (GNOME)"
+			sleep 1
+			gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.display.get_focus_window().make_fullscreen()" >/dev/null 2>&1
+			sleep 1
+		elif command -v wmctrl >/dev/null 2>&1; then
+			log "INFO" "FULLSCREEN" "Making window fullscreen (wmctrl)"
+			sleep 1
+			local window_id=$(wmctrl -l | tail -1 | awk '{print $1}')
+			if [[ -n "$window_id" ]]; then
+				wmctrl -i -r "$window_id" -b add,fullscreen
+			fi
+			sleep 1
+		fi
+		;;
+	*)
+		log "WARN" "FULLSCREEN" "Fullscreen not supported for $WM_TYPE - press F11 manually"
+		;;
+	esac
 }
 
 parse_config() {
@@ -312,308 +389,226 @@ generate_script() {
 	local wait=$(parse_config "$config" 5)
 	local fullscreen=$(parse_config "$config" 6)
 
-	# Set defaults
 	[[ -z "$workspace" ]] && workspace="0"
 	[[ -z "$vpn" ]] && vpn="secure"
 	[[ -z "$wait" ]] && wait="1"
 	[[ -z "$fullscreen" ]] && fullscreen="false"
 
-	# Get class pattern for verification
 	local class_pattern=$(get_class_pattern "$profile" "$args")
 
 	mkdir -p "$SCRIPTS_DIR"
 
-	{
-		echo "#!/usr/bin/env bash"
-		echo "# Profile: $profile"
-		echo "# Generated by Semsumo v$VERSION"
-		echo "set -e"
-		echo ""
-		echo "readonly APP_TIMEOUT=${APP_TIMEOUT}"
-		echo "readonly CHECK_INTERVAL=${CHECK_INTERVAL}"
-		echo ""
-		echo "echo \"Initializing $profile...\""
-		echo ""
-		echo "# Switch to workspace"
-		echo "if [[ \"$workspace\" != \"0\" ]] && command -v hyprctl >/dev/null 2>&1; then"
-		echo "    CURRENT_WORKSPACE=\$(hyprctl activeworkspace -j | grep -o '\"id\": [0-9]*' | grep -o '[0-9]*' || echo \"\")"
-		echo "    "
-		echo "    if [[ \"\$CURRENT_WORKSPACE\" != \"$workspace\" ]]; then"
-		echo "        echo \"Switching to workspace $workspace...\""
-		echo "        hyprctl dispatch workspace \"$workspace\""
-		echo "        sleep 1"
-		echo "    else"
-		echo "        echo \"Already on workspace $workspace, skipping switch.\""
-		echo "    fi"
-		echo "fi"
-		echo ""
-		echo "echo \"Starting application...\""
-		echo "echo \"COMMAND: $cmd $args\""
-		echo "echo \"VPN MODE: $vpn\""
-		echo ""
-		echo "# Start application with VPN mode"
-		echo "case \"$vpn\" in"
-		echo "    bypass)"
-		echo "        if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q \"Connected\"; then"
-		echo "            if command -v mullvad-exclude >/dev/null 2>&1; then"
-		echo "                echo \"Starting with VPN bypass (mullvad-exclude)\""
-		echo "                mullvad-exclude $cmd $args &"
-		echo "            else"
-		echo "                echo \"WARNING: mullvad-exclude not found, starting normally\""
-		echo "                $cmd $args &"
-		echo "            fi"
-		echo "        else"
-		echo "            echo \"VPN not connected, starting normally\""
-		echo "            $cmd $args &"
-		echo "        fi"
-		echo "        ;;"
-		echo "    secure|*)"
-		echo "        if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q \"Connected\"; then"
-		echo "            echo \"Starting with VPN protection\""
-		echo "        else"
-		echo "            echo \"WARNING: VPN not connected! Starting without protection\""
-		echo "        fi"
-		echo "        $cmd $args &"
-		echo "        ;;"
-		echo "esac"
-		echo ""
-		echo "# Save PID"
-		echo "APP_PID=\$!"
-		echo "mkdir -p \"/tmp/semsumo\""
-		echo "echo \"\$APP_PID\" > \"/tmp/semsumo/$profile.pid\""
-		echo "echo \"Application started (PID: \$APP_PID)\""
-		echo ""
-		echo "# Wait and verify application window appeared"
-		echo "if [[ \"$workspace\" != \"0\" ]] && command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then"
-		echo "    echo \"Verifying window appearance on workspace $workspace...\""
-		echo "    ELAPSED=0"
-		echo "    CLASS_PATTERN=\"$class_pattern\""
-		echo "    "
-		echo "    while [[ \$ELAPSED -lt \$APP_TIMEOUT ]]; do"
-		echo "        if hyprctl clients -j 2>/dev/null | jq -e \".[] | select(.workspace.id == $workspace and (.class | test(\\\"\$CLASS_PATTERN\\\"; \\\"i\\\")))\" >/dev/null 2>&1; then"
-		echo "            echo \"Window verified on workspace $workspace after \${ELAPSED}s\""
-		echo "            break"
-		echo "        fi"
-		echo "        "
-		echo "        sleep \$CHECK_INTERVAL"
-		echo "        ((ELAPSED += CHECK_INTERVAL))"
-		echo "        "
-		echo "        if ((ELAPSED % 3 == 0)); then"
-		echo "            echo \"Waiting for window... (\${ELAPSED}/\${APP_TIMEOUT}s)\""
-		echo "        fi"
-		echo "    done"
-		echo "    "
-		echo "    if [[ \$ELAPSED -ge \$APP_TIMEOUT ]]; then"
-		echo "        echo \"WARNING: Timeout waiting for window after \${APP_TIMEOUT}s\""
-		echo "    fi"
-		echo "else"
-		echo "    echo \"Waiting $wait seconds for application to load...\""
-		echo "    sleep $wait"
-		echo "fi"
-		echo ""
-		echo "# Make fullscreen if needed"
-		echo "if [[ \"$fullscreen\" == \"true\" ]]; then"
-		echo "    if command -v hyprctl >/dev/null 2>&1; then"
-		echo "        echo \"Making fullscreen...\""
-		echo "        hyprctl dispatch fullscreen 1"
-		echo "        sleep 1"
-		echo "    fi"
-		echo "fi"
-		echo ""
-		echo "echo \"$profile initialization complete\""
-		echo "exit 0"
-	} >"$script_path"
+	# Direkt EOF (quote'suz) - variable expansion aktif
+	cat >"$script_path" <<EOF
+#!/usr/bin/env bash
+# Profile: $profile
+# Generated by Semsumo v8.0.0 (Unified Edition)
+set -e
+
+readonly APP_TIMEOUT=${APP_TIMEOUT}
+readonly CHECK_INTERVAL=${CHECK_INTERVAL}
+readonly WORKSPACE=$workspace
+readonly VPN_MODE="$vpn"
+readonly FULLSCREEN=$fullscreen
+readonly WAIT_TIME=$wait
+
+# Detect window manager
+if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
+    WM_TYPE="hyprland"
+elif [[ "\$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
+    WM_TYPE="gnome"
+else
+    WM_TYPE="generic"
+fi
+
+echo "Initializing $profile on \$WM_TYPE..."
+
+# External monitor setup (GNOME only)
+if [[ "\$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
+    EXTERNAL_MONITOR=\$(xrandr --query | grep " connected" | grep -v "eDP" | head -1 | awk '{print \$1}')
+    if [[ -n "\$EXTERNAL_MONITOR" ]]; then
+        echo "Setting \$EXTERNAL_MONITOR as primary..."
+        xrandr --output "\$EXTERNAL_MONITOR" --primary
+        sleep 1
+    fi
+fi
+
+# Switch to workspace
+if [[ "\$WORKSPACE" != "0" ]]; then
+    case "\$WM_TYPE" in
+    hyprland)
+        if command -v hyprctl >/dev/null 2>&1; then
+            CURRENT=\$(hyprctl activeworkspace -j | grep -o '"id": [0-9]*' | grep -o '[0-9]*' || echo "")
+            if [[ "\$CURRENT" != "\$WORKSPACE" ]]; then
+                echo "Switching to workspace \$WORKSPACE..."
+                hyprctl dispatch workspace "\$WORKSPACE"
+                sleep 1
+            fi
+        fi
+        ;;
+    gnome|*)
+        if command -v wmctrl >/dev/null 2>&1; then
+            TARGET=\$((WORKSPACE - 1))
+            echo "Switching to workspace \$WORKSPACE..."
+            wmctrl -s "\$TARGET"
+            sleep 1
+        fi
+        ;;
+    esac
+fi
+
+echo "Starting application..."
+echo "COMMAND: $cmd $args"
+echo "VPN MODE: \$VPN_MODE"
+
+# Start application with VPN mode
+case "\$VPN_MODE" in
+    bypass)
+        if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
+            if command -v mullvad-exclude >/dev/null 2>&1; then
+                echo "Starting with VPN bypass"
+                mullvad-exclude $cmd $args &
+            else
+                echo "WARNING: mullvad-exclude not found"
+                $cmd $args &
+            fi
+        else
+            echo "VPN not connected"
+            $cmd $args &
+        fi
+        ;;
+    secure|*)
+        if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
+            echo "Starting with VPN protection"
+        else
+            echo "WARNING: VPN not connected!"
+        fi
+        $cmd $args &
+        ;;
+esac
+
+APP_PID=\$!
+mkdir -p "/tmp/semsumo"
+echo "\$APP_PID" > "/tmp/semsumo/$profile.pid"
+echo "Application started (PID: \$APP_PID)"
+
+# Window verification (Hyprland only)
+if [[ "\$WORKSPACE" != "0" && "\$WM_TYPE" == "hyprland" ]] && command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    # Wait for app to fully start
+    sleep 2
+    
+    echo "Verifying window on workspace \$WORKSPACE..."
+    ELAPSED=0
+    CLASS_PATTERN="$class_pattern"
+    
+    while [[ \$ELAPSED -lt \$APP_TIMEOUT ]]; do
+        if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.workspace.id == \$WORKSPACE and (.class | test(\"\$CLASS_PATTERN\"; \"i\")))" >/dev/null 2>&1; then
+            echo "Window verified after \${ELAPSED}s"
+            break
+        fi
+        sleep \$CHECK_INTERVAL
+        ((ELAPSED += CHECK_INTERVAL))
+        if ((ELAPSED % 3 == 0)); then
+            echo "Waiting... (\${ELAPSED}/\${APP_TIMEOUT}s)"
+        fi
+    done
+    
+    [[ \$ELAPSED -ge \$APP_TIMEOUT ]] && echo "WARNING: Timeout after \${APP_TIMEOUT}s"
+else
+    sleep \$WAIT_TIME
+fi
+
+# Make fullscreen if needed
+if [[ "\$FULLSCREEN" == "true" ]]; then
+    sleep \$WAIT_TIME
+    case "\$WM_TYPE" in
+    hyprland)
+        command -v hyprctl >/dev/null 2>&1 && hyprctl dispatch fullscreen 1
+        ;;
+    gnome)
+        if command -v gdbus >/dev/null 2>&1; then
+            gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.display.get_focus_window().make_fullscreen()" >/dev/null 2>&1
+        elif command -v wmctrl >/dev/null 2>&1; then
+            WID=\$(wmctrl -l | tail -1 | awk '{print \$1}')
+            [[ -n "\$WID" ]] && wmctrl -i -r "\$WID" -b add,fullscreen
+        fi
+        ;;
+    esac
+fi
+
+echo "$profile initialization complete"
+exit 0
+EOF
 
 	chmod +x "$script_path"
 	log "SUCCESS" "GENERATE" "Generated: start-${profile}.sh"
 }
 
 generate_all_scripts() {
-	log "INFO" "GENERATE" "Generating scripts for ALL profiles (all browsers + terminals + apps)..."
-
+	log "INFO" "GENERATE" "Generating scripts for ALL profiles..."
 	local count=0
 
-	# Generate terminal scripts
 	for profile in "${!TERMINALS[@]}"; do
 		generate_script "$profile" "${TERMINALS[$profile]}"
 		((count++))
 	done
 
-	# Generate ALL browser scripts (Brave, Zen, Chrome)
-	log "INFO" "GENERATE" "Generating Brave browser scripts..."
 	for profile in "${!BRAVE_BROWSERS[@]}"; do
 		generate_script "$profile" "${BRAVE_BROWSERS[$profile]}"
 		((count++))
 	done
 
-	log "INFO" "GENERATE" "Generating Zen browser scripts..."
 	for profile in "${!ZEN_BROWSERS[@]}"; do
 		generate_script "$profile" "${ZEN_BROWSERS[$profile]}"
 		((count++))
 	done
 
-	log "INFO" "GENERATE" "Generating Chrome browser scripts..."
 	for profile in "${!CHROME_BROWSERS[@]}"; do
 		generate_script "$profile" "${CHROME_BROWSERS[$profile]}"
 		((count++))
 	done
 
-	# Generate app scripts
-	log "INFO" "GENERATE" "Generating application scripts..."
 	for profile in "${!APPS[@]}"; do
 		generate_script "$profile" "${APPS[$profile]}"
 		((count++))
 	done
 
-	log "SUCCESS" "GENERATE" "Generated $count startup scripts (ALL browsers + terminals + apps) in $SCRIPTS_DIR"
+	log "SUCCESS" "GENERATE" "Generated $count unified scripts in $SCRIPTS_DIR"
 }
 
 generate_daily_scripts() {
-	log "INFO" "GENERATE" "Generating scripts for daily/essential profiles only..."
-
+	log "INFO" "GENERATE" "Generating daily/essential profiles..."
 	local count=0
 
-	# Generate daily profiles only
 	for profile in "${!DAILY_PROFILES[@]}"; do
 		local profile_type="${DAILY_PROFILES[$profile]}"
 		local config=""
 
 		case "$profile_type" in
-		"TERMINALS")
-			config="${TERMINALS[$profile]}"
-			;;
-		"BRAVE_BROWSERS")
-			config="${BRAVE_BROWSERS[$profile]}"
-			;;
-		"APPS")
-			config="${APPS[$profile]}"
-			;;
+		"TERMINALS") config="${TERMINALS[$profile]}" ;;
+		"BRAVE_BROWSERS") config="${BRAVE_BROWSERS[$profile]}" ;;
+		"APPS") config="${APPS[$profile]}" ;;
 		esac
 
 		if [[ -n "$config" ]]; then
 			generate_script "$profile" "$config"
 			((count++))
-		else
-			log "WARN" "GENERATE" "Profile not found: $profile"
 		fi
 	done
 
-	log "SUCCESS" "GENERATE" "Generated $count daily/essential scripts in $SCRIPTS_DIR"
-}
-
-generate_browser_only_scripts() {
-	log "INFO" "GENERATE" "Generating scripts for $BROWSER_TYPE browser only..."
-
-	local count=0
-
-	# Generate terminal scripts
-	for profile in "${!TERMINALS[@]}"; do
-		generate_script "$profile" "${TERMINALS[$profile]}"
-		((count++))
-	done
-
-	# Generate browser scripts for current type only
-	case "$BROWSER_TYPE" in
-	"brave")
-		for profile in "${!BRAVE_BROWSERS[@]}"; do
-			generate_script "$profile" "${BRAVE_BROWSERS[$profile]}"
-			((count++))
-		done
-		;;
-	"zen")
-		for profile in "${!ZEN_BROWSERS[@]}"; do
-			generate_script "$profile" "${ZEN_BROWSERS[$profile]}"
-			((count++))
-		done
-		;;
-	"chrome")
-		for profile in "${!CHROME_BROWSERS[@]}"; do
-			generate_script "$profile" "${CHROME_BROWSERS[$profile]}"
-			((count++))
-		done
-		;;
-	esac
-
-	# Generate app scripts
-	for profile in "${!APPS[@]}"; do
-		generate_script "$profile" "${APPS[$profile]}"
-		((count++))
-	done
-
-	log "SUCCESS" "GENERATE" "Generated $count startup scripts for $BROWSER_TYPE browser in $SCRIPTS_DIR"
-}
-
-generate_by_type() {
-	local type="$1"
-	local count=0
-
-	case "$type" in
-	terminals)
-		log "INFO" "GENERATE" "Generating terminal scripts..."
-		for profile in "${!TERMINALS[@]}"; do
-			generate_script "$profile" "${TERMINALS[$profile]}"
-			((count++))
-		done
-		;;
-	browsers)
-		log "INFO" "GENERATE" "Generating $BROWSER_TYPE browser scripts..."
-		local browsers_var=$(get_browser_profiles)
-		local -n browsers_ref=$browsers_var
-		for profile in "${!browsers_ref[@]}"; do
-			generate_script "$profile" "${browsers_ref[$profile]}"
-			((count++))
-		done
-		;;
-	apps)
-		log "INFO" "GENERATE" "Generating application scripts..."
-		for profile in "${!APPS[@]}"; do
-			generate_script "$profile" "${APPS[$profile]}"
-			((count++))
-		done
-		;;
-	*)
-		log "ERROR" "GENERATE" "Unknown type: $type"
-		log "INFO" "GENERATE" "Available types: terminals, browsers, apps"
-		return 1
-		;;
-	esac
-
-	log "SUCCESS" "GENERATE" "Generated $count $type scripts"
-}
-
-generate_single_script() {
-	local profile="$1"
-
-	if [[ -v TERMINALS["$profile"] ]]; then
-		generate_script "$profile" "${TERMINALS[$profile]}"
-	elif [[ -v BRAVE_BROWSERS["$profile"] && "$BROWSER_TYPE" == "brave" ]]; then
-		generate_script "$profile" "${BRAVE_BROWSERS[$profile]}"
-	elif [[ -v ZEN_BROWSERS["$profile"] && "$BROWSER_TYPE" == "zen" ]]; then
-		generate_script "$profile" "${ZEN_BROWSERS[$profile]}"
-	elif [[ -v CHROME_BROWSERS["$profile"] && "$BROWSER_TYPE" == "chrome" ]]; then
-		generate_script "$profile" "${CHROME_BROWSERS[$profile]}"
-	elif [[ -v APPS["$profile"] ]]; then
-		generate_script "$profile" "${APPS[$profile]}"
-	else
-		log "ERROR" "GENERATE" "Profile not found: $profile"
-		log "INFO" "GENERATE" "Use 'list' command to see available profiles"
-		return 1
-	fi
+	log "SUCCESS" "GENERATE" "Generated $count daily scripts"
 }
 
 clean_scripts() {
 	log "INFO" "GENERATE" "Removing all generated scripts..."
-
 	if [[ -d "$SCRIPTS_DIR" ]]; then
 		rm -f "$SCRIPTS_DIR"/start-*.sh
-		log "SUCCESS" "GENERATE" "All scripts removed from $SCRIPTS_DIR"
-	else
-		log "INFO" "GENERATE" "Scripts directory doesn't exist"
+		log "SUCCESS" "GENERATE" "All scripts removed"
 	fi
 }
 
 #-------------------------------------------------------------------------------
-# Direct Launch Functions (with verification)
+# Launch Functions
 #-------------------------------------------------------------------------------
 
 launch_application() {
@@ -628,27 +623,25 @@ launch_application() {
 	local wait=$(parse_config "$config" 5)
 	local fullscreen=$(parse_config "$config" 6)
 
-	# Set defaults
 	[[ -z "$workspace" ]] && workspace="0"
 	[[ -z "$vpn" ]] && vpn="secure"
 	[[ -z "$wait" ]] && wait="1"
 	[[ -z "$fullscreen" ]] && fullscreen="false"
 
-	# Check if already running
 	if is_app_running "$profile"; then
 		log "WARN" "LAUNCH" "$profile is already running"
 		return 0
 	fi
 
+	setup_external_monitor
 	switch_workspace "$workspace"
-	log "INFO" "LAUNCH" "Starting $profile ($type - workspace: $workspace)"
+	log "INFO" "LAUNCH" "Starting $profile ($type, $WM_TYPE, workspace: $workspace)"
 
 	if [[ "$DRY_RUN" == "true" ]]; then
 		log "DEBUG" "LAUNCH" "Dry run: would start $profile"
 		return 0
 	fi
 
-	# Start application with VPN mode
 	case "$vpn" in
 	bypass)
 		if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
@@ -656,11 +649,10 @@ launch_application() {
 				log "INFO" "LAUNCH" "Starting with VPN bypass"
 				mullvad-exclude $cmd $args &
 			else
-				log "WARN" "LAUNCH" "mullvad-exclude not found, starting normally"
+				log "WARN" "LAUNCH" "mullvad-exclude not found"
 				$cmd $args &
 			fi
 		else
-			log "INFO" "LAUNCH" "VPN not connected, starting normally"
 			$cmd $args &
 		fi
 		;;
@@ -668,18 +660,16 @@ launch_application() {
 		if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
 			log "INFO" "LAUNCH" "Starting with VPN protection"
 		else
-			log "WARN" "LAUNCH" "VPN not connected! Starting without protection"
+			log "WARN" "LAUNCH" "VPN not connected!"
 		fi
 		$cmd $args &
 		;;
 	esac
 
-	# Save PID
 	local app_pid=$!
 	mkdir -p "/tmp/semsumo"
 	echo "$app_pid" >"/tmp/semsumo/$profile.pid"
 
-	# Wait and verify window appeared on workspace
 	if [[ "$workspace" != "0" ]]; then
 		local class_pattern=$(get_class_pattern "$profile" "$args")
 		check_window_on_workspace "$workspace" "$class_pattern" "$APP_TIMEOUT" "$CHECK_INTERVAL"
@@ -687,11 +677,9 @@ launch_application() {
 		sleep "$wait"
 	fi
 
-	if [[ "$fullscreen" == "true" ]]; then
-		make_fullscreen
-	fi
+	[[ "$fullscreen" == "true" ]] && make_fullscreen
 
-	log "SUCCESS" "LAUNCH" "$profile started and verified (PID: $app_pid)"
+	log "SUCCESS" "LAUNCH" "$profile started (PID: $app_pid)"
 }
 
 launch_profile() {
@@ -713,37 +701,8 @@ launch_profile() {
 	fi
 }
 
-launch_terminals() {
-	log "INFO" "LAUNCH" "Starting terminal sessions..."
-
-	for profile in "${!TERMINALS[@]}"; do
-		launch_application "$profile" "${TERMINALS[$profile]}" "terminal"
-	done
-}
-
-launch_browsers() {
-	log "INFO" "LAUNCH" "Starting $BROWSER_TYPE browser profiles..."
-
-	local browsers_var=$(get_browser_profiles)
-	local -n browsers_ref=$browsers_var
-
-	for profile in "${!browsers_ref[@]}"; do
-		launch_application "$profile" "${browsers_ref[$profile]}" "$BROWSER_TYPE"
-	done
-}
-
-launch_apps() {
-	log "INFO" "LAUNCH" "Starting applications..."
-
-	for profile in "${!APPS[@]}"; do
-		launch_application "$profile" "${APPS[$profile]}" "app"
-	done
-}
-
 launch_daily_profiles() {
-	log "INFO" "LAUNCH" "Starting daily/essential profiles..."
-
-	# Launch daily profiles in specific order
+	log "INFO" "LAUNCH" "Starting daily/essential profiles on $WM_TYPE..."
 	local daily_order=("kkenp" "brave-kenp" "brave-ai" "brave-compecta" "discord" "spotify" "ferdium" "brave-youtube")
 
 	for profile in "${daily_order[@]}"; do
@@ -768,15 +727,15 @@ launch_daily_profiles() {
 		fi
 	done
 
-	log "SUCCESS" "LAUNCH" "Daily/essential profiles launched"
+	log "SUCCESS" "LAUNCH" "Daily profiles launched"
 }
 
 #-------------------------------------------------------------------------------
-# Listing Functions
+# List and Status Functions
 #-------------------------------------------------------------------------------
 
 list_profiles() {
-	echo -e "${BOLD}${CYAN}Available Profiles (Browser: $BROWSER_TYPE):${NC}\n"
+	echo -e "${BOLD}${CYAN}Available Profiles (Browser: $BROWSER_TYPE, WM: $WM_TYPE):${NC}\n"
 
 	echo -e "${BOLD}${GREEN}Terminals:${NC}"
 	for profile in "${!TERMINALS[@]}"; do
@@ -808,57 +767,12 @@ list_profiles() {
 	done
 }
 
-#-------------------------------------------------------------------------------
-# Window Management Functions
-#-------------------------------------------------------------------------------
-
-ensure_windows_on_correct_workspace() {
-	if [[ "$DRY_RUN" == "true" ]]; then
-		return 0
-	fi
-
-	if ! command -v hyprctl &>/dev/null; then
-		log "WARN" "WINDOW" "hyprctl not available, skipping window workspace verification"
-		return 0
-	fi
-
-	log "INFO" "WINDOW" "Ensuring all windows are on correct workspaces..."
-
-	# Define window to workspace mappings
-	declare -A WINDOW_WORKSPACE_MAP=(
-		["discord|Discord"]="5"
-		["spotify|Spotify"]="8"
-		["ferdium|Ferdium"]="9"
-	)
-
-	local moved_count=0
-
-	for class_pattern in "${!WINDOW_WORKSPACE_MAP[@]}"; do
-		local target_workspace="${WINDOW_WORKSPACE_MAP[$class_pattern]}"
-
-		# Check if window exists and move if needed
-		if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"^($class_pattern)$\"; \"i\"))" >/dev/null 2>&1; then
-			log "INFO" "WINDOW" "Moving windows matching '$class_pattern' to workspace $target_workspace"
-			hyprctl dispatch movetoworkspacesilent "${target_workspace},class:^(${class_pattern})$" >/dev/null 2>&1
-			((moved_count++))
-			sleep 0.5
-		fi
-	done
-
-	if [[ $moved_count -gt 0 ]]; then
-		log "SUCCESS" "WINDOW" "Verified/moved $moved_count window type(s) to correct workspaces"
-	else
-		log "INFO" "WINDOW" "No windows needed repositioning"
-	fi
-}
-
 check_status() {
-	echo -e "${BOLD}${CYAN}Application Status:${NC}\n"
+	echo -e "${BOLD}${CYAN}Application Status (WM: $WM_TYPE):${NC}\n"
 
 	local running_count=0
 	local total_count=0
 
-	# Check terminals
 	echo -e "${BOLD}${GREEN}Terminals:${NC}"
 	for profile in "${!TERMINALS[@]}"; do
 		((total_count++))
@@ -870,7 +784,6 @@ check_status() {
 		fi
 	done
 
-	# Check browsers
 	echo -e "\n${BOLD}${GREEN}Browsers ($BROWSER_TYPE):${NC}"
 	local browsers_var=$(get_browser_profiles)
 	local -n browsers_ref=$browsers_var
@@ -884,7 +797,6 @@ check_status() {
 		fi
 	done
 
-	# Check apps
 	echo -e "\n${BOLD}${GREEN}Applications:${NC}"
 	for profile in "${!APPS[@]}"; do
 		((total_count++))
@@ -901,10 +813,8 @@ check_status() {
 
 kill_all() {
 	log "INFO" "KILL" "Stopping all managed applications..."
-
 	local killed_count=0
 
-	# Kill based on PID files
 	if [[ -d "/tmp/semsumo" ]]; then
 		for pid_file in /tmp/semsumo/*.pid; do
 			if [[ -f "$pid_file" ]]; then
@@ -923,39 +833,12 @@ kill_all() {
 	log "SUCCESS" "KILL" "Stopped $killed_count applications"
 }
 
-export_config() {
-	log "INFO" "EXPORT" "Exporting current configuration (built-in profiles only)"
-
-	# Just show the current configuration without creating external files
-	echo -e "${BOLD}${CYAN}Current Configuration:${NC}\n"
-	echo -e "${BOLD}Browser Type:${NC} $BROWSER_TYPE"
-	echo -e "${BOLD}Final Workspace:${NC} $FINAL_WORKSPACE"
-	echo -e "${BOLD}Wait Time:${NC} $WAIT_TIME"
-	echo -e "${BOLD}App Timeout:${NC} $APP_TIMEOUT seconds"
-	echo -e "${BOLD}Check Interval:${NC} $CHECK_INTERVAL second(s)"
-	echo -e "${BOLD}Scripts Directory:${NC} $SCRIPTS_DIR"
-	echo -e "${BOLD}Log Directory:${NC} $LOG_DIR"
-
-	echo -e "\n${BOLD}Profile Counts:${NC}"
-	echo -e "  Terminals: ${#TERMINALS[@]}"
-
-	case "$BROWSER_TYPE" in
-	"brave") echo -e "  Browsers: ${#BRAVE_BROWSERS[@]} (Brave)" ;;
-	"zen") echo -e "  Browsers: ${#ZEN_BROWSERS[@]} (Zen)" ;;
-	"chrome") echo -e "  Browsers: ${#CHROME_BROWSERS[@]} (Chrome)" ;;
-	esac
-
-	echo -e "  Applications: ${#APPS[@]}"
-
-	log "INFO" "EXPORT" "Configuration displayed (no external files created)"
-}
-
 #-------------------------------------------------------------------------------
-# Help and Usage
+# Help Function
 #-------------------------------------------------------------------------------
 
 show_help() {
-	echo -e "${BOLD}${GREEN}Semsumo v$VERSION - Enhanced Application Launcher & Generator${NC}"
+	echo -e "${BOLD}${GREEN}Semsumo v$VERSION - Unified Application Launcher${NC}"
 	echo
 	echo -e "${BOLD}Usage:${NC}"
 	echo "    $0 [BROWSER] <command> [options]"
@@ -972,48 +855,36 @@ show_help() {
 	echo "    clean                 Remove all generated scripts"
 	echo "    status                Show running applications status"
 	echo "    kill                  Stop all managed applications"
-	echo "    export                Show current configuration"
 	echo "    help                  Show this help"
 	echo
 	echo -e "${BOLD}Generate Options:${NC}"
 	echo "    --all                 Generate scripts for ALL profiles (all browsers)"
 	echo "    --daily               Generate scripts for daily/essential profiles"
-	echo "    --type TYPE           Generate scripts for specific type"
-	echo "    --browser-only        Generate scripts only for current browser type"
 	echo
 	echo -e "${BOLD}Launch Options:${NC}"
-	echo "    --terminals           Launch only terminal sessions"
-	echo "    --browsers            Launch only browser profiles"
-	echo "    --apps                Launch only applications"
 	echo "    --daily               Launch only daily/essential profiles"
 	echo "    --workspace NUM       Final workspace (default: $DEFAULT_FINAL_WORKSPACE)"
-	echo "    --wait NUM            Wait time between launches (default: $DEFAULT_WAIT_TIME)"
 	echo "    --timeout NUM         App verification timeout (default: $DEFAULT_APP_TIMEOUT)"
 	echo
 	echo -e "${BOLD}Global Options:${NC}"
 	echo "    --dry-run             Test mode (don't actually run anything)"
 	echo "    --debug               Enable debug output"
-	echo "    --help                Show this help"
-	echo
-	echo -e "${BOLD}Examples:${NC}"
-	echo "    $0 generate --all                   # Generate ALL scripts (all browsers)"
-	echo "    $0 generate --daily                 # Generate daily/essential scripts only"
-	echo "    $0 brave generate --browser-only    # Generate only Brave scripts"
-	echo "    $0 zen generate zen-discord         # Generate specific Zen script"
-	echo "    $0 launch --daily                   # Launch daily/essential profiles"
-	echo "    $0 brave launch --browsers          # Launch all Brave browser profiles"
-	echo "    $0 launch discord                   # Launch discord directly"
-	echo "    $0 chrome launch --all              # Launch all Chrome profiles & apps"
-	echo "    $0 launch --timeout 20              # Launch with 20s verification timeout"
-	echo "    $0 list                             # List all available profiles"
-	echo "    $0 clean                            # Remove all generated scripts"
 	echo
 	echo -e "${BOLD}Features:${NC}"
-	echo "    - Application verification: Waits for window to appear on workspace"
-	echo "    - Configurable timeout: Adjust verification timeout with --timeout"
-	echo "    - Sequential launching: Only proceeds after app is verified"
-	echo "    - Workspace management: Ensures apps open on correct workspace"
+	echo "    - Auto-detects window manager (Hyprland/GNOME/generic)"
+	echo "    - Window verification on Hyprland (requires jq)"
+	echo "    - VPN bypass/secure mode support (Mullvad)"
+	echo "    - Multi-browser profile support"
 	echo
+	echo -e "${BOLD}Examples:${NC}"
+	echo "    $0 generate --all                   # Generate ALL scripts"
+	echo "    $0 generate --daily                 # Generate daily scripts only"
+	echo "    $0 launch --daily                   # Launch daily profiles"
+	echo "    $0 brave launch brave-kenp          # Launch specific profile"
+	echo "    $0 list                             # List all profiles"
+	echo "    $0 status                           # Check running apps"
+	echo
+	echo -e "${BOLD}Detected:${NC} Window Manager = $WM_TYPE"
 	echo -e "${BOLD}Locations:${NC}"
 	echo "    Scripts: $SCRIPTS_DIR"
 	echo "    Logs:    $LOG_FILE"
@@ -1023,29 +894,12 @@ show_help() {
 # Argument Parsing
 #-------------------------------------------------------------------------------
 
-detect_browser_from_script_name() {
-	case "$SCRIPT_NAME" in
-	*brave*) echo "brave" ;;
-	*zen*) echo "zen" ;;
-	*chrome*) echo "chrome" ;;
-	*) echo "brave" ;;
-	esac
-}
-
 parse_args() {
-	# First parameter might be browser type
 	if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "zen" || "$1" == "chrome") ]]; then
 		BROWSER_TYPE="$1"
 		shift
-	elif [[ $# -gt 0 && "$1" != "-"* && "$1" != "generate" && "$1" != "launch" && "$1" != "list" && "$1" != "clean" && "$1" != "help" && "$1" != "status" && "$1" != "kill" && "$1" != "export" ]]; then
-		log "ERROR" "ARGS" "Invalid browser type: $1"
-		echo "Supported browser types: brave, zen, chrome" >&2
-		exit 1
-	else
-		BROWSER_TYPE=$(detect_browser_from_script_name)
 	fi
 
-	# Parse command
 	case "${1:-help}" in
 	generate)
 		MODE_GENERATE=true
@@ -1071,10 +925,6 @@ parse_args() {
 		kill_all
 		exit 0
 		;;
-	export)
-		export_config
-		exit 0
-		;;
 	help | --help | -h)
 		show_help
 		exit 0
@@ -1090,7 +940,6 @@ parse_args() {
 		;;
 	esac
 
-	# Parse remaining options
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 		--all)
@@ -1107,33 +956,8 @@ parse_args() {
 			LAUNCH_DAILY=true
 			shift
 			;;
-		--browser-only)
-			# For generate mode: only current browser type
-			BROWSER_ONLY=true
-			shift
-			;;
-		--type)
-			LAUNCH_TYPE="$2"
-			shift 2
-			;;
-		--terminals)
-			RUN_TERMINALS=true
-			shift
-			;;
-		--browsers)
-			RUN_BROWSER=true
-			shift
-			;;
-		--apps)
-			RUN_APPS=true
-			shift
-			;;
 		--workspace)
 			FINAL_WORKSPACE="$2"
-			shift 2
-			;;
-		--wait)
-			WAIT_TIME="$2"
 			shift 2
 			;;
 		--timeout)
@@ -1148,24 +972,13 @@ parse_args() {
 			DEBUG_MODE=true
 			shift
 			;;
-		"")
-			# No more arguments
-			break
-			;;
+		"") break ;;
 		*)
-			# Assume it's a profile name
 			SINGLE_PROFILE="$1"
 			shift
 			;;
 		esac
 	done
-
-	# Set defaults for launch mode if no specific options given
-	if [[ "$MODE_LAUNCH" == "true" && "$RUN_TERMINALS" != "true" && "$RUN_BROWSER" != "true" && "$RUN_APPS" != "true" && -z "$SINGLE_PROFILE" && "$LAUNCH_DAILY" != "true" ]]; then
-		RUN_TERMINALS=true
-		RUN_BROWSER=true
-		RUN_APPS=true
-	fi
 }
 
 #-------------------------------------------------------------------------------
@@ -1175,34 +988,20 @@ parse_args() {
 main() {
 	local start_time=$(date +%s)
 
+	detect_window_manager
 	parse_args "$@"
 
-	if [[ "$DEBUG_MODE" == "true" ]]; then
-		log "DEBUG" "CONFIG" "Browser: $BROWSER_TYPE, Mode: Generate=$MODE_GENERATE Launch=$MODE_LAUNCH"
-		log "DEBUG" "CONFIG" "Terminals: $RUN_TERMINALS, Browsers: $RUN_BROWSER, Apps: $RUN_APPS"
-		log "DEBUG" "CONFIG" "Single Profile: $SINGLE_PROFILE, Dry Run: $DRY_RUN"
-		log "DEBUG" "CONFIG" "Timeout: $APP_TIMEOUT seconds, Check Interval: $CHECK_INTERVAL second(s)"
-	fi
-
 	mkdir -p "$LOG_DIR"
-	log "INFO" "START" "Semsumo v$VERSION started ($BROWSER_TYPE)" "true"
+	log "INFO" "START" "Semsumo v$VERSION started ($WM_TYPE, $BROWSER_TYPE)" "true"
 
-	if [[ "$DRY_RUN" == "true" ]]; then
-		log "INFO" "CONFIG" "Dry run mode - no applications will be started" "true"
-	fi
-
-	# Execute based on mode
 	if [[ "$MODE_GENERATE" == "true" ]]; then
 		if [[ "$LAUNCH_ALL" == "true" ]]; then
 			generate_all_scripts
 		elif [[ "$LAUNCH_DAILY" == "true" ]]; then
 			generate_daily_scripts
-		elif [[ "$BROWSER_ONLY" == "true" ]]; then
-			generate_browser_only_scripts
-		elif [[ -n "$LAUNCH_TYPE" ]]; then
-			generate_by_type "$LAUNCH_TYPE"
 		elif [[ -n "$SINGLE_PROFILE" ]]; then
-			generate_single_script "$SINGLE_PROFILE"
+			log "ERROR" "GENERATE" "Single profile generation not yet implemented in unified version"
+			exit 1
 		else
 			log "ERROR" "GENERATE" "Profile name or option required"
 			show_help
@@ -1215,18 +1014,10 @@ main() {
 		elif [[ -n "$SINGLE_PROFILE" ]]; then
 			launch_profile "$SINGLE_PROFILE"
 		else
-			# Launch in order: terminals, browsers, apps
-			[[ "$RUN_TERMINALS" == "true" ]] && launch_terminals
-			[[ "$RUN_BROWSER" == "true" ]] && launch_browsers
-			[[ "$RUN_APPS" == "true" ]] && launch_apps
+			log "ERROR" "LAUNCH" "Please specify --daily or profile name"
+			exit 1
 		fi
 
-		# Ensure all windows are on correct workspaces
-		log "INFO" "WINDOW" "Verifying window positions..."
-		sleep 2 # Give windows time to fully appear
-		ensure_windows_on_correct_workspace
-
-		# Switch to final workspace
 		if [[ -n "$FINAL_WORKSPACE" ]]; then
 			log "INFO" "WORKSPACE" "Switching to final workspace $FINAL_WORKSPACE"
 			switch_workspace "$FINAL_WORKSPACE"
@@ -1246,48 +1037,29 @@ main() {
 	local end_time=$(date +%s)
 	local total_time=$((end_time - start_time))
 
-	log "SUCCESS" "DONE" "All operations completed ($BROWSER_TYPE) - Time: ${total_time}s" "true"
+	log "SUCCESS" "DONE" "Completed ($WM_TYPE, $BROWSER_TYPE) - Time: ${total_time}s" "true"
 }
-
-#-------------------------------------------------------------------------------
-# Error Handling and Entry Point
-#-------------------------------------------------------------------------------
-
-# Trap errors and cleanup
-trap 'log "ERROR" "TRAP" "Script interrupted or failed"; exit 1' ERR INT TERM
 
 # Check dependencies
 check_dependencies() {
 	local missing_deps=()
 
-	# Check for jq (required for window verification)
-	command -v jq >/dev/null 2>&1 || missing_deps+=("jq")
-
-	# Check for required commands based on browser type
 	case "$BROWSER_TYPE" in
-	brave)
-		command -v profile_brave >/dev/null 2>&1 || missing_deps+=("profile_brave")
-		;;
-	zen)
-		command -v zen >/dev/null 2>&1 || missing_deps+=("zen")
-		;;
-	chrome)
-		command -v profile_chrome >/dev/null 2>&1 || missing_deps+=("profile_chrome")
-		;;
+	brave) command -v profile_brave >/dev/null 2>&1 || missing_deps+=("profile_brave") ;;
+	zen) command -v zen >/dev/null 2>&1 || missing_deps+=("zen") ;;
+	chrome) command -v profile_chrome >/dev/null 2>&1 || missing_deps+=("profile_chrome") ;;
 	esac
 
-	# Check for optional but useful commands
+	if [[ "$WM_TYPE" == "hyprland" ]] && ! command -v jq >/dev/null 2>&1; then
+		log "WARN" "DEPS" "jq not found - window verification disabled"
+	fi
+
 	if [[ ${#missing_deps[@]} -gt 0 ]]; then
-		log "WARN" "DEPS" "Missing dependencies: ${missing_deps[*]}"
-		if [[ " ${missing_deps[*]} " =~ " jq " ]]; then
-			log "WARN" "DEPS" "jq is required for window verification - install it for full functionality"
-		fi
-		log "INFO" "DEPS" "Some features may not work properly"
+		log "WARN" "DEPS" "Missing: ${missing_deps[*]}"
 	fi
 }
 
-# Check dependencies before main execution
-check_dependencies
+trap 'log "ERROR" "TRAP" "Script interrupted"; exit 1' ERR INT TERM
 
-# Run main function
+check_dependencies
 main "$@"

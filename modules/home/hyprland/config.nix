@@ -719,7 +719,7 @@ in
         "ALT CTRL, W, exec, whatsie -w"
         "ALT, T, exec, start-kkenp"
         "ALT CTRL, C, exec, start-mkenp"
-        "$mainMod ALT, RETURN, exec, osc-start_hypr launch --daily"
+        "$mainMod ALT, RETURN, exec, semsumo launch --daily"
 
         # System Functions
         ",F10, exec, hypr-bluetooth_toggle"
