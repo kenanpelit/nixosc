@@ -243,9 +243,6 @@ let
   ports = pkgs.writeShellScriptBin "ports" (
     builtins.readFile ./bin/ports.sh
   );
-  power-menu = pkgs.writeShellScriptBin "power-menu" (
-    builtins.readFile ./bin/power-menu.sh
-  );
   profile_brave = pkgs.writeShellScriptBin "profile_brave" (
     builtins.readFile ./bin/profile_brave.sh
   );
@@ -261,15 +258,6 @@ let
   renew_env = pkgs.writeShellScriptBin "renew_env" (
     builtins.readFile ./bin/renew_env.sh
   );
-  rofi-custom-launcher = pkgs.writeShellScriptBin "rofi-custom-launcher" (
-    builtins.readFile ./bin/rofi-custom-launcher.sh
-  );
-  rofi-frecency = pkgs.writeShellScriptBin "rofi-frecency" (
-    builtins.readFile ./bin/rofi-frecency.sh
-  );
-  rofi-hypr-keybinds = pkgs.writeShellScriptBin "rofi-hypr-keybinds" (
-    builtins.readFile ./bin/rofi-hypr-keybinds.sh
-  );
   rofi-iwmenu = pkgs.writeShellScriptBin "rofi-iwmenu" (
     builtins.readFile ./bin/rofi-iwmenu.sh
   );
@@ -279,8 +267,8 @@ let
   rofi-performance = pkgs.writeShellScriptBin "rofi-performance" (
     builtins.readFile ./bin/rofi-performance.sh
   );
-  rofi-power = pkgs.writeShellScriptBin "rofi-power" (
-    builtins.readFile ./bin/rofi-power.sh
+  rofi-power-menu = pkgs.writeShellScriptBin "rofi-power-menu" (
+    builtins.readFile ./bin/rofi-power-menu.sh
   );
   rofi-wifi = pkgs.writeShellScriptBin "rofi-wifi" (
     builtins.readFile ./bin/rofi-wifi.sh
@@ -476,19 +464,15 @@ in {
     pdfkes
     playlist
     ports
-    power-menu
     profile_brave
     profile_chrome
     publicip
     record
     renew_env
-    rofi-custom-launcher
-    rofi-frecency
-    rofi-hypr-keybinds
     rofi-iwmenu
     rofi-launcher
     rofi-performance
-    rofi-power
+    rofi-power-menu
     rofi-wifi
     rsync_backup
     rsync-retry

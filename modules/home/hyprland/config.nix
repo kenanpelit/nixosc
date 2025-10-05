@@ -647,8 +647,11 @@ in
 
       # Key Bindings (keeping all your existing bindings)
       bind = [
-        # show keybinds list
-        "$mainMod, F1, exec, rofi-hypr-keybinds"
+        # Rofi - Show keybinds list - Application Launchers
+        "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
+        "ALT, Space, exec, rofi-launcher custom || pkill rofi"
+        "$mainMod, Space, exec, rofi-launcher default || pkill rofi"
+        "$mainMod, backspace, exec, rofi-launcher power || pkill rofi"
 
         # Terminal Emulators
         "$mainMod, Return, exec, kitty"
@@ -666,9 +669,6 @@ in
         "$mainMod, G, togglegroup"
         "$mainMod, T, exec, toggle_oppacity"
 
-        # Application Launchers
-        "$mainMod, Space, exec, rofi-launcher || pkill rofi"
-        "ALT, Space, exec, rofi-custom-launcher || pkill rofi"
         #"ALT, Space, exec, walker"
         #"$mainMod ALT, Space, exec, ulauncher-toggle"
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
@@ -694,12 +694,11 @@ in
 
         # Wallpaper Management
         "$mainMod, W, exec, wallpaper-manager select"
-        "ALT, 0, exec, wallpaper-manager"
+        "ALT, 0, exec, wallpaper-manager now"
         "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'"
 
         # System Tools
         "ALT, L, exec, hyprlock"
-        "$mainMod, backspace, exec, power-menu"
         "$mainMod, C, exec, hyprpicker -a"
         "$mainMod, N, exec, makoctl restore"
         "$mainMod CTRL, N, exec, makoctl dismiss --all"

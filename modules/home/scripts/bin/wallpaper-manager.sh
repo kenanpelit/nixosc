@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =================================================================
-# Gelişmiş Duvar Kağıdı Değiştirici v2.1 (Düzeltilmiş)
+# Gelişmiş Duvar Kağıdı Değiştirici v2.2 (fd destekli)
 # Temiz ve Basit Versiyon
 # =================================================================
 
@@ -51,10 +51,22 @@ SCRIPT_NAME="$(basename "$0")"
 INTERVAL=$DEFAULT_INTERVAL
 VERBOSE=false
 DRY_RUN=false
+USE_FD=false
 
 # =================================================================
 # YARDIMCI FONKSİYONLAR
 # =================================================================
+
+# Hangi find komutunu kullanacağımızı belirle
+detect_find_tool() {
+	if command -v fd >/dev/null 2>&1; then
+		USE_FD=true
+		log DEBUG "fd komutu kullanılacak"
+	else
+		USE_FD=false
+		log DEBUG "find komutu kullanılacak"
+	fi
+}
 
 # Log fonksiyonu
 log() {
@@ -127,19 +139,42 @@ ensure_directory() {
 	return 0
 }
 
-# Find komutu için uzantı listesi oluştur
-build_find_command() {
-	local find_expr=""
+# Duvar kağıtlarını listele (fd veya find)
+list_wallpapers() {
+	if $USE_FD; then
+		# fd kullan
+		fd -t f -e jpg -e jpeg -e png -e webp -e bmp . "$WALLPAPERS_FOLDER" 2>/dev/null
+	else
+		# find kullan
+		local find_expr=""
+		for i in "${!SUPPORTED_EXTENSIONS[@]}"; do
+			if [[ $i -eq 0 ]]; then
+				find_expr="-iname \"*.${SUPPORTED_EXTENSIONS[$i]}\""
+			else
+				find_expr="$find_expr -o -iname \"*.${SUPPORTED_EXTENSIONS[$i]}\""
+			fi
+		done
+		eval "find \"$WALLPAPERS_FOLDER\" -type f \\( $find_expr \\)" 2>/dev/null
+	fi
+}
 
-	for i in "${!SUPPORTED_EXTENSIONS[@]}"; do
-		if [[ $i -eq 0 ]]; then
-			find_expr="-name \"*.${SUPPORTED_EXTENSIONS[$i]}\""
-		else
-			find_expr="$find_expr -o -name \"*.${SUPPORTED_EXTENSIONS[$i]}\""
-		fi
-	done
-
-	echo "find \"$WALLPAPERS_FOLDER\" -type f \\( $find_expr \\)"
+# Duvar kağıtlarını sadece basename ile listele
+list_wallpapers_basename() {
+	if $USE_FD; then
+		# fd kullan
+		fd -t f -e jpg -e jpeg -e png -e webp -e bmp . "$WALLPAPERS_FOLDER" -x basename 2>/dev/null
+	else
+		# find kullan
+		local find_expr=""
+		for i in "${!SUPPORTED_EXTENSIONS[@]}"; do
+			if [[ $i -eq 0 ]]; then
+				find_expr="-iname \"*.${SUPPORTED_EXTENSIONS[$i]}\""
+			else
+				find_expr="$find_expr -o -iname \"*.${SUPPORTED_EXTENSIONS[$i]}\""
+			fi
+		done
+		eval "find \"$WALLPAPERS_FOLDER\" -type f \\( $find_expr \\) -exec basename {} \\;" 2>/dev/null
+	fi
 }
 
 # =================================================================
@@ -203,11 +238,8 @@ update_wallpaper_cache() {
 	log DEBUG "Duvar kağıtları taranıyor: $WALLPAPERS_FOLDER"
 
 	# Duvar kağıtlarını bul
-	local find_cmd
-	find_cmd=$(build_find_command)
-
 	local wallpaper_files
-	mapfile -t wallpaper_files < <(eval "$find_cmd" 2>/dev/null)
+	mapfile -t wallpaper_files < <(list_wallpapers)
 
 	local total=${#wallpaper_files[@]}
 	echo "$total" >"$TOTAL_FILE"
@@ -249,11 +281,8 @@ change_wallpaper() {
 	update_wallpaper_cache
 
 	# Duvar kağıtlarını listele
-	local find_cmd
-	find_cmd=$(build_find_command)
-
 	local wallpaper_list
-	mapfile -t wallpaper_list < <(eval "$find_cmd" 2>/dev/null)
+	mapfile -t wallpaper_list < <(list_wallpapers)
 
 	local wallpaper_count=${#wallpaper_list[@]}
 
@@ -451,11 +480,8 @@ select_wallpaper_rofi() {
 		return 1
 	fi
 
-	local find_cmd
-	find_cmd=$(build_find_command)
-
 	local wallpaper_name
-	wallpaper_name=$(eval "$find_cmd" -exec basename {} \; | sort | rofi -dmenu -p "Duvar kağıdı seçin") || {
+	wallpaper_name=$(list_wallpapers_basename | sort | rofi -dmenu -p "Duvar kağıdı seçin") || {
 		log INFO "Seçim iptal edildi"
 		return 1
 	}
@@ -498,6 +524,9 @@ show_stats() {
 		current_wallpaper=$(basename "$(readlink "$WALLPAPER_LINK")" 2>/dev/null || echo "Bilinmiyor")
 	fi
 
+	local find_tool="find"
+	$USE_FD && find_tool="fd"
+
 	echo -e "${CYAN}=== Duvar Kağıdı İstatistikleri ===${NC}"
 	echo -e "Toplam duvar kağıdı: ${GREEN}$total_wallpapers${NC}"
 	echo -e "Geçmiş kayıt sayısı: ${GREEN}$history_count${NC}"
@@ -505,6 +534,7 @@ show_stats() {
 	echo -e "Duvar kağıdı dizini: ${BLUE}$WALLPAPERS_FOLDER${NC}"
 	echo -e "Aralık: ${YELLOW}${INTERVAL}s${NC}"
 	echo -e "Desteklenen formatlar: ${CYAN}${SUPPORTED_EXTENSIONS[*]}${NC}"
+	echo -e "Kullanılan araç: ${CYAN}$find_tool${NC}"
 
 	if check_status true; then
 		echo -e "Servis durumu: ${GREEN}Çalışıyor${NC}"
@@ -525,7 +555,7 @@ manual_change() {
 
 show_usage() {
 	cat <<EOF
-Duvar Kağıdı Değiştirici v2.1
+Duvar Kağıdı Değiştirici v2.2
 
 KULLANIM:
     $SCRIPT_NAME [KOMUT] [SEÇENEKLER]
@@ -562,11 +592,17 @@ YAPILANDIRMA:
     - WALLPAPERS_FOLDER: $WALLPAPERS_FOLDER
     - MAX_HISTORY: $MAX_HISTORY
     - SUPPORTED_EXTENSIONS: ${SUPPORTED_EXTENSIONS[*]}
+
+NOT:
+    Script otomatik olarak 'fd' veya 'find' komutunu algılar ve kullanır.
 EOF
 }
 
 # Ana fonksiyon
 main() {
+	# fd veya find'ı tespit et
+	detect_find_tool
+
 	# Komut satırı argümanları
 	while [[ $# -gt 0 ]]; do
 		case $1 in
