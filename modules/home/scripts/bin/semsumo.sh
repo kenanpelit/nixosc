@@ -619,6 +619,51 @@ clean_scripts() {
 # Launch Functions
 #-------------------------------------------------------------------------------
 
+ensure_windows_on_correct_workspace() {
+	if [[ "$DRY_RUN" == "true" ]]; then
+		return 0
+	fi
+
+	# Only works on Hyprland
+	if [[ "$WM_TYPE" != "hyprland" ]]; then
+		return 0
+	fi
+
+	if ! command -v hyprctl &>/dev/null || ! command -v jq &>/dev/null; then
+		log "WARN" "WINDOW" "hyprctl or jq not available, skipping window workspace verification"
+		return 0
+	fi
+
+	log "INFO" "WINDOW" "Ensuring all windows are on correct workspaces..."
+
+	# Define window to workspace mappings
+	declare -A WINDOW_WORKSPACE_MAP=(
+		["discord|Discord"]="5"
+		["spotify|Spotify"]="8"
+		["ferdium|Ferdium"]="9"
+	)
+
+	local moved_count=0
+
+	for class_pattern in "${!WINDOW_WORKSPACE_MAP[@]}"; do
+		local target_workspace="${WINDOW_WORKSPACE_MAP[$class_pattern]}"
+
+		# Check if window exists and move if needed
+		if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"^($class_pattern)$\"; \"i\"))" >/dev/null 2>&1; then
+			log "INFO" "WINDOW" "Moving windows matching '$class_pattern' to workspace $target_workspace"
+			hyprctl dispatch movetoworkspacesilent "${target_workspace},class:^(${class_pattern})$" >/dev/null 2>&1
+			((moved_count++))
+			sleep 0.5
+		fi
+	done
+
+	if [[ $moved_count -gt 0 ]]; then
+		log "SUCCESS" "WINDOW" "Verified/moved $moved_count window type(s) to correct workspaces"
+	else
+		log "INFO" "WINDOW" "No windows needed repositioning"
+	fi
+}
+
 launch_application() {
 	local profile="$1"
 	local config="$2"
@@ -1110,6 +1155,13 @@ main() {
 		else
 			log "ERROR" "LAUNCH" "Please specify --daily or profile name"
 			exit 1
+		fi
+
+		# Ensure all windows are on correct workspaces (Hyprland only)
+		if [[ "$WM_TYPE" == "hyprland" ]]; then
+			log "INFO" "WINDOW" "Verifying window positions..."
+			sleep 2 # Give windows time to fully appear
+			ensure_windows_on_correct_workspace
 		fi
 
 		if [[ -n "$FINAL_WORKSPACE" ]]; then
