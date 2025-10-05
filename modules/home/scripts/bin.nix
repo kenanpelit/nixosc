@@ -138,9 +138,6 @@ let
   osc-cleaup-grub = pkgs.writeShellScriptBin "osc-cleaup-grub" (
     builtins.readFile ./bin/osc-cleaup-grub.sh
   );
-  osc-generate_nix = pkgs.writeShellScriptBin "osc-generate_nix" (
-    builtins.readFile ./bin/osc-generate_nix.sh
-  );
   osc-gist = pkgs.writeShellScriptBin "osc-gist" (
     builtins.readFile ./bin/osc-gist.sh
   );
@@ -197,12 +194,6 @@ let
   );
   osc-ssh = pkgs.writeShellScriptBin "osc-ssh" (
     builtins.readFile ./bin/osc-ssh.sh
-  );
-  osc-start_gnome = pkgs.writeShellScriptBin "osc-start_gnome" (
-    builtins.readFile ./bin/osc-start_gnome.sh
-  );
-  osc-start_hypr = pkgs.writeShellScriptBin "osc-start_hypr" (
-    builtins.readFile ./bin/osc-start_hypr.sh
   );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./bin/osc-subliminal.sh
@@ -432,7 +423,6 @@ in {
     osc-backup
     osc-blocklist
     osc-cleaup-grub
-    osc-generate_nix
     osc-gist
     osc-gpg_unlock
     osc-hypr-update
@@ -452,8 +442,6 @@ in {
     osc-soundctl
     osc-spotify
     osc-ssh
-    osc-start_gnome
-    osc-start_hypr
     osc-subliminal
     osc-symlink_manager
     osc-sync
