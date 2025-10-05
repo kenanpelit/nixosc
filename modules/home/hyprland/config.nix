@@ -668,9 +668,9 @@ in
 
         # Application Launchers
         "$mainMod, Space, exec, rofi-launcher || pkill rofi"
-        "$mainMod, b, exec, rofi-custom-launcher || pkill rofi"
-        "ALT, Space, exec, walker"
-        "$mainMod ALT, Space, exec, ulauncher-toggle"
+        "ALT, Space, exec, rofi-custom-launcher || pkill rofi"
+        #"ALT, Space, exec, walker"
+        #"$mainMod ALT, Space, exec, ulauncher-toggle"
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal nemo'"
 
