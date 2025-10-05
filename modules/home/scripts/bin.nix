@@ -288,6 +288,9 @@ let
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
   );
+  semsumo = pkgs.writeShellScriptBin "semsumo" (
+    builtins.readFile ./bin/semsumo.sh
+  );
   sil_ayni_mp4 = pkgs.writeShellScriptBin "sil_ayni_mp4" (
     builtins.readFile ./bin/sil_ayni_mp4.sh
   );
@@ -479,6 +482,7 @@ in {
     rsync-tool
     runbg
     screenshot
+    semsumo
     sil_ayni_mp4
     smart-suspend
     ssh-launcher
