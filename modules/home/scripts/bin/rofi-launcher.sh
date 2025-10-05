@@ -28,7 +28,7 @@ readonly FRECENCY_FILE="$CACHE_DIR/frecency.txt"
 MODE="default"
 
 # Command prefixes for custom mode
-readonly CMD_PREFIXES=("start-" "gnome-")
+readonly CMD_PREFIXES=("start-")
 readonly CUSTOM_BIN_DIRS=(
 	"/etc/profiles/per-user/kenan/bin"
 	"$HOME/.local/bin"
@@ -325,7 +325,7 @@ MODES:
     window, -w, --window        Window switcher
     files, -f, --files          File browser
     ssh, -s, --ssh              SSH connections
-    custom, -c, --custom        Custom commands (start-*, gnome-*)
+    custom, -c, --custom        Custom commands (start-*)
     keys, -k, --keys            Hyprland keybindings
     power, -p, --power          Power menu
     help, -h, --help            Show this help
@@ -345,7 +345,6 @@ ENVIRONMENT:
 CUSTOM COMMANDS:
     The custom mode searches for executables with these prefixes:
     - start-*
-    - gnome-*
     
     Search locations:
     - /etc/profiles/per-user/kenan/bin
