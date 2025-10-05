@@ -708,7 +708,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 
 # Gnome Start
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/binding "'<Super><Alt>Return'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'semsumo.sh launch --daily'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'semsumo launch --daily'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/name "'Gnome Start'"
 
 # Screenshot Tool
