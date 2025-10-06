@@ -244,9 +244,129 @@ switch_workspace() {
 }
 
 is_app_running() {
-	local app_name="$1"
-	local search_pattern="${2:-$app_name}"
-	pgrep -f "$search_pattern" &>/dev/null
+	local profile="$1"
+	local search_pattern="${2:-}"
+
+	# For browser profiles, check if windows exist on Hyprland
+	if [[ "$WM_TYPE" == "hyprland" ]] && command -v hyprctl &>/dev/null && command -v jq &>/dev/null; then
+		case "$profile" in
+		# Terminal profiles
+		kkenp | mkenp)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "TmuxKenp")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		wkenp)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "TmuxKenp" or .class == "wezterm")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		kitty-single)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "kitty")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		wezterm)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "wezterm" or .class == "org.wezfurlong.wezterm")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		wezterm-rmpc)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "rmpc")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		# Brave browser profiles
+		brave-kenp)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Kenp" or .initialTitle == "Kenp Browser")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-ai)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Ai" or .initialTitle == "Ai Browser")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-compecta)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "CompecTA" or .initialTitle == "CompecTA Browser")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-whats)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Whats" or .initialTitle == "Whats Browser")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-exclude)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Exclude" or .initialTitle == "Exclude Browser")' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-youtube)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-youtube"; "i"))' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-tiktok)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-tiktok"; "i"))' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-spotify)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-spotify"; "i"))' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-discord)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-discord"; "i"))' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		brave-whatsapp)
+			if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-whatsapp"; "i"))' >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		# Zen browser profiles
+		zen-*)
+			local profile_class="${profile#zen-}"
+			if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		# Chrome browser profiles
+		chrome-*)
+			local profile_class="${profile#chrome-}"
+			if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"chrome|google-chrome\"; \"i\")) | select(.title | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
+				return 0
+			fi
+			return 1
+			;;
+		esac
+	fi
+
+	# Fallback to process check
+	if [[ -n "$search_pattern" ]]; then
+		pgrep -f "$search_pattern" &>/dev/null
+	else
+		pgrep -f "$profile" &>/dev/null
+	fi
 }
 
 check_window_on_workspace() {
