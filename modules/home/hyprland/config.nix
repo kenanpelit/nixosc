@@ -705,8 +705,8 @@ in
         "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"
 
         # Monitor and Display Management
-        "$mainMod, Escape, exec, pypr shift_monitors +1 || hypr-ctl_focusmonitor"
-        "$mainMod, A, exec, hypr-ctl_focusmonitor"
+        "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"
+        "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"
         "$mainMod, E, exec, pypr shift_monitors +1"
         "$mainMod SHIFT, B, exec, toggle_waybar"
 
