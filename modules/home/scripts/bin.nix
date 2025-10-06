@@ -75,12 +75,6 @@ let
   hypr-colorpicker = pkgs.writeShellScriptBin "hypr-colorpicker" (
     builtins.readFile ./bin/hypr-colorpicker.sh
   );
-  hypr-ctl_focusmonitor = pkgs.writeShellScriptBin "hypr-ctl_focusmonitor" (
-    builtins.readFile ./bin/hypr-ctl_focusmonitor.sh
-  );
-  hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
-    builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
-  );
   hyprland_tty = pkgs.writeShellScriptBin "hyprland_tty" (
     builtins.readFile ./bin/hyprland_tty.sh
   );
@@ -399,8 +393,6 @@ in {
     hypr-blue-hyprsunset-manager
     hypr-bluetooth_toggle
     hypr-colorpicker
-    hypr-ctl_focusmonitor
-    hypr-ctl_setup_dual_monitors
     hyprland_tty
     hypr-layout_toggle
     hypr_move_app_from_workspace
