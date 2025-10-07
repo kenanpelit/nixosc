@@ -329,7 +329,7 @@
                 modifiers: [],
                 key: "F10",
                 description: Some("Bluetooth Toggle"),
-            ): Spawn("sh -c 'hypr-bluetooth_toggle'"),
+            ): Spawn("sh -c 'bluetooth_toggle'"),
 
             (
                 modifiers: [Super],

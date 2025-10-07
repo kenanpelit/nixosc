@@ -25,12 +25,12 @@
 
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="8.0.0"
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/unified"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
-readonly DEFAULT_WAIT_TIME=3
-readonly DEFAULT_APP_TIMEOUT=10
+readonly DEFAULT_WAIT_TIME=2
+readonly DEFAULT_APP_TIMEOUT=7
 readonly DEFAULT_CHECK_INTERVAL=1
 
 # Colors
