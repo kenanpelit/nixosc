@@ -932,7 +932,7 @@ in
       # =======================================================================
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19" = {
         binding = "F10";
-        command = "hypr-bluetooth_toggle";
+        command = "bluetooth_toggle";
         name = "Bluetooth Toggle";
       };
 

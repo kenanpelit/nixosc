@@ -12,17 +12,14 @@ let
   askpass = pkgs.writeShellScriptBin "askpass" (
     builtins.readFile ./bin/askpass.sh
   );
+  bluetooth_toggle = pkgs.writeShellScriptBin "bluetooth_toggle" (
+    builtins.readFile ./bin/bluetooth_toggle.sh
+  );
   brave_killer = pkgs.writeShellScriptBin "brave_killer" (
     builtins.readFile ./bin/brave_killer.sh
   );
   bulk_rename = pkgs.writeShellScriptBin "bulk_rename" (
     builtins.readFile ./bin/bulk_rename.sh
-  );
-  cdiff = pkgs.writeShellScriptBin "cdiff" (
-    builtins.readFile ./bin/cdiff.sh
-  );
-  chist = pkgs.writeShellScriptBin "chist" (
-    builtins.readFile ./bin/chist.sh
   );
   chroot_manager = pkgs.writeShellScriptBin "chroot_manager" (
     builtins.readFile ./bin/chroot_manager.sh
@@ -30,14 +27,14 @@ let
   clearam = pkgs.writeShellScriptBin "clearam" (
     builtins.readFile ./bin/clearam.sh
   );
+  clipmaster = pkgs.writeShellScriptBin "clipmaster" (
+    builtins.readFile ./bin/clipmaster.sh
+  );
   clustergit = pkgs.writeShellScriptBin "clustergit" (
     builtins.readFile ./bin/clustergit.sh
   );
   cosmic_tty = pkgs.writeShellScriptBin "cosmic_tty" (
     builtins.readFile ./bin/cosmic_tty.sh
-  );
-  cosmic-workspace-monitor = pkgs.writeShellScriptBin "cosmic-workspace-monitor" (
-    builtins.readFile ./bin/cosmic-workspace-monitor.sh
   );
   crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
     builtins.readFile ./bin/crypto-manager.sh
@@ -68,9 +65,6 @@ let
   );
   hypr-blue-hyprsunset-manager = pkgs.writeShellScriptBin "hypr-blue-hyprsunset-manager" (
     builtins.readFile ./bin/hypr-blue-hyprsunset-manager.sh
-  );
-  hypr-bluetooth_toggle = pkgs.writeShellScriptBin "hypr-bluetooth_toggle" (
-    builtins.readFile ./bin/hypr-bluetooth_toggle.sh
   );
   hypr-colorpicker = pkgs.writeShellScriptBin "hypr-colorpicker" (
     builtins.readFile ./bin/hypr-colorpicker.sh
@@ -282,9 +276,6 @@ let
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
   );
-  st = pkgs.writeShellScriptBin "st" (
-    builtins.readFile ./bin/st.sh
-  );
   svmarch = pkgs.writeShellScriptBin "svmarch" (
     builtins.readFile ./bin/svmarch.sh
   );
@@ -372,15 +363,14 @@ in {
     anotes
     ascii
     askpass
+    bluetooth_toggle
     brave_killer
     bulk_rename
-    cdiff
-    chist
     chroot_manager
     clearam
+    clipmaster
     clustergit
     cosmic_tty
-    cosmic-workspace-monitor
     crypto-manager
     gitgo
     gnome-extensions-installer
@@ -391,7 +381,6 @@ in {
     hypr-airplane_mode
     hypr-blue-gammastep-manager
     hypr-blue-hyprsunset-manager
-    hypr-bluetooth_toggle
     hypr-colorpicker
     hyprland_tty
     hypr-layout_toggle
@@ -462,7 +451,6 @@ in {
     sil_ayni_mp4
     smart-suspend
     ssh-launcher
-    st
     svmarch
     svmnixos
     svmubuntu

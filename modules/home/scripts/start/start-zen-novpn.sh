@@ -92,9 +92,6 @@ echo "Application started (PID: $APP_PID)"
 
 # Window verification (Hyprland only)
 if [[ "$WORKSPACE" != "0" && "$WM_TYPE" == "hyprland" ]] && command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    # Wait for app to fully start
-    sleep 2
-    
     echo "Verifying window on workspace $WORKSPACE..."
     ELAPSED=0
     CLASS_PATTERN="AI"

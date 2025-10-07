@@ -698,7 +698,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 
 # Bluetooth Toggle
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/binding "'F10'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/command "'hypr-bluetooth_toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/command "'bluetooth_toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/name "'Bluetooth Toggle'"
 
 # Mullvad Toggle

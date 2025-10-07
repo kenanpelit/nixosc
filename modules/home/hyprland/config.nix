@@ -722,7 +722,7 @@ in
         "$mainMod ALT, RETURN, exec, semsumo launch --daily"
 
         # System Functions
-        ",F10, exec, hypr-bluetooth_toggle"
+        ",F10, exec, bluetooth_toggle"
         "ALT, F12, exec, osc-mullvad toggle"
         "$mainMod, M, exec, anotes"
         "$mainMod CTRL, M, exec, anotes -t"
@@ -830,7 +830,7 @@ in
 
         # Clipboard Manager
         "$mainMod, V, exec, copyq toggle"
-        "$mainMod CTRL, V, exec, chist all"
+        "$mainMod CTRL, V, exec, clipmaster all"
          
         # Layout Management
         "$mainmod CTRL, J, exec, hypr-layout_toggle"
