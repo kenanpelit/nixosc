@@ -210,10 +210,7 @@
       enable = true;
       qemu = {
         swtpm.enable = true;     # Software TPM emulation
-        ovmf = {
-          enable   = true;       # UEFI firmware
-          packages = [ pkgs.OVMFFull.fd ];
-        };
+        ovmf.enable = true;      # UEFI firmware (otomatik yüklenir)
       };
     };
     
