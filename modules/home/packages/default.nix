@@ -376,3 +376,4 @@ in
     # intel-undervolt  # CPU undervolting (Meteor Lake uyumsuz)
   ];
 }
+
