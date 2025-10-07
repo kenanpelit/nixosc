@@ -152,7 +152,7 @@ in
     qview           # Hızlı resim görüntüleyici
     
     # Audio Control
-    pamixer         # PulseAudio CLI mixer
+    #pamixer         # PulseAudio CLI mixer
     pavucontrol     # PulseAudio ses kontrolü
     playerctl       # MPRIS medya kontrolü
     
