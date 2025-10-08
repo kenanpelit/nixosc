@@ -132,7 +132,9 @@ in
       options snd_hda_intel power_save=1 power_save_controller=Y
       options iwlwifi power_save=1
       # IMPROVED: Better USB autosuspend timing for dongle compatibility
-      options usbcore autosuspend=5
+      options usbcore autosuspend=10
+      # USB 3.0
+      options usbcore use_both_schemes=y
 
       ${lib.optionalString isPhysicalMachine ''
         options thinkpad_acpi fan_control=1 experimental=1
@@ -161,7 +163,7 @@ in
 
       # System stability parameters
       "audit_backlog_limit=8192"
-      "iwlwifi.bt_coex_active=0"
+      "iwlwifi.bt_coex_active=1"
     ];
 
     # System tuning for natural operation
@@ -509,35 +511,52 @@ in
 
   # Min Frequency Guard Service
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
-    description = "Ensure minimum CPU frequency of 1400 MHz while keeping HWP active";
+    description = "Ensure minimum CPU frequency of 1400 MHz with HWP compatibility";
     after = [ "multi-user.target" ];
-    wants = [ "cpu-profile-optimizer.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = mkRobustScript "cpu-min-freq-guard" ''
-        echo "=== CPU MIN FREQUENCY GUARD ==="
+        echo "=== CPU MIN FREQUENCY GUARD (HWP COMPATIBLE) ==="
       
-        # Min frekansı 1400 MHz yap (HWP hala aktif)
-        echo "Setting minimum frequency to 1400 MHz..."
-        for minf in /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq; do
-          if [[ -w "$minf" ]]; then
-            echo 1400000 > "$minf" 2>/dev/null && \
-            echo "✓ $(basename $(dirname $(dirname $minf))): min 1400 MHz" || true
+        # Önce HWP durumunu kontrol et
+        if [[ -d "/sys/devices/system/cpu/intel_pstate" ]]; then
+          PSTATE_MODE=$(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")
+          echo "P-State mode: $PSTATE_MODE"
+        fi
+      
+        # HWP min perf seviyesini ayarla (0-100 arası)
+        echo "Setting HWP minimum performance level..."
+        for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ ! -d "$policy" ]] && continue
+        
+          # HWP min perf ayarı (Meteor Lake için)
+          if [[ -w "$policy/min_perf_pct" ]]; then
+            # %30 ≈ 1400 MHz (base freq), %50 ≈ 2000 MHz (guaranteed)
+            echo 40 > "$policy/min_perf_pct" 2>/dev/null && \
+            echo "✓ $(basename $policy): HWP min_perf=40%" || \
+            echo "⚠ $(basename $policy): HWP min_perf not writable"
+          fi
+        
+          # Geleneksel min freq denemesi (backup)
+          if [[ -w "$policy/scaling_min_freq" ]]; then
+            echo 1400000 > "$policy/scaling_min_freq" 2>/dev/null && \
+            echo "✓ $(basename $policy): scaling_min_freq=1400 MHz" || true
           fi
         done
       
-        # EPP'yi balance_performance yap (HWP ile uyumlu)
+        # EPP ayarı (HWP ile uyumlu)
         echo "Setting EPP to balance_performance..."
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ ! -d "$pol" ]] && continue
           if [[ -w "$pol/energy_performance_preference" ]]; then
             echo "balance_performance" > "$pol/energy_performance_preference" 2>/dev/null && \
-            echo "✓ $(basename $pol): EPP=balance_performance" || true
+            echo "✓ $(basename $pol): EPP=balance_performance" || \
+            echo "⚠ $(basename $pol): EPP not writable"
           fi
         done
       
-        echo "✓ Min frequency guard active (1400 MHz) - HWP remains enabled"
+        echo "✓ Min frequency guard active - HWP compatible"
       '';
     };
   };
