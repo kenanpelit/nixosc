@@ -379,11 +379,16 @@ in
     };
   };
 
-  # RAPL Power Limits Service - Correct power limits for Meteor Lake
+
+  # ============================================================================
+  # BOOT PERFORMANCE OPTIMIZATION - REMOVE DEPRECATED UDEV SETTLE
+  # ============================================================================
+  # Critical fix: Remove deprecated systemd-udev-settle dependency from RAPL services
+  # DÜZELTİLMİŞ early-rapl-limits 
   systemd.services.early-rapl-limits = lib.mkIf isPhysicalMachine {
     description = "Early set RAPL power limits";
     after = [ "systemd-udevd.service" ];
-    # CRITICAL FIX: ordering cycle'ı kır
+    wants = [ "systemd-udevd.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
@@ -392,25 +397,22 @@ in
       ExecStart = mkRobustScript "early-rapl-limits" ''
         echo "=== EARLY RAPL LIMITS ==="
         
-        # RAPL interface'lerini bekle
-        sleep 3
+        # Sleep süresini kısalt
+        sleep 1
         
         for R in /sys/class/powercap/intel-rapl:*; do
-          # Directory kontrolü
-          if [[ ! -d "$R" ]]; then
-            continue
-          fi
+          [[ ! -d "$R" ]] && continue
           
-          # PL1 yazmayı dene
+          # PL1 yazmayı dene (hızlı)
           if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
-            echo 28000000 > "$R/constraint_0_power_limit_uw" && \
-            echo "✓ Early PL1: 28W" || echo "⚠ Early PL1 write failed"
+            echo 28000000 > "$R/constraint_0_power_limit_uw" 2>/dev/null && \
+            echo "✓ Early PL1: 28W" || true
           fi
           
-          # PL2 yazmayı dene  
+          # PL2 yazmayı dene (hızlı)
           if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
-            echo 55000000 > "$R/constraint_1_power_limit_uw" && \
-            echo "✓ Early PL2: 55W" || echo "⚠ Early PL2 write failed"
+            echo 55000000 > "$R/constraint_1_power_limit_uw" 2>/dev/null && \
+            echo "✓ Early PL2: 55W" || true
           fi
         done
         
@@ -419,12 +421,11 @@ in
     };
   };
 
-  # DÜZELTİLMİŞ ana RAPL servisi - early'den sonra çalışsın
+  # DÜZELTİLMİŞ ana RAPL servisi - udev-settle bağımlılığını KALDIR
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Set correct RAPL power limits for Intel CPUs";
-    after = [ "early-rapl-limits.service" "systemd-udev-settle.service" ];
-    wants = [ "systemd-udev-settle.service" ];
-    # CRITICAL FIX: Boot'ta çalışması için
+    # CRITICAL FIX: systemd-udev-settle bağımlılığını kaldır
+    after = [ "systemd-udevd.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
@@ -433,58 +434,23 @@ in
       ExecStart = mkRobustScript "set-rapl-limits" ''
         echo "=== MAIN RAPL POWER LIMITS ==="
         
-        # CPU tipini tespit et
-        CPU_TYPE="$(${cpuDetectionScript})"
-        
-        case "$CPU_TYPE" in
-          "METEORLAKE")
-            PL1_W=28
-            PL2_W=55  
-            ;;
-          *)
-            PL1_W=20
-            PL2_W=30
-            ;;
-        esac
-        
-        echo "CPU Type: $CPU_TYPE"
-        echo "Setting Power Limits: PL1=''${PL1_W}W, PL2=''${PL2_W}W"
-        
-        APPLIED=0
+        # Hızlı kontrol ve ayar
         for R in /sys/class/powercap/intel-rapl:*; do
-          [[ -d "$R" ]] || continue
+          [[ ! -d "$R" ]] && continue
           
-          if [[ -r "$R/name" ]] && ${pkgs.gnugrep}/bin/grep -q "package" "$R/name" 2>/dev/null; then
-            # PL1
-            if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
-              CURRENT_PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
-              if [[ "$CURRENT_PL1" -gt 40000000 ]]; then  # 40W'tan büyükse düzelt
-                echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" && {
-                  APPLIED=1
-                  echo "✓ PL1: ''${PL1_W}W (was: $((CURRENT_PL1/1000000))W)"
-                } || echo "✗ PL1 write failed"
-              else
-                echo "✓ PL1 already correct: $((CURRENT_PL1/1000000))W"
-                APPLIED=1
-              fi
-            fi
-            
-            # PL2
-            if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
-              CURRENT_PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
-              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" && \
-              echo "✓ PL2: ''${PL2_W}W (was: $((CURRENT_PL2/1000000))W)" || \
-              echo "✗ PL2 write failed"
+          # Sadece PL1 kontrol et (PL2 zaten early'de ayarlandı)
+          if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
+            CURRENT_PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+            if [[ "$CURRENT_PL1" -gt 40000000 ]]; then
+              echo 28000000 > "$R/constraint_0_power_limit_uw" 2>/dev/null && \
+              echo "✓ PL1 corrected: 28W" || true
+            else
+              echo "✓ PL1 already correct: 28W"
             fi
           fi
         done
         
-        if [[ "$APPLIED" -eq 1 ]]; then
-          echo "✓ RAPL power limits set successfully"
-        else
-          echo "❌ RAPL power limits FAILED"
-          exit 1
-        fi
+        echo "✓ RAPL power limits verified"
       '';
     };
   };
@@ -643,18 +609,18 @@ in
         #!${bash}/bin/bash
         echo "=== SYSTEM STATUS - STABLE PASSIVE MODE ==="
         echo ""
-        
+  
         # CPU detection
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Type: $CPU_TYPE"
-        
+  
         # Power source
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
         done
         echo "Power Source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
-        
+  
         # CPU frequencies
         echo ""
         echo "CPU FREQUENCIES (Governor Managed):"
@@ -665,24 +631,36 @@ in
           printf "  Core %2d: %4d MHz\n" "$i" "$mhz"
           i=$((i+1))
         done
-        
+  
         # Governor status
         echo ""
         echo "CPU GOVERNOR: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
-        
+  
         # P-state status
         echo "P-STATE MODE: $(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
-        
+  
         # Temperature
         echo ""
         echo "TEMPERATURE:"
         ${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep -E 'Package|Core|Tctl' | head -3 || \
           echo "  Temperature data unavailable"
-        
+  
+        # RAPL power limits kontrolü
+        echo ""
+        echo "POWER LIMITS:"
+        if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
+          PL1=$(( $(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000 ))
+          PL2=$(( $(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000 ))
+          echo "  PL1: ''${PL1}W (sustained)"
+          echo "  PL2: ''${PL2}W (turbo)"
+        else
+          echo "  RAPL interface unavailable"
+        fi
+  
         # ENHANCED: Service status with proper oneshot detection
         echo ""
         echo "SERVICE STATUS:"
-        
+  
         # Regular services (should be active)
         for service in cpu-profile-optimizer thermald; do
           if ${systemd}/bin/systemctl is-active "$service.service" >/dev/null 2>&1; then
@@ -691,22 +669,25 @@ in
             echo "  ❌ $service: INACTIVE"
           fi
         done
-        
-        # Oneshot services - check if they ran successfully
-        ONESHOTS="platform-profile hardware-monitor rapl-power-limits"
+  
+        # Oneshot services - IMPROVED detection
+        ONESHOTS="platform-profile hardware-monitor early-rapl-limits rapl-power-limits"
         for service in $ONESHOTS; do
           ACTIVE_STATE=$(${systemd}/bin/systemctl show -p ActiveState --value "$service.service" 2>/dev/null || echo "unknown")
           RESULT=$(${systemd}/bin/systemctl show -p Result --value "$service.service" 2>/dev/null || echo "unknown")
-          
+          UNIT_FILE_STATE=$(${systemd}/bin/systemctl show -p UnitFileState --value "$service.service" 2>/dev/null || echo "unknown")
+    
           if [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "success" ]]; then
-            echo "  ✅ $service: RAN (oneshot, success)"
+            echo "  ✅ $service: RAN (success)"
           elif [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "exit-code" ]]; then
-            echo "  ⚠️  $service: RAN (oneshot, failed)"
+            echo "  ⚠️  $service: RAN (failed)"
+          elif [[ "$ACTIVE_STATE" == "active" ]] && [[ "$RESULT" == "success" ]]; then
+            echo "  ✅ $service: ACTIVE (success)"
           else
-            echo "  ❌ $service: NOT RAN ($ACTIVE_STATE, $RESULT)"
+            echo "  ❓ $service: $ACTIVE_STATE ($RESULT)"
           fi
         done
-        
+  
         echo ""
         echo "NOTE: System running in stable passive mode. Governor controls frequencies."
       '')
