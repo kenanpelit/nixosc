@@ -297,6 +297,12 @@ in
   };
 
   # ============================================================================
+  # BOOT PERFORMANCE OPTIMIZATION - FIX UDEV SETTLE TIMEOUT
+  # ============================================================================
+  # Critical fix for 2+ minute boot delay caused by systemd-udev-settle timeout
+  systemd.services.systemd-udev-settle.serviceConfig.TimeoutSec = 30;
+
+  # ============================================================================
   # FIXED THERMALD SERVICE - OPTIMIZED FOR ALL HARDWARE
   # ============================================================================
   # Enhanced thermald configuration with CPUID ignore for universal compatibility
@@ -377,12 +383,12 @@ in
   systemd.services.early-rapl-limits = lib.mkIf isPhysicalMachine {
     description = "Early set RAPL power limits";
     after = [ "systemd-udevd.service" ];
-    before = [ "sysinit.target" ];
-    # CRITICAL FIX: Boot'ta çalışması için
-    wantedBy = [ "sysinit.target" ];
+    # CRITICAL FIX: ordering cycle'ı kır
+    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      TimeoutSec = 10;
       ExecStart = mkRobustScript "early-rapl-limits" ''
         echo "=== EARLY RAPL LIMITS ==="
         
@@ -413,16 +419,17 @@ in
     };
   };
 
+  # DÜZELTİLMİŞ ana RAPL servisi - early'den sonra çalışsın
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Set correct RAPL power limits for Intel CPUs";
-    after = [ "early-rapl-limits.service" "systemd-udev-settle.service" "multi-user.target" ];
+    after = [ "early-rapl-limits.service" "systemd-udev-settle.service" ];
     wants = [ "systemd-udev-settle.service" ];
-    before = [ "display-manager.service" ];
-    # CRITICAL FIX: Boot
+    # CRITICAL FIX: Boot'ta çalışması için
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      TimeoutSec = 10;
       ExecStart = mkRobustScript "set-rapl-limits" ''
         echo "=== MAIN RAPL POWER LIMITS ==="
         
