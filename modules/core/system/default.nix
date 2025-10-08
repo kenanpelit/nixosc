@@ -412,16 +412,27 @@ in
           [[ -d "$R" ]] || continue
           
           if [[ -r "$R/name" ]] && ${pkgs.gnugrep}/bin/grep -q "package" "$R/name" 2>/dev/null; then
-            # PL1 (sustained power limit)
+            # PL1 (sustained power limit) - FIXED: Proper error checking
             if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
-              echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" && APPLIED=1
-              echo "✓ PL1 (sustained): ''${PL1_W}W"
+              if echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null; then
+                APPLIED=1
+                echo "✓ PL1 (sustained): ''${PL1_W}W"
+              else
+                echo "✗ Failed to write PL1 to $(basename "$R")"
+              fi
+            else
+              echo "✗ PL1 not writable in $(basename "$R")"
             fi
             
-            # PL2 (turbo power limit)
+            # PL2 (turbo power limit) - FIXED: Proper error checking
             if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
-              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw"
-              echo "✓ PL2 (turbo): ''${PL2_W}W"
+              if echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null; then
+                echo "✓ PL2 (turbo): ''${PL2_W}W"
+              else
+                echo "✗ Failed to write PL2 to $(basename "$R")"
+              fi
+            else
+              echo "✗ PL2 not writable in $(basename "$R")"
             fi
           fi
         done
@@ -429,7 +440,8 @@ in
         if [[ "$APPLIED" == "1" ]]; then
           echo "✓ RAPL power limits set successfully"
         else
-          echo "⚠ RAPL interface unavailable"
+          echo "❌ RAPL power limits FAILED - no interfaces were writable"
+          exit 1
         fi
       '';
     };
