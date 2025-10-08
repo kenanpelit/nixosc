@@ -42,11 +42,13 @@ let
   # ============================================================================
   # SYSTEM IDENTIFICATION & DETECTION
   # ============================================================================
+  # Why: keep behavior conditional without probing DMI/ACPI at build time.
   hostname          = config.networking.hostName or "";
-  isPhysicalMachine = hostname == "hay";    # All physical ThinkPads
-  isVirtualMachine  = hostname == "vhay";   # QEMU/KVM virtual machine
+  isPhysicalMachine = hostname == "hay";    # Physical ThinkPads profile switch
+  isVirtualMachine  = hostname == "vhay";   # QEMU/KVM profile switch
 
   # CPU detection script - determines actual hardware capabilities
+  # Why: log helpful context and allow per-family tweaks if ever needed.
   cpuDetectionScript = pkgs.writeShellScript "detect-cpu" ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
@@ -57,7 +59,7 @@ let
     echo "Detected CPU: $CPU_MODEL"
     echo "CPU Family: $CPU_FAMILY"
     
-    # Detect specific CPU models
+    # Detect specific CPU models (used only for logging/branching if extended)
     if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE "Core.*Ultra.*155H|Meteor Lake"; then
       echo "METEORLAKE"
     elif echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE "i7-8650U|Kaby Lake"; then
@@ -68,6 +70,7 @@ let
   '';
 
   # Robust script helper with CORRECTED syslog priorities
+  # Why: guaranteed logging to journal with correct facility/priorities.
   mkRobustScript = name: content: pkgs.writeShellScript name ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
@@ -82,10 +85,11 @@ in
   # ============================================================================
   # LOCALIZATION & TIMEZONE
   # ============================================================================
+  # Why: ensure consistent locale/number/date formats and TR-F inputs.
   time.timeZone = "Europe/Istanbul";
 
   i18n = {
-    defaultLocale = "en_US.UTF-8";
+    defaultLocale = "en_US.UTF-8"; # UI defaults; metrics in US style, rest TR overrides below
     extraLocaleSettings = {
       LC_ADDRESS        = "tr_TR.UTF-8";
       LC_IDENTIFICATION = "tr_TR.UTF-8";
@@ -99,34 +103,39 @@ in
     };
   };
 
+  # X keyboard: TR-F layout, Caps -> Ctrl (ergonomic)
   services.xserver.xkb = {
     layout  = "tr";
     variant = "f";
     options = "ctrl:nocaps";
   };
 
+  # TTY console: TR-F keymap + big readable terminus font
   console = {
     keyMap = "trf";
     font = "ter-v20b";
     packages = [ pkgs.terminus_font ];
   };
 
+  # Pin the module to the NixOS release baseline you target.
   system.stateVersion = "25.11";
 
   # ============================================================================
   # BOOT CONFIGURATION - STABLE PASSIVE MODE
   # ============================================================================
+  # Why passive: avoid Meteor Lake HWP/EPP reset quirks; use governors reliably.
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
 
     kernelModules = [
-      "coretemp"        # CPU temperature monitoring
+      "coretemp"        # expose CPU temps to lm_sensors
       "i915"            # Intel graphics driver
     ] ++ lib.optionals isPhysicalMachine [
-      "thinkpad_acpi"   # ThinkPad-specific features
+      "thinkpad_acpi"   # ThinkPad extras (fan/keys/leds)
     ];
 
     # OPTIMIZED modprobe configuration for better power efficiency
+    # Why: small, safe defaults that cut idle power without breaking devices.
     extraModprobeConfig = ''
       # Power optimization - balanced for all hardware
       options snd_hda_intel power_save=1 power_save_controller=Y
@@ -142,8 +151,8 @@ in
     '';
 
     # STABLE kernel parameters - intel_pstate passive mode for reliability
+    # Why: keep iGPU power features on; s2idle is modern laptops’ best default.
     kernelParams = [
-      # STABLE: Use passive mode to avoid EPP reset bug in Meteor Lake
       "intel_pstate=passive"
       # NOTE: hwp_only=1 causes EPP reset bug in Meteor Lake, so we use passive mode
       
@@ -166,7 +175,7 @@ in
       "iwlwifi.bt_coex_active=1"
     ];
 
-    # System tuning for natural operation
+    # Keep sysctl minimal and safe; don't micromanage latency knobs here.
     kernel.sysctl = {
       "vm.swappiness" = 60;
       "vm.vfs_cache_pressure" = 100;
@@ -176,6 +185,7 @@ in
     };
 
     # Bootloader configuration
+    # Why: pick device per-virtual/physical profile; keep OS prober for dual-boot.
     loader = {
       grub = {
         enable = true;
@@ -198,6 +208,7 @@ in
   # ============================================================================
   # HARDWARE CONFIGURATION - UNIVERSAL SUPPORT
   # ============================================================================
+  # Why: enable Intel graphics/compute stacks and ThinkPad niceties.
   hardware = {
     # ThinkPad TrackPoint configuration (all ThinkPads)
     trackpoint = lib.mkIf isPhysicalMachine {
@@ -237,7 +248,7 @@ in
   # ============================================================================
   # POWER MANAGEMENT - STABLE PASSIVE MODE
   # ============================================================================
-  # Let hardware manage itself - disable conflicting services
+  # Why: avoid overlapping daemons; single source of truth = thermald.
   services.auto-cpufreq.enable          = false;
   services.power-profiles-daemon.enable = false;
   services.tlp.enable                   = false;
@@ -248,6 +259,7 @@ in
   services.thinkfan.enable = lib.mkForce false;
 
   # Battery charge thresholds for longevity (all ThinkPads)
+  # Why: keep pack cycling shallow to extend lifespan (75–80% window).
   systemd.services.battery-thresholds = lib.mkIf isPhysicalMachine {
     description = "Set battery charge thresholds (75-80% for battery health)";
     wantedBy = [ "multi-user.target" ];
@@ -279,9 +291,10 @@ in
   # THERMAL MANAGEMENT - STREAMLINED (THERMALD ONLY)
   # ============================================================================
   services = {
-    upower.enable = true;      # Power management monitoring
+    upower.enable = true;      # Power management monitoring / UIs read this
 
-    # Login manager power actions (universal settings)
+    # Login manager power actions (keep as-is)
+    # Why: centralize lid/power behavior; defer to your chosen mapping.
     logind.settings.Login = {
       HandleLidSwitch              = "suspend";
       HandleLidSwitchDocked        = "suspend";
@@ -299,15 +312,15 @@ in
   # ============================================================================
   # BOOT PERFORMANCE OPTIMIZATION - FIX UDEV SETTLE TIMEOUT
   # ============================================================================
-  # Critical fix for 2+ minute boot delay caused by systemd-udev-settle timeout
+  # Why: avoid long boot stalls from udev settle; 30s hard cap.
   systemd.services.systemd-udev-settle.serviceConfig.TimeoutSec = 30;
 
   # ============================================================================
   # FIXED THERMALD SERVICE - OPTIMIZED FOR ALL HARDWARE
   # ============================================================================
-  # Enhanced thermald configuration with CPUID ignore for universal compatibility
+  # Why: ignore CPUID check to keep thermald effective on varied Intel gens.
   systemd.services.thermald = lib.mkIf config.services.thermald.enable {
-    wantedBy = [ "multi-user.target" ];  # Ensure it starts at boot
+    wantedBy = [ "multi-user.target" ];
     serviceConfig.ExecStart = lib.mkForce 
       "${pkgs.thermald}/bin/thermald --no-daemon --adaptive --dbus-enable --ignore-cpuid-check --poll-interval 4";
   };
@@ -315,8 +328,7 @@ in
   # ============================================================================
   # HARDWARE-ADAPTIVE SERVICES - OPTIMIZED FOR PASSIVE MODE
   # ============================================================================
-  
-  # CPU Profile Optimizer - Governor control in passive mode
+  # CPU Profile Optimizer - governor flips on AC/Battery in passive mode
   systemd.services.cpu-profile-optimizer = lib.mkIf isPhysicalMachine {
     description = "Optimize CPU governor settings based on hardware and power source";
     after = [ "multi-user.target" ];
@@ -326,11 +338,11 @@ in
       ExecStart = mkRobustScript "cpu-profile-optimizer" ''
         echo "=== CPU PROFILE OPTIMIZER - PASSIVE MODE ==="
         
-        # Detect CPU type
+        # Detect CPU type (for logs)
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Type: $CPU_TYPE"
         
-        # Check power source
+        # Power source probe (AC=1, Battery=0)
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && [[ "$ON_AC" == "1" ]] && break
@@ -338,18 +350,16 @@ in
 
         echo "Power source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
         
-        # Set optimal governor based on power source
+        # Pick governor
         if [[ "$ON_AC" == "1" ]]; then
-          # AC Power - Performance governor for maximum responsiveness
           GOVERNOR="performance"
           echo "Optimal Governor: $GOVERNOR (AC power)"
         else
-          # Battery - Powersave governor for maximum battery life
           GOVERNOR="powersave"
           echo "Optimal Governor: $GOVERNOR (battery power)"
         fi
         
-        # Apply governor settings to all CPUs
+        # Apply to all policies/cores
         APPLIED=0
         for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
           if [[ -w "$gov" ]]; then
@@ -368,6 +378,7 @@ in
     };
   };
 
+  # Timer: run once at boot, then occasionally (cheap safeguard)
   systemd.timers.cpu-profile-optimizer = lib.mkIf isPhysicalMachine {
     description = "Timer for CPU profile optimization";
     wantedBy = [ "timers.target" ];
@@ -383,8 +394,7 @@ in
   # ============================================================================
   # BOOT PERFORMANCE OPTIMIZATION - REMOVE DEPRECATED UDEV SETTLE
   # ============================================================================
-  # Critical fix: Remove deprecated systemd-udev-settle dependency from RAPL services
-  # DÜZELTİLMİŞ early-rapl-limits 
+  # Early RAPL: write fast limits soon after udev is up (no settle)
   systemd.services.early-rapl-limits = lib.mkIf isPhysicalMachine {
     description = "Early set RAPL power limits";
     after = [ "systemd-udevd.service" ];
@@ -397,19 +407,19 @@ in
       ExecStart = mkRobustScript "early-rapl-limits" ''
         echo "=== EARLY RAPL LIMITS ==="
         
-        # Sleep süresini kısalt
+        # Short wait to ensure powercap class is present
         sleep 1
         
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ ! -d "$R" ]] && continue
           
-          # PL1 yazmayı dene (hızlı)
+          # PL1 quick write
           if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
             echo 28000000 > "$R/constraint_0_power_limit_uw" 2>/dev/null && \
             echo "✓ Early PL1: 28W" || true
           fi
           
-          # PL2 yazmayı dene (hızlı)
+          # PL2 quick write
           if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
             echo 55000000 > "$R/constraint_1_power_limit_uw" 2>/dev/null && \
             echo "✓ Early PL2: 55W" || true
@@ -421,10 +431,10 @@ in
     };
   };
 
-  # DÜZELTİLMİŞ ana RAPL servisi - udev-settle bağımlılığını KALDIR
+  # Main RAPL: verify/correct PL1 later; PL2 was set early already
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Set correct RAPL power limits for Intel CPUs";
-    # CRITICAL FIX: systemd-udev-settle bağımlılığını kaldır
+    # CRITICAL FIX: remove udev-settle dependency; rely on udevd presence only
     after = [ "systemd-udevd.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
@@ -434,11 +444,10 @@ in
       ExecStart = mkRobustScript "set-rapl-limits" ''
         echo "=== MAIN RAPL POWER LIMITS ==="
         
-        # Hızlı kontrol ve ayar
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ ! -d "$R" ]] && continue
           
-          # Sadece PL1 kontrol et (PL2 zaten early'de ayarlandı)
+          # Only validate PL1 here
           if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
             CURRENT_PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
             if [[ "$CURRENT_PL1" -gt 40000000 ]]; then
@@ -455,7 +464,7 @@ in
     };
   };
 
-  # Platform Profile Service - Set balanced platform profile
+  # Platform Profile: balanced is a sensible middle ground for laptops
   systemd.services.platform-profile = lib.mkIf isPhysicalMachine {
     description = "Set optimal ACPI platform profile";
     after = [ "multi-user.target" ];
@@ -476,7 +485,7 @@ in
     };
   };
 
-  # Hardware Monitor - System observation without intervention
+  # Hardware Monitor: log a quick snapshot for diagnostics
   systemd.services.hardware-monitor = lib.mkIf isPhysicalMachine {
     description = "Monitor hardware status without intervention";
     serviceConfig = {
@@ -498,7 +507,7 @@ in
           fi
         done
         
-        # Temperature monitoring
+        # Temperature monitoring (fallback-safe)
         TEMP_RAW="$(${pkgs.lm_sensors}/bin/sensors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -m1 -E 'Package id 0|Tctl' || echo "0")"
         TEMP="$(echo "$TEMP_RAW" | ${pkgs.gnused}/bin/sed -E 's/.*: *\+?([0-9]+)\.?[0-9]*°C.*/\1/' 2>/dev/null || echo "unknown")"
         echo "CPU Temperature: ''${TEMP}°C"
@@ -515,7 +524,7 @@ in
     };
   };
 
-  # Min Frequency Guard Service
+  # Min Frequency Guard: keep floor reasonable under HWP (optional safety net)
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
     description = "Ensure minimum CPU frequency of 1400 MHz with HWP compatibility";
     after = [ "multi-user.target" ];
@@ -525,33 +534,32 @@ in
       ExecStart = mkRobustScript "cpu-min-freq-guard" ''
         echo "=== CPU MIN FREQUENCY GUARD (HWP COMPATIBLE) ==="
       
-        # Önce HWP durumunu kontrol et
+        # Report P-State mode (for logs)
         if [[ -d "/sys/devices/system/cpu/intel_pstate" ]]; then
           PSTATE_MODE=$(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")
           echo "P-State mode: $PSTATE_MODE"
         fi
       
-        # HWP min perf seviyesini ayarla (0-100 arası)
+        # HWP min perf (percentage-based) + classic scaling_min_freq as fallback
         echo "Setting HWP minimum performance level..."
         for policy in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ ! -d "$policy" ]] && continue
         
-          # HWP min perf ayarı (Meteor Lake için)
+          # HWP min perf (≈40% floor ~ base range on Meteor Lake)
           if [[ -w "$policy/min_perf_pct" ]]; then
-            # %30 ≈ 1400 MHz (base freq), %50 ≈ 2000 MHz (guaranteed)
             echo 40 > "$policy/min_perf_pct" 2>/dev/null && \
             echo "✓ $(basename $policy): HWP min_perf=40%" || \
             echo "⚠ $(basename $policy): HWP min_perf not writable"
           fi
         
-          # Geleneksel min freq denemesi (backup)
+          # Fallback: classic floor
           if [[ -w "$policy/scaling_min_freq" ]]; then
             echo 1400000 > "$policy/scaling_min_freq" 2>/dev/null && \
             echo "✓ $(basename $policy): scaling_min_freq=1400 MHz" || true
           fi
         done
       
-        # EPP ayarı (HWP ile uyumlu)
+        # EPP tuning (compatible with HWP; bias toward responsiveness)
         echo "Setting EPP to balance_performance..."
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ ! -d "$pol" ]] && continue
@@ -567,6 +575,7 @@ in
     };
   };
 
+  # Timer: check periodically (lightweight) to heal after firmware events
   systemd.timers.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
     description = "Timer for CPU min frequency guard";
     wantedBy = [ "timers.target" ];
@@ -578,6 +587,7 @@ in
     };
   };
 
+  # Periodic status snapshots (useful for regressions hunts)
   systemd.timers.hardware-monitor = lib.mkIf isPhysicalMachine {
     description = "Timer for hardware status monitoring";
     wantedBy = [ "timers.target" ];
@@ -590,6 +600,7 @@ in
   };
 
   # UDEV rules for automatic power source adaptation
+  # Why: re-apply governor choice on AC adapter plug/unplug events.
   services.udev.extraRules = lib.mkIf isPhysicalMachine ''
     # Re-apply CPU profile on AC adapter change
     SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-profile-optimizer.service"
@@ -599,6 +610,7 @@ in
   # ============================================================================
   # USER UTILITY SCRIPTS - ENHANCED WITH ONESHOT DETECTION
   # ============================================================================
+  # Why: quick visibility into current limits/governors/temps and service health.
   environment.systemPackages = with pkgs;
     lib.optionals isPhysicalMachine [
       lm_sensors
@@ -756,7 +768,7 @@ in
           echo "REAL-TIME HARDWARE MONITOR ($(date))"
           echo "==================================================="
           
-          # CPU frequencies
+          # CPU frequencies (first 4 cores for brevity)
           echo "CPU FREQUENCIES:"
           i=0
           for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
@@ -764,12 +776,12 @@ in
             MHZ=$(( $(cat "$f") / 1000 ))
             printf "  Core %2d: %4d MHz\n" "$i" "$MHZ"
             i=$((i+1))
-            [[ $i -eq 4 ]] && break  # Show first 4 cores only
+            [[ $i -eq 4 ]] && break
           done
           [[ $i -gt 4 ]] && echo "  ... and $((i-4)) more cores"
           echo ""
           
-          # Temperature
+          # Temperature (single line summary)
           echo "TEMPERATURE:"
           ${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep -E 'Package|Tctl' | head -1 || \
             echo "  Temperature data unavailable"
@@ -827,3 +839,5 @@ in
       '')
     ];
 }
+
+
