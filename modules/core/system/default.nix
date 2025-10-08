@@ -523,23 +523,23 @@ in
       lm_sensors
       linuxPackages.x86_energy_perf_policy
 
-      # System Status - Universal observation tool
-      (writeScriptBin "system-status" ''
+       # System Status - Fixed oneshot service detection
+       (writeScriptBin "system-status" ''
         #!${bash}/bin/bash
         echo "=== SYSTEM STATUS - OPTIMIZED HARDWARE MANAGED ==="
         echo ""
-        
+   
         # CPU detection
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Type: $CPU_TYPE"
-        
+   
         # Power source
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
         done
         echo "Power Source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
-        
+   
         # CPU frequencies
         echo ""
         echo "CPU FREQUENCIES (Hardware Managed):"
@@ -550,36 +550,53 @@ in
           printf "  Core %2d: %4d MHz\n" "$i" "$mhz"
           i=$((i+1))
         done
-        
+   
         # Governor status
         echo ""
         echo "CPU GOVERNOR: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
-        
+   
         # EPP status
         EPP="$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || echo "unknown")"
         echo "ENERGY PERFORMANCE: $EPP"
-        
+   
         # Temperature
         echo ""
         echo "TEMPERATURE:"
         ${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep -E 'Package|Core|Tctl' | head -3 || \
           echo "  Temperature data unavailable"
-        
-        # Service status
+   
+        # IMPROVED: Service status with proper oneshot detection
         echo ""
         echo "SERVICE STATUS:"
-        for service in cpu-profile-optimizer platform-profile thermald; do
+   
+        # Regular services
+        for service in cpu-profile-optimizer thermald; do
           if ${systemd}/bin/systemctl is-active "$service.service" >/dev/null 2>&1; then
             echo "  ✅ $service: ACTIVE"
           else
             echo "  ❌ $service: INACTIVE"
           fi
         done
-        
+   
+        # Oneshot services - check if they ran successfully
+        ONESHOTS="platform-profile hardware-monitor"
+        for service in $ONESHOTS; do
+          ACTIVE_STATE=$(${systemd}/bin/systemctl show -p ActiveState --value "$service.service" 2>/dev/null || echo "unknown")
+          RESULT=$(${systemd}/bin/systemctl show -p Result --value "$service.service" 2>/dev/null || echo "unknown")
+     
+          if [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "success" ]]; then
+            echo "  ✅ $service: RAN (oneshot, success)"
+          elif [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "exit-code" ]]; then
+            echo "  ⚠️  $service: RAN (oneshot, failed)"
+          else
+            echo "  ❌ $service: NOT RAN ($ACTIVE_STATE, $RESULT)"
+          fi
+        done
+   
         echo ""
         echo "NOTE: System is fully hardware-managed. Optimized for power efficiency."
       '')
-
+     
       # Hardware Info - Universal hardware detection
       (writeScriptBin "hardware-info" ''
         #!${bash}/bin/bash
