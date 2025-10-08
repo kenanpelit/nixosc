@@ -451,6 +451,46 @@ in
     };
   };
 
+  # RAPL Power Limits Service - Meteor Lake için doğru değerler
+  systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
+    description = "Set correct RAPL power limits for Meteor Lake";
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "set-rapl-limits" ''
+        echo "=== SETTING CORRECT RAPL POWER LIMITS ==="
+      
+        # Meteor Lake 155H için doğru değerler
+        PL1_W=28    # Sustained power limit
+        PL2_W=55    # Turbo power limit
+      
+        echo "Meteor Lake Power Limits: PL1=''${PL1_W}W, PL2=''${PL2_W}W"
+      
+        # Tüm RAPL paketlerine uygula
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+        
+          if [[ -r "$R/name" ]] && ${pkgs.gnugrep}/bin/grep -q "package" "$R/name" 2>/dev/null; then
+            # PL1 (sustained)
+            if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
+              echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw"
+              echo "✓ PL1 (sustained): ''${PL1_W}W"
+            fi
+          
+            # PL2 (turbo) 
+            if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
+              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw"
+              echo "✓ PL2 (turbo): ''${PL2_W}W"
+            fi
+          fi
+        done
+      
+        echo "✓ RAPL power limits set correctly"
+      '';
+    };
+  };
+
   # Min Frequency Guard Service - HWP ile birlikte çalışır
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
     description = "Ensure minimum CPU frequency of 1400 MHz while keeping HWP active";
