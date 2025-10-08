@@ -1,23 +1,22 @@
 # modules/core/system/default.nix
 # ==============================================================================
-# NixOS System Configuration - Adaptive Power Management v8.3
+# NixOS System Configuration - Adaptive Power Management v8.4
 # ==============================================================================
 #
 # Module:    modules/core/system
-# Version:   8.3 - Optimized Hardware Edition
+# Version:   8.4 - Stable Passive Mode Edition
 # Date:      2025-10-08
 # Author:    NixOS Power Management Suite
 #
-# RELEASE NOTES v8.3:
+# RELEASE NOTES v8.4:
 # -------------------
-# • OPTIMIZED C-state management - let hardware manage completely
-# • IMPROVED NVMe power management for better battery life
-# • FIXED syslog priority names (user.err instead of user.error)
-# • REMOVED unnecessary sysctl and kernel parameters
-# • ENHANCED graphics power management with conditional PSR
-# • STREAMLINED thermal management (thermald only)
-# • BETTER USB autosuspend timing
-# • CORRECTED package references
+# • STABLE intel_pstate passive mode for Meteor Lake compatibility
+# • FIXED EPP reset bug by avoiding HWP-only mode
+# • OPTIMIZED RAPL power limits (28W PL1, 55W PL2)
+# • ENHANCED service status reporting for oneshot services
+# • IMPROVED thermal management with thermald only
+# • CORRECTED syslog priority names (user.err)
+# • STREAMLINED kernel parameters for better compatibility
 #
 # SUPPORTED HARDWARE:
 # -------------------
@@ -28,12 +27,12 @@
 #
 # DESIGN PHILOSOPHY:
 # ------------------
-# "True hardware autonomy with optimized power efficiency"
-# - Zero artificial C-state limits
-# - Balanced NVMe power management
-# - Hardware-managed thermal control
-# - Universal compatibility
-# - Maximum battery life
+# "Stable hardware management with governor control"
+# - intel_pstate passive mode for reliability
+# - Governor-based frequency control
+# - Hardware-managed thermal control via thermald
+# - Universal compatibility across Intel generations
+# - Balanced performance and power efficiency
 #
 # ==============================================================================
 
@@ -115,7 +114,7 @@ in
   system.stateVersion = "25.11";
 
   # ============================================================================
-  # BOOT CONFIGURATION - OPTIMIZED HARDWARE AUTONOMY
+  # BOOT CONFIGURATION - STABLE PASSIVE MODE
   # ============================================================================
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
@@ -134,50 +133,44 @@ in
       options iwlwifi power_save=1
       # IMPROVED: Better USB autosuspend timing for dongle compatibility
       options usbcore autosuspend=5
-      # REMOVED: NVMe setting moved to kernel params for consistency
 
       ${lib.optionalString isPhysicalMachine ''
         options thinkpad_acpi fan_control=1 experimental=1
       ''}
     '';
 
-    # OPTIMIZED kernel parameters - true hardware autonomy
+    # STABLE kernel parameters - intel_pstate passive mode for reliability
     kernelParams = [
-      # ENABLE HWP - Hardware-managed frequencies for all
-      "intel_pstate=active"
-      "intel_pstate.hwp_only=1"
+      # STABLE: Use passive mode to avoid EPP reset bug in Meteor Lake
+      "intel_pstate=passive"
+      # NOTE: hwp_only=1 causes EPP reset bug in Meteor Lake, so we use passive mode
       
       # REMOVED: All C-state limits - let hardware manage completely
-      # "processor.max_cstate=5"    # REMOVED - hardware knows best
-      # "intel_idle.max_cstate=9"   # REMOVED - hardware knows best  
-      # "idle=halt"                 # REMOVED - unnecessary on modern systems
+      # Hardware knows best for C-states, no artificial limits needed
       
       # Performance optimizations (compatible with all)
       "pcie_aspm.policy=default"
       "i915.enable_guc=3"
-      # IMPROVED: Conditional graphics power management
-      # Start with PSR/FBC enabled, disable if flickering occurs
+      # Conditional graphics power management - enable by default
       "i915.enable_fbc=1"
-      "i915.enable_psr=1"
+      "i915.enable_psr=1" 
       "i915.enable_sagv=1"
       "mem_sleep_default=s2idle"
       # OPTIMIZED: Better NVMe power management for battery life
       "nvme_core.default_ps_max_latency_us=5500"
 
-      # FIX: Audit backlog
+      # System stability parameters
       "audit_backlog_limit=8192"
-  
-      # FIX: WiFi error log
       "iwlwifi.bt_coex_active=0"
     ];
 
-    # System tuning for natural operation - REMOVED unnecessary settings
+    # System tuning for natural operation
     kernel.sysctl = {
       "vm.swappiness" = 60;
       "vm.vfs_cache_pressure" = 100;
       "vm.dirty_writeback_centisecs" = 500;
       "kernel.nmi_watchdog" = 0;
-      # REMOVED: dev.cpu_dma_latency - not a valid sysctl and hardware manages this better
+      # REMOVED: dev.cpu_dma_latency - not a valid sysctl parameter
     };
 
     # Bootloader configuration
@@ -240,14 +233,14 @@ in
   };
 
   # ============================================================================
-  # POWER MANAGEMENT - OPTIMIZED HARDWARE AUTONOMY
+  # POWER MANAGEMENT - STABLE PASSIVE MODE
   # ============================================================================
   # Let hardware manage itself - disable conflicting services
   services.auto-cpufreq.enable          = false;
   services.power-profiles-daemon.enable = false;
   services.tlp.enable                   = false;
 
-  # OPTIMIZED: Use thermald only for thermal management (simplified)
+  # OPTIMIZED: Use thermald only for thermal management
   services.thermald.enable = lib.mkDefault isPhysicalMachine;
   # STREAMLINED: Disable thinkfan - let thermald handle everything
   services.thinkfan.enable = lib.mkForce false;
@@ -304,31 +297,31 @@ in
   # ============================================================================
   # FIXED THERMALD SERVICE - OPTIMIZED FOR ALL HARDWARE
   # ============================================================================
-  # Thermald
+  # Enhanced thermald configuration with CPUID ignore for universal compatibility
   systemd.services.thermald = lib.mkIf config.services.thermald.enable {
-    wantedBy = [ "multi-user.target" ];  # Boot'ta kesin başlasın
+    wantedBy = [ "multi-user.target" ];  # Ensure it starts at boot
     serviceConfig.ExecStart = lib.mkForce 
       "${pkgs.thermald}/bin/thermald --no-daemon --adaptive --dbus-enable --ignore-cpuid-check --poll-interval 4";
   };
 
   # ============================================================================
-  # HARDWARE-ADAPTIVE SERVICES - OPTIMIZED
+  # HARDWARE-ADAPTIVE SERVICES - OPTIMIZED FOR PASSIVE MODE
   # ============================================================================
   
-  # CPU Profile Optimizer - Sets optimal EPP based on CPU capabilities
+  # CPU Profile Optimizer - Governor control in passive mode
   systemd.services.cpu-profile-optimizer = lib.mkIf isPhysicalMachine {
-    description = "Optimize CPU energy-performance profile based on hardware";
+    description = "Optimize CPU governor settings based on hardware and power source";
     after = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = mkRobustScript "cpu-profile-optimizer" ''
-        echo "=== CPU PROFILE OPTIMIZER - PERFORMANCE FIX ==="
-      
+        echo "=== CPU PROFILE OPTIMIZER - PASSIVE MODE ==="
+        
         # Detect CPU type
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Type: $CPU_TYPE"
-      
+        
         # Check power source
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
@@ -336,46 +329,33 @@ in
         done
 
         echo "Power source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
-      
-        # FIX: Always use performance-oriented settings on AC power
+        
+        # Set optimal governor based on power source
         if [[ "$ON_AC" == "1" ]]; then
-          # AC Power - Use performance settings
-          EPP_PROFILE="performance"
+          # AC Power - Performance governor for maximum responsiveness
           GOVERNOR="performance"
-        
-          # Remove minimum frequency limits
-          for pol in /sys/devices/system/cpu/cpufreq/policy*; do
-            [[ ! -d "$pol" ]] && continue
-            [[ -w "$pol/scaling_min_freq" ]] && echo 0 > "$pol/scaling_min_freq" 2>/dev/null || true
-          done
-        
-          # Enable HWP boost if available
-          [[ -w "/sys/devices/system/cpu/cpufreq/boost" ]] && echo 1 > /sys/devices/system/cpu/cpufreq/boost 2>/dev/null || true
-        
+          echo "Optimal Governor: $GOVERNOR (AC power)"
         else
-          # Battery - Use balanced settings
-            EPP_PROFILE="balance_performance"
+          # Battery - Powersave governor for maximum battery life
           GOVERNOR="powersave"
+          echo "Optimal Governor: $GOVERNOR (battery power)"
         fi
-      
-        echo "Optimal Settings: EPP=$EPP_PROFILE, Governor=$GOVERNOR"
-      
-        # Apply governor settings
-        for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-          [[ -w "$gov" ]] && echo "$GOVERNOR" > "$gov" 2>/dev/null || true
-        done
-      
-        # Apply EPP settings to all policies
-        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
-          [[ ! -d "$pol" ]] && continue
         
-          if [[ -w "$pol/energy_performance_preference" ]]; then
-            echo "$EPP_PROFILE" > "$pol/energy_performance_preference" 2>/dev/null || true
-            echo "✓ Policy $(basename $pol): $EPP_PROFILE"
+        # Apply governor settings to all CPUs
+        APPLIED=0
+        for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          if [[ -w "$gov" ]]; then
+            echo "$GOVERNOR" > "$gov" 2>/dev/null && APPLIED=1 || true
           fi
         done
-      
-        echo "✓ CPU profile optimization complete - Performance mode active"
+        
+        if [[ "$APPLIED" == "1" ]]; then
+          echo "✓ Governor set to $GOVERNOR on all CPUs"
+        else
+          echo "⚠ Could not set governor (may be read-only)"
+        fi
+        
+        echo "✓ CPU profile optimization complete"
       '';
     };
   };
@@ -385,13 +365,77 @@ in
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnBootSec = "30s";
-      OnUnitActiveSec = "10min";  # Rarely needed - hardware manages itself
+      OnUnitActiveSec = "10min";  # Rarely needed - check every 10 minutes
       Persistent = true;
       Unit = "cpu-profile-optimizer.service";
     };
   };
 
-  # Platform Profile Service - Universal balanced profile (oneshot only)
+  # RAPL Power Limits Service - Correct power limits for Meteor Lake
+  systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
+    description = "Set correct RAPL power limits for Intel CPUs";
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "set-rapl-limits" ''
+        echo "=== SETTING CORRECT RAPL POWER LIMITS ==="
+        
+        # Detect CPU type for appropriate power limits
+        CPU_TYPE="$(${cpuDetectionScript})"
+        
+        # Set appropriate power limits based on CPU type
+        case "$CPU_TYPE" in
+          "METEORLAKE")
+            # Meteor Lake 155H - 28W sustained, 55W turbo
+            PL1_W=28
+            PL2_W=55
+            ;;
+          "KABYLAKE")
+            # Kaby Lake-R i7-8650U - 15W sustained, 25W turbo  
+            PL1_W=15
+            PL2_W=25
+            ;;
+          *)
+            # Generic Intel CPU - Conservative limits
+            PL1_W=20
+            PL2_W=30
+            ;;
+        esac
+        
+        echo "CPU Type: $CPU_TYPE"
+        echo "Power Limits: PL1=''${PL1_W}W (sustained), PL2=''${PL2_W}W (turbo)"
+        
+        # Apply RAPL limits to all packages
+        APPLIED=0
+        for R in /sys/class/powercap/intel-rapl:*; do
+          [[ -d "$R" ]] || continue
+          
+          if [[ -r "$R/name" ]] && ${pkgs.gnugrep}/bin/grep -q "package" "$R/name" 2>/dev/null; then
+            # PL1 (sustained power limit)
+            if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
+              echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" && APPLIED=1
+              echo "✓ PL1 (sustained): ''${PL1_W}W"
+            fi
+            
+            # PL2 (turbo power limit)
+            if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
+              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw"
+              echo "✓ PL2 (turbo): ''${PL2_W}W"
+            fi
+          fi
+        done
+
+        if [[ "$APPLIED" == "1" ]]; then
+          echo "✓ RAPL power limits set successfully"
+        else
+          echo "⚠ RAPL interface unavailable"
+        fi
+      '';
+    };
+  };
+
+  # Platform Profile Service - Set balanced platform profile
   systemd.services.platform-profile = lib.mkIf isPhysicalMachine {
     description = "Set optimal ACPI platform profile";
     after = [ "multi-user.target" ];
@@ -401,10 +445,10 @@ in
       ExecStart = mkRobustScript "platform-profile" ''
         echo "=== Platform Profile Configuration ==="
         
-        # Set balanced profile - let hardware manage power/performance
+        # Set balanced profile for optimal power/performance balance
         if [[ -w "/sys/firmware/acpi/platform_profile" ]]; then
           echo "balanced" > /sys/firmware/acpi/platform_profile
-          echo "✓ Platform profile: balanced (hardware-managed)"
+          echo "✓ Platform profile: balanced (optimal power/performance)"
         else
           echo "⚠ Platform profile interface unavailable"
         fi
@@ -412,7 +456,7 @@ in
     };
   };
 
-  # Hardware Monitor - Optimized version with robust error handling
+  # Hardware Monitor - System observation without intervention
   systemd.services.hardware-monitor = lib.mkIf isPhysicalMachine {
     description = "Monitor hardware status without intervention";
     serviceConfig = {
@@ -421,7 +465,7 @@ in
         echo "=== HARDWARE STATUS MONITOR ==="
         echo "Timestamp: $(date)"
         
-        # CPU frequencies (observe only) - FIXED: Robust CPU number extraction
+        # CPU frequencies (observe only)
         echo "CPU Frequencies (current):"
         for cpu_path in /sys/devices/system/cpu/cpu[0-9]*/cpufreq; do
           [[ -r "$cpu_path/scaling_cur_freq" ]] || continue
@@ -434,12 +478,12 @@ in
           fi
         done
         
-        # Temperature (observe only) - FIXED: Better error handling
+        # Temperature monitoring
         TEMP_RAW="$(${pkgs.lm_sensors}/bin/sensors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -m1 -E 'Package id 0|Tctl' || echo "0")"
         TEMP="$(echo "$TEMP_RAW" | ${pkgs.gnused}/bin/sed -E 's/.*: *\+?([0-9]+)\.?[0-9]*°C.*/\1/' 2>/dev/null || echo "unknown")"
         echo "CPU Temperature: ''${TEMP}°C"
         
-        # Power source
+        # Power source detection
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
@@ -451,47 +495,7 @@ in
     };
   };
 
-  # RAPL Power Limits Service - Meteor Lake için doğru değerler
-  systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
-    description = "Set correct RAPL power limits for Meteor Lake";
-    after = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = mkRobustScript "set-rapl-limits" ''
-        echo "=== SETTING CORRECT RAPL POWER LIMITS ==="
-      
-        # Meteor Lake 155H için doğru değerler
-        PL1_W=28    # Sustained power limit
-        PL2_W=55    # Turbo power limit
-      
-        echo "Meteor Lake Power Limits: PL1=''${PL1_W}W, PL2=''${PL2_W}W"
-      
-        # Tüm RAPL paketlerine uygula
-        for R in /sys/class/powercap/intel-rapl:*; do
-          [[ -d "$R" ]] || continue
-        
-          if [[ -r "$R/name" ]] && ${pkgs.gnugrep}/bin/grep -q "package" "$R/name" 2>/dev/null; then
-            # PL1 (sustained)
-            if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
-              echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw"
-              echo "✓ PL1 (sustained): ''${PL1_W}W"
-            fi
-          
-            # PL2 (turbo) 
-            if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
-              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw"
-              echo "✓ PL2 (turbo): ''${PL2_W}W"
-            fi
-          fi
-        done
-      
-        echo "✓ RAPL power limits set correctly"
-      '';
-    };
-  };
-
-  # Min Frequency Guard Service - HWP ile birlikte çalışır
+  # Min Frequency Guard Service
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
     description = "Ensure minimum CPU frequency of 1400 MHz while keeping HWP active";
     after = [ "multi-user.target" ];
@@ -548,41 +552,42 @@ in
     };
   };
 
-  # UDEV rules for power source changes - universal support
+  # UDEV rules for automatic power source adaptation
   services.udev.extraRules = lib.mkIf isPhysicalMachine ''
-    # Re-apply CPU profile on AC adapter change (all ThinkPads)
+    # Re-apply CPU profile on AC adapter change
     SUBSYSTEM=="power_supply", KERNEL=="AC*",  ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-profile-optimizer.service"
     SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", RUN+="${pkgs.systemd}/bin/systemctl start cpu-profile-optimizer.service"
   '';
 
   # ============================================================================
-  # USER UTILITY SCRIPTS - OPTIMIZED WITH CORRECTED PACKAGES
+  # USER UTILITY SCRIPTS - ENHANCED WITH ONESHOT DETECTION
   # ============================================================================
   environment.systemPackages = with pkgs;
     lib.optionals isPhysicalMachine [
       lm_sensors
-      linuxPackages.x86_energy_perf_policy
+      # CORRECTED: Use direct package reference
+      x86_energy_perf_policy
 
-       # System Status - Fixed oneshot service detection
-       (writeScriptBin "system-status" ''
+      # System Status - Enhanced with proper oneshot service detection
+      (writeScriptBin "system-status" ''
         #!${bash}/bin/bash
-        echo "=== SYSTEM STATUS - OPTIMIZED HARDWARE MANAGED ==="
+        echo "=== SYSTEM STATUS - STABLE PASSIVE MODE ==="
         echo ""
-   
+        
         # CPU detection
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Type: $CPU_TYPE"
-   
+        
         # Power source
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
         done
         echo "Power Source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
-   
+        
         # CPU frequencies
         echo ""
-        echo "CPU FREQUENCIES (Hardware Managed):"
+        echo "CPU FREQUENCIES (Governor Managed):"
         i=0
         for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
           [[ -f "$f" ]] || continue
@@ -590,26 +595,25 @@ in
           printf "  Core %2d: %4d MHz\n" "$i" "$mhz"
           i=$((i+1))
         done
-   
+        
         # Governor status
         echo ""
         echo "CPU GOVERNOR: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
-   
-        # EPP status
-        EPP="$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || echo "unknown")"
-        echo "ENERGY PERFORMANCE: $EPP"
-   
+        
+        # P-state status
+        echo "P-STATE MODE: $(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
+        
         # Temperature
         echo ""
         echo "TEMPERATURE:"
         ${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep -E 'Package|Core|Tctl' | head -3 || \
           echo "  Temperature data unavailable"
-   
-        # IMPROVED: Service status with proper oneshot detection
+        
+        # ENHANCED: Service status with proper oneshot detection
         echo ""
         echo "SERVICE STATUS:"
-   
-        # Regular services
+        
+        # Regular services (should be active)
         for service in cpu-profile-optimizer thermald; do
           if ${systemd}/bin/systemctl is-active "$service.service" >/dev/null 2>&1; then
             echo "  ✅ $service: ACTIVE"
@@ -617,13 +621,13 @@ in
             echo "  ❌ $service: INACTIVE"
           fi
         done
-   
+        
         # Oneshot services - check if they ran successfully
-        ONESHOTS="platform-profile hardware-monitor"
+        ONESHOTS="platform-profile hardware-monitor rapl-power-limits"
         for service in $ONESHOTS; do
           ACTIVE_STATE=$(${systemd}/bin/systemctl show -p ActiveState --value "$service.service" 2>/dev/null || echo "unknown")
           RESULT=$(${systemd}/bin/systemctl show -p Result --value "$service.service" 2>/dev/null || echo "unknown")
-     
+          
           if [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "success" ]]; then
             echo "  ✅ $service: RAN (oneshot, success)"
           elif [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "exit-code" ]]; then
@@ -632,15 +636,15 @@ in
             echo "  ❌ $service: NOT RAN ($ACTIVE_STATE, $RESULT)"
           fi
         done
-   
+        
         echo ""
-        echo "NOTE: System is fully hardware-managed. Optimized for power efficiency."
+        echo "NOTE: System running in stable passive mode. Governor controls frequencies."
       '')
-     
-      # Hardware Info - Universal hardware detection
+
+      # Hardware Info - Comprehensive hardware information
       (writeScriptBin "hardware-info" ''
         #!${bash}/bin/bash
-        echo "=== OPTIMIZED HARDWARE INFORMATION ==="
+        echo "=== COMPREHENSIVE HARDWARE INFORMATION ==="
         echo ""
         
         # CPU info
@@ -675,13 +679,24 @@ in
             echo "  $TYPE: ''${TEMP}°C"
           fi
         done
+        
+        # Power limits
+        echo ""
+        echo "POWER LIMITS:"
+        if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
+          for f in /sys/class/powercap/intel-rapl:0/constraint_*_power_limit_uw; do
+            [[ -f "$f" ]] && echo "  $(basename "$f" | sed 's/_power_limit_uw//'): $(($(cat "$f")/1000000))W"
+          done
+        else
+          echo "  RAPL interface unavailable"
+        fi
       '')
 
-      # Real-time Monitor - Optimized observation
+      # Real-time Hardware Monitor
       (writeScriptBin "hw-monitor" ''
         #!${bash}/bin/bash
-        echo "REAL-TIME OPTIMIZED HARDWARE MONITOR (Ctrl+C to stop)"
-        echo "System is fully hardware-managed - observation only"
+        echo "REAL-TIME HARDWARE MONITOR (Ctrl+C to stop)"
+        echo "System in passive mode - governor controls frequencies"
         echo "==================================================="
         
         while true; do
@@ -716,42 +731,46 @@ in
           done
           echo "POWER: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
           
+          # Governor
+          echo "GOVERNOR: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
+          
           sleep 2
         done
       '')
 
-      # Service Control - Optimized management
+      # Service Control - Management utility
       (writeScriptBin "power-services" ''
         #!${bash}/bin/bash
         cmd="''${1:-status}"
         
         case "$cmd" in
           status)
-            echo "=== OPTIMIZED HARDWARE MANAGEMENT SERVICES ==="
+            echo "=== POWER MANAGEMENT SERVICES STATUS ==="
             echo ""
-            for service in cpu-profile-optimizer platform-profile thermald hardware-monitor; do
+            for service in cpu-profile-optimizer platform-profile thermald hardware-monitor rapl-power-limits; do
               ${systemd}/bin/systemctl status "$service.service" --no-pager -l | head -10
               echo "---"
             done
             ;;
           restart)
-            echo "Restarting optimized hardware management services..."
+            echo "Restarting power management services..."
             ${systemd}/bin/systemctl restart cpu-profile-optimizer.service
             ${systemd}/bin/systemctl restart platform-profile.service
             ${systemd}/bin/systemctl restart thermald.service
+            ${systemd}/bin/systemctl restart rapl-power-limits.service
             echo "Services restarted"
             ;;
           log)
-            echo "=== OPTIMIZED SERVICE LOGS ==="
-            ${pkgs.systemd}/bin/journalctl -u cpu-profile-optimizer -u platform-profile -u thermald --since "1 hour ago" | tail -20
+            echo "=== SERVICE LOGS (last hour) ==="
+            ${pkgs.systemd}/bin/journalctl -u cpu-profile-optimizer -u platform-profile -u thermald -u rapl-power-limits --since "1 hour ago" | tail -20
             ;;
           *)
             echo "Usage: power-services {status|restart|log}"
             echo ""
             echo "Commands:"
-            echo "  status  - Show service status"
-            echo "  restart - Restart management services"
-            echo "  log     - Show recent logs"
+            echo "  status  - Show detailed service status"
+            echo "  restart - Restart all management services"
+            echo "  log     - Show recent service logs"
             ;;
         esac
       '')
