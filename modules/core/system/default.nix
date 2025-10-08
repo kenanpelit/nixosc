@@ -565,8 +565,7 @@ in
   environment.systemPackages = with pkgs;
     lib.optionals isPhysicalMachine [
       lm_sensors
-      # CORRECTED: Use direct package reference
-      x86_energy_perf_policy
+      linuxPackages.x86_energy_perf_policy
 
       # System Status - Enhanced with proper oneshot service detection
       (writeScriptBin "system-status" ''
