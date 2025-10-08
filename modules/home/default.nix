@@ -148,6 +148,7 @@
     # =============================================================================
     # Package Management
     # =============================================================================
+    ./flatpak       # User-level Flatpak management (via nix-flatpak HM module)
     ./packages      # User-specific package configuration
     ./program       # Program-specific settings and overrides
   ];
