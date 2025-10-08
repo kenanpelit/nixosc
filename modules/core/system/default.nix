@@ -304,10 +304,11 @@ in
   # ============================================================================
   # FIXED THERMALD SERVICE - OPTIMIZED FOR ALL HARDWARE
   # ============================================================================
-  # Fix thermald for universal compatibility
+  # Thermald
   systemd.services.thermald = lib.mkIf config.services.thermald.enable {
+    wantedBy = [ "multi-user.target" ];  # Boot'ta kesin başlasın
     serviceConfig.ExecStart = lib.mkForce 
-      "${pkgs.thermald}/bin/thermald --no-daemon --adaptive --dbus-enable --ignore-cpuid-check";
+      "${pkgs.thermald}/bin/thermald --no-daemon --adaptive --dbus-enable --ignore-cpuid-check --poll-interval 4";
   };
 
   # ============================================================================
