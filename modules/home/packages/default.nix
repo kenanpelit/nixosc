@@ -264,7 +264,7 @@ in
     ferdium          # Çoklu servis yöneticisi
     
     # Security & Authentication
-    ente-auth        # 2FA kimlik doğrulama
+    #ente-auth        # 2FA kimlik doğrulama
     keepassxc        # Parola yöneticisi
     gopass           # CLI parola yöneticisi
     

@@ -226,6 +226,27 @@
       overlaysCommon = [
         inputs.nur.overlays.default
 
+        # CMake 3.5+ compatibility fixes (GCC 14 + CMake 3.30 compatibility)
+        (final: prev: {
+          libvdpau-va-gl = prev.libvdpau-va-gl.overrideAttrs (old: {
+            cmakeFlags = (old.cmakeFlags or []) ++ [
+              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+            ];
+          });
+          
+          thinkfan = prev.thinkfan.overrideAttrs (old: {
+            cmakeFlags = (old.cmakeFlags or []) ++ [
+              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+            ];
+          });
+          
+          intel-graphics-compiler = prev.intel-graphics-compiler.overrideAttrs (old: {
+            cmakeFlags = (old.cmakeFlags or []) ++ [
+              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+            ];
+          });
+        })
+
         (final: prev: {
           buildGo123Module = args:
             prev.buildGoModule (args // { go = prev.go_1_25; });
