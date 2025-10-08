@@ -374,75 +374,108 @@ in
   };
 
   # RAPL Power Limits Service - Correct power limits for Meteor Lake
+  systemd.services.early-rapl-limits = lib.mkIf isPhysicalMachine {
+    description = "Early set RAPL power limits";
+    after = [ "systemd-udevd.service" ];
+    before = [ "sysinit.target" ];
+    # CRITICAL FIX: Boot'ta çalışması için
+    wantedBy = [ "sysinit.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "early-rapl-limits" ''
+        echo "=== EARLY RAPL LIMITS ==="
+        
+        # RAPL interface'lerini bekle
+        sleep 3
+        
+        for R in /sys/class/powercap/intel-rapl:*; do
+          # Directory kontrolü
+          if [[ ! -d "$R" ]]; then
+            continue
+          fi
+          
+          # PL1 yazmayı dene
+          if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
+            echo 28000000 > "$R/constraint_0_power_limit_uw" && \
+            echo "✓ Early PL1: 28W" || echo "⚠ Early PL1 write failed"
+          fi
+          
+          # PL2 yazmayı dene  
+          if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
+            echo 55000000 > "$R/constraint_1_power_limit_uw" && \
+            echo "✓ Early PL2: 55W" || echo "⚠ Early PL2 write failed"
+          fi
+        done
+        
+        echo "✓ Early RAPL limits applied"
+      '';
+    };
+  };
+
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Set correct RAPL power limits for Intel CPUs";
-    after = [ "multi-user.target" ];
+    after = [ "early-rapl-limits.service" "systemd-udev-settle.service" "multi-user.target" ];
+    wants = [ "systemd-udev-settle.service" ];
+    before = [ "display-manager.service" ];
+    # CRITICAL FIX: Boot
+    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = mkRobustScript "set-rapl-limits" ''
-        echo "=== SETTING CORRECT RAPL POWER LIMITS ==="
+        echo "=== MAIN RAPL POWER LIMITS ==="
         
-        # Detect CPU type for appropriate power limits
+        # CPU tipini tespit et
         CPU_TYPE="$(${cpuDetectionScript})"
         
-        # Set appropriate power limits based on CPU type
         case "$CPU_TYPE" in
           "METEORLAKE")
-            # Meteor Lake 155H - 28W sustained, 55W turbo
             PL1_W=28
-            PL2_W=55
-            ;;
-          "KABYLAKE")
-            # Kaby Lake-R i7-8650U - 15W sustained, 25W turbo  
-            PL1_W=15
-            PL2_W=25
+            PL2_W=55  
             ;;
           *)
-            # Generic Intel CPU - Conservative limits
             PL1_W=20
             PL2_W=30
             ;;
         esac
         
         echo "CPU Type: $CPU_TYPE"
-        echo "Power Limits: PL1=''${PL1_W}W (sustained), PL2=''${PL2_W}W (turbo)"
+        echo "Setting Power Limits: PL1=''${PL1_W}W, PL2=''${PL2_W}W"
         
-        # Apply RAPL limits to all packages
         APPLIED=0
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ -d "$R" ]] || continue
           
           if [[ -r "$R/name" ]] && ${pkgs.gnugrep}/bin/grep -q "package" "$R/name" 2>/dev/null; then
-            # PL1 (sustained power limit) - FIXED: Proper error checking
+            # PL1
             if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
-              if echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" 2>/dev/null; then
-                APPLIED=1
-                echo "✓ PL1 (sustained): ''${PL1_W}W"
+              CURRENT_PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+              if [[ "$CURRENT_PL1" -gt 40000000 ]]; then  # 40W'tan büyükse düzelt
+                echo $(( PL1_W * 1000000 )) > "$R/constraint_0_power_limit_uw" && {
+                  APPLIED=1
+                  echo "✓ PL1: ''${PL1_W}W (was: $((CURRENT_PL1/1000000))W)"
+                } || echo "✗ PL1 write failed"
               else
-                echo "✗ Failed to write PL1 to $(basename "$R")"
+                echo "✓ PL1 already correct: $((CURRENT_PL1/1000000))W"
+                APPLIED=1
               fi
-            else
-              echo "✗ PL1 not writable in $(basename "$R")"
             fi
             
-            # PL2 (turbo power limit) - FIXED: Proper error checking
+            # PL2
             if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
-              if echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" 2>/dev/null; then
-                echo "✓ PL2 (turbo): ''${PL2_W}W"
-              else
-                echo "✗ Failed to write PL2 to $(basename "$R")"
-              fi
-            else
-              echo "✗ PL2 not writable in $(basename "$R")"
+              CURRENT_PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
+              echo $(( PL2_W * 1000000 )) > "$R/constraint_1_power_limit_uw" && \
+              echo "✓ PL2: ''${PL2_W}W (was: $((CURRENT_PL2/1000000))W)" || \
+              echo "✗ PL2 write failed"
             fi
           fi
         done
-
-        if [[ "$APPLIED" == "1" ]]; then
+        
+        if [[ "$APPLIED" -eq 1 ]]; then
           echo "✓ RAPL power limits set successfully"
         else
-          echo "❌ RAPL power limits FAILED - no interfaces were writable"
+          echo "❌ RAPL power limits FAILED"
           exit 1
         fi
       '';
