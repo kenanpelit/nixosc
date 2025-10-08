@@ -163,6 +163,12 @@ in
       "mem_sleep_default=s2idle"
       # OPTIMIZED: Better NVMe power management for battery life
       "nvme_core.default_ps_max_latency_us=5500"
+
+      # FIX: Audit backlog
+      "audit_backlog_limit=8192"
+  
+      # FIX: WiFi error log
+      "iwlwifi.bt_coex_active=0"
     ];
 
     # System tuning for natural operation - REMOVED unnecessary settings
@@ -316,12 +322,12 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = mkRobustScript "cpu-profile-optimizer" ''
-        echo "=== CPU PROFILE OPTIMIZER ==="
-        
+        echo "=== CPU PROFILE OPTIMIZER - PERFORMANCE FIX ==="
+      
         # Detect CPU type
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Type: $CPU_TYPE"
-        
+      
         # Check power source
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
@@ -329,40 +335,46 @@ in
         done
 
         echo "Power source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
+      
+        # FIX: Always use performance-oriented settings on AC power
+        if [[ "$ON_AC" == "1" ]]; then
+          # AC Power - Use performance settings
+          EPP_PROFILE="performance"
+          GOVERNOR="performance"
         
-        # Set optimal EPP based on CPU type and power source
-        case "$CPU_TYPE" in
-          "METEORLAKE")
-            # Meteor Lake - Use balanced profile, let HWP manage
+          # Remove minimum frequency limits
+          for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+            [[ ! -d "$pol" ]] && continue
+            [[ -w "$pol/scaling_min_freq" ]] && echo 0 > "$pol/scaling_min_freq" 2>/dev/null || true
+          done
+        
+          # Enable HWP boost if available
+          [[ -w "/sys/devices/system/cpu/cpufreq/boost" ]] && echo 1 > /sys/devices/system/cpu/cpufreq/boost 2>/dev/null || true
+        
+        else
+          # Battery - Use balanced settings
             EPP_PROFILE="balance_performance"
-            ;;
-          "KABYLAKE")
-            # Kaby Lake - Slightly more aggressive on AC
-            if [[ "$ON_AC" == "1" ]]; then
-              EPP_PROFILE="balance_performance"
-            else
-              EPP_PROFILE="balance_power"
-            fi
-            ;;
-          *)
-            # Generic Intel CPU - Safe balanced profile
-            EPP_PROFILE="balance_performance"
-            ;;
-        esac
-        
-        echo "Optimal EPP Profile: $EPP_PROFILE"
-        
+          GOVERNOR="powersave"
+        fi
+      
+        echo "Optimal Settings: EPP=$EPP_PROFILE, Governor=$GOVERNOR"
+      
+        # Apply governor settings
+        for gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          [[ -w "$gov" ]] && echo "$GOVERNOR" > "$gov" 2>/dev/null || true
+        done
+      
         # Apply EPP settings to all policies
         for pol in /sys/devices/system/cpu/cpufreq/policy*; do
           [[ ! -d "$pol" ]] && continue
-          
+        
           if [[ -w "$pol/energy_performance_preference" ]]; then
             echo "$EPP_PROFILE" > "$pol/energy_performance_preference" 2>/dev/null || true
             echo "✓ Policy $(basename $pol): $EPP_PROFILE"
           fi
         done
-        
-        echo "✓ CPU profile optimization complete"
+      
+        echo "✓ CPU profile optimization complete - Performance mode active"
       '';
     };
   };
@@ -435,6 +447,52 @@ in
         
         echo "✓ Hardware status logged"
       '';
+    };
+  };
+
+  # Min Frequency Guard Service - HWP ile birlikte çalışır
+  systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
+    description = "Ensure minimum CPU frequency of 1400 MHz while keeping HWP active";
+    after = [ "multi-user.target" ];
+    wants = [ "cpu-profile-optimizer.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "cpu-min-freq-guard" ''
+        echo "=== CPU MIN FREQUENCY GUARD ==="
+      
+        # Min frekansı 1400 MHz yap (HWP hala aktif)
+        echo "Setting minimum frequency to 1400 MHz..."
+        for minf in /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq; do
+          if [[ -w "$minf" ]]; then
+            echo 1400000 > "$minf" 2>/dev/null && \
+            echo "✓ $(basename $(dirname $(dirname $minf))): min 1400 MHz" || true
+          fi
+        done
+      
+        # EPP'yi balance_performance yap (HWP ile uyumlu)
+        echo "Setting EPP to balance_performance..."
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          [[ ! -d "$pol" ]] && continue
+          if [[ -w "$pol/energy_performance_preference" ]]; then
+            echo "balance_performance" > "$pol/energy_performance_preference" 2>/dev/null && \
+            echo "✓ $(basename $pol): EPP=balance_performance" || true
+          fi
+        done
+      
+        echo "✓ Min frequency guard active (1400 MHz) - HWP remains enabled"
+      '';
+    };
+  };
+
+  systemd.timers.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
+    description = "Timer for CPU min frequency guard";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "45s";
+      OnUnitActiveSec = "2min";  # Her 2 dakikada bir kontrol
+      Persistent = true;
+      Unit = "cpu-min-freq-guard.service";
     };
   };
 
