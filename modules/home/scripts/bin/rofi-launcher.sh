@@ -62,6 +62,11 @@ declare -A POWER_TEXT POWER_ICON POWER_CMD POWER_COLOR
 readonly ALL_POWER_ACTIONS=(lockscreen logout suspend hibernate reboot shutdown)
 
 # Power action definitions with Nerd Font icons
+POWER_TEXT[reboot]="Restart"
+POWER_ICON[reboot]="󰜉"
+POWER_COLOR[reboot]="#e0af68"
+POWER_CMD[reboot]="systemctl reboot -i"
+
 POWER_TEXT[lockscreen]="Lock Screen"
 POWER_ICON[lockscreen]="󰍁"
 POWER_COLOR[lockscreen]="#7aa2f7"
@@ -81,11 +86,6 @@ POWER_TEXT[hibernate]="Hibernate"
 POWER_ICON[hibernate]="󰜗"
 POWER_COLOR[hibernate]="#9ece6a"
 POWER_CMD[hibernate]="systemctl hibernate -i"
-
-POWER_TEXT[reboot]="Restart"
-POWER_ICON[reboot]="󰜉"
-POWER_COLOR[reboot]="#e0af68"
-POWER_CMD[reboot]="systemctl reboot -i"
 
 POWER_TEXT[shutdown]="Shut Down"
 POWER_ICON[shutdown]="󰐥"
