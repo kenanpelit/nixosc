@@ -310,6 +310,7 @@ in
     
     # Extensions
     gnomeExtensions.gsconnect # Telefon entegrasyonu
+    gnome-screenshot
 
     # ==============================================================================
     # Tarayıcılar

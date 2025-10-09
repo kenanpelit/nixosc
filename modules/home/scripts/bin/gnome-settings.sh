@@ -124,7 +124,7 @@ dconf write /org/gnome/desktop/wm/preferences/button-layout "'appmenu:minimize,m
 echo "🖼️  Catppuccin duvar kağıdı ayarları..."
 
 # Ana duvar kağıdı
-WALLPAPER_PATH="$HOME/Pictures/wallpapers/catppuccin-mocha.jpg"
+WALLPAPER_PATH="$HOME/Pictures/wallpapers/others/54.jpg"
 if [ -f "$WALLPAPER_PATH" ]; then
 	dconf write /org/gnome/desktop/background/picture-uri "'file://$WALLPAPER_PATH'"
 	dconf write /org/gnome/desktop/background/picture-uri-dark "'file://$WALLPAPER_PATH'"
@@ -139,7 +139,7 @@ else
 fi
 
 # Lock screen duvar kağıdı
-LOCKSCREEN_PATH="$HOME/Pictures/wallpapers/catppuccin-mocha-lockscreen.jpg"
+LOCKSCREEN_PATH="$HOME/Pictures/wallpapers/others/54.jpg"
 if [ -f "$LOCKSCREEN_PATH" ]; then
 	dconf write /org/gnome/desktop/screensaver/picture-uri "'file://$LOCKSCREEN_PATH'"
 else
@@ -247,6 +247,26 @@ dconf write /org/gnome/shell/keybindings/switch-to-application-6 "@as []"
 dconf write /org/gnome/shell/keybindings/switch-to-application-7 "@as []"
 dconf write /org/gnome/shell/keybindings/switch-to-application-8 "@as []"
 dconf write /org/gnome/shell/keybindings/switch-to-application-9 "@as []"
+
+# =============================================================================
+# NIGHT LIGHT (Mavi ışık filtresi)
+# =============================================================================
+echo "🌙 Night Light ayarları uygulanıyor..."
+
+# 00:00 - 00:00 (24 saat) ve örnek sıcaklık değeri
+NIGHT_LIGHT_FROM="0.0" # 00:00
+NIGHT_LIGHT_TO="0.0"   # 00:00 (GNOME çoğu sürümde 24h anlamına gelir)
+NIGHT_LIGHT_TEMP=3700  # 1000–10000 arası (daha sıcak = daha sarı)
+
+dconf write /org/gnome/settings-daemon/plugins/color/night-light-enabled true
+dconf write /org/gnome/settings-daemon/plugins/color/night-light-schedule-automatic false
+dconf write /org/gnome/settings-daemon/plugins/color/night-light-temperature "uint32 $NIGHT_LIGHT_TEMP"
+dconf write /org/gnome/settings-daemon/plugins/color/night-light-schedule-from "$NIGHT_LIGHT_FROM"
+dconf write /org/gnome/settings-daemon/plugins/color/night-light-schedule-to "$NIGHT_LIGHT_TO"
+
+# Not: Bazı GNOME derlemelerinde 0.0→0.0 tam-gün davranmıyorsa,
+# yalnızca aşağıdaki satırı 24.0 yapman yeterli olur:
+# dconf write /org/gnome/settings-daemon/plugins/color/night-light-schedule-to "24.0"
 
 # =============================================================================
 # MUTTER SETTINGS
@@ -441,6 +461,29 @@ SPACE_BAR_MOCHA_CSS='
 '
 
 dconf write /org/gnome/shell/extensions/space-bar/appearance/application-styles "'$SPACE_BAR_MOCHA_CSS'"
+
+## =============================================================================
+## Dash to Panel - Date (Clock) center on each monitor
+## =============================================================================
+#echo "🕒 Dash to Panel: saati merkeze alınıyor..."
+
+## Her monitör için ayrı yerleşim kullan
+#dconf write /org/gnome/shell/extensions/dash-to-panel/panel-element-positions-monitors-sync false
+#
+## dateMenu'yu center'a koy, taskbar solda, systemMenu sağda
+#dconf write /org/gnome/shell/extensions/dash-to-panel/panel-element-positions \
+#	'"{
+#  \"CMN-0x00000000\": {
+#    \"left\":   [{\"element\":\"showAppsButton\",\"visible\":true},{\"element\":\"taskbar\",\"visible\":true}],
+#    \"center\": [{\"element\":\"dateMenu\",\"visible\":true}],
+#    \"right\":  [{\"element\":\"systemMenu\",\"visible\":true},{\"element\":\"desktopButton\",\"visible\":true}]
+#  },
+#  \"DEL-KRXTR88N909L\": {
+#    \"left\":   [{\"element\":\"showAppsButton\",\"visible\":true},{\"element\":\"taskbar\",\"visible\":true}],
+#    \"center\": [{\"element\":\"dateMenu\",\"visible\":true}],
+#    \"right\":  [{\"element\":\"systemMenu\",\"visible\":true},{\"element\":\"desktopButton\",\"visible\":true}]
+#  }
+#}"'
 
 # =============================================================================
 # PRIVACY SETTINGS
@@ -683,7 +726,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 
 # KKENP
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/binding "'<Alt>t'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/command "'gnome-kkenp'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/command "'start-kkenp'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/name "'Start KKENP'"
 
 # Notes Manager
