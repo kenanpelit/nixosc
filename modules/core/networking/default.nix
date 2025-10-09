@@ -552,7 +552,7 @@ in
         
         # Killswitch (lockdown mode)
         # Blocks all non-VPN traffic if VPN disconnects
-        "$CLI" lockdown-mode set on || echo "⚠ Failed to set lockdown mode"
+        #"$CLI" lockdown-mode set on || echo "⚠ Failed to set lockdown mode"
         
         # Optional: Set specific relay location
         # "$CLI" relay set location se got || true
