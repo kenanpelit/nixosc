@@ -148,6 +148,23 @@ in
             # CRITICAL: providedSessions tells NixOS which session names this package provides
             passthru.providedSessions = [ "hyprland-optimized" ];
           })
+
+          # GNOME Optimized session
+          (pkgs.writeTextFile rec {
+            name = "gnome-optimized-session";
+            destination = "/share/wayland-sessions/gnome-optimized.desktop";
+            text = ''
+              [Desktop Entry]
+              Name=GNOME (Optimized)
+              Comment=GNOME with Catppuccin theme and performance optimizations
+              Exec=gnome_tty
+              Type=Application
+              DesktopNames=GNOME
+              X-GDM-SessionRegisters=true
+              X-GDM-SessionType=wayland
+            '';
+            passthru.providedSessions = [ "gnome-optimized" ];
+          })
         ];
         
         # --------------------------------------------------------------------------
