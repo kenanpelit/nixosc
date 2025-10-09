@@ -390,6 +390,39 @@ in
     '';
 
     # --------------------------------------------------------------------------
+    # GNOME Session (Optimized) - Fallback Definition
+    # --------------------------------------------------------------------------
+    # Optimized GNOME launch with gnome_tty script
+    # Features: Catppuccin theme support, custom optimizations
+
+    "wayland-sessions/gnome-optimized.desktop".text = ''
+      [Desktop Entry]
+      Name=GNOME (Optimized)
+      Comment=GNOME with Catppuccin theme and performance optimizations
+      Exec=${pkgs.writeShellScript "gnome-optimized-wrapper" ''
+        #!/usr/bin/env bash
+    
+        # GDM tarafından sağlanan environment'ı koru
+        export XDG_SESSION_TYPE=wayland
+        export XDG_SESSION_DESKTOP=gnome
+        export XDG_CURRENT_DESKTOP=GNOME
+        export DESKTOP_SESSION=gnome
+    
+        # D-Bus session kontrolü (GDM zaten sağlıyor)
+        if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+            eval $(dbus-launch --sh-syntax --exit-with-session)
+        fi
+    
+        # gnome_tty betiğini çağır (ya da doğrudan gnome-session)
+        exec gnome_tty
+      ''}
+      Type=Application
+      DesktopNames=GNOME
+      X-GDM-SessionRegisters=true
+      X-GDM-SessionType=wayland
+    '';
+   
+    # --------------------------------------------------------------------------
     # Hyprland Session (Standard)
     # --------------------------------------------------------------------------
     # Direct Hyprland launch without custom script
