@@ -404,6 +404,39 @@ setup_dbus() {
 		return 0
 	fi
 
+	# ✅ YENİ: GDM session detection - ÖNCE KONTROL ET
+	if [[ -n "${GDMSESSION:-}" ]] || [[ -n "${XDG_SESSION_ID:-}" ]]; then
+		debug_log "GDM tarafından başlatıldık (GDMSESSION=${GDMSESSION:-unset}, XDG_SESSION_ID=${XDG_SESSION_ID:-unset})"
+
+		# GDM zaten D-Bus sağlıyor, mevcut olanı bul
+		if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
+			# systemd environment'dan al
+			local systemd_dbus=$(systemctl --user show-environment 2>/dev/null | grep ^DBUS_SESSION_BUS_ADDRESS= | cut -d= -f2-)
+
+			if [[ -n "$systemd_dbus" ]]; then
+				export DBUS_SESSION_BUS_ADDRESS="$systemd_dbus"
+				info "GDM D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
+				return 0
+			fi
+
+			# Veya runtime socket
+			local dbus_socket="$XDG_RUNTIME_DIR/bus"
+			if [[ -S "$dbus_socket" ]]; then
+				export DBUS_SESSION_BUS_ADDRESS="unix:path=$dbus_socket"
+				info "GDM D-Bus socket bulundu: $dbus_socket"
+				return 0
+			fi
+		else
+			info "GDM D-Bus zaten ayarlı: $DBUS_SESSION_BUS_ADDRESS"
+			return 0
+		fi
+
+		warn "GDM session algılandı ama D-Bus bulunamadı, GNOME kendi başlatacak"
+		return 0
+	fi
+
+	# ✅ Buradan sonrası TTY başlatma için (mevcut kod aynen kalacak)
+
 	# Mevcut D-Bus session kontrolü
 	if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
 		debug_log "D-Bus session zaten mevcut: $DBUS_SESSION_BUS_ADDRESS"
@@ -423,9 +456,9 @@ setup_dbus() {
 		fi
 	fi
 
-	info "D-Bus session başlatılıyor..."
+	# TTY'den başlatılıyor - yeni session gerekli
+	info "D-Bus session başlatılıyor (TTY modu)..."
 
-	# dbus-launch kullanarak başlat
 	if command -v dbus-launch &>/dev/null; then
 		debug_log "dbus-launch kullanılacak"
 		eval $(dbus-launch --sh-syntax --exit-with-session 2>/dev/null)
