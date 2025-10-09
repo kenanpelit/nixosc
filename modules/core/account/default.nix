@@ -133,7 +133,7 @@
       useUserPackages = true;
       
       # Backup existing files when home-manager conflicts
-      backupFileExtension = "hm-backup";
+      backupFileExtension = "backup";
       
       # Pass these variables to all home-manager modules
       extraSpecialArgs = { 
