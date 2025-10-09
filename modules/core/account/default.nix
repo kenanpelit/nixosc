@@ -6,12 +6,13 @@
 # Purpose: Centralized user account, groups, and sudo privilege management
 # Module: modules/core/account
 # Author: Kenan Pelit
-# Date:   2025-09-03
+# Date:   2025-10-09
 #
 # Design Principles:
 #   - Single source of truth for user configuration
 #   - User-linked home-manager profile defined in same module
 #   - System services (DBus/Keyring) belong to services module, not here
+#   - Rootless containers (Podman) - no docker group needed
 #
 # Ownership Map:
 #   - users.users.*     → THIS MODULE (account)
@@ -19,6 +20,11 @@
 #   - home-manager      → THIS MODULE (account)
 #   - DBus/Keyring      → services module
 #   - Display services  → display module
+#
+# Security Notes:
+#   - Passwordless sudo: Conscious trade-off for convenience
+#   - No docker group: Using rootless Podman instead (more secure)
+#   - UID auto-assigned: Prevents conflicts in multi-user scenarios
 #
 # ==============================================================================
 
@@ -38,10 +44,10 @@
       description = "The primary user account name";
     };
     
-    uid = lib.mkOption {
-      type = lib.types.int;
-      default = 1000;
-      description = "UID for the primary user account";
+    description = lib.mkOption {
+      type = lib.types.str;
+      default = username;
+      description = "Full name or description for the user";
     };
   };
 
@@ -54,36 +60,64 @@
     
     users.users.${username} = {
       isNormalUser = true;
-      description  = username;
-      uid          = config.my.user.uid;
+      description  = config.my.user.description;
       shell        = pkgs.zsh;
       
-      # Complete group membership list
-      # NOTE: Previously duplicated in services/default.nix - now centralized here
+      # Let NixOS assign UID automatically (prevents conflicts)
+      # uid = 1000;  # Not needed - NixOS handles this
+      
+      # --------------------------------------------------------------------------
+      # Group Membership (Complete List)
+      # --------------------------------------------------------------------------
+      # IMPORTANT: This is the ONLY place where user groups are defined.
+      # Do NOT add groups in other modules (networking, services, etc.)
+      
       extraGroups = [
-        # System administration
-        "wheel"            # sudo privileges
-        "networkmanager"   # Network Manager permissions
-        "storage"          # Storage device access
+        # ---- System Administration ----
+        "wheel"            # Sudo privileges (passwordless via config below)
+        "networkmanager"   # Network configuration without sudo
+        "storage"          # Access to storage devices
         
-        # Hardware & I/O access
-        "input"            # Input device access
-        "audio"            # Audio subsystem
-        "video"            # Video/GPU access
+        # ---- Hardware & I/O Access ----
+        "input"            # Input devices (keyboards, mice, gamepads)
+        "audio"            # Audio subsystem (PulseAudio/PipeWire)
+        "video"            # GPU access (for hardware acceleration)
         
-        # Virtualization & containers
-        "libvirtd"         # QEMU/KVM virtualization
-        "kvm"              # Direct KVM access
-        "docker"           # Docker container management
+        # ---- Virtualization ----
+        "libvirtd"         # QEMU/KVM virtual machine management
+        "kvm"              # Direct KVM access (hardware virtualization)
+        
+        # ---- Containers ----
+        # Note: No "docker" group - using rootless Podman instead
+        # Podman doesn't require group membership (more secure)
+        
+        # ---- Optional Groups (uncomment if needed) ----
+        # "plugdev"        # USB device access (Android ADB, etc.)
+        # "dialout"        # Serial port access (Arduino, etc.)
+        # "scanner"        # Scanner device access
+        # "lp"             # Printer access
+        # "adbusers"       # Android Debug Bridge
       ];
     };
 
     # ==========================================================================
     # Sudo Configuration
     # ==========================================================================
-    # Passwordless sudo for wheel group (conscious security trade-off)
+    # Passwordless sudo for wheel group members
+    # 
+    # Security Trade-off:
+    #   - Pro: Convenience, faster workflow
+    #   - Con: Physical access = instant root
+    #   - Mitigation: Full disk encryption, screen lock, physical security
     
-    security.sudo.wheelNeedsPassword = false;
+    security.sudo = {
+      wheelNeedsPassword = false;
+      
+      # Optional: Add timeout for sudo credential caching
+      # extraConfig = ''
+      #   Defaults timestamp_timeout=30
+      # '';
+    };
 
     # ==========================================================================
     # Home-Manager Integration
@@ -92,42 +126,68 @@
     # Defined here because user account and user environment are tightly coupled.
     
     home-manager = {
-      useUserPackages      = true;   # Install packages to user profile
-      useGlobalPkgs        = true;   # Use system-wide nixpkgs instance
-      backupFileExtension  = "backup"; # Backup extension for existing files
+      # Use system-wide nixpkgs instance (consistency)
+      useGlobalPkgs = true;
+      
+      # Install packages to user profile (not system profile)
+      useUserPackages = true;
+      
+      # Backup existing files when home-manager conflicts
+      backupFileExtension = "hm-backup";
       
       # Pass these variables to all home-manager modules
       extraSpecialArgs = { 
         inherit inputs username host; 
       };
       
+      # --------------------------------------------------------------------------
+      # User Environment Configuration
+      # --------------------------------------------------------------------------
       users.${username} = {
         # Import user environment configuration
-        # Path: ./modules/home (relative to repo root)
+        # Path: modules/home (relative to flake root)
         imports = [ ../../home ];
         
         # Basic home directory setup
         home = {
           username      = username;
           homeDirectory = "/home/${username}";
-          stateVersion  = "25.11";  # Home-manager state version
+          
+          # Home-manager state version
+          stateVersion  = "25.11";
         };
+        
+        # Enable home-manager to manage itself
+        programs.home-manager.enable = true;
       };
     };
 
     # --------------------------------------------------------------------------
-    # Service Boundaries
+    # Module Boundaries & Service Ownership
     # --------------------------------------------------------------------------
     # IMPORTANT: The following services are NOT managed here:
     #
-    # DBus & Keyring Services → modules/core/services/default.nix
-    #   - services.dbus.enable = true;
-    #   - services.dbus.packages = [ pkgs.gcr gnome-keyring ];
-    #   
-    # GNOME Keyring → Can be in either services or display module
-    #   - services.gnome.gnome-keyring.enable = true;
+    # 1. DBus & Related Services → modules/core/services/default.nix
+    #    - services.dbus.enable = true;
+    #    - services.dbus.packages = [ pkgs.gcr pkgs.gnome-keyring ];
     #
-    # This separation ensures clean module boundaries and single responsibility.
+    # 2. GNOME Keyring → modules/core/services or display module
+    #    - services.gnome.gnome-keyring.enable = true;
+    #    - security.pam.services.*.enableGnomeKeyring = true;
+    #
+    # 3. Display Manager → modules/core/display/default.nix
+    #    - services.xserver.displayManager.*
+    #    - services.displayManager.*
+    #
+    # 4. Container Runtime → modules/core/virtualization (if exists)
+    #    - virtualisation.podman.enable = true;
+    #    - virtualisation.docker.enable = false;  # Not using Docker
+    #
+    # This separation ensures:
+    #   - Clean module boundaries
+    #   - Single responsibility principle
+    #   - Easy to reason about dependencies
+    #   - No circular imports
     # --------------------------------------------------------------------------
   };
 }
