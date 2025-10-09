@@ -891,136 +891,131 @@ in
       YELLOW='\033[0;33m'
       NC='\033[0m' # No Color
       
-      echo -e "''${BOLD}=== TCP/IP Stack Status ===''${NC}"
-      echo
+      printf "%b=== TCP/IP Stack Status ===%b\n\n" "$BOLD" "$NC"
       
       # ----------------------------------------------------------------
       # System Information
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[System]''${NC}"
+      printf "%b[System]%b\n" "$BLUE" "$NC"
       TOTAL_MB=$(${detectMemoryScript})
       TOTAL_GB=$((TOTAL_MB / 1024))
-      echo "  RAM: ''${TOTAL_GB}GB (''${TOTAL_MB}MB)"
+      printf "  RAM: %sGB (%sMB)\n" "$TOTAL_GB" "$TOTAL_MB"
       
       if [[ -f /run/network-tuning-profile ]]; then
         PROFILE=$(${cat} /run/network-tuning-profile)
-        echo -e "  Profile: ''${GREEN}''${PROFILE^^}''${NC}"
+        printf "  Profile: %b%s%b\n\n" "$GREEN" "''${PROFILE^^}" "$NC"
       else
-        echo "  Profile: unknown (cache missing)"
+        printf "  Profile: unknown (cache missing)\n\n"
       fi
-      echo
       
       # ----------------------------------------------------------------
       # TCP Configuration
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[TCP Configuration]''${NC}"
+      printf "%b[TCP Configuration]%b\n" "$BLUE" "$NC"
       CC=$(${sysctl} -n net.ipv4.tcp_congestion_control)
       QDISC=$(${sysctl} -n net.core.default_qdisc)
-      echo "  Congestion Control: ''${GREEN}''${CC}''${NC}"
-      echo "  Queue Discipline:   ''${GREEN}''${QDISC}''${NC}"
+      printf "  Congestion Control: %b%s%b\n" "$GREEN" "$CC" "$NC"
+      printf "  Queue Discipline:   %b%s%b\n" "$GREEN" "$QDISC" "$NC"
       
       # BBR version (if available)
       if [[ -f /sys/module/tcp_bbr/version ]]; then
         BBR_VER=$(${cat} /sys/module/tcp_bbr/version)
-        echo "  BBR Version:        ''${BBR_VER}"
+        printf "  BBR Version:        %s\n" "$BBR_VER"
       fi
       
       TFO=$(${sysctl} -n net.ipv4.tcp_fastopen)
-      echo "  TCP Fast Open:      ''${TFO} (3=client+server)"
+      printf "  TCP Fast Open:      %s (3=client+server)\n" "$TFO"
       
       ECN=$(${sysctl} -n net.ipv4.tcp_ecn)
       ECN_FB=$(${sysctl} -n net.ipv4.tcp_ecn_fallback)
-      echo "  ECN:                ''${ECN} (fallback: ''${ECN_FB})"
+      printf "  ECN:                %s (fallback: %s)\n" "$ECN" "$ECN_FB"
       
       MTU=$(${sysctl} -n net.ipv4.tcp_mtu_probing)
-      echo "  MTU Probing:        ''${MTU}"
+      printf "  MTU Probing:        %s\n" "$MTU"
       
       NOTSENT=$(${sysctl} -n net.ipv4.tcp_notsent_lowat 2>/dev/null || echo "N/A")
-      echo "  notsent_lowat:      ''${NOTSENT} bytes"
-      echo
+      printf "  notsent_lowat:      %s bytes\n\n" "$NOTSENT"
       
       # ----------------------------------------------------------------
       # Buffer Configuration
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[Buffers]''${NC}"
+      printf "%b[Buffers]%b\n" "$BLUE" "$NC"
       RMEM_MAX=$(${sysctl} -n net.core.rmem_max)
       WMEM_MAX=$(${sysctl} -n net.core.wmem_max)
       RMEM_DEF=$(${sysctl} -n net.core.rmem_default)
       WMEM_DEF=$(${sysctl} -n net.core.wmem_default)
       
-      echo "  rmem_max:     $(numfmt --to=iec ''${RMEM_MAX}) (''${RMEM_MAX} bytes)"
-      echo "  wmem_max:     $(numfmt --to=iec ''${WMEM_MAX}) (''${WMEM_MAX} bytes)"
-      echo "  rmem_default: $(numfmt --to=iec ''${RMEM_DEF}) (''${RMEM_DEF} bytes)"
-      echo "  wmem_default: $(numfmt --to=iec ''${WMEM_DEF}) (''${WMEM_DEF} bytes)"
+      printf "  rmem_max:     %s (%s bytes)\n" "$(numfmt --to=iec "$RMEM_MAX")" "$RMEM_MAX"
+      printf "  wmem_max:     %s (%s bytes)\n" "$(numfmt --to=iec "$WMEM_MAX")" "$WMEM_MAX"
+      printf "  rmem_default: %s (%s bytes)\n" "$(numfmt --to=iec "$RMEM_DEF")" "$RMEM_DEF"
+      printf "  wmem_default: %s (%s bytes)\n" "$(numfmt --to=iec "$WMEM_DEF")" "$WMEM_DEF"
       
       TCP_RMEM=$(${sysctl} -n net.ipv4.tcp_rmem)
       TCP_WMEM=$(${sysctl} -n net.ipv4.tcp_wmem)
-      echo "  tcp_rmem:     ''${TCP_RMEM}"
-      echo "  tcp_wmem:     ''${TCP_WMEM}"
-      echo
+      printf "  tcp_rmem:     %s\n" "$TCP_RMEM"
+      printf "  tcp_wmem:     %s\n\n" "$TCP_WMEM"
       
       # ----------------------------------------------------------------
       # Queue & Connection Limits
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[Limits]''${NC}"
+      printf "%b[Limits]%b\n" "$BLUE" "$NC"
       BACKLOG=$(${sysctl} -n net.core.netdev_max_backlog)
       SOMAXCONN=$(${sysctl} -n net.core.somaxconn)
-      echo "  netdev_max_backlog: ''${BACKLOG}"
-      echo "  somaxconn:          ''${SOMAXCONN}"
+      printf "  netdev_max_backlog: %s\n" "$BACKLOG"
+      printf "  somaxconn:          %s\n" "$SOMAXCONN"
       
       CONNTRACK=$(${sysctl} -n net.netfilter.nf_conntrack_max 2>/dev/null || echo "N/A")
-      if [[ "''${CONNTRACK}" != "N/A" ]]; then
+      if [[ "$CONNTRACK" != "N/A" ]]; then
         CONNTRACK_COUNT=$(${cat} /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null || echo "0")
         CONNTRACK_PCT=$((CONNTRACK_COUNT * 100 / CONNTRACK))
-        echo "  nf_conntrack_max:   ''${CONNTRACK} (current: ''${CONNTRACK_COUNT} = ''${CONNTRACK_PCT}%)"
+        printf "  nf_conntrack_max:   %s (current: %s = %s%%)\n\n" "$CONNTRACK" "$CONNTRACK_COUNT" "$CONNTRACK_PCT"
       else
-        echo "  nf_conntrack_max:   N/A (module not loaded)"
+        printf "  nf_conntrack_max:   N/A (module not loaded)\n\n"
       fi
-      echo
       
       # ----------------------------------------------------------------
       # Network Interfaces
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[Interfaces]''${NC}"
+      printf "%b[Interfaces]%b\n" "$BLUE" "$NC"
       ${pkgs.iproute2}/bin/ip -br link | while read -r iface state rest; do
         case "$state" in
           UP)
-            printf "  \033[0;32m%-18s\033[0m %s\n" "$iface" "$rest"
+            printf "  %b%-18s%b %s\n" "$GREEN" "$iface" "$NC" "$rest"
             ;;
           DOWN)
             printf "  %-18s %s\n" "$iface" "$rest"
             ;;
           *)
-            printf "  \033[0;33m%-18s\033[0m %s\n" "$iface" "$rest"
+            printf "  %b%-18s%b %s\n" "$YELLOW" "$iface" "$NC" "$rest"
             ;;
         esac
       done
-      echo
+      printf "\n"
       
       # ----------------------------------------------------------------
       # DNS Configuration
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[DNS]''${NC}"
-      ${pkgs.systemd}/bin/resolvectl status | ${grep} -A5 "DNS Servers:" | head -n 6 || echo "  No DNS info available"
-      echo
+      printf "%b[DNS]%b\n" "$BLUE" "$NC"
+      ${pkgs.systemd}/bin/resolvectl status | ${grep} -A5 "DNS Servers:" | head -n 6 || printf "  No DNS info available\n"
+      printf "\n"
       
       # ----------------------------------------------------------------
       # Routing
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[Routing]''${NC}"
-      echo "  Default IPv4:"
+      printf "%b[Routing]%b\n" "$BLUE" "$NC"
+      printf "  Default IPv4:\n"
       ${pkgs.iproute2}/bin/ip -4 route show default | sed 's/^/    /'
       
       if ${sysctl} -n net.ipv6.conf.all.disable_ipv6 2>/dev/null | grep -q 0; then
-        echo "  Default IPv6:"
-        ${pkgs.iproute2}/bin/ip -6 route show default | sed 's/^/    /' || echo "    (none)"
+        printf "  Default IPv6:\n"
+        ${pkgs.iproute2}/bin/ip -6 route show default | sed 's/^/    /' || printf "    (none)\n"
       fi
-      echo
+      printf "\n"
       
       # ----------------------------------------------------------------
       # Connection Statistics
       # ----------------------------------------------------------------
-      echo -e "''${BLUE}[Connections]''${NC}"
+      printf "%b[Connections]%b\n" "$BLUE" "$NC"
       
       # TCP summary
       TCP_ESTAB=$(${pkgs.iproute2}/bin/ss -tan state established 2>/dev/null | tail -n +2 | wc -l)
@@ -1030,28 +1025,27 @@ in
       TCP_SYN=$((TCP_SYN_SENT + TCP_SYN_RECV))
       TCP_TOTAL=$((TCP_ESTAB + TCP_TIMEWAIT + TCP_SYN))
       
-      echo "  TCP Total:       ''${TCP_TOTAL}"
-      echo "  TCP Established: ''${TCP_ESTAB}"
-      echo "  TCP TIME-WAIT:   ''${TCP_TIMEWAIT}"
-      echo "  TCP SYN:         ''${TCP_SYN}"
+      printf "  TCP Total:       %s\n" "$TCP_TOTAL"
+      printf "  TCP Established: %s\n" "$TCP_ESTAB"
+      printf "  TCP TIME-WAIT:   %s\n" "$TCP_TIMEWAIT"
+      printf "  TCP SYN:         %s\n" "$TCP_SYN"
       
       # UDP count
       UDP_TOTAL=$(${pkgs.iproute2}/bin/ss -uan | tail -n +2 | wc -l)
-      echo "  UDP Total:      ''${UDP_TOTAL}"
-      echo
+      printf "  UDP Total:       %s\n\n" "$UDP_TOTAL"
       
       # ----------------------------------------------------------------
       # VPN Status (if Mullvad is enabled)
       # ----------------------------------------------------------------
       if command -v mullvad &>/dev/null; then
-        echo -e "''${BLUE}[VPN Status]''${NC}"
+        printf "%b[VPN Status]%b\n" "$BLUE" "$NC"
         mullvad status | sed 's/^/  /'
-        echo
+        printf "\n"
       fi
       
-      echo -e "''${GREEN}✓ Status check complete''${NC}"
+      printf "%b✓ Status check complete%b\n" "$GREEN" "$NC"
     '')
-    
+
     # --------------------------------------------------------------------------
     # Network Performance Test Script
     # --------------------------------------------------------------------------
