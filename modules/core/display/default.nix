@@ -151,27 +151,6 @@ in
             # Without this, NixOS won't recognize it for defaultSession validation
             passthru.providedSessions = [ "hyprland-optimized" ];
           })
-
-          # --------------------------------------------------------------------------
-          # GNOME Optimized session
-          # --------------------------------------------------------------------------
-          (pkgs.writeTextFile rec {
-            name = "gnome-optimized-session";
-            destination = "/share/wayland-sessions/gnome-optimized.desktop";
-            text = ''
-              [Desktop Entry]
-              Name=GNOME (Optimized)
-              Comment=GNOME with Catppuccin theme and performance optimizations
-              Exec=gnome_tty
-              Type=Application
-              DesktopNames=GNOME
-              X-GDM-SessionRegisters=true
-              X-GDM-SessionType=wayland
-            '';
-            
-            # Makes "gnome-optimized" a valid session name
-            passthru.providedSessions = [ "gnome-optimized" ];
-          })
         ];
         
         # --------------------------------------------------------------------------
@@ -191,7 +170,6 @@ in
         #   - "hyprland"           : Standard Hyprland (from programs.hyprland)
         #   - "hyprland-optimized" : Custom hyprland_tty launch (Intel Arc optimized)
         #   - "gnome"              : Standard GNOME (from desktopManager.gnome)
-        #   - "gnome-optimized"    : Custom gnome_tty launch (Catppuccin themed)
         #   - "cosmic"             : COSMIC desktop (from desktopManager.cosmic)
         #
         # Recommended: "hyprland-optimized" for daily use
