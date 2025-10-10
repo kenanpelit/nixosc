@@ -31,6 +31,7 @@
   #custom-mako-notifications,
   #custom-todo,
   #custom-weather,
+  #custom-system-status,
   #custom-waybar-mpris,
   #pulseaudio,
   #pulseaudio#source,
@@ -277,7 +278,7 @@
 
   #custom-power {
     color: ${custom.red};
-    font-size: 15px;
+    font-size: 14px;
     margin: 2px 3px 2px 1px;
   }
 
@@ -360,6 +361,52 @@
   #custom-weather:hover {
     background-color: rgba(122, 162, 247, 0.15);
     border-color: ${custom.blue};
+  }
+
+  /* System Status module - CPU Frequency */
+  #custom-system-status {
+    color: ${custom.cyan};
+    font-size: 14px;
+    padding: 2px 8px;
+    min-width: 80px;
+    font-weight: 500;
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
+  }
+
+  #custom-system-status.high {
+    color: ${custom.magenta};
+    background-color: rgba(187, 154, 247, 0.1);
+    border-color: rgba(187, 154, 247, 0.3);
+  }
+
+  #custom-system-status.normal {
+    color: ${custom.cyan};
+    background-color: rgba(125, 207, 255, 0.1);
+    border-color: rgba(125, 207, 255, 0.3);
+  }
+
+  #custom-system-status.low {
+    color: ${custom.green};
+    background-color: rgba(158, 206, 106, 0.1);
+    border-color: rgba(158, 206, 106, 0.3);
+  }
+
+  #custom-system-status.error {
+    color: ${custom.red};
+    opacity: 0.6;
+  }
+
+  #custom-system-status:hover {
+    background-color: rgba(125, 207, 255, 0.2);
+    border-color: ${custom.cyan};
+    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.2);
+  }
+
+  #custom-system-status.high:hover {
+    background-color: rgba(187, 154, 247, 0.2);
+    border-color: ${custom.magenta};
+    box-shadow: 0 2px 8px rgba(187, 154, 247, 0.2);
   }
 
   /* Mako Notifications module */
