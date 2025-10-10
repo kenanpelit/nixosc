@@ -23,9 +23,9 @@ let
     # Typography with fallbacks
     font = "JetBrainsMono Nerd Font";
     font_fallback = "Fira Code Nerd Font, Hack Nerd Font, monospace";
-    font_size = "15px";
+    font_size = "14px";
     font_size_small = "13px";
-    font_size_large = "17px";
+    font_size_large = "16px";
     font_weight = "600";
     font_weight_light = "400";
     font_weight_bold = "700";
