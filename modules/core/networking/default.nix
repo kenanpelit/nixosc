@@ -337,7 +337,7 @@ in
       
       # Enable killswitch (block internet if VPN drops)
       # This is enforced via firewall rules
-      enableExcludeWrapper = false;  # Disable split tunneling wrapper
+      enableExcludeWrapper = true;  # Enable split tunneling wrapper
     };
   };
 
