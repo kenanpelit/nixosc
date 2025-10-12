@@ -277,7 +277,7 @@
     "custom/system-status" = {
       exec = ''
         # Fetch system status JSON
-        status=$(system-status --json 2>/dev/null)
+        status=$(osc-status --json 2>/dev/null)
     
         if [ -z "$status" ]; then
           echo '{"text":"󰻠 N/A","class":"error","tooltip":"System status unavailable"}'

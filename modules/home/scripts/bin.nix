@@ -183,6 +183,9 @@ let
   osc-ssh = pkgs.writeShellScriptBin "osc-ssh" (
     builtins.readFile ./bin/osc-ssh.sh
   );
+  osc-status = pkgs.writeShellScriptBin "osc-status" (
+    builtins.readFile ./bin/osc-status.sh
+  );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./bin/osc-subliminal.sh
   );
@@ -284,9 +287,6 @@ let
   );
   svmubuntu = pkgs.writeShellScriptBin "svmubuntu" (
     builtins.readFile ./bin/svmubuntu.sh
-  );
-  system-status = pkgs.writeShellScriptBin "system-status" (
-    builtins.readFile ./bin/system-status.sh
   );
   tarchiver = pkgs.writeShellScriptBin "tarchiver" (
     builtins.readFile ./bin/tarchiver.sh
@@ -423,6 +423,7 @@ in {
     osc-soundctl
     osc-spotify
     osc-ssh
+    osc-status
     osc-subliminal
     osc-symlink_manager
     osc-sync
@@ -457,7 +458,6 @@ in {
     svmarch
     svmnixos
     svmubuntu
-    system-status
     tarchiver
     ter
     tlp-status
