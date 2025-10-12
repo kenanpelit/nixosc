@@ -285,6 +285,9 @@ let
   svmubuntu = pkgs.writeShellScriptBin "svmubuntu" (
     builtins.readFile ./bin/svmubuntu.sh
   );
+  system-status = pkgs.writeShellScriptBin "system-status" (
+    builtins.readFile ./bin/system-status.sh
+  );
   tarchiver = pkgs.writeShellScriptBin "tarchiver" (
     builtins.readFile ./bin/tarchiver.sh
   );
@@ -454,6 +457,7 @@ in {
     svmarch
     svmnixos
     svmubuntu
+    system-status
     tarchiver
     ter
     tlp-status
