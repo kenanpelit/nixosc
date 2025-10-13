@@ -22,7 +22,7 @@
 # ÇÖZÜM:
 # ------
 # ✅ Platform Profile → "performance" (ACPI throttling engellendi)
-# ✅ Min Performance → %30 (yaklaşık 1500 MHz minimum)
+# ✅ Min Performance → %40 (yaklaşık 1700 MHz minimum)
 # ✅ Active HWP mode (donanım kendi frekansları yönetiyor)
 # ✅ RAPL Limits → 65W/115W (thermal throttling yok)
 # ✅ Battery Thresholds → 75-80% (pil ömrü koruması)
@@ -223,10 +223,10 @@ in
   # CPU PERFORMANS KONFIGÜRASYONU
   # ============================================================================
   # ASIL ÇÖZÜM BURASI!
-  # Min Performance %30 yapıyor (yaklaşık 1500 MHz minimum)
+  # Min Performance %40 yapıyor (yaklaşık 1500 MHz minimum)
   # Bu sayede CPU idle'da bile responsive kalıyor
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
-    description = "Configure CPU for responsive performance (30% minimum)";
+    description = "Configure CPU for responsive performance (40% minimum)";
     wantedBy = [ "multi-user.target" ];
     after = [ "multi-user.target" "platform-profile.service" ];
     wants = [ "platform-profile.service" ];
@@ -239,9 +239,9 @@ in
         # Pstate interface'in hazır olmasını bekle
         sleep 2
         
-        # Minimum performansı %30 yap
+        # Minimum performansı %40 yap
         if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
-          echo 30 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null
+          echo 40 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null
           
           WRITTEN=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
           echo "✓ Minimum performans: $WRITTEN%"
