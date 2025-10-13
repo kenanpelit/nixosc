@@ -17,7 +17,7 @@
 # ✅ Intel HWP aktif + EPP (AC=performance, Pil=balance_power)
 # ✅ Min Performance (intel_pstate/min_perf_pct) → %30
 # ✅ RAPL limitleri CPU türü + güç kaynağına göre adaptif:
-#      - AC: 45W (PL1, sürdürülebilir) / 90W (PL2, burst)
+#      - AC: 45W (PL1, sürdürülebilir) / 80W (PL2, burst)
 #      - Pil: 28W / 45W
 # ✅ Suspend/hibernate sonrası otomatik yeniden uygulama (systemd-sleep hook)
 # ✅ AC tak/çıkar olayında anında profil tazeleme (udev kuralı, /bin/sh -c ile güvenli)
@@ -345,7 +345,7 @@ in
 
   # ============================================================================
   # RAPL GÜÇ LİMİTLERİ - CPU türü + AC/Pil'e göre adaptif
-  #  - AC: 45/90 W; Pil: 28/45 W
+  #  - AC: 45/80 W; Pil: 28/45 W
   # ============================================================================
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
     description = "Set RAPL power limits (adaptive: CPU type + AC/Battery)";
@@ -377,7 +377,7 @@ in
         ON_AC=$(${detectPowerSource})
         case "''${CPU_TYPE}" in
           METEORLAKE)
-            PL1_AC=45; PL2_AC=90
+            PL1_AC=45; PL2_AC=80
             PL1_BAT=28; PL2_BAT=45
             echo "  → Meteor Lake profil seçildi"
             ;;
