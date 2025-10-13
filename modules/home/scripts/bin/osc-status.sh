@@ -19,13 +19,16 @@
 # ✅ CPU Tipi (Intel/AMD detection)
 # ✅ Güç Kaynağı (AC/Pil)
 # ✅ P-State Modu (active/passive)
+# ✅ EPP (Energy Performance Preference) - YENİ v12!
+# ✅ HWP Dynamic Boost Durumu - YENİ v12!
 # ✅ Min/Max Performans Yüzdeleri
+# ✅ Turbo Boost Durumu
 # ✅ Platform Profili (performance/balanced/low-power)
 # ✅ Tüm CPU Core'larının Frekansları
 # ✅ Sıcaklık Bilgisi (sensors)
-# ✅ RAPL Güç Limitleri (PL1/PL2)
+# ✅ RAPL Güç Limitleri (PL1/PL2) - AC/Pil adaptif
 # ✅ Pil Durumu ve Şarj Eşikleri
-# ✅ Systemd Servis Durumları
+# ✅ Systemd Servis Durumları (cpu-epp dahil)
 #
 # JSON ÇIKTISI:
 # -------------
@@ -34,13 +37,16 @@
 #     "cpu_type": "intel",
 #     "power_source": "AC",
 #     "pstate_mode": "active",
+#     "epp": "performance",
+#     "hwp_dynamic_boost": true,
+#     "turbo_enabled": true,
 #     "freq_avg_mhz": 2500,
 #     "temp_celsius": 65.0,
 #     "power_limits": {
-#       "pl1_watts": 65,
-#       "pl2_watts": 115
+#       "pl1_watts": 45,
+#       "pl2_watts": 90
 #     },
-#     "timestamp": "2025-10-12T23:15:00+0300"
+#     "timestamp": "2025-10-13T23:15:00+0300"
 #   }
 #
 # ÖRNEKLER:
@@ -49,10 +55,10 @@
 #   ./osc-status.sh
 #
 #   # JSON çıktısını jq ile işle
-#   ./osc-status.sh --json | jq '.power_limits'
+#   ./osc-status.sh --json | jq '.epp'
 #
-#   # Periyodik monitoring (her 5 saniyede)
-#   watch -n 5 ./osc-status.sh
+#   # EPP değişimini izle (AC/Pil)
+#   watch -n 2 ./osc-status.sh
 #
 #   # Log'a kaydet
 #   ./osc-status.sh >> /var/log/system-status.log
@@ -68,12 +74,12 @@
 # - Script root yetkisi gerektirmez (read-only sysfs kullanır)
 # - Intel CPU'lar için optimize edilmiştir
 # - AMD sistemlerde bazı metrikler mevcut olmayabilir
-# - JSON formatı monitoring araçları ile uyumludur
+# - v12'de EPP ve AC/Pil adaptif limitler eklendi
 #
 # YAZARLAR:
 # ---------
-# Versiyon: 11.0 - Final Stable Edition
-# Tarih: 2025-10-12
+# Versiyon: 12.0 - EPP + AC/Battery Adaptive Edition
+# Tarih: 2025-10-13
 #
 # LİSANS:
 # -------
@@ -100,6 +106,20 @@ if [[ "${1:-}" == "--json" ]]; then
 	GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
 	PSTATE=$(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")
 
+	# EPP (Energy Performance Preference)
+	EPP=$(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo "unknown")
+
+	# HWP Dynamic Boost
+	HWP_BOOST=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null || echo "0")
+
+	# Turbo durumu
+	NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || echo "1")
+	TURBO_ENABLED=$([[ "$NO_TURBO" == "0" ]] && echo "true" || echo "false")
+
+	# Min/Max performans
+	MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo "0")
+	MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "0")
+
 	# Ortalama frekans
 	FREQ_SUM=0
 	FREQ_COUNT=0
@@ -125,21 +145,38 @@ if [[ "${1:-}" == "--json" ]]; then
 		PL2=$(($(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 	fi
 
+	# Platform profili
+	PLATFORM_PROFILE=$(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")
+
 	# JSON çıktısı
 	jq -n \
 		--arg cpu_type "$CPU_TYPE" \
 		--argjson on_ac "$ON_AC" \
 		--arg governor "$GOVERNOR" \
 		--arg pstate "$PSTATE" \
+		--arg epp "$EPP" \
+		--argjson hwp_boost "$HWP_BOOST" \
+		--argjson turbo_enabled "$TURBO_ENABLED" \
+		--argjson min_perf "$MIN_PERF" \
+		--argjson max_perf "$MAX_PERF" \
 		--argjson freq_avg "$FREQ_AVG" \
 		--argjson temp "$TEMP" \
 		--argjson pl1 "$PL1" \
 		--argjson pl2 "$PL2" \
+		--arg platform_profile "$PLATFORM_PROFILE" \
 		'{
       cpu_type: $cpu_type,
       power_source: (if $on_ac == 1 then "AC" else "Battery" end),
       governor: $governor,
       pstate_mode: $pstate,
+      epp: $epp,
+      hwp_dynamic_boost: ($hwp_boost == 1),
+      turbo_enabled: $turbo_enabled,
+      performance: {
+        min_pct: $min_perf,
+        max_pct: $max_perf
+      },
+      platform_profile: $platform_profile,
       freq_avg_mhz: $freq_avg,
       temp_celsius: $temp,
       power_limits: {
@@ -152,7 +189,7 @@ if [[ "${1:-}" == "--json" ]]; then
 fi
 
 # Human-readable output
-echo "=== SİSTEM DURUMU ==="
+echo "=== SİSTEM DURUMU (v12) ==="
 echo ""
 
 # CPU tipi algıla
@@ -169,79 +206,132 @@ ON_AC=0
 for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
 	[[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
 done
-echo "Power Source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
+if [[ "$ON_AC" = "1" ]]; then
+	echo "Güç Kaynağı: ⚡ AC"
+else
+	echo "Güç Kaynağı: 🔋 Pil"
+fi
 
+# P-State modu
 echo ""
-echo "CPU FREQUENCIES:"
-i=0
-for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
-	[[ -f "$f" ]] || continue
-	mhz=$(($(cat "$f") / 1000))
-	printf "  Core %2d: %4d MHz\n" "$i" "$mhz"
-	i=$((i + 1))
+if [[ -f "/sys/devices/system/cpu/intel_pstate/status" ]]; then
+	PSTATE=$(cat /sys/devices/system/cpu/intel_pstate/status)
+	echo "P-State Modu: $PSTATE"
+
+	if [[ -r "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+		MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
+		MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "?")
+		echo "  Min/Max Performans: $MIN_PERF% / $MAX_PERF%"
+	fi
+
+	# Turbo durumu
+	if [[ -r "/sys/devices/system/cpu/intel_pstate/no_turbo" ]]; then
+		NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+		if [[ "$NO_TURBO" = "0" ]]; then
+			echo "  Turbo Boost: ✓ Aktif"
+		else
+			echo "  Turbo Boost: ✗ Kapalı"
+		fi
+	fi
+
+	# HWP Dynamic Boost
+	if [[ -r "/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost" ]]; then
+		BOOST=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost)
+		if [[ "$BOOST" = "1" ]]; then
+			echo "  HWP Dynamic Boost: ✓ Aktif"
+		else
+			echo "  HWP Dynamic Boost: ✗ Kapalı"
+		fi
+	fi
+fi
+
+# Platform profili
+if [[ -r "/sys/firmware/acpi/platform_profile" ]]; then
+	PROFILE=$(cat /sys/firmware/acpi/platform_profile)
+	echo "Platform Profili: $PROFILE"
+fi
+
+# EPP (Energy Performance Preference)
+echo ""
+echo "EPP (Energy Performance Preference):"
+for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+	if [[ -r "$pol/energy_performance_preference" ]]; then
+		EPP=$(cat "$pol/energy_performance_preference")
+		POL_NUM=$(basename "$pol" | sed 's/policy//')
+		echo "  Policy $POL_NUM: $EPP"
+		break
+	fi
 done
 
+# CPU Frekansları
 echo ""
-echo "P-STATE MODE: $(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
+echo "CPU FREKANSLARI (örnek çekirdekler):"
+for i in 0 4 8 12 16 20; do
+	if [[ -r "/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq" ]]; then
+		FREQ=$(cat "/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq" 2>/dev/null || echo 0)
+		printf "  CPU %2d: %4d MHz\n" "$i" "$((FREQ / 1000))"
+	fi
+done
 
-# Min/Max performans göster
-if [[ -r "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
-	MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
-	MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "?")
-	echo "PERFORMANCE: Min $MIN_PERF% / Max $MAX_PERF%"
-fi
-
+# Sıcaklık
 echo ""
-echo "PLATFORM PROFILE: $(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
-
-echo ""
-echo "TEMPERATURE:"
+echo "SICAKLIK:"
 sensors 2>/dev/null | grep -E 'Package|Core|Tctl' | head -3 ||
-	echo "  Temperature data unavailable"
+	echo "  Sıcaklık bilgisi mevcut değil"
 
+# RAPL Güç Limitleri
 echo ""
-echo "POWER LIMITS:"
+echo "RAPL GÜÇ LİMİTLERİ:"
 if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
-	RAPL_NAME=$(cat /sys/class/powercap/intel-rapl:0/name 2>/dev/null || echo "unknown")
 	PL1=$(($(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 	PL2=$(($(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
-	echo "  Package ($RAPL_NAME):"
-	echo "    PL1: ${PL1}W (sustained)"
-	echo "    PL2: ${PL2}W (turbo)"
+	echo "  PL1 (sürekli): ${PL1}W"
+	echo "  PL2 (burst):   ${PL2}W"
+
+	# AC/Pil durumuna göre beklenen değerler
+	if [[ "$ON_AC" = "1" ]]; then
+		echo "  💡 AC modunda - Performans limitleri aktif"
+	else
+		echo "  💡 Pil modunda - Verimlilik limitleri aktif"
+	fi
 else
-	echo "  RAPL interface unavailable"
+	echo "  RAPL interface bulunamadı"
 fi
 
+# Pil Durumu
 echo ""
-echo "BATTERY STATUS:"
+echo "PİL DURUMU:"
+FOUND_BAT=0
 for bat in /sys/class/power_supply/BAT*; do
 	[[ -d "$bat" ]] || continue
+	FOUND_BAT=1
 	NAME=$(basename "$bat")
 	CAPACITY=$(cat "$bat/capacity" 2>/dev/null || echo "N/A")
 	STATUS=$(cat "$bat/status" 2>/dev/null || echo "N/A")
 	START=$(cat "$bat/charge_control_start_threshold" 2>/dev/null || echo "N/A")
 	STOP=$(cat "$bat/charge_control_end_threshold" 2>/dev/null || echo "N/A")
-	echo "  $NAME: $CAPACITY% ($STATUS) [Thresholds: $START-$STOP%]"
+	echo "  $NAME: $CAPACITY% ($STATUS) [Eşikler: $START-$STOP%]"
 done
+[[ $FOUND_BAT -eq 0 ]] && echo "  Pil bulunamadı"
 
+# Servis Durumu
 echo ""
-echo "SERVICE STATUS:"
-
-SERVICES="platform-profile rapl-power-limits battery-thresholds cpu-min-freq-guard"
+echo "SERVİS DURUMU:"
+SERVICES="battery-thresholds platform-profile cpu-epp cpu-min-freq-guard rapl-power-limits"
 for service in $SERVICES; do
-	ACTIVE_STATE=$(systemctl show -p ActiveState --value "$service.service" 2>/dev/null || echo "unknown")
-	RESULT=$(systemctl show -p Result --value "$service.service" 2>/dev/null || echo "unknown")
+	STATE=$(systemctl show -p ActiveState --value "$service.service" 2>/dev/null)
+	RESULT=$(systemctl show -p Result --value "$service.service" 2>/dev/null)
 
-	if [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "success" ]]; then
-		echo "  ✅ $service: RAN (success)"
-	elif [[ "$ACTIVE_STATE" == "inactive" ]] && [[ "$RESULT" == "exit-code" ]]; then
-		echo "  ⚠️  $service: RAN (failed)"
-	elif [[ "$ACTIVE_STATE" == "active" ]] && [[ "$RESULT" == "success" ]]; then
-		echo "  ✅ $service: ACTIVE (success)"
+	if [[ "$STATE" == "inactive" ]] && [[ "$RESULT" == "success" ]]; then
+		echo "  ✅ $service"
+	elif [[ "$STATE" == "active" ]]; then
+		echo "  ✅ $service"
 	else
-		echo "  ❓ $service: $ACTIVE_STATE ($RESULT)"
+		echo "  ⚠️  $service ($STATE)"
 	fi
 done
 
 echo ""
-echo "TIP: Use '--json' flag for machine-readable output"
+echo "💡 İpucu: Gerçek frekanslar için 'turbostat-quick' kullanın"
+echo "💡 Güç tüketimi için 'power-check' veya 'power-monitor' kullanın"
+echo "💡 JSON çıktı için: ./osc-status.sh --json"

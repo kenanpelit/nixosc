@@ -4,14 +4,26 @@
 # ==============================================================================
 #
 # Modül:     modules/core/system
-# Versiyon:  11.1 - Final Stable Edition
-# Tarih:     2025-10-12
+# Versiyon:  12.0 - EPP + AC/Battery Adaptive Edition
+# Tarih:     2025-10-13
 # Platform:  ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, Meteor Lake)
 #
 # FELSEFİ YAKLAŞIM:
 # -----------------
-# "Minimal müdahale, maksimum responsive performans"
+# "Donanıma güven, sadece kritik yerleri düzelt"
 # 
+# YENİ ÖZELLİKLER (v12):
+# ----------------------
+# ✅ EPP (Energy Performance Preference) desteği
+#    - AC'de: performance (maksimum tepkisellik)
+#    - Pil'de: balance_power (verimlilik)
+# ✅ AC/Pil ayrımı ile adaptif RAPL limitleri
+#    - AC: 45W/90W (sürdürülebilir + burst)
+#    - Pil: 28W/45W (verimli + ömür koruması)
+# ✅ Suspend/resume sonrası otomatik yeniden uygulama
+# ✅ HWP Dynamic Boost desteği
+# ✅ turbostat monitoring aracı
+#
 # SORUN ÇÖZÜMÜ:
 # -------------
 # Bu konfigürasyon şu sorunu çözdü:
@@ -22,9 +34,10 @@
 # ÇÖZÜM:
 # ------
 # ✅ Platform Profile → "performance" (ACPI throttling engellendi)
+# ✅ EPP → AC'de "performance", Pil'de "balance_power"
 # ✅ Min Performance → %30 (yaklaşık 1500 MHz minimum)
-# ✅ Active HWP mode (donanım kendi frekansları yönetiyor)
-# ✅ RAPL Limits → 65W/115W (thermal throttling yok)
+# ✅ Active HWP mode + Dynamic Boost (donanım kendi frekansları yönetiyor)
+# ✅ RAPL Limits → AC/Pil'e göre adaptif (sürdürülebilir limitler)
 # ✅ Battery Thresholds → 75-80% (pil ömrü koruması)
 #
 # ==============================================================================
@@ -42,7 +55,6 @@ let
   # ============================================================================
   # CPU DETECTION - Multi-Platform Support
   # ============================================================================
-  # Farklı CPU'lar için optimal ayarları belirlemek üzere CPU algılama
   cpuDetectionScript = pkgs.writeShellScript "detect-cpu" ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
@@ -77,10 +89,19 @@ let
   '';
 
   # ============================================================================
+  # AC/BATTERY DETECTION HELPER
+  # ============================================================================
+  detectPowerSource = ''
+    ON_AC=0
+    for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+      [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+    done
+    echo "$ON_AC"
+  '';
+
+  # ============================================================================
   # ROBUST SCRIPT HELPER
   # ============================================================================
-  # Systemd servisleri için log'lu script oluşturur
-  # Tüm output systemd journal'a gider
   mkRobustScript = name: content: pkgs.writeShellScript name ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
@@ -133,22 +154,20 @@ in
     kernelPackages = pkgs.linuxPackages_latest;
 
     kernelModules = [
-      "coretemp"    # CPU sıcaklık sensörü
-      "i915"        # Intel GPU driver
+      "coretemp"
+      "i915"
     ] ++ lib.optionals isPhysicalMachine [
-      "thinkpad_acpi"   # ThinkPad ACPI kontrolleri
+      "thinkpad_acpi"
     ];
 
     extraModprobeConfig = lib.optionalString isPhysicalMachine ''
-      options thinkpad_acpi fan_control=1 experimental=1
+      options thinkpad_acpi experimental=1
     '';
 
-    # Minimal kernel parametreleri
-    # NOT: intel_pstate parametresi YOK - active HWP mode kullanılıyor
     kernelParams = [
-      "i915.enable_guc=3"       # GPU GuC firmware
-      "i915.enable_fbc=1"       # Frame buffer compression
-      "mem_sleep_default=s2idle" # Modern standby
+      "i915.enable_guc=3"
+      "i915.enable_fbc=1"
+      "mem_sleep_default=s2idle"
     ];
 
     kernel.sysctl = {
@@ -191,11 +210,11 @@ in
       enable32Bit = true;
 
       extraPackages = with pkgs; [
-        intel-media-driver      # VA-API driver
-        mesa                    # OpenGL
-        vaapiVdpau             # Video decode
-        libvdpau-va-gl         # VDPAU backend
-        intel-compute-runtime  # OpenCL
+        intel-media-driver
+        mesa
+        vaapiVdpau
+        libvdpau-va-gl
+        intel-compute-runtime
       ];
 
       extraPackages32 = with pkgs.pkgsi686Linux; [
@@ -212,7 +231,6 @@ in
   # ============================================================================
   # GÜÇ YÖNETİMİ SERVİSLERİ - HEPSİ DEVRE DIŞI
   # ============================================================================
-  # Kendi özel servislerimizi kullanıyoruz
   services.auto-cpufreq.enable          = false;
   services.power-profiles-daemon.enable = false;
   services.tlp.enable                   = false;
@@ -222,13 +240,10 @@ in
   # ============================================================================
   # PLATFORM PROFILE - PERFORMANCE MODU
   # ============================================================================
-  # ÇOK ÖNEMLİ: Bu servis olmadan ACPI CPU'yu agresif throttle ediyor!
-  # Platform profile "balanced" modda CPU yük altında bile 400-900 MHz'e düşüyordu
-  # "performance" modu ile bu sorun çözüldü
   systemd.services.platform-profile = lib.mkIf isPhysicalMachine {
     description = "Set ACPI platform profile to performance";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "multi-user.target" ];
+    wantedBy = [ "multi-user.target" "suspend.target" "hibernate.target" ];
+    after = [ "multi-user.target" "suspend.target" "hibernate.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -239,13 +254,11 @@ in
           CURRENT=$(cat /sys/firmware/acpi/platform_profile)
           echo "Current profile: $CURRENT"
           
-          # Performance moduna geç
           echo "performance" > /sys/firmware/acpi/platform_profile 2>/dev/null
           
           NEW=$(cat /sys/firmware/acpi/platform_profile)
           if [[ "$NEW" == "performance" ]]; then
             echo "✓ Platform profile: performance"
-            echo "  ACPI artık CPU'yu throttle etmeyecek"
           else
             echo "⚠ Performance profile ayarlanamadı (current: $NEW)" >&2
           fi
@@ -257,15 +270,61 @@ in
   };
 
   # ============================================================================
+  # EPP (Energy Performance Preference)
+  # ============================================================================
+  systemd.services.cpu-epp = lib.mkIf isPhysicalMachine {
+    description = "Set Intel EPP (AC=performance, Battery=balance_power)";
+    wantedBy = [ "multi-user.target" "suspend.target" "hibernate.target" ];
+    after = [ "multi-user.target" "suspend.target" "hibernate.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = mkRobustScript "cpu-epp" ''
+        echo "=== EPP (Energy Performance Preference) ==="
+        
+        ON_AC=$(${detectPowerSource})
+        
+        if [[ "$ON_AC" = "1" ]]; then
+          EPP="performance"
+          SOURCE="AC"
+        else
+          EPP="balance_power"
+          SOURCE="Battery"
+        fi
+        
+        echo "Güç kaynağı: $SOURCE → EPP: $EPP"
+        
+        SUCCESS=0
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          if [[ -w "$pol/energy_performance_preference" ]]; then
+            echo "$EPP" > "$pol/energy_performance_preference" 2>/dev/null && SUCCESS=1
+          fi
+        done
+        
+        if [[ "$SUCCESS" == "1" ]]; then
+          echo "✓ EPP ayarlandı: $EPP"
+        else
+          echo "⚠ EPP interface'i bulunamadı" >&2
+        fi
+        
+        if [[ -w /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost ]]; then
+          echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost 2>/dev/null
+          BOOST=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost)
+          if [[ "$BOOST" == "1" ]]; then
+            echo "✓ HWP Dynamic Boost: aktif"
+          fi
+        fi
+      '';
+    };
+  };
+
+  # ============================================================================
   # CPU PERFORMANS KONFIGÜRASYONU
   # ============================================================================
-  # ASIL ÇÖZÜM BURASI!
-  # Min Performance %30 yapıyor (yaklaşık 1500 MHz minimum)
-  # Bu sayede CPU idle'da bile responsive kalıyor
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
     description = "Configure CPU for responsive performance (30% minimum)";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "multi-user.target" "platform-profile.service" ];
+    wantedBy = [ "multi-user.target" "suspend.target" "hibernate.target" ];
+    after = [ "multi-user.target" "suspend.target" "hibernate.target" "platform-profile.service" ];
     wants = [ "platform-profile.service" ];
     serviceConfig = {
       Type = "oneshot";
@@ -273,17 +332,14 @@ in
       ExecStart = mkRobustScript "cpu-min-freq-guard" ''
         echo "=== CPU PERFORMANS KONFIGÜRASYONU ==="
         
-        # Pstate interface'in hazır olmasını bekle
         sleep 2
         
-        # Minimum performansı %30 yap
         if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
           echo 30 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null
           
           WRITTEN=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
           echo "✓ Minimum performans: $WRITTEN%"
           
-          # Yaklaşık minimum frekansı hesapla
           CPUINFO_MAX=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null || echo 5000000)
           MAX_FREQ_MHZ=$((CPUINFO_MAX / 1000))
           MIN_FREQ_APPROX=$((MAX_FREQ_MHZ * WRITTEN / 100))
@@ -293,16 +349,14 @@ in
           exit 1
         fi
         
-        # Maksimum performansın sınırlanmadığından emin ol
         if [[ -w "/sys/devices/system/cpu/intel_pstate/max_perf_pct" ]]; then
           CURRENT_MAX=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct)
           if [[ "$CURRENT_MAX" -lt 100 ]]; then
             echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null
-            echo "✓ Maksimum performans: 100% (tavan kaldırıldı)"
+            echo "✓ Maksimum performans: 100%"
           fi
         fi
         
-        # Turbo boost'un açık olduğundan emin ol
         if [[ -w "/sys/devices/system/cpu/intel_pstate/no_turbo" ]]; then
           echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null
           NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
@@ -318,65 +372,78 @@ in
   };
 
   # ============================================================================
-  # RAPL GÜÇ LİMİTLERİ - ADAPTIF
+  # RAPL GÜÇ LİMİTLERİ - AC/PİL ADAPTİF
   # ============================================================================
-  # CPU tipine göre optimal güç limitleri:
-  # - Meteor Lake (28W TDP): 65W/115W
-  # - Kaby Lake (15W TDP): 35W/55W
-  # - Generic: 45W/65W (güvenli)
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
-    description = "Set RAPL power limits (adaptive based on CPU)";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "multi-user.target" ];
+    description = "Set RAPL power limits (adaptive: CPU type + AC/Battery)";
+    wantedBy = [ "multi-user.target" "suspend.target" "hibernate.target" ];
+    after = [ "multi-user.target" "suspend.target" "hibernate.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = mkRobustScript "rapl-power-limits" ''
-        echo "=== RAPL GÜÇ LİMİTLERİ (ADAPTIF) ==="
+        echo "=== RAPL GÜÇ LİMİTLERİ (AC/PİL ADAPTİF) ==="
         
-        # CPU tipini algıla
         CPU_TYPE="$(${cpuDetectionScript})"
         echo "CPU Tipi: $CPU_TYPE"
         
-        # CPU tipine göre güç limitlerini belirle
+        ON_AC=$(${detectPowerSource})
+        
         case "$CPU_TYPE" in
           METEORLAKE)
-            PL1_WATTS=65
-            PL2_WATTS=115
-            echo "  → Meteor Lake: Yüksek güç limitleri (28W TDP)"
+            PL1_AC=45;  PL2_AC=90
+            PL1_BAT=28; PL2_BAT=45
+            echo "  → Meteor Lake: Yüksek performans profili (28W TDP)"
             ;;
           KABYLAKE)
-            PL1_WATTS=35
-            PL2_WATTS=55
-            echo "  → Kaby Lake: Orta güç limitleri (15W TDP)"
+            PL1_AC=35;  PL2_AC=55
+            PL1_BAT=20; PL2_BAT=35
+            echo "  → Kaby Lake: Orta performans profili (15W TDP)"
             ;;
           *)
-            PL1_WATTS=45
-            PL2_WATTS=65
-            echo "  → Generic Intel: Dengeli güç limitleri"
+            PL1_AC=40;  PL2_AC=65
+            PL1_BAT=22; PL2_BAT=40
+            echo "  → Generic Intel: Dengeli profil"
             ;;
         esac
         
-        echo "Hedef limitler: PL1=$PL1_WATTS W, PL2=$PL2_WATTS W"
+        if [[ "$ON_AC" = "1" ]]; then
+          PL1="$PL1_AC"
+          PL2="$PL2_AC"
+          SOURCE="AC (Performans)"
+        else
+          PL1="$PL1_BAT"
+          PL2="$PL2_BAT"
+          SOURCE="Pil (Verimlilik)"
+        fi
         
+        echo "Güç Kaynağı: $SOURCE"
+        echo "Hedef limitler: PL1=$PL1 W (sürekli), PL2=$PL2 W (burst)"
+        
+        SUCCESS=0
         for R in /sys/class/powercap/intel-rapl:*; do
           [[ ! -d "$R" ]] && continue
           RAPL_NAME=$(cat "$R/name" 2>/dev/null || echo "unknown")
           
-          # PL1 ayarla
           if [[ -w "$R/constraint_0_power_limit_uw" ]]; then
-            echo $((PL1_WATTS * 1000000)) > "$R/constraint_0_power_limit_uw" 2>/dev/null && \
-            echo "✓ $RAPL_NAME PL1: $PL1_WATTS W"
+            echo $((PL1 * 1000000)) > "$R/constraint_0_power_limit_uw" 2>/dev/null && \
+            echo "✓ $RAPL_NAME PL1: $PL1 W (sürekli)" && SUCCESS=1
           fi
           
-          # PL2 ayarla
           if [[ -w "$R/constraint_1_power_limit_uw" ]]; then
-            echo $((PL2_WATTS * 1000000)) > "$R/constraint_1_power_limit_uw" 2>/dev/null && \
-            echo "✓ $RAPL_NAME PL2: $PL2_WATTS W"
+            echo $((PL2 * 1000000)) > "$R/constraint_1_power_limit_uw" 2>/dev/null && \
+            echo "✓ $RAPL_NAME PL2: $PL2 W (burst)" && SUCCESS=1
           fi
         done
         
-        echo "✓ Güç limitleri $CPU_TYPE için konfigüre edildi"
+        if [[ "$SUCCESS" == "1" ]]; then
+          echo ""
+          echo "✓ RAPL limitleri başarıyla uygulandı"
+          echo "  Konfigürasyon: $CPU_TYPE + $SOURCE"
+        else
+          echo "⚠ RAPL interface'i bulunamadı" >&2
+          exit 0
+        fi
       '';
     };
   };
@@ -384,8 +451,6 @@ in
   # ============================================================================
   # PİL SAĞLIĞI YÖNETİMİ
   # ============================================================================
-  # Pili %75'te şarj etmeye başla, %80'de durdur
-  # Bu pil ömrünü uzatır
   systemd.services.battery-thresholds = lib.mkIf isPhysicalMachine {
     description = "Set battery charge thresholds (75-80%)";
     wantedBy = [ "multi-user.target" ];
@@ -405,13 +470,11 @@ in
           
           BAT_NAME=$(basename "$bat")
           
-          # Başlangıç eşiği (75%)
           if [[ -w "$bat/charge_control_start_threshold" ]]; then
             echo 75 > "$bat/charge_control_start_threshold" 2>/dev/null && \
             echo "✓ $BAT_NAME: başlangıç eşiği = 75%" && SUCCESS=1
           fi
           
-          # Bitiş eşiği (80%)
           if [[ -w "$bat/charge_control_end_threshold" ]]; then
             echo 80 > "$bat/charge_control_end_threshold" 2>/dev/null && \
             echo "✓ $BAT_NAME: bitiş eşiği = 80%" && SUCCESS=1
@@ -452,27 +515,26 @@ in
   # ============================================================================
   environment.systemPackages = with pkgs;
     lib.optionals isPhysicalMachine [
-      lm_sensors    # Sıcaklık sensörleri
-      stress-ng     # CPU stress test
-      powertop      # Güç tüketimi analizi
-      bc            # Hesap makinesi (power-check için)
+      lm_sensors
+      stress-ng
+      powertop
+      bc
+      linuxPackages_latest.turbostat
 
       # ========================================================================
-      # SYSTEM-STATUS: Sistem durumu gösterici
+      # SYSTEM-STATUS
       # ========================================================================
       (writeScriptBin "system-status" ''
         #!${bash}/bin/bash
-        echo "=== SİSTEM DURUMU ==="
+        echo "=== SİSTEM DURUMU (v12) ==="
         echo ""
         
-        # Güç kaynağı
         ON_AC=0
         for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
           [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
         done
-        echo "Güç Kaynağı: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Pil")"
+        echo "Güç Kaynağı: $([ "$ON_AC" = "1" ] && echo "⚡ AC" || echo "🔋 Pil")"
         
-        # P-State modu ve performans
         if [[ -f "/sys/devices/system/cpu/intel_pstate/status" ]]; then
           PSTATE=$(cat /sys/devices/system/cpu/intel_pstate/status)
           echo "P-State Modu: $PSTATE"
@@ -482,20 +544,51 @@ in
             MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "?")
             echo "  Min/Max Performans: $MIN_PERF% / $MAX_PERF%"
           fi
+          
+          if [[ -r "/sys/devices/system/cpu/intel_pstate/no_turbo" ]]; then
+            NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+            echo "  Turbo Boost: $([ "$NO_TURBO" = "0" ] && echo "✓ Aktif" || echo "✗ Kapalı")"
+          fi
+          
+          if [[ -r "/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost" ]]; then
+            BOOST=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost)
+            echo "  HWP Dynamic Boost: $([ "$BOOST" = "1" ] && echo "✓ Aktif" || echo "✗ Kapalı")"
+          fi
         fi
         
-        # Platform profili
         if [[ -r "/sys/firmware/acpi/platform_profile" ]]; then
           PROFILE=$(cat /sys/firmware/acpi/platform_profile)
           echo "Platform Profili: $PROFILE"
         fi
         
         echo ""
-        echo "CPU FREKANSLARI (örnek):"
+        echo "EPP (Energy Performance Preference):"
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+          if [[ -r "$pol/energy_performance_preference" ]]; then
+            EPP=$(cat "$pol/energy_performance_preference")
+            POL_NUM=$(basename "$pol" | sed 's/policy//')
+            echo "  Policy $POL_NUM: $EPP"
+            break
+          fi
+        done
+        
+        echo ""
+        echo "CPU FREKANSLARI (örnek çekirdekler):"
         for i in 0 4 8 12 16 20; do
           if [[ -r "/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq" ]]; then
             FREQ=$(cat "/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq" 2>/dev/null || echo 0)
             printf "  CPU %2d: %4d MHz\n" "$i" "$((FREQ/1000))"
+          fi
+        done
+        
+        echo ""
+        echo "RAPL GÜÇ LİMİTLERİ:"
+        for R in /sys/class/powercap/intel-rapl:0; do
+          if [[ -d "$R" ]]; then
+            PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+            PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
+            echo "  PL1 (sürekli): $((PL1/1000000)) W"
+            echo "  PL2 (burst):   $((PL2/1000000)) W"
           fi
         done
         
@@ -513,7 +606,7 @@ in
         
         echo ""
         echo "SERVİS DURUMU:"
-        for svc in battery-thresholds platform-profile cpu-min-freq-guard rapl-power-limits; do
+        for svc in battery-thresholds platform-profile cpu-epp cpu-min-freq-guard rapl-power-limits; do
           STATE=$(${systemd}/bin/systemctl show -p ActiveState --value "$svc.service" 2>/dev/null)
           RESULT=$(${systemd}/bin/systemctl show -p Result --value "$svc.service" 2>/dev/null)
           
@@ -525,14 +618,83 @@ in
             echo "  ⚠️  $svc ($STATE)"
           fi
         done
+        
+        echo ""
+        echo "💡 İpucu: Gerçek frekanslar için 'turbostat-quick' kullanın"
+        echo "💡 Güç tüketimi için 'power-check' veya 'power-monitor' kullanın"
       '')
 
       # ========================================================================
-      # POWER-CHECK: Güç tüketimi ölçücü
+      # TURBOSTAT-QUICK
+      # ========================================================================
+      (writeScriptBin "turbostat-quick" ''
+        #!${bash}/bin/bash
+        echo "=== TURBOSTAT HIZLI ANALİZ ==="
+        echo "5 saniye boyunca CPU davranışı izleniyor..."
+        echo ""
+        echo "NOT: 'Avg_MHz' sütunu GERÇEK ortalama frekansı gösterir"
+        echo "     'Bzy_MHz' meşgul çekirdeklerin frekansını gösterir"
+        echo "     scaling_cur_freq'deki 400 MHz değerleri yanıltıcıdır!"
+        echo ""
+        
+        if ! command -v turbostat &> /dev/null; then
+          echo "⚠ turbostat bulunamadı"
+          exit 1
+        fi
+        
+        sudo ${linuxPackages_latest.turbostat}/bin/turbostat --interval 5 --num_iterations 1
+      '')
+
+      # ========================================================================
+      # TURBOSTAT-STRESS
+      # ========================================================================
+      (writeScriptBin "turbostat-stress" ''
+        #!${bash}/bin/bash
+        echo "=== CPU PERFORMANS TESTİ ==="
+        echo "10 saniye stress + turbostat analizi"
+        echo ""
+        
+        if ! command -v turbostat &> /dev/null || ! command -v stress-ng &> /dev/null; then
+          echo "⚠ Gerekli araçlar bulunamadı"
+          exit 1
+        fi
+        
+        echo "Başlangıç durumu (idle):"
+        sudo ${linuxPackages_latest.turbostat}/bin/turbostat --interval 2 --num_iterations 1
+        
+        echo ""
+        echo "Stress test başlatılıyor..."
+        ${stress-ng}/bin/stress-ng --cpu 0 --timeout 10s &
+        STRESS_PID=$!
+        
+        sleep 1
+        echo "Yük altında analiz:"
+        sudo ${linuxPackages_latest.turbostat}/bin/turbostat --interval 8 --num_iterations 1
+        
+        wait $STRESS_PID 2>/dev/null
+        
+        echo ""
+        echo "Stress test tamamlandı"
+        echo ""
+        echo "📊 Değerlendirme:"
+        echo "   - Avg_MHz değerine bakın (2000+ MHz iyi)"
+        echo "   - Package sıcaklığını kontrol edin (85°C altı ideal)"
+        echo "   - Watt değerlerini RAPL limitleri ile karşılaştırın"
+      '')
+
+      # ========================================================================
+      # POWER-CHECK
       # ========================================================================
       (writeScriptBin "power-check" ''
         #!${bash}/bin/bash
-        echo "=== GÜÇ TÜKETİMİ KONTROLÜ ==="
+        echo "=== GÜÇ TÜKETİMİ ANALİZİ (v12) ==="
+        echo ""
+        
+        ON_AC=0
+        for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+          [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+        done
+        echo "Güç Kaynağı: $([ "$ON_AC" = "1" ] && echo "⚡ AC" || echo "🔋 Pil")"
         echo ""
         
         if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
@@ -550,39 +712,51 @@ in
           WATTS=$(echo "scale=2; $ENERGY_DIFF / 2000000" | ${bc}/bin/bc)
           
           echo ""
-          echo "ANLIK GÜÇ TÜKETİMİ: ''${WATTS}W"
+          echo "ANLIK PACKAGE GÜÇ: ''${WATTS}W"
           echo ""
           
           PL1=$(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw)
           PL2=$(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw)
           
-          echo "Güç Limitleri:"
-          echo "  PL1 (sürekli): $((PL1/1000000))W"
-          echo "  PL2 (burst):   $((PL2/1000000))W"
+          echo "Aktif RAPL Limitleri:"
+          printf "  PL1 (sürekli): %3d W\n" $((PL1/1000000))
+          printf "  PL2 (burst):   %3d W\n" $((PL2/1000000))
           echo ""
           
-          # Ortalama frekans
+          WATTS_INT=$(echo "$WATTS" | ${coreutils}/bin/cut -d. -f1)
+          if [[ "$WATTS_INT" -lt 10 ]]; then
+            echo "📊 Durum: İdeal (düşük güç tüketimi)"
+          elif [[ "$WATTS_INT" -lt 30 ]]; then
+            echo "📊 Durum: Normal (günlük kullanım)"
+          elif [[ "$WATTS_INT" -lt 50 ]]; then
+            echo "📊 Durum: Yüksek (yoğun işlem)"
+          else
+            echo "📊 Durum: Çok Yüksek (stres testi?)"
+          fi
+          
           FREQ_SUM=0
           COUNT=0
           for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
             [[ -f "$f" ]] && FREQ_SUM=$((FREQ_SUM + $(cat "$f"))) && COUNT=$((COUNT + 1))
           done
-          [[ $COUNT -gt 0 ]] && echo "Ortalama CPU frekansı: $((FREQ_SUM / COUNT / 1000)) MHz"
+          [[ $COUNT -gt 0 ]] && echo "Ortalama scaling freq: $((FREQ_SUM / COUNT / 1000)) MHz"
           
-          # Sıcaklık
           TEMP=$(${lm_sensors}/bin/sensors 2>/dev/null | ${gnugrep}/bin/grep "Package id 0" | ${gawk}/bin/awk '{match($0, /[+]?([0-9]+\.[0-9]+)/, arr); print arr[1]}')
-          [[ -n "$TEMP" ]] && echo "Package sıcaklığı: ''${TEMP}°C"
+          [[ -n "$TEMP" ]] && printf "Package sıcaklığı: %.1f°C\n" "$TEMP"
+          
+          echo ""
+          echo "💡 İpucu: 'turbostat-quick' gerçek frekansları gösterir"
         else
-          echo "RAPL interface bulunamadı"
+          echo "⚠ RAPL interface bulunamadı"
         fi
       '')
 
       # ========================================================================
-      # POWER-MONITOR: Gerçek zamanlı izleme
+      # POWER-MONITOR
       # ========================================================================
       (writeScriptBin "power-monitor" ''
         #!${bash}/bin/bash
-        echo "=== GERÇEK ZAMANLI GÜÇ MONİTÖRÜ ==="
+        echo "=== GERÇEK ZAMANLI GÜÇ MONİTÖRÜ (v12) ==="
         echo "Durdurmak için Ctrl+C"
         echo ""
         
@@ -591,7 +765,13 @@ in
           echo "=== GÜÇ MONİTÖRÜ ($(date '+%H:%M:%S')) ==="
           echo ""
           
-          # RAPL güç tüketimi
+          ON_AC=0
+          for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+            [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+          done
+          echo "Güç Kaynağı: $([ "$ON_AC" = "1" ] && echo "⚡ AC" || echo "🔋 Pil")"
+          echo ""
+          
           if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
             ENERGY_BEFORE=$(cat /sys/class/powercap/intel-rapl:0/energy_uj 2>/dev/null || echo 0)
             sleep 0.5
@@ -607,14 +787,22 @@ in
             PL2=$(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0)
             
             echo "PACKAGE GÜÇ:"
-            printf "  Anlık:  %6.2f W\n" "$WATTS"
+            printf "  Anlık:   %6.2f W\n" "$WATTS"
             printf "  Limit 1: %6d W (sürekli)\n" $((PL1/1000000))
             printf "  Limit 2: %6d W (burst)\n" $((PL2/1000000))
             echo ""
           fi
           
-          # CPU Frekansları
-          echo "CPU FREKANSLARI:"
+          for pol in /sys/devices/system/cpu/cpufreq/policy0; do
+            if [[ -r "$pol/energy_performance_preference" ]]; then
+              EPP=$(cat "$pol/energy_performance_preference")
+              echo "EPP: $EPP"
+              echo ""
+              break
+            fi
+          done
+          
+          echo "CPU FREKANSLARI (scaling):"
           FREQ_SUM=0
           FREQ_COUNT=0
           FREQ_MIN=9999999
@@ -638,15 +826,37 @@ in
           fi
           echo ""
           
-          # Sıcaklık
           echo "SICAKLIK:"
           TEMP=$(${lm_sensors}/bin/sensors 2>/dev/null | \
             ${gnugrep}/bin/grep "Package id 0" | \
             ${gawk}/bin/awk '{match($0, /[+]?([0-9]+\.[0-9]+)/, arr); print arr[1]}')
           [[ -n "$TEMP" ]] && printf "  Package: %5.1f°C\n" "$TEMP" || echo "  N/A"
           
+          echo ""
+          echo "⚠ NOT: scaling_cur_freq değerleri yanıltıcı olabilir!"
+          echo "   Gerçek frekanslar için 'turbostat-quick' kullanın"
+          
           sleep 1
         done
+      '')
+
+      # ========================================================================
+      # POWER-PROFILE-REFRESH
+      # ========================================================================
+      (writeScriptBin "power-profile-refresh" ''
+        #!${bash}/bin/bash
+        echo "=== GÜÇ PROFİLİ YENİLEME ==="
+        echo ""
+        echo "EPP ve RAPL servislerini yeniden tetikliyor..."
+        echo ""
+        
+        sudo ${systemd}/bin/systemctl restart cpu-epp.service
+        sudo ${systemd}/bin/systemctl restart rapl-power-limits.service
+        
+        echo "✓ Servisler yenilendi"
+        echo ""
+        echo "Yeni durum:"
+        system-status
       '')
     ];
 }
