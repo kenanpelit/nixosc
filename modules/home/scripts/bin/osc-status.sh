@@ -1,9 +1,88 @@
 #!/usr/bin/env bash
-
-# System Status Script with JSON support
+# ==============================================================================
+# System Status Monitor - NixOS Power Management Suite
+# ==============================================================================
+#
+# AÇIKLAMA:
+# ---------
+# Bu script NixOS sisteminin güç yönetimi ve performans durumunu gösterir.
+# Özellikle Intel CPU'lar için optimize edilmiştir ve gerçek zamanlı sistem
+# metriklerini hem insan-okunabilir hem de JSON formatında sunar.
+#
+# KULLANIM:
+# ---------
+#   ./osc-status.sh           # Normal çıktı (renkli, detaylı)
+#   ./osc-status.sh --json    # JSON çıktı (monitoring için)
+#
+# GÖSTERİLEN BİLGİLER:
+# --------------------
+# ✅ CPU Tipi (Intel/AMD detection)
+# ✅ Güç Kaynağı (AC/Pil)
+# ✅ P-State Modu (active/passive)
+# ✅ Min/Max Performans Yüzdeleri
+# ✅ Platform Profili (performance/balanced/low-power)
+# ✅ Tüm CPU Core'larının Frekansları
+# ✅ Sıcaklık Bilgisi (sensors)
+# ✅ RAPL Güç Limitleri (PL1/PL2)
+# ✅ Pil Durumu ve Şarj Eşikleri
+# ✅ Systemd Servis Durumları
+#
+# JSON ÇIKTISI:
+# -------------
+# Monitoring araçları için makine-okunabilir JSON formatı:
+#   {
+#     "cpu_type": "intel",
+#     "power_source": "AC",
+#     "pstate_mode": "active",
+#     "freq_avg_mhz": 2500,
+#     "temp_celsius": 65.0,
+#     "power_limits": {
+#       "pl1_watts": 65,
+#       "pl2_watts": 115
+#     },
+#     "timestamp": "2025-10-12T23:15:00+0300"
+#   }
+#
+# ÖRNEKLER:
+# ---------
+#   # Anlık durum kontrolü
+#   ./osc-status.sh
+#
+#   # JSON çıktısını jq ile işle
+#   ./osc-status.sh --json | jq '.power_limits'
+#
+#   # Periyodik monitoring (her 5 saniyede)
+#   watch -n 5 ./osc-status.sh
+#
+#   # Log'a kaydet
+#   ./osc-status.sh >> /var/log/system-status.log
+#
+# BAĞIMLILIKLAR:
+# --------------
+# - lm_sensors (sensors komutu)
+# - jq (JSON çıktısı için)
+# - systemctl (servis durumu için)
+#
+# NOTLAR:
+# -------
+# - Script root yetkisi gerektirmez (read-only sysfs kullanır)
+# - Intel CPU'lar için optimize edilmiştir
+# - AMD sistemlerde bazı metrikler mevcut olmayabilir
+# - JSON formatı monitoring araçları ile uyumludur
+#
+# YAZARLAR:
+# ---------
+# Versiyon: 11.0 - Final Stable Edition
+# Tarih: 2025-10-12
+#
+# LİSANS:
+# -------
+# MIT License - Özgürce kullanabilir, değiştirebilir ve dağıtabilirsiniz
+#
+# ==============================================================================
 
 if [[ "${1:-}" == "--json" ]]; then
-	# Detect CPU type
+	# CPU tipi algıla
 	CPU_TYPE="unknown"
 	if grep -q "Intel" /proc/cpuinfo 2>/dev/null; then
 		CPU_TYPE="intel"
@@ -11,17 +90,17 @@ if [[ "${1:-}" == "--json" ]]; then
 		CPU_TYPE="amd"
 	fi
 
-	# Check power source
+	# Güç kaynağı
 	ON_AC=0
 	for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
 		[[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
 	done
 
-	# Get governor and pstate
+	# Governor ve pstate
 	GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
 	PSTATE=$(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")
 
-	# Calculate average frequency
+	# Ortalama frekans
 	FREQ_SUM=0
 	FREQ_COUNT=0
 	for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
@@ -32,13 +111,13 @@ if [[ "${1:-}" == "--json" ]]; then
 	FREQ_AVG=0
 	[[ $FREQ_COUNT -gt 0 ]] && FREQ_AVG=$((FREQ_SUM / FREQ_COUNT / 1000))
 
-	# Get temperature
+	# Sıcaklık
 	TEMP=$(sensors 2>/dev/null |
 		grep -E 'Package id 0|Tctl' |
 		awk '{match($0, /[+]?([0-9]+\.[0-9]+)/, arr); if(arr[1]!="") print arr[1]; exit}')
 	[[ -z "$TEMP" ]] && TEMP="0"
 
-	# Get power limits
+	# Güç limitleri
 	PL1=0
 	PL2=0
 	if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
@@ -46,7 +125,7 @@ if [[ "${1:-}" == "--json" ]]; then
 		PL2=$(($(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 	fi
 
-	# Output JSON
+	# JSON çıktısı
 	jq -n \
 		--arg cpu_type "$CPU_TYPE" \
 		--argjson on_ac "$ON_AC" \
@@ -73,10 +152,10 @@ if [[ "${1:-}" == "--json" ]]; then
 fi
 
 # Human-readable output
-echo "=== SYSTEM STATUS - STABLE PASSIVE MODE ==="
+echo "=== SİSTEM DURUMU ==="
 echo ""
 
-# Detect CPU type
+# CPU tipi algıla
 CPU_TYPE="unknown"
 if grep -q "Intel" /proc/cpuinfo 2>/dev/null; then
 	CPU_TYPE="intel"
@@ -85,7 +164,7 @@ elif grep -q "AMD" /proc/cpuinfo 2>/dev/null; then
 fi
 echo "CPU Type: $CPU_TYPE"
 
-# Check power source
+# Güç kaynağı
 ON_AC=0
 for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
 	[[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
@@ -93,7 +172,7 @@ done
 echo "Power Source: $([ "$ON_AC" = "1" ] && echo "AC" || echo "Battery")"
 
 echo ""
-echo "CPU FREQUENCIES (Governor Managed):"
+echo "CPU FREQUENCIES:"
 i=0
 for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
 	[[ -f "$f" ]] || continue
@@ -103,8 +182,17 @@ for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
 done
 
 echo ""
-echo "CPU GOVERNOR: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
 echo "P-STATE MODE: $(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
+
+# Min/Max performans göster
+if [[ -r "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+	MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
+	MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "?")
+	echo "PERFORMANCE: Min $MIN_PERF% / Max $MAX_PERF%"
+fi
+
+echo ""
+echo "PLATFORM PROFILE: $(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
 
 echo ""
 echo "TEMPERATURE:"
@@ -125,18 +213,22 @@ else
 fi
 
 echo ""
-echo "SERVICE STATUS:"
-
-for service in cpu-profile-optimizer thermald; do
-	if systemctl is-active "$service.service" >/dev/null 2>&1; then
-		echo "  ✅ $service: ACTIVE"
-	else
-		echo "  ❌ $service: INACTIVE"
-	fi
+echo "BATTERY STATUS:"
+for bat in /sys/class/power_supply/BAT*; do
+	[[ -d "$bat" ]] || continue
+	NAME=$(basename "$bat")
+	CAPACITY=$(cat "$bat/capacity" 2>/dev/null || echo "N/A")
+	STATUS=$(cat "$bat/status" 2>/dev/null || echo "N/A")
+	START=$(cat "$bat/charge_control_start_threshold" 2>/dev/null || echo "N/A")
+	STOP=$(cat "$bat/charge_control_end_threshold" 2>/dev/null || echo "N/A")
+	echo "  $NAME: $CAPACITY% ($STATUS) [Thresholds: $START-$STOP%]"
 done
 
-ONESHOTS="platform-profile hardware-monitor early-rapl-limits rapl-power-limits battery-thresholds cpu-min-freq-guard"
-for service in $ONESHOTS; do
+echo ""
+echo "SERVICE STATUS:"
+
+SERVICES="platform-profile rapl-power-limits battery-thresholds cpu-min-freq-guard"
+for service in $SERVICES; do
 	ACTIVE_STATE=$(systemctl show -p ActiveState --value "$service.service" 2>/dev/null || echo "unknown")
 	RESULT=$(systemctl show -p Result --value "$service.service" 2>/dev/null || echo "unknown")
 
@@ -152,5 +244,4 @@ for service in $ONESHOTS; do
 done
 
 echo ""
-echo "NOTE: System running in stable passive mode. Governor controls frequencies."
-echo "TIP: Use 'system-status --json' for machine-readable output"
+echo "TIP: Use '--json' flag for machine-readable output"
