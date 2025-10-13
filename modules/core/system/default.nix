@@ -4,7 +4,7 @@
 # ==============================================================================
 #
 # Modül:     modules/core/system
-# Versiyon:  11.0 - Final Stable Edition
+# Versiyon:  11.1 - Final Stable Edition
 # Tarih:     2025-10-12
 # Platform:  ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, Meteor Lake)
 #
@@ -22,7 +22,7 @@
 # ÇÖZÜM:
 # ------
 # ✅ Platform Profile → "performance" (ACPI throttling engellendi)
-# ✅ Min Performance → %40 (yaklaşık 1700 MHz minimum)
+# ✅ Min Performance → %30 (yaklaşık 1500 MHz minimum)
 # ✅ Active HWP mode (donanım kendi frekansları yönetiyor)
 # ✅ RAPL Limits → 65W/115W (thermal throttling yok)
 # ✅ Battery Thresholds → 75-80% (pil ömrü koruması)
@@ -38,6 +38,43 @@ let
   hostname          = config.networking.hostName or "";
   isPhysicalMachine = hostname == "hay";      # ThinkPad E14 Gen 6
   isVirtualMachine  = hostname == "vhay";     # QEMU/KVM VM
+
+  # ============================================================================
+  # CPU DETECTION - Multi-Platform Support
+  # ============================================================================
+  # Farklı CPU'lar için optimal ayarları belirlemek üzere CPU algılama
+  cpuDetectionScript = pkgs.writeShellScript "detect-cpu" ''
+    #!${pkgs.bash}/bin/bash
+    set -euo pipefail
+    
+    CACHE_FILE="/run/cpu-detection.cache"
+    
+    # Cache varsa kullan
+    if [[ -f "$CACHE_FILE" ]]; then
+      cat "$CACHE_FILE"
+      exit 0
+    fi
+    
+    # CPU bilgilerini al
+    CPU_MODEL="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'Model name' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.gnused}/bin/sed 's/^ *//')"
+    CPU_FAMILY="$(${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F 'CPU family' | ${pkgs.coreutils}/bin/cut -d: -f2- | ${pkgs.gnused}/bin/sed 's/^ *//')"
+    
+    echo "Detected CPU: $CPU_MODEL" >&2
+    echo "CPU Family: $CPU_FAMILY" >&2
+    
+    # CPU tipini belirle
+    RESULT=""
+    if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE "Core.*Ultra.*155H|Meteor Lake"; then
+      RESULT="METEORLAKE"
+    elif echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -qiE "i7-8650U|Kaby Lake"; then
+      RESULT="KABYLAKE"
+    else
+      RESULT="GENERIC"
+    fi
+    
+    # Cache'e yaz ve döndür
+    echo "$RESULT" | ${pkgs.coreutils}/bin/tee "$CACHE_FILE"
+  '';
 
   # ============================================================================
   # ROBUST SCRIPT HELPER
@@ -223,10 +260,10 @@ in
   # CPU PERFORMANS KONFIGÜRASYONU
   # ============================================================================
   # ASIL ÇÖZÜM BURASI!
-  # Min Performance %40 yapıyor (yaklaşık 1500 MHz minimum)
+  # Min Performance %30 yapıyor (yaklaşık 1500 MHz minimum)
   # Bu sayede CPU idle'da bile responsive kalıyor
   systemd.services.cpu-min-freq-guard = lib.mkIf isPhysicalMachine {
-    description = "Configure CPU for responsive performance (40% minimum)";
+    description = "Configure CPU for responsive performance (30% minimum)";
     wantedBy = [ "multi-user.target" ];
     after = [ "multi-user.target" "platform-profile.service" ];
     wants = [ "platform-profile.service" ];
@@ -239,9 +276,9 @@ in
         # Pstate interface'in hazır olmasını bekle
         sleep 2
         
-        # Minimum performansı %40 yap
+        # Minimum performansı %30 yap
         if [[ -w "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
-          echo 40 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null
+          echo 30 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null
           
           WRITTEN=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
           echo "✓ Minimum performans: $WRITTEN%"
@@ -281,24 +318,44 @@ in
   };
 
   # ============================================================================
-  # RAPL GÜÇ LİMİTLERİ
+  # RAPL GÜÇ LİMİTLERİ - ADAPTIF
   # ============================================================================
-  # Core Ultra 7 155H için optimal güç limitleri
-  # PL1: 65W (sürekli yük) - Base TDP 28W'ın üstünde
-  # PL2: 115W (kısa burst'ler için)
-  # Bu limitler thermal throttling'i engelliyor
+  # CPU tipine göre optimal güç limitleri:
+  # - Meteor Lake (28W TDP): 65W/115W
+  # - Kaby Lake (15W TDP): 35W/55W
+  # - Generic: 45W/65W (güvenli)
   systemd.services.rapl-power-limits = lib.mkIf isPhysicalMachine {
-    description = "Set RAPL power limits (65W/115W)";
+    description = "Set RAPL power limits (adaptive based on CPU)";
     wantedBy = [ "multi-user.target" ];
     after = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = mkRobustScript "rapl-power-limits" ''
-        echo "=== RAPL GÜÇ LİMİTLERİ ==="
+        echo "=== RAPL GÜÇ LİMİTLERİ (ADAPTIF) ==="
         
-        PL1_WATTS=65   # Sürekli güç limiti
-        PL2_WATTS=115  # Burst güç limiti
+        # CPU tipini algıla
+        CPU_TYPE="$(${cpuDetectionScript})"
+        echo "CPU Tipi: $CPU_TYPE"
+        
+        # CPU tipine göre güç limitlerini belirle
+        case "$CPU_TYPE" in
+          METEORLAKE)
+            PL1_WATTS=65
+            PL2_WATTS=115
+            echo "  → Meteor Lake: Yüksek güç limitleri (28W TDP)"
+            ;;
+          KABYLAKE)
+            PL1_WATTS=35
+            PL2_WATTS=55
+            echo "  → Kaby Lake: Orta güç limitleri (15W TDP)"
+            ;;
+          *)
+            PL1_WATTS=45
+            PL2_WATTS=65
+            echo "  → Generic Intel: Dengeli güç limitleri"
+            ;;
+        esac
         
         echo "Hedef limitler: PL1=$PL1_WATTS W, PL2=$PL2_WATTS W"
         
@@ -319,7 +376,7 @@ in
           fi
         done
         
-        echo "✓ Güç limitleri konfigüre edildi"
+        echo "✓ Güç limitleri $CPU_TYPE için konfigüre edildi"
       '';
     };
   };
@@ -593,4 +650,3 @@ in
       '')
     ];
 }
-
