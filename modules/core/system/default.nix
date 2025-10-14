@@ -25,7 +25,7 @@
 # ✅ Intel HWP active + EPP (AC=performance, Battery=balance_power)
 # ✅ Min Performance (intel_pstate/min_perf_pct) → 30%
 # ✅ RAPL limits adaptive to CPU type + power source:
-#      - AC: 45W (PL1, sustainable) / 80W (PL2, burst)
+#      - AC: 45W (PL1, sustainable) / 70W (PL2, burst)
 #      - Battery: 28W / 45W
 # ✅ Auto-reapplication after suspend/hibernate (systemd-sleep hook)
 # ✅ Instant profile refresh on AC plug/unplug (udev rule with /bin/sh -c)
@@ -495,7 +495,7 @@ in
         # Select appropriate power profile based on CPU type
         case "''${CPU_TYPE}" in
           METEORLAKE)
-            PL1_AC=45; PL2_AC=80
+            PL1_AC=45; PL2_AC=70
             PL1_BAT=28; PL2_BAT=45
             echo "  → Meteor Lake profile selected"
             ;;
@@ -520,8 +520,8 @@ in
               | ${pkgs.gnugrep}/bin/grep -m1 "Package id 0" \
               | ${pkgs.gawk}/bin/awk '{match($0, /[+]?([0-9]+(\.[0-9]+)?)/, a); print a[1]}')"
             if [[ -n "''${TEMP}" && $(printf '%.0f' "''${TEMP}") -lt 80 ]]; then
-              echo "Temp ''${TEMP}°C < 80°C → enabling short PL2=90W burst"
-              PL2=90
+              echo "Temp ''${TEMP}°C < 80°C → enabling short PL2=85W burst"
+              PL2=85
             else
               echo "Temp ''${TEMP:-N/A}°C ≥ 80°C or unknown → keeping PL2=''${PL2}W"
             fi
