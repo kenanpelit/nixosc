@@ -523,16 +523,13 @@ in
   services.udev.extraRules = lib.concatStringsSep "\n" [
     ''
       # When the MMIO powercap zone is added or changed, trigger the disable service.
-      # This is a defense against MMIO RAPL overriding our MSR-based settings.
       ACTION=="add",    SUBSYSTEM=="powercap", KERNEL=="intel-rapl-mmio:*", ATTR{enabled}="0", TAG+="systemd", ENV{SYSTEMD_WANTS}="disable-rapl-mmio.service"
       ACTION=="change", SUBSYSTEM=="powercap", KERNEL=="intel-rapl-mmio:*", ATTR{enabled}="0", TAG+="systemd", ENV{SYSTEMD_WANTS}="disable-rapl-mmio.service"
     ''
-    (lib.optionalString isPhysicalMachine ''
-      # When the AC adapter is plugged in or unplugged, instantly refresh all
-      # relevant power management services to apply the correct AC/Battery profile.
-      # This ensures immediate adaptation without waiting for a timer.
-      ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="1", RUN+="${pkgs.runtimeShell} -c '/run/current-system/sw/bin/systemctl restart cpu-epp.service; /run/current-system/sw/bin/systemctl restart cpu-epb.service; /run/current-system/sw/bin/systemctl restart rapl-power-limits.service'"
-      ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="${pkgs.runtimeShell} -c '/run/current-system/sw/bin/systemctl restart cpu-epp.service; /run/current-system/sw/bin/systemctl restart cpu-epb.service; /run/current-system/sw/bin/systemctl restart rapl-power-limits.service'"
+   (lib.optionalString isPhysicalMachine ''
+      # AC adapter tak/çıkar → profilleri anında yenile
+      ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="1", RUN+="${pkgs.runtimeShell} -c '/run/current-system/sw/bin/systemctl restart platform-profile.service; /run/current-system/sw/bin/systemctl restart cpu-epp.service; /run/current-system/sw/bin/systemctl restart cpu-epb.service; /run/current-system/sw/bin/systemctl restart rapl-power-limits.service; /run/current-system/sw/bin/systemctl restart cpu-min-freq-guard.service; /run/current-system/sw/bin/systemctl start rapl-mmio-sync.service'"
+      ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="${pkgs.runtimeShell} -c '/run/current-system/sw/bin/systemctl restart platform-profile.service; /run/current-system/sw/bin/systemctl restart cpu-epp.service; /run/current-system/sw/bin/systemctl restart cpu-epb.service; /run/current-system/sw/bin/systemctl restart rapl-power-limits.service; /run/current-system/sw/bin/systemctl restart cpu-min-freq-guard.service; /run/current-system/sw/bin/systemctl start rapl-mmio-sync.service'"
     '')
   ];
 
@@ -603,28 +600,39 @@ in
     script = ''
       #!/usr/bin/env bash
       set -euo pipefail
-      # This service targets ONLY the primary MSR-based RAPL interface.
+
       SRC="/sys/class/powercap/intel-rapl:0"
       [[ -d "$SRC" ]] || { echo "MSR RAPL interface not found, exiting."; exit 0; }
 
-      # TODO: This script currently has hardcoded values. It should be updated
-      # to use the cpuDetectionScript and detectPowerSource logic to apply
-      # the adaptive limits described in the comments above.
-      PL1_UW=$((35 * 1000000)) # Placeholder: 35W
-      PL2_UW=$((55 * 1000000)) # Placeholder: 55W
-      T1_US=28000000 # 28 seconds for PL1 time window
-      T2_US=2000000  # 2 milliseconds for PL2 time window
+      # Power source
+      ON_AC=0
+      for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+        [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+      done
+
+      # CPU family (basit tespit, istersen ${cpuDetectionScript} çağırabilirsin)
+      CPU_MODEL="$(LC_ALL=C ${pkgs.util-linux}/bin/lscpu | ${pkgs.gnugrep}/bin/grep -F "Model name" | ${pkgs.coreutils}/bin/cut -d: -f2-)"
+      CPU_MODEL="$(echo "$CPU_MODEL" | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+
+      if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq 'Ultra 7 155H|Meteor Lake|MTL'; then
+        if [[ "$ON_AC" = "1" ]]; then PL1=45; PL2=70; else PL1=28; PL2=45; fi
+      elif echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq '8650U|Kaby Lake'; then
+        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=55; else PL1=20; PL2=35; fi
+      else
+        if [[ "$ON_AC" = "1" ]]; then PL1=40; PL2=65; else PL1=22; PL2=40; fi
+      fi
+
+      PL1_UW=$((PL1 * 1000000))
+      PL2_UW=$((PL2 * 1000000))
+      T1_US=28000000
+      T2_US=2000000
 
       [[ -w "$SRC/constraint_0_power_limit_uw" ]] && echo "$PL1_UW" > "$SRC/constraint_0_power_limit_uw" || true
       [[ -w "$SRC/constraint_1_power_limit_uw" ]] && echo "$PL2_UW" > "$SRC/constraint_1_power_limit_uw" || true
       [[ -w "$SRC/constraint_0_time_window_us"  ]] && echo "$T1_US"  > "$SRC/constraint_0_time_window_us"  || true
       [[ -w "$SRC/constraint_1_time_window_us"  ]] && echo "$T2_US"  > "$SRC/constraint_1_time_window_us"  || true
 
-      echo "rapl-power-limits: MSR limits set → PL1=''${PL1_UW}uW, PL2=''${PL2_UW}uW"
-    '';
-    # After setting MSR limits, trigger a service to sync them to the MMIO interface.
-    postStart = ''
-      /run/current-system/sw/bin/systemctl --no-block start rapl-mmio-sync.service || true
+      echo "rapl-power-limits: set PL1=''${PL1}W, PL2=''${PL2}W (AC=$ON_AC, CPU='$CPU_MODEL')"
     '';
   };
 
@@ -1106,7 +1114,7 @@ in
         # Service Health Status
         echo ""
         echo "SERVICE STATUS:"
-        for svc in battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard; do
+        for svc in battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio rapl-mmio-sync rapl-mmio-keeper; do
             STATE=$(${pkgs.systemd}/bin/systemctl show -p ActiveState --value "$svc.service" 2>/dev/null)
             RESULT=$(${pkgs.systemd}/bin/systemctl show -p Result --value "$svc.service" 2>/dev/null)
             if [[ ( "''${STATE}" == "inactive" && "''${RESULT}" == "success" ) || "''${STATE}" == "active" ]]; then
@@ -1601,36 +1609,41 @@ in
     # from a failed state without needing a full reboot. Requires sudo.
     # ========================================================================
     (writeScriptBin "power-profile-refresh" ''
-      #!${pkgs.bash}/bin/bash
-      echo "=== RESTARTING ALL POWER MANAGEMENT SERVICES ==="
-      echo ""
-      if [[ $EUID -ne 0 ]]; then
-        echo "⚠ This script requires root privileges. Please run with sudo."
-        exit 1
-      fi
-
-      SERVICES=(
-        "cpu-epp.service"
-        "cpu-epb.service"
-        "rapl-power-limits.service"
-        "cpu-min-freq-guard.service"
-        "platform-profile.service"
-        "rapl-thermo-guard.service"
-      )
-
-      for SVC in "''${SERVICES[@]}"; do
-        printf "Restarting %-30s ... " "$SVC"
-        if systemctl restart "$SVC"; then
-          echo "[ OK ]"
-        else
-          echo "[ FAILED ]"
+        #!${pkgs.bash}/bin/bash
+        echo "=== RESTARTING POWER PROFILE SERVICES ==="
+        echo ""
+        if [[ $EUID -ne 0 ]]; then
+            echo "⚠ This script requires root privileges. Please run with sudo."
+            exit 1
         fi
-      done
 
-      echo ""
-      echo "✓ Services restarted. Displaying new status:"
-      echo "-------------------------------------------------"
-      system-status
+        # Ordered restart sequence (dependency-safe)
+        SERVICES=(
+            "platform-profile.service"
+            "cpu-epp.service"
+            "cpu-epb.service"
+            "cpu-min-freq-guard.service"
+            "rapl-power-limits.service"
+            "disable-rapl-mmio.service"
+            "rapl-mmio-sync.service"
+            "rapl-mmio-keeper.service"
+            "rapl-thermo-guard.service"
+            "battery-thresholds.service"
+        )
+
+        for SVC in "''${SERVICES[@]}"; do
+            printf "Restarting %-30s ... " "$SVC"
+            if systemctl restart "$SVC" 2>/dev/null; then
+                echo "[ OK ]"
+            else
+                echo "[ FAILED ]"
+            fi
+        done
+
+        echo ""
+        echo "✓ All power-related services have been refreshed."
+        echo "-------------------------------------------------"
+        system-status
     '')
   ];
 }

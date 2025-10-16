@@ -424,7 +424,7 @@ fi
 
 echo ""
 echo "SERVİS DURUMU:"
-SERVICES=(battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard)
+SERVICES=(battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio rapl-mmio-sync rapl-mmio-keeper)
 for svc in "${SERVICES[@]}"; do
 	STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
 	RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
