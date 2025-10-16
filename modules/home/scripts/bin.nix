@@ -195,6 +195,9 @@ let
   osc-sync = pkgs.writeShellScriptBin "osc-sync" (
     builtins.readFile ./bin/osc-sync.sh
   );
+  osc-system = pkgs.writeShellScriptBin "osc-system" (
+    builtins.readFile ./bin/osc-system.sh
+  );
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./bin/osc-test.sh
   );
@@ -427,6 +430,7 @@ in {
     osc-subliminal
     osc-symlink_manager
     osc-sync
+    osc-system
     osc-test
     osc-tmux-plugins-install
     osc-tv-splitter

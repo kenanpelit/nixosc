@@ -500,7 +500,8 @@ in
   
   systemd.services."mullvad-autoconnect" = mkIf hasMullvad {
     description = "Configure and auto-connect Mullvad VPN on boot";
-    wantedBy = [ "multi-user.target" ];
+    #wantedBy = [ "multi-user.target" ];
+    wantedBy = [ ];
     after = [ 
       "network-online.target"
       "NetworkManager.service" 
