@@ -12,48 +12,43 @@
 # -----------------------
 # "Trust the hardware; intervene only where critical."
 #
-# This configuration philosophy acknowledges that modern Intel processors,
-# especially platforms like Meteor Lake, have sophisticated, built-in
-# self-management capabilities (Hardware P-States). Rather than attempting to
-# micromanage every power and performance parameter from the OS, we make
-# strategic, high-impact adjustments at key control points:
+# Modern Intel platforms (esp. Meteor Lake) already optimize P-states and boosting
+# in hardware (HWP). Instead of fighting the firmware, this module applies a few
+# well-chosen, high-leverage controls and leaves the rest to silicon:
 #
-# - ACPI Platform Profile: A high-level hint to the firmware to prevent
-#   overly aggressive, premature throttling.
-# - Energy Performance Preference (EPP): A hint to the CPU's hardware governor
-#   about the user's workload intent (performance vs. power saving).
-# - RAPL Power Limits: The ultimate hard boundaries for the thermal and
-#   power envelope, defining sustained (PL1) and burst (PL2) behavior.
-# - Minimum Performance Floor: A guarantee for UI responsiveness by preventing
-#   the CPU from dropping to excessively deep idle states during normal use.
+# - ACPI Platform Profile: High-level hint to relax conservative firmware limits.
+# - EPP/EPB: Clear intent signals to HWP (performance vs. efficiency).
+# - RAPL (PL1/PL2): Hard ceilings for the thermal/power envelope.
+# - Min Performance Floor: Prevents UI jank by avoiding over-deep idle.
 #
 # KEY FEATURES IN THIS VERSION:
-# ------------------------------
-# ✅ ACPI Platform Profile → "performance" (Bypasses conservative firmware throttling).
-# ✅ Intel HWP active + EPP (AC="performance", Battery="balance_power") for dynamic workload adaptation.
-# ✅ Minimum Performance (intel_pstate/min_perf_pct) → 30% on AC for a consistently responsive desktop.
-# ✅ CPU-aware RAPL limits adaptive to the power source:
-#      - AC:      35W (PL1, sustainable) / 55W (PL2, burst)
-#      - Battery: 28W (PL1) / 45W (PL2)
-# ✅ Post-Suspend Restoration: A systemd-sleep hook ensures all settings are
-#   re-applied after waking from suspend or hibernate.
-# ✅ Instant Profile Refresh: A udev rule triggers service restarts immediately
-#   upon plugging or unplugging the AC adapter.
-# ✅ Battery Longevity: Charge thresholds are set to 75% (start) and 80% (stop)
-#   to significantly extend the battery's lifespan.
-# ✅ Diagnostic Tools: A suite of custom command-line tools (turbostat-quick,
-#   power-monitor, etc.) for easy monitoring and troubleshooting.
+# -----------------------------
+# ✅ ACPI Platform Profile → "performance" (reduces premature firmware throttling).
+# ✅ Intel HWP active + EPP auto: AC="performance", Battery="balance_power".
+# ✅ EPB tuned: AC=0 (max perf), Battery=6 (balanced) for better turbo behavior.
+# ✅ Min performance guard (intel_pstate/min_perf_pct): AC=30%, Battery=20%.
+# ✅ CPU-aware, source-aware RAPL:
+#      • Meteor Lake (this machine) → AC: 35W/55W, Battery: 28W/45W.
+# ✅ Temperature-aware PL2 (rapl-thermo-guard):
+#      • ≤75 °C → restore BASE_PL2; 76–79 °C → hold; 80–84 °C → clamp 45 W; ≥85 °C → clamp 35 W.
+#      • Never touches PL1; avoids oscillation vs. stock firmware throttling.
+# ✅ MSR/MMIO parity & enforcement:
+#      • Disable intel-rapl-mmio on udev add/change to prevent conflicts.
+#      • Mirror/timer/keeper services keep MMIO synced to MSR limits.
+# ✅ Instant AC plug/unplug handling via udev (restart all relevant services).
+# ✅ Post-suspend hook re-applies all power settings after resume.
+# ✅ Battery longevity: charge thresholds 75% (start) / 80% (stop).
+# ✅ Tooling: system-status, turbostat-quick/stress/analyze, power-check, power-monitor,
+#    power-profile-refresh for fast diagnostics.
 #
 # IMPORTANT NOTES:
 # ----------------
-# • The value in `scaling_cur_freq` (often 400 MHz) can be MISLEADING when
-#   Intel HWP is active. The hardware manages frequency directly. For a true
-#   representation of CPU behavior, use `turbostat` and check the `Avg_MHz`
-#   and `Bzy_MHz` metrics.
-# • Bash environment variables (e.g., ${WATTS}) are escaped as ''${WATTS}
-#   within Nix strings. This is crucial to prevent Nix from interpreting them
-#   as its own interpolation syntax, which would cause build-time errors.
-# • The timezone is set to Europe/Istanbul as per the original configuration.
+# • With HWP, `scaling_cur_freq` often reads ~400 MHz and is misleading. Use `turbostat`
+#   (Avg_MHz/Bzy_MHz, PkgWatt) for truth.
+# • Nix string escaping: write Bash vars as ''${VAR} (not ${VAR}) inside Nix strings.
+# • Conflicting daemons are intentionally disabled (tlp, thermald, power-profiles-daemon,
+#   auto-cpufreq) to ensure deterministic control via sysfs/MSR.
+# • Timezone defaults to Europe/Istanbul; UI/console/input are tuned for TR-F layout.
 #
 # ==============================================================================
 
@@ -806,12 +801,12 @@ in
   # Temperature Policy (default):
   #   ≤ 75°C : Cool  → restore full PL2 (BASE_PL2)
   #   76–79°C: Hold  → keep current PL2 (hysteresis, no change)
-  #   80–84°C: Warm  → clamp PL2 to 55 W
-  #   ≥ 85°C : Hot   → clamp PL2 to 45 W
+  #   80–84°C: Warm  → clamp PL2 to 45 W
+  #   ≥ 85°C : Hot   → clamp PL2 to 35 W
   #
   # Tunables (edit here if you want different bands):
   #   HOT_C=85, WARM_C=80, COOL_C=75
-  #   CLAMP_HOT_W=45, CLAMP_WARM_W=55
+  #   CLAMP_HOT_W=35, CLAMP_WARM_W=45
   #
   systemd.services.rapl-thermo-guard = lib.mkIf isPhysicalMachine {
     description = "Temperature-aware PL2 clamp on all RAPL interfaces";
