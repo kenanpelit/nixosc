@@ -972,121 +972,153 @@ in
     # management configuration. This is the first tool to run when diagnosing
     # any power or performance issues. It reports on: Power source, P-State/HWP
     # status, platform profile, EPP, RAPL limits, battery thresholds, and more.
+    # Also checks MSR vs MMIO RAPL parity to catch mismatches.
     # ========================================================================
     (writeScriptBin "system-status" ''
-      #!${pkgs.bash}/bin/bash
-      echo "=== SYSTEM STATUS (v15.0.0) ==="
-      echo ""
+        #!${pkgs.bash}/bin/bash
+        set -euo pipefail
 
-      # Power Source Detection
-      ON_AC=0
-      for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
-        [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
-      done
-      echo "Power Source: $([ "''${ON_AC}" = "1" ] && echo "⚡ AC Power" || echo "🔋 Battery")"
-
-      # Intel P-State Status
-      if [[ -f "/sys/devices/system/cpu/intel_pstate/status" ]]; then
-        PSTATE=$(cat /sys/devices/system/cpu/intel_pstate/status)
-        echo "P-State Mode: ''${PSTATE}"
-
-        if [[ -r "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
-          MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
-          MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "?")
-          echo "  Min/Max Performance: ''${MIN_PERF}% / ''${MAX_PERF}%"
-        fi
-
-        if [[ -r "/sys/devices/system/cpu/intel_pstate/no_turbo" ]]; then
-          NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
-          echo "  Turbo Boost: $([ "''${NO_TURBO}" = "0" ] && echo "✓ Active" || echo "✗ Disabled")"
-        fi
-
-        if [[ -r "/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost" ]]; then
-          BOOST=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost)
-          echo "  HWP Dynamic Boost: $([ "''${BOOST}" = "1" ] && echo "✓ Active" || echo "✗ Disabled")"
-        fi
-      fi
-
-      # ACPI Platform Profile
-      if [[ -r "/sys/firmware/acpi/platform_profile" ]]; then
-        PROFILE=$(cat /sys/firmware/acpi/platform_profile)
-        echo "Platform Profile: ''${PROFILE}"
-      fi
-
-      # Energy Performance Preference (EPP) Summary
-      echo ""
-      CPU_COUNT=$(${pkgs.coreutils}/bin/ls -d /sys/devices/system/cpu/cpu[0-9]* 2>/dev/null | ${pkgs.coreutils}/bin/wc -l | ${pkgs.coreutils}/bin/tr -d ' ')
-      declare -A EPP_MAP
-      for pol in /sys/devices/system/cpu/cpufreq/policy*; do
-        [[ -r "$pol/energy_performance_preference" ]] || continue
-        epp=$(${pkgs.coreutils}/bin/cat "$pol/energy_performance_preference")
-        ((EPP_MAP["$epp"]++)) || true
-      done
-
-      echo "EPP (Energy Performance Preference):"
-      if [[ "''${#EPP_MAP[@]}" -eq 0 ]]; then
-        echo "  (EPP interface not found)"
-      else
-        for k in "''${!EPP_MAP[@]}"; do
-          count="''${EPP_MAP[$k]}"
-          echo "  - ''${k} (on ''${count} policies)"
-        done
-      fi
-
-      # RAPL Power Limits
-      echo ""
-      echo "RAPL POWER LIMITS:"
-      if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
-        for R in /sys/class/powercap/intel-rapl:*; do
-          [[ -d "$R" ]] || continue
-          NAME=$(basename "$R")
-          LABEL=$(cat "$R/name" 2>/dev/null || echo "$NAME")
-
-          PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
-          PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
-
-          echo "  Domain: ''${LABEL} (''${NAME})"
-          printf "    PL1 (Sustained): %3d W\n" $((PL1/1000000))
-          if [[ "$PL2" -gt 0 ]]; then
-            printf "    PL2 (Burst):     %3d W\n" $((PL2/1000000))
-          fi
-        done
-      else
-        echo "  (RAPL interface not available)"
-      fi
-
-      # Battery Status and Health Settings
-      echo ""
-      echo "BATTERY STATUS:"
-      found_bat=0
-      for bat in /sys/class/power_supply/BAT*; do
-        [[ -d "$bat" ]] || continue
-        found_bat=1
-        NAME=$(basename "$bat")
-        CAPACITY=$(cat "$bat/capacity" 2>/dev/null || echo "N/A")
-        STATUS=$(cat "$bat/status" 2>/dev/null || echo "N/A")
-        START=$(cat "$bat/charge_control_start_threshold" 2>/dev/null || echo "N/A")
-        STOP=$(cat "$bat/charge_control_end_threshold" 2>/dev/null || echo "N/A")
-        echo "  ''${NAME}: ''${CAPACITY}% (''${STATUS}) | Charge Thresholds: Start=''${START}%, Stop=''${STOP}%"
-      done
-      [[ "$found_bat" -eq 0 ]] && echo "  (No battery detected)"
-
-
-      # Service Health Status
-      echo ""
-      echo "SERVICE STATUS:"
-      for svc in battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard; do
-        STATE=$(${pkgs.systemd}/bin/systemctl show -p ActiveState --value "$svc.service" 2>/dev/null)
-        RESULT=$(${pkgs.systemd}/bin/systemctl show -p Result --value "$svc.service" 2>/dev/null)
-        if [[ ( "''${STATE}" == "inactive" && "''${RESULT}" == "success" ) || "''${STATE}" == "active" ]]; then
-          printf "  %-25s [ ✅ OK ]\n" "$svc"
-        else
-          printf "  %-25s [ ⚠️  ''${STATE} (''${RESULT}) ]\n" "$svc"
-        fi
-      done
+        echo "=== SYSTEM STATUS (v15.1.1) ==="
         echo ""
-      echo "💡 Tip: Use 'turbostat-quick' for real-time frequency analysis (requires root)."
-      echo "💡 Tip: Use 'power-monitor' for a live power consumption dashboard."
+
+        # Power Source Detection
+        ON_AC=0
+        for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+            [[ -f "$PS" ]] && ON_AC="$(cat "$PS")" && break
+        done
+        echo "Power Source: $([ "''${ON_AC}" = "1" ] && echo "⚡ AC Power" || echo "🔋 Battery")"
+
+        # Intel P-State Status
+        if [[ -f "/sys/devices/system/cpu/intel_pstate/status" ]]; then
+            PSTATE=$(cat /sys/devices/system/cpu/intel_pstate/status)
+            echo "P-State Mode: ''${PSTATE}"
+
+            if [[ -r "/sys/devices/system/cpu/intel_pstate/min_perf_pct" ]]; then
+                MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
+                MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "?")
+                echo "  Min/Max Performance: ''${MIN_PERF}% / ''${MAX_PERF}%"
+            fi
+
+            if [[ -r "/sys/devices/system/cpu/intel_pstate/no_turbo" ]]; then
+                NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+                echo "  Turbo Boost: $([ "''${NO_TURBO}" = "0" ] && echo "✓ Active" || echo "✗ Disabled")"
+            fi
+
+            if [[ -r "/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost" ]]; then
+                BOOST=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost)
+                echo "  HWP Dynamic Boost: $([ "''${BOOST}" = "1" ] && echo "✓ Active" || echo "✗ Disabled")"
+            fi
+        fi
+
+        # ACPI Platform Profile
+        if [[ -r "/sys/firmware/acpi/platform_profile" ]]; then
+            PROFILE=$(cat /sys/firmware/acpi/platform_profile)
+            echo "Platform Profile: ''${PROFILE}"
+        fi
+
+        # Energy Performance Preference (EPP) Summary
+        echo ""
+        CPU_COUNT=$(${pkgs.coreutils}/bin/ls -d /sys/devices/system/cpu/cpu[0-9]* 2>/dev/null | ${pkgs.coreutils}/bin/wc -l | ${pkgs.coreutils}/bin/tr -d ' ')
+        declare -A EPP_MAP=()
+        for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+            [[ -r "$pol/energy_performance_preference" ]] || continue
+            epp=$(${pkgs.coreutils}/bin/cat "$pol/energy_performance_preference")
+            # Safe increment under 'set -u'
+            EPP_MAP["$epp"]=$(( ''${EPP_MAP["$epp"]-0} + 1 ))
+        done
+
+        echo "EPP (Energy Performance Preference):"
+        if [[ "''${#EPP_MAP[@]}" -eq 0 ]]; then
+            echo "  (EPP interface not found)"
+        else
+            for k in "''${!EPP_MAP[@]}"; do
+                count="''${EPP_MAP[$k]-0}"
+                echo "  - ''${k} (on ''${count} policies)"
+            done
+        fi
+
+        # RAPL Power Limits (per domain)
+        echo ""
+        echo "RAPL POWER LIMITS (per domain):"
+        if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
+            for R in /sys/class/powercap/intel-rapl:*; do
+                [[ -d "$R" ]] || continue
+                NAME=$(basename "$R")
+                LABEL=$(cat "$R/name" 2>/dev/null || echo "$NAME")
+
+                PL1=$(cat "$R/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+                PL2=$(cat "$R/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
+
+                echo "  Domain: ''${LABEL} (''${NAME})"
+                ${pkgs.coreutils}/bin/printf "    PL1 (Sustained): %3d W\n" $((PL1/1000000))
+                if [[ "$PL2" -gt 0 ]]; then
+                    ${pkgs.coreutils}/bin/printf "    PL2 (Burst):     %3d W\n" $((PL2/1000000))
+                fi
+            done
+        else
+            echo "  (RAPL interface not available)"
+        fi
+
+        # RAPL Consistency Check: MSR vs MMIO (Package 0)
+        echo ""
+        echo "RAPL CONSISTENCY (MSR vs MMIO, package-0):"
+        MSR_BASE="/sys/class/powercap/intel-rapl:0"
+        MMIO_BASE="/sys/class/powercap/intel-rapl-mmio:0"
+        if [[ -d "$MSR_BASE" && -d "$MMIO_BASE" ]]; then
+            msr_pl1=$(cat "$MSR_BASE/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+            msr_pl2=$(cat "$MSR_BASE/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
+            mmio_pl1=$(cat "$MMIO_BASE/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
+            mmio_pl2=$(cat "$MMIO_BASE/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
+
+            msr_pl1_w=$((msr_pl1/1000000)); msr_pl2_w=$((msr_pl2/1000000))
+            mmio_pl1_w=$((mmio_pl1/1000000)); mmio_pl2_w=$((mmio_pl2/1000000))
+
+            match_pl1=$([ "''${msr_pl1}" = "''${mmio_pl1}" ] && echo "✓" || echo "⚠")
+            match_pl2=$([ "''${msr_pl2}" = "''${mmio_pl2}" ] && echo "✓" || echo "⚠")
+
+            echo "  PL1: MSR=''${msr_pl1_w} W  |  MMIO=''${mmio_pl1_w} W   [$match_pl1 match]"
+            if [[ "$msr_pl2_w" -gt 0 || "$mmio_pl2_w" -gt 0 ]]; then
+                echo "  PL2: MSR=''${msr_pl2_w} W  |  MMIO=''${mmio_pl2_w} W   [$match_pl2 match]"
+            fi
+            if [[ "$match_pl1" = "⚠" || "$match_pl2" = "⚠" ]]; then
+                echo "  Note: Mismatch detected. A service or firmware may be rewriting one interface."
+            fi
+        else
+            echo "  (One or both interfaces missing; skipping parity check)"
+        fi
+
+        # Battery Status and Health Settings
+        echo ""
+        echo "BATTERY STATUS:"
+        found_bat=0
+        for bat in /sys/class/power_supply/BAT*; do
+            [[ -d "$bat" ]] || continue
+            found_bat=1
+            NAME=$(basename "$bat")
+            CAPACITY=$(cat "$bat/capacity" 2>/dev/null || echo "N/A")
+            STATUS=$(cat "$bat/status" 2>/dev/null || echo "N/A")
+            START=$(cat "$bat/charge_control_start_threshold" 2>/dev/null || echo "N/A")
+            STOP=$(cat "$bat/charge_control_end_threshold" 2>/dev/null || echo "N/A")
+            echo "  ''${NAME}: ''${CAPACITY}% (''${STATUS}) | Charge Thresholds: Start=''${START}%, Stop=''${STOP}%"
+        done
+        [[ "$found_bat" -eq 0 ]] && echo "  (No battery detected)"
+
+        # Service Health Status
+        echo ""
+        echo "SERVICE STATUS:"
+        for svc in battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard; do
+            STATE=$(${pkgs.systemd}/bin/systemctl show -p ActiveState --value "$svc.service" 2>/dev/null)
+            RESULT=$(${pkgs.systemd}/bin/systemctl show -p Result --value "$svc.service" 2>/dev/null)
+            if [[ ( "''${STATE}" == "inactive" && "''${RESULT}" == "success" ) || "''${STATE}" == "active" ]]; then
+                ${pkgs.coreutils}/bin/printf "  %-25s [ ✅ OK ]\n" "$svc"
+            else
+                ${pkgs.coreutils}/bin/printf "  %-25s [ ⚠️  ''${STATE} (''${RESULT}) ]\n" "$svc"
+            fi
+        done
+
+        echo ""
+        echo "💡 Tip: Use 'turbostat-quick' for real-time frequency analysis (requires root)."
+        echo "💡 Tip: Use 'power-monitor' for a live power consumption dashboard."
     '')
 
     # ========================================================================
