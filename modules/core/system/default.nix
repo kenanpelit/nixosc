@@ -33,7 +33,7 @@
 # ✅ Intel HWP active + EPP (AC="performance", Battery="balance_power") for dynamic workload adaptation.
 # ✅ Minimum Performance (intel_pstate/min_perf_pct) → 30% on AC for a consistently responsive desktop.
 # ✅ CPU-aware RAPL limits adaptive to the power source:
-#      - AC:      45W (PL1, sustainable) / 70W (PL2, burst)
+#      - AC:      35W (PL1, sustainable) / 55W (PL2, burst)
 #      - Battery: 28W (PL1) / 45W (PL2)
 # ✅ Post-Suspend Restoration: A systemd-sleep hook ensures all settings are
 #   re-applied after waking from suspend or hibernate.
@@ -575,7 +575,7 @@ in
   # Power profiles are tailored to the specific CPU and power source:
   #
   # Meteor Lake (Core Ultra 7 155H):
-  #   AC:      PL1=45W / PL2=80W (High-performance desktop replacement)
+  #   AC:      PL1=35W / PL2=55W (High-performance desktop replacement)
   #   Battery: PL1=28W / PL2=45W (Balanced for mobile usage)
   #
   # Kaby Lake R (8th gen U-series):
@@ -615,7 +615,7 @@ in
       CPU_MODEL="$(echo "$CPU_MODEL" | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
 
       if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq 'Ultra 7 155H|Meteor Lake|MTL'; then
-        if [[ "$ON_AC" = "1" ]]; then PL1=45; PL2=70; else PL1=28; PL2=45; fi
+        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=55; else PL1=28; PL2=45; fi
       elif echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq '8650U|Kaby Lake'; then
         if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=55; else PL1=20; PL2=35; fi
       else
@@ -792,49 +792,49 @@ in
   # ============================================================================
   # INTELLIGENT THERMAL PROTECTION - Temperature-Aware PL2 Management
   # ============================================================================
-  # This service implements a sophisticated thermal throttling strategy that
-  # protects the CPU from overheating while maintaining smooth, consistent
-  # performance. It is superior to aggressive, default firmware throttling, which
-  # often causes jarring frequency oscillations and performance stuttering.
+  # This service implements a temperature-aware PL2 control daemon that
+  # dynamically adjusts the short-term power limit (PL2) based on CPU package
+  # temperature. It prevents harsh firmware throttling and keeps performance
+  # smooth without oscillations.
   #
-  # How it works:
-  # - Continuously monitors the CPU package temperature every 2 seconds.
-  # - When the temperature exceeds predefined thresholds, it smoothly reduces
-  #   the burst power limit (PL2), effectively capping the thermal ceiling.
-  # - When the temperature drops, it restores the original PL2 value.
-  # - The sustained power limit (PL1) is NEVER touched, ensuring that baseline
-  #   performance for long-running tasks remains consistent.
+  # Operation:
+  #   • Monitors CPU package temperature every 2 seconds.
+  #   • Adjusts PL2 (burst limit) according to temperature bands.
+  #   • Restores full PL2 when cool, clamps it when hot.
+  #   • Never modifies PL1 (sustained limit).
   #
-  # Temperature Thresholds and Actions:
-  # - <= 75°C: Cool. Full performance (original PL2 is restored).
-  # - 76-79°C: Hysteresis zone. Maintain current PL2 to prevent flapping.
-  # - 80-84°C: Warm. Moderate protection (PL2 is clamped to 55W).
-  # - >= 85°C: Hot. Aggressive protection (PL2 is clamped to 45W).
+  # Temperature Policy (default):
+  #   ≤ 75°C : Cool  → restore full PL2 (BASE_PL2)
+  #   76–79°C: Hold  → keep current PL2 (hysteresis, no change)
+  #   80–84°C: Warm  → clamp PL2 to 55 W
+  #   ≥ 85°C : Hot   → clamp PL2 to 45 W
   #
-  # This approach prevents the hot→throttle→cool→boost cycle, leading to a
-  # better user experience with no stuttering in games or unstable compile times.
+  # Tunables (edit here if you want different bands):
+  #   HOT_C=85, WARM_C=80, COOL_C=75
+  #   CLAMP_HOT_W=45, CLAMP_WARM_W=55
+  #
   systemd.services.rapl-thermo-guard = lib.mkIf isPhysicalMachine {
     description = "Temperature-aware PL2 clamp on all RAPL interfaces";
     wantedBy    = [ "multi-user.target" ];
     after       = [ "multi-user.target" "rapl-power-limits.service" ];
     serviceConfig = {
       Type       = "simple";
-      Restart    = "always"; # This is a continuously running daemon.
+      Restart    = "always";      # Continuously running daemon
       RestartSec = "2s";
-      ExecStart = mkRobustScript "rapl-thermo-guard" ''
+      ExecStart  = mkRobustScript "rapl-thermo-guard" ''
         echo "=== RAPL Thermo Guard Daemon Starting ==="
 
-        # Verify that at least one RAPL interface exists.
+        # Ensure at least one RAPL interface is available.
         have_iface=0
         for R in /sys/class/powercap/intel-rapl:0 /sys/class/powercap/intel-rapl-mmio:0; do
           [[ -d "$R" ]] && have_iface=1
         done
         if [[ "''${have_iface}" -eq 0 ]]; then
-          echo "⚠ No RAPL interface found. Thermo guard cannot run." >&2
+          echo "⚠ No RAPL interface found. Exiting."
           exit 0
         fi
 
-        # Read the initial PL2 value to use as the "base" or maximum.
+        # Read initial PL2 (base / maximum limit)
         read_base_pl2() {
           local P
           for P in /sys/class/powercap/intel-rapl:0 /sys/class/powercap/intel-rapl-mmio:0; do
@@ -842,47 +842,62 @@ in
             echo $(( $(cat "$P/constraint_1_power_limit_uw") / 1000000 ))
             return
           done
-          echo 55 # Fallback value if PL2 cannot be read.
+          echo 55  # fallback if unreadable
         }
 
         BASE_PL2="$(read_base_pl2)"
         CURRENT_PL2="''${BASE_PL2}"
-        echo "Base PL2 detected as ''${BASE_PL2}W. Starting monitoring loop."
+        echo "Base PL2 detected: ''${BASE_PL2} W"
 
-        # Helper function to read CPU package temperature.
+        # -------------------- Tunables --------------------
+        HOT_C=85         # ≥ HOT_C → aggressive clamp
+        WARM_C=80        # ≥ WARM_C → moderate clamp
+        COOL_C=75        # ≤ COOL_C → restore full PL2
+        CLAMP_HOT_W=35   # PL2 when hot
+        CLAMP_WARM_W=45  # PL2 when warm
+
+        # -------------------- Helpers ---------------------
         read_temp() {
           ${pkgs.lm_sensors}/bin/sensors 2>/dev/null \
             | ${pkgs.gnugrep}/bin/grep -m1 "Package id 0" \
             | ${pkgs.gawk}/bin/awk '{match($0, /[+]?([0-9]+(\.[0-9]+)?)/, a); print a[1]}'
         }
 
-        # Helper function to apply a new PL2 value to all available RAPL interfaces.
         set_pl2_all() {
           local W="$1"
           for R in /sys/class/powercap/intel-rapl:* /sys/class/powercap/intel-rapl-mmio:*; do
             [[ -w "$R/constraint_1_power_limit_uw" ]] || continue
             echo $((W * 1000000)) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
           done
-          echo "Thermal event: PL2 clamped to ''${W}W on all interfaces."
+          echo "Thermal event: PL2 → ''${W} W"
         }
 
-        # Main monitoring and control loop.
+        # -------------------- Main loop -------------------
         while true; do
-          TEMP="$(read_temp)";
-          T_INT=$(printf '%.0f' "''${TEMP:-0}") # Convert temp to integer for comparison.
+          TEMP="$(read_temp)"
+          T_INT=$(printf '%.0f' "''${TEMP:-0}")  # round to int °C
 
-          # Hysteresis logic: >=85°C→45W, 80–84°C→55W, <=75°C→BASE_PL2, 76–79°C→maintain current.
-          if   [[ "''${T_INT}" -ge 85 ]]; then TARGET_PL2=45
-          elif [[ "''${T_INT}" -ge 80 ]]; then TARGET_PL2=55
-          elif [[ "''${T_INT}" -le 75 ]]; then TARGET_PL2="''${BASE_PL2}"
-          else TARGET_PL2="''${CURRENT_PL2}" # Hysteresis zone: no change.
+          # Hysteresis bands:
+          #   >= HOT_C  → CLAMP_HOT_W
+          #   >= WARM_C → CLAMP_WARM_W
+          #   <= COOL_C → BASE_PL2
+          #   otherwise → keep CURRENT_PL2 (no change)
+          if   [[ "''${T_INT}" -ge "''${HOT_C}" ]]; then
+            TARGET_PL2="''${CLAMP_HOT_W}"
+          elif [[ "''${T_INT}" -ge "''${WARM_C}" ]]; then
+            TARGET_PL2="''${CLAMP_WARM_W}"
+          elif [[ "''${T_INT}" -le "''${COOL_C}" ]]; then
+            TARGET_PL2="''${BASE_PL2}"
+          else
+            TARGET_PL2="''${CURRENT_PL2}"
           fi
 
-          # Only write the new value if it has changed, to reduce redundant writes.
+          # Apply only if changed
           if [[ "''${TARGET_PL2}" != "''${CURRENT_PL2}" ]]; then
             set_pl2_all "''${TARGET_PL2}"
             CURRENT_PL2="''${TARGET_PL2}"
           fi
+
           sleep 2
         done
       '';
