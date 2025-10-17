@@ -48,6 +48,9 @@ let
   gnome-flow = pkgs.writeShellScriptBin "gnome-flow" (
     builtins.readFile ./bin/gnome-flow.sh
   );
+  gnome-gkr-fix = pkgs.writeShellScriptBin "gnome-gkr-fix" (
+    builtins.readFile ./bin/gnome-gkr-fix.sh
+  );
   gnome-mpv-manager = pkgs.writeShellScriptBin "gnome-mpv-manager" (
     builtins.readFile ./bin/gnome-mpv-manager.sh
   );
@@ -387,6 +390,7 @@ in {
     gitgo
     gnome-extensions-installer
     gnome-flow
+    gnome-gkr-fix
     gnome-mpv-manager
     gnome-settings
     gnome_tty
