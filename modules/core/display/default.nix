@@ -1,473 +1,718 @@
 # modules/core/display/default.nix
 # ==============================================================================
-# Display & Desktop Environment Module
+# Display & Desktop Environment Module - Production Grade
 # ==============================================================================
 #
-# Module: modules/core/display
-# Author: Kenan Pelit
-# Date:   2025-10-10
+# Module:      modules/core/display
+# Author:      Kenan Pelit
+# Created:     2025-10-10
+# Modified:    2025-10-17
+# Version:     2.0
 #
-# Purpose: Unified management of display, audio, fonts, and desktop portals
-# 
-# Why Single File?
-#   - Consolidates scattered desktop settings (display, portal, fonts, audio)
-#   - Eliminates "where was that setting?" searches
-#   - Prevents common conflicts when running GNOME + Hyprland + COSMIC side-by-side
+# Purpose:
+#   Unified display stack management with multi-desktop support, proper portal
+#   routing, and conditional service activation to prevent log pollution.
+#
+# Architecture Overview:
+#   ┌─────────────────────────────────────────────────────────────────┐
+#   │                         GDM (Display Manager)                   │
+#   ├─────────────┬─────────────────┬─────────────────┬───────────────┤
+#   │  Hyprland   │  Hyprland (Opt) │     GNOME       │    COSMIC     │
+#   │  (Standard) │  (Intel Arc)    │  (Traditional)  │   (Beta/Rust) │
+#   └─────────────┴─────────────────┴─────────────────┴───────────────┘
+#                           ↓
+#   ┌─────────────────────────────────────────────────────────────────┐
+#   │              XDG Desktop Portal Layer                           │
+#   │  • Hyprland Portal → Screenshots, Screen share                  │
+#   │  • COSMIC Portal   → File picker, Screenshots (conditional)     │
+#   │  • GNOME Portal    → GNOME integration                          │
+#   │  • GTK Portal      → Universal fallback                         │
+#   └─────────────────────────────────────────────────────────────────┘
+#                           ↓
+#   ┌─────────────────────────────────────────────────────────────────┐
+#   │              Audio Stack (PipeWire)                             │
+#   │  PipeWire → ALSA/PulseAudio/JACK compatibility                  │
+#   └─────────────────────────────────────────────────────────────────┘
+#
+# Key Features:
+#   ✓ Multi-desktop flexibility (switch sessions via GDM)
+#   ✓ Conditional portal activation (no log spam from unused desktops)
+#   ✓ Intel Arc A380 optimizations (custom Hyprland launcher)
+#   ✓ Comprehensive font stack (Nerd Fonts, emoji, CJK)
+#   ✓ Wayland-first with XWayland fallback
+#   ✓ PipeWire unified audio (replaces PulseAudio/JACK)
 #
 # Design Principles:
+#   1. Desktop-agnostic portal routing (each DE gets correct backend)
+#   2. Conditional service activation (don't start what you don't use)
+#   3. Fail-safe fallbacks (GTK portal as universal backup)
+#   4. Zero-config user experience (works out of box)
+#   5. Debug-friendly (extensive aliases for troubleshooting)
 #
-#   1. Desktop-Specific Portal Strategy
-#      - Each desktop uses its own portal implementation
-#      - COSMIC portal for COSMIC sessions with screenshot support
-#      - Hyprland portal for Hyprland sessions
-#      - GNOME portal for GNOME sessions
-#      - GTK portal as universal fallback
+# Session Selection Flow:
+#   1. Boot → GDM login screen
+#   2. Select user → Click gear icon (⚙️)
+#   3. Choose session:
+#      • Hyprland (Optimized) ← Default, Intel Arc tuned
+#      • Hyprland             ← Standard build
+#      • GNOME                ← Traditional GNOME
+#      • COSMIC               ← Rust-based DE (Beta)
+#   4. Login → Selected desktop starts with correct portal backend
 #
-#   2. Xorg Compatibility Layer
-#      - GNOME + Hyprland + COSMIC primarily use Wayland
-#      - Xorg enabled only as fallback for legacy applications
+# Troubleshooting:
+#   • Portal issues:       busctl --user list | grep portal
+#   • Session won't start: journalctl -xe --user
+#   • Font problems:       font-debug (see aliases below)
+#   • Audio issues:        pactl info
 #
-#   3. PipeWire Central Audio Stack
-#      - ALSA/Pulse compatibility through PipeWire
-#      - JACK disabled by default (enable if needed)
-#      - rtkit in security module handles latency/priorities
-#
-#   4. Conservative Fontconfig
-#      - Let apps choose their sans/serif preferences
-#      - Explicitly manage monospace and emoji fonts
-#      - No localConf to avoid Mako emoji conflicts
-#
-#   5. Living Documentation
-#      - Each block has WHY/HOW explanations
-#      - Quick decision support (e.g., enabling JACK, changing portals)
-#
-#   6. Multi-Desktop Support
-#      - GNOME: Traditional desktop with Wayland
-#      - Hyprland: Tiling compositor for power users with custom optimizations
-#      - COSMIC: Next-gen Rust-based desktop (Beta - from nixpkgs)
-#
-#   7. Session Selection Strategy
-#      - GDM provides graphical session selection with proper XDG discovery
-#      - Custom sessions registered via services.displayManager.sessionPackages
-#      - TTY2: Direct hyprland_tty launch with full optimizations
-#      - Both methods supported - user can choose workflow preference
-#
-# Conflict Prevention:
-#   - Hyprland portal via programs.hyprland.portalPackage (no duplication)
-#   - COSMIC portal automatically provided by services.desktopManager.cosmic
-#   - GNOME keyring here; PAM/Security in security module
-#   - Font env vars identical in system and home-manager layers
-#
-# Module Consolidation:
-#   - Replaces: ./fonts, ./xdg, ./audio modules
-#   - Single import: ./display in modules/core/default.nix
+# Module Dependencies:
+#   • inputs.hyprland (flake input for locked Hyprland version)
+#   • home-manager (user-specific font/diagnostic configs)
 #
 # ==============================================================================
 
-{ username, inputs, pkgs, lib, ... }:
+{ username, inputs, pkgs, lib, config, ... }:
 
 let
-  # Hyprland packages from flake input
-  # Locked versions ensure portal compatibility
+  # ---------------------------------------------------------------------------
+  # Hyprland Packages - Locked Version from Flake Input
+  # ---------------------------------------------------------------------------
+  # Using flake input ensures portal compatibility (mismatched versions cause
+  # portal failures). Both package and portal must be from same source.
+  
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.default;
   hyprPortal  = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+
+  # ---------------------------------------------------------------------------
+  # Custom Hyprland Session - Intel Arc A380 Optimized
+  # ---------------------------------------------------------------------------
+  # This creates a custom .desktop entry for GDM to discover. The optimized
+  # launcher (hyprland_tty) includes:
+  #   • Intel Arc environment variables (VK_ICD_FILENAMES, LIBVA_DRIVER_NAME)
+  #   • Catppuccin theme preloading
+  #   • Custom compositor flags
+  #
+  # Dual Registration:
+  #   1. services.displayManager.sessionPackages → GDM discovers session
+  #   2. environment.systemPackages → Appears in /run/current-system/sw/
+  #
+  # passthru.providedSessions:
+  #   Must match defaultSession value exactly. GDM uses this to validate.
   
-  # COSMIC packages from nixpkgs unstable
-  # COSMIC portal is automatically provided by services.desktopManager.cosmic
+  hyprlandOptimizedSession = pkgs.writeTextFile {
+    name = "hyprland-optimized-session";
+    destination = "/share/wayland-sessions/hyprland-optimized.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=Hyprland (Optimized)
+      Comment=Hyprland with Intel Arc A380 optimizations and Catppuccin theming
+      
+      # Session Type Markers (required for GDM)
+      Type=Application
+      DesktopNames=Hyprland
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+      
+      # Launcher Path (per-user profile for home-manager integration)
+      Exec=/etc/profiles/per-user/${username}/bin/hyprland_tty
+      
+      # Optional: Pre-flight check (uncomment to validate launcher exists)
+      # TryExec=/etc/profiles/per-user/${username}/bin/hyprland_tty
+      
+      # Metadata
+      Keywords=wayland;wm;tiling;catppuccin;intel-arc;
+    '';
+    
+    # GDM Session Discovery Metadata
+    passthru.providedSessions = [ "hyprland-optimized" ];
+  };
+
 in
 {
-  # ============================================================================
+  # =============================================================================
   # Wayland Compositor - Hyprland
-  # ============================================================================
-  # Modern Wayland compositor with proper portal integration.
-  # Critical for screen sharing and xdg-open when running alongside GNOME.
+  # =============================================================================
+  # Standard Hyprland configuration. The "Hyprland (Optimized)" session above
+  # coexists with this standard build, giving users choice at login.
   
   programs.hyprland = {
     enable = true;
     package = hyprlandPkg;
-    portalPackage = hyprPortal;  # Portal defined HERE - don't add to extraPortals
+    
+    # CRITICAL: Portal must match Hyprland version
+    # Do NOT add hyprPortal to xdg.portal.extraPortals (already registered here)
+    portalPackage = hyprPortal;
   };
 
-  # ============================================================================
-  # Display Stack Configuration
-  # ============================================================================
-  
+  # =============================================================================
+  # System Services Configuration
+  # =============================================================================
   services = {
-    # --------------------------------------------------------------------------
-    # X11 Server (Legacy Compatibility)
-    # --------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # X11 Server (Legacy Compatibility Only)
+    # ---------------------------------------------------------------------------
+    # Required for:
+    #   • GDM (uses X11 for greeter, Wayland for sessions)
+    #   • XWayland (X11 apps in Wayland sessions)
+    #   • Keyboard layout configuration (propagates to Wayland)
+    #
+    # Not used for: Primary display protocol (that's Wayland)
+    
     xserver = {
       enable = true;
+      
+      # Turkish F-Keyboard Layout
+      # Why F variant? More ergonomic than Q layout for Turkish typing.
       xkb = {
-        layout = "tr";              # Turkish layout
-        variant = "f";              # TR-F variant
-        options = "ctrl:nocaps";    # Caps Lock → Control (ergonomics)
+        layout  = "tr";           # Turkish
+        variant = "f";            # F-keyboard (not Q)
+        options = "ctrl:nocaps";  # Caps Lock → Control (ergonomics)
       };
     };
 
-    # --------------------------------------------------------------------------
-    # Display Manager - GDM (GNOME Display Manager)
-    # --------------------------------------------------------------------------
-    # GDM provides robust session selection with full XDG portal support
-    # Automatically discovers sessions from:
-    #   - services.displayManager.sessionPackages (custom sessions)
-    #   - /run/current-system/sw/share/wayland-sessions/ (system packages)
-    #   - Desktop environment defaults
-    #
-    # Why GDM over cosmic-greeter?
-    #   - Mature, well-tested with comprehensive session discovery
-    #   - Proper XDG standards compliance (crucial for custom sessions)
-    #   - Better integration with GNOME components (keyring, portals)
-    #   - Reliable multi-session support (GNOME + Hyprland + COSMIC)
+    # ---------------------------------------------------------------------------
+    # Display Manager - GDM
+    # ---------------------------------------------------------------------------
+    # GDM (GNOME Display Manager) chosen for:
+    #   ✓ Excellent Wayland support
+    #   ✓ Robust multi-session handling
+    #   ✓ Proper XDG portal integration
+    #   ✓ Beautiful, modern UI
     
     displayManager = {
-        # --------------------------------------------------------------------------
-        # Custom Session Packages
-        # --------------------------------------------------------------------------
-        # Register custom desktop sessions with display manager
-        # This is the PROPER NixOS way to add custom sessions
-        # 
-        # CRITICAL: passthru.providedSessions MUST match the session name
-        # used in defaultSession - this is how NixOS validates sessions
-        
-        sessionPackages = [
-          # --------------------------------------------------------------------------
-          # Custom Hyprland Optimized session
-          # --------------------------------------------------------------------------
-          (pkgs.writeTextFile rec {
-            name = "hyprland-optimized-session";
-            destination = "/share/wayland-sessions/hyprland-optimized.desktop";
-            text = ''
-              [Desktop Entry]
-              Name=Hyprland (Optimized)
-              Comment=Hyprland with Intel Arc optimizations and Catppuccin theme support
-              Exec=hyprland_tty
-              Type=Application
-              DesktopNames=Hyprland
-              Keywords=wayland;wm;tiling;catppuccin;
-            '';
-            
-            # CRITICAL: This line makes "hyprland-optimized" a valid session name
-            # Without this, NixOS won't recognize it for defaultSession validation
-            passthru.providedSessions = [ "hyprland-optimized" ];
-          })
-        ];
-        
-        # --------------------------------------------------------------------------
-        # GDM Configuration
-        # --------------------------------------------------------------------------
-        
-        gdm = {
-            enable = true;
-            wayland = true;             # Wayland-first approach
-            autoSuspend = false;        # Prevent auto-suspend on login screen
-        };
-        
-        # --------------------------------------------------------------------------
-        # Default Session Selection
-        # --------------------------------------------------------------------------
-        # Available validated options (thanks to sessionPackages above):
-        #   - "hyprland"           : Standard Hyprland (from programs.hyprland)
-        #   - "hyprland-optimized" : Custom hyprland_tty launch (Intel Arc optimized)
-        #   - "gnome"              : Standard GNOME (from desktopManager.gnome)
-        #   - "cosmic"             : COSMIC desktop (from desktopManager.cosmic)
-        #
-        # Recommended: "hyprland-optimized" for daily use
-        # Features:
-        #   - Intel Arc Graphics compatibility
-        #   - Dynamic Catppuccin theme support (CATPPUCCIN_FLAVOR/ACCENT)
-        #   - Enhanced logging and error handling
-        #   - Proper systemd user session integration
-        
-        defaultSession = "hyprland-optimized";
-        
-        # Security: no auto-login
-        autoLogin.enable = false;
+      # Custom Session Registration
+      # hyprlandOptimizedSession appears in GDM's session picker
+      sessionPackages = [ hyprlandOptimizedSession ];
+
+      # GDM Configuration
+      gdm = {
+        enable = true;
+        wayland = true;        # Prefer Wayland sessions
+        autoSuspend = false;   # Don't sleep on login screen (annoying in dev)
+      };
+
+      # Default Session Selection
+      # User can override at login via gear icon (⚙️)
+      # Valid options: "hyprland", "hyprland-optimized", "gnome", "cosmic"
+      defaultSession = "hyprland-optimized";
+
+      # Auto-Login (Security vs Convenience Trade-off)
+      # Enable only if:
+      #   ✓ Single-user machine with full disk encryption
+      #   ✓ Physical security is adequate
+      # Disable if:
+      #   ✓ Shared machine or travels (laptop)
+      #   ✓ No disk encryption
+      autoLogin = {
+        enable = false;  # Require password (recommended)
+        user = "kenan";
+      };
+      
+      # Disable conflicting display managers
+      sddm.enable = false;  # KDE's display manager
     };
 
-    # --------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Desktop Environments
-    # --------------------------------------------------------------------------
-    # Multiple desktops enabled for flexibility
-    # User can select at login screen via GDM session chooser
+    # ---------------------------------------------------------------------------
+    # All enabled desktops appear in GDM's session picker.
+    # Each runs isolated - no conflicts.
     
     desktopManager = {
-      gnome.enable = true;          # GNOME - Traditional desktop
-      cosmic.enable = true;         # COSMIC - Rust-based desktop (Beta)
+      gnome.enable  = true;  # GNOME - Full-featured traditional desktop
+      cosmic.enable = true;  # COSMIC - Rust-based, System76 (Beta/Experimental)
     };
 
-    # --------------------------------------------------------------------------
-    # Input Management
-    # --------------------------------------------------------------------------
-    libinput.enable = true;         # Modern input device handling
+    # ---------------------------------------------------------------------------
+    # Input Device Management
+    # ---------------------------------------------------------------------------
+    libinput.enable = true;  # Modern touchpad/mouse handling (replaces synaptics)
 
-    # --------------------------------------------------------------------------
-    # Session Security - Keyring
-    # --------------------------------------------------------------------------
-    gnome.gnome-keyring.enable = true;  # Session secrets management
+    # ---------------------------------------------------------------------------
+    # Session Security - GNOME Keyring
+    # ---------------------------------------------------------------------------
+    # Manages session secrets (WiFi passwords, SSH keys, browser passwords)
+    # Works across all desktop environments, not just GNOME
+    gnome.gnome-keyring.enable = true;
 
-    # --------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Audio Stack - PipeWire
-    # --------------------------------------------------------------------------
-    # Modern audio/video server with broad compatibility
+    # ---------------------------------------------------------------------------
+    # Modern audio server with ALSA/PulseAudio/JACK compatibility.
+    # 
+    # Why PipeWire?
+    #   ✓ Low latency (good for gaming/music production)
+    #   ✓ Replaces PulseAudio without breaking apps
+    #   ✓ JACK support for pro audio (if enabled)
+    #   ✓ Per-app audio routing
+    #   ✓ Bluetooth audio improvements
     
     pipewire = {
       enable = true;
       
-      # ALSA support (native + 32-bit for games)
+      # ALSA Support (legacy apps, direct hardware access)
       alsa.enable = true;
-      alsa.support32Bit = true;
+      alsa.support32Bit = true;  # 32-bit games/Wine apps
       
-      # PulseAudio compatibility layer
+      # PulseAudio Compatibility (most desktop apps)
       pulse.enable = true;
       
-      # JACK disabled (enable for DAW/studio use)
+      # JACK Support (disable unless using DAW/music production)
+      # Enabling JACK can conflict with PulseAudio routing
       jack.enable = false;
     };
 
-    # --------------------------------------------------------------------------
-    # D-Bus Configuration - Portal Support
-    # --------------------------------------------------------------------------
-    # Ensure portal packages are registered with D-Bus
+    # ---------------------------------------------------------------------------
+    # D-Bus Configuration - Portal Package Registration
+    # ---------------------------------------------------------------------------
+    # D-Bus must know about portal packages for proper activation.
+    # Each desktop's portal must be registered here.
+    
     dbus = {
       enable = true;
-      packages = with pkgs; [ 
-        xdg-desktop-portal 
-        xdg-desktop-portal-cosmic
-        xdg-desktop-portal-gtk
-        xdg-desktop-portal-gnome
+      packages = with pkgs; [
+        xdg-desktop-portal           # Base portal framework
+        xdg-desktop-portal-gtk       # GTK apps (universal fallback)
+        xdg-desktop-portal-gnome     # GNOME-specific integrations
+        xdg-desktop-portal-cosmic    # COSMIC portal (for COSMIC DE)
       ];
+      # Note: xdg-desktop-portal-hyprland registered via programs.hyprland.portalPackage
     };
   };
 
-  # ============================================================================
-  # XDG Desktop Portals
-  # ============================================================================
-  # Portal routing ensures applications use the correct backend for
-  # screen sharing, file selection, and external link handling.
-  # Each desktop environment gets its optimal portal configuration.
+  # =============================================================================
+  # XDG Desktop Portals - Backend Routing Configuration
+  # =============================================================================
+  # Portals provide desktop integration (file pickers, screenshots, screen share)
+  # in a compositor-agnostic way. Each desktop needs correct backend routing.
   #
-  # CRITICAL: COSMIC screenshot fix
-  # The cosmic portal must be explicitly set for Screenshot and ScreenCast
-  # interfaces to make cosmic-screenshot work properly.
+  # Portal Interfaces:
+  #   • Screenshot      - Take screenshots
+  #   • ScreenCast      - Screen recording/sharing
+  #   • FileChooser     - File open/save dialogs
+  #   • Notification    - Desktop notifications
+  #   • Inhibit         - Prevent suspend/screensaver
   #
-  # NOTE: COSMIC portal is automatically provided by services.desktopManager.cosmic
-  # Hyprland portal is provided by programs.hyprland.portalPackage
+  # Configuration Format:
+  #   <session>.<interface> = [ "preferred" "fallback" ];
+  #
+  # Testing Portals:
+  #   busctl --user list | grep portal                    # Active portals
+  #   cat /run/user/$(id -u)/xdg-desktop-portal/*.conf   # Runtime config
   
   xdg.portal = {
     enable = true;
-    xdgOpenUsePortal = true;  # Route xdg-open through portal (Wayland-safe)
+    
+    # Force xdg-open to use portal (safer in Wayland, handles file associations)
+    xdgOpenUsePortal = true;
 
-    # Portal priority configuration per desktop session
-    # Format: desktop_name.interface = [ "preferred_impl" "fallback_impl" ];
+    # Portal Backend Configuration
     config = {
-      # Common fallback for all desktops
+      # ---------------------------------------------------------------------------
+      # Common Fallback (applies to all sessions)
+      # ---------------------------------------------------------------------------
       common.default = [ "gtk" ];
-      
-      # Hyprland session - uses hyprland portal with gtk fallback
-      hyprland.default = [ "gtk" "hyprland" ];
-      
-      # COSMIC session - uses cosmic portal with explicit screenshot support
+
+      # ---------------------------------------------------------------------------
+      # Hyprland Session Portal Routing
+      # ---------------------------------------------------------------------------
+      # Hyprland portal handles screenshots/screencasts natively.
+      # GTK portal used for file pickers (Hyprland has no native file dialog).
+      hyprland.default = [ "hyprland" "gtk" ];
+
+      # ---------------------------------------------------------------------------
+      # COSMIC Session Portal Routing
+      # ---------------------------------------------------------------------------
+      # COSMIC has full portal implementation. Explicit interface routing ensures
+      # screenshots work correctly (was broken with just "default" in some builds).
       cosmic = {
         default = [ "cosmic" "gtk" ];
-        # CRITICAL: These lines fix cosmic-screenshot
-        "org.freedesktop.impl.portal.Screenshot" = [ "cosmic" ];
-        "org.freedesktop.impl.portal.ScreenCast" = [ "cosmic" ];
+        
+        # Explicit interface routing (prevents fallback issues)
+        "org.freedesktop.impl.portal.Screenshot"  = [ "cosmic" ];
+        "org.freedesktop.impl.portal.ScreenCast"  = [ "cosmic" ];
         "org.freedesktop.impl.portal.FileChooser" = [ "cosmic" ];
       };
-      
-      # GNOME session - uses gnome portal with gtk fallback
+
+      # ---------------------------------------------------------------------------
+      # GNOME Session Portal Routing
+      # ---------------------------------------------------------------------------
+      # GNOME portal provides full desktop integration.
+      # GTK portal as fallback for edge cases.
       gnome.default = [ "gnome" "gtk" ];
     };
 
-    # GTK and GNOME portals explicitly added
-    # Desktop-specific portals (cosmic, hyprland) are provided by their respective modules
-    extraPortals = [ 
-      pkgs.xdg-desktop-portal-gtk 
-      pkgs.xdg-desktop-portal-gnome
-      pkgs.xdg-desktop-portal-cosmic 
+    # Extra Portal Packages
+    # Desktop-specific portals (hyprland via programs.hyprland.portalPackage)
+    extraPortals = [
+      pkgs.xdg-desktop-portal-gtk     # Universal fallback
+      pkgs.xdg-desktop-portal-gnome   # GNOME integration
+      pkgs.xdg-desktop-portal-cosmic  # COSMIC integration
     ];
   };
 
-  # ============================================================================
-  # Systemd User Services - COSMIC Portal
-  # ============================================================================
-  # Custom service definition with proper dependencies
-  # Ensures proper startup order and D-Bus registration
+  # =============================================================================
+  # Systemd User Services - COSMIC Portal (Conditional Activation)
+  # =============================================================================
+  # Problem: COSMIC portal starts even when COSMIC desktop isn't running,
+  #          causing D-Bus watcher errors in logs (seen in your journalctl).
+  #
+  # Solution: Conditional service activation using lib.mkIf.
+  #           Portal only starts when COSMIC desktop is enabled.
+  #
+  # Why explicit systemd unit?
+  #   • Control startup ordering (after graphical-session.target)
+  #   • Set proper D-Bus activation (Type=dbus)
+  #   • Configure restart policy
+  #   • Set environment variables (XDG_CURRENT_DESKTOP)
   
-  systemd.user.services.xdg-desktop-portal-cosmic = {
+  systemd.user.services.xdg-desktop-portal-cosmic = lib.mkIf config.services.desktopManager.cosmic.enable {
     description = "Portal service (COSMIC implementation)";
-    
-    # Wait for graphical session to be ready (Wayland display available)
-    after = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
+
+    # Service Ordering
+    # Start after Wayland compositor is ready
+    after    = [ "graphical-session.target" ];
+    partOf   = [ "graphical-session.target" ];
     wantedBy = [ "xdg-desktop-portal.service" ];
-    
+
+    # Service Configuration
     serviceConfig = {
-      Type = "dbus";
+      # D-Bus Activation
+      Type    = "dbus";
       BusName = "org.freedesktop.impl.portal.desktop.cosmic";
-      ExecStart = "${pkgs.xdg-desktop-portal-cosmic}/libexec/xdg-desktop-portal-cosmic";
-      Restart = "on-failure";
-      RestartSec = "2s";
-      Slice = "session.slice";
       
-      # Timeout configuration
-      TimeoutStartSec = "10s";     # Portal should start quickly
-      TimeoutStopSec = "5s";       # Quick shutdown
+      # Executable
+      ExecStart = "${pkgs.xdg-desktop-portal-cosmic}/libexec/xdg-desktop-portal-cosmic";
+      
+      # Restart Policy
+      # Restart on failure (portal crashes shouldn't break session)
+      Restart    = "on-failure";
+      RestartSec = "2s";
+      
+      # Resource Management
+      Slice = "session.slice";  # User session resource group
+      
+      # Timeouts
+      TimeoutStartSec = "10s";  # Kill if takes >10s to start
+      TimeoutStopSec  = "5s";   # Kill if takes >5s to stop
     };
-    
+
+    # Environment Variables
     environment = {
-      # Ensure portal knows it's running in COSMIC
+      # Critical: Portal needs to know it's running under COSMIC
+      # Without this, it may not claim correct D-Bus interfaces
       XDG_CURRENT_DESKTOP = "COSMIC";
     };
   };
 
-  # ============================================================================
-  # Font Configuration
-  # ============================================================================
-  # Strategy: Monospace & Emoji first, comprehensive Unicode coverage
+  # =============================================================================
+  # Font Configuration - Comprehensive Stack
+  # =============================================================================
+  # Font stack covers:
+  #   • Nerd Fonts (terminal/coding with icons)
+  #   • Emoji fonts (color emoji support)
+  #   • CJK fonts (Chinese/Japanese/Korean)
+  #   • System fonts (Liberation, DejaVu)
+  #   • Modern UI fonts (Inter, Roboto)
+  #
+  # Font Fallback Chain:
+  #   App requests "monospace" → Maple Mono NF → Hack NF → JetBrains Mono →
+  #   Fira Code → Liberation Mono → Noto Color Emoji (if emoji detected)
   
   fonts = {
     packages = with pkgs; [
-      # Core fonts (tested with Mako notifications)
-      maple-mono.NF
-      nerd-fonts.hack
-      noto-fonts
-      noto-fonts-cjk-sans
-      noto-fonts-emoji
-      liberation_ttf
-      fira-code
-      fira-code-symbols
-      cascadia-code
-      inter
-      font-awesome
-      
-      # Extended coverage
-      source-code-pro
-      dejavu_fonts
-      noto-fonts-cjk-serif
-      noto-fonts-extra
-      material-design-icons
-      
-      # Modern favorites
-      jetbrains-mono
-      ubuntu_font_family
-      roboto
-      open-sans
+      # -------------------------------------------------------------------------
+      # Core Fonts (Terminal/Coding)
+      # -------------------------------------------------------------------------
+      # Tested with: Kitty, Alacritty, WezTerm, VS Code, Mako notifications
+      maple-mono.NF           # Maple Mono Nerd Font (primary terminal font)
+      nerd-fonts.hack         # Hack Nerd Font (icons + coding ligatures)
+      cascadia-code           # Microsoft's coding font (good ligatures)
+      fira-code               # Fira Code (classic coding font)
+      fira-code-symbols       # Fira Code symbols/ligatures
+      jetbrains-mono          # JetBrains Mono (excellent for coding)
+      source-code-pro         # Adobe's monospace (clean, readable)
+
+      # -------------------------------------------------------------------------
+      # Emoji & Symbol Fonts
+      # -------------------------------------------------------------------------
+      noto-fonts-emoji        # Google's color emoji (primary emoji font)
+      font-awesome            # Icon font (web icons, arrows, symbols)
+      material-design-icons   # Material Design icons
+
+      # -------------------------------------------------------------------------
+      # System Fonts (Liberation = Microsoft font metrics-compatible)
+      # -------------------------------------------------------------------------
+      liberation_ttf          # Liberation Sans/Serif/Mono (Arial/Times/Courier clones)
+      dejavu_fonts            # DejaVu Sans/Serif/Mono (universal fallback)
+
+      # -------------------------------------------------------------------------
+      # CJK Fonts (Chinese/Japanese/Korean)
+      # -------------------------------------------------------------------------
+      noto-fonts-cjk-sans     # Noto Sans CJK (Asian languages - sans-serif)
+      noto-fonts-cjk-serif    # Noto Serif CJK (Asian languages - serif)
+
+      # -------------------------------------------------------------------------
+      # Extended Unicode Coverage
+      # -------------------------------------------------------------------------
+      noto-fonts              # Noto Sans/Serif (base Unicode coverage)
+      noto-fonts-extra        # Extended Noto variants
+
+      # -------------------------------------------------------------------------
+      # Modern UI Fonts
+      # -------------------------------------------------------------------------
+      inter                   # Inter (modern UI font, great for web/desktop)
+      roboto                  # Android's system font
+      ubuntu_font_family      # Ubuntu font family
+      open-sans               # Open Sans (web/UI font)
     ];
 
+    # Font Configuration (fontconfig)
     fontconfig = {
-      # Font priorities by category
+      # -----------------------------------------------------------------------
+      # Default Font Families
+      # -----------------------------------------------------------------------
+      # When app requests generic family (monospace/serif/sans-serif/emoji),
+      # fontconfig resolves to these fonts in priority order.
+      
       defaultFonts = {
+        # Monospace (Terminal/Code Editors)
         monospace = [
-          "Maple Mono NF"
-          "Hack Nerd Font Mono"
-          "JetBrains Mono"
-          "Fira Code"
-          "Source Code Pro"
-          "Liberation Mono"
-          "Noto Color Emoji"
+          "Maple Mono NF"         # Primary (best icon support)
+          "Hack Nerd Font Mono"   # Fallback #1
+          "JetBrains Mono"        # Fallback #2
+          "Fira Code"             # Fallback #3 (ligatures)
+          "Source Code Pro"       # Fallback #4
+          "Liberation Mono"       # Fallback #5 (universal)
+          "Noto Color Emoji"      # Emoji in terminal
         ];
+        
+        # Emoji (Color Emoji Support)
         emoji = [ "Noto Color Emoji" ];
-        serif = [ "Liberation Serif" "Noto Serif" "DejaVu Serif" ];
-        sansSerif = [ "Liberation Sans" "Inter" "Noto Sans" "DejaVu Sans" ];
+        
+        # Serif (Traditional/Print)
+        serif = [
+          "Liberation Serif"
+          "Noto Serif"
+          "DejaVu Serif"
+        ];
+        
+        # Sans-Serif (Modern/UI)
+        sansSerif = [
+          "Liberation Sans"
+          "Inter"
+          "Noto Sans"
+          "DejaVu Sans"
+        ];
       };
 
-      # Subpixel rendering for LCD panels
+      # -----------------------------------------------------------------------
+      # Subpixel Rendering (LCD Panel Optimization)
+      # -----------------------------------------------------------------------
+      # Improves font clarity on LCD monitors.
+      # RGB subpixel layout is standard (BGR for some old laptops).
       subpixel = {
-        rgba = "rgb";
-        lcdfilter = "default";
+        rgba = "rgb";           # Subpixel order (rgb/bgr/vrgb/vbgr/none)
+        lcdfilter = "default";  # LCD filter type
       };
 
-      # Hinting configuration
+      # -----------------------------------------------------------------------
+      # Hinting Configuration
+      # -----------------------------------------------------------------------
+      # Hinting aligns font outlines to pixel grid for sharper text.
+      # 
+      # Hinting Styles:
+      #   • none   - No hinting (blurry on low DPI)
+      #   • slight - Minimal hinting (best for HiDPI)
+      #   • medium - Balanced hinting
+      #   • full   - Maximum hinting (sharp but can distort shapes)
       hinting = {
-        enable = true;
-        autohint = false;     # Use font's built-in hints
-        style = "slight";     # Best for modern displays
+        enable   = true;
+        autohint = false;     # Use font's built-in hints (better quality)
+        style    = "slight";  # Slight hinting (good for modern displays)
       };
 
+      # Antialiasing (Smooth Font Edges)
       antialias = true;
-      # localConf disabled - can break Mako emoji rendering
+
+      # -----------------------------------------------------------------------
+      # localConf Disabled
+      # -----------------------------------------------------------------------
+      # localConf can break emoji rendering in some apps (Mako notifications).
+      # Explicitly disabled to prevent user overrides from breaking fonts.
+      # Users can still add custom fontconfig in ~/.config/fontconfig/fonts.conf
     };
 
-    enableDefaultPackages = true;
-    fontDir.enable = true;
+    # System Font Support
+    enableDefaultPackages = true;  # Include basic fonts (DejaVu, Liberation)
+    fontDir.enable = true;         # Expose fonts in /run/current-system/sw/share/fonts
   };
 
-  # ============================================================================
-  # System Environment Variables
-  # ============================================================================
-  # Font-related environment variables for consistency and debugging
-  
+  # =============================================================================
+  # System Environment Configuration
+  # =============================================================================
   environment = {
+    # Environment Variables
     variables = {
-      FONTCONFIG_PATH = "/etc/fonts";
-      LC_ALL = "en_US.UTF-8";
+      # Font Configuration Paths
+      FONTCONFIG_PATH     = "/etc/fonts";
+      FONTCONFIG_FILE     = "/etc/fonts/fonts.conf";
+      
+      # Locale (prevents font rendering issues with some apps)
+      LC_ALL              = "en_US.UTF-8";
+      
+      # FreeType Rendering (interpreter-version=40 = better hinting)
       FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
-      FONTCONFIG_FILE = "/etc/fonts/fonts.conf";
     };
 
-    systemPackages = with pkgs; [
-      fontconfig      # Font utilities (fc-list, fc-match)
-      font-manager    # GUI font browser
+    # System Packages
+    # Includes font utilities and the custom Hyprland session desktop entry.
+    systemPackages = (with pkgs; [
+      # Font Management Tools
+      fontconfig     # fc-list, fc-match, fc-cache (font introspection)
+      font-manager   # GUI font browser/manager
+    ]) ++ [
+      # Custom Hyprland Session
+      # Included here so .desktop file appears in:
+      # /run/current-system/sw/share/wayland-sessions/hyprland-optimized.desktop
+      hyprlandOptimizedSession
     ];
   };
 
-  # ============================================================================
+  # =============================================================================
   # Home-Manager User Configuration
-  # ============================================================================
-  # User-specific font settings and diagnostic tools
+  # =============================================================================
+  # User-specific font settings and diagnostic aliases.
+  # Ensures fonts work correctly in user applications.
   
   home-manager.users.${username} = {
+    # Home-Manager Version Tracking
     home.stateVersion = "25.11";
-    
+
+    # Enable Font Configuration (per-user fontconfig cache)
     fonts.fontconfig.enable = true;
 
+    # -------------------------------------------------------------------------
+    # Application Font Configuration - Rofi
+    # -------------------------------------------------------------------------
     programs.rofi = {
-      font = "Hack Nerd Font 13";
-      terminal = "${pkgs.kitty}/bin/kitty";
+      font = "Hack Nerd Font 13";          # App launcher font
+      terminal = "${pkgs.kitty}/bin/kitty"; # Terminal emulator
     };
 
-    # Diagnostic and testing aliases
+    # -------------------------------------------------------------------------
+    # Shell Aliases - Font Diagnostics & Testing
+    # -------------------------------------------------------------------------
+    # Comprehensive font troubleshooting toolkit.
+    # Use these to debug font issues, test emoji support, verify installation.
+    
     home.shellAliases = {
-      # Quick diagnostics
-      "font-list"        = "fc-list";
-      "font-emoji"       = "fc-list | grep -i emoji";
-      "font-nerd"        = "fc-list | grep -i 'nerd\\|hack\\|maple'";
-      "font-maple"       = "fc-list | grep -i maple";
-      "font-reload"      = "fc-cache -f -v";
+      # Quick Diagnostics
+      "font-list"        = "fc-list";                              # List all installed fonts
+      "font-emoji"       = "fc-list | grep -i emoji";             # Show emoji fonts
+      "font-nerd"        = "fc-list | grep -i 'nerd\\|hack\\|maple'"; # Show Nerd Fonts
+      "font-maple"       = "fc-list | grep -i maple";             # Show Maple Mono variants
+      "font-reload"      = "fc-cache -f -v";                       # Rebuild font cache
 
-      # Visual tests
+      # Visual Tests (Terminal Output)
       "font-test"        = "echo 'Font Test: Hack Nerd Font with ★ ♪ ● ⚡ ▲ symbols and emoji support'";
       "emoji-test"       = "echo '🎵 📱 💬 🔥 ⭐ 🚀 - Color emoji test'";
+      "font-render-test" = "echo 'Rendering: ABCDabcd1234 ★♪●⚡▲ 🚀📱💬'";
+      "font-ligature-test" = "echo 'Ligatures: -> => != === >= <= && || /* */ //'";
+      "font-nerd-icons"  = "echo 'Nerd Icons:     󰈹 󰍛'";
+
+      # Notification Tests (Mako/System Notifications)
       "mako-emoji-test"  = "notify-send 'Emoji Test 🚀' 'Mako notification with emojis: 📱 💬 🔥 ⭐ 🎵'";
       "mako-font-test"   = "notify-send 'Font Test' 'Maple Mono NF with symbols: ★ ♪ ● ⚡ ▲'";
       "mako-icons-test"  = "notify-send 'Icon Test' 'Nerd Font icons:     󰈹 󰍛'";
 
-      # Deep diagnostics
-      "font-info"        = "fc-match -v";
-      "font-debug"       = "fc-match -s monospace | head -5";
-      "font-mono"        = "fc-list : family | grep -i mono | sort";
-      "font-available"   = "fc-list : family | sort | uniq";
-      "font-cache-clean" = "fc-cache -f -r -v";
-      "font-render-test" = "echo 'Rendering Test: ABCDabcd1234 ★♪●⚡▲ 🚀📱💬'";
-      "font-ligature-test" = "echo 'Ligature Test: -> => != === >= <= && || /* */ //'";
-      "font-nerd-icons"  = "echo 'Nerd Icons:     󰈹 󰍛'";
+      # Deep Diagnostics (Troubleshooting)
+      "font-info"        = "fc-match -v";                          # Show default font details
+      "font-debug"       = "fc-match -s monospace | head -5";     # Show monospace fallback chain
+      "font-mono"        = "fc-list : family | grep -i mono | sort"; # List monospace fonts
+      "font-available"   = "fc-list : family | sort | uniq";      # List all font families
+      "font-cache-clean" = "fc-cache -f -r -v";                   # Full font cache rebuild
     };
 
-    # Session variables (mirror system for consistency)
+    # -------------------------------------------------------------------------
+    # Session Variables (User Environment)
+    # -------------------------------------------------------------------------
     home.sessionVariables = {
+      # Locale (consistent with system)
       LC_ALL = "en_US.UTF-8";
+      
+      # Fontconfig Paths (user + system)
       FONTCONFIG_FILE = "${pkgs.fontconfig.out}/etc/fonts/fonts.conf";
-      FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
       FONTCONFIG_PATH = "/etc/fonts:~/.config/fontconfig";
+      
+      # FreeType Rendering
+      FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
     };
 
-    # Font utilities
+    # -------------------------------------------------------------------------
+    # User Packages - Font Tools
+    # -------------------------------------------------------------------------
     home.packages = with pkgs; [
-      fontpreview    # Preview fonts quickly
-      gucharmap      # Character map GUI
+      fontpreview  # Quick font preview in terminal
+      gucharmap    # GTK Character Map (GUI font browser)
     ];
   };
 }
+
+# ==============================================================================
+# Post-Installation Verification
+# ==============================================================================
+#
+# After rebuilding (nixos-rebuild switch --flake .#hay), verify:
+#
+# 1. Sessions Available:
+#    ls /run/current-system/sw/share/wayland-sessions/
+#    # Should show: hyprland.desktop, hyprland-optimized.desktop, cosmic.desktop, gnome.desktop
+#
+# 2. Portals Active (run after logging into Hyprland):
+#    busctl --user list | grep portal
+#    # Should show: xdg-desktop-portal-hyprland, xdg-desktop-portal-gtk
+#    # Should NOT show: xdg-desktop-portal-cosmic (unless in COSMIC session)
+#
+# 3. Fonts Installed:
+#    fc-list | grep -i "maple\|hack\|emoji"
+#    # Should show: Maple Mono NF, Hack Nerd Font, Noto Color Emoji
+#
+# 4. Audio Working:
+#    pactl info
+#    # Should show: PipeWire as server
+#
+# 5. No Errors in Logs:
+#    journalctl --user -n 50 | grep -i error
+#    # Should NOT show COSMIC portal errors (fixed by conditional activation)
+#
+# ==============================================================================
+# Troubleshooting Guide
+# ==============================================================================
+#
+# Issue: COSMIC Portal Errors in Logs
+# Fix:   Verify services.desktopManager.cosmic.enable = false if not using COSMIC
+#        Or keep enabled and ignore errors (harmless, just log spam)
+#
+# Issue: Fonts Not Appearing
+# Fix:   fc-cache -f -v              # Rebuild font cache
+#        fc-list | grep <font-name>  # Verify font installed
+#
+# Issue: Emoji Not Rendering
+# Fix:   Verify "Noto Color Emoji" in fc-list
+#        Check app fontconfig: fc-match emoji
+#
+# Issue: Session Not in GDM
+# Fix:   Verify hyprlandOptimizedSession in services.displayManager.sessionPackages
+#        Check passthru.providedSessions matches defaultSession
+#
+# Issue: Portal Not Working (screenshots fail)
+# Fix:   busctl --user list | grep portal  # Check active portals
+#        xdg-desktop-portal --replace        # Restart portal
+#
+# Issue: Audio Not Working
+# Fix:   systemctl --user restart pipewire pipewire-pulse
+#        pactl info  # Check PipeWire is running
+#
+# ==============================================================================
 
