@@ -539,7 +539,7 @@ start_gnome() {
 	fi
 
 	trap cleanup EXIT TERM INT HUP
-	debug_log "Signal trap'leri ayarlandı"
+	: >"$GNOME_LOG"
 
 	info "═══════════════════════════════════════════════════════════"
 	info "GNOME başlatılıyor..."
@@ -548,36 +548,55 @@ start_gnome() {
 	info "Log: $GNOME_LOG"
 	info "═══════════════════════════════════════════════════════════"
 
-	# Log dosyasını sıfırla
-	: >"$GNOME_LOG"
+	# Eski/yanlış soketleri zorlamayalım; yeni bus içinde ayarlanacaklar
+	unset GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
 
-	# --- ÖNEMLİ: Keyring'i oturumdan önce başlat ---
-	if command -v gnome-keyring-daemon >/dev/null 2>&1; then
-		debug_log "gnome-keyring-daemon önden başlatılıyor"
-		KR_OUT="$(gnome-keyring-daemon --start --components=secrets,ssh,pkcs11 2>/dev/null || true)"
-		if [[ -n "$KR_OUT" ]]; then
-			eval "$KR_OUT"
-			export GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
-			debug_log "Keyring ENV alındı: GNOME_KEYRING_CONTROL=$GNOME_KEYRING_CONTROL, SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
+	# NixOS sistem bin dizini (tam patika kullan)
+	SYS="/run/current-system/sw/bin"
 
-			# Ortama enjekte et (systemd --user & dbus aktivasyon için)
-			systemctl --user import-environment GNOME_KEYRING_CONTROL SSH_AUTH_SOCK 2>/dev/null || true
-			dbus-update-activation-environment GNOME_KEYRING_CONTROL SSH_AUTH_SOCK 1>/dev/null 2>&1 || true
-		else
-			debug_log "Keyring zaten çalışıyor olabilir (ENV çıkmadı)"
-		fi
+	if command -v "$SYS/dbus-run-session" >/dev/null 2>&1; then
+		debug_log "dbus-run-session ile (içinde keyring başlatılarak) açılıyor"
+		exec "$SYS/dbus-run-session" -- "$SYS/bash" -lc '
+      set -euo pipefail
+
+      # ── 1) Bu noktada YENİ bir user session bus var ─────────────────────────
+      # gnome-keyring’i BU bus üzerinde başlat; dönen ENV’yi içeri al
+      if command -v "'"$SYS"'/gnome-keyring-daemon" >/dev/null 2>&1; then
+        KR_OUT=$("'"$SYS"'/gnome-keyring-daemon" --start --components=secrets,ssh,pkcs11 || true)
+        if [[ -n "${KR_OUT:-}" ]]; then
+          eval "$KR_OUT"
+          export GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
+        fi
+      fi
+
+      # ── 2) ENV’yi systemd --user & dbus activation ortamına aktar ───────────
+      "'"$SYS"'/systemctl" --user import-environment \
+        GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
+        WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS || true
+
+      "'"$SYS"'/dbus-update-activation-environment" \
+        GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
+        WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS --systemd || true
+
+      # ── 3) Keyring gerçekten "owned" mı? (activatable değil) kısacık bekle ───
+      for _ in $(seq 1 10); do
+        if "'"$SYS"'/busctl" --user list 2>/dev/null \
+            | "'"$SYS"'/grep" -E "org\.freedesktop\.secrets" \
+            | "'"$SYS"'/grep" -vq "(activatable)"; then
+          break
+        fi
+        "'"$SYS"'/sleep" 0.1
+      done
+
+      # Tanılama (isteğe bağlı)
+      "'"$SYS"'/busctl" --user list | "'"$SYS"'/grep" -E "org\.freedesktop\.secrets|org\.gnome\.keyring" || true
+
+      # ── 4) GNOME oturumunu başlat ────────────────────────────────────────────
+      exec "'"$SYS"'/gnome-session" --session=gnome
+    ' >>"$GNOME_LOG" 2>&1
 	else
-		warn "gnome-keyring-daemon bulunamadı; kısayollarda gecikme yaşayabilirsiniz"
-	fi
-
-	# GNOME session'ı başlat
-	debug_log "GNOME session başlatılıyor"
-	if command -v dbus-run-session >/dev/null 2>&1; then
-		debug_log "dbus-run-session ile başlatılıyor"
-		exec dbus-run-session -- gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
-	else
-		debug_log "dbus-run-session yok, direkt gnome-session başlatılıyor"
-		exec gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
+		warn "dbus-run-session bulunamadı; doğrudan gnome-session denenecek (keyring entegrasyonu eksik olabilir)"
+		exec "$SYS/gnome-session" --session=gnome >>"$GNOME_LOG" 2>&1
 	fi
 }
 

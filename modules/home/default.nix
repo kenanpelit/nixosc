@@ -21,6 +21,7 @@
     ./hyprland      # Hyprland Wayland compositor configuration
     ./sway          # Sway tiling window manager
     ./cosmic        # Cosmic tiling desktop
+    ./gnome         # Library with common API for various GNOME modules
     ./waybar        # Wayland status bar and system information
     ./rofi          # Application launcher and menu system
     ./swaylock      # Screen locker for Wayland sessions
