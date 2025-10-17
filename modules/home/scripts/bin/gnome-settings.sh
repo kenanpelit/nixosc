@@ -628,195 +628,239 @@ dconf write /org/gnome/desktop/notifications/show-in-lock-screen "false"
 dconf write /org/gnome/desktop/notifications/show-banners "true"
 
 # =============================================================================
-# CUSTOM KEYBINDINGS
+# CUSTOM KEYBINDINGS (0..40) — absolute paths, no PATH lookups
 # =============================================================================
-echo "⌨️  Custom keybinding'ler ekleniyor..."
+echo "⌨️  Custom keybinding'ler (0..40) yazılıyor..."
 
-# Ana custom keybindings listesini oluştur
+# --- helpers: resolve absolute paths
+opt() {
+	local n="$1"
+	local cand
+
+	# 1) PATH içinde varsa
+	cand="$(command -v "$n" 2>/dev/null || true)"
+	if [ -n "$cand" ] && [ -x "$cand" ]; then
+		printf '%s' "$cand"
+		return 0
+	fi
+
+	# 2) NixOS'ta yaygın dizinler
+	for cand in \
+		"/etc/profiles/per-user/$USER/bin/$n" \
+		"$HOME/.local/bin/$n" \
+		"$HOME/.nix-profile/bin/$n" \
+		"/run/current-system/sw/bin/$n"; do
+		if [ -x "$cand" ]; then
+			printf '%s' "$cand"
+			return 0
+		fi
+	done
+
+	# 3) yoksa son çare isim (ama bu gecikme demek!)
+	printf '%s' "$n"
+}
+
+KITTY="$(opt kitty)"
+BRAVE="$(opt brave || opt brave-browser)"
+YAZI="$(opt yazi)"
+NEMO="$(opt nemo)"
+WALKER="$(opt walker)"
+COPYQ="$(opt copyq)"
+WEBCORD="$(opt webcord)"
+WMCTRL="$(opt wmctrl)"
+LOGINCTL="$(opt loginctl)"
+
+OSC_SOUNDCTL="$(opt osc-soundctl)"
+OSC_SPOTIFY="$(opt osc-spotify)"
+BLUE_TOGGLE="$(opt bluetooth_toggle)"
+MPV_MGR="$(opt gnome-mpv-manager)"
+KKENP="$(opt start-kkenp)"
+SEM_SUMO="$(opt semsumo)"
+WORKSW="$(opt workspace-switcher)"
+WSPREV="$(opt ws-prev)"
+WSNEXT="$(opt ws-next)"
+MULLVAD="$(opt osc-mullvad)"
+SCREENSHOT="$(opt gnome-screenshot)"
+
+# 0..40 path list
 CUSTOM_PATHS=""
 for i in {0..40}; do
-	if [ $i -eq 0 ]; then
-		CUSTOM_PATHS="'/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$i/'"
+	p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
+	if [ -z "$CUSTOM_PATHS" ]; then
+		CUSTOM_PATHS="'$p'"
 	else
-		CUSTOM_PATHS="$CUSTOM_PATHS, '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$i/'"
+		CUSTOM_PATHS="$CUSTOM_PATHS, '$p'"
 	fi
 done
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings "[ $CUSTOM_PATHS ]"
 
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings "[$CUSTOM_PATHS]"
-
-# Terminal
+# 0) Terminal
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/binding "'<Super>Return'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command "'kitty'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command "'$KITTY'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/name "'Terminal'"
 
-# Browser
+# 1) Browser
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/binding "'<Super>b'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command "'brave'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command "'$BRAVE'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/name "'Browser'"
 
-# Terminal File Manager (Floating)
+# 2) Terminal FM (floating yazi)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/binding "'<Super>e'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command "'kitty --class floating-terminal -e yazi'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command "'$KITTY --class floating-terminal -e $YAZI'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/name "'Terminal File Manager (Floating)'"
 
-# File Manager
+# 3) Nemo
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/binding "'<Alt><Ctrl>f'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/command "'nemo'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/command "'$NEMO'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/name "'Open Nemo File Manager'"
 
-# Terminal File Manager (Yazi)
+# 4) Terminal FM (yazi)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/binding "'<Alt>f'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/command "'kitty yazi'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/command "'$KITTY $YAZI'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/name "'Terminal File Manager (Yazi)'"
 
-# Walker Launcher
+# 5) Walker
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Super><Alt>space'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'walker'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'$WALKER'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/name "'Open Walker'"
 
-# Audio Output Switch
+# 6) Audio output switch
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/binding "'<Alt>a'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/command "'osc-soundctl switch'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/command "'$OSC_SOUNDCTL switch'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/name "'Switch Audio Output'"
 
-# Microphone Switch
+# 7) Mic switch
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7/binding "'<Alt><Ctrl>a'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7/command "'osc-soundctl switch-mic'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7/command "'$OSC_SOUNDCTL switch-mic'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom7/name "'Switch Microphone'"
 
-# Spotify Toggle
+# 8) Spotify toggle
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom8/binding "'<Alt>e'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom8/command "'osc-spotify'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom8/command "'$OSC_SPOTIFY'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom8/name "'Spotify Toggle'"
 
-# Spotify Next
+# 9) Spotify next
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom9/binding "'<Alt><Ctrl>n'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom9/command "'osc-spotify next'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom9/command "'$OSC_SPOTIFY next'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom9/name "'Spotify Next'"
 
-# Spotify Previous
+# 10) Spotify prev
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/binding "'<Alt><Ctrl>b'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/command "'osc-spotify prev'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/command "'$OSC_SPOTIFY prev'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/name "'Spotify Previous'"
 
-# MPV Start/Focus
+# 11) MPV start/focus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/binding "'<Alt>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/command "'gnome-mpv-manager start'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/command "'$MPV_MGR start'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/name "'MPV Start/Focus'"
 
-# Lock Screen
+# 12) Lock screen
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/binding "'<Alt>l'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/command "'loginctl lock-session'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/command "'$LOGINCTL lock-session'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/name "'Lock Screen'"
 
-# Previous Workspace
+# 13) Prev workspace
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/binding "'<Super><Alt>Left'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/command "'bash -c \"current=\$(wmctrl -d | grep \\\"*\\\" | awk \\\"{print \\\\\$1}\\\"); if [ \$current -gt 0 ]; then wmctrl -s \$((current - 1)); fi\"'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/command "'$WSPREV'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/name "'Previous Workspace'"
 
-# Next Workspace
+# 14) Next workspace
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/binding "'<Super><Alt>Right'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/command "'bash -c \"current=\$(wmctrl -d | grep \\\"*\\\" | awk \\\"{print \\\\\$1}\\\"); total=\$(wmctrl -d | wc -l); if [ \$current -lt \$((total - 1)) ]; then wmctrl -s \$((current + 1)); fi\"'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/command "'$WSNEXT'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/name "'Next Workspace'"
 
-# Discord
+# 15) Discord (WebCord)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom15/binding "'<Super><Shift>d'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom15/command "'webcord --enable-features=UseOzonePlatform --ozone-platform=wayland'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom15/command "'$WEBCORD --enable-features=UseOzonePlatform --ozone-platform=wayland'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom15/name "'Open Discord'"
 
-# KKENP
+# 16) KKENP
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/binding "'<Alt>t'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/command "'start-kkenp'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/command "'$KKENP'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/name "'Start KKENP'"
 
-# Notes Manager
+# 17) Notes Manager
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/binding "'<Super>n'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/command "'anotes -M'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/name "'Notes Manager'"
 
-# Clipboard Manager
+# 18) Clipboard (CopyQ)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/binding "'<Alt>v'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/command "'copyq toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/command "'$COPYQ toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/name "'Clipboard Manager'"
 
-# Bluetooth Toggle
+# 19) Bluetooth toggle
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/binding "'F10'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/command "'bluetooth_toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/command "'$BLUE_TOGGLE'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/name "'Bluetooth Toggle'"
 
-# Mullvad Toggle
+# 20) Mullvad toggle
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/binding "'<Alt>F12'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/command "'osc-mullvad toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/name "'Mullvad Toggle'"
 
-# Gnome Start
+# 21) Gnome Start
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/binding "'<Super><Alt>Return'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'semsumo launch --daily'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'$SEM_SUMO launch --daily'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/name "'Gnome Start'"
 
-# Screenshot Tool
+# 22) Screenshot UI
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'<Super><Shift>s'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'gnome-screenshot -i'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Screenshot Tool'"
 
-# MPV Move Window
+# 23) MPV Move
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Alt><Shift>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'gnome-mpv-manager move'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$MPV_MGR move'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'MPV Move Window'"
 
-# MPV Resize Center
+# 24) MPV Resize
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Alt><Ctrl>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'gnome-mpv-manager resize'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$MPV_MGR resize'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'MPV Resize Center'"
 
-# Play YouTube from Clipboard
+# 25) Play YouTube (clipboard)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>y'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/command "'gnome-mpv-manager play-yt'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/command "'$MPV_MGR play-yt'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/name "'Play YouTube from Clipboard'"
 
-# Download YouTube Video
+# 26) Save YouTube
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/binding "'<Alt><Shift>y'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/command "'gnome-mpv-manager save-yt'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/command "'$MPV_MGR save-yt'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/name "'Download YouTube Video'"
 
-# MPV Toggle Playback
+# 27) MPV Toggle
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/binding "'<Alt>p'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'gnome-mpv-manager playback'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'$MPV_MGR playback'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/name "'MPV Toggle Playback'"
 
-# Workspace Switching with History Support (1-9)
-echo "🔢 Workspace keybinding'leri ekleniyor..."
-
+# 28..36) Workspaces 1..9 (history switcher)
 for i in {1..9}; do
-	custom_index=$((27 + i))
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$custom_index/binding "'<Super>$i'"
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$custom_index/command "'workspace-switcher $i'"
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$custom_index/name "'Workspace $i (with history)'"
+	idx=$((27 + i)) # 28..36
+	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<Super>$i'"
+	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/command "'$WORKSW $i'"
+	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/name "'Workspace $i (with history)'"
 done
 
-# Power Management Shortcuts
-echo "⚡ Power management keybinding'leri ekleniyor..."
-
-# Shutdown
+# 37) Shutdown
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/binding "'<Ctrl><Alt><Shift>s'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/command "'gnome-session-quit --power-off --no-prompt'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/name "'Shutdown Computer'"
 
-# Restart
+# 38) Restart
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38/binding "'<Ctrl><Alt>r'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38/command "'gnome-session-quit --reboot --no-prompt'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom38/name "'Restart Computer'"
 
-# Logout
+# 39) Logout
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom39/binding "'<Ctrl><Alt>q'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom39/command "'gnome-session-quit --logout --no-prompt'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom39/name "'Logout'"
 
-# Power Menu
+# 40) Power menu (confirm)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/binding "'<Ctrl><Alt>p'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/command "'gnome-session-quit --power-off'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/name "'Power Menu (with confirmation)'"
-
 # =============================================================================
 # EXTENSION COMPLEX CONFIGURATIONS
 # =============================================================================
@@ -946,13 +990,13 @@ fi
 # =============================================================================
 # FINALIZATION
 # =============================================================================
-echo "🔄 DConf güncelleniyor..."
-dconf update
+#echo "🔄 DConf güncelleniyor..."
+#dconf update
 
-echo "🔧 GNOME Settings Daemon restart ediliyor..."
-pkill -f gnome-settings-daemon || true
-sleep 2
-nohup gnome-settings-daemon >/dev/null 2>&1 &
+#echo "🔧 GNOME Settings Daemon restart ediliyor..."
+#pkill -f gnome-settings-daemon || true
+#sleep 2
+#nohup gnome-settings-daemon >/dev/null 2>&1 &
 
 echo ""
 echo "✅ GNOME + Catppuccin Mocha Konfigürasyonu başarıyla tamamlandı!"
