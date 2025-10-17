@@ -528,7 +528,6 @@ cleanup() {
 # =============================================================================
 # GNOME Başlatma
 # =============================================================================
-
 start_gnome() {
 	print_header "GNOME BAŞLATILIYOR"
 	debug_log "GNOME başlatma fonksiyonu çağrıldı"
@@ -549,17 +548,35 @@ start_gnome() {
 	info "Log: $GNOME_LOG"
 	info "═══════════════════════════════════════════════════════════"
 
+	# Log dosyasını sıfırla
+	: >"$GNOME_LOG"
+
+	# --- ÖNEMLİ: Keyring'i oturumdan önce başlat ---
+	if command -v gnome-keyring-daemon >/dev/null 2>&1; then
+		debug_log "gnome-keyring-daemon önden başlatılıyor"
+		KR_OUT="$(gnome-keyring-daemon --start --components=secrets,ssh,pkcs11 2>/dev/null || true)"
+		if [[ -n "$KR_OUT" ]]; then
+			eval "$KR_OUT"
+			export GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
+			debug_log "Keyring ENV alındı: GNOME_KEYRING_CONTROL=$GNOME_KEYRING_CONTROL, SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
+
+			# Ortama enjekte et (systemd --user & dbus aktivasyon için)
+			systemctl --user import-environment GNOME_KEYRING_CONTROL SSH_AUTH_SOCK 2>/dev/null || true
+			dbus-update-activation-environment GNOME_KEYRING_CONTROL SSH_AUTH_SOCK 1>/dev/null 2>&1 || true
+		else
+			debug_log "Keyring zaten çalışıyor olabilir (ENV çıkmadı)"
+		fi
+	else
+		warn "gnome-keyring-daemon bulunamadı; kısayollarda gecikme yaşayabilirsiniz"
+	fi
+
+	# GNOME session'ı başlat
 	debug_log "GNOME session başlatılıyor"
-
-	# Log dosyasını truncate et
-	>"$GNOME_LOG"
-
-	# .zprofile'daki çalışan yöntemi kullan
-	if command -v dbus-run-session &>/dev/null; then
-		debug_log "dbus-run-session wrapper ile başlatılıyor"
+	if command -v dbus-run-session >/dev/null 2>&1; then
+		debug_log "dbus-run-session ile başlatılıyor"
 		exec dbus-run-session -- gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
 	else
-		debug_log "Direkt gnome-session başlatılıyor (dbus-run-session yok)"
+		debug_log "dbus-run-session yok, direkt gnome-session başlatılıyor"
 		exec gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
 	fi
 }

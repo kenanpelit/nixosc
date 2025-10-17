@@ -149,6 +149,25 @@ in
       '';
     };
 
+    # GNOME Keyring’i GNOME servisleriyle aç
+    services.gnome.gnome-keyring.enable = true;
+
+    # TTY’den GNOME başlattığında da secrets bus adını sahiplenen user-unit
+    systemd.user.services.gnome-keyring-secrets = {
+      description = "GNOME Keyring (Secrets/SSH/PKCS11) — own org.freedesktop.secrets";
+      after = [ "graphical-session.target" "dbus.service" ];
+      wants = [ "graphical-session.target" ];
+      wantedBy = [ "graphical-session.target" ];
+      partOf = [ "graphical-session.target" ];
+
+      serviceConfig = {
+        Type = "dbus";
+        BusName = "org.freedesktop.secrets";
+        ExecStart = "${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --foreground --components=secrets,ssh,pkcs11";
+        Restart = "on-failure";
+      };
+    };
+
     # --------------------------------------------------------------------------
     # System Security Services
     # --------------------------------------------------------------------------
