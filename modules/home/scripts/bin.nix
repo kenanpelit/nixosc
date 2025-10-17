@@ -357,6 +357,12 @@ let
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
   );
+  ws-next = pkgs.writeShellScriptBin "ws-next" (
+    builtins.readFile ./bin/ws-next.sh
+  );
+  ws-prev = pkgs.writeShellScriptBin "ws-prev" (
+    builtins.readFile ./bin/ws-prev.sh
+  );
   zen_profile_launcher = pkgs.writeShellScriptBin "zen_profile_launcher" (
     builtins.readFile ./bin/zen_profile_launcher.sh
   );
@@ -484,6 +490,8 @@ in {
     wallpaper-manager
     workspace-switcher
     wrename
+    ws-next
+    ws-prev
     zen_profile_launcher
     zen_terminate_sessions
   ];
