@@ -11,7 +11,7 @@
         # Tüm environment değişkenleri ilgili başlatma script'lerinde ayarlanır.
         # =============================================================================
         # TTY Atamaları:
-        #   TTY1: Display Manager (cosmic-greeter) - Session Selection
+        #   TTY1: Display Manager - Session Selection
         #   TTY2: Hyprland (hyprland_tty script ile)
         #   TTY3: GNOME (gnome_tty script ile)
         #   TTY4: COSMIC (cosmic_tty script ile)
@@ -28,15 +28,15 @@
             fi
             
             # ==========================================================================
-            # TTY1: Display Manager (cosmic-greeter)
+            # TTY1: Display Manager
             # ==========================================================================
             if [ "''${XDG_VTNR}" = "1" ]; then
                 echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY1: Display Manager (cosmic-greeter)                    ║"
+                echo "║  TTY1: Display Manager                                     ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
                 echo ""
                 echo "Available Desktop Sessions:"
-                echo "  • COSMIC   - Rust-based desktop (Beta)"
+                echo "  • COSMIC   - Rust-based desktop"
                 echo "  • Hyprland - Dynamic tiling Wayland compositor"
                 echo "  • GNOME    - Traditional GNOME desktop"
                 echo ""
@@ -103,7 +103,7 @@
                 fi
             
             # ==========================================================================
-            # TTY4: COSMIC Desktop Environment (Beta)
+            # TTY4: COSMIC Desktop Environment
             # ==========================================================================
             # Tüm environment ayarları cosmic_tty script'inde yapılır
             elif [ "''${XDG_VTNR}" = "4" ]; then
