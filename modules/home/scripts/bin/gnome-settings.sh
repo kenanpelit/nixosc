@@ -681,7 +681,7 @@ WSPREV="$(opt ws-prev)"
 WSNEXT="$(opt ws-next)"
 MULLVAD="$(opt osc-mullvad)"
 SCREENSHOT="$(opt gnome-screenshot)"
-GKR="$(opt gnome-gkr-fix)"
+GKR="$(opt gnome-kr-fix)"
 
 # 0..40 path list
 CUSTOM_PATHS=""

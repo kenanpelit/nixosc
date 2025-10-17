@@ -556,44 +556,61 @@ start_gnome() {
 
 	if command -v "$SYS/dbus-run-session" >/dev/null 2>&1; then
 		debug_log "dbus-run-session ile (içinde keyring başlatılarak) açılıyor"
-		exec "$SYS/dbus-run-session" -- "$SYS/bash" -lc '
+		exec "$SYS/dbus-run-session" -- "$SYS/bash" -lc "
       set -euo pipefail
 
       # ── 1) Bu noktada YENİ bir user session bus var ─────────────────────────
-      # gnome-keyring’i BU bus üzerinde başlat; dönen ENV’yi içeri al
-      if command -v "'"$SYS"'/gnome-keyring-daemon" >/dev/null 2>&1; then
-        KR_OUT=$("'"$SYS"'/gnome-keyring-daemon" --start --components=secrets,ssh,pkcs11 || true)
-        if [[ -n "${KR_OUT:-}" ]]; then
-          eval "$KR_OUT"
+      # gnome-keyring'i BU bus üzerinde başlat; dönen ENV'yi içeri al
+      if command -v '$SYS/gnome-keyring-daemon' >/dev/null 2>&1; then
+        KR_OUT=\$('$SYS/gnome-keyring-daemon' --start --components=secrets,ssh,pkcs11 || true)
+        if [[ -n \"\${KR_OUT:-}\" ]]; then
+          eval \"\$KR_OUT\"
           export GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
         fi
       fi
 
-      # ── 2) ENV’yi systemd --user & dbus activation ortamına aktar ───────────
-      "'"$SYS"'/systemctl" --user import-environment \
+      # ── 2) ENV'yi systemd --user & dbus activation ortamına aktar ───────────
+      '$SYS/systemctl' --user import-environment \
         GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
         WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS || true
 
-      "'"$SYS"'/dbus-update-activation-environment" \
+      '$SYS/dbus-update-activation-environment' \
         GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
         WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS --systemd || true
 
-      # ── 3) Keyring gerçekten "owned" mı? (activatable değil) kısacık bekle ───
-      for _ in $(seq 1 10); do
-        if "'"$SYS"'/busctl" --user list 2>/dev/null \
-            | "'"$SYS"'/grep" -E "org\.freedesktop\.secrets" \
-            | "'"$SYS"'/grep" -vq "(activatable)"; then
+      # ── 3) Keyring gerçekten \"owned\" mı? (activatable değil) kısacık bekle ───
+      for _ in \$(seq 1 10); do
+        if '$SYS/busctl' --user list 2>/dev/null \
+            | '$SYS/grep' -E 'org\.freedesktop\.secrets' \
+            | '$SYS/grep' -vq '(activatable)'; then
           break
         fi
-        "'"$SYS"'/sleep" 0.1
+        '$SYS/sleep' 0.1
       done
 
+      # ── 3.5) GNOME-GKR-FIX: Eğer hala activatable ise zorla düzelt ──────────
+      if '$SYS/busctl' --user list 2>/dev/null \
+          | '$SYS/grep' -E 'org\.freedesktop\.secrets' \
+          | '$SYS/grep' -q '(activatable)'; then
+        
+        echo \"[\$(date +%H:%M:%S)] Keyring hala activatable, gnome-gkr-fix çalıştırılıyor...\" >&2
+        
+        # gnome-gkr-fix varsa çalıştır (home-manager ile kurulmuş olabilir)
+        if command -v gnome-gkr-fix >/dev/null 2>&1; then
+          gnome-gkr-fix 2>&1 | head -20 || true
+        else
+          echo \"[\$(date +%H:%M:%S)] UYARI: gnome-gkr-fix bulunamadı, atlıyor\" >&2
+        fi
+      else
+        echo \"[\$(date +%H:%M:%S)] ✅ Keyring zaten owned, fix gereksiz\" >&2
+      fi
+
       # Tanılama (isteğe bağlı)
-      "'"$SYS"'/busctl" --user list | "'"$SYS"'/grep" -E "org\.freedesktop\.secrets|org\.gnome\.keyring" || true
+      '$SYS/busctl' --user list | '$SYS/grep' -E 'org\.freedesktop\.secrets|org\.gnome\.keyring' || true
 
       # ── 4) GNOME oturumunu başlat ────────────────────────────────────────────
-      exec "'"$SYS"'/gnome-session" --session=gnome
-    ' >>"$GNOME_LOG" 2>&1
+      exec '$SYS/gnome-session' --session=gnome
+    " >>"$GNOME_LOG" 2>&1
 	else
 		warn "dbus-run-session bulunamadı; doğrudan gnome-session denenecek (keyring entegrasyonu eksik olabilir)"
 		exec "$SYS/gnome-session" --session=gnome >>"$GNOME_LOG" 2>&1

@@ -28,11 +28,21 @@ GKD_BIN="$(command -v gnome-keyring-daemon || true)"
 [[ -n "$GKD_BIN" ]] || GKD_BIN="/run/current-system/sw/bin/gnome-keyring-daemon"
 [[ -x "$GKD_BIN" ]] || die "gnome-keyring-daemon bulunamadı"
 SYSTEMD_RUN="$(command -v systemd-run || true)"
+[[ -n "$SYSTEMD_RUN" ]] || SYSTEMD_RUN="/run/current-system/sw/bin/systemd-run"
+[[ -x "$SYSTEMD_RUN" ]] || die "systemd-run yok"
+
+SYSTEMCTL="$(command -v systemctl || true)"
+[[ -n "$SYSTEMCTL" ]] || SYSTEMCTL="/run/current-system/sw/bin/systemctl"
+[[ -x "$SYSTEMCTL" ]] || die "systemctl yok"
+
 BUSCTL_BIN="$(command -v busctl || true)"
+[[ -n "$BUSCTL_BIN" ]] || BUSCTL_BIN="/run/current-system/sw/bin/busctl"
+[[ -x "$BUSCTL_BIN" ]] || die "busctl yok"
+
+# grep kullan (ripgrep farklı syntax kullanıyor)
 GREP_BIN="$(command -v grep || true)"
-[[ -n "$SYSTEMD_RUN" ]] || die "systemd-run yok"
-[[ -n "$BUSCTL_BIN" ]] || die "busctl yok"
-[[ -n "$GREP_BIN" ]] || die "grep yok"
+[[ -n "$GREP_BIN" ]] || GREP_BIN="/run/current-system/sw/bin/grep"
+[[ -x "$GREP_BIN" ]] || die "grep yok"
 
 # --- force user bus ---------------------------------------------------------
 : "${XDG_RUNTIME_DIR:="/run/user/$(id -u)"}"
@@ -55,7 +65,7 @@ log "Keyring binary            : ${GKD_BIN}"
 "$NOTIFY_SEND" -u low -a "Keyring Fix" "🔧 Keyring Fix" "GNOME Keyring yeniden başlatılıyor..." 2>/dev/null || log "notify başarısız (devam ediyoruz)"
 
 # --- start/replace keyring in background via systemd-run --------------------
-UNIT="gnome-keyring-fix-$(date +%s)"
+UNIT="gnome-keyring-fix-$(date +%s 2>/dev/null || echo $)"
 log "systemd-run --user başlatılıyor (unit: ${UNIT})"
 
 "$SYSTEMD_RUN" --user --unit="$UNIT" --collect --quiet \
