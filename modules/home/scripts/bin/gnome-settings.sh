@@ -681,10 +681,11 @@ WSPREV="$(opt ws-prev)"
 WSNEXT="$(opt ws-next)"
 MULLVAD="$(opt osc-mullvad)"
 SCREENSHOT="$(opt gnome-screenshot)"
+GKR="$(opt gnome-gkr-fix)"
 
 # 0..40 path list
 CUSTOM_PATHS=""
-for i in {0..40}; do
+for i in {0..41}; do
 	p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
 	if [ -z "$CUSTOM_PATHS" ]; then
 		CUSTOM_PATHS="'$p'"
@@ -861,6 +862,12 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/binding "'<Ctrl><Alt>p'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/command "'gnome-session-quit --power-off'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/name "'Power Menu (with confirmation)'"
+
+# 41) GKR
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/binding "'<Super><Ctrl>F12'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/command "'$GKR'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/name "'GNOME GKR'"
+
 # =============================================================================
 # EXTENSION COMPLEX CONFIGURATIONS
 # =============================================================================
