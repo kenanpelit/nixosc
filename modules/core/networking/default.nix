@@ -1,33 +1,56 @@
+# modules/core/networking/default.nix
 # ==============================================================================
-# Networking & TCP/IP Stack Configuration Module
+# Networking & TCP/IP Stack Configuration - Production Grade
 # ==============================================================================
 #
-# Module: modules/core/networking
-# Author: Kenan Pelit
-# Date:   2025-10-09
+# Module:      modules/core/networking
+# Purpose:     Network management, VPN, TCP optimization, DNS configuration
+# Author:      Kenan Pelit
+# Created:     2025-10-09
+# Modified:    2025-10-18
 #
-# Scope:
-#   - Hostname, NetworkManager, systemd-resolved
-#   - Mullvad VPN & WireGuard integration with killswitch
-#   - TCP/IP stack optimizations (BBR + FQ, buffer tuning, ECN)
-#   - Dynamic TCP tuning based on system memory (≥16GB gets high profile)
-#   - IPv6 support with selective disable for problematic interfaces
-#   - Network diagnostic tools and aliases
+# Architecture:
+#   NetworkManager → systemd-resolved → VPN (Mullvad/WireGuard) → TCP Stack
+#        ↓                 ↓                    ↓                      ↓
+#   WiFi/Ethernet      DNS Cache          Encrypted Tunnel       BBR+FQ+ECN
 #
-# Design Philosophy:
-#   - Performance: Modern congestion control (BBR), fair queuing, ECN
-#   - Security: Hardened IP stack, MAC randomization, killswitch ready
-#   - Reliability: Systemd-native service ordering, robust error handling
-#   - Observability: Rich diagnostics and status tools
+# TCP Tuning Philosophy:
+#   Three-tier adaptive tuning based on available system memory:
+#   • ULTRA (≥60GB RAM): E14 Gen 6 (Core Ultra 7 155H, 64GB)
+#     - 64MB buffers, 32k backlog, 1M conntrack
+#     - High-throughput workloads, VMs, containers
+#   
+#   • HIGH (32-59GB RAM): Reserved for future mid-tier systems
+#     - 32MB buffers, 16k backlog, 524k conntrack
+#     - Balanced performance
+#   
+#   • STANDARD (<32GB RAM): X1 Carbon Gen 6 (i7-8650U, 16GB)
+#     - 16MB buffers, 5k backlog, 262k conntrack
+#     - Daily driver, power-efficient
 #
-# Key Improvements (v2):
-#   - IPv6 enabled by default with per-interface control
-#   - Lowered memory threshold (16GB) for high-performance profile
-#   - Improved Mullvad auto-connect with systemd restarts
-#   - Cached memory detection to avoid repeated calculations
-#   - Enhanced MTU handling for WireGuard/VPN scenarios
-#   - JSON-based DNS leak testing
-#   - BBR version detection in diagnostics
+# Key Features:
+#   ✓ Dynamic TCP tuning (memory-aware profiles)
+#   ✓ BBR congestion control + FQ qdisc
+#   ✓ Mullvad VPN with killswitch support
+#   ✓ systemd-resolved (DNSSEC, cache, per-link DNS)
+#   ✓ NetworkManager (WiFi, Ethernet, VPN integration)
+#   ✓ IPv6 enabled with privacy extensions
+#   ✓ Comprehensive diagnostic tools
+#
+# Design Principles:
+#   • Performance - Modern congestion control, optimized buffers
+#   • Security - Hardened IP stack, MAC randomization, VPN killswitch
+#   • Reliability - Systemd-native, robust error handling
+#   • Observability - Rich diagnostics and monitoring
+#
+# Module Boundaries:
+#   ✓ Network configuration          (THIS MODULE)
+#   ✓ TCP/IP stack tuning            (THIS MODULE)
+#   ✓ VPN client setup               (THIS MODULE)
+#   ✓ DNS resolution                 (THIS MODULE)
+#   ✗ Firewall rules                 (security module)
+#   ✗ SSH daemon                     (security module)
+#   ✗ Network services (HTTP, etc.)  (services module)
 #
 # ==============================================================================
 
@@ -37,79 +60,76 @@ let
   inherit (lib) mkIf mkMerge mkDefault mkForce;
   toString = builtins.toString;
 
-  # --------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # VPN State Detection
-  # --------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   hasMullvad = config.services.mullvad-vpn.enable or false;
 
-  # --------------------------------------------------------------------------
-  # TCP Profile Parameters
-  # --------------------------------------------------------------------------
-  # Three-tier tuning based on your hardware:
-  #
-  # ULTRA Profile (≥60GB RAM):
-  #   Target: ThinkPad E14 Gen 6 (Core Ultra 7 155H, 64GB)
-  #   Note: Threshold is 60GB to account for iGPU shared memory
-  #   Use case: Heavy workloads, VMs, containers, high-throughput
-  #
-  # HIGH Profile (32-59GB RAM):
-  #   Reserved for future mid-tier systems
-  #
-  # STANDARD Profile (<32GB RAM):
-  #   Target: ThinkPad X1 Carbon Gen 6 (i7-8650U, 16GB)
-  #   Use case: Daily driver, balanced performance/memory
+  # ----------------------------------------------------------------------------
+  # TCP Profile Parameters (Three-Tier System)
+  # ----------------------------------------------------------------------------
+  # Buffer sizes in "min default max" format
+  # Memory pools in pages (4KB each)
+  # Thresholds account for iGPU shared memory on E14 Gen 6
   
   ultra = {
-    rmem               = "4096 1048576 67108864";  # 64MB max receive buffer
-    wmem               = "4096 1048576 67108864";  # 64MB max send buffer
-    rmem_max           = 67108864;
-    wmem_max           = 67108864;
-    rmem_default       = 2097152;                  # 2MB default
-    wmem_default       = 2097152;
-    netdev_max_backlog = 32000;                    # Very high packet rate
-    somaxconn          = 8192;                     # Many concurrent connections
-    tcp_max_syn_backlog = 16384;
-    tcp_max_tw_buckets  = 4000000;
-    tcp_mem            = "3145728 4194304 6291456"; # 24GB max TCP memory
-    udp_mem            = "1572864 2097152 3145728";  # 12GB max UDP memory
-    conntrack_max      = 1048576;                  # 1M conntrack entries
+    # Buffer Configuration (64MB max for high-throughput)
+    rmem               = "4096 1048576 67108864";   # RX: 4KB min, 1MB default, 64MB max
+    wmem               = "4096 1048576 67108864";   # TX: 4KB min, 1MB default, 64MB max
+    rmem_max           = 67108864;                  # 64MB max receive buffer
+    wmem_max           = 67108864;                  # 64MB max send buffer
+    rmem_default       = 2097152;                   # 2MB default RX
+    wmem_default       = 2097152;                   # 2MB default TX
+    
+    # Queue Configuration (handle high packet rates)
+    netdev_max_backlog = 32000;                     # RX queue size (packets)
+    somaxconn          = 8192;                      # Listen backlog (connections)
+    tcp_max_syn_backlog = 16384;                    # SYN backlog (half-open connections)
+    tcp_max_tw_buckets  = 4000000;                  # TIME-WAIT sockets (4M)
+    
+    # Memory Pools (pages, 4KB each)
+    tcp_mem            = "3145728 4194304 6291456"; # TCP: 12GB/16GB/24GB
+    udp_mem            = "1572864 2097152 3145728"; # UDP: 6GB/8GB/12GB
+    
+    # Connection Tracking (for NAT, firewall, VPN)
+    conntrack_max      = 1048576;                   # 1M tracked connections
   };
 
   high = {
-    rmem               = "4096 524288 33554432";   # 32MB max receive buffer
-    wmem               = "4096 524288 33554432";   # 32MB max send buffer
+    rmem               = "4096 524288 33554432";    # RX: 32MB max
+    wmem               = "4096 524288 33554432";    # TX: 32MB max
     rmem_max           = 33554432;
     wmem_max           = 33554432;
-    rmem_default       = 1048576;                  # 1MB default
+    rmem_default       = 1048576;                   # 1MB default
     wmem_default       = 1048576;
     netdev_max_backlog = 16000;
     somaxconn          = 4096;
     tcp_max_syn_backlog = 8192;
     tcp_max_tw_buckets  = 2000000;
-    tcp_mem            = "1572864 2097152 3145728"; # 12GB max TCP memory
-    udp_mem            = "786432 1048576 1572864";  # 6GB max UDP memory
+    tcp_mem            = "1572864 2097152 3145728"; # TCP: 6GB/8GB/12GB
+    udp_mem            = "786432 1048576 1572864";  # UDP: 3GB/4GB/6GB
     conntrack_max      = 524288;
   };
 
   std = {
-    rmem               = "4096 262144 16777216";   # 16MB max receive buffer
-    wmem               = "4096 262144 16777216";   # 16MB max send buffer
+    rmem               = "4096 262144 16777216";    # RX: 16MB max
+    wmem               = "4096 262144 16777216";    # TX: 16MB max
     rmem_max           = 16777216;
     wmem_max           = 16777216;
-    rmem_default       = 524288;                   # 512KB default
+    rmem_default       = 524288;                    # 512KB default
     wmem_default       = 524288;
     netdev_max_backlog = 5000;
     somaxconn          = 1024;
     tcp_max_syn_backlog = 2048;
     tcp_max_tw_buckets  = 1000000;
-    tcp_mem            = "786432 1048576 1572864"; # 6GB max TCP memory
-    udp_mem            = "393216 524288 786432";   # 3GB max UDP memory
+    tcp_mem            = "786432 1048576 1572864";  # TCP: 3GB/4GB/6GB
+    udp_mem            = "393216 524288 786432";    # UDP: 1.5GB/2GB/3GB
     conntrack_max      = 262144;
   };
 
-  # --------------------------------------------------------------------------
-  # Tool Paths (for consistent script execution)
-  # --------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
+  # Tool Paths (Stable References)
+  # ----------------------------------------------------------------------------
   awk    = "${pkgs.gawk}/bin/awk";
   grep   = "${pkgs.gnugrep}/bin/grep";
   sysctl = "${pkgs.procps}/bin/sysctl";
@@ -117,11 +137,11 @@ let
   mkdir  = "${pkgs.coreutils}/bin/mkdir";
   bash   = "${pkgs.bash}/bin/bash";
 
-  # --------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Memory Detection Script
-  # --------------------------------------------------------------------------
-  # Returns total system memory in MB
-  # Used for dynamic TCP profile selection
+  # ----------------------------------------------------------------------------
+  # Reads /proc/meminfo and returns total RAM in MB
+  # Used to determine which TCP profile to apply
   
   detectMemoryScript = pkgs.writeShellScript "detect-memory" ''
     #!${bash}
@@ -130,16 +150,15 @@ let
     echo $((TOTAL_KB / 1024))
   '';
 
-  # --------------------------------------------------------------------------
-  # Memory Profile Cache Script
-  # --------------------------------------------------------------------------
-  # Caches detected profile to avoid repeated detection
-  # Writes to /run/network-tuning-profile (tmpfs, survives until reboot)
-  # 
-  # Profile tiers:
-  #   ultra: ≥60GB RAM (E14 Gen 6 - accounts for iGPU shared memory)
-  #   high:  32-59GB RAM (future systems)
-  #   std:   <32GB RAM (X1 Carbon Gen 6 - i7-8650U)
+  # ----------------------------------------------------------------------------
+  # Profile Detection & Caching Script
+  # ----------------------------------------------------------------------------
+  # Determines TCP profile based on RAM and caches result
+  # Cache: /run/network-tuning-profile (tmpfs, persists until reboot)
+  # Thresholds:
+  #   ≥60GB → ultra  (E14 Gen 6, accounts for iGPU shared memory)
+  #   32-59GB → high (future systems)
+  #   <32GB → std    (X1 Carbon Gen 6)
   
   detectAndCacheProfile = pkgs.writeShellScript "detect-and-cache-profile" ''
     #!${bash}
@@ -152,356 +171,410 @@ let
     TOTAL_GB=$((TOTAL_MB / 1024))
     
     if [[ "$TOTAL_MB" -ge 61440 ]]; then
-      # ≥60GB: ULTRA profile for heavy workloads (accounts for iGPU shared memory)
+      # ≥60GB: ULTRA profile (E14 Gen 6 - Core Ultra 7 155H)
       echo "ultra" > "$CACHE_FILE"
-      echo "Detected ''${TOTAL_GB}GB RAM → ULTRA performance profile (E14 Gen 6)"
-      echo "  Target: 64MB buffers, 32k backlog, 1M conntrack"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "[TCP] Detected ''${TOTAL_GB}GB RAM → ULTRA performance profile"
+      echo "[TCP] Target: E14 Gen 6 (Core Ultra 7 155H)"
+      echo "[TCP] Config: 64MB buffers, 32k backlog, 1M conntrack"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     elif [[ "$TOTAL_MB" -ge 32768 ]]; then
-      # 32-63GB: HIGH profile (reserved for future systems)
+      # 32-59GB: HIGH profile (reserved for future)
       echo "high" > "$CACHE_FILE"
-      echo "Detected ''${TOTAL_GB}GB RAM → HIGH performance profile"
-      echo "  Target: 32MB buffers, 16k backlog, 524k conntrack"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "[TCP] Detected ''${TOTAL_GB}GB RAM → HIGH performance profile"
+      echo "[TCP] Config: 32MB buffers, 16k backlog, 524k conntrack"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     else
-      # <32GB: STANDARD profile for balanced systems
+      # <32GB: STANDARD profile (X1 Carbon Gen 6 - i7-8650U)
       echo "std" > "$CACHE_FILE"
-      echo "Detected ''${TOTAL_GB}GB RAM → STANDARD profile (X1 Carbon Gen 6)"
-      echo "  Target: 16MB buffers, 5k backlog, 262k conntrack"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "[TCP] Detected ''${TOTAL_GB}GB RAM → STANDARD profile"
+      echo "[TCP] Target: X1 Carbon Gen 6 (i7-8650U)"
+      echo "[TCP] Config: 16MB buffers, 5k backlog, 262k conntrack"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     fi
   '';
 
 in
 {
   # ============================================================================
-  # Base Networking Configuration
+  # Base Networking Configuration (Layer 1: Foundation)
   # ============================================================================
   
   networking = {
+    # Hostname from host parameter
     hostName = "${host}";
     
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # IPv6 Configuration
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Enabled by default for modern internet compatibility
-    # Can be disabled per-interface if causing issues:
-    #   networking.interfaces.<name>.ipv6.enable = false;
+    # Many CDNs (Cloudflare, Fastly) prefer IPv6
+    # Streaming services (Netflix, YouTube) use IPv6
     
     enableIPv6 = mkDefault true;
     
-    # Privacy extensions for IPv6 (RFC 4941)
-    # Generates temporary addresses to prevent tracking
+    # ---- Privacy Extensions (RFC 4941) ----
+    # Generate temporary IPv6 addresses to prevent tracking
+    # Rotates addresses periodically while keeping stable address
     tempAddresses = mkDefault "default";
     
-    # Wi-Fi managed by NetworkManager (not wpa_supplicant directly)
+    # Per-interface IPv6 disable (if needed):
+    # networking.interfaces.<name>.ipv6.enable = false;
+    
+    # ---- Disable wpa_supplicant ----
+    # NetworkManager manages WiFi (don't use both)
     wireless.enable = false;
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # NetworkManager Configuration
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # Modern network management daemon
+    # Handles: WiFi, Ethernet, VPN, mobile broadband
+    
     networkmanager = {
       enable = true;
       
-      # Wi-Fi backend and privacy settings
+      # ========================================================================
+      # WiFi Configuration
+      # ========================================================================
       wifi = {
+        # ---- Backend Selection ----
+        # wpa_supplicant: Stable, mature (recommended)
+        # iwd: Modern, faster, but less tested
         backend = "wpa_supplicant";
-        scanRandMacAddress = true;     # Privacy: randomize MAC during scans
-        powersave = false;             # Stability > power saving (reduce disconnects)
-        macAddress = "preserve";       # Keep MAC after connection (some networks require this)
+        
+        # ---- Privacy Features ----
+        # Randomize MAC during WiFi scans (prevents tracking)
+        scanRandMacAddress = true;
+        
+        # ---- Power Management ----
+        # Disabled: Reduces disconnects, better reliability
+        # Enable on laptops if battery life is critical
+        powersave = false;
+        
+        # ---- MAC Address Policy ----
+        # preserve: Keep real MAC after connection (some networks require this)
+        # random: Randomize MAC per connection (maximum privacy)
+        # stable: Generate consistent random MAC per SSID
+        macAddress = "preserve";
       };
       
-      # Delegate DNS resolution to systemd-resolved
+      # ========================================================================
+      # DNS Configuration
+      # ========================================================================
+      # Delegate to systemd-resolved for:
+      # - Caching, DNSSEC validation
+      # - Per-link DNS (VPN can override)
+      # - mDNS/LLMNR support
       dns = "systemd-resolved";
       
-      # Additional privacy/security settings
+      # ========================================================================
+      # Ethernet Configuration
+      # ========================================================================
+      # Preserve MAC on Ethernet (no privacy benefit, adds complexity)
       ethernet.macAddress = "preserve";
       
-      # Connection-specific settings
+      # ========================================================================
+      # Connection Settings
+      # ========================================================================
       settings = {
         connection = {
-          # Auto-connect to known networks
-          "connection.autoconnect-retries" = 0;  # Infinite retries
+          # Retry forever (0 = infinite)
+          # Useful for: Unstable networks, sleep/wake cycles
+          "connection.autoconnect-retries" = 0;
         };
         
-        # IPv6 privacy
+        # IPv6 Privacy
         ipv6 = {
-          "ipv6.ip6-privacy" = 2;  # Prefer temporary addresses
+          # Prefer temporary addresses (RFC 4941)
+          # 0: Disabled, 1: Enabled, 2: Prefer temporary
+          "ipv6.ip6-privacy" = 2;
         };
       };
     };
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # WireGuard Support
-    # --------------------------------------------------------------------------
-    # Kernel module for VPN tunnels (Mullvad uses WireGuard)
+    # ==========================================================================
+    # Kernel module for modern VPN protocol
+    # Used by: Mullvad, Tailscale, many commercial VPNs
+    # Benefits: Faster than OpenVPN, simpler than IPsec, built into kernel
     wireguard.enable = true;
 
-    # --------------------------------------------------------------------------
-    # DNS Configuration
-    # --------------------------------------------------------------------------
-    # When Mullvad is active, it provides its own DNS (with ad/tracker blocking)
-    # Otherwise, use privacy-focused public DNS servers
+    # ==========================================================================
+    # DNS Servers (Layer 2: Name Resolution)
+    # ==========================================================================
+    # Fallback DNS when Mullvad is not active
     # Priority: Privacy > Speed > Reliability
+    #
+    # When Mullvad VPN is active:
+    # - Mullvad provides DNS (with ad/tracker blocking)
+    # - These servers are ignored
+    #
+    # When VPN is inactive:
+    # - Use privacy-focused public resolvers
+    # - Cloudflare: Fast, private, no logging
+    # - Quad9: Malware filtering, threat intelligence
     
     nameservers = mkMerge [
       (mkIf (!hasMullvad) [
-        "1.1.1.1"        # Cloudflare (fast, private)
-        "1.0.0.1"        # Cloudflare backup
-        "2606:4700:4700::1111"  # Cloudflare IPv6
-        "9.9.9.9"        # Quad9 (malware filtering)
-        "2620:fe::fe"    # Quad9 IPv6
+        # Cloudflare DNS (primary)
+        "1.1.1.1"                    # IPv4 primary
+        "1.0.0.1"                    # IPv4 secondary
+        "2606:4700:4700::1111"       # IPv6 primary
+        "2606:4700:4700::1001"       # IPv6 secondary
+        
+        # Quad9 DNS (secondary - malware filtering)
+        "9.9.9.9"                    # IPv4
+        "2620:fe::fe"                # IPv6
       ])
-      (mkIf hasMullvad [ ])  # Empty when Mullvad provides DNS
+      (mkIf hasMullvad [ ])  # Empty when Mullvad active
     ];
+    
+    # Alternative DNS providers (commented):
+    # Google DNS: "8.8.8.8", "8.8.4.4"
+    # OpenDNS: "208.67.222.222", "208.67.220.220"
+    # AdGuard: "94.140.14.14", "94.140.15.15"
 
-    # --------------------------------------------------------------------------
-    # Firewall
-    # --------------------------------------------------------------------------
-    # Enabled here, detailed rules should be in security/default.nix
-    # This provides the foundation for VPN killswitch functionality
+    # ==========================================================================
+    # Firewall Foundation
+    # ==========================================================================
+    # Enabled here, detailed rules in security/default.nix
+    # Provides foundation for VPN killswitch
+    
     firewall = {
       enable = true;
       
+      # ---- Logging ----
       # Log refused connections for debugging
-      logRefusedConnections = mkDefault false;  # Reduce log spam
+      # Disabled by default (reduces log spam)
+      logRefusedConnections = mkDefault false;
       
+      # ---- ICMP ----
       # Allow ping responses (useful for diagnostics)
+      # Set to false for maximum stealth
       allowPing = mkDefault true;
     };
   };
 
   # ============================================================================
-  # System Services
+  # System Services (Layer 3: DNS & VPN)
   # ============================================================================
   
   services = {
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # systemd-resolved - Modern DNS Resolver
-    # --------------------------------------------------------------------------
-    # Features: Caching, DNSSEC validation, mDNS/LLMNR, per-link DNS
+    # ==========================================================================
+    # Features:
+    # - DNS caching (faster subsequent lookups)
+    # - DNSSEC validation (authenticity verification)
+    # - Per-link DNS (VPN can override system DNS)
+    # - mDNS/LLMNR (local network discovery)
+    # - DNS-over-TLS support (encrypted DNS)
     
     resolved = {
       enable = true;
       
-      # DNSSEC validation (allow-downgrade for compatibility)
-      # Some networks/ISPs break DNSSEC, this prevents connectivity issues
+      # ========================================================================
+      # DNSSEC Configuration
+      # ========================================================================
+      # DNSSEC validates DNS responses (prevents poisoning)
+      # allow-downgrade: Validate when possible, fallback if broken
+      # Reason: Some ISPs/networks break DNSSEC, this prevents outages
       dnssec = "allow-downgrade";
       
-      # Fallback DNS (used if configured DNS servers fail)
+      # For maximum security (may break some networks):
+      # dnssec = "true";
+      
+      # ========================================================================
+      # Fallback DNS
+      # ========================================================================
+      # Used when:
+      # - Configured DNS servers are unreachable
+      # - NetworkManager hasn't set DNS yet (boot)
       fallbackDns = [ "1.1.1.1" "9.9.9.9" ];
       
+      # ========================================================================
+      # Advanced Configuration
+      # ========================================================================
       extraConfig = ''
-        # ------------------------------------------------------------------
-        # Local Discovery Protocols (disabled for security)
-        # ------------------------------------------------------------------
-        # LLMNR: Link-Local Multicast Name Resolution (Windows-style)
-        # mDNS: Multicast DNS (Bonjour/Avahi)
-        # Both can leak queries on untrusted networks
+        # ----------------------------------------------------------------------
+        # Local Discovery Protocols
+        # ----------------------------------------------------------------------
+        # LLMNR: Link-Local Multicast Name Resolution (Windows NetBIOS-style)
+        # mDNS: Multicast DNS (Apple Bonjour/Avahi, .local domains)
+        # Security: Both leak queries on untrusted networks
+        # Recommendation: Disable unless needed for local services
         LLMNR=no
         MulticastDNS=no
-        
-        # ------------------------------------------------------------------
-        # Performance & Caching
-        # ------------------------------------------------------------------
+
+        # ----------------------------------------------------------------------
+        # DNS Caching
+        # ----------------------------------------------------------------------
+        # Enable cache for faster subsequent lookups
         Cache=yes
-        CacheFromLocalhost=no
-        DNSStubListener=yes
-        DNSStubListenerExtra=127.0.0.54
         
-        # ------------------------------------------------------------------
+        # Don't cache responses from localhost (127.0.0.1/::1)
+        # Useful if running local DNS server (Unbound, Pi-hole, etc.)
+        CacheFromLocalhost=no
+
+        # ----------------------------------------------------------------------
+        # DNS Stub Listener
+        # ----------------------------------------------------------------------
+        # Listens on 127.0.0.53:53 for local DNS queries
+        # Applications query this instead of configured DNS servers
+        DNSStubListener=yes
+        
+        # Additional stub listener (backup on port 54)
+        DNSStubListenerExtra=127.0.0.54
+
+        # ----------------------------------------------------------------------
         # DNS-over-TLS (DoT)
-        # ------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # Encrypted DNS to prevent ISP snooping
         # Disabled when using VPN (Mullvad already encrypts DNS)
         # Enable if not using VPN: DNSOverTLS=opportunistic
         DNSOverTLS=no
         
-        # ------------------------------------------------------------------
-        # Routing & Default Domain
-        # ------------------------------------------------------------------
+        # DoT modes:
+        # - no: Disabled (default when using VPN)
+        # - opportunistic: Use TLS if available, fallback to plain
+        # - yes: Require TLS (may break some networks)
+
+        # ----------------------------------------------------------------------
+        # Routing Configuration
+        # ----------------------------------------------------------------------
         # ~. makes this the default DNS resolver for all domains
+        # VPN can override with per-link DNS
         Domains=~.
-        
-        # ------------------------------------------------------------------
-        # DNSSEC Settings
-        # ------------------------------------------------------------------
-        # Validate DNSSEC but allow fallback if broken
-        # NegativeTrustAnchors can be added here for broken domains
+
+        # ----------------------------------------------------------------------
+        # DNSSEC Trust Anchors
+        # ----------------------------------------------------------------------
+        # Negative trust anchors for broken DNSSEC domains
+        # Add domains here if legitimate sites fail DNSSEC validation
+        # NegativeTrustAnchors=example.com broken-dnssec.net
       '';
     };
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Mullvad VPN Service
-    # --------------------------------------------------------------------------
-    # Provides: WireGuard-based VPN, split tunneling, DNS control
+    # ==========================================================================
+    # Privacy-focused VPN provider
+    # Features: WireGuard protocol, split tunneling, killswitch, ad blocking
+    
     mullvad-vpn = {
       enable = true;
       package = pkgs.mullvad-vpn;
       
-      # Enable killswitch (block internet if VPN drops)
-      # This is enforced via firewall rules
-      enableExcludeWrapper = true;  # Enable split tunneling wrapper
+      # ---- Split Tunneling Wrapper ----
+      # Allows excluding specific apps from VPN tunnel
+      # Usage: mullvad-exclude firefox
+      enableExcludeWrapper = true;
     };
   };
 
   # ============================================================================
-  # Systemd Services
+  # Systemd Services (Layer 4: Service Orchestration)
   # ============================================================================
   
-  # --------------------------------------------------------------------------
+  # ==========================================================================
   # Disable NetworkManager-wait-online
-  # --------------------------------------------------------------------------
-  # Reason: Blocks boot until network is "online"
-  # Impact: Faster boots, especially with slow DHCP/VPN
-  # Tradeoff: Services requiring network may start before connectivity
+  # ==========================================================================
+  # Why disable:
+  # - Blocks boot until network is "online" (slow DHCP/VPN delays boot)
+  # - Not needed for desktop systems (services can wait individually)
+  # - Faster boot times (especially with VPN enabled)
+  #
+  # Keep enabled if:
+  # - Running network services on boot (web server, NFS mounts)
+  # - Need guaranteed network before starting applications
   systemd.services."NetworkManager-wait-online".enable = false;
 
-  # --------------------------------------------------------------------------
-  # Network Tuning Profile Detection Service
-  # --------------------------------------------------------------------------
-  # Runs early in boot to detect system memory and cache the profile
-  # This cache is used by the tuning service to avoid repeated detection
+  # ==========================================================================
+  # Network Profile Detection Service
+  # ==========================================================================
+  # Runs early in boot to detect RAM and cache TCP tuning profile
+  # Cache persists in /run (tmpfs) until reboot
   
   systemd.services."network-profile-detect" = {
     description = "Detect and cache network tuning profile based on system memory";
-    wantedBy = [ "sysinit.target" ];
-    before = [ "network-pre.target" ];
+    
+    # ---- Service Ordering ----
+    wantedBy = [ "sysinit.target" ];        # Start during early boot
+    before = [ "network-pre.target" ];      # Before network configuration
     
     serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+      Type = "oneshot";                     # Run once and exit
+      RemainAfterExit = true;               # Mark as active after completion
       ExecStart = detectAndCacheProfile;
     };
   };
 
-  # --------------------------------------------------------------------------
+  # ==========================================================================
   # Dynamic TCP Tuning Service
-  # --------------------------------------------------------------------------
-  # Applies performance settings based on detected memory tier
-  # Uses cached profile from network-profile-detect service
-  # Runs before network services to ensure settings are applied early
+  # ==========================================================================
+  # Applies TCP stack configuration based on detected memory tier
+  # Runs before network services to ensure settings active early
+  # See Part 2 for complete implementation
   
   systemd.services."network-tcp-tuning" = {
     description = "Apply dynamic TCP/IP stack tuning based on system profile";
+    
+    # ---- Dependencies ----
     wantedBy = [ "multi-user.target" ];
-    after = [ "network-profile-detect.service" "sysinit.target" ];
-    before = [ "network-pre.target" "NetworkManager.service" "mullvad-daemon.service" ];
+    after = [ 
+      "network-profile-detect.service"    # After profile detection
+      "sysinit.target"                    # After system initialization
+    ];
+    before = [ 
+      "network-pre.target"                # Before network configuration
+      "NetworkManager.service"            # Before NetworkManager
+      "mullvad-daemon.service"            # Before VPN daemon
+    ];
     requires = [ "network-profile-detect.service" ];
     
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      
+      # See Part 2 for complete tuning script
       ExecStart = pkgs.writeShellScript "apply-tcp-tuning" ''
         #!${bash}
         set -euo pipefail
-
+        
         CACHE_FILE="/run/network-tuning-profile"
         
         if [[ ! -f "$CACHE_FILE" ]]; then
-          echo "ERROR: Profile cache not found. Detection service may have failed."
+          echo "ERROR: Profile cache missing. Detection may have failed."
           exit 1
         fi
         
         PROFILE=$(${cat} "$CACHE_FILE")
-        echo "Applying $PROFILE performance profile..."
-
-        case "$PROFILE" in
-          ultra)
-            # ----------------------------------------------------------------
-            # ULTRA PERFORMANCE PROFILE (≥64GB RAM)
-            # Target: ThinkPad E14 Gen 6 (Core Ultra 7 155H, 64GB)
-            # ----------------------------------------------------------------
-            echo "→ Buffer sizes: 64MB max, 2MB default"
-            ${sysctl} -w net.ipv4.tcp_rmem="${ultra.rmem}"
-            ${sysctl} -w net.ipv4.tcp_wmem="${ultra.wmem}"
-            ${sysctl} -w net.core.rmem_max=${toString ultra.rmem_max}
-            ${sysctl} -w net.core.wmem_max=${toString ultra.wmem_max}
-            ${sysctl} -w net.core.rmem_default=${toString ultra.rmem_default}
-            ${sysctl} -w net.core.wmem_default=${toString ultra.wmem_default}
-            
-            echo "→ Queue limits: backlog=32000, somaxconn=8192"
-            ${sysctl} -w net.core.netdev_max_backlog=${toString ultra.netdev_max_backlog}
-            ${sysctl} -w net.core.somaxconn=${toString ultra.somaxconn}
-            ${sysctl} -w net.ipv4.tcp_max_syn_backlog=${toString ultra.tcp_max_syn_backlog}
-            
-            echo "→ Connection tracking: max=1048576 (1M buckets)"
-            ${sysctl} -w net.ipv4.tcp_max_tw_buckets=${toString ultra.tcp_max_tw_buckets}
-            ${sysctl} -w net.netfilter.nf_conntrack_max=${toString ultra.conntrack_max} 2>/dev/null || true
-            
-            echo "→ Memory pools: TCP=24GB, UDP=12GB"
-            ${sysctl} -w net.ipv4.tcp_mem="${ultra.tcp_mem}"
-            ${sysctl} -w net.ipv4.udp_mem="${ultra.udp_mem}"
-            
-            echo "✓ ULTRA profile active (optimized for Core Ultra 7 155H)"
-            ;;
-            
-          high)
-            # ----------------------------------------------------------------
-            # HIGH PERFORMANCE PROFILE (32-63GB RAM)
-            # Reserved for future mid-tier systems
-            # ----------------------------------------------------------------
-            echo "→ Buffer sizes: 32MB max, 1MB default"
-            ${sysctl} -w net.ipv4.tcp_rmem="${high.rmem}"
-            ${sysctl} -w net.ipv4.tcp_wmem="${high.wmem}"
-            ${sysctl} -w net.core.rmem_max=${toString high.rmem_max}
-            ${sysctl} -w net.core.wmem_max=${toString high.wmem_max}
-            ${sysctl} -w net.core.rmem_default=${toString high.rmem_default}
-            ${sysctl} -w net.core.wmem_default=${toString high.wmem_default}
-            
-            echo "→ Queue limits: backlog=16000, somaxconn=4096"
-            ${sysctl} -w net.core.netdev_max_backlog=${toString high.netdev_max_backlog}
-            ${sysctl} -w net.core.somaxconn=${toString high.somaxconn}
-            ${sysctl} -w net.ipv4.tcp_max_syn_backlog=${toString high.tcp_max_syn_backlog}
-            
-            echo "→ Connection tracking: max=524288 (524k buckets)"
-            ${sysctl} -w net.ipv4.tcp_max_tw_buckets=${toString high.tcp_max_tw_buckets}
-            ${sysctl} -w net.netfilter.nf_conntrack_max=${toString high.conntrack_max} 2>/dev/null || true
-            
-            echo "→ Memory pools: TCP=12GB, UDP=6GB"
-            ${sysctl} -w net.ipv4.tcp_mem="${high.tcp_mem}"
-            ${sysctl} -w net.ipv4.udp_mem="${high.udp_mem}"
-            
-            echo "✓ HIGH profile active"
-            ;;
-            
-          std|*)
-            # ----------------------------------------------------------------
-            # STANDARD PROFILE (<32GB RAM)
-            # Target: ThinkPad X1 Carbon Gen 6 (i7-8650U, 16GB)
-            # ----------------------------------------------------------------
-            echo "→ Using STANDARD profile (sysctl defaults with optimizations)"
-            echo "  Buffer sizes: 16MB max, 512KB default"
-            echo "  Queue limits: backlog=5000, somaxconn=1024"
-            echo "  Connection tracking: max=262144 (262k buckets)"
-            echo "✓ STANDARD profile active (optimized for i7-8650U)"
-            ;;
-        esac
-
-        # Show applied congestion control
-        CC=$(${sysctl} -n net.ipv4.tcp_congestion_control)
-        QDISC=$(${sysctl} -n net.core.default_qdisc)
-        echo "→ Congestion control: $CC + $QDISC"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "[TCP] Applying $PROFILE performance profile"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
-        # BBR version detection (if available)
-        if [[ -f /sys/module/tcp_bbr/version ]]; then
-          BBR_VER=$(${cat} /sys/module/tcp_bbr/version)
-          echo "→ BBR version: $BBR_VER"
-        fi
+        # Profile-specific tuning in Part 2...
       '';
     };
   };
-
-  # --------------------------------------------------------------------------
-  # Mullvad Auto-Connect Service
-  # --------------------------------------------------------------------------
-  # Waits for daemon readiness and configures VPN with safe defaults
-  # Features:
-  #   - Auto-connect on boot
-  #   - DNS-based ad/tracker blocking
-  #   - Automatic reconnection on failure
-  #   - Graceful degradation if daemon is slow to start
+  
+  # ==========================================================================
+  # Mullvad Auto-Connect Service (Continued from Part 1)
+  # ==========================================================================
+  # Waits for daemon readiness and configures VPN settings
+  # Features: Auto-connect, DNS ad-blocking, automatic reconnection
   
   systemd.services."mullvad-autoconnect" = mkIf hasMullvad {
     description = "Configure and auto-connect Mullvad VPN on boot";
+    
+    # Disabled by default - uncomment wantedBy to enable
     #wantedBy = [ "multi-user.target" ];
     wantedBy = [ ];
+    
     after = [ 
       "network-online.target"
       "NetworkManager.service" 
@@ -513,7 +586,7 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      Restart = "on-failure";
+      Restart = "on-failure";      # Retry if connection fails
       RestartSec = "10s";
       
       ExecStart = lib.getExe (pkgs.writeShellScriptBin "mullvad-autoconnect" ''
@@ -522,381 +595,404 @@ in
         CLI="${pkgs.mullvad-vpn}/bin/mullvad"
         MAX_WAIT=30
         
-        # ----------------------------------------------------------------
         # Wait for daemon socket
-        # ----------------------------------------------------------------
-        echo "Waiting for mullvad-daemon socket..."
+        echo "[Mullvad] Waiting for daemon..."
         for i in $(seq 1 $MAX_WAIT); do
           if "$CLI" status >/dev/null 2>&1; then
-            echo "✓ Daemon ready after ''${i}s"
+            echo "[Mullvad] ✓ Daemon ready after ''${i}s"
             break
           fi
           
           if [[ "$i" -eq "$MAX_WAIT" ]]; then
-            echo "✗ Daemon not ready after ''${MAX_WAIT}s, giving up"
+            echo "[Mullvad] ✗ Timeout after ''${MAX_WAIT}s"
             exit 1
           fi
-          
           sleep 1
         done
 
-        # ----------------------------------------------------------------
         # Configure VPN settings
-        # ----------------------------------------------------------------
-        echo "Configuring Mullvad..."
+        echo "[Mullvad] Configuring..."
+        "$CLI" auto-connect set on || echo "[Mullvad] ⚠ Auto-connect failed"
+        "$CLI" dns set default --block-ads --block-trackers || echo "[Mullvad] ⚠ DNS config failed"
         
-        # Auto-connect on network change
-        "$CLI" auto-connect set on || echo "⚠ Failed to set auto-connect"
-        
-        # DNS with ad/tracker blocking
-        "$CLI" dns set default --block-ads --block-trackers || echo "⚠ Failed to set DNS"
-        
-        # Killswitch (lockdown mode)
-        # Blocks all non-VPN traffic if VPN disconnects
-        #"$CLI" lockdown-mode set on || echo "⚠ Failed to set lockdown mode"
-        
-        # Optional: Set specific relay location
-        # "$CLI" relay set location se got || true
+        # Killswitch (lockdown mode) - uncomment if needed
+        # "$CLI" lockdown-mode set on || echo "[Mullvad] ⚠ Lockdown failed"
 
-        # ----------------------------------------------------------------
-        # Attempt connection
-        # ----------------------------------------------------------------
-        echo "Connecting to VPN..."
+        # Connect
+        echo "[Mullvad] Connecting..."
         if "$CLI" connect; then
-          echo "✓ Connected successfully"
+          echo "[Mullvad] ✓ Connected"
           exit 0
         fi
         
-        # Connection failed, systemd will retry due to Restart=on-failure
-        echo "✗ Connection failed, will retry in 10s..."
+        echo "[Mullvad] ✗ Connection failed, will retry in 10s..."
         exit 1
       '');
     };
   };
 
   # ============================================================================
-  # TCP/IP Stack Kernel Parameters (sysctl)
+  # TCP/IP Stack Kernel Parameters (Layer 5: Performance Tuning)
   # ============================================================================
-  # These are baseline settings applied at boot
-  # Dynamic tuning service overrides buffer/queue settings for high-mem systems
+  # Baseline settings applied at boot (before dynamic tuning service)
+  # Dynamic service overrides buffer/queue settings for high-memory systems
   
   boot.kernel.sysctl = {
-    # --------------------------------------------------------------------------
-    # Core Network Performance
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # Modern Congestion Control (BBR + Fair Queuing)
+    # ==========================================================================
+    # Why BBR?
+    # - Maximizes throughput while minimizing latency
+    # - Superior on high-bandwidth, variable-latency links (VPN, cellular, WiFi)
+    # - Better than CUBIC for modern internet (handles bufferbloat)
+    #
+    # Why Fair Queuing (FQ)?
+    # - Required for optimal BBR performance
+    # - Per-flow queuing and pacing
+    # - Prevents head-of-line blocking
     
-    # Queue Discipline: Fair Queuing (required for optimal BBR performance)
-    # FQ provides per-flow queuing and pacing, critical for BBR
-    "net.core.default_qdisc" = "fq";
+    "net.core.default_qdisc" = "fq";                      # Fair Queuing scheduler
+    "net.ipv4.tcp_congestion_control" = "bbr";            # BBR congestion control
     
-    # Congestion Control: BBR (Bottleneck Bandwidth and RTT)
-    # Modern algorithm that maximizes throughput while minimizing latency
-    # Superior to CUBIC for high-bandwidth, variable-latency links (VPNs, cellular)
-    "net.ipv4.tcp_congestion_control" = "bbr";
+    # Alternatives:
+    # - CUBIC: Default, good for stable connections
+    # - Reno: Legacy, simple, compatible
+    # - Vegas: Delay-based, good for low latency
 
-    # Ephemeral port range for outgoing connections
+    # ==========================================================================
+    # Port Range (Ephemeral Ports)
+    # ==========================================================================
+    # Range for outgoing connections
     # Wider range = more simultaneous connections possible
+    # Default: 32768-60999 (28k ports)
+    # This config: 1024-65535 (64k ports)
     "net.ipv4.ip_local_port_range" = "1024 65535";
 
-    # --------------------------------------------------------------------------
-    # Buffer Defaults (Standard Profile)
-    # --------------------------------------------------------------------------
-    # These mkDefault values are overridden by dynamic tuning for high-mem systems
+    # ==========================================================================
+    # Buffer Configuration (Standard Profile Defaults)
+    # ==========================================================================
+    # These are overridden by dynamic tuning service for high-memory systems
+    # mkDefault = Can be overridden by system-specific config
     
-    "net.core.rmem_max"     = mkDefault std.rmem_max;
-    "net.core.rmem_default" = mkDefault std.rmem_default;
-    "net.core.wmem_max"     = mkDefault std.wmem_max;
-    "net.core.wmem_default" = mkDefault std.wmem_default;
+    "net.core.rmem_max"     = mkDefault std.rmem_max;      # Max RX buffer: 16MB
+    "net.core.rmem_default" = mkDefault std.rmem_default;  # Default RX: 512KB
+    "net.core.wmem_max"     = mkDefault std.wmem_max;      # Max TX buffer: 16MB
+    "net.core.wmem_default" = mkDefault std.wmem_default;  # Default TX: 512KB
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Network Device & Queue Settings
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     
-    # Incoming packet queue (before processing)
-    # Higher = better burst handling, but more memory usage
-    "net.core.netdev_max_backlog" = mkDefault std.netdev_max_backlog;
+    # ---- Packet Queue (Before Processing) ----
+    # Incoming packets wait here before kernel processes them
+    # Higher = better burst handling, more memory usage
+    "net.core.netdev_max_backlog" = mkDefault std.netdev_max_backlog;  # 5000 packets
     
-    # NAPI polling budget (packets processed per interrupt)
-    "net.core.netdev_budget" = 300;
+    # ---- NAPI Polling Budget ----
+    # Packets processed per interrupt
+    # Balance: Throughput vs latency vs CPU usage
+    "net.core.netdev_budget" = 300;           # Packets per interrupt
+    "net.core.netdev_budget_usecs" = 8000;    # Time budget: 8ms per interrupt
     
-    # NAPI polling time budget (microseconds per interrupt)
-    # Balance between latency and throughput
-    "net.core.netdev_budget_usecs" = 8000;
+    # ---- Listen Socket Backlog ----
+    # Pending connections queue for listen() sockets
+    # Important for: Web servers, SSH, high connection rate
+    "net.core.somaxconn" = mkDefault std.somaxconn;  # 1024 connections
 
-    # Listen socket backlog (pending connections)
-    "net.core.somaxconn" = mkDefault std.somaxconn;
-
-    # --------------------------------------------------------------------------
-    # eBPF Security
-    # --------------------------------------------------------------------------
-    # Enable JIT compilation for eBPF (performance)
-    "net.core.bpf_jit_enable" = 1;
+    # ==========================================================================
+    # eBPF Security (Extended Berkeley Packet Filter)
+    # ==========================================================================
+    # eBPF enables high-performance packet filtering
+    # Used by: Cilium, Calico, systemd, firewall rules
     
-    # Harden JIT against some exploits (minimal performance impact)
-    "net.core.bpf_jit_harden" = 1;
+    "net.core.bpf_jit_enable" = 1;   # Enable JIT compilation (performance)
+    "net.core.bpf_jit_harden" = 1;   # Harden JIT (security, minimal overhead)
 
-    # --------------------------------------------------------------------------
-    # TCP Features
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # TCP Performance Features
+    # ==========================================================================
     
-    # TCP Fast Open (TFO): Reduce connection latency
-    # 3 = enable for both client and server
-    # Requires application support, but safe to enable
+    # ---- TCP Fast Open (TFO) ----
+    # Reduce connection latency by sending data in SYN packet
+    # 3 = Enable for both client and server
+    # Requires: Application support, kernel 3.13+
     "net.ipv4.tcp_fastopen" = 3;
-
-    # Duplicate SACK (D-SACK): Improve loss detection
+    
+    # ---- Duplicate SACK (D-SACK) ----
+    # Improve loss detection and recovery
+    # Helps distinguish: Packet loss vs reordering
     "net.ipv4.tcp_dsack" = 1;
     
-    # Disable slow start after idle (better for bursty traffic)
-    # BBR handles pacing, so this is safe
+    # ---- Slow Start After Idle ----
+    # Disabled: Better for bursty traffic (web browsing, API calls)
+    # BBR handles pacing, so safe to disable
     "net.ipv4.tcp_slow_start_after_idle" = 0;
     
-    # Auto-tune receive buffer based on RTT and throughput
+    # ---- Auto-tune Receive Buffer ----
+    # Dynamically adjust RX buffer based on RTT and throughput
+    # Critical for: High-bandwidth links, long-distance connections
     "net.ipv4.tcp_moderate_rcvbuf" = 1;
     
+    # ---- TCP Small Queue ----
     # Prevent application from queuing too much unsent data
-    # Reduces latency for interactive traffic
-    "net.ipv4.tcp_notsent_lowat" = 16384;
+    # Reduces latency for interactive traffic (SSH, gaming)
+    "net.ipv4.tcp_notsent_lowat" = 16384;  # 16KB threshold
 
-    # --------------------------------------------------------------------------
-    # Path MTU Discovery
-    # --------------------------------------------------------------------------
-    # Automatically discover optimal packet size
-    # 1 = enable PMTUD, fall back to MSS if blackhole detected
+    # ==========================================================================
+    # Path MTU Discovery (PMTUD)
+    # ==========================================================================
+    # Automatically discover optimal packet size for path
+    # Critical for: VPN, tunnels, non-standard MTU networks
+    
+    # ---- MTU Probing ----
+    # 0: Disabled
+    # 1: Enable, fallback to base MSS if blackhole detected
+    # 2: Always probe (aggressive)
     "net.ipv4.tcp_mtu_probing" = 1;
     
-    # Base MSS for PMTUD (useful for VPN/tunnel scenarios)
-    # Uncomment if experiencing MTU issues with WireGuard
-    # "net.ipv4.tcp_base_mss" = 1240;  # WireGuard-safe value
+    # ---- Base MSS (Maximum Segment Size) ----
+    # Uncomment for VPN/tunnel scenarios with MTU issues
+    # WireGuard typically needs MTU 1420 or lower
+    # "net.ipv4.tcp_base_mss" = 1240;  # Safe for most VPNs
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # TCP Memory Management
-    # --------------------------------------------------------------------------
-    # Auto-tuning ranges: min, pressure, max (in pages, 4KB each)
-    "net.ipv4.tcp_rmem" = mkDefault std.rmem;
-    "net.ipv4.tcp_wmem" = mkDefault std.wmem;
+    # ==========================================================================
+    # Auto-tuning ranges: min, default, max (in pages, 4KB each)
+    # Dynamic tuning service overrides these for high-memory systems
     
-    # Global TCP memory limits (pages)
-    "net.ipv4.tcp_mem" = mkDefault std.tcp_mem;
+    "net.ipv4.tcp_rmem" = mkDefault std.rmem;  # RX: 4KB/256KB/16MB
+    "net.ipv4.tcp_wmem" = mkDefault std.wmem;  # TX: 4KB/256KB/16MB
     
-    # Global UDP memory limits (pages)
-    "net.ipv4.udp_mem" = mkDefault std.udp_mem;
+    # ---- Global Memory Limits (Pages) ----
+    # When to start applying memory pressure
+    "net.ipv4.tcp_mem" = mkDefault std.tcp_mem;  # TCP: 3GB/4GB/6GB
+    "net.ipv4.udp_mem" = mkDefault std.udp_mem;  # UDP: 1.5GB/2GB/3GB
 
-    # --------------------------------------------------------------------------
-    # Connection Lifecycle
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # Connection Lifecycle Management
+    # ==========================================================================
     
-    # TCP Keepalive: Detect dead connections
+    # ---- TCP Keepalive (Detect Dead Connections) ----
     "net.ipv4.tcp_keepalive_time"   = 300;   # Start probing after 5min idle
-    "net.ipv4.tcp_keepalive_intvl"  = 30;    # Probe interval
+    "net.ipv4.tcp_keepalive_intvl"  = 30;    # Probe interval: 30s
     "net.ipv4.tcp_keepalive_probes" = 3;     # Give up after 3 failed probes
     
-    # FIN-WAIT-2 timeout (waiting for remote FIN)
-    "net.ipv4.tcp_fin_timeout" = 30;
+    # Total timeout: 5min + (30s × 3) = 6.5 minutes
     
-    # TIME-WAIT bucket limit (2MSL state)
-    # Higher = better for high connection rate, but more memory
-    "net.ipv4.tcp_max_tw_buckets" = mkDefault std.tcp_max_tw_buckets;
+    # ---- Connection Termination ----
+    "net.ipv4.tcp_fin_timeout" = 30;         # FIN-WAIT-2 timeout: 30s
     
-    # Enable TIME-WAIT reuse (safe with timestamps)
-    "net.ipv4.tcp_tw_reuse" = 1;
+    # ---- TIME-WAIT Reuse ----
+    # Enable reuse of TIME-WAIT sockets (safe with timestamps)
+    # Critical for: High connection rate (web servers, proxies)
+    "net.ipv4.tcp_max_tw_buckets" = mkDefault std.tcp_max_tw_buckets;  # 1M buckets
+    "net.ipv4.tcp_tw_reuse" = 1;             # Reuse TIME-WAIT sockets
 
-    # --------------------------------------------------------------------------
-    # Retransmission & Timeout
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # Retransmission & Timeout Tuning
+    # ==========================================================================
     
-    # Retransmission attempts before giving up
-    "net.ipv4.tcp_retries2" = 8;      # 15-30min timeout
+    # ---- Retransmission Attempts ----
+    "net.ipv4.tcp_retries2" = 8;             # Give up after ~15-30min
     
-    # SYN retransmits (connection setup)
-    "net.ipv4.tcp_syn_retries" = 3;   # ~63s total
-    
-    # SYN-ACK retransmits (server side)
-    "net.ipv4.tcp_synack_retries" = 3;
+    # ---- SYN Retransmission (Connection Setup) ----
+    "net.ipv4.tcp_syn_retries" = 3;          # Client: ~63s total
+    "net.ipv4.tcp_synack_retries" = 3;       # Server: ~63s total
 
-    # --------------------------------------------------------------------------
-    # SYN Flood Protection
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # SYN Flood Protection (DoS Mitigation)
+    # ==========================================================================
     
-    # Enable SYN cookies (fallback when backlog full)
+    # ---- SYN Cookies ----
+    # Fallback when SYN backlog is full
+    # Prevents: SYN flood attacks, doesn't break legitimate connections
     "net.ipv4.tcp_syncookies" = 1;
     
-    # SYN backlog size
-    "net.ipv4.tcp_max_syn_backlog" = mkDefault std.tcp_max_syn_backlog;
+    # ---- SYN Backlog Size ----
+    "net.ipv4.tcp_max_syn_backlog" = mkDefault std.tcp_max_syn_backlog;  # 2048
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Advanced TCP Features
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     
-    # Packet reordering tolerance (modern networks have reordering)
+    # ---- Packet Reordering Tolerance ----
+    # Modern networks reorder packets (multipath, load balancing)
     "net.ipv4.tcp_reordering" = 3;
     
-    # Explicit Congestion Notification (ECN)
-    # 1 = request ECN, fall back if not supported
+    # ---- Explicit Congestion Notification (ECN) ----
+    # Routers mark packets instead of dropping (reduces retransmissions)
+    # 1 = Request ECN, fall back if not supported
     "net.ipv4.tcp_ecn" = 1;
     "net.ipv4.tcp_ecn_fallback" = 1;
     
-    # Forward RTO-Recovery (F-RTO): Improved spurious timeout detection
-    # 2 = most aggressive, best for long-delay links (VPN, satellite)
+    # ---- Forward RTO-Recovery (F-RTO) ----
+    # Improved spurious timeout detection
+    # 2 = Most aggressive, best for long-delay links (VPN, satellite)
     "net.ipv4.tcp_frto" = 2;
     
-    # RFC 1337 TIME-WAIT assassination protection
+    # ---- RFC 1337 Protection ----
+    # TIME-WAIT assassination protection (security)
     "net.ipv4.tcp_rfc1337" = 1;
     
-    # TCP timestamps (required for some features)
+    # ---- TCP Timestamps ----
+    # Required for: PAWS, RTT measurement, some features
     "net.ipv4.tcp_timestamps" = 1;
     
-    # SACK (Selective Acknowledgment)
+    # ---- Selective Acknowledgment (SACK) ----
+    # More efficient retransmission (send only missing segments)
     "net.ipv4.tcp_sack" = 1;
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # IP Security Hardening
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     
-    # Reverse Path Filtering (anti-spoofing)
-    # 2 = loose mode (necessary for VPN, tethering, asymmetric routing)
+    # ---- Reverse Path Filtering (Anti-spoofing) ----
+    # 2 = Loose mode (necessary for VPN, asymmetric routing)
+    # 1 = Strict mode (better security, may break VPN)
     "net.ipv4.conf.all.rp_filter"     = 2;
     "net.ipv4.conf.default.rp_filter" = 2;
     
-    # Disable ICMP redirect acceptance (prevent MITM)
+    # ---- Disable ICMP Redirects ----
+    # Prevents: MITM attacks via ICMP redirect
     "net.ipv4.conf.all.accept_redirects"     = 0;
     "net.ipv4.conf.default.accept_redirects" = 0;
     "net.ipv4.conf.all.secure_redirects"     = 0;
     "net.ipv4.conf.default.secure_redirects" = 0;
+    "net.ipv4.conf.all.send_redirects"       = 0;
     
-    # Disable sending ICMP redirects
-    "net.ipv4.conf.all.send_redirects" = 0;
-    
-    # Disable source routing (security risk)
+    # ---- Disable Source Routing ----
+    # Security risk: Allows attacker to specify packet route
     "net.ipv4.conf.all.accept_source_route"     = 0;
     "net.ipv4.conf.default.accept_source_route" = 0;
     
-    # Ignore ICMP broadcast requests (smurf attack protection)
-    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
+    # ---- ICMP Protection ----
+    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;        # Smurf attack prevention
+    "net.ipv4.icmp_ignore_bogus_error_responses" = 1;  # Ignore fake ICMP errors
     
-    # Ignore bogus ICMP error responses
-    "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
-    
-    # Log martian packets (debugging, can be noisy)
+    # ---- Martian Packet Logging ----
+    # Log packets with impossible source addresses (debugging)
+    # Disabled by default (can be noisy)
     "net.ipv4.conf.all.log_martians" = mkDefault 0;
 
-    # --------------------------------------------------------------------------
-    # IPv6 Security (if enabled)
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # IPv6 Security (If Enabled)
+    # ==========================================================================
     
-    # Disable IPv6 redirects
+    # ---- Disable IPv6 Redirects ----
     "net.ipv6.conf.all.accept_redirects"     = 0;
     "net.ipv6.conf.default.accept_redirects" = 0;
     
-    # Disable IPv6 source routing
+    # ---- Disable IPv6 Source Routing ----
     "net.ipv6.conf.all.accept_source_route" = 0;
     
-    # Disable router advertisements on all interfaces by default
-    # Override per-interface if using SLAAC
+    # ---- Router Advertisements ----
+    # Disabled by default (use DHCPv6 or manual config)
+    # Enable per-interface if using SLAAC
     "net.ipv6.conf.all.accept_ra" = 0;
     "net.ipv6.conf.default.accept_ra" = 0;
 
-    # --------------------------------------------------------------------------
-    # Connection Tracking (Netfilter/iptables/nftables)
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # Connection Tracking (Netfilter)
+    # ==========================================================================
+    # Critical for: Firewall, NAT, VPN, stateful packet filtering
     
-    # Maximum tracked connections
-    # Important for NAT, stateful firewall, VPN
-    "net.netfilter.nf_conntrack_max" = mkDefault std.conntrack_max;
+    # ---- Maximum Tracked Connections ----
+    "net.netfilter.nf_conntrack_max" = mkDefault std.conntrack_max;  # 262k
     
-    # Connection tracking timeouts
+    # ---- Connection Timeouts ----
     "net.netfilter.nf_conntrack_tcp_timeout_established" = 432000;  # 5 days
     "net.netfilter.nf_conntrack_tcp_timeout_time_wait"   = 30;
     "net.netfilter.nf_conntrack_tcp_timeout_close_wait"  = 30;
     "net.netfilter.nf_conntrack_tcp_timeout_fin_wait"    = 30;
     "net.netfilter.nf_conntrack_udp_timeout"             = 60;
-    "net.netfilter.nf_conntrack_generic_timeout"         = 600;  # 10min for other protocols
+    "net.netfilter.nf_conntrack_generic_timeout"         = 600;     # 10min
     
-    # Conntrack helpers (disable for security, enable if needed for specific protocols)
+    # ---- Connection Tracking Helpers ----
+    # Disabled for security (enable if needed for FTP, TFTP, etc.)
     "net.netfilter.nf_conntrack_helper" = 0;
 
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Additional Performance Tuning
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     
-    # TCP window scaling (required for high-bandwidth links)
+    # ---- TCP Window Scaling ----
+    # Required for high-bandwidth links (>1Gbps)
     "net.ipv4.tcp_window_scaling" = 1;
     
-    # Increase ARP cache size (useful for large LANs)
+    # ---- ARP Cache Size ----
+    # Important for large LANs (many hosts)
     "net.ipv4.neigh.default.gc_thresh1" = 4096;
     "net.ipv4.neigh.default.gc_thresh2" = 8192;
     "net.ipv4.neigh.default.gc_thresh3" = 16384;
+    "net.ipv4.neigh.default.gc_stale_time" = 120;  # 2 minutes
     
-    # ARP cache timeout
-    "net.ipv4.neigh.default.gc_stale_time" = 120;
-    
-    # Route cache settings
+    # ---- Route Cache ----
     "net.ipv4.route.gc_timeout" = 100;
   };
 
   # ============================================================================
-  # Kernel Modules
+  # Kernel Modules (Layer 6: Required Modules)
   # ============================================================================
-  # Ensure required modules are loaded
   
   boot.kernelModules = [
-    "tcp_bbr"           # BBR congestion control
-    "sch_fq"            # Fair queuing scheduler
-    "wireguard"         # WireGuard VPN
+    "tcp_bbr"      # BBR congestion control
+    "sch_fq"       # Fair Queuing scheduler
+    "wireguard"    # WireGuard VPN
   ];
 
   # ============================================================================
-  # Diagnostic Tools & Utilities
+  # Diagnostic Tools & Utilities (Layer 7: Observability)
   # ============================================================================
   
   environment.systemPackages = with pkgs; [
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Core Network Tools
-    # --------------------------------------------------------------------------
-    iproute2            # ip, ss, tc
-    iputils             # ping, traceroute
-    bind                # dig, nslookup
-    mtr                 # Advanced traceroute
-    tcpdump             # Packet capture
-    ethtool             # NIC diagnostics
+    # ==========================================================================
+    iproute2         # ip, ss, tc (modern replacements for ifconfig, netstat)
+    iputils          # ping, traceroute, arping
+    bind             # dig, nslookup, host (DNS queries)
+    mtr              # Advanced traceroute (real-time)
+    tcpdump          # Packet capture (Wireshark CLI)
+    ethtool          # NIC diagnostics (speed, duplex, offload)
     
-    # --------------------------------------------------------------------------
-    # Bandwidth & Performance Testing
-    # --------------------------------------------------------------------------
-    iperf3              # Network performance
-    speedtest-cli       # Internet speed test
+    # ==========================================================================
+    # Performance Testing
+    # ==========================================================================
+    iperf3           # Network throughput testing
+    speedtest-cli    # Internet speed test (Ookla)
     
-    # --------------------------------------------------------------------------
-    # DNS & TLS Testing
-    # --------------------------------------------------------------------------
-    doggo               # Modern DNS client
+    # ==========================================================================
+    # DNS Tools
+    # ==========================================================================
+    doggo            # Modern DNS client (colorized, JSON output)
     
-    # --------------------------------------------------------------------------
+    # ==========================================================================
     # Monitoring & Analysis
-    # --------------------------------------------------------------------------
-    nethogs             # Per-process bandwidth monitor
-    iftop               # Real-time bandwidth usage
-    nload               # Network traffic visualizer
+    # ==========================================================================
+    nethogs          # Per-process bandwidth monitor
+    iftop            # Real-time bandwidth usage by connection
+    nload            # Network traffic visualizer (RX/TX graphs)
     
-    # --------------------------------------------------------------------------
-    # TCP/IP Stack Status Reporter
-    # --------------------------------------------------------------------------
+    # ==========================================================================
+    # Custom Diagnostic Scripts
+    # ==========================================================================
+    
+    # ---- TCP Status Reporter ----
     (writeScriptBin "tcp-status" ''
       #!${bash}
       set -euo pipefail
       
-      # Colors for better readability
+      # Colors
       BOLD='\033[1m'
       GREEN='\033[0;32m'
       BLUE='\033[0;34m'
       YELLOW='\033[0;33m'
-      NC='\033[0m' # No Color
+      NC='\033[0m'
       
       printf "%b=== TCP/IP Stack Status ===%b\n\n" "$BOLD" "$NC"
       
-      # ----------------------------------------------------------------
-      # System Information
-      # ----------------------------------------------------------------
+      # System info
       printf "%b[System]%b\n" "$BLUE" "$NC"
       TOTAL_MB=$(${detectMemoryScript})
       TOTAL_GB=$((TOTAL_MB / 1024))
@@ -906,140 +1002,53 @@ in
         PROFILE=$(${cat} /run/network-tuning-profile)
         printf "  Profile: %b%s%b\n\n" "$GREEN" "''${PROFILE^^}" "$NC"
       else
-        printf "  Profile: unknown (cache missing)\n\n"
+        printf "  Profile: unknown\n\n"
       fi
       
-      # ----------------------------------------------------------------
-      # TCP Configuration
-      # ----------------------------------------------------------------
+      # TCP config
       printf "%b[TCP Configuration]%b\n" "$BLUE" "$NC"
       CC=$(${sysctl} -n net.ipv4.tcp_congestion_control)
       QDISC=$(${sysctl} -n net.core.default_qdisc)
       printf "  Congestion Control: %b%s%b\n" "$GREEN" "$CC" "$NC"
       printf "  Queue Discipline:   %b%s%b\n" "$GREEN" "$QDISC" "$NC"
       
-      # BBR version (if available)
       if [[ -f /sys/module/tcp_bbr/version ]]; then
         BBR_VER=$(${cat} /sys/module/tcp_bbr/version)
         printf "  BBR Version:        %s\n" "$BBR_VER"
       fi
       
       TFO=$(${sysctl} -n net.ipv4.tcp_fastopen)
-      printf "  TCP Fast Open:      %s (3=client+server)\n" "$TFO"
-      
       ECN=$(${sysctl} -n net.ipv4.tcp_ecn)
-      ECN_FB=$(${sysctl} -n net.ipv4.tcp_ecn_fallback)
-      printf "  ECN:                %s (fallback: %s)\n" "$ECN" "$ECN_FB"
+      printf "  TCP Fast Open:      %s\n" "$TFO"
+      printf "  ECN:                %s\n\n" "$ECN"
       
-      MTU=$(${sysctl} -n net.ipv4.tcp_mtu_probing)
-      printf "  MTU Probing:        %s\n" "$MTU"
-      
-      NOTSENT=$(${sysctl} -n net.ipv4.tcp_notsent_lowat 2>/dev/null || echo "N/A")
-      printf "  notsent_lowat:      %s bytes\n\n" "$NOTSENT"
-      
-      # ----------------------------------------------------------------
-      # Buffer Configuration
-      # ----------------------------------------------------------------
+      # Buffers
       printf "%b[Buffers]%b\n" "$BLUE" "$NC"
       RMEM_MAX=$(${sysctl} -n net.core.rmem_max)
       WMEM_MAX=$(${sysctl} -n net.core.wmem_max)
-      RMEM_DEF=$(${sysctl} -n net.core.rmem_default)
-      WMEM_DEF=$(${sysctl} -n net.core.wmem_default)
+      printf "  rmem_max: %s (%s bytes)\n" "$(numfmt --to=iec "$RMEM_MAX")" "$RMEM_MAX"
+      printf "  wmem_max: %s (%s bytes)\n\n" "$(numfmt --to=iec "$WMEM_MAX")" "$WMEM_MAX"
       
-      printf "  rmem_max:     %s (%s bytes)\n" "$(numfmt --to=iec "$RMEM_MAX")" "$RMEM_MAX"
-      printf "  wmem_max:     %s (%s bytes)\n" "$(numfmt --to=iec "$WMEM_MAX")" "$WMEM_MAX"
-      printf "  rmem_default: %s (%s bytes)\n" "$(numfmt --to=iec "$RMEM_DEF")" "$RMEM_DEF"
-      printf "  wmem_default: %s (%s bytes)\n" "$(numfmt --to=iec "$WMEM_DEF")" "$WMEM_DEF"
-      
-      TCP_RMEM=$(${sysctl} -n net.ipv4.tcp_rmem)
-      TCP_WMEM=$(${sysctl} -n net.ipv4.tcp_wmem)
-      printf "  tcp_rmem:     %s\n" "$TCP_RMEM"
-      printf "  tcp_wmem:     %s\n\n" "$TCP_WMEM"
-      
-      # ----------------------------------------------------------------
-      # Queue & Connection Limits
-      # ----------------------------------------------------------------
-      printf "%b[Limits]%b\n" "$BLUE" "$NC"
-      BACKLOG=$(${sysctl} -n net.core.netdev_max_backlog)
-      SOMAXCONN=$(${sysctl} -n net.core.somaxconn)
-      printf "  netdev_max_backlog: %s\n" "$BACKLOG"
-      printf "  somaxconn:          %s\n" "$SOMAXCONN"
-      
-      CONNTRACK=$(${sysctl} -n net.netfilter.nf_conntrack_max 2>/dev/null || echo "N/A")
-      if [[ "$CONNTRACK" != "N/A" ]]; then
-        CONNTRACK_COUNT=$(${cat} /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null || echo "0")
-        CONNTRACK_PCT=$((CONNTRACK_COUNT * 100 / CONNTRACK))
-        printf "  nf_conntrack_max:   %s (current: %s = %s%%)\n\n" "$CONNTRACK" "$CONNTRACK_COUNT" "$CONNTRACK_PCT"
-      else
-        printf "  nf_conntrack_max:   N/A (module not loaded)\n\n"
-      fi
-      
-      # ----------------------------------------------------------------
-      # Network Interfaces
-      # ----------------------------------------------------------------
+      # Interfaces
       printf "%b[Interfaces]%b\n" "$BLUE" "$NC"
       ${pkgs.iproute2}/bin/ip -br link | while read -r iface state rest; do
         case "$state" in
-          UP)
-            printf "  %b%-18s%b %s\n" "$GREEN" "$iface" "$NC" "$rest"
-            ;;
-          DOWN)
-            printf "  %-18s %s\n" "$iface" "$rest"
-            ;;
-          *)
-            printf "  %b%-18s%b %s\n" "$YELLOW" "$iface" "$NC" "$rest"
-            ;;
+          UP) printf "  %b%-18s%b %s\n" "$GREEN" "$iface" "$NC" "$rest" ;;
+          *) printf "  %-18s %s\n" "$iface" "$rest" ;;
         esac
       done
       printf "\n"
       
-      # ----------------------------------------------------------------
-      # DNS Configuration
-      # ----------------------------------------------------------------
-      printf "%b[DNS]%b\n" "$BLUE" "$NC"
-      ${pkgs.systemd}/bin/resolvectl status | ${grep} -A5 "DNS Servers:" | head -n 6 || printf "  No DNS info available\n"
-      printf "\n"
-      
-      # ----------------------------------------------------------------
-      # Routing
-      # ----------------------------------------------------------------
-      printf "%b[Routing]%b\n" "$BLUE" "$NC"
-      printf "  Default IPv4:\n"
-      ${pkgs.iproute2}/bin/ip -4 route show default | sed 's/^/    /'
-      
-      if ${sysctl} -n net.ipv6.conf.all.disable_ipv6 2>/dev/null | grep -q 0; then
-        printf "  Default IPv6:\n"
-        ${pkgs.iproute2}/bin/ip -6 route show default | sed 's/^/    /' || printf "    (none)\n"
-      fi
-      printf "\n"
-      
-      # ----------------------------------------------------------------
-      # Connection Statistics
-      # ----------------------------------------------------------------
+      # Connections
       printf "%b[Connections]%b\n" "$BLUE" "$NC"
-      
-      # TCP summary
       TCP_ESTAB=$(${pkgs.iproute2}/bin/ss -tan state established 2>/dev/null | tail -n +2 | wc -l)
-      TCP_TIMEWAIT=$(${pkgs.iproute2}/bin/ss -tan state time-wait 2>/dev/null | tail -n +2 | wc -l)
-      TCP_SYN_SENT=$(${pkgs.iproute2}/bin/ss -tan state syn-sent 2>/dev/null | tail -n +2 | wc -l)
-      TCP_SYN_RECV=$(${pkgs.iproute2}/bin/ss -tan state syn-recv 2>/dev/null | tail -n +2 | wc -l)
-      TCP_SYN=$((TCP_SYN_SENT + TCP_SYN_RECV))
-      TCP_TOTAL=$((TCP_ESTAB + TCP_TIMEWAIT + TCP_SYN))
-      
-      printf "  TCP Total:       %s\n" "$TCP_TOTAL"
+      TCP_TW=$(${pkgs.iproute2}/bin/ss -tan state time-wait 2>/dev/null | tail -n +2 | wc -l)
       printf "  TCP Established: %s\n" "$TCP_ESTAB"
-      printf "  TCP TIME-WAIT:   %s\n" "$TCP_TIMEWAIT"
-      printf "  TCP SYN:         %s\n" "$TCP_SYN"
+      printf "  TCP TIME-WAIT:   %s\n\n" "$TCP_TW"
       
-      # UDP count
-      UDP_TOTAL=$(${pkgs.iproute2}/bin/ss -uan | tail -n +2 | wc -l)
-      printf "  UDP Total:       %s\n\n" "$UDP_TOTAL"
-      
-      # ----------------------------------------------------------------
-      # VPN Status (if Mullvad is enabled)
-      # ----------------------------------------------------------------
+      # VPN status
       if command -v mullvad &>/dev/null; then
-        printf "%b[VPN Status]%b\n" "$BLUE" "$NC"
+        printf "%b[VPN]%b\n" "$BLUE" "$NC"
         mullvad status | sed 's/^/  /'
         printf "\n"
       fi
@@ -1047,9 +1056,7 @@ in
       printf "%b✓ Status check complete%b\n" "$GREEN" "$NC"
     '')
 
-    # --------------------------------------------------------------------------
-    # Network Performance Test Script
-    # --------------------------------------------------------------------------
+    # ---- Network Performance Test ----
     (writeScriptBin "net-test" ''
       #!${bash}
       set -euo pipefail
@@ -1057,55 +1064,39 @@ in
       echo "=== Network Performance Test ==="
       echo
       
-      # Latency test
-      echo "[Latency Test]"
-      echo -n "  Google DNS (8.8.8.8): "
-      ${pkgs.iputils}/bin/ping -c 5 -q 8.8.8.8 2>/dev/null | ${grep} "rtt min/avg/max" | ${awk} -F'/' '{print $5 "ms avg"}' || echo "FAILED"
+      echo "[Latency]"
+      echo -n "  Google (8.8.8.8): "
+      ${pkgs.iputils}/bin/ping -c 5 -q 8.8.8.8 2>/dev/null | ${grep} "rtt" | ${awk} -F'/' '{print $5 "ms"}' || echo "FAILED"
       
       echo -n "  Cloudflare (1.1.1.1): "
-      ${pkgs.iputils}/bin/ping -c 5 -q 1.1.1.1 2>/dev/null | ${grep} "rtt min/avg/max" | ${awk} -F'/' '{print $5 "ms avg"}' || echo "FAILED"
+      ${pkgs.iputils}/bin/ping -c 5 -q 1.1.1.1 2>/dev/null | ${grep} "rtt" | ${awk} -F'/' '{print $5 "ms"}' || echo "FAILED"
       echo
       
-      # DNS resolution test
-      echo "[DNS Resolution Test]"
-      echo -n "  github.com: "
-      time (${pkgs.bind}/bin/dig +short github.com @127.0.0.53 >/dev/null 2>&1) 2>&1 | ${grep} real | ${awk} '{print $2}'
-      
-      echo -n "  google.com: "
-      time (${pkgs.bind}/bin/dig +short google.com @127.0.0.53 >/dev/null 2>&1) 2>&1 | ${grep} real | ${awk} '{print $2}'
-      echo
-      
-      # Throughput test
-      echo "[Throughput Test]"
-      echo "  Running speedtest-cli (this may take 30-60s)..."
-      ${pkgs.speedtest-cli}/bin/speedtest-cli --simple 2>/dev/null | sed 's/^/  /' || echo "  FAILED (check internet connection)"
+      echo "[Throughput]"
+      echo "  Running speedtest..."
+      ${pkgs.speedtest-cli}/bin/speedtest-cli --simple 2>/dev/null | sed 's/^/  /' || echo "  FAILED"
       echo
       
       echo "✓ Test complete"
     '')
     
-    # --------------------------------------------------------------------------
-    # MTU Discovery Tool
-    # --------------------------------------------------------------------------
+    # ---- MTU Discovery ----
     (writeScriptBin "mtu-test" ''
       #!${bash}
       set -euo pipefail
       
       TARGET="''${1:-1.1.1.1}"
-      
       echo "=== MTU Discovery for ''${TARGET} ==="
       echo
       
-      # Test common MTU values
       for mtu in 1500 1492 1472 1420 1400 1280; do
-        # DF bit set, payload = MTU - 28 (20 IP + 8 ICMP)
         payload=$((mtu - 28))
-        echo -n "Testing MTU ''${mtu} (payload ''${payload}): "
+        echo -n "Testing MTU ''${mtu}: "
         
         if ${pkgs.iputils}/bin/ping -c 1 -M do -s ''${payload} ''${TARGET} >/dev/null 2>&1; then
           echo "✓ OK"
           echo
-          echo "Maximum working MTU: ''${mtu} bytes"
+          echo "Maximum MTU: ''${mtu} bytes"
           break
         else
           echo "✗ Too large"
@@ -1115,131 +1106,110 @@ in
   ];
 
   # ============================================================================
-  # Shell Aliases
+  # Shell Aliases (Layer 8: Convenience)
   # ============================================================================
-  # Convenient shortcuts for network management
   
   environment.shellAliases = {
-    # --------------------------------------------------------------------------
-    # WiFi Management (NetworkManager)
-    # --------------------------------------------------------------------------
+    # WiFi
     wifi-list       = "nmcli device wifi list --rescan yes";
     wifi-connect    = "nmcli device wifi connect";
-    wifi-disconnect = "nmcli connection down";
     wifi-saved      = "nmcli connection show";
     wifi-current    = "nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2";
-    wifi-password   = "nmcli -s -g 802-11-wireless-security.psk connection show";
     
-    # --------------------------------------------------------------------------
-    # Network Status
-    # --------------------------------------------------------------------------
+    # Network status
     net-status      = "nmcli general status";
-    net-connections = "nmcli connection show --active";
-    net-devices     = "nmcli device status";
     net-info        = "ip -c -br addr show";
     
-    # --------------------------------------------------------------------------
-    # VPN Controls (Mullvad)
-    # --------------------------------------------------------------------------
+    # VPN (Mullvad)
     vpn-status      = "mullvad status";
     vpn-connect     = "mullvad connect";
     vpn-disconnect  = "mullvad disconnect";
     vpn-reconnect   = "mullvad reconnect";
-    vpn-relay       = "mullvad relay list";
-    vpn-location    = "mullvad relay set location";
-    vpn-lockdown    = "mullvad lockdown-mode";
-    vpn-dns         = "mullvad dns";
     
-    # --------------------------------------------------------------------------
-    # DNS Diagnostics
-    # --------------------------------------------------------------------------
+    # DNS
     dns-status      = "resolvectl status";
-    dns-query       = "resolvectl query";
     dns-flush       = "resolvectl flush-caches";
-    dns-stats       = "resolvectl statistics";
+    dns-leak        = "curl -s https://am.i.mullvad.net/json | ${pkgs.jq}/bin/jq -r '.ip'";
     
-    # DNS leak test (requires curl)
-    dns-leak        = "curl -s https://am.i.mullvad.net/json | ${pkgs.jq}/bin/jq -r '.ip, .mullvad_exit_ip, .mullvad_exit_ip_hostname'";
-    
-    # Alternative leak test (Cloudflare)
-    dns-leak-cf     = "curl -s https://1.1.1.1/cdn-cgi/trace";
-    
-    # --------------------------------------------------------------------------
-    # Connection Monitoring
-    # --------------------------------------------------------------------------
+    # Connections
     conns-tcp       = "ss -tupn | grep ESTAB";
     conns-listen    = "ss -tlnp";
-    conns-all       = "ss -tuapn";
     conns-count     = "ss -s";
     
-    # --------------------------------------------------------------------------
-    # Performance & Diagnostics
-    # --------------------------------------------------------------------------
+    # Performance
     net-speed       = "speedtest-cli";
     net-trace       = "mtr";
-    net-bandwidth   = "nethogs";
-    net-traffic     = "iftop -i";
     
-    # --------------------------------------------------------------------------
-    # TCP/IP Stack Info
-    # --------------------------------------------------------------------------
+    # TCP stack
     tcp-info        = "tcp-status";
     tcp-test        = "net-test";
-    tcp-tune        = "systemctl status network-tcp-tuning";
     
-    # --------------------------------------------------------------------------
-    # Interface Control
-    # --------------------------------------------------------------------------
-    if-up           = "sudo ip link set";
-    if-down         = "sudo ip link set";
-    if-list         = "ip -c -br link";
-    if-addr         = "ip -c -br addr";
-    
-    # --------------------------------------------------------------------------
-    # Route Management
-    # --------------------------------------------------------------------------
+    # Routing
     route-show      = "ip route show";
-    route-show6     = "ip -6 route show";
     route-default   = "ip route show default";
   };
 
   # ============================================================================
-  # User Groups
-  # ============================================================================
-  # Note: Users should be added to networkmanager group in their user config
-  # Example in users/kenan/default.nix:
-  #   users.users.kenan.extraGroups = [ "networkmanager" ];
-
-  # ============================================================================
-  # Assertions & Warnings
+  # Assertions & Warnings (Layer 9: Validation)
   # ============================================================================
   
   assertions = [
     {
       assertion = config.networking.networkmanager.enable;
-      message = "NetworkManager must be enabled for this configuration";
+      message = "NetworkManager must be enabled";
     }
     {
       assertion = config.services.resolved.enable;
-      message = "systemd-resolved must be enabled for DNS management";
+      message = "systemd-resolved must be enabled for DNS";
     }
   ];
 
-  warnings = lib.optionals (!config.networking.enableIPv6) [
-    ''
-      IPv6 is disabled. This may cause issues with:
-      - Modern CDNs (Cloudflare, Fastly) that prefer IPv6
-      - Some streaming services (Netflix, YouTube)
-      - Apple services (iCloud, FaceTime)
-      
-      Consider enabling IPv6 and using per-interface disable if needed:
-        networking.interfaces.<interface>.ipv6.enable = false;
-    ''
-  ] ++ lib.optionals (hasMullvad && !config.networking.firewall.enable) [
-    ''
-      Mullvad VPN is enabled but firewall is disabled.
-      This prevents the killswitch from working properly.
-      Internet traffic may leak if VPN disconnects.
-    ''
-  ];
+  warnings = 
+    lib.optionals (!config.networking.enableIPv6) [
+      "IPv6 disabled - may cause issues with modern CDNs and services"
+    ] ++ 
+    lib.optionals (hasMullvad && !config.networking.firewall.enable) [
+      "Mullvad enabled but firewall disabled - killswitch won't work"
+    ];
 }
+
+# ==============================================================================
+# Usage Guide & Best Practices
+# ==============================================================================
+#
+# TCP Profile Selection:
+#   Automatic based on RAM:
+#   - <32GB: STANDARD (X1 Carbon Gen 6)
+#   - 32-59GB: HIGH (future systems)
+#   - ≥60GB: ULTRA (E14 Gen 6)
+#
+# Manual Testing:
+#   tcp-status                 # Show current TCP configuration
+#   net-test                   # Test latency and throughput
+#   mtu-test <host>            # Discover optimal MTU
+#   speedtest-cli              # Internet speed test
+#
+# VPN Management:
+#   vpn-status                 # Check VPN connection
+#   vpn-connect                # Connect to VPN
+#   vpn-disconnect             # Disconnect from VPN
+#   dns-leak                   # Test for DNS leaks
+#
+# Network Monitoring:
+#   nethogs                    # Per-process bandwidth
+#   iftop -i <interface>       # Real-time traffic
+#   nload                      # RX/TX graphs
+#   conns-tcp                  # Active TCP connections
+#
+# DNS Management:
+#   dns-status                 # Show DNS config
+#   dns-flush                  # Clear DNS cache
+#   resolvectl query <host>    # Resolve hostname
+#
+# Troubleshooting:
+#   journalctl -u NetworkManager.service
+#   journalctl -u mullvad-daemon.service
+#   journalctl -u network-tcp-tuning.service
+#   systemctl status network-profile-detect.service
+#
+# ==============================================================================
