@@ -1,30 +1,37 @@
 # modules/core/account/default.nix
 # ==============================================================================
-# User Account Management Module
+# User Account Management - Centralized Configuration
 # ==============================================================================
 #
-# Purpose: Centralized user account, groups, and sudo privilege management
-# Module: modules/core/account
-# Author: Kenan Pelit
-# Date:   2025-10-09
+# Module:      modules/core/account
+# Purpose:     Single source of truth for user account, groups, and privileges
+# Author:      Kenan Pelit
+# Created:     2025-10-09
+# Modified:    2025-10-18
+#
+# Architecture:
+#   User Account → Groups → Sudo Config → Home-Manager Integration
 #
 # Design Principles:
-#   - Single source of truth for user configuration
-#   - User-linked home-manager profile defined in same module
-#   - System services (DBus/Keyring) belong to services module, not here
-#   - Rootless containers (Podman) - no docker group needed
+#   1. Single Responsibility - Only user account configuration
+#   2. No Service Configuration - Services belong in their own modules
+#   3. Clear Boundaries - Explicit ownership mapping
+#   4. Security Conscious - Documented trade-offs
 #
-# Ownership Map:
-#   - users.users.*     → THIS MODULE (account)
-#   - sudo config       → THIS MODULE (account)
-#   - home-manager      → THIS MODULE (account)
-#   - DBus/Keyring      → services module
-#   - Display services  → display module
+# Module Boundaries:
+#   ✓ User account definition           (THIS MODULE)
+#   ✓ Group membership                  (THIS MODULE)
+#   ✓ Sudo configuration                (THIS MODULE)
+#   ✓ Home-Manager integration          (THIS MODULE)
+#   ✗ DBus/Keyring services            (services module)
+#   ✗ Display manager                   (display module)
+#   ✗ Virtualization services           (virtualization module)
 #
-# Security Notes:
-#   - Passwordless sudo: Conscious trade-off for convenience
-#   - No docker group: Using rootless Podman instead (more secure)
-#   - UID auto-assigned: Prevents conflicts in multi-user scenarios
+# Security Model:
+#   • Passwordless sudo for wheel group (convenience vs security trade-off)
+#   • No docker group (using rootless Podman - more secure)
+#   • Auto-assigned UID (prevents multi-user conflicts)
+#   • Full disk encryption recommended (mitigates physical access risks)
 #
 # ==============================================================================
 
@@ -32,22 +39,19 @@
 
 {
   # ============================================================================
-  # Module Options
+  # Module Options (Configurable)
   # ============================================================================
-  # Configurable options for user account management.
-  # These can be overridden per-host if needed.
-  
   options.my.user = {
     name = lib.mkOption {
       type = lib.types.str;
       default = username;
-      description = "The primary user account name";
+      description = "Primary user account name";
     };
     
     description = lib.mkOption {
       type = lib.types.str;
       default = username;
-      description = "Full name or description for the user";
+      description = "User full name or description";
     };
   };
 
@@ -55,65 +59,70 @@
     # ==========================================================================
     # User Account Configuration
     # ==========================================================================
-    # Primary user account definition with all necessary groups.
-    # This is the SINGLE authority for user groups - no duplication elsewhere.
-    
     users.users.${username} = {
       isNormalUser = true;
       description  = config.my.user.description;
       shell        = pkgs.zsh;
       
-      # Let NixOS assign UID automatically (prevents conflicts)
-      # uid = 1000;  # Not needed - NixOS handles this
+      # UID Assignment: Auto-managed by NixOS
+      # Prevents conflicts in multi-user scenarios
+      # uid = 1000;  # Not needed - system assigns automatically
       
-      # --------------------------------------------------------------------------
-      # Group Membership (Complete List)
-      # --------------------------------------------------------------------------
-      # IMPORTANT: This is the ONLY place where user groups are defined.
-      # Do NOT add groups in other modules (networking, services, etc.)
+      # ------------------------------------------------------------------------
+      # Group Membership (Complete & Authoritative List)
+      # ------------------------------------------------------------------------
+      # CRITICAL: This is the ONLY location for user group definitions
+      # Do NOT duplicate group assignments in other modules
       
       extraGroups = [
         # ---- System Administration ----
-        "wheel"            # Sudo privileges (passwordless via config below)
-        "networkmanager"   # Network configuration without sudo
-        "storage"          # Access to storage devices
+        "wheel"            # Sudo access (see security.sudo config below)
+        "networkmanager"   # Network config without sudo (WiFi, VPN)
+        "storage"          # External storage devices (USB, SD cards)
         
-        # ---- Hardware & I/O Access ----
-        "input"            # Input devices (keyboards, mice, gamepads)
-        "audio"            # Audio subsystem (PulseAudio/PipeWire)
-        "video"            # GPU access (for hardware acceleration)
+        # ---- Hardware Access ----
+        "input"            # Input devices (keyboard, mouse, gamepad)
+        "audio"            # Audio system (PulseAudio/PipeWire)
+        "video"            # GPU access (hardware accel, screen capture)
         
-        # ---- Virtualization ----
-        "libvirtd"         # QEMU/KVM virtual machine management
-        "kvm"              # Direct KVM access (hardware virtualization)
+        # ---- Virtualization & Containers ----
+        "libvirtd"         # QEMU/KVM management (virt-manager)
+        "kvm"              # Hardware virtualization access
+        # Note: No "docker" group - using rootless Podman
+        # Podman runs without group membership (better security isolation)
         
-        # ---- Containers ----
-        # Note: No "docker" group - using rootless Podman instead
-        # Podman doesn't require group membership (more secure)
-        
-        # ---- Optional Groups (uncomment if needed) ----
-        # "plugdev"        # USB device access (Android ADB, etc.)
-        # "dialout"        # Serial port access (Arduino, etc.)
-        # "scanner"        # Scanner device access
+        # ---- Optional Groups (Uncomment if needed) ----
+        # "plugdev"        # USB devices (Android ADB, programmer devices)
+        # "dialout"        # Serial ports (Arduino, microcontrollers)
+        # "scanner"        # Scanner hardware access
         # "lp"             # Printer access
         # "adbusers"       # Android Debug Bridge
       ];
     };
 
     # ==========================================================================
-    # Sudo Configuration
+    # Sudo Configuration - Passwordless for Wheel Group
     # ==========================================================================
-    # Passwordless sudo for wheel group members
-    # 
-    # Security Trade-off:
-    #   - Pro: Convenience, faster workflow
-    #   - Con: Physical access = instant root
-    #   - Mitigation: Full disk encryption, screen lock, physical security
+    # Security Trade-off Analysis:
+    #   Pros:
+    #     • Faster workflow (no password interruptions)
+    #     • Better for automation/scripts
+    #     • Reduces password fatigue
+    #   Cons:
+    #     • Physical access = instant root privilege
+    #     • No audit trail of sudo usage intent
+    #   Mitigations:
+    #     • Full disk encryption (LUKS)
+    #     • Screen lock on idle
+    #     • Physical device security
+    #     • User awareness training
     
     security.sudo = {
+      # Wheel group members can sudo without password
       wheelNeedsPassword = false;
       
-      # Optional: Add timeout for sudo credential caching
+      # Optional: Credential caching timeout (uncomment to enable)
+      # After first sudo, credentials cached for X minutes
       # extraConfig = ''
       #   Defaults timestamp_timeout=30
       # '';
@@ -122,73 +131,100 @@
     # ==========================================================================
     # Home-Manager Integration
     # ==========================================================================
-    # User environment management through home-manager.
-    # Defined here because user account and user environment are tightly coupled.
+    # User environment management (dotfiles, packages, services)
+    # Defined here because user account and environment are tightly coupled
     
     home-manager = {
-      # Use system-wide nixpkgs instance (consistency)
+      # Use system nixpkgs (ensures version consistency)
       useGlobalPkgs = true;
       
-      # Install packages to user profile (not system profile)
+      # Install packages to user profile (isolated from system)
       useUserPackages = true;
       
-      # Backup existing files when home-manager conflicts
+      # Backup existing files on conflict (prevents data loss)
       backupFileExtension = "backup";
       
-      # Pass these variables to all home-manager modules
+      # Pass flake inputs to all home-manager modules
       extraSpecialArgs = { 
         inherit inputs username host; 
       };
       
-      # --------------------------------------------------------------------------
-      # User Environment Configuration
-      # --------------------------------------------------------------------------
+      # ------------------------------------------------------------------------
+      # User Environment
+      # ------------------------------------------------------------------------
       users.${username} = {
-        # Import user environment configuration
-        # Path: modules/home (relative to flake root)
+        # Import user configuration tree
+        # Location: modules/home/ (managed separately)
         imports = [ ../../home ];
         
-        # Basic home directory setup
+        # Home directory configuration
         home = {
           username      = username;
           homeDirectory = "/home/${username}";
-          
-          # Home-manager state version
-          stateVersion  = "25.11";
+          stateVersion  = "25.11";  # Track home-manager state
         };
         
-        # Enable home-manager to manage itself
+        # Allow home-manager to self-manage
         programs.home-manager.enable = true;
       };
     };
 
-    # --------------------------------------------------------------------------
-    # Module Boundaries & Service Ownership
-    # --------------------------------------------------------------------------
-    # IMPORTANT: The following services are NOT managed here:
+    # ==========================================================================
+    # Module Boundaries - Service Ownership Map
+    # ==========================================================================
+    # This module does NOT manage the following (explicit exclusions):
     #
-    # 1. DBus & Related Services → modules/core/services/default.nix
-    #    - services.dbus.enable = true;
-    #    - services.dbus.packages = [ pkgs.gcr pkgs.gnome-keyring ];
+    # 1. DBus & Session Services
+    #    Location: modules/core/services/default.nix
+    #    - services.dbus.enable
+    #    - services.dbus.packages = [ gcr gnome-keyring ]
     #
-    # 2. GNOME Keyring → modules/core/services or display module
-    #    - services.gnome.gnome-keyring.enable = true;
-    #    - security.pam.services.*.enableGnomeKeyring = true;
+    # 2. GNOME Keyring & PAM
+    #    Location: modules/core/services OR display module
+    #    - services.gnome.gnome-keyring.enable
+    #    - security.pam.services.*.enableGnomeKeyring
     #
-    # 3. Display Manager → modules/core/display/default.nix
-    #    - services.xserver.displayManager.*
+    # 3. Display Manager & Desktop
+    #    Location: modules/core/display/default.nix
     #    - services.displayManager.*
+    #    - services.desktopManager.*
     #
-    # 4. Container Runtime → modules/core/virtualization (if exists)
-    #    - virtualisation.podman.enable = true;
-    #    - virtualisation.docker.enable = false;  # Not using Docker
+    # 4. Virtualization Runtime
+    #    Location: modules/core/virtualization (if exists)
+    #    - virtualisation.podman.enable
+    #    - virtualisation.docker.enable = false
     #
-    # This separation ensures:
-    #   - Clean module boundaries
-    #   - Single responsibility principle
-    #   - Easy to reason about dependencies
-    #   - No circular imports
-    # --------------------------------------------------------------------------
+    # 5. Network Services
+    #    Location: modules/core/networking
+    #    - networking.networkmanager.enable
+    #
+    # Why this separation?
+    #   ✓ Clean module boundaries (Single Responsibility Principle)
+    #   ✓ Easy dependency tracking (no hidden couplings)
+    #   ✓ Prevents circular imports (clear hierarchy)
+    #   ✓ Maintainable configuration (one module = one concern)
+    #   ✓ Reusable modules (can enable/disable independently)
+    #
+    # ==========================================================================
   };
 }
+
+# ==============================================================================
+# Usage Examples
+# ==============================================================================
+#
+# Override user description per-host:
+#   my.user.description = "Kenan Pelit - Development Workstation";
+#
+# Add optional groups (in THIS module):
+#   extraGroups = [ ... "adbusers" "scanner" ];
+#
+# Enable sudo password (override security):
+#   security.sudo.wheelNeedsPassword = true;
+#
+# Check user groups:
+#   groups ${username}
+#   id ${username}
+#
+# ==============================================================================
 
