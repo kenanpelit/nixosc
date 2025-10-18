@@ -116,7 +116,7 @@ in
       defaultSession = "hyprland-optimized";
       
       autoLogin = {
-        enable = false;
+        enable = true;
         user = "kenan";
       };
       
