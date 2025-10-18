@@ -70,7 +70,6 @@
 #   • home-manager (user-specific font/diagnostic configs)
 #
 # ==============================================================================
-
 { username, inputs, pkgs, lib, config, ... }:
 
 let
@@ -84,17 +83,69 @@ let
   hyprPortal  = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
 
   # ---------------------------------------------------------------------------
+  # GDM Session Wrapper - Systemd-Aware Pre-Start Handler
+  # ---------------------------------------------------------------------------
+  # This wrapper script runs BEFORE hyprland_tty to ensure systemd user session
+  # is properly initialized when launching from GDM. This solves the issue where
+  # GDM sessions start with incomplete systemd context.
+  #
+  # What it does:
+  #   1. Checks if systemd user session is running
+  #   2. Starts default.target if needed (with 2s initialization time)
+  #   3. Activates hyprland-session.target for service dependencies
+  #   4. Hands off to hyprland_tty for main compositor launch
+  #
+  # Why needed:
+  #   • GDM sometimes launches sessions before systemd user manager is ready
+  #   • User services (Waybar, Mako) need proper systemd context
+  #   • Environment variables need to be synced to systemd
+  #
+  # NixOS-safe:
+  #   • Uses full Nix store paths (no /bin/sh assumptions)
+  #   • writeShellScriptBin ensures proper bash shebang
+  #   • All dependencies are declarative
+  
+  hyprlandGdmWrapper = pkgs.writeShellScriptBin "hyprland-gdm-wrapper" ''
+    # Systemd user session readiness check
+    # GDM may start session before systemd user manager is fully initialized
+    if ! systemctl --user is-system-running &>/dev/null; then
+      # Start systemd user default target (includes graphical-session-pre.target)
+      systemctl --user start default.target 2>/dev/null || true
+      
+      # Give systemd time to initialize services (critical for GDM context)
+      sleep 2
+    fi
+    
+    # Activate Hyprland session target
+    # This triggers any services that are BindsTo/Wants hyprland-session.target
+    # (e.g., compositor-specific services, environment sync services)
+    systemctl --user start hyprland-session.target 2>/dev/null || true
+    sleep 1
+    
+    # Hand off to main Hyprland launcher
+    # hyprland_tty will handle environment setup, Intel Arc optimizations,
+    # Catppuccin theming, and compositor launch
+    exec /etc/profiles/per-user/${username}/bin/hyprland_tty
+  '';
+
+  # ---------------------------------------------------------------------------
   # Custom Hyprland Session - Intel Arc A380 Optimized
   # ---------------------------------------------------------------------------
-  # This creates a custom .desktop entry for GDM to discover. The optimized
-  # launcher (hyprland_tty) includes:
+  # This creates a custom .desktop entry for GDM to discover. The desktop entry
+  # now uses the wrapper script instead of calling hyprland_tty directly.
+  #
+  # Launch Chain:
+  #   GDM → hyprland-gdm-wrapper → systemd setup → hyprland_tty → Hyprland
+  #
+  # Features:
   #   • Intel Arc environment variables (VK_ICD_FILENAMES, LIBVA_DRIVER_NAME)
   #   • Catppuccin theme preloading
   #   • Custom compositor flags
+  #   • Proper systemd user session initialization
   #
   # Dual Registration:
   #   1. services.displayManager.sessionPackages → GDM discovers session
-  #   2. environment.systemPackages → Appears in /run/current-system/sw/
+  #   2. environment.systemPackages → Wrapper appears in system PATH
   #
   # passthru.providedSessions:
   #   Must match defaultSession value exactly. GDM uses this to validate.
@@ -113,17 +164,19 @@ let
       X-GDM-SessionType=wayland
       X-Session-Type=wayland
       
-      # Launcher Path (per-user profile for home-manager integration)
-      Exec=/etc/profiles/per-user/${username}/bin/hyprland_tty
+      # Launcher Path - Uses wrapper for proper systemd initialization
+      # The wrapper ensures systemd user session is ready before Hyprland starts
+      Exec=${hyprlandGdmWrapper}/bin/hyprland-gdm-wrapper
       
-      # Optional: Pre-flight check (uncomment to validate launcher exists)
-      # TryExec=/etc/profiles/per-user/${username}/bin/hyprland_tty
+      # Optional: Pre-flight check (validates wrapper exists before session start)
+      # TryExec=${hyprlandGdmWrapper}/bin/hyprland-gdm-wrapper
       
       # Metadata
-      Keywords=wayland;wm;tiling;catppuccin;intel-arc;
+      Keywords=wayland;wm;tiling;catppuccin;intel-arc;systemd;
     '';
     
     # GDM Session Discovery Metadata
+    # GDM reads this to populate session picker dropdown
     passthru.providedSessions = [ "hyprland-optimized" ];
   };
 
@@ -143,7 +196,6 @@ in
     # Do NOT add hyprPortal to xdg.portal.extraPortals (already registered here)
     portalPackage = hyprPortal;
   };
-
   # =============================================================================
   # System Services Configuration
   # =============================================================================
@@ -403,6 +455,33 @@ in
       # Without this, it may not claim correct D-Bus interfaces
       XDG_CURRENT_DESKTOP = "COSMIC";
     };
+  };
+
+  # =============================================================================
+  # Systemd User Target - Hyprland Session
+  # =============================================================================
+  # This target acts as a synchronization point for Hyprland-specific services.
+  # Services that need to run with Hyprland can BindsTo/Wants this target.
+  #
+  # Purpose:
+  #   • Ensures proper service ordering (services wait for compositor)
+  #   • Groups Hyprland-related services together
+  #   • Allows clean shutdown of compositor and its services
+  #
+  # The wrapper script (hyprland-gdm-wrapper) starts this target before
+  # launching Hyprland, ensuring all dependencies are ready.
+  
+  systemd.user.targets.hyprland-session = {
+    description = "Hyprland compositor session";
+    
+    # Bind to graphical session (stop when graphical session ends)
+    bindsTo = [ "graphical-session.target" ];
+    
+    # Want graphical-session-pre (prefer it starts first)
+    wants = [ "graphical-session-pre.target" ];
+    
+    # Start after graphical-session-pre is ready
+    after = [ "graphical-session-pre.target" ];
   };
 
   # =============================================================================
@@ -715,4 +794,3 @@ in
 #        pactl info  # Check PipeWire is running
 #
 # ==============================================================================
-
