@@ -301,7 +301,90 @@ in
   services.power-profiles-daemon.enable = false;
   services.tlp.enable                   = false;
   services.thermald.enable              = false;
-  services.thinkfan.enable              = false;
+  #services.thinkfan.enable              = false;
+
+  # ============================================================================
+  # THINKFAN - INTELLIGENT FAN CONTROL
+  # ============================================================================
+  # ThinkFan provides hardware-level thermal management by directly controlling
+  # the system fan speed based on CPU package temperature. This works in
+  # conjunction with (but independently of) our rapl-thermo-guard service.
+  #
+  # Strategy:
+  # - rapl-thermo-guard: Software-level power limiting (adjusts PL2)
+  # - thinkfan: Hardware-level cooling (adjusts fan speed)
+  #
+  # Temperature Bands (Conservative Profile):
+  # ≤ 55°C : Silent operation (fan off or minimal)
+  # 48-60°C: Level 1 (quiet background cooling)
+  # 50-65°C: Level 2 (light workload)
+  # 55-70°C: Level 3 (moderate workload)
+  # 60-75°C: Level 4 (sustained load)
+  # 65-80°C: Level 5 (heavy workload)
+  # 70-85°C: Level 7 (aggressive cooling)
+  # ≥ 80°C : Maximum fan speed (thermal protection)
+  #
+  # Note: Temperature ranges overlap intentionally to provide hysteresis and
+  # prevent rapid fan speed oscillations (fan flutter).
+  # ============================================================================
+  services.thinkfan = {
+    enable = true;
+  
+    # ---------------------------------------------------------------------------
+    # Temperature Sensor Configuration
+    # ---------------------------------------------------------------------------
+    sensors = [
+      {
+        type = "hwmon";                    # Hardware monitoring interface
+        query = "/sys/class/hwmon";        # Sensor discovery path
+        name = "coretemp";                 # Intel Core temperature sensor
+        indices = [1];                     # Index 1 = Package temperature
+      }
+    ];
+  
+    # ---------------------------------------------------------------------------
+    # Fan Interface Configuration
+    # ---------------------------------------------------------------------------
+    fans = [
+      {
+        type = "tpacpi";                   # ThinkPad ACPI interface
+        query = "/proc/acpi/ibm/fan";      # ThinkPad fan control file
+      }
+    ];
+  
+    # ---------------------------------------------------------------------------
+    # Fan Speed Levels
+    # ---------------------------------------------------------------------------
+    # Format: [FanSpeed, LowerBound, UpperBound]
+    # FanSpeed values:
+    #   0   : Auto mode (BIOS control)
+    #   1-7 : Manual levels (1=quietest, 7=loudest)
+    #   127 : Full speed (disengaged/maximum)
+    # ---------------------------------------------------------------------------
+    #levels = [
+    #  # Format: [FanSpeed, LowerTemp, UpperTemp]
+    #  [0    0   55]      # Fan kapalı: 0-55°C
+    #  [1   48   60]      # Seviye 1: 48-60°C (55 ile çakışıyor ✓)
+    #  [2   50   65]      # Seviye 2: 50-65°C
+    #  [3   55   70]      # Seviye 3: 55-70°C
+    #  [4   60   75]      # Seviye 4: 60-75°C
+    #  [5   65   80]      # Seviye 5: 65-80°C
+    #  [7   70   85]      # Seviye 7: 70-85°C
+    #  [127 80   32767]   # Max hız: 80°C+
+    #];
+    levels = [
+      # Format: [FanSpeed, LowerTemp, UpperTemp]
+      # DENGELİ PROFİL (Performans + Sessizlik dengesi)
+      [0    0   50]      # Fan kapalı: 0-50°C (sessiz çalışma)
+      [1   42   55]      # Seviye 1: 42-55°C (hafif soğutma başlar)
+      [2   48   60]      # Seviye 2: 48-60°C (web, ofis)
+      [3   52   65]      # Seviye 3: 52-65°C (çoklu görev)
+      [4   57   70]      # Seviye 4: 57-70°C (derleme, video)
+      [5   62   75]      # Seviye 5: 62-75°C (ağır iş yükü)
+      [7   67   80]      # Seviye 7: 67-80°C (stres testi)
+      [127 75   32767]   # Max hız: 75°C+ (acil soğutma)
+    ];
+  };
 
   # ============================================================================
   # PLATFORM PROFILE - PERFORMANCE
