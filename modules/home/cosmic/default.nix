@@ -554,7 +554,7 @@
     
     "cosmic/com.system76.CosmicTheme/v1/icon_theme" = {
       text = builtins.toJSON {
-        theme = "a-candy-beauty-icon-theme";
+        theme = "candy-icons";
       };
     };
 
