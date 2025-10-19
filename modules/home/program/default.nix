@@ -40,8 +40,8 @@
     # ---------------------------------------------------------------------------
     git = {
       enable = true;
-      delta.enable = true;  # Better diff viewer
       lfs.enable = true;    # Large File Storage support
+      # Delta is now configured separately in git/default.nix
     };
   };
 }

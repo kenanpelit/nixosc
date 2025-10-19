@@ -295,7 +295,7 @@ in
     
     # Wallpaper & Themes
     wpaperd          # Wayland duvar kağıdı daemon
-    #candy-icons      # Simge teması
+    candy-icons      # Simge teması
     beauty-line-icon-theme # Alternatif simge seti
     
     # Input Simulation
