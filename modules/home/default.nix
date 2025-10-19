@@ -142,7 +142,6 @@
     # =============================================================================
     # Document & Archive Management
     # =============================================================================
-    ./candy         # Document and archive viewer
     ./subliminal    # Subtitle download and management
     #./zotfiles      # Zotero reference management integration
     
