@@ -301,7 +301,7 @@ in
   services.power-profiles-daemon.enable = false;
   services.tlp.enable                   = false;
   services.thermald.enable              = false;
-  #services.thinkfan.enable              = false;
+  services.thinkfan.enable              = false;
 
   # ============================================================================
   # THINKFAN - INTELLIGENT FAN CONTROL
@@ -310,81 +310,142 @@ in
   # the system fan speed based on CPU package temperature. This works in
   # conjunction with (but independently of) our rapl-thermo-guard service.
   #
-  # Strategy:
-  # - rapl-thermo-guard: Software-level power limiting (adjusts PL2)
-  # - thinkfan: Hardware-level cooling (adjusts fan speed)
+  # Dual-Layer Thermal Strategy:
+  # - rapl-thermo-guard: Software-level power limiting (adjusts PL2 dynamically)
+  # - thinkfan: Hardware-level cooling response (adjusts fan speed)
   #
-  # Temperature Bands (Conservative Profile):
-  # ≤ 55°C : Silent operation (fan off or minimal)
-  # 48-60°C: Level 1 (quiet background cooling)
-  # 50-65°C: Level 2 (light workload)
-  # 55-70°C: Level 3 (moderate workload)
-  # 60-75°C: Level 4 (sustained load)
-  # 65-80°C: Level 5 (heavy workload)
-  # 70-85°C: Level 7 (aggressive cooling)
-  # ≥ 80°C : Maximum fan speed (thermal protection)
+  # Platform-Specific Profiles:
+  # This configuration adapts fan curves based on CPU detection to account for
+  # different thermal characteristics of each platform:
   #
-  # Note: Temperature ranges overlap intentionally to provide hysteresis and
-  # prevent rapid fan speed oscillations (fan flutter).
+  # • Meteor Lake (Core Ultra 7 155H) - E14 Gen 6
+  #   - Modern 7nm architecture with efficient thermal design
+  #   - Higher TDP headroom (28W base / 55W burst)
+  #   - Can tolerate higher temperatures before aggressive cooling
+  #   - Profile: Balanced (prioritizes silence, allows 52°C idle)
+  #
+  # • Kaby Lake (Core i7-8650U) - X1 Carbon Gen 6
+  #   - Older 14nm architecture with higher heat density
+  #   - Lower TDP (15W base / 25W burst)
+  #   - Requires earlier fan intervention to prevent thermal throttling
+  #   - Profile: Aggressive (prioritizes cooling, 45°C fan start)
+  #
+  # • Virtual Machine
+  #   - Minimal profile with simple two-stage control
+  #   - Relies on hypervisor thermal management
+  #
+  # Hysteresis Design:
+  # Temperature ranges intentionally overlap by 5-8°C to provide hysteresis,
+  # preventing rapid fan speed oscillations (fan flutter) during variable loads.
+  #
+  # FanSpeed Values:
+  #   0   : Auto mode (firmware/BIOS control)
+  #   1-7 : Manual levels (1=quietest, 7=loudest)
+  #   127 : Full speed/disengaged (maximum cooling, emergency only)
   # ============================================================================
-  services.thinkfan = {
-    enable = true;
+  #services.thinkfan = lib.mkIf isPhysicalMachine {
+  #  enable = true;
+  #  
+  #  # ---------------------------------------------------------------------------
+  #  # Temperature Sensor Configuration
+  #  # ---------------------------------------------------------------------------
+  #  sensors = [
+  #    {
+  #      type = "hwmon";
+  #      query = "/sys/class/hwmon";
+  #      name = "coretemp";
+  #      indices = [1];
+  #    }
+  #  ];
+  #  
+  #  # ---------------------------------------------------------------------------
+  #  # Fan Interface Configuration
+  #  # ---------------------------------------------------------------------------
+  #  fans = [
+  #    {
+  #      type = "tpacpi";
+  #      query = "/proc/acpi/ibm/fan";
+  #    }
+  #  ];
+  #  
+  #  # ---------------------------------------------------------------------------
+  #  # Platform-Adaptive Fan Speed Curves
+  #  # ---------------------------------------------------------------------------
+  #  # The configuration dynamically detects CPU model and applies the
+  #  # appropriate thermal profile. This is determined at runtime by reading
+  #  # /proc/cpuinfo via the cpuDetectionScript.
+  #  # ---------------------------------------------------------------------------
+  #};
   
-    # ---------------------------------------------------------------------------
-    # Temperature Sensor Configuration
-    # ---------------------------------------------------------------------------
-    sensors = [
-      {
-        type = "hwmon";                    # Hardware monitoring interface
-        query = "/sys/class/hwmon";        # Sensor discovery path
-        name = "coretemp";                 # Intel Core temperature sensor
-        indices = [1];                     # Index 1 = Package temperature
-      }
-    ];
-  
-    # ---------------------------------------------------------------------------
-    # Fan Interface Configuration
-    # ---------------------------------------------------------------------------
-    fans = [
-      {
-        type = "tpacpi";                   # ThinkPad ACPI interface
-        query = "/proc/acpi/ibm/fan";      # ThinkPad fan control file
-      }
-    ];
-  
-    # ---------------------------------------------------------------------------
-    # Fan Speed Levels
-    # ---------------------------------------------------------------------------
-    # Format: [FanSpeed, LowerBound, UpperBound]
-    # FanSpeed values:
-    #   0   : Auto mode (BIOS control)
-    #   1-7 : Manual levels (1=quietest, 7=loudest)
-    #   127 : Full speed (disengaged/maximum)
-    # ---------------------------------------------------------------------------
-    #levels = [
-    #  # Format: [FanSpeed, LowerTemp, UpperTemp]
-    #  [0    0   55]      # Fan kapalı: 0-55°C
-    #  [1   48   60]      # Seviye 1: 48-60°C (55 ile çakışıyor ✓)
-    #  [2   50   65]      # Seviye 2: 50-65°C
-    #  [3   55   70]      # Seviye 3: 55-70°C
-    #  [4   60   75]      # Seviye 4: 60-75°C
-    #  [5   65   80]      # Seviye 5: 65-80°C
-    #  [7   70   85]      # Seviye 7: 70-85°C
-    #  [127 80   32767]   # Max hız: 80°C+
-    #];
-    levels = [
-      # Format: [FanSpeed, LowerTemp, UpperTemp]
-      # DENGELİ PROFİL (Performans + Sessizlik dengesi)
-      [0    0   50]      # Fan kapalı: 0-50°C (sessiz çalışma)
-      [1   42   55]      # Seviye 1: 42-55°C (hafif soğutma başlar)
-      [2   48   60]      # Seviye 2: 48-60°C (web, ofis)
-      [3   52   65]      # Seviye 3: 52-65°C (çoklu görev)
-      [4   57   70]      # Seviye 4: 57-70°C (derleme, video)
-      [5   62   75]      # Seviye 5: 62-75°C (ağır iş yükü)
-      [7   67   80]      # Seviye 7: 67-80°C (stres testi)
-      [127 75   32767]   # Max hız: 75°C+ (acil soğutma)
-    ];
-  };
+  ## systemd service to write thinkfan config based on CPU detection
+  #systemd.services.thinkfan-config = lib.mkIf isPhysicalMachine {
+  #  description = "Generate CPU-specific thinkfan configuration";
+  #  wantedBy = [ "thinkfan.service" ];
+  #  before = [ "thinkfan.service" ];
+  #  serviceConfig = {
+  #    Type = "oneshot";
+  #    RemainAfterExit = true;
+  #  };
+  #  script = ''
+  #    CPU_TYPE=$(${cpuDetectionScript})
+  #    
+  #    case "''${CPU_TYPE}" in
+  #      METEORLAKE)
+  #        # Meteor Lake Profile: SILENT (sessiz ve rahat)
+  #        cat > /etc/thinkfan.conf << 'EOF'
+  #    hwmon /sys/class/hwmon/hwmon*/temp1_input : (1, 0, 0, 0)
+  #    
+  #    tp_fan /proc/acpi/ibm/fan
+  #    
+  #    (0,   0,  60)      # Fan kapalı: 0-60°C (geniş sessiz aralık)
+  #    (1,  50,  65)      # Level 1: 50-65°C (geç başla)
+  #    (2,  55,  70)      # Level 2: 55-70°C
+  #    (3,  60,  75)      # Level 3: 60-75°C
+  #    (4,  65,  78)      # Level 4: 65-78°C
+  #    (5,  70,  82)      # Level 5: 70-82°C
+  #    (7,  75,  88)      # Level 7: 75-88°C
+  #    (127, 82, 32767)   # Max hız: 82°C+
+  #    EOF
+  #        ;;
+  #      KABYLAKE)
+  #        # Kaby Lake Profile: Balanced (orta yol)
+  #        cat > /etc/thinkfan.conf << 'EOF'
+  #    hwmon /sys/class/hwmon/hwmon*/temp1_input : (1, 0, 0, 0)
+  #    
+  #    tp_fan /proc/acpi/ibm/fan
+  #    
+  #    (0,   0,  50)      # Fan kapalı: 0-50°C
+  #    (1,  42,  58)      # Level 1: 42-58°C
+  #    (2,  50,  64)      # Level 2: 50-64°C
+  #    (3,  56,  70)      # Level 3: 56-70°C
+  #    (4,  62,  75)      # Level 4: 62-75°C
+  #    (5,  68,  80)      # Level 5: 68-80°C
+  #    (7,  73,  85)      # Level 7: 73-85°C
+  #    (127, 78, 32767)   # Max hız: 78°C+
+  #    EOF
+  #        ;;
+  #      *)
+  #        # Generic Profile: Conservative fallback
+  #        cat > /etc/thinkfan.conf << 'EOF'
+  #    hwmon /sys/class/hwmon/hwmon*/temp1_input : (1, 0, 0, 0)
+  #    
+  #    tp_fan /proc/acpi/ibm/fan
+  #    
+  #    (0,   0,  55)
+  #    (1,  45,  62)
+  #    (2,  52,  68)
+  #    (3,  58,  73)
+  #    (4,  64,  78)
+  #    (5,  70,  83)
+  #    (7,  75,  88)
+  #    (127, 80, 32767)
+  #    EOF
+  #        ;;
+  #    esac
+  #    
+  #    echo "Thinkfan config generated for CPU type: ''${CPU_TYPE}"
+  #  '';
+  #};
 
   # ============================================================================
   # PLATFORM PROFILE - PERFORMANCE
@@ -1029,6 +1090,10 @@ in
       # $1: "pre" (before sleep) or "post" (after wake).
       # $2: The sleep state ("suspend", "hibernate", etc.).
       case "''${1}" in
+        pre)
+          # Suspend'e girmeden önce thinkfan'i durdur
+          /run/current-system/sw/bin/systemctl stop thinkfan.service || true
+          ;;
         post)
           # After waking up, restart all power management services to restore our settings.
           # We use `|| true` to prevent a single service failure from stopping the script.
@@ -1040,6 +1105,7 @@ in
           /run/current-system/sw/bin/systemctl restart rapl-thermo-guard.service || true
           /run/current-system/sw/bin/systemctl start   rapl-mmio-sync.service || true
           /run/current-system/sw/bin/systemctl start   disable-rapl-mmio.service || true
+          /run/current-system/sw/bin/systemctl start   thinkfan.service || true
           ;;
       esac
     '';
