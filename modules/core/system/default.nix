@@ -28,9 +28,9 @@
 # ✅ EPB tuned: AC=0 (max perf), Battery=6 (balanced) for better turbo behavior.
 # ✅ Min performance guard (intel_pstate/min_perf_pct): AC=30%, Battery=20%.
 # ✅ CPU-aware, source-aware RAPL:
-#      • Meteor Lake (this machine) → AC: 35W/55W, Battery: 28W/45W.
+#      • Meteor Lake (this machine) → AC: 35W/52W, Battery: 28W/45W.
 # ✅ Temperature-aware PL2 (rapl-thermo-guard):
-#      • ≤75 °C → restore BASE_PL2; 76–79 °C → hold; 80–84 °C → clamp 45 W; ≥85 °C → clamp 35 W.
+#      • ≤65 °C → restore BASE_PL2 (52W); 66–69 °C → hold; 70–74 °C → clamp 38W; ≥75 °C → clamp 32W.
 #      • Never touches PL1; avoids oscillation vs. stock firmware throttling.
 # ✅ MSR/MMIO parity & enforcement:
 #      • Disable intel-rapl-mmio on udev add/change to prevent conflicts.
@@ -583,11 +583,11 @@ in
   # Power profiles are tailored to the specific CPU and power source:
   #
   # Meteor Lake (Core Ultra 7 155H):
-  #   AC:      PL1=35W / PL2=55W (High-performance desktop replacement)
+  #   AC:      PL1=35W / PL2=52W (High-performance desktop replacement)
   #   Battery: PL1=28W / PL2=45W (Balanced for mobile usage)
   #
   # Kaby Lake R (8th gen U-series):
-  #   AC:      PL1=35W / PL2=55W (Respecting the lower TDP of this platform)
+  #   AC:      PL1=35W / PL2=52W (Respecting the lower TDP of this platform)
   #   Battery: PL1=20W / PL2=35W
   #
   # Generic Intel (Fallback):
@@ -819,14 +819,14 @@ in
   #   • Never modifies PL1 (sustained limit).
   #
   # Temperature Policy (AGGRESSIVE COOLING):
-  #   ≤ 68°C : Cool  → restore full PL2 (BASE_PL2)
-  #   69–72°C: Hold  → keep current PL2 (hysteresis, no change)
-  #   73–77°C: Warm  → clamp PL2 to 40 W
-  #   ≥ 78°C : Hot   → clamp PL2 to 35 W
+  #   ≤ 65°C : Cool  → restore full PL2 (BASE_PL2 = 52W)
+  #   66–69°C: Hold  → keep current PL2 (hysteresis, no change)
+  #   70–74°C: Warm  → clamp PL2 to 38W
+  #   ≥ 75°C : Hot   → clamp PL2 to 32W
   #
   # Tunables (optimized for lower temperatures):
-  #   HOT_C=78, WARM_C=73, COOL_C=68
-  #   CLAMP_HOT_W=35, CLAMP_WARM_W=40
+  #   HOT_C=75, WARM_C=70, COOL_C=65
+  #   CLAMP_HOT_W=32, CLAMP_WARM_W=38
   #
   systemd.services.rapl-thermo-guard = lib.mkIf isPhysicalMachine {
     description = "Temperature-aware PL2 clamp on all RAPL interfaces (AGGRESSIVE)";
@@ -866,11 +866,11 @@ in
         echo "Base PL2 detected: ''${BASE_PL2} W"
 
         # -------------------- Tunables (AGGRESSIVE) --------------------
-        HOT_C=75         # ≥ 78°C → aggressive clamp (was 80)
-        WARM_C=70        # ≥ 73°C → moderate clamp (was 75)
-        COOL_C=65        # ≤ 68°C → restore full PL2 (was 70)
-        CLAMP_HOT_W=32   # PL2 when hot
-        CLAMP_WARM_W=38  # PL2 when warm (was 43)
+        HOT_C=75         # ≥ 75°C → aggressive clamp (was 78)
+        WARM_C=70        # ≥ 70°C → moderate clamp (was 73)
+        COOL_C=65        # ≤ 65°C → restore full PL2 (was 68)
+        CLAMP_HOT_W=32   # PL2 when hot (was 35)
+        CLAMP_WARM_W=38  # PL2 when warm (was 40)
 
         # -------------------- Helpers ---------------------
         read_temp() {
@@ -895,9 +895,9 @@ in
           T_INT=$(printf '%.0f' "''${TEMP:-0}")  # round to int °C
 
           # Hysteresis bands (AGGRESSIVE):
-          #   >= 78°C  → 35W (hot)
-          #   >= 73°C  → 40W (warm)
-          #   <= 68°C  → 52W (cool)
+          #   >= 75°C  → 32W (hot)
+          #   >= 70°C  → 38W (warm)
+          #   <= 65°C  → 52W (cool)
           #   otherwise → keep CURRENT_PL2 (hysteresis)
           if   [[ "''${T_INT}" -ge "''${HOT_C}" ]]; then
             TARGET_PL2="''${CLAMP_HOT_W}"
