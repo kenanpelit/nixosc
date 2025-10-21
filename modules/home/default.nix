@@ -57,6 +57,7 @@
     ./firefox       # Firefox browser with privacy enhancements
     ./chrome        # Google Chrome configuration
     ./brave         # Brave browser with ad blocking
+    ./vivaldi       # Vivaldi browser with ad blocking
     ./zen           # Zen browser setup and customization
     
     # =============================================================================
