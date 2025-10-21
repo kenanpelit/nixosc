@@ -359,6 +359,28 @@ in
   };
 
   # ============================================================================
+  # RAPL Energy Counter Permissions (for non-root power monitoring)
+  # ============================================================================
+  systemd.services.rapl-permissions = lib.mkIf isPhysicalMachine {
+    description = "Set RAPL energy counter permissions for non-root users";
+   wantedBy = [ "multi-user.target" ];
+   after = [ "multi-user.target" ];
+   serviceConfig = {
+     Type = "oneshot";
+     RemainAfterExit = true;
+     ExecStart = pkgs.writeShellScript "rapl-permissions" ''
+       # Make RAPL energy counters readable by all users
+       for rapl in /sys/class/powercap/intel-rapl:*/energy_uj; do
+         if [[ -f "$rapl" ]]; then
+           chmod 644 "$rapl" || true
+         fi
+       done
+       echo "RAPL energy counters made readable for non-root users"
+     '';
+   };
+  };
+
+  # ============================================================================
   # EPP (Energy Performance Preference)
   # ============================================================================
   # This service configures the Intel Energy Performance Preference (EPP), which
@@ -623,9 +645,9 @@ in
       CPU_MODEL="$(echo "$CPU_MODEL" | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
 
       if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq 'Ultra 7 155H|Meteor Lake|MTL'; then
-        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=52; else PL1=28; PL2=45; fi
+        if [[ "$ON_AC" = "1" ]]; then PL1=32; PL2=52; else PL1=28; PL2=45; fi
       elif echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq '8650U|Kaby Lake'; then
-        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=52; else PL1=20; PL2=35; fi
+        if [[ "$ON_AC" = "1" ]]; then PL1=32; PL2=52; else PL1=20; PL2=35; fi
       else
         if [[ "$ON_AC" = "1" ]]; then PL1=40; PL2=65; else PL1=22; PL2=40; fi
       fi
@@ -866,11 +888,11 @@ in
         echo "Base PL2 detected: ''${BASE_PL2} W"
 
         # -------------------- Tunables (AGGRESSIVE) --------------------
-        HOT_C=75         # ≥ 75°C → aggressive clamp (was 78)
-        WARM_C=70        # ≥ 70°C → moderate clamp (was 73)
-        COOL_C=65        # ≤ 65°C → restore full PL2 (was 68)
-        CLAMP_HOT_W=32   # PL2 when hot (was 35)
-        CLAMP_WARM_W=38  # PL2 when warm (was 40)
+        HOT_C=73         # ≥ 75°C → aggressive clamp (was 78)
+        WARM_C=68        # ≥ 70°C → moderate clamp (was 73)
+        COOL_C=63        # ≤ 65°C → restore full PL2 (was 68)
+        CLAMP_HOT_W=30   # PL2 when hot (was 35)
+        CLAMP_WARM_W=36  # PL2 when warm (was 40)
 
         # -------------------- Helpers ---------------------
         read_temp() {

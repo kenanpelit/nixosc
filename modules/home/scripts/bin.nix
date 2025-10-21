@@ -204,6 +204,9 @@ let
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./bin/osc-test.sh
   );
+  osc-thermal = pkgs.writeShellScriptBin "osc-thermal" (
+    builtins.readFile ./bin/osc-thermal.sh
+  );
   osc-tmux-plugins-install = pkgs.writeShellScriptBin "osc-tmux-plugins-install" (
     builtins.readFile ./bin/osc-tmux-plugins-install.sh
   );
@@ -442,6 +445,7 @@ in {
     osc-sync
     osc-system
     osc-test
+    osc-thermal
     osc-tmux-plugins-install
     osc-tv-splitter
     osc-ulauncher_ext
