@@ -217,8 +217,21 @@ in
       # Set the default suspend mode to "s2idle" (modern standby) for faster
       # sleep and wake cycles, mimicking smartphone-like behavior.
       "mem_sleep_default=s2idle"
+      # Enable Display C-states for GPU power management. Level 2 enables deeper
+      # power saving states when the display is idle, reducing GPU power consumption.
+      "i915.enable_dc=2"
+      # Enable Panel Self Refresh (PSR) to allow the display panel to refresh itself
+      # from its internal frame buffer without CPU/GPU intervention, saving power.
+      "i915.enable_psr=1"
+      # Enable fastboot to reuse BIOS/firmware-initialized display configuration,
+      # reducing GPU initialization overhead during boot and resume.
+      "i915.fastboot=1"
+      # Limit Intel idle C-states to C7 maximum. This prevents entering very deep
+      # sleep states (C8-C10) which can cause thermal spikes on exit. C7 provides
+      # good power savings with more stable thermal behavior.
+      "intel_idle.max_cstate=7"
     ];
-
+   
     # Runtime kernel tuning via sysctl.
     kernel.sysctl = {
       "vm.swappiness"       = 60; # Default swappiness value, moderate swap usage.
@@ -302,150 +315,6 @@ in
   services.tlp.enable                   = false;
   services.thermald.enable              = false;
   services.thinkfan.enable              = false;
-
-  # ============================================================================
-  # THINKFAN - INTELLIGENT FAN CONTROL
-  # ============================================================================
-  # ThinkFan provides hardware-level thermal management by directly controlling
-  # the system fan speed based on CPU package temperature. This works in
-  # conjunction with (but independently of) our rapl-thermo-guard service.
-  #
-  # Dual-Layer Thermal Strategy:
-  # - rapl-thermo-guard: Software-level power limiting (adjusts PL2 dynamically)
-  # - thinkfan: Hardware-level cooling response (adjusts fan speed)
-  #
-  # Platform-Specific Profiles:
-  # This configuration adapts fan curves based on CPU detection to account for
-  # different thermal characteristics of each platform:
-  #
-  # • Meteor Lake (Core Ultra 7 155H) - E14 Gen 6
-  #   - Modern 7nm architecture with efficient thermal design
-  #   - Higher TDP headroom (28W base / 55W burst)
-  #   - Can tolerate higher temperatures before aggressive cooling
-  #   - Profile: Balanced (prioritizes silence, allows 52°C idle)
-  #
-  # • Kaby Lake (Core i7-8650U) - X1 Carbon Gen 6
-  #   - Older 14nm architecture with higher heat density
-  #   - Lower TDP (15W base / 25W burst)
-  #   - Requires earlier fan intervention to prevent thermal throttling
-  #   - Profile: Aggressive (prioritizes cooling, 45°C fan start)
-  #
-  # • Virtual Machine
-  #   - Minimal profile with simple two-stage control
-  #   - Relies on hypervisor thermal management
-  #
-  # Hysteresis Design:
-  # Temperature ranges intentionally overlap by 5-8°C to provide hysteresis,
-  # preventing rapid fan speed oscillations (fan flutter) during variable loads.
-  #
-  # FanSpeed Values:
-  #   0   : Auto mode (firmware/BIOS control)
-  #   1-7 : Manual levels (1=quietest, 7=loudest)
-  #   127 : Full speed/disengaged (maximum cooling, emergency only)
-  # ============================================================================
-  #services.thinkfan = lib.mkIf isPhysicalMachine {
-  #  enable = true;
-  #  
-  #  # ---------------------------------------------------------------------------
-  #  # Temperature Sensor Configuration
-  #  # ---------------------------------------------------------------------------
-  #  sensors = [
-  #    {
-  #      type = "hwmon";
-  #      query = "/sys/class/hwmon";
-  #      name = "coretemp";
-  #      indices = [1];
-  #    }
-  #  ];
-  #  
-  #  # ---------------------------------------------------------------------------
-  #  # Fan Interface Configuration
-  #  # ---------------------------------------------------------------------------
-  #  fans = [
-  #    {
-  #      type = "tpacpi";
-  #      query = "/proc/acpi/ibm/fan";
-  #    }
-  #  ];
-  #  
-  #  # ---------------------------------------------------------------------------
-  #  # Platform-Adaptive Fan Speed Curves
-  #  # ---------------------------------------------------------------------------
-  #  # The configuration dynamically detects CPU model and applies the
-  #  # appropriate thermal profile. This is determined at runtime by reading
-  #  # /proc/cpuinfo via the cpuDetectionScript.
-  #  # ---------------------------------------------------------------------------
-  #};
-  
-  ## systemd service to write thinkfan config based on CPU detection
-  #systemd.services.thinkfan-config = lib.mkIf isPhysicalMachine {
-  #  description = "Generate CPU-specific thinkfan configuration";
-  #  wantedBy = [ "thinkfan.service" ];
-  #  before = [ "thinkfan.service" ];
-  #  serviceConfig = {
-  #    Type = "oneshot";
-  #    RemainAfterExit = true;
-  #  };
-  #  script = ''
-  #    CPU_TYPE=$(${cpuDetectionScript})
-  #    
-  #    case "''${CPU_TYPE}" in
-  #      METEORLAKE)
-  #        # Meteor Lake Profile: SILENT (sessiz ve rahat)
-  #        cat > /etc/thinkfan.conf << 'EOF'
-  #    hwmon /sys/class/hwmon/hwmon*/temp1_input : (1, 0, 0, 0)
-  #    
-  #    tp_fan /proc/acpi/ibm/fan
-  #    
-  #    (0,   0,  60)      # Fan kapalı: 0-60°C (geniş sessiz aralık)
-  #    (1,  50,  65)      # Level 1: 50-65°C (geç başla)
-  #    (2,  55,  70)      # Level 2: 55-70°C
-  #    (3,  60,  75)      # Level 3: 60-75°C
-  #    (4,  65,  78)      # Level 4: 65-78°C
-  #    (5,  70,  82)      # Level 5: 70-82°C
-  #    (7,  75,  88)      # Level 7: 75-88°C
-  #    (127, 82, 32767)   # Max hız: 82°C+
-  #    EOF
-  #        ;;
-  #      KABYLAKE)
-  #        # Kaby Lake Profile: Balanced (orta yol)
-  #        cat > /etc/thinkfan.conf << 'EOF'
-  #    hwmon /sys/class/hwmon/hwmon*/temp1_input : (1, 0, 0, 0)
-  #    
-  #    tp_fan /proc/acpi/ibm/fan
-  #    
-  #    (0,   0,  50)      # Fan kapalı: 0-50°C
-  #    (1,  42,  58)      # Level 1: 42-58°C
-  #    (2,  50,  64)      # Level 2: 50-64°C
-  #    (3,  56,  70)      # Level 3: 56-70°C
-  #    (4,  62,  75)      # Level 4: 62-75°C
-  #    (5,  68,  80)      # Level 5: 68-80°C
-  #    (7,  73,  85)      # Level 7: 73-85°C
-  #    (127, 78, 32767)   # Max hız: 78°C+
-  #    EOF
-  #        ;;
-  #      *)
-  #        # Generic Profile: Conservative fallback
-  #        cat > /etc/thinkfan.conf << 'EOF'
-  #    hwmon /sys/class/hwmon/hwmon*/temp1_input : (1, 0, 0, 0)
-  #    
-  #    tp_fan /proc/acpi/ibm/fan
-  #    
-  #    (0,   0,  55)
-  #    (1,  45,  62)
-  #    (2,  52,  68)
-  #    (3,  58,  73)
-  #    (4,  64,  78)
-  #    (5,  70,  83)
-  #    (7,  75,  88)
-  #    (127, 80, 32767)
-  #    EOF
-  #        ;;
-  #    esac
-  #    
-  #    echo "Thinkfan config generated for CPU type: ''${CPU_TYPE}"
-  #  '';
-  #};
 
   # ============================================================================
   # PLATFORM PROFILE - PERFORMANCE
@@ -754,17 +623,17 @@ in
       CPU_MODEL="$(echo "$CPU_MODEL" | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
 
       if echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq 'Ultra 7 155H|Meteor Lake|MTL'; then
-        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=55; else PL1=28; PL2=45; fi
+        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=52; else PL1=28; PL2=45; fi
       elif echo "$CPU_MODEL" | ${pkgs.gnugrep}/bin/grep -Eiq '8650U|Kaby Lake'; then
-        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=55; else PL1=20; PL2=35; fi
+        if [[ "$ON_AC" = "1" ]]; then PL1=35; PL2=52; else PL1=20; PL2=35; fi
       else
         if [[ "$ON_AC" = "1" ]]; then PL1=40; PL2=65; else PL1=22; PL2=40; fi
       fi
 
       PL1_UW=$((PL1 * 1000000))
       PL2_UW=$((PL2 * 1000000))
-      T1_US=28000000
-      T2_US=2000000
+      T1_US=20000000
+      T2_US=1500000
 
       [[ -w "$SRC/constraint_0_power_limit_uw" ]] && echo "$PL1_UW" > "$SRC/constraint_0_power_limit_uw" || true
       [[ -w "$SRC/constraint_1_power_limit_uw" ]] && echo "$PL2_UW" > "$SRC/constraint_1_power_limit_uw" || true
@@ -781,7 +650,6 @@ in
   systemd.services.rapl-mmio-sync = lib.mkIf isPhysicalMachine {
     description = "Mirror MSR RAPL limits to MMIO RAPL interface";
     after = [ "rapl-power-limits.service" ];
-    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       StandardOutput = "journal";
@@ -823,13 +691,15 @@ in
     };
   };
 
-  # This service acts as a "keeper", forcefully re-applying the desired RAPL
-  # limits from the MSR source to the MMIO destination. This provides an
-  # additional layer of enforcement.
+  # This service acts as a "keeper", mirroring the current RAPL limits from
+  # the MSR source to the MMIO destination. This provides an additional layer
+  # of enforcement while respecting dynamic changes made by rapl-thermo-guard.
+  # CRITICAL: This service now reads from MSR (not hardcoded values) to ensure
+  # compatibility with temperature-aware PL2 adjustments.
   systemd.services.rapl-mmio-keeper = lib.mkIf isPhysicalMachine {
-    description = "Periodically enforce MSR RAPL limits onto MMIO interface";
-    after = [ "rapl-power-limits.service" "rapl-mmio-sync.service" "multi-user.target" ];
-    wants = [ "rapl-power-limits.service" "rapl-mmio-sync.service" ];
+    description = "Mirror current MSR RAPL limits to MMIO interface";
+    after = [ "rapl-power-limits.service" "rapl-mmio-sync.service" "rapl-thermo-guard.service" "multi-user.target" ];
+    wants = [ "rapl-power-limits.service" "rapl-mmio-sync.service" "rapl-thermo-guard.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -845,37 +715,43 @@ in
         done
         [ -d "''${MMIO}" ] || { echo "rapl-mmio-keeper: MMIO interface not found, exiting."; exit 0; }
 
-        # Read target limits from MSR, with a fallback to 35/55W.
+        # IMPORTANT: Read current limits from MSR (not hardcoded values).
+        # This allows rapl-thermo-guard to dynamically adjust PL2 based on temperature.
+        # Fallback values are only used if MSR is unreadable (35W/52W for Meteor Lake).
         PL1_UW=$((35*1000000))
-        PL2_UW=$((55*1000000))
+        PL2_UW=$((52*1000000))
         [ -r "''${MSR}/constraint_0_power_limit_uw" ] && PL1_UW="$(cat "''${MSR}/constraint_0_power_limit_uw")"
         [ -r "''${MSR}/constraint_1_power_limit_uw" ] && PL2_UW="$(cat "''${MSR}/constraint_1_power_limit_uw")"
 
-        # Forcefully write limits and time windows to the MMIO interface.
+        # Mirror the current MSR limits to MMIO interface.
         [ -w "''${MMIO}/constraint_0_power_limit_uw" ] && echo "''${PL1_UW}" > "''${MMIO}/constraint_0_power_limit_uw" || true
         [ -w "''${MMIO}/constraint_1_power_limit_uw" ] && echo "''${PL2_UW}" > "''${MMIO}/constraint_1_power_limit_uw" || true
-        [ -w "''${MMIO}/constraint_0_time_window_us" ] && echo 28000000 > "''${MMIO}/constraint_0_time_window_us" || true
-        [ -w "''${MMIO}/constraint_1_time_window_us" ] && echo 2000000  > "''${MMIO}/constraint_1_time_window_us" || true
+        
+        # Update time windows to match the optimized values (20s PL1, 1.5s PL2).
+        [ -w "''${MMIO}/constraint_0_time_window_us" ] && echo 20000000 > "''${MMIO}/constraint_0_time_window_us" || true
+        [ -w "''${MMIO}/constraint_1_time_window_us" ] && echo 1500000  > "''${MMIO}/constraint_1_time_window_us" || true
 
+        # Verify and log the mirrored limits.
         R1=$(cat "''${MMIO}/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
         R2=$(cat "''${MMIO}/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
-        echo "rapl-mmio-keeper: Verified MMIO limits: PL1=$((R1/1000000))W, PL2=$((R2/1000000))W"
+        echo "rapl-mmio-keeper: Mirrored limits to MMIO: PL1=$((R1/1000000))W, PL2=$((R2/1000000))W"
       '');
     };
     wantedBy = [ "multi-user.target" ];
   };
 
   # A timer to run the keeper service every 30 seconds, ensuring persistent
-  # enforcement of the desired power limits.
-  systemd.timers.rapl-mmio-keeper = lib.mkIf isPhysicalMachine {
-    description = "Re-apply intel-rapl-mmio limits every 30s";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "5s";
-      OnUnitActiveSec = "30s";
-      AccuracySec = "1s";
-    };
-  };
+  # mirroring of current power limits. This maintains MSR/MMIO parity while
+  # allowing rapl-thermo-guard to dynamically adjust PL2 based on temperature.
+  #systemd.timers.rapl-mmio-keeper = lib.mkIf isPhysicalMachine {
+  #  description = "Mirror intel-rapl MSR limits to MMIO every 30s";
+  #  wantedBy = [ "timers.target" ];
+  #  timerConfig = {
+  #    OnBootSec = "5s";
+  #    OnUnitActiveSec = "30s";
+  #    AccuracySec = "1s";
+  #  };
+  #};
 
   # ============================================================================
   # BATTERY HEALTH MANAGEMENT (75–80% Thresholds)
@@ -942,26 +818,27 @@ in
   #   • Restores full PL2 when cool, clamps it when hot.
   #   • Never modifies PL1 (sustained limit).
   #
-  # Temperature Policy (default):
-  #   ≤ 75°C : Cool  → restore full PL2 (BASE_PL2)
-  #   76–79°C: Hold  → keep current PL2 (hysteresis, no change)
-  #   80–84°C: Warm  → clamp PL2 to 45 W
-  #   ≥ 85°C : Hot   → clamp PL2 to 35 W
+  # Temperature Policy (AGGRESSIVE COOLING):
+  #   ≤ 68°C : Cool  → restore full PL2 (BASE_PL2)
+  #   69–72°C: Hold  → keep current PL2 (hysteresis, no change)
+  #   73–77°C: Warm  → clamp PL2 to 40 W
+  #   ≥ 78°C : Hot   → clamp PL2 to 35 W
   #
-  # Tunables (edit here if you want different bands):
-  #   HOT_C=85, WARM_C=80, COOL_C=75
-  #   CLAMP_HOT_W=35, CLAMP_WARM_W=45
+  # Tunables (optimized for lower temperatures):
+  #   HOT_C=78, WARM_C=73, COOL_C=68
+  #   CLAMP_HOT_W=35, CLAMP_WARM_W=40
   #
   systemd.services.rapl-thermo-guard = lib.mkIf isPhysicalMachine {
-    description = "Temperature-aware PL2 clamp on all RAPL interfaces";
+    description = "Temperature-aware PL2 clamp on all RAPL interfaces (AGGRESSIVE)";
     wantedBy    = [ "multi-user.target" ];
-    after       = [ "multi-user.target" "rapl-power-limits.service" ];
+    after       = [ "multi-user.target" ];
+    before      = [ "rapl-mmio-keeper.service" "rapl-mmio-sync.service" ];
     serviceConfig = {
       Type       = "simple";
       Restart    = "always";      # Continuously running daemon
       RestartSec = "2s";
       ExecStart  = mkRobustScript "rapl-thermo-guard" ''
-        echo "=== RAPL Thermo Guard Daemon Starting ==="
+        echo "=== RAPL Thermo Guard Daemon Starting (AGGRESSIVE PROFILE) ==="
 
         # Ensure at least one RAPL interface is available.
         have_iface=0
@@ -981,25 +858,26 @@ in
             echo $(( $(cat "$P/constraint_1_power_limit_uw") / 1000000 ))
             return
           done
-          echo 55  # fallback if unreadable
+          echo 52  # fallback if unreadable
         }
 
         BASE_PL2="$(read_base_pl2)"
         CURRENT_PL2="''${BASE_PL2}"
         echo "Base PL2 detected: ''${BASE_PL2} W"
 
-        # -------------------- Tunables --------------------
-        HOT_C=85         # ≥ HOT_C → aggressive clamp
-        WARM_C=80        # ≥ WARM_C → moderate clamp
-        COOL_C=75        # ≤ COOL_C → restore full PL2
-        CLAMP_HOT_W=35   # PL2 when hot
-        CLAMP_WARM_W=45  # PL2 when warm
+        # -------------------- Tunables (AGGRESSIVE) --------------------
+        HOT_C=75         # ≥ 78°C → aggressive clamp (was 80)
+        WARM_C=70        # ≥ 73°C → moderate clamp (was 75)
+        COOL_C=65        # ≤ 68°C → restore full PL2 (was 70)
+        CLAMP_HOT_W=32   # PL2 when hot
+        CLAMP_WARM_W=38  # PL2 when warm (was 43)
 
         # -------------------- Helpers ---------------------
         read_temp() {
           ${pkgs.lm_sensors}/bin/sensors 2>/dev/null \
             | ${pkgs.gnugrep}/bin/grep -m1 "Package id 0" \
-            | ${pkgs.gawk}/bin/awk '{match($0, /[+]?([0-9]+(\.[0-9]+)?)/, a); print a[1]}'
+            | ${pkgs.gnugrep}/bin/grep -oP '\+\K[0-9]+' \
+            | head -1
         }
 
         set_pl2_all() {
@@ -1008,7 +886,7 @@ in
             [[ -w "$R/constraint_1_power_limit_uw" ]] || continue
             echo $((W * 1000000)) > "$R/constraint_1_power_limit_uw" 2>/dev/null || true
           done
-          echo "Thermal event: PL2 → ''${W} W"
+          echo "Thermal event: PL2 → ''${W} W (Temp: ''${TEMP}°C)"
         }
 
         # -------------------- Main loop -------------------
@@ -1016,11 +894,11 @@ in
           TEMP="$(read_temp)"
           T_INT=$(printf '%.0f' "''${TEMP:-0}")  # round to int °C
 
-          # Hysteresis bands:
-          #   >= HOT_C  → CLAMP_HOT_W
-          #   >= WARM_C → CLAMP_WARM_W
-          #   <= COOL_C → BASE_PL2
-          #   otherwise → keep CURRENT_PL2 (no change)
+          # Hysteresis bands (AGGRESSIVE):
+          #   >= 78°C  → 35W (hot)
+          #   >= 73°C  → 40W (warm)
+          #   <= 68°C  → 52W (cool)
+          #   otherwise → keep CURRENT_PL2 (hysteresis)
           if   [[ "''${T_INT}" -ge "''${HOT_C}" ]]; then
             TARGET_PL2="''${CLAMP_HOT_W}"
           elif [[ "''${T_INT}" -ge "''${WARM_C}" ]]; then
@@ -1785,7 +1663,6 @@ in
             "rapl-power-limits.service"
             "disable-rapl-mmio.service"
             "rapl-mmio-sync.service"
-            "rapl-mmio-keeper.service"
             "rapl-thermo-guard.service"
             "battery-thresholds.service"
         )
