@@ -463,18 +463,6 @@ for svc in "${SERVICES[@]}"; do
 	fi
 done
 
-# Kaldırılan servisler kontrolü (v15 → v16)
-echo ""
-echo "${DIM}Kaldırılan Servisler (v15):${RST}"
-OLD_SERVICES=(cpu-epb rapl-mmio-sync rapl-mmio-keeper)
-for svc in "${OLD_SERVICES[@]}"; do
-	if systemctl list-unit-files | grep -q "^${svc}.service"; then
-		echo "  ${YLW}⚠ ${svc}${RST} ${DIM}(v15'den kalma, artık kullanılmıyor)${RST}"
-	else
-		echo "  ${GRN}✓ ${svc}${RST} ${DIM}(temizlenmiş)${RST}"
-	fi
-done
-
 echo ""
 echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
 echo "${BOLD}💡 İpuçları:${RST}"
