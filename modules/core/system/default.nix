@@ -183,7 +183,7 @@ in
 
     # Load essential kernel modules
     kernelModules = [
-      "intel_pstate"        # Intel P-state driver (required for HWP)
+      # Note: intel_pstate is built-in to kernel, not loaded as module
       "msr"                 # MSR access (required for RAPL)
       "coretemp"            # Intel CPU core temperature monitoring
       "i915"                # Driver for Intel integrated graphics
@@ -425,7 +425,7 @@ in
     rapl-power-limits = {
       description = "Set RAPL Power Limits (MSR, CPU-Aware)";
       wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
+      before = [ "multi-user.target" ];
       requires = [ "disable-rapl-mmio.service" ];
       serviceConfig = {
         Type = "oneshot";
@@ -1069,4 +1069,3 @@ in
   # ============================================================================
   system.stateVersion = "25.11";
 }
-
