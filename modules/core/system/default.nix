@@ -552,9 +552,10 @@ in
   # These udev rules provide instant, event-driven responses to hardware changes.
   services.udev.extraRules = lib.concatStringsSep "\n" [
     ''
-      # When the MMIO powercap zone is added or changed, trigger the disable service.
-      ACTION=="add",    SUBSYSTEM=="powercap", KERNEL=="intel-rapl-mmio:*", ATTR{enabled}="0", TAG+="systemd", ENV{SYSTEMD_WANTS}="disable-rapl-mmio.service"
-      ACTION=="change", SUBSYSTEM=="powercap", KERNEL=="intel-rapl-mmio:*", ATTR{enabled}="0", TAG+="systemd", ENV{SYSTEMD_WANTS}="disable-rapl-mmio.service"
+      # When the MMIO powercap zone appears or changes, trigger the disable service (writing is done in the service).
+      ACTION=="add",    SUBSYSTEM=="powercap", KERNEL=="intel-rapl-mmio:*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="disable-rapl-mmio.service"
+      ACTION=="change", SUBSYSTEM=="powercap", KERNEL=="intel-rapl-mmio:*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="disable-rapl-mmio.service"
+
     ''
    (lib.optionalString isPhysicalMachine ''
       # AC adapter tak/çıkar → profilleri anında yenile
@@ -570,22 +571,20 @@ in
     description = "Disable intel-rapl-mmio powercap zone";
     wantedBy = [ "sysinit.target" ];
     after = [ "local-fs.target" ];
-    serviceConfig.Type = "oneshot";
+
+    # systemd rate-limitini kapat — udev birden fazla kez tetiklese bile sorun çıkarma
+    unitConfig.StartLimitIntervalSec = 0;
+    unitConfig.StartLimitBurst = 0;
+
+    serviceConfig = {
+      Type = "oneshot";
+    };
+
     script = ''
       for d in /sys/class/powercap/intel-rapl-mmio:*; do
         [ -w "$d/enabled" ] && echo 0 > "$d/enabled" || true
       done
     '';
-  };
-
-  # A systemd path unit to re-trigger the disable service if the `enabled`
-  # file for the MMIO zone changes, providing an extra layer of enforcement.
-  systemd.paths.disable-rapl-mmio = lib.mkIf isPhysicalMachine {
-    wantedBy = [ "multi-user.target" ];
-    pathConfig = {
-      PathChanged = "/sys/class/powercap/intel-rapl-mmio:0/enabled";
-      Unit = "disable-rapl-mmio.service";
-    };
   };
 
   # ============================================================================
@@ -605,11 +604,11 @@ in
   # Power profiles are tailored to the specific CPU and power source:
   #
   # Meteor Lake (Core Ultra 7 155H):
-  #   AC:      PL1=35W / PL2=52W (High-performance desktop replacement)
+  #   AC:      PL1=32W / PL2=52W (High-performance desktop replacement)
   #   Battery: PL1=28W / PL2=45W (Balanced for mobile usage)
   #
   # Kaby Lake R (8th gen U-series):
-  #   AC:      PL1=35W / PL2=52W (Respecting the lower TDP of this platform)
+  #   AC:      PL1=32W / PL2=52W (Respecting the lower TDP of this platform)
   #   Battery: PL1=20W / PL2=35W
   #
   # Generic Intel (Fallback):
@@ -713,68 +712,6 @@ in
     };
   };
 
-  # This service acts as a "keeper", mirroring the current RAPL limits from
-  # the MSR source to the MMIO destination. This provides an additional layer
-  # of enforcement while respecting dynamic changes made by rapl-thermo-guard.
-  # CRITICAL: This service now reads from MSR (not hardcoded values) to ensure
-  # compatibility with temperature-aware PL2 adjustments.
-  systemd.services.rapl-mmio-keeper = lib.mkIf isPhysicalMachine {
-    description = "Mirror current MSR RAPL limits to MMIO interface";
-    after = [ "rapl-power-limits.service" "rapl-mmio-sync.service" "rapl-thermo-guard.service" "multi-user.target" ];
-    wants = [ "rapl-power-limits.service" "rapl-mmio-sync.service" "rapl-thermo-guard.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = lib.getExe (pkgs.writeShellScriptBin "rapl-mmio-keeper" ''
-        set -eu
-        MSR="/sys/class/powercap/intel-rapl:0"
-        MMIO="/sys/class/powercap/intel-rapl-mmio:0"
-
-        # Wait a few seconds for the MMIO interface to appear.
-        for i in $(seq 1 30); do
-          [ -d "''${MMIO}" ] && break
-          sleep 0.1
-        done
-        [ -d "''${MMIO}" ] || { echo "rapl-mmio-keeper: MMIO interface not found, exiting."; exit 0; }
-
-        # IMPORTANT: Read current limits from MSR (not hardcoded values).
-        # This allows rapl-thermo-guard to dynamically adjust PL2 based on temperature.
-        # Fallback values are only used if MSR is unreadable (35W/52W for Meteor Lake).
-        PL1_UW=$((35*1000000))
-        PL2_UW=$((52*1000000))
-        [ -r "''${MSR}/constraint_0_power_limit_uw" ] && PL1_UW="$(cat "''${MSR}/constraint_0_power_limit_uw")"
-        [ -r "''${MSR}/constraint_1_power_limit_uw" ] && PL2_UW="$(cat "''${MSR}/constraint_1_power_limit_uw")"
-
-        # Mirror the current MSR limits to MMIO interface.
-        [ -w "''${MMIO}/constraint_0_power_limit_uw" ] && echo "''${PL1_UW}" > "''${MMIO}/constraint_0_power_limit_uw" || true
-        [ -w "''${MMIO}/constraint_1_power_limit_uw" ] && echo "''${PL2_UW}" > "''${MMIO}/constraint_1_power_limit_uw" || true
-        
-        # Update time windows to match the optimized values (20s PL1, 1.5s PL2).
-        [ -w "''${MMIO}/constraint_0_time_window_us" ] && echo 20000000 > "''${MMIO}/constraint_0_time_window_us" || true
-        [ -w "''${MMIO}/constraint_1_time_window_us" ] && echo 1500000  > "''${MMIO}/constraint_1_time_window_us" || true
-
-        # Verify and log the mirrored limits.
-        R1=$(cat "''${MMIO}/constraint_0_power_limit_uw" 2>/dev/null || echo 0)
-        R2=$(cat "''${MMIO}/constraint_1_power_limit_uw" 2>/dev/null || echo 0)
-        echo "rapl-mmio-keeper: Mirrored limits to MMIO: PL1=$((R1/1000000))W, PL2=$((R2/1000000))W"
-      '');
-    };
-    wantedBy = [ "multi-user.target" ];
-  };
-
-  # A timer to run the keeper service every 30 seconds, ensuring persistent
-  # mirroring of current power limits. This maintains MSR/MMIO parity while
-  # allowing rapl-thermo-guard to dynamically adjust PL2 based on temperature.
-  #systemd.timers.rapl-mmio-keeper = lib.mkIf isPhysicalMachine {
-  #  description = "Mirror intel-rapl MSR limits to MMIO every 30s";
-  #  wantedBy = [ "timers.target" ];
-  #  timerConfig = {
-  #    OnBootSec = "5s";
-  #    OnUnitActiveSec = "30s";
-  #    AccuracySec = "1s";
-  #  };
-  #};
-
   # ============================================================================
   # BATTERY HEALTH MANAGEMENT (75–80% Thresholds)
   # ============================================================================
@@ -854,7 +791,7 @@ in
     description = "Temperature-aware PL2 clamp on all RAPL interfaces (AGGRESSIVE)";
     wantedBy    = [ "multi-user.target" ];
     after       = [ "multi-user.target" ];
-    before      = [ "rapl-mmio-keeper.service" "rapl-mmio-sync.service" ];
+    before      = [ "rapl-mmio-sync.service" ];
     serviceConfig = {
       Type       = "simple";
       Restart    = "always";      # Continuously running daemon
@@ -953,13 +890,13 @@ in
     # Configure systemd-logind to handle events like lid closure and power button presses.
     logind.settings = {
       Login = {
-        HandleLidSwitch              = "suspend"; # Suspend when the lid is closed.
-        HandleLidSwitchDocked        = "suspend"; # Also suspend when docked.
-        HandleLidSwitchExternalPower = "suspend"; # Also suspend even when on AC power.
-        HandlePowerKey               = "ignore";  # Ignore short power key presses to prevent accidents.
-        HandlePowerKeyLongPress      = "poweroff";# Long press will initiate a shutdown.
-        HandleSuspendKey             = "suspend"; # Handle dedicated suspend key.
-        HandleHibernateKey           = "hibernate";# Handle dedicated hibernate key.
+        HandleLidSwitch              = "suspend";   # Suspend when the lid is closed.
+        HandleLidSwitchDocked        = "suspend";   # Also suspend when docked.
+        HandleLidSwitchExternalPower = "suspend";   # Also suspend even when on AC power.
+        HandlePowerKey               = "ignore";    # Ignore short power key presses to prevent accidents.
+        HandlePowerKeyLongPress      = "poweroff";  # Long press will initiate a shutdown.
+        HandleSuspendKey             = "suspend";   # Handle dedicated suspend key.
+        HandleHibernateKey           = "hibernate"; # Handle dedicated hibernate key.
       };
     };
 
@@ -991,12 +928,10 @@ in
       # $2: The sleep state ("suspend", "hibernate", etc.).
       case "''${1}" in
         pre)
-          # Suspend'e girmeden önce thinkfan'i durdur
-          /run/current-system/sw/bin/systemctl stop thinkfan.service || true
+          # (no-op)
           ;;
         post)
           # After waking up, restart all power management services to restore our settings.
-          # We use `|| true` to prevent a single service failure from stopping the script.
           /run/current-system/sw/bin/systemctl restart cpu-epp.service || true
           /run/current-system/sw/bin/systemctl restart cpu-epb.service || true
           /run/current-system/sw/bin/systemctl restart rapl-power-limits.service || true
@@ -1005,7 +940,6 @@ in
           /run/current-system/sw/bin/systemctl restart rapl-thermo-guard.service || true
           /run/current-system/sw/bin/systemctl start   rapl-mmio-sync.service || true
           /run/current-system/sw/bin/systemctl start   disable-rapl-mmio.service || true
-          /run/current-system/sw/bin/systemctl start   thinkfan.service || true
           ;;
       esac
     '';
@@ -1173,7 +1107,7 @@ in
         # Service Health Status
         echo ""
         echo "SERVICE STATUS:"
-        for svc in battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio rapl-mmio-sync rapl-mmio-keeper; do
+        for svc in battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio rapl-mmio-sync; do
             STATE=$(${pkgs.systemd}/bin/systemctl show -p ActiveState --value "$svc.service" 2>/dev/null)
             RESULT=$(${pkgs.systemd}/bin/systemctl show -p Result --value "$svc.service" 2>/dev/null)
             if [[ ( "''${STATE}" == "inactive" && "''${RESULT}" == "success" ) || "''${STATE}" == "active" ]]; then
