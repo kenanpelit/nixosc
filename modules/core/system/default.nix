@@ -4,61 +4,36 @@
 # ==============================================================================
 #
 # Module:    modules/core/system
-# Version:   16.0 (Optimized & Conflict-Resolved)
+# Version:   16.1 (Optimized, Declarative, Conflict-Resolved)
 # Date:      2025-10-22
 # Platform:  ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, Meteor Lake)
 #
-# PHILOSOPHICAL APPROACH:
-# -----------------------
+# PHILOSOPHICAL APPROACH
+# ----------------------
 # "Trust the hardware; intervene only where critical."
 #
 # Modern Intel platforms (esp. Meteor Lake) already optimize P-states and boosting
-# in hardware (HWP). Instead of fighting the firmware, this module applies a few
-# well-chosen, high-leverage controls and leaves the rest to silicon:
+# in hardware (HWP). Rather than fighting firmware, we provide a few high-leverage
+# controls and let silicon do the rest:
 #
 # - ACPI Platform Profile: Power-source-aware (performance on AC, low-power on battery).
 # - EPP (Energy Performance Preference): Primary control signal to HWP.
-# - RAPL (PL1/PL2): Hard ceilings for the thermal/power envelope.
+# - RAPL (PL1/PL2): Hard ceilings for the thermal/power envelope (MSR-exclusive).
 # - Min Performance Floor: Prevents UI jank by avoiding over-deep idle.
 #
-# KEY FEATURES IN THIS VERSION (v16.0):
-# -------------------------------------
-# ✅ ACPI Platform Profile → Power-aware: AC="performance", Battery="low-power".
-# ✅ Intel HWP active + EPP: AC="performance", Battery="balance_power".
-# ✅ EPB REMOVED: Redundant with HWP+EPP active; eliminates potential conflicts.
-# ✅ Min performance guard (intel_pstate/min_perf_pct): AC=30%, Battery=20%.
-# ✅ CPU-aware, source-aware RAPL:
-#      • Meteor Lake (this machine) → AC: 35W/52W, Battery: 28W/45W.
-# ✅ Temperature-aware PL2 (rapl-thermo-guard):
-#      • ≤64°C → restore BASE_PL2 (52W)
-#      • 65-69°C → hold current
-#      • 70-74°C → clamp 38W
-#      • ≥75°C → clamp 32W
-#      • Never touches PL1; avoids oscillation with firmware throttling.
-# ✅ UNIFIED RAPL STRATEGY (MSR-only):
-#      • MMIO driver disabled completely via udev to prevent conflicts.
-#      • All RAPL operations use MSR interface exclusively.
-#      • No sync services needed; single source of truth.
-# ✅ Instant AC plug/unplug handling via udev (restart all relevant services).
-# ✅ Post-suspend hook re-applies all power settings after resume.
-# ✅ Battery longevity: charge thresholds 75% (start) / 80% (stop).
-# ✅ Tooling: system-status, turbostat-quick/stress/analyze, power-check, power-monitor,
-#    power-profile-refresh for fast diagnostics.
+# WHAT'S NEW IN v16.1
+# -------------------
+# ✅ Declarative MMIO blacklist via boot.blacklistedKernelModules (no ad-hoc /etc writes)
+# ✅ Safer unit ordering: RAPL after udev-settle + platform-profile + cpu-epp
+# ✅ Platform-profile is choices-aware (low_power vs low-power)
+# ✅ Thermal guard prefers /sys thermal_zone x86_pkg_temp, sensors as fallback
+# ✅ Clean udev trigger for AC changes (no unbind hacks; MMIO prevented by blacklist)
+# ✅ Tools added: turbostat & stress-ng available system-wide
 #
-# RESOLVED CONFLICTS (v15 → v16):
-# --------------------------------
-# 🔧 RAPL Strategy: Eliminated MMIO/MSR conflict by using MSR exclusively.
-# 🔧 EPB Removed: With HWP+EPP active, EPB is redundant and can cause conflicts.
-# 🔧 Platform Profile: Now power-source-aware (performance/low-power).
-# 🔧 Temperature Thresholds: Unified documentation and implementation (≤64°C restore).
-# 🔧 Power Detection: Centralized to single function, no code duplication.
-# 🔧 Service Dependencies: Proper ordering with After=/Before= directives.
-# 🔧 Restart Logic: Staggered restart with dependency-aware sequencing.
-#
-# IMPORTANT NOTES:
-# ----------------
-# • With HWP, `scaling_cur_freq` often reads ~400 MHz and is misleading. Use `turbostat`
-#   (Avg_MHz/Bzy_MHz, PkgWatt) for truth.
+# IMPORTANT NOTES
+# ---------------
+# • With HWP, `scaling_cur_freq` often reads ~400 MHz and is misleading. Use turbostat
+#   (Avg_MHz/Bzy_MHz, PkgWatt) for ground truth.
 # • Nix string escaping: write Bash vars as ''${VAR} (not ${VAR}) inside Nix strings.
 # • Conflicting daemons are intentionally disabled (tlp, thermald, power-profiles-daemon,
 #   auto-cpufreq) to ensure deterministic control via sysfs/MSR.
@@ -109,7 +84,6 @@ let
   # CENTRALIZED POWER SOURCE DETECTION
   # ============================================================================
   # Single source of truth for power detection. Returns "AC" or "BATTERY".
-  # This eliminates code duplication and ensures consistency across all services.
   detectPowerSourceFunc = ''
     detect_power_source() {
       local on_ac=0
@@ -125,7 +99,7 @@ let
   '';
 
   # ============================================================================
-  # ROBUST SCRIPT GENERATOR
+  # ROBUST SCRIPT GENERATOR (logs to systemd-journald)
   # ============================================================================
   mkRobustScript = name: content: pkgs.writeTextFile {
     name = name;
@@ -201,16 +175,18 @@ in
       # Intel HWP and power management
       "intel_pstate=active"           # Enable HWP (Hardware P-States)
       "intel_idle.max_cstate=7"       # Limit C-states (good balance)
-      "processor.ignore_ppc=1"        # Ignore BIOS power limits
-      "pcie_aspm.policy=performance"  # PCIe Active State Power Management
-      
+      "processor.ignore_ppc=1"        # Ignore BIOS power caps (does not bypass thermal/VRM)
+      # NOTE: ASPM policy affects battery life vs perf; keep default or set to powersave.
+      # "pcie_aspm.policy=powersave"
+      # "pcie_aspm.policy=performance" # (Not recommended on battery)
+
       # Intel graphics optimization
       "i915.enable_guc=3"             # Enable GuC/HuC firmware
       "i915.enable_fbc=1"             # Frame Buffer Compression
       "i915.enable_dc=2"              # Display C-states
       "i915.enable_psr=1"             # Panel Self Refresh
       "i915.fastboot=1"               # Reuse firmware display config
-      
+
       # Modern standby
       "mem_sleep_default=s2idle"      # Modern standby (faster wake)
     ];
@@ -220,6 +196,9 @@ in
       "vm.swappiness"       = 60;     # Moderate swap usage
       "kernel.nmi_watchdog" = 0;      # Disable NMI watchdog (saves ~1W)
     };
+
+    # Declarative blacklist: prevent intel_rapl_mmio from loading at all
+    blacklistedKernelModules = [ "intel_rapl_mmio" ];
 
     # Bootloader configuration (GRUB) with dual-boot support
     loader = {
@@ -280,82 +259,99 @@ in
   };
 
   # ============================================================================
+  # SYSTEM SERVICES (logind configuration)
+  # ============================================================================
+  services = {
+    # Enable UPower for battery monitoring and power state information in DEs.
+    upower.enable = true;
+
+    # Configure systemd-logind to handle lid/power events.
+    logind.settings = {
+      Login = {
+        HandleLidSwitch              = "suspend";   # Suspend when the lid is closed.
+        HandleLidSwitchDocked        = "suspend";   # Also suspend when docked.
+        HandleLidSwitchExternalPower = "suspend";   # Also suspend even when on AC power.
+        HandlePowerKey               = "ignore";    # Ignore short presses to prevent accidents.
+        HandlePowerKeyLongPress      = "poweroff";  # Long press will initiate a shutdown.
+        HandleSuspendKey             = "suspend";   # Dedicated suspend key.
+        HandleHibernateKey           = "hibernate"; # Dedicated hibernate key.
+      };
+    };
+
+    # SPICE guest agent for VMs
+    spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
+  };
+
+  # ============================================================================
   # POWER MANAGEMENT - DISABLE CONFLICTING SERVICES
   # ============================================================================
-  # Explicitly disable all conflicting power management daemons to ensure
-  # our custom services have full control.
   services.thermald.enable = false;
   services.tlp.enable = false;
   services.power-profiles-daemon.enable = false;
-  # Note: auto-cpufreq is not a standard NixOS service, but mentioned for clarity
+  # Note: auto-cpufreq is not a standard NixOS service; intentionally off.
 
   # ============================================================================
   # CUSTOM POWER MANAGEMENT SERVICES
   # ============================================================================
   systemd.services = {
-    # ==========================================================================
-    # 1. PLATFORM PROFILE (Power-Source-Aware)
-    # ==========================================================================
-    # Sets ACPI platform profile based on power source:
-    # - AC: "performance" (unleashes hardware potential)
-    # - Battery: "low-power" (extends battery life)
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 1) PLATFORM PROFILE (Power-Source-Aware)
+    # ----------------------------------------------------------------------
     platform-profile = {
       description = "Set ACPI Platform Profile (Power-Aware)";
       wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
+      after = [ "systemd-udev-settle.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = mkRobustScript "platform-profile" ''
           ${detectPowerSourceFunc}
-          
+
           PROFILE_PATH="/sys/firmware/acpi/platform_profile"
-          
+          CHOICES_PATH="/sys/firmware/acpi/platform_profile_choices"
+
           if [[ ! -f "''${PROFILE_PATH}" ]]; then
             echo "⚠ Platform profile interface not available"
             exit 0
           fi
 
           POWER_SRC=$(detect_power_source)
-          
-          if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET="performance"
-          else
-            TARGET="low-power"
+          TARGET="performance"
+          [[ "''${POWER_SRC}" != "AC" ]] && TARGET="low-power"
+
+          # Some kernels expose 'low_power' instead of 'low-power' — respect choices
+          if [[ -f "''${CHOICES_PATH}" ]]; then
+            CHOICES="$(cat "''${CHOICES_PATH}")"
+            if [[ "''${TARGET}" == "low-power" && "''${CHOICES}" == *low_power* ]]; then
+              TARGET="low_power"
+            fi
           fi
 
           CURRENT=$(cat "''${PROFILE_PATH}" 2>/dev/null || echo "unknown")
-          
           if [[ "''${CURRENT}" != "''${TARGET}" ]]; then
             echo "''${TARGET}" > "''${PROFILE_PATH}"
             echo "✓ Platform profile set to: ''${TARGET} (was: ''${CURRENT})"
           else
-            echo "✓ Platform profile already set to: ''${TARGET}"
+            echo "✓ Platform profile already: ''${TARGET}"
           fi
         '';
       };
     };
 
-    # ==========================================================================
-    # 2. CPU EPP (Energy Performance Preference)
-    # ==========================================================================
-    # Primary control for Intel HWP. Sets performance intent:
-    # - AC: "performance" (maximum responsiveness)
-    # - Battery: "balance_power" (efficiency-focused)
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 2) CPU EPP (Energy Performance Preference)
+    # ----------------------------------------------------------------------
     cpu-epp = {
       description = "Configure Intel HWP Energy Performance Preference";
       wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
+      after = [ "systemd-udev-settle.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = mkRobustScript "cpu-epp" ''
           ${detectPowerSourceFunc}
-          
+
           POWER_SRC=$(detect_power_source)
-          
           if [[ "''${POWER_SRC}" == "AC" ]]; then
             TARGET_EPP="performance"
           else
@@ -373,33 +369,27 @@ in
       };
     };
 
-    # ==========================================================================
-    # 3. CPU MIN FREQUENCY GUARD
-    # ==========================================================================
-    # Sets minimum performance percentage to prevent deep idle states that
-    # cause UI stuttering:
-    # - AC: 30% (snappy response)
-    # - Battery: 20% (balanced)
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 3) CPU MIN FREQUENCY GUARD
+    # ----------------------------------------------------------------------
     cpu-min-freq-guard = {
       description = "Set Minimum CPU Performance Floor";
       wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
+      after = [ "systemd-udev-settle.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = mkRobustScript "cpu-min-freq-guard" ''
           ${detectPowerSourceFunc}
-          
+
           MIN_PERF_PATH="/sys/devices/system/cpu/intel_pstate/min_perf_pct"
-          
+
           if [[ ! -f "''${MIN_PERF_PATH}" ]]; then
             echo "⚠ intel_pstate min_perf_pct not available"
             exit 0
           fi
 
           POWER_SRC=$(detect_power_source)
-          
           if [[ "''${POWER_SRC}" == "AC" ]]; then
             TARGET_MIN=30
           else
@@ -412,31 +402,34 @@ in
       };
     };
 
-    # ==========================================================================
-    # 4. RAPL POWER LIMITS (MSR-based, CPU & Power-Source-Aware)
-    # ==========================================================================
-    # Sets PL1 (sustained) and PL2 (burst) limits via MSR interface only.
-    # MMIO is disabled to prevent conflicts. Platform-specific profiles:
-    # 
-    # Meteor Lake (Core Ultra 7 155H):
-    # - AC: PL1=35W, PL2=52W
-    # - Battery: PL1=28W, PL2=45W
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 4) RAPL POWER LIMITS (MSR-based, CPU & Power-Source-Aware)
+    #    * Core service; pulls in disable-rapl-mmio + rapl-thermo-guard
+    # ----------------------------------------------------------------------
     rapl-power-limits = {
       description = "Set RAPL Power Limits (MSR, CPU-Aware)";
       wantedBy = [ "multi-user.target" ];
-      before = [ "multi-user.target" ];
+      # Safer ordering: wait udev settle, then after platform-profile & cpu-epp
+      after = [
+        "systemd-udev-settle.service"
+        "platform-profile.service"
+        "cpu-epp.service"
+      ];
+      # Pull helpers; require MMIO disable, want thermal guard
+      wants = [ "disable-rapl-mmio.service" "rapl-thermo-guard.service" ];
       requires = [ "disable-rapl-mmio.service" ];
+      unitConfig = {
+        ConditionPathExists = "/sys/class/powercap/intel-rapl:0";
+      };
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = mkRobustScript "rapl-power-limits" ''
           ${detectPowerSourceFunc}
-          
-          # Detect CPU platform
+
           CPU_TYPE=$(${cpuDetectionScript})
           POWER_SRC=$(detect_power_source)
-          
+
           echo "Detected CPU: ''${CPU_TYPE}, Power: ''${POWER_SRC}"
 
           # Platform-specific power profiles
@@ -459,7 +452,7 @@ in
                 PL2_WATTS=35
               fi
               ;;
-            GENERIC)
+            *)
               if [[ "''${POWER_SRC}" == "AC" ]]; then
                 PL1_WATTS=25
                 PL2_WATTS=40
@@ -475,7 +468,7 @@ in
           PL2_UW=$((PL2_WATTS * 1000000))
 
           RAPL_BASE="/sys/class/powercap/intel-rapl:0"
-          
+
           if [[ ! -d "''${RAPL_BASE}" ]]; then
             echo "⚠ RAPL interface not available"
             exit 1
@@ -490,58 +483,43 @@ in
           echo "✓ PL2 set to ''${PL2_WATTS}W"
 
           # Store BASE_PL2 for thermal guard service
+          install -d -m 0755 /var/run
           echo "''${PL2_WATTS}" > /var/run/rapl-base-pl2
         '';
       };
     };
 
-    # ==========================================================================
-    # 5. DISABLE RAPL MMIO (Prevent MSR/MMIO Conflicts)
-    # ==========================================================================
-    # Disables intel-rapl-mmio driver to ensure all RAPL operations use
-    # MSR interface exclusively. This eliminates conflicts and ensures
-    # single source of truth.
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 5) DISABLE RAPL MMIO (Prevent MSR/MMIO Conflicts)
+    #    * Not wanted by multi-user.target (pulled by rapl-power-limits)
+    # ----------------------------------------------------------------------
     disable-rapl-mmio = {
-      description = "Disable intel-rapl-mmio to Prevent Conflicts";
-      wantedBy = [ "multi-user.target" ];
+      description = "Disable intel_rapl_mmio to Prevent Conflicts";
       before = [ "rapl-power-limits.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = mkRobustScript "disable-rapl-mmio" ''
-          if ${pkgs.kmod}/bin/lsmod | ${pkgs.gnugrep}/bin/grep -q "intel_rapl_mmio"; then
-            echo "Disabling intel-rapl-mmio driver..."
+          # Declarative blacklist prevents autoload; if loaded, remove it.
+          if ${pkgs.kmod}/bin/lsmod | ${pkgs.gnugrep}/bin/grep -q "^intel_rapl_mmio"; then
+            echo "Disabling intel_rapl_mmio (rmmod)..."
             ${pkgs.kmod}/bin/rmmod intel_rapl_mmio 2>/dev/null || true
-            echo "✓ intel-rapl-mmio disabled"
+            echo "✓ intel_rapl_mmio removed"
           else
-            echo "✓ intel-rapl-mmio already disabled"
+            echo "✓ intel_rapl_mmio not loaded"
           fi
-          
-          # Prevent auto-loading
-          echo "blacklist intel_rapl_mmio" > /etc/modprobe.d/rapl-mmio-blacklist.conf
         '';
       };
     };
 
-    # ==========================================================================
-    # 6. RAPL THERMO GUARD (Temperature-Aware PL2 Throttling)
-    # ==========================================================================
-    # Dynamically adjusts PL2 based on CPU package temperature to prevent
-    # thermal throttling while maintaining performance when cool:
-    #
-    # Temperature Zones:
-    # - ≤64°C: Restore BASE_PL2 (full performance)
-    # - 65-69°C: Hold current limit (stable zone)
-    # - 70-74°C: Clamp to 38W (moderate protection)
-    # - ≥75°C: Clamp to 32W (aggressive protection)
-    #
-    # Never touches PL1 to avoid oscillation with firmware.
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 6) RAPL THERMO GUARD (Temperature-Aware PL2 Throttling)
+    #    * Not wantedBy multi-user.target; started with rapl-power-limits
+    # ----------------------------------------------------------------------
     rapl-thermo-guard = {
       description = "Temperature-Aware RAPL PL2 Guard";
-      wantedBy = [ "multi-user.target" ];
       after = [ "rapl-power-limits.service" ];
+      partOf = [ "rapl-power-limits.service" ];
       serviceConfig = {
         Type = "simple";
         Restart = "always";
@@ -550,111 +528,106 @@ in
           RAPL_BASE="/sys/class/powercap/intel-rapl:0"
           PL2_PATH="''${RAPL_BASE}/constraint_1_power_limit_uw"
           BASE_PL2_FILE="/var/run/rapl-base-pl2"
-          
-          if [[ ! -f "''${BASE_PL2_FILE}" ]]; then
-            echo "⚠ BASE_PL2 not set, skipping thermal guard"
+
+          if [[ ! -f "''${BASE_PL2_FILE}" || ! -f "''${PL2_PATH}" ]]; then
+            echo "⚠ RAPL not ready; skipping thermal guard"
             exit 0
           fi
-          
+
           BASE_PL2=$(cat "''${BASE_PL2_FILE}")
           BASE_PL2_UW=$((BASE_PL2 * 1000000))
-          
           echo "Starting thermal guard (BASE_PL2: ''${BASE_PL2}W)"
 
+          read_pkgtemp() {
+            # Prefer sysfs thermal zones (x86_pkg_temp), fallback to sensors
+            for tz in /sys/class/thermal/thermal_zone*; do
+              [[ -r "''${tz}/type" && -r "''${tz}/temp" ]] || continue
+              if ${pkgs.gnugrep}/bin/grep -qi "x86_pkg_temp" "''${tz}/type"; then
+                ${pkgs.gawk}/bin/awk '{printf("%d\n",$1/1000)}' "''${tz}/temp"
+                return
+              fi
+            done
+            ${pkgs.lm_sensors}/bin/sensors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -m1 "Package id 0" | ${pkgs.gawk}/bin/awk '{match($0,/([0-9]+)\./,a); print a[1]}'
+          }
+
           while true; do
-            # Read CPU package temperature
-            TEMP_RAW=$(${pkgs.lm_sensors}/bin/sensors 2>/dev/null | \
-                       ${pkgs.gnugrep}/bin/grep "Package id 0" | \
-                       ${pkgs.gawk}/bin/awk '{match($0, /[+]?([0-9]+\.[0-9]+)/, a); print a[1]}')
-            
-            if [[ -z "''${TEMP_RAW}" ]]; then
-              sleep 3
-              continue
-            fi
-            
-            TEMP_INT=''${TEMP_RAW%.*}
+            TEMP_INT="$(read_pkgtemp)"
+            [[ -z "''${TEMP_INT}" ]] && { sleep 3; continue; }
+
             CURRENT_PL2_UW=$(cat "''${PL2_PATH}")
             CURRENT_PL2_W=$((CURRENT_PL2_UW / 1000000))
 
-            # Temperature-based PL2 adjustment
-            if [[ ''${TEMP_INT} -le 64 ]]; then
-              # Cool zone: restore full performance
+            if   [[ ''${TEMP_INT} -le 64 ]]; then
+              # Cool zone → restore base PL2
               if [[ ''${CURRENT_PL2_W} -ne ''${BASE_PL2} ]]; then
                 echo "''${BASE_PL2_UW}" > "''${PL2_PATH}"
                 echo "✓ [''${TEMP_INT}°C] PL2 restored to ''${BASE_PL2}W"
               fi
             elif [[ ''${TEMP_INT} -ge 75 ]]; then
-              # Hot zone: aggressive clamp
+              # Hot zone → aggressive clamp
               TARGET_UW=$((32 * 1000000))
               if [[ ''${CURRENT_PL2_UW} -ne ''${TARGET_UW} ]]; then
                 echo "''${TARGET_UW}" > "''${PL2_PATH}"
-                echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 32W (critical)"
+                echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 32W"
               fi
             elif [[ ''${TEMP_INT} -ge 70 ]]; then
-              # Warm zone: moderate clamp
+              # Warm zone → moderate clamp
               TARGET_UW=$((38 * 1000000))
               if [[ ''${CURRENT_PL2_UW} -ne ''${TARGET_UW} ]]; then
                 echo "''${TARGET_UW}" > "''${PL2_PATH}"
                 echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 38W"
               fi
             fi
-            # 65-69°C: hold current (stable zone, no logging)
-            
+            # 65–69°C: hold current (quiet)
             sleep 3
           done
         '';
       };
     };
 
-    # ==========================================================================
-    # 7. BATTERY CHARGE THRESHOLDS (Longevity Protection)
-    # ==========================================================================
-    # Limits battery charge to 75-80% to extend battery lifespan.
-    # ThinkPad-specific sysfs interface.
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 7) BATTERY CHARGE THRESHOLDS (Longevity Protection)
+    # ----------------------------------------------------------------------
     battery-thresholds = {
       description = "Set Battery Charge Thresholds (75-80%)";
       wantedBy = [ "multi-user.target" ];
-      after = [ "multi-user.target" ];
+      after = [ "systemd-udev-settle.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = mkRobustScript "battery-thresholds" ''
           BAT_BASE="/sys/class/power_supply/BAT0"
-          
+
           if [[ ! -d "''${BAT_BASE}" ]]; then
             echo "⚠ Battery interface not found"
             exit 0
           fi
 
-          # Set start threshold (when to start charging)
+          # Start threshold
           if [[ -f "''${BAT_BASE}/charge_control_start_threshold" ]]; then
             echo 75 > "''${BAT_BASE}/charge_control_start_threshold"
             echo "✓ Charge start threshold: 75%"
           fi
 
-          # Set stop threshold (when to stop charging)
+          # Stop threshold
           if [[ -f "''${BAT_BASE}/charge_control_end_threshold" ]]; then
             echo 80 > "''${BAT_BASE}/charge_control_end_threshold"
-            echo "✓ Charge stop threshold: 80%"
+            echo "✓ Charge stop  threshold: 80%"
           fi
         '';
       };
     };
 
-    # ==========================================================================
-    # 8. POWER SOURCE CHANGE HANDLER (Udev-Triggered Service Restart)
-    # ==========================================================================
-    # Restarts all power-dependent services when AC is plugged/unplugged.
-    # Dependency-aware restart sequence prevents race conditions.
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 8) POWER SOURCE CHANGE HANDLER (Udev-Triggered Service Restart)
+    # ----------------------------------------------------------------------
     power-source-change = {
       description = "Handle AC Power Source Changes";
       serviceConfig = {
         Type = "oneshot";
         ExecStart = mkRobustScript "power-source-change" ''
           ${detectPowerSourceFunc}
-          
+
           POWER_SRC=$(detect_power_source)
           echo "Power source changed to: ''${POWER_SRC}"
 
@@ -678,12 +651,9 @@ in
       };
     };
 
-    # ==========================================================================
-    # 9. POST-SUSPEND RESTORATION (Resume Hook)
-    # ==========================================================================
-    # Re-applies all power settings after system resume to ensure consistent
-    # state after sleep/hibernate.
-    # ==========================================================================
+    # ----------------------------------------------------------------------
+    # 9) POST-SUSPEND RESTORATION (Resume Hook)
+    # ----------------------------------------------------------------------
     post-suspend-restore = {
       description = "Restore Power Settings After Suspend/Resume";
       wantedBy = [ "suspend.target" ];
@@ -693,7 +663,6 @@ in
         ExecStart = mkRobustScript "post-suspend-restore" ''
           echo "Restoring power settings after resume..."
 
-          # Same ordered restart as power-source-change
           SERVICES=(
             "disable-rapl-mmio.service"
             "platform-profile.service"
@@ -716,37 +685,39 @@ in
   };
 
   # ============================================================================
-  # UDEV RULES (AC Power Detection & MMIO Prevention)
+  # UDEV RULES (AC Power Detection)
   # ============================================================================
   services.udev.extraRules = ''
-    # Trigger power-source-change service on AC plug/unplug
-    SUBSYSTEM=="power_supply", ATTR{online}=="0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
-    SUBSYSTEM=="power_supply", ATTR{online}=="1", TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
-    
-    # Block intel-rapl-mmio from binding to prevent MSR/MMIO conflicts
-    SUBSYSTEM=="platform", DRIVER=="intel-rapl-mmio", ATTR{driver/unbind}="intel-rapl-mmio.0"
+    # Trigger power-source-change service on AC plug/unplug (declarative & simple)
+    ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="1", \
+      TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
+    ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="0", \
+      TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
+
+    # Do NOT attempt to unbind intel-rapl-mmio here — it is declaratively blacklisted.
   '';
 
   # ============================================================================
-  # SYSTEM PACKAGES
+  # SYSTEM PACKAGES (Tools & Diagnostics)
   # ============================================================================
   environment.systemPackages = with pkgs; let
     writeScriptBin = pkgs.writeScriptBin;
   in [
-    # Essential monitoring tools
-    lm_sensors       # CPU temperature (sensors command)
-    htop             # Process viewer
-    powertop         # Power consumption analyzer
-    intel-gpu-tools  # Intel GPU utilities
+    # Monitoring tools
+    lm_sensors
+    htop
+    powertop
+    intel-gpu-tools
+    (pkgs.linuxPackages_latest.turbostat)  # matches kernelPackages above
+    stress-ng
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: system-status
-    # Comprehensive power management status dashboard.
     # ========================================================================
     (writeScriptBin "system-status" ''
       #!${pkgs.bash}/bin/bash
       echo "╔════════════════════════════════════════════════════════════════╗"
-      echo "║          POWER MANAGEMENT STATUS (v16.0)                      ║"
+      echo "║          POWER MANAGEMENT STATUS (v16.1)                      ║"
       echo "╚════════════════════════════════════════════════════════════════╝"
       echo ""
 
@@ -759,12 +730,12 @@ in
       echo "━━━ CPU INFORMATION ━━━"
       CPU_MODEL=$(lscpu | grep "Model name" | cut -d: -f2- | sed 's/^[[:space:]]*//')
       echo "Model: ''${CPU_MODEL}"
-      
+
       if [[ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver ]]; then
         DRIVER=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver)
         echo "Driver: ''${DRIVER}"
       fi
-      
+
       if [[ -f /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost ]]; then
         HWP=$(cat /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost)
         echo "HWP Dynamic Boost: ''${HWP}"
@@ -809,7 +780,7 @@ in
         PL2=$(cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw)
         printf "PL1 (Sustained): %3d W\n" $((PL1 / 1000000))
         printf "PL2 (Burst):     %3d W\n" $((PL2 / 1000000))
-        
+
         if [[ -f /var/run/rapl-base-pl2 ]]; then
           BASE_PL2=$(cat /var/run/rapl-base-pl2)
           echo "Base PL2:        ''${BASE_PL2} W (thermal guard reference)"
@@ -863,7 +834,7 @@ in
         "rapl-thermo-guard.service"
         "battery-thresholds.service"
       )
-      
+
       for SVC in "''${SERVICES[@]}"; do
         STATUS=$(systemctl is-active "''${SVC}" 2>/dev/null || echo "inactive")
         if [[ "''${STATUS}" == "active" ]]; then
@@ -880,44 +851,40 @@ in
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: turbostat-quick
-    # Quick turbostat snapshot (3 seconds) for instant frequency verification.
     # ========================================================================
     (writeScriptBin "turbostat-quick" ''
       #!${pkgs.bash}/bin/bash
       echo "=== TURBOSTAT QUICK CHECK (3 sec sample) ==="
       echo "This shows REAL CPU frequencies (not scaling_cur_freq)"
       echo ""
-      sudo turbostat --quiet --show PkgWatt,Avg_MHz,Busy%,Bzy_MHz --interval 3 --num_iterations 1
+      sudo ${pkgs.linuxPackages_latest.turbostat}/bin/turbostat --quiet --show PkgWatt,Avg_MHz,Busy%,Bzy_MHz --interval 3 --num_iterations 1
     '')
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: turbostat-stress
-    # Runs stress-ng for 10 seconds with turbostat monitoring.
     # ========================================================================
     (writeScriptBin "turbostat-stress" ''
       #!${pkgs.bash}/bin/bash
       echo "=== TURBOSTAT STRESS TEST ==="
       echo "Running stress-ng (10 sec) with turbostat monitoring..."
       echo ""
-      sudo turbostat --quiet --show PkgWatt,Avg_MHz,Busy%,Bzy_MHz --interval 1 \
-        stress-ng --cpu $(nproc) --timeout 10s --metrics-brief
+      sudo ${pkgs.linuxPackages_latest.turbostat}/bin/turbostat --quiet --show PkgWatt,Avg_MHz,Busy%,Bzy_MHz --interval 1 \
+        ${pkgs.stress-ng}/bin/stress-ng --cpu $(nproc) --timeout 10s --metrics-brief
     '')
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: turbostat-analyze
-    # Extended 30-second turbostat analysis with detailed metrics.
     # ========================================================================
     (writeScriptBin "turbostat-analyze" ''
       #!${pkgs.bash}/bin/bash
       echo "=== TURBOSTAT DETAILED ANALYSIS (30 sec) ==="
       echo "Collecting comprehensive CPU metrics..."
       echo ""
-      sudo turbostat --quiet --show Core,CPU,Avg_MHz,Busy%,Bzy_MHz,PkgWatt,PkgTmp,IRQ --interval 2 --num_iterations 15
+      sudo ${pkgs.linuxPackages_latest.turbostat}/bin/turbostat --quiet --show Core,CPU,Avg_MHz,Busy%,Bzy_MHz,PkgWatt,PkgTmp,IRQ --interval 2 --num_iterations 15
     '')
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: power-check
-    # Instant power consumption measurement via RAPL.
     # ========================================================================
     (writeScriptBin "power-check" ''
       #!${pkgs.bash}/bin/bash
@@ -962,7 +929,6 @@ in
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: power-monitor
-    # Real-time power monitoring dashboard (updates every second).
     # ========================================================================
     (writeScriptBin "power-monitor" ''
       #!${pkgs.bash}/bin/bash
@@ -971,7 +937,7 @@ in
 
       while true; do
         clear
-        echo "=== REAL-TIME POWER MONITOR (v16.0) | Press Ctrl+C to stop ==="
+        echo "=== REAL-TIME POWER MONITOR (v16.1) | Press Ctrl+C to stop ==="
         echo "Timestamp: $(date '+%H:%M:%S')"
         echo "------------------------------------------------------------"
 
@@ -1002,7 +968,7 @@ in
           echo "PACKAGE POWER (RAPL):"
           printf "  Current Consumption: %6.2f W\n" "''${WATTS}"
           printf "  Sustained Limit (PL1): %4d W\n" $((PL1/1000000))
-          printf "  Burst Limit (PL2):     %4d W\n" $((PL2/1000000))
+          printf "  Burst    Limit (PL2): %4d W\n" $((PL2/1000000))
         else
           echo "PACKAGE POWER (RAPL): Not Available"
         fi
@@ -1027,7 +993,6 @@ in
 
     # ========================================================================
     # DIAGNOSTIC SCRIPT: power-profile-refresh
-    # Manual service restart utility for testing/recovery.
     # ========================================================================
     (writeScriptBin "power-profile-refresh" ''
       #!${pkgs.bash}/bin/bash
