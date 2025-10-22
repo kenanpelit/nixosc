@@ -19,8 +19,8 @@
 # ✅ CPU Tipi (Intel/AMD detection)
 # ✅ Güç Kaynağı (AC/Pil)
 # ✅ P-State Modu (active/passive)
-# ✅ EPP (Energy Performance Preference) - YENİ v12!
-# ✅ HWP Dynamic Boost Durumu - YENİ v12!
+# ✅ EPP (Energy Performance Preference)
+# ✅ HWP Dynamic Boost Durumu
 # ✅ Min/Max Performans Yüzdeleri
 # ✅ Turbo Boost Durumu
 # ✅ Platform Profili (performance/balanced/low-power)
@@ -28,7 +28,8 @@
 # ✅ Sıcaklık Bilgisi (sensors)
 # ✅ RAPL Güç Limitleri (PL1/PL2) - AC/Pil adaptif
 # ✅ Pil Durumu ve Şarj Eşikleri
-# ✅ Systemd Servis Durumları (cpu-epp dahil)
+# ✅ Systemd Servis Durumları (v16.0 servisleri)
+# ✅ MMIO Status (disabled/active)
 #
 # JSON ÇIKTISI:
 # -------------
@@ -38,15 +39,15 @@
 #     "power_source": "AC",
 #     "pstate_mode": "active",
 #     "epp": "performance",
-#     "hwp_dynamic_boost": true,
+#     "hwp_dynamic_boost": false,
 #     "turbo_enabled": true,
 #     "freq_avg_mhz": 2500,
 #     "temp_celsius": 65.0,
 #     "power_limits": {
-#       "pl1_watts": 45,
-#       "pl2_watts": 90
+#       "pl1_watts": 35,
+#       "pl2_watts": 52
 #     },
-#     "timestamp": "2025-10-13T23:15:00+0300"
+#     "timestamp": "2025-10-22T23:15:00+0300"
 #   }
 #
 # ÖRNEKLER:
@@ -74,12 +75,21 @@
 # - Script root yetkisi gerektirmez (read-only sysfs kullanır)
 # - Intel CPU'lar için optimize edilmiştir
 # - AMD sistemlerde bazı metrikler mevcut olmayabilir
-# - v12'de EPP ve AC/Pil adaptif limitler eklendi
+# - v16.0: MMIO disabled, MSR-only RAPL, EPB kaldırıldı
 #
 # YAZARLAR:
 # ---------
-# Versiyon: 12.0 - EPP + AC/Battery Adaptive Edition
-# Tarih: 2025-10-13
+# Versiyon: 16.0 - MSR-Only Edition (Conflict-Resolved)
+# Tarih: 2025-10-22
+#
+# DEĞİŞİKLİKLER (v12 → v16):
+# ---------------------------
+# ✅ MMIO durumu eklendi (driver check)
+# ✅ EPB servisi kaldırıldı (artık kullanılmıyor)
+# ✅ Sync/keeper servisleri kaldırıldı
+# ✅ MSR/MMIO mismatch uyarısı güncellendi
+# ✅ Platform profile power-aware kontrolü
+# ✅ Base PL2 thermal guard referansı eklendi
 #
 # LİSANS:
 # -------
@@ -89,7 +99,7 @@
 
 set -euo pipefail
 
-VERSION="12.4"
+VERSION="16.0"
 
 # ----------------------------- renkler (isteğe bağlı) -------------------------
 if [[ -t 1 ]]; then
@@ -219,26 +229,29 @@ get_temp() {
 }
 TEMP_C="$(get_temp)"
 
-# ----------------------------- RAPL limitleri ---------------------------------
+# ----------------------------- RAPL limitleri (MSR-based) --------------------
 PL1_W=0
 PL2_W=0
 PL4_W=0
+BASE_PL2_W=0
+
 if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
 	PL1_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 	PL2_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 	PL4_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_2_power_limit_uw 2>/dev/null || echo 0) / 1000000))
+
+	# Base PL2 (thermal guard reference)
+	if [[ -r /var/run/rapl-base-pl2 ]]; then
+		BASE_PL2_W=$(cat /var/run/rapl-base-pl2)
+	fi
 fi
 
-# MSR vs MMIO tutarlılık (sadece package-0 için)
-MSR_PL1_W=0
-MSR_PL2_W=0
-MMIO_PL1_W=0
-MMIO_PL2_W=0
-if [[ -d /sys/class/powercap/intel-rapl:0 && -d /sys/class/powercap/intel-rapl-mmio:0 ]]; then
-	MSR_PL1_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000))
-	MSR_PL2_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
-	MMIO_PL1_W=$(($(read_file /sys/class/powercap/intel-rapl-mmio:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000))
-	MMIO_PL2_W=$(($(read_file /sys/class/powercap/intel-rapl-mmio:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
+# ----------------------------- MMIO durumu ------------------------------------
+MMIO_STATUS="disabled"
+MMIO_LOADED=false
+if lsmod 2>/dev/null | grep -q "intel_rapl_mmio"; then
+	MMIO_STATUS="active"
+	MMIO_LOADED=true
 fi
 
 # ----------------------------- platform profile -------------------------------
@@ -279,7 +292,7 @@ if $json_out; then
 		exit 1
 	fi
 
-	# EPP map’i JSON’a çevir
+	# EPP map'i JSON'a çevir
 	EPP_JSON="{}"
 	if ((EPP_COUNT > 0)); then
 		for k in "${!EPP_MAP[@]}"; do
@@ -297,9 +310,11 @@ if $json_out; then
 		--arg pstate "$PSTATE" \
 		--arg epp_any "$EPP_ANY" \
 		--arg platform_profile "$PLATFORM_PROFILE" \
+		--arg mmio_status "$MMIO_STATUS" \
 		--arg ts "$TS" \
 		--argjson turbo "$TURBO_ENABLED" \
 		--argjson hwp_boost "$HWP_BOOST_BOOL" \
+		--argjson mmio_loaded "$MMIO_LOADED" \
 		--argjson min_perf "${MIN_PERF//[^0-9]/}" \
 		--argjson max_perf "${MAX_PERF//[^0-9]/}" \
 		--argjson freq_avg "$FREQ_AVG_MHZ" \
@@ -307,10 +322,7 @@ if $json_out; then
 		--argjson pl1 "$PL1_W" \
 		--argjson pl2 "$PL2_W" \
 		--argjson pl4 "$PL4_W" \
-		--argjson msr_pl1 "$MSR_PL1_W" \
-		--argjson msr_pl2 "$MSR_PL2_W" \
-		--argjson mmio_pl1 "$MMIO_PL1_W" \
-		--argjson mmio_pl2 "$MMIO_PL2_W" \
+		--argjson base_pl2 "$BASE_PL2_W" \
 		--argjson pkg_w_now "${PKG_W_NOW:-0}" \
 		--argjson bat "$([[ "${BAT_JSON}" == "[]" ]] && echo "[]" || echo "${BAT_JSON}")" \
 		--argjson epp_map "$([[ $EPP_COUNT -gt 0 ]] && echo "${EPP_JSON}" || echo "{}")" \
@@ -324,13 +336,17 @@ if $json_out; then
       epp_map: $epp_map,
       hwp_dynamic_boost: $hwp_boost,
       turbo_enabled: $turbo,
+      mmio_status: $mmio_status,
+      mmio_driver_loaded: $mmio_loaded,
       performance: { min_pct: $min_perf, max_pct: $max_perf },
       platform_profile: $platform_profile,
       freq_avg_mhz: $freq_avg,
       temp_celsius: $temp,
       power_limits: {
-        pl1_watts: $pl1, pl2_watts: $pl2, pl4_watts: $pl4,
-        msr_vs_mmio: { msr: {pl1:$msr_pl1, pl2:$msr_pl2}, mmio: {pl1:$mmio_pl1, pl2:$mmio_pl2} }
+        pl1_watts: $pl1,
+        pl2_watts: $pl2,
+        pl4_watts: $pl4,
+        base_pl2_watts: $base_pl2
       },
       pkg_watts_now: $pkg_w_now,
       batteries: $bat,
@@ -340,35 +356,35 @@ if $json_out; then
 fi
 
 # ----------------------------- İnsan-okunur çıktı -----------------------------
-echo "=== SİSTEM DURUMU (v${VERSION}) ==="
+echo "${BOLD}=== SİSTEM DURUMU (v${VERSION}) ===${RST}"
 echo ""
 
 echo "CPU Type: ${CYN}${CPU_TYPE}${RST}"
 echo -n "Güç Kaynağı: "
 if [[ "$POWER_SRC" = "AC" ]]; then
-	echo "⚡ AC"
+	echo "${GRN}⚡ AC${RST}"
 else
-	echo "🔋 Pil"
+	echo "${YLW}🔋 Pil${RST}"
 fi
 
 echo ""
 if [[ "$PSTATE" != "unknown" ]]; then
 	echo "P-State Modu: ${BOLD}${PSTATE}${RST}"
 	echo "  Min/Max Performans: ${MIN_PERF}% / ${MAX_PERF}%"
-	echo "  Turbo Boost: $([[ "$TURBO_ENABLED" = true ]] && echo "✓ Aktif" || echo "✗ Kapalı")"
-	echo "  HWP Dynamic Boost: $([[ "$HWP_BOOST_BOOL" = true ]] && echo "✓ Aktif" || echo "✗ Kapalı")"
+	echo "  Turbo Boost: $([[ "$TURBO_ENABLED" = true ]] && echo "${GRN}✓ Aktif${RST}" || echo "${RED}✗ Kapalı${RST}")"
+	echo "  HWP Dynamic Boost: $([[ "$HWP_BOOST_BOOL" = true ]] && echo "${GRN}✓ Aktif${RST}" || echo "${RED}✗ Kapalı${RST}")"
 fi
 
-[[ "$PLATFORM_PROFILE" != "unknown" ]] && echo "Platform Profili: ${PLATFORM_PROFILE}"
+[[ "$PLATFORM_PROFILE" != "unknown" ]] && echo "Platform Profili: ${BOLD}${PLATFORM_PROFILE}${RST}"
 
 echo ""
 if ((EPP_COUNT > 0)); then
 	echo "EPP (Energy Performance Preference):"
 	for k in "${!EPP_MAP[@]}"; do
-		echo "  - ${k} (on ${EPP_MAP[$k]} policies)"
+		echo "  ${CYN}→${RST} ${BOLD}${k}${RST} (${EPP_MAP[$k]} policies)"
 	done
 else
-	echo "EPP: (arayüz bulunamadı veya yetkisiz)"
+	echo "EPP: ${DIM}(arayüz bulunamadı veya yetkisiz)${RST}"
 fi
 
 if ! $brief_out; then
@@ -380,62 +396,90 @@ if ! $brief_out; then
 		f="$(cat "$p" 2>/dev/null || echo 0)"
 		printf "  CPU %2d: %4d MHz\n" "$i" "$((f / 1000))"
 	done
-	echo "  Ortalama: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
+	echo "  ${DIM}Ortalama: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
+	echo "  ${DIM}💡 Not: scaling_cur_freq yanıltıcı olabilir, turbostat kullanın${RST}"
 fi
 
 echo ""
-echo "SICAKLIK: ${BOLD}${TEMP_C}°C${RST}"
+TEMP_COLOR="${GRN}"
+[[ $(awk -v t="$TEMP_C" 'BEGIN{print (t>=70)?1:0}') -eq 1 ]] && TEMP_COLOR="${YLW}"
+[[ $(awk -v t="$TEMP_C" 'BEGIN{print (t>=75)?1:0}') -eq 1 ]] && TEMP_COLOR="${RED}"
+echo "SICAKLIK: ${TEMP_COLOR}${BOLD}${TEMP_C}°C${RST}"
 
 echo ""
-echo "RAPL GÜÇ LİMİTLERİ:"
+echo "RAPL GÜÇ LİMİTLERİ (MSR):"
 if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
-	printf "  PL1 (sürekli): %2d W\n" "$PL1_W"
-	printf "  PL2 (burst):   %2d W\n" "$PL2_W"
-	[[ $PL4_W -gt 0 ]] && printf "  PL4 (peak):    %2d W\n" "$PL4_W"
+	printf "  PL1 (sürekli): ${BOLD}%2d W${RST}\n" "$PL1_W"
+	printf "  PL2 (burst):   ${BOLD}%2d W${RST}\n" "$PL2_W"
+	[[ $PL4_W -gt 0 ]] && printf "  PL4 (peak):    ${BOLD}%2d W${RST}\n" "$PL4_W"
+	[[ $BASE_PL2_W -gt 0 ]] && echo "  ${DIM}Base PL2 (thermal guard ref): ${BASE_PL2_W} W${RST}"
 
-	if [[ $MSR_PL1_W -gt 0 || $MMIO_PL1_W -gt 0 ]]; then
-		match_pl1=$([[ $MSR_PL1_W -eq $MMIO_PL1_W ]] && echo "✓ match" || echo "≠ mismatch")
-		match_pl2=$([[ $MSR_PL2_W -eq $MMIO_PL2_W ]] && echo "✓ match" || echo "≠ mismatch")
-		echo "  Tutarlılık (MSR vs MMIO):"
-		printf "    PL1: MSR=%d W | MMIO=%d W  [%s]\n" "$MSR_PL1_W" "$MMIO_PL1_W" "$match_pl1"
-		printf "    PL2: MSR=%d W | MMIO=%d W  [%s]\n" "$MSR_PL2_W" "$MMIO_PL2_W" "$match_pl2"
+	echo ""
+	echo "  MMIO Driver Status: $([[ "$MMIO_LOADED" = true ]] && echo "${RED}✗ ACTIVE (UYARI!)${RST}" || echo "${GRN}✓ DISABLED${RST}")"
+	if [[ "$MMIO_LOADED" = true ]]; then
+		echo "  ${RED}⚠ MMIO driver yüklü! MSR/MMIO çakışması olabilir${RST}"
+		echo "  ${YLW}→ Çözüm: sudo systemctl restart disable-rapl-mmio.service${RST}"
 	fi
 
 	if $sample_power && [[ -n "${PKG_W_NOW}" ]]; then
+		echo ""
 		echo "  Anlık Paket Gücü (≈2 sn örnek): ${BOLD}${PKG_W_NOW} W${RST}"
 	fi
 
+	echo ""
 	if [[ "$POWER_SRC" = "AC" ]]; then
-		echo "  💡 AC modunda - Performans limitleri"
+		echo "  ${GRN}💡 AC modunda - Performans limitleri${RST}"
 	else
-		echo "  💡 Pil modunda - Verimlilik limitleri"
+		echo "  ${YLW}💡 Pil modunda - Verimlilik limitleri${RST}"
 	fi
 else
-	echo "  RAPL interface bulunamadı"
+	echo "  ${RED}RAPL interface bulunamadı${RST}"
 fi
 
 echo ""
 echo "PİL DURUMU:"
 if ((${#BAT_LINES[@]} == 0)); then
-	echo "  Pil bulunamadı"
+	echo "  ${DIM}Pil bulunamadı${RST}"
 else
 	printf "%s\n" "${BAT_LINES[@]}"
 fi
 
 echo ""
-echo "SERVİS DURUMU:"
-SERVICES=(battery-thresholds platform-profile cpu-epp cpu-epb cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio rapl-mmio-sync rapl-mmio-keeper)
+echo "SERVİS DURUMU (v16.0):"
+# Yeni servisler (v16.0)
+SERVICES=(platform-profile cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
 for svc in "${SERVICES[@]}"; do
 	STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
 	RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
-	if [[ ("$STATE" == "inactive" && "$RESULT" == "success") || "$STATE" == "active" ]]; then
-		printf "  %-25s %s\n" "$svc" "✅ OK"
+	SUBSTATE="$(systemctl show -p SubState --value "$svc.service" 2>/dev/null || echo "")"
+
+	if [[ "$STATE" == "active" ]]; then
+		printf "  %-30s ${GRN}✓ ACTIVE${RST}" "$svc"
+		[[ "$SUBSTATE" == "running" ]] && echo " ${DIM}(running)${RST}" || echo " ${DIM}(exited)${RST}"
+	elif [[ "$STATE" == "inactive" && "$RESULT" == "success" ]]; then
+		printf "  %-30s ${GRN}✓ OK${RST} ${DIM}(completed)${RST}\n" "$svc"
 	else
-		printf "  %-25s %s\n" "$svc" "⚠️  $STATE ($RESULT)"
+		printf "  %-30s ${RED}✗ %s${RST} ${DIM}(%s)${RST}\n" "$svc" "$STATE" "$RESULT"
+	fi
+done
+
+# Kaldırılan servisler kontrolü (v15 → v16)
+echo ""
+echo "${DIM}Kaldırılan Servisler (v15):${RST}"
+OLD_SERVICES=(cpu-epb rapl-mmio-sync rapl-mmio-keeper)
+for svc in "${OLD_SERVICES[@]}"; do
+	if systemctl list-unit-files | grep -q "^${svc}.service"; then
+		echo "  ${YLW}⚠ ${svc}${RST} ${DIM}(v15'den kalma, artık kullanılmıyor)${RST}"
+	else
+		echo "  ${GRN}✓ ${svc}${RST} ${DIM}(temizlenmiş)${RST}"
 	fi
 done
 
 echo ""
-echo "💡 İpucu: Gerçek frekanslar için 'turbostat-quick'"
-echo "💡 İpucu: Güç için 'power-check' / 'power-monitor' (veya bu scriptte --sample-power)"
-echo "💡 JSON çıktı: ${BOLD}${0##*/} --json${RST}"
+echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
+echo "${BOLD}💡 İpuçları:${RST}"
+echo "  • Gerçek CPU frekansları: ${CYN}turbostat-quick${RST}"
+echo "  • Güç tüketimi: ${CYN}power-check${RST} / ${CYN}power-monitor${RST}"
+echo "  • AC/Pil testi: Kabloyu çıkarıp ${CYN}system-status${RST} çalıştırın"
+echo "  • JSON çıktı: ${CYN}${0##*/} --json${RST}"
+echo "  • Güç örneği: ${CYN}${0##*/} --sample-power${RST}"
