@@ -154,8 +154,8 @@
          { import = "lazyvim.plugins.extras.lang.json" },
          { import = "lazyvim.plugins.extras.util.mini-hipatterns" },
          { import = "lazyvim.plugins.extras.lsp.none-ls" },
-         { "williamboman/mason.nvim" },
-         { "williamboman/mason-lspconfig.nvim" },
+         { "mason-org/mason.nvim" },
+         { "mason-org/mason-lspconfig.nvim" },
          { "neovim/nvim-lspconfig" },
          
          -- Tokyo Night theme plugin

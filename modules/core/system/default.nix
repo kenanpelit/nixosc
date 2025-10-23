@@ -391,9 +391,9 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_MIN=30
+            TARGET_MIN=40
           else
-            TARGET_MIN=20
+            TARGET_MIN=30
           fi
 
           echo "''${TARGET_MIN}" > "''${MIN_PERF_PATH}"
@@ -436,8 +436,8 @@ in
           case "''${CPU_TYPE}" in
             METEORLAKE)
               if [[ "''${POWER_SRC}" == "AC" ]]; then
-                PL1_WATTS=35
-                PL2_WATTS=52
+                PL1_WATTS=50
+                PL2_WATTS=85
               else
                 PL1_WATTS=28
                 PL2_WATTS=45
@@ -557,28 +557,28 @@ in
             CURRENT_PL2_UW=$(cat "''${PL2_PATH}")
             CURRENT_PL2_W=$((CURRENT_PL2_UW / 1000000))
 
-            if   [[ ''${TEMP_INT} -le 64 ]]; then
-              # Cool zone → restore base PL2
+            if   [[ ''${TEMP_INT} -le 72 ]]; then
+              # Cool zone → restore base PL2 (raised from 64°C to 72°C)
               if [[ ''${CURRENT_PL2_W} -ne ''${BASE_PL2} ]]; then
                 echo "''${BASE_PL2_UW}" > "''${PL2_PATH}"
                 echo "✓ [''${TEMP_INT}°C] PL2 restored to ''${BASE_PL2}W"
               fi
-            elif [[ ''${TEMP_INT} -ge 75 ]]; then
-              # Hot zone → aggressive clamp
-              TARGET_UW=$((32 * 1000000))
+            elif [[ ''${TEMP_INT} -ge 82 ]]; then
+              # Hot zone → aggressive clamp (raised from 75°C to 82°C)
+              TARGET_UW=$((45 * 1000000))
               if [[ ''${CURRENT_PL2_UW} -ne ''${TARGET_UW} ]]; then
                 echo "''${TARGET_UW}" > "''${PL2_PATH}"
-                echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 32W"
+                echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 45W"
               fi
-            elif [[ ''${TEMP_INT} -ge 70 ]]; then
-              # Warm zone → moderate clamp
-              TARGET_UW=$((38 * 1000000))
+            elif [[ ''${TEMP_INT} -ge 77 ]]; then
+              # Warm zone → moderate clamp (raised from 70°C to 77°C)
+              TARGET_UW=$((60 * 1000000))
               if [[ ''${CURRENT_PL2_UW} -ne ''${TARGET_UW} ]]; then
                 echo "''${TARGET_UW}" > "''${PL2_PATH}"
-                echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 38W"
+                echo "⚠ [''${TEMP_INT}°C] PL2 clamped to 60W"
               fi
             fi
-            # 65–69°C: hold current (quiet)
+            # 73–76°C: hold current (quiet)
             sleep 3
           done
         '';

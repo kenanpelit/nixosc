@@ -1,18 +1,17 @@
-# modules/home/ai/claude-cli.nix
 { lib, stdenv, makeWrapper, nodejs }:
 
 stdenv.mkDerivation rec {
   pname = "claude-code";
   version = "latest";
-
+  
   src = builtins.toFile "dummy" "";
-
+  
   nativeBuildInputs = [ makeWrapper ];
   buildInputs = [ nodejs ];
-
+  
   dontUnpack = true;
   dontBuild = true;
-
+  
   installPhase = ''
     runHook preInstall
     
@@ -20,14 +19,21 @@ stdenv.mkDerivation rec {
     
     cat > $out/bin/claude << 'EOF'
 #!/usr/bin/env bash
+set -e
+
 # HOME değişkenini ayarla
 if [ -z "$HOME" ]; then
     export HOME=/tmp
 fi
 
+# NPM ayarları - local kullanıcı dizinleri ve uyarıları kapat
 export NPM_CONFIG_CACHE="$HOME/.cache/npm"
 export NPM_CONFIG_PREFIX="$HOME/.local"
-mkdir -p "$HOME/.cache/npm" "$HOME/.local"
+export NPM_CONFIG_UPDATE_NOTIFIER=false
+export NO_UPDATE_NOTIFIER=1
+
+# Dizinleri oluştur
+mkdir -p "$HOME/.cache/npm" "$HOME/.local/bin" "$HOME/.local/lib"
 
 # Dinamik olarak nodejs path'ini bul
 find_node() {
@@ -56,7 +62,7 @@ find_node() {
     fi
     
     # Son çare: nix shell ile çalıştır
-    echo "Node.js bulunamadı, nix shell kullanılıyor..."
+    echo "Node.js bulunamadı, nix shell kullanılıyor..." >&2
     exec nix shell nixpkgs#nodejs_24 -c "$0" "$@"
 }
 
@@ -65,14 +71,15 @@ find_node
 export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
 
 # npx ile en güncel sürümü çalıştır (versiyon belirtmeden)
-exec "$NODE_BIN/npx" @anthropic-ai/claude-code "$@"
+# npm uyarılarını stderr'e yazdırmasın diye 2>/dev/null ekleyebiliriz
+exec "$NODE_BIN/npx" --yes @anthropic-ai/claude-code "$@"
 EOF
     
     chmod +x $out/bin/claude
     
     runHook postInstall
   '';
-
+  
   meta = with lib; {
     description = "Claude Code - Agentic coding tool from Anthropic";
     homepage = "https://docs.anthropic.com/en/docs/claude-code";
@@ -81,4 +88,3 @@ EOF
     platforms = platforms.unix;
   };
 }
-
