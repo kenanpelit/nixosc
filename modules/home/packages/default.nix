@@ -275,7 +275,6 @@ in
     ventoy           # Çoklu ISO USB aracı
     
     # Clipboard Management
-    copyq            # Gelişmiş pano yöneticisi
     xclip            # X11 pano aracı
     cliphist         # Wayland pano geçmişi
     clipman          # Pano yöneticisi

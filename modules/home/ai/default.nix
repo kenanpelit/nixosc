@@ -1,6 +1,8 @@
 # modules/home/ai/default.nix
 { config, lib, pkgs, ... }:
+
 with lib;
+
 let
   cfg = config.modules.home.ai;
 in
@@ -79,4 +81,3 @@ in
     };
   };
 }
-
