@@ -268,9 +268,8 @@
      require("mason-lspconfig").setup({
        ensure_installed = {
          "jsonls",    -- JSON
-         "tsserver",  -- TypeScript
+         "ts_ls",  -- TypeScript
          "lua_ls",    -- Lua
-         "nil_ls",    -- Nix
        },
        automatic_installation = true,
      })
