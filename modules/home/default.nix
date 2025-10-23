@@ -98,6 +98,7 @@
     # Productivity & Office
     # =============================================================================
     ./obsidian      # Knowledge management and note-taking
+    ./clipse        # Advanced clipboard manager
     #./copyq         # Advanced clipboard manager
     ./search        # File and content search utilities
     #./ulauncher     # Extensible application launcher

@@ -46,7 +46,8 @@ in
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
         # Advanced clipboard manager with searchable history
-        "copyq"
+        "clipse -listen"
+        #"copyq"
         # Set system cursor theme and size - Dynamic Catppuccin
         "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-cursor 24"
         # Initialize wallpaper daemon for dynamic wallpapers
@@ -515,6 +516,11 @@ in
         "move 74% 10%,class:^(com.github.hluk.copyq)$"
         "animation popout,class:^(com.github.hluk.copyq)$"
         "dimaround,class:^(com.github.hluk.copyq)$"
+        "float,class:^(clipse)$"
+        "size 25% 80%,class:^(clipse)$"
+        "move 74% 10%,class:^(clipse)$"
+        "animation popout,class:^(clipse)$"
+        "dimaround,class:^(clipse)$"
 
         # Dropdown Terminal
         "float,class:^(dropdown)$"
@@ -829,7 +835,8 @@ in
         "$mainMod, mouse_up, workspace, e+1"
 
         # Clipboard Manager
-        "$mainMod, V, exec, copyq toggle"
+        #"$mainMod, V, exec, copyq toggle"
+        "$mainMod, V, exec, kitty --class clipse -e clipse"
         "$mainMod CTRL, V, exec, clipmaster all"
          
         # Layout Management
