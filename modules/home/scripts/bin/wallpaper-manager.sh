@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 
 # =================================================================
-# Gelişmiş Duvar Kağıdı Değiştirici v2.2 (fd destekli)
-# Temiz ve Basit Versiyon
+# Gelişmiş Duvar Kağıdı Değiştirici v2.3 (Lock sorunu düzeltildi)
 # =================================================================
 
 set -euo pipefail
 
 # =================================================================
-# YAPILANDIRMA - Bu değerleri ihtiyacınıza göre değiştirebilirsiniz
+# YAPILANDIRMA
 # =================================================================
 
-DEFAULT_INTERVAL=300 # 5 dakika (saniye)
+DEFAULT_INTERVAL=300
 WALLPAPER_PATH="$HOME/Pictures/wallpapers"
 WALLPAPERS_FOLDER="$WALLPAPER_PATH/others"
 WALLPAPER_LINK="$WALLPAPER_PATH/wallpaper"
@@ -31,7 +30,7 @@ TOTAL_FILE="$HISTORY_DIR/total_wallpapers.txt"
 LOG_FILE="/tmp/wallpaper-changer.log"
 
 # =================================================================
-# RENKLER VE SABİTLER
+# RENKLER
 # =================================================================
 
 RED='\033[0;31m'
@@ -57,7 +56,6 @@ USE_FD=false
 # YARDIMCI FONKSİYONLAR
 # =================================================================
 
-# Hangi find komutunu kullanacağımızı belirle
 detect_find_tool() {
 	if command -v fd >/dev/null 2>&1; then
 		USE_FD=true
@@ -68,7 +66,6 @@ detect_find_tool() {
 	fi
 }
 
-# Log fonksiyonu
 log() {
 	local level="$1"
 	shift
@@ -84,11 +81,10 @@ log() {
 	DEBUG) $VERBOSE && echo -e "${CYAN}[DEBUG]${NC} $message" ;;
 	esac
 
-	# Log dosyasına yaz
 	echo "[$timestamp] [$level] $message" >>"$LOG_FILE" 2>/dev/null || true
 }
 
-# Lock dosyası ile güvenli işlem (farklı lock dosyaları kullanır)
+# Geliştirilmiş lock mekanizması
 acquire_lock() {
 	local lock_type="${1:-manual}"
 	local timeout=${2:-10}
@@ -101,12 +97,23 @@ acquire_lock() {
 	*) lock_file="$MANUAL_LOCK_FILE" ;;
 	esac
 
+	# Eski lock dosyasını kontrol et ve gerekirse temizle
+	if [[ -f "$lock_file" ]]; then
+		local lock_pid
+		lock_pid=$(cat "$lock_file" 2>/dev/null || echo "")
+
+		if [[ -n "$lock_pid" ]] && ! kill -0 "$lock_pid" 2>/dev/null; then
+			log DEBUG "Eski lock dosyası temizleniyor (PID: $lock_pid artık çalışmıyor)"
+			rm -f "$lock_file"
+		fi
+	fi
+
 	while [ $count -lt $timeout ]; do
 		if (
 			set -C
 			echo $$ >"$lock_file"
 		) 2>/dev/null; then
-			trap "rm -f \"$lock_file\"" EXIT
+			trap "rm -f \"$lock_file\"" EXIT INT TERM
 			log DEBUG "Lock alındı: $lock_file"
 			return 0
 		fi
@@ -118,13 +125,28 @@ acquire_lock() {
 		log ERROR "Servis lock'u alınamadı. Başka bir servis çalışıyor olabilir."
 	else
 		log WARN "Manuel işlem için lock alınamadı. Servis çalışıyor, ancak yine de devam ediliyor."
-		# Manuel işlemlerde lock alamasak bile devam edelim
 		return 0
 	fi
 	return 1
 }
 
-# Dizin kontrolü ve oluşturma
+# Lock'u temizle
+release_lock() {
+	local lock_type="${1:-manual}"
+	local lock_file
+
+	case "$lock_type" in
+	"service") lock_file="$SERVICE_LOCK_FILE" ;;
+	"manual") lock_file="$MANUAL_LOCK_FILE" ;;
+	*) lock_file="$MANUAL_LOCK_FILE" ;;
+	esac
+
+	if [[ -f "$lock_file" ]]; then
+		rm -f "$lock_file"
+		log DEBUG "Lock temizlendi: $lock_file"
+	fi
+}
+
 ensure_directory() {
 	local dir="$1"
 	local description="${2:-dizin}"
@@ -139,13 +161,10 @@ ensure_directory() {
 	return 0
 }
 
-# Duvar kağıtlarını listele (fd veya find)
 list_wallpapers() {
 	if $USE_FD; then
-		# fd kullan
 		fd -t f -e jpg -e jpeg -e png -e webp -e bmp . "$WALLPAPERS_FOLDER" 2>/dev/null
 	else
-		# find kullan
 		local find_expr=""
 		for i in "${!SUPPORTED_EXTENSIONS[@]}"; do
 			if [[ $i -eq 0 ]]; then
@@ -158,13 +177,10 @@ list_wallpapers() {
 	fi
 }
 
-# Duvar kağıtlarını sadece basename ile listele
 list_wallpapers_basename() {
 	if $USE_FD; then
-		# fd kullan
 		fd -t f -e jpg -e jpeg -e png -e webp -e bmp . "$WALLPAPERS_FOLDER" -x basename 2>/dev/null
 	else
-		# find kullan
 		local find_expr=""
 		for i in "${!SUPPORTED_EXTENSIONS[@]}"; do
 			if [[ $i -eq 0 ]]; then
@@ -181,7 +197,6 @@ list_wallpapers_basename() {
 # DUVAR KAĞIDI FONKSİYONLARI
 # =================================================================
 
-# Duvar kağıdını ayarla
 set_wallpaper() {
 	local wallpaper="$1"
 	local animation="${2:-}"
@@ -191,13 +206,11 @@ set_wallpaper() {
 		return 1
 	fi
 
-	# swww kontrolü
 	if ! command -v swww >/dev/null 2>&1; then
 		log ERROR "swww komutu bulunamadı. Lütfen swww'yi yükleyin."
 		return 1
 	fi
 
-	# Animasyon seç
 	if [[ -z "$animation" ]]; then
 		animation="${ANIMATIONS[RANDOM % ${#ANIMATIONS[@]}]}"
 	fi
@@ -209,7 +222,6 @@ set_wallpaper() {
 		return 0
 	fi
 
-	# swww komutunu çalıştır
 	if [[ "$animation" == "wipe" ]]; then
 		swww img --transition-type="wipe" --transition-angle=135 "$wallpaper" 2>/dev/null || {
 			log ERROR "swww komutu başarısız"
@@ -225,33 +237,28 @@ set_wallpaper() {
 	return 0
 }
 
-# Geçmiş dosyalarını hazırla
 init_history() {
 	ensure_directory "$HISTORY_DIR" "geçmiş dizini"
 	touch "$HISTORY_FILE" "$TOTAL_FILE"
 }
 
-# Duvar kağıdı cache'ini güncelle
 update_wallpaper_cache() {
 	init_history
 
 	log DEBUG "Duvar kağıtları taranıyor: $WALLPAPERS_FOLDER"
 
-	# Duvar kağıtlarını bul
 	local wallpaper_files
 	mapfile -t wallpaper_files < <(list_wallpapers)
 
 	local total=${#wallpaper_files[@]}
 	echo "$total" >"$TOTAL_FILE"
 
-	# Listeleri kaydet
 	printf '%s\n' "${wallpaper_files[@]}" >"$HISTORY_DIR/available_wallpapers.txt" 2>/dev/null
 
 	log DEBUG "Toplam $total duvar kağıdı bulundu"
 	return 0
 }
 
-# Geçmişi temizle
 cleanup_history() {
 	if [[ -f "$HISTORY_FILE" ]]; then
 		local line_count
@@ -265,22 +272,20 @@ cleanup_history() {
 	fi
 }
 
-# Ana duvar kağıdı değiştirme fonksiyonu
 change_wallpaper() {
 	local lock_type="${1:-manual}"
 
-	# Servis modu dışında lock alma zorunlu değil
 	if [[ "$lock_type" == "service" ]]; then
-		acquire_lock "service" || return 1
+		if ! acquire_lock "service" 5; then
+			return 1
+		fi
 	else
-		# Manuel işlemde lock alamasak bile devam et
 		acquire_lock "manual" 3 || log DEBUG "Manuel lock alınamadı, devam ediliyor"
 	fi
 
 	init_history
 	update_wallpaper_cache
 
-	# Duvar kağıtlarını listele
 	local wallpaper_list
 	mapfile -t wallpaper_list < <(list_wallpapers)
 
@@ -288,18 +293,17 @@ change_wallpaper() {
 
 	if [[ $wallpaper_count -eq 0 ]]; then
 		log ERROR "Duvar kağıdı bulunamadı: $WALLPAPERS_FOLDER"
+		release_lock "$lock_type"
 		return 1
 	fi
 
 	log DEBUG "$wallpaper_count duvar kağıdı bulundu"
 
-	# Son kullanılanları oku
 	local recent_wallpapers=()
 	if [[ -f "$HISTORY_FILE" ]]; then
 		mapfile -t recent_wallpapers < <(tail -n 10 "$HISTORY_FILE" 2>/dev/null)
 	fi
 
-	# Yeni duvar kağıdı seç (tekrar etmeyen)
 	local selected_wallpaper=""
 	local selected_name=""
 	local max_attempts=50
@@ -309,7 +313,6 @@ change_wallpaper() {
 		selected_wallpaper="${wallpaper_list[RANDOM % wallpaper_count]}"
 		selected_name=$(basename "$selected_wallpaper")
 
-		# Son kullanılanlar listesinde var mı?
 		local found=false
 		for recent in "${recent_wallpapers[@]}"; do
 			if [[ "$recent" == "$selected_name" ]]; then
@@ -325,31 +328,26 @@ change_wallpaper() {
 		((attempt++))
 	done
 
-	# Duvar kağıdını değiştir
 	if ! set_wallpaper "$selected_wallpaper"; then
+		release_lock "$lock_type"
 		return 1
 	fi
 
 	if [[ "$DRY_RUN" != "true" ]]; then
-		# Symlink oluştur
-		ln -sf "$selected_wallpaper" "$WALLPAPER_LINK" 2>/dev/null || {
-			log WARN "Symlink oluşturulamadı: $WALLPAPER_LINK"
-		}
-
-		# Geçmişe ekle
+		ln -sf "$selected_wallpaper" "$WALLPAPER_LINK" 2>/dev/null || true
 		echo "$selected_name" >>"$HISTORY_FILE"
 		cleanup_history
+		log SUCCESS "Duvar kağıdı değiştirildi: $selected_name"
 	fi
 
-	log SUCCESS "Duvar kağıdı değiştirildi: $selected_name"
+	release_lock "$lock_type"
 	return 0
 }
 
 # =================================================================
-# SERVİS YÖNETİMİ
+# SERVİS FONKSİYONLARI
 # =================================================================
 
-# Servis durumu kontrol
 check_status() {
 	local quiet=${1:-false}
 
@@ -375,14 +373,12 @@ check_status() {
 	return 0
 }
 
-# Servisi başlat
 start_service() {
 	if check_status true; then
 		log WARN "Servis zaten çalışıyor"
 		return 1
 	fi
 
-	# Dizin kontrolü
 	if [[ ! -d "$WALLPAPERS_FOLDER" ]]; then
 		log ERROR "Duvar kağıdı dizini bulunamadı: $WALLPAPERS_FOLDER"
 		return 1
@@ -390,10 +386,15 @@ start_service() {
 
 	ensure_directory "$WALLPAPER_PATH" "ana dizin"
 
+	# Eski lock dosyalarını temizle
+	rm -f "$SERVICE_LOCK_FILE"
+
 	log INFO "Servis başlatılıyor (aralık: ${INTERVAL}s)"
 
-	# Ana döngü
+	# Ana döngü - trap'i burada kur
 	(
+		trap "rm -f '$SERVICE_LOCK_FILE'; exit" EXIT INT TERM
+
 		while true; do
 			if ! change_wallpaper "service"; then
 				log ERROR "Duvar kağıdı değiştirilemedi, 60 saniye bekleniyor"
@@ -407,46 +408,42 @@ start_service() {
 	local main_pid=$!
 	echo "$main_pid" >"$PID_FILE"
 
-	# Başlatma kontrolü
 	sleep 2
 	if check_status true; then
 		log SUCCESS "Servis başarıyla başlatıldı"
 		return 0
 	else
 		log ERROR "Servis başlatılamadı"
-		rm -f "$PID_FILE"
+		rm -f "$PID_FILE" "$SERVICE_LOCK_FILE"
 		return 1
 	fi
 }
 
-# Servisi durdur
 stop_service() {
 	if [[ ! -f "$PID_FILE" ]]; then
 		log WARN "Servis zaten çalışmıyor"
+		rm -f "$SERVICE_LOCK_FILE"
 		return 0
 	fi
 
 	local pid
 	pid=$(cat "$PID_FILE" 2>/dev/null) || {
 		log WARN "PID dosyası okunamadı"
-		rm -f "$PID_FILE"
+		rm -f "$PID_FILE" "$SERVICE_LOCK_FILE"
 		return 0
 	}
 
 	if kill -0 "$pid" 2>/dev/null; then
 		log INFO "Servis durduruluyor (PID: $pid)"
 
-		# TERM sinyali gönder
 		kill -TERM "$pid" 2>/dev/null
 
-		# 5 saniye bekle
 		local count=0
 		while [[ $count -lt 5 ]] && kill -0 "$pid" 2>/dev/null; do
 			sleep 1
 			((count++))
 		done
 
-		# Hâlâ çalışıyorsa KILL
 		if kill -0 "$pid" 2>/dev/null; then
 			log WARN "Servis zorla sonlandırılıyor"
 			kill -KILL "$pid" 2>/dev/null
@@ -461,7 +458,6 @@ stop_service() {
 	return 0
 }
 
-# Servisi yeniden başlat
 restart_service() {
 	log INFO "Servis yeniden başlatılıyor"
 	stop_service
@@ -473,7 +469,6 @@ restart_service() {
 # İNTERAKTİF FONKSİYONLAR
 # =================================================================
 
-# Rofi ile duvar kağıdı seç
 select_wallpaper_rofi() {
 	if ! command -v rofi >/dev/null 2>&1; then
 		log ERROR "rofi komutu bulunamadı"
@@ -504,7 +499,6 @@ select_wallpaper_rofi() {
 	fi
 }
 
-# İstatistikleri göster
 show_stats() {
 	init_history
 	update_wallpaper_cache
@@ -543,7 +537,6 @@ show_stats() {
 	fi
 }
 
-# Manuel duvar kağıdı değiştirme (servis çalışırken bile)
 manual_change() {
 	log INFO "Manuel duvar kağıdı değişimi başlatılıyor..."
 	change_wallpaper "manual"
@@ -555,7 +548,7 @@ manual_change() {
 
 show_usage() {
 	cat <<EOF
-Duvar Kağıdı Değiştirici v2.2
+Duvar Kağıdı Değiştirici v2.3
 
 KULLANIM:
     $SCRIPT_NAME [KOMUT] [SEÇENEKLER]
@@ -586,24 +579,12 @@ SEÇENEKLER:
 DOSYALAR:
     Geçmiş: $HISTORY_FILE
     Log:    $LOG_FILE
-
-YAPILANDIRMA:
-    Script içinde şu değişkenleri düzenleyebilirsiniz:
-    - WALLPAPERS_FOLDER: $WALLPAPERS_FOLDER
-    - MAX_HISTORY: $MAX_HISTORY
-    - SUPPORTED_EXTENSIONS: ${SUPPORTED_EXTENSIONS[*]}
-
-NOT:
-    Script otomatik olarak 'fd' veya 'find' komutunu algılar ve kullanır.
 EOF
 }
 
-# Ana fonksiyon
 main() {
-	# fd veya find'ı tespit et
 	detect_find_tool
 
-	# Komut satırı argümanları
 	while [[ $# -gt 0 ]]; do
 		case $1 in
 		-v | --verbose)
@@ -676,9 +657,7 @@ main() {
 		esac
 	done
 
-	# Parametre yoksa manuel değişim
 	manual_change
 }
 
-# Script'i çalıştır
 main "$@"
