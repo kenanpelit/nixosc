@@ -18,32 +18,45 @@
     logFile = "clipse.log";
     
     keyBindings = {
+      # Navigation - Vim style
+      up = "k";
+      down = "j";
+      home = "g";          # gg yapmak için 2 kere g
+      end = "G";
+      
+      # Page navigation
+      nextPage = "l";      # veya "right"
+      prevPage = "h";      # veya "left"
+      
+      # Selection
       choose = "enter";
-      clearSelected = "S";
-      down = "down";
-      end = "end";
-      filter = "/";
-      home = "home";
-      more = "?";
-      nextPage = "right";
-      prevPage = "left";
-      preview = "t";
-      quit = "q";
-      remove = "x";
-      selectDown = "ctrl+down";
       selectSingle = "s";
-      selectUp = "ctrl+up";
+      selectUp = "ctrl+k"; # veya "K"
+      selectDown = "ctrl+j"; # veya "J"
+      
+      # Actions
       togglePin = "p";
       togglePinned = "tab";
-      up = "up";
-      yankFilter = "ctrl+s";
+      remove = "d";        # vim'de delete gibi
+      clearSelected = "D"; # büyük D - hepsini temizle
+      
+      # Search/Filter
+      filter = "/";        # vim search gibi
+      yankFilter = "y";    # vim yank gibi
+      
+      # Preview & Help
+      preview = "t";
+      more = "?";
+      
+      # Exit
+      quit = "q";
     };
     
     imageDisplay = {
       type = "basic";
       scaleX = 9;
       scaleY = 9;
-      heightCut = 2;
+      heightCut = 4;
     };
   };
 
@@ -102,26 +115,4 @@
     clipse
     wl-clipboard  # Wayland clipboard utilities (required dependency)
   ];
-
-  # =============================================================================
-  # Systemd Service (Auto-start listener)
-  # =============================================================================
-  systemd.user.services.clipse = {
-    Unit = {
-      Description = "Clipse clipboard manager listener";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
-    };
-
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.clipse}/bin/clipse -listen";
-      Restart = "on-failure";
-      RestartSec = 3;
-    };
-
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
-    };
-  };
 }
