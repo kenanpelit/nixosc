@@ -276,7 +276,7 @@
       exec = "waybar-status";
       return-type = "json";
       interval = 3;
-      format = "{icon} {text}";
+      format = "󰾆 {icon} {text}";
       tooltip = true;
     };
 
