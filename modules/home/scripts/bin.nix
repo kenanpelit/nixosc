@@ -186,9 +186,6 @@ let
   osc-ssh = pkgs.writeShellScriptBin "osc-ssh" (
     builtins.readFile ./bin/osc-ssh.sh
   );
-  osc-status = pkgs.writeShellScriptBin "osc-status" (
-    builtins.readFile ./bin/osc-status.sh
-  );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./bin/osc-subliminal.sh
   );
@@ -203,9 +200,6 @@ let
   );
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./bin/osc-test.sh
-  );
-  osc-thermal = pkgs.writeShellScriptBin "osc-thermal" (
-    builtins.readFile ./bin/osc-thermal.sh
   );
   osc-tmux-plugins-install = pkgs.writeShellScriptBin "osc-tmux-plugins-install" (
     builtins.readFile ./bin/osc-tmux-plugins-install.sh
@@ -442,13 +436,11 @@ in {
     osc-soundctl
     osc-spotify
     osc-ssh
-    osc-status
     osc-subliminal
     osc-symlink_manager
     osc-sync
     osc-system
     osc-test
-    osc-thermal
     osc-tmux-plugins-install
     osc-tv-splitter
     osc-ulauncher_ext
