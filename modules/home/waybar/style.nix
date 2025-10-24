@@ -36,11 +36,9 @@
   #pulseaudio,
   #pulseaudio#source,
   #pulseaudio#sink,
-  #network,
-  #cpu,
-  #temperature,
   #memory,
   #disk,
+  #network,
   #battery,
   #clock,
   #language,
@@ -170,26 +168,6 @@
   #pulseaudio#source.muted { 
     color: ${custom.red};
     opacity: 0.6;
-  }
-  
-  #cpu { 
-    color: ${custom.green}; 
-  }
-  
-  #memory { 
-    color: ${custom.magenta}; 
-  }
-  
-  #disk { 
-    color: ${custom.orange}; 
-  }
-  
-  #temperature {
-    color: ${custom.green};
-  }
-  #temperature.critical {
-    color: ${custom.red};
-    background-color: rgba(247, 118, 142, 0.1);
   }
 
   /* VPN module specific styles */
@@ -363,29 +341,50 @@
     border-color: ${custom.blue};
   }
 
-  /* System Status module - CPU Frequency */
+  #memory { 
+    color: ${custom.magenta}; 
+  }
+  
+  #disk { 
+    color: ${custom.orange}; 
+  }
+  
+  /* System Status module - CPU Usage, Temperature & Power (UPDATED) */
   #custom-system-status {
     color: ${custom.cyan};
     font-size: 14px;
-    padding: 2px 8px;
-    min-width: 80px;
-    font-weight: 500;
+    padding: 2px 10px;
+    min-width: 90px;
+    font-weight: 600;
     background-color: rgba(125, 207, 255, 0.1);
     border-color: rgba(125, 207, 255, 0.3);
   }
 
-  #custom-system-status.high {
-    color: ${custom.magenta};
-    background-color: rgba(187, 154, 247, 0.1);
-    border-color: rgba(187, 154, 247, 0.3);
+  /* Critical state - Yüksek sıcaklık (80°C+) */
+  #custom-system-status.critical {
+    color: ${custom.red};
+    background-color: rgba(247, 118, 142, 0.2);
+    border-color: rgba(247, 118, 142, 0.5);
+    animation: critical-pulse 2s ease-in-out infinite;
+    box-shadow: 0 2px 12px rgba(247, 118, 142, 0.4);
   }
 
+  /* High state - Yüksek kullanım/sıcaklık (70-79°C veya 80%+ CPU) */
+  #custom-system-status.high {
+    color: ${custom.magenta};
+    background-color: rgba(187, 154, 247, 0.15);
+    border-color: rgba(187, 154, 247, 0.4);
+    box-shadow: 0 2px 6px rgba(187, 154, 247, 0.2);
+  }
+
+  /* Normal state - Orta kullanım (50-79% CPU) */
   #custom-system-status.normal {
     color: ${custom.cyan};
     background-color: rgba(125, 207, 255, 0.1);
     border-color: rgba(125, 207, 255, 0.3);
   }
 
+  /* Low state - Düşük kullanım (<50% CPU) */
   #custom-system-status.low {
     color: ${custom.green};
     background-color: rgba(158, 206, 106, 0.1);
@@ -397,16 +396,45 @@
     opacity: 0.6;
   }
 
+  /* Hover effects */
   #custom-system-status:hover {
     background-color: rgba(125, 207, 255, 0.2);
     border-color: ${custom.cyan};
-    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(125, 207, 255, 0.3);
   }
 
   #custom-system-status.high:hover {
-    background-color: rgba(187, 154, 247, 0.2);
+    background-color: rgba(187, 154, 247, 0.25);
     border-color: ${custom.magenta};
-    box-shadow: 0 2px 8px rgba(187, 154, 247, 0.2);
+    box-shadow: 0 2px 8px rgba(187, 154, 247, 0.3);
+  }
+
+  #custom-system-status.critical:hover {
+    background-color: rgba(247, 118, 142, 0.3);
+    border-color: ${custom.red};
+    box-shadow: 0 2px 12px rgba(247, 118, 142, 0.5);
+  }
+
+  #custom-system-status.low:hover {
+    background-color: rgba(158, 206, 106, 0.2);
+    border-color: ${custom.green};
+    box-shadow: 0 2px 8px rgba(158, 206, 106, 0.2);
+  }
+
+  /* Critical pulse animation */
+  @keyframes critical-pulse {
+    0% {
+      box-shadow: 0 2px 12px rgba(247, 118, 142, 0.4);
+      border-color: rgba(247, 118, 142, 0.5);
+    }
+    50% {
+      box-shadow: 0 2px 16px rgba(247, 118, 142, 0.6);
+      border-color: rgba(247, 118, 142, 0.7);
+    }
+    100% {
+      box-shadow: 0 2px 12px rgba(247, 118, 142, 0.4);
+      border-color: rgba(247, 118, 142, 0.5);
+    }
   }
 
   /* Mako Notifications module */
@@ -487,11 +515,9 @@
   #pulseaudio:hover,
   #pulseaudio#source:hover,
   #pulseaudio#sink:hover,
-  #network:hover,
-  #cpu:hover,
-  #temperature:hover,
   #memory:hover,
   #disk:hover,
+  #network:hover,
   #battery:hover,
   #clock:hover,
   #language:hover,
@@ -514,4 +540,3 @@
     font-weight: 500;
   }
 ''
-

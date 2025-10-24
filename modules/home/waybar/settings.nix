@@ -51,8 +51,6 @@
     
     # Right: System Monitoring & Controls
     modules-right = [
-      "cpu"                # 💻 CPU usage monitoring
-      "temperature"        # 🌡️ CPU temperature monitoring
       "custom/system-status" # 💻 System status (CPU, temp, power)
       "memory"             # 🧠 RAM usage monitoring
       "disk"               # 💾 Disk usage monitoring
@@ -275,49 +273,10 @@
 
     # 💻 System Status (CPU Frequency)
     "custom/system-status" = {
-      exec = ''
-        # Fetch system status JSON
-        status=$(osc-status --json 2>/dev/null)
-    
-        if [ -z "$status" ]; then
-          echo '{"text":"󰻠 N/A","class":"error","tooltip":"System status unavailable"}'
-          exit 0
-        fi
-    
-        # Parse JSON fields
-        freq=$(echo "$status" | jq -r '.freq_avg_mhz // "0"')
-        temp=$(echo "$status" | jq -r '.temp_celsius // "0"')
-        governor=$(echo "$status" | jq -r '.governor // "unknown"')
-        power_source=$(echo "$status" | jq -r '.power_source // "unknown"')
-        pl1=$(echo "$status" | jq -r '.power_limits.pl1_watts // "0"')
-        pl2=$(echo "$status" | jq -r '.power_limits.pl2_watts // "0"')
-    
-        # Convert frequency to GHz
-        freq_ghz=$(echo "scale=1; $freq / 1000" | bc)
-    
-        # Determine class based on frequency
-        if [ "$(echo "$freq >= 3000" | bc)" -eq 1 ]; then
-          class="high"
-        elif [ "$(echo "$freq >= 2000" | bc)" -eq 1 ]; then
-          class="normal"
-        else
-          class="low"
-        fi
-    
-        # Format output text
-        text="󰻠 $freq_ghz GHz"
-    
-        # Create tooltip
-        tooltip="System Status\n━━━━━━━━━━━━━━━━━━━━\nCPU: $freq_ghz GHz (avg)\nTemperature: $temp°C\nGovernor: $governor\nPower: $power_source\n━━━━━━━━━━━━━━━━━━━━\nLimits: PL1=''${pl1}W / PL2=''${pl2}W\n\n󱎫 Sol: System Monitor\n󰑐 Sağ: Detailed Status"
-    
-        # Output JSON for waybar
-        printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' "$text" "$class" "$tooltip"
-      '';
+      exec = "waybar-status";
       return-type = "json";
-      interval = 2;
-      format = "{}";
-      on-click = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title System_Monitor btop'";
-      on-click-right = "kitty --title 'System Status' --hold -e system-status";
+      interval = 5;
+      format = "{icon} {text}";
       tooltip = true;
     };
 
