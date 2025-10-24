@@ -357,6 +357,9 @@ let
   wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
     builtins.readFile ./bin/wallpaper-manager.sh
   );
+  waybar-status = pkgs.writeShellScriptBin "waybar-status" (
+    builtins.readFile ./bin/waybar-status.sh
+  );
   workspace-switcher = pkgs.writeShellScriptBin "workspace-switcher" (
     builtins.readFile ./bin/workspace-switcher.sh
   );
@@ -496,6 +499,7 @@ in {
     vpn-waybar
     vv
     wallpaper-manager
+    waybar-status
     workspace-switcher
     wrename
     ws-next
