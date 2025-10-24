@@ -138,27 +138,54 @@ get_icon() {
 
 	case "$status_class" in
 	critical)
-		echo "🔥"
+		echo "󰈸" # fire
 		;;
 	high)
 		if [[ "$power_source" = "AC" ]]; then
-			echo "⚡"
+			echo "󱐋" # chip-lightning
 		else
-			echo "💻"
+			echo "󰻠" # chip
 		fi
 		;;
 	normal)
-		echo "💻"
+		echo "󰾆" # cpu
 		;;
 	low)
-		echo "💤"
+		echo "󰾆" # cpu-low
 		;;
 	*)
-		echo "💻"
+		echo "󰾆"
 		;;
 	esac
 }
 
+# ----------------------------- icon belirle ----------------------------------
+get_icon() {
+	local status_class=$1
+	local power_source=$2
+
+	case "$status_class" in
+	critical)
+		echo "" # flame
+		;;
+	high)
+		if [[ "$power_source" = "AC" ]]; then
+			echo "" # flash
+		else
+			echo "" # chip
+		fi
+		;;
+	normal)
+		echo "" # cpu
+		;;
+	low)
+		echo "" # cpu
+		;;
+	*)
+		echo ""
+		;;
+	esac
+}
 # ----------------------------- ana işlem --------------------------------------
 main() {
 	# Verileri topla
@@ -181,8 +208,8 @@ main() {
 	tooltip="CPU: ${cpu_usage}% | Temp: ${temp}°C | Freq: ${freq} MHz | Power: ${power_source}"
 
 	# JSON çıktı (Waybar için)
-	printf '{"text":"%s","tooltip":"%s","class":"%s","percentage":%d}\n' \
-		"${text}" "${tooltip}" "${status_class}" "${cpu_usage}"
+	printf '{"text":"%s","icon":"%s","tooltip":"%s","class":"%s","percentage":%d}\n' \
+		"${text}" "${icon}" "${tooltip}" "${status_class}" "${cpu_usage}"
 }
 
 main

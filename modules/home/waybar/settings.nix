@@ -275,7 +275,7 @@
     "custom/system-status" = {
       exec = "waybar-status";
       return-type = "json";
-      interval = 5;
+      interval = 3;
       format = "{icon} {text}";
       tooltip = true;
     };
