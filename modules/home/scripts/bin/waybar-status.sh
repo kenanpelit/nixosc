@@ -56,7 +56,7 @@ get_temp() {
 	if have sensors; then
 		local t
 		# Önce Package id dene, yoksa coretemp'ten en yüksek sıcaklığı al
-		t="$(sensors 2>/dev/null | grep -E 'Package id 0' | head -1 | awk '{match($0, /[+]?([0-9]+)/, a); if(a[1]!=""){print a[1]; exit}}')"
+		t="$(sensors 2>/dev/null | grep 'Package id 0' | awk '{match($0, /\+([0-9]+)/, a); if(a[1]!=""){print a[1]; exit}}')"
 		[[ -z "$t" ]] && t="$(sensors 2>/dev/null | awk '/^temp[0-9]+:/ && /°C/ {match($0, /[+]([0-9]+)/, a); if(a[1]!="" && a[1]>max){max=a[1]}} END{if(max>0) print max; else print 0}')"
 		[[ -n "$t" && "$t" != "0" ]] && {
 			echo "$t"
@@ -138,20 +138,20 @@ get_icon() {
 
 	case "$status_class" in
 	critical)
-		echo "󰈸" # fire
+		echo "󰾆" # fire
 		;;
 	high)
 		if [[ "$power_source" = "AC" ]]; then
-			echo "󱐋" # chip-lightning
+			echo "󰍛" # charging/power
 		else
-			echo "󰻠" # chip
+			echo "󰍛" # chip
 		fi
 		;;
 	normal)
-		echo "󰾆" # cpu
+		echo "󰾆" # cpu/chip
 		;;
 	low)
-		echo "󰾆" # cpu-low
+		echo "󰾆" # cpu low power
 		;;
 	*)
 		echo "󰾆"
