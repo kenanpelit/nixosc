@@ -551,6 +551,10 @@ in
     # SSH Client Configuration (Layer 5: Secure Remote Access)
     # ==========================================================================
     # Global SSH client settings for improved reliability and security
+    # 
+    # Note: ControlMaster multiplexing is DISABLED
+    # Reason: ASSH proxy handles connection management more efficiently
+    # This prevents socket conflicts and "muxclient: master hello exchange failed" errors
     
     programs.ssh = {
       # Disable SSH agent (using GPG agent for key management)
@@ -572,28 +576,19 @@ in
           # Fail fast on unreachable hosts
           ConnectTimeout 30           # Timeout for initial connection (30 seconds)
           
-          # ---- Connection Multiplexing ----
-          # Reuse connections for better performance
-          ControlMaster auto
-          ControlPath ~/.ssh/controlmasters/%r@%h:%p
-          ControlPersist 10m          # Keep master connection open for 10 minutes
-          
           # ---- ASSH Proxy (Advanced SSH Connection Manager) ----
           # ASSH provides enhanced SSH configuration management:
           #   - Host templates and inheritance
           #   - Gateway/bastion host support
-          #   - Advanced connection reuse
-          # Configuration file: ~/.ssh/assh.yml
+          #   - Advanced connection management (replaces ControlMaster)
+          #   - Centralized configuration (~/.ssh/assh.yml)
+          # 
+          # ASSH handles connection multiplexing internally, so native
+          # ControlMaster is disabled to prevent conflicts
           ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
       '';
     };
-
-    # Create ControlMaster directory in user skeleton
-    system.activationScripts.sshControlMasters = ''
-      mkdir -p /etc/skel/.ssh/controlmasters
-      chmod 700 /etc/skel/.ssh/controlmasters
-    '';
-
+   
     # ==========================================================================
     # Environment Configuration
     # ==========================================================================
