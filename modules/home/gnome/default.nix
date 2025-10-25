@@ -10,7 +10,7 @@
     Type=Application
     Name=GNOME Keyring Fix
     Comment=Fix GNOME Keyring lag on startup
-    Exec=gnome-gkr-fix
+    Exec=gnome-kr-fix
     Terminal=false
     Hidden=false
     X-GNOME-Autostart-enabled=true
