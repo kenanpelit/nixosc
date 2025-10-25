@@ -207,6 +207,13 @@ in
     hostName = "${host}";
     
     # ==========================================================================
+    # Firewall Configuration
+    # ==========================================================================
+    # Note: Firewall is enabled by default, but can be overridden by security module
+    # When nftables is used (security module), this will be set to false with mkForce
+    firewall.enable = mkDefault true;
+    
+    # ==========================================================================
     # IPv6 Configuration
     # ==========================================================================
     # Enabled by default for modern internet compatibility
@@ -339,24 +346,14 @@ in
     # AdGuard: "94.140.14.14", "94.140.15.15"
 
     # ==========================================================================
-    # Firewall Foundation
+    # Firewall Configuration
     # ==========================================================================
-    # Enabled here, detailed rules in security/default.nix
-    # Provides foundation for VPN killswitch
-    
-    firewall = {
-      enable = true;
-      
-      # ---- Logging ----
-      # Log refused connections for debugging
-      # Disabled by default (reduces log spam)
-      logRefusedConnections = mkDefault false;
-      
-      # ---- ICMP ----
-      # Allow ping responses (useful for diagnostics)
-      # Set to false for maximum stealth
-      allowPing = mkDefault true;
-    };
+    # Note: Detailed firewall rules are in security/default.nix
+    # This module only sets the foundation for VPN killswitch compatibility
+    # When using nftables (security module), firewall.enable will be overridden to false
+    #
+    # The firewall.enable setting above (line 214) is sufficient.
+    # No additional firewall configuration needed here.
   };
 
   # ============================================================================
@@ -1168,8 +1165,8 @@ in
     lib.optionals (!config.networking.enableIPv6) [
       "IPv6 disabled - may cause issues with modern CDNs and services"
     ] ++ 
-    lib.optionals (hasMullvad && !config.networking.firewall.enable) [
-      "Mullvad enabled but firewall disabled - killswitch won't work"
+    lib.optionals (hasMullvad && !config.networking.firewall.enable && !config.networking.nftables.enable) [
+      "Mullvad enabled but no firewall (neither iptables nor nftables) - killswitch won't work"
     ];
 }
 
