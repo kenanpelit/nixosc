@@ -23,6 +23,7 @@
     ./cosmic        # Cosmic tiling desktop
     #./gnome         # Library with common API for various GNOME modules
     ./waybar        # Wayland status bar and system information
+    #./hyprpanel     # Bar/Panel for Hyprland with extensive customizability
     ./rofi          # Application launcher and menu system
     ./swaylock      # Screen locker for Wayland sessions
     #./swaync        # Notification center and control
