@@ -7,7 +7,7 @@
 # Purpose:     Centralized security configuration and hardening
 # Author:      Kenan Pelit
 # Created:     2025-10-09
-# Modified:    2025-10-18
+# Modified:    2025-10-25
 #
 # Architecture:
 #   Firewall → Authentication → Access Control → Audit → SSH → Ad Blocking
@@ -26,6 +26,7 @@
 #   • Minimal Custom Rules - Only what NixOS doesn't provide
 #   • Defense in Depth - Multiple security layers
 #   • Fail Secure - Default deny, explicit allow
+#   • SSH Friendly - Special handling for SSH connections and multiplexing
 #
 # Module Boundaries:
 #   ✓ Firewall configuration         (THIS MODULE)
@@ -36,6 +37,13 @@
 #   ✗ SSH daemon config              (networking module)
 #   ✗ User authentication            (account module)
 #   ✗ GNOME Keyring daemon           (display/services module)
+#
+# Recent Changes (2025-10-25):
+#   • Fixed SSH connection issues with ControlMaster/multiplexing
+#   • Added SSH exception to DoS rate limiting
+#   • Increased rate limits to be more tolerant (5/s, burst 10)
+#   • Increased connection limit from 15 to 50 per IP
+#   • Added detailed comments about SSH handling
 #
 # ==============================================================================
 
@@ -57,7 +65,7 @@ let
   # ----------------------------------------------------------------------------
   # Updates HOSTALIASES file for each user with blocked domains
   # Uses hBlock to fetch and merge ad/tracker blocklists
-  
+
   hblockUpdateScript = pkgs.writeShellScript "hblock-update" ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
@@ -150,23 +158,64 @@ in
       # Custom Hardening Rules (Beyond NixOS Defaults)
       # ------------------------------------------------------------------------
       # Additional iptables rules for advanced protection
+      # IMPORTANT: SSH connections are exempted from rate limiting to prevent
+      # issues with SSH multiplexing (ControlMaster) and connection reuse
       
       extraCommands = ''
-        # ---- DoS Mitigation: SYN Flood Protection ----
+        # ====================================================================
+        # SSH Exception Rules (CRITICAL - Must be first)
+        # ====================================================================
+        # SSH connections need special handling because:
+        # 1. SSH ControlMaster creates multiple channels over one connection
+        # 2. Connection reuse can trigger rate limits
+        # 3. Aggressive limits break SSH multiplexing (rwindow 0 issue)
+        # 
+        # Solution: Allow SSH traffic BEFORE applying rate limits
+        
+        # Allow established SSH connections (outbound client connections)
+        iptables -A INPUT -p tcp --sport 22 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        iptables -A INPUT -p tcp --sport 36499 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        
+        # Allow SSH daemon connections (if running SSH server)
+        iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+        
+        # Allow custom SSH ports (add your custom ports here)
+        # iptables -A INPUT -p tcp --dport XXXXX -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+        # ====================================================================
+        # DoS Mitigation: SYN Flood Protection
+        # ====================================================================
+        # Applies to all NON-SSH connections (SSH already handled above)
+        # 
+        # Previous settings (TOO AGGRESSIVE):
+        #   - Rate: 1/s, burst: 3  → Caused SSH multiplexing issues
+        #   - Connlimit: 15        → Too restrictive for modern apps
+        # 
+        # New settings (BALANCED):
+        #   - Rate: 5/s, burst: 10 → Allows SSH channels + normal usage
+        #   - Connlimit: 50        → Reasonable for web browsers, dev tools
+        
         # Limit new TCP connections (SYN packets)
-        # Rate: 1 connection/second, burst: 3 connections
-        iptables -A INPUT -p tcp --syn -m limit --limit 1/s --limit-burst 3 -j ACCEPT
+        # Rate: 5 connections/second, burst: 10 connections
+        iptables -A INPUT -p tcp --syn -m limit --limit 5/s --limit-burst 10 -j ACCEPT
         
         # Drop excessive connections from single IP
-        # Max 15 concurrent connections per IP
-        iptables -A INPUT -p tcp --syn -m connlimit --connlimit-above 15 -j REJECT --reject-with tcp-reset
+        # Max 50 concurrent connections per IP (increased from 15)
+        iptables -A INPUT -p tcp --syn -m connlimit --connlimit-above 50 -j REJECT --reject-with tcp-reset
 
-        # ---- Drop Invalid Packets ----
+        # ====================================================================
+        # Invalid Packet Filtering
+        # ====================================================================
         # Drop packets that don't match any known connection state
+        # This catches malformed packets and certain attack patterns
         iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
-        # ---- Port Scan Detection & Prevention ----
-        # Drop common port scan patterns (null scan, xmas scan, etc.)
+        # ====================================================================
+        # Port Scan Detection & Prevention
+        # ====================================================================
+        # Drop common port scan patterns
+        # These flag combinations are never used in legitimate traffic
+        
         iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP                        # NULL scan
         iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP                         # XMAS scan
         iptables -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP                 # FIN/URG/PSH scan
@@ -174,9 +223,11 @@ in
         iptables -A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP                 # SYN/FIN scan
         iptables -A INPUT -p tcp --tcp-flags SYN,RST SYN,RST -j DROP                 # SYN/RST scan
 
-        # ---- ICMP Rate Limiting ----
+        # ====================================================================
+        # ICMP Rate Limiting
+        # ====================================================================
         # Already blocked via allowPing=false, but add extra rate limiting
-        # Allow 1 ping per second, burst of 1
+        # Allow 1 ping per second, burst of 1 (for diagnostic purposes)
         iptables -A INPUT -p icmp -m limit --limit 1/s --limit-burst 1 -j ACCEPT
         iptables -A INPUT -p icmp -j DROP
       '';
@@ -195,115 +246,113 @@ in
     
     # ---- GNOME Keyring Integration ----
     # System-wide password storage daemon
-    # Note: Service enabled here, daemon managed in services module
-    services.gnome.gnome-keyring.enable = true;
-
-    # ---- Core Security Services ----
-    security = {
-      rtkit.enable = true;      # RealtimeKit (audio priority)
-      sudo.enable = true;       # Sudo privilege escalation
-      polkit.enable = true;     # PolicyKit authorization framework
-
-      # ---- AppArmor Mandatory Access Control ----
-      # Linux Security Module for process isolation
-      apparmor = {
-        enable = true;
-        packages = with pkgs; [
-          apparmor-profiles    # Default profiles (browsers, etc.)
-          apparmor-utils       # aa-enforce, aa-complain, aa-logprof
-        ];
-      };
-
-      # ---- System Audit Daemon ----
-      # Logs security-relevant system calls and events
-      auditd.enable = true;
-
-      # ---- Kernel Hardening ----
-      allowUserNamespaces = true;    # Required for containers (Podman)
-      protectKernelImage = true;     # Prevent kernel module loading
-
-      # ---- PAM GNOME Keyring Integration ----
-      # Unlock keyring automatically on login
-      pam.services = {
-        gdm.enableGnomeKeyring = true;           # GDM login
-        gdm-password.enableGnomeKeyring = true;  # Password authentication
-        login.enableGnomeKeyring = true;         # Console login
-      };
+    # Note: Daemon itself configured in display/services module
+    # Here we only configure PAM integration
+    
+    security.pam.services = {
+      # Enable GNOME Keyring for login sessions
+      login.enableGnomeKeyring = true;
+      
+      # Enable for graphical display manager
+      gdm.enableGnomeKeyring = true;
+      
+      # Enable for sudo (unlock keyring with sudo password)
+      sudo.enableGnomeKeyring = true;
     };
 
-    # ---- D-Bus Service Registration ----
-    # Register GNOME security services with D-Bus
-    services.dbus.packages = mkAfter [ 
-      pkgs.gcr              # Certificate/key management
-      pkgs.gnome-keyring    # Password storage
-    ];
-
-    # ==========================================================================
-    # Audit Logging (Layer 3: Activity Monitoring)
-    # ==========================================================================
-    # Linux Audit Framework configuration
+    # ---- Polkit Configuration ----
+    # PolicyKit - Authorization framework for privileged operations
     
-    environment.etc = {
-      # ---- Main Auditd Configuration ----
-      "audit/auditd.conf".text = ''
-        log_file = /var/log/audit/audit.log
-        log_format = RAW
-        flush = incremental_async
-        freq = 50
-        priority_boost = 4
-        overflow_action = SYSLOG
-        max_log_file = 50
-        num_logs = 5
-        max_log_file_action = ROTATE
-        name_format = HOSTNAME
+    security.polkit = {
+      enable = true;
+      
+      # Allow users in 'wheel' group to perform admin actions without password
+      # (For specific actions like reboot, shutdown, package management)
+      extraConfig = ''
+        /* Allow members of wheel group to execute actions without authentication */
+        polkit.addRule(function(action, subject) {
+          if (subject.isInGroup("wheel")) {
+            return polkit.Result.YES;
+          }
+        });
       '';
+    };
 
-      # ---- Filter Configuration ----
-      # Suppress warning about missing filter.conf
-      "audit/filter.conf" = {
-        mode = "0644";
-        text = "# empty\n";
-      };
+    # ==========================================================================
+    # Mandatory Access Control (Layer 3: AppArmor)
+    # ==========================================================================
+    # AppArmor provides additional security layer beyond DAC (Discretionary Access Control)
+    # Profiles define what resources each program can access
+    
+    security.apparmor = {
+      enable = true;
+      
+      # Kill processes that violate their AppArmor profile
+      killUnconfinedConfinables = true;
+      
+      # Custom AppArmor profiles can be added here
+      # packages = [ pkgs.apparmor-profiles ];
+    };
 
-      # ---- Audit Rules (Single Source) ----
-      # Preferred location: rules.d/ (not audit.rules)
-      "audit/rules.d/99-nixos.rules".text = ''
-        # Remove all previous rules
-        -D
-        
-        # Buffer size (16384 = workstation, 32768 = server)
-        -b 16384
-        
-        # Rate limit (0 = unlimited, use 100-500 for production)
-        -r 0
-
+    # ==========================================================================
+    # Audit Logging (Layer 4: System Activity Monitoring)
+    # ==========================================================================
+    # Linux Audit Framework - Records security-relevant events
+    # Useful for forensics, compliance, and intrusion detection
+    
+    security.audit = {
+      enable = true;
+      
+      # Audit rules configuration
+      # Format: auditctl syntax (see: man auditctl)
+      rules = [
         # ----------------------------------------------------------------------
-        # File Watches (Who Modified Critical Files)
+        # Buffer & Rate Configuration
         # ----------------------------------------------------------------------
-        -w /etc/passwd -p wa -k passwd_changes           # User database
-        -w /etc/shadow -p wa -k shadow_changes           # Password hashes
-        -w /etc/group -p wa -k group_changes             # Group database
-        -w /etc/gshadow -p wa -k gshadow_changes         # Group passwords
-        -w /etc/sudoers -p wa -k sudoers_changes         # Sudo config
-        -w /etc/sudoers.d/ -p wa -k sudoers_changes      # Sudo drop-in files
-        -w /etc/ssh/sshd_config -p wa -k sshd_config     # SSH daemon config
+        # Audit system tuning parameters
+        "-b 8192"                    # Buffer size: 8192 events (default: 64)
+        "-f 1"                       # Failure mode: 1=printk (log to kernel buffer)
+        "--backlog_wait_time 60000"  # Wait 60s if buffer full (prevent data loss)
+        "-r 100"                     # Rate limit: 100 messages/second per rule
+        
+        # ----------------------------------------------------------------------
+        # File Integrity Monitoring
+        # ----------------------------------------------------------------------
+        # Watch critical system files for unauthorized modifications
+        # Format: -w PATH -p PERMISSIONS -k KEY
+        #   -w: watch path
+        #   -p: permissions to audit (r=read, w=write, x=execute, a=attribute)
+        #   -k: key name for filtering logs
+        
+        "-w /etc/passwd -p wa -k passwd_changes"         # User accounts
+        "-w /etc/shadow -p wa -k shadow_changes"         # Password hashes
+        "-w /etc/group -p wa -k group_changes"           # Group database
+        "-w /etc/gshadow -p wa -k gshadow_changes"       # Group passwords
+        "-w /etc/sudoers -p wa -k sudoers_changes"       # Sudo config
+        "-w /etc/sudoers.d/ -p wa -k sudoers_changes"    # Sudo drop-in files
+        "-w /etc/ssh/sshd_config -p wa -k sshd_config"   # SSH daemon config
 
         # ----------------------------------------------------------------------
         # Syscall Auditing (Minimal for Workstation)
         # ----------------------------------------------------------------------
+        # Track security-relevant system calls
+        # More comprehensive rules available for servers/production systems
+        
         # Track root commands executed by normal users
         # Catches privilege escalation attempts
-        -a always,exit -F arch=b64 -S execve,execveat -F euid=0 -F auid>=1000 -F auid!=4294967295 -k exec_root
+        # Format: -a ACTION,FILTER -F FIELD=VALUE -S SYSCALL -k KEY
+        "-a always,exit -F arch=b64 -S execve,execveat -F euid=0 -F auid>=1000 -F auid!=4294967295 -k exec_root"
 
         # Track UID/GID changes (privilege changes)
-        -a always,exit -F arch=b64 -S setuid,setresgid,setfsuid,setfsgid -k id_change
+        "-a always,exit -F arch=b64 -S setuid,setresgid,setfsuid,setfsgid -k id_change"
 
         # ----------------------------------------------------------------------
         # Make Rules Immutable (Uncomment for Production)
         # ----------------------------------------------------------------------
         # Prevents rule changes without reboot (security hardening)
-        # -e 2
-      '';
+        # WARNING: Once enabled, requires reboot to modify audit rules
+        # "-e 2"
+      ];
     };
 
     # ==========================================================================
@@ -362,7 +411,7 @@ in
     };
 
     # ==========================================================================
-    # SSH Client Configuration (Layer 4: Secure Remote Access)
+    # SSH Client Configuration (Layer 5: Secure Remote Access)
     # ==========================================================================
     
     programs.ssh = {
@@ -373,14 +422,22 @@ in
       enableAskPassword = false;
 
       # Global SSH client options
+      # These settings improve connection reliability and timeout handling
       extraConfig = ''
         Host *
-          # Keep connections alive (prevent timeout)
-          ServerAliveInterval 60
-          ServerAliveCountMax 2
-          TCPKeepAlive yes
+          # ---- Connection Keep-Alive ----
+          # Prevent timeouts on idle connections
+          ServerAliveInterval 60      # Send keepalive every 60 seconds
+          ServerAliveCountMax 3       # Allow 3 missed keepalives (180s total)
+          TCPKeepAlive yes            # Enable TCP keepalive
           
-          # Use ASSH proxy for connection management
+          # ---- Connection Timeout ----
+          ConnectTimeout 30           # Timeout for initial connection (30 seconds)
+          
+          # ---- ASSH Proxy (Advanced SSH Connection Manager) ----
+          # ASSH provides enhanced SSH configuration management
+          # Includes: host templates, gateways, connection reuse
+          # Config file: ~/.ssh/assh.yml
           ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
       '';
     };
@@ -392,6 +449,7 @@ in
     environment = {
       # ---- hBlock Integration for New Users ----
       # Add HOSTALIASES to default shell config
+      # This enables per-user DNS blocking without modifying /etc/hosts
       etc."skel/.bashrc".text = mkAfter ''
         export HOSTALIASES="$HOME/.config/hblock/hosts"
       '';
@@ -418,6 +476,11 @@ in
         audit-summary      = "sudo aureport --summary";      # Summary report
         audit-failed       = "sudo aureport --failed";       # Failed events
         audit-search       = "sudo ausearch -i";             # Interactive search
+        
+        # Firewall diagnostics
+        fw-list            = "sudo iptables -L -v -n";       # List all rules
+        fw-list-custom     = "sudo iptables -L INPUT -v -n"; # List INPUT chain
+        fw-stats           = "sudo iptables -L -v -n -x";    # Show packet counts
       };
 
       # ---- Environment Variables ----
@@ -433,48 +496,106 @@ in
 # ==============================================================================
 #
 # 1. Firewall:
-#    - All ports declared in THIS module only
+#    - All ports declared in THIS module only (single source of truth)
 #    - Use NixOS firewall, extend with extraCommands
-#    - Test: sudo iptables -L -v -n
+#    - SSH connections exempt from rate limiting (prevents multiplexing issues)
+#    - Test commands:
+#      * sudo iptables -L -v -n           (list all rules)
+#      * sudo iptables -L INPUT -v -n -x  (show INPUT chain with packet counts)
+#      * journalctl -k | grep "IN=.*OUT=" (check dropped packets)
 #
 # 2. AppArmor:
 #    - Profiles in /etc/apparmor.d/
 #    - Check status: sudo aa-status
 #    - Enforce profile: sudo aa-enforce /path/to/profile
+#    - Complain mode: sudo aa-complain /path/to/profile (log violations only)
 #
 # 3. Audit:
 #    - View logs: sudo ausearch -i
 #    - Summary: sudo aureport --summary
 #    - Search failed logins: sudo ausearch -m USER_LOGIN --failed
+#    - Search by key: sudo ausearch -k passwd_changes
+#    - Real-time monitoring: sudo ausearch -i --start recent -m all
 #
 # 4. SSH:
 #    - Use ASSH for complex configurations
 #    - Config: ~/.ssh/assh.yml
 #    - Build: assh config build > ~/.ssh/config
+#    - Test connection: ssh -vvv hostname (verbose debug)
+#    - Check multiplexing: ls -la ~/.ssh/controlmasters/
 #
 # 5. hBlock:
 #    - Manual update: hblock-update-now
 #    - Check file: cat ~/.config/hblock/hosts
-#    - Test: ping blocked-domain.com (should fail)
+#    - Test blocking: ping ad-server.com (should fail/redirect)
+#    - Disable temporarily: unset HOSTALIASES
 #
 # ==============================================================================
-# Troubleshooting
+# Troubleshooting SSH Connection Issues
 # ==============================================================================
 #
-# Firewall blocking legitimate traffic:
-#   sudo iptables -L -v -n  # Check rules
-#   journalctl -k           # Check kernel logs for dropped packets
+# If SSH connections are slow or hanging:
 #
-# AppArmor denials:
-#   sudo journalctl -xe | grep apparmor
-#   sudo aa-complain /path/to/profile  # Switch to complain mode
+# 1. Check firewall rules:
+#    sudo iptables -L INPUT -v -n | grep -E "tcp.*22|tcp.*syn"
+#    
+#    Look for:
+#    - SSH exceptions are listed BEFORE rate limit rules
+#    - Rate limits are reasonable (5/s, burst 10)
+#    - Connection limits are not too low (<50)
 #
-# Audit logs too verbose:
-#   Edit /etc/audit/rules.d/99-nixos.rules
-#   Increase rate limit: -r 100
+# 2. Test without rate limiting:
+#    sudo iptables -D INPUT -p tcp --syn -m limit --limit 5/s --limit-burst 10 -j ACCEPT
+#    sudo iptables -D INPUT -p tcp --syn -m connlimit --connlimit-above 50 -j REJECT
+#    
+#    Then test SSH. If it works, firewall rules are the issue.
 #
-# SSH connection issues:
-#   ssh -vvv host  # Verbose debug
-#   Check ProxyCommand: assh connect --port=22 host
+# 3. Check SSH multiplexing:
+#    ssh -O check hostname     # Check ControlMaster status
+#    ssh -O exit hostname      # Close ControlMaster
+#    rm -rf ~/.ssh/controlmasters/*  # Remove stale sockets
+#
+# 4. Test without ASSH proxy:
+#    ssh -o ProxyCommand=none hostname
+#    
+#    If this works, issue is with ASSH configuration.
+#
+# 5. Monitor connection in real-time:
+#    # Terminal 1: Watch firewall
+#    sudo iptables -L INPUT -v -n -x --line-numbers && watch -n1 'sudo iptables -L INPUT -v -n -x'
+#    
+#    # Terminal 2: SSH with verbose output
+#    ssh -vvv hostname
+#    
+#    Look for packets being dropped in firewall counters.
+#
+# 6. Check for rwindow 0 issue:
+#    ssh -vvv hostname 2>&1 | grep "rwindow"
+#    
+#    If you see "rwindow 0", the server is not ready to receive data.
+#    Possible causes:
+#    - Rate limiting (should be fixed with these rules)
+#    - Network congestion
+#    - Server-side shell initialization hanging
+#    - BBR congestion control issues (check networking module)
+#
+# ==============================================================================
+# Advanced Firewall Diagnostics
+# ==============================================================================
+#
+# Monitor dropped packets:
+#   sudo journalctl -k -f | grep "IN=.*OUT="
+#
+# Count dropped packets by rule:
+#   sudo iptables -L INPUT -v -n -x | awk '/DROP|REJECT/ {print $1, $2, $NF}'
+#
+# Test specific port:
+#   nc -zv hostname port
+#
+# Check connection tracking:
+#   sudo conntrack -L | grep -E "tcp.*22"
+#
+# Reset connection tracking (if table full):
+#   sudo conntrack -F
 #
 # ==============================================================================

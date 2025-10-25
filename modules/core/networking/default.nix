@@ -781,7 +781,7 @@ in
     # Total timeout: 5min + (30s × 3) = 6.5 minutes
     
     # ---- Connection Termination ----
-    "net.ipv4.tcp_fin_timeout" = 30;         # FIN-WAIT-2 timeout: 30s
+    "net.ipv4.tcp_fin_timeout" = 60;         # FIN-WAIT-2 timeout: 30s
     
     # ---- TIME-WAIT Reuse ----
     # Enable reuse of TIME-WAIT sockets (safe with timestamps)
