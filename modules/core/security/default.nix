@@ -170,12 +170,9 @@ in
       enable = true;
       
       # Complete ruleset definition with guaranteed execution order
+      # Note: No 'flush ruleset' - NixOS handles atomic loading
+      # This prevents conflicts with third-party tables (e.g., Mullvad VPN)
       ruleset = ''
-        # ======================================================================
-        # Flush all existing rules to start clean
-        # ======================================================================
-        flush ruleset
-
         # ======================================================================
         # MAIN TABLE: inet (handles both IPv4 and IPv6)
         # ======================================================================
@@ -248,9 +245,12 @@ in
             #   - NO firewall rate limiting on SSH port
             #   - fail2ban monitors auth logs and bans IPs after failed attempts
             #   - This approach is more intelligent (distinguishes failed vs successful auth)
+            #
+            # Note: Return traffic (sport 22) is already handled by the
+            # established/related rule at the top of the chain, so no separate
+            # rule is needed here.
             
             tcp dport 22 ct state new,established counter accept comment "SSH - main port (fail2ban protected)"
-            tcp sport 22 ct state established,related counter accept comment "SSH - return traffic"
             
             # Custom SSH port (if configured in networking module)
             # Uncomment and adjust port number as needed:
@@ -437,7 +437,19 @@ in
       # Enable PolicyKit (GUI authorization dialogs)
       services = {
         # Disable GNOME Keyring in favor of GPG agent
-        # Note: Overrides GNOME desktop module with mkForce
+        # 
+        # CONFIGURATION OPTIONS:
+        # 
+        # Option 1 (RECOMMENDED): Disable in GNOME module
+        #   In your GNOME/display module:
+        #   services.gnome.gnome-keyring.enable = false;
+        #   Then REMOVE the line below (no mkForce needed)
+        # 
+        # Option 2 (CURRENT): Override here with mkForce
+        #   Keep the line below to force disable
+        #   Works even if GNOME module enables it
+        # 
+        # Using Option 2 for now (works with any GNOME config)
         login.enableGnomeKeyring = mkForce false;
         
         # Require strong passwords (optional, configure as needed)
@@ -551,10 +563,6 @@ in
     # SSH Client Configuration (Layer 5: Secure Remote Access)
     # ==========================================================================
     # Global SSH client settings for improved reliability and security
-    # 
-    # Note: ControlMaster multiplexing is DISABLED
-    # Reason: ASSH proxy handles connection management more efficiently
-    # This prevents socket conflicts and "muxclient: master hello exchange failed" errors
     
     programs.ssh = {
       # Disable SSH agent (using GPG agent for key management)
@@ -580,15 +588,12 @@ in
           # ASSH provides enhanced SSH configuration management:
           #   - Host templates and inheritance
           #   - Gateway/bastion host support
-          #   - Advanced connection management (replaces ControlMaster)
-          #   - Centralized configuration (~/.ssh/assh.yml)
-          # 
-          # ASSH handles connection multiplexing internally, so native
-          # ControlMaster is disabled to prevent conflicts
+          #   - Advanced connection reuse
+          # Configuration file: ~/.ssh/assh.yml
           ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
       '';
     };
-   
+
     # ==========================================================================
     # Environment Configuration
     # ==========================================================================
@@ -950,4 +955,3 @@ in
 # [ ] Verify VPN forwarding (if used):  fw-list-forward
 #
 # ==============================================================================
-
