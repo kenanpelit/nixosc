@@ -61,7 +61,7 @@
 { username, inputs, pkgs, lib, config, ... }:
 
 let
-  inherit (lib) mkIf;
+  inherit (lib) mkIf mkForce;
   
   # ----------------------------------------------------------------------------
   # Hyprland Packages (Locked Flake Version)
@@ -267,14 +267,26 @@ in
     # ==========================================================================
     # Session Security (Layer 6: Credential Storage)
     # ==========================================================================
-    # GNOME Keyring stores passwords, SSH keys, certificates
-    # Integration: Auto-unlocked on login, D-Bus secrets API
+    # GNOME Keyring: Password and credential management
+    # 
+    # DISABLED: Using GPG agent for unified key/password management
+    # GPG agent provides:
+    #   - SSH key management (programs.ssh.startAgent = false in security module)
+    #   - GPG key management
+    #   - Password caching
+    #   - Works in both GUI and terminal
+    #   - Not desktop-specific (portable across sessions)
+    # 
+    # To re-enable GNOME Keyring:
+    #   1. Set: gnome.gnome-keyring.enable = true;
+    #   2. Remove mkForce from security module:
+    #      security.pam.services.login.enableGnomeKeyring
     
-    gnome.gnome-keyring.enable = true;
+    gnome.gnome-keyring.enable = mkForce false;  # Using GPG agent (see security module)
     
-    # Note: PAM integration configured in security module
-    # This only enables the service registration
-
+    # Note: PAM integration is handled in security module
+    # If you switch back to GNOME Keyring, update both locations
+    
     # ==========================================================================
     # Audio Stack (Layer 7: PipeWire)
     # ==========================================================================
