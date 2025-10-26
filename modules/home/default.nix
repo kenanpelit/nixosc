@@ -113,6 +113,11 @@
     ./transmission  # BitTorrent client configuration
     
     # =============================================================================
+    # Device Integration & Sharing
+    # =============================================================================
+    ./connect       # KDE Connect (Hyprland-friendly device integration)
+
+    # =============================================================================
     # Security & Privacy
     # =============================================================================
     ./gnupg         # GPG key management and encryption
@@ -129,6 +134,7 @@
     ./xdg-mimes     # MIME type associations and defaults
     ./xdg-portal    # Desktop portal configuration
     ./xserver       # X11 server configuration and settings
+    ./candy         # Icon theme colored with sweet gradients
 
     # =============================================================================
     # Input & Gestures

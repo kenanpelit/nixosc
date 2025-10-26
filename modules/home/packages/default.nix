@@ -294,7 +294,7 @@ in
     
     # Wallpaper & Themes
     wpaperd          # Wayland duvar kağıdı daemon
-    candy-icons      # Simge teması
+    # candy-icons removed - using custom candy-beauty from modules/home/candy
     beauty-line-icon-theme # Alternatif simge seti
     
     # Input Simulation

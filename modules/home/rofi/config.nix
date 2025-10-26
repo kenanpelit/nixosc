@@ -20,7 +20,7 @@
 
       /* Display Settings */
       show-icons: true;
-      icon-theme: "candy-icons";
+      icon-theme: "a-candy-beauty-icon-theme";
       terminal: "kitty";
       location: 0;
       hide-scrollbar: true;
