@@ -91,7 +91,7 @@ in
     "qt5ct/qt5ct.conf".text = lib.generators.toINI {} {
       # Appearance Settings
       Appearance = {
-        icon_theme = "candy-icons";
+        icon_theme = "a-candy-beauty-icon-theme";
         style = "kvantum";
         custom_palette = false;
         standard_dialogs = "gtk3";
@@ -132,7 +132,7 @@ in
     "qt6ct/qt6ct.conf".text = lib.generators.toINI {} {
       # Appearance Settings
       Appearance = {
-        icon_theme = "candy-icons";
+        icon_theme = "a-candy-beauty-icon-theme";
         style = "kvantum";
         custom_palette = false;
         standard_dialogs = "gtk3";

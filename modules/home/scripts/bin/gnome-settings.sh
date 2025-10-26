@@ -101,7 +101,7 @@ dconf write /org/gnome/desktop/interface/enable-animations "true"
 echo "🎨 GTK tema ayarları (Catppuccin Mocha)..."
 
 dconf write /org/gnome/desktop/interface/gtk-theme "'catppuccin-mocha-mauve-standard+normal'"
-dconf write /org/gnome/desktop/interface/icon-theme "'candy-icons'"
+dconf write /org/gnome/desktop/interface/icon-theme "'a-candy-beauty-icon-theme'"
 dconf write /org/gnome/desktop/interface/cursor-theme "'catppuccin-mocha-dark-cursors'"
 dconf write /org/gnome/desktop/interface/cursor-size "24"
 
@@ -981,7 +981,7 @@ else
 fi
 
 # Icon tema kontrolü
-if gsettings get org.gnome.desktop.interface icon-theme | grep -q "candy-icons"; then
+if gsettings get org.gnome.desktop.interface icon-theme | grep -q "a-candy-beauty-icon-theme"; then
 	echo "✅ İkon teması: Candy Beauty aktif"
 else
 	echo "⚠️  İkon teması: Varsayılan kullanılıyor"
@@ -1012,7 +1012,7 @@ echo "📊 Script çalışma süresi: $SECONDS saniye"
 echo ""
 echo "🎨 Catppuccin Mocha Tema Özellikleri:"
 echo "   • GTK Teması: catppuccin-mocha-mauve-standard+normal"
-echo "   • İkon Teması: candy-icons"
+echo "   • İkon Teması: a-candy-beauty-icon-theme"
 echo "   • Cursor Teması: catppuccin-mocha-dark-cursors"
 echo "   • Terminal Renkleri: Catppuccin Mocha paleti"
 echo "   • Extension Temaları: Mocha renkleri ile uyumlu"
