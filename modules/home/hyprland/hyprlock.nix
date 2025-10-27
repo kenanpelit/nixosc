@@ -97,7 +97,7 @@ in
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%A")"
-      color = ${dynamicColors.blue}
+      color = ${dynamicColors.text}
       font_size = 42
       font_family = Hack Nerd Font
       position = 0, 300
@@ -109,7 +109,7 @@ in
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%d %B %Y")"
-      color = ${dynamicColors.cyan}
+      color = ${dynamicColors.subtext0}
       font_size = 26
       font_family = Hack Nerd Font
       position = 0, 250
@@ -121,7 +121,7 @@ in
     label {
       monitor =
       text = cmd[update:1000] echo "$(date +"%H:%M")"
-      color = ${dynamicColors.text}
+      color = ${dynamicColors.subtext0}
       font_size = 22
       font_family = Hack Nerd Font
       position = 0, 200
@@ -138,7 +138,7 @@ in
       monitor =
       path = /home/${username}/Pictures/wallpapers/nixos/avatar.png
       border_size = 3
-      border_color = ${dynamicColors.purple}
+      border_color = ${dynamicColors.border}
       size = 120
       rounding = 60
       position = 0, 50
@@ -206,7 +206,7 @@ in
     label {
       monitor =
       text = Press Enter to unlock
-      color = ${dynamicColors.purple}
+      color = ${dynamicColors.subtext1}
       font_size = 12
       font_family = Hack Nerd Font
       position = 0, -260
@@ -223,7 +223,7 @@ in
     label {
       monitor =
       text = cmd[update:60000] echo "⏱ Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
-      color = ${dynamicColors.subtext0}
+      color = ${dynamicColors.subtext1}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -320
@@ -236,7 +236,7 @@ in
     label {
       monitor =
       text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "🎵 $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "🎵 No Player"; fi
-      color = ${dynamicColors.teal}
+      color = ${dynamicColors.subtext1}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -350
@@ -249,7 +249,7 @@ in
     label {
       monitor =
       text = cmd[update:30000] if [ -f /sys/class/power_supply/BAT0/capacity ]; then echo "🔋 $(cat /sys/class/power_supply/BAT0/capacity)%"; else echo ""; fi
-      color = ${dynamicColors.orange}
+      color = ${dynamicColors.subtext1}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -380
@@ -262,7 +262,7 @@ in
     label {
       monitor =
       text = cmd[update:300000] curl -s "wttr.in/Istanbul?format=3" 2>/dev/null | head -1 || echo "🌤 Weather unavailable"
-      color = ${dynamicColors.cyan}
+      color = ${dynamicColors.subtext1}
       font_size = 14
       font_family = Hack Nerd Font
       position = 0, -410
