@@ -20,6 +20,7 @@
         
         # Güvenlik & Gizlilik
         { id = "ddkjiahejlhfcafbddmgiahcphecmpfh"; } # uBlock Origin Lite
+        { id = "pkehgijcmpdhfbdbbnkijodmdjhbjlgp"; } # Privacy Badger
         
         # Navigasyon & Prodüktivite
         { id = "gfbliohnnapiefjpjlpjnehglfpaknnc"; } # Surfingkeys
@@ -28,6 +29,7 @@
         { id = "kdejdkdjdoabfihpcjmgjebcpfbhepmh"; } # Copy Link Address
         { id = "kgfcmiijchdkbknmjnojfngnapkibkdh"; } # Picture-in-Picture Viewer
         { id = "mbcjcnomlakhkechnbhmfjhnnllpbmlh"; } # Tab Pinner (Keyboard Shortcuts)
+        { id = "llimhhconnjiflfimocjggfjdlmlhblm"; } # Reader Mode
         
         # Medya
         { id = "lmjnegcaeklhafolokijcfjliaokphfk"; } # Video DownloadHelper
