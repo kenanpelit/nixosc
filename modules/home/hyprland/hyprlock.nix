@@ -192,7 +192,8 @@ in
       font_color = ${dynamicColors.text}
       fade_on_empty = true
       font_family = Hack Nerd Font
-      placeholder_text = <span foreground="${colors.subtext0.hex}">Enter Password</span>
+      placeholder_text = 
+      hide_input = false
       check_color = ${dynamicColors.green}      # Correct password
       fail_color = ${dynamicColors.red}         # Wrong password
       capslock_color = ${dynamicColors.yellow}  # Caps Lock active
