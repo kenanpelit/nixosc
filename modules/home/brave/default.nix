@@ -10,6 +10,7 @@
 # - Extensions management
 # - Catppuccin theming integration
 # - Performance and security optimizations
+# - Automated cache cleanup with systemd timers
 #
 # Author: Kenan Pelit
 # ==============================================================================
@@ -17,13 +18,17 @@
 let
   system = pkgs.system;
   
-  # Detect if we're using Wayland
+  # ==========================================================================
+  # Desktop Environment Detection
+  # ==========================================================================
+  
+  # Detect if we're using Wayland - checks multiple sources for accuracy
+  # Priority: explicit config > display manager > session environment
   isWayland = (config.my.desktop.wayland.enable or false) || 
               (config.services.xserver.displayManager.gdm.wayland or false) || 
-              (builtins.getEnv "XDG_SESSION_TYPE" == "wayland") || 
-              true; # Default to wayland for modern setups
+              (builtins.getEnv "XDG_SESSION_TYPE" == "wayland");
   
-  # Detect desktop environment for optimizations
+  # Detect specific desktop environments for targeted optimizations
   isHyprland = config.my.desktop.hyprland.enable or false;
   isGnome = config.services.xserver.desktopManager.gnome.enable or false;
   
@@ -32,6 +37,10 @@ in {
     ./extensions.nix
     ./theme.nix
   ];
+  
+  # ==========================================================================
+  # Module Options
+  # ==========================================================================
   
   options.my.browser.brave = {
     enable = lib.mkOption {
@@ -89,8 +98,16 @@ in {
     };
   };
   
+  # ==========================================================================
+  # Main Configuration
+  # ==========================================================================
+  
   config = lib.mkIf config.my.browser.brave.enable {
-    # Configure default application associations
+    
+    # ========================================================================
+    # Default Application Associations
+    # ========================================================================
+    
     xdg.mimeApps = lib.mkIf config.my.browser.brave.setAsDefault {
       enable = true;
       defaultApplications = {
@@ -115,96 +132,136 @@ in {
       };
     };
     
-    # ==========================================================================
-    # Brave Specific Configuration
-    # ==========================================================================
+    # ========================================================================
+    # Brave Browser Configuration
+    # ========================================================================
+    
     programs.chromium = {
       enable = true;
       package = config.my.browser.brave.package;
       
-      # Brave command line arguments for optimal performance and functionality
+      # ======================================================================
+      # Command Line Arguments
+      # ======================================================================
+      # Carefully curated flags for optimal performance, privacy, and UX
+      
       commandLineArgs = [
-        # Core Performance flags
-        "--disable-extensions-http-throttling"
-        "--disable-background-timer-throttling"
-        "--disable-backgrounding-occluded-windows"
-        "--disable-renderer-backgrounding"
+        # --------------------------------------------------------------------
+        # Core Performance Optimizations
+        # --------------------------------------------------------------------
+        "--disable-extensions-http-throttling"      # Faster extension loads
+        "--disable-background-timer-throttling"     # Better background tab performance
+        "--disable-backgrounding-occluded-windows"  # Keep hidden windows responsive
+        "--disable-renderer-backgrounding"          # Maintain renderer performance
         
-        # UI/UX improvements
-        "--disable-default-apps"
-        "--no-default-browser-check"
-        "--no-first-run"
-        "--disable-component-update"
+        # --------------------------------------------------------------------
+        # Modern Web Platform Features
+        # --------------------------------------------------------------------
+        "--enable-features=BackForwardCache"        # Instant back/forward navigation
+        "--enable-features=QuietNotificationPrompts" # Less intrusive notifications
+        "--enable-smooth-scrolling"                 # Smooth scrolling experience
+        "--enable-features=OverlayScrollbar"        # Modern overlay scrollbars
+        "--enable-features=TabFreeze"               # Suspend inactive tabs to save resources
         
-        # Theme and appearance
-        "--force-dark-mode"
-        "--enable-features=WebUIDarkMode"
+        # --------------------------------------------------------------------
+        # UI/UX Improvements
+        # --------------------------------------------------------------------
+        "--disable-default-apps"                    # No unwanted default apps
+        "--no-default-browser-check"                # Skip default browser prompt
+        "--no-first-run"                            # Skip first run experience
+        "--disable-component-update"                # Disable component auto-updates
         
-        # Language and region
-        "--lang=en-US"
-        "--accept-lang=en-US,tr-TR"
+        # --------------------------------------------------------------------
+        # Theme and Appearance
+        # --------------------------------------------------------------------
+        "--force-dark-mode"                         # Force dark mode globally
+        "--enable-features=WebUIDarkMode"           # Dark mode for browser UI
+        
+        # --------------------------------------------------------------------
+        # Language and Region Settings
+        # --------------------------------------------------------------------
+        "--lang=en-US"                              # Primary language
+        "--accept-lang=en-US,tr-TR"                 # Accepted languages
         
       ] 
-      # Hardware acceleration flags
+      # ======================================================================
+      # Conditional Hardware Acceleration Flags
+      # ======================================================================
       ++ lib.optionals config.my.browser.brave.enableHardwareAcceleration [
-        "--enable-gpu-rasterization"
-        "--enable-zero-copy"
-        "--ignore-gpu-blocklist"
-        "--enable-features=VaapiVideoDecoder,VaapiVideoEncoder"
-        "--enable-accelerated-video-decode"
-        "--enable-accelerated-video-encode"
+        "--enable-gpu-rasterization"                # GPU-accelerated rendering
+        "--enable-zero-copy"                        # Efficient GPU memory usage
+        "--ignore-gpu-blocklist"                    # Force GPU usage
+        "--enable-features=VaapiVideoDecoder,VaapiVideoEncoder" # VA-API support
+        "--enable-accelerated-video-decode"         # Hardware video decoding
+        "--enable-accelerated-video-encode"         # Hardware video encoding
       ]
-      # Privacy flags (strict mode)
+      # ======================================================================
+      # Conditional Privacy Flags (Strict Mode)
+      # ======================================================================
+      # Note: These flags enhance privacy but may break some website features
       ++ lib.optionals config.my.browser.brave.enableStrictPrivacy [
-        "--disable-background-networking"
-        "--disable-sync"
-        "--disable-speech-api"
-        "--disable-web-security"
-        "--disable-features=AudioServiceOutOfProcess"
-        "--disable-background-sync"
+        "--disable-background-networking"           # No background connections
+        "--disable-sync"                            # Disable sync services
+        "--disable-speech-api"                      # Disable speech recognition
+        "--disable-features=AudioServiceOutOfProcess" # Audio privacy
+        "--disable-background-sync"                 # No background sync
       ]
-      # Wayland support flags
+      # ======================================================================
+      # Wayland-Specific Flags
+      # ======================================================================
       ++ lib.optionals isWayland [
-        "--ozone-platform=wayland"
-        "--enable-wayland-ime"
-        "--enable-features=UseOzonePlatform"
-        "--gtk-version=4"
+        "--ozone-platform=wayland"                  # Use Wayland backend
+        "--enable-wayland-ime"                      # Wayland input method support
+        "--enable-features=UseOzonePlatform"        # Enable Ozone platform
+        "--gtk-version=4"                           # Use GTK4 for better Wayland support
       ]
-      # Hyprland specific optimizations
+      # ======================================================================
+      # Hyprland-Specific Optimizations
+      # ======================================================================
       ++ lib.optionals isHyprland [
-        "--enable-features=WaylandWindowDecorations"
-        "--disable-features=UseChromeOSDirectVideoDecoder"
+        "--enable-features=WaylandWindowDecorations" # Native window decorations
+        "--disable-features=UseChromeOSDirectVideoDecoder" # Better video compatibility
       ]
-      # GNOME integration
+      # ======================================================================
+      # GNOME Integration
+      # ======================================================================
       ++ lib.optionals isGnome [
-        "--enable-features=MiddleClickAutoscroll"
+        "--enable-features=MiddleClickAutoscroll"   # GNOME-style middle-click scrolling
       ]
-      # Catppuccin specific flags
+      # ======================================================================
+      # Catppuccin Theme Integration
+      # ======================================================================
       ++ lib.optionals (config.catppuccin.enable or config.my.browser.brave.enableCatppuccinTheme) [
-        "--force-prefers-color-scheme=dark"
-        "--enable-features=WebContentsForceDark"
+        "--force-prefers-color-scheme=dark"         # Force dark color scheme
+        "--enable-features=WebContentsForceDark"    # Force dark mode on websites
       ];
     };
     
-    # ==========================================================================
+    # ========================================================================
     # System Integration
-    # ==========================================================================
+    # ========================================================================
     
-    # Environment variables for better integration
+    # Environment variables for better browser integration
     home.sessionVariables = {
       # Default browser
       BROWSER = lib.mkIf config.my.browser.brave.setAsDefault "brave";
-      # Better font rendering
+      
+      # Better font rendering - disables subpixel positioning for clearer text
       BRAVE_DISABLE_FONT_SUBPIXEL_POSITIONING = "1";
+      
       # Enable VA-API for hardware acceleration
       LIBVA_DRIVER_NAME = lib.mkIf config.my.browser.brave.enableHardwareAcceleration "iHD";
-    } // lib.optionalAttrs isWayland {
-      # Wayland specific variables
-      NIXOS_OZONE_WL = "1";
-      MOZ_ENABLE_WAYLAND = "1";
+    } 
+    # Wayland-specific environment variables
+    // lib.optionalAttrs isWayland {
+      NIXOS_OZONE_WL = "1";                         # Enable Ozone Wayland support
+      MOZ_ENABLE_WAYLAND = "1";                     # Mozilla Wayland support (for compatibility)
     };
     
-    # Desktop file customization
+    # ========================================================================
+    # Desktop Entry Customization
+    # ========================================================================
+    
     xdg.desktopEntries.brave-browser = lib.mkIf config.my.browser.brave.setAsDefault {
       name = "Brave Browser";
       comment = "Browse the Web with Brave";
@@ -212,6 +269,8 @@ in {
       exec = "brave %U";
       icon = "brave-browser";
       categories = [ "Network" "WebBrowser" ];
+      
+      # Supported MIME types
       mimeType = [
         "text/html"
         "text/xml"
@@ -228,6 +287,8 @@ in {
         "x-scheme-handler/about"
         "x-scheme-handler/unknown"
       ];
+      
+      # Desktop actions (right-click menu)
       actions = {
         "new-window" = {
           name = "New Window";
@@ -240,38 +301,82 @@ in {
       };
     };
     
-    # ==========================================================================
+    # ========================================================================
     # Profile Management
-    # ==========================================================================
+    # ========================================================================
     
-    # Create profile directory structure
+    # Ensure profile directory exists
     home.file.".config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/.keep".text = "";
     
-    # Systemd user service for cleanup (optional)
+    # ========================================================================
+    # Automated Cache Cleanup
+    # ========================================================================
+    
+    # Systemd service for cache cleanup
     systemd.user.services.brave-cleanup = {
       Unit = {
-        Description = "Brave Browser Cache Cleanup";
+        Description = "Brave Browser Cache Cleanup Service";
+        Documentation = [ "https://github.com/kenanpelit/nixosc" ];
         After = [ "graphical-session.target" ];
       };
       
       Service = {
         Type = "oneshot";
-        ExecStart = "${pkgs.bash}/bin/bash -c 'find ~/.cache/BraveSoftware -name \"*.tmp\" -delete 2>/dev/null || true'";
-      };
-      
-      Install = {
-        WantedBy = [ "default.target" ];
+        # Clean temporary files and old cache
+        ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.findutils}/bin/find ~/.cache/BraveSoftware -name \"*.tmp\" -o -name \"*.lock\" -delete 2>/dev/null || true'";
+        
+        # Security hardening
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        
+        # Resource limits
+        MemoryMax = "256M";
+        CPUQuota = "50%";
       };
     };
     
-    # ==========================================================================
+    # Systemd timer for scheduled cleanup
+    systemd.user.timers.brave-cleanup = {
+      Unit = {
+        Description = "Daily Brave Browser Cache Cleanup";
+        Documentation = [ "https://github.com/kenanpelit/nixosc" ];
+      };
+      
+      Timer = {
+        # Run daily at 3 AM
+        OnCalendar = "daily";
+        # Also run 15 minutes after boot if missed
+        OnBootSec = "15min";
+        # Catch up on missed runs
+        Persistent = true;
+        # Randomize start time by up to 1 hour for system load distribution
+        RandomizedDelaySec = "1h";
+      };
+      
+      Install = {
+        WantedBy = [ "timers.target" ];
+      };
+    };
+    
+    # ========================================================================
     # Shell Aliases
-    # ==========================================================================
+    # ========================================================================
     
     home.shellAliases = {
+      # Development mode with relaxed security (for testing only)
       brave-dev = "brave --disable-web-security --disable-features=VizDisplayCompositor --user-data-dir=/tmp/brave-dev";
+      
+      # Clean mode - no extensions or plugins, incognito
       brave-clean = "brave --disable-extensions --disable-plugins --incognito";
+      
+      # Launch with specific profile
       brave-profile = "brave --profile-directory='${config.my.browser.brave.profile}'";
+      
+      # Debug mode - verbose logging
+      brave-debug = "brave --enable-logging --v=1";
+      
+      # Safe mode - minimal features for troubleshooting
+      brave-safe = "brave --disable-extensions --disable-plugins --disable-gpu";
     };
     
   };
