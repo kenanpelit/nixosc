@@ -15,6 +15,9 @@ let
   bluetooth_toggle = pkgs.writeShellScriptBin "bluetooth_toggle" (
     builtins.readFile ./bin/bluetooth_toggle.sh
   );
+  brave-extensions = pkgs.writeShellScriptBin "brave-extensions" (
+    builtins.readFile ./bin/brave-extensions.sh
+  );
   brave_killer = pkgs.writeShellScriptBin "brave_killer" (
     builtins.readFile ./bin/brave_killer.sh
   );
@@ -379,6 +382,7 @@ in {
     ascii
     askpass
     bluetooth_toggle
+    brave-extensions
     brave_killer
     bulk_rename
     chroot_manager
