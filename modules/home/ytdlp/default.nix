@@ -15,7 +15,8 @@
     # ---------------------------------------------------------------------------
     # YouTube Client Settings
     # ---------------------------------------------------------------------------
-    --extractor-args "youtube:player_client=web_creator"
+    #--extractor-args "youtube:player_client=web_creator"
+    --extractor-args "youtube:player_client=ios,android,web"
     # ---------------------------------------------------------------------------
     # Output Settings
     # ---------------------------------------------------------------------------
