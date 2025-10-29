@@ -164,6 +164,12 @@
       url = "github:abenz1267/walker/v2.7.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    
+    # Elephant - Backend provider for Walker (with all providers)
+    elephant = {
+      url = "github:abenz1267/elephant";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   
     spicetify-nix = { 
       url = "github:gerg-l/spicetify-nix"; 
@@ -222,8 +228,9 @@
     hyprutils, 
     hyprland-protocols, 
     xdph, 
-    hyprcursor, 
+    hyprcursor,
     walker,
+    elephant,
     ... 
   }@inputs:
     let
@@ -399,3 +406,4 @@
     ];
   };
 }
+

@@ -123,8 +123,6 @@ in
       gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
       gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
       gtk-application-prefer-dark-theme = 1;
-      gtk-button-images = 1;
-      gtk-menu-images = 1;
       gtk-enable-event-sounds = 0;
       gtk-enable-input-feedback-sounds = 0;
       gtk-xft-antialias = 1;
