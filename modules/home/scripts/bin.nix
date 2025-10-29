@@ -351,6 +351,9 @@ let
   vv = pkgs.writeShellScriptBin "vv" (
     builtins.readFile ./bin/vv.sh
   );
+  walk = pkgs.writeShellScriptBin "walk" (
+    builtins.readFile ./bin/walk.sh
+  );
   wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
     builtins.readFile ./bin/wallpaper-manager.sh
   );
@@ -494,6 +497,7 @@ in {
     vnc-connect
     vpn-waybar
     vv
+    walk
     wallpaper-manager
     waybar-status
     workspace-switcher
