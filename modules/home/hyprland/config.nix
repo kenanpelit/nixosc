@@ -57,7 +57,7 @@ in
         # Initialize workspace layout
         "m2w2"
         # Start in service-mode application launcher
-        "walker --gapplication-service"
+        #"walker --gapplication-service"
         # Initialize screen locker for security
         "hyprlock"
         # Set initial audio levels
@@ -675,7 +675,7 @@ in
         "$mainMod, G, togglegroup"
         "$mainMod, T, exec, toggle_oppacity"
 
-        #"ALT, Space, exec, walker"
+        "$mainMod CTRL, Space, exec, walker"
         #"$mainMod ALT, Space, exec, ulauncher-toggle"
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal nemo'"
