@@ -371,7 +371,7 @@ in
     # Commented Out / Optional Packages
     # ==============================================================================
     # python312Packages.subliminal # Altyazı indirici
-    # walker           # Uygulama başlatıcı
+    # walker            # Uygulama başlatıcı
     # iwgtk            # Kablosuz yapılandırma GUI
     # intel-undervolt  # CPU undervolting (Meteor Lake uyumsuz)
   ];

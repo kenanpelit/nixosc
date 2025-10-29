@@ -159,6 +159,12 @@
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
+    # Walker - Wayland application launcher (pinned to v2.7.2)
+    walker = {
+      url = "github:abenz1267/walker/v2.7.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  
     spicetify-nix = { 
       url = "github:gerg-l/spicetify-nix"; 
       inputs.nixpkgs.follows = "nixpkgs"; 
@@ -217,6 +223,7 @@
     hyprland-protocols, 
     xdph, 
     hyprcursor, 
+    walker,
     ... 
   }@inputs:
     let
