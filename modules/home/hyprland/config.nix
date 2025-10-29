@@ -656,7 +656,7 @@ in
         # Rofi - Show keybinds list - Application Launchers
         "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
         "ALT, Space, exec, rofi-launcher custom || pkill rofi"
-        "$mainMod, Space, exec, rofi-launcher default || pkill rofi"
+        "$mainMod CTRL, Space, exec, rofi-launcher default || pkill rofi"
         "$mainMod, backspace, exec, rofi-launcher power || pkill rofi"
 
         # Terminal Emulators
@@ -675,7 +675,7 @@ in
         "$mainMod, G, togglegroup"
         "$mainMod, T, exec, toggle_oppacity"
 
-        "$mainMod CTRL, Space, exec, walker"
+        "$mainMod, Space, exec, walk"
         #"$mainMod ALT, Space, exec, ulauncher-toggle"
         "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
         "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal nemo'"
