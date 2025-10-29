@@ -103,7 +103,7 @@
     #./copyq         # Advanced clipboard manager
     ./search        # File and content search utilities
     #./ulauncher     # Extensible application launcher
-    #./walker        # Wayland application runner
+    ./walker        # Wayland application runner
     #./iwmenu        # Interactive WiFi management menu
     
     # =============================================================================
