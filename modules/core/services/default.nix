@@ -274,7 +274,7 @@
     # Uncomment for full PAM/display-manager integration
     # Provides: Automatic keyring unlock on login, SSH key management
     # Note: Already configured in security module PAM settings
-    # programs.gnome-keyring.enable = true;
+    #gnome-keyring.enable = true;
 
     # ==========================================================================
     # Foreign Binary Support (nix-ld)

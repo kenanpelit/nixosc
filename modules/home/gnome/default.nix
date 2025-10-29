@@ -1,21 +1,33 @@
 # modules/home/gnome/default.nix
 # ==============================================================================
-# GNOME autostart desktop entry for keyring fix
+# GNOME Keyring (Secrets-only) as a user systemd service for Hyprland/Wayland
+# - Starts only the 'secrets' component to avoid SSH/GPG agent conflicts
+# - Requires a running user D-Bus (DBUS_SESSION_BUS_ADDRESS=%t/bus)
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 
 {
-  xdg.configFile."autostart/gnome-keyring-fix.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=GNOME Keyring Fix
-    Comment=Fix GNOME Keyring lag on startup
-    Exec=gnome-kr-fix
-    Terminal=false
-    Hidden=false
-    X-GNOME-Autostart-enabled=true
-    X-GNOME-Autostart-Delay=3
-    Categories=System;
-    StartupNotify=false
-  '';
+  # User systemd servisi: sadece 'secrets' (SSH/GPG ile çakışmaz)
+  systemd.user.services.gnome-keyring-secrets = {
+    Unit = {
+      Description = "GNOME Keyring (Secrets only)";
+      After = [ "graphical-session.target" ];
+    };
+
+    Service = {
+      Type = "simple";
+      Environment = [ "DBUS_SESSION_BUS_ADDRESS=unix:path=%t/bus" ];
+      # DÜZELTME: pkgs.gnome.gnome-keyring → pkgs.gnome-keyring
+      ExecStart = "${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --foreground --components=secrets";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
 }
+
+

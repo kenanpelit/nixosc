@@ -42,6 +42,9 @@ let
   crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
     builtins.readFile ./bin/crypto-manager.sh
   );
+  ente-run = pkgs.writeShellScriptBin "ente-run" (
+    builtins.readFile ./bin/ente-run.sh
+  );
   gitgo = pkgs.writeShellScriptBin "gitgo" (
     builtins.readFile ./bin/gitgo.sh
   );
@@ -394,6 +397,7 @@ in {
     clustergit
     cosmic_tty
     crypto-manager
+    ente-run
     gitgo
     gnome-extensions-installer
     gnome-flow
