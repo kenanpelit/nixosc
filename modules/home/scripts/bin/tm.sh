@@ -1112,33 +1112,11 @@ kenp_session_mode() {
 		return $?
 	fi
 
-	# Yeni oturum oluştur - ilk pencere basit terminal
+	# Yeni oturum oluştur - sadece terminal penceresi
 	if ! tmux new-session -d -s "$session_name" -n 'terminal' 2>/dev/null; then
 		error "KENP oturumu oluşturulamadı"
 		return 1
 	fi
-
-	# İkinci pencere: layout 3 ile çalışma ortamı
-	tmux new-window -t "$session_name" -n 'workspace'
-
-	# Layout 3'ü uygula (L-şekilli düzen)
-	tmux split-window -h -p 80 -t "$session_name:workspace"
-	tmux select-pane -t "$session_name:workspace.2"
-	tmux split-window -v -p 85 -t "$session_name:workspace.2"
-	tmux select-pane -t "$session_name:workspace.3"
-
-	# Üçüncü pencere: monitoring (opsiyonel, btop/htop varsa)
-	if command -v btop &>/dev/null || command -v htop &>/dev/null; then
-		tmux new-window -t "$session_name" -n 'monitor'
-		if command -v btop &>/dev/null; then
-			tmux send-keys -t "$session_name:monitor" 'btop' C-m
-		elif command -v htop &>/dev/null; then
-			tmux send-keys -t "$session_name:monitor" 'htop' C-m
-		fi
-	fi
-
-	# İkinci pencereyi (workspace) seç
-	tmux select-window -t "$session_name:workspace"
 
 	success "KENP oturumu hazır"
 	attach_or_switch "$session_name"
@@ -1375,20 +1353,20 @@ $(echo -e "${GREEN}")KENP Geliştirme Oturumu$(echo -e "${NC}")
 
 Kullanım: $(basename "$0") kenp [oturum_adı]
 
-Özelleştirilmiş geliştirme ortamı oturumu oluşturur.
+Basit ve hızlı tmux oturumu oluşturur.
 
-Pencereler:
-    1. terminal  - Basit terminal penceresi
-    2. workspace - Layout 3 ile çalışma ortamı (L-şekilli düzen)
-       ├─ Sol: Küçük panel (%20)
-       └─ Sağ: Büyük panel (%80) + Alt küçük panel (%15)
-    3. monitor   - Sistem izleme (htop/btop varsa)
+Pencere:
+    terminal - Tek basit terminal penceresi
 
 Özellikler:
-    • İlk pencere: Basit terminal, hızlı komutlar için
-    • İkinci pencere: Layout 3 ile hazır çalışma ortamı
-    • Üçüncü pencere: Sistem izleme (opsiyonel)
-    • Otomatik olarak workspace penceresi seçili başlar
+    • Minimalist yaklaşım - tek pencere
+    • Anında kullanıma hazır
+    • Layout'ları manuel oluşturabilirsiniz
+    • Hızlı başlangıç
+
+Layout Oluşturma:
+    $(basename "$0") s layout KENP 3    # Layout 3 uygula
+    $(basename "$0") s layout KENP 4    # Layout 4 uygula
 
 Örnekler:
     $(basename "$0") kenp          # 'KENP' adıyla oturum
