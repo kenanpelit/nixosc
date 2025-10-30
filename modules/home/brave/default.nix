@@ -143,16 +143,19 @@ in {
       # ======================================================================
       # Command Line Arguments
       # ======================================================================
-      # Carefully curated flags for optimal performance, privacy, and UX
+      # Optimized for performance, privacy, and stability
       
       commandLineArgs = [
         # --------------------------------------------------------------------
         # Core Performance Optimizations
         # --------------------------------------------------------------------
         "--disable-extensions-http-throttling"      # Faster extension loads
-        "--disable-background-timer-throttling"     # Better background tab performance
-        "--disable-backgrounding-occluded-windows"  # Keep hidden windows responsive
-        "--disable-renderer-backgrounding"          # Maintain renderer performance
+        
+        # --------------------------------------------------------------------
+        # Cache Management
+        # --------------------------------------------------------------------
+        "--disk-cache-size=268435456"               # 256 MB disk cache limit
+        "--media-cache-size=134217728"              # 128 MB media cache limit
         
         # --------------------------------------------------------------------
         # Modern Web Platform Features
@@ -169,12 +172,10 @@ in {
         "--disable-default-apps"                    # No unwanted default apps
         "--no-default-browser-check"                # Skip default browser prompt
         "--no-first-run"                            # Skip first run experience
-        "--disable-component-update"                # Disable component auto-updates
         
         # --------------------------------------------------------------------
         # Theme and Appearance
         # --------------------------------------------------------------------
-        "--force-dark-mode"                         # Force dark mode globally
         "--enable-features=WebUIDarkMode"           # Dark mode for browser UI
         
         # --------------------------------------------------------------------
@@ -191,9 +192,10 @@ in {
         "--enable-gpu-rasterization"                # GPU-accelerated rendering
         "--enable-zero-copy"                        # Efficient GPU memory usage
         "--ignore-gpu-blocklist"                    # Force GPU usage
-        "--enable-features=VaapiVideoDecoder,VaapiVideoEncoder" # VA-API support
+        "--enable-features=VaapiVideoDecoder,VaapiVideoEncoder,VaapiVideoDecodeLinuxGL" # Full VA-API support
         "--enable-accelerated-video-decode"         # Hardware video decoding
         "--enable-accelerated-video-encode"         # Hardware video encoding
+        "--use-gl=egl"                              # Use EGL backend for Wayland
       ]
       # ======================================================================
       # Conditional Privacy Flags (Strict Mode)
@@ -203,8 +205,6 @@ in {
         "--disable-background-networking"           # No background connections
         "--disable-sync"                            # Disable sync services
         "--disable-speech-api"                      # Disable speech recognition
-        "--disable-features=AudioServiceOutOfProcess" # Audio privacy
-        "--disable-background-sync"                 # No background sync
       ]
       # ======================================================================
       # Wayland-Specific Flags
@@ -249,13 +249,58 @@ in {
       # Better font rendering - disables subpixel positioning for clearer text
       BRAVE_DISABLE_FONT_SUBPIXEL_POSITIONING = "1";
       
-      # Enable VA-API for hardware acceleration
+      # Enable VA-API for hardware acceleration (Intel Gen 8+ / Broadwell and newer)
+      # Use "i965" for older Intel GPUs (Gen 7 and below)
       LIBVA_DRIVER_NAME = lib.mkIf config.my.browser.brave.enableHardwareAcceleration "iHD";
     } 
     # Wayland-specific environment variables
     // lib.optionalAttrs isWayland {
       NIXOS_OZONE_WL = "1";                         # Enable Ozone Wayland support
       MOZ_ENABLE_WAYLAND = "1";                     # Mozilla Wayland support (for compatibility)
+    };
+    
+    # ========================================================================
+    # Managed Browser Policies (JSON-based configuration)
+    # ========================================================================
+    # Note: These are applied via JSON files in the profile directory
+    # Brave reads policies from: ~/.config/BraveSoftware/Brave-Browser/Default/Preferences
+    
+    home.file.".config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/managed_preferences.json".text = builtins.toJSON {
+      # WebRTC Privacy
+      webrtc = {
+        ip_handling_policy = "disable_non_proxied_udp";  # Prevent WebRTC IP leaks
+      };
+      
+      # Cookie Management
+      profile = {
+        block_third_party_cookies = true;           # Block 3rd party cookies
+        default_content_setting_values = {
+          cookies = 1;                              # Allow 1st party cookies only
+        };
+      };
+      
+      # Privacy Enhancements
+      spellcheck = {
+        enabled = false;                            # Disable spellcheck (no data sent to Google)
+      };
+      search = {
+        suggest_enabled = false;                    # Disable search suggestions
+      };
+      credentials_enable_service = false;           # Disable built-in password manager
+      
+      # Network Privacy
+      dns_over_https = {
+        mode = "secure";                            # Force DNS-over-HTTPS
+      };
+      
+      # Additional Security
+      ssl = {
+        error_override_allowed = false;             # Don't allow bypassing SSL errors
+      };
+      safebrowsing = {
+        enabled = true;
+        enhanced = true;                            # Enhanced protection mode
+      };
     };
     
     # ========================================================================
