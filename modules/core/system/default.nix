@@ -179,22 +179,21 @@ in
       # NOTE: ASPM policy affects battery life vs perf; keep default or set to powersave.
       # "pcie_aspm.policy=powersave"
       # "pcie_aspm.policy=performance" # (Not recommended on battery)
-
       # Intel graphics optimization
       "i915.enable_guc=3"             # Enable GuC/HuC firmware
       "i915.enable_fbc=1"             # Frame Buffer Compression
       "i915.enable_dc=2"              # Display C-states
       "i915.enable_psr=1"             # Panel Self Refresh
       "i915.fastboot=1"               # Reuse firmware display config
-
       # Modern standby
       "mem_sleep_default=s2idle"      # Modern standby (faster wake)
     ];
-
+    
     # Runtime kernel tuning via sysctl
     kernel.sysctl = {
-      "vm.swappiness"       = 60;     # Moderate swap usage
-      "kernel.nmi_watchdog" = 0;      # Disable NMI watchdog (saves ~1W)
+      "vm.swappiness"                = 60;    # Moderate swap usage
+      "kernel.nmi_watchdog"          = 0;     # Disable NMI watchdog (saves ~1W)
+      "kernel.audit_backlog_limit"   = 8192;  # Prevent audit overflow (default: 64-256)
     };
 
     # Declarative blacklist: prevent intel_rapl_mmio from loading at all

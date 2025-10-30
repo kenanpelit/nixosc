@@ -496,7 +496,7 @@ in
     # Linux Audit Framework for security monitoring and compliance
     
     security.audit = {
-      enable = true;
+      enable = false;
       
       # Audit rules for security monitoring
       # Note: Using safe rules that won't fail if paths don't exist
