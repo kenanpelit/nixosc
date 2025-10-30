@@ -105,10 +105,6 @@ setup_fzf_theme() {
         --color='bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8' \
         --color='fg:#cdd6f4,header:#89b4fa,info:#cba6f7,pointer:#f5e0dc' \
         --color='marker:#a6e3a1,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8' \
-        --bind 'ctrl-j:preview-down,ctrl-k:preview-up' \
-        --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up' \
-        --bind 'ctrl-/:toggle-preview' \
-        --bind 'ctrl-a:select-all,ctrl-n:deselect-all' \
         --tiebreak=index"
 }
 
