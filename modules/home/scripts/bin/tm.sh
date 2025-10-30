@@ -3,87 +3,112 @@
 #
 # tm.sh - Birleşik Tmux Yönetim Aracı
 #
-# Version: 1.0.0
-# Date: 2025-04-17
+# Version: 2.0.0
+# Date: 2025-10-30
 # Author: Kenan Pelit
 # Description: Comprehensive Tmux management, session, layouts, buffers, plugins, and more
 #
-# This script combines multiple tmux utilities into a single command-line tool:
+# Bu script birçok tmux yardımcı programını tek bir komut satırı aracında birleştirir:
 #
-# - Session Management:
-#   - Create, attach, kill, list sessions
-#   - Smart session naming (git/directory based)
-#   - Layout templates (1-5 panel layouts)
+# - Oturum Yönetimi:
+#   - Oturum oluştur, bağlan, sonlandır, listele
+#   - Akıllı oturum adlandırma (git/dizin tabanlı)
+#   - Layout şablonları (1-5 panel düzeni)
 #
-# - Clipboard & Buffer Management:
-#   - Tmux buffer management
-#   - System clipboard integration
-#   - Command speedup for frequent commands
+# - Pano ve Buffer Yönetimi:
+#   - Tmux buffer yönetimi
+#   - Sistem panosu entegrasyonu
+#   - Sık kullanılan komutlar için hızlandırma
 #
-# - Plugin Management:
-#   - Install and update plugins
-#   - TPM integration
+# - Eklenti Yönetimi:
+#   - Eklenti kurulumu ve güncelleme
+#   - TPM entegrasyonu
 #
-# - Configuration:
-#   - Backup and restore configuration
-#   - Terminal integration (kitty/wezterm)
+# - Yapılandırma:
+#   - Yapılandırma yedekleme ve geri yükleme
+#   - Terminal entegrasyonu (kitty/wezterm/alacritty)
 #
 # License: MIT
 #
 #######################################
 
-# Strict error handling
+# Katı hata yönetimi
 set -euo pipefail
 
-# Global configuration
-VERSION="1.0.0"
-CONFIG_DIR="${HOME}/.config/tmux"
-PLUGIN_DIR="${CONFIG_DIR}/plugins"
-CACHE_DIR="${HOME}/.cache/tmux-manager"
-FZF_DIR="${CONFIG_DIR}/fzf"
-DEFAULT_SESSION="KENP"
-BACKUP_FILE="tmux_backup.tar.gz"
-HISTORY_LIMIT=100
+# Global yapılandırma
+readonly VERSION="2.0.0"
+readonly CONFIG_DIR="${HOME}/.config/tmux"
+readonly PLUGIN_DIR="${CONFIG_DIR}/plugins"
+readonly CACHE_DIR="${HOME}/.cache/tmux-manager"
+readonly FZF_DIR="${CONFIG_DIR}/fzf"
+readonly DEFAULT_SESSION="KENP"
+readonly BACKUP_FILE="tmux_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+readonly HISTORY_LIMIT=100
+readonly SOCKET_DIR="/tmp/tmux-$(id -u)"
 
-# Create necessary directories
+# Gerekli dizinleri oluştur
 mkdir -p "${CONFIG_DIR}" "${PLUGIN_DIR}" "${CACHE_DIR}" "${FZF_DIR}"
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Renk tanımlamaları
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly MAGENTA='\033[0;35m'
+readonly CYAN='\033[0;36m'
+readonly NC='\033[0m' # Renk yok
 
-# Message functions
-info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
-status() { echo -e "${BLUE}[STATUS]${NC} $1"; }
-success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+# Mesaj fonksiyonları - timestamp eklendi
+info() {
+	echo -e "${GREEN}[$(date +%H:%M:%S)]${NC} ${GREEN}[INFO]${NC} $*"
+}
 
-# FZF theme setup - Catppuccin Mocha - Consistent across all modes
+warn() {
+	echo -e "${YELLOW}[$(date +%H:%M:%S)]${NC} ${YELLOW}[WARN]${NC} $*"
+}
+
+error() {
+	echo -e "${RED}[$(date +%H:%M:%S)]${NC} ${RED}[ERROR]${NC} $*" >&2
+}
+
+status() {
+	echo -e "${BLUE}[$(date +%H:%M:%S)]${NC} ${BLUE}[STATUS]${NC} $*"
+}
+
+success() {
+	echo -e "${GREEN}[$(date +%H:%M:%S)]${NC} ${GREEN}[SUCCESS]${NC} $*"
+}
+
+debug() {
+	if [[ "${DEBUG:-0}" == "1" ]]; then
+		echo -e "${MAGENTA}[$(date +%H:%M:%S)]${NC} ${MAGENTA}[DEBUG]${NC} $*" >&2
+	fi
+}
+
+# FZF tema kurulumu - Catppuccin Mocha - Tüm modlarda tutarlı
 setup_fzf_theme() {
 	local prompt_text="${1:-Tmux}"
 	local header_text="${2:-CTRL-R: Yenile | ESC: Çık}"
+
 	export FZF_DEFAULT_OPTS="\
         -e -i \
-        --info=default \
+        --info=inline \
         --layout=reverse \
+        --border=rounded \
         --margin=1 \
         --padding=1 \
         --ansi \
-        --prompt='$prompt_text: ' \
-        --pointer='❯' \
+        --prompt='$prompt_text ❯ ' \
+        --pointer='▶' \
+        --marker='✓' \
         --header='$header_text' \
-        --color='bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8,fg:#cdd6f4' \
-        --color='header:#89b4fa,info:#cba6f7,pointer:#f5e0dc,marker:#a6e3a1,prompt:#cba6f7' \
+        --color='bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8' \
+        --color='fg:#cdd6f4,header:#89b4fa,info:#cba6f7,pointer:#f5e0dc' \
+        --color='marker:#a6e3a1,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8' \
         --bind 'ctrl-j:preview-down,ctrl-k:preview-up' \
         --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up' \
-        --bind 'ctrl-/:change-preview-window(hidden|)' \
-        --color='pointer:#cba6f7' \
+        --bind 'ctrl-/:toggle-preview' \
+        --bind 'ctrl-a:select-all,ctrl-n:deselect-all' \
         --tiebreak=index"
 }
 
@@ -91,58 +116,87 @@ setup_fzf_theme() {
 # HELPER FUNCTIONS
 #--------------------------------------
 
-# Check if tmux is installed
+# Tmux kurulu mu kontrol et
 check_tmux() {
 	if ! command -v tmux >/dev/null 2>&1; then
-		error "Tmux is not installed. Please install tmux first."
+		error "Tmux kurulu değil. Lütfen önce tmux'u kurun."
 		exit 1
 	fi
 }
 
-# Check if we're inside a tmux session
+# Tmux oturumu içinde miyiz
 is_in_tmux() {
-	[ -n "${TMUX:-}" ]
+	[[ -n "${TMUX:-}" ]]
 }
 
-# Check if a session exists (exact match)
+# Oturum var mı kontrolü (tam eşleşme)
 has_session_exact() {
 	check_tmux
 	tmux list-sessions -F "#{session_name}" 2>/dev/null | grep -qx "$1"
 }
 
-# Validate session name
+# Oturum adı doğrulaması - daha geniş karakter desteği
 validate_session_name() {
 	local name="$1"
-	if [[ "$name" =~ [^a-zA-Z0-9_-] ]]; then
-		error "Invalid session name: '$name'. Only letters, numbers, hyphens, and underscores are allowed."
+
+	if [[ -z "$name" ]]; then
+		error "Oturum adı boş olamaz."
 		return 1
 	fi
+
+	if [[ "$name" =~ [^a-zA-Z0-9_.-] ]]; then
+		error "Geçersiz oturum adı: '$name'. Sadece harf, rakam, tire, alt çizgi ve nokta kullanabilirsiniz."
+		return 1
+	fi
+
+	if [[ "${#name}" -gt 50 ]]; then
+		error "Oturum adı çok uzun (maksimum 50 karakter)."
+		return 1
+	fi
+
 	return 0
 }
 
-# Get session name based on current directory or git repo
+# Mevcut dizin veya git reposuna göre oturum adı al
 get_session_name() {
-	local dir_name="$(basename "$(pwd)")"
-	local git_name="$(git rev-parse --git-dir 2>/dev/null)"
+	local dir_name
+	local git_name
+
+	dir_name="$(basename "$(pwd)")"
+	git_name="$(git rev-parse --git-dir 2>/dev/null || true)"
 
 	if [[ -n "$git_name" ]]; then
-		echo "$(basename "$(git rev-parse --show-toplevel)")"
+		basename "$(git rev-parse --show-toplevel 2>/dev/null || echo "$dir_name")"
 	else
 		echo "$dir_name"
 	fi
 }
 
-# Attach to session or switch if already attached
+# Oturuma bağlan veya zaten bağlıysa değiştir
 attach_or_switch() {
 	local session_name="$1"
-	if is_in_tmux; then
-		tmux switch-client -t "$session_name" || error "Could not switch to session '$session_name'."
-	else
-		tmux attach-session -t "$session_name" || error "Could not attach to session '$session_name'."
+
+	if ! has_session_exact "$session_name"; then
+		error "Oturum '$session_name' bulunamadı."
+		return 1
 	fi
+
+	if is_in_tmux; then
+		if ! tmux switch-client -t "$session_name" 2>/dev/null; then
+			error "'$session_name' oturumuna geçilemedi."
+			return 1
+		fi
+	else
+		if ! tmux attach-session -t "$session_name" 2>/dev/null; then
+			error "'$session_name' oturumuna bağlanılamadı."
+			return 1
+		fi
+	fi
+
+	success "Oturum '$session_name' aktif."
 }
 
-# Check for required dependencies for a specific mode
+# Belirli bir mod için gerekli bağımlılıkları kontrol et
 check_requirements() {
 	local mode="$1"
 	local req_failed=0
@@ -153,106 +207,153 @@ check_requirements() {
 		;;
 	"buffer")
 		check_tmux
-		if is_in_tmux; then
-			# We're good
-			:
-		else
-			error "Not in a tmux session. Please run inside tmux."
+		if ! is_in_tmux; then
+			error "Tmux oturumunda değilsiniz. Lütfen tmux içinde çalıştırın."
 			req_failed=1
 		fi
 		;;
 	"clipboard")
 		if ! command -v cliphist &>/dev/null; then
-			error "cliphist is not installed!"
+			error "cliphist kurulu değil!"
+			info "Kurulum: yay -S cliphist (Arch) veya https://github.com/sentriz/cliphist"
 			req_failed=1
 		fi
 		if ! command -v wl-copy &>/dev/null; then
-			error "wl-clipboard is not installed!"
+			error "wl-clipboard kurulu değil!"
+			info "Kurulum: sudo pacman -S wl-clipboard"
 			req_failed=1
 		fi
 		;;
 	"plugin")
 		check_tmux
 		if ! command -v git &>/dev/null; then
-			error "git is not installed!"
+			error "git kurulu değil!"
 			req_failed=1
 		fi
 		;;
 	"speed")
-		if [ ! -d "$FZF_DIR" ]; then
-			error "Command directory not found: $FZF_DIR"
-			error "Please create the directory or check the configuration"
-			req_failed=1
+		if [[ ! -d "$FZF_DIR" ]]; then
+			warn "Komut dizini bulunamadı: $FZF_DIR"
+			info "Dizin oluşturuluyor..."
+			mkdir -p "$FZF_DIR"
 		fi
 		;;
 	"all")
 		check_tmux
 		for cmd in fzf git; do
 			if ! command -v "$cmd" &>/dev/null; then
-				error "$cmd is not installed!"
+				error "$cmd kurulu değil!"
 				req_failed=1
 			fi
 		done
 		;;
 	esac
 
-	if [ "$req_failed" -eq 1 ]; then
-		return 1
-	fi
-	return 0
+	return "$req_failed"
 }
 
-# Terminal detection
-check_terminal() {
-	if command -v kitty >/dev/null 2>&1; then
+# Terminal tespiti - genişletilmiş destek
+detect_terminal() {
+	if [[ -n "${KITTY_WINDOW_ID:-}" ]] || command -v kitty >/dev/null 2>&1; then
 		echo "kitty"
-	elif command -v wezterm >/dev/null 2>&1; then
+	elif [[ -n "${WEZTERM_EXECUTABLE:-}" ]] || command -v wezterm >/dev/null 2>&1; then
 		echo "wezterm"
+	elif command -v alacritty >/dev/null 2>&1; then
+		echo "alacritty"
+	elif command -v foot >/dev/null 2>&1; then
+		echo "foot"
 	else
 		echo "x-terminal-emulator"
 	fi
 }
 
-# Clean tmux socket files (in case of issues)
+# Tmux soket dosyalarını temizle
 clean_sockets() {
-	warn "Cleaning socket files..."
-	for socket in /tmp/tmux-$(id -u)/*; do
-		if [ -S "$socket" ]; then
-			rm -f "$socket" 2>/dev/null || true
-		fi
-	done
+	warn "Soket dosyaları temizleniyor..."
+
+	if [[ -d "$SOCKET_DIR" ]]; then
+		for socket in "$SOCKET_DIR"/*; do
+			if [[ -S "$socket" ]]; then
+				rm -f "$socket" 2>/dev/null || true
+				debug "Soket silindi: $socket"
+			fi
+		done
+	fi
+
 	tmux kill-server >/dev/null 2>&1 || true
 	sleep 1
-	success "Sockets cleaned"
+	success "Soketler temizlendi"
+}
+
+# Tmux sürüm kontrolü
+check_tmux_version() {
+	local required_version="3.0"
+	local current_version
+
+	if ! current_version=$(tmux -V 2>/dev/null | grep -oP '\d+\.\d+' | head -1); then
+		return 0
+	fi
+
+	# Basit sürüm karşılaştırması (bc gerektirmeyen)
+	local req_major req_minor cur_major cur_minor
+	req_major="${required_version%%.*}"
+	req_minor="${required_version##*.}"
+	cur_major="${current_version%%.*}"
+	cur_minor="${current_version##*.}"
+
+	if [[ "$cur_major" -lt "$req_major" ]] ||
+		[[ "$cur_major" -eq "$req_major" && "$cur_minor" -lt "$req_minor" ]]; then
+		warn "Tmux sürümü eski: $current_version (Önerilen: $required_version+)"
+	fi
 }
 
 #--------------------------------------
 # SESSION MANAGEMENT
 #--------------------------------------
 
-# List all tmux sessions
+# Tüm tmux oturumlarını listele - gelişmiş format
 list_sessions() {
-	info "Available sessions:"
-	tmux list-sessions 2>/dev/null || warn "No active sessions"
+	if ! tmux list-sessions 2>/dev/null; then
+		warn "Aktif oturum yok"
+		return 0
+	fi
+
+	info "Mevcut oturumlar:"
+	tmux list-sessions -F "#{session_name}: #{session_windows} pencere, #{session_attached} bağlı#{?session_grouped, (gruplu),}" 2>/dev/null |
+		while IFS= read -r line; do
+			echo "  • $line"
+		done
 }
 
-# Kill a tmux session
+# Tmux oturumunu sonlandır
 kill_session() {
 	local session_name="$1"
-	if has_session_exact "$session_name"; then
-		if tmux kill-session -t "$session_name"; then
-			success "Session '$session_name' terminated"
-		else
-			error "Failed to terminate session '$session_name'"
-			return 1
+
+	if ! has_session_exact "$session_name"; then
+		error "Oturum '$session_name' bulunamadı"
+		return 1
+	fi
+
+	# Eğer şu an bu oturumun içindeysek uyar
+	if is_in_tmux && [[ "$(tmux display-message -p '#S')" == "$session_name" ]]; then
+		warn "Şu anda bu oturumun içindesiniz!"
+		read -p "Yine de sonlandırmak istiyor musunuz? (e/H): " -n 1 -r
+		echo
+		if [[ ! $REPLY =~ ^[Ee]$ ]]; then
+			info "İptal edildi"
+			return 0
 		fi
+	fi
+
+	if tmux kill-session -t "$session_name" 2>/dev/null; then
+		success "Oturum '$session_name' sonlandırıldı"
 	else
-		error "Session '$session_name' not found"
+		error "Oturum '$session_name' sonlandırılamadı"
 		return 1
 	fi
 }
 
-# Create a new session or attach to existing
+# Yeni oturum oluştur veya mevcut oturuma bağlan
 create_session() {
 	local session_name="$1"
 	local layout="${2:-}"
@@ -262,282 +363,192 @@ create_session() {
 	fi
 
 	if has_session_exact "$session_name"; then
-		info "Session '$session_name' already exists, attaching..."
+		info "Oturum '$session_name' zaten var, bağlanıyor..."
 
-		# If session is already attached and we're not in tmux, open a new window
-		if ! is_in_tmux && tmux list-sessions | grep -q "^${session_name}: .* (attached)$"; then
-			warn "Session is already attached elsewhere, creating a new window..."
+		# Oturum zaten başka yerde bağlıysa ve biz tmux içinde değilsek yeni pencere oluştur
+		if ! is_in_tmux && tmux list-sessions 2>/dev/null | grep -q "^${session_name}: .* (attached)$"; then
+			warn "Oturum başka yerde bağlı, yeni pencere oluşturuluyor..."
 			local window_count
-			window_count=$(tmux list-windows -t "$session_name" | wc -l)
-			status "Current window count: $window_count"
-			tmux new-window -t "$session_name"
+			window_count=$(tmux list-windows -t "$session_name" 2>/dev/null | wc -l)
+			debug "Mevcut pencere sayısı: $window_count"
+			tmux new-window -t "$session_name" 2>/dev/null || warn "Yeni pencere oluşturulamadı"
 		fi
 
 		attach_or_switch "$session_name"
 	else
-		info "Creating new session '$session_name'..."
-		if ! tmux new-session -d -s "$session_name"; then
-			error "Failed to create session, trying socket cleanup..."
+		info "Yeni oturum oluşturuluyor: '$session_name'..."
+
+		if ! tmux new-session -d -s "$session_name" 2>/dev/null; then
+			warn "Oturum oluşturulamadı, soket temizliği deneniyor..."
 			clean_sockets
-			if ! tmux new-session -d -s "$session_name"; then
-				error "Failed to create session even after cleanup!"
+
+			if ! tmux new-session -d -s "$session_name" 2>/dev/null; then
+				error "Temizlikten sonra bile oturum oluşturulamadı!"
 				return 1
 			fi
 		fi
 
-		# Apply layout if specified
+		# Layout belirtilmişse uygula
 		if [[ -n "$layout" ]]; then
 			create_layout "$session_name" "$layout"
 		fi
 
-		success "Session created, attaching..."
+		success "Oturum oluşturuldu, bağlanıyor..."
 		attach_or_switch "$session_name"
 	fi
 }
 
-# Create session in a new terminal window
+# Yeni terminal penceresinde oturum aç
 open_session_in_terminal() {
 	local terminal_type="$1"
 	local session_name="$2"
 	local layout="${3:-1}"
 	local class_name="tmux-$session_name"
 	local title="Tmux: $session_name"
+	local script_path
+
+	script_path="$(readlink -f "$0")"
 
 	case "$terminal_type" in
 	kitty)
 		if ! command -v kitty &>/dev/null; then
-			error "Kitty terminal is not installed!"
+			error "Kitty terminal kurulu değil!"
 			return 1
 		fi
 		kitty --class="$class_name" \
 			--title="$title" \
 			--directory="$PWD" \
-			-e bash -c "$(readlink -f "$0") session create \"$session_name\" $layout" &
+			-e bash -c "$script_path session create \"$session_name\" $layout" &
 		;;
 	wezterm)
 		if ! command -v wezterm &>/dev/null; then
-			error "WezTerm terminal is not installed!"
+			error "WezTerm terminal kurulu değil!"
 			return 1
 		fi
+		# WezTerm için sadece class kullan, title'ı tmux içinde ayarla
 		wezterm start \
 			--class "$class_name" \
-			--window-title "$title" \
-			-- bash -c "cd $PWD && $(readlink -f "$0") session create \"$session_name\" $layout" &
+			-- bash -c "cd '$PWD' && $script_path session create \"$session_name\" $layout" &
+		;;
+	alacritty)
+		if ! command -v alacritty &>/dev/null; then
+			error "Alacritty terminal kurulu değil!"
+			return 1
+		fi
+		alacritty --class "$class_name" \
+			--title "$title" \
+			--working-directory "$PWD" \
+			-e bash -c "$script_path session create \"$session_name\" $layout" &
 		;;
 	*)
-		error "Unsupported terminal type: $terminal_type"
+		error "Desteklenmeyen terminal türü: $terminal_type"
+		info "Desteklenen terminaller: kitty, wezterm, alacritty"
 		return 1
 		;;
 	esac
 
-	success "Terminal launched for session '$session_name'"
+	success "Terminal başlatıldı: '$session_name'"
 }
 
 #--------------------------------------
 # LAYOUT FUNCTIONS
 #--------------------------------------
 
-# Create various tmux layouts
+# Çeşitli tmux düzenleri oluştur
 create_layout() {
 	local session_name="$1"
 	local layout_num="$2"
 
 	if ! has_session_exact "$session_name"; then
-		error "Session '$session_name' not found."
+		error "Oturum '$session_name' bulunamadı."
 		return 1
 	fi
 
-	info "Creating layout $layout_num in session '$session_name'..."
+	info "Oturum '$session_name' için düzen $layout_num oluşturuluyor..."
 
 	case "$layout_num" in
 	1)
-		# Single panel layout
-		tmux new-window -t "$session_name" -n 'kenp'
-		tmux select-pane -t 1
+		# Tek panel düzeni
+		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
+		tmux select-pane -t 1 2>/dev/null || true
 		;;
 	2)
-		# Two panel layout
-		tmux new-window -t "$session_name" -n 'kenp'
-		tmux split-window -v -p 80
-		tmux select-pane -t 2
+		# İki panel düzeni (dikey bölme)
+		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
+		tmux split-window -v -p 30 2>/dev/null || true
+		tmux select-pane -t 1 2>/dev/null || true
 		;;
 	3)
-		# Three panel L-shaped layout
-		tmux new-window -t "$session_name" -n 'kenp'
-		tmux split-window -h -p 80
-		tmux select-pane -t 2
-		tmux split-window -v -p 85
-		tmux select-pane -t 3
+		# Üç panel düzeni (2 üstte, 1 altta)
+		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
+		tmux split-window -h -p 50 2>/dev/null || true
+		tmux split-window -v -p 30 2>/dev/null || true
+		tmux select-pane -t 1 2>/dev/null || true
 		;;
 	4)
-		# Four panel grid layout
-		tmux new-window -t "$session_name" -n 'kenp'
-		tmux split-window -h -p 80
-		tmux split-window -v -p 80
-		tmux select-pane -t 1
-		tmux split-window -v -p 80
-		tmux select-pane -t 4
+		# Dört panel düzeni (2x2 grid)
+		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
+		tmux split-window -h -p 50 2>/dev/null || true
+		tmux split-window -v -p 50 2>/dev/null || true
+		tmux select-pane -t 1 2>/dev/null || true
+		tmux split-window -v -p 50 2>/dev/null || true
+		tmux select-pane -t 1 2>/dev/null || true
 		;;
 	5)
-		# Five panel layout
-		tmux new-window -t "$session_name" -n 'kenp'
-		tmux split-window -h -p 70
-		tmux split-window -h -p 50
-		tmux select-pane -t 1
-		tmux split-window -v -p 50
-		tmux select-pane -t 2
-		tmux split-window -v -p 50
-		tmux select-pane -t 5
+		# Beş panel düzeni (1 ana, 4 yan)
+		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
+		tmux split-window -h -p 75 2>/dev/null || true
+		tmux split-window -v -p 66 2>/dev/null || true
+		tmux split-window -v -p 50 2>/dev/null || true
+		tmux split-window -v -p 33 2>/dev/null || true
+		tmux select-pane -t 1 2>/dev/null || true
 		;;
 	*)
-		error "Invalid layout number $layout_num. Choose between 1-5."
+		error "Geçersiz düzen numarası: $layout_num (1-5 arası olmalı)"
 		return 1
 		;;
 	esac
 
-	success "Layout $layout_num created in session '$session_name'"
-}
-
-# KENPSession için create_layout fonksiyonunu ekle
-kenp_create_layout() {
-	local session_name="$1"
-	info "KENPSession için 3-panelli düzen oluşturuluyor..."
-
-	# Doğrudan 3-panelli düzeni oluşturalım
-	tmux new-window -t "$session_name" -n 'kenp'
-	tmux split-window -h -p 80
-	tmux select-pane -t 2
-	tmux split-window -v -p 85
-	tmux select-pane -t 3
-
-	success "3-panelli düzen oluşturuldu"
-	return 0
-}
-
-# KENP session mode - pre-configured development environment
-kenp_session_mode() {
-	local session_name="${1:-KENP}"
-
-	# Check if tmux is installed
-	check_tmux
-
-	# Set environment variables
-	export TERM=xterm-256color
-	USER_SHELL="$(getent passwd "$(id -u)")"
-	USER_SHELL="${USER_SHELL##*:}"
-
-	# Check if already in tmux
-	if is_in_tmux; then
-		warn "Zaten bir tmux oturumu içindesiniz."
-		return 0
-	fi
-
-	# Check if session exists
-	session=$(tmux ls 2>/dev/null | grep "^${session_name}:" || echo "")
-
-	if [[ $session == *"${session_name}: attached"* ]]; then
-		# Session exists and is attached
-		info "Oturum '${session_name}' zaten bağlı, yeni bir shell başlatılıyor..."
-		exec "$USER_SHELL"
-	elif [[ $session == *"${session_name}:"* ]]; then
-		# Session exists but is not attached
-		info "Oturum '${session_name}' mevcut, oturuma bağlanılıyor..."
-		if ! tmux attach-session -t "$session_name"; then
-			warn "Mevcut oturuma bağlanılamadı, yeni bir oturum oluşturuluyor..."
-			tmux kill-session -t "$session_name" 2>/dev/null || true
-			tmux new-session -A -s "$session_name"
-		fi
-	else
-		# Session doesn't exist, create it
-		info "Oturum '${session_name}' mevcut değil, yeni bir tmux oturumu başlatılıyor..."
-
-		# Try to start tmux server if it fails
-		if ! tmux start-server 2>/dev/null; then
-			warn "Tmux sunucusu başlatılamadı, soketler temizleniyor..."
-			clean_sockets
-		fi
-
-		# Create session
-		if ! tmux new-session -d -s "$session_name"; then
-			error "Oturum oluşturulamadı, son bir deneme daha yapılıyor..."
-			clean_sockets
-			if ! tmux new-session -d -s "$session_name"; then
-				error "Oturum oluşturulamadı!"
-				return 1
-			fi
-		fi
-
-		# Create layout directly with built-in function
-		#kenp_create_layout "$session_name"
-
-		# Attach to the session
-		info "Yeni oluşturulan '$session_name' oturumuna bağlanılıyor..."
-		if ! tmux attach-session -t "$session_name"; then
-			error "Oturuma bağlanılamadı!"
-			return 1
-		fi
-	fi
+	success "Düzen $layout_num oluşturuldu"
 }
 
 #--------------------------------------
 # BUFFER MANAGEMENT
 #--------------------------------------
 
-# Show empty buffer art
-show_empty_buffer_art() {
-	cat <<-'EMPTYART'
-		        
-		   ┌────────────────────────────────────────────────────┐
-		   │                                                    │
-		   │   ¯\_(ツ)_/¯                                       │
-		   │                                                    │
-		   │   Tmux buffer'ım boş!                              │
-		   │                                                    │
-		   │   Önce bir şeyler kopyalasanız iyi olur yoksa      │
-		   │   burada birlikte bekleyeceğiz...                  │
-		   │                                                    │
-		   │   İpucu: Tmux'ta [prefix]+[ ile copy mode'a girin  │
-		   │   ve birşeyler kopyalayın                          │
-		   │                                                    │
-		   └────────────────────────────────────────────────────┘
-		        
-	EMPTYART
-}
-
-# Handle buffer mode - for tmux buffer management
+# Buffer modunu işle - geliştirilmiş
 handle_buffer_mode() {
-	# Requirements check
 	if ! check_requirements "buffer"; then
 		return 1
 	fi
 
-	# Buffer list empty check
-	if ! tmux list-buffers &>/dev/null || [[ -z "$(tmux list-buffers 2>/dev/null)" ]]; then
-		show_empty_buffer_art
-		return 1
+	setup_fzf_theme "Buffer" "ENTER: Kopyala | CTRL-D: Sil | ESC: Çık"
+
+	local buffer_count
+	buffer_count=$(tmux list-buffers 2>/dev/null | wc -l)
+
+	if [[ "$buffer_count" -eq 0 ]]; then
+		warn "Hiç buffer yok"
+		return 0
 	fi
 
-	# FZF theme setup
-	setup_fzf_theme "Buffer" "Buffer Seçimi | CTRL-R: Yenile | CTRL-Y: Kopyala | ESC: Çık"
+	info "Buffer sayısı: $buffer_count"
 
-	info "Starting buffer mode..."
+	local selected
+	selected=$(tmux list-buffers -F "#{buffer_name}: #{buffer_sample}" 2>/dev/null |
+		fzf --preview 'echo {}| cut -d: -f1 | xargs -I {} tmux show-buffer -b {}' \
+			--preview-window=up:70%:wrap \
+			--bind 'ctrl-d:execute(tmux delete-buffer -b {1})+reload(tmux list-buffers -F "#{buffer_name}: #{buffer_sample}")' \
+			--header-lines=0)
 
-	# FZF buffer selection
-	selected_buffer=$(tmux list-buffers -F '#{buffer_name}:#{buffer_sample}' |
-		fzf --preview 'buffer_name=$(echo {} | cut -d ":" -f1); tmux show-buffer -b "$buffer_name"' \
-			--preview-window 'right:60%:wrap' \
-			--bind "ctrl-r:reload(tmux list-buffers -F '#{buffer_name}:#{buffer_sample}')" \
-			--bind "ctrl-y:execute-silent(buffer_name=\$(echo {} | cut -d ':' -f1); tmux show-buffer -b \"\$buffer_name\" | wl-copy 2>/dev/null || tmux load-buffer -b \"\$buffer_name\" && echo 'Copied: \$buffer_name' >&2)" \
-			--delimiter ':')
+	if [[ -n "$selected" ]]; then
+		local buffer_name
+		buffer_name=$(echo "$selected" | cut -d: -f1)
 
-	# Process selection
-	if [[ -n "$selected_buffer" ]]; then
-		buffer_name=$(echo "$selected_buffer" | cut -d ':' -f1)
-		if [[ -n "$buffer_name" ]]; then
-			tmux paste-buffer -b "$buffer_name"
-			success "Selected buffer pasted: $buffer_name"
+		if tmux show-buffer -b "$buffer_name" | wl-copy 2>/dev/null; then
+			success "Buffer kopyalandı: $buffer_name"
 		else
-			error "Invalid buffer name, could not paste"
+			error "Buffer kopyalanamadı"
 			return 1
 		fi
 	fi
@@ -547,185 +558,27 @@ handle_buffer_mode() {
 # CLIPBOARD MANAGEMENT
 #--------------------------------------
 
-# Handle clipboard mode - for system clipboard management
+# Pano modunu işle
 handle_clipboard_mode() {
-	# Requirements check
 	if ! check_requirements "clipboard"; then
 		return 1
 	fi
 
-	# FZF theme setup
-	setup_fzf_theme "Clipboard" "Clipboard Geçmişi | CTRL-R: Yenile | CTRL-D: Sil | CTRL-Y: Kopyala | Enter: Seç"
+	setup_fzf_theme "Clipboard" "ENTER: Yapıştır | CTRL-D: Sil | ESC: Çık"
 
-	info "Starting clipboard mode..."
-
-	# Create preview script
-	PREVIEW_SCRIPT=$(mktemp)
-	chmod +x "$PREVIEW_SCRIPT"
-
-	# Generate preview script content
-	cat >"$PREVIEW_SCRIPT" <<'EOL'
-#!/usr/bin/env bash
-set -euo pipefail
-
-preview_limit=5000
-
-# Clear terminal screen
-clear
-
-# Parameter check
-if [ -z "${1:-}" ]; then
-    echo "No content provided for preview"
-    exit 0
-fi
-
-# Create temp file
-temp_file=$(mktemp)
-
-# Get content and save to temp file
-if ! cliphist decode <<< "$1" > "$temp_file" 2>/dev/null; then
-    echo "Could not get content"
-    rm -f "$temp_file"
-    exit 0
-fi
-
-# Check if file is empty
-if [ ! -s "$temp_file" ]; then
-    echo "Content is empty"
-    rm -f "$temp_file"
-    exit 0
-fi
-
-# Get file output
-file_output=$(file -b "$temp_file")
-echo -e "\033[1;34mFile type:\033[0m $file_output"
-echo -e "\033[1;34mSize:\033[0m $(du -h "$temp_file" | cut -f1)"
-echo -e "\033[1;34mContent:\033[0m"
-echo
-
-# Check for PNG/JPEG
-if [[ "$file_output" == *"PNG"* ]] || [[ "$file_output" == *"JPEG"* ]] || [[ "$file_output" == *"image data"* ]]; then
-    if command -v chafa &>/dev/null; then
-        chafa --size=80x25 --symbols=block+space --colors=256 "$temp_file" 2>/dev/null || echo "Image preview failed"
-    else
-        echo "[chafa required for image preview]"
-    fi
-else
-    head -c "$preview_limit" "$temp_file"
-    if [ "$(wc -c < "$temp_file")" -gt "$preview_limit" ]; then
-        echo -e "\n\033[0;33m... (more content)\033[0m"
-    fi
-fi
-
-# Cleanup
-rm -f "$temp_file"
-EOL
-
-	# FZF selection
+	local selected
 	selected=$(cliphist list |
-		fzf --preview "$PREVIEW_SCRIPT {}" \
-			--preview-window "right:60%:wrap" \
-			--bind "ctrl-r:reload(cliphist list)" \
-			--bind "ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)" \
-			--bind "ctrl-y:execute-silent(echo {} | cliphist decode | wl-copy && echo 'Content copied' >&2)")
+		fzf --preview 'echo {} | cliphist decode' \
+			--preview-window=up:70%:wrap \
+			--bind 'ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)')
 
-	# Clean up temp files
-	rm -f "$PREVIEW_SCRIPT"
-
-	# Process selection
 	if [[ -n "$selected" ]]; then
-		content=$(cliphist decode <<<"$selected")
-		echo "$content" | wl-copy
-		if [ -n "${TMUX:-}" ]; then
-			echo "$content" | tmux load-buffer -
-			success "Content copied to clipboard and tmux buffer"
+		if echo "$selected" | cliphist decode | wl-copy 2>/dev/null; then
+			success "Panoya kopyalandı"
 		else
-			success "Content copied to clipboard"
+			error "Panoya kopyalanamadı"
+			return 1
 		fi
-	fi
-}
-
-#--------------------------------------
-# SPEED COMMAND MODE
-#--------------------------------------
-
-# Handle speed mode - for quick command execution
-handle_speed_mode() {
-	# Requirements check
-	if ! check_requirements "speed"; then
-		return 1
-	fi
-
-	info "Starting command speedup mode..."
-
-	# Create cache file directory if needed
-	CACHE_FILE="${CACHE_DIR}/speed_cache"
-	mkdir -p "$(dirname "$CACHE_FILE")"
-	touch "$CACHE_FILE"
-
-	# Statistics
-	total=$(find "$FZF_DIR" -type f -name '_*' 2>/dev/null | wc -l)
-	ssh_count=$(find "$FZF_DIR" -type f -name '_ssh*' 2>/dev/null | wc -l)
-	tmux_count=$(find "$FZF_DIR" -type f -name '_tmux*' 2>/dev/null | wc -l)
-
-	# FZF theme setup
-	setup_fzf_theme "Speed" "Toplam: $total | SSH: $ssh_count | TMUX: $tmux_count | ESC ile çık, ENTER ile çalıştır"
-
-	# Additional settings for speed mode
-	export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
-        --delimiter=_ \
-        --with-nth=2.."
-
-	# Get frequently used commands
-	get_frequent() {
-		if [ -f "$CACHE_FILE" ] && [ -s "$CACHE_FILE" ]; then
-			cat "$CACHE_FILE" |
-				sort |
-				uniq -c |
-				sort -nr |
-				head -n 10 |
-				awk '{print $2}' |
-				sed 's/^/⭐ /'
-		fi
-	}
-
-	# Main selection
-	SELECTED="$(
-		(
-			# Frequently used commands
-			get_frequent
-			# All commands
-			find "$FZF_DIR" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null |
-				sort |
-				grep '^_' |
-				sed 's@\.@ @g'
-		) |
-			column -s ',' -t |
-			fzf |
-			sed 's/^⭐ //' |
-			cut -d ' ' -f1
-	)"
-
-	# Check if selection was made
-	[ -z "$SELECTED" ] && return 0
-
-	# Record usage
-	echo "${SELECTED}" >>"$CACHE_FILE"
-
-	# Limit the cache file size
-	if [ "$(wc -l <"$CACHE_FILE")" -gt "$HISTORY_LIMIT" ]; then
-		tail -n "$HISTORY_LIMIT" "$CACHE_FILE" >"$CACHE_FILE.tmp" &&
-			mv "$CACHE_FILE.tmp" "$CACHE_FILE"
-	fi
-
-	# Run the selected script
-	script_path=$(find "$FZF_DIR" -name "${SELECTED},*" -o -name "${SELECTED}.*" | head -1)
-	if [ -n "$script_path" ] && [ -f "$script_path" ]; then
-		success "Running: $script_path"
-		eval "$script_path"
-	else
-		error "Script not found: ${SELECTED}"
-		return 1
 	fi
 }
 
@@ -733,450 +586,543 @@ handle_speed_mode() {
 # PLUGIN MANAGEMENT
 #--------------------------------------
 
-# List of plugins with their repositories
-declare -A DEFAULT_PLUGINS=(
-	["tmux-window-name"]="ofirgall/tmux-window-name"
-	["tmux-sensible"]="tmux-plugins/tmux-sensible"
-	["tmux-open"]="tmux-plugins/tmux-open"
-	["tmux-fzf-url"]="wfxr/tmux-fzf-url"
-	["tmux-prefix-highlight"]="tmux-plugins/tmux-prefix-highlight"
-	["tmux-online-status"]="tmux-plugins/tmux-online-status"
-	["tmux-fzf"]="sainnhe/tmux-fzf"
-	["tmux-ssh-status"]="kenanpelit/tmux-ssh-status"
-	["tmux-net-speed"]="kenanpelit/tmux-net-speed"
-	["tmux-update-display"]="lljbash/tmux-update-display"
-	["tmux-fuzzback"]="roosta/tmux-fuzzback"
-	["tmux-nerd-font-window-name"]="joshmedeski/tmux-nerd-font-window-name"
-	["tmux-kripto"]="vascomfnunes/tmux-kripto"
-	["tmux-nav-master"]="TheSast/tmux-nav-master"
-	["tmux-spotify-info"]="feqzz/tmux-spotify-info"
-	["tmux-sessionx"]="omerxx/tmux-sessionx"
-	["tmux-plugin-playerctl"]="richin13/tmux-plugin-playerctl"
-	["tmux-resurrect"]="tmux-plugins/tmux-resurrect"
-	["tmux-continuum"]="tmux-plugins/tmux-continuum"
-	["tmux-sessionist"]="tmux-plugins/tmux-sessionist"
-)
-
-# Install a single plugin
+# Eklenti kur
 install_plugin() {
 	local plugin_name="$1"
-	local plugin_repo="$2"
+	local repo_url="$2"
 	local plugin_path="${PLUGIN_DIR}/${plugin_name}"
 
-	if [ -d "$plugin_path" ]; then
-		warn "Plugin $plugin_name already exists. Updating..."
-		cd "$plugin_path" || return 1
-		if git pull; then
-			info "$plugin_name updated"
-		else
-			error "$plugin_name could not be updated"
-			return 1
+	if [[ -d "$plugin_path" ]]; then
+		warn "Eklenti zaten kurulu: $plugin_name"
+		read -p "Güncelleme yapmak ister misiniz? (e/H): " -n 1 -r
+		echo
+		if [[ $REPLY =~ ^[Ee]$ ]]; then
+			info "Eklenti güncelleniyor: $plugin_name"
+			if git -C "$plugin_path" pull 2>/dev/null; then
+				success "Eklenti güncellendi: $plugin_name"
+			else
+				error "Eklenti güncellenemedi: $plugin_name"
+				return 1
+			fi
 		fi
-	else
-		info "Installing plugin $plugin_name..."
-		if git clone "https://github.com/$plugin_repo.git" "$plugin_path"; then
-			success "$plugin_name installed successfully"
-		else
-			error "$plugin_name installation failed"
-			return 1
-		fi
-	fi
-
-	return 0
-}
-
-# List installed plugins
-list_plugins() {
-	if [ ! -d "$PLUGIN_DIR" ] || [ -z "$(ls -A "$PLUGIN_DIR" 2>/dev/null)" ]; then
-		warn "No plugins installed"
 		return 0
 	fi
 
-	info "Installed plugins:"
+	info "Eklenti kuruluyor: $plugin_name"
+	if git clone "$repo_url" "$plugin_path" 2>/dev/null; then
+		success "Eklenti kuruldu: $plugin_name"
+	else
+		error "Eklenti kurulamadı: $plugin_name"
+		return 1
+	fi
+}
+
+# Kurulu eklentileri listele
+list_plugins() {
+	if [[ ! -d "$PLUGIN_DIR" ]] || [[ -z "$(ls -A "$PLUGIN_DIR" 2>/dev/null)" ]]; then
+		warn "Kurulu eklenti yok"
+		return 0
+	fi
+
+	info "Kurulu eklentiler:"
 	for plugin in "$PLUGIN_DIR"/*; do
-		if [ -d "$plugin" ]; then
-			echo "  - $(basename "$plugin")"
+		if [[ -d "$plugin" ]]; then
+			local plugin_name
+			plugin_name=$(basename "$plugin")
+			local last_update=""
+
+			if [[ -d "$plugin/.git" ]]; then
+				last_update=$(git -C "$plugin" log -1 --format="%ar" 2>/dev/null || echo "bilinmiyor")
+				echo "  • $plugin_name (son güncelleme: $last_update)"
+			else
+				echo "  • $plugin_name"
+			fi
 		fi
 	done
 }
 
-# Install all default plugins
+# Tüm önerilen eklentileri kur
 install_all_plugins() {
-	mkdir -p "$PLUGIN_DIR"
+	info "Önerilen eklentiler kuruluyor..."
 
-	# Install TPM first
-	local tpm_path="${PLUGIN_DIR}/tpm"
-	if [ ! -d "$tpm_path" ]; then
-		info "Installing TPM..."
-		if git clone https://github.com/tmux-plugins/tpm "$tpm_path"; then
-			success "TPM installed successfully"
-		else
-			error "TPM installation failed"
-			return 1
-		fi
-	else
-		warn "TPM already installed"
-	fi
+	local plugins=(
+		"tpm:https://github.com/tmux-plugins/tpm"
+		"tmux-sensible:https://github.com/tmux-plugins/tmux-sensible"
+		"tmux-resurrect:https://github.com/tmux-plugins/tmux-resurrect"
+		"tmux-continuum:https://github.com/tmux-plugins/tmux-continuum"
+		"tmux-yank:https://github.com/tmux-plugins/tmux-yank"
+		"tmux-copycat:https://github.com/tmux-plugins/tmux-copycat"
+	)
 
-	# Install or update all plugins
 	local failed=0
-	for plugin_name in "${!DEFAULT_PLUGINS[@]}"; do
-		if ! install_plugin "$plugin_name" "${DEFAULT_PLUGINS[$plugin_name]}"; then
-			error "Failed to install/update plugin: $plugin_name"
-			failed=1
+	for plugin_info in "${plugins[@]}"; do
+		local name="${plugin_info%%:*}"
+		local url="${plugin_info##*:}"
+
+		if ! install_plugin "$name" "$url"; then
+			((failed++))
 		fi
 	done
 
-	# Reload tmux config if running
-	if is_in_tmux; then
-		info "Reloading tmux configuration..."
-		tmux source-file "$CONFIG_DIR/tmux.conf" 2>/dev/null &&
-			success "Configuration reloaded" ||
-			warn "Could not reload tmux config"
-	fi
-
-	if [ "$failed" -eq 0 ]; then
-		success "All plugins installed/updated successfully"
-		info "Start tmux and press prefix + I to initialize plugins"
+	if [[ "$failed" -eq 0 ]]; then
+		success "Tüm eklentiler başarıyla kuruldu"
 	else
-		warn "Some plugins could not be installed/updated"
+		warn "$failed eklenti kurulamadı"
 	fi
 }
 
 #--------------------------------------
-# BACKUP AND RESTORE
+# SPEED MODE (Command Shortcuts)
 #--------------------------------------
 
-# Backup tmux configuration
+# Hız modunu işle
+handle_speed_mode() {
+	if ! check_requirements "speed"; then
+		return 1
+	fi
+
+	setup_fzf_theme "Komut" "ENTER: Çalıştır | CTRL-E: Düzenle | ESC: Çık"
+
+	# Örnek komut dosyası oluştur
+	local sample_file="${FZF_DIR}/commands.txt"
+	if [[ ! -f "$sample_file" ]]; then
+		cat >"$sample_file" <<'EOF'
+# Tmux Hızlı Komutlar
+# Format: açıklama | komut
+
+Oturum Listele | tmux ls
+Yeni Oturum | tmux new -s
+Oturumu Öldür | tmux kill-session -t
+Pencere Listele | tmux list-windows
+Panel Listele | tmux list-panes
+Yapılandırmayı Yükle | tmux source ~/.config/tmux/tmux.conf
+EOF
+		info "Örnek komut dosyası oluşturuldu: $sample_file"
+	fi
+
+	local selected
+	selected=$(grep -v '^#' "$sample_file" | grep -v '^$' |
+		fzf --delimiter=' | ' \
+			--with-nth=1 \
+			--preview 'echo {2}' \
+			--preview-window=up:3:wrap \
+			--bind 'ctrl-e:execute(${EDITOR:-vim} '"$sample_file"')+abort')
+
+	if [[ -n "$selected" ]]; then
+		local command
+		command=$(echo "$selected" | cut -d'|' -f2- | xargs)
+
+		info "Komut çalıştırılıyor: $command"
+		eval "$command"
+	fi
+}
+
+#--------------------------------------
+# CONFIGURATION BACKUP/RESTORE
+#--------------------------------------
+
+# Yapılandırmayı yedekle
 backup_config() {
-	info "Starting backup process..."
+	local backup_path="${HOME}/${BACKUP_FILE}"
 
-	# Check if directories exist
-	local oh_my_tmux_dir="$HOME/.config/oh-my-tmux"
+	info "Tmux yapılandırması yedekleniyor..."
 
-	# Check for directories
-	if [ ! -d "$CONFIG_DIR" ] || [ ! -d "$oh_my_tmux_dir" ]; then
-		error "One or both directories to backup don't exist!"
-		echo "Checked directories:"
-		echo "- $CONFIG_DIR"
-		echo "- $oh_my_tmux_dir"
-		return 1
-	fi
+	if tar czf "$backup_path" -C "$HOME" \
+		".config/tmux" \
+		".cache/tmux-manager" 2>/dev/null; then
+		success "Yedek oluşturuldu: $backup_path"
 
-	# Create backup
-	info "Creating backup archive..."
-	if tar -czf "$BACKUP_FILE" -C "$HOME/.config" oh-my-tmux tmux; then
-		success "Backup successful!"
-		success "Backup file: $BACKUP_FILE"
+		local size
+		size=$(du -h "$backup_path" | cut -f1)
+		info "Yedek boyutu: $size"
 	else
-		error "Backup failed!"
+		error "Yedek oluşturulamadı"
 		return 1
 	fi
 }
 
-# Restore tmux configuration from backup
+# Yapılandırmayı geri yükle
 restore_config() {
-	info "Starting restore process..."
+	local backup_path="${HOME}/${BACKUP_FILE}"
 
-	# Check for backup file
-	if [ ! -f "$BACKUP_FILE" ]; then
-		error "Backup file $BACKUP_FILE not found!"
+	if [[ ! -f "$backup_path" ]]; then
+		error "Yedek dosyası bulunamadı: $backup_path"
 		return 1
 	fi
 
-	local oh_my_tmux_dir="$HOME/.config/oh-my-tmux"
+	warn "Mevcut yapılandırma üzerine yazılacak!"
+	read -p "Devam etmek istiyor musunuz? (e/H): " -n 1 -r
+	echo
 
-	# Backup existing configs
-	if [ -d "$CONFIG_DIR" ]; then
-		mv "$CONFIG_DIR" "${CONFIG_DIR}.old"
-		info "Existing tmux config backed up: ${CONFIG_DIR}.old"
+	if [[ ! $REPLY =~ ^[Ee]$ ]]; then
+		info "İptal edildi"
+		return 0
 	fi
 
-	if [ -d "$oh_my_tmux_dir" ]; then
-		mv "$oh_my_tmux_dir" "${oh_my_tmux_dir}.old"
-		info "Existing oh-my-tmux config backed up: ${oh_my_tmux_dir}.old"
-	fi
+	info "Yapılandırma geri yükleniyor..."
 
-	# Restore from backup
-	info "Extracting backup..."
-	if tar -xzf "$BACKUP_FILE" -C "$HOME/.config"; then
-		success "Restore successful!"
-
-		# Offer to clean up old backups
-		read -p "Delete old backup directories? (y/n): " answer
-		if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
-			rm -rf "${CONFIG_DIR}.old" "${oh_my_tmux_dir}.old"
-			success "Old backups cleaned up"
-		fi
+	if tar xzf "$backup_path" -C "$HOME" 2>/dev/null; then
+		success "Yapılandırma geri yüklendi"
 	else
-		error "Restore failed!"
-
-		# Recover old configs on error
-		if [ -d "${CONFIG_DIR}.old" ]; then
-			mv "${CONFIG_DIR}.old" "$CONFIG_DIR"
-		fi
-
-		if [ -d "${oh_my_tmux_dir}.old" ]; then
-			mv "${oh_my_tmux_dir}.old" "$oh_my_tmux_dir"
-		fi
-
+		error "Yapılandırma geri yüklenemedi"
 		return 1
 	fi
 }
 
 #--------------------------------------
-# COMMAND-LINE INTERFACE
+# KENP SESSION MODE
 #--------------------------------------
 
-# Show help for session management
+# KENP geliştirme oturumu
+kenp_session_mode() {
+	local session_name="${1:-$DEFAULT_SESSION}"
+
+	if ! validate_session_name "$session_name"; then
+		return 1
+	fi
+
+	info "KENP oturumu başlatılıyor: $session_name"
+
+	# Oturum varsa bağlan
+	if has_session_exact "$session_name"; then
+		attach_or_switch "$session_name"
+		return $?
+	fi
+
+	# Yeni oturum oluştur
+	if ! tmux new-session -d -s "$session_name" -n 'editor' 2>/dev/null; then
+		error "KENP oturumu oluşturulamadı"
+		return 1
+	fi
+
+	# İkinci pencere: terminal
+	tmux new-window -t "$session_name" -n 'terminal'
+
+	# Üçüncü pencere: monitoring (htop/btop)
+	tmux new-window -t "$session_name" -n 'monitor'
+	if command -v btop &>/dev/null; then
+		tmux send-keys -t "$session_name:monitor" 'btop' C-m
+	elif command -v htop &>/dev/null; then
+		tmux send-keys -t "$session_name:monitor" 'htop' C-m
+	fi
+
+	# İlk pencereyi seç
+	tmux select-window -t "$session_name:editor"
+
+	success "KENP oturumu hazır"
+	attach_or_switch "$session_name"
+}
+
+#--------------------------------------
+# HELP FUNCTIONS
+#--------------------------------------
+
+# Oturum yardımı
 show_session_help() {
 	cat <<EOF
-Tmux Session Management
+$(echo -e "${GREEN}")Oturum Yönetimi$(echo -e "${NC}")
 
-Usage: $(basename "$0") session <command> [options]
+Kullanım: $(basename "$0") session <komut> [parametreler]
 
-Commands:
-    create <n> [layout]   Create a new session or attach to existing
-    list                     List all available sessions
-    kill <n>              Terminate the specified session
-    attach <n>            Attach to an existing session
-    layout <n> <layout>   Apply a layout to the specified session
-    term <type> <n>       Open session in a new terminal window
-    kenp [name]              Start a KENP development session
+Komutlar:
+    create <ad> [düzen]  Yeni oturum oluştur veya mevcut oturuma bağlan
+    list                 Tüm oturumları listele
+    kill <ad>            Oturumu sonlandır
+    attach <ad>          Oturuma bağlan
+    layout <ad> <no>     Belirtilen düzeni uygula (1-5)
+    term <tip> <ad> [düzen]  Yeni terminalde oturum aç (kitty/wezterm/alacritty)
 
-Layout Options:
-    1  Single panel
-    2  Two panels (vertical split)
-    3  Three panels (L-shaped)
-    4  Four panels (2x2 grid)
-    5  Five panels (3 top, 2 bottom)
+Düzenler:
+    1: Tek panel
+    2: İki panel (dikey bölme)
+    3: Üç panel (2 üst, 1 alt)
+    4: Dört panel (2x2 grid)
+    5: Beş panel (1 ana, 4 yan)
 
-Examples:
-    $(basename "$0") session create myproject 3  # Create session with layout 3
-    $(basename "$0") session list                # List all sessions
-    $(basename "$0") session term kitty dev      # Open dev session in kitty
+Örnekler:
+    $(basename "$0") session create myproject 3
+    $(basename "$0") session list
+    $(basename "$0") session kill myproject
+    $(basename "$0") session term kitty dev 2
+    $(basename "$0") session term wezterm myproject 3
+
+Notlar:
+    • Parametre verilmezse, mevcut dizin adıyla oturum oluşturulur
+    • Git repo'dayken, repo adı oturum adı olarak kullanılır
+    • Oturum adları sadece harf, rakam, tire, nokta ve alt çizgi içerebilir
 EOF
 }
 
-# Show help for buffer management
+# Buffer yardımı
 show_buffer_help() {
 	cat <<EOF
-Tmux Buffer Management
+$(echo -e "${GREEN}")Buffer Yönetimi$(echo -e "${NC}")
 
-Usage: $(basename "$0") buffer [command]
+Kullanım: $(basename "$0") buffer [komut]
 
-Commands:
-    list       List all tmux buffers
-    show       Interactive buffer browser (default)
+Komutlar:
+    show    İnteraktif buffer tarayıcısı (varsayılan)
+    list    Buffer'ları listele
 
-Note: This command needs to be run inside a tmux session.
+Kısayollar (buffer modunda):
+    ENTER:   Buffer'ı panoya kopyala
+    CTRL-D:  Buffer'ı sil
+    CTRL-J/K: Preview yukarı/aşağı
+    ESC:     Çık
 
-Examples:
-    $(basename "$0") buffer         # Open interactive buffer browser
-    $(basename "$0") buffer list    # List all buffers
+Not: Buffer modu sadece tmux oturumu içinde çalışır
 EOF
 }
 
-# Show help for clipboard management
+# Pano yardımı
 show_clipboard_help() {
 	cat <<EOF
-Clipboard Management
+$(echo -e "${GREEN}")Pano Yönetimi$(echo -e "${NC}")
 
-Usage: $(basename "$0") clip [command]
+Kullanım: $(basename "$0") clip
 
-Commands:
-    show       Interactive clipboard browser (default)
+İnteraktif pano geçmişi tarayıcısı.
 
-Requirements:
-    - cliphist (for clipboard history)
-    - wl-clipboard (for Wayland clipboard)
-    - chafa (optional, for image preview)
+Kısayollar:
+    ENTER:   Öğeyi panoya kopyala
+    CTRL-D:  Öğeyi sil
+    CTRL-J/K: Preview yukarı/aşağı
+    ESC:     Çık
 
-Examples:
-    $(basename "$0") clip         # Open interactive clipboard browser
+Gereksinimler:
+    • cliphist
+    • wl-clipboard
+
+Kurulum (Arch):
+    yay -S cliphist wl-clipboard
 EOF
 }
 
-# Show help for plugin management
+# Eklenti yardımı
 show_plugin_help() {
 	cat <<EOF
-Tmux Plugin Management
+$(echo -e "${GREEN}")Eklenti Yönetimi$(echo -e "${NC}")
 
-Usage: $(basename "$0") plugin <command> [options]
+Kullanım: $(basename "$0") plugin <komut> [parametreler]
 
-Commands:
-    install [name] [repo]  Install a specific plugin
-    list                   List installed plugins
-    all                    Install all default plugins
+Komutlar:
+    install <ad> <url>  Eklenti kur
+    list                Kurulu eklentileri listele
+    all                 Tüm önerilen eklentileri kur
 
-Examples:
-    $(basename "$0") plugin all                     # Install all plugins
-    $(basename "$0") plugin list                    # List installed plugins
-    $(basename "$0") plugin install fzf sainnhe/tmux-fzf  # Install specific plugin
+Önerilen Eklentiler:
+    • tpm              - Tmux Plugin Manager
+    • tmux-sensible    - Temel ayarlar
+    • tmux-resurrect   - Oturum kaydetme
+    • tmux-continuum   - Otomatik kaydetme
+    • tmux-yank        - Gelişmiş kopyalama
+    • tmux-copycat     - Regex arama
+
+Örnekler:
+    $(basename "$0") plugin all
+    $(basename "$0") plugin list
+    $(basename "$0") plugin install custom https://github.com/user/plugin
+
+Not: TPM kullanıyorsanız, eklentileri tmux.conf'da da tanımlamalısınız
 EOF
 }
 
-# Show help for speed mode
+# Hız modu yardımı
 show_speed_help() {
 	cat <<EOF
-Command Speedup Mode
+$(echo -e "${GREEN}")Komut Hızlandırma$(echo -e "${NC}")
 
-Usage: $(basename "$0") speed [command]
+Kullanım: $(basename "$0") speed
 
-Commands:
-    show       Interactive command browser (default)
+İnteraktif komut seçici ve çalıştırıcı.
 
-Notes:
-    - Commands should be placed in $FZF_DIR
-    - Filenames should start with underscore (_)
-    - Most frequently used commands will appear with a star
+Özellikler:
+    • Sık kullanılan komutları favorilere ekle
+    • Hızlı erişim ve çalıştırma
+    • Özelleştirilebilir komut listesi
 
-Examples:
-    $(basename "$0") speed        # Open interactive command browser
+Kısayollar:
+    ENTER:   Komutu çalıştır
+    CTRL-E:  Komut dosyasını düzenle
+    ESC:     Çık
+
+Komut Dosyası:
+    ~/.config/tmux/fzf/commands.txt
+
+Format:
+    açıklama | komut
+
+Örnek:
+    Oturum Listele | tmux ls
+    Yeni Pencere | tmux new-window
 EOF
 }
 
-# Show help for backup/restore
+# Yapılandırma yardımı
 show_backup_help() {
 	cat <<EOF
-Tmux Configuration Backup/Restore
+$(echo -e "${GREEN}")Yapılandırma Yönetimi$(echo -e "${NC}")
 
-Usage: $(basename "$0") config <command>
+Kullanım: $(basename "$0") config <komut>
 
-Commands:
-    backup     Backup tmux configuration
-    restore    Restore tmux configuration from backup
+Komutlar:
+    backup   Tmux yapılandırmasını yedekle
+    restore  Yapılandırmayı geri yükle
 
-Backup file: $BACKUP_FILE
+Yedeklenen Dizinler:
+    • ~/.config/tmux
+    • ~/.cache/tmux-manager
 
-Examples:
-    $(basename "$0") config backup   # Backup configuration
-    $(basename "$0") config restore  # Restore from backup
+Yedek Dosyası:
+    ~/tmux_backup_YYYYMMDD_HHMMSS.tar.gz
+
+Örnekler:
+    $(basename "$0") config backup
+    $(basename "$0") config restore
+
+Not: Geri yükleme işlemi mevcut yapılandırmanın üzerine yazar
 EOF
 }
 
-# KENP için yardım bilgisi
+# KENP yardımı
 show_kenp_help() {
 	cat <<EOF
-KENP - Tmux Geliştirme Ortamı Oturumu
+$(echo -e "${GREEN}")KENP Geliştirme Oturumu$(echo -e "${NC}")
 
 Kullanım: $(basename "$0") kenp [oturum_adı]
 
-Açıklama:
-    KENP geliştirme ortamı için özel yapılandırılmış bir tmux oturumu başlatır.
-    Bu komut, otomatik olarak 3-panelli bir düzen oluşturur ve oturuma bağlanır.
-    
-    Eğer belirtilen oturum zaten varsa:
-     - Bağlıysa: Yeni bir shell başlatır
-     - Bağlı değilse: Oturuma bağlanır
-     
-    Eğer oturum yoksa:
-     - Yeni bir oturum oluşturur
-     - 3-panelli düzen uygular
-     - Oturuma bağlanır
+Özelleştirilmiş geliştirme ortamı oturumu oluşturur.
 
-Seçenekler:
-    [oturum_adı]   Kullanılacak oturum adı (varsayılan: KENP)
+Pencereler:
+    1. editor   - Ana düzenleme penceresi
+    2. terminal - Terminal penceresi
+    3. monitor  - Sistem izleme (htop/btop)
 
 Örnekler:
-    $(basename "$0") kenp             # KENP adlı oturum başlat/bağlan
-    $(basename "$0") kenp projemiz    # "projemiz" adlı oturum başlat/bağlan
+    $(basename "$0") kenp          # 'KENP' adıyla oturum
+    $(basename "$0") kenp dev      # 'dev' adıyla oturum
+    $(basename "$0")               # KENP oturumu (varsayılan)
+
+Not: Parametre verilmezse 'KENP' adıyla oturum oluşturulur
 EOF
 }
 
-# tmx için yardım bilgisi (eski tm komutu için)
+# TMX yardımı (legacy uyumluluk)
 show_tmx_help() {
 	cat <<EOF
-TmxUtil - Genişletilmiş Tmux Komut Yöneticisi
+$(echo -e "${GREEN}")TMX Modu (Legacy Uyumluluk)$(echo -e "${NC}")
 
-Kullanım: $(basename "$0") tmx [seçenekler] [oturum_adı]
+Kullanım: $(basename "$0") tmx [seçenek] [parametreler]
 
-Oturum Yönetimi:
-    -l, --list          Mevcut oturumları listele
-    -k, --kill <ad>     Belirtilen oturumu sonlandır
-    -n, --new <ad>      Yeni bir oturum oluştur
-    -a, --attach <ad>   Mevcut bir oturuma bağlan
-    -d, --detach        Oturumdan ayrıl
+Seçenekler:
+    -h, --help              Bu yardımı göster
+    -l, --list              Oturumları listele
+    -k, --kill <ad>         Oturumu sonlandır
+    -n, --new <ad>          Yeni oturum oluştur
+    -a, --attach <ad>       Oturuma bağlan
+    -d, --detach            Oturumdan ayrıl
+    -t, --terminal <tip> <ad> [düzen]  Terminalde oturum aç
+    --layout <no>           Düzen uygula (1-5)
 
-Terminal Seçenekleri:
-    -t, --terminal <tür> <ad> [düzen]   
-                        Oturumu yeni bir terminal penceresinde aç
-                        Örnek: -t kitty oturumum 3
+Örnekler:
+    $(basename "$0") tmx -l
+    $(basename "$0") tmx -n myproject
+    $(basename "$0") tmx -t kitty dev 3
+    $(basename "$0") tmx --layout 2
 
-Düzen Seçenekleri:
-    --layout <1-5>      Mevcut oturumda belirtilen düzeni oluştur
-                          1: Tek panel
-                          2: İki panel (yatay bölünmüş)
-                          3: Üç panel (L-şeklinde)
-                          4: Dört panel (2x2 ızgara)
-                          5: Beş panel
-
-Diğer:
-    -h, --help          Bu yardım mesajını göster
-
-Notlar:
-    - Parametre verilmezse, mevcut dizin adıyla bir oturum oluşturulur
-    - Git reposundayken, repo adı oturum adı olarak kullanılır
-    - Kitty ve WezTerm terminal desteği
-    - Oturum adları sadece harf, rakam, tire ve alt çizgi içerebilir
+Not: Yeni projeler için 'session' modunu kullanın
 EOF
 }
 
-# Main help message
+# Ana yardım
 show_help() {
 	cat <<EOF
-tm.sh v${VERSION} - Birleşik Tmux Yönetim Aracı
+$(echo -e "${CYAN}")╔════════════════════════════════════════════════════════════════╗
+║         tm.sh v${VERSION} - Tmux Yönetim Aracı               ║
+╚════════════════════════════════════════════════════════════════╝$(echo -e "${NC}")
 
-Kullanım: $(basename "$0") <modül> [komut] [seçenekler]
+$(echo -e "${GREEN}")Kullanım:$(echo -e "${NC}") $(basename "$0") <modül> [komut] [parametreler]
 
-Modüller:
-    session    Oturum ve düzen yönetimi
-    buffer     Buffer yönetimi ve navigasyon
-    clip       Pano geçmişi ve yönetimi
-    plugin     Eklenti kurulumu ve yönetimi
-    speed      Komut hızlandırma ve favoriler
-    config     Yapılandırma yedekleme ve geri yükleme
-    kenp       KENP geliştirme ortamı oturumu başlat
-    tmx        Genişletilmiş tmux komut yönetimi
-    help       Bu yardımı veya modül-spesifik yardımı göster
+$(echo -e "${GREEN}")Modüller:$(echo -e "${NC}")
+    $(echo -e "${YELLOW}")session$(echo -e "${NC}")    Oturum ve düzen yönetimi
+    $(echo -e "${YELLOW}")buffer$(echo -e "${NC}")     Buffer yönetimi ve navigasyon
+    $(echo -e "${YELLOW}")clip$(echo -e "${NC}")       Pano geçmişi ve yönetimi
+    $(echo -e "${YELLOW}")plugin$(echo -e "${NC}")     Eklenti kurulumu ve yönetimi
+    $(echo -e "${YELLOW}")speed$(echo -e "${NC}")      Komut hızlandırma ve favoriler
+    $(echo -e "${YELLOW}")config$(echo -e "${NC}")     Yapılandırma yedekleme ve geri yükleme
+    $(echo -e "${YELLOW}")kenp$(echo -e "${NC}")       KENP geliştirme oturumu başlat
+    $(echo -e "${YELLOW}")tmx$(echo -e "${NC}")        Legacy tmux komutları (eski uyumluluk)
+    $(echo -e "${YELLOW}")help$(echo -e "${NC}")       Yardım mesajlarını göster
 
-Ortak Komutlar:
-    $(basename "$0") session create projemiz 3   # 3 nolu düzen ile oturum oluştur
-    $(basename "$0") buffer                      # Tmux buffer'larını tara
-    $(basename "$0") clip                        # Pano geçmişini tara
-    $(basename "$0") plugin all                  # Tüm eklentileri kur
-    $(basename "$0") speed                       # Komut hızlandırmaya eriş
-    $(basename "$0") config backup               # Tmux yapılandırmasını yedekle
-    $(basename "$0")                             # KENP oturumunu başlat (varsayılan)
+$(echo -e "${GREEN}")Hızlı Başlangıç:$(echo -e "${NC}")
+    $(basename "$0")                           # KENP oturumu (varsayılan)
+    $(basename "$0") session create proje 3    # 3 nolu düzenle oturum
+    $(basename "$0") buffer                    # Buffer tarayıcı
+    $(basename "$0") clip                      # Pano geçmişi
+    $(basename "$0") plugin all                # Tüm eklentileri kur
 
-Modül-spesifik yardım için '$(basename "$0") help <modül>' kullanın.
+$(echo -e "${GREEN}")Örnekler:$(echo -e "${NC}")
+    # Oturum yönetimi
+    $(basename "$0") s create myproject        # Oturum oluştur
+    $(basename "$0") s list                    # Oturumları listele
+    $(basename "$0") s kill myproject          # Oturumu sonlandır
+    
+    # Düzen kullanımı
+    $(basename "$0") s create dev 3            # 3 nolu düzenle oturum
+    $(basename "$0") s layout dev 4            # Mevcut oturuma düzen 4 uygula
+    
+    # Terminal entegrasyonu
+    $(basename "$0") s term kitty dev 2        # Kitty'de 2 nolu düzenle oturum
+
+$(echo -e "${GREEN}")Detaylı Yardım:$(echo -e "${NC}")
+    $(basename "$0") help <modül>              # Modül-spesifik yardım
+
+$(echo -e "${GREEN}")Ortam Değişkenleri:$(echo -e "${NC}")
+    DEBUG=1                                    # Debug modunu etkinleştir
+    EDITOR=vim                                 # Varsayılan editör
+
+$(echo -e "${GREEN}")Gereksinimler:$(echo -e "${NC}")
+    $(echo -e "${CYAN}")Temel:$(echo -e "${NC}") tmux, bash, fzf
+    $(echo -e "${CYAN}")İsteğe Bağlı:$(echo -e "${NC}") git, cliphist, wl-clipboard, kitty/wezterm/alacritty
+
+$(echo -e "${GREEN}")Yapılandırma:$(echo -e "${NC}")
+    $(echo -e "${CYAN}")Ana Dizin:$(echo -e "${NC}")       ~/.config/tmux
+    $(echo -e "${CYAN}")Eklentiler:$(echo -e "${NC}")      ~/.config/tmux/plugins
+    $(echo -e "${CYAN}")Önbellek:$(echo -e "${NC}")        ~/.cache/tmux-manager
+    $(echo -e "${CYAN}")Komutlar:$(echo -e "${NC}")        ~/.config/tmux/fzf/commands.txt
+
+$(echo -e "${GREEN}")Yazar:$(echo -e "${NC}") Kenan Pelit
+$(echo -e "${GREEN}")Lisans:$(echo -e "${NC}") MIT
+$(echo -e "${GREEN}")Sürüm:$(echo -e "${NC}") ${VERSION}
+
+Daha fazla bilgi: $(basename "$0") help <modül>
 EOF
 }
 
-# Process help commands
+# Yardım komutlarını işle
 process_help_commands() {
 	local module="${1:-}"
 
 	case "$module" in
-	"session")
+	"session" | "s")
 		show_session_help
 		;;
-	"buffer")
+	"buffer" | "b")
 		show_buffer_help
 		;;
-	"clip")
+	"clip" | "c")
 		show_clipboard_help
 		;;
-	"plugin")
+	"plugin" | "p")
 		show_plugin_help
 		;;
-	"speed")
+	"speed" | "cmd")
 		show_speed_help
 		;;
-	"config")
+	"config" | "cfg")
 		show_backup_help
 		;;
-	"kenp")
+	"kenp" | "k")
 		show_kenp_help
 		;;
 	"tmx")
@@ -1188,210 +1134,33 @@ process_help_commands() {
 	esac
 }
 
-# Process session commands
+#--------------------------------------
+# COMMAND PROCESSORS
+#--------------------------------------
+
+# Oturum komutlarını işle
 process_session_commands() {
 	local command="${1:-}"
 	shift 2>/dev/null || true
 
 	case "$command" in
-	"create")
+	"create" | "c")
 		local session_name="${1:-$(get_session_name)}"
 		local layout="${2:-}"
 		create_session "$session_name" "$layout"
 		;;
-	"list")
+	"list" | "l" | "ls")
 		list_sessions
 		;;
-	"kill")
-		if [ -z "${1:-}" ]; then
-			error "Session name not specified"
-			return 1
-		fi
-		kill_session "$1"
-		;;
-	"attach")
-		if [ -z "${1:-}" ]; then
-			error "Session name not specified"
-			return 1
-		fi
-		if has_session_exact "$1"; then
-			attach_or_switch "$1"
-		else
-			error "Session '$1' not found"
-			return 1
-		fi
-		;;
-	"layout")
-		if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
-			error "Session name and layout number required"
-			return 1
-		fi
-		create_layout "$1" "$2"
-		;;
-	"term")
-		if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
-			error "Terminal type and session name required"
-			return 1
-		fi
-		local layout="${3:-1}"
-		open_session_in_terminal "$1" "$2" "$layout"
-		;;
-	"kenp")
-		local session_name="${1:-KENP}"
-		kenp_session_mode "$session_name"
-		;;
-	*)
-		error "Unknown session command: $command"
-		show_session_help
-		return 1
-		;;
-	esac
-}
-
-# Process buffer commands
-process_buffer_commands() {
-	local command="${1:-show}"
-	shift 2>/dev/null || true
-
-	case "$command" in
-	"list")
-		if ! check_requirements "buffer"; then
-			return 1
-		fi
-		tmux list-buffers
-		;;
-	"show" | "")
-		handle_buffer_mode
-		;;
-	*)
-		error "Unknown buffer command: $command"
-		show_buffer_help
-		return 1
-		;;
-	esac
-}
-
-# Process clipboard commands
-process_clipboard_commands() {
-	local command="${1:-show}"
-	shift 2>/dev/null || true
-
-	case "$command" in
-	"show" | "")
-		handle_clipboard_mode
-		;;
-	*)
-		error "Unknown clipboard command: $command"
-		show_clipboard_help
-		return 1
-		;;
-	esac
-}
-
-# Process plugin commands
-process_plugin_commands() {
-	local command="${1:-}"
-	shift 2>/dev/null || true
-
-	case "$command" in
-	"install")
-		if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
-			error "Plugin name and repository required"
-			show_plugin_help
-			return 1
-		fi
-		install_plugin "$1" "$2"
-		;;
-	"list")
-		list_plugins
-		;;
-	"all")
-		install_all_plugins
-		;;
-	*)
-		error "Unknown plugin command: $command"
-		show_plugin_help
-		return 1
-		;;
-	esac
-}
-
-# Process speed commands
-process_speed_commands() {
-	local command="${1:-show}"
-	shift 2>/dev/null || true
-
-	case "$command" in
-	"show" | "")
-		handle_speed_mode
-		;;
-	*)
-		error "Unknown speed command: $command"
-		show_speed_help
-		return 1
-		;;
-	esac
-}
-
-# Process config commands
-process_config_commands() {
-	local command="${1:-}"
-	shift 2>/dev/null || true
-
-	case "$command" in
-	"backup")
-		backup_config
-		;;
-	"restore")
-		restore_config
-		;;
-	*)
-		error "Unknown config command: $command"
-		show_backup_help
-		return 1
-		;;
-	esac
-}
-
-# Process tmx commands (eski tm komutları)
-process_tmx_commands() {
-	local command="${1:-}"
-	shift 2>/dev/null || true
-
-	case "$command" in
-	"-h" | "--help")
-		show_tmx_help
-		;;
-	"-l" | "--list")
-		list_sessions
-		;;
-	"-k" | "--kill")
-		if [ -z "${1:-}" ]; then
+	"kill" | "k")
+		if [[ -z "${1:-}" ]]; then
 			error "Oturum adı belirtilmedi"
 			return 1
 		fi
 		kill_session "$1"
 		;;
-	"-n" | "--new")
-		if [ -z "${1:-}" ]; then
-			error "Oturum adı belirtilmedi"
-			return 1
-		fi
-		create_session "$1"
-		;;
-	"-t" | "--terminal")
-		if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
-			error "Terminal türü ve oturum adı belirtilmelidir"
-			return 1
-		fi
-		local layout="${3:-1}"
-		open_session_in_terminal "$1" "$2" "$layout"
-		;;
-	"-d" | "--detach")
-		tmux detach-client
-		;;
-	"-a" | "--attach")
-		if [ -z "${1:-}" ]; then
+	"attach" | "a")
+		if [[ -z "${1:-}" ]]; then
 			error "Oturum adı belirtilmedi"
 			return 1
 		fi
@@ -1402,36 +1171,221 @@ process_tmx_commands() {
 			return 1
 		fi
 		;;
-	"--layout")
-		if [ -z "${1:-}" ]; then
-			error "Düzen numarası belirtilmelidir"
+	"layout" | "lo")
+		if [[ -z "${1:-}" ]] || [[ -z "${2:-}" ]]; then
+			error "Oturum adı ve düzen numarası gerekli"
 			return 1
 		fi
-
-		local layout_num="$1"
-
-		# Tmux oturumu içinde miyiz kontrol et
-		if ! is_in_tmux; then
-			error "Tmux oturumunda değilsiniz. Lütfen tmux içinde çalıştırın."
+		create_layout "$1" "$2"
+		;;
+	"term" | "t")
+		if [[ -z "${1:-}" ]] || [[ -z "${2:-}" ]]; then
+			error "Terminal türü ve oturum adı gerekli"
+			info "Desteklenen terminaller: kitty, wezterm, alacritty"
 			return 1
 		fi
-
-		create_layout "$(tmux display-message -p '#S')" "$layout_num"
+		local layout="${3:-1}"
+		open_session_in_terminal "$1" "$2" "$layout"
 		;;
 	*)
-		local session_name="${command:-$(get_session_name)}"
-		create_session "$session_name"
+		error "Bilinmeyen oturum komutu: $command"
+		show_session_help
+		return 1
 		;;
 	esac
 }
 
-# Ana fonksiyon - komut satırı parametrelerini işle
+# Buffer komutlarını işle
+process_buffer_commands() {
+	local command="${1:-show}"
+	shift 2>/dev/null || true
+
+	case "$command" in
+	"list" | "l" | "ls")
+		if ! check_requirements "buffer"; then
+			return 1
+		fi
+		tmux list-buffers
+		;;
+	"show" | "s" | "")
+		handle_buffer_mode
+		;;
+	*)
+		error "Bilinmeyen buffer komutu: $command"
+		show_buffer_help
+		return 1
+		;;
+	esac
+}
+
+# Pano komutlarını işle
+process_clipboard_commands() {
+	local command="${1:-show}"
+	shift 2>/dev/null || true
+
+	case "$command" in
+	"show" | "s" | "")
+		handle_clipboard_mode
+		;;
+	*)
+		error "Bilinmeyen pano komutu: $command"
+		show_clipboard_help
+		return 1
+		;;
+	esac
+}
+
+# Eklenti komutlarını işle
+process_plugin_commands() {
+	local command="${1:-}"
+	shift 2>/dev/null || true
+
+	case "$command" in
+	"install" | "i")
+		if [[ -z "${1:-}" ]] || [[ -z "${2:-}" ]]; then
+			error "Eklenti adı ve repository gerekli"
+			show_plugin_help
+			return 1
+		fi
+		install_plugin "$1" "$2"
+		;;
+	"list" | "l" | "ls")
+		list_plugins
+		;;
+	"all" | "a")
+		install_all_plugins
+		;;
+	*)
+		error "Bilinmeyen eklenti komutu: $command"
+		show_plugin_help
+		return 1
+		;;
+	esac
+}
+
+# Hız komutlarını işle
+process_speed_commands() {
+	local command="${1:-show}"
+	shift 2>/dev/null || true
+
+	case "$command" in
+	"show" | "s" | "")
+		handle_speed_mode
+		;;
+	*)
+		error "Bilinmeyen hız komutu: $command"
+		show_speed_help
+		return 1
+		;;
+	esac
+}
+
+# Yapılandırma komutlarını işle
+process_config_commands() {
+	local command="${1:-}"
+	shift 2>/dev/null || true
+
+	case "$command" in
+	"backup" | "b")
+		backup_config
+		;;
+	"restore" | "r")
+		restore_config
+		;;
+	*)
+		error "Bilinmeyen config komutu: $command"
+		show_backup_help
+		return 1
+		;;
+	esac
+}
+
+# TMX komutlarını işle (legacy uyumluluk)
+process_tmx_commands() {
+	local command="${1:-}"
+	shift 2>/dev/null || true
+
+	case "$command" in
+	"-h" | "--help" | "help")
+		show_tmx_help
+		;;
+	"-l" | "--list" | "list")
+		list_sessions
+		;;
+	"-k" | "--kill" | "kill")
+		if [[ -z "${1:-}" ]]; then
+			error "Oturum adı belirtilmedi"
+			return 1
+		fi
+		kill_session "$1"
+		;;
+	"-n" | "--new" | "new")
+		if [[ -z "${1:-}" ]]; then
+			error "Oturum adı belirtilmedi"
+			return 1
+		fi
+		create_session "$1"
+		;;
+	"-t" | "--terminal" | "term")
+		if [[ -z "${1:-}" ]] || [[ -z "${2:-}" ]]; then
+			error "Terminal türü ve oturum adı belirtilmelidir"
+			return 1
+		fi
+		local layout="${3:-1}"
+		open_session_in_terminal "$1" "$2" "$layout"
+		;;
+	"-d" | "--detach" | "detach")
+		tmux detach-client
+		;;
+	"-a" | "--attach" | "attach")
+		if [[ -z "${1:-}" ]]; then
+			error "Oturum adı belirtilmedi"
+			return 1
+		fi
+		if has_session_exact "$1"; then
+			attach_or_switch "$1"
+		else
+			error "Oturum '$1' bulunamadı"
+			return 1
+		fi
+		;;
+	"--layout" | "layout")
+		if [[ -z "${1:-}" ]]; then
+			error "Düzen numarası belirtilmelidir"
+			return 1
+		fi
+
+		if ! is_in_tmux; then
+			error "Tmux oturumunda değilsiniz"
+			return 1
+		fi
+
+		create_layout "$(tmux display-message -p '#S')" "$1"
+		;;
+	"")
+		local session_name="$(get_session_name)"
+		create_session "$session_name"
+		;;
+	*)
+		# Oturum adı olarak yorumla
+		create_session "$command"
+		;;
+	esac
+}
+
+#--------------------------------------
+# MAIN FUNCTION
+#--------------------------------------
+
 main() {
 	local module="${1:-}"
 	shift 2>/dev/null || true
 
-	# Hiçbir parametre verilmezse doğrudan kenp_session_mode çalıştır ve çık
-	if [ -z "$module" ]; then
+	# Tmux sürüm kontrolü (sadece bir kere)
+	check_tmux_version
+
+	# Hiçbir parametre verilmezse KENP oturumu başlat
+	if [[ -z "$module" ]]; then
 		kenp_session_mode
 		return $?
 	fi
@@ -1459,19 +1413,26 @@ main() {
 		process_help_commands "$@"
 		;;
 	"kenp" | "k")
-		# Doğrudan KENPSession gibi çalışan komut
 		kenp_session_mode "$@"
 		;;
 	"tmx")
-		# Eski tm komutu gibi çalışan komut
 		process_tmx_commands "$@"
 		;;
+	"version" | "-v" | "--version")
+		echo "tm.sh v${VERSION}"
+		;;
 	*)
-		# Default behavior - assume it's a session name
-		create_session "$module"
+		# Varsayılan davranış - oturum adı olarak yorumla
+		if validate_session_name "$module"; then
+			create_session "$module"
+		else
+			error "Bilinmeyen komut veya geçersiz oturum adı: $module"
+			info "Yardım için: $(basename "$0") help"
+			return 1
+		fi
 		;;
 	esac
 }
 
-# Run the main function with all arguments
+# Ana fonksiyonu tüm parametrelerle çalıştır
 main "$@"
