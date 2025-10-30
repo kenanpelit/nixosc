@@ -138,7 +138,7 @@ in
       glow            # Markdown preview
       atool           # Archive listing
       ffmpegthumbnailer # Video thumbnails
-      poppler_utils   # PDF tools
+      poppler-utils   # PDF tools
       odt2txt         # Office document converter
       tree            # Directory tree viewer
       mediainfo       # Media file information

@@ -145,7 +145,7 @@
     # ---- VM Guest Support ----
     # Tools and drivers for Windows/Linux guests
     spice-gtk                    # SPICE protocol GTK widget (remote display)
-    win-virtio                   # VirtIO drivers ISO for Windows guests
+    virtio-win                   # VirtIO drivers ISO for Windows guests
     win-spice                    # SPICE guest tools for Windows
     swtpm                        # Software TPM emulator (TPM 2.0 for VMs)
     

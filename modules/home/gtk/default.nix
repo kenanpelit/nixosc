@@ -173,7 +173,7 @@ in
       nerd-fonts.hack
       nerd-fonts.symbols-only
       twemoji-color-font
-      noto-fonts-emoji
+      noto-fonts-color-emoji
       maple-mono.NF
       font-awesome
     ];
