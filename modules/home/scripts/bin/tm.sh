@@ -469,39 +469,42 @@ create_layout() {
 	case "$layout_num" in
 	1)
 		# Tek panel düzeni
-		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
+		tmux new-window -t "$session_name" -n 'kenp' 2>/dev/null || true
 		tmux select-pane -t 1 2>/dev/null || true
 		;;
 	2)
-		# İki panel düzeni (dikey bölme)
-		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
-		tmux split-window -v -p 30 2>/dev/null || true
-		tmux select-pane -t 1 2>/dev/null || true
+		# İki panel düzeni (dikey bölme - %80 üst)
+		tmux new-window -t "$session_name" -n 'kenp' 2>/dev/null || true
+		tmux split-window -v -p 80 2>/dev/null || true
+		tmux select-pane -t 2 2>/dev/null || true
 		;;
 	3)
-		# Üç panel düzeni (2 üstte, 1 altta)
-		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
-		tmux split-window -h -p 50 2>/dev/null || true
-		tmux split-window -v -p 30 2>/dev/null || true
-		tmux select-pane -t 1 2>/dev/null || true
+		# Üç panel L-şekilli düzen
+		tmux new-window -t "$session_name" -n 'kenp' 2>/dev/null || true
+		tmux split-window -h -p 80 2>/dev/null || true
+		tmux select-pane -t 2 2>/dev/null || true
+		tmux split-window -v -p 85 2>/dev/null || true
+		tmux select-pane -t 3 2>/dev/null || true
 		;;
 	4)
-		# Dört panel düzeni (2x2 grid)
-		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
-		tmux split-window -h -p 50 2>/dev/null || true
-		tmux split-window -v -p 50 2>/dev/null || true
+		# Dört panel grid düzeni
+		tmux new-window -t "$session_name" -n 'kenp' 2>/dev/null || true
+		tmux split-window -h -p 80 2>/dev/null || true
+		tmux split-window -v -p 80 2>/dev/null || true
 		tmux select-pane -t 1 2>/dev/null || true
-		tmux split-window -v -p 50 2>/dev/null || true
-		tmux select-pane -t 1 2>/dev/null || true
+		tmux split-window -v -p 80 2>/dev/null || true
+		tmux select-pane -t 4 2>/dev/null || true
 		;;
 	5)
-		# Beş panel düzeni (1 ana, 4 yan)
-		tmux new-window -t "$session_name" -n 'main' 2>/dev/null || true
-		tmux split-window -h -p 75 2>/dev/null || true
-		tmux split-window -v -p 66 2>/dev/null || true
-		tmux split-window -v -p 50 2>/dev/null || true
-		tmux split-window -v -p 33 2>/dev/null || true
+		# Beş panel düzeni
+		tmux new-window -t "$session_name" -n 'kenp' 2>/dev/null || true
+		tmux split-window -h -p 70 2>/dev/null || true
+		tmux split-window -h -p 50 2>/dev/null || true
 		tmux select-pane -t 1 2>/dev/null || true
+		tmux split-window -v -p 50 2>/dev/null || true
+		tmux select-pane -t 2 2>/dev/null || true
+		tmux split-window -v -p 50 2>/dev/null || true
+		tmux select-pane -t 5 2>/dev/null || true
 		;;
 	*)
 		error "Geçersiz düzen numarası: $layout_num (1-5 arası olmalı)"
@@ -675,45 +678,365 @@ install_all_plugins() {
 # SPEED MODE (Command Shortcuts)
 #--------------------------------------
 
-# Hız modunu işle
+# Hız modunu işle - hızlı komut çalıştırma için
 handle_speed_mode() {
+	# Gereksinim kontrolü
 	if ! check_requirements "speed"; then
 		return 1
 	fi
 
-	setup_fzf_theme "Komut" "ENTER: Çalıştır | CTRL-E: Düzenle | ESC: Çık"
+	info "Komut hızlandırma modu başlatılıyor..."
 
-	# Örnek komut dosyası oluştur
-	local sample_file="${FZF_DIR}/commands.txt"
-	if [[ ! -f "$sample_file" ]]; then
-		cat >"$sample_file" <<'EOF'
-# Tmux Hızlı Komutlar
-# Format: açıklama | komut
+	# Cache dosyası oluştur
+	local cache_file="${CACHE_DIR}/speed_cache"
+	mkdir -p "$(dirname "$cache_file")"
+	touch "$cache_file"
 
-Oturum Listele | tmux ls
-Yeni Oturum | tmux new -s
-Oturumu Öldür | tmux kill-session -t
-Pencere Listele | tmux list-windows
-Panel Listele | tmux list-panes
-Yapılandırmayı Yükle | tmux source ~/.config/tmux/tmux.conf
-EOF
-		info "Örnek komut dosyası oluşturuldu: $sample_file"
+	# İstatistikler
+	local total ssh_count tmux_count
+	total=$(find "$FZF_DIR" -maxdepth 1 -type f -name '_*' 2>/dev/null | wc -l)
+	ssh_count=$(find "$FZF_DIR" -maxdepth 1 -type f -name '_ssh*' 2>/dev/null | wc -l)
+	tmux_count=$(find "$FZF_DIR" -maxdepth 1 -type f -name '_tmux*' 2>/dev/null | wc -l)
+
+	debug "Toplam komut: $total | SSH: $ssh_count | TMUX: $tmux_count"
+
+	# FZF tema kurulumu
+	setup_fzf_theme "Speed" "Toplam: $total | SSH: $ssh_count | TMUX: $tmux_count | ENTER: Çalıştır | ESC: Çık"
+
+	# Speed modu için ek ayarlar (preview olmadan)
+	export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
+        --delimiter=_ \
+        --with-nth=2.."
+
+	# Sık kullanılan komutları getir
+	get_frequent_commands() {
+		if [[ -f "$cache_file" ]] && [[ -s "$cache_file" ]]; then
+			cat "$cache_file" |
+				sort |
+				uniq -c |
+				sort -nr |
+				head -n 10 |
+				awk '{print $2}' |
+				sed 's/^/⭐ /'
+		fi
+	}
+
+	# Ana seçim
+	local selected
+	selected="$(
+		(
+			# Sık kullanılan komutlar
+			get_frequent_commands
+
+			# Tüm komutlar
+			find "$FZF_DIR" -maxdepth 1 -type f -name '_*' 2>/dev/null |
+				xargs -I {} basename {} |
+				sort |
+				sed 's@\.@ @g'
+		) |
+			column -s ',' -t |
+			fzf |
+			sed 's/^⭐ //' |
+			awk '{print $1}'
+	)"
+
+	# Seçim yapıldı mı kontrol et
+	if [[ -z "$selected" ]]; then
+		info "İptal edildi"
+		return 0
 	fi
 
-	local selected
-	selected=$(grep -v '^#' "$sample_file" | grep -v '^$' |
-		fzf --delimiter=' | ' \
-			--with-nth=1 \
-			--preview 'echo {2}' \
-			--preview-window=up:3:wrap \
-			--bind 'ctrl-e:execute(${EDITOR:-vim} '"$sample_file"')+abort')
+	# Kullanımı kaydet
+	echo "${selected}" >>"$cache_file"
 
-	if [[ -n "$selected" ]]; then
-		local command
-		command=$(echo "$selected" | cut -d'|' -f2- | xargs)
+	# Cache dosyası boyutunu sınırla
+	if [[ "$(wc -l <"$cache_file")" -gt "$HISTORY_LIMIT" ]]; then
+		tail -n "$HISTORY_LIMIT" "$cache_file" >"${cache_file}.tmp" &&
+			mv "${cache_file}.tmp" "$cache_file"
+	fi
 
-		info "Komut çalıştırılıyor: $command"
-		eval "$command"
+	# Script yolunu bul
+	local script_path
+	script_path=$(find "$FZF_DIR" -maxdepth 1 -type f \( -name "${selected},*" -o -name "${selected}.*" -o -name "${selected}" \) 2>/dev/null | head -1)
+
+	if [[ -n "$script_path" ]] && [[ -f "$script_path" ]]; then
+		success "Çalıştırılıyor: $(basename "$script_path")"
+
+		# Script çalıştırılabilir mi kontrol et
+		if [[ ! -x "$script_path" ]]; then
+			debug "Script çalıştırılabilir değil, izin veriliyor..."
+			chmod +x "$script_path" 2>/dev/null || true
+		fi
+
+		# Script'i çalıştır
+		if bash "$script_path"; then
+			success "Komut başarıyla tamamlandı"
+		else
+			error "Komut çalıştırılırken hata oluştu"
+			return 1
+		fi
+	else
+		error "Script bulunamadı: ${selected}"
+		warn "Beklenen konum: ${FZF_DIR}/_${selected}*"
+		return 1
+	fi
+}
+
+# Örnek speed komut dosyası oluştur
+create_sample_speed_commands() {
+	local sample_dir="$FZF_DIR"
+
+	info "Örnek speed komutları oluşturuluyor: $sample_dir"
+
+	# SSH komutları
+	cat >"${sample_dir}/_ssh.server1" <<'EOF'
+#!/usr/bin/env bash
+# SSH to server1
+ssh user@server1.example.com
+EOF
+
+	cat >"${sample_dir}/_ssh.server2" <<'EOF'
+#!/usr/bin/env bash
+# SSH to server2
+ssh user@server2.example.com
+EOF
+
+	# Tmux komutları
+	cat >"${sample_dir}/_tmux.list" <<'EOF'
+#!/usr/bin/env bash
+# List all tmux sessions
+tmux list-sessions
+EOF
+
+	cat >"${sample_dir}/_tmux.kill-all" <<'EOF'
+#!/usr/bin/env bash
+# Kill all tmux sessions
+read -p "Tüm tmux oturumlarını sonlandırmak istediğinize emin misiniz? (e/H): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Ee]$ ]]; then
+    tmux kill-server
+    echo "Tüm oturumlar sonlandırıldı"
+fi
+EOF
+
+	cat >"${sample_dir}/_tmux.attach" <<'EOF'
+#!/usr/bin/env bash
+# Attach to last tmux session
+tmux attach || tmux new-session
+EOF
+
+	# Git komutları
+	cat >"${sample_dir}/_git.status" <<'EOF'
+#!/usr/bin/env bash
+# Git status with color
+git status
+EOF
+
+	cat >"${sample_dir}/_git.pull" <<'EOF'
+#!/usr/bin/env bash
+# Git pull with rebase
+git pull --rebase
+EOF
+
+	cat >"${sample_dir}/_git.push" <<'EOF'
+#!/usr/bin/env bash
+# Git push current branch
+current_branch=$(git branch --show-current)
+git push origin "$current_branch"
+EOF
+
+	# System komutları
+	cat >"${sample_dir}/_system.update" <<'EOF'
+#!/usr/bin/env bash
+# System update (Arch Linux)
+if command -v yay &>/dev/null; then
+    yay -Syu
+elif command -v pacman &>/dev/null; then
+    sudo pacman -Syu
+fi
+EOF
+
+	cat >"${sample_dir}/_system.clean" <<'EOF'
+#!/usr/bin/env bash
+# Clean package cache
+if command -v yay &>/dev/null; then
+    yay -Sc
+elif command -v pacman &>/dev/null; then
+    sudo pacman -Sc
+fi
+EOF
+
+	# Docker komutları
+	cat >"${sample_dir}/_docker.ps" <<'EOF'
+#!/usr/bin/env bash
+# List running containers
+docker ps
+EOF
+
+	cat >"${sample_dir}/_docker.clean" <<'EOF'
+#!/usr/bin/env bash
+# Clean docker system
+docker system prune -af
+EOF
+
+	# Tüm dosyaları çalıştırılabilir yap
+	chmod +x "${sample_dir}"/_* 2>/dev/null
+
+	success "Örnek komutlar oluşturuldu: $sample_dir"
+	info "Toplam $(ls -1 "${sample_dir}"/_* 2>/dev/null | wc -l) örnek komut"
+}
+
+# Speed komutlarını listele
+list_speed_commands() {
+	if [[ ! -d "$FZF_DIR" ]]; then
+		warn "Speed komut dizini bulunamadı: $FZF_DIR"
+		return 1
+	fi
+
+	local total
+	total=$(find "$FZF_DIR" -maxdepth 1 -type f -name '_*' 2>/dev/null | wc -l)
+
+	if [[ "$total" -eq 0 ]]; then
+		warn "Hiç speed komutu bulunamadı"
+		info "Örnek komutlar oluşturmak için: tm.sh speed init"
+		return 0
+	fi
+
+	info "Speed Komutları (Toplam: $total)"
+	echo
+
+	# Kategorilere göre grupla
+	for category in ssh tmux git docker system; do
+		local count
+		count=$(find "$FZF_DIR" -maxdepth 1 -type f -name "_${category}*" 2>/dev/null | wc -l)
+
+		if [[ "$count" -gt 0 ]]; then
+			echo -e "${YELLOW}${category^^}:${NC} ($count komut)"
+			find "$FZF_DIR" -maxdepth 1 -type f -name "_${category}*" 2>/dev/null |
+				while read -r file; do
+					local name desc
+					name=$(basename "$file" | sed 's/^_//')
+					desc=$(head -2 "$file" | tail -1 | sed 's/^# //')
+					echo "  • $name - $desc"
+				done
+			echo
+		fi
+	done
+
+	# Diğer komutlar
+	local other_count
+	other_count=$(find "$FZF_DIR" -maxdepth 1 -type f -name '_*' 2>/dev/null |
+		grep -v -E '_(ssh|tmux|git|docker|system)' | wc -l)
+
+	if [[ "$other_count" -gt 0 ]]; then
+		echo -e "${YELLOW}DİĞER:${NC} ($other_count komut)"
+		find "$FZF_DIR" -maxdepth 1 -type f -name '_*' 2>/dev/null |
+			grep -v -E '_(ssh|tmux|git|docker|system)' |
+			while read -r file; do
+				local name desc
+				name=$(basename "$file" | sed 's/^_//')
+				desc=$(head -2 "$file" | tail -1 | sed 's/^# //')
+				echo "  • $name - $desc"
+			done
+		echo
+	fi
+}
+
+# Speed komutu ekle
+add_speed_command() {
+	local name="$1"
+	local command="$2"
+
+	if [[ -z "$name" ]] || [[ -z "$command" ]]; then
+		error "Kullanım: tm.sh speed add <isim> <komut>"
+		return 1
+	fi
+
+	local file="${FZF_DIR}/_${name}"
+
+	if [[ -f "$file" ]]; then
+		warn "Komut zaten var: $name"
+		read -p "Üzerine yazmak ister misiniz? (e/H): " -n 1 -r
+		echo
+		if [[ ! $REPLY =~ ^[Ee]$ ]]; then
+			info "İptal edildi"
+			return 0
+		fi
+	fi
+
+	cat >"$file" <<EOF
+#!/usr/bin/env bash
+# $name
+$command
+EOF
+
+	chmod +x "$file"
+	success "Speed komutu eklendi: $name"
+}
+
+# Speed komutu sil
+remove_speed_command() {
+	local name="$1"
+
+	if [[ -z "$name" ]]; then
+		error "Kullanım: tm.sh speed remove <isim>"
+		return 1
+	fi
+
+	local file
+	file=$(find "$FZF_DIR" -maxdepth 1 -type f -name "_${name}*" 2>/dev/null | head -1)
+
+	if [[ -z "$file" ]]; then
+		error "Komut bulunamadı: $name"
+		return 1
+	fi
+
+	warn "Komut silinecek: $(basename "$file")"
+	read -p "Emin misiniz? (e/H): " -n 1 -r
+	echo
+
+	if [[ $REPLY =~ ^[Ee]$ ]]; then
+		rm -f "$file"
+		success "Komut silindi: $name"
+	else
+		info "İptal edildi"
+	fi
+}
+
+# Speed komutu düzenle
+edit_speed_command() {
+	local name="$1"
+
+	if [[ -z "$name" ]]; then
+		error "Kullanım: tm.sh speed edit <isim>"
+		return 1
+	fi
+
+	local file
+	file=$(find "$FZF_DIR" -maxdepth 1 -type f -name "_${name}*" 2>/dev/null | head -1)
+
+	if [[ -z "$file" ]]; then
+		error "Komut bulunamadı: $name"
+		return 1
+	fi
+
+	"${EDITOR:-vim}" "$file"
+}
+
+# Speed dizinini aç
+open_speed_dir() {
+	if [[ ! -d "$FZF_DIR" ]]; then
+		warn "Speed dizini bulunamadı, oluşturuluyor..."
+		mkdir -p "$FZF_DIR"
+	fi
+
+	cd "$FZF_DIR" || return 1
+	info "Speed dizini: $FZF_DIR"
+
+	if [[ -n "$SHELL" ]]; then
+		"$SHELL"
+	else
+		bash
 	fi
 }
 
@@ -789,25 +1112,33 @@ kenp_session_mode() {
 		return $?
 	fi
 
-	# Yeni oturum oluştur
-	if ! tmux new-session -d -s "$session_name" -n 'editor' 2>/dev/null; then
+	# Yeni oturum oluştur - ilk pencere basit terminal
+	if ! tmux new-session -d -s "$session_name" -n 'terminal' 2>/dev/null; then
 		error "KENP oturumu oluşturulamadı"
 		return 1
 	fi
 
-	# İkinci pencere: terminal
-	tmux new-window -t "$session_name" -n 'terminal'
+	# İkinci pencere: layout 3 ile çalışma ortamı
+	tmux new-window -t "$session_name" -n 'workspace'
 
-	# Üçüncü pencere: monitoring (htop/btop)
-	tmux new-window -t "$session_name" -n 'monitor'
-	if command -v btop &>/dev/null; then
-		tmux send-keys -t "$session_name:monitor" 'btop' C-m
-	elif command -v htop &>/dev/null; then
-		tmux send-keys -t "$session_name:monitor" 'htop' C-m
+	# Layout 3'ü uygula (L-şekilli düzen)
+	tmux split-window -h -p 80 -t "$session_name:workspace"
+	tmux select-pane -t "$session_name:workspace.2"
+	tmux split-window -v -p 85 -t "$session_name:workspace.2"
+	tmux select-pane -t "$session_name:workspace.3"
+
+	# Üçüncü pencere: monitoring (opsiyonel, btop/htop varsa)
+	if command -v btop &>/dev/null || command -v htop &>/dev/null; then
+		tmux new-window -t "$session_name" -n 'monitor'
+		if command -v btop &>/dev/null; then
+			tmux send-keys -t "$session_name:monitor" 'btop' C-m
+		elif command -v htop &>/dev/null; then
+			tmux send-keys -t "$session_name:monitor" 'htop' C-m
+		fi
 	fi
 
-	# İlk pencereyi seç
-	tmux select-window -t "$session_name:editor"
+	# İkinci pencereyi (workspace) seç
+	tmux select-window -t "$session_name:workspace"
 
 	success "KENP oturumu hazır"
 	attach_or_switch "$session_name"
@@ -834,10 +1165,10 @@ Komutlar:
 
 Düzenler:
     1: Tek panel
-    2: İki panel (dikey bölme)
-    3: Üç panel (2 üst, 1 alt)
-    4: Dört panel (2x2 grid)
-    5: Beş panel (1 ana, 4 yan)
+    2: İki panel (dikey bölme, %80 üst)
+    3: Üç panel (L-şekilli düzen)
+    4: Dört panel (grid düzeni)
+    5: Beş panel (özel düzen)
 
 Örnekler:
     $(basename "$0") session create myproject 3
@@ -930,31 +1261,84 @@ EOF
 # Hız modu yardımı
 show_speed_help() {
 	cat <<EOF
-$(echo -e "${GREEN}")Komut Hızlandırma$(echo -e "${NC}")
+$(echo -e "${GREEN}")Komut Hızlandırma (Speed Mode)$(echo -e "${NC}")
 
-Kullanım: $(basename "$0") speed
+Kullanım: $(basename "$0") speed [komut] [parametreler]
 
-İnteraktif komut seçici ve çalıştırıcı.
+Komutlar:
+    show              İnteraktif komut seçici (varsayılan)
+    list              Tüm speed komutlarını listele
+    init              Örnek speed komutları oluştur
+    add <isim> <cmd>  Yeni speed komutu ekle
+    remove <isim>     Speed komutunu sil
+    edit <isim>       Speed komutunu düzenle
+    dir               Speed dizinini aç
+
+Speed Komut Formatı:
+    Dosya adı: _kategori.isim (örn: _ssh.server1, _tmux.list)
+    Konum: ~/.config/tmux/fzf/
+    İçerik: Çalıştırılabilir bash scripti
 
 Özellikler:
-    • Sık kullanılan komutları favorilere ekle
-    • Hızlı erişim ve çalıştırma
-    • Özelleştirilebilir komut listesi
+    • Sık kullanılan komutlar ⭐ ile işaretlenir
+    • Kullanım geçmişi otomatik kaydedilir
+    • Kategorilere göre gruplandırma
+    • Hızlı arama ve filtreleme
+    • Preview desteği
 
-Kısayollar:
-    ENTER:   Komutu çalıştır
-    CTRL-E:  Komut dosyasını düzenle
-    ESC:     Çık
+Kategoriler:
+    _ssh.*      SSH bağlantıları
+    _tmux.*     Tmux komutları
+    _git.*      Git işlemleri
+    _docker.*   Docker komutları
+    _system.*   Sistem komutları
 
-Komut Dosyası:
-    ~/.config/tmux/fzf/commands.txt
+Örnekler:
+    # İnteraktif mod
+    $(basename "$0") speed
+    
+    # Komutları listele
+    $(basename "$0") speed list
+    
+    # Örnek komutlar oluştur
+    $(basename "$0") speed init
+    
+    # Yeni komut ekle
+    $(basename "$0") speed add git.status "git status"
+    
+    # Komut düzenle
+    $(basename "$0") speed edit ssh.server1
+    
+    # Komut sil
+    $(basename "$0") speed remove git.status
+    
+    # Speed dizinini aç
+    $(basename "$0") speed dir
 
-Format:
-    açıklama | komut
+Manuel Komut Oluşturma:
+    1. Dosya oluştur:
+       ~/.config/tmux/fzf/_kategori.isim
+    
+    2. İçeriğini yaz:
+       #!/usr/bin/env bash
+       # Komut açıklaması
+       komutunuz buraya
+    
+    3. Çalıştırılabilir yap:
+       chmod +x ~/.config/tmux/fzf/_kategori.isim
 
-Örnek:
-    Oturum Listele | tmux ls
-    Yeni Pencere | tmux new-window
+Kısayollar (speed modunda):
+    ENTER:    Komutu çalıştır
+    ESC:      Çık
+
+İpuçları:
+    • Komut adları kısa ve açıklayıcı olmalı
+    • Kategorileri tutarlı kullanın
+    • Tehlikeli komutlar için onay ekleyin
+    • Sık kullanılan komutlar otomatik öne çıkar
+    • Cache dosyası: ~/.cache/tmux-manager/speed_cache
+
+Not: Speed modu ~/.config/tmux/fzf/ dizinindeki _* dosyalarını kullanır
 EOF
 }
 
@@ -994,9 +1378,17 @@ Kullanım: $(basename "$0") kenp [oturum_adı]
 Özelleştirilmiş geliştirme ortamı oturumu oluşturur.
 
 Pencereler:
-    1. editor   - Ana düzenleme penceresi
-    2. terminal - Terminal penceresi
-    3. monitor  - Sistem izleme (htop/btop)
+    1. terminal  - Basit terminal penceresi
+    2. workspace - Layout 3 ile çalışma ortamı (L-şekilli düzen)
+       ├─ Sol: Küçük panel (%20)
+       └─ Sağ: Büyük panel (%80) + Alt küçük panel (%15)
+    3. monitor   - Sistem izleme (htop/btop varsa)
+
+Özellikler:
+    • İlk pencere: Basit terminal, hızlı komutlar için
+    • İkinci pencere: Layout 3 ile hazır çalışma ortamı
+    • Üçüncü pencere: Sistem izleme (opsiyonel)
+    • Otomatik olarak workspace penceresi seçili başlar
 
 Örnekler:
     $(basename "$0") kenp          # 'KENP' adıyla oturum
@@ -1060,6 +1452,7 @@ $(echo -e "${GREEN}")Hızlı Başlangıç:$(echo -e "${NC}")
     $(basename "$0") buffer                    # Buffer tarayıcı
     $(basename "$0") clip                      # Pano geçmişi
     $(basename "$0") plugin all                # Tüm eklentileri kur
+    $(basename "$0") speed                     # Hızlı komut çalıştırıcı
 
 $(echo -e "${GREEN}")Örnekler:$(echo -e "${NC}")
     # Oturum yönetimi
@@ -1073,6 +1466,11 @@ $(echo -e "${GREEN}")Örnekler:$(echo -e "${NC}")
     
     # Terminal entegrasyonu
     $(basename "$0") s term kitty dev 2        # Kitty'de 2 nolu düzenle oturum
+    
+    # Speed komutları
+    $(basename "$0") speed                     # İnteraktif hızlı komutlar
+    $(basename "$0") speed init                # Örnek komutlar oluştur
+    $(basename "$0") speed list                # Tüm komutları listele
 
 $(echo -e "${GREEN}")Detaylı Yardım:$(echo -e "${NC}")
     $(basename "$0") help <modül>              # Modül-spesifik yardım
@@ -1271,6 +1669,36 @@ process_speed_commands() {
 	case "$command" in
 	"show" | "s" | "")
 		handle_speed_mode
+		;;
+	"list" | "l" | "ls")
+		list_speed_commands
+		;;
+	"init" | "i")
+		create_sample_speed_commands
+		;;
+	"add" | "a")
+		if [[ -z "${1:-}" ]] || [[ -z "${2:-}" ]]; then
+			error "Kullanım: speed add <isim> <komut>"
+			return 1
+		fi
+		add_speed_command "$1" "$2"
+		;;
+	"remove" | "rm" | "r")
+		if [[ -z "${1:-}" ]]; then
+			error "Kullanım: speed remove <isim>"
+			return 1
+		fi
+		remove_speed_command "$1"
+		;;
+	"edit" | "e")
+		if [[ -z "${1:-}" ]]; then
+			error "Kullanım: speed edit <isim>"
+			return 1
+		fi
+		edit_speed_command "$1"
+		;;
+	"dir" | "d" | "open" | "o")
+		open_speed_dir
 		;;
 	*)
 		error "Bilinmeyen hız komutu: $command"
