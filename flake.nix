@@ -155,7 +155,7 @@
     # --------------------------------------------------------------------------
     
     alejandra = { 
-      url = "github:kamadorueda/alejandra/3.1.0"; 
+      url = "github:kamadorueda/alejandra"; 
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
@@ -239,50 +239,6 @@
       
       overlaysCommon = [
         inputs.nur.overlays.default
-
-        # CMake 3.5+ compatibility fixes (GCC 14 + CMake 3.30 compatibility)
-        (final: prev: {
-          libvdpau-va-gl = prev.libvdpau-va-gl.overrideAttrs (old: {
-            cmakeFlags = (old.cmakeFlags or []) ++ [
-              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-            ];
-          });
-          
-          thinkfan = prev.thinkfan.overrideAttrs (old: {
-            cmakeFlags = (old.cmakeFlags or []) ++ [
-              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-            ];
-          });
-          
-          intel-graphics-compiler = prev.intel-graphics-compiler.overrideAttrs (old: {
-            cmakeFlags = (old.cmakeFlags or []) ++ [
-              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-            ];
-          });
-        })
-
-        (final: prev: {
-          buildGo123Module = args:
-            prev.buildGoModule (args // { go = prev.go_1_25; });
-        })
-
-        (final: prev: {
-          tigervnc = prev.tigervnc.overrideAttrs (old: {
-            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [
-              prev.autoconf
-              prev.automake
-              prev.libtool
-            ];
-          });
-        })
-
-        (final: prev: {
-          globalprotect-openconnect = prev.globalprotect-openconnect.override {
-            qtbase = final.qt6.qtbase;
-            qtwebsockets = final.qt6.qtwebsockets;
-            qtwebengine = final.qt6.qtwebengine;
-          };
-        })
       ];
  
       nixpkgsConfigCommon = {
