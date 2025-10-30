@@ -243,9 +243,9 @@ in
       extraPackages = with pkgs; [
         intel-media-driver    # Modern VA-API driver for Meteor Lake
         mesa                  # Core OpenGL support
-        vaapiVdpau            # VDPAU wrapper for VA-API
+        libva-vdpau-driver    # VDPAU wrapper for VA-API
         libvdpau-va-gl        # VDPAU backend using VA-API and OpenGL
-        intel-compute-runtime # OpenCL support for Intel GPUs
+        #intel-compute-runtime # OpenCL support for Intel GPUs
       ];
       extraPackages32 = with pkgs.pkgsi686Linux; [
         intel-media-driver

@@ -8,7 +8,7 @@
   # Package Installation
   # =============================================================================
   home.packages = with pkgs; [
-    mpc-cli   # MPD command line interface
+    mpc       # MPD command line interface
     rmpc      # Remote MPD client
   ];
 

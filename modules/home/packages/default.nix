@@ -171,7 +171,7 @@ in
     spotify-cli-linux # Spotify CLI kontrolü
     ani-cli         # Anime streaming CLI
     rmpc            # Modern MPD istemcisi
-    mpc-cli         # Minimal MPD istemcisi
+    mpc             # Minimal MPD istemcisi
     #radiotray-ng    # İnternet radyo oynatıcı
     soundwireserver # Ses streaming sunucusu
     
@@ -255,12 +255,12 @@ in
     pdftk            # PDF araç seti
     zathura          # Minimal PDF görüntüleyici
     evince           # GNOME belge görüntüleyici
-    poppler_utils    # PDF komut satırı araçları
+    poppler-utils    # PDF komut satırı araçları
     
     # Communication
     discord          # Oyuncu sohbet platformu
     #whatsie          # WhatsApp masaüstü - qtwebengine-5
-    whatsapp-for-linux # Alternatif WhatsApp
+    wasistlos        # Alternatif WhatsApp
     ferdium          # Çoklu servis yöneticisi
     
     # Security & Authentication

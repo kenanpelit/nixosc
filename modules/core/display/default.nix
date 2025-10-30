@@ -565,7 +565,7 @@ in
       # ========================================================================
       # Essential for modern UI/UX (color emoji rendering)
       
-      noto-fonts-emoji        # Google's color emoji (comprehensive)
+      noto-fonts-color-emoji  # Google's color emoji (comprehensive)
       font-awesome            # Icon font (web icons, UI symbols)
       material-design-icons   # Google Material Design icons
       
@@ -604,7 +604,6 @@ in
       # Fallback fonts for rare glyphs (math symbols, ancient scripts, etc.)
       
       noto-fonts         # Base Noto (Latin, Greek, Cyrillic)
-      noto-fonts-extra   # Extended scripts (Arabic, Hebrew, Thai, etc.)
       
       # Noto (No Tofu): Aims to cover all Unicode glyphs
       # "Tofu" = □ boxes shown for missing glyphs
@@ -616,7 +615,7 @@ in
       
       inter               # Modern UI font (excellent legibility)
       roboto              # Google's Android/Material Design font
-      ubuntu_font_family  # Ubuntu system font (friendly, clean)
+      ubuntu-classic      # Ubuntu system font (friendly, clean)
       open-sans           # Humanist sans-serif (web-optimized)
       
       # Use cases:

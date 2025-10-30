@@ -159,9 +159,9 @@
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
     
-    # Walker - Wayland application launcher (pinned to v2.7.2)
+    # Walker - Wayland application launcher
     walker = {
-      url = "github:abenz1267/walker/v2.7.2";
+      url = "github:abenz1267/walker";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
@@ -284,7 +284,7 @@
           };
         })
       ];
-
+ 
       nixpkgsConfigCommon = {
         allowUnfree = true;
         permittedInsecurePackages = [
