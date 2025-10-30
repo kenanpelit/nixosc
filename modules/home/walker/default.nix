@@ -22,6 +22,11 @@
 #   - Recommended: v2.7.2+ (from GitHub flake input)
 #   - Nixpkgs version: 0.12.21 (outdated, not recommended)
 #
+# Known Issues:
+#   - D-Bus service registration can take 15-20 seconds on first launch
+#   - Type=dbus causes systemd timeout (fixed with Type=simple + increased timeout)
+#   - Walker must wait for Elephant backend to fully initialize
+#
 # Usage:
 #   # Automatically enabled when imported in modules/home/default.nix
 #   # To disable: programs.walker.enable = false;
@@ -96,16 +101,19 @@ in
         
         When enabled:
         - Elephant backend runs automatically on login
-        - Walker runs as a D-Bus activated service for faster startup
+        - Walker runs as a service with extended timeout for D-Bus registration
         - Services restart automatically on failure
         
         Recommended: `true` for best performance and reliability.
         
+        Note: Walker's D-Bus registration can take 15-20 seconds on first launch,
+        so we use Type=simple with a 2-minute timeout instead of Type=dbus.
+        
         Manual control:
-        ```bash
+```bash
         systemctl --user status elephant walker
         systemctl --user restart elephant walker
-        ```
+```
       '';
     };
 
@@ -122,12 +130,12 @@ in
         **Recommended**: Use the flake input for latest version (v2.7.2+)
         
         Add to your flake.nix:
-        ```nix
+```nix
         inputs.walker = {
           url = "github:abenz1267/walker/v2.7.2";
           inputs.nixpkgs.follows = "nixpkgs";
         };
-        ```
+```
         
         **Note**: nixpkgs version (0.12.21) is significantly outdated and
         missing many features. Using the flake input is strongly recommended.
@@ -188,9 +196,11 @@ in
       recursive = true;
     };
 
-    # Elephant systemd service with proper configuration
-    # Note: We create our own service file instead of using 'elephant service enable'
-    # because that creates a service with relative path that doesn't work in systemd
+    # ==========================================================================
+    # Elephant Backend Service
+    # ==========================================================================
+    # Provides search providers (apps, files, clipboard, etc.) to Walker
+    # Must start before Walker and remain running
     systemd.user.services.elephant = mkIf cfg.runAsService {
       Unit = {
         Description = "Elephant - Backend provider for Walker";
@@ -212,7 +222,22 @@ in
       };
     };
 
-    # Walker systemd service - Frontend launcher
+    # ==========================================================================
+    # Walker Frontend Service
+    # ==========================================================================
+    # GTK4 launcher interface that connects to Elephant backend
+    #
+    # Service Type Notes:
+    #   Originally used Type=dbus for D-Bus activation, but Walker's D-Bus
+    #   registration can take 15-20 seconds, causing systemd timeout.
+    #   
+    #   Solution: Use Type=simple with extended TimeoutStartSec (2 minutes)
+    #   to allow Walker time to initialize and register with D-Bus.
+    #
+    # D-Bus Activation:
+    #   Even with Type=simple, D-Bus activation still works via the service
+    #   file in ~/.local/share/dbus-1/services/. This allows applications
+    #   to launch Walker on-demand via D-Bus while avoiding systemd timeouts.
     systemd.user.services.walker = mkIf cfg.runAsService {
       Unit = {
         Description = "Walker - Application launcher";
@@ -224,12 +249,24 @@ in
       };
 
       Service = {
-        Type = "dbus";
-        BusName = "io.github.abenz1267.walker";
+        # Use Type=simple instead of Type=dbus to avoid systemd timeout
+        # D-Bus registration can take 15-20 seconds on first launch
+        Type = "simple";
+        
+        # Start Walker in GApplication service mode
+        # This enables D-Bus activation and single-instance behavior
         ExecStart = "${cfg.package}/bin/walker --gapplication-service";
+        
+        # Restart policy
         Restart = "on-failure";
         RestartSec = 3;
-        # Ensure clean shutdown
+        
+        # Extended timeout to accommodate slow D-Bus registration
+        # Walker needs time to:
+        #   1. Initialize GTK4 and Vulkan/Mesa
+        #   2. Connect to Elephant backend
+        #   3. Load providers and register D-Bus service
+        TimeoutStartSec = 120;  # 2 minutes (default is 90 seconds)
         TimeoutStopSec = 10;
       };
 
@@ -243,8 +280,19 @@ in
       source = tomlFormat.generate "walker-config.toml" cfg.settings;
     };
 
-    # D-Bus service file for Walker (REQUIRED for --gapplication-service)
-    # This allows Walker to be D-Bus activated
+    # ==========================================================================
+    # D-Bus Service File
+    # ==========================================================================
+    # Enables D-Bus activation of Walker (allows other apps to launch Walker)
+    # Works independently of systemd service type
+    #
+    # How it works:
+    #   1. Application sends D-Bus message to io.github.abenz1267.walker
+    #   2. D-Bus checks this service file and launches Walker if not running
+    #   3. Walker registers the bus name and handles the request
+    #
+    # Note: This is why we can use Type=simple in systemd - D-Bus activation
+    # is handled by this service file, not by systemd's Type=dbus mechanism
     xdg.dataFile."dbus-1/services/io.github.abenz1267.walker.service".text = ''
       [D-BUS Service]
       Name=io.github.abenz1267.walker
@@ -253,9 +301,12 @@ in
     '';
     
     # Note: Walker uses bus name 'io.github.abenz1267.walker'
-    # Alternative bus name 'dev.benz.walker' is legacy and not needed
+    # Legacy bus name 'dev.benz.walker' is no longer used and not needed
     
-    # Usage instructions via activation script
+    # ==========================================================================
+    # Usage Instructions
+    # ==========================================================================
+    # Displayed after home-manager activation to inform user about Walker setup
     home.activation.walkerInfo = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ${pkgs.coreutils}/bin/cat << 'EOF'
       
@@ -274,16 +325,27 @@ in
       Launch Walker:
         walker                                    # Standard launch
         nc -U /run/user/$UID/walker/walker.sock  # Fast socket launch
+        
+      Troubleshooting:
+        journalctl --user -u walker -n 50        # View Walker logs
+        journalctl --user -u elephant -n 50      # View Elephant logs
+        
+      Note: First launch may take 15-20 seconds for D-Bus registration.
+      This is normal behavior. Subsequent launches will be faster.
       '' else ''
       ⚠ Not running as service
       
       Manual Start:
-        elephant service &  # Start backend first
-        walker              # Then start frontend
+        elephant &      # Start backend first (wait a few seconds)
+        walker          # Then start frontend
+        
+      Recommended: Enable service mode for automatic startup
+        programs.walker.runAsService = true;
       ''}
       
       Configuration:
         ~/.config/walker/config.toml              # Main config
+        ~/.config/elephant/providers/             # Provider configs
         ~/.config/elephant/menus/                 # Custom menus
         
       Documentation:

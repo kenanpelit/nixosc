@@ -9,31 +9,36 @@
 # Components:
 #   • Pass CLI - Command-line password manager with GPG encryption
 #   • Pass Extensions - OTP, audit, update functionality
-#   • Secret Service - D-Bus integration for desktop apps
+#   • Secret Service - D-Bus integration for desktop apps (DISABLED - Python 3.13 incompatible)
 #   • Secret Tool - CLI interface to Secret Service API
 #
 # Architecture:
 #   Pass Storage (~/.pass)
 #      ↓ (GPG encrypted)
 #   Pass CLI (password-store)
-#      ↓ (D-Bus Secret Service API)
-#   Desktop Apps (Firefox, NetworkManager, etc.)
+#      ↓ (Manual CLI usage)
+#   Desktop Apps (Use GNOME Keyring or KeePassXC instead)
 #
 # Features:
 #   ✓ GPG-encrypted password storage
 #   ✓ Git synchronization support
 #   ✓ OTP/2FA token generation
 #   ✓ Password audit (strength/breach check)
-#   ✓ Desktop application integration
-#   ✓ Browser autofill support
-#   ✓ WiFi password storage (NetworkManager)
+#   ✗ Desktop application integration (pass-secret-service disabled due to Python 3.13 bug)
+#   ✗ Browser autofill support (use browserpass extension instead)
+#   ✗ WiFi password storage (use NetworkManager's default keyring)
+#
+# Known Issues:
+#   • pass-secret-service has UnboundLocalError with Python 3.13
+#   • Upstream issue: https://github.com/mdellweg/pass_secret_service/issues
+#   • Workaround: Use GNOME Keyring or disable the service
 #
 # Usage:
 #   pass insert website/example.com       # Add password
 #   pass show website/example.com         # Show password
 #   pass generate website/example.com 20  # Generate strong password
 #   pass otp website/example.com          # Show OTP token
-#   secret-tool lookup service myapp      # Query via Secret Service
+#   secret-tool lookup service myapp      # Query via Secret Service (requires alternative keyring)
 #
 # ==============================================================================
 
@@ -87,47 +92,45 @@
   };
 
   # =============================================================================
-  # Secret Service Integration - Desktop Application Bridge
+  # Secret Service Integration - DISABLED DUE TO PYTHON 3.13 BUG
   # =============================================================================
-  # Implements freedesktop.org Secret Service API via D-Bus
-  # Allows desktop applications to securely access Pass storage
+  # pass-secret-service currently has a critical bug with Python 3.13:
+  # UnboundLocalError: cannot access local variable 'service' where it is not associated with a value
   #
-  # Compatible Applications:
-  #   • Browsers: Firefox, Chrome (password autofill)
-  #   • Email: Thunderbird, Evolution
-  #   • Network: NetworkManager (WiFi passwords)
-  #   • Chat: Pidgin, HexChat
-  #   • Any app using libsecret/secret-tool
+  # Alternative Solutions:
+  #   1. Use GNOME Keyring (services.gnome-keyring.enable = true in display module)
+  #   2. Use KeePassXC with Secret Service integration
+  #   3. Use browserpass extension for browser password management
+  #   4. Wait for upstream fix or downgrade to Python 3.12
   #
-  # How it works:
-  #   1. App requests password via D-Bus Secret Service API
-  #   2. pass-secret-service queries ~/.pass (GPG-encrypted)
-  #   3. GPG decrypts entry (may prompt for passphrase)
-  #   4. Password returned to app securely
+  # Tracking Issue:
+  #   • GitHub: https://github.com/mdellweg/pass_secret_service/issues
+  #   • NixOS: https://github.com/NixOS/nixpkgs/issues (search pass-secret-service python 3.13)
+  #
+  # To Re-enable (when fixed):
+  #   Uncomment the block below and change enable to true
   
   services.pass-secret-service = {
-    enable = true;
+    # DISABLED: Python 3.13 incompatibility causes UnboundLocalError on startup
+    enable = false;
     
-    # Must match PASSWORD_STORE_DIR above
-    # This is where encrypted password files are stored
-    storePath = "${config.home.homeDirectory}/.pass";
+    # Uncomment when bug is fixed:
+    # enable = true;
+    # storePath = "${config.home.homeDirectory}/.pass";
   };
 
   # =============================================================================
   # Secret Tool - CLI Interface to Secret Service
   # =============================================================================
   # Provides command-line access to the Secret Service API
-  # Useful for scripts and manual password retrieval
+  # Note: With pass-secret-service disabled, this will query GNOME Keyring
+  # or other active Secret Service provider instead
   #
   # Common Operations:
   #   secret-tool store --label='MyApp' service myapp username myuser
   #   secret-tool lookup service myapp username myuser
   #   secret-tool search --all
   #   secret-tool clear service myapp username myuser
-  #
-  # Integration with Pass:
-  #   When pass-secret-service is running, secret-tool queries
-  #   will return passwords from ~/.pass storage
   
   home.packages = with pkgs; [
     libsecret  # Provides secret-tool binary and libsecret library
@@ -158,7 +161,7 @@
     # Password audit
     "paudit" = "pass audit";                   # Check password strength
     
-    # Secret Service queries
+    # Secret Service queries (queries active keyring - GNOME Keyring, KeePassXC, etc.)
     "secret-list" = "secret-tool search --all"; # List all secrets
     "secret-get" = "secret-tool lookup";        # Get specific secret
   };
@@ -187,11 +190,14 @@
 #    pass otp insert website/example.com
 #    # Enter otpauth:// URI from QR code
 #
-# 6. Test Secret Service integration:
-#    secret-tool lookup title email/gmail.com
+# 6. Test Pass CLI:
+#    pass show email/gmail.com
+#    pass otp email/gmail.com
 #
-# 7. Verify pass-secret-service is running:
-#    systemctl --user status pass-secret-service
+# 7. Browser Integration:
+#    Install browserpass extension:
+#    • Firefox: https://addons.mozilla.org/firefox/addon/browserpass-ce/
+#    • Chrome: https://chrome.google.com/webstore (search browserpass)
 #
 # ==============================================================================
 # Troubleshooting
@@ -201,16 +207,23 @@
 # Fix:   echo "use-agent" >> ~/.gnupg/gpg.conf
 #        systemctl --user restart gpg-agent
 #
-# Issue: pass-secret-service not starting
-# Fix:   systemctl --user restart pass-secret-service
-#        journalctl --user -u pass-secret-service
+# Issue: pass-secret-service UnboundLocalError (Python 3.13)
+# Fix:   Service is disabled by default due to this bug
+#        Alternative: Use GNOME Keyring or KeePassXC for desktop integration
 #
 # Issue: Browser not using Pass for autofill
-# Fix:   Install browser extension (browserpass for Firefox/Chrome)
-#        Or configure browser to use system keyring
+# Fix:   Install browserpass extension (direct Pass integration, no Secret Service needed)
+#        Firefox: about:addons → Search "browserpass"
+#        Chrome: chrome://extensions → Search Chrome Web Store for "browserpass"
 #
 # Issue: NetworkManager not saving WiFi passwords
-# Fix:   Ensure pass-secret-service is running
-#        Check: busctl --user list | grep secret
+# Fix:   Enable GNOME Keyring in your display module:
+#        services.gnome.gnome-keyring.enable = true;
+#
+# Issue: Desktop apps can't access passwords
+# Fix:   Enable alternative Secret Service provider:
+#        • GNOME Keyring: services.gnome.gnome-keyring.enable = true;
+#        • KeePassXC: Configure Secret Service integration in KeePassXC settings
 #
 # ==============================================================================
+
