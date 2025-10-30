@@ -474,6 +474,44 @@ in
   };
 
   # ============================================================================
+  # Mullvad Daemon Log Optimization - FINAL SOLUTION
+  # ============================================================================
+  # Problem: mullvad_daemon::management_interface still emits DEBUG
+  #          - get_tunnel_state/get_device every 5 seconds
+  #          - RUST_LOG environment variable ignored
+  #
+  # Root Cause: Mullvad GUI client triggers these DEBUG logs
+  #             Not the daemon itself, but the management interface
+  #
+  # Solution: Since these come from GUI polling, filter at systemd level
+  #           Accept that some DEBUG will exist, just prevent journal spam
+  
+  systemd.services.mullvad-daemon = {
+    # Don't override environment (let Mullvad set its own)
+    # Instead, filter at journal ingestion level
+    
+    serviceConfig = {
+      # Journal filtering - AGGRESSIVE
+      # Drop DEBUG messages before they hit disk
+      StandardOutput = "journal";
+      StandardError = "journal";
+      
+      # Use numeric levels (more reliable)
+      # 6 = info, 7 = debug
+      LogLevelMax = "6";
+      
+      # Alternative: If numeric doesn't work, use syslog
+      SyslogLevel = "info";
+      SyslogLevelPrefix = false;
+      
+      # AGGRESSIVE rate limiting
+      # Only allow 10 messages per 10 seconds (vs 100/30s)
+      LogRateLimitIntervalSec = "10s";
+      LogRateLimitBurst = 10;
+    };
+  };
+
+  # ============================================================================
   # Systemd Services (Layer 4: Service Orchestration)
   # ============================================================================
   
