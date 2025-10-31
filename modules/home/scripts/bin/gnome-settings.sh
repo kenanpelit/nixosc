@@ -839,7 +839,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 # 28..36) Workspaces 1..9 (history switcher)
 for i in {1..9}; do
 	idx=$((27 + i)) # 28..36
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<ALT>$i'"
+	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<Super>$i'"
 	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/command "'$WORKSW $i'"
 	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/name "'Workspace $i (with history)'"
 done
@@ -887,9 +887,15 @@ done
 # Workspace geçiş kısayollarını kapat (Super+[1-9])
 for i in {1..9}; do
 	dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "@as []"
+	dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "@as []"
 done
 
+# Space Bar extension'ının workspace switching kısayolunu kapat
+echo "🔧 Space Bar extension kısayolları devre dışı bırakılıyor..."
+dconf write /org/gnome/shell/extensions/space-bar/shortcuts/enable-activate-workspace-shortcuts false
+
 echo "✅ Varsayılan Super+[1-9] kısayolları kapatıldı."
+echo "💡 Artık sadece Alt+[1-9] ile workspace geçişi yapabilirsiniz."
 
 # =============================================================================
 # EXTENSION COMPLEX CONFIGURATIONS
