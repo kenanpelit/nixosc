@@ -57,6 +57,9 @@ let
   gnome-kr-fix = pkgs.writeShellScriptBin "gnome-kr-fix" (
     builtins.readFile ./bin/gnome-kr-fix.sh
   );
+  gnome-monitor-set = pkgs.writeShellScriptBin "gnome-monitor-set" (
+    builtins.readFile ./bin/gnome-monitor-set.sh
+  );
   gnome-mpv-manager = pkgs.writeShellScriptBin "gnome-mpv-manager" (
     builtins.readFile ./bin/gnome-mpv-manager.sh
   );
@@ -402,6 +405,7 @@ in {
     gnome-extensions-installer
     gnome-flow
     gnome-kr-fix
+    gnome-monitor-set
     gnome-mpv-manager
     gnome-settings
     gnome_tty

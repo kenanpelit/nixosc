@@ -144,6 +144,7 @@ in
     # Medya Araçları
     # ==============================================================================
     # Video/Audio Players
+    open-in-mpv     # mpv browser eklentisi
     mpv             # Minimal medya oynatıcı
     vlc             # Çok amaçlı medya oynatıcı
     
@@ -273,7 +274,8 @@ in
     gparted          # Disk bölümleme GUI
     flatpak          # Uygulama sandboxing
     ventoy           # Çoklu ISO USB aracı
-    
+    gnome-monitor-config #Program to help manage GNOME monitor configuration
+
     # Clipboard Management
     xclip            # X11 pano aracı
     cliphist         # Wayland pano geçmişi
