@@ -18,7 +18,7 @@
     language = en
     folder = ~/Pictures/wallpapers/others
     monitors = All
-    wallpaper = ~/Pictures/wallpapers/nixos/nixos_blue.png
+    wallpaper = ~/Pictures/wallpapers/nixos/nixos.png
     
     # Display Settings
     backend = swww
