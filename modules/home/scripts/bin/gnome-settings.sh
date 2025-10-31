@@ -8,7 +8,7 @@ set -euo pipefail
 
 # Log dizinini oluştur
 LOG_DIR="$HOME/.logs"
-LOG_FILE="$LOG_DIR/gnome_settings.log"
+LOG_FILE="$LOG_DIR/gnome_settings_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "$LOG_DIR"
 
 # Debug mode'u aktif et ve log'a yönlendir
@@ -682,10 +682,11 @@ WSNEXT="$(opt ws-next)"
 MULLVAD="$(opt osc-mullvad)"
 SCREENSHOT="$(opt gnome-screenshot)"
 GKR="$(opt gnome-kr-fix)"
+WALK="$(opt walk)"
 
 # 0..40 path list
 CUSTOM_PATHS=""
-for i in {0..41}; do
+for i in {0..42}; do
 	p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
 	if [ -z "$CUSTOM_PATHS" ]; then
 		CUSTOM_PATHS="'$p'"
@@ -867,6 +868,11 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/binding "'<Super><Ctrl>F12'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/command "'$GKR'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/name "'GNOME GKR'"
+
+# 42) Walker
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/binding "'<Super>space'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/command "'$WALK'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/name "'WalkerS'"
 
 # =============================================================================
 # EXTENSION COMPLEX CONFIGURATIONS
