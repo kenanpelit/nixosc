@@ -875,6 +875,23 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/name "'WalkerS'"
 
 # =============================================================================
+# GNOME'UN VARSAYILAN SUPER+[1-9] KISA YOLLARINI KAPAT
+# =============================================================================
+echo "🚫 GNOME varsayılan Super+[1-9] kısayolları devre dışı bırakılıyor..."
+
+# Uygulama başlatma kısayollarını kapat (Super+[1-9])
+for i in {1..9}; do
+	dconf write /org/gnome/shell/keybindings/switch-to-application-$i "@as []"
+done
+
+# Workspace geçiş kısayollarını kapat (Super+[1-9])
+for i in {1..9}; do
+	dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "@as []"
+done
+
+echo "✅ Varsayılan Super+[1-9] kısayolları kapatıldı."
+
+# =============================================================================
 # EXTENSION COMPLEX CONFIGURATIONS
 # =============================================================================
 echo "🎨 Karmaşık extension ayarları uygulanıyor..."
