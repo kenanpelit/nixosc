@@ -556,6 +556,17 @@ dconf write /org/gnome/desktop/screensaver/lock-delay "uint32 0"
 dconf write /org/gnome/desktop/screensaver/idle-activation-enabled "true"
 
 # =============================================================================
+# LOCK SCREEN DISABLE (AUTOLOGIN İÇİN)
+# =============================================================================
+echo "🔓 Kilit ekranı devre dışı bırakılıyor (autologin için)..."
+
+dconf write /org/gnome/desktop/lockdown/disable-lock-screen "true"
+dconf write /org/gnome/desktop/screensaver/lock-enabled "false"
+dconf write /org/gnome/desktop/screensaver/idle-activation-enabled "false"
+dconf write /org/gnome/desktop/session/idle-delay "uint32 0"
+
+echo "✅ Kilit ekranı tamamen devre dışı bırakıldı"
+# =============================================================================
 # NAUTILUS SETTINGS
 # =============================================================================
 echo "📁 Nautilus ayarları uygulanıyor..."
