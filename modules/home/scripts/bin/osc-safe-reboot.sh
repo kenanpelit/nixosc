@@ -4,11 +4,10 @@
 #  Amaç : Brave/Chromium tabanlı tarayıcılar crash uyarısı vermeden reboot
 #  Author: Kenan Pelit
 #===============================================================================
-
 set -euo pipefail
 
 #--- Ayarlar -------------------------------------------------------------------
-GRACE_APPS=("brave" "brave-browser" "brave-browser-stable" "chromium")
+GRACE_APPS=("brave" "chromium")
 SOFT_TIMEOUT=5 # SIGTERM sonrası bekleme (saniye)
 HARD_DELAY=0.5 # KILL öncesi küçük bekleme
 
@@ -19,7 +18,6 @@ fix_browser_flags() {
 
 	for p in "${profiles[@]}"; do
 		[[ -d "$p" ]] || continue
-
 		# Preferences dosyası
 		if [[ -f "$p/Preferences" ]]; then
 			sed -i \
@@ -41,22 +39,28 @@ fix_browser_flags() {
 #--- Uygulamaları graceful şekilde kapat ---------------------------------------
 graceful_shutdown() {
 	echo "[INFO] SIGTERM gönderiliyor: ${GRACE_APPS[*]}"
+
 	for a in "${GRACE_APPS[@]}"; do
-		if pgrep -f -x "$a" >/dev/null 2>&1; then
-			pkill -TERM -f -x "$a" 2>/dev/null || true
+		# -f kullan (komut satırında ara), -x kaldır
+		if pgrep -f "$a" >/dev/null 2>&1; then
+			echo "[INFO] $a bulundu, kapatılıyor..."
+			pkill -TERM -f "$a" 2>/dev/null || true
 		fi
 	done
 
 	echo "[INFO] ${SOFT_TIMEOUT}s bekleniyor..."
 	sleep "$SOFT_TIMEOUT"
 
+	# Hala açık olanları KILL
 	for a in "${GRACE_APPS[@]}"; do
-		if pgrep -f -x "$a" >/dev/null 2>&1; then
-			echo "[WARN] $a hala açık, SIGKILL..."
-			pkill -KILL -f -x "$a" 2>/dev/null || true
+		if pgrep -f "$a" >/dev/null 2>&1; then
+			echo "[WARN] $a hala açık, SIGKILL gönderiliyor..."
+			pkill -KILL -f "$a" 2>/dev/null || true
 			sleep "$HARD_DELAY"
 		fi
 	done
+
+	echo "[INFO] Tüm hedef uygulamalar kapatıldı."
 }
 
 #--- Ana akış ------------------------------------------------------------------
