@@ -103,7 +103,7 @@ echo "🎨 GTK tema ayarları (Catppuccin Mocha)..."
 dconf write /org/gnome/desktop/interface/gtk-theme "'catppuccin-mocha-mauve-standard+normal'"
 dconf write /org/gnome/desktop/interface/icon-theme "'a-candy-beauty-icon-theme'"
 dconf write /org/gnome/desktop/interface/cursor-theme "'catppuccin-mocha-dark-cursors'"
-dconf write /org/gnome/desktop/interface/cursor-size "24"
+dconf write /org/gnome/desktop/interface/cursor-size "16"
 
 # Shell tema
 dconf write /org/gnome/shell/extensions/user-theme/name "'catppuccin-mocha-mauve-standard+normal'"
@@ -206,15 +206,15 @@ dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-9 "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-10 "@as []"
 
 # Move window to workspace
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-1 "['<Super><Shift>1']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-2 "['<Super><Shift>2']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-3 "['<Super><Shift>3']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-4 "['<Super><Shift>4']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-5 "['<Super><Shift>5']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-6 "['<Super><Shift>6']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-7 "['<Super><Shift>7']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Super><Shift>8']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Super><Shift>9']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-1 "['<Alt><Shift>1']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-2 "['<Alt><Shift>2']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-3 "['<Alt><Shift>3']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-4 "['<Alt><Shift>4']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-5 "['<Alt><Shift>5']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-6 "['<Alt><Shift>6']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-7 "['<Alt><Shift>7']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Alt><Shift>8']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Alt><Shift>9']"
 
 # Navigate workspaces with arrows - DISABLED
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "@as []"
@@ -256,7 +256,7 @@ echo "🌙 Night Light ayarları uygulanıyor..."
 # 00:00 - 00:00 (24 saat) ve örnek sıcaklık değeri
 NIGHT_LIGHT_FROM="0.0" # 00:00
 NIGHT_LIGHT_TO="0.0"   # 00:00 (GNOME çoğu sürümde 24h anlamına gelir)
-NIGHT_LIGHT_TEMP=3700  # 1000–10000 arası (daha sıcak = daha sarı)
+NIGHT_LIGHT_TEMP=3200  # 1000–10000 arası (daha sıcak = daha sarı)
 
 dconf write /org/gnome/settings-daemon/plugins/color/night-light-enabled true
 dconf write /org/gnome/settings-daemon/plugins/color/night-light-schedule-automatic false
@@ -839,7 +839,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 # 28..36) Workspaces 1..9 (history switcher)
 for i in {1..9}; do
 	idx=$((27 + i)) # 28..36
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<Super>$i'"
+	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<ALT>$i'"
 	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/command "'$WORKSW $i'"
 	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/name "'Workspace $i (with history)'"
 done

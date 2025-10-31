@@ -254,11 +254,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1761915119,
-        "narHash": "sha256-I4XAUt4lyhi9JGLgxiv8iHOP66iyy6P/1Pit3QTiCYw=",
+        "lastModified": 1761930611,
+        "narHash": "sha256-kDxYtClX8rn/sIHm69VBdU8CcZ2v7FJ4IXZB2LTjMeg=",
         "owner": "abenz1267",
         "repo": "elephant",
-        "rev": "84984c2452952774a0c6bbb42f4e56b899fadc1c",
+        "rev": "b3dd348e5b3befba5f3e93ca738192616ebda777",
         "type": "github"
       },
       "original": {
@@ -1445,11 +1445,11 @@
         "systems": "systems_11"
       },
       "locked": {
-        "lastModified": 1760659264,
-        "narHash": "sha256-2IV5aOvkJ/lBObKpJ90HEGHybppMAcw71tRhcg6MBJM=",
+        "lastModified": 1761923011,
+        "narHash": "sha256-7wjem/IGv2+El/JWMm9c5amTU7ifX72ALK8XgmZRoiQ=",
         "owner": "hyprwm",
         "repo": "hyprpicker",
-        "rev": "cd7ba93fadabe391aa8a6e6db6fc9bcdb9e2c428",
+        "rev": "b645b892b14d0f55be7636555044836ec57c6d06",
         "type": "github"
       },
       "original": {
@@ -1973,11 +1973,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1761915742,
-        "narHash": "sha256-wlhSCSq2plxAa22BK74v2IE7IUuXm4xmjB/IsCfSHjk=",
+        "lastModified": 1761930831,
+        "narHash": "sha256-dyHySG8HWOcJ6b1IfmPp1Q3KPyWHPEjQS/WKsiQpq7c=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "c0ca0f86a5b136817b369908679ef5b2432307ee",
+        "rev": "5e0770b8015b078fbfce60cb851a765901ff4991",
         "type": "github"
       },
       "original": {
@@ -2596,15 +2596,16 @@
         "systems": "systems_22"
       },
       "locked": {
-        "lastModified": 1761908722,
-        "narHash": "sha256-zPx5UxmabifshF373JOFGJrKld+seGXps4c/sUYrydE=",
+        "lastModified": 1761857374,
+        "narHash": "sha256-JLtDpYqL8enGEiitISr3rmbnE9D2exCaJ+6vFOOodG4=",
         "owner": "abenz1267",
         "repo": "walker",
-        "rev": "87e3160c4f1bc56d10c687ae8802f0182a75dcf0",
+        "rev": "8fa62a7dedc7e0dd15b630a20350773980345906",
         "type": "github"
       },
       "original": {
         "owner": "abenz1267",
+        "ref": "v2.7.5",
         "repo": "walker",
         "type": "github"
       }

@@ -14,16 +14,15 @@
       Description = "GNOME Keyring (Secrets only)";
       After = [ "graphical-session.target" ];
     };
-
     Service = {
       Type = "simple";
       Environment = [ "DBUS_SESSION_BUS_ADDRESS=unix:path=%t/bus" ];
-      # DÜZELTME: pkgs.gnome.gnome-keyring → pkgs.gnome-keyring
       ExecStart = "${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --foreground --components=secrets";
       Restart = "on-failure";
       RestartSec = 2;
+      # Add this line to grant memory locking capability
+      AmbientCapabilities = "CAP_IPC_LOCK";
     };
-
     Install = {
       WantedBy = [ "default.target" ];
     };
