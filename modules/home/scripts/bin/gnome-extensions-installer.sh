@@ -3,7 +3,7 @@
 #===============================================================================
 #
 #   Script: GNOME Extensions Auto Installer + Updater
-#   Version: 2.0.0
+#   Version: 2.1.0
 #   Description: Install, update, and (optionally) reinstall GNOME Shell extensions
 #
 #===============================================================================
@@ -21,29 +21,33 @@ readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m'
 
-# Modes: install (default), update, reinstall
+# Modes: install (default), update, reinstall, scan
 MODE="install"
 
 # Extension list from your config
 declare -a EXTENSIONS=(
-	"clipboard-indicator@tudmotu.com"
-	"dash-to-panel@jderose9.github.com"
 	"alt-tab-scroll-workaround@lucasresck.github.io"
-	"extension-list@tu.berry"
 	"auto-move-windows@gnome-shell-extensions.gcampax.github.com"
 	"bluetooth-quick-connect@bjarosze.gmail.com"
-	"no-overview@fthx"
-	"Vitals@CoreCoding.com"
-	"tilingshell@ferrarodomenico.com"
-	"weatheroclock@CleoMenezesJr.github.io"
-	"spotify-controls@Sonath21"
-	"space-bar@luchrioh"
-	"sound-percentage@subashghimire.info.np"
-	"screenshort-cut@pauloimon"
-	"window-centering@hnjjhmtr27"
+	"clipboard-indicator@tudmotu.com"
+	"dash-to-panel@jderose9.github.com"
 	"disable-workspace-animation@ethnarque"
+	"extension-list@tu.berry"
+	"freon@UshakovVasilii_Github.yahoo.com"
 	"gsconnect@andyholmes.github.io"
+	"just-perfection-desktop@just-perfection"
 	"mullvadindicator@pobega.github.com"
+	"no-overview@fthx"
+	"screenshort-cut@pauloimon"
+	"sound-percentage@subashghimire.info.np"
+	"space-bar@luchrioh"
+	"spotify-controls@Sonath21"
+	"tilingshell@ferrarodomenico.com"
+	"trayIconsReloaded@selfmade.pl"
+	"Vitals@CoreCoding.com"
+	"weatheroclock@CleoMenezesJr.github.io"
+	"window-centering@hnjjhmtr27"
+	"zetadev@bootpaper"
 )
 
 log() {
@@ -69,12 +73,16 @@ Options:
   -i, --install     Install missing extensions only (default)
   -u, --update      Update installed extensions to latest compatible version
   -r, --reinstall   Force reinstall all listed extensions
+  -s, --scan        Scan currently installed extensions and update script
+  -l, --list        List currently installed extensions
   -h, --help        Show this help
 
 Examples:
   $(basename "$0")                 # install missing
   $(basename "$0") --update        # update installed
   $(basename "$0") -r              # reinstall all
+  $(basename "$0") --scan          # scan and add installed extensions to script
+  $(basename "$0") --list          # show installed extensions
 EOF
 }
 
@@ -91,6 +99,14 @@ parse_args() {
 			;;
 		-r | --reinstall)
 			MODE="reinstall"
+			shift
+			;;
+		-s | --scan)
+			MODE="scan"
+			shift
+			;;
+		-l | --list)
+			MODE="list"
 			shift
 			;;
 		-h | --help)
@@ -165,6 +181,22 @@ current_local_version() {
 	fi
 }
 
+get_extension_name() {
+	local uuid="$1"
+	local dir
+	dir="$(extensions_dir_for_uuid "$uuid")"
+	local meta="$dir/metadata.json"
+	[[ -f "$meta" ]] || {
+		echo "$uuid"
+		return
+	}
+	if command -v jq >/dev/null 2>&1; then
+		jq -r 'try .name catch ""' "$meta" || echo "$uuid"
+	else
+		grep -oE '"name"\s*:\s*"[^"]+"' "$meta" | sed -E 's/.*:\s*"([^"]+)".*/\1/' | head -1 || echo "$uuid"
+	fi
+}
+
 # Query GNOME Extensions API for a UUID + shell version.
 query_remote_info() {
 	local uuid="$1"
@@ -176,7 +208,7 @@ query_remote_info() {
 			--retry 3 --retry-delay 1 \
 			--connect-timeout 5 --max-time 15 \
 			-H 'Accept: application/json' \
-			-H 'User-Agent: gext-installer/2.0 (+local)' \
+			-H 'User-Agent: gext-installer/2.1 (+local)' \
 			"$api"
 	)"; then
 		return 1
@@ -242,7 +274,7 @@ download_and_install() {
 		--retry 3 --retry-delay 1 \
 		--connect-timeout 5 --max-time 15 \
 		-H 'Accept: application/zip' \
-		-H 'User-Agent: gext-installer/2.0 (+local)' \
+		-H 'User-Agent: gext-installer/2.1 (+local)' \
 		-o "$zip_path" "$download_url"; then
 		log "ERROR" "Download failed for: $uuid"
 		rm -rf "$tmpdir"
@@ -311,6 +343,127 @@ update_extension_if_available() {
 		log "INFO" "Update available: $uuid local v$local_ver → remote v$remote_version"
 		download_and_install "$uuid" "$shell_ver" "Update"
 	fi
+}
+
+scan_and_update_script() {
+	log "INFO" "Scanning currently installed extensions..."
+
+	# Get the script path
+	local script_path="$0"
+	local script_realpath
+	script_realpath="$(realpath "$script_path")"
+
+	# Create backup
+	local backup_path="${script_realpath}.backup-$(date +%Y%m%d-%H%M%S)"
+	cp "$script_realpath" "$backup_path"
+	log "SUCCESS" "Backup created: $backup_path"
+
+	# Get all installed extensions
+	local -a installed_extensions
+	mapfile -t installed_extensions < <(gnome-extensions list | sort)
+
+	if [[ ${#installed_extensions[@]} -eq 0 ]]; then
+		log "WARN" "No extensions found!"
+		return 1
+	fi
+
+	log "INFO" "Found ${#installed_extensions[@]} installed extensions"
+	echo
+
+	# Display installed extensions with names
+	log "INFO" "Currently installed extensions:"
+	for uuid in "${installed_extensions[@]}"; do
+		local name
+		name="$(get_extension_name "$uuid")"
+		local ver
+		ver="$(current_local_version "$uuid")"
+
+		if is_extension_enabled "$uuid"; then
+			echo -e "  ${GREEN}✓${NC} $name"
+			echo -e "    ${CYAN}$uuid${NC} (v${ver:-?})"
+		else
+			echo -e "  ${YELLOW}○${NC} $name"
+			echo -e "    ${CYAN}$uuid${NC} (v${ver:-?})"
+		fi
+	done
+
+	echo
+	read -rp "Do you want to update the script with these extensions? (y/N): " -n 1 REPLY
+	echo
+
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		log "INFO" "Scan cancelled. Backup preserved at: $backup_path"
+		return 0
+	fi
+
+	# Create new extension array content
+	local new_extensions="declare -a EXTENSIONS=(\n"
+	for uuid in "${installed_extensions[@]}"; do
+		new_extensions+="\t\"$uuid\"\n"
+	done
+	new_extensions+=")"
+
+	# Create temporary file with updated content
+	local tmpfile
+	tmpfile="$(mktemp)"
+
+	# Replace the EXTENSIONS array in the script
+	awk -v new_ext="$new_extensions" '
+		/^declare -a EXTENSIONS=\(/ {
+			print new_ext
+			# Skip lines until closing parenthesis
+			while (getline > 0 && !/^\)/) { }
+			next
+		}
+		{ print }
+	' "$script_realpath" >"$tmpfile"
+
+	# Replace the script with updated version
+	mv "$tmpfile" "$script_realpath"
+	chmod +x "$script_realpath"
+
+	log "SUCCESS" "Script updated with ${#installed_extensions[@]} extensions!"
+	log "INFO" "Backup saved at: $backup_path"
+	log "INFO" "You can now use this script on other systems to install these extensions"
+}
+
+is_extension_enabled() {
+	local uuid="$1"
+	gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"
+}
+
+list_installed_extensions() {
+	log "INFO" "Currently installed extensions:"
+	echo
+
+	local -a installed
+	mapfile -t installed < <(gnome-extensions list | sort)
+
+	if [[ ${#installed[@]} -eq 0 ]]; then
+		log "WARN" "No extensions installed!"
+		return 0
+	fi
+
+	local count=1
+	for uuid in "${installed[@]}"; do
+		local name
+		name="$(get_extension_name "$uuid")"
+		local ver
+		ver="$(current_local_version "$uuid")"
+
+		echo -e "${BOLD}[$count]${NC} $name"
+		echo -e "    UUID: ${CYAN}$uuid${NC}"
+		echo -e "    Version: ${YELLOW}${ver:-unknown}${NC}"
+		if is_extension_enabled "$uuid"; then
+			echo -e "    Status: ${GREEN}Enabled${NC}"
+		else
+			echo -e "    Status: ${RED}Disabled${NC}"
+		fi
+		echo
+		((count++))
+	done
+
+	log "INFO" "Total: ${#installed[@]} extensions"
 }
 
 install_all_extensions() {
@@ -393,13 +546,10 @@ restart_gnome_shell() {
 show_installed_extensions() {
 	log "INFO" "Currently installed extensions:"
 	gnome-extensions list | while read -r extension; do
-		# State
-		local state
-		state="$(gnome-extensions info "$extension" | awk -F': ' '/State/{print $2}')"
 		# Version
 		local ver
 		ver="$(current_local_version "$extension")"
-		if [[ "$state" == "ENABLED" ]]; then
+		if is_extension_enabled "$extension"; then
 			echo -e "  ${GREEN}✓${NC} $extension (v${ver:-?})"
 		else
 			echo -e "  ${RED}✗${NC} $extension (v${ver:-?})"
@@ -413,6 +563,25 @@ main() {
 	echo -e "${BOLD}${CYAN}GNOME Extensions Installer/Updater${NC}"
 	echo -e "${BOLD}Mode:${NC} $MODE"
 	echo
+
+	# For scan and list modes, we don't need full dependency check
+	if [[ "$MODE" == "list" ]]; then
+		if ! command -v gnome-extensions &>/dev/null; then
+			log "ERROR" "gnome-extensions command not found!"
+			exit 1
+		fi
+		list_installed_extensions
+		exit 0
+	fi
+
+	if [[ "$MODE" == "scan" ]]; then
+		if ! command -v gnome-extensions &>/dev/null; then
+			log "ERROR" "gnome-extensions command not found!"
+			exit 1
+		fi
+		scan_and_update_script
+		exit 0
+	fi
 
 	check_dependencies
 	echo

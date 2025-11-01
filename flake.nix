@@ -161,7 +161,8 @@
     
     # Walker - Wayland application launcher
     walker = {
-      url = "github:abenz1267/walker/v2.7.5";
+      url = "github:abenz1267/walker/v2.8.1";
+      #url = "github:abenz1267/walker/v2.7.5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
