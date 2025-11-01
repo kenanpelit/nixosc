@@ -103,7 +103,7 @@ echo "🎨 GTK tema ayarları (Catppuccin Mocha)..."
 dconf write /org/gnome/desktop/interface/gtk-theme "'catppuccin-mocha-mauve-standard+normal'"
 dconf write /org/gnome/desktop/interface/icon-theme "'a-candy-beauty-icon-theme'"
 dconf write /org/gnome/desktop/interface/cursor-theme "'catppuccin-mocha-dark-cursors'"
-dconf write /org/gnome/desktop/interface/cursor-size "16"
+dconf write /org/gnome/desktop/interface/cursor-size "24"
 
 # Shell tema
 dconf write /org/gnome/shell/extensions/user-theme/name "'catppuccin-mocha-mauve-standard+normal'"
@@ -146,6 +146,40 @@ else
 	dconf write /org/gnome/desktop/screensaver/color-shading-type "'solid'"
 	dconf write /org/gnome/desktop/screensaver/primary-color "'$MOCHA_MANTLE'"
 fi
+
+# =============================================================================
+# AZWALLPAPER (WALLPAPER SLIDESHOW) CONFIGURATION
+# =============================================================================
+echo "🖼️  AzWallpaper (Wallpaper Slideshow) ayarları uygulanıyor..."
+
+# Wallpaper dizini
+WALLPAPER_DIR="$HOME/Pictures/wallpapers/others"
+BING_DOWNLOAD_DIR="$HOME/Pictures/bing"
+
+# Wallpaper dizinlerini oluştur
+mkdir -p "$WALLPAPER_DIR"
+mkdir -p "$BING_DOWNLOAD_DIR"
+
+# Temel ayarlar
+dconf write /org/gnome/shell/extensions/azwallpaper/slideshow-directory "'$WALLPAPER_DIR'"
+dconf write /org/gnome/shell/extensions/azwallpaper/bing-download-directory "'$BING_DOWNLOAD_DIR'"
+dconf write /org/gnome/shell/extensions/azwallpaper/bing-wallpaper-download "true"
+
+# Slideshow zamanlaması - 5 dakikada bir değişsin (0 saat, 5 dakika, 0 saniye)
+dconf write /org/gnome/shell/extensions/azwallpaper/slideshow-slide-duration "(0, 5, 0)"
+dconf write /org/gnome/shell/extensions/azwallpaper/slideshow-use-absolute-time-for-duration "true"
+
+# Preferences sayfası (boş - varsayılan)
+dconf write /org/gnome/shell/extensions/azwallpaper/prefs-visible-page "''"
+
+# Update notifier
+dconf write /org/gnome/shell/extensions/azwallpaper/update-notifier-project-version "16"
+
+echo "✅ AzWallpaper ayarları tamamlandı"
+echo "   📁 Wallpaper dizini: $WALLPAPER_DIR"
+echo "   📁 Bing indirme dizini: $BING_DOWNLOAD_DIR"
+echo "   ⏱️  Değişim süresi: 5 dakika"
+echo "   🌐 Bing otomatik indirme: Aktif"
 
 # =============================================================================
 # TERMINAL COLORS (Catppuccin Mocha için)
@@ -304,6 +338,7 @@ dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.des
 EXTENSIONS="[
 'alt-tab-scroll-workaround@lucasresck.github.io',
 'auto-move-windows@gnome-shell-extensions.gcampax.github.com',
+'azwallpaper@azwallpaper.gitlab.com',
 'bluetooth-quick-connect@bjarosze.gmail.com',
 'clipboard-indicator@tudmotu.com',
 'dash-to-panel@jderose9.github.com',
@@ -617,10 +652,10 @@ echo "🎯 Cursor ve ikon ayarları..."
 
 # Cursor size for HiDPI
 if xrandr | grep -q "3840x2160\|2560x1440"; then
-	dconf write /org/gnome/desktop/interface/cursor-size "32"
+	dconf write /org/gnome/desktop/interface/cursor-size "24"
 	echo "🖥️  HiDPI ekran tespit edildi, cursor boyutu 32'ye ayarlandı"
 else
-	dconf write /org/gnome/desktop/interface/cursor-size "24"
+	dconf write /org/gnome/desktop/interface/cursor-size "20"
 fi
 
 # =============================================================================

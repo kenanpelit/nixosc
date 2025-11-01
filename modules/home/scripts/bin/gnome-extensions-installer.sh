@@ -28,6 +28,7 @@ MODE="install"
 declare -a EXTENSIONS=(
 	"alt-tab-scroll-workaround@lucasresck.github.io"
 	"auto-move-windows@gnome-shell-extensions.gcampax.github.com"
+	"azwallpaper@azwallpaper.gitlab.com"
 	"bluetooth-quick-connect@bjarosze.gmail.com"
 	"clipboard-indicator@tudmotu.com"
 	"dash-to-panel@jderose9.github.com"
