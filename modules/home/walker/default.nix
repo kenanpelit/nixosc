@@ -21,11 +21,26 @@
 # Version Information:
 #   - Recommended: v2.7.2+ (from GitHub flake input)
 #   - Nixpkgs version: 0.12.21 (outdated, not recommended)
+#   - Current detected: Walker 2.7.5, Elephant 2.11.0
+#   
+#   IMPORTANT: Walker and Elephant versions should match or be close!
+#   Version mismatch can cause "unexpected EOF" errors in communication.
+#   
+#   To fix version mismatch:
+#   1. Pin both to same version in flake.nix
+#   2. Or use matching flake inputs
+#   3. Check: walker --version && elephant --version
 #
 # Known Issues:
 #   - D-Bus service registration can take 15-20 seconds on first launch
 #   - Type=dbus causes systemd timeout (fixed with Type=simple + increased timeout)
 #   - Walker must wait for Elephant backend to fully initialize
+#
+# Reliability Improvements (v2):
+#   - Elephant uses Restart=always for sleep/resume resilience
+#   - Health check timer monitors Elephant every 3 minutes
+#   - Automatic restart on any service stoppage
+#   - Resource limits prevent runaway processes
 #
 # Usage:
 #   # Automatically enabled when imported in modules/home/default.nix
@@ -102,7 +117,8 @@ in
         When enabled:
         - Elephant backend runs automatically on login
         - Walker runs as a service with extended timeout for D-Bus registration
-        - Services restart automatically on failure
+        - Services restart automatically on failure, manual stop, or sleep/resume
+        - Health check timer monitors Elephant every 3 minutes
         
         Recommended: `true` for best performance and reliability.
         
@@ -113,6 +129,7 @@ in
 ```bash
         systemctl --user status elephant walker
         systemctl --user restart elephant walker
+        systemctl --user status elephant-healthcheck.timer
 ```
       '';
     };
@@ -201,24 +218,155 @@ in
     # ==========================================================================
     # Provides search providers (apps, files, clipboard, etc.) to Walker
     # Must start before Walker and remain running
+    #
+    # Restart Policy:
+    #   Uses "always" instead of "on-failure" to ensure the service restarts
+    #   even after manual stops or system sleep/resume cycles.
+    #
+    # Resource Limits:
+    #   Memory and CPU quotas prevent runaway resource usage while allowing
+    #   the service to restart reliably.
     systemd.user.services.elephant = mkIf cfg.runAsService {
       Unit = {
         Description = "Elephant - Backend provider for Walker";
         Documentation = "https://github.com/abenz1267/elephant";
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
+        
+        # Restart limit ayarları Unit bölümünde olmalı
+        # 2 dakika içinde 10 kez yeniden başlatma denemesi yapabilir
+        StartLimitBurst = 10;
+        StartLimitIntervalSec = 120;
       };
 
       Service = {
         Type = "simple";
         ExecStart = "${elephantPkg}/bin/elephant";
-        Restart = "on-failure";
-        RestartSec = 5;
+        
+        # Agresif yeniden başlatma politikası
+        # "always" - servis her durduğunda yeniden başlar (sleep/resume dahil)
+        Restart = "always";
+        RestartSec = 3;
+        
+        # Kaynak kullanımını sınırla
+        MemoryMax = "500M";
+        CPUQuota = "50%";
+        
         TimeoutStopSec = 10;
       };
 
       Install = {
         WantedBy = [ "graphical-session.target" ];
+      };
+    };
+
+    # ==========================================================================
+    # Elephant Health Check Timer
+    # ==========================================================================
+    # Monitors Elephant service health and restarts if not running
+    # Runs every 3 minutes to ensure continuous availability
+    systemd.user.timers.elephant-healthcheck = mkIf cfg.runAsService {
+      Unit = {
+        Description = "Periodic health check for Elephant service";
+        Documentation = "https://github.com/abenz1267/elephant";
+      };
+
+      Timer = {
+        # İlk kontrol boot'tan 1 dakika sonra
+        OnBootSec = "1min";
+        
+        # Sonraki kontroller her 3 dakikada bir
+        OnUnitActiveSec = "3min";
+        
+        # Timer'ın kendisi persistent olsun
+        Persistent = true;
+      };
+
+      Install = {
+        WantedBy = [ "timers.target" ];
+      };
+    };
+
+    # ==========================================================================
+    # Elephant Health Check Service
+    # ==========================================================================
+    # Executed by the timer to check and restart Elephant if needed
+    systemd.user.services.elephant-healthcheck = mkIf cfg.runAsService {
+      Unit = {
+        Description = "Health check and restart Elephant if needed";
+        Documentation = "https://github.com/abenz1267/elephant";
+      };
+
+      Service = {
+        Type = "oneshot";
+        
+        # D-Bus environment'ını ayarla (SSH session için gerekli)
+        Environment = [
+          "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus"
+        ];
+        
+        # Elephant'ın çalışıp çalışmadığını kontrol et ve gerekirse yeniden başlat
+        # Chroot-safe: systemctl yerine direkt systemd socket kullan
+        ExecStart = pkgs.writeShellScript "elephant-healthcheck" ''
+          #!${pkgs.bash}/bin/bash
+          
+          LOG_FILE="$HOME/.local/share/elephant-health.log"
+          TIMESTAMP=$(${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S')
+          
+          # Log dizinini oluştur
+          ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$LOG_FILE")"
+          
+          # Elephant process'ini kontrol et
+          if ! ${pkgs.procps}/bin/pgrep -u "$USER" -x elephant >/dev/null 2>&1; then
+            echo "$TIMESTAMP: Elephant not running, attempting restart..." | \
+              ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+            
+            # systemd socket üzerinden restart (chroot-safe)
+            # /run/user/$UID/systemd/private socket'i kullan
+            SYSTEMD_SOCKET="/run/user/$(${pkgs.coreutils}/bin/id -u)/systemd/private"
+            
+            if [ -S "$SYSTEMD_SOCKET" ]; then
+              # busctl ile restart gönder (en güvenilir yöntem)
+              if ${pkgs.systemd}/bin/busctl --user call \
+                 org.freedesktop.systemd1 \
+                 /org/freedesktop/systemd1 \
+                 org.freedesktop.systemd1.Manager \
+                 StartUnit ss elephant.service replace 2>&1 | \
+                 ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"; then
+                
+                echo "$TIMESTAMP: Start command sent via busctl" | \
+                  ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+                
+                # Başlatmanın başarılı olup olmadığını kontrol et
+                ${pkgs.coreutils}/bin/sleep 10
+                if ${pkgs.procps}/bin/pgrep -u "$USER" -x elephant >/dev/null 2>&1; then
+                  echo "$TIMESTAMP: Elephant successfully restarted" | \
+                    ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+                else
+                  echo "$TIMESTAMP: Failed to restart Elephant (process not found after 10s)" | \
+                    ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+                fi
+              else
+                echo "$TIMESTAMP: Failed to send start command via busctl" | \
+                  ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+              fi
+            else
+              echo "$TIMESTAMP: Systemd socket not found at $SYSTEMD_SOCKET" | \
+                ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+                
+              # Son çare: direkt binary çalıştır
+              echo "$TIMESTAMP: Attempting direct binary execution..." | \
+                ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+              ${elephantPkg}/bin/elephant &
+              ELEPHANT_PID=$!
+              echo "$TIMESTAMP: Started Elephant with PID $ELEPHANT_PID" | \
+                ${pkgs.coreutils}/bin/tee -a "$LOG_FILE"
+            fi
+          else
+            # Elephant çalışıyor, log'a yazmaya gerek yok (sessiz başarı)
+            true
+          fi
+        '';
       };
     };
 
@@ -252,6 +400,10 @@ in
         # Use Type=simple instead of Type=dbus to avoid systemd timeout
         # D-Bus registration can take 15-20 seconds on first launch
         Type = "simple";
+        
+        # Elephant'ın tamamen hazır olmasını bekle
+        # 5 saniye gecikme ekleyerek bağlantı sorunlarını önle
+        ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
         
         # Start Walker in GApplication service mode
         # This enables D-Bus activation and single-instance behavior
@@ -316,22 +468,35 @@ in
       
       ${if cfg.runAsService then ''
       ✓ Running as systemd service (recommended)
+      ✓ Elephant health check enabled (every 3 minutes)
       
       Service Management:
         systemctl --user status elephant walker
         systemctl --user restart elephant walker
         systemctl --user stop elephant walker
         
+        # Health check timer
+        systemctl --user status elephant-healthcheck.timer
+        systemctl --user list-timers elephant-healthcheck
+        
       Launch Walker:
         walker                                    # Standard launch
         nc -U /run/user/$UID/walker/walker.sock  # Fast socket launch
         
       Troubleshooting:
-        journalctl --user -u walker -n 50        # View Walker logs
-        journalctl --user -u elephant -n 50      # View Elephant logs
+        journalctl --user -u walker -n 50           # View Walker logs
+        journalctl --user -u elephant -n 50         # View Elephant logs
+        journalctl --user -u elephant-healthcheck   # View health check logs
+        cat ~/.local/share/elephant-health.log      # View health check history
         
       Note: First launch may take 15-20 seconds for D-Bus registration.
       This is normal behavior. Subsequent launches will be faster.
+      
+      Reliability Features:
+        • Elephant restarts automatically on stop/failure/sleep
+        • Health check monitors Elephant every 3 minutes
+        • Resource limits prevent runaway processes
+        • Detailed logging for troubleshooting
       '' else ''
       ⚠ Not running as service
       
@@ -347,6 +512,7 @@ in
         ~/.config/walker/config.toml              # Main config
         ~/.config/elephant/providers/             # Provider configs
         ~/.config/elephant/menus/                 # Custom menus
+        ~/.local/share/elephant-health.log        # Health check log
         
       Documentation:
         Walker:   https://github.com/abenz1267/walker
@@ -357,4 +523,3 @@ in
     '';
   };
 }
-

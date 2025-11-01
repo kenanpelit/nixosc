@@ -206,15 +206,15 @@ dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-9 "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-10 "@as []"
 
 # Move window to workspace
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-1 "['<Alt><Shift>1']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-2 "['<Alt><Shift>2']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-3 "['<Alt><Shift>3']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-4 "['<Alt><Shift>4']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-5 "['<Alt><Shift>5']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-6 "['<Alt><Shift>6']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-7 "['<Alt><Shift>7']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Alt><Shift>8']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Alt><Shift>9']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-1 "['<Super><Shift>1']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-2 "['<Super><Shift>2']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-3 "['<Super><Shift>3']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-4 "['<Super><Shift>4']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-5 "['<Super><Shift>5']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-6 "['<Super><Shift>6']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-7 "['<Super><Shift>7']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Super><Shift>8']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Super><Shift>9']"
 
 # Navigate workspaces with arrows - DISABLED
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "@as []"
@@ -256,7 +256,7 @@ echo "🌙 Night Light ayarları uygulanıyor..."
 # 00:00 - 00:00 (24 saat) ve örnek sıcaklık değeri
 NIGHT_LIGHT_FROM="0.0" # 00:00
 NIGHT_LIGHT_TO="0.0"   # 00:00 (GNOME çoğu sürümde 24h anlamına gelir)
-NIGHT_LIGHT_TEMP=3200  # 1000–10000 arası (daha sıcak = daha sarı)
+NIGHT_LIGHT_TEMP=2800  # 1000–10000 arası (daha sıcak = daha sarı)
 
 dconf write /org/gnome/settings-daemon/plugins/color/night-light-enabled true
 dconf write /org/gnome/settings-daemon/plugins/color/night-light-schedule-automatic false
@@ -302,24 +302,28 @@ dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.des
 
 # Extensions - NixOS'ta yüklü olanlar
 EXTENSIONS="[
-'clipboard-indicator@tudmotu.com',
-'dash-to-panel@jderose9.github.com',
 'alt-tab-scroll-workaround@lucasresck.github.io',
-'extension-list@tu.berry',
 'auto-move-windows@gnome-shell-extensions.gcampax.github.com',
 'bluetooth-quick-connect@bjarosze.gmail.com',
-'no-overview@fthx',
-'Vitals@CoreCoding.com',
-'tilingshell@ferrarodomenico.com',
-'weatheroclock@CleoMenezesJr.github.io',
-'spotify-controls@Sonath21',
-'space-bar@luchrioh',
-'sound-percentage@subashghimire.info.np',
-'screenshort-cut@pauloimon',
-'window-centering@hnjjhmtr27',
+'clipboard-indicator@tudmotu.com',
+'dash-to-panel@jderose9.github.com',
 'disable-workspace-animation@ethnarque',
+'extension-list@tu.berry',
+'freon@UshakovVasilii_Github.yahoo.com',
 'gsconnect@andyholmes.github.io',
-'mullvadindicator@pobega.github.com'
+'just-perfection-desktop@just-perfection',
+'mullvadindicator@pobega.github.com',
+'no-overview@fthx',
+'screenshort-cut@pauloimon',
+'sound-percentage@subashghimire.info.np',
+'space-bar@luchrioh',
+'spotify-controls@Sonath21',
+'tilingshell@ferrarodomenico.com',
+'trayIconsReloaded@selfmade.pl',
+'Vitals@CoreCoding.com',
+'weatheroclock@CleoMenezesJr.github.io',
+'window-centering@hnjjhmtr27',
+'zetadev@bootpaper'
 ]"
 
 dconf write /org/gnome/shell/enabled-extensions "$EXTENSIONS"
@@ -462,29 +466,6 @@ SPACE_BAR_MOCHA_CSS='
 
 dconf write /org/gnome/shell/extensions/space-bar/appearance/application-styles "'$SPACE_BAR_MOCHA_CSS'"
 
-## =============================================================================
-## Dash to Panel - Date (Clock) center on each monitor
-## =============================================================================
-#echo "🕒 Dash to Panel: saati merkeze alınıyor..."
-
-## Her monitör için ayrı yerleşim kullan
-#dconf write /org/gnome/shell/extensions/dash-to-panel/panel-element-positions-monitors-sync false
-#
-## dateMenu'yu center'a koy, taskbar solda, systemMenu sağda
-#dconf write /org/gnome/shell/extensions/dash-to-panel/panel-element-positions \
-#	'"{
-#  \"CMN-0x00000000\": {
-#    \"left\":   [{\"element\":\"showAppsButton\",\"visible\":true},{\"element\":\"taskbar\",\"visible\":true}],
-#    \"center\": [{\"element\":\"dateMenu\",\"visible\":true}],
-#    \"right\":  [{\"element\":\"systemMenu\",\"visible\":true},{\"element\":\"desktopButton\",\"visible\":true}]
-#  },
-#  \"DEL-KRXTR88N909L\": {
-#    \"left\":   [{\"element\":\"showAppsButton\",\"visible\":true},{\"element\":\"taskbar\",\"visible\":true}],
-#    \"center\": [{\"element\":\"dateMenu\",\"visible\":true}],
-#    \"right\":  [{\"element\":\"systemMenu\",\"visible\":true},{\"element\":\"desktopButton\",\"visible\":true}]
-#  }
-#}"'
-
 # =============================================================================
 # PRIVACY SETTINGS
 # =============================================================================
@@ -555,17 +536,30 @@ dconf write /org/gnome/desktop/screensaver/lock-enabled "true"
 dconf write /org/gnome/desktop/screensaver/lock-delay "uint32 0"
 dconf write /org/gnome/desktop/screensaver/idle-activation-enabled "true"
 
-# =============================================================================
-# LOCK SCREEN DISABLE (AUTOLOGIN İÇİN)
-# =============================================================================
-echo "🔓 Kilit ekranı devre dışı bırakılıyor (autologin için)..."
+## =============================================================================
+## LOCK SCREEN DISABLE (AUTOLOGIN İÇİN)
+## =============================================================================
+#echo "🔓 Kilit ekranı devre dışı bırakılıyor (autologin için)..."
 
-dconf write /org/gnome/desktop/lockdown/disable-lock-screen "true"
-dconf write /org/gnome/desktop/screensaver/lock-enabled "false"
-dconf write /org/gnome/desktop/screensaver/idle-activation-enabled "false"
-dconf write /org/gnome/desktop/session/idle-delay "uint32 0"
+#dconf write /org/gnome/desktop/lockdown/disable-lock-screen "true"
+#dconf write /org/gnome/desktop/screensaver/lock-enabled "false"
+#dconf write /org/gnome/desktop/screensaver/idle-activation-enabled "false"
+#dconf write /org/gnome/desktop/session/idle-delay "uint32 0"
 
-echo "✅ Kilit ekranı tamamen devre dışı bırakıldı"
+#echo "✅ Kilit ekranı tamamen devre dışı bırakıldı"
+
+# =============================================================================
+# LOCK SCREEN SETTINGS
+# =============================================================================
+echo "🔒 Kilit ekranı ayarları yapılıyor..."
+
+dconf write /org/gnome/desktop/lockdown/disable-lock-screen "false"
+dconf write /org/gnome/desktop/screensaver/lock-enabled "true"
+dconf write /org/gnome/desktop/screensaver/lock-delay "uint32 0"
+dconf write /org/gnome/desktop/screensaver/idle-activation-enabled "true"
+dconf write /org/gnome/desktop/session/idle-delay "uint32 1800"
+
+echo "✅ Kilit ekranı aktif (30 dakika idle sonra, Alt+L ile manuel)"
 # =============================================================================
 # NAUTILUS SETTINGS
 # =============================================================================
@@ -898,7 +892,7 @@ done
 # Workspace geçiş kısayollarını kapat (Super+[1-9])
 for i in {1..9}; do
 	dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "@as []"
-	dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "@as []"
+	#dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "@as []"
 done
 
 # Space Bar extension'ının workspace switching kısayolunu kapat
@@ -1003,7 +997,7 @@ export CATPPUCCIN_THEME="mocha"
 export CATPPUCCIN_ACCENT="mauve"
 export GTK_THEME="catppuccin-mocha-mauve-standard+normal"
 export XCURSOR_THEME="catppuccin-mocha-dark-cursors"
-export XCURSOR_SIZE="24"
+export XCURSOR_SIZE="16"
 EOF
 	echo "✅ Catppuccin ortam değişkenleri ~/.profile'a eklendi"
 fi

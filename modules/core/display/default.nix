@@ -209,7 +209,7 @@ in
       # Automatically log in specified user (no password prompt)
       # Security consideration: Only use on single-user systems
       autoLogin = {
-        enable = true;
+        enable = false;
         user = "kenan";  # Should match your username variable
       };
       
