@@ -263,6 +263,7 @@
       },
       "original": {
         "owner": "abenz1267",
+        "ref": "v2.11.0",
         "repo": "elephant",
         "type": "github"
       }
@@ -1973,11 +1974,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1761990263,
-        "narHash": "sha256-zDtpgYslPcTHDPanTP3znzIaQR1nSC32T84DJix39W0=",
+        "lastModified": 1762009359,
+        "narHash": "sha256-d6nVA9FRfgvLubgkRSut2OZHMC1dj+2oZPkEF65cPd8=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "d774aea3ebfa729e6e4fcec9562170799e414187",
+        "rev": "024437792c0750dfab885880a193e81b44997034",
         "type": "github"
       },
       "original": {

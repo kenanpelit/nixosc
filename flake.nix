@@ -162,13 +162,12 @@
     # Walker - Wayland application launcher
     walker = {
       url = "github:abenz1267/walker/v2.8.1";
-      #url = "github:abenz1267/walker/v2.7.5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
     # Elephant - Backend provider for Walker (with all providers)
     elephant = {
-      url = "github:abenz1267/elephant";
+      url = "github:abenz1267/elephant/v2.11.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   
