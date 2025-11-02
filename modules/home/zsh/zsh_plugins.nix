@@ -16,15 +16,15 @@
           sha256 = "085132b1s114six9s4643ghgcmmn6allj2w1z1alymj0h8pm8a36";
         };
       }
-      {
-        name = "zsh-you-should-use";
-        src = pkgs.fetchFromGitHub {
-          owner = "MichaelAquilina";
-          repo = "zsh-you-should-use";
-          rev = "78617df02e09fcc06f41a91d934b7048947fc62d";
-          sha256 = "0acrqvzgyc1q86709mfkxdnyp7d2gxy32cacnrpndfwaqglq8vkl";
-        };
-      }
+      #{
+      #  name = "zsh-you-should-use";
+      #  src = pkgs.fetchFromGitHub {
+      #    owner = "MichaelAquilina";
+      #    repo = "zsh-you-should-use";
+      #    rev = "78617df02e09fcc06f41a91d934b7048947fc62d";
+      #    sha256 = "0acrqvzgyc1q86709mfkxdnyp7d2gxy32cacnrpndfwaqglq8vkl";
+      #  };
+      #}
       {
         name = "zsh-autosuggestions";
         src = pkgs.fetchFromGitHub {

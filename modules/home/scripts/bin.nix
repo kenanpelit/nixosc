@@ -294,6 +294,9 @@ let
   svmarch = pkgs.writeShellScriptBin "svmarch" (
     builtins.readFile ./bin/svmarch.sh
   );
+  svm_launcher = pkgs.writeShellScriptBin "svm_launcher" (
+    builtins.readFile ./bin/svm_launcher.sh
+  );
   svmnixos = pkgs.writeShellScriptBin "svmnixos" (
     builtins.readFile ./bin/svmnixos.sh
   );
@@ -484,6 +487,7 @@ in {
     smart-suspend
     ssh-launcher
     svmarch
+    svm_launcher
     svmnixos
     svmubuntu
     tarchiver
