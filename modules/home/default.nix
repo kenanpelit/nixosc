@@ -42,7 +42,7 @@
     ./wezterm       # Cross-platform terminal with multiplexing
     ./tmux          # Terminal multiplexer and session management
     ./zsh           # Z shell configuration and plugins
-    ./p10k          # Powerlevel10k prompt theme
+    #./bash
     
     # =============================================================================
     # Development & Code Editing

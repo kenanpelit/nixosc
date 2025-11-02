@@ -445,11 +445,9 @@
       load = "uptime";
       usage = "du -h --max-depth=1 | sort -hr";
       
-      # Colors test
-      colors = "for i in {0..255}; do print -Pn \"%K{\$i}  %k%F{\$i}\$'{i:3d}'%f \" \$'{i%16==15?\"\\\\n\":\"\"}'; done";
     };
 
-initContent = ''
+    initContent = lib.mkAfter ''
       # =============================================================================
       # Environment Variables and Core Setup
       # =============================================================================
