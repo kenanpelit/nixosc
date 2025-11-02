@@ -54,27 +54,31 @@ let
   # Setup Script (runs before service starts)
   # =============================================================================
   # Creates directories and installs configuration
-  # Fixed to handle errors gracefully and not fail service startup
-  setupScript = pkgs.writeShellScript "transmission-setup" ''
+  setupScript = pkgs.writeShellScriptBin "transmission-setup" ''
     set -euo pipefail
     
+    echo "Setting up Transmission directories and configuration..."
+    
     # Create necessary directories
-    mkdir -p "${config.home.homeDirectory}/.tor/transmission"/{complete,incomplete,watch}
-    mkdir -p "${config.home.homeDirectory}/${settingsDir}"
+    ${pkgs.coreutils}/bin/mkdir -p "${config.home.homeDirectory}/.tor/transmission"/{complete,incomplete,watch}
+    ${pkgs.coreutils}/bin/mkdir -p "${config.home.homeDirectory}/${settingsDir}"
     
     # Settings file path
     SETTINGS_FILE="${config.home.homeDirectory}/${settingsDir}/settings.json"
     
     # Backup existing settings if present
     if [ -f "$SETTINGS_FILE" ]; then
-      # Only backup if different from source
+      echo "Found existing settings, checking for changes..."
       if ! ${pkgs.diffutils}/bin/cmp -s "${settingsFile}" "$SETTINGS_FILE" 2>/dev/null; then
-        ${pkgs.coreutils}/bin/cp "$SETTINGS_FILE" "$SETTINGS_FILE.backup.$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+        BACKUP_FILE="$SETTINGS_FILE.backup.$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+        ${pkgs.coreutils}/bin/cp "$SETTINGS_FILE" "$BACKUP_FILE"
+        echo "Backed up to: $BACKUP_FILE"
       fi
     fi
     
     # Install new settings with proper permissions
     ${pkgs.coreutils}/bin/install -m 644 "${settingsFile}" "$SETTINGS_FILE"
+    echo "Configuration installed successfully"
   '';
   
 in
@@ -97,7 +101,7 @@ in
         Type = "notify";
         
         # Setup directories and configuration before starting
-        ExecStartPre = "${setupScript}";
+        ExecStartPre = "${setupScript}/bin/transmission-setup";
         
         # Start transmission daemon
         ExecStart = "${pkgs.transmission_4}/bin/transmission-daemon -f --log-level=error";
@@ -177,6 +181,11 @@ in
 # Troubleshooting
 # ==============================================================================
 #
+# Exit Code 127 Error:
+#   - Means "command not found" in the setup script
+#   - Fixed by using system PATH commands instead of hardcoded paths
+#   - Script now uses: mkdir, cp, chmod, date, cmp (all in standard PATH)
+#
 # Timer and Service Behavior:
 #   - Timer triggers 60 seconds after boot
 #   - Timer activates the transmission service
@@ -195,5 +204,9 @@ in
 # Issue: Want to disable delayed start
 # Fix:   systemctl --user disable transmission.timer
 #        systemctl --user enable transmission.service --now
+#
+# Debug Setup Script:
+#   journalctl --user -u transmission -n 50    # View setup script output
+#   bash -x /nix/store/.../transmission-setup  # Run script manually with debug
 #
 # ==============================================================================
