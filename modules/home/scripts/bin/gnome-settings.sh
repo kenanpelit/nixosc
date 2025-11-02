@@ -714,6 +714,7 @@ LOGINCTL="$(opt loginctl)"
 
 OSC_SOUNDCTL="$(opt osc-soundctl)"
 OSC_SPOTIFY="$(opt osc-spotify)"
+OSC_REBOOT="$(opt osc-safe-reboot)"
 BLUE_TOGGLE="$(opt bluetooth_toggle)"
 MPV_MGR="$(opt gnome-mpv-manager)"
 KKENP="$(opt start-kkenp)"
@@ -728,7 +729,7 @@ WALK="$(opt walk)"
 
 # 0..40 path list
 CUSTOM_PATHS=""
-for i in {0..42}; do
+for i in {0..43}; do
 	p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
 	if [ -z "$CUSTOM_PATHS" ]; then
 		CUSTOM_PATHS="'$p'"
@@ -915,6 +916,11 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/binding "'<Super>space'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/command "'$WALK'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/name "'WalkerS'"
+
+# 43) Safe Reboot
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom43/binding "'<Super>backspace'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom43/command "'$OSC_REBOOT'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom43/name "'OSC Reboot'"
 
 # =============================================================================
 # GNOME'UN VARSAYILAN SUPER+[1-9] KISA YOLLARINI KAPAT

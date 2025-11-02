@@ -8,8 +8,20 @@ set -euo pipefail
 
 #--- Ayarlar -------------------------------------------------------------------
 GRACE_APPS=("brave" "chromium")
-SOFT_TIMEOUT=5 # SIGTERM sonrası bekleme (saniye)
-HARD_DELAY=0.5 # KILL öncesi küçük bekleme
+SOFT_TIMEOUT=5   # SIGTERM sonrası bekleme (saniye)
+HARD_DELAY=0.5   # KILL öncesi küçük bekleme
+NOTIFY_TIME=3000 # Bildirim gösterim süresi (ms)
+
+#--- Notify fonksiyonu ---------------------------------------------------------
+send_notify() {
+	local title="$1"
+	local msg="$2"
+	local urgency="${3:-normal}"
+
+	if command -v notify-send &>/dev/null; then
+		notify-send -u "$urgency" -t "$NOTIFY_TIME" "$title" "$msg"
+	fi
+}
 
 #--- Brave/Chromium fix fonksiyonu ---------------------------------------------
 fix_browser_flags() {
@@ -18,6 +30,7 @@ fix_browser_flags() {
 
 	for p in "${profiles[@]}"; do
 		[[ -d "$p" ]] || continue
+
 		# Preferences dosyası
 		if [[ -f "$p/Preferences" ]]; then
 			sed -i \
@@ -39,9 +52,10 @@ fix_browser_flags() {
 #--- Uygulamaları graceful şekilde kapat ---------------------------------------
 graceful_shutdown() {
 	echo "[INFO] SIGTERM gönderiliyor: ${GRACE_APPS[*]}"
+	send_notify "🔄 Güvenli Reboot" "Tarayıcılar kapatılıyor..."
 
 	for a in "${GRACE_APPS[@]}"; do
-		# -f kullan (komut satırında ara), -x kaldır
+		# -f kullan (komut satırında ara)
 		if pgrep -f "$a" >/dev/null 2>&1; then
 			echo "[INFO] $a bulundu, kapatılıyor..."
 			pkill -TERM -f "$a" 2>/dev/null || true
@@ -52,13 +66,19 @@ graceful_shutdown() {
 	sleep "$SOFT_TIMEOUT"
 
 	# Hala açık olanları KILL
+	local killed=0
 	for a in "${GRACE_APPS[@]}"; do
 		if pgrep -f "$a" >/dev/null 2>&1; then
 			echo "[WARN] $a hala açık, SIGKILL gönderiliyor..."
 			pkill -KILL -f "$a" 2>/dev/null || true
 			sleep "$HARD_DELAY"
+			killed=1
 		fi
 	done
+
+	if [[ $killed -eq 1 ]]; then
+		send_notify "⚠️ Güvenli Reboot" "Bazı uygulamalar zorla kapatıldı" "critical"
+	fi
 
 	echo "[INFO] Tüm hedef uygulamalar kapatıldı."
 }
@@ -69,6 +89,10 @@ graceful_shutdown
 
 echo "[STEP] Brave/Chromium flag fix..."
 fix_browser_flags
+send_notify "✅ Güvenli Reboot" "Browser flag'leri düzeltildi"
 
 echo "[STEP] Reboot başlatılıyor..."
+send_notify "🔌 Sistem Yeniden Başlatılıyor" "3 saniye sonra reboot..." "critical"
+sleep 1
+
 exec systemctl reboot -i
