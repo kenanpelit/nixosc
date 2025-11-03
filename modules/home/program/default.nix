@@ -8,7 +8,7 @@
   # =============================================================================
   # Service Configuration
   # =============================================================================
-  services.mhyprsunset.enable = true;  # Enable HyprSunset service for automatic blue light filtering
+  services.blue.enable = true;  # Enable unified night light manager (Gammastep + HyprSunset)
   
   programs = {
     # ---------------------------------------------------------------------------
