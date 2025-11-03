@@ -33,6 +33,7 @@
   #custom-weather,
   #custom-system-status,
   #custom-waybar-mpris,
+  #custom-nlight,
   #pulseaudio,
   #pulseaudio#source,
   #pulseaudio#sink,
@@ -479,11 +480,29 @@
     font-weight: 500;
   }
 
+/* Night Light module */
+  #custom-nlight {
+    color: ${custom.yellow};
+    font-size: 14px;
+    padding: 2px 8px;
+    min-width: 60px;
+    font-weight: 500;
+    background-color: rgba(224, 175, 104, 0.1);
+    border-color: rgba(224, 175, 104, 0.3);
+  }
+  
+  #custom-nlight:hover {
+    background-color: rgba(224, 175, 104, 0.2);
+    border-color: ${custom.yellow};
+    box-shadow: 0 2px 8px rgba(224, 175, 104, 0.2);
+  }
+
   /* Subtle hover effects */
   #bluetooth:hover,
   #custom-vpn:hover,
   #custom-todo:hover,
   #custom-waybar-mpris:hover,
+  #custom-nlight:hover,
   #pulseaudio:hover,
   #pulseaudio#source:hover,
   #pulseaudio#sink:hover,
