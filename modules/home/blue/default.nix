@@ -29,8 +29,12 @@ in
   # Servis Uygulaması
   # =============================================================================
   config = lib.mkIf cfg.enable {
-    # Script'i kullanıcı home'una kur
-    home.packages = [ cfg.package ];
+    # Script ve bağımlılıkları kullanıcı home'una kur
+    home.packages = [
+      cfg.package
+      pkgs.gammastep
+      pkgs.hyprsunset
+    ];
     
     # Systemd user servisi
     systemd.user.services.blue = {
