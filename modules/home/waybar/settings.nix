@@ -143,11 +143,11 @@
       on-click = ''
         current=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature | awk '{print $2}')
         if [ "$current" -eq 4000 ]; then
-          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3700
-          notify-send -u low -t 1200 "󰖔 Night Light" "Gündüz: 3700K 🟡"
-        elif [ "$current" -eq 3700 ]; then
-          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3100
-          notify-send -u low -t 1200 "󰖔 Night Light" "Gece: 3100K 🟠"
+          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3500
+          notify-send -u low -t 1200 "󰖔 Night Light" "Gündüz: 3500K 🟡"
+        elif [ "$current" -eq 3500 ]; then
+          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3000
+          notify-send -u low -t 1200 "󰖔 Night Light" "Gece: 3000K 🟠"
         else
           busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 4000
           notify-send -u low -t 1200 "󰖔 Night Light" "Normal: 4000K ⚪"
@@ -156,8 +156,8 @@
 
         # Hızlı gece modu
       on-click-middle = ''
-        busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3100
-        notify-send -u low -t 1200 "󰖔 Night Light" "Hızlı Gece: 3100K 🟠"
+        busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3000
+        notify-send -u low -t 1200 "󰖔 Night Light" "Hızlı Gece: 3000K 🟠"
       '';
 
       # Tam sıfırla
@@ -177,8 +177,8 @@
         󰖔 Night Light
         Sıcaklık/Parlaklık/Γ: {}
 
-        Sol tık: 4000 ↔ 3700 ↔ 3100
-        Orta tık: 3100K (gece)
+        Sol tık: 4000 ↔ 3500 ↔ 3000
+        Orta tık: 3000K (gece)
         Sağ tık: Sıfırla (4000K, 100%, γ1.0)
         Scroll: ±100K
       '';
