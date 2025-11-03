@@ -72,11 +72,8 @@ let
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
   );
-  hypr-blue-gammastep-manager = pkgs.writeShellScriptBin "hypr-blue-gammastep-manager" (
-    builtins.readFile ./bin/hypr-blue-gammastep-manager.sh
-  );
-  hypr-blue-hyprsunset-manager = pkgs.writeShellScriptBin "hypr-blue-hyprsunset-manager" (
-    builtins.readFile ./bin/hypr-blue-hyprsunset-manager.sh
+  hypr-blue-manager = pkgs.writeShellScriptBin "hypr-blue-manager" (
+    builtins.readFile ./bin/hypr-blue-manager.sh
   );
   hypr-colorpicker = pkgs.writeShellScriptBin "hypr-colorpicker" (
     builtins.readFile ./bin/hypr-colorpicker.sh
@@ -413,8 +410,7 @@ in {
     gnome-settings
     gnome_tty
     hypr-airplane_mode
-    hypr-blue-gammastep-manager
-    hypr-blue-hyprsunset-manager
+    hypr-blue-manager
     hypr-colorpicker
     hyprland_tty
     hypr-layout_toggle
