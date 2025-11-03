@@ -57,17 +57,19 @@ in
       };
 
       Service = {
-        Type = "simple";
+        Type = "dbus";
+        BusName = "rs.wl-gammarelay";
         ExecStart = "${pkgs.wl-gammarelay-rs}/bin/wl-gammarelay-rs";
 
         # 💡 Kritik fark burada:
         # Çok satırlı string yerine array (list) kullanıyoruz
         ExecStartPost = [
+          "${pkgs.coreutils}/bin/sleep 1"
           "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 4000"
           "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Brightness d 1.0"
           "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Gamma d 1.0"
         ];
-
+        SuccessExitStatus = [ 0 2 ];
         Restart = "on-failure";
         RestartSec = 3;
       };
