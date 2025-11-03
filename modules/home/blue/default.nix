@@ -55,9 +55,6 @@ in
         WantedBy = ["hyprland-session.target"];
       };
     };
-    
-    # Cache dizinini oluştur
-    home.file.".cache/.keep".text = "";
   };
 }
 
