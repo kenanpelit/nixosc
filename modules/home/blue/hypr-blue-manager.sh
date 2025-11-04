@@ -2,11 +2,11 @@
 
 #######################################
 #
-# Version: 2.0.0
-# Date: 2025-11-03
+# Version: 3.0.0
+# Date: 2025-11-04
 # Author: Kenan Pelit (Modified)
 # Repository: github.com/kenanpelit/dotfiles
-# Description: Unified Gammastep + HyprSunset Manager
+# Description: Unified Gammastep + HyprSunset + wl-gammarelay Manager
 #
 # License: MIT
 #
@@ -15,19 +15,21 @@
 #########################################################################
 # Unified Night Light Manager
 #
-# Bu script, Gammastep ve HyprSunset'i birlikte yönetir.
-# Her iki araç da aynı anda çalışarak istediğiniz renk tonunu elde eder.
+# Bu script, Gammastep, HyprSunset ve wl-gammarelay'i birlikte yönetir.
+# Her üç araç da aynı anda çalışarak istediğiniz renk tonunu elde eder.
 #
 # Özellikler:
-#   - Gammastep ve HyprSunset'i eşzamanlı başlatma/durdurma
+#   - Gammastep, HyprSunset ve wl-gammarelay'i eşzamanlı başlatma/durdurma
 #   - Zaman tabanlı otomatik renk sıcaklığı ayarlama
 #   - Waybar entegrasyonu
 #   - Sistem bildirimleri
 #   - Daemon ve fork modları
+#   - Her araç ayrı ayrı çalışabilir
 #
 # Gereksinimler:
-#   - gammastep
-#   - hyprsunset
+#   - gammastep (opsiyonel)
+#   - hyprsunset (opsiyonel)
+#   - wl-gammarelay-rs (opsiyonel)
 #   - libnotify (notify-send için)
 #   - waybar (opsiyonel)
 #
@@ -40,6 +42,11 @@ declare -r GAMMASTEP_PID_FILE="$HOME/.cache/hypr-blue-gammastep.pid"
 declare -r LOG_FILE="/tmp/hypr-blue.log"
 declare -r LAST_TEMP_FILE="$HOME/.cache/hypr-blue.last"
 
+# Araç aktiflik kontrolleri
+ENABLE_GAMMASTEP=true
+ENABLE_HYPRSUNSET=true
+ENABLE_WLGAMMARELAY=true
+
 # Gammastep ayarları
 MODE="wayland"
 LOCATION="41.0108:29.0219"
@@ -47,13 +54,24 @@ GAMMA="1,0.2,0.1"
 BRIGHTNESS_DAY=1.0
 BRIGHTNESS_NIGHT=0.8
 
-# Sıcaklık ayarları - Sarı/Turuncu ton (Basitleştirilmiş)
-TEMP_DAY=3400   # Gündüz sıcaklığı - Hafif sarı
-TEMP_NIGHT=3100 # Gece sıcaklığı - Koyu turuncu
+# Sıcaklık profilleri - Her araç için 3 farklı seviye
+# 4000K - Hafif sarı/turuncu
+# 3500K - Orta sarı/turuncu
+# 3000K - Koyu turuncu/kırmızımsı
 
-# Gammastep sıcaklık ayarları - HyprSunset ile uyumlu
-GAMMASTEP_TEMP_DAY=3400   # Gündüz - Hafif sarı (HyprSunset ile aynı)
-GAMMASTEP_TEMP_NIGHT=3100 # Gece - Koyu turuncu (HyprSunset ile aynı)
+# HyprSunset sıcaklık ayarları
+TEMP_DAY=4000   # Gündüz sıcaklığı
+TEMP_NIGHT=3000 # Gece sıcaklığı
+
+# Gammastep sıcaklık ayarları
+GAMMASTEP_TEMP_DAY=4000
+GAMMASTEP_TEMP_NIGHT=3000
+
+# wl-gammarelay sıcaklık ayarları
+WLGAMMA_TEMP_DAY=4000
+WLGAMMA_TEMP_NIGHT=3000
+WLGAMMA_BRIGHTNESS=1.0
+WLGAMMA_GAMMA=1.0
 
 # Diğer ayarlar
 CHECK_INTERVAL=3600
@@ -67,7 +85,7 @@ log() {
 # Kullanım bilgisi
 usage() {
 	cat <<EOF
-Hypr Blue Manager - Unified Gammastep + HyprSunset Manager
+Hypr Blue Manager - Unified Gammastep + HyprSunset + wl-gammarelay Manager
 
 KULLANIM:
     $(basename "$0") [KOMUT] [PARAMETRELER]
@@ -80,28 +98,61 @@ KOMUTLAR:
     status        Durum göster
     -h, --help    Bu yardım mesajını göster
 
+ARAÇ KONTROLÜ:
+    --enable-gammastep BOOL     Gammastep'i aktif et (true/false, varsayılan: $ENABLE_GAMMASTEP)
+    --enable-hyprsunset BOOL    HyprSunset'i aktif et (true/false, varsayılan: $ENABLE_HYPRSUNSET)
+    --enable-wlgamma BOOL       wl-gammarelay'i aktif et (true/false, varsayılan: $ENABLE_WLGAMMARELAY)
+
 HYPRSUNSET PARAMETRELERI:
-    --temp-day VALUE        Gündüz sıcaklığı (Kelvin, varsayılan: $TEMP_DAY)
-    --temp-night VALUE      Gece sıcaklığı (Kelvin, varsayılan: $TEMP_NIGHT)
+    --temp-day VALUE            Gündüz sıcaklığı (Kelvin, varsayılan: $TEMP_DAY)
+    --temp-night VALUE          Gece sıcaklığı (Kelvin, varsayılan: $TEMP_NIGHT)
 
 GAMMASTEP PARAMETRELERI:
-    --gs-temp-day VALUE     Gammastep gündüz sıcaklığı (Kelvin, varsayılan: $GAMMASTEP_TEMP_DAY)
-    --gs-temp-night VALUE   Gammastep gece sıcaklığı (Kelvin, varsayılan: $GAMMASTEP_TEMP_NIGHT)
-    --bright-day VALUE      Gündüz parlaklığı (0.1-1.0, varsayılan: $BRIGHTNESS_DAY)
-    --bright-night VALUE    Gece parlaklığı (0.1-1.0, varsayılan: $BRIGHTNESS_NIGHT)
-    --location VALUE        Konum (format: enlem:boylam, varsayılan: $LOCATION)
-    --gamma VALUE           Gamma değeri (format: r,g,b, varsayılan: $GAMMA)
-    --interval VALUE        Kontrol aralığı (saniye, varsayılan: $CHECK_INTERVAL)
+    --gs-temp-day VALUE         Gammastep gündüz sıcaklığı (Kelvin, varsayılan: $GAMMASTEP_TEMP_DAY)
+    --gs-temp-night VALUE       Gammastep gece sıcaklığı (Kelvin, varsayılan: $GAMMASTEP_TEMP_NIGHT)
+    --bright-day VALUE          Gündüz parlaklığı (0.1-1.0, varsayılan: $BRIGHTNESS_DAY)
+    --bright-night VALUE        Gece parlaklığı (0.1-1.0, varsayılan: $BRIGHTNESS_NIGHT)
+    --location VALUE            Konum (format: enlem:boylam, varsayılan: $LOCATION)
+    --gamma VALUE               Gamma değeri (format: r,g,b, varsayılan: $GAMMA)
+
+WL-GAMMARELAY PARAMETRELERI:
+    --wl-temp-day VALUE         wl-gammarelay gündüz sıcaklığı (Kelvin, varsayılan: $WLGAMMA_TEMP_DAY)
+    --wl-temp-night VALUE       wl-gammarelay gece sıcaklığı (Kelvin, varsayılan: $WLGAMMA_TEMP_NIGHT)
+    --wl-brightness VALUE       wl-gammarelay parlaklık (0.1-1.0, varsayılan: $WLGAMMA_BRIGHTNESS)
+    --wl-gamma VALUE            wl-gammarelay gamma (0.1-2.0, varsayılan: $WLGAMMA_GAMMA)
+
+DİĞER PARAMETRELER:
+    --interval VALUE            Kontrol aralığı (saniye, varsayılan: $CHECK_INTERVAL)
 
 ÖRNEKLER:
-    # Varsayılan ayarlarla başlatma
+    # Varsayılan ayarlarla başlatma (tüm araçlar aktif)
     $(basename "$0") start
 
-    # Özel sıcaklıklarla başlatma
-    $(basename "$0") start --temp-day 3800 --temp-night 3200
+    # Sadece Gammastep ile çalıştırma
+    $(basename "$0") start --enable-hyprsunset false --enable-wlgamma false
 
-    # Gammastep ayarları ile
-    $(basename "$0") start --gs-temp-day 3700 --gs-temp-night 3100
+    # Sadece wl-gammarelay ile çalıştırma
+    $(basename "$0") start --enable-gammastep false --enable-hyprsunset false
+
+    # Özel sıcaklıklarla başlatma (tüm araçlar)
+    $(basename "$0") start --temp-day 4000 --temp-night 3000 \\
+                           --gs-temp-day 4000 --gs-temp-night 3000 \\
+                           --wl-temp-day 4000 --wl-temp-night 3000
+
+    # Hafif sarı ton (4000K) - tüm araçlar
+    $(basename "$0") start --temp-day 4000 --temp-night 4000 \\
+                           --gs-temp-day 4000 --gs-temp-night 4000 \\
+                           --wl-temp-day 4000 --wl-temp-night 4000
+
+    # Orta ton (3500K) - tüm araçlar
+    $(basename "$0") start --temp-day 3500 --temp-night 3500 \\
+                           --gs-temp-day 3500 --gs-temp-night 3500 \\
+                           --wl-temp-day 3500 --wl-temp-night 3500
+
+    # Koyu turuncu (3000K) - tüm araçlar
+    $(basename "$0") start --temp-day 3000 --temp-night 3000 \\
+                           --gs-temp-day 3000 --gs-temp-night 3000 \\
+                           --wl-temp-day 3000 --wl-temp-night 3000
 
     # Systemd servisi için
     $(basename "$0") daemon
@@ -109,32 +160,59 @@ GAMMASTEP PARAMETRELERI:
     # Durum kontrolü
     $(basename "$0") status
 
+SICAKLIK REHBERİ:
+    4000K - Hafif sarı/turuncu (en az etki)
+    3500K - Orta sarı/turuncu (dengeli)
+    3000K - Koyu turuncu/kırmızımsı (maksimum etki)
+
 NOT:
-    - Bu script hem gammastep hem de hyprsunset'i birlikte çalıştırır
-    - Her iki araç da aynı sıcaklıklarda çalışır (uyumlu katmanlar)
-    - Gammastep otomatik yumuşak geçiş yapar
-    - HyprSunset ek renk katmanı olarak çalışır
+    - Her araç bağımsız olarak aktif/pasif edilebilir
+    - En az bir araç aktif olmalıdır
+    - Tüm araçlar aynı anda çalışabilir (maksimum etki)
     - Düşük sıcaklık değerleri daha sıcak/kırmızımsı renk verir
+    - Her araç kendi katmanını ekler, birlikte daha güçlü etki sağlar
 EOF
 }
 
 # Bağımlılıkları kontrol et
 check_dependencies() {
 	local missing_deps=()
+	local available_tools=0
 
-	if ! command -v gammastep >/dev/null 2>&1; then
-		missing_deps+=("gammastep")
+	if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
+		if command -v gammastep >/dev/null 2>&1; then
+			((available_tools++))
+		else
+			log "UYARI: Gammastep aktif ama bulunamadı"
+			ENABLE_GAMMASTEP=false
+		fi
 	fi
 
-	if ! command -v hyprsunset >/dev/null 2>&1; then
-		missing_deps+=("hyprsunset")
+	if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
+		if command -v hyprsunset >/dev/null 2>&1; then
+			((available_tools++))
+		else
+			log "UYARI: HyprSunset aktif ama bulunamadı"
+			ENABLE_HYPRSUNSET=false
+		fi
 	fi
 
-	if [ ${#missing_deps[@]} -gt 0 ]; then
-		echo "Hata: Eksik bağımlılıklar: ${missing_deps[*]}"
-		log "HATA: Eksik bağımlılıklar: ${missing_deps[*]}"
+	if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
+		if command -v busctl >/dev/null 2>&1; then
+			((available_tools++))
+		else
+			log "UYARI: wl-gammarelay aktif ama busctl bulunamadı"
+			ENABLE_WLGAMMARELAY=false
+		fi
+	fi
+
+	if [[ $available_tools -eq 0 ]]; then
+		echo "Hata: Hiçbir araç kullanılabilir değil veya aktif değil"
+		log "HATA: Hiçbir araç kullanılabilir değil"
 		exit 1
 	fi
+
+	log "Aktif araçlar: Gammastep=$ENABLE_GAMMASTEP, HyprSunset=$ENABLE_HYPRSUNSET, wl-gammarelay=$ENABLE_WLGAMMARELAY"
 }
 
 # Bildirim gönder
@@ -157,7 +235,7 @@ get_current_hour() {
 	date +%H
 }
 
-# HyprSunset için sıcaklık belirle (Gammastep gibi basit)
+# HyprSunset için sıcaklık belirle
 get_hyprsunset_temp() {
 	local hour=$(get_current_hour)
 
@@ -170,15 +248,31 @@ get_hyprsunset_temp() {
 	fi
 }
 
+# wl-gammarelay için sıcaklık belirle
+get_wlgamma_temp() {
+	local hour=$(get_current_hour)
+
+	if [[ "$hour" -ge 6 && "$hour" -lt 18 ]]; then
+		echo "$WLGAMMA_TEMP_DAY"
+	else
+		echo "$WLGAMMA_TEMP_NIGHT"
+	fi
+}
+
 # Gammastep'i başlat
 start_gammastep() {
+	if [[ "$ENABLE_GAMMASTEP" != "true" ]]; then
+		log "Gammastep devre dışı, atlanıyor"
+		return 0
+	fi
+
 	log "Gammastep başlatılıyor..."
 
 	# Eski gammastep process'lerini temizle
 	pkill -9 gammastep 2>/dev/null
 	sleep 1
 
-	/usr/bin/gammastep -m "$MODE" \
+	$(command -v gammastep) -m "$MODE" \
 		-l manual \
 		-t "$GAMMASTEP_TEMP_DAY:$GAMMASTEP_TEMP_NIGHT" \
 		-b "$BRIGHTNESS_DAY:$BRIGHTNESS_NIGHT" \
@@ -195,6 +289,10 @@ start_gammastep() {
 
 # Gammastep'i durdur
 stop_gammastep() {
+	if [[ "$ENABLE_GAMMASTEP" != "true" ]]; then
+		return 0
+	fi
+
 	log "Gammastep durduruluyor..."
 
 	if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
@@ -214,6 +312,10 @@ stop_gammastep() {
 
 # HyprSunset sıcaklığını ayarla
 set_hyprsunset_temperature() {
+	if [[ "$ENABLE_HYPRSUNSET" != "true" ]]; then
+		return 0
+	fi
+
 	local temp=$1
 	log "HyprSunset sıcaklığı ayarlanıyor: ${temp}K"
 
@@ -225,10 +327,126 @@ set_hyprsunset_temperature() {
 	fi
 }
 
-# Sıcaklıkları ayarla
+# wl-gammarelay daemon'ını başlat veya kontrol et
+start_wlgammarelay() {
+	if [[ "$ENABLE_WLGAMMARELAY" != "true" ]]; then
+		log "wl-gammarelay devre dışı, atlanıyor"
+		return 0
+	fi
+
+	log "wl-gammarelay kontrol ediliyor..."
+
+	# Servis zaten çalışıyor mu kontrol et
+	if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+		log "wl-gammarelay zaten çalışıyor (servis veya manuel)"
+		# Mevcut sıcaklığı al
+		local current_temp=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature 2>/dev/null | awk '{print $2}')
+		log "wl-gammarelay mevcut sıcaklık: ${current_temp}K"
+
+		# Eğer varsayılan 6500K'de ise, istediğimiz sıcaklığa ayarla
+		if [[ "$current_temp" == "6500" ]]; then
+			local target_temp=$(get_wlgamma_temp)
+			log "wl-gammarelay 6500K'de, ${target_temp}K'ye ayarlanıyor"
+			set_wlgamma_temperature "$target_temp"
+		fi
+		return 0
+	fi
+
+	# wl-gammarelay yoksa başlat
+	if command -v wl-gammarelay-rs >/dev/null 2>&1; then
+		log "wl-gammarelay başlatılıyor..."
+		wl-gammarelay-rs >/dev/null 2>&1 &
+		local wl_pid=$!
+		disown
+
+		# Başlamasını bekle
+		for i in {1..10}; do
+			if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+				log "wl-gammarelay başlatıldı (PID: $wl_pid)"
+				sleep 1
+				# Başlangıç sıcaklığını ayarla
+				local target_temp=$(get_wlgamma_temp)
+				set_wlgamma_temperature "$target_temp"
+				return 0
+			fi
+			sleep 0.5
+		done
+
+		log "UYARI: wl-gammarelay başlatılamadı veya yanıt vermiyor"
+		return 1
+	else
+		log "UYARI: wl-gammarelay-rs komutu bulunamadı"
+		return 1
+	fi
+}
+
+# wl-gammarelay daemon'ını durdur (sadece biz başlattıysak)
+stop_wlgammarelay() {
+	if [[ "$ENABLE_WLGAMMARELAY" != "true" ]]; then
+		return 0
+	fi
+
+	log "wl-gammarelay durduruluyor..."
+
+	# Sadece sıcaklığı sıfırla, daemon'ı kapatma
+	# (başka servisler kullanıyor olabilir)
+	if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+		busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 6500 >/dev/null 2>&1
+		log "wl-gammarelay sıcaklığı sıfırlandı (6500K)"
+	fi
+}
+
+# wl-gammarelay sıcaklığını ayarla
+set_wlgamma_temperature() {
+	if [[ "$ENABLE_WLGAMMARELAY" != "true" ]]; then
+		return 0
+	fi
+
+	local temp=$1
+	log "wl-gammarelay sıcaklığı ayarlanıyor: ${temp}K"
+
+	# wl-gammarelay servisinin çalıştığını kontrol et
+	if ! busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+		log "UYARI: wl-gammarelay servisi bulunamadı"
+		return 1
+	fi
+
+	# Sıcaklığı ayarla
+	if busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q "$temp" >/dev/null 2>&1; then
+		log "wl-gammarelay sıcaklığı ayarlandı: ${temp}K"
+
+		# Parlaklık ve gamma'yı da ayarla
+		busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Brightness d "$WLGAMMA_BRIGHTNESS" >/dev/null 2>&1
+		busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Gamma d "$WLGAMMA_GAMMA" >/dev/null 2>&1
+
+		return 0
+	else
+		log "HATA: wl-gammarelay sıcaklığı ayarlanamadı"
+		return 1
+	fi
+}
+
+# Tüm sıcaklıkları ayarla
 adjust_temperature() {
-	local temp=$(get_hyprsunset_temp)
-	set_hyprsunset_temperature "$temp"
+	local hour=$(get_current_hour)
+	local period="gece"
+	[[ "$hour" -ge 6 && "$hour" -lt 18 ]] && period="gündüz"
+
+	log "Sıcaklık ayarlama başlıyor (saat: $hour, dönem: $period)"
+
+	# HyprSunset
+	if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
+		local hs_temp=$(get_hyprsunset_temp)
+		set_hyprsunset_temperature "$hs_temp"
+	fi
+
+	# wl-gammarelay
+	if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
+		local wl_temp=$(get_wlgamma_temp)
+		set_wlgamma_temperature "$wl_temp"
+	fi
+
+	log "Sıcaklık ayarlama tamamlandı"
 }
 
 # Cleanup fonksiyonu
@@ -241,6 +459,9 @@ cleanup() {
 
 		# Gammastep'i durdur
 		stop_gammastep
+
+		# wl-gammarelay'i sıfırla
+		stop_wlgammarelay
 
 		# HyprSunset daemon'ı durdur
 		if [[ -f "$PID_FILE" ]]; then
@@ -256,7 +477,7 @@ cleanup() {
 		rm -f "$STATE_FILE"
 
 		# HyprSunset sıcaklığını sıfırla
-		if command -v hyprsunset >/dev/null 2>&1; then
+		if [[ "$ENABLE_HYPRSUNSET" == "true" ]] && command -v hyprsunset >/dev/null 2>&1; then
 			hyprsunset -i >/dev/null 2>&1
 		fi
 
@@ -271,9 +492,10 @@ cleanup_daemon() {
 	log "Daemon cleanup başlıyor (PID: $$)"
 
 	stop_gammastep
+	stop_wlgammarelay
 	rm -f "$STATE_FILE" "$PID_FILE"
 
-	if command -v hyprsunset >/dev/null 2>&1; then
+	if [[ "$ENABLE_HYPRSUNSET" == "true" ]] && command -v hyprsunset >/dev/null 2>&1; then
 		hyprsunset -i >/dev/null 2>&1
 		log "HyprSunset sıcaklığı sıfırlandı"
 	fi
@@ -286,10 +508,24 @@ trap cleanup EXIT INT TERM
 
 # Daemon loop (fork modu için)
 daemon_loop() {
+	# Log dosyasını temizle (eski loglar karışmasın)
+	>"$LOG_FILE"
+
 	log "Fork daemon döngüsü başlatıldı (PID: $$)"
+	log "Parametreler: Gammastep=$ENABLE_GAMMASTEP, HyprSunset=$ENABLE_HYPRSUNSET, wl-gammarelay=$ENABLE_WLGAMMARELAY"
 
 	# İlk ayarlamaları yap
 	start_gammastep
+	start_wlgammarelay
+
+	# Eğer wl-gammarelay devre dışı ama dışarıdan çalışıyorsa, onu da ayarla
+	if [[ "$ENABLE_WLGAMMARELAY" != "true" ]] && busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+		log "Harici wl-gammarelay bulundu, sıcaklık ayarlanıyor"
+		local temp=$(get_wlgamma_temp)
+		busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q "$temp" >/dev/null 2>&1
+		log "Harici wl-gammarelay ${temp}K'ye ayarlandı"
+	fi
+
 	adjust_temperature
 
 	while [[ -f "$STATE_FILE" ]]; do
@@ -301,15 +537,17 @@ daemon_loop() {
 		fi
 
 		# Gammastep'in çalıştığını kontrol et
-		if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
-			local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
-			if ! kill -0 "$gs_pid" 2>/dev/null; then
-				log "Gammastep durmuş, yeniden başlatılıyor"
+		if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
+			if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
+				local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
+				if ! kill -0 "$gs_pid" 2>/dev/null; then
+					log "Gammastep durmuş, yeniden başlatılıyor"
+					start_gammastep
+				fi
+			else
+				log "Gammastep PID file yok, yeniden başlatılıyor"
 				start_gammastep
 			fi
-		else
-			log "Gammastep PID file yok, yeniden başlatılıyor"
-			start_gammastep
 		fi
 
 		adjust_temperature
@@ -321,7 +559,11 @@ daemon_loop() {
 
 # Daemon modu (systemd için)
 daemon_mode() {
+	# Log dosyasını temizle (eski loglar karışmasın)
+	>"$LOG_FILE"
+
 	log "Systemd daemon modu başlatıldı (PID: $$)"
+	log "Parametreler: Gammastep=$ENABLE_GAMMASTEP, HyprSunset=$ENABLE_HYPRSUNSET, wl-gammarelay=$ENABLE_WLGAMMARELAY"
 
 	touch "$STATE_FILE"
 	echo "$$" >"$PID_FILE"
@@ -330,6 +572,16 @@ daemon_mode() {
 
 	# İlk ayarlamaları yap
 	start_gammastep
+	start_wlgammarelay
+
+	# Eğer wl-gammarelay devre dışı ama dışarıdan çalışıyorsa, onu da ayarla
+	if [[ "$ENABLE_WLGAMMARELAY" != "true" ]] && busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+		log "Harici wl-gammarelay bulundu, sıcaklık ayarlanıyor"
+		local temp=$(get_wlgamma_temp)
+		busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q "$temp" >/dev/null 2>&1
+		log "Harici wl-gammarelay ${temp}K'ye ayarlandı"
+	fi
+
 	adjust_temperature
 
 	while true; do
@@ -341,14 +593,16 @@ daemon_mode() {
 		fi
 
 		# Gammastep kontrolü
-		if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
-			local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
-			if ! kill -0 "$gs_pid" 2>/dev/null; then
-				log "Gammastep durmuş, yeniden başlatılıyor"
+		if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
+			if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
+				local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
+				if ! kill -0 "$gs_pid" 2>/dev/null; then
+					log "Gammastep durmuş, yeniden başlatılıyor"
+					start_gammastep
+				fi
+			else
 				start_gammastep
 			fi
-		else
-			start_gammastep
 		fi
 
 		adjust_temperature
@@ -367,6 +621,8 @@ start_service() {
 	fi
 
 	log "Hypr Blue Manager başlatılıyor (fork modu)"
+	log "Aktif araçlar: Gammastep=$ENABLE_GAMMASTEP, HyprSunset=$ENABLE_HYPRSUNSET, wl-gammarelay=$ENABLE_WLGAMMARELAY"
+
 	touch "$STATE_FILE"
 
 	daemon_loop &
@@ -377,8 +633,14 @@ start_service() {
 
 	sleep 1
 	if kill -0 "$daemon_pid" 2>/dev/null; then
-		send_notification "Hypr Blue Manager" "Başarıyla başlatıldı (Gammastep + HyprSunset)"
+		local tools=""
+		[[ "$ENABLE_GAMMASTEP" == "true" ]] && tools+="Gammastep "
+		[[ "$ENABLE_HYPRSUNSET" == "true" ]] && tools+="HyprSunset "
+		[[ "$ENABLE_WLGAMMARELAY" == "true" ]] && tools+="wl-gammarelay"
+
+		send_notification "Hypr Blue Manager" "Başarıyla başlatıldı ($tools)"
 		echo "Hypr Blue Manager başlatıldı (PID: $daemon_pid)"
+		echo "Aktif araçlar: $tools"
 		update_waybar
 		return 0
 	else
@@ -426,8 +688,11 @@ stop_service() {
 	# Gammastep'i durdur
 	stop_gammastep
 
+	# wl-gammarelay'i sıfırla
+	stop_wlgammarelay
+
 	# HyprSunset'i sıfırla
-	if hyprsunset -i >/dev/null 2>&1; then
+	if [[ "$ENABLE_HYPRSUNSET" == "true" ]] && hyprsunset -i >/dev/null 2>&1; then
 		log "HyprSunset sıcaklığı sıfırlandı"
 	fi
 
@@ -482,34 +747,59 @@ show_status() {
 	fi
 
 	echo ""
-	echo "--- Gammastep Durumu ---"
-	if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
-		local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
-		if kill -0 "$gs_pid" 2>/dev/null; then
-			echo "Durum: AKTİF (PID: $gs_pid)"
+	echo "--- Araç Durumları ---"
+	echo "Gammastep: $([ "$ENABLE_GAMMASTEP" == "true" ] && echo "AKTİF" || echo "KAPALI")"
+	echo "HyprSunset: $([ "$ENABLE_HYPRSUNSET" == "true" ] && echo "AKTİF" || echo "KAPALI")"
+	echo "wl-gammarelay: $([ "$ENABLE_WLGAMMARELAY" == "true" ] && echo "AKTİF" || echo "KAPALI")"
+
+	if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
+		echo ""
+		echo "--- Gammastep Detayları ---"
+		if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
+			local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
+			if kill -0 "$gs_pid" 2>/dev/null; then
+				echo "Durum: ÇALIŞIYOR (PID: $gs_pid)"
+			else
+				echo "Durum: HATA (PID geçersiz)"
+			fi
 		else
-			echo "Durum: HATA (PID geçersiz)"
+			if pgrep gammastep &>/dev/null; then
+				echo "Durum: ÇALIŞIYOR (PID dosyası yok)"
+			else
+				echo "Durum: DURDU"
+			fi
 		fi
-	else
-		if pgrep gammastep &>/dev/null; then
-			echo "Durum: AKTİF (PID dosyası yok)"
-		else
-			echo "Durum: KAPALI"
+		echo "Gündüz sıcaklığı: ${GAMMASTEP_TEMP_DAY}K"
+		echo "Gece sıcaklığı: ${GAMMASTEP_TEMP_NIGHT}K"
+		echo "Gündüz parlaklık: $BRIGHTNESS_DAY"
+		echo "Gece parlaklık: $BRIGHTNESS_NIGHT"
+	fi
+
+	if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
+		echo ""
+		echo "--- HyprSunset Detayları ---"
+		echo "Gündüz sıcaklığı: ${TEMP_DAY}K (06:00-18:00)"
+		echo "Gece sıcaklığı: ${TEMP_NIGHT}K (18:00-06:00)"
+		echo "Kontrol aralığı: ${CHECK_INTERVAL} saniye"
+		if [[ -f "$LAST_TEMP_FILE" ]]; then
+			echo "Son sıcaklık: $(cat "$LAST_TEMP_FILE")K"
 		fi
 	fi
-	echo "Gündüz sıcaklığı: ${GAMMASTEP_TEMP_DAY}K"
-	echo "Gece sıcaklığı: ${GAMMASTEP_TEMP_NIGHT}K"
-	echo "Gündüz parlaklık: $BRIGHTNESS_DAY"
-	echo "Gece parlaklık: $BRIGHTNESS_NIGHT"
 
-	echo ""
-	echo "--- HyprSunset Durumu ---"
-	echo "Gündüz sıcaklığı: ${TEMP_DAY}K (06:00-18:00)"
-	echo "Gece sıcaklığı: ${TEMP_NIGHT}K (18:00-06:00)"
-	echo "Kontrol aralığı: ${CHECK_INTERVAL} saniye"
-
-	if [[ -f "$LAST_TEMP_FILE" ]]; then
-		echo "Son sıcaklık: $(cat "$LAST_TEMP_FILE")K"
+	if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
+		echo ""
+		echo "--- wl-gammarelay Detayları ---"
+		if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
+			echo "Durum: ÇALIŞIYOR"
+			local current_temp=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature 2>/dev/null | awk '{print $2}')
+			[[ -n "$current_temp" ]] && echo "Mevcut sıcaklık: ${current_temp}K"
+		else
+			echo "Durum: DURDU veya BULUNAMADI"
+		fi
+		echo "Gündüz sıcaklığı: ${WLGAMMA_TEMP_DAY}K (06:00-18:00)"
+		echo "Gece sıcaklığı: ${WLGAMMA_TEMP_NIGHT}K (18:00-06:00)"
+		echo "Parlaklık: $WLGAMMA_BRIGHTNESS"
+		echo "Gamma: $WLGAMMA_GAMMA"
 	fi
 
 	echo ""
@@ -520,6 +810,11 @@ show_status() {
 	if [[ -f "$LOG_FILE" ]]; then
 		echo ""
 		echo "--- Son Log Kayıtları ---"
+		echo "Log dosyası: $LOG_FILE"
+		if [[ -f "$PID_FILE" ]]; then
+			local current_pid=$(cat "$PID_FILE")
+			echo "Daemon PID: $current_pid"
+		fi
 		tail -n 5 "$LOG_FILE" 2>/dev/null || echo "Log okunamadı"
 	fi
 }
@@ -529,17 +824,29 @@ main() {
 	mkdir -p "$(dirname "$LOG_FILE")"
 	mkdir -p "$HOME/.cache"
 	touch "$LOG_FILE"
-	log "=== Hypr Blue Manager başlatıldı (v2.0.0) ==="
-
-	check_dependencies
+	log "=== Hypr Blue Manager başlatıldı (v3.0.0) ==="
 
 	if [[ $# -eq 0 ]]; then
 		usage
 		exit 1
 	fi
 
+	# Parametreleri parse et
 	while [[ $# -gt 0 ]]; do
 		case $1 in
+		# Araç kontrolü
+		--enable-gammastep)
+			ENABLE_GAMMASTEP="$2"
+			shift 2
+			;;
+		--enable-hyprsunset)
+			ENABLE_HYPRSUNSET="$2"
+			shift 2
+			;;
+		--enable-wlgamma)
+			ENABLE_WLGAMMARELAY="$2"
+			shift 2
+			;;
 		# HyprSunset parametreleri
 		--temp-day)
 			TEMP_DAY="$2"
@@ -578,12 +885,31 @@ main() {
 			GAMMA="$2"
 			shift 2
 			;;
+		# wl-gammarelay parametreleri
+		--wl-temp-day)
+			WLGAMMA_TEMP_DAY="$2"
+			shift 2
+			;;
+		--wl-temp-night)
+			WLGAMMA_TEMP_NIGHT="$2"
+			shift 2
+			;;
+		--wl-brightness)
+			WLGAMMA_BRIGHTNESS="$2"
+			shift 2
+			;;
+		--wl-gamma)
+			WLGAMMA_GAMMA="$2"
+			shift 2
+			;;
 		# Komutlar
 		start)
+			check_dependencies
 			start_service
 			exit $?
 			;;
 		daemon)
+			check_dependencies
 			daemon_mode
 			exit $?
 			;;
@@ -592,6 +918,7 @@ main() {
 			exit $?
 			;;
 		toggle)
+			check_dependencies
 			toggle_service
 			exit $?
 			;;
