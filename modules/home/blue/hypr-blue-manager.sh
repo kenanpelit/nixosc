@@ -232,7 +232,9 @@ update_waybar() {
 
 # Mevcut saati al
 get_current_hour() {
-	date +%H
+	# Başındaki sıfırları kaldır (09 -> 9)
+	local hour=$(date +%H)
+	echo $((10#$hour))
 }
 
 # HyprSunset için sıcaklık belirle
@@ -310,8 +312,8 @@ stop_gammastep() {
 	log "Gammastep durduruldu"
 }
 
-# HyprSunset sıcaklığını ayarla
-set_hyprsunset_temperature() {
+# HyprSunset daemon'ını başlat veya sıcaklığı güncelle
+start_or_update_hyprsunset() {
 	if [[ "$ENABLE_HYPRSUNSET" != "true" ]]; then
 		return 0
 	fi
@@ -326,18 +328,24 @@ set_hyprsunset_temperature() {
 
 	log "HyprSunset sıcaklığı ayarlanıyor: ${temp}K"
 
-	# Timeout ve hata yakalama ile çalıştır
-	if timeout 5s hyprsunset -t "$temp" 2>&1 | tee -a "$LOG_FILE"; then
+	# Eski hyprsunset process'lerini durdur
+	pkill -9 hyprsunset 2>/dev/null
+	sleep 0.5
+
+	# Daemon modunda başlat (arka planda sürekli çalışır)
+	hyprsunset -t "$temp" >/dev/null 2>&1 &
+	local hs_pid=$!
+	disown
+
+	# Başlamasını bekle
+	sleep 1
+
+	if kill -0 "$hs_pid" 2>/dev/null; then
 		echo "$temp" >"$LAST_TEMP_FILE"
-		log "HyprSunset sıcaklığı ayarlandı: ${temp}K"
+		log "HyprSunset başlatıldı ve sıcaklık ayarlandı: ${temp}K (PID: $hs_pid)"
 		return 0
 	else
-		local exit_code=$?
-		log "HATA: HyprSunset başarısız (exit code: $exit_code, temp: ${temp}K)"
-
-		# Core dump varsa temizle
-		rm -f core.* 2>/dev/null
-
+		log "HATA: HyprSunset başlatılamadı"
 		return 1
 	fi
 }
@@ -452,7 +460,7 @@ adjust_temperature() {
 	# HyprSunset
 	if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
 		local hs_temp=$(get_hyprsunset_temp)
-		set_hyprsunset_temperature "$hs_temp"
+		start_or_update_hyprsunset "$hs_temp"
 	fi
 
 	# wl-gammarelay
