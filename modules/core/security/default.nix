@@ -450,8 +450,11 @@ in
         #   Works even if GNOME module enables it
         # 
         # Using Option 2 for now (works with any GNOME config)
-        login.enableGnomeKeyring = mkForce false;
-        
+        #login.enableGnomeKeyring = mkForce false;
+        #greetd.enableGnomeKeyring = true;
+        gdm.enableGnomeKeyring  = true;
+        login.enableGnomeKeyring  = true;  # Optional but recommended for TTY logins
+
         # Require strong passwords (optional, configure as needed)
         # passwd.text = lib.mkDefault (lib.mkAfter ''
         #   password required pam_pwquality.so retry=3 minlen=12 difok=3
