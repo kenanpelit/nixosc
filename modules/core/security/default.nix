@@ -450,10 +450,7 @@ in
         #   Works even if GNOME module enables it
         # 
         # Using Option 2 for now (works with any GNOME config)
-        #login.enableGnomeKeyring = mkForce false;
-        login.enableGnomeKeyring  = lib.mkForce false;
-        greetd.enableGnomeKeyring = lib.mkForce false;
-        gdm.enableGnomeKeyring    = lib.mkForce false;
+        login.enableGnomeKeyring = mkForce false;
 
         # Require strong passwords (optional, configure as needed)
         # passwd.text = lib.mkDefault (lib.mkAfter ''
