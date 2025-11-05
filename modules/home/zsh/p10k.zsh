@@ -1,8 +1,9 @@
-# Powerlevel10k - "Pure Pro v4.1 (Clean Git Visibility)"
-# ======================================================
-# Clean Pure-style prompt with simple, colorful Git status
-# - No complex expansions, just clear icons
-# - Maintains Pure aesthetic
+# Powerlevel10k - "Pure Pro v1.0"
+# ==========================================================
+# Clean Pure-style prompt with optimized Git status display
+# - Clear, colorful Git indicators
+# - Fast and reliable
+# - Perfect balance of information and simplicity
 
 # Preserve original shell options
 builtin local -a p10k_config_opts
@@ -18,47 +19,49 @@ builtin setopt no_aliases no_sh_glob brace_expand
   [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
 
   # ============================
-  # Color Palette
+  # Enhanced Color Palette
   # ============================
-  local grey='242'
-  local red='1'
-  local yellow='3'
-  local blue='4'
-  local green='2'
-  local magenta='5'
-  local cyan='6'
+  local grey='242'        # subtle elements
+  local red='1'           # errors, dirty state
+  local yellow='3'        # warnings, unstaged
+  local blue='4'          # directories
+  local green='2'         # success, clean state, staged
+  local magenta='5'       # prompt character
+  local cyan='6'          # ahead/behind, technical
+  local orange='214'      # branch name (high visibility)
+  local white='7'         # bright text
 
   # ============================
   # Prompt Segments
   # ============================
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
-    context
-    dir
-    vcs                     # Simple Git segment
-    command_execution_time
-    newline
-    virtualenv
-    podman
-    background_jobs
-    prompt_char
+    context                   # user@host (SSH/root only)
+    dir                       # smart-truncated directory
+    vcs                       # optimized Git segment
+    command_execution_time    # long commands (≥3s)
+    newline                   # Pure-style line break
+    virtualenv                # Python environment
+    podman                    # container context
+    background_jobs           # background processes
+    prompt_char               # interactive prompt
   )
 
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
-    newline
+    newline                   # structural symmetry
   )
 
   # ============================
-  # Global Settings
+  # Global Layout & Appearance
   # ============================
-  typeset -g POWERLEVEL9K_BACKGROUND=
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_{LEFT,RIGHT}_WHITESPACE=
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SUBSEGMENT_SEPARATOR=' '
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SEGMENT_SEPARATOR=
-  typeset -g POWERLEVEL9K_VISUAL_IDENTIFIER_EXPANSION=
-  typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true
+  typeset -g POWERLEVEL9K_BACKGROUND=                    # transparent
+  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_{LEFT,RIGHT}_WHITESPACE=  # no padding
+  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SUBSEGMENT_SEPARATOR=' '  # space between
+  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SEGMENT_SEPARATOR=        # no separators
+  typeset -g POWERLEVEL9K_VISUAL_IDENTIFIER_EXPANSION=           # no icons
+  typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true               # blank line before prompt
 
   # ============================
-  # Prompt Character
+  # Prompt Character & VI Modes
   # ============================
   typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS}_FOREGROUND=$magenta
   typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS}_FOREGROUND=$red
@@ -75,82 +78,86 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=
 
   # ============================
-  # Directory
+  # Directory Segment
   # ============================
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=$blue
+  # Smart truncation to prevent line wrapping
   typeset -g POWERLEVEL9K_SHORTEN_STRATEGY=truncate_to_unique
   typeset -g POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
   typeset -g POWERLEVEL9K_DIR_MAX_LENGTH=80
+  typeset -g POWERLEVEL9K_DIR_MIN_COMMAND_COLUMNS=40
   typeset -g POWERLEVEL9K_DIR_TRUNCATE_BEFORE_MARKER=true
   typeset -g POWERLEVEL9K_SHORTEN_DELIMITER='…'
 
   # ============================
-  # Context
+  # Context Segment (user@host)
   # ============================
   typeset -g POWERLEVEL9K_CONTEXT_ROOT_TEMPLATE="%F{$red}%n%f%F{$grey}@%m%f"
   typeset -g POWERLEVEL9K_CONTEXT_TEMPLATE="%F{$yellow}%n@%m%f"
-  typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_CONTENT_EXPANSION=
-  typeset -g POWERLEVEL9K_CONTEXT_SHOW_ON_SSH=true
+  typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_CONTENT_EXPANSION=  # hide locally
+  typeset -g POWERLEVEL9K_CONTEXT_SHOW_ON_SSH=true                   # show on SSH
 
   # ============================
   # Command Execution Time
   # ============================
-  typeset -g POWERLEVEL9K_COMMAND_EXKECUTION_TIME_THRESHOLD=3
+  typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=3
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=0
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FORMAT='d h m s'
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND=$yellow
 
   # ============================
-  # SIMPLE & CLEAN Git Segment
+  # OPTIMIZED Git Status Segment
   # ============================
-  typeset -g POWERLEVEL9K_VCS_FOREGROUND=$green  # Default green for clean state
   
-  # Basic icons - let Powerlevel10k handle the formatting
-  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=''
-  typeset -g POWERLEVEL9K_VCS_COMMIT_ICON='@'
+  # Branch styling - high visibility
+  typeset -g POWERLEVEL9K_VCS_FOREGROUND=$orange        # Branch name in orange
+  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=''            # No extra icon
+  typeset -g POWERLEVEL9K_VCS_COMMIT_ICON='@'           # Commit hash prefix
   
-  # Clear state icons
-  typeset -g POWERLEVEL9K_VCS_CLEAN_ICON='✓'
-  typeset -g POWERLEVEL9K_VCS_DIRTY_ICON='✗'
-  typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='?'
-  typeset -g POWERLEVEL9K_VCS_UNSTAGED_ICON='!'
-  typeset -g POWERLEVEL9K_VCS_STAGED_ICON='+'
+  # Clear state indicators with colors
+  typeset -g POWERLEVEL9K_VCS_CLEAN_ICON='%F{green}✓%f'           # Green check for clean
+  typeset -g POWERLEVEL9K_VCS_DIRTY_ICON='%F{red}✗%f'            # Red X for dirty
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='%F{blue}?%f'       # Blue ? for untracked
+  typeset -g POWERLEVEL9K_VCS_STAGED_ICON='%F{green}+%f'         # Green + for staged
+  typeset -g POWERLEVEL9K_VCS_UNSTAGED_ICON='%F{yellow}!%f'      # Yellow ! for unstaged
   
-  # Colorful arrows
-  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON='⇣'
-  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON='⇡'
+  # Remote status with colors
+  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON='%F{cyan}⇣%f'  # Cyan down arrow
+  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON='%F{cyan}⇡%f'  # Cyan up arrow
   
-  # Show commit counts
-  typeset -g POWERLEVEL9K_VCS_{COMMITS_AHEAD,COMMITS_BEHIND}_MAX_NUM=5
+  # Show reasonable commit counts
+  typeset -g POWERLEVEL9K_VCS_{COMMITS_AHEAD,COMMITS_BEHIND}_MAX_NUM=99
   
-  # SIMPLE content expansion - no complex logic
+  # Clean content formatting - remove colons and extra spaces
   typeset -g POWERLEVEL9K_VCS_CONTENT_EXPANSION='${P9K_CONTENT//:/ }'
   
-  # Performance settings
-  typeset -g POWERLEVEL9K_VCS_MAX_SYNC_LATENCY_SECONDS=1
-  typeset -g POWERLEVEL9K_VCS_LOADING_TEXT='…'
+  # Performance optimization
+  typeset -g POWERLEVEL9K_VCS_MAX_SYNC_LATENCY_SECONDS=0.5
+  typeset -g POWERLEVEL9K_VCS_LOADING_TEXT='%F{grey}…%f'
   
-  # Git hooks for basic status
+  # Git hooks for comprehensive status detection
   typeset -g POWERLEVEL9K_VCS_GIT_HOOKS=(
-    vcs-detect-changes
-    git-untracked
-    git-aheadbehind
+    vcs-detect-changes    # Basic repository detection
+    git-untracked         # Untracked files
+    git-aheadbehind       # Remote comparison
+    git-stash            # Stash count
+    git-remotebranch     # Remote branch name
   )
 
   # ============================
-  # Podman
+  # Podman Context Segment
   # ============================
   typeset -g POWERLEVEL9K_PODMAN_FOREGROUND=$cyan
   typeset -g POWERLEVEL9K_PODMAN_SHOW_ON_COMMAND='podman|docker|kubectl'
 
   # ============================
-  # Background Jobs
+  # Background Jobs Indicator
   # ============================
   typeset -g POWERLEVEL9K_BACKGROUND_JOBS_FOREGROUND=$grey
   typeset -g POWERLEVEL9K_BACKGROUND_JOBS_VERBOSE=false
 
   # ============================
-  # Error Status
+  # Error Status Highlighting
   # ============================
   typeset -g POWERLEVEL9K_STATUS_ERROR=true
   typeset -g POWERLEVEL9K_STATUS_ERROR_FOREGROUND=$red
@@ -158,15 +165,21 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_STATUS_ERROR_VISUAL_IDENTIFIER_EXPANSION='✘'
 
   # ============================
-  # Performance
+  # Performance & Behavior
   # ============================
-  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off
-  typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
-  typeset -g POWERLEVEL9K_DISABLE_HOT_RELOAD=true
+  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off          # Stable prompt behavior
+  typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet          # Fast startup
+  typeset -g POWERLEVEL9K_DISABLE_HOT_RELOAD=true       # Maximum performance
 
+  # Reload configuration if Powerlevel10k is already running
   (( ! $+functions[p10k] )) || p10k reload
 }
 
+# ============================
+# Configuration Management
+# ============================
 typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
+
+# Restore original shell options
 (( ${#p10k_config_opts} )) && setopt ${p10k_config_opts[@]}
 builtin unset p10k_config_opts
