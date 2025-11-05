@@ -381,23 +381,77 @@ let
       # ANIMATIONS - SMOOTH CATPPUCCIN TRANSITIONS
       # =====================================================
       animations = {
+        # ---------------------------------------------------
+        # Master switch: enables or disables all animations.
+        # true  → animations active
+        # false → all animations instantly jump to target state
+        # ---------------------------------------------------
         enabled = true;
 
-        # Bezier curves - Animation easing functions
+        # ---------------------------------------------------
+        # Custom Bezier curves
+        # Each entry defines an easing function used by animations.
+        # Format: "name, p0x, p0y, p1x, p1y"
+        # - p0x/p0y/p1x/p1y are control points for a cubic-bezier curve.
+        # ---------------------------------------------------
         bezier = [
-          "fluent_decel, 0, 0.2, 0.4, 1"
-          "easeOutCirc, 0, 0.55, 0.45, 1"
-          "easeOutCubic, 0.33, 1, 0.68, 1"
+          # Gentle deceleration similar to Fluent UI transitions.
+          "fluent, 0.05, 0.20, 0.00, 1.00"
+
+          # Classic “ease out” curve for fades (starts fast, ends slow).
+          "easeOutCirc, 0.00, 0.55, 0.45, 1.00"
+
+          # Slight overshoot for “elastic” effect (window open/close).
+          "overshoot, 0.20, 0.80, 0.20, 1.20"
+
+          # Balanced Catppuccin feel — slightly smoother at the end.
           "catppuccinSmooth, 0.25, 0.1, 0.25, 1"
-          "overshot, 0.05, 0.9, 0.1, 1.05"  # Slight elastic effect
+
+          # Linear motion: constant velocity (used for borders).
+          "linear, 0.00, 0.00, 1.00, 1.00"
         ];
 
+        # ---------------------------------------------------
+        # Animation definitions
+        # Format: "object, enabled, speed, curve, style"
+        # - object : what to animate (windows, fade, workspaces, etc.)
+        # - enabled: 1 to enable, 0 to disable
+        # - speed  : higher = slower animation
+        # - curve  : bezier name defined above
+        # - style  : animation style (slide, popin, fade, etc.)
+        # ---------------------------------------------------
         animation = [
-          "windows, 1, 3, overshot, slide"  # Window open/close animation
-          "windowsOut, 1, 2, easeOutCubic, popin 80%"  # Window close effect
-          "fade, 1, 4, easeOutCirc"  # Fade animation
-          "workspaces, 1, 4, catppuccinSmooth, slide"  # Workspace switching
-          "border, 1, 1, linear"  # Border color transition
+          # -----------------------------------------------
+          # Window appearing and disappearing
+          # slide   → moves window slightly from spawn point
+          # overshoot → gives a tiny elastic bounce effect
+          # -----------------------------------------------
+          "windows, 1, 3, overshoot, slide"
+
+          # -----------------------------------------------
+          # Window close effect
+          # popin 80% → shrink inward to 80% before disappearing
+          # easeOutCirc → smooth deceleration toward end
+          # -----------------------------------------------
+          "windowsOut, 1, 2, easeOutCirc, popin 80%"
+
+          # -----------------------------------------------
+          # Fade in/out transitions (used for blur, menus, etc.)
+          # Speed 4 gives moderate fade length.
+          # -----------------------------------------------
+          "fade, 1, 4, easeOutCirc"
+
+          # -----------------------------------------------
+          # Workspace transitions when swiping or switching
+          # catppuccinSmooth → smooth cross-slide between spaces
+          # -----------------------------------------------
+          "workspaces, 1, 4, catppuccinSmooth, slide"
+
+          # -----------------------------------------------
+          # Border color transition (when window focus changes)
+          # linear → instant color interpolation without easing.
+          # -----------------------------------------------
+          "border, 1, 1, linear"
         ];
       };
 
