@@ -257,19 +257,6 @@ in
       valign = center
     }
     
-    # Weather for Istanbul - Updates every 5 minutes
-    # Uses wttr.in API for current conditions
-    label {
-      monitor =
-      text = cmd[update:300000] curl -s "wttr.in/Istanbul?format=3" 2>/dev/null | head -1 || echo "🌤 Weather unavailable"
-      color = ${dynamicColors.subtext1}
-      font_size = 14
-      font_family = Hack Nerd Font
-      position = 0, -410
-      halign = center
-      valign = center
-    }
-    
     # ==========================================================================
     # FOOTER ELEMENTS
     # ==========================================================================
