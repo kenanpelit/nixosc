@@ -72,6 +72,9 @@ let
         
         # Initialize audio control system
         "osc-soundctl init"
+        
+        # Initialize screen locker for security
+        "hyprlock"
       ];
 
       # =====================================================
