@@ -87,20 +87,20 @@ let
   hypr-start-batteryd = pkgs.writeShellScriptBin "hypr-start-batteryd" (
     builtins.readFile ./bin/hypr-start-batteryd.sh
   );
-  hypr-start-disable_wifi_power_save = pkgs.writeShellScriptBin "hypr-start-disable_wifi_power_save" (
-    builtins.readFile ./bin/hypr-start-disable_wifi_power_save.sh
+  hypr-switch = pkgs.writeShellScriptBin "hypr-switch" (
+    builtins.readFile ./bin/hypr-switch.sh
   );
   hypr-vlc_toggle = pkgs.writeShellScriptBin "hypr-vlc_toggle" (
     builtins.readFile ./bin/hypr-vlc_toggle.sh
+  );
+  hypr-wifi-power-save = pkgs.writeShellScriptBin "hypr-wifi-power-save" (
+    builtins.readFile ./bin/hypr-wifi-power-save.sh
   );
   hypr-workspace-monitor = pkgs.writeShellScriptBin "hypr-workspace-monitor" (
     builtins.readFile ./bin/hypr-workspace-monitor.sh
   );
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
-  );
-  m2w2 = pkgs.writeShellScriptBin "m2w2" (
-    builtins.readFile ./bin/m2w2.sh
   );
   mako-status = pkgs.writeShellScriptBin "mako-status" (
     builtins.readFile ./bin/mako-status.sh
@@ -315,8 +315,8 @@ let
   toggle-mic = pkgs.writeShellScriptBin "toggle-mic" (
     builtins.readFile ./bin/toggle-mic.sh
   );
-  toggle_oppacity = pkgs.writeShellScriptBin "toggle_oppacity" (
-    builtins.readFile ./bin/toggle_oppacity.sh
+  toggle_opacity = pkgs.writeShellScriptBin "toggle_opacity" (
+    builtins.readFile ./bin/toggle_opacity.sh
   );
   toggle_waybar = pkgs.writeShellScriptBin "toggle_waybar" (
     builtins.readFile ./bin/toggle_waybar.sh
@@ -409,11 +409,11 @@ in {
     hypr-layout_toggle
     hypr-mpv-manager
     hypr-start-batteryd
-    hypr-start-disable_wifi_power_save
+    hypr-switch
     hypr-vlc_toggle
+    hypr-wifi-power-save
     hypr-workspace-monitor
     lofi
-    m2w2
     mako-status
     monitor_brightness
     move_media_files
@@ -485,7 +485,7 @@ in {
     toggle_blur
     toggle_float
     toggle-mic
-    toggle_oppacity
+    toggle_opacity
     toggle_waybar
     tsm
     tty_config
