@@ -282,7 +282,7 @@ in
     #   2. Remove mkForce from security module:
     #      security.pam.services.login.enableGnomeKeyring
     
-    gnome.gnome-keyring.enable = mkForce false;  # Using GPG agent (see security module)
+    #gnome.gnome-keyring.enable = mkForce false;  # Using GPG agent (see security module)
     
     # Note: PAM integration is handled in security module
     # If you switch back to GNOME Keyring, update both locations

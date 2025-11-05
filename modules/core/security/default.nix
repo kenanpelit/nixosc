@@ -451,9 +451,9 @@ in
         # 
         # Using Option 2 for now (works with any GNOME config)
         #login.enableGnomeKeyring = mkForce false;
-        #greetd.enableGnomeKeyring = true;
-        gdm.enableGnomeKeyring  = true;
-        login.enableGnomeKeyring  = true;  # Optional but recommended for TTY logins
+        login.enableGnomeKeyring  = lib.mkForce false;
+        greetd.enableGnomeKeyring = lib.mkForce false;
+        gdm.enableGnomeKeyring    = lib.mkForce false;
 
         # Require strong passwords (optional, configure as needed)
         # passwd.text = lib.mkDefault (lib.mkAfter ''
