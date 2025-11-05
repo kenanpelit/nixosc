@@ -12,7 +12,8 @@
   systemd.user.services.gnome-keyring-secrets = {
     Unit = {
       Description = "GNOME Keyring (Secrets only)";
-      After = [ "graphical-session.target" ];
+      After = [ "dbus.service" "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
     };
     Service = {
       Type = "simple";
@@ -21,7 +22,7 @@
       Restart = "on-failure";
       RestartSec = 2;
       # Add this line to grant memory locking capability
-      AmbientCapabilities = "CAP_IPC_LOCK";
+      #AmbientCapabilities = "CAP_IPC_LOCK";
     };
     Install = {
       WantedBy = [ "default.target" ];
