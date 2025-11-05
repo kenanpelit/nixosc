@@ -317,13 +317,28 @@ set_hyprsunset_temperature() {
 	fi
 
 	local temp=$1
+
+	# Sıcaklık değerini kontrol et
+	if [[ ! "$temp" =~ ^[0-9]+$ ]] || [[ "$temp" -lt 1000 ]] || [[ "$temp" -gt 10000 ]]; then
+		log "HATA: Geçersiz sıcaklık değeri: ${temp}K (1000-10000 arası olmalı)"
+		return 1
+	fi
+
 	log "HyprSunset sıcaklığı ayarlanıyor: ${temp}K"
 
-	if hyprsunset -t "$temp" >/dev/null 2>&1; then
+	# Timeout ve hata yakalama ile çalıştır
+	if timeout 5s hyprsunset -t "$temp" 2>&1 | tee -a "$LOG_FILE"; then
 		echo "$temp" >"$LAST_TEMP_FILE"
 		log "HyprSunset sıcaklığı ayarlandı: ${temp}K"
+		return 0
 	else
-		log "HATA: HyprSunset sıcaklığı ayarlanamadı: ${temp}K"
+		local exit_code=$?
+		log "HATA: HyprSunset başarısız (exit code: $exit_code, temp: ${temp}K)"
+
+		# Core dump varsa temizle
+		rm -f core.* 2>/dev/null
+
+		return 1
 	fi
 }
 
