@@ -106,43 +106,50 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND=$yellow
 
   # ============================
-  # OPTIMIZED Git Status Segment
+  # OPTIMIZED Git Status Segment (robust & explicit)
   # ============================
-  
-  # Branch styling - high visibility
-  typeset -g POWERLEVEL9K_VCS_FOREGROUND=$orange        # Branch name in orange
-  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=''            # No extra icon
-  typeset -g POWERLEVEL9K_VCS_COMMIT_ICON='@'           # Commit hash prefix
-  
-  # Clear state indicators with colors
-  typeset -g POWERLEVEL9K_VCS_CLEAN_ICON='%F{green}✓%f'           # Green check for clean
-  typeset -g POWERLEVEL9K_VCS_DIRTY_ICON='%F{red}✗%f'            # Red X for dirty
-  typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='%F{blue}?%f'       # Blue ? for untracked
-  typeset -g POWERLEVEL9K_VCS_STAGED_ICON='%F{green}+%f'         # Green + for staged
-  typeset -g POWERLEVEL9K_VCS_UNSTAGED_ICON='%F{yellow}!%f'      # Yellow ! for unstaged
-  
-  # Remote status with colors
-  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON='%F{cyan}⇣%f'  # Cyan down arrow
-  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON='%F{cyan}⇡%f'  # Cyan up arrow
-  
-  # Show reasonable commit counts
-  typeset -g POWERLEVEL9K_VCS_{COMMITS_AHEAD,COMMITS_BEHIND}_MAX_NUM=99
-  
-  # Clean content formatting - remove colons and extra spaces
+  # --- Layoutta nokta ayırıcı: { } artıkları ve birleşik görüntüler için iyi
+  typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=' · '
+
+  # --- VCS: daha görünür ve güvenilir hale getir
+  typeset -g POWERLEVEL9K_VCS_FOREGROUND=214         # branch turuncu (yüksek görünürlük)
+  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=           # Pure gibi: ikon yok
+  typeset -g POWERLEVEL9K_VCS_COMMIT_ICON='@'
+
+  # Net durum işaretleri (renkli)
+  typeset -g POWERLEVEL9K_VCS_CLEAN_ICON='%F{2}✓%f'
+  typeset -g POWERLEVEL9K_VCS_DIRTY_ICON='%F{1}✗%f'
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='%F{4}?%f'
+  typeset -g POWERLEVEL9K_VCS_STAGED_ICON='%F{2}+%f'
+  typeset -g POWERLEVEL9K_VCS_UNSTAGED_ICON='%F{3}!%f'
+
+  # Uzak durum
+  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON='%F{6}⇣%f'
+  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON='%F{6}⇡%f'
+
+  # İçerik biçimleme: iki nokta yerine boşluk; simgeler birleşmesin
   typeset -g POWERLEVEL9K_VCS_CONTENT_EXPANSION='${P9K_CONTENT//:/ }'
-  
-  # Performance optimization
-  typeset -g POWERLEVEL9K_VCS_MAX_SYNC_LATENCY_SECONDS=0.5
-  typeset -g POWERLEVEL9K_VCS_LOADING_TEXT='%F{grey}…%f'
-  
-  # Git hooks for comprehensive status detection
+
+  # Rakamları göster ve sapmaları vurgula (Pure minimal ama bilgi dolu)
+  typeset -g POWERLEVEL9K_VCS_SHOW_NUM_CHANGES=true
+  typeset -g POWERLEVEL9K_VCS_SHOW_DIVERGENCE=true
+
+  # Hafif bekleme: büyük repo’da bile dal/ileri-geri neredeyse her zaman görünür
+  typeset -g POWERLEVEL9K_VCS_MAX_SYNC_LATENCY_SECONDS=0.2
+
+  # Yüklenirken ince ipucu (gri üç nokta)
+  typeset -g POWERLEVEL9K_VCS_LOADING_TEXT='%F{245}…%f'
+
+  # Yalın ve hızlı kancalar (destekli olanlar)
   typeset -g POWERLEVEL9K_VCS_GIT_HOOKS=(
-    vcs-detect-changes    # Basic repository detection
-    git-untracked         # Untracked files
-    git-aheadbehind       # Remote comparison
-    git-stash            # Stash count
-    git-remotebranch     # Remote branch name
+    vcs-detect-changes
+    git-untracked
+    git-aheadbehind
   )
+
+  # VCS'i yanlışlıkla devre dışı bırakacak bir desen olmasın
+  typeset -g POWERLEVEL9K_VCS_DISABLED_DIR_PATTERN=''
+  typeset -g POWERLEVEL9K_VCS_DISABLED_WORKDIR_PATTERN=''
 
   # ============================
   # Podman Context Segment
