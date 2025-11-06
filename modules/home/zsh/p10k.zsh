@@ -62,9 +62,9 @@ builtin setopt no_aliases no_sh_glob brace_expand
     # Line 2 – Dev Env → Containers → Jobs → Prompt Char
     newline
     virtualenv
-    nodeenv
-    nodenv
-    node_version
+    #nodeenv
+    #nodenv
+    #node_version
     pyenv
     rustenv
     podman
