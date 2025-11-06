@@ -273,7 +273,7 @@ builtin setopt no_aliases no_sh_glob brace_expand
   # ⚡  Performance Optimization & Behavior
   # -----------------------------------------------------------------------------
   # Transient prompt: keeps history clean
-  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=always
+  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=false
   
   # Instant prompt for blazing fast startup
   typeset -g POWERLEVEL9K_INSTANT_PROMPT=verbose
