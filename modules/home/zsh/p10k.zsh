@@ -13,6 +13,7 @@
 #   • Optimized async performance with intelligent caching
 #   • Enhanced SSH detection with visual distinction
 #   • Command failure feedback with exit code display
+#   • Persistent directory display (no transient prompt)
 #
 # ------------------------------------------------------------------------------
 
@@ -51,8 +52,8 @@ builtin setopt no_aliases no_sh_glob brace_expand
   # 🧩  Improved Prompt Structure – Two Lines with Smart Segments
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
-    # Line 1 – Context → OS Icon → Dir → Git → Status → Exec Time
-    #os_icon
+    # Line 1 – Context → Dir → Git → Status → Exec Time
+    # os_icon removed for cleaner look
     context
     dir
     vcs
@@ -88,12 +89,6 @@ builtin setopt no_aliases no_sh_glob brace_expand
 
   # Refined separator with better visual balance
   typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR='%F{238}│%f'
-
-  # -----------------------------------------------------------------------------
-  # 🖥️  OS Icon – Subtle System Indicator
-  # -----------------------------------------------------------------------------
-  #typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=$grey
-  #typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION='${P9K_OS_ICON}'
 
   # -----------------------------------------------------------------------------
   # ⌨️  Enhanced Prompt Character with VI Mode Support
@@ -272,8 +267,9 @@ builtin setopt no_aliases no_sh_glob brace_expand
   # -----------------------------------------------------------------------------
   # ⚡  Performance Optimization & Behavior
   # -----------------------------------------------------------------------------
-  # Transient prompt: keeps history clean
-  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=false
+  # Transient prompt: DISABLED - Keep full directory info visible after commands
+  # Options: off (full prompt always) | same-dir (transient except after cd) | always (minimal)
+  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off
   
   # Instant prompt for blazing fast startup
   typeset -g POWERLEVEL9K_INSTANT_PROMPT=verbose
