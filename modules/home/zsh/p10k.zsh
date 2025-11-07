@@ -46,7 +46,6 @@ setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_BACKGROUND=
   typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SUBSEGMENT_SEPARATOR=' '
   typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SEGMENT_SEPARATOR=
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_{LEFT,RIGHT}_WHITESPACE=
   typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true
   typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR="%F{$darker_grey}│%f"
   typeset -g POWERLEVEL9K_VISUAL_IDENTIFIER_EXPANSION=
@@ -166,19 +165,7 @@ setopt no_aliases no_sh_glob brace_expand
 
   # Disable VCS in heavy/remote/system paths to prevent I/O stalls
   # (regex; | separates patterns)
-  typeset -g POWERLEVEL9K_VCS_DISABLED_DIR_PATTERN='
-    ^/nix/store($|/)|
-    ^/proc($|/)|
-    ^/sys($|/)|
-    ^/dev($|/)|
-    ^/run($|/)|
-    ^/tmp($|/)|
-    /node_modules(/|$)|
-    /target(/|$)|
-    /build(/|$)|
-    /.venv(/|$)|
-    /.direnv(/|$)
-  '
+  typeset -g POWERLEVEL9K_VCS_DISABLED_DIR_PATTERN='(^/nix/store($|/)|^/proc($|/)|^/sys($|/)|^/dev($|/)|^/run($|/)|^/tmp($|/)|/node_modules(/|$)|/target(/|$)|/build(/|$)|/\.venv(/|$)|/\.direnv(/|$))'
 
   # Don’t recurse untracked dirs; massive speed-up on mono-repos
   typeset -g POWERLEVEL9K_VCS_RECURSE_UNTRACKED_DIRS=false
