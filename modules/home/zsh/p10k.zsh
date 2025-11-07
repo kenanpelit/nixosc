@@ -1,18 +1,17 @@
 # ==============================================================================
-# Powerlevel10k — "Pure Pro v3.0 Refined (Catppuccin Lavender Edition)"
+# Powerlevel10k — "Pure Pro Minimal (Catppuccin Lavender Edition)"
 # ==============================================================================
-# Ultra-refined, performance-optimized Pure-style prompt with essential
-# features only. No bloat, maximum clarity.
+# Minimal, performance-first Pure-style prompt. No bloat, maximum speed.
 #
-# ✨ Core Features:
+# ✨ Essential Features Only:
 #   • Enhanced Git status with comprehensive indicators
 #   • Smart context hiding (auto-detects $DEFAULT_USER)
-#   • Improved visual hierarchy with refined color palette
-#   • Python, Node.js, and Rust version indicators
+#   • Refined color palette
+#   • Python virtualenv indicator (when active)
 #   • Intelligent directory truncation with Git-aware anchoring
-#   • Optimized async performance with sub-50ms latency
-#   • Enhanced SSH detection with visual distinction
-#   • Command failure feedback with exit code display
+#   • Maximum async performance (sub-50ms latency)
+#   • Enhanced SSH detection
+#   • Command failure feedback with exit code
 #   • VI mode indicators
 #   • Background jobs counter
 #
@@ -33,27 +32,24 @@ builtin setopt no_aliases no_sh_glob brace_expand
   [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
 
   # -----------------------------------------------------------------------------
-  # 🎨 Enhanced Catppuccin Lavender Color Palette
+  # 🎨 Catppuccin Lavender Color Palette
   # -----------------------------------------------------------------------------
   local grey='242'          # Subtle elements / secondary text
   local dark_grey='238'     # Muted backgrounds
   local darker_grey='236'   # Deep backgrounds
-  local red='204'           # Errors / conflicts (softer for eyes)
+  local red='204'           # Errors / conflicts
   local bright_red='196'    # Critical errors
   local yellow='221'        # Warnings / SSH
-  local blue='75'           # Directories (sky blue)
-  local bright_blue='117'   # Active elements
+  local blue='75'           # Directories
   local green='114'         # Success / clean state
   local bright_green='156'  # Emphasized success
-  local magenta='176'       # Prompt char (vibrant)
-  local cyan='117'          # Info / network
+  local magenta='176'       # Prompt char
+  local cyan='117'          # Info
   local orange='215'        # Branch names
-  local lavender='147'      # Primary accent
-  local peach='216'         # Staged changes
   local teal='109'          # Upstream sync
 
   # -----------------------------------------------------------------------------
-  # 🧩 Optimized Prompt Structure — Clean Two-Line Layout
+  # 🧩 Minimal Prompt Structure — Two Lines
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
     # Line 1 — Context → Directory → Git → Performance → Status
@@ -63,23 +59,20 @@ builtin setopt no_aliases no_sh_glob brace_expand
     command_execution_time    # execution duration
     status                    # exit code
     
-    # Line 2 — Dev Environment → Jobs → Prompt
+    # Line 2 — Virtualenv → Jobs → Prompt
     newline
-    virtualenv                # Python venv
-    pyenv                     # Python version
-    nodenv                    # Node.js version
-    rustenv                   # Rust version
+    virtualenv                # Python venv (only when active)
     background_jobs           # Background jobs
     prompt_char               # VI-aware prompt
   )
 
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
-    # Minimal right prompt (Pure philosophy)
+    # Empty for minimal look
     newline
   )
 
   # -----------------------------------------------------------------------------
-  # 🧱 Enhanced Layout Configuration
+  # 🧱 Layout Configuration
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_BACKGROUND=
   typeset -g POWERLEVEL9K_{LEFT,RIGHT}_{LEFT,RIGHT}_WHITESPACE=
@@ -88,19 +81,19 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_VISUAL_IDENTIFIER_EXPANSION=
   typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true
 
-  # Professional separator with refined aesthetics
+  # Clean separator
   typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR='%F{236}│%f'
   
-  # Whitespace padding for breathing room
+  # Spacing
   typeset -g POWERLEVEL9K_PROMPT_CHAR_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=' '
 
   # -----------------------------------------------------------------------------
-  # ⌨️ Enhanced Prompt Character with VI Mode Support
+  # ⌨️ Prompt Character with VI Mode Support
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=$magenta
   typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=$red
   
-  # Enhanced VI mode indicators
+  # VI mode indicators
   typeset -g POWERLEVEL9K_PROMPT_CHAR_{OK,ERROR}_VIINS_CONTENT_EXPANSION='❯'
   typeset -g POWERLEVEL9K_PROMPT_CHAR_{OK,ERROR}_VICMD_CONTENT_EXPANSION='❮'
   typeset -g POWERLEVEL9K_PROMPT_CHAR_{OK,ERROR}_VIVIS_CONTENT_EXPANSION='V'
@@ -110,10 +103,10 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_PROMPT_CHAR_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
 
   # -----------------------------------------------------------------------------
-  # 🐍 Enhanced Python Environment
+  # 🐍 Python Virtualenv (Minimal)
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_VIRTUALENV_FOREGROUND=$green
-  typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=true
+  typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=false
   typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_WITH_PYENV=false
   typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=
   
@@ -122,32 +115,12 @@ builtin setopt no_aliases no_sh_glob brace_expand
     venv .venv env .env virtualenv .virtualenv
   )
 
-  # Pyenv — show when different from global
-  typeset -g POWERLEVEL9K_PYENV_FOREGROUND=$grey
-  typeset -g POWERLEVEL9K_PYENV_PROMPT_ALWAYS_SHOW=false
-  typeset -g POWERLEVEL9K_PYENV_CONTENT_EXPANSION='🐍${P9K_CONTENT}${${P9K_PYENV_PYTHON_VERSION:#$P9K_PYENV_GLOBAL_PYTHON_VERSION}:+ %F{green}⊕%f}'
-
   # -----------------------------------------------------------------------------
-  # 🟢 Enhanced Node.js Environment
-  # -----------------------------------------------------------------------------
-  typeset -g POWERLEVEL9K_NODENV_FOREGROUND=$green
-  typeset -g POWERLEVEL9K_NODENV_PROMPT_ALWAYS_SHOW=false
-  typeset -g POWERLEVEL9K_NODENV_CONTENT_EXPANSION='⬢${P9K_CONTENT}${${P9K_NODENV_NODE_VERSION:#$P9K_NODENV_GLOBAL_NODE_VERSION}:+ %F{green}⊕%f}'
-
-  # -----------------------------------------------------------------------------
-  # 🦀 Rust Environment
-  # -----------------------------------------------------------------------------
-  typeset -g POWERLEVEL9K_RUSTENV_FOREGROUND=$orange
-  typeset -g POWERLEVEL9K_RUSTENV_SOURCES=(rustup rust-toolchain rust-toolchain.toml)
-  typeset -g POWERLEVEL9K_RUSTENV_PROMPT_ALWAYS_SHOW=false
-  typeset -g POWERLEVEL9K_RUSTENV_CONTENT_EXPANSION='🦀 ${P9K_CONTENT}'
-
-  # -----------------------------------------------------------------------------
-  # 📁 Advanced Directory Segment — Intelligent Truncation
+  # 📁 Directory Segment — Intelligent Truncation
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=$blue
   
-  # Advanced truncation strategy
+  # Truncation strategy
   typeset -g POWERLEVEL9K_SHORTEN_STRATEGY=truncate_to_unique
   typeset -g POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
   typeset -g POWERLEVEL9K_DIR_MAX_LENGTH=50
@@ -157,30 +130,10 @@ builtin setopt no_aliases no_sh_glob brace_expand
   
   # Git repository anchoring
   typeset -g POWERLEVEL9K_DIR_ANCHOR_BOLD=true
-  typeset -g POWERLEVEL9K_SHORTEN_FOLDER_MARKER='(
-    .git|.svn|.hg|
-    package.json|package-lock.json|
-    Cargo.toml|Cargo.lock|
-    go.mod|requirements.txt|pyproject.toml
-  )'
+  typeset -g POWERLEVEL9K_SHORTEN_FOLDER_MARKER='(.git|.svn|.hg|package.json|Cargo.toml|go.mod|requirements.txt|pyproject.toml)'
   
-  # Enhanced directory classification
-  typeset -g POWERLEVEL9K_DIR_CLASSES=(
-    '~'                      HOME          ''
-    '~/.config(|/*)'         CONFIG        '⚙'
-    '~/Documents(|/*)'       DOCUMENTS     '📄'
-    '~/Downloads(|/*)'       DOWNLOADS     '📥'
-    '~/Projects(|/*)'        PROJECTS      '💼'
-    '~/Dev(|/*)'             DEV           '💻'
-    '~/Code(|/*)'            CODE          '💻'
-    '/etc(|/*)'              ETC           '⚙'
-    '*'                      DEFAULT       ''
-  )
-  
-  # Special states
-  typeset -g POWERLEVEL9K_DIR_NOT_WRITABLE_FOREGROUND=$red
-  typeset -g POWERLEVEL9K_DIR_NOT_WRITABLE_VISUAL_IDENTIFIER_EXPANSION='🔒'
-  typeset -g POWERLEVEL9K_DIR_SHOW_WRITABLE=true
+  # Smart directory shortening in Git repos
+  typeset -g POWERLEVEL9K_DIR_SHORTEN_BEFORE_REPO=true
 
   # -----------------------------------------------------------------------------
   # 👤 Smart Context Segment (user@host)
@@ -188,36 +141,27 @@ builtin setopt no_aliases no_sh_glob brace_expand
   # Set your default user to auto-hide locally
   typeset -g DEFAULT_USER="${USER}"
   
-  # Context templates with enhanced styling
+  # Context templates
   typeset -g POWERLEVEL9K_CONTEXT_ROOT_TEMPLATE="%F{$bright_red}%B%n%b%f%F{$grey}@%f%F{$red}%m%f"
-  typeset -g POWERLEVEL9K_CONTEXT_ROOT_FOREGROUND=$bright_red
-  
   typeset -g POWERLEVEL9K_CONTEXT_{REMOTE,REMOTE_SUDO}_TEMPLATE="%F{$yellow}%n%f%F{$grey}@%f%F{$yellow}%m%f"
-  typeset -g POWERLEVEL9K_CONTEXT_{REMOTE,REMOTE_SUDO}_FOREGROUND=$yellow
-  
   typeset -g POWERLEVEL9K_CONTEXT_TEMPLATE="%F{$grey}%n@%m%f"
-  typeset -g POWERLEVEL9K_CONTEXT_FOREGROUND=$grey
   
-  # Smart visibility rules
+  # Smart visibility — hide for default user locally, show on SSH/root
   typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_CONTENT_EXPANSION=
   typeset -g POWERLEVEL9K_ALWAYS_SHOW_CONTEXT=false
   typeset -g POWERLEVEL9K_ALWAYS_SHOW_USER=false
-  
-  # Visual indicators
-  typeset -g POWERLEVEL9K_CONTEXT_ROOT_VISUAL_IDENTIFIER_EXPANSION='⚡'
-  typeset -g POWERLEVEL9K_CONTEXT_REMOTE_VISUAL_IDENTIFIER_EXPANSION='🌐'
 
   # -----------------------------------------------------------------------------
-  # ⏱️ Enhanced Command Execution Time
+  # ⏱️ Command Execution Time
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=3
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FORMAT='d h m s'
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND=$yellow
-  typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PREFIX='%F{242}⏱ '
+  typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_PREFIX='%F{242}took '
 
   # -----------------------------------------------------------------------------
-  # ✅ Advanced Status Segment — Comprehensive Error Reporting
+  # ✅ Status Segment — Error Reporting
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_STATUS_EXTENDED_STATES=true
   typeset -g POWERLEVEL9K_STATUS_OK=false
@@ -241,7 +185,7 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_STATUS_ERROR_CONTENT_EXPANSION='✘ ${P9K_CONTENT}'
 
   # -----------------------------------------------------------------------------
-  # 🌿 Professional Git Status — Maximum Information Density
+  # 🌿 Git Status — Comprehensive & Fast
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_VCS_FOREGROUND=$orange
   typeset -g POWERLEVEL9K_VCS_LOADING_FOREGROUND=$grey
@@ -257,22 +201,20 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND=$cyan
   typeset -g POWERLEVEL9K_VCS_CONFLICTED_FOREGROUND=$red
   
-  # Comprehensive status icons with enhanced visibility
+  # Status icons
   typeset -g POWERLEVEL9K_VCS_CLEAN_ICON='%F{114}✓%f'
   typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='%F{117}?%f'
   typeset -g POWERLEVEL9K_VCS_MODIFIED_ICON='%F{221}!%f'
   typeset -g POWERLEVEL9K_VCS_STAGED_ICON='%F{156}+%f'
   typeset -g POWERLEVEL9K_VCS_CONFLICTED_ICON='%F{204}✖%f'
   typeset -g POWERLEVEL9K_VCS_STASHES_ICON='%F{117}*%f'
-  typeset -g POWERLEVEL9K_VCS_DELETED_ICON='%F{red}−%f'
-  typeset -g POWERLEVEL9K_VCS_RENAMED_ICON='%F{cyan}→%f'
   
-  # Remote tracking with visual indicators
+  # Remote tracking
   typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON='%F{109}⇣%f'
   typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON='%F{109}⇡%f'
   typeset -g POWERLEVEL9K_VCS_{COMMITS_AHEAD,COMMITS_BEHIND}_MAX_NUM=99
   
-  # Action states (merge, rebase, cherry-pick, bisect, etc.)
+  # Action states
   typeset -g POWERLEVEL9K_VCS_ACTIONFORMAT_FOREGROUND=$red
   
   # Display configuration
@@ -288,7 +230,7 @@ builtin setopt no_aliases no_sh_glob brace_expand
   typeset -g POWERLEVEL9K_VCS_RECURSE_UNTRACKED_DIRS=false
   typeset -g POWERLEVEL9K_VCS_LOADING_TEXT='%F{236}⋯%f'
   
-  # Comprehensive Git hooks
+  # Git hooks
   typeset -g POWERLEVEL9K_VCS_GIT_HOOKS=(
     vcs-detect-changes
     git-untracked
@@ -298,29 +240,28 @@ builtin setopt no_aliases no_sh_glob brace_expand
     git-tagname
   )
   
-  # Repository patterns (empty = all enabled)
+  # Enable all repos
   typeset -g POWERLEVEL9K_VCS_DISABLED_DIR_PATTERN=''
   typeset -g POWERLEVEL9K_VCS_DISABLED_WORKDIR_PATTERN='~'
 
   # -----------------------------------------------------------------------------
-  # ⚙️ Enhanced Background Jobs
+  # ⚙️ Background Jobs
   # -----------------------------------------------------------------------------
   typeset -g POWERLEVEL9K_BACKGROUND_JOBS_FOREGROUND=$cyan
   typeset -g POWERLEVEL9K_BACKGROUND_JOBS_VERBOSE=true
   typeset -g POWERLEVEL9K_BACKGROUND_JOBS_VERBOSE_ALWAYS=true
-  typeset -g POWERLEVEL9K_BACKGROUND_JOBS_VISUAL_IDENTIFIER_EXPANSION='⚙'
 
   # -----------------------------------------------------------------------------
-  # ⚡ Performance Optimization & Advanced Behavior
+  # ⚡ Maximum Performance Configuration
   # -----------------------------------------------------------------------------
   
-  # Transient prompt: OFF for full context visibility
+  # Transient prompt: OFF
   typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off
   
-  # Instant prompt mode for sub-second startup
+  # Instant prompt for fastest startup
   typeset -g POWERLEVEL9K_INSTANT_PROMPT=verbose
   
-  # Hot reload: disabled for maximum performance
+  # Hot reload: disabled
   typeset -g POWERLEVEL9K_DISABLE_HOT_RELOAD=true
   
   # Gitstatus optimization
@@ -330,22 +271,10 @@ builtin setopt no_aliases no_sh_glob brace_expand
   
   # Cache configuration
   typeset -g POWERLEVEL9K_VCS_MAX_INDEX_SIZE_DIRTY=4096
-  
-  # Performance tuning
   typeset -g POWERLEVEL9K_USE_CACHE=true
   typeset -g POWERLEVEL9K_MAX_CACHE_SIZE=10000
 
-  # -----------------------------------------------------------------------------
-  # 🎯 Quality-of-Life Features
-  # -----------------------------------------------------------------------------
-  
-  # Smart directory shortening in Git repos
-  typeset -g POWERLEVEL9K_DIR_SHORTEN_BEFORE_REPO=true
-  
-  # Anchor important directories
-  typeset -g POWERLEVEL9K_DIR_ANCHOR_BOLD=true
-
-  # Apply configuration immediately if already active
+  # Apply configuration immediately
   (( ! $+functions[p10k] )) || p10k reload
 }
 
@@ -359,11 +288,10 @@ typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
 builtin unset p10k_config_opts
 
 # ==============================================================================
-# 💡 Quick Customization Guide:
+# 💡 Customization:
 # ==============================================================================
-# 1. Set your username at line 202: DEFAULT_USER="${USER}"
-# 2. Adjust colors at lines 33-48 for personal preference
-# 3. Modify directory classes at lines 165-176 for custom paths
-# 4. Tune performance at line 323: GITSTATUS_NUM_THREADS (8-12 recommended)
-# 5. Change execution time threshold at line 225 (default: 3 seconds)
+# 1. Set DEFAULT_USER at line 134 to your username for smart context hiding
+# 2. Adjust colors at lines 34-46 if desired
+# 3. Change execution time threshold at line 154 (default: 3 seconds)
+# 4. Tune GITSTATUS_NUM_THREADS at line 227 based on your CPU (8-12 optimal)
 # ==============================================================================
