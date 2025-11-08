@@ -791,6 +791,8 @@ let
         # === Basic Window Management ===
         "$mainMod, Q, killactive"  # Close active window
         "ALT, F4, killactive"  # Alternative close
+        #"$mainMod SHIFT, F, exec, hyprctl dispatch fullscreen 1 toggle"  # Maximize toggle
+        #"$mainMod CTRL, F, exec, hyprctl dispatch fullscreen 0 toggle"   # True fullscreen toggle
         "$mainMod SHIFT, F, fullscreen, 1"  # Maximize fullscreen
         "$mainMod CTRL, F, fullscreen, 0"  # True fullscreen
         "$mainMod, F, exec, toggle_float"  # Toggle floating
