@@ -38,7 +38,7 @@ in {
         # Function to safely compile ZSH files
         compile_zsh() {
           local file="$1"
-          if [[ -f "$file" ]]; then
+          if [[ -f "$file" && ( ! -f "$file.zwc" || "$file" -nt "$file.zwc" ) ]]; then
             ${pkgs.zsh}/bin/zsh -c "zcompile '$file'" 2>/dev/null || true
             [[ -f "$file.zwc" ]] && run echo "  ✓ Compiled: $file"
           fi
@@ -50,11 +50,12 @@ in {
         # Compile completion dump
         compile_zsh "${cacheDir}/zcompdump"
         
-        # Compile all plugin files
+        # Compile all plugin files in background for better performance
         if [[ -d "${zshDir}/plugins" ]]; then
           while IFS= read -r -d "" file; do
-            compile_zsh "$file"
+            compile_zsh "$file" &
           done < <(find "${zshDir}/plugins" -name "*.zsh" -type f -print0 2>/dev/null)
+          wait
         fi
         
         run echo "✅ ZSH bytecode compilation completed"
@@ -74,6 +75,9 @@ in {
           source_file="''${zwc%.zwc}"
           [[ ! -f "$source_file" ]] && rm -f "$zwc" 2>/dev/null || true
         done
+        
+        # Clean old cache entries
+        find "${cacheDir}/.zcompcache" -type f -mtime +7 -delete 2>/dev/null || true
         
         run echo "✅ Cache cleanup completed"
       '';
@@ -145,7 +149,7 @@ in {
         "assign" = "fg=magenta";
       };
       patterns = {
-        "rm -rf *" = "fg=white,bold,bg=red";  # Dangerous command highlighting
+        "rm -rf *" = "fg=white,bold,bg=red";
         "rm -fr *" = "fg=white,bold,bg=red";
       };
     };
@@ -165,18 +169,13 @@ in {
       ZSH_CACHE_DIR = cacheDir;
       ZSH_DATA_DIR = dataDir;
       ZSH_STATE_DIR = stateDir;
-      ZCOMPDUMP = "${cacheDir}/zcompdump-$HOST-$ZSH_VERSION";
-      
-      # Plugin configurations
-      #YSU_MESSAGE_POSITION = "after";
-      #YSU_HARDCORE = "1";
       
       # Essential application defaults
       EDITOR = "nvim";
       VISUAL = "nvim";
       TERMINAL = "kitty";
       BROWSER = "brave";
-      PAGER = "less";  # Changed to 'less' for better compatibility
+      PAGER = "less";
       TERM = "xterm-256color";
       
       # Enhanced pager configuration
@@ -197,6 +196,9 @@ in {
       HISTSIZE = "150000";
       SAVEHIST = "120000";
       HISTFILE = "${zshDir}/history";
+      
+      # Completion dump location
+      ZCOMPDUMP = "${cacheDir}/zcompdump-$HOST-$ZSH_VERSION";
     };
 
     # -------------------------------------------------------------------------
@@ -222,7 +224,6 @@ in {
           
           # Create directories only if needed (avoid stat calls)
           [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
-          [[ -d "${zshDir}" ]] || mkdir -p "${zshDir}"
           [[ -d "${dataDir}" ]] || mkdir -p "${dataDir}"
           [[ -d "${stateDir}" ]] || mkdir -p "${stateDir}"
         ''}
@@ -260,6 +261,16 @@ in {
         
         # Disable flow control (Ctrl-S/Ctrl-Q) for better terminal UX
         stty -ixon 2>/dev/null
+        
+        # NixOS-specific environment setup
+        # NIX_PATH is typically set by NixOS, but ensure it's available
+        export NIX_PATH="''${NIX_PATH:-nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos}"
+        
+        # Enable nix-index for command-not-found functionality
+        # This is much faster than the default implementation
+        if [[ -f "$HOME/.nix-profile/etc/profile.d/command-not-found.sh" ]]; then
+          source "$HOME/.nix-profile/etc/profile.d/command-not-found.sh"
+        fi
       '')
       
       # =======================================================================
@@ -285,51 +296,56 @@ in {
         # ZSH Options - Carefully Tuned for Performance & UX
         # ---------------------------------------------------------------------
         # Directory navigation
-        setopt AUTO_CD                    # cd by typing directory name
-        setopt AUTO_PUSHD                 # Push old directory onto stack
-        setopt PUSHD_IGNORE_DUPS          # Don't push duplicates
-        setopt PUSHD_SILENT               # Don't print directory stack
-        setopt PUSHD_TO_HOME              # Push to home if no argument
-        setopt CD_SILENT                  # Don't print directory changes
+        setopt AUTO_CD
+        setopt AUTO_PUSHD
+        setopt PUSHD_IGNORE_DUPS
+        setopt PUSHD_SILENT
+        setopt PUSHD_TO_HOME
+        setopt CD_SILENT
         
         # Globbing
-        setopt EXTENDED_GLOB              # Extended globbing syntax
-        setopt GLOB_DOTS                  # Include dotfiles during globbing
-        setopt NUMERIC_GLOB_SORT          # Sort numerically when possible
-        setopt NO_CASE_GLOB               # Case insensitive globbing
-        setopt GLOB_COMPLETE              # Show completions for glob patterns
+        setopt EXTENDED_GLOB
+        setopt GLOB_DOTS
+        setopt NUMERIC_GLOB_SORT
+        setopt NO_CASE_GLOB
+        setopt GLOB_COMPLETE
         
         # Completion
-        setopt COMPLETE_IN_WORD           # Complete from cursor position
-        setopt ALWAYS_TO_END              # Move cursor after completion
-        setopt AUTO_MENU                  # Show menu on successive tab press
-        setopt AUTO_LIST                  # List choices on ambiguous completion
-        setopt AUTO_PARAM_SLASH           # Add trailing slash to directory completions
-        setopt NO_MENU_COMPLETE           # Don't autoselect first completion
-        setopt LIST_PACKED                # Compact completion lists
+        setopt COMPLETE_IN_WORD
+        setopt ALWAYS_TO_END
+        setopt AUTO_MENU
+        setopt AUTO_LIST
+        setopt AUTO_PARAM_SLASH
+        setopt NO_MENU_COMPLETE
+        setopt LIST_PACKED
         
         # Correction
-        setopt CORRECT                    # Correct commands
-        setopt NO_CORRECT_ALL             # Don't correct arguments
+        setopt CORRECT
+        setopt NO_CORRECT_ALL
         
         # Job control
-        setopt NO_BG_NICE                 # Don't nice background jobs
-        setopt NO_HUP                     # Don't kill jobs on shell exit
-        setopt NO_CHECK_JOBS              # Don't warn about running jobs
+        setopt NO_BG_NICE
+        setopt NO_HUP
+        setopt NO_CHECK_JOBS
+        setopt LONG_LIST_JOBS
         
         # Input/Output
-        setopt NO_FLOW_CONTROL            # Disable start/stop characters
-        setopt INTERACTIVE_COMMENTS       # Allow comments during interactive shell
-        setopt RC_QUOTES                  # Allow doubled single quotes for apostrophes
-        setopt COMBINING_CHARS            # Combine zero-length punctuation chars
+        setopt NO_FLOW_CONTROL
+        setopt INTERACTIVE_COMMENTS
+        setopt RC_QUOTES
+        setopt COMBINING_CHARS
         
         # Prompt
-        setopt PROMPT_SUBST               # Enable parameter expansion for prompts
-        setopt TRANSIENT_RPROMPT          # Remove right prompt on accept
+        setopt PROMPT_SUBST
+        setopt TRANSIENT_RPROMPT
         
         # Disable dangerous options
-        setopt NO_CLOBBER                 # Don't overwrite files with >
-        setopt NO_RM_STAR_SILENT          # Ask for confirmation on rm *
+        setopt NO_CLOBBER
+        setopt NO_RM_STAR_SILENT
+        
+        # Performance optimizations
+        setopt NO_BEEP
+        setopt MULTI_OS
         
         # Disable globbing for specific commands
         alias nix='noglob nix'
@@ -341,22 +357,22 @@ in {
         # ---------------------------------------------------------------------
         # History Configuration - Advanced Settings
         # ---------------------------------------------------------------------
-        setopt EXTENDED_HISTORY           # Save timestamp and duration
-        setopt HIST_EXPIRE_DUPS_FIRST     # Expire duplicates first
-        setopt HIST_FIND_NO_DUPS          # Don't show duplicates when searching
-        setopt HIST_IGNORE_ALL_DUPS       # Remove all earlier duplicates
-        setopt HIST_IGNORE_DUPS           # Don't record consecutive duplicates
-        setopt HIST_IGNORE_SPACE          # Ignore commands starting with space
-        setopt HIST_REDUCE_BLANKS         # Remove superfluous blanks
-        setopt HIST_SAVE_NO_DUPS          # Don't write duplicate entries
-        setopt HIST_VERIFY                # Show before executing from history
-        setopt HIST_FCNTL_LOCK            # Use fcntl for better locking
-        setopt SHARE_HISTORY              # Share history between sessions
-        setopt INC_APPEND_HISTORY         # Append to history immediately
-        setopt HIST_NO_STORE              # Don't store history commands
+        setopt EXTENDED_HISTORY
+        setopt HIST_EXPIRE_DUPS_FIRST
+        setopt HIST_FIND_NO_DUPS
+        setopt HIST_IGNORE_ALL_DUPS
+        setopt HIST_IGNORE_DUPS
+        setopt HIST_IGNORE_SPACE
+        setopt HIST_REDUCE_BLANKS
+        setopt HIST_SAVE_NO_DUPS
+        setopt HIST_VERIFY
+        setopt HIST_FCNTL_LOCK
+        setopt SHARE_HISTORY
+        setopt INC_APPEND_HISTORY
+        setopt HIST_NO_STORE
         
         # History performance optimization
-        HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..|cd -|z *)"
+        HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..|cd -|z *|zi *)"
 
         # ---------------------------------------------------------------------
         # FZF Configuration - Modern Fuzzy Finder
@@ -380,13 +396,13 @@ in {
         "
         
         export FZF_CTRL_T_OPTS="
-          --preview='bat --style=numbers --color=always --line-range :500 {}' 
+          --preview='bat --style=numbers --color=always --line-range :500 {} 2>/dev/null || cat {}' 
           --preview-window='right:60%:wrap'
           --bind='ctrl-/:change-preview-window(down|hidden|)'
         "
         
         export FZF_ALT_C_OPTS="
-          --preview='eza --tree --level=2 --color=always --icons {} | head -200'
+          --preview='eza --tree --level=2 --color=always --icons {} 2>/dev/null || tree -L 2 -C {} 2>/dev/null || ls -lah {}'
           --preview-window='right:60%:wrap'
         "
         
@@ -418,20 +434,25 @@ in {
           # Lazy Loading - Performance Optimization
           # -------------------------------------------------------------------
           
-          # Generic lazy loader function
+          # Generic lazy loader function with improved error handling
           __lazy_load() {
             local func_name="$1"
             local init_cmd="$2"
-            local alias_cmds=("''${@:3}")
+            shift 2
+            local alias_cmds=("$@")
             
             eval "
               $func_name() {
-                unfunction $func_name
-                for cmd in ''${alias_cmds[@]}; do
-                  unalias $cmd 2>/dev/null || true
+                unfunction $func_name 2>/dev/null
+                for cmd in \''${alias_cmds[@]}; do
+                  unalias \$cmd 2>/dev/null || true
                 done
-                $init_cmd
-                $func_name \"\$@\"
+                eval '$init_cmd' 2>/dev/null || return 1
+                if type $func_name &>/dev/null; then
+                  $func_name \"\$@\"
+                else
+                  command \''${alias_cmds[1]:-\''${func_name#__init_}} \"\$@\"
+                fi
               }
             "
             
@@ -460,6 +481,13 @@ in {
               'export PYENV_ROOT="$HOME/.pyenv"; export PATH="$PYENV_ROOT/bin:$PATH"; eval "$(pyenv init --path)"; eval "$(pyenv init -)"' \
               pyenv python pip
           fi
+          
+          # Lazy load conda if available
+          if [[ -d "$HOME/.conda/miniconda3" ]] || [[ -d "$HOME/.conda/anaconda3" ]]; then
+            __lazy_load __init_conda \
+              'eval "$(conda shell.zsh hook 2>/dev/null)"' \
+              conda
+          fi
         ''}
 
         # ---------------------------------------------------------------------
@@ -477,12 +505,6 @@ in {
           SAVEHIST=12000
         fi
 
-        # macOS specific settings
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-          # macOS specific PATH
-          path=(/opt/homebrew/bin /usr/local/bin $path)
-        fi
-
         # ---------------------------------------------------------------------
         # Tool Integrations - Fast and reliable
         # ---------------------------------------------------------------------
@@ -493,8 +515,16 @@ in {
         fi
         
         # Direnv - Load environment per directory
+        # Use nix-direnv for better Nix integration if available
         if command -v direnv &>/dev/null; then
           eval "$(direnv hook zsh)"
+          # Enable direnv layout caching for better performance
+          export DIRENV_LOG_FORMAT=""
+        fi
+        
+        # Atuin - Enhanced shell history (if available)
+        if command -v atuin &>/dev/null; then
+          eval "$(atuin init zsh --disable-up-arrow)"
         fi
         
         # ---------------------------------------------------------------------
@@ -507,17 +537,17 @@ in {
           # Cache for 24 hours, then rebuild
           local zcompdump="${cacheDir}/zcompdump-$HOST-$ZSH_VERSION"
           
+          # Check if we need to regenerate the completion dump
           if [[ -n $zcompdump(#qN.mh+24) ]]; then
             # Rebuild completion cache (older than 24 hours)
             compinit -i -d "$zcompdump"
+            # Compile in background
+            { zcompile "$zcompdump" } &!
           else
             # Use cached completion (skip check for speed)
             compinit -C -i -d "$zcompdump"
-          fi
-          
-          # Compile completion cache during background for next session
-          if [[ ! -f "$zcompdump.zwc" || "$zcompdump" -nt "$zcompdump.zwc" ]]; then
-            { zcompile "$zcompdump" } &!
+            # Compile if needed in background
+            [[ ! -f "$zcompdump.zwc" || "$zcompdump" -nt "$zcompdump.zwc" ]] && { zcompile "$zcompdump" } &!
           fi
         ''}
         
@@ -528,6 +558,14 @@ in {
         
         # Ensure completion system is initialized
         autoload -Uz bashcompinit && bashcompinit
+        
+        # Add custom completion paths early
+        fpath=(
+          "${zshDir}/completions"
+          "${zshDir}/plugins/zsh-completions/src"
+          "${zshDir}/functions"
+          $fpath
+        )
       '')
       
       # =======================================================================
@@ -539,22 +577,11 @@ in {
           source "${zshDir}/p10k.zsh"
         fi
         
-        # Add custom completion paths
-        fpath=(
-          "${zshDir}/completions"
-          "${zshDir}/plugins/zsh-completions/src"
-          "${zshDir}/functions"
-          $fpath
-        )
-        
-        # Autoload custom functions
+        # Autoload custom functions efficiently
         if [[ -d "${zshDir}/functions" ]]; then
-          # Add functions directory to fpath
-          fpath=("${zshDir}/functions" $fpath)
-          # Autoload all functions using shell expansion
           local func_file
-          for func_file in "${zshDir}/functions"/*; do
-            [[ -f "$func_file" ]] && autoload -Uz "$${func_file##*/}"
+          for func_file in "${zshDir}/functions"/*(.N); do
+            autoload -Uz "''${func_file:t}"
           done
         fi
         
@@ -663,7 +690,7 @@ in {
       zstyle ':completion:*:*:*:users' ignored-patterns adm amanda apache at avahi avahi-autoipd backup bin cacti canna clamav daemon dbus distcache dnsmasq dovecot fax ftp games gdm gkrellmd gopher hacluster haldaemon halt hsqldb ident junkbust kdm ldap lp mail mailman mailnull man messagebus mldonkey mysql nagios named netdump news nfsnobody nobody nscd ntp nut nx obsrun openvpn operator pcap polkitd postfix postgres privoxy pulse pvm quagga radvd rpc rpcuser rpm rtkit scard shutdown squid sshd statd svn sync tftp usbmux uucp vcsa wwwrun xfs '_*'
       
       # FZF-Tab Integration
-      zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath 2>/dev/null || ls -lah --color=always $realpath'
+      zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath 2>/dev/null || ls -lah --color=always $realpath 2>/dev/null'
       zstyle ':fzf-tab:complete:*:*' fzf-flags --height=80% --border=rounded --info=inline --cycle
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-flags --preview-window=down:3:wrap
@@ -673,7 +700,7 @@ in {
       zstyle ':fzf-tab:complete:git-show:*' fzf-preview 'git show --color=always $word | delta'
       zstyle ':fzf-tab:complete:ssh:argument-1' fzf-preview 'dig $word'
       zstyle ':fzf-tab:complete:man:*' fzf-preview 'man $word | head -100'
-      zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --level=2 --color=always --icons $realpath'
+      zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --level=2 --color=always --icons $realpath 2>/dev/null || tree -L 2 -C $realpath 2>/dev/null'
       zstyle ':fzf-tab:*' fzf-command fzf
       zstyle ':fzf-tab:*' fzf-min-height 100
       zstyle ':fzf-tab:*' switch-group ',' '.'
@@ -718,4 +745,3 @@ in {
     };
   };
 }
-
