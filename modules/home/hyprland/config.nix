@@ -253,6 +253,7 @@ let
         # === Performance Optimizations ===
         vfr = true;                          # Variable frame rate when idle
         disable_autoreload = false;          # Allow config auto-reload on change
+        disable_hyprland_guiutils_check = true;  # Skip GUI utils check (using custom tools)
 
         # === Window Behavior ===
         focus_on_activate = true;            # Automatically focus new active window
