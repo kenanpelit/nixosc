@@ -1,4 +1,4 @@
-# modules/home/zsh/zsh.nix - STARSHIP FIX VERSION
+# modules/home/zsh/zsh.nix
 # ==============================================================================
 # ZSH Configuration - Ultra Performance Optimized with Starship Prompt
 # Author: Kenan Pelit
@@ -106,46 +106,11 @@ in {
     autocd = true;
     
     # -------------------------------------------------------------------------
-    # Enhanced Autosuggestions - Intelligent History-Based Suggestions
+    # Autosuggestions & Syntax Highlighting
+    # DISABLED HERE - Handled in zsh_plugins.nix for better control
     # -------------------------------------------------------------------------
-    autosuggestion = {
-      enable = true;
-      strategy = [ "history" "completion" ];
-      highlight = "fg=8";
-    };
-    
-    # -------------------------------------------------------------------------
-    # Enhanced Syntax Highlighting - Comprehensive Code Recognition
-    # -------------------------------------------------------------------------
-    syntaxHighlighting = {
-      enable = true;
-      highlighters = [ "main" "brackets" "pattern" "cursor" ];
-      styles = {
-        "alias" = "fg=magenta,bold";
-        "builtin" = "fg=cyan,bold";
-        "function" = "fg=blue,bold";
-        "command" = "fg=green";
-        "precommand" = "fg=green,underline";
-        "commandseparator" = "fg=yellow";
-        "path" = "underline";
-        "path_prefix" = "underline";
-        "globbing" = "fg=yellow,bold";
-        "history-expansion" = "fg=blue";
-        "single-hyphen-option" = "fg=cyan";
-        "double-hyphen-option" = "fg=cyan";
-        "back-quoted-argument" = "fg=magenta";
-        "single-quoted-argument" = "fg=yellow";
-        "double-quoted-argument" = "fg=yellow";
-        "dollar-quoted-argument" = "fg=yellow";
-        "dollar-double-quoted-argument" = "fg=cyan";
-        "back-double-quoted-argument" = "fg=cyan";
-        "assign" = "fg=magenta";
-      };
-      patterns = {
-        "rm -rf *" = "fg=white,bold,bg=red";
-        "rm -fr *" = "fg=white,bold,bg=red";
-      };
-    };
+    # autosuggestion.enable = false;  # Using zsh-autosuggestions from plugins
+    # syntaxHighlighting.enable = false;  # Using fast-syntax-highlighting from plugins
     
     enableCompletion = true;
 

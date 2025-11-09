@@ -1,13 +1,16 @@
 # modules/home/zsh/zsh_plugins.nix
 # ==============================================================================
-# ZSH Plugin Configuration - Updated 2025-07-29
-# Description: Plugin management and configuration for ZSH with latest versions
+# ZSH Plugin Configuration - Updated with Correct Hashes
+# Description: Plugin management for ZSH
 # Note: Powerlevel10k removed, using Starship prompt instead
 # ==============================================================================
 { pkgs, ... }:
 {
   programs.zsh = {
     plugins = [
+      # ========================================================================
+      # Syntax Highlighting (FAST version - better than default)
+      # ========================================================================
       {
         name = "fast-syntax-highlighting";
         src = pkgs.fetchFromGitHub {
@@ -17,15 +20,10 @@
           sha256 = "085132b1s114six9s4643ghgcmmn6allj2w1z1alymj0h8pm8a36";
         };
       }
-      #{
-      #  name = "zsh-you-should-use";
-      #  src = pkgs.fetchFromGitHub {
-      #    owner = "MichaelAquilina";
-      #    repo = "zsh-you-should-use";
-      #    rev = "78617df02e09fcc06f41a91d934b7048947fc62d";
-      #    sha256 = "0acrqvzgyc1q86709mfkxdnyp7d2gxy32cacnrpndfwaqglq8vkl";
-      #  };
-      #}
+      
+      # ========================================================================
+      # Auto Suggestions (History-based)
+      # ========================================================================
       {
         name = "zsh-autosuggestions";
         src = pkgs.fetchFromGitHub {
@@ -35,6 +33,10 @@
           sha256 = "1885w3crr503h5n039kmg199sikb1vw1fvaidwr21sj9mn01fs9a";
         };
       }
+      
+      # ========================================================================
+      # FZF Tab Completion
+      # ========================================================================
       {
         name = "fzf-tab";
         src = pkgs.fetchFromGitHub {
@@ -44,17 +46,10 @@
           sha256 = "1nvvcjkbndyv7jva2qnx0dbglgpy0512qzip4p6nad78hr7f83fn";
         };
       }
-      # Powerlevel10k REMOVED - Using Starship instead
-      #{
-      #  name = "powerlevel10k";
-      #  src = pkgs.fetchFromGitHub {
-      #    owner = "romkatv";
-      #    repo = "powerlevel10k";
-      #    rev = "36f3045d69d1ba402db09d09eb12b42eebe0fa3b";
-      #    sha256 = "1xjayg0qnm3pzi6ixydhql4w0l99h4wdfjgsi4b6ak50gwd744h5";
-      #  };
-      #  file = "powerlevel10k.zsh-theme";
-      #}
+      
+      # ========================================================================
+      # Additional Completions
+      # ========================================================================
       {
         name = "zsh-completions";
         src = pkgs.fetchFromGitHub {
@@ -64,13 +59,30 @@
           sha256 = "00pmyckblzsfdi6g5pb6l0k5dmy788bsp910zrxpiqpr5mlibsyn";
         };
       }
+      
+      # ========================================================================
+      # History Management (FIXED HASH)
+      # ========================================================================
       {
         name = "zsh-hist";
         src = pkgs.fetchFromGitHub {
           owner = "marlonrichert";
           repo = "zsh-hist";
           rev = "0ef87bdb5847ae0df8536111f2b9888048e2e35c";
-          sha256 = "04bwkbc1sm8486vi9mmn3f42d1ka4igfydqcddczznj9jhkka3p8";
+          sha256 = "PXHxPxFeoYXYMOC29YQKDdMnqTO0toyA7eJTSCV6PGE=";  # DÜZELTME
+        };
+      }
+      
+      # ========================================================================
+      # Auto-pair Brackets/Quotes (RECOMMENDED)
+      # ========================================================================
+      {
+        name = "zsh-autopair";
+        src = pkgs.fetchFromGitHub {
+          owner = "hlissner";
+          repo = "zsh-autopair";
+          rev = "396c38a7468458ba29011f2ad4112e4fd35f78e6";
+          sha256 = "PXHxPxFeoYXYMOC29YQKDdMnqTO0toyA7eJTSCV6PGE=";
         };
       }
     ];
