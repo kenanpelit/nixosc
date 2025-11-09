@@ -50,6 +50,7 @@ in
     p7zip         # 7-Zip sıkıştırma
     lftp          # FTP istemcisi
     scrcpy        # Android ekran yansıtma
+    starship      # Minimal, blazing fast, and extremely customizable prompt for any shell
 
     # ==============================================================================
     # Geliştirme Araçları

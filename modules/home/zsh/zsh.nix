@@ -1,9 +1,9 @@
-# modules/home/zsh/zsh.nix
+# modules/home/zsh/zsh.nix - STARSHIP FIX VERSION
 # ==============================================================================
-# ZSH Configuration - Ultra Performance Optimized with Smart Features
+# ZSH Configuration - Ultra Performance Optimized with Starship Prompt
 # Author: Kenan Pelit
 # Description: Production-ready ZSH with bytecode compilation, lazy loading,
-#              and intelligent caching strategies
+#              and Starship prompt integration
 # ==============================================================================
 { hostname, config, pkgs, host, lib, ... }:
 
@@ -11,7 +11,6 @@ let
   # ============================================================================
   # Performance and Feature Toggles
   # ============================================================================
-  enableInstantPrompt = true;      # P10k instant prompt (sub-100ms startup)
   enablePerformanceOpts = true;    # Smart compinit and aggressive caching
   enableBytecodeCompile = true;    # Bytecode compilation (20-30% speed boost)
   enableLazyLoading = true;        # Lazy load heavy tools (saves ~50-100ms)
@@ -90,12 +89,6 @@ in {
   home.file = {
     # Ensure .ssh directory exists
     ".ssh/.keep".text = "";
-
-    # Powerlevel10k theme configuration
-    "${zshDir}/p10k.zsh" = {
-      enable = true;
-      source = ./p10k.zsh;
-    };
     
     # Custom completions directory
     "${zshDir}/completions/.keep".text = "";
@@ -250,24 +243,14 @@ in {
           /usr/local/bin
           $path
         )
-
-        ${lib.optionalString enableInstantPrompt ''
-          # Powerlevel10k instant prompt - Must be at the top
-          typeset -g POWERLEVEL9K_INSTANT_PROMPT="quiet"
-          if [[ -r "${cacheDir}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-            source "${cacheDir}/p10k-instant-prompt-''${(%):-%n}.zsh"
-          fi
-        ''}
         
         # Disable flow control (Ctrl-S/Ctrl-Q) for better terminal UX
         stty -ixon 2>/dev/null
         
         # NixOS-specific environment setup
-        # NIX_PATH is typically set by NixOS, but ensure it's available
         export NIX_PATH="''${NIX_PATH:-nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos}"
         
         # Enable nix-index for command-not-found functionality
-        # This is much faster than the default implementation
         if [[ -f "$HOME/.nix-profile/etc/profile.d/command-not-found.sh" ]]; then
           source "$HOME/.nix-profile/etc/profile.d/command-not-found.sh"
         fi
@@ -495,7 +478,6 @@ in {
         # ---------------------------------------------------------------------
         if [[ -n $SSH_CONNECTION ]]; then
           # Lightweight SSH configuration
-          POWERLEVEL9K_INSTANT_PROMPT="off"
           unset MANPAGER
           export PAGER="less"
           
@@ -509,16 +491,14 @@ in {
         # Tool Integrations - Fast and reliable
         # ---------------------------------------------------------------------
         
-        # Zoxide - Smarter cd command (keep simple, no lazy load)
+        # Zoxide - Smarter cd command
         if command -v zoxide &>/dev/null; then
           eval "$(zoxide init zsh)"
         fi
         
         # Direnv - Load environment per directory
-        # Use nix-direnv for better Nix integration if available
         if command -v direnv &>/dev/null; then
           eval "$(direnv hook zsh)"
-          # Enable direnv layout caching for better performance
           export DIRENV_LOG_FORMAT=""
         fi
         
@@ -572,11 +552,6 @@ in {
       # PHASE 3: LATE INITIALIZATION (Post-completion)
       # =======================================================================
       (lib.mkAfter ''
-        # Load P10k theme - Must be after compinit
-        if [[ -f "${zshDir}/p10k.zsh" ]]; then
-          source "${zshDir}/p10k.zsh"
-        fi
-        
         # Autoload custom functions efficiently
         if [[ -d "${zshDir}/functions" ]]; then
           local func_file
@@ -599,6 +574,13 @@ in {
           echo "\n=== ZSH Startup Profile ==="
           zprof | head -20
         ''}
+        
+        # =====================================================================
+        # STARSHIP PROMPT - Initialize at the very end
+        # =====================================================================
+        if command -v starship &>/dev/null; then
+          eval "$(starship init zsh)"
+        fi
       '')
     ];
    
@@ -745,3 +727,4 @@ in {
     };
   };
 }
+
