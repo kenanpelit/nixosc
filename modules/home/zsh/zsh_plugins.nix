@@ -2,6 +2,7 @@
 # ==============================================================================
 # ZSH Plugin Configuration - Updated 2025-07-29
 # Description: Plugin management and configuration for ZSH with latest versions
+# Note: Powerlevel10k removed, using Starship prompt instead
 # ==============================================================================
 { pkgs, ... }:
 {
@@ -43,16 +44,17 @@
           sha256 = "1nvvcjkbndyv7jva2qnx0dbglgpy0512qzip4p6nad78hr7f83fn";
         };
       }
-      {
-        name = "powerlevel10k";
-        src = pkgs.fetchFromGitHub {
-          owner = "romkatv";
-          repo = "powerlevel10k";
-          rev = "36f3045d69d1ba402db09d09eb12b42eebe0fa3b";
-          sha256 = "1xjayg0qnm3pzi6ixydhql4w0l99h4wdfjgsi4b6ak50gwd744h5";
-        };
-        file = "powerlevel10k.zsh-theme";
-      }
+      # Powerlevel10k REMOVED - Using Starship instead
+      #{
+      #  name = "powerlevel10k";
+      #  src = pkgs.fetchFromGitHub {
+      #    owner = "romkatv";
+      #    repo = "powerlevel10k";
+      #    rev = "36f3045d69d1ba402db09d09eb12b42eebe0fa3b";
+      #    sha256 = "1xjayg0qnm3pzi6ixydhql4w0l99h4wdfjgsi4b6ak50gwd744h5";
+      #  };
+      #  file = "powerlevel10k.zsh-theme";
+      #}
       {
         name = "zsh-completions";
         src = pkgs.fetchFromGitHub {
