@@ -1670,11 +1670,11 @@
         "systems": "systems_12"
       },
       "locked": {
-        "lastModified": 1762701058,
-        "narHash": "sha256-EvH+MR0buDxwqGqd0oVj7BjC6RKMB6zuQkjZDP6ABJQ=",
+        "lastModified": 1762711501,
+        "narHash": "sha256-80UJ5GWro6HTse7tq91DIhRqKS/pP0oHVoM3Ivf7/Ag=",
         "owner": "hyprwm",
         "repo": "hyprutils",
-        "rev": "9a9745d7aa5380ad321dc4b2418b28ca7fbc193d",
+        "rev": "01afe9245b54f090886720df908a9a4c58a4a63b",
         "type": "github"
       },
       "original": {

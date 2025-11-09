@@ -323,50 +323,82 @@ in {
         HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..|cd -|z *|zi *)"
 
         # ---------------------------------------------------------------------
-        # FZF Configuration - Modern Fuzzy Finder
+        # FZF Configuration - Optimized & Enhanced
         # ---------------------------------------------------------------------
+        
+        # Core FZF settings with Catppuccin Mocha theme
         export FZF_DEFAULT_OPTS="
           --height=80%
           --layout=reverse
           --info=inline
           --border=rounded
+          --margin=1
+          --padding=1
           --cycle
           --scroll-off=5
           --bind='ctrl-/:toggle-preview'
           --bind='ctrl-u:preview-half-page-up'
           --bind='ctrl-d:preview-half-page-down'
           --bind='ctrl-a:select-all'
-          --bind='ctrl-y:execute-silent(echo {+} | xclip -selection clipboard)'
-          --color='hl:148,hl+:154,pointer:032,marker:010,bg+:237,gutter:008'
+          --bind='ctrl-x:deselect-all'
+          --bind='ctrl-y:execute-silent(echo {+} | wl-copy)'
+          --bind='alt-w:toggle-preview-wrap'
+          --bind='ctrl-space:toggle+down'
+          --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8
+          --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc
+          --color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8
           --pointer='▶'
           --marker='✓'
           --prompt='❯ '
+          --no-scrollbar
         "
         
+        # File finder (Ctrl-T)
         export FZF_CTRL_T_OPTS="
-          --preview='bat --style=numbers --color=always --line-range :500 {} 2>/dev/null || cat {}' 
+          --preview='[[ -d {} ]] && eza --tree --level=2 --color=always --icons {} || bat --style=numbers --color=always --line-range :500 {}'
           --preview-window='right:60%:wrap'
           --bind='ctrl-/:change-preview-window(down|hidden|)'
+          --bind='ctrl-e:execute(nvim {} < /dev/tty > /dev/tty 2>&1)'
+          --header='CTRL-/: toggle preview | CTRL-E: edit in nvim'
         "
         
+        # Directory finder (Alt-C)
         export FZF_ALT_C_OPTS="
-          --preview='eza --tree --level=2 --color=always --icons {} 2>/dev/null || tree -L 2 -C {} 2>/dev/null || ls -lah {}'
+          --preview='eza --tree --level=3 --color=always --icons --group-directories-first {}'
           --preview-window='right:60%:wrap'
+          --bind='ctrl-/:change-preview-window(down|hidden|)'
+          --header='CTRL-/: toggle preview'
         "
         
+        # History search (Ctrl-R)
         export FZF_CTRL_R_OPTS="
           --preview='echo {}'
           --preview-window='down:3:hidden:wrap'
           --bind='?:toggle-preview'
-          --bind='ctrl-y:execute-silent(echo -n {2..} | xclip -selection clipboard)+abort'
-          --header='Press ? to toggle preview | Press CTRL-Y to copy command'
+          --bind='ctrl-y:execute-silent(echo -n {2..} | wl-copy)+abort'
+          --bind='ctrl-e:execute(echo {2..} | xargs echo > /tmp/fzf-cmd && nvim /tmp/fzf-cmd < /dev/tty > /dev/tty 2>&1)'
+          --header='?: toggle preview | CTRL-Y: copy | CTRL-E: edit'
+          --exact
         "
-
-        # Use fd for FZF if available (much faster than find)
+        
+        # Completion trigger
+        export FZF_COMPLETION_TRIGGER='**'
+        export FZF_COMPLETION_OPTS="
+          --info=inline
+          --border=rounded
+          --height=80%
+        "
+        
+        # Use fd for faster file finding
         if command -v fd &>/dev/null; then
-          export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git --exclude node_modules --exclude .cache'
-          export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-          export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git --exclude node_modules --exclude .cache'
+          export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules'
+          export FZF_CTRL_T_COMMAND="fd --type f --type d --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules"
+          export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules'
+        fi
+        
+        # Use ripgrep for content search
+        if command -v rg &>/dev/null; then
+          export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git/*" --glob "!.cache/*" --glob "!node_modules/*"'
         fi
 
         # ---------------------------------------------------------------------
