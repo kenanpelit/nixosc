@@ -106,12 +106,12 @@
     
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/522edc87126a48f3ce4891747b6a92a22385b1e7"; # 1108 - Updated Commits
+      url = "github:hyprwm/hyprland/0b1d690676589503f0addece30e936a240733699"; # 1110 - Updated Commits
+#      url = "github:hyprwm/hyprland/522edc87126a48f3ce4891747b6a92a22385b1e7"; # 1108 - Updated Commits
 #      url = "github:hyprwm/hyprland/f56ec180d3a03a5aa978391249ff8f40f949fb73"; # 1107 - Updated Commits
 #      url = "github:hyprwm/hyprland/8e8bfbb0b146fb1f3234b2a3e3e92b63989e1993"; # 1106 - Updated Commits
 #      url = "github:hyprwm/hyprland/c757fd375cce299e3da922190ddf1a0622ce807c"; # 1106 - Updated Commits
 #      url = "github:hyprwm/hyprland/46b71eda6423cc9c3b19cb310c3344e81ac624c5"; # 1105 - Updated Commits
-#      url = "github:hyprwm/hyprland/8e9add2afda58d233a75e4c5ce8503b24fa59ceb"; # 1031 - Updated Commits
     };
     
     hyprlang            = { url = "github:hyprwm/hyprlang";                      inputs.nixpkgs.follows = "nixpkgs"; };
