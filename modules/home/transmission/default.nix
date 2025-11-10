@@ -42,10 +42,75 @@ let
     speed-limit-up = 100;
     speed-limit-up-enabled = false;
     
+    # Blocklist Settings
+    blocklist-enabled = true;
+    blocklist-url = "http://www.example.com/blocklist";  # Lokal dosya kullanıldığı için URL önemsiz
+    
+    # Performance Settings
+    cache-size-mb = 64;  # Varsayılan 4 MB'dan artırıldı
+    peer-limit-global = 200;
+    peer-limit-per-torrent = 50;
+    
+    # Network Settings
+    peer-port = 51413;
+    peer-port-random-on-start = false;
+    port-forwarding-enabled = true;
+    
+    # Protocol Settings
+    dht-enabled = true;
+    lpd-enabled = true;
+    pex-enabled = true;
+    utp-enabled = true;
+    
+    # Security Settings
+    encryption = 1;  # 0=off, 1=preferred, 2=required
+    
+    # Queue Settings
+    download-queue-enabled = true;
+    download-queue-size = 5;
+    seed-queue-enabled = false;
+    seed-queue-size = 10;
+    queue-stalled-enabled = true;
+    queue-stalled-minutes = 30;
+    
+    # Seeding Settings
+    ratio-limit = 2;
+    ratio-limit-enabled = false;
+    idle-seeding-limit = 30;
+    idle-seeding-limit-enabled = false;
+    
+    # Alternative Speed Limits (Scheduler)
+    alt-speed-enabled = false;
+    alt-speed-up = 50;
+    alt-speed-down = 50;
+    alt-speed-time-enabled = false;
+    alt-speed-time-begin = 540;   # 09:00
+    alt-speed-time-end = 1020;    # 17:00
+    alt-speed-time-day = 127;     # All days
+    
+    # Advanced Settings
+    preallocation = 1;            # Fast preallocation
+    prefetch-enabled = true;
+    scrape-paused-torrents-enabled = true;
+    upload-slots-per-torrent = 8;
+    
     # Behavior Settings
     start-added-torrents = true;
     trash-original-torrent-files = false;
-    umask = 18;
+    rename-partial-files = false;
+    torrent-added-verify-mode = "fast";
+    umask = 18;  # 022 in octal
+    
+    # Logging
+    message-level = 2;  # 0=None, 1=Error, 2=Info, 3=Debug
+    
+    # Scripts (disabled by default)
+    script-torrent-added-enabled = false;
+    script-torrent-added-filename = "";
+    script-torrent-done-enabled = false;
+    script-torrent-done-filename = "";
+    script-torrent-done-seeding-enabled = false;
+    script-torrent-done-seeding-filename = "";
   };
   
   settingsFile = settingsFormat.generate "settings.json" baseSettings;
@@ -61,7 +126,7 @@ let
     
     # Create necessary directories
     ${pkgs.coreutils}/bin/mkdir -p "${config.home.homeDirectory}/.tor/transmission"/{complete,incomplete,watch}
-    ${pkgs.coreutils}/bin/mkdir -p "${config.home.homeDirectory}/${settingsDir}"
+    ${pkgs.coreutils}/bin/mkdir -p "${config.home.homeDirectory}/${settingsDir}/blocklists"
     
     # Settings file path
     SETTINGS_FILE="${config.home.homeDirectory}/${settingsDir}/settings.json"
@@ -209,4 +274,16 @@ in
 #   journalctl --user -u transmission -n 50    # View setup script output
 #   bash -x /nix/store/.../transmission-setup  # Run script manually with debug
 #
+# Blocklist Management:
+#   - Blocklist enabled by default
+#   - Place blocklist files in ~/.config/transmission-daemon/blocklists/
+#   - Use the separate blocklist update script for automated updates
+#   - Restart service after blocklist updates: tr-restart
+#
+# Performance Tuning:
+#   - cache-size-mb increased to 64 MB (from default 4 MB)
+#   - Adjust based on available RAM and usage patterns
+#   - Monitor with: tr-list and system resource monitors
+#
 # ==============================================================================
+
