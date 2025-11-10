@@ -17,7 +17,7 @@ let
   fastMode = builtins.getEnv "STARSHIP_MODE" != "full";
 
   # Conservative timeouts: avoid "timed out" blanks on slow/remote FS
-  commandTimeout = if fastMode then 350 else 800;  # ms
+  commandTimeout = if fastMode then 250 else 500;  # ms
   scanTimeout    = if fastMode then 10  else 30;   # ms
 
   # Feature toggles
@@ -434,9 +434,17 @@ in
   # ============================================================================
   # Diagnostics / Quick helpers (FAST only)
   # ============================================================================
-  home.shellAliases = lib.mkIf fastMode {
-    starship-profile = "echo '🚀 Starship FAST Mode Active'";
-    starship-debug   = "STARSHIP_LOG=debug starship module all";
-    starfull         = "export STARSHIP_MODE=full; exec zsh -l";
+  home.shellAliases = {
+    # Fast mode
+    starship-profile = "echo '🚀 Starship Mode: '${if fastMode then "FAST ⚡" else "FULL 🎯"}";
+    starship-debug = "STARSHIP_LOG=debug starship module all";
+    starship-timings = "starship timings";  # performans analizi
+  
+    # Mode switching
+    starfast = "export STARSHIP_MODE=fast; exec zsh -l";
+    starfull = "export STARSHIP_MODE=full; exec zsh -l";
+  
+    # Config testing
+    starship-test = "starship print-config";
   };
 }
