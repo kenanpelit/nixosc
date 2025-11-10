@@ -279,6 +279,9 @@ let
   smart-suspend = pkgs.writeShellScriptBin "smart-suspend" (
     builtins.readFile ./bin/smart-suspend.sh
   );
+  sqm = pkgs.writeShellScriptBin "sqm" (
+    builtins.readFile ./bin/sqm.sh
+  );
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
   );
@@ -476,6 +479,7 @@ in {
     semsumo
     sil_ayni_mp4
     smart-suspend
+    sqm
     ssh-launcher
     starship_toggle
     svmarch

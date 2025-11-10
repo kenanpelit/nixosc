@@ -974,6 +974,8 @@ in
     "tcp_bbr"      # BBR congestion control
     "sch_fq"       # Fair Queuing scheduler
     "wireguard"    # WireGuard VPN
+    "sch_cake"     # CAKE qdisc for SQM
+    "ifb"          # Intermediate Functional Block for ingress shaping
   ];
 
   # ============================================================================
