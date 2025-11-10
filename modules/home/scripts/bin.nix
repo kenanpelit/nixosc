@@ -282,6 +282,9 @@ let
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
   );
+  starship_toggle = pkgs.writeShellScriptBin "starship_toggle" (
+    builtins.readFile ./bin/starship_toggle.sh
+  );
   svmarch = pkgs.writeShellScriptBin "svmarch" (
     builtins.readFile ./bin/svmarch.sh
   );
@@ -474,6 +477,7 @@ in {
     sil_ayni_mp4
     smart-suspend
     ssh-launcher
+    starship_toggle
     svmarch
     svm_launcher
     svmnixos
