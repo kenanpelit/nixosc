@@ -1,96 +1,100 @@
 # modules/home/starship/default.nix
 # ==============================================================================
-# Starship Prompt — Catppuccin Mocha + Pure-like Layout (Performance Optimized)
+# Starship Prompt — Catppuccin Mocha + Pure/Pure-ish Layout (Ultra Lean)
 # Author: Kenan Pelit
-# Description:
-#   • Dual-profile: FAST (default) vs FULL
-#   • Aggressive I/O & subprocess reduction in FAST
-#   • Clean, low-latency experience on large git repos / remote FS
+# Notes:
+#   • Dual profile via STARSHIP_MODE: "fast" (default) vs "full"
+#   • Left side: context + repo + langs | Right side: timing (+ time/battery on FULL)
+#   • Keep symbols minimal to reduce glyph/render cost; keep scans tiny on FAST
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
 
 let
   # ----------------------------------------------------------------------------
-  # Profile switch
-  # - Default: FAST (unless STARSHIP_MODE=full)
-  # - You can still hardcode: fastMode = true/false
+  # Profile switch (env takes precedence)
   # ----------------------------------------------------------------------------
   fastMode = builtins.getEnv "STARSHIP_MODE" != "full";
 
-  # ----------------------------------------------------------------------------
-  # Tunables (keep conservative to avoid "timed out" blanks on slow FS)
-  # ----------------------------------------------------------------------------
-  commandTimeout = if fastMode then 400 else 800;  # ms
-  scanTimeout    = if fastMode then 12  else 30;   # ms
+  # Conservative timeouts: avoid "timed out" blanks on slow/remote FS
+  commandTimeout = if fastMode then 350 else 800;  # ms
+  scanTimeout    = if fastMode then 10  else 30;   # ms
 
   # Feature toggles
-  enableGitState       = !fastMode;  # rebase/merge state is expensive
-  enableHeavyLanguages = !fastMode;  # Java/Ruby/... scans
-  enableInfraTools     = !fastMode;  # Docker/Terraform/AWS/Package/Conda
-  enableBattery        = !fastMode;  # show battery only in FULL
+  enableGitState       = !fastMode;   # rebase/merge state is expensive
+  enableGitMetrics     = !fastMode;   # counts added/modified lines (heavy-ish)
+  enableHeavyLanguages = !fastMode;   # Java/Ruby/… scans
+  enableInfraTools     = !fastMode;   # Docker/Terraform/AWS/Package/Conda
+  enableBattery        = !fastMode;   # show battery only in FULL
+  enableClock          = !fastMode;   # right side clock only in FULL
 
   # ----------------------------------------------------------------------------
   # Catppuccin Mocha Palette
   # ----------------------------------------------------------------------------
   catppuccinPalette = {
-    rosewater = "#f5e0dc"; flamingo  = "#f2cdcd"; pink      = "#f5c2e7";
-    mauve     = "#cba6f7"; red       = "#f38ba8"; maroon    = "#eba0ac";
-    peach     = "#fab387"; yellow    = "#f9e2af"; green     = "#a6e3a1";
-    teal      = "#94e2d5"; sky       = "#89dceb"; sapphire  = "#74c7ec";
-    blue      = "#89b4fa"; lavender  = "#b4befe"; text      = "#cdd6f4";
-    subtext1  = "#bac2de"; subtext0  = "#a6adc8"; overlay2  = "#9399b2";
-    overlay1  = "#7f849c"; overlay0  = "#6c7086"; surface2  = "#585b70";
-    surface1  = "#45475a"; surface0  = "#313244"; base      = "#1e1e2e";
-    mantle    = "#181825"; crust     = "#11111b";
+    rosewater="#f5e0dc"; flamingo="#f2cdcd"; pink="#f5c2e7"; mauve="#cba6f7";
+    red="#f38ba8"; maroon="#eba0ac"; peach="#fab387"; yellow="#f9e2af";
+    green="#a6e3a1"; teal="#94e2d5"; sky="#89dceb"; sapphire="#74c7ec";
+    blue="#89b4fa"; lavender="#b4befe"; text="#cdd6f4"; subtext1="#bac2de";
+    subtext0="#a6adc8"; overlay2="#9399b2"; overlay1="#7f849c"; overlay0="#6c7086";
+    surface2="#585b70"; surface1="#45475a"; surface0="#313244"; base="#1e1e2e";
+    mantle="#181825"; crust="#11111b";
   };
 
   # ----------------------------------------------------------------------------
-  # Layout presets
+  # Layouts
+  # - Use $fill to create a right-aligned area (right prompt feeling)
   # ----------------------------------------------------------------------------
-  fastFormat = lib.concatStrings [
-    # Line 1: Context + Git + core langs
+  fastLeft = lib.concatStrings [
     "$username$hostname$directory"
     "$git_branch$git_status"
     "$python$rust$golang$nodejs"
     "$nix_shell"
-    "$cmd_duration"
-    "$line_break"
-    # Line 2: Jobs + prompt
-    "$jobs$character"
   ];
 
-  fullFormat = lib.concatStrings [
-    # Line 1: Full context + git state + all langs
+  fullLeft = lib.concatStrings [
     "$username$hostname$directory"
     "$git_branch$git_status$git_state"
     "$python$rust$golang$nodejs$java$c$ruby$php$lua$haskell$elixir$zig"
     "$nix_shell"
-    # Infra + pkg managers
-    "$docker_context$terraform$aws"
-    "$package$conda"
-    "$cmd_duration"
-    "$line_break"
-    # Line 2: System info
-    "$jobs$battery$status$character"
+    "$docker_context$terraform$aws$package$conda"
   ];
+
+  fastRight = lib.concatStrings [
+    "$cmd_duration"
+  ];
+
+  fullRight = lib.concatStrings [
+    "$cmd_duration$time$battery$status"
+  ];
+
+  baseFormat = left: right:
+    # 2 lines: line-1 (left … fill … right) + line-2 (jobs + prompt char)
+    lib.concatStrings [
+      left
+      "$fill"
+      right
+      "$line_break"
+      "$jobs$character"
+    ];
+
+  format = if fastMode then baseFormat fastLeft fastRight else baseFormat fullLeft fullRight;
 
   # ----------------------------------------------------------------------------
   # DRY helpers
   # ----------------------------------------------------------------------------
-
-  # Git config (spaces at tail to prevent tokens sticking together)
   gitConfig = {
     branch = {
+      # Keep short, add a trailing space to avoid token sticking
       format             = "[$symbol$branch]($style) ";
-      # Nerd Font symbol; falls back gracefully if font missing (just a square).
-      symbol             = " ";
+      symbol             = " ";          # Nerd: git-branch
       style              = "bold mauve";
       truncation_length  = 15;
       truncation_symbol  = "…";
     };
 
     status = {
+      # $all_status includes staged/modified/untracked/etc
       format            = "[$all_status$ahead_behind]($style) ";
       style             = "bold red";
       ahead             = "⇡$count";
@@ -103,7 +107,7 @@ let
       staged            = "+";
       untracked         = "?";
       stashed           = "$";
-      ignore_submodules = true;   # major win on mono-repos
+      ignore_submodules = true;     # major win on mono-repos
     };
 
     state = {
@@ -111,9 +115,17 @@ let
       style    = "bold yellow";
       disabled = !enableGitState;
     };
+
+    metrics = {
+      # Shallow, show only when meaningful; keep thresholds tiny
+      format           = "([+$added]([-]$deleted)) ";
+      disabled         = !enableGitMetrics;
+      added_style      = "green";
+      deleted_style    = "red";
+      only_nonzero_diffs = true;
+    };
   };
 
-  # Language module template (trailing space!)
   mkLanguage = { symbol, style, extensions, files ? [], folders ? [] }: {
     format            = "[$symbol$version]($style) ";
     inherit symbol style;
@@ -132,20 +144,24 @@ in
       # ========================================================================
       # Core performance
       # ========================================================================
+      palette         = "catppuccin_mocha";
+      palettes.catppuccin_mocha = catppuccinPalette;
+
       command_timeout = commandTimeout;
       scan_timeout    = scanTimeout;
       add_newline     = true;
 
-      # Profile-aware layout
-      format = if fastMode then fastFormat else fullFormat;
+      # Main layout (left … fill … right)
+      format          = format;
 
-      # Palette
-      palette = "catppuccin_mocha";
-      palettes.catppuccin_mocha = catppuccinPalette;
+      # Right format is implicitly simulated with $fill; keep right_format empty
+      right_format    = "";
 
       # ========================================================================
-      # Core prompt atoms
+      # Prompt atoms
       # ========================================================================
+      fill.symbol = " ";  # visually minimal separator
+
       character = {
         success_symbol        = "[❯](bold mauve)";
         error_symbol          = "[❯](bold red)";
@@ -156,13 +172,13 @@ in
 
       username = {
         format      = "[$user]($style) ";
+        show_always = false;               # show on SSH or root only
         style_user  = "bold sapphire";
         style_root  = "bold red";
-        show_always = false;  # show on SSH or root
       };
 
       hostname = {
-        ssh_only   = true;
+        ssh_only   = true;                 # show only when SSH
         ssh_symbol = "↗ ";
         format     = "[@$hostname]($style) ";
         style      = "bold blue";
@@ -171,32 +187,31 @@ in
       directory = {
         format            = "[$path]($style) ";
         style             = "bold sapphire";
-        truncation_length = 3;     # keep a bit more context than 2
+        truncation_length = 3;
         truncation_symbol = "…/";
         truncate_to_repo  = true;
         read_only         = " ";
         read_only_style   = "red";
-
-        # Minimal, fast substitutions (emoji/nerd fonts add tiny render cost)
         substitutions = {
-          "Documents" = " ";   # document
-          "Downloads" = " ";   # download
-          "Music"     = " ";   # music
-          "Pictures"  = " ";   # image
-          "Videos"    = " ";   # film
-          "Projects"  = " ";   # folder (devicons)
-          "Desktop"   = " ";   # desktop
-          ".config"   = " ";   # config (gear)
-          ".nixosc"   = " ";   # Nix/NixOS logo
+          "Documents" = " ";
+          "Downloads" = " ";
+          "Music"     = " ";
+          "Pictures"  = " ";
+          "Videos"    = " ";
+          "Projects"  = " ";
+          "Desktop"   = " ";
+          ".config"   = " ";
+          ".nixosc"   = " ";
         };
       };
 
       # ========================================================================
-      # Git (latency hotspot)
+      # Git (latency hotspot) — keep lean on FAST
       # ========================================================================
       git_branch = gitConfig.branch;
       git_status = gitConfig.status;
       git_state  = gitConfig.state;
+      git_metrics = gitConfig.metrics;
 
       # ========================================================================
       # Core languages (always on)
@@ -232,7 +247,7 @@ in
       };
 
       # ========================================================================
-      # Heavy languages (disabled in FAST)
+      # Heavy languages (disabled on FAST)
       # ========================================================================
       java = (mkLanguage {
         symbol = " ";
@@ -306,7 +321,7 @@ in
       };
 
       # ========================================================================
-      # Infra & package managers (disabled in FAST)
+      # Infra & package managers (disabled on FAST)
       # ========================================================================
       docker_context = {
         format          = "[$symbol$context]($style) ";
@@ -351,20 +366,21 @@ in
       };
 
       # ========================================================================
-      # System & UX
+      # System & UX (right side)
       # ========================================================================
       cmd_duration = {
         format            = "[$duration]($style) ";
         style             = "yellow";
-        min_time          = 3000;     # only show if > 3s
+        min_time          = 3000;     # show only if > 3s
         show_milliseconds = false;
       };
 
-      jobs = {
-        format           = "[$symbol$number]($style) ";
-        symbol           = "✦ ";
-        style            = "bold blue";
-        number_threshold = 1;
+      time = {
+        format   = "[$time]($style) ";
+        style    = "subtext1";
+        disabled = !enableClock;
+        time_format = "%H:%M";
+        use_12hr = false;
       };
 
       battery = {
@@ -386,18 +402,25 @@ in
         symbol                = "✗ ";
         style                 = "bold red";
         recognize_signal_code = true;
-        disabled              = fastMode;  # rely on character color in FAST
+        disabled              = fastMode; # rely on character color on FAST
       };
 
-      # Always-off (keep lean)
+      jobs = {
+        format           = "[$symbol$number]($style) ";
+        symbol           = "✦ ";
+        style            = "bold blue";
+        number_threshold = 1;
+      };
+
+      # ========================================================================
+      # Always-off to stay lean
+      # ========================================================================
       azure.disabled        = true;
       gcloud.disabled       = true;
       kubernetes.disabled   = true;
-      memory_usage.disabled = true;
-      time.disabled         = true;
+      memory_usage.disabled = true;   # enable if you really need it
       sudo.disabled         = true;
-
-      # Light but handy
+      # direnv is handy but cheap
       direnv = {
         format       = "[$symbol$loaded]($style) ";
         symbol       = "direnv ";
