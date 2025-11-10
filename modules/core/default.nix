@@ -343,6 +343,7 @@
     # Dependencies: None (but before security module)
     # Used by: Security module (firewall applies after network up)
     ./networking
+    ./sqm           # SQM/CAKE bufferbloat mitigation
 
     # ==========================================================================
     # LAYER 5: SECURITY & SECRETS (Protection & Authentication)
