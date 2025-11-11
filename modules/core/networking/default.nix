@@ -464,7 +464,9 @@ in
     
     mullvad-vpn = {
       enable = true;
-      package = pkgs.mullvad-vpn;
+      package = pkgs.mullvad;
+      #package = pkgs.mullvad-vpn;
+
       
       # ---- Split Tunneling Wrapper ----
       # Allows excluding specific apps from VPN tunnel

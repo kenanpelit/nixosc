@@ -348,7 +348,7 @@ in
     openvpn                   # OpenVPN istemcisi
     openconnect               # Cisco AnyConnect uyumlu
     openfortivpn              # Fortinet VPN istemcisi
-    mullvad-vpn               # Mullvad VPN GUI
+    mullvad                   # Mullvad VPN GUI
     wireguard-tools           # WireGuard CLI araçları
  
     # ==============================================================================
