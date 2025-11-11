@@ -342,8 +342,17 @@
     # Provides: Network connectivity, DNS resolution, VPN tunnels
     # Dependencies: None (but before security module)
     # Used by: Security module (firewall applies after network up)
+    # Smart Queue Management with CAKE qdisc for latency control
+    # Provides: Dynamic traffic shaping with VPN awareness
+    # Features:
+    #   • WAN Mode: Egress + Ingress shaping on physical interface
+    #   • VPN Mode: Egress on wg*/tun*, Ingress on physical interface
+    #   • Automatic mode switching based on VPN state
+    #   • CAKE qdisc: diffserv4, triple-isolate, ack-filter, NAT awareness
+    # Benefits: Eliminates bufferbloat, reduces latency under load
+    # Testing: Use sqm-test alias or https://www.waveform.com/tools/bufferbloat
+    # Usage: sqm-status | sqm-restart | sqm-show | sqm-logs
     ./networking
-    ./sqm           # SQM/CAKE bufferbloat mitigation
 
     # ==========================================================================
     # LAYER 5: SECURITY & SECRETS (Protection & Authentication)

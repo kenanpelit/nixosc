@@ -349,6 +349,7 @@ in
     openconnect               # Cisco AnyConnect uyumlu
     openfortivpn              # Fortinet VPN istemcisi
     mullvad                   # Mullvad VPN GUI
+    mullvad-closest           # Mullvad servers with the lowest latency
     wireguard-tools           # WireGuard CLI araçları
  
     # ==============================================================================
