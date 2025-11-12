@@ -1,59 +1,57 @@
 # modules/home/zsh/zsh.nix
 # ==============================================================================
-# ZSH Configuration — Ultra Performance, Race-free Compinit, Starship Prompt
+# ZSH Configuration — Ultra Performance, Race-free Compinit (lazy), pure-prompt
 # Author: Kenan Pelit
-# Description:
-#   • Bytecode compilation for user config & plugins
-#   • Safe (flock) & smart compinit with fpath/version fingerprint
-#   • Single cache location under XDG, old dumps auto-cleaned
-#   • Lazy loading for heavy toolchains (nvm/rvm/pyenv/conda)
-#   • FZF/FZF-Tab tuned (previews toggle-on to avoid stalls)
+# Notes:
+#   • Starship kapalı
+#   • pure-prompt anında; git async, fetch/pull yok
+#   • compinit LAZY (ilk tamamlamada); zcompdump build-time’da üretilip .zwc derlenir
+#   • OMZ ve ağır hook’lar ilk prompttan sonra yüklenir
 # ==============================================================================
 
-{ hostname, config, pkgs, host, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 let
-  # ----------------------------------------------------------------------------
-  # Feature toggles
-  # ----------------------------------------------------------------------------
-  enablePerformanceOpts = true;    # Safe compinit, aggressive caching
-  enableBytecodeCompile = true;    # zcompile user files & plugins
-  enableLazyLoading    = true;     # Lazy-load heavy env managers
-  enableDebugMode      = false;    # zprof/xtrace for startup profiling
+  enablePerformanceOpts = true;
+  enableBytecodeCompile = true;
+  enableLazyLoading     = true;
+  enableDebugMode       = false;
 
-  # ----------------------------------------------------------------------------
-  # XDG paths
-  # ----------------------------------------------------------------------------
   zshDir   = "${config.xdg.configHome}/zsh";
   cacheDir = "${config.xdg.cacheHome}/zsh";
   dataDir  = "${config.xdg.dataHome}/zsh";
   stateDir = "${config.xdg.stateHome}/zsh";
+
+  omzPath  = "${pkgs.oh-my-zsh}/share/oh-my-zsh";
 in
 {
-  # =============================================================================
-  # Home Activation — compile user files & keep caches sane
-  # =============================================================================
+  programs.starship.enable = lib.mkForce false;
+
+  home.packages = [
+    pkgs.pure-prompt
+    pkgs.zsh-completions
+    pkgs.oh-my-zsh
+  ];
+
+  # ============================ Home Activation ===============================
   home.activation = lib.mkMerge [
-    # Bytecode compile (user rc + plugins); skip zcompdump here (handled at runtime)
     (lib.mkIf enableBytecodeCompile {
       zshCompile = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         run echo "🚀 Compiling ZSH files for optimal performance..."
 
         compile_zsh() {
-          local file="$1"
-          if [[ -f "$file" && ( ! -f "$file.zwc" || "$file" -nt "$file.zwc" ) ]]; then
-            ${pkgs.zsh}/bin/zsh -c "zcompile '$file'" 2>/dev/null || true
-            [[ -f "$file.zwc" ]] && run echo "  ✓ Compiled: $file"
+          local f="$1"
+          if [[ -f "$f" && ( ! -f "$f.zwc" || "$f" -nt "$f.zwc" ) ]]; then
+            ${pkgs.zsh}/bin/zsh -c "zcompile '$f'" 2>/dev/null || true
+            [[ -f "$f.zwc" ]] && run echo "  ✓ Compiled: $f"
           fi
         }
 
-        # Compile main rc (Nix writes to dotDir; runtime symlinks will exist)
         compile_zsh "${zshDir}/.zshrc"
 
-        # Compile all plugin .zsh files (background)
         if [[ -d "${zshDir}/plugins" ]]; then
-          while IFS= read -r -d "" file; do
-            compile_zsh "$file" &
+          while IFS= read -r -d "" f; do
+            compile_zsh "$f" &
           done < <(find "${zshDir}/plugins" -type f -name "*.zsh" -print0 2>/dev/null)
           wait
         fi
@@ -61,90 +59,93 @@ in
         run echo "✅ ZSH bytecode compilation completed"
       '';
     })
-
-    # Ensure cache layout & lock file (prevents first-run flock errors)
     {
       zshCacheEnsure = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p "${cacheDir}" "${cacheDir}/.zcompcache" 2>/dev/null || true
         : > "${cacheDir}/compinit.lock" 2>/dev/null || true
       '';
     }
-
-    # One-shot fix: remove wrongly placed .zcompdump under $zshDir (we keep dumps only in cache)
     {
       zshCacheLocationFix = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         find "${zshDir}" -maxdepth 1 -type f -name ".zcompdump*" -delete 2>/dev/null || true
       '';
     }
+    # --- Prebuild zcompdump (no awk; hostname güvenli; mutlak path’ler) ---
+    {
+      prebuildZcompdump = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        run echo "⚡ Prebuilding zcompdump..."
+        mkdir -p "${cacheDir}"
 
-    # Periodic cache housekeeping
+        fhash="$(
+          {
+            ${pkgs.coreutils}/bin/printf "%s\n" "${zshDir}/completions"
+            ${pkgs.coreutils}/bin/printf "%s\n" "${zshDir}/plugins/zsh-completions/src"
+            ${pkgs.coreutils}/bin/printf "%s\n" "${pkgs.zsh-completions}/share/zsh/site-functions"
+            ${pkgs.coreutils}/bin/printf "%s\n" "${zshDir}/functions"
+          } | ${pkgs.coreutils}/bin/md5sum | ${pkgs.coreutils}/bin/cut -d' ' -f1
+        )"
+
+        zver="$(${pkgs.zsh}/bin/zsh -c 'print -r -- $ZSH_VERSION')"
+        host="$(${pkgs.coreutils}/bin/hostname 2>/dev/null || ${pkgs.coreutils}/bin/cat /proc/sys/kernel/hostname 2>/dev/null || echo unknown)"
+        dump="${cacheDir}/zcompdump-''${host}-''${zver}-''${fhash}"
+
+        ${pkgs.zsh}/bin/zsh -lc '
+          autoload -Uz compinit
+          compinit -u -i -d "'"$dump"'"
+          [[ -s "'"$dump"'" ]] && zcompile "'"$dump"'" || true
+        ' >/dev/null 2>&1 || true
+
+        [[ -s "$dump" ]] && run echo "  ✓ zcompdump ready"
+      '';
+    }
     {
       zshCacheCleanup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         run echo "🧹 Cleaning old ZSH cache files..."
-
         (
-          # Bu alt kabukta "set -e" etkisini kapatıp bütün hataları yutuyoruz
           set +e
-
-          # Dizinlerin varlığını garanti et (yoksa find hata verir)
           [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
           [[ -d "${cacheDir}/.zcompcache" ]] || true
-
-          # Eski completion dump'ları (30+ gün)
-          if [[ -d "${cacheDir}" ]]; then
-            find "${cacheDir}" -type f -name 'zcompdump*' -mtime +30 -delete 2>/dev/null || true
-          fi
-
-          # Orphan .zwc temizliği (kaynak dosyası yoksa)
+          find "${cacheDir}" -type f -name 'zcompdump*' -mtime +30 -delete 2>/dev/null || true
           if [[ -d "${zshDir}" || -d "${cacheDir}" ]]; then
             while IFS= read -r zwc; do
               src="''${zwc%.zwc}"
               [[ -f "$src" ]] || rm -f "$zwc" 2>/dev/null || true
             done < <( ( find "${zshDir}" "${cacheDir}" -type f -name '*.zwc' 2>/dev/null ) || true )
           fi
-
-          # .zcompcache içindeki 7+ günlük dosyalar (dizin yoksa atla)
           if [[ -d "${cacheDir}/.zcompcache" ]]; then
             find "${cacheDir}/.zcompcache" -type f -mtime +7 -delete 2>/dev/null || true
           fi
         )
-
         run echo "✅ Cache cleanup completed"
       '';
     }
   ];
 
-  # =============================================================================
-  # Ensure directory structure
-  # =============================================================================
+  # ============================ Files / Dirs ==================================
   home.file = {
     ".ssh/.keep".text = "";
     "${zshDir}/completions/.keep".text = "";
     "${zshDir}/functions/.keep".text   = "";
   };
 
-  # =============================================================================
-  # ZSH Program Configuration
-  # =============================================================================
+  # ============================ ZSH Program ===================================
   programs.zsh = {
     enable  = true;
     dotDir  = zshDir;
     autocd  = true;
     enableCompletion = true;
 
-    # Environment/session vars
+    oh-my-zsh.enable = false; # deferred yükleyeceğiz
+
     sessionVariables = {
-      # Performance & safety
       ZSH_DISABLE_COMPFIX = "true";
       COMPLETION_WAITING_DOTS = "true";
 
-      # XDG
       ZDOTDIR       = zshDir;
       ZSH_CACHE_DIR = cacheDir;
       ZSH_DATA_DIR  = dataDir;
       ZSH_STATE_DIR = stateDir;
 
-      # Defaults
       EDITOR   = "nvim";
       VISUAL   = "nvim";
       TERMINAL = "kitty";
@@ -152,7 +153,6 @@ in
       PAGER    = "less";
       TERM     = "xterm-256color";
 
-      # Pager & locale
       MANPAGER = "sh -c 'col -bx | bat -l man -p'";
       MANWIDTH = "100";
       LESS = "-R --use-color -Dd+r -Du+b -DS+y -DP+k";
@@ -162,20 +162,14 @@ in
       LC_ALL = "en_US.UTF-8";
       LANG   = "en_US.UTF-8";
 
-      # Hosts & history
       HOSTALIASES = "${config.xdg.configHome}/hblock/hosts";
       HISTSIZE = "150000";
       SAVEHIST = "120000";
       HISTFILE = "${zshDir}/history";
-
-      # NOTE: Do NOT set ZCOMPDUMP here; we compute a fingerprinted path at runtime.
     };
 
-    # ----------------------------------------------------------------------------
-    # Initialization (phased)
-    # ----------------------------------------------------------------------------
     initContent = lib.mkMerge [
-      # =============================== PHASE 1: Early ==========================
+      # --------------------------- PHASE 1: Early ------------------------------
       (lib.mkBefore ''
         ${lib.optionalString enableDebugMode ''
           zmodload zsh/zprof
@@ -186,10 +180,7 @@ in
         ''}
 
         ${lib.optionalString enablePerformanceOpts ''
-          # Skip global compinit; we run our own safe/locked compinit.
           skip_global_compinit=1
-
-          # Create needed XDG dirs (cheap guards prevent extra stats)
           [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
           [[ -d "${dataDir}"  ]] || mkdir -p "${dataDir}"
           [[ -d "${stateDir}" ]] || mkdir -p "${stateDir}"
@@ -197,16 +188,13 @@ in
           : > "${cacheDir}/compinit.lock" 2>/dev/null || true
         ''}
 
-        # XDG fallbacks (if not set by login manager)
         export XDG_CONFIG_HOME="''${XDG_CONFIG_HOME:-$HOME/.config}"
         export XDG_CACHE_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}"
         export XDG_DATA_HOME="''${XDG_DATA_HOME:-$HOME/.local/share}"
         export XDG_STATE_HOME="''${XDG_STATE_HOME:-$HOME/.local/state}"
 
-        # Force key exports (prevent overrides later)
         export EDITOR="nvim" VISUAL="nvim" TERMINAL="kitty" TERM="xterm-256color" BROWSER="brave"
 
-        # PATH de-dup & priority
         typeset -U path PATH cdpath CDPATH fpath FPATH manpath MANPATH
         path=(
           $HOME/.local/bin
@@ -216,19 +204,17 @@ in
           $path
         )
 
-        # Better TTY UX
         stty -ixon 2>/dev/null
 
-        # Nix env & command-not-found
         export NIX_PATH="''${NIX_PATH:-nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos}"
         if [[ -f "$HOME/.nix-profile/etc/profile.d/command-not-found.sh" ]]; then
           source "$HOME/.nix-profile/etc/profile.d/command-not-found.sh"
         fi
       '')
 
-      # =============================== PHASE 2: Core ===========================
+      # --------------------------- PHASE 2: Core -------------------------------
       (''
-        # ----- ZLE goodies -----
+        # ZLE
         autoload -Uz url-quote-magic bracketed-paste-magic
         zle -N self-insert url-quote-magic
         zle -N bracketed-paste bracketed-paste-magic
@@ -237,7 +223,7 @@ in
         zstyle ':url-quote-magic:*' url-metas '*?[]^()~#{}='
         zstyle ':bracketed-paste-magic' active-widgets '.self-*'
 
-        # ----- Options (performance & UX) -----
+        # Options
         setopt AUTO_CD AUTO_PUSHD PUSHD_IGNORE_DUPS PUSHD_SILENT PUSHD_TO_HOME CD_SILENT
         setopt EXTENDED_GLOB GLOB_DOTS NUMERIC_GLOB_SORT NO_CASE_GLOB GLOB_COMPLETE
         setopt COMPLETE_IN_WORD ALWAYS_TO_END AUTO_MENU AUTO_LIST AUTO_PARAM_SLASH NO_MENU_COMPLETE LIST_PACKED
@@ -248,29 +234,23 @@ in
         setopt NO_CLOBBER NO_RM_STAR_SILENT
         setopt NO_BEEP MULTI_OS
 
-        # Disable globbing for some tools (avoid surprises)
+        # Aliases (noglob)
         alias nix='noglob nix'
         alias git='noglob git'
         alias find='noglob find'
         alias rsync='noglob rsync'
         alias scp='noglob scp'
 
-        # ----- History -----
+        # History
         setopt EXTENDED_HISTORY HIST_EXPIRE_DUPS_FIRST HIST_FIND_NO_DUPS HIST_IGNORE_ALL_DUPS
         setopt HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS HIST_SAVE_NO_DUPS
         setopt HIST_VERIFY HIST_FCNTL_LOCK SHARE_HISTORY INC_APPEND_HISTORY HIST_NO_STORE
         HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..|cd -|z *|zi *)"
 
-        # ----- FZF (safe defaults; previews toggle with ctrl-/) -----
+        # FZF
         export FZF_DEFAULT_OPTS="
-          --height=80%
-          --layout=reverse
-          --info=inline
-          --border=rounded
-          --margin=1
-          --padding=1
-          --cycle
-          --scroll-off=5
+          --height=80% --layout=reverse --info=inline --border=rounded
+          --margin=1 --padding=1 --cycle --scroll-off=5
           --bind='ctrl-/:toggle-preview'
           --bind='ctrl-u:preview-half-page-up'
           --bind='ctrl-d:preview-half-page-down'
@@ -279,15 +259,11 @@ in
           --bind='ctrl-y:execute-silent(echo {+} | wl-copy)'
           --bind='alt-w:toggle-preview-wrap'
           --bind='ctrl-space:toggle+down'
-          --pointer='▶'
-          --marker='✓'
-          --prompt='❯ '
-          --no-scrollbar
+          --pointer='▶' --marker='✓' --prompt='❯ ' --no-scrollbar
         "
         export FZF_COMPLETION_TRIGGER='**'
         export FZF_COMPLETION_OPTS="--info=inline --border=rounded --height=80%"
 
-        # Prefer rg/fd when available
         if command -v rg &>/dev/null; then
           export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git/*" --glob "!.cache/*" --glob "!node_modules/*"'
         elif command -v fd &>/dev/null; then
@@ -320,56 +296,44 @@ in
           --exact
         "
 
-        # ----- eza -----
         if command -v eza &>/dev/null; then
           export EZA_COLORS="da=1;34:gm=1;34"
           export EZA_ICON_SPACING=2
         fi
 
         ${lib.optionalString enableLazyLoading ''
-          # ----- Generic lazy loader -----
           __lazy_load() {
-            local func_name="$1"; local init_cmd="$2"; shift 2
+            local fn="$1"; local init="$2"; shift 2
             local alias_cmds=("$@")
             eval "
-              $func_name() {
-                unfunction $func_name 2>/dev/null
-                for cmd in \''${alias_cmds[@]}; do unalias \$cmd 2>/dev/null || true; done
-                eval '$init_cmd' 2>/dev/null || return 1
-                if type $func_name &>/dev/null; then
-                  $func_name \"\$@\"
+              $fn() {
+                unfunction $fn 2>/dev/null
+                for c in \''${alias_cmds[@]}; do unalias \$c 2>/dev/null || true; done
+                eval '$init' 2>/dev/null || return 1
+                if type $fn &>/dev/null; then
+                  $fn \"\$@\"
                 else
-                  command \''${alias_cmds[1]:-\''${func_name#__init_}} \"\$@\"
+                  command \''${alias_cmds[1]:-\''${fn#__init_}} \"\$@\"
                 fi
               }
             "
-            for cmd in "''${alias_cmds[@]}"; do alias $cmd="$func_name"; done
+            for c in "''${alias_cmds[@]}"; do alias $c="$fn"; done
           }
 
-          # nvm / rvm / pyenv / conda
           if [[ -d "$HOME/.nvm" ]]; then
-            __lazy_load __init_nvm \
-              'export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"' \
-              nvm node npm npx
+            __lazy_load __init_nvm 'export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"' nvm node npm npx
           fi
           if [[ -d "$HOME/.rvm" ]]; then
-            __lazy_load __init_rvm \
-              '[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"' \
-              rvm ruby gem bundle
+            __lazy_load __init_rvm '[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"' rvm ruby gem bundle
           fi
           if [[ -d "$HOME/.pyenv" ]]; then
-            __lazy_load __init_pyenv \
-              'export PYENV_ROOT="$HOME/.pyenv"; export PATH="$PYENV_ROOT/bin:$PATH"; eval "$(pyenv init --path)"; eval "$(pyenv init -)"' \
-              pyenv python pip
+            __lazy_load __init_pyenv 'export PYENV_ROOT="$HOME/.pyenv"; export PATH="$PYENV_ROOT/bin:$PATH"; eval "$(pyenv init --path)"; eval "$(pyenv init -)"' pyenv python pip
           fi
           if [[ -d "$HOME/.conda/miniconda3" ]] || [[ -d "$HOME/.conda/anaconda3" ]]; then
-            __lazy_load __init_conda \
-              'eval "$(conda shell.zsh hook 2>/dev/null)"' \
-              conda
+            __lazy_load __init_conda 'eval "$(conda shell.zsh hook 2>/dev/null)"' conda
           fi
         ''}
 
-        # ----- SSH-light profile -----
         if [[ -n $SSH_CONNECTION ]]; then
           unset MANPAGER
           export PAGER="less"
@@ -378,85 +342,95 @@ in
           SAVEHIST=12000
         fi
 
-        # ----- Tool hooks -----
-        if command -v zoxide &>/dev/null; then eval "$(zoxide init zsh)"; fi
-        if command -v direnv &>/dev/null; then eval "$(direnv hook zsh)"; export DIRENV_LOG_FORMAT=""; fi
-        if command -v atuin &>/dev/null; then eval "$(atuin init zsh --disable-up-arrow)"; fi
+        # Minimal hooks (zoxide hemen; direnv/atuin sonra)
+        command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
 
-        # ----- Custom completion/function paths (prepend before hashing) -----
+        # fpath (prepend)
         fpath=(
           "${zshDir}/completions"
           "${zshDir}/plugins/zsh-completions/src"
+          "${pkgs.zsh-completions}/share/zsh/site-functions"
           "${zshDir}/functions"
           $fpath
         )
 
-        # ----- Safe, smart, locked compinit -----
-        autoload -Uz compinit
+        # ------------------ LAZY COMPINIT: ilk tamamlamada kurulsun ----------------
+        autoload -Uz compinit add-zle-hook-widget
         zmodload zsh/system 2>/dev/null || true
 
-        # Fingerprint: ZSH version + fpath hash (cache invalidates when either changes)
-        local _ver="$(print -r -- $ZSH_VERSION)"
-        local _fpath_hash="$(print -rl -- $fpath | md5sum 2>/dev/null | awk '{print $1}')"
-        local _dump_base="${cacheDir}/zcompdump-''${HOST}-''${_ver}-''${_fpath_hash}"
-        local _zcompdump="$_dump_base"
-        # Lock'u hash'e bağla ki farklı fpath sürümleri birbirini bloklamasın
-        local _lock="${cacheDir}/compinit-''${_fpath_hash}.lock"
+        __ensure_compinit() {
+          local _ver _fhash _dump _lock _host
+          _ver="$(print -r -- $ZSH_VERSION)"
+          _fhash="$(print -rl -- $fpath | ${pkgs.coreutils}/bin/md5sum 2>/dev/null | ${pkgs.coreutils}/bin/cut -d' ' -f1)"
+          _host="''${HOST:-$(${pkgs.coreutils}/bin/hostname 2>/dev/null || echo unknown)}"
+          _dump="${cacheDir}/zcompdump-''${_host}-''${_ver}-''${_fhash}"
+          _lock="${cacheDir}/compinit-''${_fhash}.lock"
 
-        _safe_compinit() {
-          # Klasör hazır
-          [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
-
-          # 24 saatten eskiyse yeniden kuracağız
-          local _need_rebuild=0
-          if [[ ! -s "$_zcompdump" || -n $_zcompdump(#qN.mh+24) ]]; then
-            _need_rebuild=1
+          if [[ -s "$_dump" ]]; then
+            compinit -C -i -d "$_dump"
+            [[ ! -f "$_dump.zwc" || "$_dump" -nt "$_dump.zwc" ]] && { zcompile "$_dump" 2>/dev/null || true; } &!
+            return 0
           fi
 
-          # --- CACHE VARSA: Hızlı yol, hiç kilit deneme ---
-          if (( _need_rebuild == 0 )); then
-            compinit -C -i -d "$_zcompdump"
-            # .zwc güncel değilse arka planda derle
-            [[ ! -f "$_zcompdump.zwc" || "$_zcompdump" -nt "$_zcompdump.zwc" ]] && { zcompile "$_zcompdump" 2>/dev/null || true; } &!
-            return
-          fi
-
-          # --- YENİDEN KURULUM GEREKİYOR: kilidi dene, anında vazgeç ---
           if command -v zsystem >/dev/null 2>&1; then
-            # 0.1 sn içinde kilit alınamazsa hızlı yola dön
-            zsystem flock -t 0.1 "$_lock" || {
-              compinit -C -i -d "$_zcompdump"
-              return
-            }
+            zsystem flock -t 0.1 "$_lock" || { compinit -C -i -d "$_dump"; return 0; }
           fi
-
-          # Gerçek rebuild
-          compinit -u -i -d "$_zcompdump"
-          { zcompile "$_zcompdump" 2>/dev/null || true; } &!
-
-          # Kilidi bırak
+          compinit -u -i -d "$_dump"
+          { zcompile "$_dump" 2>/dev/null || true; } &!
           if command -v zsystem >/dev/null 2>&1; then
             zsystem flock -u "$_lock" 2>/dev/null || true
           fi
+          return 0
         }
 
-        _safe_compinit
+        __first_complete() {
+          zle -I
+          __ensure_compinit
+          zle .expand-or-complete
+        }
+        zle -N expand-or-complete __first_complete
 
-        # Bash completion (optional)
-        autoload -Uz bashcompinit && bashcompinit
+        # ---------------------- Prompt: pure (anında) ----------------------------
+        fpath=( ${pkgs.pure-prompt}/share/zsh/site-functions $fpath )
+        autoload -Uz promptinit && promptinit
+
+        export PURE_GIT_ASYNC=1
+        export PURE_GIT_FETCH_TIMEOUT=0
+        export PURE_GIT_PULL=0
+        export PURE_GIT_DELAY=0
+        export PURE_GIT_UNTRACKED_DIRTY=0
+        export PURE_CMD_MAX_EXEC_TIME=3
+        export PURE_PROMPT_SYMBOL="❯"
+        export PURE_PROMPT_VICMD_SYMBOL="❮"
+        export PURE_PROMPT_SPINNER="↻"
+        prompt pure
+
+        # --------------- İlk prompttan SONRA ağır şeyleri yükle ------------------
+        __after_first_prompt() {
+          if [[ -z $__OMZ_LOADED ]]; then
+            __OMZ_LOADED=1
+            export ZSH="${omzPath}"
+            plugins=(
+              git sudo command-not-found history
+              copypath copyfile dirhistory jump
+              colored-man-pages extract aliases safe-paste web-search
+              jsontools encode64 urltools systemd rsync
+            )
+            [[ -f "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
+          fi
+          command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+          command -v atuin  >/dev/null && eval "$(atuin init zsh --disable-up-arrow)"
+          add-zle-hook-widget -d zle-line-init __after_first_prompt 2>/dev/null
+        }
+        add-zle-hook-widget zle-line-init __after_first_prompt
       '')
 
-      # =============================== PHASE 3: Late ===========================
+      # --------------------------- PHASE 3: Late -------------------------------
       (lib.mkAfter ''
-        # Autoload custom functions found in ${zshDir}/functions
         if [[ -d "${zshDir}/functions" ]]; then
-          local func_file
-          for func_file in "${zshDir}/functions"/*(.N); do
-            autoload -Uz "''${func_file:t}"
-          done
+          local f; for f in "${zshDir}/functions"/*(.N); do autoload -Uz "''${f:t}"; done
         fi
 
-        # Completion styles that benefit after compinit
         zstyle ':completion:*' rehash true
         zstyle ':completion:*' accept-exact-dirs true
         zstyle ':completion:*' use-cache on
@@ -467,17 +441,9 @@ in
           echo "\n=== ZSH Startup Profile ==="
           zprof | head -20
         ''}
-
-        # Starship at the very end for lowest latency
-        if command -v starship &>/dev/null; then
-          eval "$(starship init zsh)"
-        fi
       '')
     ];
 
-    # ----------------------------------------------------------------------------
-    # History (HM-level)
-    # ----------------------------------------------------------------------------
     history = {
       size  = 150000;
       save  = 120000;
@@ -490,28 +456,22 @@ in
       expireDuplicatesFirst = true;
     };
 
-    # ----------------------------------------------------------------------------
-    # Completion styles (HM-level)
-    # ----------------------------------------------------------------------------
     completionInit = ''
       autoload -Uz colors && colors
       _comp_options+=(globdots)
 
-      # Core completion behavior
       zstyle ':completion:*' completer _extensions _complete _approximate _ignored
       zstyle ':completion:*' use-cache on
       zstyle ':completion:*' cache-path "${cacheDir}/.zcompcache"
       zstyle ':completion:*' complete true
       zstyle ':completion:*' complete-options true
 
-      # Matching/sorting
       zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
       zstyle ':completion:*' file-sort modification
       zstyle ':completion:*' sort false
       zstyle ':completion:*' list-suffixes true
       zstyle ':completion:*' expand prefix suffix
 
-      # Menu & grouping
       zstyle ':completion:*' menu select=2
       zstyle ':completion:*' auto-description 'specify: %d'
       zstyle ':completion:*' group-name ""
@@ -519,33 +479,28 @@ in
       zstyle ':completion:*' keep-prefix true
       zstyle ':completion:*' preserve-prefix '//[^/]##/'
 
-      # Visuals
       zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
       zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
       zstyle ':completion:*:messages'     format '%F{purple}-- %d --%f'
       zstyle ':completion:*:warnings'     format '%F{red}-- no matches found --%f'
       zstyle ':completion:*:corrections'  format '%F{green}-- %d (errors: %e) --%f'
 
-      # Specials
       zstyle ':completion:*' special-dirs true
       zstyle ':completion:*' squeeze-slashes true
       zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
       zstyle ':completion:*:*:cd:*:directory-stack' menu yes select
       zstyle ':completion:*:-tilde-:*' group-order 'named-directories' 'path-directories' 'users' 'expand'
 
-      # Process completion
       zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w -w"
       zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01'
       zstyle ':completion:*:*:kill:*' menu yes select
       zstyle ':completion:*:*:kill:*' force-list always
       zstyle ':completion:*:*:kill:*' insert-ids single
 
-      # Manuals
       zstyle ':completion:*:manuals' separate-sections true
       zstyle ':completion:*:manuals.*' insert-sections true
       zstyle ':completion:*:man:*' menu yes select
 
-      # SSH/SCP/RSYNC hosts grouping/ignores
       zstyle ':completion:*:(ssh|scp|rsync):*' tag-order 'hosts:-host:host hosts:-domain:domain hosts:-ipaddr:ip\ address *'
       zstyle ':completion:*:(scp|rsync):*' group-order users files all-files hosts-domain hosts-host hosts-ipaddr
       zstyle ':completion:*:ssh:*' group-order users hosts-domain hosts-host users hosts-ipaddr
@@ -553,13 +508,13 @@ in
       zstyle ':completion:*:(ssh|scp|rsync):*:hosts-domain' ignored-patterns '<->.<->.<->.<->' '^[-[:alnum:]]##(.[-[:alnum:]]##)##' '*@*'
       zstyle ':completion:*:(ssh|scp|rsync):*:hosts-ipaddr' ignored-patterns '^(<->.<->.<->.<->|(|::)([[:xdigit:].]##:(#c,2))##(|%*))' '127.0.0.<->' '255.255.255.255' '::1' 'fe80::*'
 
-      # fzf-tab: previews are opt-in (toggle with ctrl-/ to avoid initial stalls)
+      # fzf-tab: previews opt-in
       zstyle ':fzf-tab:*' fzf-command fzf
       zstyle ':fzf-tab:*' fzf-min-height 100
       zstyle ':fzf-tab:*' switch-group ',' '.'
       zstyle ':fzf-tab:*' continuous-trigger '/'
       zstyle ':fzf-tab:*' print-query alt-enter
-      zstyle ':fzf-tab:complete:*:*' fzf-preview ""              # default OFF
+      zstyle ':fzf-tab:complete:*:*' fzf-preview ""
       zstyle ':fzf-tab:complete:*:*' fzf-flags --height=80% --border=rounded --info=inline --cycle --bind='ctrl-/:toggle-preview'
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-flags --preview-window=down:3:wrap
@@ -571,24 +526,6 @@ in
       zstyle ':fzf-tab:complete:man:*' fzf-preview 'man $word | head -100'
       zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --level=2 --color=always --icons $realpath 2>/dev/null || tree -L 2 -C $realpath 2>/dev/null'
     '';
-
-    # ----------------------------------------------------------------------------
-    # Oh-My-Zsh — curated plugin set
-    # ----------------------------------------------------------------------------
-    oh-my-zsh = {
-      enable = true;
-      plugins = [
-        # Core
-        "git" "sudo" "command-not-found" "history"
-
-        # Navigation / UX
-        "copypath" "copyfile" "dirhistory" "jump"
-        "colored-man-pages" "extract" "aliases" "safe-paste" "web-search"
-
-        # Dev / Sys
-        "jsontools" "encode64" "urltools"
-        "systemd" "rsync"
-      ];
-    };
   };
 }
+

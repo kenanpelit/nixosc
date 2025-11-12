@@ -41,7 +41,7 @@
     ./wezterm       # Cross-platform terminal with multiplexing
     ./tmux          # Terminal multiplexer and session management
     ./zsh           # Z shell configuration and plugins
-    ./starship      # Z shell configuration
+    #./starship      # Z shell configuration
     #./bash
     
     # =============================================================================
