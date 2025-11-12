@@ -209,173 +209,203 @@ let
     vpnDownloadBandwidth = "50mbit";   # VPN downstream (applied on default iface)
     enableNatOnVPN       = false;
 
-    sqmScript = pkgs.writeShellScript "setup-sqm-cake" ''
-      set -euo pipefail
+  sqmScript = pkgs.writeShellScript "setup-sqm-cake" ''
+    set -euo pipefail
 
-      # ===== Config from Nix =====
-      WAN_UP="${uploadBandwidth}"
-      WAN_DOWN="${downloadBandwidth}"
-      WAN_NAT="${if enableNatOnWAN then "1" else "0"}"
+    # ===== Config from Nix =====
+    WAN_UP="${uploadBandwidth}"
+    WAN_DOWN="${downloadBandwidth}"
+    WAN_NAT="${if enableNatOnWAN then "1" else "0"}"
 
-      VPN_UP="${vpnUploadBandwidth}"
-      VPN_DOWN="${vpnDownloadBandwidth}"
-      VPN_NAT="${if enableNatOnVPN then "1" else "0"}"
+    VPN_UP="${vpnUploadBandwidth}"
+    VPN_DOWN="${vpnDownloadBandwidth}"
+    VPN_NAT="${if enableNatOnVPN then "1" else "0"}"
 
-      # ===== Binaries =====
-      IP="${pkgs.iproute2}/bin/ip"
-      TC="${pkgs.iproute2}/bin/tc"
-      GREP="${pkgs.gnugrep}/bin/grep"
-      AWK="${pkgs.gawk}/bin/awk"
-      DATE="${pkgs.coreutils}/bin/date"
-      MODPROBE="${pkgs.kmod}/bin/modprobe"
-      LSMOD="${pkgs.kmod}/bin/lsmod"
-      SED="${pkgs.gnused}/bin/sed"
-      SORT="${pkgs.coreutils}/bin/sort"
-      TR="${pkgs.coreutils}/bin/tr"
+    # ===== Binaries =====
+    IP="${pkgs.iproute2}/bin/ip"
+    TC="${pkgs.iproute2}/bin/tc"
+    GREP="${pkgs.gnugrep}/bin/grep"
+    AWK="${pkgs.gawk}/bin/awk"
+    DATE="${pkgs.coreutils}/bin/date"
+    MODPROBE="${pkgs.kmod}/bin/modprobe"
+    LSMOD="${pkgs.kmod}/bin/lsmod"
+    SED="${pkgs.gnused}/bin/sed"
+    SORT="${pkgs.coreutils}/bin/sort"
+    TR="${pkgs.coreutils}/bin/tr"
 
-      log()   { echo "[$(${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S')] $*"; }
-      error() { echo "[$(${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >&2; }
+    log()   { echo "[$(${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S')] $*"; }
+    error() { echo "[$(${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >&2; }
 
-      # ===== Detectors =====
-      detect_default_iface() {
-        ''${IP} route show default 2>/dev/null | ''${AWK} '/default/ {print $5; exit}'
-      }
+    # ===== Detectors =====
+    detect_default_iface() {
+      ''${IP} route show default 2>/dev/null | ''${AWK} '/default/ {print $5; exit}'
+    }
 
-      detect_vpn_ifaces() {
-        ''${IP} -o link show | ''${AWK} -F': ' '{print $2}' \
-          | ''${GREP} -E '^(wg|tun)[0-9A-Za-z._-]*$' -h || true
-      }
+    detect_vpn_ifaces() {
+      ''${IP} -o link show | ''${AWK} -F': ' '{print $2}' \
+        | ''${GREP} -E '^(wg|tun)[0-9A-Za-z._-]*$' -h || true
+    }
 
-      is_up() {
-        ''${IP} -o link show "$1" 2>/dev/null | ''${GREP} -q '<[^>]*UP[^>]*>'
-      }
+    is_up() {
+      ''${IP} -o link show "$1" 2>/dev/null | ''${GREP} -q '<[^>]*UP[^>]*>'
+    }
 
-      # ===== Kernel modules =====
-      load_modules() {
-        log "Loading kernel modules..."
-        ''${LSMOD} | ''${GREP} -q sch_cake || ''${MODPROBE} sch_cake || { error "Failed to load sch_cake"; return 1; }
-        ''${LSMOD} | ''${GREP} -q '\<ifb\>'   || ''${MODPROBE} ifb      || { error "Failed to load ifb"; return 1; }
-        log "Kernel modules loaded"
-      }
+    # ===== Kernel modules =====
+    load_modules() {
+      log "Loading kernel modules..."
+      ''${LSMOD} | ''${GREP} -q sch_cake || ''${MODPROBE} sch_cake || { error "Failed to load sch_cake"; return 1; }
+      ''${LSMOD} | ''${GREP} -q '\<ifb\>'   || ''${MODPROBE} ifb      || { error "Failed to load ifb"; return 1; }
+      log "Kernel modules loaded"
+    }
 
-      # ===== Helpers =====
-      ifb_name_for() {
-        echo "ifb-$1" | ''${TR} -c '[:alnum:]._-' '-' | ''${SED} 's/-\{2,\}/-/g'
-      }
+    # ===== New: robust waits =====
+    wait_for_tc_ready() {
+      # modüller yüklendikten hemen sonra tc bazen ilk saniyede hata verebilir
+      local tries=5
+      while [ $tries -gt 0 ]; do
+        if ''${TC} qdisc show dev lo >/dev/null 2>&1; then
+          return 0
+        fi
+        sleep 1; tries=$((tries-1))
+      done
+      return 1
+    }
 
-      clean_iface() {
-        local iface="$1" ifb
-        ifb="$(ifb_name_for "$iface")"
-        log "Cleaning qdiscs for $iface (and $ifb)..."
-        ''${TC} qdisc del dev "$iface" root    2>/dev/null || true
-        ''${TC} qdisc del dev "$iface" ingress 2>/dev/null || true
-        ''${TC} qdisc del dev "$ifb"   root    2>/dev/null || true
+    wait_for_default_iface() {
+      # default route + iface UP olana kadar bekle
+      local tries=30
+      while [ $tries -gt 0 ]; do
+        local def
+        def="$(detect_default_iface || true)"
+        if [ -n "''${def:-}" ] && is_up "$def"; then
+          echo "$def"; return 0
+        fi
+        sleep 1; tries=$((tries-1))
+      done
+      return 1
+    }
+
+    # ===== Helpers =====
+    ifb_name_for() {
+      echo "ifb-$1" | ''${TR} -c '[:alnum:]._-' '-' | ''${SED} 's/-\{2,\}/-/g'
+    }
+
+    clean_iface() {
+      local iface="$1" ifb
+      ifb="$(ifb_name_for "$iface")"
+      log "Cleaning qdiscs for $iface (and $ifb)..."
+      ''${TC} qdisc del dev "$iface" root    2>/dev/null || true
+      ''${TC} qdisc del dev "$iface" ingress 2>/dev/null || true
+      ''${TC} qdisc del dev "$ifb"   root    2>/dev/null || true
+      ''${IP} link set dev "$ifb" down 2>/dev/null || true
+      ''${IP} link del "$ifb" type ifb 2>/dev/null || true
+    }
+
+    setup_egress() {
+      local iface="$1" bw="$2" use_nat="$3"
+      log "[$iface] Egress CAKE: $bw  nat=$([ "$use_nat" = "1" ] && echo on || echo off)"
+      local -a CAKE_OPTS
+      CAKE_OPTS=(bandwidth "$bw" diffserv4 triple-isolate wash ack-filter memlimit 32Mb)
+      if [ "$use_nat" = "1" ]; then CAKE_OPTS+=(nat); fi
+      ''${TC} qdisc add dev "$iface" root cake "''${CAKE_OPTS[@]}"
+    }
+
+    setup_ingress_on_iface() {
+      local iface="$1" bw="$2" use_nat="$3"
+      local ifb; ifb="$(ifb_name_for "$iface")"
+      log "[$iface] Ingress via $ifb: $bw  nat=$([ "$use_nat" = "1" ] && echo on || echo off)"
+      ''${IP} link add "$ifb" type ifb 2>/dev/null || true
+      ''${IP} link set dev "$ifb" up
+      ''${TC} qdisc add dev "$iface" handle ffff: ingress 2>/dev/null || true
+      ''${TC} filter add dev "$iface" parent ffff: protocol all prio 10 u32 match u32 0 0 \
+        action mirred egress redirect dev "$ifb"
+      local -a CAKE_OPTS
+      CAKE_OPTS=(bandwidth "$bw" diffserv4 triple-isolate wash ingress memlimit 32Mb)
+      if [ "$use_nat" = "1" ]; then CAKE_OPTS+=(nat); fi
+      ''${TC} qdisc add dev "$ifb" root cake "''${CAKE_OPTS[@]}"
+    }
+
+    # ===== Verify helpers =====
+    verify_pair() {
+      local iface="$1" ifb; ifb="$(ifb_name_for "$iface")"
+      ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc cake"    || { error "[$iface] Egress CAKE missing"; return 1; }
+      ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc ingress" || { error "[$iface] Ingress qdisc missing"; return 1; }
+      ''${TC} qdisc show dev "$ifb"   | ''${GREP} -q "qdisc cake"    || { error "[$iface] IFB ($ifb) CAKE missing"; return 1; }
+      log "[$iface] Verified (egress+ingress)"
+    }
+
+    verify_ingress_only() {
+      local iface="$1" ifb; ifb="$(ifb_name_for "$iface")"
+      ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc ingress" || { error "[$iface] Ingress qdisc missing"; return 1; }
+      ''${TC} qdisc show dev "$ifb"   | ''${GREP} -q "qdisc cake"    || { error "[$iface] IFB ($ifb) CAKE missing"; return 1; }
+      log "[$iface] Verified (ingress-only)"
+    }
+
+    verify_egress_only() {
+      local iface="$1"
+      ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc cake" || { error "[$iface] Egress CAKE missing"; return 1; }
+      log "[$iface] Verified (egress-only)"
+    }
+
+    # ===== UPDATED setup_all with waits =====
+    setup_all() {
+      log "Starting SQM/CAKE setup..."
+      load_modules
+      wait_for_tc_ready || { error "tc not ready"; exit 1; }
+
+      # Default arayüz/route hazır olana kadar bekle
+      local def; def="$(wait_for_default_iface || true)"
+      [ -n "$def" ] || { error "No default interface (route not up)"; exit 1; }
+
+      local vpns; vpns="$(detect_vpn_ifaces || true)"
+      local vpn_up_any=0
+      for v in $vpns; do
+        if is_up "$v"; then vpn_up_any=1; break; fi
+      done
+
+      if [ "$vpn_up_any" -eq 1 ]; then
+        log "Mode: VPN (egress on wg*/tun*, ingress on $def)"
+        clean_iface "$def"
+        for v in $vpns; do
+          is_up "$v" || continue
+          clean_iface "$v"
+          setup_egress "$v" "$VPN_UP" "$VPN_NAT"
+          verify_egress_only "$v"
+        done
+        setup_ingress_on_iface "$def" "$VPN_DOWN" "$VPN_NAT"
+        verify_ingress_only "$def"
+      else
+        log "Mode: WAN (egress+ingress on $def)"
+        clean_iface "$def"
+        setup_egress "$def" "$WAN_UP" "$WAN_NAT"
+        setup_ingress_on_iface "$def" "$WAN_DOWN" "$WAN_NAT"
+        verify_pair "$def"
+      fi
+
+      log "All done."
+    }
+
+    cleanup_all() {
+      log "Cleaning up all SQM configuration..."
+      local def; def="$(detect_default_iface || true)"
+      if [ -n "$def" ]; then clean_iface "$def"; fi
+      local vpns; vpns="$(detect_vpn_ifaces || true)"
+      for v in $vpns; do clean_iface "$v"; done
+      # leftover ifb-*
+      ''${IP} -o link show | ''${AWK} -F': ' '{print $2}' | ''${GREP} -E '^ifb-' | while read -r ifb; do
+        ''${TC} qdisc del dev "$ifb" root 2>/dev/null || true
         ''${IP} link set dev "$ifb" down 2>/dev/null || true
         ''${IP} link del "$ifb" type ifb 2>/dev/null || true
-      }
+      done
+      log "Cleanup completed."
+    }
 
-      setup_egress() {
-        local iface="$1" bw="$2" use_nat="$3"
-        log "[$iface] Egress CAKE: $bw  nat=$([ "$use_nat" = "1" ] && echo on || echo off)"
-        local -a CAKE_OPTS
-        CAKE_OPTS=(bandwidth "$bw" diffserv4 triple-isolate wash ack-filter memlimit 32Mb)
-        if [ "$use_nat" = "1" ]; then CAKE_OPTS+=(nat); fi
-        ''${TC} qdisc add dev "$iface" root cake "''${CAKE_OPTS[@]}"
-      }
-
-      setup_ingress_on_iface() {
-        local iface="$1" bw="$2" use_nat="$3"
-        local ifb; ifb="$(ifb_name_for "$iface")"
-        log "[$iface] Ingress via $ifb: $bw  nat=$([ "$use_nat" = "1" ] && echo on || echo off)"
-        ''${IP} link add "$ifb" type ifb 2>/dev/null || true
-        ''${IP} link set dev "$ifb" up
-        ''${TC} qdisc add dev "$iface" handle ffff: ingress 2>/dev/null || true
-        ''${TC} filter add dev "$iface" parent ffff: protocol all prio 10 u32 match u32 0 0 \
-          action mirred egress redirect dev "$ifb"
-        local -a CAKE_OPTS
-        CAKE_OPTS=(bandwidth "$bw" diffserv4 triple-isolate wash ingress memlimit 32Mb)
-        if [ "$use_nat" = "1" ]; then CAKE_OPTS+=(nat); fi
-        ''${TC} qdisc add dev "$ifb" root cake "''${CAKE_OPTS[@]}"
-      }
-
-      # ===== Verify helpers =====
-      verify_pair() {
-        local iface="$1" ifb; ifb="$(ifb_name_for "$iface")"
-        ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc cake"    || { error "[$iface] Egress CAKE missing"; return 1; }
-        ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc ingress" || { error "[$iface] Ingress qdisc missing"; return 1; }
-        ''${TC} qdisc show dev "$ifb"   | ''${GREP} -q "qdisc cake"    || { error "[$iface] IFB ($ifb) CAKE missing"; return 1; }
-        log "[$iface] Verified (egress+ingress)"
-      }
-
-      verify_ingress_only() {
-        local iface="$1" ifb; ifb="$(ifb_name_for "$iface")"
-        ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc ingress" || { error "[$iface] Ingress qdisc missing"; return 1; }
-        ''${TC} qdisc show dev "$ifb"   | ''${GREP} -q "qdisc cake"    || { error "[$iface] IFB ($ifb) CAKE missing"; return 1; }
-        log "[$iface] Verified (ingress-only)"
-      }
-
-      verify_egress_only() {
-        local iface="$1"
-        ''${TC} qdisc show dev "$iface" | ''${GREP} -q "qdisc cake" || { error "[$iface] Egress CAKE missing"; return 1; }
-        log "[$iface] Verified (egress-only)"
-      }
-
-      setup_all() {
-        log "Starting SQM/CAKE setup..."
-        load_modules
-
-        local def; def="$(detect_default_iface || true)"
-        [ -n "$def" ] || { error "No default interface"; exit 1; }
-        is_up "$def"  || { error "Default iface $def is not UP"; exit 1; }
-
-        local vpns; vpns="$(detect_vpn_ifaces || true)"
-        local vpn_up_any=0
-        for v in $vpns; do
-          if is_up "$v"; then vpn_up_any=1; break; fi
-        done
-
-        if [ "$vpn_up_any" -eq 1 ]; then
-          log "Mode: VPN (egress on wg*/tun*, ingress on $def)"
-          clean_iface "$def"
-          for v in $vpns; do
-            is_up "$v" || continue
-            clean_iface "$v"
-            setup_egress "$v" "$VPN_UP" "$VPN_NAT"
-            verify_egress_only "$v"
-          done
-          setup_ingress_on_iface "$def" "$VPN_DOWN" "$VPN_NAT"
-          verify_ingress_only "$def"
-        else
-          log "Mode: WAN (egress+ingress on $def)"
-          clean_iface "$def"
-          setup_egress "$def" "$WAN_UP" "$WAN_NAT"
-          setup_ingress_on_iface "$def" "$WAN_DOWN" "$WAN_NAT"
-          verify_pair "$def"
-        fi
-
-        log "All done."
-      }
-
-      cleanup_all() {
-        log "Cleaning up all SQM configuration..."
-        local def; def="$(detect_default_iface || true)"
-        if [ -n "$def" ]; then clean_iface "$def"; fi
-        local vpns; vpns="$(detect_vpn_ifaces || true)"
-        for v in $vpns; do clean_iface "$v"; done
-        ''${IP} -o link show | ''${AWK} -F': ' '{print $2}' | ''${GREP} -E '^ifb-' | while read -r ifb; do
-          ''${TC} qdisc del dev "$ifb" root 2>/dev/null || true
-          ''${IP} link set dev "$ifb" down 2>/dev/null || true
-          ''${IP} link del "$ifb" type ifb 2>/dev/null || true
-        done
-        log "Cleanup completed."
-      }
-
-      case "''${1:-setup}" in
-        setup)   setup_all   ;;
-        cleanup) cleanup_all ;;
-        *) echo "Usage: $0 {setup|cleanup}"; exit 1 ;;
-      esac
-    '';
+    case "''${1:-setup}" in
+      setup)   setup_all   ;;
+      cleanup) cleanup_all ;;
+      *) echo "Usage: $0 {setup|cleanup}"; exit 1 ;;
+    esac
+  '';
   };
 
 in
@@ -1399,10 +1429,11 @@ in
   #     • VPN-UP : Egress on wg*/tun*  | Ingress on default physical iface
   # ============================================================================
   systemd.services.sqm-cake = {
-    description   = "SQM/CAKE Bufferbloat Mitigation (WAN + VPN aware)";
-    after         = [ "network-online.target" ];
-    wants         = [ "network-online.target" ];
-    wantedBy      = [ "multi-user.target" ];
+    description = "SQM/CAKE Bufferbloat Mitigation (WAN + VPN aware)";
+    after  = [ "network.target" "NetworkManager.service" "mullvad-daemon.service" ];
+    wants  = [ "NetworkManager.service" ];
+    wantedBy = [ "multi-user.target" ];
+
     serviceConfig = {
       Type            = "oneshot";
       RemainAfterExit = true;
