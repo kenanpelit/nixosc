@@ -1,40 +1,44 @@
 # modules/home/zsh/zsh.nix
 # ==============================================================================
-# ZSH Configuration - Ultra Performance Optimized with Starship Prompt
+# ZSH Configuration — Ultra Performance, Race-free Compinit, Starship Prompt
 # Author: Kenan Pelit
-# Description: Production-ready ZSH with bytecode compilation, lazy loading,
-#              and Starship prompt integration
+# Description:
+#   • Bytecode compilation for user config & plugins
+#   • Safe (flock) & smart compinit with fpath/version fingerprint
+#   • Single cache location under XDG, old dumps auto-cleaned
+#   • Lazy loading for heavy toolchains (nvm/rvm/pyenv/conda)
+#   • FZF/FZF-Tab tuned (previews toggle-on to avoid stalls)
 # ==============================================================================
+
 { hostname, config, pkgs, host, lib, ... }:
 
 let
-  # ============================================================================
-  # Performance and Feature Toggles
-  # ============================================================================
-  enablePerformanceOpts = true;    # Smart compinit and aggressive caching
-  enableBytecodeCompile = true;    # Bytecode compilation (20-30% speed boost)
-  enableLazyLoading = true;        # Lazy load heavy tools (saves ~50-100ms)
-  enableDebugMode = false;         # Enable startup profiling (for optimization)
-  
-  # ============================================================================
-  # Centralized Path Management - XDG Compliant
-  # ============================================================================
-  zshDir = "${config.xdg.configHome}/zsh";
+  # ----------------------------------------------------------------------------
+  # Feature toggles
+  # ----------------------------------------------------------------------------
+  enablePerformanceOpts = true;    # Safe compinit, aggressive caching
+  enableBytecodeCompile = true;    # zcompile user files & plugins
+  enableLazyLoading    = true;     # Lazy-load heavy env managers
+  enableDebugMode      = false;    # zprof/xtrace for startup profiling
+
+  # ----------------------------------------------------------------------------
+  # XDG paths
+  # ----------------------------------------------------------------------------
+  zshDir   = "${config.xdg.configHome}/zsh";
   cacheDir = "${config.xdg.cacheHome}/zsh";
-  dataDir = "${config.xdg.dataHome}/zsh";
+  dataDir  = "${config.xdg.dataHome}/zsh";
   stateDir = "${config.xdg.stateHome}/zsh";
-  
-in {
-  # ============================================================================
-  # Home Activation - Bytecode Compilation & Cache Management
-  # ============================================================================
+in
+{
+  # =============================================================================
+  # Home Activation — compile user files & keep caches sane
+  # =============================================================================
   home.activation = lib.mkMerge [
-    # Bytecode compilation for performance
+    # Bytecode compile (user rc + plugins); skip zcompdump here (handled at runtime)
     (lib.mkIf enableBytecodeCompile {
-      zshCompile = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      zshCompile = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         run echo "🚀 Compiling ZSH files for optimal performance..."
-        
-        # Function to safely compile ZSH files
+
         compile_zsh() {
           local file="$1"
           if [[ -f "$file" && ( ! -f "$file.zwc" || "$file" -nt "$file.zwc" ) ]]; then
@@ -42,164 +46,167 @@ in {
             [[ -f "$file.zwc" ]] && run echo "  ✓ Compiled: $file"
           fi
         }
-        
-        # Compile main configuration
+
+        # Compile main rc (Nix writes to dotDir; runtime symlinks will exist)
         compile_zsh "${zshDir}/.zshrc"
-        
-        # Compile completion dump
-        compile_zsh "${cacheDir}/zcompdump"
-        
-        # Compile all plugin files in background for better performance
+
+        # Compile all plugin .zsh files (background)
         if [[ -d "${zshDir}/plugins" ]]; then
           while IFS= read -r -d "" file; do
             compile_zsh "$file" &
-          done < <(find "${zshDir}/plugins" -name "*.zsh" -type f -print0 2>/dev/null)
+          done < <(find "${zshDir}/plugins" -type f -name "*.zsh" -print0 2>/dev/null)
           wait
         fi
-        
+
         run echo "✅ ZSH bytecode compilation completed"
       '';
     })
-    
-    # Cache cleanup for old files (keeps system clean)
+
+    # Ensure cache layout & lock file (prevents first-run flock errors)
     {
-      zshCacheCleanup = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      zshCacheEnsure = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        mkdir -p "${cacheDir}" "${cacheDir}/.zcompcache" 2>/dev/null || true
+        : > "${cacheDir}/compinit.lock" 2>/dev/null || true
+      '';
+    }
+
+    # One-shot fix: remove wrongly placed .zcompdump under $zshDir (we keep dumps only in cache)
+    {
+      zshCacheLocationFix = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        find "${zshDir}" -maxdepth 1 -type f -name ".zcompdump*" -delete 2>/dev/null || true
+      '';
+    }
+
+    # Periodic cache housekeeping
+    {
+      zshCacheCleanup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         run echo "🧹 Cleaning old ZSH cache files..."
-        
-        # Remove old completion dumps (older than 30 days)
-        find "${cacheDir}" -name "zcompdump*" -mtime +30 -delete 2>/dev/null || true
-        
-        # Remove orphaned .zwc files
-        find "${zshDir}" "${cacheDir}" -name "*.zwc" -type f 2>/dev/null | while read zwc; do
-          source_file="''${zwc%.zwc}"
-          [[ ! -f "$source_file" ]] && rm -f "$zwc" 2>/dev/null || true
-        done
-        
-        # Clean old cache entries
-        find "${cacheDir}/.zcompcache" -type f -mtime +7 -delete 2>/dev/null || true
-        
+
+        (
+          # Bu alt kabukta "set -e" etkisini kapatıp bütün hataları yutuyoruz
+          set +e
+
+          # Dizinlerin varlığını garanti et (yoksa find hata verir)
+          [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
+          [[ -d "${cacheDir}/.zcompcache" ]] || true
+
+          # Eski completion dump'ları (30+ gün)
+          if [[ -d "${cacheDir}" ]]; then
+            find "${cacheDir}" -type f -name 'zcompdump*' -mtime +30 -delete 2>/dev/null || true
+          fi
+
+          # Orphan .zwc temizliği (kaynak dosyası yoksa)
+          if [[ -d "${zshDir}" || -d "${cacheDir}" ]]; then
+            while IFS= read -r zwc; do
+              src="''${zwc%.zwc}"
+              [[ -f "$src" ]] || rm -f "$zwc" 2>/dev/null || true
+            done < <( ( find "${zshDir}" "${cacheDir}" -type f -name '*.zwc' 2>/dev/null ) || true )
+          fi
+
+          # .zcompcache içindeki 7+ günlük dosyalar (dizin yoksa atla)
+          if [[ -d "${cacheDir}/.zcompcache" ]]; then
+            find "${cacheDir}/.zcompcache" -type f -mtime +7 -delete 2>/dev/null || true
+          fi
+        )
+
         run echo "✅ Cache cleanup completed"
       '';
     }
   ];
 
-  # ============================================================================
-  # Directory Structure & File Management
-  # ============================================================================
+  # =============================================================================
+  # Ensure directory structure
+  # =============================================================================
   home.file = {
-    # Ensure .ssh directory exists
     ".ssh/.keep".text = "";
-    
-    # Custom completions directory
     "${zshDir}/completions/.keep".text = "";
-    
-    # ZSH functions directory for custom functions
-    "${zshDir}/functions/.keep".text = "";
+    "${zshDir}/functions/.keep".text   = "";
   };
 
-  # ============================================================================
-  # ZSH Program Configuration - Core Settings
-  # ============================================================================
+  # =============================================================================
+  # ZSH Program Configuration
+  # =============================================================================
   programs.zsh = {
-    enable = true;
-    dotDir = zshDir;
-    autocd = true;
-    
-    # -------------------------------------------------------------------------
-    # Autosuggestions & Syntax Highlighting
-    # DISABLED HERE - Handled in zsh_plugins.nix for better control
-    # -------------------------------------------------------------------------
-    # autosuggestion.enable = false;  # Using zsh-autosuggestions from plugins
-    # syntaxHighlighting.enable = false;  # Using fast-syntax-highlighting from plugins
-    
+    enable  = true;
+    dotDir  = zshDir;
+    autocd  = true;
     enableCompletion = true;
 
-    # -------------------------------------------------------------------------
-    # Session Variables - Environment Configuration
-    # -------------------------------------------------------------------------
+    # Environment/session vars
     sessionVariables = {
-      # Performance optimizations
+      # Performance & safety
       ZSH_DISABLE_COMPFIX = "true";
       COMPLETION_WAITING_DOTS = "true";
-      
-      # XDG Base Directory compliance
-      ZDOTDIR = zshDir;
+
+      # XDG
+      ZDOTDIR       = zshDir;
       ZSH_CACHE_DIR = cacheDir;
-      ZSH_DATA_DIR = dataDir;
+      ZSH_DATA_DIR  = dataDir;
       ZSH_STATE_DIR = stateDir;
-      
-      # Essential application defaults
-      EDITOR = "nvim";
-      VISUAL = "nvim";
+
+      # Defaults
+      EDITOR   = "nvim";
+      VISUAL   = "nvim";
       TERMINAL = "kitty";
-      BROWSER = "brave";
-      PAGER = "less";
-      TERM = "xterm-256color";
-      
-      # Enhanced pager configuration
+      BROWSER  = "brave";
+      PAGER    = "less";
+      TERM     = "xterm-256color";
+
+      # Pager & locale
       MANPAGER = "sh -c 'col -bx | bat -l man -p'";
       MANWIDTH = "100";
       LESS = "-R --use-color -Dd+r -Du+b -DS+y -DP+k";
       LESSHISTFILE = "-";
-      LESSCHARSET = "utf-8";
-      
-      # System locale
+      LESSCHARSET  = "utf-8";
+
       LC_ALL = "en_US.UTF-8";
-      LANG = "en_US.UTF-8";
-      
-      # Host aliases configuration
+      LANG   = "en_US.UTF-8";
+
+      # Hosts & history
       HOSTALIASES = "${config.xdg.configHome}/hblock/hosts";
-      
-      # History configuration
       HISTSIZE = "150000";
       SAVEHIST = "120000";
       HISTFILE = "${zshDir}/history";
-      
-      # Completion dump location
-      ZCOMPDUMP = "${cacheDir}/zcompdump-$HOST-$ZSH_VERSION";
+
+      # NOTE: Do NOT set ZCOMPDUMP here; we compute a fingerprinted path at runtime.
     };
 
-    # -------------------------------------------------------------------------
-    # Initialization Content - Unified and Optimized
-    # -------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
+    # Initialization (phased)
+    # ----------------------------------------------------------------------------
     initContent = lib.mkMerge [
-      # =======================================================================
-      # PHASE 1: EARLY INITIALIZATION (Performance Critical)
-      # =======================================================================
+      # =============================== PHASE 1: Early ==========================
       (lib.mkBefore ''
         ${lib.optionalString enableDebugMode ''
-          # Debug mode: Profile startup time
           zmodload zsh/zprof
           typeset -F SECONDS
           PS4=$'%D{%M%S%.} %N:%i> '
           exec 3>&2 2>/tmp/zsh_profile.$$.log
           setopt xtrace prompt_subst
         ''}
-        
+
         ${lib.optionalString enablePerformanceOpts ''
-          # Performance: Skip global compinit (we handle it ourselves)
+          # Skip global compinit; we run our own safe/locked compinit.
           skip_global_compinit=1
-          
-          # Create directories only if needed (avoid stat calls)
+
+          # Create needed XDG dirs (cheap guards prevent extra stats)
           [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
-          [[ -d "${dataDir}" ]] || mkdir -p "${dataDir}"
+          [[ -d "${dataDir}"  ]] || mkdir -p "${dataDir}"
           [[ -d "${stateDir}" ]] || mkdir -p "${stateDir}"
+          [[ -d "${cacheDir}/.zcompcache" ]] || mkdir -p "${cacheDir}/.zcompcache"
+          : > "${cacheDir}/compinit.lock" 2>/dev/null || true
         ''}
-        
-        # XDG Base Directory - Ensure consistency
+
+        # XDG fallbacks (if not set by login manager)
         export XDG_CONFIG_HOME="''${XDG_CONFIG_HOME:-$HOME/.config}"
         export XDG_CACHE_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}"
         export XDG_DATA_HOME="''${XDG_DATA_HOME:-$HOME/.local/share}"
         export XDG_STATE_HOME="''${XDG_STATE_HOME:-$HOME/.local/state}"
 
-        # Force essential exports (prevent override by other configs)
-        export EDITOR="nvim"
-        export VISUAL="nvim"
-        export TERMINAL="kitty"
-        export TERM="xterm-256color"
-        export BROWSER="brave"
-        
-        # Smart PATH management - Deduplicate and prioritize
+        # Force key exports (prevent overrides later)
+        export EDITOR="nvim" VISUAL="nvim" TERMINAL="kitty" TERM="xterm-256color" BROWSER="brave"
+
+        # PATH de-dup & priority
         typeset -U path PATH cdpath CDPATH fpath FPATH manpath MANPATH
         path=(
           $HOME/.local/bin
@@ -208,125 +215,53 @@ in {
           /usr/local/bin
           $path
         )
-        
-        # Disable flow control (Ctrl-S/Ctrl-Q) for better terminal UX
+
+        # Better TTY UX
         stty -ixon 2>/dev/null
-        
-        # NixOS-specific environment setup
+
+        # Nix env & command-not-found
         export NIX_PATH="''${NIX_PATH:-nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos}"
-        
-        # Enable nix-index for command-not-found functionality
         if [[ -f "$HOME/.nix-profile/etc/profile.d/command-not-found.sh" ]]; then
           source "$HOME/.nix-profile/etc/profile.d/command-not-found.sh"
         fi
       '')
-      
-      # =======================================================================
-      # PHASE 2: CORE FUNCTIONALITY
-      # =======================================================================
+
+      # =============================== PHASE 2: Core ===========================
       (''
-        # ---------------------------------------------------------------------
-        # ZLE Magic - Enhanced Terminal Experience
-        # ---------------------------------------------------------------------
+        # ----- ZLE goodies -----
         autoload -Uz url-quote-magic bracketed-paste-magic
         zle -N self-insert url-quote-magic
         zle -N bracketed-paste bracketed-paste-magic
-        
-        # Additional ZLE improvements
         autoload -Uz edit-command-line
         zle -N edit-command-line
-        
-        # URL handling configuration
         zstyle ':url-quote-magic:*' url-metas '*?[]^()~#{}='
         zstyle ':bracketed-paste-magic' active-widgets '.self-*'
 
-        # ---------------------------------------------------------------------
-        # ZSH Options - Carefully Tuned for Performance & UX
-        # ---------------------------------------------------------------------
-        # Directory navigation
-        setopt AUTO_CD
-        setopt AUTO_PUSHD
-        setopt PUSHD_IGNORE_DUPS
-        setopt PUSHD_SILENT
-        setopt PUSHD_TO_HOME
-        setopt CD_SILENT
-        
-        # Globbing
-        setopt EXTENDED_GLOB
-        setopt GLOB_DOTS
-        setopt NUMERIC_GLOB_SORT
-        setopt NO_CASE_GLOB
-        setopt GLOB_COMPLETE
-        
-        # Completion
-        setopt COMPLETE_IN_WORD
-        setopt ALWAYS_TO_END
-        setopt AUTO_MENU
-        setopt AUTO_LIST
-        setopt AUTO_PARAM_SLASH
-        setopt NO_MENU_COMPLETE
-        setopt LIST_PACKED
-        
-        # Correction
-        setopt CORRECT
-        setopt NO_CORRECT_ALL
-        
-        # Job control
-        setopt NO_BG_NICE
-        setopt NO_HUP
-        setopt NO_CHECK_JOBS
-        setopt LONG_LIST_JOBS
-        
-        # Input/Output
-        setopt NO_FLOW_CONTROL
-        setopt INTERACTIVE_COMMENTS
-        setopt RC_QUOTES
-        setopt COMBINING_CHARS
-        
-        # Prompt
-        setopt PROMPT_SUBST
-        setopt TRANSIENT_RPROMPT
-        
-        # Disable dangerous options
-        setopt NO_CLOBBER
-        setopt NO_RM_STAR_SILENT
-        
-        # Performance optimizations
-        setopt NO_BEEP
-        setopt MULTI_OS
-        
-        # Disable globbing for specific commands
+        # ----- Options (performance & UX) -----
+        setopt AUTO_CD AUTO_PUSHD PUSHD_IGNORE_DUPS PUSHD_SILENT PUSHD_TO_HOME CD_SILENT
+        setopt EXTENDED_GLOB GLOB_DOTS NUMERIC_GLOB_SORT NO_CASE_GLOB GLOB_COMPLETE
+        setopt COMPLETE_IN_WORD ALWAYS_TO_END AUTO_MENU AUTO_LIST AUTO_PARAM_SLASH NO_MENU_COMPLETE LIST_PACKED
+        setopt CORRECT NO_CORRECT_ALL
+        setopt NO_BG_NICE NO_HUP NO_CHECK_JOBS LONG_LIST_JOBS
+        setopt NO_FLOW_CONTROL INTERACTIVE_COMMENTS RC_QUOTES COMBINING_CHARS
+        setopt PROMPT_SUBST TRANSIENT_RPROMPT
+        setopt NO_CLOBBER NO_RM_STAR_SILENT
+        setopt NO_BEEP MULTI_OS
+
+        # Disable globbing for some tools (avoid surprises)
         alias nix='noglob nix'
         alias git='noglob git'
         alias find='noglob find'
         alias rsync='noglob rsync'
         alias scp='noglob scp'
-        
-        # ---------------------------------------------------------------------
-        # History Configuration - Advanced Settings
-        # ---------------------------------------------------------------------
-        setopt EXTENDED_HISTORY
-        setopt HIST_EXPIRE_DUPS_FIRST
-        setopt HIST_FIND_NO_DUPS
-        setopt HIST_IGNORE_ALL_DUPS
-        setopt HIST_IGNORE_DUPS
-        setopt HIST_IGNORE_SPACE
-        setopt HIST_REDUCE_BLANKS
-        setopt HIST_SAVE_NO_DUPS
-        setopt HIST_VERIFY
-        setopt HIST_FCNTL_LOCK
-        setopt SHARE_HISTORY
-        setopt INC_APPEND_HISTORY
-        setopt HIST_NO_STORE
-        
-        # History performance optimization
+
+        # ----- History -----
+        setopt EXTENDED_HISTORY HIST_EXPIRE_DUPS_FIRST HIST_FIND_NO_DUPS HIST_IGNORE_ALL_DUPS
+        setopt HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS HIST_SAVE_NO_DUPS
+        setopt HIST_VERIFY HIST_FCNTL_LOCK SHARE_HISTORY INC_APPEND_HISTORY HIST_NO_STORE
         HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..|cd -|z *|zi *)"
 
-        # ---------------------------------------------------------------------
-        # FZF Configuration - Optimized & Enhanced
-        # ---------------------------------------------------------------------
-        
-        # Core FZF settings with Catppuccin Mocha theme
+        # ----- FZF (safe defaults; previews toggle with ctrl-/) -----
         export FZF_DEFAULT_OPTS="
           --height=80%
           --layout=reverse
@@ -344,16 +279,24 @@ in {
           --bind='ctrl-y:execute-silent(echo {+} | wl-copy)'
           --bind='alt-w:toggle-preview-wrap'
           --bind='ctrl-space:toggle+down'
-          --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8
-          --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc
-          --color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8
           --pointer='▶'
           --marker='✓'
           --prompt='❯ '
           --no-scrollbar
         "
-        
-        # File finder (Ctrl-T)
+        export FZF_COMPLETION_TRIGGER='**'
+        export FZF_COMPLETION_OPTS="--info=inline --border=rounded --height=80%"
+
+        # Prefer rg/fd when available
+        if command -v rg &>/dev/null; then
+          export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git/*" --glob "!.cache/*" --glob "!node_modules/*"'
+        elif command -v fd &>/dev/null; then
+          export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules'
+        fi
+        if command -v fd &>/dev/null; then
+          export FZF_CTRL_T_COMMAND="fd --type f --type d --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules"
+          export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules'
+        fi
         export FZF_CTRL_T_OPTS="
           --preview='[[ -d {} ]] && eza --tree --level=2 --color=always --icons {} || bat --style=numbers --color=always --line-range :500 {}'
           --preview-window='right:60%:wrap'
@@ -361,16 +304,12 @@ in {
           --bind='ctrl-e:execute(nvim {} < /dev/tty > /dev/tty 2>&1)'
           --header='CTRL-/: toggle preview | CTRL-E: edit in nvim'
         "
-        
-        # Directory finder (Alt-C)
         export FZF_ALT_C_OPTS="
           --preview='eza --tree --level=3 --color=always --icons --group-directories-first {}'
           --preview-window='right:60%:wrap'
           --bind='ctrl-/:change-preview-window(down|hidden|)'
           --header='CTRL-/: toggle preview'
         "
-        
-        # History search (Ctrl-R)
         export FZF_CTRL_R_OPTS="
           --preview='echo {}'
           --preview-window='down:3:hidden:wrap'
@@ -380,53 +319,22 @@ in {
           --header='?: toggle preview | CTRL-Y: copy | CTRL-E: edit'
           --exact
         "
-        
-        # Completion trigger
-        export FZF_COMPLETION_TRIGGER='**'
-        export FZF_COMPLETION_OPTS="
-          --info=inline
-          --border=rounded
-          --height=80%
-        "
-        
-        # Use fd for faster file finding
-        if command -v fd &>/dev/null; then
-          export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules'
-          export FZF_CTRL_T_COMMAND="fd --type f --type d --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules"
-          export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --strip-cwd-prefix --exclude .git --exclude .cache --exclude node_modules'
-        fi
-        
-        # Use ripgrep for content search
-        if command -v rg &>/dev/null; then
-          export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git/*" --glob "!.cache/*" --glob "!node_modules/*"'
-        fi
 
-        # ---------------------------------------------------------------------
-        # Eza (Modern ls replacement) Configuration
-        # ---------------------------------------------------------------------
+        # ----- eza -----
         if command -v eza &>/dev/null; then
           export EZA_COLORS="da=1;34:gm=1;34"
           export EZA_ICON_SPACING=2
         fi
 
         ${lib.optionalString enableLazyLoading ''
-          # -------------------------------------------------------------------
-          # Lazy Loading - Performance Optimization
-          # -------------------------------------------------------------------
-          
-          # Generic lazy loader function with improved error handling
+          # ----- Generic lazy loader -----
           __lazy_load() {
-            local func_name="$1"
-            local init_cmd="$2"
-            shift 2
+            local func_name="$1"; local init_cmd="$2"; shift 2
             local alias_cmds=("$@")
-            
             eval "
               $func_name() {
                 unfunction $func_name 2>/dev/null
-                for cmd in \''${alias_cmds[@]}; do
-                  unalias \$cmd 2>/dev/null || true
-                done
+                for cmd in \''${alias_cmds[@]}; do unalias \$cmd 2>/dev/null || true; done
                 eval '$init_cmd' 2>/dev/null || return 1
                 if type $func_name &>/dev/null; then
                   $func_name \"\$@\"
@@ -435,34 +343,25 @@ in {
                 fi
               }
             "
-            
-            for cmd in "''${alias_cmds[@]}"; do
-              alias $cmd="$func_name"
-            done
+            for cmd in "''${alias_cmds[@]}"; do alias $cmd="$func_name"; done
           }
-          
-          # Lazy load NVM (Node Version Manager)
+
+          # nvm / rvm / pyenv / conda
           if [[ -d "$HOME/.nvm" ]]; then
             __lazy_load __init_nvm \
               'export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"' \
               nvm node npm npx
           fi
-          
-          # Lazy load RVM (Ruby Version Manager)
           if [[ -d "$HOME/.rvm" ]]; then
             __lazy_load __init_rvm \
               '[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"' \
               rvm ruby gem bundle
           fi
-          
-          # Lazy load pyenv (Python Version Manager)
           if [[ -d "$HOME/.pyenv" ]]; then
             __lazy_load __init_pyenv \
               'export PYENV_ROOT="$HOME/.pyenv"; export PATH="$PYENV_ROOT/bin:$PATH"; eval "$(pyenv init --path)"; eval "$(pyenv init -)"' \
               pyenv python pip
           fi
-          
-          # Lazy load conda if available
           if [[ -d "$HOME/.conda/miniconda3" ]] || [[ -d "$HOME/.conda/anaconda3" ]]; then
             __lazy_load __init_conda \
               'eval "$(conda shell.zsh hook 2>/dev/null)"' \
@@ -470,124 +369,119 @@ in {
           fi
         ''}
 
-        # ---------------------------------------------------------------------
-        # Conditional Configuration - Adapt to environment
-        # ---------------------------------------------------------------------
+        # ----- SSH-light profile -----
         if [[ -n $SSH_CONNECTION ]]; then
-          # Lightweight SSH configuration
           unset MANPAGER
           export PAGER="less"
-          
-          # SSH-specific optimizations
           setopt NO_SHARE_HISTORY
           HISTSIZE=15000
           SAVEHIST=12000
         fi
 
-        # ---------------------------------------------------------------------
-        # Tool Integrations - Fast and reliable
-        # ---------------------------------------------------------------------
-        
-        # Zoxide - Smarter cd command
-        if command -v zoxide &>/dev/null; then
-          eval "$(zoxide init zsh)"
-        fi
-        
-        # Direnv - Load environment per directory
-        if command -v direnv &>/dev/null; then
-          eval "$(direnv hook zsh)"
-          export DIRENV_LOG_FORMAT=""
-        fi
-        
-        # Atuin - Enhanced shell history (if available)
-        if command -v atuin &>/dev/null; then
-          eval "$(atuin init zsh --disable-up-arrow)"
-        fi
-        
-        # ---------------------------------------------------------------------
-        # Completion System - Optimized Initialization
-        # ---------------------------------------------------------------------
-        autoload -Uz compinit
-        
-        ${lib.optionalString enablePerformanceOpts ''
-          # Smart compinit - Only rebuild when necessary
-          # Cache for 24 hours, then rebuild
-          local zcompdump="${cacheDir}/zcompdump-$HOST-$ZSH_VERSION"
-          
-          # Check if we need to regenerate the completion dump
-          if [[ -n $zcompdump(#qN.mh+24) ]]; then
-            # Rebuild completion cache (older than 24 hours)
-            compinit -i -d "$zcompdump"
-            # Compile in background
-            { zcompile "$zcompdump" } &!
-          else
-            # Use cached completion (skip check for speed)
-            compinit -C -i -d "$zcompdump"
-            # Compile if needed in background
-            [[ ! -f "$zcompdump.zwc" || "$zcompdump" -nt "$zcompdump.zwc" ]] && { zcompile "$zcompdump" } &!
-          fi
-        ''}
-        
-        ${lib.optionalString (!enablePerformanceOpts) ''
-          # Standard compinit for compatibility
-          compinit -i -d "${cacheDir}/zcompdump"
-        ''}
-        
-        # Ensure completion system is initialized
-        autoload -Uz bashcompinit && bashcompinit
-        
-        # Add custom completion paths early
+        # ----- Tool hooks -----
+        if command -v zoxide &>/dev/null; then eval "$(zoxide init zsh)"; fi
+        if command -v direnv &>/dev/null; then eval "$(direnv hook zsh)"; export DIRENV_LOG_FORMAT=""; fi
+        if command -v atuin &>/dev/null; then eval "$(atuin init zsh --disable-up-arrow)"; fi
+
+        # ----- Custom completion/function paths (prepend before hashing) -----
         fpath=(
           "${zshDir}/completions"
           "${zshDir}/plugins/zsh-completions/src"
           "${zshDir}/functions"
           $fpath
         )
+
+        # ----- Safe, smart, locked compinit -----
+        autoload -Uz compinit
+        zmodload zsh/system 2>/dev/null || true
+
+        # Fingerprint: ZSH version + fpath hash (cache invalidates when either changes)
+        local _ver="$(print -r -- $ZSH_VERSION)"
+        local _fpath_hash="$(print -rl -- $fpath | md5sum 2>/dev/null | awk '{print $1}')"
+        local _dump_base="${cacheDir}/zcompdump-''${HOST}-''${_ver}-''${_fpath_hash}"
+        local _zcompdump="$_dump_base"
+        # Lock'u hash'e bağla ki farklı fpath sürümleri birbirini bloklamasın
+        local _lock="${cacheDir}/compinit-''${_fpath_hash}.lock"
+
+        _safe_compinit() {
+          # Klasör hazır
+          [[ -d "${cacheDir}" ]] || mkdir -p "${cacheDir}"
+
+          # 24 saatten eskiyse yeniden kuracağız
+          local _need_rebuild=0
+          if [[ ! -s "$_zcompdump" || -n $_zcompdump(#qN.mh+24) ]]; then
+            _need_rebuild=1
+          fi
+
+          # --- CACHE VARSA: Hızlı yol, hiç kilit deneme ---
+          if (( _need_rebuild == 0 )); then
+            compinit -C -i -d "$_zcompdump"
+            # .zwc güncel değilse arka planda derle
+            [[ ! -f "$_zcompdump.zwc" || "$_zcompdump" -nt "$_zcompdump.zwc" ]] && { zcompile "$_zcompdump" 2>/dev/null || true; } &!
+            return
+          fi
+
+          # --- YENİDEN KURULUM GEREKİYOR: kilidi dene, anında vazgeç ---
+          if command -v zsystem >/dev/null 2>&1; then
+            # 0.1 sn içinde kilit alınamazsa hızlı yola dön
+            zsystem flock -t 0.1 "$_lock" || {
+              compinit -C -i -d "$_zcompdump"
+              return
+            }
+          fi
+
+          # Gerçek rebuild
+          compinit -u -i -d "$_zcompdump"
+          { zcompile "$_zcompdump" 2>/dev/null || true; } &!
+
+          # Kilidi bırak
+          if command -v zsystem >/dev/null 2>&1; then
+            zsystem flock -u "$_lock" 2>/dev/null || true
+          fi
+        }
+
+        _safe_compinit
+
+        # Bash completion (optional)
+        autoload -Uz bashcompinit && bashcompinit
       '')
-      
-      # =======================================================================
-      # PHASE 3: LATE INITIALIZATION (Post-completion)
-      # =======================================================================
+
+      # =============================== PHASE 3: Late ===========================
       (lib.mkAfter ''
-        # Autoload custom functions efficiently
+        # Autoload custom functions found in ${zshDir}/functions
         if [[ -d "${zshDir}/functions" ]]; then
           local func_file
           for func_file in "${zshDir}/functions"/*(.N); do
             autoload -Uz "''${func_file:t}"
           done
         fi
-        
-        # Rehash on completion for new commands
+
+        # Completion styles that benefit after compinit
         zstyle ':completion:*' rehash true
-        
-        # Performance: Reduce completion delay
         zstyle ':completion:*' accept-exact-dirs true
         zstyle ':completion:*' use-cache on
-        
+
         ${lib.optionalString enableDebugMode ''
-          # Debug mode: Show profiling results
           unsetopt xtrace
           exec 2>&3 3>&-
           echo "\n=== ZSH Startup Profile ==="
           zprof | head -20
         ''}
-        
-        # =====================================================================
-        # STARSHIP PROMPT - Initialize at the very end
-        # =====================================================================
+
+        # Starship at the very end for lowest latency
         if command -v starship &>/dev/null; then
           eval "$(starship init zsh)"
         fi
       '')
     ];
-   
-    # -------------------------------------------------------------------------
-    # History Configuration
-    # -------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------
+    # History (HM-level)
+    # ----------------------------------------------------------------------------
     history = {
-      size = 150000;
-      save = 120000;
-      path = "${zshDir}/history";
+      size  = 150000;
+      save  = 120000;
+      path  = "${zshDir}/history";
       ignoreDups = true;
       ignoreAllDups = true;
       ignoreSpace = true;
@@ -596,81 +490,77 @@ in {
       expireDuplicatesFirst = true;
     };
 
-    # -------------------------------------------------------------------------
-    # Completion System - Advanced Configuration
-    # -------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
+    # Completion styles (HM-level)
+    # ----------------------------------------------------------------------------
     completionInit = ''
-      # Load colors
       autoload -Uz colors && colors
-      
-      # Enable completion for hidden files
       _comp_options+=(globdots)
 
-      # -----------------------------------------------------------------------
-      # Core Completion Configuration
-      # -----------------------------------------------------------------------
+      # Core completion behavior
       zstyle ':completion:*' completer _extensions _complete _approximate _ignored
       zstyle ':completion:*' use-cache on
       zstyle ':completion:*' cache-path "${cacheDir}/.zcompcache"
       zstyle ':completion:*' complete true
       zstyle ':completion:*' complete-options true
-      
-      # Matching and sorting
+
+      # Matching/sorting
       zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
       zstyle ':completion:*' file-sort modification
       zstyle ':completion:*' sort false
       zstyle ':completion:*' list-suffixes true
       zstyle ':completion:*' expand prefix suffix
-      
-      # Menu behavior
+
+      # Menu & grouping
       zstyle ':completion:*' menu select=2
       zstyle ':completion:*' auto-description 'specify: %d'
       zstyle ':completion:*' group-name ""
       zstyle ':completion:*' verbose yes
       zstyle ':completion:*' keep-prefix true
       zstyle ':completion:*' preserve-prefix '//[^/]##/'
-      
-      # Visual styling
+
+      # Visuals
       zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
       zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
-      zstyle ':completion:*:messages' format '%F{purple}-- %d --%f'
-      zstyle ':completion:*:warnings' format '%F{red}-- no matches found --%f'
-      zstyle ':completion:*:corrections' format '%F{green}-- %d (errors: %e) --%f'
-      
-      # Special completions
+      zstyle ':completion:*:messages'     format '%F{purple}-- %d --%f'
+      zstyle ':completion:*:warnings'     format '%F{red}-- no matches found --%f'
+      zstyle ':completion:*:corrections'  format '%F{green}-- %d (errors: %e) --%f'
+
+      # Specials
       zstyle ':completion:*' special-dirs true
       zstyle ':completion:*' squeeze-slashes true
       zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
       zstyle ':completion:*:*:cd:*:directory-stack' menu yes select
       zstyle ':completion:*:-tilde-:*' group-order 'named-directories' 'path-directories' 'users' 'expand'
-      
+
       # Process completion
       zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w -w"
       zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01'
       zstyle ':completion:*:*:kill:*' menu yes select
       zstyle ':completion:*:*:kill:*' force-list always
       zstyle ':completion:*:*:kill:*' insert-ids single
-      
-      # Man pages
+
+      # Manuals
       zstyle ':completion:*:manuals' separate-sections true
       zstyle ':completion:*:manuals.*' insert-sections true
       zstyle ':completion:*:man:*' menu yes select
-      
-      # SSH/SCP/RSYNC
+
+      # SSH/SCP/RSYNC hosts grouping/ignores
       zstyle ':completion:*:(ssh|scp|rsync):*' tag-order 'hosts:-host:host hosts:-domain:domain hosts:-ipaddr:ip\ address *'
       zstyle ':completion:*:(scp|rsync):*' group-order users files all-files hosts-domain hosts-host hosts-ipaddr
       zstyle ':completion:*:ssh:*' group-order users hosts-domain hosts-host users hosts-ipaddr
       zstyle ':completion:*:(ssh|scp|rsync):*:hosts-host' ignored-patterns '*(.|:)*' loopback ip6-loopback localhost ip6-localhost broadcasthost
       zstyle ':completion:*:(ssh|scp|rsync):*:hosts-domain' ignored-patterns '<->.<->.<->.<->' '^[-[:alnum:]]##(.[-[:alnum:]]##)##' '*@*'
       zstyle ':completion:*:(ssh|scp|rsync):*:hosts-ipaddr' ignored-patterns '^(<->.<->.<->.<->|(|::)([[:xdigit:].]##:(#c,2))##(|%*))' '127.0.0.<->' '255.255.255.255' '::1' 'fe80::*'
-      
-      # Don't complete uninteresting stuff
-      zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
-      zstyle ':completion:*:*:*:users' ignored-patterns adm amanda apache at avahi avahi-autoipd backup bin cacti canna clamav daemon dbus distcache dnsmasq dovecot fax ftp games gdm gkrellmd gopher hacluster haldaemon halt hsqldb ident junkbust kdm ldap lp mail mailman mailnull man messagebus mldonkey mysql nagios named netdump news nfsnobody nobody nscd ntp nut nx obsrun openvpn operator pcap polkitd postfix postgres privoxy pulse pvm quagga radvd rpc rpcuser rpm rtkit scard shutdown squid sshd statd svn sync tftp usbmux uucp vcsa wwwrun xfs '_*'
-      
-      # FZF-Tab Integration
-      zstyle ':fzf-tab:complete:*:*' fzf-preview 'eza --icons -a --group-directories-first -1 --color=always $realpath 2>/dev/null || ls -lah --color=always $realpath 2>/dev/null'
-      zstyle ':fzf-tab:complete:*:*' fzf-flags --height=80% --border=rounded --info=inline --cycle
+
+      # fzf-tab: previews are opt-in (toggle with ctrl-/ to avoid initial stalls)
+      zstyle ':fzf-tab:*' fzf-command fzf
+      zstyle ':fzf-tab:*' fzf-min-height 100
+      zstyle ':fzf-tab:*' switch-group ',' '.'
+      zstyle ':fzf-tab:*' continuous-trigger '/'
+      zstyle ':fzf-tab:*' print-query alt-enter
+      zstyle ':fzf-tab:complete:*:*' fzf-preview ""              # default OFF
+      zstyle ':fzf-tab:complete:*:*' fzf-flags --height=80% --border=rounded --info=inline --cycle --bind='ctrl-/:toggle-preview'
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w -w'
       zstyle ':fzf-tab:complete:kill:argument-rest' fzf-flags --preview-window=down:3:wrap
       zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'
@@ -680,48 +570,25 @@ in {
       zstyle ':fzf-tab:complete:ssh:argument-1' fzf-preview 'dig $word'
       zstyle ':fzf-tab:complete:man:*' fzf-preview 'man $word | head -100'
       zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --level=2 --color=always --icons $realpath 2>/dev/null || tree -L 2 -C $realpath 2>/dev/null'
-      zstyle ':fzf-tab:*' fzf-command fzf
-      zstyle ':fzf-tab:*' fzf-min-height 100
-      zstyle ':fzf-tab:*' switch-group ',' '.'
-      zstyle ':fzf-tab:*' continuous-trigger '/'
-      zstyle ':fzf-tab:*' print-query alt-enter
     '';
-    
-    # -------------------------------------------------------------------------
-    # Oh-My-Zsh - Curated Plugin Selection
-    # -------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------
+    # Oh-My-Zsh — curated plugin set
+    # ----------------------------------------------------------------------------
     oh-my-zsh = {
       enable = true;
       plugins = [
-        # Core functionality
-        "git"
-        "sudo"
-        "command-not-found"
-        "history"
-        
-        # Navigation
-        "copypath"
-        "copyfile"
-        "dirhistory"
-        "jump"
-        
-        # User experience
-        "colored-man-pages"
-        "extract"
-        "aliases"
-        "safe-paste"
-        "web-search"
-        
-        # Development tools
-        "jsontools"
-        "encode64"
-        "urltools"
-        
-        # System tools
-        "systemd"
-        "rsync"
+        # Core
+        "git" "sudo" "command-not-found" "history"
+
+        # Navigation / UX
+        "copypath" "copyfile" "dirhistory" "jump"
+        "colored-man-pages" "extract" "aliases" "safe-paste" "web-search"
+
+        # Dev / Sys
+        "jsontools" "encode64" "urltools"
+        "systemd" "rsync"
       ];
     };
   };
 }
-
