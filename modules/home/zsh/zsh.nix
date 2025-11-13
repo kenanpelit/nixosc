@@ -195,6 +195,10 @@ in
       # PHASE 0: Early Initialization
       # ========================================================================
       (lib.mkBefore ''
+        # Force valid PWD
+        [[ ! -d "$PWD" ]] && { export PWD="$HOME"; builtin cd "$HOME"; }
+        [[ "$PWD" == *"/zinit/"* ]] && { export PWD="$HOME"; builtin cd "$HOME"; }
+
         ${lib.optionalString features.debugMode ''
           zmodload zsh/zprof
           typeset -F SECONDS
