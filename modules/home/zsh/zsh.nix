@@ -156,6 +156,9 @@ in
       ZSH_DATA_DIR  = xdg.data;
       ZSH_STATE_DIR = xdg.state;
 
+      # Completion dump
+      ZSH_COMPDUMP  = "${xdg.cache}/zcompdump-$HOST-$ZSH_VERSION";
+
       # Core tools
       EDITOR   = "nvim";
       VISUAL   = "nvim";
@@ -453,38 +456,37 @@ in
         autoload -Uz compinit
         zmodload zsh/system 2>/dev/null || true
 
+        # Canonical dump target (env'den gelmezse fallback)
+        : ''${ZSH_COMPDUMP:="${xdg.cache}/zcompdump-$HOST-$ZSH_VERSION"}
+        zstyle ':completion:*' dump-file "$ZSH_COMPDUMP"
+
         _safe_compinit() {
-          local _zsh_ver="$ZSH_VERSION"
-          local _fpath_hash
-          _fpath_hash="$(print -rl -- $fpath | md5sum 2>/dev/null | awk '{print $1}')"
-          local _dump_file="${xdg.cache}/zcompdump-$HOST-$_zsh_ver-$_fpath_hash"
-          local _lock_file="${xdg.cache}/.compinit-$_fpath_hash.lock"
+          local _lock_file="${xdg.cache}/.compinit-''${HOST}-''${ZSH_VERSION}.lock"
 
           [[ -d "${xdg.cache}" ]] || mkdir -p "${xdg.cache}"
 
           local -i need_rebuild=0
-          if [[ ! -s "$_dump_file" || -n $_dump_file(#qN.mh+24) ]]; then
+          if [[ ! -s "$ZSH_COMPDUMP" || -n $ZSH_COMPDUMP(#qN.mh+24) ]]; then
             need_rebuild=1
           fi
 
           if (( need_rebuild == 0 )); then
-            compinit -C -i -d "$_dump_file"
-            if [[ ! -f "$_dump_file.zwc" || "$_dump_file" -nt "$_dump_file.zwc" ]]; then
-              { zcompile "$_dump_file" 2>/dev/null || true; } &!
+            compinit -C -i -d "$ZSH_COMPDUMP"
+            if [[ ! -f "$ZSH_COMPDUMP.zwc" || "$ZSH_COMPDUMP" -nt "$ZSH_COMPDUMP.zwc" ]]; then
+              { zcompile "$ZSH_COMPDUMP" 2>/dev/null || true; } &!
             fi
             return 0
           fi
 
           if command -v zsystem &>/dev/null; then
             if ! zsystem flock -t 0.1 "$_lock_file" 2>/dev/null; then
-              compinit -C -i -d "$_dump_file"
+              compinit -C -i -d "$ZSH_COMPDUMP"
               return 0
             fi
           fi
 
-          compinit -u -i -d "$_dump_file"
-          { zcompile "$_dump_file" 2>/dev/null || true; } &!
-
+          compinit -u -i -d "$ZSH_COMPDUMP"
+          { zcompile "$ZSH_COMPDUMP" 2>/dev/null || true; } &!
           command -v zsystem &>/dev/null && zsystem flock -u "$_lock_file" 2>/dev/null || true
         }
 
