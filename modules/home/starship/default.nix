@@ -17,8 +17,8 @@ let
   fastMode = builtins.getEnv "STARSHIP_MODE" != "full";
 
   # Conservative timeouts: avoid "timed out" blanks on slow/remote FS
-  commandTimeout = if fastMode then 250 else 500;  # ms
-  scanTimeout    = if fastMode then 10  else 30;   # ms
+  commandTimeout = if fastMode then 150 else 300;  # ms
+  scanTimeout    = if fastMode then 5  else 15;   # ms
 
   # Feature toggles
   enableGitState       = !fastMode;   # rebase/merge state is expensive
@@ -314,10 +314,11 @@ in
         format      = "[$symbol$state( \\($name\\))]($style) ";
         symbol      = "❄ ";
         style       = "bold blue";
-        impure_msg  = "impure";
-        pure_msg    = "pure";
-        unknown_msg = "unknown";
-        heuristic   = true;
+        impure_msg  = "";
+        pure_msg    = "";
+        unknown_msg = "";
+        heuristic   = false;
+        disabled    = false;
       };
 
       # ========================================================================
