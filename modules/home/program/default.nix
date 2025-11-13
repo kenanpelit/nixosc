@@ -17,15 +17,15 @@
     wezterm.enable = true;  # Modern GPU-accelerated terminal emulator
     kitty.enable = true;    # Fast, feature-rich, GPU based terminal emulator
     
-    # ---------------------------------------------------------------------------
-    # Shell Configuration
-    # ---------------------------------------------------------------------------
-    zsh = {
-      enable = true;
-      autosuggestion.enable = true;     # Enable fish-like autosuggestions
-      enableCompletion = true;          # Enable completion system
-      syntaxHighlighting.enable = true; # Enable syntax highlighting
-    };
+    ## ---------------------------------------------------------------------------
+    ## Shell Configuration
+    ## ---------------------------------------------------------------------------
+    #zsh = {
+    #  enable = true;
+    #  autosuggestion.enable = true;     # Enable fish-like autosuggestions
+    #  enableCompletion = true;          # Enable completion system
+    #  syntaxHighlighting.enable = true; # Enable syntax highlighting
+    #};
     
     # ---------------------------------------------------------------------------
     # Core Utilities
