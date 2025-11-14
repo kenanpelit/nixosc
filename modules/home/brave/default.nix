@@ -16,7 +16,7 @@
 # ==============================================================================
 { inputs, pkgs, config, lib, ... }:
 let
-  system = pkgs.system;
+  system = pkgs.stdenv.hostPlatform.system;
   
   # ==========================================================================
   # Desktop Environment Detection

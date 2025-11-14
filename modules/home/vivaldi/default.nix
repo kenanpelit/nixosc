@@ -6,7 +6,7 @@
 { inputs, pkgs, config, lib, ... }:
 
 let
-  system = pkgs.system;
+  system = pkgs.stdenv.hostPlatform.system;
 
   # Detect Wayland session (default to Wayland on modern setups)
   isWayland =

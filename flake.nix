@@ -260,9 +260,9 @@
 
       mkSystem = { system, host, modules }:
         lib.nixosSystem {
-          inherit system;
-
           modules = [
+            { nixpkgs.hostPlatform = system; }
+
             {
               nixpkgs.overlays = overlaysCommon;
               nixpkgs.config   = nixpkgsConfigCommon;

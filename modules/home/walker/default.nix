@@ -87,7 +87,7 @@ let
   
   # Get elephant package
   elephantPkg = if inputs ? elephant 
-                then inputs.elephant.packages.${pkgs.system}.elephant-with-providers
+                then inputs.elephant.packages.${pkgs.stdenv.hostPlatform.system}.elephant-with-providers
                 else throw "Elephant backend is required but not found in flake inputs";
   
 in
@@ -138,9 +138,9 @@ in
       type = types.package;
       # Default to GitHub flake input if available, fallback to nixpkgs
       default = if inputs ? walker 
-                then inputs.walker.packages.${pkgs.system}.default 
+                then inputs.walker.packages.${pkgs.stdenv.hostPlatform.system}.default 
                 else pkgs.walker;
-      defaultText = literalExpression "inputs.walker.packages.\${pkgs.system}.default";
+      defaultText = literalExpression "inputs.walker.packages.\${pkgs.stdenv.hostPlatform.system}.default";
       description = mdDoc ''
         Walker package to use.
         

@@ -11,8 +11,8 @@ in
 
     package = mkOption {
       type = types.package;
-      default = inputs.hyprpanel.packages.${pkgs.system}.default;
-      defaultText = literalExpression "inputs.hyprpanel.packages.\${pkgs.system}.default";
+      default = inputs.hyprpanel.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      defaultText = literalExpression "inputs.hyprpanel.packages.\${pkgs.stdenv.hostPlatform.system}.default";
       description = "The Hyprpanel package to use.";
     };
 

@@ -69,8 +69,8 @@ let
   # Use pinned Hyprland from flake input for version consistency
   # Ensures portal and compositor versions match exactly
   
-  hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.default;
-  hyprPortal  = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  hyprPortal  = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
   # ----------------------------------------------------------------------------
   # Hyprland Optimized Session (Intel Arc A380 Hardware Acceleration)
