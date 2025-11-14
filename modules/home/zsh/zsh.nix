@@ -9,8 +9,8 @@
 #   │ 1. PERFORMANCE: Zinit turbo mode, async loading, sub-100ms startup │
 #   │ 2. ZERO LAG: No blocking plugins - instant typing response         │
 #   │ 3. RELIABILITY: Atomic operations, error handling, race prevention │
-#   │ 4. PORTABILITY: SSH-aware, multi-machine, XDG-compliant           │
-#   │ 5. MAINTAINABILITY: Modular, documented, testable                 │
+#   │ 4. PORTABILITY: Multi-machine, XDG-compliant                       │
+#   │ 5. MAINTAINABILITY: Modular, documented, testable                  │
 #   ╰─────────────────────────────────────────────────────────────────────╯
 #
 # Critical Performance Decision:
@@ -31,7 +31,6 @@
 #   • Zinit plugin manager with turbo mode
 #   • XDG Base Directory compliant
 #   • Aggressive bytecode compilation
-#   • SSH-optimized profile
 #   • Smart cache management
 #   • Lazy loading for heavy tools (nvm, pyenv, conda, rvm)
 #   • FZF/fzf-tab/eza/zoxide/direnv/atuin integration
@@ -52,12 +51,9 @@ let
   # Feature Matrix — Compile-time Configuration Switches
   # ============================================================================
   features = {
-    performance     = true;   # Enable all performance optimizations
-    bytecode        = true;   # Compile .zsh files to bytecode (.zwc)
-    lazyLoading     = true;   # Defer loading of nvm/conda/pyenv/rvm
-    sshOptimization = true;   # Use lightweight profile over SSH
-    debugMode       = false;  # Enable zprof profiling and xtrace logging
-    zinitTurbo      = true;   # Enable Zinit turbo mode
+    lazyLoading = true;   # Defer loading of nvm/conda/pyenv/rvm
+    debugMode   = false;  # Enable zprof profiling and xtrace logging
+    zinitTurbo  = true;   # Enable Zinit turbo mode (plugin set)
   };
 
   # ============================================================================
@@ -126,7 +122,6 @@ in
       zshCacheSetup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         run mkdir -p "${xdg.cache}/.zcompcache" "${xdg.data}" "${xdg.state}"
         run mkdir -p "${xdg.data}/zinit"
-        run touch "${xdg.cache}/.compinit.lock"
         run echo "✓ ZSH directory structure initialized"
       '';
     }
@@ -169,9 +164,9 @@ in
     # Zinit handles this more efficiently with caching and async loading
     enableCompletion = lib.mkForce false;
     
-    # Disable Home Manager's built-in plugins
-    # Zinit manages these with better performance and control
-    autosuggestion.enable     = false;
+    # Disable Home Manager's built-in autosuggestion
+    # Zinit manages plugins with better performance and control
+    autosuggestion.enable = false;
 
     # ==========================================================================
     # Environment Variables
@@ -214,14 +209,6 @@ in
       # -----------------------------------------------------------------------
       LANG   = "en_US.UTF-8";
       LC_ALL = "en_US.UTF-8";
-
-      # -----------------------------------------------------------------------
-      # History Configuration
-      # Large history for better search results
-      # -----------------------------------------------------------------------
-      HISTSIZE = "200000";
-      SAVEHIST = "150000";
-      HISTFILE = "${xdg.zsh}/history";
 
       # -----------------------------------------------------------------------
       # Pager Configuration
@@ -336,601 +323,413 @@ in
       # ========================================================================
       ''
         # ----------------------------------------------------------------------
-        # Zinit Auto-Installation
+        # Zinit Auto-Installation (Robust)
         # 
-        # If Zinit is not installed, clone it from GitHub
-        # This makes the config portable across machines
+        # If Zinit is not installed, try to clone it from GitHub.
+        # If clone fails (offline, no git, firewall), we skip all Zinit-based
+        # plugin setup but keep the shell functional.
         # ----------------------------------------------------------------------
         if [[ ! -d "$ZINIT_HOME" ]]; then
           mkdir -p "$(dirname "$ZINIT_HOME")"
-          ${pkgs.git}/bin/git clone --depth=1 \
-            https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+          if ! ${pkgs.git}/bin/git clone --depth=1 \
+            https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME" 2>/dev/null; then
+            echo "WARNING: Zinit could not be installed; skipping plugin setup." >&2
+          fi
         fi
 
-        # ----------------------------------------------------------------------
-        # Load Zinit
-        # 
-        # This initializes the plugin manager
-        # ----------------------------------------------------------------------
-        source "$ZINIT_HOME/zinit.zsh"
+        if [[ -f "$ZINIT_HOME/zinit.zsh" ]]; then
+          # --------------------------------------------------------------------
+          # Load Zinit
+          # --------------------------------------------------------------------
+          source "$ZINIT_HOME/zinit.zsh"
 
-        # ----------------------------------------------------------------------
-        # Zinit Annexes (Extensions)
-        # 
-        # These add extra functionality to Zinit:
-        # • bin-gem-node: Manage binary programs, gems, and node modules
-        # • patch-dl: Apply patches and download files
-        # ----------------------------------------------------------------------
-        zinit light-mode for \
-          zdharma-continuum/zinit-annex-bin-gem-node \
-          zdharma-continuum/zinit-annex-patch-dl
+          # --------------------------------------------------------------------
+          # Zinit Annexes (Extensions)
+          # --------------------------------------------------------------------
+          zinit light-mode for \
+            zdharma-continuum/zinit-annex-bin-gem-node \
+            zdharma-continuum/zinit-annex-patch-dl
 
-        # ----------------------------------------------------------------------
-        # ZLE Configuration (Zsh Line Editor)
-        # 
-        # Set up advanced line editing features:
-        # • url-quote-magic: Auto-escape URLs
-        # • bracketed-paste-magic: Handle pasted text intelligently
-        # • edit-command-line: Edit command in $EDITOR with Ctrl-x e
-        # ----------------------------------------------------------------------
-        autoload -Uz url-quote-magic bracketed-paste-magic edit-command-line
+          # --------------------------------------------------------------------
+          # ZLE Configuration (Zsh Line Editor)
+          # --------------------------------------------------------------------
+          autoload -Uz url-quote-magic bracketed-paste-magic edit-command-line
 
-        zle -N self-insert url-quote-magic
-        zle -N bracketed-paste bracketed-paste-magic
-        zle -N edit-command-line
+          zle -N self-insert url-quote-magic
+          zle -N bracketed-paste bracketed-paste-magic
+          zle -N edit-command-line
 
-        zstyle ':url-quote-magic:*' url-metas '*?[]^()~#{}='
-        zstyle ':bracketed-paste-magic' active-widgets '.self-*'
+          zstyle ':url-quote-magic:*' url-metas '*?[]^()~#{}='
+          zstyle ':bracketed-paste-magic' active-widgets '.self-*'
 
-        bindkey '^xe' edit-command-line
-        bindkey '^x^e' edit-command-line
+          bindkey '^xe'   edit-command-line
+          bindkey '^x^e'  edit-command-line
 
-        # ----------------------------------------------------------------------
-        # Shell Options
-        # 
-        # These control ZSH behavior. Each section is grouped by function.
-        # ----------------------------------------------------------------------
-        
-        # Navigation options
-        setopt AUTO_CD              # Type directory name to cd
-        setopt AUTO_PUSHD           # Make cd push old directory onto stack
-        setopt PUSHD_IGNORE_DUPS    # Don't push duplicates
-        setopt PUSHD_SILENT         # Don't print directory stack
-        setopt PUSHD_TO_HOME        # Push to home if no argument
+          # --------------------------------------------------------------------
+          # Shell Options
+          # --------------------------------------------------------------------
+          setopt AUTO_CD              # Type directory name to cd
+          setopt AUTO_PUSHD           # Make cd push old directory onto stack
+          setopt PUSHD_IGNORE_DUPS    # Don't push duplicates
+          setopt PUSHD_SILENT         # Don't print directory stack
+          setopt PUSHD_TO_HOME        # Push to home if no argument
 
-        # Globbing options
-        setopt EXTENDED_GLOB        # Use extended globbing syntax
-        setopt GLOB_DOTS            # Include dotfiles in globbing
-        setopt NUMERIC_GLOB_SORT    # Sort numerically when possible
-        setopt NO_CASE_GLOB         # Case-insensitive globbing
-        setopt NO_NOMATCH           # Don't error on no glob match
+          setopt EXTENDED_GLOB        # Use extended globbing syntax
+          setopt GLOB_DOTS            # Include dotfiles in globbing
+          setopt NUMERIC_GLOB_SORT    # Sort numerically when possible
+          setopt NO_CASE_GLOB         # Case-insensitive globbing
+          setopt NO_NOMATCH           # Don't error on no glob match
 
-        # Completion options
-        setopt COMPLETE_IN_WORD     # Complete from both ends of word
-        setopt ALWAYS_TO_END        # Move cursor to end after completion
-        setopt AUTO_MENU            # Show menu on second tab press
-        setopt AUTO_LIST            # List choices on ambiguous completion
-        setopt AUTO_PARAM_SLASH     # Add slash after directory completion
-        setopt NO_MENU_COMPLETE     # Don't insert first match immediately
-        setopt LIST_PACKED          # Vary column widths for compact display
+          setopt COMPLETE_IN_WORD     # Complete from both ends of word
+          setopt ALWAYS_TO_END        # Move cursor to end after completion
+          setopt AUTO_MENU            # Show menu on second tab press
+          setopt AUTO_LIST            # List choices on ambiguous completion
+          setopt AUTO_PARAM_SLASH     # Add slash after directory completion
+          setopt NO_MENU_COMPLETE     # Don't insert first match immediately
+          setopt LIST_PACKED          # Vary column widths for compact display
 
-        # History options
-        setopt EXTENDED_HISTORY         # Save timestamps in history
-        setopt HIST_EXPIRE_DUPS_FIRST   # Expire duplicates first
-        setopt HIST_FIND_NO_DUPS        # Don't show duplicates in search
-        setopt HIST_IGNORE_ALL_DUPS     # Remove older duplicate entries
-        setopt HIST_IGNORE_SPACE        # Don't save commands starting with space
-        setopt HIST_REDUCE_BLANKS       # Remove superfluous blanks
-        setopt HIST_SAVE_NO_DUPS        # Don't write duplicates to history file
-        setopt HIST_VERIFY              # Show history expansion before running
-        setopt SHARE_HISTORY            # Share history across sessions
-        setopt INC_APPEND_HISTORY       # Append to history immediately
+          setopt EXTENDED_HISTORY         # Save timestamps in history
+          setopt HIST_EXPIRE_DUPS_FIRST   # Expire duplicates first
+          setopt HIST_FIND_NO_DUPS        # Don't show duplicates in search
+          setopt HIST_IGNORE_ALL_DUPS     # Remove older duplicate entries
+          setopt HIST_IGNORE_SPACE        # Don't save commands starting with space
+          setopt HIST_REDUCE_BLANKS       # Remove superfluous blanks
+          setopt HIST_SAVE_NO_DUPS        # Don't write duplicates to history file
+          setopt HIST_VERIFY              # Show history expansion before running
+          setopt SHARE_HISTORY            # Share history across sessions
+          setopt INC_APPEND_HISTORY       # Append to history immediately
 
-        # UX options
-        setopt INTERACTIVE_COMMENTS     # Allow comments in interactive shell
-        setopt NO_BEEP                  # Don't beep on errors
-        setopt PROMPT_SUBST             # Allow prompt string substitutions
-        setopt TRANSIENT_RPROMPT        # Remove right prompt on accept
-        setopt NO_FLOW_CONTROL          # Disable Ctrl-S/Ctrl-Q
-        setopt COMBINING_CHARS          # Combine zero-length punctuation
+          setopt INTERACTIVE_COMMENTS     # Allow comments in interactive shell
+          setopt NO_BEEP                  # Don't beep on errors
+          setopt PROMPT_SUBST             # Allow prompt string substitutions
+          setopt TRANSIENT_RPROMPT        # Remove right prompt on accept
+          setopt NO_FLOW_CONTROL          # Disable Ctrl-S/Ctrl-Q
+          setopt COMBINING_CHARS          # Combine zero-length punctuation
 
-        # Safety options
-        setopt NO_CLOBBER               # Don't overwrite files with >
-        setopt NO_RM_STAR_SILENT        # Ask before rm *
-        setopt CORRECT                  # Correct command spelling
+          setopt NO_CLOBBER               # Don't overwrite files with >
+          setopt NO_RM_STAR_SILENT        # Ask before rm *
+          setopt CORRECT                  # Correct command spelling
 
-        # ----------------------------------------------------------------------
-        # History Ignore Pattern
-        # 
-        # Don't save these common commands to history
-        # ----------------------------------------------------------------------
-        HISTORY_IGNORE="(ls|cd|pwd|exit|clear|history|cd ..|cd -|z *|zi *)"
+          # --------------------------------------------------------------------
+          # Disable Globbing for Specific Commands
+          # --------------------------------------------------------------------
+          alias nix='noglob nix'
+          alias git='noglob git'
+          alias find='noglob find'
+          alias rsync='noglob rsync'
+          alias scp='noglob scp'
+          alias curl='noglob curl'
+          alias wget='noglob wget'
 
-        # ----------------------------------------------------------------------
-        # Disable Globbing for Specific Commands
-        # 
-        # Some commands interpret glob characters themselves
-        # Using noglob prevents ZSH from expanding them first
-        # ----------------------------------------------------------------------
-        alias nix='noglob nix'
-        alias git='noglob git'
-        alias find='noglob find'
-        alias rsync='noglob rsync'
-        alias scp='noglob scp'
-        alias curl='noglob curl'
-        alias wget='noglob wget'
+          # --------------------------------------------------------------------
+          # FZF Configuration (Fuzzy Finder)
+          # --------------------------------------------------------------------
+          export FZF_DEFAULT_OPTS="
+            --height=80%
+            --layout=reverse
+            --info=inline
+            --border=rounded
+            --margin=1
+            --padding=1
+            --cycle
+            --scroll-off=5
+            --bind='ctrl-/:toggle-preview'
+            --bind='ctrl-u:preview-half-page-up'
+            --bind='ctrl-d:preview-half-page-down'
+            --bind='ctrl-a:select-all'
+            --bind='ctrl-x:deselect-all'
+            --bind='ctrl-y:execute-silent(echo {+} | wl-copy)'
+            --bind='alt-w:toggle-preview-wrap'
+            --bind='ctrl-space:toggle+down'
+            --pointer='▶'
+            --marker='✓'
+            --prompt='❯ '
+            --no-scrollbar
+          "
 
-        # ----------------------------------------------------------------------
-        # FZF Configuration (Fuzzy Finder)
-        # 
-        # FZF is used throughout the shell for fuzzy searching
-        # These settings control its appearance and behavior
-        # ----------------------------------------------------------------------
-        export FZF_DEFAULT_OPTS="
-          --height=80%
-          --layout=reverse
-          --info=inline
-          --border=rounded
-          --margin=1
-          --padding=1
-          --cycle
-          --scroll-off=5
-          --bind='ctrl-/:toggle-preview'
-          --bind='ctrl-u:preview-half-page-up'
-          --bind='ctrl-d:preview-half-page-down'
-          --bind='ctrl-a:select-all'
-          --bind='ctrl-x:deselect-all'
-          --bind='ctrl-y:execute-silent(echo {+} | wl-copy)'
-          --bind='alt-w:toggle-preview-wrap'
-          --bind='ctrl-space:toggle+down'
-          --pointer='▶'
-          --marker='✓'
-          --prompt='❯ '
-          --no-scrollbar
-        "
+          export FZF_COMPLETION_TRIGGER='**'
+          export FZF_COMPLETION_OPTS='--border=rounded --info=inline'
 
-        export FZF_COMPLETION_TRIGGER='**'
-        export FZF_COMPLETION_OPTS='--border=rounded --info=inline'
-
-        # Use ripgrep for FZF file finding (much faster than find)
-        if command -v rg &>/dev/null; then
-          export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!{.git,.cache,node_modules}/*"'
-        elif command -v fd &>/dev/null; then
-          export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --strip-cwd-prefix -E .git -E .cache -E node_modules'
-        fi
-
-        # FZF commands for file/directory navigation
-        if command -v fd &>/dev/null; then
-          export FZF_CTRL_T_COMMAND='fd --type f --type d --hidden --follow --strip-cwd-prefix -E .git -E .cache -E node_modules'
-          export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --strip-cwd-prefix -E .git -E .cache -E node_modules'
-        fi
-
-        # FZF preview windows with syntax highlighting
-        export FZF_CTRL_T_OPTS="
-          --preview='[[ -d {} ]] && eza -T -L2 --icons --color=always {} || bat -n --color=always -r :500 {}'
-          --preview-window='right:60%:wrap'
-          --bind='ctrl-/:change-preview-window(down|hidden|)'
-          --bind='ctrl-e:execute(nvim {} < /dev/tty > /dev/tty 2>&1)'
-        "
-
-        export FZF_ALT_C_OPTS="
-          --preview='eza -T -L3 --icons --color=always --group-directories-first {}'
-          --preview-window='right:60%'
-          --bind='ctrl-/:change-preview-window(down|hidden|)'
-        "
-
-        export FZF_CTRL_R_OPTS="
-          --preview='echo {}'
-          --preview-window='down:3:hidden:wrap'
-          --bind='?:toggle-preview'
-          --bind='ctrl-y:execute-silent(echo -n {2..} | wl-copy)+abort'
-          --exact
-        "
-
-        # Eza (modern ls) configuration
-        if command -v eza &>/dev/null; then
-          export EZA_COLORS="da=1;34:gm=1;34"
-          export EZA_ICON_SPACING=2
-        fi
-
-        # ----------------------------------------------------------------------
-        # Lazy Loading for Heavy Tools
-        # 
-        # NVM, pyenv, RVM, and Conda are slow to initialize
-        # We load them only when their commands are actually used
-        # This dramatically improves shell startup time
-        # ----------------------------------------------------------------------
-        ${lib.optionalString features.lazyLoading ''
-          # NVM (Node Version Manager)
-          # Only loads when you run: nvm, node, npm, or npx
-          if [[ -d "$HOME/.nvm" ]]; then
-            _lazy_nvm() {
-              unset -f _lazy_nvm
-              unalias nvm node npm npx 2>/dev/null || true
-              export NVM_DIR="$HOME/.nvm"
-              [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
-              nvm "$@"
-            }
-            alias nvm='_lazy_nvm'
-            alias node='_lazy_nvm'
-            alias npm='_lazy_nvm'
-            alias npx='_lazy_nvm'
+          if command -v rg &>/dev/null; then
+            export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!{.git,.cache,node_modules}/*"'
+          elif command -v fd &>/dev/null; then
+            export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --strip-cwd-prefix -E .git -E .cache -E node_modules'
           fi
 
-          # RVM (Ruby Version Manager)
-          # Only loads when you run: rvm, ruby, gem, or bundle
-          if [[ -d "$HOME/.rvm" ]]; then
-            _lazy_rvm() {
-              unset -f _lazy_rvm
-              unalias rvm ruby gem bundle 2>/dev/null || true
-              [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-              rvm "$@"
-            }
-            alias rvm='_lazy_rvm'
-            alias ruby='_lazy_rvm'
-            alias gem='_lazy_rvm'
-            alias bundle='_lazy_rvm'
+          if command -v fd &>/dev/null; then
+            export FZF_CTRL_T_COMMAND='fd --type f --type d --hidden --follow --strip-cwd-prefix -E .git -E .cache -E node_modules'
+            export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --strip-cwd-prefix -E .git -E .cache -E node_modules'
           fi
 
-          # pyenv (Python Version Manager)
-          # Only loads when you run: pyenv, python, or pip
-          if [[ -d "$HOME/.pyenv" ]]; then
-            _lazy_pyenv() {
-              unset -f _lazy_pyenv
-              unalias pyenv python pip 2>/dev/null || true
-              export PYENV_ROOT="$HOME/.pyenv"
-              path=("$PYENV_ROOT/bin" $path)
-              eval "$(pyenv init --path)"
-              eval "$(pyenv init -)"
-              pyenv "$@"
-            }
-            alias pyenv='_lazy_pyenv'
-            alias python='_lazy_pyenv'
-            alias pip='_lazy_pyenv'
+          export FZF_CTRL_T_OPTS="
+            --preview='[[ -d {} ]] && eza -T -L2 --icons --color=always {} || bat -n --color=always -r :500 {}'
+            --preview-window='right:60%:wrap'
+            --bind='ctrl-/:change-preview-window(down|hidden|)'
+            --bind='ctrl-e:execute(nvim {} < /dev/tty > /dev/tty 2>&1)'
+          "
+
+          export FZF_ALT_C_OPTS="
+            --preview='eza -T -L3 --icons --color=always --group-directories-first {}'
+            --preview-window='right:60%'
+            --bind='ctrl-/:change-preview-window(down|hidden|)'
+          "
+
+          export FZF_CTRL_R_OPTS="
+            --preview='echo {}'
+            --preview-window='down:3:hidden:wrap'
+            --bind='?:toggle-preview'
+            --bind='ctrl-y:execute-silent(echo -n {2..} | wl-copy)+abort'
+            --exact
+          "
+
+          if command -v eza &>/dev/null; then
+            export EZA_COLORS="da=1;34:gm=1;34"
+            export EZA_ICON_SPACING=2
           fi
 
-          # Conda (Python Environment Manager)
-          # Only loads when you run: conda
-          if [[ -d "$HOME/.conda/miniconda3" || -d "$HOME/.conda/anaconda3" ]]; then
-            _lazy_conda() {
-              unset -f _lazy_conda
-              unalias conda 2>/dev/null || true
-              local conda_base="$HOME/.conda/miniconda3"
-              [[ -d "$HOME/.conda/anaconda3" ]] && conda_base="$HOME/.conda/anaconda3"
-              eval "$("$conda_base/bin/conda" shell.zsh hook 2>/dev/null)"
-              conda "$@"
-            }
-            alias conda='_lazy_conda'
-          fi
-        ''}
-
-        # ----------------------------------------------------------------------
-        # SSH Optimization
-        # 
-        # When connected via SSH, use a lighter profile:
-        # • Disable fancy man pager
-        # • Disable history sharing (reduces network I/O)
-        # • Smaller history limits
-        # ----------------------------------------------------------------------
-        ${lib.optionalString features.sshOptimization ''
-          if [[ -n $SSH_CONNECTION ]]; then
-            unset MANPAGER
-            export PAGER="less"
-            setopt NO_SHARE_HISTORY
-            HISTSIZE=20000
-            SAVEHIST=15000
-            export _SSH_LIGHT_MODE=1
-          fi
-        ''}
-
-        # ======================================================================
-        # ZINIT PLUGINS - Zero-Lag Configuration
-        # ======================================================================
-        # 
-        # CRITICAL DESIGN DECISION:
-        # 
-        # What you still get:
-        #   • Command validation: Exit code changes prompt color
-        #   • Autosuggestions: Shows if command exists in history
-        #   • Tab completion: Validates commands before running
-        #   • Visual feedback is sufficient without syntax colors
-        # 
-        # Performance Benefits:
-        #   • Zero input lag - NEVER freezes during typing
-        #   • Faster startup (~150ms vs 200ms+)
-        #   • Lower memory usage
-        #   • More responsive shell overall
-        # 
-        # Load Order:
-        #   1. Completions (instant - adds to fpath)
-        #   2. fzf-tab (instant - BEFORE compinit)
-        #   3. compinit (instant - completion init)
-        #   4. All other plugins (instant - lightweight)
-        # 
-        # ======================================================================
-
-        # ----------------------------------------------------------------------
-        # 1. COMPLETIONS (Instant Load - adds to fpath)
-        # 
-        # Must load immediately to extend fpath before compinit runs
-        # This plugin adds thousands of completion definitions
-        # ----------------------------------------------------------------------
-        zinit ice blockf atpull'zinit creinstall -q .'
-        zinit light zsh-users/zsh-completions
-
-        # ----------------------------------------------------------------------
-        # 2. FZF-TAB (Instant Load - BEFORE compinit)
-        # 
-        # CRITICAL: Must load before compinit to hook into completion system
-        # Replaces default tab completion with FZF fuzzy finder
-        # ----------------------------------------------------------------------
-        zinit ice depth=1
-        zinit light Aloxaf/fzf-tab
-
-        # Configure fzf-tab behavior
-        zstyle ':fzf-tab:*' fzf-command fzf
-        zstyle ':fzf-tab:*' fzf-min-height 100
-        zstyle ':fzf-tab:*' switch-group ',' '.'
-        zstyle ':fzf-tab:*' continuous-trigger '/'
-        zstyle ':fzf-tab:complete:*:*' fzf-preview ""
-        zstyle ':fzf-tab:complete:*:*' fzf-flags --height=80% --border=rounded --bind='ctrl-/:toggle-preview'
-
-        # Context-specific preview commands
-        zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w'
-        zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'
-        zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git diff $word | delta'
-        zstyle ':fzf-tab:complete:git-log:*' fzf-preview 'git log --color=always $word'
-        zstyle ':fzf-tab:complete:git-show:*' fzf-preview 'git show --color=always $word | delta'
-        zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -T -L2 --icons --color=always $realpath 2>/dev/null'
-
-        # ----------------------------------------------------------------------
-        # 3. COMPINIT (Safe, Fast, Cached)
-        # 
-        # This is the ZSH completion system initialization
-        # We use aggressive caching to make it fast
-        # ----------------------------------------------------------------------
-        
-        # Add our custom completions and functions to fpath
-        fpath=("${xdg.zsh}/completions" "${xdg.zsh}/functions" $fpath)
-
-        # Load completion system
-        autoload -Uz compinit
-        zmodload zsh/system 2>/dev/null || true
-
-        # Set completion dump file location
-        : ''${ZSH_COMPDUMP:="${xdg.cache}/zcompdump-$HOST-$ZSH_VERSION"}
-        zstyle ':completion:*' dump-file "$ZSH_COMPDUMP"
-
-        # ----------------------------------------------------------------------
-        # _safe_compinit: Smart Completion Initialization
-        # 
-        # This function intelligently decides whether to rebuild completions:
-        # • If dump is fresh (<24h old): Use cached version (-C flag)
-        # • If dump is stale: Rebuild (no -C flag)
-        # • Uses file locking to prevent race conditions
-        # • Compiles dump to bytecode for faster loading
-        # ----------------------------------------------------------------------
-        _safe_compinit() {
-          local _lock_file="${xdg.cache}/.compinit-''${HOST}-''${ZSH_VERSION}.lock"
-          local _dump_dir="$(dirname "$ZSH_COMPDUMP")"
-
-          # Ensure dump directory exists
-          [[ -d "$_dump_dir" ]] || mkdir -p "$_dump_dir"
-
-          local -i need_rebuild=0
-          
-          # Check if dump exists and is fresh (less than 24 hours old)
-          if [[ ! -s "$ZSH_COMPDUMP" || -n $ZSH_COMPDUMP(#qN.mh+24) ]]; then
-            need_rebuild=1
-          fi
-
-          # If dump is fresh, use cached version
-          if (( need_rebuild == 0 )); then
-            compinit -C -i -d "$ZSH_COMPDUMP"
-            
-            # Compile dump to bytecode in background if needed
-            if [[ ! -f "$ZSH_COMPDUMP.zwc" || "$ZSH_COMPDUMP" -nt "$ZSH_COMPDUMP.zwc" ]]; then
-              { zcompile -U "$ZSH_COMPDUMP" 2>/dev/null || true; } &!
+          # --------------------------------------------------------------------
+          # Lazy Loading for Heavy Tools
+          # --------------------------------------------------------------------
+          ${lib.optionalString features.lazyLoading ''
+            if [[ -d "$HOME/.nvm" ]]; then
+              _lazy_nvm() {
+                unset -f _lazy_nvm
+                unalias nvm node npm npx 2>/dev/null || true
+                export NVM_DIR="$HOME/.nvm"
+                [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+                nvm "$@"
+              }
+              alias nvm='_lazy_nvm'
+              alias node='_lazy_nvm'
+              alias npm='_lazy_nvm'
+              alias npx='_lazy_nvm'
             fi
-            return 0
-          fi
 
-          # If we need to rebuild, try to acquire lock
-          # If lock fails, another instance is rebuilding - use cached version
-          if command -v zsystem &>/dev/null; then
-            if ! zsystem flock -t 0.1 "$_lock_file" 2>/dev/null; then
+            if [[ -d "$HOME/.rvm" ]]; then
+              _lazy_rvm() {
+                unset -f _lazy_rvm
+                unalias rvm ruby gem bundle 2>/dev/null || true
+                [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
+                rvm "$@"
+              }
+              alias rvm='_lazy_rvm'
+              alias ruby='_lazy_rvm'
+              alias gem='_lazy_rvm'
+              alias bundle='_lazy_rvm'
+            fi
+
+            if [[ -d "$HOME/.pyenv" ]]; then
+              _lazy_pyenv() {
+                unset -f _lazy_pyenv
+                unalias pyenv python pip 2>/dev/null || true
+                export PYENV_ROOT="$HOME/.pyenv"
+                path=("$PYENV_ROOT/bin" $path)
+                eval "$(pyenv init --path)"
+                eval "$(pyenv init -)"
+                pyenv "$@"
+              }
+              alias pyenv='_lazy_pyenv'
+              alias python='_lazy_pyenv'
+              alias pip='_lazy_pyenv'
+            fi
+
+            if [[ -d "$HOME/.conda/miniconda3" || -d "$HOME/.conda/anaconda3" ]]; then
+              _lazy_conda() {
+                unset -f _lazy_conda
+                unalias conda 2>/dev/null || true
+                local conda_base="$HOME/.conda/miniconda3"
+                [[ -d "$HOME/.conda/anaconda3" ]] && conda_base="$HOME/.conda/anaconda3"
+                eval "$("$conda_base/bin/conda" shell.zsh hook 2>/dev/null)"
+                conda "$@"
+              }
+              alias conda='_lazy_conda'
+            fi
+          ''}
+
+          # ====================================================================
+          # ZINIT PLUGINS - Zero-Lag Configuration (as claimed)
+          # ====================================================================
+          ${lib.optionalString features.zinitTurbo ''
+            zinit light zsh-users/zsh-history-substring-search
+            bindkey '^[[A'  history-substring-search-up
+            bindkey '^[[B'  history-substring-search-down
+            bindkey '^[OA'  history-substring-search-up
+            bindkey '^[OB'  history-substring-search-down
+
+            zinit light zsh-users/zsh-autosuggestions
+            zinit light hlissner/zsh-autopair
+
+            # Syntax highlighting (left as-is, per your request)
+            zinit light zsh-users/zsh-syntax-highlighting
+          
+            zinit snippet OMZ::plugins/sudo/sudo.plugin.zsh
+            zinit snippet OMZ::plugins/extract/extract.plugin.zsh
+            zinit snippet OMZ::plugins/copypath/copypath.plugin.zsh
+            zinit snippet OMZ::plugins/copyfile/copyfile.plugin.zsh
+            zinit snippet OMZ::plugins/git/git.plugin.zsh
+          ''}
+
+          ${lib.optionalString (!features.zinitTurbo) ''
+            zinit light zsh-users/zsh-history-substring-search
+            bindkey '^[[A' history-substring-search-up
+            bindkey '^[[B' history-substring-search-down
+
+            zinit light zsh-users/zsh-autosuggestions
+            zinit light hlissner/zsh-autopair
+
+            zinit snippet OMZ::plugins/sudo/sudo.plugin.zsh
+            zinit snippet OMZ::plugins/extract/extract.plugin.zsh
+            zinit snippet OMZ::plugins/copypath/copypath.plugin.zsh
+            zinit snippet OMZ::plugins/copyfile/copyfile.plugin.zsh
+            zinit snippet OMZ::plugins/git/git.plugin.zsh
+          ''}
+
+          # --------------------------------------------------------------------
+          # 1. COMPLETIONS
+          # --------------------------------------------------------------------
+          zinit ice blockf atpull'zinit creinstall -q .'
+          zinit light zsh-users/zsh-completions
+
+          # --------------------------------------------------------------------
+          # 2. FZF-TAB (before compinit)
+          # --------------------------------------------------------------------
+          zinit ice depth=1
+          zinit light Aloxaf/fzf-tab
+
+          zstyle ':fzf-tab:*' fzf-command fzf
+          zstyle ':fzf-tab:*' fzf-min-height 100
+          zstyle ':fzf-tab:*' switch-group ',' '.'
+          zstyle ':fzf-tab:*' continuous-trigger '/'
+          zstyle ':fzf-tab:complete:*:*' fzf-preview ""
+          zstyle ':fzf-tab:complete:*:*' fzf-flags --height=80% --border=rounded --bind='ctrl-/:toggle-preview'
+
+          zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps --pid=$word -o cmd --no-headers -w'
+          zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'
+          zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git diff $word | delta'
+          zstyle ':fzf-tab:complete:git-log:*' fzf-preview 'git log --color=always $word'
+          zstyle ':fzf-tab:complete:git-show:*' fzf-preview 'git show --color=always $word | delta'
+          zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -T -L2 --icons --color=always $realpath 2>/dev/null'
+
+          # --------------------------------------------------------------------
+          # 3. COMPINIT (Safe, Fast, Cached)
+          # --------------------------------------------------------------------
+          fpath=("${xdg.zsh}/completions" "${xdg.zsh}/functions" $fpath)
+
+          autoload -Uz compinit
+          zmodload zsh/system 2>/dev/null || true
+
+          : ''${ZSH_COMPDUMP:="${xdg.cache}/zcompdump-$HOST-$ZSH_VERSION"}
+          zstyle ':completion:*' dump-file "$ZSH_COMPDUMP"
+
+          _safe_compinit() {
+            local _lock_file="${xdg.cache}/.compinit-''${HOST}-''${ZSH_VERSION}.lock"
+            local _dump_dir="$(dirname "$ZSH_COMPDUMP")"
+
+            [[ -d "$_dump_dir" ]] || mkdir -p "$_dump_dir"
+
+            local -i need_rebuild=0
+            if [[ ! -s "$ZSH_COMPDUMP" || -n $ZSH_COMPDUMP(#qN.mh+24) ]]; then
+              need_rebuild=1
+            fi
+
+            if (( need_rebuild == 0 )); then
               compinit -C -i -d "$ZSH_COMPDUMP"
+              if [[ ! -f "$ZSH_COMPDUMP.zwc" || "$ZSH_COMPDUMP" -nt "$ZSH_COMPDUMP.zwc" ]]; then
+                { zcompile -U "$ZSH_COMPDUMP" 2>/dev/null || true; } &!
+              fi
               return 0
             fi
-          fi
 
-          # Rebuild completion dump
-          compinit -u -i -d "$ZSH_COMPDUMP"
-          
-          # Compile to bytecode in background
-          { zcompile -U "$ZSH_COMPDUMP" 2>/dev/null || true; } &!
-          
-          # Release lock
-          command -v zsystem &>/dev/null && zsystem flock -u "$_lock_file" 2>/dev/null || true
-        }
+            if command -v zsystem &>/dev/null; then
+              if ! zsystem flock -t 0.1 "$_lock_file" 2>/dev/null; then
+                compinit -C -i -d "$ZSH_COMPDUMP"
+                return 0
+              fi
+            fi
 
-        # Initialize completion system
-        _safe_compinit
-        
-        # Also load bash completion compatibility
-        autoload -Uz bashcompinit && bashcompinit
+            compinit -u -i -d "$ZSH_COMPDUMP"
+            { zcompile -U "$ZSH_COMPDUMP" 2>/dev/null || true; } &!
+            command -v zsystem &>/dev/null && zsystem flock -u "$_lock_file" 2>/dev/null || true
+          }
 
-        # ----------------------------------------------------------------------
-        # Completion System Styles
-        # 
-        # These control how completions look and behave
-        # ----------------------------------------------------------------------
-        autoload -Uz colors && colors
-        _comp_options+=(globdots)  # Include hidden files in completion
+          _safe_compinit
+          autoload -Uz bashcompinit && bashcompinit
 
-        # Completion strategy: try extensions, then exact, then approximate
-        zstyle ':completion:*' completer _extensions _complete _approximate _ignored
-        
-        # Enable caching for better performance
-        zstyle ':completion:*' use-cache on
-        zstyle ':completion:*' cache-path "${xdg.cache}/.zcompcache"
-        
-        # Enable full completion
-        zstyle ':completion:*' complete true
-        zstyle ':completion:*' complete-options true
+          autoload -Uz colors && colors
+          _comp_options+=(globdots)
 
-        # Smart case-insensitive matching
-        zstyle ':completion:*' matcher-list \
-          'm:{a-zA-Z}={A-Za-z}' \
-          'r:|[._-]=* r:|=*' \
-          'l:|=* r:|=*'
+          zstyle ':completion:*' completer _extensions _complete _approximate _ignored
+          zstyle ':completion:*' use-cache on
+          zstyle ':completion:*' cache-path "${xdg.cache}/.zcompcache"
+          zstyle ':completion:*' complete true
+          zstyle ':completion:*' complete-options true
 
-        # File sorting and listing
-        zstyle ':completion:*' file-sort modification
-        zstyle ':completion:*' sort false
-        zstyle ':completion:*' list-suffixes true
-        zstyle ':completion:*' expand prefix suffix
-        zstyle ':completion:*' menu select=2
-        zstyle ':completion:*' group-name ""
-        zstyle ':completion:*' verbose yes
-        zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
-        zstyle ':completion:*' special-dirs true
-        zstyle ':completion:*' squeeze-slashes true
+          zstyle ':completion:*' matcher-list \
+            'm:{a-zA-Z}={A-Za-z}' \
+            'r:|[._-]=* r:|=*' \
+            'l:|=* r:|=*'
 
-        # Colored completion messages
-        zstyle ':completion:*:descriptions' format '%F{yellow}━━ %d ━━%f'
-        zstyle ':completion:*:messages'     format '%F{purple}━━ %d ━━%f'
-        zstyle ':completion:*:warnings'     format '%F{red}━━ no matches found ━━%f'
-        zstyle ':completion:*:corrections'  format '%F{green}━━ %d (errors: %e) ━━%f'
+          zstyle ':completion:*' file-sort modification
+          zstyle ':completion:*' sort false
+          zstyle ':completion:*' list-suffixes true
+          zstyle ':completion:*' expand prefix suffix
+          zstyle ':completion:*' menu select=2
+          zstyle ':completion:*' group-name ""
+          zstyle ':completion:*' verbose yes
+          zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
+          zstyle ':completion:*' special-dirs true
+          zstyle ':completion:*' squeeze-slashes true
 
-        # Process completion for kill command
-        zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w"
-        zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01'
-        zstyle ':completion:*:*:kill:*' menu yes select
-        zstyle ':completion:*:*:kill:*' force-list always
-        zstyle ':completion:*:*:kill:*' insert-ids single
+          zstyle ':completion:*:descriptions' format '%F{yellow}━━ %d ━━%f'
+          zstyle ':completion:*:messages'     format '%F{purple}━━ %d ━━%f'
+          zstyle ':completion:*:warnings'     format '%F{red}━━ no matches found ━━%f'
+          zstyle ':completion:*:corrections'  format '%F{green}━━ %d (errors: %e) ━━%f'
 
-        # Man page completion
-        zstyle ':completion:*:manuals' separate-sections true
-        zstyle ':completion:*:manuals.*' insert-sections true
+          zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w"
+          zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01'
+          zstyle ':completion:*:*:kill:*' menu yes select
+          zstyle ':completion:*:*:kill:*' force-list always
+          zstyle ':completion:*:*:kill:*' insert-ids single
 
-        # SSH/SCP/rsync completion
-        zstyle ':completion:*:(ssh|scp|rsync):*' tag-order \
-          'hosts:-host:host hosts:-domain:domain hosts:-ipaddr:ip\ address'
-        zstyle ':completion:*:(ssh|scp|rsync):*:hosts-host' \
-          ignored-patterns '*(.|:)*' loopback localhost broadcasthost
-        zstyle ':completion:*:(ssh|scp|rsync):*:hosts-domain' \
-          ignored-patterns '<->.<->.<->.<->' '*@*'
-        zstyle ':completion:*:(ssh|scp|rsync):*:hosts-ipaddr' \
-          ignored-patterns '^(<->.<->.<->.<->)' '127.0.0.<->' '::1' 'fe80::*'
+          zstyle ':completion:*:manuals'    separate-sections true
+          zstyle ':completion:*:manuals.*'  insert-sections true
 
-        # Always rehash for new commands
-        zstyle ':completion:*' rehash true
-        zstyle ':completion:*' accept-exact-dirs true
+          zstyle ':completion:*:(ssh|scp|rsync):*' tag-order \
+            'hosts:-host:host hosts:-domain:domain hosts:-ipaddr:ip\ address'
+          zstyle ':completion:*:(ssh|scp|rsync):*:hosts-host' \
+            ignored-patterns '*(.|:)*' loopback localhost broadcasthost
+          zstyle ':completion:*:(ssh|scp|rsync):*:hosts-domain' \
+            ignored-patterns '<->.<->.<->.<->' '*@*'
+          zstyle ':completion:*:(ssh|scp|rsync):*:hosts-ipaddr' \
+            ignored-patterns '^(<->.<->.<->.<->)' '127.0.0.<->' '::1' 'fe80::*'
 
-        # ======================================================================
-        # 4. ALL PLUGINS - Instant Load (NO WAIT, NO SYNTAX HIGHLIGHTING)
-        # ======================================================================
-        # 
-        # All plugins load synchronously during startup
-        # This adds ~50ms to startup but guarantees ZERO typing lag
-        # 
-        # ======================================================================
-        ${lib.optionalString features.zinitTurbo ''
-          # --------------------------------------------------------------------
-          # History substring search (INSTANT)
-          # 
-          # Provides up/down arrow history search with substring matching
-          # Essential feature, lightweight plugin
-          # --------------------------------------------------------------------
-          zinit light zsh-users/zsh-history-substring-search
-          bindkey '^[[A' history-substring-search-up
-          bindkey '^[[B' history-substring-search-down
-          bindkey '^[OA' history-substring-search-up
-          bindkey '^[OB' history-substring-search-down
-
-          # --------------------------------------------------------------------
-          # Auto-suggestions (INSTANT)
-          # 
-          # Shows suggestions based on history as you type
-          # Lightweight and provides excellent UX
-          # --------------------------------------------------------------------
-          zinit light zsh-users/zsh-autosuggestions
-
-          # --------------------------------------------------------------------
-          # Autopair (INSTANT)
-          # 
-          # Auto-closes brackets, quotes, etc.
-          # Tiny plugin with no performance impact
-          # --------------------------------------------------------------------
-          zinit light hlissner/zsh-autopair
-
-          # --------------------------------------------------------------------
-          # SYNTAX HIGHLIGHTING (INSTANT)
-          # 
-          # --------------------------------------------------------------------
-          zinit light zsh-users/zsh-syntax-highlighting
-          
-          # --------------------------------------------------------------------
-          # OMZ Plugin Snippets (INSTANT)
-          # 
-          # Lightweight utilities from Oh-My-Zsh
-          # Each adds useful functionality without slowdown
-          # --------------------------------------------------------------------
-          zinit snippet OMZ::plugins/sudo/sudo.plugin.zsh
-          zinit snippet OMZ::plugins/extract/extract.plugin.zsh
-          zinit snippet OMZ::plugins/copypath/copypath.plugin.zsh
-          zinit snippet OMZ::plugins/copyfile/copyfile.plugin.zsh
-          zinit snippet OMZ::plugins/git/git.plugin.zsh
-        ''}
+          zstyle ':completion:*' rehash true
+          zstyle ':completion:*' accept-exact-dirs true
+        else
+          echo "WARNING: Zinit not available; shell running without plugins." >&2
+        fi
 
         # ----------------------------------------------------------------------
-        # Non-Turbo Fallback
-        # 
-        # If turbo mode is disabled, load same plugins synchronously
+        # Tool Integrations
+        # (Do not depend on Zinit; run regardless of plugin availability)
         # ----------------------------------------------------------------------
-        ${lib.optionalString (!features.zinitTurbo) ''
-          zinit light zsh-users/zsh-history-substring-search
-          bindkey '^[[A' history-substring-search-up
-          bindkey '^[[B' history-substring-search-down
+        if command -v zoxide &>/dev/null; then
+          eval "$(zoxide init zsh)"
+        fi
 
-          zinit light zsh-users/zsh-autosuggestions
-          zinit light hlissner/zsh-autopair
+        if command -v direnv &>/dev/null; then
+          eval "$(direnv hook zsh)"
+          export DIRENV_LOG_FORMAT=""
+        fi
 
-          zinit snippet OMZ::plugins/sudo/sudo.plugin.zsh
-          zinit snippet OMZ::plugins/extract/extract.plugin.zsh
-          zinit snippet OMZ::plugins/copypath/copypath.plugin.zsh
-          zinit snippet OMZ::plugins/copyfile/copyfile.plugin.zsh
-          zinit snippet OMZ::plugins/git/git.plugin.zsh
-        ''}
-
-        # ----------------------------------------------------------------------
-        # Tool Integrations (Local Only - Not Over SSH)
-        # 
-        # These are heavy tools that should only load on local machines
-        # ----------------------------------------------------------------------
-        if [[ -z $_SSH_LIGHT_MODE ]]; then
-          # Zoxide: Smarter cd command (learns your habits)
-          command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
-          
-          # Direnv: Automatic environment switching per directory
-          if command -v direnv &>/dev/null; then
-            eval "$(direnv hook zsh)"
-            export DIRENV_LOG_FORMAT=""  # Silence direnv messages
-          fi
-
-          # Atuin: Better shell history with sync
-          if command -v atuin &>/dev/null; then
-            export ATUIN_NOBIND="true"  # Don't auto-bind Ctrl-R
-            eval "$(atuin init zsh)"
-            bindkey '^r' _atuin_search_widget  # Manual binding
-          fi
+        if command -v atuin &>/dev/null; then
+          export ATUIN_NOBIND="true"
+          eval "$(atuin init zsh)"
+          bindkey '^r' _atuin_search_widget
         fi
 
         # ----------------------------------------------------------------------
         # Custom Functions
-        # 
-        # Auto-load any functions in the functions directory
         # ----------------------------------------------------------------------
         if [[ -d "${xdg.zsh}/functions" ]]; then
           for func in "${xdg.zsh}/functions"/*(.N); do
@@ -940,16 +739,11 @@ in
 
         # ----------------------------------------------------------------------
         # Zinit Directory Escape
-        # 
-        # If we somehow ended up in a zinit plugin directory, go home
-        # This can happen if a plugin changes PWD during loading
         # ----------------------------------------------------------------------
         [[ $PWD == *"/zinit/plugins/"* ]] && cd ~
 
         # ----------------------------------------------------------------------
         # Debug Output
-        # 
-        # If debug mode is enabled, show profiling results
         # ----------------------------------------------------------------------
         ${lib.optionalString features.debugMode ''
           unsetopt xtrace
@@ -968,8 +762,6 @@ in
 
         # ----------------------------------------------------------------------
         # Starship Prompt
-        # 
-        # Load Starship last so it doesn't interfere with plugin loading
         # ----------------------------------------------------------------------
         if command -v starship &>/dev/null; then
           eval "$(starship init zsh)"
@@ -986,39 +778,12 @@ in
       size                  = 200000;  # Commands to keep in memory
       save                  = 150000;  # Commands to save to disk
       path                  = "${xdg.zsh}/history";
-      ignoreDups            = true;    # Don't record duplicates
-      ignoreAllDups         = true;    # Remove all duplicates
-      ignoreSpace           = true;    # Ignore commands starting with space
-      share                 = true;    # Share history across sessions
-      extended              = true;    # Save timestamps
-      expireDuplicatesFirst = true;    # Expire duplicates before unique commands
+      ignoreDups            = true;
+      ignoreAllDups         = true;
+      ignoreSpace           = true;
+      share                 = true;
+      extended              = true;
+      expireDuplicatesFirst = true;
     };
   };
 }
-
-# ==============================================================================
-# TESTING & VERIFICATION
-# ==============================================================================
-# 
-# After applying this configuration, test with:
-# 
-# 1. Rebuild your system:
-#    sudo nixos-rebuild switch
-#    # OR
-#    home-manager switch
-# 
-# 2. Open a new terminal (or new tmux window with Ctrl-a c)
-# 
-# 3. Type immediately - should be INSTANT with ZERO lag
-# 
-# 4. Expected results:
-#    • Startup: ~150ms (fast)
-#    • First keystroke: <50ms (instant)
-#    • Typing: 0ms freeze (NEVER blocks)
-# 
-# 5. Verify no lag:
-#    • Open new terminal
-#    • Type "echo test" IMMEDIATELY
-#    • Should be instant with no delay
-# 
-# ==============================================================================
