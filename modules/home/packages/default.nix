@@ -69,7 +69,7 @@ in
     shfmt                 # Shell biçimlendirici
     stylua                # Lua biçimlendirici
     treefmt               # Çoklu dil biçimlendirici
-    inputs.alejandra.defaultPackage.${pkgs.system} # Nix biçimlendirici
+    inputs.alejandra.defaultPackage.${pkgs.stdenv.hostPlatform.system} # Nix biçimlendirici
     
     # Binary Analysis & Debugging
     binsider               # İkili dosya analizci

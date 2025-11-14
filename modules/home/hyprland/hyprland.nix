@@ -22,13 +22,13 @@
     # ---------------------------------------------------------------------------
     # Screenshot and Recording
     # ---------------------------------------------------------------------------
-    inputs.hypr-contrib.packages.${pkgs.system}.grimblast # Enhanced screenshot
+    inputs.hypr-contrib.packages.${pkgs.stdenv.hostPlatform.system}.grimblast # Enhanced screenshot
     wf-recorder        # Screen recorder
 
     # ---------------------------------------------------------------------------
     # Enhancement Tools
     # ---------------------------------------------------------------------------
-    #inputs.hyprmag.packages.${pkgs.system}.hyprmag # Screen magnifier
+    #inputs.hyprmag.packages.${pkgs.stdenv.hostPlatform.system}.hyprmag # Screen magnifier
     wl-clip-persist    # Clipboard manager
     cliphist           # Clipboard history
   ];
