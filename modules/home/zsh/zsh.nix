@@ -172,7 +172,6 @@ in
     # Disable Home Manager's built-in plugins
     # Zinit manages these with better performance and control
     autosuggestion.enable     = false;
-    syntaxHighlighting.enable = false;
 
     # ==========================================================================
     # Environment Variables
@@ -629,13 +628,6 @@ in
         # ======================================================================
         # 
         # CRITICAL DESIGN DECISION:
-        #   Syntax highlighting has been REMOVED to eliminate 500ms freeze
-        # 
-        # Why no syntax highlighting?
-        #   • fast-syntax-highlighting causes 500ms freeze when loading
-        #   • This happens regardless of wait time (wait'0', wait'5', etc)
-        #   • The freeze occurs because it must wrap EVERY ZLE widget
-        #   • This is a fundamental limitation of how ZLE works
         # 
         # What you still get:
         #   • Command validation: Exit code changes prompt color
@@ -843,10 +835,6 @@ in
         # All plugins load synchronously during startup
         # This adds ~50ms to startup but guarantees ZERO typing lag
         # 
-        # Removed plugins:
-        #   • fast-syntax-highlighting (causes 500ms freeze)
-        #   • zsh-syntax-highlighting (also causes freeze)
-        # 
         # ======================================================================
         ${lib.optionalString features.zinitTurbo ''
           # --------------------------------------------------------------------
@@ -878,12 +866,8 @@ in
           zinit light hlissner/zsh-autopair
 
           # --------------------------------------------------------------------
-          # SYNTAX HIGHLIGHTING (ALTERNATIVE - STILL CAUSES LAG!)
+          # SYNTAX HIGHLIGHTING (INSTANT)
           # 
-          # WARNING: zsh-syntax-highlighting also causes freeze (300-500ms)
-          # It's lighter than fast-syntax-highlighting but still blocks ZLE
-          # 
-          # Uncomment ONLY if you really want it and accept the freeze:
           # --------------------------------------------------------------------
           zinit light zsh-users/zsh-syntax-highlighting
           
