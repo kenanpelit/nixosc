@@ -11,6 +11,7 @@
 # - Dosya yönetimi araçları
 #
 # Author: Kenan Pelit
+# Updated: 2025-11-15
 # ==============================================================================
 
 { inputs, pkgs, ... }:
@@ -164,6 +165,7 @@ in
     imagemagick     # Resim işleme araçları
     yt-dlp          # YouTube/video indirici
     pipe-viewer     # A lightweight YouTube client
+    
     # Screenshot Tools
     satty           # Ekran görüntüsü annotasyon
     swappy          # Wayland ekran görüntüsü editörü
@@ -193,6 +195,9 @@ in
     dool            # Sistem istatistikleri (dstat fork)
     stress-ng       # Sistem stres test aracı
     s-tui           # Terminal stres monitörü
+    htop            # İnteraktif process viewer
+    procs           # Modern process lister (ps alternatifi)
+    hyperfine       # Command-line benchmarking tool
     
     # Process Management
     cpulimit        # CPU kullanım sınırlayıcı
@@ -253,14 +258,16 @@ in
     qalculate-gtk    # Bilimsel hesap makinesi
     calcurse         # Terminal takvim
     
-    # PDF Tools
+    # PDF & Image Tools
     pdftk            # PDF araç seti
     zathura          # Minimal PDF görüntüleyici
     evince           # GNOME belge görüntüleyici
     poppler-utils    # PDF komut satırı araçları
+    img2pdf          # Resim → PDF dönüştürücü
     
     # Communication
     discord          # Oyuncu sohbet platformu
+    catppuccin-discord # Discord Catppuccin teması
     #whatsie          # WhatsApp masaüstü - qtwebengine-5
     wasistlos        # Alternatif WhatsApp
     ferdium          # Çoklu servis yöneticisi
@@ -275,7 +282,9 @@ in
     gparted          # Disk bölümleme GUI
     flatpak          # Uygulama sandboxing
     ventoy           # Çoklu ISO USB aracı
-    gnome-monitor-config #Program to help manage GNOME monitor configuration
+    efibootmgr       # EFI boot manager
+    gnome-monitor-config # GNOME monitor yapılandırma yardımcısı
+    wayland-utils    # Wayland yardımcı araçları
 
     # Clipboard Management
     xclip            # X11 pano aracı
@@ -294,6 +303,13 @@ in
     hyprsunset       # Ekran renk sıcaklığı
     hypridle         # Boşta kalma yöneticisi
     brightnessctl    # Ekran parlaklığı kontrolü
+    hyprshade        # Hyprland shader yönetimi
+    
+    # Display & Input
+    wl-gammactl      # Wayland gamma kontrolü
+    wl-gammarelay-applet # Gamma relay applet
+    waynergy         # Synergy alternatifi (Wayland)
+    input-leap       # Klavye/mouse paylaşımı
     
     # Wallpaper & Themes
     wpaperd          # Wayland duvar kağıdı daemon
@@ -318,6 +334,7 @@ in
     # Tarayıcılar
     # ==============================================================================
     # Text Browsers
+    browsh          # Modern text browser with graphics
     lynx            # Klasik metin tarayıcı
     links2          # Gelişmiş metin tarayıcı
     elinks          # Özellikli metin tarayıcı
@@ -359,6 +376,7 @@ in
     todo              # Görev yöneticisi
     toipe             # Terminal yazma pratiği
     ttyper            # Yazma hızı oyunu
+    localsend         # Lokal ağ dosya transferi
  
     # ==============================================================================
     # Eğlence ve Terminal Oyunları
@@ -370,6 +388,7 @@ in
     sl               # Tren animasyonu
     toilet           # Renkli ASCII sanatı
     tty-clock        # Terminal saati
+    ytfzf            # YouTube terminal arayüzü
  
     # ==============================================================================
     # Commented Out / Optional Packages
@@ -380,4 +399,3 @@ in
     # intel-undervolt  # CPU undervolting (Meteor Lake uyumsuz)
   ];
 }
-

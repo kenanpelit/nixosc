@@ -3,8 +3,8 @@
 # ==============================================================================
 #
 # Project: NixOS Configuration Suite (nixosc)
-# Version: 4.1.0
-# Date:    2025-10-01
+# Version: 4.2.0
+# Date:    2025-11-15
 # Author:  Kenan Pelit
 # Repo:    https://github.com/kenanpelit/nixosc
 # License: MIT
@@ -14,6 +14,7 @@
 #   - Modular, host-aware, theme-enabled, and battery-included
 #   - Single source of truth for overlays & nixpkgs configuration
 #   - Reproducible builds with pinned dependencies via flake.lock
+#   - Dual home-manager modes: NixOS module + standalone
 #
 # Architecture & Design Principles:
 #   
@@ -24,11 +25,12 @@
 #      • pkgsFor (packages/devShells multi-system world)
 #      → This eliminates the "works here, breaks there" class of overlay bugs
 #
-#   2. Temporary Compatibility Bridge:
-#      buildGo123Module → buildGoModule (Go 1.25)
-#      → Why: nixpkgs removed buildGo123Module (Go 1.23 is EOL)
-#      → Some external flakes still call it; this shim keeps builds green
-#      → TODO: Remove once all external dependencies are updated
+#   2. Dual Home-Manager Configuration:
+#      • NixOS Module Mode: Integrated with system, atomic updates
+#        Usage: sudo nixos-rebuild switch --flake .#hay
+#      • Standalone Mode: Independent user environment management
+#        Usage: home-manager switch --flake .#kenan@hay
+#      Both modes share the same ./modules/home configuration
 #
 #   3. Central Configuration:
 #      Single nixpkgs config (allowUnfree + permittedInsecurePackages)
@@ -41,6 +43,7 @@
 #     flake instead of trying to overlay it here.
 #   - Use `nix flake update` to update all inputs, or `nix flake lock --update-input <n>`
 #     to update specific inputs.
+#   - stateVersion "25.11" tracks nixos-unstable compatibility
 #
 # ==============================================================================
 
@@ -234,13 +237,18 @@
     ... 
   }@inputs:
     let
+      # ==========================================================================
+      # Configuration Constants
+      # ==========================================================================
       username = "kenan";
       system   = "x86_64-linux";
       
+      # Unified overlay list - applied consistently everywhere
       overlaysCommon = [
         inputs.nur.overlays.default
       ];
  
+      # Central nixpkgs configuration
       nixpkgsConfigCommon = {
         allowUnfree = true;
         permittedInsecurePackages = [
@@ -250,6 +258,7 @@
         ];
       };
 
+      # Primary package set with overlays and config
       pkgs = import nixpkgs {
         inherit system;
         overlays = overlaysCommon;
@@ -258,19 +267,26 @@
 
       lib = nixpkgs.lib;
 
+      # ==========================================================================
+      # System Builder Function
+      # ==========================================================================
       mkSystem = { system, host, modules }:
         lib.nixosSystem {
           modules = [
+            # Platform configuration
             { nixpkgs.hostPlatform = system; }
 
+            # Apply overlays and nixpkgs config
             {
               nixpkgs.overlays = overlaysCommon;
               nixpkgs.config   = nixpkgsConfigCommon;
             }
 
+            # Theming modules
             inputs.distro-grub-themes.nixosModules.${system}.default
             inputs.catppuccin.nixosModules.catppuccin
 
+            # Home-manager as NixOS module (integrated mode)
             inputs.home-manager.nixosModules.home-manager
             {
               home-manager = {
@@ -286,10 +302,12 @@
               };
             }
 
+            # Empty system packages (managed elsewhere)
             {
               environment.systemPackages = [];
             }
 
+            # Ensure insecure packages are allowed
             {
               nixpkgs.config.permittedInsecurePackages = 
                 nixpkgsConfigCommon.permittedInsecurePackages;
@@ -299,10 +317,41 @@
           specialArgs = { inherit self inputs username host system; };
         };
 
+      # ==========================================================================
+      # Home-Manager Configuration Builder
+      # ==========================================================================
+      mkHomeConfiguration = { host }:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = pkgs;
+          extraSpecialArgs = { 
+            inherit inputs username host; 
+          };
+          modules = [
+            # Catppuccin theming
+            inputs.catppuccin.homeModules.catppuccin
+            
+            # Main home configuration
+            ./modules/home
+            
+            # Required home-manager settings for standalone mode
+            {
+              home = {
+                username = username;
+                homeDirectory = "/home/${username}";
+                stateVersion = "25.11";
+              };
+            }
+          ];
+        };
+
+      # ==========================================================================
+      # Poetry2nix Setup
+      # ==========================================================================
       inherit (inputs.poetry2nix.lib) mkPoetry2Nix;
 
       eachSystem = lib.genAttrs (import systems);
 
+      # Per-system package sets with overlays
       pkgsFor = eachSystem (sys:
         import nixpkgs {
           localSystem = sys;
@@ -312,6 +361,9 @@
       );
     in
     {
+      # ==========================================================================
+      # NixOS System Configurations
+      # ==========================================================================
       nixosConfigurations = {
         hay = mkSystem { 
           inherit system; 
@@ -326,6 +378,19 @@
         };
       };
 
+      # ==========================================================================
+      # Home-Manager Standalone Configurations
+      # ==========================================================================
+      # These allow using `home-manager switch --flake .#kenan@HOST`
+      # Provides user-level package management without sudo
+      homeConfigurations = {
+        "kenan@hay" = mkHomeConfiguration { host = "hay"; };
+        "kenan@vhay" = mkHomeConfiguration { host = "vhay"; };
+      };
+
+      # ==========================================================================
+      # Exported Packages
+      # ==========================================================================
       packages = eachSystem (sys:
         let 
           inherit (mkPoetry2Nix { pkgs = pkgsFor.${sys}; }) mkPoetryApplication;
@@ -337,6 +402,9 @@
         }
       );
 
+      # ==========================================================================
+      # Development Shells
+      # ==========================================================================
       devShells = eachSystem (sys:
         let 
           inherit (mkPoetry2Nix { pkgs = pkgsFor.${sys}; }) mkPoetryEnv;
@@ -351,6 +419,9 @@
       );
     };
 
+  # ============================================================================
+  # Binary Cache Configuration
+  # ============================================================================
   nixConfig = {
     extra-substituters = [
       "https://hyprland-community.cachix.org"
