@@ -41,6 +41,7 @@ let
   # ---------------------------------------------------------------------------
   hyprlandPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
@@ -204,8 +205,10 @@ in
     programs.hyprland = mkIf cfg.enableHyprland {
       enable        = true;
       package       = hyprlandPkg;
+      # IMPORTANT:
+      #   - Hyprland portal backend (xdg-desktop-portal-hyprland) buradan geliyor.
+      #   - XDG portal extraPortals kısmında tekrar eklemiyoruz ki unit çakışması olmasın.
       portalPackage = hyprPortalPkg;
-      # XWayland is on by default; no need to touch unless you want to disable.
     };
 
     # -------------------------------------------------------------------------
@@ -236,8 +239,8 @@ in
 
       # We pick GDM and explicitly disable SDDM to avoid conflicts
       gdm = {
-        enable  = true;
-        wayland = true;
+        enable      = true;
+        wayland     = true;
         autoSuspend = false;
       };
 
@@ -276,12 +279,10 @@ in
     # -------------------------------------------------------------------------
     services.dbus = {
       enable = true;
-      packages = with pkgs; [
-        xdg-desktop-portal
-        xdg-desktop-portal-gtk
-        xdg-desktop-portal-gnome
-        xdg-desktop-portal-cosmic
-      ];
+      # NOTE:
+      #   - Core xdg-desktop-portal burada.
+      #   - DE/WM backend'leri xdg.portal.extraPortals üzerinden geliyor.
+      packages = [ pkgs.xdg-desktop-portal ];
     };
 
     # -------------------------------------------------------------------------
@@ -291,60 +292,46 @@ in
       enable = true;
       xdgOpenUsePortal = true;
 
-      # Core routing: which backend is used in which session
+      # Burada sadece backend paketlerini DE/WM bazlı ekliyoruz.
+      # Hyprland portalını programs.hyprland.portalPackage sağlıyor; burada tekrar yok.
+      extraPortals =
+        lib.concatLists [
+          # Hyprland:
+          #   - Backend: hyprland portal (programs.hyprland.portalPackage)
+          #   - Burada sadece GTK fallback dosya seçici vs. için.
+          (lib.optionals cfg.enableHyprland [
+            pkgs.xdg-desktop-portal-gtk
+          ])
+
+          # GNOME: GNOME portal + GTK fallback
+          (lib.optionals cfg.enableGnome [
+            pkgs.xdg-desktop-portal-gnome
+            pkgs.xdg-desktop-portal-gtk
+          ])
+
+          # COSMIC: COSMIC portal + GTK fallback
+          (lib.optionals cfg.enableCosmic [
+            pkgs.xdg-desktop-portal-cosmic
+            pkgs.xdg-desktop-portal-gtk
+          ])
+        ];
+
+      # Backend seçim haritası:
+      #   - Session name → backend tercih sırası
       config = {
         # Fallback for unknown sessions
         common.default = [ "gtk" ];
 
-        # Hyprland → hyprland portal for screenshot/screencast, GTK for files
+        # Hyprland → hyprland backend + gtk fallback
         hyprland.default = [ "hyprland" "gtk" ];
 
-        # GNOME → GNOME portal, GTK fallback
-        gnome.default = [ "gnome" "gtk" ];
+        # GNOME → gnome backend + gtk fallback
+        gnome.default    = [ "gnome"    "gtk" ];
 
-        # COSMIC → COSMIC portal with explicit interface mapping
-        cosmic = {
-          default = [ "cosmic" "gtk" ];
-
-          "org.freedesktop.impl.portal.Screenshot"   = [ "cosmic" ];
-          "org.freedesktop.impl.portal.ScreenCast"   = [ "cosmic" ];
-          "org.freedesktop.impl.portal.FileChooser"  = [ "cosmic" ];
-          "org.freedesktop.impl.portal.Notification" = [ "cosmic" ];
-          "org.freedesktop.impl.portal.Print"        = [ "cosmic" ];
-        };
+        # COSMIC → cosmic backend + gtk fallback
+        cosmic.default   = [ "cosmic"   "gtk" ];
       };
-
-      extraPortals = [
-        pkgs.xdg-desktop-portal-gtk
-        pkgs.xdg-desktop-portal-gnome
-        pkgs.xdg-desktop-portal-cosmic
-      ];
     };
-
-    # -------------------------------------------------------------------------
-    # COSMIC portal systemd user service (only if COSMIC is enabled)
-    # -------------------------------------------------------------------------
-    systemd.user.services.xdg-desktop-portal-cosmic =
-      mkIf cfg.enableCosmic {
-        description = "XDG desktop portal implementation for COSMIC";
-
-        after    = [ "graphical-session.target" ];
-        partOf   = [ "graphical-session.target" ];
-        wantedBy = [ "xdg-desktop-portal.service" ];
-
-        serviceConfig = {
-          Type    = "dbus";
-          BusName = "org.freedesktop.impl.portal.desktop.cosmic";
-          ExecStart = "${pkgs.xdg-desktop-portal-cosmic}/libexec/xdg-desktop-portal-cosmic";
-          Restart    = "on-failure";
-          RestartSec = "2s";
-          Slice      = "session.slice";
-        };
-
-        environment = {
-          XDG_CURRENT_DESKTOP = "COSMIC";
-        };
-      };
 
     # -------------------------------------------------------------------------
     # Hyprland session target (for user services)
@@ -403,20 +390,20 @@ in
             "Noto Color Emoji"
           ];
 
-          emoji = [ "Noto Color Emoji" ];
+        emoji = [ "Noto Color Emoji" ];
 
-          serif = [
-            "Liberation Serif"
-            "Noto Serif"
-            "DejaVu Serif"
-          ];
+        serif = [
+          "Liberation Serif"
+          "Noto Serif"
+          "DejaVu Serif"
+        ];
 
-          sansSerif = [
-            "Liberation Sans"
-            "Inter"
-            "Noto Sans"
-            "DejaVu Sans"
-          ];
+        sansSerif = [
+          "Liberation Sans"
+          "Inter"
+          "Noto Sans"
+          "DejaVu Sans"
+        ];
         };
 
         subpixel = mkIf cfg.fonts.hiDpiOptimized {
@@ -452,4 +439,3 @@ in
     };
   };
 }
-
