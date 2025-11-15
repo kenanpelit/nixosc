@@ -154,10 +154,15 @@ in
         Wants = lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
       };
 
+ 
       Service = {
         Type = "simple";
-        Environment = "PATH=/etc/profiles/per-user/${username}/bin:$PATH";
-        
+
+        # FIX: PATH’i override etme, sistem bin’lerini de ekle
+        Environment = [
+          "PATH=/etc/profiles/per-user/${username}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
+        ];
+
         ExecStart = lib.concatStringsSep " " ([
           "/etc/profiles/per-user/${username}/bin/hypr-blue-manager"
           "daemon"
