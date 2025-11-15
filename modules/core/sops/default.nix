@@ -1,44 +1,27 @@
 # modules/core/sops/default.nix
 # ==============================================================================
-# SOPS Secrets Management Configuration
+# SOPS Secrets Management Configuration (age backend)
 # ==============================================================================
 #
 # Module:      modules/core/sops
-# Purpose:     System-level encrypted secrets management with SOPS and age
+# Purpose:     System-level encrypted secrets management with SOPS + age
 # Author:      Kenan Pelit
 # Created:     2025-09-03
 # Modified:    2025-11-15
 #
-# Architecture:
-#   Age Encryption → SOPS Management → NixOS Integration → Service Injection
+# Layers:
+#   1) Encryption backend (age + sops)
+#   2) Secret definitions (sops.secrets)
+#   3) Filesystem layout (tmpfiles)
+#   4) Tools (age, sops)
+#   5) System bootstrap service (root-level diagnostics)
+#   6) User bootstrap service (user-level diagnostics)
 #
-# Secret Lifecycle:
-#   1. Generation    - age-keygen creates encryption key
-#   2. Encryption    - sops encrypts secrets with age public key
-#   3. Storage       - Encrypted YAML stored in git (safe to commit)
-#   4. Activation    - Decrypted during nixos-rebuild to tmpfs
-#   5. Consumption   - Services read decrypted secrets from /run/secrets/
-#
-# Security Model:
-#   • Encryption at Rest - Secrets encrypted in git repository
-#   • Decryption on Boot - Transparent decryption during activation
-#   • Memory-only Store - Decrypted secrets live in tmpfs (RAM)
-#   • Access Control - File permissions limit secret access
-#   • No GPG Complexity - Age is simpler, faster, more secure
-#
-# Design Principles:
-#   • Fail Gracefully - Allow builds without secrets (initial setup)
-#   • Single Source - One encrypted file per secret category
-#   • Least Privilege - Minimal permissions, per-service access
-#   • Git-friendly - Encrypted files safe to version control
-#
-# Module Boundaries:
-#   ✓ System-level secrets           (THIS MODULE)
-#   ✓ Age key management             (THIS MODULE)
-#   ✓ NetworkManager passwords       (THIS MODULE)
-#   ✗ User-level secrets             (home-manager sops module)
-#   ✗ Application config             (service modules)
-#   ✗ SSH keys                       (accounts module)
+# Key points:
+#   • Secrets live encrypted in git (YAML)
+#   • Decryption happens on tmpfs at runtime
+#   • Age only (no GPG)
+#   • Build must NOT fail if secrets are missing (initial setup)
 #
 # ==============================================================================
 
@@ -46,59 +29,50 @@
 
 let
   inherit (lib) mkIf;
-  
-  # ----------------------------------------------------------------------------
-  # Path Configuration (Single Source of Truth)
-  # ----------------------------------------------------------------------------
-  
-  homeDir = "/home/${username}";
-  
-  # SOPS configuration paths
+
+  # ---------------------------------------------------------------------------
+  # Paths (single source of truth)
+  # ---------------------------------------------------------------------------
+  homeDir        = "/home/${username}";
   sopsDir        = "${homeDir}/.nixosc/secrets";
-  sopsAgeKeyFile = "${homeDir}/.config/sops/age/keys.txt";
-  
-  # Secret files (one file per category for better organization)
+  sopsAgeKeyDir  = "${homeDir}/.config/sops/age";
+  sopsAgeKeyFile = "${sopsAgeKeyDir}/keys.txt";
+
+  # One encrypted file per logical category
   wirelessSecretsFile = "${sopsDir}/wireless-secrets.enc.yaml";
-  
-  # ----------------------------------------------------------------------------
-  # Helper Functions
-  # ----------------------------------------------------------------------------
-  
-  # Check if encrypted secrets file exists (prevents build failures)
+
+  # Avoid build failures when secrets are not yet created
   secretsFileExists = builtins.pathExists wirelessSecretsFile;
-  
+
 in
 {
   # ============================================================================
-  # Module Imports
+  # Import sops-nix
   # ============================================================================
-  # Import sops-nix for NixOS integration
   imports = [ inputs.sops-nix.nixosModules.sops ];
 
   # ============================================================================
-  # SOPS Configuration (Layer 1: Encryption Backend)
+  # Core SOPS configuration
   # ============================================================================
-  
   sops = {
-    # Default encrypted file
     defaultSopsFile = wirelessSecretsFile;
-    
+
     age = {
       keyFile     = sopsAgeKeyFile;
       sshKeyPaths = [ ];
     };
-    
-    # Build-time validation disabled to allow initial setup
+
+    # We do not want evaluation to fail if the file does not exist yet.
     validateSopsFiles = false;
 
-    # GPG disabled – using age only
+    # GPG fully disabled; we use age only.
     gnupg.sshKeyPaths = [ ];
 
-    # ==========================================================================
-    # Secret Definitions (Layer 2: Access Control)
-    # ==========================================================================
+    # -------------------------------------------------------------------------
+    # Secrets (wireless example)
+    # -------------------------------------------------------------------------
     secrets = mkIf secretsFileExists {
-      # ---- Ken_5 WiFi Network (5GHz) ----
+      # Wi-Fi: Ken_5 (5 GHz)
       "wireless_ken_5_password" = {
         sopsFile = wirelessSecretsFile;
         key      = "ken_5_password";
@@ -107,8 +81,8 @@ in
         mode     = "0640";
         restartUnits = [ "NetworkManager.service" ];
       };
-      
-      # ---- Ken_2_4 WiFi Network (2.4GHz) ----
+
+      # Wi-Fi: Ken_2_4 (2.4 GHz)
       "wireless_ken_2_4_password" = {
         sopsFile = wirelessSecretsFile;
         key      = "ken_2_4_password";
@@ -118,26 +92,27 @@ in
         restartUnits = [ "NetworkManager.service" ];
       };
 
-      # Diğer secret örnekleri comment’te kalıyor
+      # Add more secrets here as needed (mail, VPN, API tokens, etc.)
     };
   };
 
   # ============================================================================
-  # Directory Structure & Permissions (Layer 3: Filesystem Setup)
+  # Directory layout & permissions (tmpfiles)
   # ============================================================================
-  
   systemd.tmpfiles.rules = [
+    # Repo-level secrets dir
     "d ${homeDir}/.nixosc           0755 ${username} users -"
     "d ${sopsDir}                  0750 ${username} users -"
+
+    # SOPS age key location
     "d ${homeDir}/.config          0755 ${username} users -"
     "d ${homeDir}/.config/sops     0750 ${username} users -"
-    "d ${homeDir}/.config/sops/age 0700 ${username} users -"
+    "d ${sopsAgeKeyDir}            0700 ${username} users -"
   ];
 
   # ============================================================================
-  # System Packages (Layer 4: Management Tools)
+  # Tools
   # ============================================================================
-  
   environment.systemPackages = with pkgs; [
     age
     sops
@@ -146,16 +121,13 @@ in
   ];
 
   # ============================================================================
-  # System Service - SOPS Activation Helper (Layer 5: System Integration)
+  # System-level diagnostics service (root)
   # ============================================================================
-  # ÖNEMLİ: sops-nix kendi `sops-nix.service` unit’ini getiriyor.
-  # Burada isim çakışmaması için `sops-bootstrap` kullanıyoruz.
-
   systemd.services.sops-bootstrap = {
     description = "SOPS secrets activation (system-level diagnostics)";
     wantedBy    = [ "multi-user.target" ];
     after       = [ "local-fs.target" ];
-    
+
     serviceConfig = {
       Type            = "oneshot";
       RemainAfterExit = true;
@@ -167,112 +139,108 @@ in
       NoNewPrivileges = true;
       ReadWritePaths  = [ homeDir ];
     };
-    
+
     script = ''
       set -euo pipefail
-      
-      # Age key directory
-      mkdir -p ${homeDir}/.config/sops/age
-      chown ${username}:users ${homeDir}/.config/sops/age
-      chmod 700 ${homeDir}/.config/sops/age
-      
-      # Age key validation
+
+      # Ensure age key directory exists (root fixes perms, user owns content)
+      mkdir -p ${sopsAgeKeyDir}
+      chown ${username}:users ${sopsAgeKeyDir}
+      chmod 700 ${sopsAgeKeyDir}
+
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "[SOPS][system] Diagnostics started"
+
+      # Age key presence
       if [ ! -f "${sopsAgeKeyFile}" ]; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "[SOPS] ⚠️  Age key not found!"
-        echo "[SOPS] 📍 Expected location: ${sopsAgeKeyFile}"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "[SOPS][system] ⚠ Age key not found"
+        echo "[SOPS][system]    Expected: ${sopsAgeKeyFile}"
         echo ""
-        echo "🔧 Setup Instructions:"
-        echo "   1. Generate age key:"
-        echo "      age-keygen -o ${sopsAgeKeyFile}"
-        echo ""
-        echo "   2. Extract public key:"
-        echo "      grep 'public key:' ${sopsAgeKeyFile}"
-        echo ""
-        echo "   3. Add public key to .sops.yaml:"
-        echo "      keys:"
-        echo "        - &user_key age1..."
-        echo "      creation_rules:"
-        echo "        - path_regex: .*"
-        echo "          key_groups:"
-        echo "            - age:"
-        echo "              - *user_key"
-        echo ""
-        echo "   4. Create first secret file:"
-        echo "      sops ${wirelessSecretsFile}"
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Setup:"
+        echo "  1) Generate key:"
+        echo "       age-keygen -o ${sopsAgeKeyFile}"
+        echo "  2) Extract public key:"
+        echo "       grep 'public key:' ${sopsAgeKeyFile}"
+        echo "  3) Configure .sops.yaml with that public key."
       else
-        echo "[SOPS] ✅ Age key found - system-level SOPS ready"
-        
-        if grep -q "^AGE-SECRET-KEY-" "${sopsAgeKeyFile}"; then
-          echo "[SOPS] ✅ Age key format valid"
+        echo "[SOPS][system] ✅ Age key found: ${sopsAgeKeyFile}"
+
+        if grep -q '^AGE-SECRET-KEY-' "${sopsAgeKeyFile}"; then
+          echo "[SOPS][system] ✅ Age key format OK"
         else
-          echo "[SOPS] ⚠️  Age key format invalid (should start with AGE-SECRET-KEY-)"
+          echo "[SOPS][system] ⚠ Age key format suspicious (should start with AGE-SECRET-KEY-)"
         fi
-        
+
         KEY_PERMS=$(stat -c %a "${sopsAgeKeyFile}")
         if [ "$KEY_PERMS" = "600" ]; then
-          echo "[SOPS] ✅ Age key permissions correct (600)"
+          echo "[SOPS][system] ✅ Permissions OK (600)"
         else
-          echo "[SOPS] ⚠️  Age key permissions: $KEY_PERMS (should be 600)"
-          echo "[SOPS] 🔧 Fix: chmod 600 ${sopsAgeKeyFile}"
+          echo "[SOPS][system] ⚠ Permissions are $KEY_PERMS (expected 600)"
+          echo "[SOPS][system]    Fix: chmod 600 ${sopsAgeKeyFile}"
         fi
       fi
-      
-      # Secrets file validation
+
+      # Secrets file presence
       if [ -f "${wirelessSecretsFile}" ]; then
-        echo "[SOPS] ✅ Wireless secrets file found"
-        
-        if grep -q "ENC\[" "${wirelessSecretsFile}"; then
-          echo "[SOPS] ✅ Secrets file encrypted"
+        echo "[SOPS][system] ✅ Wireless secrets file present: ${wirelessSecretsFile}"
+        if grep -q 'ENC\[' "${wirelessSecretsFile}"; then
+          echo "[SOPS][system] ✅ Appears encrypted (ENC[..] markers found)"
         else
-          echo "[SOPS] ⚠️  Secrets file not encrypted (plain text?)"
+          echo "[SOPS][system] ⚠ File does not look encrypted (no ENC[..] markers)"
         fi
       else
-        echo "[SOPS] ℹ️  No secrets file yet (${wirelessSecretsFile})"
-        echo "[SOPS]    This is normal for initial setup"
+        echo "[SOPS][system] ℹ No wireless secrets file yet:"
+        echo "[SOPS][system]    ${wirelessSecretsFile}"
+        echo "[SOPS][system]    This is normal on initial setup."
       fi
-      
-      echo "[SOPS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      echo "[SOPS][system] Done."
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     '';
   };
 
   # ============================================================================
-  # User Service - Home-Manager Integration (Layer 6: User-level Support)
+  # User-level diagnostics service (unprivileged)
   # ============================================================================
-  # Yine çakışmaması için isim: sops-user-bootstrap
-
+  # NOTE: Previously this unit was broken by ProtectSystem=strict
+  # because it tried to mkdir in $HOME (read-only). Here we relax it
+  # to "full" and explicitly allow homeDir as writable.
+  # ============================================================================
   systemd.user.services.sops-user-bootstrap = {
     description = "SOPS secrets activation (user-level diagnostics)";
     wantedBy    = [ "default.target" ];
     after       = [ "graphical-session.target" ];
-    
+
     serviceConfig = {
       Type            = "oneshot";
       RemainAfterExit = true;
       PrivateTmp      = true;
-      ProtectSystem   = "strict";
       NoNewPrivileges = true;
+      # ProtectSystem and other hardening defaults are defined globally
+      # in modules/core/services; do NOT override them here.
+      ReadWritePaths  = [ homeDir "/tmp" ];
     };
-    
+
     script = ''
       set -euo pipefail
-      
-      mkdir -p ${homeDir}/.config/sops/age
-      
+
+      mkdir -p ${sopsAgeKeyDir}
+
+      echo "[SOPS][user] Bootstrap started"
+
       if [ -f "${sopsAgeKeyFile}" ]; then
-        echo "[SOPS][user] ✅ Age key present - user-level SOPS ready"
-        PUB_KEY=$(grep 'public key:' "${sopsAgeKeyFile}" | cut -d: -f2 | tr -d ' ' || echo "unknown")
+        echo "[SOPS][user] ✅ Age key present at ${sopsAgeKeyFile}"
+        PUB_KEY=$(grep 'public key:' "${sopsAgeKeyFile}" | cut -d: -f2- | tr -d ' ' || echo "unknown")
         echo "[SOPS][user] 🔑 Public key: $PUB_KEY"
       else
-        echo "[SOPS][user] ⚠️  No age key at ${sopsAgeKeyFile}"
-        echo "[SOPS][user] 🔧 Generate: age-keygen -o ${sopsAgeKeyFile}"
+        echo "[SOPS][user] ⚠ No age key at ${sopsAgeKeyFile}"
+        echo "[SOPS][user]   Generate with:"
+        echo "[SOPS][user]     age-keygen -o ${sopsAgeKeyFile}"
       fi
-      
+
       touch /tmp/sops-user-ready
-      echo "[SOPS][user] 📡 Ready signal created: /tmp/sops-user-ready"
+      echo "[SOPS][user] 📡 Ready signal: /tmp/sops-user-ready"
     '';
   };
 }
+
