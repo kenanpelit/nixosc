@@ -2,7 +2,7 @@
 # ==============================================================================
 # OSC-SYSTEM: Unified Power Management & Monitoring Utility
 # ==============================================================================
-# Version: 17.0 - Complete Integration
+# Version: 17.1 - v17 Power Stack Integration
 # Author: OSC Power Management Suite
 # License: MIT
 #
@@ -12,7 +12,6 @@
 # Integrates system status, thermal monitoring, CPU analysis, and power tracking.
 #
 # Usage:
-# ------
 #   osc-system <command> [options]
 #
 # Commands:
@@ -33,7 +32,7 @@
 
 set -euo pipefail
 
-VERSION="17.0"
+VERSION="17.1"
 SCRIPT_NAME=$(basename "$0")
 LOG_BASE_DIR="${HOME}/.logs"
 THERMAL_LOG_DIR="${LOG_BASE_DIR}/thermal"
@@ -100,9 +99,9 @@ ${BOLD}Features:${RST}
   ✓ Real-time power consumption tracking
   ✓ Thermal monitoring with CSV logging
   ✓ CPU frequency analysis (turbostat)
-  ✓ RAPL power limit management
-  ✓ Battery health monitoring
-  ✓ Service status tracking
+  ✓ RAPL power limit awareness
+  ✓ Battery health & thresholds
+  ✓ Service status tracking (v17 stack)
   ✓ JSON output for automation
 
 EOF
@@ -136,17 +135,16 @@ ${BOLD}Options:${RST}
 ${BOLD}Features:${RST}
   ✅ CPU Type (Intel/AMD detection)
   ✅ Power Source (AC/Battery)
-  ✅ P-State Mode & Performance
+  ✅ P-State Mode & Min/Max Performance
+  ✅ Turbo + HWP Dynamic Boost status
   ✅ EPP (Energy Performance Preference)
-  ✅ HWP Dynamic Boost Status
-  ✅ Turbo Boost Status
-  ✅ Platform Profile
-  ✅ CPU Frequencies
+  ✅ Platform Profile (balanced/performance/low-power)
+  ✅ CPU Frequencies snapshot
   ✅ Temperature (sensors)
   ✅ RAPL Power Limits (PL1/PL2/PL4)
   ✅ Battery Status & Charge Thresholds
-  ✅ Service Health Status
-  ✅ MMIO Status
+  ✅ Service Health Status (v17 stack)
+  ✅ MMIO Status (intel_rapl_mmio)
 
 ${BOLD}Examples:${RST}
   ${SCRIPT_NAME} status
@@ -180,7 +178,7 @@ EOF
 	done
 	POWER_SRC=$([[ "${ON_AC}" = "1" ]] && echo "AC" || echo "Battery")
 
-	# P-State & Governor
+	# P-State / governor / turbo / HWP boost
 	GOVERNOR="$(read_file /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
 	PSTATE="$(read_file /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
 
@@ -205,7 +203,7 @@ EOF
 		EPP_COUNT=$((EPP_COUNT + 1))
 	done
 
-	# CPU Frequency
+	# CPU Frequency snapshot
 	FREQ_SUM=0 FREQ_CNT=0
 	for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
 		[[ -f "$f" ]] || continue
@@ -219,7 +217,8 @@ EOF
 	# Temperature
 	TEMP_C="0"
 	if have sensors; then
-		TEMP_C="$(sensors 2>/dev/null | grep -E 'Package id 0|Tctl' | awk '{match($0, /[+]?([0-9]+\.[0-9]+)/, a); if(a[1]!=""){print a[1]; exit}}' || echo "0")"
+		TEMP_C="$(sensors 2>/dev/null | grep -E 'Package id 0|Tctl' |
+			awk '{match($0, /[+]?([0-9]+\.[0-9]+)/, a); if(a[1]!=""){print a[1]; exit}}' || echo "0")"
 	fi
 	[[ -z "$TEMP_C" ]] && TEMP_C="0"
 
@@ -235,7 +234,7 @@ EOF
 	# MMIO Status
 	MMIO_STATUS="disabled"
 	MMIO_LOADED=false
-	if lsmod 2>/dev/null | grep -q "intel_rapl_mmio"; then
+	if lsmod 2>/dev/null | grep -q "^intel_rapl_mmio"; then
 		MMIO_STATUS="active"
 		MMIO_LOADED=true
 	fi
@@ -255,8 +254,9 @@ EOF
 		stop="$(read_file "$bat/charge_control_end_threshold" 2>/dev/null || echo "N/A")"
 		BAT_LINES+=("  ${name}: ${cap}% (${stat}) [thresholds: ${start}-${stop}%]")
 		if have jq; then
-			BAT_JSON="$(jq -cn --arg name "$name" --arg cap "$cap" --arg stat "$stat" --arg start "$start" --arg stop "$stop" \
-				--argjson cur "$BAT_JSON" '$cur + [{name:$name, capacity:$cap, status:$stat, start:$start, stop:$stop}]')"
+			BAT_JSON="$(jq -cn --arg name "$name" --arg cap "$cap" --arg stat "$stat" \
+				--arg start "$start" --arg stop "$stop" --argjson cur "$BAT_JSON" \
+				'$cur + [{name:$name, capacity:$cap, status:$stat, start:$start, stop:$stop}]')"
 		fi
 	done
 
@@ -281,7 +281,8 @@ EOF
 		EPP_JSON="{}"
 		if ((EPP_COUNT > 0)); then
 			for k in "${!EPP_MAP[@]}"; do
-				EPP_JSON="$(jq -cn --argjson cur "$EPP_JSON" --arg k "$k" --argjson v "${EPP_MAP[$k]}" '$cur + {($k):$v}')"
+				EPP_JSON="$(jq -cn --argjson cur "$EPP_JSON" --arg k "$k" \
+					--argjson v "${EPP_MAP[$k]}" '$cur + {($k):$v}')"
 			done
 		fi
 
@@ -312,31 +313,31 @@ EOF
 			--argjson bat "$([[ "${BAT_JSON}" == "[]" ]] && echo "[]" || echo "${BAT_JSON}")" \
 			--argjson epp_map "$([[ $EPP_COUNT -gt 0 ]] && echo "${EPP_JSON}" || echo "{}")" \
 			'{
-				version: $version,
-				cpu_type: $cpu_type,
-				power_source: $power_source,
-				governor: $governor,
-				pstate_mode: $pstate,
-				epp_any: $epp_any,
-				epp_map: $epp_map,
-				hwp_dynamic_boost: $hwp_boost,
-				turbo_enabled: $turbo,
-				mmio_status: $mmio_status,
-				mmio_driver_loaded: $mmio_loaded,
-				performance: { min_pct: $min_perf, max_pct: $max_perf },
-				platform_profile: $platform_profile,
-				freq_avg_mhz: $freq_avg,
-				temp_celsius: $temp,
-				power_limits: {
-					pl1_watts: $pl1,
-					pl2_watts: $pl2,
-					pl4_watts: $pl4,
-					base_pl2_watts: $base_pl2
-				},
-				pkg_watts_now: $pkg_w_now,
-				batteries: $bat,
-				timestamp: $ts
-			}'
+        version: $version,
+        cpu_type: $cpu_type,
+        power_source: $power_source,
+        governor: $governor,
+        pstate_mode: $pstate,
+        epp_any: $epp_any,
+        epp_map: $epp_map,
+        hwp_dynamic_boost: $hwp_boost,
+        turbo_enabled: $turbo,
+        mmio_status: $mmio_status,
+        mmio_driver_loaded: $mmio_loaded,
+        performance: { min_pct: $min_perf, max_pct: $max_perf },
+        platform_profile: $platform_profile,
+        freq_avg_mhz: $freq_avg,
+        temp_celsius: $temp,
+        power_limits: {
+          pl1_watts: $pl1,
+          pl2_watts: $pl2,
+          pl4_watts: $pl4,
+          base_pl2_watts: $base_pl2
+        },
+        pkg_watts_now: $pkg_w_now,
+        batteries: $bat,
+        timestamp: $ts
+      }'
 		return 0
 	fi
 
@@ -347,13 +348,14 @@ EOF
 	echo "CPU Type: ${CYN}${CPU_TYPE}${RST}"
 	echo -n "Power Source: "
 	[[ "$POWER_SRC" = "AC" ]] && echo "${GRN}⚡ AC${RST}" || echo "${YLW}🔋 Battery${RST}"
-
 	echo ""
+
 	if [[ "$PSTATE" != "unknown" ]]; then
 		echo "P-State Mode: ${BOLD}${PSTATE}${RST}"
 		echo "  Min/Max Performance: ${MIN_PERF}% / ${MAX_PERF}%"
 		echo "  Turbo Boost: $([[ "$TURBO_ENABLED" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
 		echo "  HWP Dynamic Boost: $([[ "$HWP_BOOST_BOOL" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
+		[[ "$GOVERNOR" != "unknown" ]] && echo "  Governor: ${GOVERNOR}"
 	fi
 
 	[[ "$PLATFORM_PROFILE" != "unknown" ]] && echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE}${RST}"
@@ -378,13 +380,13 @@ EOF
 			printf "  CPU %2d: %4d MHz\n" "$i" "$((f / 1000))"
 		done
 		echo "  ${DIM}Average: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
-		echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading, use turbostat${RST}"
+		echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading; use turbostat${RST}"
 	fi
 
 	echo ""
 	TEMP_COLOR="${GRN}"
 	[[ $(awk -v t="$TEMP_C" 'BEGIN{print (t>=70)?1:0}') -eq 1 ]] && TEMP_COLOR="${YLW}"
-	[[ $(awk -v t="$TEMP_C" 'BEGIN{print (t>=75)?1:0}') -eq 1 ]] && TEMP_COLOR="${RED}"
+	[[ $(awk -v t="$TEMP_C" 'BEGIN{print (t>=80)?1:0}') -eq 1 ]] && TEMP_COLOR="${RED}"
 	echo "TEMPERATURE: ${TEMP_COLOR}${BOLD}${TEMP_C}°C${RST}"
 
 	echo ""
@@ -408,7 +410,11 @@ EOF
 		fi
 
 		echo ""
-		[[ "$POWER_SRC" = "AC" ]] && echo "  ${GRN}💡 AC mode - Performance limits${RST}" || echo "  ${YLW}💡 Battery mode - Efficiency limits${RST}"
+		if [[ "$POWER_SRC" = "AC" ]]; then
+			echo "  ${GRN}💡 AC mode - Performance limits${RST}"
+		else
+			echo "  ${YLW}💡 Battery mode - Efficiency limits${RST}"
+		fi
 	else
 		echo "  ${RED}RAPL interface not found${RST}"
 	fi
@@ -418,7 +424,8 @@ EOF
 	((${#BAT_LINES[@]} == 0)) && echo "  ${DIM}No battery detected${RST}" || printf "%s\n" "${BAT_LINES[@]}"
 
 	echo ""
-	echo "SERVICE STATUS (v17.0):"
+	echo "SERVICE STATUS (v${VERSION} / v17 stack):"
+	# Must match v17 system module exactly:
 	SERVICES=(platform-profile cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
 	for svc in "${SERVICES[@]}"; do
 		STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
@@ -430,6 +437,8 @@ EOF
 			[[ "$SUBSTATE" == "running" ]] && echo " ${DIM}(running)${RST}" || echo " ${DIM}(exited)${RST}"
 		elif [[ "$STATE" == "inactive" && "$RESULT" == "success" ]]; then
 			printf "  %-30s ${GRN}✓ OK${RST} ${DIM}(completed)${RST}\n" "$svc"
+		elif [[ -z "$STATE" ]]; then
+			printf "  %-30s ${DIM}– not found (masked/disabled)${RST}\n" "$svc"
 		else
 			printf "  %-30s ${RED}✗ %s${RST} ${DIM}(%s)${RST}\n" "$svc" "$STATE" "$RESULT"
 		fi
@@ -439,10 +448,10 @@ EOF
 	echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
 	echo "${BOLD}💡 Tips:${RST}"
 	echo "  • Real CPU frequencies: ${CYN}${SCRIPT_NAME} turbostat-quick${RST}"
-	echo "  • Power consumption: ${CYN}${SCRIPT_NAME} power-check${RST} / ${CYN}${SCRIPT_NAME} power-monitor${RST}"
-	echo "  • Thermal monitoring: ${CYN}${SCRIPT_NAME} thermal -d 300 -p${RST}"
-	echo "  • JSON output: ${CYN}${SCRIPT_NAME} status --json${RST}"
-	echo "  • Power sample: ${CYN}${SCRIPT_NAME} status --sample-power${RST}"
+	echo "  • Power consumption:    ${CYN}${SCRIPT_NAME} power-check${RST} / ${CYN}${SCRIPT_NAME} power-monitor${RST}"
+	echo "  • Thermal monitoring:   ${CYN}${SCRIPT_NAME} thermal -d 300 -p${RST}"
+	echo "  • JSON output:          ${CYN}${SCRIPT_NAME} status --json${RST}"
+	echo "  • Power sample:         ${CYN}${SCRIPT_NAME} status --sample-power${RST}"
 }
 
 # ==============================================================================
@@ -463,7 +472,7 @@ ${BOLD}Usage:${RST} ${SCRIPT_NAME} thermal [OPTIONS]
 ${BOLD}Options:${RST}
   -d, --duration SECONDS    Monitor duration in seconds (default: 60)
   -i, --interval SECONDS    Sample interval in seconds (default: 2)
-  -o, --output FILE         Output CSV file (default: ~/.logs/thermal/thermal-TIMESTAMP.csv)
+  -o, --output FILE         Output CSV file (default: ${THERMAL_LOG_DIR}/thermal-TIMESTAMP.csv)
   -p, --plot                Generate gnuplot graph after logging
   -q, --quiet               Disable live output, only log to file
   -h, --help                Show this help
@@ -487,7 +496,7 @@ ${BOLD}Logged Data:${RST}
 ${BOLD}Notes:${RST}
   • All logs saved to: ${THERMAL_LOG_DIR}/
   • No root required (uses RAPL energy counters)
-  • Plotting requires gnuplot: sudo apt install gnuplot
+  • Plotting requires gnuplot (e.g. 'nix-shell -p gnuplot' veya flake'e ekle)
 
 EOF
 }
@@ -498,17 +507,17 @@ read_temp_thermal() {
 
 read_pl1() {
 	[[ -r /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw ]] &&
-		cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw | awk '{print int($1/1000000)}' || echo "0"
+		awk '{print int($1/1000000)}' /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw || echo "0"
 }
 
 read_pl2() {
 	[[ -r /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw ]] &&
-		cat /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw | awk '{print int($1/1000000)}' || echo "0"
+		awk '{print int($1/1000000)}' /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw || echo "0"
 }
 
 read_fan() {
 	[[ -r /proc/acpi/ibm/fan ]] &&
-		cat /proc/acpi/ibm/fan 2>/dev/null | grep "speed:" | awk '{print $2}' || echo "0"
+		grep "speed:" /proc/acpi/ibm/fan 2>/dev/null | awk '{print $2}' || echo "0"
 }
 
 read_power_rapl() {
@@ -550,7 +559,7 @@ colorize_temp() {
 
 colorize_power() {
 	local power=$1
-	(($(echo "$power >= 30" | bc -l))) && echo -e "${RED}${power}W${RST}" && return
+	(($(echo "$power >= 35" | bc -l))) && echo -e "${RED}${power}W${RST}" && return
 	(($(echo "$power >= 20" | bc -l))) && echo -e "${YLW}${power}W${RST}" && return
 	echo -e "${GRN}${power}W${RST}"
 }
@@ -595,10 +604,10 @@ cmd_thermal() {
 	parse_thermal_args "$@"
 
 	ensure_log_dir "$THERMAL_LOG_DIR"
-
 	[[ -z "$THERMAL_OUTPUT" ]] && THERMAL_OUTPUT="${THERMAL_LOG_DIR}/thermal-$(date +%Y%m%d_%H%M%S).csv"
 
 	SAMPLES=$((THERMAL_DURATION / THERMAL_INTERVAL))
+	((SAMPLES == 0)) && SAMPLES=1
 	CURRENT=0
 
 	echo "timestamp,temp_c,pl1_w,pl2_w,fan_rpm,avg_mhz,pkg_watt" >"$THERMAL_OUTPUT"
@@ -609,12 +618,10 @@ cmd_thermal() {
 		echo -e "Output:   ${THERMAL_OUTPUT}"
 		[[ $EUID -ne 0 ]] && echo -e "${YLW}Note: Using RAPL for power measurements (no root required)${RST}"
 		echo ""
-		printf "%-8s %-10s %-14s %-8s %-8s %-10s %-10s %-12s\n" \
-			"Sample" "Time" "Temp" "PL1" "PL2" "Fan" "Avg_MHz" "PkgWatt"
-		echo "------------------------------------------------------------------------------------"
+		printf "%-8s %-10s %-10s %-8s %-8s %-10s %-12s\n" \
+			"Sample" "Time" "Temp" "PL1" "PL2" "Fan" "PkgWatt"
+		echo "-------------------------------------------------------------------------------"
 	fi
-
-	START_TIME=$(date +%s)
 
 	while [[ $CURRENT -lt $SAMPLES ]]; do
 		CURRENT=$((CURRENT + 1))
@@ -633,12 +640,11 @@ cmd_thermal() {
 		if [[ $THERMAL_SHOW_LIVE -eq 1 ]]; then
 			TEMP_COLOR=$(colorize_temp "$TEMP")
 			POWER_COLOR=$(colorize_power "$PKG_WATT")
-			printf "%-8s %-10s %-20s %-8s %-8s %-10s %-10s %-18s\n" \
-				"$CURRENT" "$TIME_STR" "$TEMP_COLOR" "${PL1}W" "${PL2}W" "${FAN}rpm" "${AVG_MHZ}MHz" "$POWER_COLOR"
+			printf "%-8s %-10s %-10s %-8s %-8s %-10s %-12s\n" \
+				"$CURRENT" "$TIME_STR" "$TEMP_COLOR" "${PL1}W" "${PL2}W" "${FAN}rpm" "$POWER_COLOR"
 		fi
 
-		SLEEP_TIME=$((THERMAL_INTERVAL - 1))
-		[[ $SLEEP_TIME -gt 0 ]] && sleep "$SLEEP_TIME"
+		sleep "$THERMAL_INTERVAL"
 	done
 
 	if [[ $THERMAL_SHOW_LIVE -eq 1 ]]; then
@@ -646,15 +652,16 @@ cmd_thermal() {
 		echo -e "${CYN}=== Monitoring Complete ===${RST}"
 		echo ""
 
-		read -r MIN_TEMP AVG_TEMP MAX_TEMP AVG_PL2 AVG_FAN AVG_PWR MIN_PWR MAX_PWR <<<$(awk -F, 'NR>1 {
-			if (NR==2 || $2<mint) mint=$2;
-			if (NR==2 || $2>maxt) maxt=$2;
-			if (NR==2 || $7<minp) minp=$7;
-			if (NR==2 || $7>maxp) maxp=$7;
-			sumt+=$2; pl2+=$4; fan+=$5; pwr+=$7; count++
-		} END {
-			printf "%.0f %.1f %.0f %.1f %.0f %.2f %.2f %.2f", mint, sumt/count, maxt, pl2/count, fan/count, pwr/count, minp, maxp
-		}' "$THERMAL_OUTPUT")
+		read -r MIN_TEMP AVG_TEMP MAX_TEMP AVG_PL2 AVG_FAN AVG_PWR MIN_PWR MAX_PWR <<<"$(awk -F, 'NR>1 {
+      if (NR==2 || $2<mint) mint=$2;
+      if (NR==2 || $2>maxt) maxt=$2;
+      if (NR==2 || $7<minp) minp=$7;
+      if (NR==2 || $7>maxp) maxp=$7;
+      sumt+=$2; pl2+=$4; fan+=$5; pwr+=$7; count++
+    } END {
+      if (count==0) {print 0,0,0,0,0,0,0,0; exit}
+      printf "%.0f %.1f %.0f %.1f %.0f %.2f %.2f %.2f", mint, sumt/count, maxt, pl2/count, fan/count, pwr/count, minp, maxp
+    }' "$THERMAL_OUTPUT")"
 
 		echo "Temperature:"
 		echo "  Min:     ${MIN_TEMP}°C"
@@ -676,7 +683,7 @@ cmd_thermal() {
 	if [[ $THERMAL_PLOT -eq 1 ]]; then
 		if ! have gnuplot; then
 			echo -e "${YLW}Warning: gnuplot not found. Skipping plot.${RST}"
-			echo "Install: sudo apt install gnuplot"
+			echo "Use: nix-shell -p gnuplot (veya flake'e ekle)"
 		else
 			PLOT_FILE="${THERMAL_OUTPUT%.csv}.png"
 
@@ -699,11 +706,12 @@ set style line 3 lc rgb '#ff7f0e' lt 1 lw 2
 set style line 4 lc rgb '#2ca02c' lt 1 lw 1.5
 set style line 5 lc rgb '#9467bd' lt 1 lw 2
 
-plot '${THERMAL_OUTPUT}' using (\$1-$(head -2 "$THERMAL_OUTPUT" | tail -1 | cut -d, -f1)):(column(2)) with lines ls 1 title "Temp (°C)" axes x1y1, \\
-     '' using (\$1-$(head -2 "$THERMAL_OUTPUT" | tail -1 | cut -d, -f1)):(column(4)) with lines ls 2 title "PL2 (W)" axes x1y2, \\
-     '' using (\$1-$(head -2 "$THERMAL_OUTPUT" | tail -1 | cut -d, -f1)):(column(3)) with lines ls 3 title "PL1 (W)" axes x1y2, \\
-     '' using (\$1-$(head -2 "$THERMAL_OUTPUT" | tail -1 | cut -d, -f1)):(column(7)) with lines ls 5 title "Pkg Power (W)" axes x1y2, \\
-     '' using (\$1-$(head -2 "$THERMAL_OUTPUT" | tail -1 | cut -d, -f1)):(column(5)/10) with lines ls 4 title "Fan (RPM/10)" axes x1y2
+first_ts = 0
+plot '${THERMAL_OUTPUT}' using ( (first_ts==0 ? (first_ts=\$1,\$1) : (\$1-first_ts)) ):(column(2)) with lines ls 1 title "Temp (°C)" axes x1y1, \
+     '' using ( (first_ts==0 ? (first_ts=\$1,\$1) : (\$1-first_ts)) ):(column(4)) with lines ls 2 title "PL2 (W)" axes x1y2, \
+     '' using ( (first_ts==0 ? (first_ts=\$1,\$1) : (\$1-first_ts)) ):(column(3)) with lines ls 3 title "PL1 (W)" axes x1y2, \
+     '' using ( (first_ts==0 ? (first_ts=\$1,\$1) : (\$1-first_ts)) ):(column(7)) with lines ls 5 title "Pkg Power (W)" axes x1y2, \
+     '' using ( (first_ts==0 ? (first_ts=\$1,\$1) : (\$1-first_ts)) ):(column(5)/10) with lines ls 4 title "Fan (RPM/10)" axes x1y2
 EOF
 
 			[[ $THERMAL_SHOW_LIVE -eq 1 ]] && echo -e "${GRN}Plot saved to: ${PLOT_FILE}${RST}"
@@ -743,7 +751,7 @@ EOF
 
 	if ! have turbostat; then
 		echo "${RED}⚠ turbostat not found.${RST}"
-		echo "Install: Ensure linuxPackages_latest.turbostat is in your NixOS config"
+		echo "In NixOS: add linuxPackages_latest.turbostat to systemPackages"
 		exit 1
 	fi
 
@@ -796,6 +804,7 @@ EOF
 			return 1
 			;;
 		esac
+		shift
 	done
 
 	if ! have turbostat || ! have stress-ng; then
@@ -827,12 +836,12 @@ EOF
 		echo ""
 		echo "=== ANALYSIS ==="
 		awk '/^[^C]/ && NF>5 && $2 ~ /^[0-9]+$/ {
-			if (max_freq < $5) max_freq = $5;
-			if (max_watts < $11) max_watts = $11;
-		} END {
-			printf "Peak Bzy_MHz: %.0f MHz\n", max_freq;
-			printf "Peak PkgWatt: %.2f W\n", max_watts;
-		}' "$LOGFILE"
+      if (max_freq < $5) max_freq = $5;
+      if (max_watts < $11) max_watts = $11;
+    } END {
+      printf "Peak Bzy_MHz: %.0f MHz\n", max_freq;
+      printf "Peak PkgWatt: %.2f W\n", max_watts;
+    }' "$LOGFILE"
 	fi
 
 	rm -f "$LOGFILE"
@@ -882,6 +891,7 @@ EOF
 			return 1
 			;;
 		esac
+		shift
 	done
 
 	if ! have turbostat; then
@@ -904,19 +914,19 @@ EOF
 	echo ""
 	echo "=== SUMMARY ==="
 	awk '/^[^C]/ && NF>5 && $2 ~ /^[0-9]+$/ {
-		freq[NR] = $5; watt[NR] = $11; n++;
-	} END {
-		if (n == 0) exit;
-		for (i=1; i<=n; i++) {
-			sum_f += freq[i]; sum_w += watt[i];
-			if (freq[i] > max_f) max_f = freq[i];
-			if (freq[i] < min_f || min_f == 0) min_f = freq[i];
-			if (watt[i] > max_w) max_w = watt[i];
-			if (watt[i] < min_w || min_w == 0) min_w = watt[i];
-		}
-		printf "Bzy_MHz: Min=%.0f Avg=%.0f Max=%.0f\n", min_f, sum_f/n, max_f;
-		printf "PkgWatt: Min=%.2f Avg=%.2f Max=%.2f\n", min_w, sum_w/n, max_w;
-	}' "$LOGFILE"
+    freq[NR] = $5; watt[NR] = $11; n++;
+  } END {
+    if (n == 0) exit;
+    for (i=1; i<=n; i++) {
+      sum_f += freq[i]; sum_w += watt[i];
+      if (freq[i] > max_f) max_f = freq[i];
+      if (freq[i] < min_f || min_f == 0) min_f = freq[i];
+      if (watt[i] > max_w) max_w = watt[i];
+      if (watt[i] < min_w || min_w == 0) min_w = watt[i];
+    }
+    printf "Bzy_MHz: Min=%.0f Avg=%.0f Max=%.0f\n", min_f, sum_f/n, max_f;
+    printf "PkgWatt: Min=%.2f Avg=%.2f Max=%.2f\n", min_w, sum_w/n, max_w;
+  }' "$LOGFILE"
 
 	rm -f "$LOGFILE"
 }
@@ -938,11 +948,6 @@ ${BOLD}Features:${RST}
   • Shows current power draw in Watts
   • Displays active RAPL limits (PL1/PL2)
   • Power source detection (AC/Battery)
-
-${BOLD}Output:${RST}
-  • Instantaneous package power (W)
-  • Status assessment (Idle/Normal/High/Very High)
-  • Active RAPL power limits
 
 EOF
 		return 0
@@ -1074,7 +1079,7 @@ EOF
 
 		echo "------------------------------------------------------------"
 		echo "CPU FREQUENCY (scaling_cur_freq):"
-		FREQS=($(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null))
+		FREQS=($(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null || echo ""))
 		if [[ ${#FREQS[@]} -gt 0 ]]; then
 			SUM=$(
 				IFS=+
@@ -1099,13 +1104,13 @@ EOF
 cmd_profile_refresh() {
 	if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
 		cat <<EOF
-${BOLD}Profile Refresh${RST} - Restart power management services
+${BOLD}Profile Refresh${RST} - Restart v17 power management services
 
 ${BOLD}Usage:${RST} sudo ${SCRIPT_NAME} profile-refresh
 
-Restart all custom power management services.
+Restart all custom power management services (v17 stack).
 Useful for testing configuration changes or recovering
-from a failed state without needing a full reboot.
+from a failed state without a full reboot.
 
 ${BOLD}Services restarted:${RST}
   • platform-profile
@@ -1122,7 +1127,7 @@ EOF
 		return 0
 	fi
 
-	echo "=== RESTARTING POWER PROFILE SERVICES ==="
+	echo "=== RESTARTING POWER PROFILE SERVICES (v17) ==="
 	echo ""
 	if [[ $EUID -ne 0 ]]; then
 		echo "${RED}⚠ This command requires root privileges. Please run with sudo.${RST}"
@@ -1149,9 +1154,9 @@ EOF
 	done
 
 	echo ""
-	echo "${GRN}✓ All power-related services have been refreshed.${RST}"
+	echo "${GRN}✓ All v17 power-related services have been refreshed.${RST}"
 	echo "-------------------------------------------------"
-	cmd_status
+	cmd_status --brief
 }
 
 # ==============================================================================
@@ -1196,9 +1201,7 @@ main() {
 		shift
 		cmd_profile_refresh "$@"
 		;;
-	help | -h | --help)
-		show_help
-		;;
+	help | -h | --help) show_help ;;
 	*)
 		echo "${RED}Error: Unknown command '$1'${RST}" >&2
 		echo "" >&2
