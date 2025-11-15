@@ -77,6 +77,8 @@ WLGAMMA_GAMMA=1.0
 CHECK_INTERVAL=3600
 CLEANUP_ON_EXIT=false
 
+export PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:/run/wrappers/bin:${PATH:-}"
+
 # Loglama fonksiyonu
 log() {
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >>"$LOG_FILE"
@@ -232,8 +234,8 @@ update_waybar() {
 
 # Mevcut saati al
 get_current_hour() {
-	# Başındaki sıfırları kaldır (09 -> 9)
-	local hour=$(date +%H)
+	local hour
+	hour="$(date +%H 2>/dev/null || echo 00)"
 	echo $((10#$hour))
 }
 
