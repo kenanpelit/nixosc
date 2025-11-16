@@ -1,3 +1,4 @@
+# modules/home/ai/claude-cli.nix
 { lib, stdenv, makeWrapper, nodejs }:
 
 stdenv.mkDerivation rec {

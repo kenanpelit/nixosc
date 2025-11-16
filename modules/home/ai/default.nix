@@ -1,17 +1,23 @@
 # modules/home/ai/default.nix
 { config, lib, pkgs, ... }:
-
 with lib;
-
 let
   cfg = config.modules.home.ai;
 in
 {
   options.modules.home.ai = {
-    enable = mkEnableOption "AI tools and interfaces";
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable AI tools and interfaces";
+    };
     
     claude-cli = {
-      enable = mkEnableOption "Claude CLI (Claude Code)";
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable Claude CLI (Claude Code)";
+      };
       package = mkOption {
         type = types.package;
         default = pkgs.callPackage ./claude-cli.nix { };
@@ -28,22 +34,27 @@ in
       };
     };
   };
-
+  
   config = mkIf cfg.enable {
     home.packages = with pkgs; 
       (optional cfg.claude-cli.enable cfg.claude-cli.package) ++
       (optional cfg.ollama.enable ollama);
-
-    programs.zsh.shellAliases = mkIf (cfg.claude-cli.enable && config.programs.zsh.enable) {
-      claude = "claude";
-      cc = "claude";
+    
+    # Shell configuration for claude command
+    programs.zsh = mkIf (cfg.claude-cli.enable && config.programs.zsh.enable) {
+      shellAliases = {
+        claude = "${cfg.claude-cli.package}/bin/claude";
+        ai = "${cfg.claude-cli.package}/bin/claude";
+      };
     };
-
-    programs.bash.shellAliases = mkIf (cfg.claude-cli.enable && config.programs.bash.enable) {
-      claude = "claude";
-      cc = "claude";
+    
+    programs.bash = mkIf (cfg.claude-cli.enable && config.programs.bash.enable) {
+      shellAliases = {
+        claude = "${cfg.claude-cli.package}/bin/claude";
+        ai = "${cfg.claude-cli.package}/bin/claude";
+      };
     };
-
+    
     systemd.user.services.ollama = mkIf cfg.ollama.enable {
       Unit = {
         Description = "Ollama AI models service";
@@ -64,11 +75,11 @@ in
         WantedBy = [ "default.target" ];
       };
     };
-
+    
     home.sessionVariables = mkIf cfg.ollama.enable {
       OLLAMA_HOST = "127.0.0.1:11434";
     };
-
+    
     xdg.desktopEntries = mkIf cfg.claude-cli.enable {
       claude-cli = {
         name = "Claude Code";
@@ -81,3 +92,4 @@ in
     };
   };
 }
+
