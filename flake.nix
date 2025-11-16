@@ -1,122 +1,110 @@
 # ==============================================================================
-# NixOS System Configuration Flake
+#  NixOS Configuration Flake Suite - nixosc v4.2.0
 # ==============================================================================
 #
-# Project: NixOS Configuration Suite (nixosc)
-# Version: 4.2.0
-# Date:    2025-11-15
-# Author:  Kenan Pelit
-# Repo:    https://github.com/kenanpelit/nixosc
-# License: MIT
+#  Author:  Kenan Pelit
+#  Repo:    https://github.com/kenanpelit/nixosc
+#  License: MIT
+#  Date:    2025-11-15
 #
-# Overview:
-#   - Full-stack NixOS configuration (system + home-manager)
-#   - Modular, host-aware, theme-enabled, and battery-included
-#   - Single source of truth for overlays & nixpkgs configuration
-#   - Reproducible builds with pinned dependencies via flake.lock
-#   - Dual home-manager modes: NixOS module + standalone
+# ------------------------------------------------------------------------------
+#  ARCHITECTURE OVERVIEW
+# ------------------------------------------------------------------------------
 #
-# Architecture & Design Principles:
-#   
-#   1. Unified Overlay Management:
-#      One overlay list (overlaysCommon) is consistently injected into:
-#      • Top-level pkgs (import nixpkgs …)
-#      • nixosSystem via a tiny module (nixpkgs.overlays = overlaysCommon)
-#      • pkgsFor (packages/devShells multi-system world)
-#      → This eliminates the "works here, breaks there" class of overlay bugs
+#  INPUTS (External Dependencies)
+#      │
+#      ├─ nixpkgs ─────────┐
+#      ├─ home-manager ────┤
+#      ├─ hyprland ────────┤
+#      └─ themes & tools ──┘
+#              │
+#              ▼
+#  UNIFIED OVERLAY LAYER
+#      • overlaysCommon       → Applied everywhere
+#      • nixpkgsConfigCommon  → Central config
+#              │
+#      ┌───────┴────────┐
+#      │                │
+#      ▼                ▼
+#  NIXOS SYSTEMS    HOME-MANAGER
+#    • hay            • kenan@hay
+#    • vhay           • kenan@vhay
 #
-#   2. Dual Home-Manager Configuration:
-#      • NixOS Module Mode: Integrated with system, atomic updates
-#        Usage: sudo nixos-rebuild switch --flake .#hay
-#      • Standalone Mode: Independent user environment management
-#        Usage: home-manager switch --flake .#kenan@hay
-#      Both modes share the same ./modules/home configuration
+#  Integrated Mode   Standalone Mode
+#  nixos-rebuild     home-manager
 #
-#   3. Central Configuration:
-#      Single nixpkgs config (allowUnfree + permittedInsecurePackages)
-#      → Declared once, reused everywhere to avoid divergence
-#      → Ensures consistent behavior across all contexts
+# ------------------------------------------------------------------------------
+#  KEY FEATURES
+# ------------------------------------------------------------------------------
 #
-# Important Notes:
-#   - External flakes often build with their own nixpkgs; your overlays may not
-#     affect them. If a package fails inside a foreign flake, pin or patch that
-#     flake instead of trying to overlay it here.
-#   - Use `nix flake update` to update all inputs, or `nix flake lock --update-input <n>`
-#     to update specific inputs.
-#   - stateVersion "25.11" tracks nixos-unstable compatibility
+#  ✓ Unified Overlay Management    Single source of truth
+#  ✓ Dual Home-Manager Modes        NixOS module + standalone
+#  ✓ Central Configuration          No divergence
+#  ✓ Modular Architecture           Host-aware, theme-enabled
+#  ✓ Reproducible Builds            Pinned dependencies
 #
 # ==============================================================================
 
 {
-  description = "Kenan's NixOS Configuration";
+  description = "Kenan's NixOS Configuration - Full-stack system and home management";
 
   # ============================================================================
-  # INPUTS - External Dependencies
+  #  INPUTS - External Dependencies
   # ============================================================================
-  # All dependencies are pinned through flake.lock for reproducibility.
-  # We use `follows = "nixpkgs"` where practical to ensure ABI alignment
-  # and reduce closure size.
-  
+
   inputs = {
+    
     # --------------------------------------------------------------------------
-    # Core Dependencies
+    #  CORE SYSTEM COMPONENTS
     # --------------------------------------------------------------------------
     
-    # Primary package collection (nixos-unstable for fresh software)
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs = { 
+      url = "github:NixOS/nixpkgs/nixos-unstable"; 
+    };
 
-    # User environment management with declarative configuration
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # --------------------------------------------------------------------------
-    # Package Repositories & Extensions
+    #  PACKAGE REPOSITORIES & EXTENSIONS
     # --------------------------------------------------------------------------
     
-    # Nix User Repository - Community-maintained packages
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Secret management with SOPS (encrypted secrets in git)
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # --------------------------------------------------------------------------
-    # Theming & Aesthetics
+    #  THEMING & AESTHETICS
     # --------------------------------------------------------------------------
     
-    # Catppuccin theme framework for consistent theming
     catppuccin = {
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # GRUB bootloader themes for visual customization
     distro-grub-themes = {
       url = "github:AdisonCavani/distro-grub-themes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # --------------------------------------------------------------------------
-    # Hyprland Ecosystem (Wayland Compositor)
+    #  HYPRLAND ECOSYSTEM
     # --------------------------------------------------------------------------
     
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/d52639fdfaedd520515a8f46e00d9b8881d40819"; # 1116 - Updated Commits
-#      url = "github:hyprwm/hyprland/43527d363472b52f17dd9f9f4f87ec25cbf8a399"; # 1114 - Updated Commits
-#      url = "github:hyprwm/hyprland/64ee8f8a72d62069a6bef45ca05bef1d0d412e1f"; # 1113 - Updated Commits
-#      url = "github:hyprwm/hyprland/0b1d690676589503f0addece30e936a240733699"; # 1110 - Updated Commits
-#      url = "github:hyprwm/hyprland/522edc87126a48f3ce4891747b6a92a22385b1e7"; # 1108 - Updated Commits
-#      url = "github:hyprwm/hyprland/f56ec180d3a03a5aa978391249ff8f40f949fb73"; # 1107 - Updated Commits
+      url = "github:hyprwm/hyprland/d52639fdfaedd520515a8f46e00d9b8881d40819";
     };
     
+    # Hyprland dependencies
     hyprlang            = { url = "github:hyprwm/hyprlang";                      inputs.nixpkgs.follows = "nixpkgs"; };
     hyprutils           = { url = "github:hyprwm/hyprutils";                     inputs.nixpkgs.follows = "nixpkgs"; };
     hyprland-protocols  = { url = "github:hyprwm/hyprland-protocols";            inputs.nixpkgs.follows = "nixpkgs"; };
@@ -136,7 +124,7 @@
     };
 
     # --------------------------------------------------------------------------
-    # Development Tools & Build Systems
+    #  DEVELOPMENT TOOLS
     # --------------------------------------------------------------------------
     
     poetry2nix = {
@@ -153,22 +141,20 @@
       flake = false;
     };
 
-    # --------------------------------------------------------------------------
-    # Applications & Integrations
-    # --------------------------------------------------------------------------
-    
     alejandra = { 
       url = "github:kamadorueda/alejandra"; 
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
+
+    # --------------------------------------------------------------------------
+    #  APPLICATIONS & INTEGRATIONS
+    # --------------------------------------------------------------------------
     
-    # Walker - Wayland application launcher
     walker = {
       url = "github:abenz1267/walker/v2.8.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # Elephant - Backend provider for Walker (with all providers)
     elephant = {
       url = "github:abenz1267/elephant/v2.13.2";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -198,23 +184,23 @@
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
 
+    nix-search-tv = {
+      url = "github:3timeslazy/nix-search-tv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --------------------------------------------------------------------------
-    # Data Sources (Non-flake inputs)
+    #  DATA SOURCES (Non-flake)
     # --------------------------------------------------------------------------
     
     yazi-plugins = {
       url = "github:yazi-rs/plugins";
       flake = false;
     };
-
-    nix-search-tv = {
-      url = "github:3timeslazy/nix-search-tv";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   # ============================================================================
-  # OUTPUTS - System Configurations & Packages
+  #  OUTPUTS - System Configurations & Packages
   # ============================================================================
   
   outputs = { 
@@ -227,19 +213,13 @@
     systems, 
     pyprland,
     hyprland, 
-    hyprlang, 
-    hyprutils, 
-    hyprland-protocols, 
-    xdph, 
-    hyprcursor,
-    walker,
-    elephant,
     ... 
   }@inputs:
     let
-      # ==========================================================================
-      # Configuration Constants
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  CONFIGURATION CONSTANTS
+      # ------------------------------------------------------------------------
+      
       username = "kenan";
       system   = "x86_64-linux";
       
@@ -267,9 +247,10 @@
 
       lib = nixpkgs.lib;
 
-      # ==========================================================================
-      # System Builder Function
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  SYSTEM BUILDER FUNCTION
+      # ------------------------------------------------------------------------
+      
       mkSystem = { system, host, modules }:
         lib.nixosSystem {
           modules = [
@@ -303,9 +284,7 @@
             }
 
             # Empty system packages (managed elsewhere)
-            {
-              environment.systemPackages = [];
-            }
+            { environment.systemPackages = []; }
 
             # Ensure insecure packages are allowed
             {
@@ -317,23 +296,17 @@
           specialArgs = { inherit self inputs username host system; };
         };
 
-      # ==========================================================================
-      # Home-Manager Configuration Builder
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  HOME-MANAGER CONFIGURATION BUILDER
+      # ------------------------------------------------------------------------
+      
       mkHomeConfiguration = { host }:
         home-manager.lib.homeManagerConfiguration {
           pkgs = pkgs;
-          extraSpecialArgs = { 
-            inherit inputs username host; 
-          };
+          extraSpecialArgs = { inherit inputs username host; };
           modules = [
-            # Catppuccin theming
             inputs.catppuccin.homeModules.catppuccin
-            
-            # Main home configuration
             ./modules/home
-            
-            # Required home-manager settings for standalone mode
             {
               home = {
                 username = username;
@@ -344,11 +317,11 @@
           ];
         };
 
-      # ==========================================================================
-      # Poetry2nix Setup
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  POETRY2NIX SETUP
+      # ------------------------------------------------------------------------
+      
       inherit (inputs.poetry2nix.lib) mkPoetry2Nix;
-
       eachSystem = lib.genAttrs (import systems);
 
       # Per-system package sets with overlays
@@ -361,9 +334,10 @@
       );
     in
     {
-      # ==========================================================================
-      # NixOS System Configurations
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  NIXOS SYSTEM CONFIGURATIONS
+      # ------------------------------------------------------------------------
+      
       nixosConfigurations = {
         hay = mkSystem { 
           inherit system; 
@@ -378,19 +352,21 @@
         };
       };
 
-      # ==========================================================================
-      # Home-Manager Standalone Configurations
-      # ==========================================================================
-      # These allow using `home-manager switch --flake .#kenan@HOST`
-      # Provides user-level package management without sudo
+      # ------------------------------------------------------------------------
+      #  HOME-MANAGER STANDALONE CONFIGURATIONS
+      #
+      #  Usage: home-manager switch --flake .#kenan@HOST
+      # ------------------------------------------------------------------------
+      
       homeConfigurations = {
         "kenan@hay" = mkHomeConfiguration { host = "hay"; };
         "kenan@vhay" = mkHomeConfiguration { host = "vhay"; };
       };
 
-      # ==========================================================================
-      # Exported Packages
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  EXPORTED PACKAGES
+      # ------------------------------------------------------------------------
+      
       packages = eachSystem (sys:
         let 
           inherit (mkPoetry2Nix { pkgs = pkgsFor.${sys}; }) mkPoetryApplication;
@@ -402,9 +378,10 @@
         }
       );
 
-      # ==========================================================================
-      # Development Shells
-      # ==========================================================================
+      # ------------------------------------------------------------------------
+      #  DEVELOPMENT SHELLS
+      # ------------------------------------------------------------------------
+      
       devShells = eachSystem (sys:
         let 
           inherit (mkPoetry2Nix { pkgs = pkgsFor.${sys}; }) mkPoetryEnv;
@@ -420,8 +397,9 @@
     };
 
   # ============================================================================
-  # Binary Cache Configuration
+  #  BINARY CACHE CONFIGURATION
   # ============================================================================
+  
   nixConfig = {
     extra-substituters = [
       "https://hyprland-community.cachix.org"
@@ -434,4 +412,3 @@
     ];
   };
 }
-
