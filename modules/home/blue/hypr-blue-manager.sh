@@ -61,15 +61,15 @@ BRIGHTNESS_NIGHT=0.8
 
 # HyprSunset sıcaklık ayarları
 TEMP_DAY=4000   # Gündüz sıcaklığı
-TEMP_NIGHT=3000 # Gece sıcaklığı
+TEMP_NIGHT=3500 # Gece sıcaklığı
 
 # Gammastep sıcaklık ayarları
 GAMMASTEP_TEMP_DAY=4000
-GAMMASTEP_TEMP_NIGHT=3000
+GAMMASTEP_TEMP_NIGHT=3500
 
 # wl-gammarelay sıcaklık ayarları
 WLGAMMA_TEMP_DAY=4000
-WLGAMMA_TEMP_NIGHT=3000
+WLGAMMA_TEMP_NIGHT=3500
 WLGAMMA_BRIGHTNESS=1.0
 WLGAMMA_GAMMA=1.0
 
