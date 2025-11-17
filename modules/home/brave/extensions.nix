@@ -1,74 +1,181 @@
 # modules/home/brave/extensions.nix
 # ==============================================================================
-# Brave Browser Extensions Configuration
+# Brave Browser Extensions Configuration - Fixed Version
 # ==============================================================================
-# This configuration manages Brave browser extensions through NixOS
-# Extensions are automatically installed and managed declaratively
-# Now includes Catppuccin theme integration and conditional crypto wallets
+# Bu konfigürasyon extensions'ları Chrome Web Store'dan otomatik yükler
+# 
+# NASIL ÇALIŞIR:
+# - ExtensionInstallForcelist kullanarak extensions otomatik yüklenir
+# - Kullanıcı extensions'ları disable edebilir ama silemez
+# - Her başlatmada kontrol edilir ve eksikse yüklenir
+#
+# ÖNEMLİ:
+# - Extension ID'ler Chrome Web Store'dan alınır
+# - Update URL otomatik eklenir
+# - Sync yapılmaz, local installation
 #
 # Author: Kenan Pelit
 # ==============================================================================
 { inputs, pkgs, config, lib, ... }:
-{
-  config = lib.mkIf config.my.browser.brave.enable {
-    programs.chromium = {
-      extensions = [
-        # ======================================================================
-        # Translation Tools
-        # ======================================================================
-        { id = "aapbdbdomjkkjkaonfhkkikfgjllcleb"; } # Google Translate
-        { id = "cofdbpoegempjloogbagkncekinflcnj"; } # DeepL: translate and write with AI
-        { id = "ibplnjkanclpjokhdolnendpplpjiace"; } # Simple Translate
 
-        # ======================================================================
-        # Security & Privacy
-        # ======================================================================
-        { id = "ddkjiahejlhfcafbddmgiahcphecmpfh"; } # uBlock Origin Lite
-        { id = "pkehgijcmpdhfbdbbnkijodmdjhbjlgp"; } # Privacy Badger
+let
+  # Chrome Web Store update URL
+  chromeWebStoreUrl = "https://clients2.google.com/service/update2/crx";
+  
+  # Extension listesi (ID ve açıklama ile)
+  coreExtensions = [
+    # Translation
+    { id = "aapbdbdomjkkjkaonfhkkikfgjllcleb"; name = "Google Translate"; }
+    { id = "cofdbpoegempjloogbagkncekinflcnj"; name = "DeepL"; }
+    { id = "ibplnjkanclpjokhdolnendpplpjiace"; name = "Simple Translate"; }
+    
+    # Security & Privacy
+    { id = "ddkjiahejlhfcafbddmgiahcphecmpfh"; name = "uBlock Origin Lite"; }
+    { id = "pkehgijcmpdhfbdbbnkijodmdjhbjlgp"; name = "Privacy Badger"; }
+    
+    # Navigation & Productivity
+    { id = "gfbliohnnapiefjpjlpjnehglfpaknnc"; name = "Surfingkeys"; }
+    { id = "eekailopagacbcdloonjhbiecobagjci"; name = "Go Back With Backspace"; }
+    { id = "inglelmldhjcljkomheneakjkpadclhf"; name = "Keep Awake"; }
+    { id = "kdejdkdjdoabfihpcjmgjebcpfbhepmh"; name = "Copy Link Address"; }
+    { id = "kgfcmiijchdkbknmjnojfngnapkibkdh"; name = "Picture-in-Picture"; }
+    { id = "mbcjcnomlakhkechnbhmfjhnnllpbmlh"; name = "Tab Pinner"; }
+    
+    # Media
+    { id = "lmjnegcaeklhafolokijcfjliaokphfk"; name = "Video DownloadHelper"; }
+    { id = "ponfpcnoihfmfllpaingbgckeeldkhle"; name = "Enhancer for YouTube"; }
+    
+    # System Integration
+    { id = "gphhapmejobijbbhgpjhcjognlahblep"; name = "GNOME Shell Integration"; }
+    
+    # Other
+    { id = "njbclohenpagagafbmdipcdoogfpnfhp"; name = "Ethereum Gas Prices"; }
+  ];
 
-        # ======================================================================
-        # Navigation & Productivity
-        # ======================================================================
-        { id = "gfbliohnnapiefjpjlpjnehglfpaknnc"; } # Surfingkeys
-        { id = "eekailopagacbcdloonjhbiecobagjci"; } # Go Back With Backspace
-        { id = "inglelmldhjcljkomheneakjkpadclhf"; } # Keep Awake
-        { id = "kdejdkdjdoabfihpcjmgjebcpfbhepmh"; } # Copy Link Address
-        { id = "kgfcmiijchdkbknmjnojfngnapkibkdh"; } # Picture-in-Picture Viewer
-        { id = "mbcjcnomlakhkechnbhmfjhnnllpbmlh"; } # Tab Pinner (Keyboard Shortcuts)
-        #{ id = "llimhhconnjiflfimocjggfjdlmlhblm"; } # Reader Mode
+  # Crypto extensions (optional)
+  cryptoExtensions = [
+    { id = "acmacodkjbdgmoleebolmdjonilkdbch"; name = "Rabby Wallet"; }
+    { id = "anokgmphncpekkhclmingpimjmcooifb"; name = "Compass Wallet"; }
+    { id = "bfnaelmomeimhlpmgjnjophhpkkoljpa"; name = "Phantom"; }
+    { id = "bhhhlbepdkbapadjdnnojkbgioiodbic"; name = "Solflare"; }
+    { id = "dlcobpjiigpikoobohmabehhmhfoodbb"; name = "Ready Wallet"; }
+    { id = "dmkamcknogkgcdfhhbddcghachkejeap"; name = "Keplr"; }
+    { id = "enabgbdfcbaehmbigakijjabdpdnimlg"; name = "Manta Wallet"; }
+    { id = "nebnhfamliijlghikdgcigoebonmoibm"; name = "Leo Wallet"; }
+    { id = "ojggmchlghnjlapmfbnjholfjkiidbch"; name = "Venom Wallet"; }
+    { id = "ppbibelpcjmhbdihakflkdcoccbgbkpo"; name = "UniSat Wallet"; }
+  ];
 
-        # ======================================================================
-        # Media
-        # ======================================================================
-        { id = "lmjnegcaeklhafolokijcfjliaokphfk"; } # Video DownloadHelper
-        { id = "ponfpcnoihfmfllpaingbgckeeldkhle"; } # Enhancer for YouTube™
+  # Tüm extensions'ları birleştir
+  allExtensions = coreExtensions ++ 
+    (if config.my.browser.brave.enableCrypto then cryptoExtensions else []);
 
-        # ======================================================================
-        # System Integration
-        # ======================================================================
-        { id = "gphhapmejobijbbhgpjhcjognlahblep"; } # GNOME Shell integration
+  # Extension install string oluştur (ID;update_url formatında)
+  extensionInstallList = map (ext: "${ext.id};${chromeWebStoreUrl}") allExtensions;
 
-        # ======================================================================
-        # Other
-        # ======================================================================
-        { id = "njbclohenpagagafbmdipcdoogfpnfhp"; } # Ethereum Gas Prices
-      ]
-      # ========================================================================
-      # Conditional Crypto Wallet Extensions
-      # ========================================================================
-      # Only loaded when enableCrypto option is true
-      ++ lib.optionals config.my.browser.brave.enableCrypto [
-        { id = "acmacodkjbdgmoleebolmdjonilkdbch"; } # Rabby Wallet
-        { id = "anokgmphncpekkhclmingpimjmcooifb"; } # Compass Wallet for Sei
-        { id = "bfnaelmomeimhlpmgjnjophhpkkoljpa"; } # Phantom
-        { id = "bhhhlbepdkbapadjdnnojkbgioiodbic"; } # Solflare Wallet
-        { id = "dlcobpjiigpikoobohmabehhmhfoodbb"; } # Ready Wallet (Formerly Argent)
-        { id = "dmkamcknogkgcdfhhbddcghachkejeap"; } # Keplr
-        { id = "enabgbdfcbaehmbigakijjabdpdnimlg"; } # Manta Wallet
-        { id = "nebnhfamliijlghikdgcigoebonmoibm"; } # Leo Wallet
-        { id = "ojggmchlghnjlapmfbnjholfjkiidbch"; } # Venom Wallet
-        { id = "ppbibelpcjmhbdihakflkdcoccbgbkpo"; } # UniSat Wallet
-      ];
+  # Extension settings JSON
+  extensionSettings = lib.listToAttrs (map (ext: {
+    name = ext.id;
+    value = {
+      installation_mode = "force_installed";
+      update_url = chromeWebStoreUrl;
     };
+  }) allExtensions);
+
+in {
+  config = lib.mkIf (config.my.browser.brave.enable && config.my.browser.brave.manageExtensions) {
+    
+    # ========================================================================
+    # Brave Managed Policies - Extensions
+    # ========================================================================
+    # Brave için tek çalışan yöntem: Managed policies JSON dosyası
+    
+    home.file.".config/BraveSoftware/Brave-Browser/managed_preferences.json" = {
+      text = builtins.toJSON {
+        ExtensionInstallForcelist = extensionInstallList;
+      };
+    };
+    
+    # Alternative: User policies (daha esnek)
+    home.file.".config/BraveSoftware/Brave-Browser/Preferences.json" = {
+      text = builtins.toJSON {
+        extensions = {
+          settings = extensionSettings;
+        };
+      };
+    };
+    
+    # ========================================================================
+    # Extension Installation Script (Manuel trigger için)
+    # ========================================================================
+    
+    home.file.".local/bin/brave-install-extensions" = {
+      text = ''
+        #!/usr/bin/env bash
+        # Brave Extensions Force Installer
+        
+        PROFILE_DIR="$HOME/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}"
+        PREFS_FILE="$PROFILE_DIR/Preferences"
+        
+        echo "==> Force installing Brave Extensions..."
+        echo "Profile: ${config.my.browser.brave.profile}"
+        echo ""
+        
+        # Brave'i kapat
+        if pgrep -x brave > /dev/null; then
+          echo "⚠ Brave is running. Closing it..."
+          pkill brave
+          sleep 2
+        fi
+        
+        # Profile directory oluştur
+        mkdir -p "$PROFILE_DIR"
+        
+        # Preferences dosyasını güncelle
+        if [ -f "$PREFS_FILE" ]; then
+          echo "Backing up existing Preferences..."
+          cp "$PREFS_FILE" "$PREFS_FILE.backup"
+          
+          # Extensions section'ı ekle/güncelle
+          ${pkgs.jq}/bin/jq '.extensions.settings = ${builtins.toJSON extensionSettings}' "$PREFS_FILE" > "$PREFS_FILE.tmp"
+          mv "$PREFS_FILE.tmp" "$PREFS_FILE"
+          echo "✓ Updated Preferences with extensions"
+        else
+          echo "Creating new Preferences with extensions..."
+          cat > "$PREFS_FILE" << 'EOF'
+${builtins.toJSON {
+  extensions = {
+    settings = extensionSettings;
+  };
+}}
+EOF
+          echo "✓ Created Preferences"
+        fi
+        
+        echo ""
+        echo "Extensions to be installed:"
+        ${lib.concatMapStringsSep "\n" (ext: ''echo "  • ${ext.name} (${ext.id})"'') allExtensions}
+        echo ""
+        echo "✓ Configuration updated"
+        echo ""
+        echo "Next steps:"
+        echo "1. Start Brave: brave"
+        echo "2. Check: brave://extensions/"
+        echo "3. Extensions should auto-install from Chrome Web Store"
+      '';
+      executable = true;
+    };
+
+    # ========================================================================
+    # Shell Aliases
+    # ========================================================================
+    
+    home.shellAliases = {
+      # Extension yönetimi
+      brave-extensions = "brave-install-extensions";
+      brave-ext-list = "ls -la ~/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Extensions/";
+      brave-ext-clean = "rm -rf ~/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Extensions/";
+    };
+
   };
 }
