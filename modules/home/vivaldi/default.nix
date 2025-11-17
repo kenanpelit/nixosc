@@ -193,7 +193,7 @@ in {
     home.sessionVariables =
       {
         # Do NOT export BROWSER here (Brave wins)
-        LIBVA_DRIVER_NAME = lib.mkIf config.my.browser.vivaldi.enableHardwareAcceleration "iHD";
+        LIBVA_DRIVER_NAME = lib.mkIf config.my.browser.vivaldi.enableHardwareAcceleration (lib.mkDefault "iHD");
       }
       // lib.optionalAttrs isWayland {
         NIXOS_OZONE_WL = "1";
