@@ -1,38 +1,36 @@
 # modules/home/brave/extensions.nix
 # ==============================================================================
-# Brave Browser Extensions Configuration - Fixed Version
+# Brave Browser Extensions Configuration
 # ==============================================================================
-# Bu konfigürasyon extensions'ları Chrome Web Store'dan otomatik yükler
-# 
-# NASIL ÇALIŞIR:
-# - ExtensionInstallForcelist kullanarak extensions otomatik yüklenir
-# - Kullanıcı extensions'ları disable edebilir ama silemez
-# - Her başlatmada kontrol edilir ve eksikse yüklenir
+# How this works (NixOS + Home Manager context):
 #
-# ÖNEMLİ:
-# - Extension ID'ler Chrome Web Store'dan alınır
-# - Update URL otomatik eklenir
-# - Sync yapılmaz, local installation
+# - We use a per-profile managed_preferences.json under $HOME to suggest/force
+#   installation of extensions from Chrome Web Store.
+# - Additionally, we provide a manual helper script (brave-install-extensions)
+#   that patches the real Preferences file using jq.
+# - Home Manager itself does NOT continuously overwrite Preferences; it only
+#   writes managed_preferences.json and the helper script.
 #
 # Author: Kenan Pelit
 # ==============================================================================
+
 { inputs, pkgs, config, lib, ... }:
 
 let
   # Chrome Web Store update URL
   chromeWebStoreUrl = "https://clients2.google.com/service/update2/crx";
-  
-  # Extension listesi (ID ve açıklama ile)
+
+  # Core extensions (ID + name)
   coreExtensions = [
     # Translation
     { id = "aapbdbdomjkkjkaonfhkkikfgjllcleb"; name = "Google Translate"; }
-    { id = "cofdbpoegempjloogbagkncekinflcnj"; name = "DeepL"; }
+    { id = "cofdbpoegempjloogbagkncekinflcnj"; name = "DeepL Translator"; }
     { id = "ibplnjkanclpjokhdolnendpplpjiace"; name = "Simple Translate"; }
-    
+
     # Security & Privacy
     { id = "ddkjiahejlhfcafbddmgiahcphecmpfh"; name = "uBlock Origin Lite"; }
     { id = "pkehgijcmpdhfbdbbnkijodmdjhbjlgp"; name = "Privacy Badger"; }
-    
+
     # Navigation & Productivity
     { id = "gfbliohnnapiefjpjlpjnehglfpaknnc"; name = "Surfingkeys"; }
     { id = "eekailopagacbcdloonjhbiecobagjci"; name = "Go Back With Backspace"; }
@@ -40,15 +38,15 @@ let
     { id = "kdejdkdjdoabfihpcjmgjebcpfbhepmh"; name = "Copy Link Address"; }
     { id = "kgfcmiijchdkbknmjnojfngnapkibkdh"; name = "Picture-in-Picture"; }
     { id = "mbcjcnomlakhkechnbhmfjhnnllpbmlh"; name = "Tab Pinner"; }
-    
+
     # Media
     { id = "lmjnegcaeklhafolokijcfjliaokphfk"; name = "Video DownloadHelper"; }
     { id = "ponfpcnoihfmfllpaingbgckeeldkhle"; name = "Enhancer for YouTube"; }
-    
+
     # System Integration
     { id = "gphhapmejobijbbhgpjhcjognlahblep"; name = "GNOME Shell Integration"; }
-    
-    # Other
+
+    # Example: Ethereum tools etc.
     { id = "njbclohenpagagafbmdipcdoogfpnfhp"; name = "Ethereum Gas Prices"; }
   ];
 
@@ -66,116 +64,125 @@ let
     { id = "ppbibelpcjmhbdihakflkdcoccbgbkpo"; name = "UniSat Wallet"; }
   ];
 
-  # Tüm extensions'ları birleştir
-  allExtensions = coreExtensions ++ 
-    (if config.my.browser.brave.enableCrypto then cryptoExtensions else []);
+  # Merge all extensions depending on crypto toggle
+  allExtensions =
+    coreExtensions
+    ++ (if config.my.browser.brave.enableCrypto then cryptoExtensions else []);
 
-  # Extension install string oluştur (ID;update_url formatında)
+  # Format for ExtensionInstallForcelist: "id;update_url"
   extensionInstallList = map (ext: "${ext.id};${chromeWebStoreUrl}") allExtensions;
 
-  # Extension settings JSON
+  # Extension settings map for policies and Preferences patching
   extensionSettings = lib.listToAttrs (map (ext: {
     name = ext.id;
     value = {
       installation_mode = "force_installed";
-      update_url = chromeWebStoreUrl;
+      update_url        = chromeWebStoreUrl;
     };
   }) allExtensions);
 
-in {
+  # Profile-relative path (same logic as in default.nix)
+  braveConfigDir = ".config/BraveSoftware/Brave-Browser";
+  profilePath    = "${braveConfigDir}/${config.my.browser.brave.profile}";
+
+in
+{
   config = lib.mkIf (config.my.browser.brave.enable && config.my.browser.brave.manageExtensions) {
-    
-    # ========================================================================
-    # Brave Managed Policies - Extensions
-    # ========================================================================
-    # Brave için tek çalışan yöntem: Managed policies JSON dosyası
-    
-    home.file.".config/BraveSoftware/Brave-Browser/managed_preferences.json" = {
+
+    # -------------------------------------------------------------------------
+    # Brave managed preferences (per-profile, under $HOME)
+    # -------------------------------------------------------------------------
+    # NOTE:
+    # - This is NOT /etc-based policy like on non-Nix Linux distributions.
+    # - On NixOS + Home Manager we place managed_preferences.json inside the
+    #   profile directory under $HOME and let Brave pick it up from there.
+
+    home.file."${profilePath}/managed_preferences.json" = {
       text = builtins.toJSON {
         ExtensionInstallForcelist = extensionInstallList;
+        ExtensionSettings         = extensionSettings;
       };
     };
-    
-    # Alternative: User policies (daha esnek)
-    home.file.".config/BraveSoftware/Brave-Browser/Preferences.json" = {
-      text = builtins.toJSON {
-        extensions = {
-          settings = extensionSettings;
-        };
-      };
-    };
-    
-    # ========================================================================
-    # Extension Installation Script (Manuel trigger için)
-    # ========================================================================
-    
+
+    # -------------------------------------------------------------------------
+    # Manual extension installation script
+    # -------------------------------------------------------------------------
+    # This script:
+    # - Kills Brave if it is running
+    # - Ensures the profile directory exists
+    # - Uses jq to inject `.extensions.settings` into Preferences
+    # - Creates a minimal Preferences file if it does not exist
+    #
+    # Home Manager does NOT touch Preferences directly; only this script does,
+    # and only when you manually run it.
+
     home.file.".local/bin/brave-install-extensions" = {
+      executable = true;
       text = ''
         #!/usr/bin/env bash
-        # Brave Extensions Force Installer
-        
-        PROFILE_DIR="$HOME/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}"
+        # Brave Extensions Force Installer (NixOS / Home Manager)
+
+        PROFILE_DIR="$HOME/${profilePath}"
         PREFS_FILE="$PROFILE_DIR/Preferences"
-        
-        echo "==> Force installing Brave Extensions..."
-        echo "Profile: ${config.my.browser.brave.profile}"
-        echo ""
-        
-        # Brave'i kapat
-        if pgrep -x brave > /dev/null; then
+
+        echo "==> Force installing Brave extensions"
+        echo "Profile directory: $PROFILE_DIR"
+        echo
+
+        # Stop Brave if running
+        if pgrep -x brave >/dev/null 2>&1; then
           echo "⚠ Brave is running. Closing it..."
-          pkill brave
+          pkill brave || true
           sleep 2
         fi
-        
-        # Profile directory oluştur
+
+        # Ensure profile directory exists
         mkdir -p "$PROFILE_DIR"
-        
-        # Preferences dosyasını güncelle
+
+        # If Preferences exists, patch it via jq; otherwise create minimal JSON
         if [ -f "$PREFS_FILE" ]; then
           echo "Backing up existing Preferences..."
-          cp "$PREFS_FILE" "$PREFS_FILE.backup"
-          
-          # Extensions section'ı ekle/güncelle
-          ${pkgs.jq}/bin/jq '.extensions.settings = ${builtins.toJSON extensionSettings}' "$PREFS_FILE" > "$PREFS_FILE.tmp"
+          cp "$PREFS_FILE" "$PREFS_FILE.backup.$(date +%Y%m%d_%H%M%S)"
+
+          echo "Injecting extension settings into Preferences..."
+          ${pkgs.jq}/bin/jq \
+            --argjson ext '${builtins.toJSON extensionSettings}' \
+            '.extensions.settings = $ext' \
+            "$PREFS_FILE" > "$PREFS_FILE.tmp"
+
           mv "$PREFS_FILE.tmp" "$PREFS_FILE"
-          echo "✓ Updated Preferences with extensions"
+          echo "✓ Preferences updated"
         else
-          echo "Creating new Preferences with extensions..."
-          cat > "$PREFS_FILE" << 'EOF'
+          echo "Creating new Preferences file with extension settings..."
+          cat > "$PREFS_FILE" << 'EOFPREFS'
 ${builtins.toJSON {
   extensions = {
     settings = extensionSettings;
   };
 }}
-EOF
-          echo "✓ Created Preferences"
+EOFPREFS
+          echo "✓ Preferences created"
         fi
-        
-        echo ""
-        echo "Extensions to be installed:"
+
+        echo
+        echo "Extensions configured (policy + Preferences):"
         ${lib.concatMapStringsSep "\n" (ext: ''echo "  • ${ext.name} (${ext.id})"'') allExtensions}
-        echo ""
-        echo "✓ Configuration updated"
-        echo ""
+        echo
         echo "Next steps:"
-        echo "1. Start Brave: brave"
-        echo "2. Check: brave://extensions/"
-        echo "3. Extensions should auto-install from Chrome Web Store"
+        echo "  1. Start Brave (brave or brave-launcher)"
+        echo "  2. Visit brave://extensions/"
+        echo "  3. Verify that extensions are installed and enabled"
       '';
-      executable = true;
     };
 
-    # ========================================================================
-    # Shell Aliases
-    # ========================================================================
-    
+    # -------------------------------------------------------------------------
+    # Shell aliases for extensions
+    # -------------------------------------------------------------------------
+
     home.shellAliases = {
-      # Extension yönetimi
-      brave-extensions = "brave-install-extensions";
-      brave-ext-list = "ls -la ~/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Extensions/";
-      brave-ext-clean = "rm -rf ~/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Extensions/";
+      brave-extensions  = "brave-install-extensions";
+      brave-ext-list    = "ls -la ~/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Extensions/ 2>/dev/null || echo 'No Extensions directory found'";
+      brave-ext-clean   = "rm -rf ~/.config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Extensions/";
     };
-
   };
 }
