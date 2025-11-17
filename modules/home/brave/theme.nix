@@ -14,22 +14,22 @@ let
   # Merkezi catppuccin konfigürasyonundan ayarları al
   flavor = config.catppuccin.flavor or "mocha";
   accent = config.catppuccin.accent or "mauve";
-  
+
   # Catppuccin Chrome Theme extension IDs (flavor'a göre)
   catppuccinThemeIds = {
     mocha = "bkkmolkhemgaeaeggcmfbghljjjoofoh";        # Catppuccin Mocha
-    macchiato = "cmpdlhmnmjhihmcfnigoememnffkimlk";    # Catppuccin Macchiato  
+    macchiato = "cmpdlhmnmjhihmcfnigoememnffkimlk";    # Catppuccin Macchiato
     frappe = "olhelnoplefjdmncknfphenjclimckaf";        # Catppuccin Frappe
     latte = "jhjnalhegpceacdhbplhnakmkdliaddd";         # Catppuccin Latte
   };
-  
+
   # Seçilen flavor için theme ID
   themeId = catppuccinThemeIds.${flavor};
-  
+
   # Custom CSS for websites (Catppuccin colors)
   catppuccinColors = {
     mocha = {
-      base = "#1e1e2e"; text = "#cdd6f4"; 
+      base = "#1e1e2e"; text = "#cdd6f4";
       blue = "#89b4fa"; mauve = "#cba6f7";
       red = "#f38ba8"; green = "#a6e3a1";
       yellow = "#f9e2af"; peach = "#fab387";
@@ -53,9 +53,9 @@ let
       yellow = "#df8e1d"; peach = "#fe640b";
     };
   };
-  
+
   colors = catppuccinColors.${flavor};
-  
+
   # Custom CSS for injection
   customCSS = ''
     /* Catppuccin ${flavor} Custom Styles */
@@ -64,7 +64,7 @@ let
       --catppuccin-text: ${colors.text};
       --catppuccin-accent: ${colors.${accent}};
     }
-    
+
     /* Dark websites theme override */
     @media (prefers-color-scheme: dark) {
       html, body {
@@ -82,30 +82,26 @@ in
     programs.chromium.extensions = [
       # Catppuccin theme (dinamik olarak seçilen flavor)
       { id = themeId; }
-      
+
       # Dark Reader (websites için)
       { id = "eimadpbcbfnmbkopoojfekhnkhdbieeh"; }
-      
+
       # Stylus (custom CSS injection için)
       { id = "clngdbkpkpeebahjckkjfobafhncgmne"; }
     ];
-    
+
     # ==========================================================================
     # Custom Stylus CSS
     # ==========================================================================
     home.file.".config/BraveSoftware/Brave-Browser/User Data/Stylus/catppuccin-${flavor}.css".text = customCSS;
-    
+
     # ==========================================================================
-    # Brave Flags for better theming
+    # Theme-specific Session Variables
     # ==========================================================================
     home.sessionVariables = {
       # Enable dark mode detection
       BRAVE_ENABLE_DARK_MODE = "1";
-      # Better font rendering
-      BRAVE_DISABLE_FONT_SUBPIXEL_POSITIONING = "1";
     };
-    
 
   };
 }
-
