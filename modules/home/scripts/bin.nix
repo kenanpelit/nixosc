@@ -84,6 +84,9 @@ let
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
   );
+  hyprpaper-manager = pkgs.writeShellScriptBin "hyprpaper-manager" (
+    builtins.readFile ./bin/hyprpaper-manager.sh
+  );
   hypr-start-batteryd = pkgs.writeShellScriptBin "hypr-start-batteryd" (
     builtins.readFile ./bin/hypr-start-batteryd.sh
   );
@@ -360,9 +363,6 @@ let
   walk = pkgs.writeShellScriptBin "walk" (
     builtins.readFile ./bin/walk.sh
   );
-  wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
-    builtins.readFile ./bin/wallpaper-manager.sh
-  );
   waybar-status = pkgs.writeShellScriptBin "waybar-status" (
     builtins.readFile ./bin/waybar-status.sh
   );
@@ -414,6 +414,7 @@ in {
     hyprland_tty
     hypr-layout_toggle
     hypr-mpv-manager
+    hyprpaper-manager
     hypr-start-batteryd
     hypr-switch
     hypr-vlc_toggle
@@ -506,7 +507,6 @@ in {
     vpn-waybar
     vv
     walk
-    wallpaper-manager
     waybar-status
     workspace-switcher
     wrename

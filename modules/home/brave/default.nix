@@ -295,73 +295,75 @@ in {
     # ========================================================================
     # Applied via Brave's Preferences file (not managed policies)
     # This is the correct approach for NixOS home-manager configuration
+    home.file.".config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Preferences" = {
+      text = builtins.toJSON {
+        # ======================================================================
+        # WebRTC Privacy Settings
+        # ======================================================================
+        webrtc = {
+          ip_handling_policy = "disable_non_proxied_udp";  # Prevent WebRTC IP leaks
+          multiple_routes_enabled = false;                 # Disable multiple routes
+          nonproxied_udp_enabled = false;                  # Force proxied connections
+        };
 
-    home.file.".config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}/Preferences".text = builtins.toJSON {
-      # ======================================================================
-      # WebRTC Privacy Settings
-      # ======================================================================
-      webrtc = {
-        ip_handling_policy = "disable_non_proxied_udp";  # Prevent WebRTC IP leaks
-        multiple_routes_enabled = false;                 # Disable multiple routes
-        nonproxied_udp_enabled = false;                  # Force proxied connections
-      };
+        # ======================================================================
+        # Cookie Management
+        # ======================================================================
+        profile = {
+          block_third_party_cookies = true;           # Block 3rd party cookies
+          cookie_controls_mode = 1;                   # Block third-party cookies
+          default_content_setting_values = {
+            cookies = 1;                              # Allow 1st party cookies only
+          };
+        };
 
-      # ======================================================================
-      # Cookie Management
-      # ======================================================================
-      profile = {
-        block_third_party_cookies = true;           # Block 3rd party cookies
-        cookie_controls_mode = 1;                   # Block third-party cookies
-        default_content_setting_values = {
-          cookies = 1;                              # Allow 1st party cookies only
+        # ======================================================================
+        # Privacy Enhancements
+        # ======================================================================
+        spellcheck = {
+          enabled = false;                            # Disable spellcheck (no data sent to Google)
+        };
+        search = {
+          suggest_enabled = false;                    # Disable search suggestions
+        };
+        credentials_enable_service = false;           # Disable built-in password manager
+        password_manager_enabled = false;             # Disable password manager
+
+        # ======================================================================
+        # Network Privacy
+        # ======================================================================
+        dns_over_https = {
+          mode = "secure";                            # Force DNS-over-HTTPS
+          templates = "https://cloudflare-dns.com/dns-query"; # Use Cloudflare DoH
+        };
+
+        # ======================================================================
+        # Security Settings
+        # ======================================================================
+        ssl = {
+          error_override_allowed = false;             # Don't allow bypassing SSL errors
+        };
+        safebrowsing = {
+          enabled = true;
+          enhanced = true;                            # Enhanced protection mode
+        };
+
+        # ======================================================================
+        # Performance Optimizations
+        # ======================================================================
+        hardware_acceleration_mode = {
+          enabled = config.my.browser.brave.enableHardwareAcceleration;
+        };
+
+        # ======================================================================
+        # Download Settings
+        # ======================================================================
+        download = {
+          prompt_for_download = true;                 # Always ask where to save files
+          directory_upgrade = true;                   # Use system download directory
         };
       };
-
-      # ======================================================================
-      # Privacy Enhancements
-      # ======================================================================
-      spellcheck = {
-        enabled = false;                            # Disable spellcheck (no data sent to Google)
-      };
-      search = {
-        suggest_enabled = false;                    # Disable search suggestions
-      };
-      credentials_enable_service = false;           # Disable built-in password manager
-      password_manager_enabled = false;             # Disable password manager
-
-      # ======================================================================
-      # Network Privacy
-      # ======================================================================
-      dns_over_https = {
-        mode = "secure";                            # Force DNS-over-HTTPS
-        templates = "https://cloudflare-dns.com/dns-query"; # Use Cloudflare DoH
-      };
-
-      # ======================================================================
-      # Security Settings
-      # ======================================================================
-      ssl = {
-        error_override_allowed = false;             # Don't allow bypassing SSL errors
-      };
-      safebrowsing = {
-        enabled = true;
-        enhanced = true;                            # Enhanced protection mode
-      };
-
-      # ======================================================================
-      # Performance Optimizations
-      # ======================================================================
-      hardware_acceleration_mode = {
-        enabled = config.my.browser.brave.enableHardwareAcceleration;
-      };
-
-      # ======================================================================
-      # Download Settings
-      # ======================================================================
-      download = {
-        prompt_for_download = true;                 # Always ask where to save files
-        directory_upgrade = true;                   # Use system download directory
-      };
+      force = true;
     };
 
     # ========================================================================

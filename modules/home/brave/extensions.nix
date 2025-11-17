@@ -35,7 +35,7 @@
         { id = "kdejdkdjdoabfihpcjmgjebcpfbhepmh"; } # Copy Link Address
         { id = "kgfcmiijchdkbknmjnojfngnapkibkdh"; } # Picture-in-Picture Viewer
         { id = "mbcjcnomlakhkechnbhmfjhnnllpbmlh"; } # Tab Pinner (Keyboard Shortcuts)
-        { id = "llimhhconnjiflfimocjggfjdlmlhblm"; } # Reader Mode
+        #{ id = "llimhhconnjiflfimocjggfjdlmlhblm"; } # Reader Mode
 
         # ======================================================================
         # Media
