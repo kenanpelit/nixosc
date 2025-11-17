@@ -18,7 +18,7 @@ let
 
   # Conservative timeouts: avoid "timed out" blanks on slow/remote FS
   commandTimeout = if fastMode then 150 else 300;  # ms
-  scanTimeout    = if fastMode then 5  else 15;   # ms
+  scanTimeout    = if fastMode then 20  else 60;   # ms
 
   # Feature toggles
   enableGitState       = !fastMode;   # rebase/merge state is expensive
