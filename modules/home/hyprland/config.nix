@@ -61,11 +61,8 @@ let
         # Set system cursor theme and size - Dynamic Catppuccin theme
         "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors 24"
         
-        # Wallpaper daemon for dynamic wallpaper management
-        "swww-daemon"
-        
         # Custom wallpaper manager service
-        "wallpaper-manager start"
+        "hyprpaper-manager start"
         
         # Initialize workspace layout configuration
         "hypr-switch"
@@ -826,8 +823,8 @@ let
         "ALT, 6, exec, hypr-mpv-manager wallpaper"  # Set as wallpaper
 
         # === Wallpaper Management ===
-        "$mainMod, W, exec, wallpaper-manager select"  # Select wallpaper
-        "ALT, 0, exec, wallpaper-manager now"  # Current wallpaper info
+        "$mainMod, W, exec, hyprpaper-manager select"  # Select wallpaper
+        "ALT, 0, exec, hyprpaper-manager now"  # Current wallpaper info
         "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'"  # Waypaper GUI
 
         # === System Tools ===
