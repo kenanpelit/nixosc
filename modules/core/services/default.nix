@@ -1,278 +1,319 @@
-# modules/core/sops/default.nix
+# modules/core/services/default.nix
 # ==============================================================================
-# SOPS Secrets Management Configuration
+# System Services & Virtualization Configuration
 # ==============================================================================
 #
-# Module:      modules/core/sops
-# Purpose:     System-level encrypted secrets management with SOPS and age
+# Module:      modules/core/services
+# Purpose:     Unified system services, virtualization, gaming, and containerization
 # Author:      Kenan Pelit
-# Created:     2025-09-03
-# Modified:    2025-11-15
+# Created:     2025-09-04
+# Modified:    2025-11-17
 #
 # Architecture:
-#   Age Encryption → SOPS Management → NixOS Integration → Service Injection
+#   Base Services → Desktop Integration → Gaming Stack → Containers → VMs
 #
-# Secret Lifecycle:
-#   1. Generation    - age-keygen creates encryption key
-#   2. Encryption    - sops encrypts secrets with age public key
-#   3. Storage       - Encrypted YAML stored in git (safe to commit)
-#   4. Activation    - Decrypted during nixos-rebuild to tmpfs
-#   5. Consumption   - Services read decrypted secrets from /run/secrets/
-#
-# Security Model:
-#   • Encryption at Rest - Secrets encrypted in git repository
-#   • Decryption on Boot - Transparent decryption during activation
-#   • Memory-only Store - Decrypted secrets live in tmpfs (RAM)
-#   • Access Control - File permissions limit secret access
-#   • No GPG Complexity - Age is simpler, faster, more secure
+# Service Categories:
+#   1. Base Services       - GVFS, TRIM, D-Bus
+#   2. Desktop Integration - Bluetooth, thumbnailer, Flatpak
+#   3. Gaming Stack        - Steam, Gamescope, Proton-GE
+#   4. Containers          - Podman + registries
+#   5. Virtualization      - Libvirt/QEMU, SPICE, VFIO plumbing
 #
 # Design Principles:
-#   • Fail Gracefully - Allow builds without secrets (initial setup)
-#   • Single Source - One encrypted file per secret category
-#   • Least Privilege - Minimal permissions, per-service access
-#   • Git-friendly - Encrypted files safe to version control
-#
-# Module Boundaries:
-#   ✓ System-level secrets           (THIS MODULE)
-#   ✓ Age key management             (THIS MODULE)
-#   ✓ NetworkManager passwords       (THIS MODULE)
-#   ✗ User-level secrets             (home-manager sops module)
-#   ✗ Application config             (service modules)
-#   ✗ SSH keys                       (accounts module)
+#   • Only "host-level" services live here (no user apps)
+#   • Security by default, performance where it matters (games / VMs / containers)
+#   • Keep responsibilities separated: firewall/security live in security module
 #
 # ==============================================================================
 
-{ config, lib, pkgs, inputs, username, ... }:
+{ lib, pkgs, inputs, username, system, ... }:
 
-let
-  inherit (lib) mkIf;
-  
-  # ----------------------------------------------------------------------------
-  # Path Configuration (Single Source of Truth)
-  # ----------------------------------------------------------------------------
-  
-  homeDir = "/home/${username}";
-  
-  # SOPS configuration paths
-  sopsDir        = "${homeDir}/.nixosc/secrets";
-  sopsAgeKeyFile = "${homeDir}/.config/sops/age/keys.txt";
-  
-  # Secret files (one file per category for better organization)
-  wirelessSecretsFile = "${sopsDir}/wireless-secrets.enc.yaml";
-  
-  # ----------------------------------------------------------------------------
-  # Helper Functions
-  # ----------------------------------------------------------------------------
-  
-  # Check if encrypted secrets file exists (prevents build failures)
-  secretsFileExists = builtins.pathExists wirelessSecretsFile;
-  
-in
 {
   # ============================================================================
   # Module Imports
   # ============================================================================
-  # Import sops-nix for NixOS integration
-  imports = [ inputs.sops-nix.nixosModules.sops ];
+  # Declarative Flatpak management (remotes, apps, overrides)
+  imports = [
+    inputs.nix-flatpak.nixosModules.nix-flatpak
+  ];
 
   # ============================================================================
-  # SOPS Configuration (Layer 1: Encryption Backend)
+  # Base System Services (Layer 1: Core Functionality)
   # ============================================================================
-  
-  sops = {
-    # Default encrypted file
-    defaultSopsFile = wirelessSecretsFile;
-    
-    age = {
-      keyFile     = sopsAgeKeyFile;
-      sshKeyPaths = [ ];
+  services = {
+    # --------------------------------------------------------------------------
+    # File System & Storage
+    # --------------------------------------------------------------------------
+    # GVFS: virtual filesystems (MTP, SMB, archive mounts, Google Drive, etc.)
+    gvfs.enable = true;
+
+    # SSD TRIM: keep SSD performance consistent over time
+    fstrim.enable = true;
+
+    # --------------------------------------------------------------------------
+    # Desktop Integration
+    # --------------------------------------------------------------------------
+    dbus = {
+      enable = true;
+
+      # Register GNOME crypto/key services on the system bus.
+      # Not full keyring integration – PAM side is controlled in security module.
+      packages = with pkgs; [
+        gcr
+        gnome-keyring
+      ];
     };
-    
-    # Build-time validation disabled to allow initial setup
-    validateSopsFiles = false;
 
-    # GPG disabled – using age only
-    gnupg.sshKeyPaths = [ ];
+    # Blueman: system tray Bluetooth manager (BlueZ backend)
+    blueman.enable = true;
 
-    # ==========================================================================
-    # Secret Definitions (Layer 2: Access Control)
-    # ==========================================================================
-    secrets = mkIf secretsFileExists {
-      # ---- Ken_5 WiFi Network (5GHz) ----
-      "wireless_ken_5_password" = {
-        sopsFile = wirelessSecretsFile;
-        key      = "ken_5_password";
-        owner    = "root";
-        group    = "networkmanager";
-        mode     = "0640";
-        restartUnits = [ "NetworkManager.service" ];
+    # Touchegg: multi-touch gestures (disabled by default; opt-in per host)
+    touchegg.enable = false;
+
+    # Thumbnails for file managers (images, videos, PDFs, etc.)
+    tumbler.enable = true;
+
+    # --------------------------------------------------------------------------
+    # Hardware & Firmware
+    # --------------------------------------------------------------------------
+    # fwupd: LVFS firmware updates (UEFI, SSD, peripherals)
+    fwupd.enable = true;
+
+    # SPICE guest agent – only useful *inside* VMs; keep defaulted off here.
+    spice-vdagentd.enable = lib.mkDefault false;
+
+    # --------------------------------------------------------------------------
+    # Printing (off by default)
+    # --------------------------------------------------------------------------
+    printing.enable = false;
+
+    avahi = {
+      enable   = false;
+      nssmdns4 = false;
+    };
+
+    # --------------------------------------------------------------------------
+    # Accessibility Services (DISABLED)
+    # --------------------------------------------------------------------------
+    # Speech-dispatcher: System-wide TTS/screen reader service
+    # Disabled to prevent auto-reading in browsers and applications
+    # Affects: Orca screen reader, browser TTS, system announcements
+    speechd.enable = lib.mkForce false;
+
+    # --------------------------------------------------------------------------
+    # Flatpak (via nix-flatpak)
+    # --------------------------------------------------------------------------
+    flatpak = {
+      enable = true;
+
+      remotes = [
+        {
+          name     = "flathub";
+          location = "https://dl.flathub.org/repo/flathub.flatpakrepo";
+        }
+      ];
+
+      # System-wide Flatpaks (user apps → home-manager tarafı)
+      packages = [
+        "com.github.tchx84.Flatseal"   # Permissions editor (fiilen zorunlu)
+        "io.github.everestapi.Olympus" # Celeste mod manager
+      ];
+
+      # Global sandbox defaults – Wayland first, X11 fallback.
+      overrides.global = {
+        Context = {
+          sockets = [ "wayland" ];
+
+          # X11 tamamen kapatılsın istenirse:
+          # "!sockets" = [ "x11" "fallback-x11" ];
+        };
       };
-      
-      # ---- Ken_2_4 WiFi Network (2.4GHz) ----
-      "wireless_ken_2_4_password" = {
-        sopsFile = wirelessSecretsFile;
-        key      = "ken_2_4_password";
-        owner    = "root";
-        group    = "networkmanager";
-        mode     = "0640";
-        restartUnits = [ "NetworkManager.service" ];
-      };
+    };
+  };
 
-      # Diğer secret örnekleri comment’te kalıyor
+  # nix-flatpak managed install service – rebuild sırasında gereksiz I/O'yu kes.
+  systemd.services.flatpak-managed-install.enable = false;
+
+  # ============================================================================
+  # Systemd Service Hardening (Layer 1.5: Prevent unwanted activation)
+  # ============================================================================
+  # Ensure speech-dispatcher cannot be socket-activated or started by D-Bus
+  systemd.user.services.speech-dispatcher = {
+    enable = false;
+    unitConfig = {
+      ConditionPathExists = "!/dev/null";  # Never start
+    };
+  };
+
+  systemd.user.sockets.speech-dispatcher = {
+    enable = false;
+    unitConfig = {
+      ConditionPathExists = "!/dev/null";  # Never start socket
     };
   };
 
   # ============================================================================
-  # Directory Structure & Permissions (Layer 3: Filesystem Setup)
+  # Environment Variables (Layer 1.6: Disable accessibility stack)
   # ============================================================================
-  
-  systemd.tmpfiles.rules = [
-    "d ${homeDir}/.nixosc           0755 ${username} users -"
-    "d ${sopsDir}                  0750 ${username} users -"
-    "d ${homeDir}/.config          0755 ${username} users -"
-    "d ${homeDir}/.config/sops     0750 ${username} users -"
-    "d ${homeDir}/.config/sops/age 0700 ${username} users -"
-  ];
+  # Disable GTK/GNOME accessibility bridge to prevent TTS activation
+  environment.sessionVariables = {
+    GTK_A11Y = "none";        # Disable GTK accessibility
+    NO_AT_BRIDGE = "1";       # Disable AT-SPI bridge
+  };
 
   # ============================================================================
-  # System Packages (Layer 4: Management Tools)
+  # Core Programs (Layer 2: Desktop / Gaming / Foreign binaries)
   # ============================================================================
-  
+  programs = {
+    # --------------------------------------------------------------------------
+    # Gaming Stack: Steam + Gamescope
+    # --------------------------------------------------------------------------
+    steam = {
+      enable = true;
+
+      # Steam Remote Play portları (UDP 27031–27036, TCP 27036–27037)
+      remotePlay.openFirewall      = true;
+      dedicatedServer.openFirewall = false;
+
+      # Gamescope session (login manager'dan seçilebilen "Gamescope Session")
+      gamescopeSession.enable = true;
+
+      # Proton-GE: oyun uyumluluğu için community Proton
+      extraCompatPackages = [ pkgs.proton-ge-bin ];
+    };
+
+    gamescope = {
+      enable    = true;
+      capSysNice = true;  # RT scheduling için gerekli capability
+
+      args = [
+        "--rt"                # RT scheduler
+        "--expose-wayland"    # Wayland soketini expose et
+        "--adaptive-sync"     # VRR/FreeSync/G-Sync
+        "--immediate-flips"   # Minimum latency
+        "--force-grab-cursor" # FPS oyunlarda imleci zorla kilitle
+      ];
+    };
+
+    # --------------------------------------------------------------------------
+    # Desktop Core
+    # --------------------------------------------------------------------------
+    dconf.enable = true;  # GNOME / GTK ayar veritabanı
+
+    # Sadece shell'i sistem çapında açar; config'ler home-manager'da.
+    zsh.enable = true;
+
+    # --------------------------------------------------------------------------
+    # Foreign Binary Support (nix-ld)
+    # --------------------------------------------------------------------------
+    nix-ld = {
+      enable = true;
+
+      # Eksik kütüphaneler çıktıkça doldurulacak "parking lot".
+      libraries = with pkgs; [
+        # stdenv.cc.cc.lib
+        # zlib
+        # xorg.libX11
+        # mesa
+        # vulkan-loader
+      ];
+    };
+  };
+
+  # ============================================================================
+  # Host-level Packages (Layer 3: VM / SPICE clients)
+  # ============================================================================
   environment.systemPackages = with pkgs; [
-    age
-    sops
-    # jq
-    # yq-go
+    spice-gtk
+    spice-protocol
+    virt-viewer
+    # virt-manager  # Core packages modülünde duruyor; burada tekrar eklemeye gerek yok.
   ];
 
   # ============================================================================
-  # System Service - SOPS Activation Helper (Layer 5: System Integration)
+  # Virtualisation (Layer 4: Containers & VMs)
   # ============================================================================
-  # ÖNEMLİ: sops-nix kendi `sops-nix.service` unit’ini getiriyor.
-  # Burada isim çakışmaması için `sops-bootstrap` kullanıyoruz.
+  virtualisation = {
+    # --------------------------------------------------------------------------
+    # Podman (rootless Docker alternatifi)
+    # --------------------------------------------------------------------------
+    podman = {
+      enable = true;
 
-  systemd.services.sops-bootstrap = {
-    description = "SOPS secrets activation (system-level diagnostics)";
-    wantedBy    = [ "multi-user.target" ];
-    after       = [ "local-fs.target" ];
-    
-    serviceConfig = {
-      Type            = "oneshot";
-      RemainAfterExit = true;
-      User            = "root";
-      Group           = "root";
-      PrivateTmp      = true;
-      ProtectSystem   = "strict";
-      ProtectHome     = false;
-      NoNewPrivileges = true;
-      ReadWritePaths  = [ homeDir ];
+      # Docker soketi uyumluluğu – tooling tarafında "docker" takıntısını kırmak için.
+      dockerCompat = true;
+
+      # Rootless network DNS
+      defaultNetwork.settings.dns_enabled = true;
+
+      # Haftalık auto-prune – disk şişmesine izin verme.
+      autoPrune = {
+        enable = true;
+        flags  = [ "--all" ];
+        dates  = "weekly";
+      };
+
+      extraPackages = with pkgs; [
+        runc
+        conmon
+        skopeo
+        slirp4netns
+      ];
     };
-    
-    script = ''
-      set -euo pipefail
-      
-      # Age key directory
-      mkdir -p ${homeDir}/.config/sops/age
-      chown ${username}:users ${homeDir}/.config/sops/age
-      chmod 700 ${homeDir}/.config/sops/age
-      
-      # Age key validation
-      if [ ! -f "${sopsAgeKeyFile}" ]; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "[SOPS] ⚠️  Age key not found!"
-        echo "[SOPS] 📍 Expected location: ${sopsAgeKeyFile}"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "🔧 Setup Instructions:"
-        echo "   1. Generate age key:"
-        echo "      age-keygen -o ${sopsAgeKeyFile}"
-        echo ""
-        echo "   2. Extract public key:"
-        echo "      grep 'public key:' ${sopsAgeKeyFile}"
-        echo ""
-        echo "   3. Add public key to .sops.yaml:"
-        echo "      keys:"
-        echo "        - &user_key age1..."
-        echo "      creation_rules:"
-        echo "        - path_regex: .*"
-        echo "          key_groups:"
-        echo "            - age:"
-        echo "              - *user_key"
-        echo ""
-        echo "   4. Create first secret file:"
-        echo "      sops ${wirelessSecretsFile}"
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      else
-        echo "[SOPS] ✅ Age key found - system-level SOPS ready"
-        
-        if grep -q "^AGE-SECRET-KEY-" "${sopsAgeKeyFile}"; then
-          echo "[SOPS] ✅ Age key format valid"
-        else
-          echo "[SOPS] ⚠️  Age key format invalid (should start with AGE-SECRET-KEY-)"
-        fi
-        
-        KEY_PERMS=$(stat -c %a "${sopsAgeKeyFile}")
-        if [ "$KEY_PERMS" = "600" ]; then
-          echo "[SOPS] ✅ Age key permissions correct (600)"
-        else
-          echo "[SOPS] ⚠️  Age key permissions: $KEY_PERMS (should be 600)"
-          echo "[SOPS] 🔧 Fix: chmod 600 ${sopsAgeKeyFile}"
-        fi
-      fi
-      
-      # Secrets file validation
-      if [ -f "${wirelessSecretsFile}" ]; then
-        echo "[SOPS] ✅ Wireless secrets file found"
-        
-        if grep -q "ENC\[" "${wirelessSecretsFile}"; then
-          echo "[SOPS] ✅ Secrets file encrypted"
-        else
-          echo "[SOPS] ⚠️  Secrets file not encrypted (plain text?)"
-        fi
-      else
-        echo "[SOPS] ℹ️  No secrets file yet (${wirelessSecretsFile})"
-        echo "[SOPS]    This is normal for initial setup"
-      fi
-      
-      echo "[SOPS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    '';
+
+    # Container registry konfigürasyonu – TEK otorite burası olsun.
+    containers.registries = {
+      search = [ "docker.io" "quay.io" ];
+      insecure = [
+        # "registry.internal.example"
+      ];
+      block = [
+        # "sketchy-registry.com"
+      ];
+    };
+
+    # --------------------------------------------------------------------------
+    # Libvirt / QEMU (tam sanallaştırma)
+    # --------------------------------------------------------------------------
+    libvirtd = {
+      enable = true;
+
+      qemu.swtpm.enable = true;
+
+      # OVMF notu:
+      # - OVMF paketini core packages'te taşıyorsun.
+      # - OVMF otomatik enable/detect ediliyor, ekstra override gerekmedikçe dokunma.
+      # qemu.ovmf.enable = true;
+    };
+
+    # SPICE USB redirection – libvirt ile USB'yi VM'e geçirmek için
+    spiceUSBRedirection.enable = true;
   };
 
   # ============================================================================
-  # User Service - Home-Manager Integration (Layer 6: User-level Support)
+  # Udev Rules (Layer 5: KVM / VFIO erişim izinleri)
   # ============================================================================
-  # Yine çakışmaması için isim: sops-user-bootstrap
+  services.udev.extraRules = ''
+    # --------------------------------------------------------------------------
+    # VFIO (GPU Passthrough)
+    # --------------------------------------------------------------------------
+    SUBSYSTEM=="vfio", GROUP="libvirtd"
 
-  systemd.user.services.sops-user-bootstrap = {
-    description = "SOPS secrets activation (user-level diagnostics)";
-    wantedBy    = [ "default.target" ];
-    after       = [ "graphical-session.target" ];
-    
-    serviceConfig = {
-      Type            = "oneshot";
-      RemainAfterExit = true;
-      PrivateTmp      = true;
-      ProtectSystem   = "strict";
-      NoNewPrivileges = true;
-    };
-    
-    script = ''
-      set -euo pipefail
-      
-      mkdir -p ${homeDir}/.config/sops/age
-      
-      if [ -f "${sopsAgeKeyFile}" ]; then
-        echo "[SOPS][user] ✅ Age key present - user-level SOPS ready"
-        PUB_KEY=$(grep 'public key:' "${sopsAgeKeyFile}" | cut -d: -f2 | tr -d ' ' || echo "unknown")
-        echo "[SOPS][user] 🔑 Public key: $PUB_KEY"
-      else
-        echo "[SOPS][user] ⚠️  No age key at ${sopsAgeKeyFile}"
-        echo "[SOPS][user] 🔧 Generate: age-keygen -o ${sopsAgeKeyFile}"
-      fi
-      
-      touch /tmp/sops-user-ready
-      echo "[SOPS][user] 📡 Ready signal created: /tmp/sops-user-ready"
-    '';
-  };
+    # --------------------------------------------------------------------------
+    # KVM & vhost-net – hızlandırma
+    # --------------------------------------------------------------------------
+    KERNEL=="kvm",            GROUP="kvm", MODE="0664"
+    SUBSYSTEM=="misc", KERNEL=="vhost-net", GROUP="kvm", MODE="0664"
+
+    # --------------------------------------------------------------------------
+    # Örnek USB passthrough kuralları (devre dışı)
+    # --------------------------------------------------------------------------
+    # SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c534", GROUP="libvirtd"
+    # SUBSYSTEM=="usb", ATTR{idVendor}=="1050", ATTR{idProduct}=="0407", GROUP="libvirtd"
+  '';
+
+  # ============================================================================
+  # Security wrappers
+  # ============================================================================
+  # SPICE USB wrapper'ı spiceUSBRedirection.enable ile zaten hallediliyor.
 }

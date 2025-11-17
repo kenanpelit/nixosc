@@ -313,6 +313,7 @@ in
     
     # Wallpaper & Themes
     wpaperd          # Wayland duvar kağıdı daemon
+    hyprpaper        # Hyprland duvar kağıdı daemon
     # candy-icons removed - using custom candy-beauty from modules/home/candy
     beauty-line-icon-theme # Alternatif simge seti
     
