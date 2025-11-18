@@ -481,10 +481,11 @@ let
           name = "mpv-pip";
           "match:class" = "^(mpv)$";
           float = true;
-          size = "19% 19%";
-          move = "1% 77%";
+          size = "(monitor_w*0.19) (monitor_h*0.19)";
+          move = "(monitor_w*0.01) (monitor_h*0.77)";
           opacity = "1.0 override 1.0 override";
           pin = true;
+          idle_inhibit = "focus";
         }
         {
           name = "vlc-workspace";
@@ -609,7 +610,7 @@ let
           name = "ranger-float";
           "match:class" = "^(ranger)$";
           float = true;
-          size = "75% 60%";
+          size = "(monitor_w*0.75) (monitor_h*0.60)";
           center = true;
         }
 
@@ -618,7 +619,7 @@ let
           name = "htop-float";
           "match:class" = "^(htop)$";
           float = true;
-          size = "80% 80%";
+          size = "(monitor_w*0.80) (monitor_h*0.80)";
           center = true;
         }
 
@@ -633,7 +634,7 @@ let
           name = "kitty-scratch-float";
           "match:class" = "^(kitty-scratch)$";
           float = true;
-          size = "75% 60%";
+          size = "(monitor_w*0.75) (monitor_h*0.60)";
           center = true;
         }
 
@@ -815,7 +816,7 @@ let
           name = "notes-float";
           "match:class" = "^(notes)$";
           float = true;
-          size = "70% 50%";
+          size = "(monitor_w*0.70) (monitor_h*0.50)";
           center = true;
         }
         {
@@ -839,17 +840,17 @@ let
           name = "copyq-float";
           "match:class" = "^(com.github.hluk.copyq)$";
           float = true;
-          size = "25% 80%";
-          move = "74% 10%";
-          animation = "popout";
+          size = "(monitor_w*0.25) (monitor_h*0.80)";
+          move = "(monitor_w*0.74) (monitor_h*0.10)";
+          animation = "popin";
         }
         {
           name = "clipse-float";
           "match:class" = "^(clipse)$";
           float = true;
-          size = "25% 80%";
-          move = "74% 10%";
-          animation = "popout";
+          size = "(monitor_w*0.25) (monitor_h*0.80)";
+          move = "(monitor_w*0.74) (monitor_h*0.10)";
+          animation = "popin";
         }
 
         # === DROPDOWN TERMINAL ===
@@ -857,8 +858,8 @@ let
           name = "dropdown-terminal";
           "match:class" = "^(dropdown)$";
           float = true;
-          size = "99% 50%";
-          move = "0.5% 3%";
+          size = "(monitor_w*0.99) (monitor_h*0.50)";
+          move = "(monitor_w*0.005) (monitor_h*0.03)";
           workspace = "special:dropdown";
         }
 
@@ -867,8 +868,8 @@ let
           name = "shortwave-float";
           "match:class" = "^(de.haeckerfelix.Shortwave)$";
           float = true;
-          size = "30% 80%";
-          move = "65% 10%";
+          size = "(monitor_w*0.30) (monitor_h*0.80)";
+          move = "(monitor_w*0.65) (monitor_h*0.10)";
           workspace = 8;
         }
 
@@ -877,8 +878,8 @@ let
           name = "otpclient-float";
           "match:class" = "^(otpclient)$";
           float = true;
-          size = "20%";
-          move = "79% 40%";
+          size = "(monitor_w*0.20) (monitor_w*0.20)";
+          move = "(monitor_w*0.79) (monitor_h*0.40)";
           opacity = "1.0 1.0";
         }
         {
@@ -912,7 +913,7 @@ let
           name = "pavucontrol-float";
           "match:class" = "^(org.pulseaudio.pavucontrol)$";
           float = true;
-          size = "60% 90%";
+          size = "(monitor_w*0.60) (monitor_h*0.90)";
           animation = "popin";
         }
 
@@ -1045,9 +1046,10 @@ let
           move = "0 0";
         }
         {
-          name = "firefox-idleinhibit";
+          name = "firefox-idle-inhibit";
           "match:class" = "^(firefox)$";
           "match:fullscreen" = true;
+          idle_inhibit = "fullscreen";
         }
 
         # === TRANSMISSION ===
@@ -1071,24 +1073,24 @@ let
           name = "xwayland-video-bridge";
           "match:class" = "^(xwaylandvideobridge)$";
           opacity = "0.0 override";
+          no_anim = true;
+          no_initial_focus = true;
+          max_size = "1 1";
+          no_blur = true;
         }
 
         # === CONTEXT MENU OPTIMIZATION ===
         {
-          name = "context-menu-opaque";
-          "match:class" = "^()$";
-          "match:title" = "^()$";
-          opaque = true;
-        }
-        {
           name = "context-menu-noshadow";
           "match:class" = "^()$";
           "match:title" = "^()$";
+          no_shadow = true;
         }
         {
           name = "context-menu-noblur";
           "match:class" = "^()$";
           "match:title" = "^()$";
+          no_blur = true;
         }
 
         # === TERMINAL OPACITY OVERRIDES ===
@@ -1118,6 +1120,7 @@ let
         # === GLOBAL LAYOUT RULES ===
         {
           name = "floating-border";
+          border_size = 2;
         }
         {
           name = "floating-rounding";
