@@ -203,7 +203,7 @@ let
         resize_on_border = true;        # Allow resizing by dragging window border
         extend_border_grab_area = 15;   # Extra clickable area around borders
         hover_icon_on_border = true;    # Show resize icon on hover
-        no_border_on_floating = false;  # Keep border visible on floating windows
+        #no_border_on_floating = false;  # Keep border visible on floating windows
       };
 
       # =====================================================
@@ -456,303 +456,673 @@ let
       };
 
       # =====================================================
-      # WINDOW RULES - APPLICATION-SPECIFIC CONFIGURATIONS
+      # WINDOW RULES - MODERN SYNTAX WITH MATCH CONDITIONS
       # =====================================================
       windowrule = [
-        # === Media Applications ===
-        # MPV Video Player - Picture-in-Picture style
-        "float,class:^(mpv)$"
-        "size 19% 19%,class:^(mpv)$"
-        "move 1% 77%,class:^(mpv)$"
-        "opacity 1.0 override 1.0 override,class:^(mpv)$"
-        "pin,class:^(mpv)$"
-        "idleinhibit focus,class:^(mpv)$"
+        # === GLOBAL RULES ===
+        {
+          name = "suppress-maximize-events";
+          "match:class" = ".*";
+          suppress_event = "maximize";
+        }
+        {
+          name = "fix-xwayland-drags";
+          "match:class" = "^$";
+          "match:title" = "^$";
+          "match:xwayland" = true;
+          "match:float" = true;
+          "match:fullscreen" = false;
+          "match:pin" = false;
+          no_focus = true;
+        }
 
-        # VLC Media Player
-        "float,class:^(vlc)$"
-        "size 800 1250,class:^(vlc)$"
-        "move 1700 90,class:^(vlc)$"
-        "workspace 6,class:^(vlc)$"
-        "pin,class:^(vlc)$"
+        # === MEDIA APPLICATIONS ===
+        {
+          name = "mpv-pip";
+          "match:class" = "^(mpv)$";
+          float = true;
+          size = "19% 19%";
+          move = "1% 77%";
+          opacity = "1.0 override 1.0 override";
+          pin = true;
+        }
+        {
+          name = "vlc-workspace";
+          "match:class" = "^(vlc)$";
+          float = true;
+          size = "800 1250";
+          move = "1700 90";
+          workspace = 6;
+          pin = true;
+        }
 
-        # === Image Viewers ===
-        "float,class:^(Viewnior)$"
-        "center,class:^(Viewnior)$"
-        "size 1200 800,class:^(Viewnior)$"
-        "float,class:^(imv)$"
-        "center,class:^(imv)$"
-        "size 1200 725,class:^(imv)$"
-        "opacity 1.0 override 1.0 override,title:^(.*imv.*)$"
+        # === IMAGE VIEWERS ===
+        {
+          name = "viewnior-float";
+          "match:class" = "^(Viewnior)$";
+          float = true;
+          center = true;
+          size = "1200 800";
+        }
+        {
+          name = "imv-float";
+          "match:class" = "^(imv)$";
+          float = true;
+          center = true;
+          size = "1200 725";
+        }
+        {
+          name = "imv-opacity";
+          "match:title" = "^(.*imv.*)$";
+          opacity = "1.0 override 1.0 override";
+        }
 
-        # === Audio Applications ===
-        "float,class:^(audacious)$"
-        "workspace 5,class:^(Audacious)$"
+        # === AUDIO APPLICATIONS ===
+        {
+          name = "audacious-float";
+          "match:class" = "^(audacious)$";
+          float = true;
+        }
+        {
+          name = "audacious-workspace";
+          "match:class" = "^(Audacious)$";
+          workspace = 5;
+        }
 
-        # === Productivity Applications ===
-        # Aseprite - Pixel art editor
-        "tile,class:^(Aseprite)$"
-        "workspace 4,class:^(Aseprite)$"
-        "opacity 1.0 override 1.0 override,class:^(Aseprite)$"
-        
-        # GIMP
-        "workspace 4,class:^(Gimp-2.10)$"
-        
-        # Neovide
-        "tile,class:^(neovide)$"
-        
-        # Unity
-        "opacity 1.0 override 1.0 override,class:^(Unity)$"
+        # === PRODUCTIVITY APPLICATIONS ===
+        {
+          name = "aseprite-tile";
+          "match:class" = "^(Aseprite)$";
+          tile = true;
+          workspace = 4;
+          opacity = "1.0 override 1.0 override";
+        }
+        {
+          name = "gimp-workspace";
+          "match:class" = "^(Gimp-2.10)$";
+          workspace = 4;
+        }
+        {
+          name = "neovide-tile";
+          "match:class" = "^(neovide)$";
+          tile = true;
+        }
+        {
+          name = "unity-opacity";
+          "match:class" = "^(Unity)$";
+          opacity = "1.0 override 1.0 override";
+        }
 
-        # === Document Viewer ===
-        "workspace 3,class:^(evince)$"
-        "opacity 1.0 override 1.0 override,class:^(evince)$"
+        # === DOCUMENT VIEWER ===
+        {
+          name = "evince-workspace";
+          "match:class" = "^(evince)$";
+          workspace = 3;
+          opacity = "1.0 override 1.0 override";
+        }
 
-        # === OBS Studio ===
-        "workspace 8,class:^(com.obsproject.Studio)$"
+        # === OBS STUDIO ===
+        {
+          name = "obs-workspace";
+          "match:class" = "^(com.obsproject.Studio)$";
+          workspace = 8;
+        }
 
-        # === System Utilities ===
-        # VNC Viewer
-        "float,class:^(Vncviewer)$"
-        "center,class:^(Vncviewer)$"
-        "workspace 6,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
-        "fullscreen,class:^(Vncviewer)$,title:^(.*TigerVNC)$"
+        # === SYSTEM UTILITIES ===
+        {
+          name = "vnc-float";
+          "match:class" = "^(Vncviewer)$";
+          float = true;
+          center = true;
+        }
+        {
+          name = "vnc-fullscreen";
+          "match:class" = "^(Vncviewer)$";
+          "match:title" = "^(.*TigerVNC)$";
+          workspace = 6;
+          fullscreen = true;
+        }
 
-        # === File Management ===
-        "float,class:^(udiskie)$"
-        "float,class:^(org.gnome.FileRoller)$"
-        "center,class:^(org.gnome.FileRoller)$"
-        "size 850 500,class:^(org.gnome.FileRoller)$"
+        # === FILE MANAGEMENT ===
+        {
+          name = "udiskie-float";
+          "match:class" = "^(udiskie)$";
+          float = true;
+        }
+        {
+          name = "fileroller-float";
+          "match:class" = "^(org.gnome.FileRoller)$";
+          float = true;
+          center = true;
+          size = "850 500";
+        }
 
-        # === Terminal Applications ===
-        # Yazi file manager
-        "float,class:^(yazi)$"
-        "center,class:^(yazi)$"
-        "size 1920 1080,class:^(yazi)$"
-        
-        # Ranger file manager
-        "float,class:^(ranger)$"
-        "size 75% 60%,class:^(ranger)$"
-        "center,class:^(ranger)$"
+        # === TERMINAL FILE MANAGERS ===
+        {
+          name = "yazi-float";
+          "match:class" = "^(yazi)$";
+          float = true;
+          center = true;
+          size = "1920 1080";
+        }
+        {
+          name = "ranger-float";
+          "match:class" = "^(ranger)$";
+          float = true;
+          size = "75% 60%";
+          center = true;
+        }
 
-        # === System Monitor ===
-        "float,class:^(htop)$"
-        "size 80% 80%,class:^(htop)$"
-        "center,class:^(htop)$"
+        # === SYSTEM MONITOR ===
+        {
+          name = "htop-float";
+          "match:class" = "^(htop)$";
+          float = true;
+          size = "80% 80%";
+          center = true;
+        }
 
-        # === Scratchpad Terminals ===
-        "float,class:^(scratchpad)$"
-        "center,class:^(scratchpad)$"
-        "float,class:^(kitty-scratch)$"
-        "size 75% 60%,class:^(kitty-scratch)$"
-        "center,class:^(kitty-scratch)$"
+        # === SCRATCHPAD TERMINALS ===
+        {
+          name = "scratchpad-float";
+          "match:class" = "^(scratchpad)$";
+          float = true;
+          center = true;
+        }
+        {
+          name = "kitty-scratch-float";
+          "match:class" = "^(kitty-scratch)$";
+          float = true;
+          size = "75% 60%";
+          center = true;
+        }
 
-        # === Communication Apps ===
-        # Discord
-        "workspace 5 silent,class:^(Discord)$"
-        "workspace 5,class:^(WebCord)$"
-        "workspace 5 silent,tile,class:^(discord)$"
-        "float,class:^(WebCord)$,title:^(Warning: Opening link in external app)$"
-        "center,class:^(WebCord)$,title:^(Warning: Opening link in external app)$"
-        "float,title:^(blob:https://discord.com).*$"
-        "center,title:^(blob:https://discord.com).*$"
-        "animation popin,title:^(blob:https://discord.com).*$"
+        # === COMMUNICATION - DISCORD ===
+        {
+          name = "discord-workspace";
+          "match:class" = "^(Discord)$";
+          workspace = "5 silent";
+        }
+        {
+          name = "webcord-workspace";
+          "match:class" = "^(WebCord)$";
+          workspace = 5;
+        }
+        {
+          name = "discord-lowercase";
+          "match:class" = "^(discord)$";
+          workspace = "5 silent";
+          tile = true;
+        }
+        {
+          name = "webcord-link-warning";
+          "match:class" = "^(WebCord)$";
+          "match:title" = "^(Warning: Opening link in external app)$";
+          float = true;
+          center = true;
+        }
+        {
+          name = "discord-blob";
+          "match:title" = "^(blob:https://discord.com).*$";
+          float = true;
+          center = true;
+          animation = "popin";
+        }
 
-        # WhatsApp
-        "workspace 9 silent,class:^(Whats)$"
-        "workspace 9 silent,title:^(web.whatsapp.com)$, class:^(Brave-browser)$"
-        "workspace 9 silent,title:^(web.whatsapp.com)$"
-        "workspace 9 silent,class:^(Ferdium)$,title:^(Ferdium)$"
+        # === COMMUNICATION - WHATSAPP ===
+        {
+          name = "whatsapp-class";
+          "match:class" = "^(Whats)$";
+          workspace = "9 silent";
+        }
+        {
+          name = "whatsapp-brave";
+          "match:title" = "^(web.whatsapp.com)$";
+          "match:class" = "^(Brave-browser)$";
+          workspace = "9 silent";
+        }
+        {
+          name = "whatsapp-title";
+          "match:title" = "^(web.whatsapp.com)$";
+          workspace = "9 silent";
+        }
+        {
+          name = "ferdium-whatsapp";
+          "match:class" = "^(Ferdium)$";
+          "match:title" = "^(Ferdium)$";
+          workspace = "9 silent";
+        }
 
-        # === Video Conferencing ===
-        "float,title:^(Meet).*$"
-        "size 918 558,title:^(Meet).*$"
-        "workspace 4,title:^(Meet).*$"
-        "center,title:^(Meet).*$"
+        # === VIDEO CONFERENCING ===
+        {
+          name = "google-meet";
+          "match:title" = "^(Meet).*$";
+          float = true;
+          size = "918 558";
+          workspace = 4;
+          center = true;
+        }
 
-        # === Workspace Assignments ===
-        # Browser workspaces
-        "workspace 1,class:^(zen)$"
-        "workspace 6 silent,class:^(Kenp)$,title:^(Zen Browser Private Browsing)$"
-        "workspace 6 silent,title:^(New Private Tab - Brave)$"
-        "workspace 6 silent,title:^Kenp Browser (Inkognito)$"
-        "workspace 7 silent,title:^(brave-youtube.com__-Default)$"
-        "workspace 8 silent,class:^(Brave-browser)$,title:^(Spotify - Web Player).*"
+        # === WORKSPACE ASSIGNMENTS - BROWSERS ===
+        {
+          name = "zen-browser";
+          "match:class" = "^(zen)$";
+          workspace = 1;
+        }
+        {
+          name = "zen-private";
+          "match:class" = "^(Kenp)$";
+          "match:title" = "^(Zen Browser Private Browsing)$";
+          workspace = "6 silent";
+        }
+        {
+          name = "brave-private";
+          "match:title" = "^(New Private Tab - Brave)$";
+          workspace = "6 silent";
+        }
+        {
+          name = "kenp-incognito";
+          "match:title" = "^Kenp Browser (Inkognito)$";
+          workspace = "6 silent";
+        }
+        {
+          name = "brave-youtube";
+          "match:title" = "^(brave-youtube.com__-Default)$";
+          workspace = "7 silent";
+        }
+        {
+          name = "brave-spotify";
+          "match:class" = "^(Brave-browser)$";
+          "match:title" = "^(Spotify - Web Player).*";
+          workspace = "8 silent";
+        }
 
-        # Development workspaces
-        "workspace 2 silent,class:^(Tmux)$,title:^(Tmux)$"
-        "workspace 2 silent,class:^(TmuxKenp)$"
+        # === WORKSPACE ASSIGNMENTS - DEVELOPMENT ===
+        {
+          name = "tmux-workspace";
+          "match:class" = "^(Tmux)$";
+          "match:title" = "^(Tmux)$";
+          workspace = "2 silent";
+        }
+        {
+          name = "tmux-kenp";
+          "match:class" = "^(TmuxKenp)$";
+          workspace = "2 silent";
+        }
 
-        # AI and documents
-        "workspace 3 silent,class:^(AI)$"
+        # === WORKSPACE ASSIGNMENTS - AI & DOCUMENTS ===
+        {
+          name = "ai-workspace";
+          "match:class" = "^(AI)$";
+          workspace = "3 silent";
+        }
 
-        # Work and projects
-        "workspace 4 silent,class:^(CompecTA)$"
-        "workspace 4 silent,title:^(compecta)$"
+        # === WORKSPACE ASSIGNMENTS - WORK ===
+        {
+          name = "compecta-class";
+          "match:class" = "^(CompecTA)$";
+          workspace = "4 silent";
+        }
+        {
+          name = "compecta-title";
+          "match:title" = "^(compecta)$";
+          workspace = "4 silent";
+        }
 
-        # Security and system
-        "workspace 7 silent,class:^(org.keepassxc.KeePassXC)$"
-        "workspace 7 silent,class:^(com.transmissionbt.transmission.*)$"
+        # === WORKSPACE ASSIGNMENTS - SECURITY ===
+        {
+          name = "keepassxc";
+          "match:class" = "^(org.keepassxc.KeePassXC)$";
+          workspace = "7 silent";
+        }
+        {
+          name = "transmission";
+          "match:class" = "^(com.transmissionbt.transmission.*)$";
+          workspace = "7 silent";
+        }
 
-        # Entertainment
-        "workspace 8 silent,class:^(Spotify)$"
-        "workspace 6 silent,class:^(qemu-system-x86_64)$"
-        "workspace 6 silent,class:^(qemu)$"
+        # === WORKSPACE ASSIGNMENTS - ENTERTAINMENT ===
+        {
+          name = "spotify-app";
+          "match:class" = "^(Spotify)$";
+          workspace = "8 silent";
+        }
+        {
+          name = "qemu-x86";
+          "match:class" = "^(qemu-system-x86_64)$";
+          workspace = "6 silent";
+        }
+        {
+          name = "qemu-generic";
+          "match:class" = "^(qemu)$";
+          workspace = "6 silent";
+        }
 
-        # === Launcher & System Tools ===
-        "pin,class:^(rofi)$"
-        "pin,class:^(waypaper)$"
+        # === LAUNCHER & SYSTEM TOOLS ===
+        {
+          name = "rofi-pin";
+          "match:class" = "^(rofi)$";
+          pin = true;
+        }
+        {
+          name = "waypaper-pin";
+          "match:class" = "^(waypaper)$";
+          pin = true;
+        }
 
-        # === Notes & Clipboard ===
-        # Notes application
-        "float,class:^(notes)$"
-        "size 70% 50%,class:^(notes)$"
-        "center,class:^(notes)$"
-        "float,class:^(anote)$"
-        "center,class:^(anote)$"
-        "size 1536 864,class:^(anote)$"
-        "animation slide,class:^(anote)$"
-        "opacity 0.95 0.95,class:^(anote)$"
+        # === NOTES & CLIPBOARD ===
+        {
+          name = "notes-float";
+          "match:class" = "^(notes)$";
+          float = true;
+          size = "70% 50%";
+          center = true;
+        }
+        {
+          name = "anote-float";
+          "match:class" = "^(anote)$";
+          float = true;
+          center = true;
+          size = "1536 864";
+          animation = "slide";
+          opacity = "0.95 0.95";
+        }
+        {
+          name = "clipb-float";
+          "match:class" = "^(clipb)$";
+          float = true;
+          center = true;
+          size = "1536 864";
+          animation = "slide";
+        }
+        {
+          name = "copyq-float";
+          "match:class" = "^(com.github.hluk.copyq)$";
+          float = true;
+          size = "25% 80%";
+          move = "74% 10%";
+          animation = "popout";
+        }
+        {
+          name = "clipse-float";
+          "match:class" = "^(clipse)$";
+          float = true;
+          size = "25% 80%";
+          move = "74% 10%";
+          animation = "popout";
+        }
 
-        # Clipboard managers
-        "float,class:^(clipb)$"
-        "center,class:^(clipb)$"
-        "size 1536 864,class:^(clipb)$"
-        "animation slide,class:^(clipb)$"
-        
-        # CopyQ clipboard manager
-        "float,class:^(com.github.hluk.copyq)$"
-        "size 25% 80%,class:^(com.github.hluk.copyq)$"
-        "move 74% 10%,class:^(com.github.hluk.copyq)$"
-        "animation popout,class:^(com.github.hluk.copyq)$"
-        "dimaround,class:^(com.github.hluk.copyq)$"
-        
-        # Clipse clipboard manager
-        "float,class:^(clipse)$"
-        "size 25% 80%,class:^(clipse)$"
-        "move 74% 10%,class:^(clipse)$"
-        "animation popout,class:^(clipse)$"
-        "dimaround,class:^(clipse)$"
+        # === DROPDOWN TERMINAL ===
+        {
+          name = "dropdown-terminal";
+          "match:class" = "^(dropdown)$";
+          float = true;
+          size = "99% 50%";
+          move = "0.5% 3%";
+          workspace = "special:dropdown";
+        }
 
-        # === Dropdown Terminal ===
-        "float,class:^(dropdown)$"
-        "size 99% 50%,class:^(dropdown)$"
-        "move 0.5% 3%,class:^(dropdown)$"
-        "workspace special:dropdown,class:^(dropdown)$"
+        # === SHORTWAVE RADIO ===
+        {
+          name = "shortwave-float";
+          "match:class" = "^(de.haeckerfelix.Shortwave)$";
+          float = true;
+          size = "30% 80%";
+          move = "65% 10%";
+          workspace = 8;
+        }
 
-        # === Shortwave Radio Player ===
-        "float,class:^(de.haeckerfelix.Shortwave)$"
-        "size 30% 80%,class:^(de.haeckerfelix.Shortwave)$"
-        "move 65% 10%,class:^(de.haeckerfelix.Shortwave)$"
-        "workspace 8,class:^(de.haeckerfelix.Shortwave)$"
+        # === AUTHENTICATION & SECURITY ===
+        {
+          name = "otpclient-float";
+          "match:class" = "^(otpclient)$";
+          float = true;
+          size = "20%";
+          move = "79% 40%";
+          opacity = "1.0 1.0";
+        }
+        {
+          name = "ente-auth-float";
+          "match:class" = "^(io.ente.auth)$";
+          float = true;
+          size = "400 900";
+          center = true;
+        }
 
-        # === Authentication & Security ===
-        # OTP Client
-        "float,class:^(otpclient)$"
-        "size 20%,class:^(otpclient)$"
-        "move 79% 40%,class:^(otpclient)$"
-        "opacity 1.0 1.0,class:^(otpclient)$"
-        
-        # Ente Auth
-        "float,class:^(io.ente.auth)$"
-        "size 400 900,class:^(io.ente.auth)$"
-        "center,class:^(io.ente.auth)$"
+        # === SYSTEM PROMPTS ===
+        {
+          name = "gcr-prompter";
+          "match:class" = "^(gcr-prompter)$";
+          float = true;
+          center = true;
+          pin = true;
+          animation = "fade";
+          opacity = "0.95 0.95";
+        }
 
-        # === System Prompts ===
-        "float,class:^(gcr-prompter)$"
-        "center,class:^(gcr-prompter)$"
-        "pin,class:^(gcr-prompter)$"
-        "animation fade,class:^(gcr-prompter)$"
-        "opacity 0.95 0.95,class:^(gcr-prompter)$"
+        # === AUDIO CONTROL ===
+        {
+          name = "volume-control-float";
+          "match:title" = "^(Volume Control)$";
+          float = true;
+          size = "700 450";
+          move = "40 55%";
+        }
+        {
+          name = "pavucontrol-float";
+          "match:class" = "^(org.pulseaudio.pavucontrol)$";
+          float = true;
+          size = "60% 90%";
+          animation = "popin";
+        }
 
-        # === Audio Control ===
-        # Volume control
-        "float,title:^(Volume Control)$"
-        "size 700 450,title:^(Volume Control)$"
-        "move 40 55%,title:^(Volume Control)$"
-        
-        # PulseAudio volume control
-        "float,class:^(org.pulseaudio.pavucontrol)$"
-        "size 60% 90%,class:^(org.pulseaudio.pavucontrol)$"
-        "animation popin,class:^(org.pulseaudio.pavucontrol)$"
-        "dimaround,class:^(org.pulseaudio.pavucontrol)$"
+        # === NETWORK MANAGEMENT ===
+        {
+          name = "iwgtk-large";
+          "match:class" = "^(org.twosheds.iwgtk)$";
+          float = true;
+          size = "1536 864";
+          center = true;
+        }
+        {
+          name = "iwgtk-small";
+          "match:class" = "^(iwgtk)$";
+          float = true;
+          size = "360 440";
+          center = true;
+        }
+        {
+          name = "nm-connection-editor";
+          "match:class" = "^(nm-connection-editor)$";
+          float = true;
+          size = "1200 800";
+          center = true;
+        }
+        {
+          name = "network-displays";
+          "match:class" = "^(org.gnome.NetworkDisplays)$";
+          float = true;
+          size = "1200 800";
+          center = true;
+        }
+        {
+          name = "nm-applet-float";
+          "match:class" = "^(nm-applet)$";
+          float = true;
+          size = "360 440";
+          center = true;
+        }
 
-        # === Network Management ===
-        "float,class:^(org.twosheds.iwgtk)$"
-        "size 1536 864,class:^(org.twosheds.iwgtk)$"
-        "center,class:^(org.twosheds.iwgtk)$"
-        "float,class:^(iwgtk)$"
-        "size 360 440,class:^(iwgtk)$"
-        "center,class:^(iwgtk)$"
-        "float,class:^(nm-connection-editor)$"
-        "size 1200 800,class:^(nm-connection-editor)$"
-        "center,class:^(nm-connection-editor)$"
-        "float,class:^(org.gnome.NetworkDisplays)$"
-        "size 1200 800,class:^(org.gnome.NetworkDisplays)$"
-        "center,class:^(org.gnome.NetworkDisplays)$"
-        "float,class:^(nm-applet)$"
-        "size 360 440,class:^(nm-applet)$"
-        "center,class:^(nm-applet)$"
+        # === GAMING & EMULATION ===
+        {
+          name = "sameboy-float";
+          "match:class" = "^(.sameboy-wrapped)$";
+          float = true;
+        }
+        {
+          name = "soundwire-float";
+          "match:class" = "^(SoundWireServer)$";
+          float = true;
+        }
 
-        # === Gaming & Emulation ===
-        "float,class:^(.sameboy-wrapped)$"
-        "float,class:^(SoundWireServer)$"
+        # === GENERIC DIALOG RULES ===
+        {
+          name = "open-file-dialog";
+          "match:title" = "^(Open File)$";
+          float = true;
+        }
+        {
+          name = "file-upload-dialog";
+          "match:title" = "^(File Upload)$";
+          float = true;
+          size = "850 500";
+        }
+        {
+          name = "replace-files-dialog";
+          "match:title" = "^(Confirm to replace files)$";
+          float = true;
+        }
+        {
+          name = "file-operation-dialog";
+          "match:title" = "^(File Operation Progress)$";
+          float = true;
+        }
+        {
+          name = "branch-dialog";
+          "match:title" = "^(branchdialog)$";
+          float = true;
+        }
 
-        # === Generic Dialog Rules ===
-        "float,title:^(Open File)$"
-        "float,title:^(File Upload)$"
-        "size 850 500,title:^(File Upload)$"
-        "float,title:^(Confirm to replace files)$"
-        "float,title:^(File Operation Progress)$"
-        "float,title:^(branchdialog)$"
+        # === SYSTEM DIALOGS ===
+        {
+          name = "file-progress-dialog";
+          "match:class" = "^(file_progress)$";
+          float = true;
+        }
+        {
+          name = "confirm-dialog";
+          "match:class" = "^(confirm)$";
+          float = true;
+        }
+        {
+          name = "dialog-generic";
+          "match:class" = "^(dialog)$";
+          float = true;
+        }
+        {
+          name = "download-dialog";
+          "match:class" = "^(download)$";
+          float = true;
+        }
+        {
+          name = "notification-dialog";
+          "match:class" = "^(notification)$";
+          float = true;
+        }
+        {
+          name = "error-dialog";
+          "match:class" = "^(error)$";
+          float = true;
+        }
+        {
+          name = "confirmreset-dialog";
+          "match:class" = "^(confirmreset)$";
+          float = true;
+        }
+        {
+          name = "zenity-dialog";
+          "match:class" = "^(zenity)$";
+          float = true;
+          center = true;
+          size = "850 500";
+        }
 
-        # === System Dialogs ===
-        "float,class:^(file_progress)$"
-        "float,class:^(confirm)$"
-        "float,class:^(dialog)$"
-        "float,class:^(download)$"
-        "float,class:^(notification)$"
-        "float,class:^(error)$"
-        "float,class:^(confirmreset)$"
-        "float,class:^(zenity)$"
-        "center,class:^(zenity)$"
-        "size 850 500,class:^(zenity)$"
+        # === BROWSER SPECIFIC ===
+        {
+          name = "firefox-sharing-indicator";
+          "match:title" = "^(Firefox — Sharing Indicator)$";
+          float = true;
+          move = "0 0";
+        }
+        {
+          name = "firefox-idleinhibit";
+          "match:class" = "^(firefox)$";
+          "match:fullscreen" = true;
+        }
 
-        # === Browser Specific ===
-        "float,title:^(Firefox — Sharing Indicator)$"
-        "move 0 0,title:^(Firefox — Sharing Indicator)$"
-        "idleinhibit fullscreen,class:^(firefox)$"
+        # === TRANSMISSION ===
+        {
+          name = "transmission-float";
+          "match:title" = "^(Transmission)$";
+          float = true;
+        }
 
-        # === Transmission ===
-        "float,title:^(Transmission)$"
+        # === PICTURE-IN-PICTURE ===
+        {
+          name = "pip-window";
+          "match:title" = "^(Picture-in-Picture)$";
+          float = true;
+          pin = true;
+          opacity = "1.0 override 1.0 override";
+        }
 
-        # === Picture-in-Picture ===
-        "float,title:^(Picture-in-Picture)$"
-        "pin,title:^(Picture-in-Picture)$"
-        "opacity 1.0 override 1.0 override,title:^(Picture-in-Picture)$"
+        # === XWAYLAND VIDEO BRIDGE ===
+        {
+          name = "xwayland-video-bridge";
+          "match:class" = "^(xwaylandvideobridge)$";
+          opacity = "0.0 override";
+        }
 
-        # === XWayland Video Bridge ===
-        "opacity 0.0 override,class:^(xwaylandvideobridge)$"
-        "noanim,class:^(xwaylandvideobridge)$"
-        "noinitialfocus,class:^(xwaylandvideobridge)$"
-        "maxsize 1 1,class:^(xwaylandvideobridge)$"
-        "noblur,class:^(xwaylandvideobridge)$"
+        # === CONTEXT MENU OPTIMIZATION ===
+        {
+          name = "context-menu-opaque";
+          "match:class" = "^()$";
+          "match:title" = "^()$";
+          opaque = true;
+        }
+        {
+          name = "context-menu-noshadow";
+          "match:class" = "^()$";
+          "match:title" = "^()$";
+        }
+        {
+          name = "context-menu-noblur";
+          "match:class" = "^()$";
+          "match:title" = "^()$";
+        }
 
-        # === Context Menu Optimization ===
-        "opaque,class:^()$,title:^()$"
-        "noshadow,class:^()$,title:^()$"
-        "noblur,class:^()$,title:^()$"
+        # === TERMINAL OPACITY OVERRIDES ===
+        {
+          name = "kitty-opacity";
+          "match:class" = "^(kitty)$";
+          opacity = "1.0 override 1.0 override";
+        }
+        {
+          name = "foot-opacity";
+          "match:class" = "^(foot)$";
+          opacity = "1.0 override 1.0 override";
+        }
+        {
+          name = "alacritty-opacity";
+          "match:class" = "^(Alacritty)$";
+          opacity = "1.0 override 1.0 override";
+        }
 
-        # === Terminal Opacity Overrides ===
-        "opacity 1.0 override 1.0 override,class:^(kitty)$"
-        "opacity 1.0 override 1.0 override,class:^(foot)$"
-        "opacity 1.0 override 1.0 override,class:^(Alacritty)$"
+        # === BROWSER OPACITY OVERRIDES ===
+        {
+          name = "zen-opacity";
+          "match:class" = "^(zen)$";
+          opacity = "1.0 override 1.0 override";
+        }
 
-        # === Browser Opacity Overrides ===
-        "opacity 1.0 override 1.0 override,class:^(zen)$"
-
-        # === Global Layout Rules ===
-        "bordersize 2, floating:0"
-        "rounding 10, floating:0"
+        # === GLOBAL LAYOUT RULES ===
+        {
+          name = "floating-border";
+        }
+        {
+          name = "floating-rounding";
+          rounding = 10;
+        }
       ];
 
       # =====================================================

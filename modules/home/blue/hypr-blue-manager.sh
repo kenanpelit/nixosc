@@ -2,13 +2,17 @@
 
 #######################################
 #
-# Version: 3.0.1
+# Version: 3.0.2
 # Date: 2025-11-18
 # Author: Kenan Pelit (Modified)
 # Repository: github.com/kenanpelit/dotfiles
 # Description: Unified Gammastep + HyprSunset + wl-gammarelay Manager
 #
 # License: MIT
+#
+# Changelog v3.0.2:
+#   - FIXED: İlk başlatmada mevcut zamana göre sıcaklık ayarlanması eklendi
+#   - Daemon başlatıldığında gece ise gece sıcaklığı, gündüz ise gündüz sıcaklığı ayarlanır
 #
 # Changelog v3.0.1:
 #   - FIXED: Her saat başı gereksiz ayarlama problemi
@@ -565,7 +569,26 @@ daemon_loop() {
     log "Harici wl-gammarelay ${temp}K'ye ayarlandı"
   fi
 
-  adjust_temperature
+  # İlk başlatmada mevcut zamana göre sıcaklık ayarla
+  local hour=$(get_current_hour)
+  local period="gece"
+  [[ "$hour" -ge 6 && "$hour" -lt 18 ]] && period="gündüz"
+
+  log "İlk başlatma: Mevcut saat $hour, dönem: $period - sıcaklık ayarlanıyor"
+
+  # HyprSunset
+  if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
+    local hs_temp=$(get_hyprsunset_temp)
+    start_or_update_hyprsunset "$hs_temp"
+  fi
+
+  # wl-gammarelay
+  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
+    local wl_temp=$(get_wlgamma_temp)
+    set_wlgamma_temperature "$wl_temp"
+  fi
+
+  log "İlk başlatma sıcaklık ayarlaması tamamlandı"
 
   while [[ -f "$STATE_FILE" ]]; do
     sleep "$CHECK_INTERVAL"
@@ -621,7 +644,26 @@ daemon_mode() {
     log "Harici wl-gammarelay ${temp}K'ye ayarlandı"
   fi
 
-  adjust_temperature
+  # İlk başlatmada mevcut zamana göre sıcaklık ayarla
+  local hour=$(get_current_hour)
+  local period="gece"
+  [[ "$hour" -ge 6 && "$hour" -lt 18 ]] && period="gündüz"
+
+  log "İlk başlatma: Mevcut saat $hour, dönem: $period - sıcaklık ayarlanıyor"
+
+  # HyprSunset
+  if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
+    local hs_temp=$(get_hyprsunset_temp)
+    start_or_update_hyprsunset "$hs_temp"
+  fi
+
+  # wl-gammarelay
+  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
+    local wl_temp=$(get_wlgamma_temp)
+    set_wlgamma_temperature "$wl_temp"
+  fi
+
+  log "İlk başlatma sıcaklık ayarlaması tamamlandı"
 
   while true; do
     sleep "$CHECK_INTERVAL"
@@ -864,7 +906,7 @@ main() {
   mkdir -p "$(dirname "$LOG_FILE")"
   mkdir -p "$HOME/.cache"
   touch "$LOG_FILE"
-  log "=== Hypr Blue Manager başlatıldı (v3.0.1) ==="
+  log "=== Hypr Blue Manager başlatıldı (v3.0.2) ==="
 
   if [[ $# -eq 0 ]]; then
     usage
