@@ -690,7 +690,6 @@ let
         {
           name = "ferdium-whatsapp";
           "match:class" = "^(Ferdium)$";
-          "match:title" = "^(Ferdium)$";
           workspace = "9 silent";
         }
 
@@ -728,7 +727,7 @@ let
         }
         {
           name = "brave-youtube";
-          "match:title" = "^(brave-youtube.com__-Default)$";
+          "match:class" = "^(brave-youtube.com__-Default)$";
           workspace = "7 silent";
         }
         {
@@ -754,7 +753,7 @@ let
         # === WORKSPACE ASSIGNMENTS - AI & DOCUMENTS ===
         {
           name = "ai-workspace";
-          "match:class" = "^(AI)$";
+          "match:class" = "^(Ai)$";
           workspace = "3 silent";
         }
 
@@ -1109,13 +1108,44 @@ let
           "match:class" = "^(Alacritty)$";
           opacity = "1.0 override 1.0 override";
         }
+
+        # === BROWSER OPACITY OVERRIDES ===
+        {
+          name = "zen-opacity";
+          "match:class" = "^(zen)$";
+          opacity = "1.0 override 1.0 override";
+        }
+        {
+          name = "brave-opacity";
+          "match:class" = "^(Brave-browser)$";
+          opacity = "1.0 override 1.0 override";
+        }
+        {
+          name = "kenp-opacity";
+          "match:class" = "^(Kenp)$";
+          opacity = "1.0 override 1.0 override";
+        }
+
+        # === GLOBAL LAYOUT RULES ===
+        {
+          name = "floating-border";
+          "match:float" = true;
+          border_size = 2;
+        }
+        {
+          name = "floating-rounding";
+          "match:float" = true;
+          rounding = 10;
+        }
       ];
+
       # =====================================================
       # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
       # =====================================================
       # Optimized for dual monitor setup:
       # - Primary: Dell UP2716D (2560x1440) - Workspaces 1-6
       # - Secondary: Chimei Innolux (1920x1200) - Workspaces 7-9
+      # - Smart Borders: Dynamic border adjustment based on window count
       
       workspace = [
         # === PRIMARY MONITOR (Dell UP2716D - 2560x1440) ===
@@ -1163,6 +1193,27 @@ let
         # - Messaging applications
         # - Social communication
         "9, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
+        
+        # === SMART BORDERS CONFIGURATION ===
+        # Automatic border adjustment based on window count
+        # - Single window: Borderless for maximum focus and screen real estate
+        # - Multiple windows: 3px borders for clear visual separation
+        # - Fullscreen: Borderless for immersive content viewing
+        
+        # Single Tiled Window: No borders, no rounding
+        # - Applies when exactly 1 tiled window exists on workspace
+        # - Excludes special workspaces (dropdown, scratchpad)
+        "w[tv1]s[false], bordersize:0, rounding:false"
+        
+        # Fullscreen Mode: No borders, no rounding
+        # - Applies when 1 fullscreen window exists on workspace
+        # - Excludes special workspaces
+        "f[1]s[false], bordersize:0, rounding:false"
+        
+        # Multiple Windows: Standard 3px borders with rounding
+        # - Applies when 2 or more tiled windows exist on workspace
+        # - Provides clear visual separation between windows
+        "w[t2-99]s[false], bordersize:3, rounding:true"
         
         # === SPECIAL WORKSPACES ===
         
