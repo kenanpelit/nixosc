@@ -1109,64 +1109,13 @@ let
           "match:class" = "^(Alacritty)$";
           opacity = "1.0 override 1.0 override";
         }
-
-        # === BROWSER OPACITY OVERRIDES ===
-        {
-          name = "zen-opacity";
-          "match:class" = "^(zen)$";
-          opacity = "1.0 override 1.0 override";
-        }
-
-        # === SMART BORDERS - DYNAMIC BORDER MANAGEMENT ===
-        # Automatically adjusts borders and rounding based on window count
-        # - Single window: Clean, borderless experience for maximum focus
-        # - Multiple windows: 3px borders for clear visual separation
-        # - Fullscreen: Borderless for immersive content viewing
-        
-        # Single Tiled Window: No borders, no rounding
-        {
-          name = "smart-borders-single-tiled";
-          "match:floating" = false;
-          "match:onworkspace" = "w[tv1]s[false]";
-          border_size = 0;
-          rounding = 0;
-        }
-        
-        # Fullscreen Window: No borders, no rounding
-        {
-          name = "smart-borders-fullscreen";
-          "match:floating" = false;
-          "match:onworkspace" = "f[1]s[false]";
-          border_size = 0;
-          rounding = 0;
-        }
-        
-        # Multiple Windows: Standard 3px borders with rounding
-        {
-          name = "smart-borders-multi";
-          "match:floating" = false;
-          "match:onworkspace" = "w[tg2-99]";
-          border_size = 3;
-        }
-
-        # === GLOBAL LAYOUT RULES ===
-        {
-          name = "floating-border";
-          border_size = 2;
-        }
-        {
-          name = "floating-rounding";
-          rounding = 10;
-        }
       ];
-
       # =====================================================
       # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
       # =====================================================
       # Optimized for dual monitor setup:
       # - Primary: Dell UP2716D (2560x1440) - Workspaces 1-6
       # - Secondary: Chimei Innolux (1920x1200) - Workspaces 7-9
-      # - Smart Borders: Automatic border adjustment based on window count
       
       workspace = [
         # === PRIMARY MONITOR (Dell UP2716D - 2560x1440) ===
@@ -1214,18 +1163,6 @@ let
         # - Messaging applications
         # - Social communication
         "9, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
-        
-        # === SMART BORDERS CONFIGURATION ===
-        
-        # Single Tiled Window: No borders for distraction-free focus
-        # - Applies when exactly 1 tiled window exists on workspace
-        # - Excludes special workspaces (dropdown, scratchpad)
-        "w[tv1]s[false], bordersize:0"
-        
-        # Fullscreen Mode: No borders for immersive experience
-        # - Applies when 1 fullscreen window exists on workspace
-        # - Excludes special workspaces
-        "f[1]s[false], bordersize:0"
         
         # === SPECIAL WORKSPACES ===
         
