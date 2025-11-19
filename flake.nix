@@ -101,7 +101,8 @@
     
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/9f02dca8de5489689a7e31a2dfbf068c5dd3d282"; # 1119 - Updated Commits
+      url = "github:hyprwm/hyprland/fbb31503f1b69402eeda81ba75a547c862c88bf2"; # 1119 - Updated commit
+#      url = "github:hyprwm/hyprland/9f02dca8de5489689a7e31a2dfbf068c5dd3d282"; # 1119 - Updated Commits
 #      url = "github:hyprwm/hyprland/edc311544a54a06ce4acb759b4d9a30853695452"; # 1118 - Updated Commits
 #      url = "github:hyprwm/hyprland/ad52ba9c1393de717f6b86b9e94c21be9e96e320"; # 1117 - Updated Commits
 #      url = "github:hyprwm/hyprland/d52639fdfaedd520515a8f46e00d9b8881d40819";
@@ -154,12 +155,12 @@
     # --------------------------------------------------------------------------
     
     walker = {
-      url = "github:abenz1267/walker/v2.8.2";
+      url = "github:abenz1267/walker/v2.11.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
     elephant = {
-      url = "github:abenz1267/elephant/v2.13.2";
+      url = "github:abenz1267/elephant/v2.16.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   
