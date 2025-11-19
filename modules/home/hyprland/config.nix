@@ -1129,22 +1129,45 @@ let
       ];
 
       # =====================================================
-      # WORKSPACE RULES - NO GAPS CONFIGURATION
+      # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
       # =====================================================
       workspace = [
-        "1, gapsout:0, gapsin:0"
-        "2, gapsout:0, gapsin:0"
-        "3, gapsout:0, gapsin:0"
-        "4, gapsout:0, gapsin:0"
-        "5, gapsout:0, gapsin:0"
-        "6, gapsout:0, gapsin:0"
-        "7, gapsout:0, gapsin:0"
-        "8, gapsout:0, gapsin:0"
-        "9, gapsout:0, gapsin:0"
+        # === PRIMARY MONITOR (Dell UP2716D - 2560x1440) ===
+        # Workspace 1: Main Browser (Kenp profile)
+        "1, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        
+        # Workspace 2: Terminal Sessions (TmuxKenp) - Default for primary monitor
+        "2, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L, default:true"
+        
+        # Workspace 3: AI/Claude workspace
+        "3, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        
+        # Workspace 4: Work/CompecTA
+        "4, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        
+        # Workspace 5: Discord (fullscreen optimized)
+        "5, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        
+        # Workspace 6: General/Exclude
+        "6, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        
+        # === SECONDARY MONITOR (Chimei Innolux - 1920x1200) ===
+        # Workspace 7: YouTube/Entertainment - Default for secondary monitor
+        "7, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F, default:true"
+        
+        # Workspace 8: Spotify/Music
+        "8, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
+        
+        # Workspace 9: WhatsApp/Ferdium
+        "9, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
+        
+        # === SPECIAL WORKSPACES ===
+        "special:dropdown, gapsout:0, gapsin:0, border:false"
+        "special:scratchpad, gapsout:0, gapsin:0, border:false"
       ];
 
       # =====================================================
-      # KEY BINDINGS - COMPREHENSIVE KEYBOARD SHORTCUTS
+      # KEY BINDINGS - COMPREHENSIVE KEYBOARD Shortcuts
       # =====================================================
       bind = [
         # === Application Launchers ===
