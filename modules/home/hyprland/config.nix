@@ -1146,54 +1146,8 @@ let
       # - Primary: Dell UP2716D (2560x1440) - Workspaces 1-6
       # - Secondary: Chimei Innolux (1920x1200) - Workspaces 7-9
       # - Smart Borders: Dynamic border adjustment based on window count
-      
+       
       workspace = [
-        # === PRIMARY MONITOR (Dell UP2716D - 2560x1440) ===
-        
-        # Workspace 1: Main Browser (Brave Kenp profile)
-        # - No gaps for maximum screen space
-        # - Rounding enabled for visual clarity
-        "1, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
-        
-        # Workspace 2: Terminal Sessions (TmuxKenp)
-        # - Default workspace for primary monitor
-        # - Optimized for development work
-        "2, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L, default:true"
-        
-        # Workspace 3: AI/Claude workspace
-        # - For AI assistant interactions
-        "3, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
-        
-        # Workspace 4: Work/CompecTA
-        # - Business email and work applications
-        "4, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
-        
-        # Workspace 5: Discord
-        # - Communication and collaboration
-        # - Usually runs in fullscreen mode
-        "5, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
-        
-        # Workspace 6: General/Exclude
-        # - VPN bypass applications
-        # - General purpose workspace
-        "6, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
-        
-        # === SECONDARY MONITOR (Chimei Innolux - 1920x1200) ===
-        
-        # Workspace 7: YouTube/Entertainment
-        # - Default workspace for secondary monitor
-        # - Media consumption and entertainment
-        "7, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F, default:true"
-        
-        # Workspace 8: Spotify/Music
-        # - Music player and audio applications
-        "8, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
-        
-        # Workspace 9: WhatsApp/Ferdium
-        # - Messaging applications
-        # - Social communication
-        "9, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
-        
         # === SMART BORDERS CONFIGURATION ===
         # Automatic border adjustment based on window count
         # - Single window: Borderless for maximum focus and screen real estate
