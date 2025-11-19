@@ -189,7 +189,7 @@ let
         # --- Window spacing & borders ---
         gaps_in = 0;                    # Gap between tiled windows
         gaps_out = 0;                   # Gap between windows and monitor edge
-        border_size = 2;                # Border thickness in pixels
+        border_size = 3;                # Border thickness in pixels
 
         # --- Border colors (dynamic with Catppuccin palette) ---
         "col.active_border" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg"; 
@@ -1131,39 +1131,66 @@ let
       # =====================================================
       # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
       # =====================================================
+      # Optimized for dual monitor setup:
+      # - Primary: Dell UP2716D (2560x1440) - Workspaces 1-6
+      # - Secondary: Chimei Innolux (1920x1200) - Workspaces 7-9
+      
       workspace = [
         # === PRIMARY MONITOR (Dell UP2716D - 2560x1440) ===
-        # Workspace 1: Main Browser (Kenp profile)
-        "1, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
         
-        # Workspace 2: Terminal Sessions (TmuxKenp) - Default for primary monitor
-        "2, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L, default:true"
+        # Workspace 1: Main Browser (Brave Kenp profile)
+        # - No gaps for maximum screen space
+        # - Rounding enabled for visual clarity
+        "1, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        
+        # Workspace 2: Terminal Sessions (TmuxKenp)
+        # - Default workspace for primary monitor
+        # - Optimized for development work
+        "2, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L, default:true"
         
         # Workspace 3: AI/Claude workspace
-        "3, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        # - For AI assistant interactions
+        "3, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
         
         # Workspace 4: Work/CompecTA
-        "4, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        # - Business email and work applications
+        "4, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
         
-        # Workspace 5: Discord (fullscreen optimized)
-        "5, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        # Workspace 5: Discord
+        # - Communication and collaboration
+        # - Usually runs in fullscreen mode
+        "5, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
         
         # Workspace 6: General/Exclude
-        "6, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
+        # - VPN bypass applications
+        # - General purpose workspace
+        "6, gapsout:0, gapsin:0, rounding:true, monitor:desc:Dell Inc. DELL UP2716D KRXTR88N909L"
         
         # === SECONDARY MONITOR (Chimei Innolux - 1920x1200) ===
-        # Workspace 7: YouTube/Entertainment - Default for secondary monitor
-        "7, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F, default:true"
+        
+        # Workspace 7: YouTube/Entertainment
+        # - Default workspace for secondary monitor
+        # - Media consumption and entertainment
+        "7, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F, default:true"
         
         # Workspace 8: Spotify/Music
-        "8, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
+        # - Music player and audio applications
+        "8, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
         
         # Workspace 9: WhatsApp/Ferdium
-        "9, gapsout:0, gapsin:0, border:true, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
+        # - Messaging applications
+        # - Social communication
+        "9, gapsout:0, gapsin:0, rounding:true, monitor:desc:Chimei Innolux Corporation 0x143F"
         
         # === SPECIAL WORKSPACES ===
-        "special:dropdown, gapsout:0, gapsin:0, border:false"
-        "special:scratchpad, gapsout:0, gapsin:0, border:false"
+        
+        # Dropdown Terminal
+        # - Quick access terminal (minimal styling)
+        "special:dropdown, gapsout:0, gapsin:0"
+        
+        # Scratchpad
+        # - Temporary workspace for background tasks
+        "special:scratchpad, gapsout:0, gapsin:0"
       ];
 
       # =====================================================
