@@ -254,16 +254,15 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1762020869,
-        "narHash": "sha256-5NB1EthU0z2USsL7AmyB9h7VUQ9Ey6qDCwknrJBzc4U=",
+        "lastModified": 1763474772,
+        "narHash": "sha256-0yXfZiLLDcxfRj7YGEzJY2ghXHBhIWzJ6tyxdfJUM20=",
         "owner": "abenz1267",
         "repo": "elephant",
-        "rev": "21aced0d304735d46b86f06a7f91b0fed4e5792f",
+        "rev": "5db3374070eb9e4433106306a4ae089b0e2c22e8",
         "type": "github"
       },
       "original": {
         "owner": "abenz1267",
-        "ref": "v2.13.2",
         "repo": "elephant",
         "type": "github"
       }
@@ -280,11 +279,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1759675127,
-        "narHash": "sha256-AsYUdOukKNXIu47CpQNJeAccu524sIj9UTuP9Aadycs=",
+        "lastModified": 1762026536,
+        "narHash": "sha256-JX3s/1qBc+dQkCa1heZ2PO1Sd6EwrQsEAXxe3CqyFLs=",
         "owner": "abenz1267",
         "repo": "elephant",
-        "rev": "abfa18c844f1028b0b2beef456fee6d40e98dfad",
+        "rev": "0e3b6a99d2a4c8f548435ea0466202d7c1129353",
         "type": "github"
       },
       "original": {
@@ -2627,16 +2626,15 @@
         "systems": "systems_22"
       },
       "locked": {
-        "lastModified": 1761992429,
-        "narHash": "sha256-0t2jBY0rQZ5Nvmzvnn4NtVpXeScPIbPNs9FrXk7zoPA=",
+        "lastModified": 1763481052,
+        "narHash": "sha256-Y/2lU0iqGhd1K1GnzIWodu62dn0vcoGv0dJSk9BAVQU=",
         "owner": "abenz1267",
         "repo": "walker",
-        "rev": "42b3a5fdbcb02479be3ea191876515a5561f930d",
+        "rev": "cfa8aff1d9989b0a368128d32004a58d8686b11a",
         "type": "github"
       },
       "original": {
         "owner": "abenz1267",
-        "ref": "v2.8.2",
         "repo": "walker",
         "type": "github"
       }
@@ -2757,11 +2755,11 @@
     "yazi-plugins": {
       "flake": false,
       "locked": {
-        "lastModified": 1761133023,
-        "narHash": "sha256-7vsqHvdNimH/YVWegfAo7DfJ+InDr3a1aNU0f+gjcdw=",
+        "lastModified": 1763546883,
+        "narHash": "sha256-+lirIBXv3EvztE/1b3zHnQ9r5N3VWBCUuH3gZR52fE0=",
         "owner": "yazi-rs",
         "repo": "plugins",
-        "rev": "8f1d9711bcd0e48af1fcb4153c16d24da76e732d",
+        "rev": "2301ff803a033cd16d16e62697474d6cb9a94711",
         "type": "github"
       },
       "original": {

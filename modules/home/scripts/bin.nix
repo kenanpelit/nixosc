@@ -132,14 +132,14 @@ let
   osc-cleaup-grub = pkgs.writeShellScriptBin "osc-cleaup-grub" (
     builtins.readFile ./bin/osc-cleaup-grub.sh
   );
+  osc-fiup = pkgs.writeShellScriptBin "osc-fiup" (
+    builtins.readFile ./bin/osc-fiup.sh
+  );
   osc-gist = pkgs.writeShellScriptBin "osc-gist" (
     builtins.readFile ./bin/osc-gist.sh
   );
   osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
     builtins.readFile ./bin/osc-gpg_unlock.sh
-  );
-  osc-hypr-update = pkgs.writeShellScriptBin "osc-hypr-update" (
-    builtins.readFile ./bin/osc-hypr-update.sh
   );
   osc-imagekeeper = pkgs.writeShellScriptBin "osc-imagekeeper" (
     builtins.readFile ./bin/osc-imagekeeper.sh
@@ -430,9 +430,9 @@ in {
     osc-backup
     osc-blocklist
     osc-cleaup-grub
+    osc-fiup
     osc-gist
     osc-gpg_unlock
-    osc-hypr-update
     osc-imagekeeper
     osc-mullvad
     osc-nix-cleanup-script
