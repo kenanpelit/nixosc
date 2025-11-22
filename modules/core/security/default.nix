@@ -7,7 +7,7 @@
 # Purpose:     Centralized security configuration and hardening
 # Author:      Kenan Pelit
 # Created:     2025-10-09
-# Modified:    2025-11-15
+# Modified:    2025-11-22
 #
 # Architecture:
 #   Firewall → Authentication → Access Control → Audit → SSH → Ad Blocking
@@ -35,6 +35,7 @@
 #   ✓ Audit logging                   (THIS MODULE)
 #   ✓ SSH client config               (THIS MODULE)
 #   ✓ fail2ban SSH protection         (THIS MODULE)
+#   ✓ Polkit agents (DE-aware)        (THIS MODULE)
 #   ✗ SSH daemon config               (networking module)
 #   ✗ User authentication             (account module)
 #   ✗ GNOME Keyring daemon            (display/services module)
@@ -44,7 +45,26 @@
 { lib, pkgs, config, ... }:
 
 let
-  inherit (lib) mkEnableOption mkIf mkAfter mkForce;
+  inherit (lib) mkEnableOption mkIf mkAfter mkForce optional;
+
+  # ----------------------------------------------------------------------------
+  # Desktop Environment Detection
+  # ----------------------------------------------------------------------------
+  # Detect which desktop environment is active to choose appropriate polkit agent
+  isHyprland = config.programs.hyprland.enable or false;
+  isGnome = config.services.xserver.desktopManager.gnome.enable or false;
+  isCosmic = config.services.desktopManager.cosmic.enable or false;
+  
+  # Select polkit agent based on active DE (priority: Hyprland > GNOME > fallback)
+  polkitAgent = 
+    if isHyprland then pkgs.hyprpolkitagent
+    else if isGnome then pkgs.polkit_gnome
+    else pkgs.libsForQt5.polkit-kde-agent;  # Universal fallback
+  
+  polkitAgentBinary =
+    if isHyprland then "${polkitAgent}/libexec/hyprpolkitagent"
+    else if isGnome then "${polkitAgent}/libexec/polkit-gnome-authentication-agent-1"
+    else "${polkitAgent}/libexec/polkit-kde-authentication-agent-1";
 
   # ----------------------------------------------------------------------------
   # Port Configuration (Single Source of Truth)
@@ -301,25 +321,35 @@ in
     # ==========================================================================
     security.pam = {
       services = {
-        # GNOME keyring istemiyoruz; GPG agent / age ile gidiyorsun.
+        # GNOME keyring disabled - using GPG agent / age
         login.enableGnomeKeyring = mkForce false;
 
-        # Örnek güçlü parola politikası (isteyince açarsın):
+        # Example strong password policy (enable when needed):
         # passwd.text = lib.mkDefault (mkAfter ''
         #   password required pam_pwquality.so retry=3 minlen=12 difok=3
         # '');
       };
     };
 
-    # Polkit GNOME authentication agent (GUI auth dialogs)
-    systemd.user.services.polkit-gnome-authentication-agent-1 = {
-      description = "PolicyKit GNOME Authentication Agent";
+    # Polkit authentication agent (desktop environment aware)
+    # Automatically selects appropriate agent:
+    #   - Hyprland → hyprpolkitagent
+    #   - GNOME → polkit-gnome
+    #   - Other → polkit-kde (universal fallback)
+    systemd.user.services.polkit-authentication-agent = {
+      description = "PolicyKit Authentication Agent (${
+        if isHyprland then "Hyprland"
+        else if isGnome then "GNOME"
+        else "KDE"
+      })";
+      documentation = optional isHyprland "https://github.com/hyprwm/hyprpolkitagent";
       wantedBy    = [ "graphical-session.target" ];
       wants       = [ "graphical-session.target" ];
       after       = [ "graphical-session.target" ];
+      
       serviceConfig = {
         Type           = "simple";
-        ExecStart      = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+        ExecStart      = polkitAgentBinary;
         Restart        = "on-failure";
         RestartSec     = 1;
         TimeoutStopSec = 10;
@@ -338,30 +368,26 @@ in
     # ==========================================================================
     # 5) Audit System — Activity Monitoring
     # ==========================================================================
-    # Not: Burada audit'i *kapalı* tutuyorsun, ama rule set hazır.
-    #      Daha önemlisi: auditd.service override sadece enable=true iken
-    #      devreye giriyor; böylece "Service has no ExecStart" hatası ortadan kalkıyor.
-
     security.audit = {
       enable = lib.mkDefault false;
 
       rules = [
-        # /etc/passwd / /etc/shadow değişiklikleri
+        # /etc/passwd / /etc/shadow changes
         "-w /etc/passwd -p wa -k passwd_changes"
         "-w /etc/shadow -p wa -k shadow_changes"
 
-        # sudoers değişiklikleri
+        # sudoers changes
         "-w /etc/sudoers -p wa -k sudoers_changes"
 
-        # dosya silme syscalls
+        # file deletion syscalls
         "-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F success=1 -k delete"
       ];
     };
 
-    # auditd unit override — sadece audit etkinse
+    # auditd unit override — only when audit is enabled
     systemd.services.auditd = mkIf config.security.audit.enable {
       serviceConfig = {
-        # Küçük bir gecikme, log rotasyonu vs. için hook noktası
+        # Small delay for log rotation hooks
         ExecStartPost = "${pkgs.coreutils}/bin/sleep 1";
       };
     };
@@ -375,9 +401,9 @@ in
         Type            = "oneshot";
         ExecStart       = "${hblockUpdateScript}";
         PrivateTmp      = true;
-        NoNewPrivileges = false;   # chown için root ayrıcalığı gerekli
+        NoNewPrivileges = false;   # chown requires root privileges
         ProtectSystem   = "strict";
-        ProtectHome     = false;   # /home erişimi gerekli
+        ProtectHome     = false;   # /home access required
         ReadWritePaths  = [ "/home" ];
       };
     };
@@ -419,15 +445,15 @@ in
     # 8) Environment — Packages, Aliases, Variables
     # ==========================================================================
     environment = {
-      # Yeni kullanıcılar için .bashrc içine hBlock entegrasyonu
+      # New user skeleton - hBlock integration
       etc."skel/.bashrc".text = mkAfter ''
         # hBlock DNS blocking via HOSTALIASES
         export HOSTALIASES="$HOME/.config/hblock/hosts"
       '';
 
       systemPackages = with pkgs; [
-        # Polkit / GUI auth
-        polkit_gnome
+        # Polkit authentication agent (DE-aware)
+        polkitAgent
 
         # SSH tooling
         assh
@@ -490,6 +516,10 @@ in
         aa-status   = "sudo aa-status";
         aa-enforce  = "sudo aa-enforce";
         aa-complain = "sudo aa-complain";
+        
+        # Polkit
+        polkit-agent-status = "systemctl --user status polkit-authentication-agent";
+        polkit-agent-restart = "systemctl --user restart polkit-authentication-agent";
       };
 
       variables = {
@@ -500,17 +530,19 @@ in
 }
 
 # ==============================================================================
-# Notlar (Özet)
+# Changelog
 # ==============================================================================
 #
-# • auditd hatası:
-#   Önceki sürümde security.audit.enable = false iken auditd.serviceConfig
-#   tanımladığın için systemd "no ExecStart" diye bağırıyordu.
-#   Şimdi auditd override sadece config.security.audit.enable = true iken
-#   devreye giriyor → journalctl’daki hata kaybolmalı.
+# 2025-11-22:
+#   • Added desktop environment detection for polkit agent selection
+#   • Unified polkit agent service (supports Hyprland/GNOME/KDE)
+#   • Removed polkit-gnome-authentication-agent-1 in favor of generic service
+#   • Added polkit agent status/restart aliases
+#   • Improved documentation for multi-DE support
 #
-# • nftables / fail2ban / hBlock / ASSH / AppArmor davranışları korunuyor.
-# • customServicePort için (1401) ileride hangi servis olduğunu açıkça
-#   dokümante et; şu an sadece “Custom service” diye duruyor.
+# 2025-11-15:
+#   • Fixed auditd.service "no ExecStart" error with conditional override
+#   • Added comprehensive nftables ruleset documentation
+#   • Improved fail2ban integration with nftables
 #
 # ==============================================================================
