@@ -304,6 +304,7 @@ in
     hypridle         # Boşta kalma yöneticisi
     brightnessctl    # Ekran parlaklığı kontrolü
     hyprshade        # Hyprland shader yönetimi
+    hyprsysteminfo   # System information
     
     # Display & Input
     wl-gammactl      # Wayland gamma kontrolü
