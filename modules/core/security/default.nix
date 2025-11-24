@@ -301,19 +301,14 @@ in
     # ==========================================================================
     security.pam = {
       services = {
-        # GNOME keyring istemiyoruz; GPG agent / age ile gidiyorsun.
-        #login.enableGnomeKeyring = mkForce false;
+        # GNOME Keyring - sadece GNOME aktifse
         login.enableGnomeKeyring = mkIf config.my.display.enableGnome true;
         gdm.enableGnomeKeyring   = mkIf config.my.display.enableGnome true;
-
-        # Örnek güçlü parola politikası (isteyince açarsın):
-        # passwd.text = lib.mkDefault (mkAfter ''
-        #   password required pam_pwquality.so retry=3 minlen=12 difok=3
-        # '');
       };
     };
 
-    # Polkit GNOME authentication agent (GUI auth dialogs)
+    # Polkit GNOME authentication agent
+    # NOT: Bu agent Hyprland için de çalışıyor, GNOME'da da
     systemd.user.services.polkit-gnome-authentication-agent-1 = {
       description = "PolicyKit GNOME Authentication Agent";
       wantedBy    = [ "graphical-session.target" ];

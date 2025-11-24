@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # =============================================================================
-# GNOME TTY Başlatma Script'i - Production Ready
+# GNOME TTY Başlatma Script'i - Production Ready v2.0
 # =============================================================================
 # ThinkPad E14 Gen 6 + Intel Arc Graphics + NixOS
 # Dinamik Catppuccin tema desteği ile
+# Hem GDM hem TTY başlatmayı destekler
 # =============================================================================
 # KULLANIM:
 #   gnome_tty              - Normal başlatma
 #   gnome_tty -d           - Debug modu
-#   gnome_tty --dry-run    - Sadece kontroller, başlatma
+#   gnome_tty --dry-run    - Sadece kontroller, başlatma yok
+#   gnome_tty --systemd    - Systemd kullanarak başlat (önerilen)
 # =============================================================================
 
 set -euo pipefail
@@ -17,7 +19,7 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="1.0.0"
+readonly SCRIPT_VERSION="2.0.0"
 readonly LOG_DIR="$HOME/.logs"
 readonly GNOME_LOG="$LOG_DIR/gnome.log"
 readonly DEBUG_LOG="$LOG_DIR/gnome_debug.log"
@@ -30,15 +32,17 @@ readonly C_BLUE='\033[0;34m'
 readonly C_YELLOW='\033[1;33m'
 readonly C_RED='\033[0;31m'
 readonly C_CYAN='\033[0;36m'
+readonly C_MAGENTA='\033[0;35m'
 readonly C_RESET='\033[0m'
 
 # Catppuccin flavor ve accent
 CATPPUCCIN_FLAVOR="${CATPPUCCIN_FLAVOR:-mocha}"
 CATPPUCCIN_ACCENT="${CATPPUCCIN_ACCENT:-mauve}"
 
-# Debug modu flag
+# Script modları
 DEBUG_MODE=false
 DRY_RUN=false
+USE_SYSTEMD=false
 
 # =============================================================================
 # Logging Fonksiyonları
@@ -104,6 +108,14 @@ print_header() {
   echo -e "${C_BLUE}║  ${C_GREEN}${text}${C_RESET}"
   echo -e "${C_BLUE}╚════════════════════════════════════════════════════════════╝${C_RESET}"
   echo
+}
+
+print_box() {
+  local text="$1"
+  local color="${2:-$C_MAGENTA}"
+  echo -e "${color}┌────────────────────────────────────────────────────────────┐${C_RESET}"
+  echo -e "${color}│  ${text}${C_RESET}"
+  echo -e "${color}└────────────────────────────────────────────────────────────┘${C_RESET}"
 }
 
 # =============================================================================
@@ -192,9 +204,18 @@ check_system() {
   fi
 
   # TTY kontrolü
+  local current_tty=$(tty 2>/dev/null || echo "unknown")
+  debug_log "Current TTY: $current_tty"
+
   if [[ -z "${XDG_VTNR:-}" ]]; then
-    export XDG_VTNR=3
-    warn "XDG_VTNR varsayılan değere ayarlandı: 3 (GNOME için)"
+    # TTY numarasını otomatik tespit et
+    if [[ "$current_tty" =~ /dev/tty([0-9]+) ]]; then
+      export XDG_VTNR="${BASH_REMATCH[1]}"
+      info "XDG_VTNR otomatik tespit edildi: $XDG_VTNR"
+    else
+      export XDG_VTNR=3
+      warn "XDG_VTNR varsayılan değere ayarlandı: 3"
+    fi
   else
     debug_log "XDG_VTNR: $XDG_VTNR"
   fi
@@ -204,14 +225,47 @@ check_system() {
     error "gnome-session binary bulunamadı! PATH: $PATH"
   fi
 
-  # GNOME version bilgisi - hata yoksayılacak şekilde
-  local gnome_version="Unknown"
-  if command -v gnome-shell &>/dev/null; then
-    gnome_version=$(gnome-shell --version 2>/dev/null || echo "Unknown")
+  if ! command -v gnome-shell &>/dev/null; then
+    error "gnome-shell binary bulunamadı! PATH: $PATH"
   fi
-  info "GNOME version: $gnome_version"
+
+  # GNOME version bilgisi
+  local gnome_version=$(gnome-shell --version 2>/dev/null || echo "Unknown")
+  info "GNOME Shell: $gnome_version"
+
+  # Systemd user instance kontrolü
+  if ! systemctl --user is-active --quiet basic.target 2>/dev/null; then
+    warn "Systemd user instance çalışmıyor, başlatılıyor..."
+    systemctl --user start basic.target 2>/dev/null || {
+      error "Systemd user instance başlatılamadı"
+    }
+  fi
 
   info "Sistem kontrolleri tamamlandı"
+}
+
+# =============================================================================
+# Session Detection - GDM vs TTY
+# =============================================================================
+
+detect_session_type() {
+  local session_type="tty"
+
+  # 1. GDMSESSION environment variable
+  if [[ -n "${GDMSESSION:-}" ]]; then
+    debug_log "GDMSESSION bulundu: $GDMSESSION"
+    session_type="gdm"
+  # 2. Parent process check
+  elif pstree -s $$ 2>/dev/null | grep -q "gdm-wayland-session\|gdm-x-session"; then
+    debug_log "Parent process GDM (pstree check)"
+    session_type="gdm"
+  # 3. XDG_SESSION_CLASS check (GDM sets this to 'user')
+  elif [[ "${XDG_SESSION_CLASS:-}" == "user" ]] && [[ -n "${DISPLAY:-}" || -n "${WAYLAND_DISPLAY:-}" ]]; then
+    debug_log "XDG_SESSION_CLASS=user ve display var, GDM olabilir"
+    session_type="gdm"
+  fi
+
+  echo "$session_type"
 }
 
 # =============================================================================
@@ -226,9 +280,14 @@ cleanup_environment() {
   unset WLR_NO_HARDWARE_CURSORS
   unset WLR_DRM_NO_ATOMIC
   unset WLR_RENDERER
+  unset HYPRLAND_CMD
 
   # COSMIC kalıntıları
   unset COSMIC_DATA_CONTROL_ENABLED
+
+  # Sway kalıntıları
+  unset SWAYSOCK
+  unset I3SOCK
 
   # Genel temizlik
   unset XDG_CURRENT_DESKTOP
@@ -258,7 +317,7 @@ setup_environment() {
   export DESKTOP_SESSION="gnome"
   export XDG_SESSION_CLASS="user"
   export XDG_SEAT="seat0"
-  debug_log "Temel GNOME değişkenleri: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP / $DESKTOP_SESSION"
+  debug_log "Temel GNOME değişkenleri: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP"
 
   # -------------------------------------------------------------------------
   # Wayland Backend Tercihleri
@@ -277,8 +336,15 @@ setup_environment() {
   # GNOME Shell Ayarları
   # -------------------------------------------------------------------------
   export GNOME_SHELL_SESSION_MODE=user
-  export MUTTER_DEBUG_ENABLE_ATOMIC_KMS=0 # Intel Arc uyumluluğu için
-  debug_log "GNOME Shell ayarları yapıldı"
+
+  # Intel Arc uyumluluğu için atomic modesetting kapalı
+  export MUTTER_DEBUG_ENABLE_ATOMIC_KMS=0
+
+  # GNOME debug/verbose ayarları kapalı (crash'i önlemek için)
+  unset G_DEBUG
+  unset G_MESSAGES_DEBUG
+
+  debug_log "GNOME Shell ayarları yapıldı (G_DEBUG temizlendi)"
 
   # -------------------------------------------------------------------------
   # Catppuccin Dinamik Tema - GTK
@@ -363,7 +429,7 @@ setup_environment() {
 cleanup_old_processes() {
   debug_log "Eski GNOME prosesleri kontrol ediliyor"
 
-  local old_pids=$(pgrep -f "gnome-session\|gnome-shell" 2>/dev/null || true)
+  local old_pids=$(pgrep -u "$(id -u)" -f "gnome-session|gnome-shell" 2>/dev/null || true)
 
   if [[ -z "$old_pids" ]]; then
     debug_log "Eski GNOME prosesi bulunamadı"
@@ -381,7 +447,7 @@ cleanup_old_processes() {
   echo "$old_pids" | xargs -r kill -TERM 2>/dev/null || true
   sleep 2
 
-  local remaining_pids=$(pgrep -f "gnome-session\|gnome-shell" 2>/dev/null || true)
+  local remaining_pids=$(pgrep -u "$(id -u)" -f "gnome-session|gnome-shell" 2>/dev/null || true)
   if [[ -n "$remaining_pids" ]]; then
     warn "Bazı prosesler hala aktif, zorla sonlandırılıyor (SIGKILL)..."
     echo "$remaining_pids" | xargs -r kill -KILL 2>/dev/null || true
@@ -392,7 +458,7 @@ cleanup_old_processes() {
 }
 
 # =============================================================================
-# D-Bus Session Başlatma
+# D-Bus Session Başlatma - GDM-Aware
 # =============================================================================
 
 setup_dbus() {
@@ -404,30 +470,34 @@ setup_dbus() {
     return 0
   fi
 
-  # ✅ YENİ: GDM session detection - ÖNCE KONTROL ET
-  if [[ -n "${GDMSESSION:-}" ]] || [[ -n "${XDG_SESSION_ID:-}" ]]; then
-    debug_log "GDM tarafından başlatıldık (GDMSESSION=${GDMSESSION:-unset}, XDG_SESSION_ID=${XDG_SESSION_ID:-unset})"
+  local session_type=$(detect_session_type)
+  info "Session type: $session_type"
 
-    # GDM zaten D-Bus sağlıyor, mevcut olanı bul
-    if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
-      # systemd environment'dan al
-      local systemd_dbus=$(systemctl --user show-environment 2>/dev/null | grep ^DBUS_SESSION_BUS_ADDRESS= | cut -d= -f2-)
+  # -------------------------------------------------------------------------
+  # GDM Session - Mevcut D-Bus'ı kullan
+  # -------------------------------------------------------------------------
+  if [[ "$session_type" == "gdm" ]]; then
+    debug_log "GDM tarafından başlatıldık, mevcut D-Bus kullanılacak"
 
-      if [[ -n "$systemd_dbus" ]]; then
-        export DBUS_SESSION_BUS_ADDRESS="$systemd_dbus"
-        info "GDM D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
-        return 0
-      fi
-
-      # Veya runtime socket
-      local dbus_socket="$XDG_RUNTIME_DIR/bus"
-      if [[ -S "$dbus_socket" ]]; then
-        export DBUS_SESSION_BUS_ADDRESS="unix:path=$dbus_socket"
-        info "GDM D-Bus socket bulundu: $dbus_socket"
-        return 0
-      fi
-    else
+    # Zaten set edilmiş mi?
+    if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
       info "GDM D-Bus zaten ayarlı: $DBUS_SESSION_BUS_ADDRESS"
+      return 0
+    fi
+
+    # systemd environment'dan al
+    local systemd_dbus=$(systemctl --user show-environment 2>/dev/null | grep ^DBUS_SESSION_BUS_ADDRESS= | cut -d= -f2-)
+    if [[ -n "$systemd_dbus" ]]; then
+      export DBUS_SESSION_BUS_ADDRESS="$systemd_dbus"
+      info "GDM D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
+      return 0
+    fi
+
+    # Systemd user bus socket
+    local user_bus="$XDG_RUNTIME_DIR/bus"
+    if [[ -S "$user_bus" ]]; then
+      export DBUS_SESSION_BUS_ADDRESS="unix:path=$user_bus"
+      info "GDM D-Bus socket bulundu: $user_bus"
       return 0
     fi
 
@@ -435,7 +505,10 @@ setup_dbus() {
     return 0
   fi
 
-  # ✅ Buradan sonrası TTY başlatma için (mevcut kod aynen kalacak)
+  # -------------------------------------------------------------------------
+  # TTY Session - D-Bus Setup
+  # -------------------------------------------------------------------------
+  debug_log "TTY'den manuel başlatma tespit edildi"
 
   # Mevcut D-Bus session kontrolü
   if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
@@ -443,7 +516,15 @@ setup_dbus() {
     return 0
   fi
 
-  # D-Bus user session kontrolü
+  # Systemd user bus kullan (öncelikli)
+  local user_bus="$XDG_RUNTIME_DIR/bus"
+  if [[ -S "$user_bus" ]]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=$user_bus"
+    info "Systemd user bus kullanılıyor: $user_bus"
+    return 0
+  fi
+
+  # Mevcut dbus-daemon kontrolü
   if pgrep -u "$(id -u)" dbus-daemon >/dev/null 2>&1; then
     debug_log "D-Bus daemon zaten çalışıyor"
 
@@ -451,23 +532,23 @@ setup_dbus() {
     local dbus_addr=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name "dbus-*" -type s 2>/dev/null | head -n1)
     if [[ -n "$dbus_addr" ]]; then
       export DBUS_SESSION_BUS_ADDRESS="unix:path=$dbus_addr"
-      debug_log "Mevcut D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
+      info "Mevcut D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
       return 0
     fi
   fi
 
-  # TTY'den başlatılıyor - yeni session gerekli
-  info "D-Bus session başlatılıyor (TTY modu)..."
+  # Yeni D-Bus session başlat (son çare)
+  info "Yeni D-Bus session başlatılıyor (dbus-launch)..."
 
-  if command -v dbus-launch &>/dev/null; then
-    debug_log "dbus-launch kullanılacak"
-    eval $(dbus-launch --sh-syntax --exit-with-session 2>/dev/null)
-    export DBUS_SESSION_BUS_ADDRESS
-    export DBUS_SESSION_BUS_PID
-    info "D-Bus session başlatıldı (PID: ${DBUS_SESSION_BUS_PID:-unknown})"
-  else
-    warn "dbus-launch bulunamadı, GNOME kendi başlatacak"
+  if ! command -v dbus-launch &>/dev/null; then
+    error "dbus-launch bulunamadı ve mevcut D-Bus yok!"
   fi
+
+  debug_log "dbus-launch kullanılacak"
+  eval $(dbus-launch --sh-syntax --exit-with-session 2>/dev/null)
+  export DBUS_SESSION_BUS_ADDRESS
+  export DBUS_SESSION_BUS_PID
+  info "D-Bus session başlatıldı (PID: ${DBUS_SESSION_BUS_PID:-unknown})"
 }
 
 # =============================================================================
@@ -483,21 +564,77 @@ setup_systemd_integration() {
     return 0
   fi
 
-  local systemd_vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS"
+  # Önemli environment variable'lar
+  local systemd_vars=(
+    "WAYLAND_DISPLAY"
+    "DISPLAY"
+    "XDG_CURRENT_DESKTOP"
+    "XDG_SESSION_TYPE"
+    "XDG_SESSION_DESKTOP"
+    "DBUS_SESSION_BUS_ADDRESS"
+    "GNOME_KEYRING_CONTROL"
+    "SSH_AUTH_SOCK"
+  )
 
-  if systemctl --user import-environment $systemd_vars 2>/dev/null; then
+  # Systemd user environment'a import et
+  if systemctl --user import-environment "${systemd_vars[@]}" 2>/dev/null; then
     debug_log "Systemd environment import başarılı"
   else
     warn "Systemd environment import başarısız"
   fi
 
-  if dbus-update-activation-environment --systemd $systemd_vars 2>/dev/null; then
-    debug_log "DBus activation environment güncellendi"
+  # D-Bus activation environment güncelle
+  if dbus-update-activation-environment --systemd "${systemd_vars[@]}" 2>/dev/null; then
+    debug_log "D-Bus activation environment güncellendi"
   else
-    warn "DBus activation environment güncellenemedi"
+    warn "D-Bus activation environment güncellenemedi"
   fi
 
   info "Systemd entegrasyonu tamamlandı"
+}
+
+# =============================================================================
+# GNOME Keyring Başlatma
+# =============================================================================
+
+start_gnome_keyring() {
+  debug_log "GNOME Keyring başlatılıyor"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    info "[DRY-RUN] Keyring başlatma atlanıyor"
+    return 0
+  fi
+
+  local session_type=$(detect_session_type)
+
+  # GDM zaten keyring başlatmış olabilir
+  if [[ "$session_type" == "gdm" ]]; then
+    debug_log "GDM session - keyring kontrol ediliyor"
+    if pgrep -u "$(id -u)" gnome-keyring-daemon >/dev/null 2>&1; then
+      info "GNOME Keyring zaten çalışıyor (GDM tarafından)"
+      return 0
+    fi
+  fi
+
+  # Keyring binary kontrolü
+  if ! command -v gnome-keyring-daemon &>/dev/null; then
+    warn "gnome-keyring-daemon bulunamadı, atlanıyor"
+    return 0
+  fi
+
+  info "GNOME Keyring başlatılıyor..."
+
+  # Keyring başlat
+  eval $(gnome-keyring-daemon --start --components=secrets,ssh,pkcs11 2>/dev/null || true)
+
+  export GNOME_KEYRING_CONTROL
+  export SSH_AUTH_SOCK
+
+  if [[ -n "${GNOME_KEYRING_CONTROL:-}" ]]; then
+    info "Keyring başarıyla başlatıldı: $GNOME_KEYRING_CONTROL"
+  else
+    warn "Keyring başlatılamadı"
+  fi
 }
 
 # =============================================================================
@@ -508,14 +645,14 @@ cleanup() {
   debug_log "Cleanup fonksiyonu tetiklendi"
   info "GNOME oturumu sonlandırılıyor..."
 
-  local gnome_pids=$(pgrep -f "gnome-session\|gnome-shell" 2>/dev/null || true)
+  local gnome_pids=$(pgrep -u "$(id -u)" -f "gnome-session|gnome-shell" 2>/dev/null || true)
 
   if [[ -n "$gnome_pids" ]]; then
     debug_log "GNOME prosesleri bulundu: $gnome_pids"
     echo "$gnome_pids" | xargs -r kill -TERM 2>/dev/null || true
     sleep 2
 
-    local remaining=$(pgrep -f "gnome-session\|gnome-shell" 2>/dev/null || true)
+    local remaining=$(pgrep -u "$(id -u)" -f "gnome-session|gnome-shell" 2>/dev/null || true)
     if [[ -n "$remaining" ]]; then
       warn "Bazı prosesler hala aktif, zorla sonlandırılıyor"
       echo "$remaining" | xargs -r kill -KILL 2>/dev/null || true
@@ -526,10 +663,40 @@ cleanup() {
 }
 
 # =============================================================================
-# GNOME Başlatma
+# GNOME Başlatma - Systemd ile
 # =============================================================================
-start_gnome() {
-  print_header "GNOME BAŞLATILIYOR"
+
+start_gnome_with_systemd() {
+  print_header "GNOME BAŞLATILIYOR (SYSTEMD)"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    info "[DRY-RUN] GNOME başlatılmayacak"
+    return 0
+  fi
+
+  info "═══════════════════════════════════════════════════════════"
+  info "GNOME başlatılıyor (systemd mode)..."
+  info "Session: gnome"
+  info "Flavor: $CATPPUCCIN_FLAVOR | Accent: $CATPPUCCIN_ACCENT"
+  info "Log: $GNOME_LOG"
+  info "═══════════════════════════════════════════════════════════"
+
+  # Systemd graphical-session.target'ı başlat
+  systemctl --user start gnome-session.target 2>&1 | tee -a "$GNOME_LOG"
+
+  # GNOME başlayana kadar bekle
+  info "GNOME başlatıldı, graphical-session.target aktif"
+
+  # Session'ı sürdür
+  wait
+}
+
+# =============================================================================
+# GNOME Başlatma - Direct (exec)
+# =============================================================================
+
+start_gnome_direct() {
+  print_header "GNOME BAŞLATILIYOR (DIRECT)"
 
   if [[ "$DRY_RUN" == "true" ]]; then
     info "[DRY-RUN] GNOME başlatılmayacak"
@@ -540,41 +707,21 @@ start_gnome() {
   : >"$GNOME_LOG"
 
   info "═══════════════════════════════════════════════════════════"
-  info "GNOME başlatılıyor..."
+  info "GNOME başlatılıyor (direct mode)..."
   info "Session: gnome"
   info "Flavor: $CATPPUCCIN_FLAVOR | Accent: $CATPPUCCIN_ACCENT"
   info "Log: $GNOME_LOG"
   info "═══════════════════════════════════════════════════════════"
 
-  SYS="/run/current-system/sw/bin"
-
-  # Mevcut systemd user instance'ının D-Bus'ını kullan
-  if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
-    local user_bus="$XDG_RUNTIME_DIR/bus"
-    if [[ -S "$user_bus" ]]; then
-      export DBUS_SESSION_BUS_ADDRESS="unix:path=$user_bus"
-      info "Systemd user bus kullanılıyor: $user_bus"
-    else
-      error "Systemd user bus socket bulunamadı: $user_bus"
-    fi
-  fi
-
-  # Keyring başlat
-  if command -v "$SYS/gnome-keyring-daemon" >/dev/null 2>&1; then
-    info "Keyring başlatılıyor..."
-    eval $("$SYS/gnome-keyring-daemon" --start --components=secrets,ssh,pkcs11 2>/dev/null || true)
-    export GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
-  fi
-
-  # Environment'ı systemd'ye aktar
+  # Son environment export
   systemctl --user import-environment \
     GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
     WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE \
-    XDG_SESSION_DESKTOP DISPLAY 2>/dev/null || true
+    XDG_SESSION_DESKTOP 2>/dev/null || true
 
-  # GNOME başlat (systemd entegrasyonlu)
-  info "GNOME session başlatılıyor..."
-  exec "$SYS/gnome-session" --session=gnome >>"$GNOME_LOG" 2>&1
+  # GNOME başlat (exec ile - mevcut shell'i replace et)
+  info "GNOME session exec ediliyor..."
+  exec gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
 }
 
 # =============================================================================
@@ -594,16 +741,22 @@ SEÇENEKLER:
   -h, --help       Bu yardımı göster
   -d, --debug      Debug modu (detaylı log)
   --dry-run        Sadece kontroller, başlatma yapma
+  --systemd        Systemd ile başlat (önerilen)
   -v, --version    Version bilgisini göster
 
 ÖRNEKLER:
-  $SCRIPT_NAME              # Normal başlatma
-  $SCRIPT_NAME -d           # Debug modu ile
-  $SCRIPT_NAME --dry-run    # Sadece test et
+  $SCRIPT_NAME                # Normal başlatma (direct)
+  $SCRIPT_NAME --systemd      # Systemd ile başlatma (önerilen)
+  $SCRIPT_NAME -d             # Debug modu ile
+  $SCRIPT_NAME --dry-run      # Sadece test et
 
 CATPPUCCIN TEMA:
   Flavor: $CATPPUCCIN_FLAVOR (CATPPUCCIN_FLAVOR env var ile değiştir)
   Accent: $CATPPUCCIN_ACCENT (CATPPUCCIN_ACCENT env var ile değiştir)
+
+SESSION DETECTION:
+  - GDM'den başlatılırsa: Mevcut D-Bus kullanılır
+  - TTY'den başlatılırsa: Yeni D-Bus session oluşturulur
 
 LOG DOSYALARI:
   Ana log:   $GNOME_LOG
@@ -611,6 +764,7 @@ LOG DOSYALARI:
 
 NOTLAR:
   - Wayland backend varsayılan olarak kullanılır
+  - G_DEBUG otomatik temizlenir (crash'i önlemek için)
   - Log dosyaları ${MAX_LOG_SIZE} byte üzerinde ise otomatik rotate edilir
   - Son ${MAX_LOG_BACKUPS} log yedeklenir
 
@@ -638,6 +792,11 @@ parse_arguments() {
       info "Dry-run modu aktif"
       shift
       ;;
+    --systemd)
+      USE_SYSTEMD=true
+      info "Systemd modu aktif"
+      shift
+      ;;
     -v | --version)
       echo "$SCRIPT_NAME version $SCRIPT_VERSION"
       exit 0
@@ -661,6 +820,7 @@ main() {
   debug_log "Script version: $SCRIPT_VERSION"
   debug_log "Kullanıcı: $USER"
   debug_log "TTY: $(tty 2>/dev/null || echo 'unknown')"
+  debug_log "PID: $$"
   debug_log "════════════════════════════════════════════════════════"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -672,6 +832,9 @@ main() {
   info "Başlatma zamanı: $(date '+%Y-%m-%d %H:%M:%S')"
   info "Kullanıcı: $USER | TTY: $(tty 2>/dev/null || echo 'bilinmiyor')"
   info "Catppuccin: $CATPPUCCIN_FLAVOR-$CATPPUCCIN_ACCENT"
+
+  local session_type=$(detect_session_type)
+  print_box "Session Type: ${session_type^^}" "$C_MAGENTA"
   echo
 
   setup_directories
@@ -680,8 +843,15 @@ main() {
   setup_environment
   cleanup_old_processes
   setup_dbus
+  start_gnome_keyring
   setup_systemd_integration
-  start_gnome
+
+  # Başlatma modu seçimi
+  if [[ "$USE_SYSTEMD" == "true" ]]; then
+    start_gnome_with_systemd
+  else
+    start_gnome_direct
+  fi
 
   error "Ana fonksiyon beklenmedik şekilde sonlandı!"
 }
