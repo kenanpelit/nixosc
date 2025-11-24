@@ -263,6 +263,21 @@ in
     };
 
     # -------------------------------------------------------------------------
+    # GNOME services (keyring, etc.)
+    # -------------------------------------------------------------------------
+    services.gnome = mkIf cfg.enableGnome {
+      gnome-keyring.enable = true;
+    };
+
+    # -------------------------------------------------------------------------
+    # PAM integration for GNOME keyring
+    # -------------------------------------------------------------------------
+    security.pam.services = mkIf cfg.enableGnome {
+      gdm.enableGnomeKeyring = true;
+      login.enableGnomeKeyring = true;
+    };
+
+    # -------------------------------------------------------------------------
     # Audio stack (PipeWire)
     # -------------------------------------------------------------------------
     services.pipewire = mkIf cfg.enableAudio {

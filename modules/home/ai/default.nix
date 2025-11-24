@@ -25,6 +25,19 @@ in
       };
     };
     
+    gemini-cli = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable Gemini CLI";
+      };
+      package = mkOption {
+        type = types.package;
+        default = pkgs.callPackage ./gemini-cli.nix { };
+        description = "Gemini CLI package to use";
+      };
+    };
+    
     ollama = {
       enable = mkEnableOption "Ollama local AI models";
       models = mkOption {
@@ -38,23 +51,37 @@ in
   config = mkIf cfg.enable {
     home.packages = with pkgs; 
       (optional cfg.claude-cli.enable cfg.claude-cli.package) ++
+      (optional cfg.gemini-cli.enable cfg.gemini-cli.package) ++
       (optional cfg.ollama.enable ollama);
     
-    # Shell configuration for claude command
-    programs.zsh = mkIf (cfg.claude-cli.enable && config.programs.zsh.enable) {
-      shellAliases = {
-        claude = "${cfg.claude-cli.package}/bin/claude";
-        ai = "${cfg.claude-cli.package}/bin/claude";
-      };
+    # Shell configuration for AI commands
+    programs.zsh = mkIf config.programs.zsh.enable {
+      shellAliases = mkMerge [
+        (mkIf cfg.claude-cli.enable {
+          claude = "${cfg.claude-cli.package}/bin/claude";
+          ai-claude = "${cfg.claude-cli.package}/bin/claude";
+        })
+        (mkIf cfg.gemini-cli.enable {
+          gemini = "${cfg.gemini-cli.package}/bin/gemini";
+          ai-gemini = "${cfg.gemini-cli.package}/bin/gemini";
+        })
+      ];
     };
     
-    programs.bash = mkIf (cfg.claude-cli.enable && config.programs.bash.enable) {
-      shellAliases = {
-        claude = "${cfg.claude-cli.package}/bin/claude";
-        ai = "${cfg.claude-cli.package}/bin/claude";
-      };
+    programs.bash = mkIf config.programs.bash.enable {
+      shellAliases = mkMerge [
+        (mkIf cfg.claude-cli.enable {
+          claude = "${cfg.claude-cli.package}/bin/claude";
+          ai-claude = "${cfg.claude-cli.package}/bin/claude";
+        })
+        (mkIf cfg.gemini-cli.enable {
+          gemini = "${cfg.gemini-cli.package}/bin/gemini";
+          ai-gemini = "${cfg.gemini-cli.package}/bin/gemini";
+        })
+      ];
     };
     
+    # Ollama service
     systemd.user.services.ollama = mkIf cfg.ollama.enable {
       Unit = {
         Description = "Ollama AI models service";
@@ -80,16 +107,28 @@ in
       OLLAMA_HOST = "127.0.0.1:11434";
     };
     
-    xdg.desktopEntries = mkIf cfg.claude-cli.enable {
-      claude-cli = {
-        name = "Claude Code";
-        comment = "Agentic coding tool from Anthropic";
-        exec = "${cfg.claude-cli.package}/bin/claude";
-        icon = "terminal";
-        terminal = true;
-        categories = [ "Development" "ConsoleOnly" ];
-      };
-    };
+    # Desktop entries
+    xdg.desktopEntries = mkMerge [
+      (mkIf cfg.claude-cli.enable {
+        claude-cli = {
+          name = "Claude Code";
+          comment = "Anthropic's agentic coding tool";
+          exec = "${cfg.claude-cli.package}/bin/claude";
+          icon = "terminal";
+          terminal = true;
+          categories = [ "Development" "ConsoleOnly" ];
+        };
+      })
+      (mkIf cfg.gemini-cli.enable {
+        gemini-cli = {
+          name = "Gemini CLI";
+          comment = "Google's AI coding assistant";
+          exec = "${cfg.gemini-cli.package}/bin/gemini";
+          icon = "terminal";
+          terminal = true;
+          categories = [ "Development" "ConsoleOnly" ];
+        };
+      })
+    ];
   };
 }
-
