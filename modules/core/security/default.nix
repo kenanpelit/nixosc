@@ -302,7 +302,9 @@ in
     security.pam = {
       services = {
         # GNOME keyring istemiyoruz; GPG agent / age ile gidiyorsun.
-        login.enableGnomeKeyring = mkForce false;
+        #login.enableGnomeKeyring = mkForce false;
+        login.enableGnomeKeyring = mkIf config.my.display.enableGnome true;
+        gdm.enableGnomeKeyring   = mkIf config.my.display.enableGnome true;
 
         # Örnek güçlü parola politikası (isteyince açarsın):
         # passwd.text = lib.mkDefault (mkAfter ''
