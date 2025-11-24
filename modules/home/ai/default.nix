@@ -33,7 +33,7 @@ in
       };
       package = mkOption {
         type = types.package;
-        default = pkgs.callPackage ./gemini-cli.nix { };
+        default = pkgs.gemini-cli;  # Direkt nixpkgs'den
         description = "Gemini CLI package to use";
       };
     };
@@ -122,7 +122,7 @@ in
       (mkIf cfg.gemini-cli.enable {
         gemini-cli = {
           name = "Gemini CLI";
-          comment = "Google's AI coding assistant";
+          comment = "Google's AI agent for your terminal";
           exec = "${cfg.gemini-cli.package}/bin/gemini";
           icon = "terminal";
           terminal = true;

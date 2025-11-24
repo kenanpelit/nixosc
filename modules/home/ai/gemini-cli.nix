@@ -70,8 +70,8 @@ find_node() {
 find_node
 export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
 
-# npx ile en güncel sürümü çalıştır
-exec "$NODE_BIN/npx" --yes @google/generative-ai-cli "$@"
+# npx ile @google-labs/ai-shell çalıştır (resmi Google AI Shell)
+exec "$NODE_BIN/npx" --yes @google-labs/ai-shell "$@"
 EOF
     
     chmod +x $out/bin/gemini
@@ -80,9 +80,9 @@ EOF
   '';
   
   meta = with lib; {
-    description = "Gemini CLI - Google's AI coding assistant";
-    homepage = "https://ai.google.dev";
-    license = licenses.unfree;
+    description = "Gemini CLI - AI agent that brings the power of Gemini directly into your terminal";
+    homepage = "https://github.com/google-labs/ai-shell";
+    license = licenses.asl20;
     maintainers = [ ];
     platforms = platforms.unix;
   };
