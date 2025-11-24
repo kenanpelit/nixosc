@@ -33,7 +33,7 @@ in
       };
       package = mkOption {
         type = types.package;
-        default = pkgs.gemini-cli;  # Direkt nixpkgs'den
+        default = pkgs.callPackage ./gemini-cli.nix { };
         description = "Gemini CLI package to use";
       };
     };
