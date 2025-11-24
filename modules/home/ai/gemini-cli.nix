@@ -1,5 +1,6 @@
 # modules/home/ai/gemini-cli.nix
 { lib, stdenv, makeWrapper, nodejs }:
+
 stdenv.mkDerivation rec {
   pname = "gemini-cli";
   version = "latest";
@@ -19,7 +20,7 @@ stdenv.mkDerivation rec {
     
     cat > $out/bin/gemini << 'EOF'
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # HOME değişkenini ayarla
 if [ -z "$HOME" ]; then
@@ -70,8 +71,8 @@ find_node() {
 find_node
 export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
 
-# npx ile @google-labs/ai-shell çalıştır (resmi Google AI Shell)
-exec "$NODE_BIN/npx" --yes @google-labs/ai-shell "$@"
+# npx ile @google/gemini-cli çalıştır (resmi Google Gemini CLI)
+exec "$NODE_BIN/npx" --yes @google/gemini-cli "$@"
 EOF
     
     chmod +x $out/bin/gemini
@@ -80,10 +81,16 @@ EOF
   '';
   
   meta = with lib; {
-    description = "Gemini CLI - AI agent that brings the power of Gemini directly into your terminal";
-    homepage = "https://github.com/google-labs/ai-shell";
+    description = "AI agent that brings the power of Gemini directly into your terminal";
+    longDescription = ''
+      Gemini CLI is the official command-line interface for Google's Gemini AI.
+      It provides interactive chat, code generation, and context-aware assistance
+      directly from your terminal with Google account authentication.
+    '';
+    homepage = "https://github.com/google-gemini/gemini-cli";
     license = licenses.asl20;
-    maintainers = [ ];
+    maintainers = with maintainers; [ ];
     platforms = platforms.unix;
+    mainProgram = "gemini";
   };
 }
