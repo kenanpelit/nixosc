@@ -237,9 +237,11 @@ in
       # Register custom sessions
       # NOTE:
       #   - Hyprland: Custom session wrapper (hyprland_tty) ekledik
-      #   - GNOME: services.desktopManager.gnome.enable otomatik session ekliyor
-      #            Manuel gnome-session EKLEME! Conflict yaratır.
-      sessionPackages = lib.optionals cfg.enableHyprland [ hyprlandOptimizedSession ];
+      #   - GNOME: Explicitly add gnome.sessions package for session desktop files
+      #   - COSMIC: cosmic-session package adds its own session
+      sessionPackages =
+        lib.optionals cfg.enableHyprland [ hyprlandOptimizedSession ] ++
+        lib.optionals cfg.enableGnome [ pkgs.gnome-session.sessions ];
 
       # We pick GDM and explicitly disable SDDM to avoid conflicts
       gdm = {
