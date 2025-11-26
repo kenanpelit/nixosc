@@ -554,7 +554,7 @@ setup_dbus() {
 
     # Verify systemd is accessible via D-Bus
     if dbus-send --session --print-reply --dest=org.freedesktop.systemd1 \
-       /org/freedesktop/systemd1 org.freedesktop.DBus.Peer.Ping &>/dev/null; then
+      /org/freedesktop/systemd1 org.freedesktop.DBus.Peer.Ping &>/dev/null; then
       info "✓ Systemd user manager D-Bus üzerinden erişilebilir"
     else
       warn "⚠ Systemd user manager D-Bus üzerinden erişilemiyor"
@@ -746,15 +746,11 @@ start_gnome_direct() {
   info "Log: $GNOME_LOG"
   info "═══════════════════════════════════════════════════════════"
 
-  # CRITICAL FIX: Only set SYSTEMD_OFFLINE=0 in TTY mode
-  # In GDM mode, systemd user session is already managed by GDM
-  # Setting SYSTEMD_OFFLINE when GDM is active can cause conflicts
-  if [[ "$GDM_MODE" == "false" ]]; then
-    export SYSTEMD_OFFLINE=0
-    debug_log "✓ SYSTEMD_OFFLINE=0 set (TTY mode)"
-  else
-    debug_log "✓ SYSTEMD_OFFLINE not set (GDM mode - GDM manages systemd)"
-  fi
+  # CRITICAL FIX: Enforce SYSTEMD_OFFLINE=0 globally
+  # Explicitly enabled for both GDM and TTY modes to ensure the script
+  # can reliably interact with the systemd user session without conflicts.
+  export SYSTEMD_OFFLINE=0
+  debug_log "✓ SYSTEMD_OFFLINE=0 her zaman ayarlı (GDM veya TTY modu)"
 
   # Wait for systemd user session to be ready
   local max_wait=10
