@@ -19,10 +19,24 @@
         # =============================================================================
 
         # Only run in login shell when no desktop is active
+        # CRITICAL: Also check if we're being called from a desktop session startup
+        # (gnome-session, cosmic-session, etc. may re-exec shell during startup)
         if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
-            
+
             # TTY1 special check: Don't interfere if session already active
             if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
+                return
+            fi
+
+            # CRITICAL FIX: Prevent re-running when called from desktop session startup
+            # Desktop sessions (GNOME, COSMIC) may re-exec shell with login flag
+            # Check if we're in a desktop session startup context
+            # IMPORTANT: Only check for actual running sessions, not just env vars
+            if pgrep -x "gnome-shell" >/dev/null 2>&1 || \
+               pgrep -x "cosmic-comp" >/dev/null 2>&1 || \
+               [ -n "''${GNOME_DESKTOP_SESSION_ID:-}" ] || \
+               [ -n "''${GNOME_SHELL_SESSION_MODE:-}" ] || \
+               [ -n "''${COSMIC_SESSION:-}" ]; then
                 return
             fi
             
@@ -75,11 +89,11 @@
                 echo "╔════════════════════════════════════════════════════════════╗"
                 echo "║  TTY3: Launching GNOME via gnome_tty                       ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
-                
-                # Minimum required variables - rest configured in gnome_tty
-                export XDG_SESSION_TYPE=wayland
+
+                # CRITICAL: Only set XDG_RUNTIME_DIR - let gnome_tty handle everything else
+                # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
+
                 # Check for gnome_tty script
                 if command -v gnome_tty >/dev/null 2>&1; then
                     echo "Starting GNOME with optimized configuration..."
@@ -88,15 +102,13 @@
                     echo "ERROR: gnome_tty script not found in PATH"
                     echo "Falling back to direct GNOME launch (not recommended)"
                     sleep 3
-                    
-                    # Start GNOME with D-Bus session
-                    if command -v dbus-run-session >/dev/null; then
-                        exec dbus-run-session -- gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
-                    else
-                        eval $(dbus-launch --sh-syntax --exit-with-session)
-                        export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-                        exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
-                    fi
+
+                    # Fallback: Start GNOME with proper environment
+                    export XDG_SESSION_TYPE=wayland
+                    export SYSTEMD_OFFLINE=0
+
+                    # Start GNOME session directly (no dbus-run-session wrapper)
+                    exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
                 fi
             
             # ==========================================================================
@@ -106,11 +118,11 @@
                 echo "╔════════════════════════════════════════════════════════════╗"
                 echo "║  TTY4: Launching COSMIC via cosmic_tty                     ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
-                
-                # Minimum required variables - rest configured in cosmic_tty
-                export XDG_SESSION_TYPE=wayland
+
+                # CRITICAL: Only set XDG_RUNTIME_DIR - let cosmic_tty handle everything else
+                # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
+
                 # Check for cosmic_tty script
                 if command -v cosmic_tty >/dev/null 2>&1; then
                     echo "Starting COSMIC with optimized configuration..."
@@ -120,20 +132,16 @@
                     echo "Falling back to direct COSMIC launch (not recommended)"
                     echo "NOTE: COSMIC is in Beta - expect occasional issues"
                     sleep 3
-                    
-                    # COSMIC environment settings
+
+                    # Fallback: COSMIC environment settings
+                    export XDG_SESSION_TYPE=wayland
                     export XDG_SESSION_DESKTOP=cosmic
                     export XDG_CURRENT_DESKTOP=COSMIC
                     export DESKTOP_SESSION=cosmic
                     export COSMIC_DATA_CONTROL_ENABLED=1
                     export NIXOS_OZONE_WL=1
-                    
-                    # D-Bus check
-                    if ! pgrep -u $(id -u) dbus-daemon >/dev/null 2>&1; then
-                        eval $(dbus-launch --sh-syntax)
-                        export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-                    fi
-                    
+                    export SYSTEMD_OFFLINE=0
+
                     exec cosmic-session 2>&1 | tee /tmp/cosmic-session-tty4.log
                 fi
             
