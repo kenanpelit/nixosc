@@ -5,7 +5,7 @@
 # Module:      modules/core/display
 # Purpose:     Unified display stack (DM/DE/Portals/Input/Audio/Fonts)
 # Author:      Kenan Pelit
-# Last Edited: 2025-11-15
+# Last Edited: 2025-11-24
 #
 # Scope:
 #   ✓ Display Manager (GDM — Wayland-first)
@@ -26,6 +26,7 @@
 #   • Strict module boundaries: no user logic, no HM, no debug noise
 #   • Composable API: my.display.{enable,enableHyprland,enableGnome,...}
 #   • Zero hard-coded host/user names: fully flake-driven
+#   • NixOS handles DE packages: Don't duplicate gnome-session/gnome-shell
 #
 # ==============================================================================
 
@@ -74,12 +75,56 @@ let
   };
 
   # ---------------------------------------------------------------------------
+  # Custom GNOME session wrapper (fixes systemd user session issues)
+  # ---------------------------------------------------------------------------
+  gnomeSessionWrapper = pkgs.writeTextFile {
+    name = "gnome-session-wrapper";
+    destination = "/share/wayland-sessions/gnome-nixos.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=GNOME (NixOS)
+      Comment=GNOME with systemd user session support and custom launcher
+
+      Type=Application
+      DesktopNames=GNOME
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+      X-GDM-SessionRegisters=true
+      X-GDM-CanRunHeadless=true
+
+      Exec=/etc/profiles/per-user/${username}/bin/gnome_tty
+    '';
+    passthru.providedSessions = [ "gnome-nixos" ];
+  };
+
+  # ---------------------------------------------------------------------------
+  # Custom COSMIC session wrapper (fixes systemd user session issues)
+  # ---------------------------------------------------------------------------
+  cosmicSessionWrapper = pkgs.writeTextFile {
+    name = "cosmic-session-wrapper";
+    destination = "/share/wayland-sessions/cosmic-nixos.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=COSMIC (NixOS)
+      Comment=COSMIC with systemd user session support and custom launcher
+
+      Type=Application
+      DesktopNames=COSMIC
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+
+      Exec=/etc/profiles/per-user/${username}/bin/cosmic_tty
+    '';
+    passthru.providedSessions = [ "cosmic-nixos" ];
+  };
+
+  # ---------------------------------------------------------------------------
   # Derived values
   # ---------------------------------------------------------------------------
   defaultSession =
     if cfg.defaultSession != null
     then cfg.defaultSession
-    else (if cfg.enableHyprland then "hyprland-optimized" else "gnome");
+    else (if cfg.enableHyprland then "hyprland-optimized" else "gnome-nixos");
 
   autoLoginUser =
     cfg.autoLogin.user or username;
@@ -233,15 +278,24 @@ in
     # Display manager: GDM (Wayland-first)
     # -------------------------------------------------------------------------
     services.displayManager = {
-      # Register custom Hyprland session if enabled
+      # Register custom sessions
+      # NOTE:
+      #   - Tüm desktop'lar için custom wrapper session'lar kullanıyoruz
+      #   - Bu wrapper'lar systemd user session'ı düzgün başlatıyor
+      #   - Default binary'ler yerine *_tty scriptlerimizi çağırıyor
       sessionPackages =
-        lib.optionals cfg.enableHyprland [ hyprlandOptimizedSession ];
+        lib.optionals cfg.enableHyprland [ hyprlandOptimizedSession ] ++
+        lib.optionals cfg.enableGnome [ gnomeSessionWrapper ] ++
+        lib.optionals cfg.enableCosmic [ cosmicSessionWrapper ];
 
       # We pick GDM and explicitly disable SDDM to avoid conflicts
       gdm = {
         enable      = true;
         wayland     = true;
         autoSuspend = false;
+
+        # Disable debug mode to prevent G_DEBUG=fatal-warnings crash
+        debug       = false;
       };
 
       sddm.enable = false;
@@ -257,9 +311,70 @@ in
     # -------------------------------------------------------------------------
     # Desktop environments (GNOME / COSMIC)
     # -------------------------------------------------------------------------
+    # NOTE:
+    #   - Bu enable'lar otomatik olarak tüm gerekli paketleri yükler:
+    #     * gnome.enable → gnome-session, gnome-shell, mutter, gdm session files
+    #     * cosmic.enable → cosmic-session, cosmic-comp
+    #   - Manuel paket eklemeye gerek YOK!
+    #
+    # CRITICAL FIXES:
+    #   - GNOME: extraGSettingsOverrides ile systemd user session problemlerini çöz
+    #   - Script'lerin session launch'ında systemd.offline ortam değişkeni sorun yaratıyor
+    #
     services.desktopManager = {
-      gnome.enable  = cfg.enableGnome;
+      gnome = mkIf cfg.enableGnome {
+        enable = true;
+
+        # CRITICAL: GNOME session systemd user services'e bağımlı
+        # GDM'den session başlatıldığında systemd user instance çalışmıyorsa
+        # gnome-session çalışmıyor ve TTY'ye geri atıyor
+        extraGSettingsOverrides = ''
+          [org.gnome.desktop.session]
+          session-name='gnome'
+        '';
+      };
+
       cosmic.enable = cfg.enableCosmic;
+    };
+
+    # -------------------------------------------------------------------------
+    # GNOME services & integrations
+    # -------------------------------------------------------------------------
+    services.gnome = mkIf cfg.enableGnome {
+      # Keyring (password management)
+      gnome-keyring.enable = true;
+      
+      # Core GNOME apps (calculator, text editor, system monitor, etc.)
+      # NOTE: NixOS 24.11+ renamed: core-utilities → core-apps
+      # Disabled for minimal setup - user can install desired apps via home-manager
+      core-apps.enable = false;
+      
+      # Evolution data server (calendar, contacts, tasks integration)
+      evolution-data-server.enable = true;
+      
+      # GNOME Settings Daemon (handles theme, input, power management)
+      gnome-settings-daemon.enable = true;
+      
+      # Remote desktop (disabled by default for security)
+      gnome-remote-desktop.enable = false;
+      
+      # Online accounts integration (Google, Microsoft, etc.)
+      # Disabled - user can enable via GNOME Settings if needed
+      gnome-online-accounts.enable = false;
+    };
+
+    # -------------------------------------------------------------------------
+    # PAM integration for GNOME keyring
+    # -------------------------------------------------------------------------
+    # NOTE:
+    #   - Bu security modülünde değil, burada olmalı.
+    #   - GNOME enable olduğunda otomatik devreye girer.
+    #   - Login sırasında keyring'i unlock eder.
+    #   - GDM ve login PAM stack'lerine GNOME Keyring entegrasyonu ekler.
+    #
+    security.pam.services = mkIf cfg.enableGnome {
+      gdm.enableGnomeKeyring = true;
+      login.enableGnomeKeyring = true;
     };
 
     # -------------------------------------------------------------------------
@@ -288,6 +403,13 @@ in
     # -------------------------------------------------------------------------
     # XDG Desktop Portals (session-aware routing)
     # -------------------------------------------------------------------------
+    # NOTE:
+    #   - Portal backend seçimi session bazlı yapılıyor.
+    #   - Hyprland: programs.hyprland.portalPackage sağlıyor.
+    #   - GNOME: xdg-desktop-portal-gnome kullanıyor.
+    #   - COSMIC: xdg-desktop-portal-cosmic kullanıyor.
+    #   - GTK portal tüm DE'lerde fallback olarak var.
+    #
     xdg.portal = {
       enable = true;
       xdgOpenUsePortal = true;
@@ -326,16 +448,22 @@ in
         hyprland.default = [ "hyprland" "gtk" ];
 
         # GNOME → gnome backend + gtk fallback
-        gnome.default    = [ "gnome"    "gtk" ];
+        gnome.default        = [ "gnome"    "gtk" ];
+        "gnome-nixos".default = [ "gnome"    "gtk" ];
 
         # COSMIC → cosmic backend + gtk fallback
-        cosmic.default   = [ "cosmic"   "gtk" ];
+        cosmic.default        = [ "cosmic"   "gtk" ];
+        "cosmic-nixos".default = [ "cosmic"   "gtk" ];
       };
     };
 
     # -------------------------------------------------------------------------
     # Hyprland session target (for user services)
     # -------------------------------------------------------------------------
+    # NOTE:
+    #   - User services'lerin Hyprland başladıktan sonra çalışması için.
+    #   - Home-Manager services'leri buna bağlanabilir.
+    #
     systemd.user.targets.hyprland-session = mkIf cfg.enableHyprland {
       description = "Hyprland compositor session";
 
@@ -390,20 +518,20 @@ in
             "Noto Color Emoji"
           ];
 
-        emoji = [ "Noto Color Emoji" ];
+          emoji = [ "Noto Color Emoji" ];
 
-        serif = [
-          "Liberation Serif"
-          "Noto Serif"
-          "DejaVu Serif"
-        ];
+          serif = [
+            "Liberation Serif"
+            "Noto Serif"
+            "DejaVu Serif"
+          ];
 
-        sansSerif = [
-          "Liberation Sans"
-          "Inter"
-          "Noto Sans"
-          "DejaVu Sans"
-        ];
+          sansSerif = [
+            "Liberation Sans"
+            "Inter"
+            "Noto Sans"
+            "DejaVu Sans"
+          ];
         };
 
         subpixel = mkIf cfg.fonts.hiDpiOptimized {
@@ -427,12 +555,14 @@ in
     environment = {
       # Keep this minimal. Locale should be handled in a dedicated module.
       variables = {
+        # FreeType hinting quality
         FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
       };
 
       systemPackages =
         [ hyprlandOptimizedSession ]
         ++ (with pkgs; [
+          # Font management utilities
           fontconfig
           font-manager
         ]);

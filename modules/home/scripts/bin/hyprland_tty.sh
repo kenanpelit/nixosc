@@ -301,18 +301,15 @@ setup_environment() {
 	debug_log "Environment değişkenleri ayarlanıyor (GDM_MODE=$GDM_MODE)"
 
 	# =========================================================================
-	# CRITICAL FIX: GDM SYSTEMD_OFFLINE override
+	# CRITICAL FIX: Set SYSTEMD_OFFLINE=0 for proper systemd user session
 	# =========================================================================
-	# GDM sometimes sets SYSTEMD_OFFLINE=1 which breaks user services
-	# We must unset this to allow systemd user session to work properly
-	if [[ -n "${SYSTEMD_OFFLINE:-}" ]]; then
-		warn "SYSTEMD_OFFLINE tespit edildi! Temizleniyor..."
-		unset SYSTEMD_OFFLINE
-		info "✓ SYSTEMD_OFFLINE kaldırıldı - systemd user services aktif edildi"
-	fi
-
-	# Systemd'yi açıkça aktif et
+	# Setting SYSTEMD_OFFLINE=0 (not unsetting!) ensures systemd user services
+	# start immediately without delays. This is critical for:
+	# - Waybar and other user services to start properly
+	# - Session to launch without slowdown
+	# - GDM compatibility when launched via display manager
 	export SYSTEMD_OFFLINE=0
+	debug_log "✓ SYSTEMD_OFFLINE=0 set - systemd user services enabled"
 
 	# -------------------------------------------------------------------------
 	# Temel Wayland Ayarları

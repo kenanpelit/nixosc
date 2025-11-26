@@ -126,25 +126,25 @@ echo "🖼️  Catppuccin duvar kağıdı ayarları..."
 # Ana duvar kağıdı
 WALLPAPER_PATH="$HOME/Pictures/wallpapers/others/54.jpg"
 if [ -f "$WALLPAPER_PATH" ]; then
-	dconf write /org/gnome/desktop/background/picture-uri "'file://$WALLPAPER_PATH'"
-	dconf write /org/gnome/desktop/background/picture-uri-dark "'file://$WALLPAPER_PATH'"
-	dconf write /org/gnome/desktop/background/picture-options "'zoom'"
-	echo "✅ Duvar kağıdı ayarlandı: $WALLPAPER_PATH"
+  dconf write /org/gnome/desktop/background/picture-uri "'file://$WALLPAPER_PATH'"
+  dconf write /org/gnome/desktop/background/picture-uri-dark "'file://$WALLPAPER_PATH'"
+  dconf write /org/gnome/desktop/background/picture-options "'zoom'"
+  echo "✅ Duvar kağıdı ayarlandı: $WALLPAPER_PATH"
 else
-	# Fallback solid color
-	dconf write /org/gnome/desktop/background/color-shading-type "'solid'"
-	dconf write /org/gnome/desktop/background/primary-color "'$MOCHA_BASE'"
-	dconf write /org/gnome/desktop/background/picture-options "'none'"
-	echo "⚠️  Duvar kağıdı bulunamadı, solid renk kullanılıyor"
+  # Fallback solid color
+  dconf write /org/gnome/desktop/background/color-shading-type "'solid'"
+  dconf write /org/gnome/desktop/background/primary-color "'$MOCHA_BASE'"
+  dconf write /org/gnome/desktop/background/picture-options "'none'"
+  echo "⚠️  Duvar kağıdı bulunamadı, solid renk kullanılıyor"
 fi
 
 # Lock screen duvar kağıdı
 LOCKSCREEN_PATH="$HOME/Pictures/wallpapers/others/54.jpg"
 if [ -f "$LOCKSCREEN_PATH" ]; then
-	dconf write /org/gnome/desktop/screensaver/picture-uri "'file://$LOCKSCREEN_PATH'"
+  dconf write /org/gnome/desktop/screensaver/picture-uri "'file://$LOCKSCREEN_PATH'"
 else
-	dconf write /org/gnome/desktop/screensaver/color-shading-type "'solid'"
-	dconf write /org/gnome/desktop/screensaver/primary-color "'$MOCHA_MANTLE'"
+  dconf write /org/gnome/desktop/screensaver/color-shading-type "'solid'"
+  dconf write /org/gnome/desktop/screensaver/primary-color "'$MOCHA_MANTLE'"
 fi
 
 # =============================================================================
@@ -345,7 +345,6 @@ EXTENSIONS="[
 'disable-workspace-animation@ethnarque',
 'extension-list@tu.berry',
 'gsconnect@andyholmes.github.io',
-'hidetopbar@mathieu.bidon.ca',
 'just-perfection-desktop@just-perfection',
 'mediacontrols@cliffniff.github.com',
 'mullvadindicator@pobega.github.com',
@@ -654,10 +653,10 @@ echo "🎯 Cursor ve ikon ayarları..."
 
 # Cursor size for HiDPI
 if xrandr | grep -q "3840x2160\|2560x1440"; then
-	dconf write /org/gnome/desktop/interface/cursor-size "24"
-	echo "🖥️  HiDPI ekran tespit edildi, cursor boyutu 32'ye ayarlandı"
+  dconf write /org/gnome/desktop/interface/cursor-size "24"
+  echo "🖥️  HiDPI ekran tespit edildi, cursor boyutu 32'ye ayarlandı"
 else
-	dconf write /org/gnome/desktop/interface/cursor-size "20"
+  dconf write /org/gnome/desktop/interface/cursor-size "20"
 fi
 
 # =============================================================================
@@ -676,30 +675,30 @@ echo "⌨️  Custom keybinding'ler (0..40) yazılıyor..."
 
 # --- helpers: resolve absolute paths
 opt() {
-	local n="$1"
-	local cand
+  local n="$1"
+  local cand
 
-	# 1) PATH içinde varsa
-	cand="$(command -v "$n" 2>/dev/null || true)"
-	if [ -n "$cand" ] && [ -x "$cand" ]; then
-		printf '%s' "$cand"
-		return 0
-	fi
+  # 1) PATH içinde varsa
+  cand="$(command -v "$n" 2>/dev/null || true)"
+  if [ -n "$cand" ] && [ -x "$cand" ]; then
+    printf '%s' "$cand"
+    return 0
+  fi
 
-	# 2) NixOS'ta yaygın dizinler
-	for cand in \
-		"/etc/profiles/per-user/$USER/bin/$n" \
-		"$HOME/.local/bin/$n" \
-		"$HOME/.nix-profile/bin/$n" \
-		"/run/current-system/sw/bin/$n"; do
-		if [ -x "$cand" ]; then
-			printf '%s' "$cand"
-			return 0
-		fi
-	done
+  # 2) NixOS'ta yaygın dizinler
+  for cand in \
+    "/etc/profiles/per-user/$USER/bin/$n" \
+    "$HOME/.local/bin/$n" \
+    "$HOME/.nix-profile/bin/$n" \
+    "/run/current-system/sw/bin/$n"; do
+    if [ -x "$cand" ]; then
+      printf '%s' "$cand"
+      return 0
+    fi
+  done
 
-	# 3) yoksa son çare isim (ama bu gecikme demek!)
-	printf '%s' "$n"
+  # 3) yoksa son çare isim (ama bu gecikme demek!)
+  printf '%s' "$n"
 }
 
 KITTY="$(opt kitty)"
@@ -730,12 +729,12 @@ WALK="$(opt walk)"
 # 0..40 path list
 CUSTOM_PATHS=""
 for i in {0..43}; do
-	p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
-	if [ -z "$CUSTOM_PATHS" ]; then
-		CUSTOM_PATHS="'$p'"
-	else
-		CUSTOM_PATHS="$CUSTOM_PATHS, '$p'"
-	fi
+  p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
+  if [ -z "$CUSTOM_PATHS" ]; then
+    CUSTOM_PATHS="'$p'"
+  else
+    CUSTOM_PATHS="$CUSTOM_PATHS, '$p'"
+  fi
 done
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings "[ $CUSTOM_PATHS ]"
 
@@ -881,10 +880,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 
 # 28..36) Workspaces 1..9 (history switcher)
 for i in {1..9}; do
-	idx=$((27 + i)) # 28..36
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<Super>$i'"
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/command "'$WORKSW $i'"
-	dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/name "'Workspace $i (with history)'"
+  idx=$((27 + i)) # 28..36
+  dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<Super>$i'"
+  dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/command "'$WORKSW $i'"
+  dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/name "'Workspace $i (with history)'"
 done
 
 # 37) Shutdown
@@ -929,13 +928,13 @@ echo "🚫 GNOME varsayılan Super+[1-9] kısayolları devre dışı bırakılı
 
 # Uygulama başlatma kısayollarını kapat (Super+[1-9])
 for i in {1..9}; do
-	dconf write /org/gnome/shell/keybindings/switch-to-application-$i "@as []"
+  dconf write /org/gnome/shell/keybindings/switch-to-application-$i "@as []"
 done
 
 # Workspace geçiş kısayollarını kapat (Super+[1-9])
 for i in {1..9}; do
-	dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "@as []"
-	#dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "@as []"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "@as []"
+  #dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "@as []"
 done
 
 # Space Bar extension'ının workspace switching kısayolunu kapat
@@ -963,6 +962,7 @@ dconf write /org/gnome/shell/extensions/dash-to-panel/group-apps "true"
 dconf write /org/gnome/shell/extensions/dash-to-panel/dot-position "'BOTTOM'"
 dconf write /org/gnome/shell/extensions/dash-to-panel/window-preview-title-position "'TOP'"
 dconf write /org/gnome/shell/extensions/dash-to-panel/hotkeys-overlay-combo "'TEMPORARILY'"
+dconf write /org/gnome/shell/extensions/dash-to-panel/intellihide "false"
 
 # Panel positions - JSON string
 dconf write /org/gnome/shell/extensions/dash-to-panel/panel-positions '"{\"CMN-0x00000000\":\"TOP\",\"DEL-KRXTR88N909L\":\"TOP\"}"'
@@ -1033,7 +1033,7 @@ echo "🌍 Catppuccin ortam değişkenleri..."
 # ~/.profile dosyasına ekle
 PROFILE_FILE="$HOME/.profile"
 if ! grep -q "CATPPUCCIN_THEME" "$PROFILE_FILE" 2>/dev/null; then
-	cat >>"$PROFILE_FILE" <<EOF
+  cat >>"$PROFILE_FILE" <<EOF
 
 # Catppuccin Mocha Theme Environment
 export CATPPUCCIN_THEME="mocha"
@@ -1042,7 +1042,7 @@ export GTK_THEME="catppuccin-mocha-mauve-standard+normal"
 export XCURSOR_THEME="catppuccin-mocha-dark-cursors"
 export XCURSOR_SIZE="16"
 EOF
-	echo "✅ Catppuccin ortam değişkenleri ~/.profile'a eklendi"
+  echo "✅ Catppuccin ortam değişkenleri ~/.profile'a eklendi"
 fi
 
 # =============================================================================
@@ -1052,23 +1052,23 @@ echo "✅ Catppuccin Mocha tema doğrulaması..."
 
 # GTK tema kontrolü
 if gsettings get org.gnome.desktop.interface gtk-theme | grep -q "catppuccin-mocha"; then
-	echo "✅ GTK teması: Catppuccin Mocha aktif"
+  echo "✅ GTK teması: Catppuccin Mocha aktif"
 else
-	echo "⚠️  GTK teması: Catppuccin Mocha aktif değil"
+  echo "⚠️  GTK teması: Catppuccin Mocha aktif değil"
 fi
 
 # Icon tema kontrolü
 if gsettings get org.gnome.desktop.interface icon-theme | grep -q "a-candy-beauty-icon-theme"; then
-	echo "✅ İkon teması: Candy Beauty aktif"
+  echo "✅ İkon teması: Candy Beauty aktif"
 else
-	echo "⚠️  İkon teması: Varsayılan kullanılıyor"
+  echo "⚠️  İkon teması: Varsayılan kullanılıyor"
 fi
 
 # Cursor tema kontrolü
 if gsettings get org.gnome.desktop.interface cursor-theme | grep -q "catppuccin-mocha"; then
-	echo "✅ Cursor teması: Catppuccin Mocha aktif"
+  echo "✅ Cursor teması: Catppuccin Mocha aktif"
 else
-	echo "⚠️  Cursor teması: Catppuccin Mocha aktif değil"
+  echo "⚠️  Cursor teması: Catppuccin Mocha aktif değil"
 fi
 
 # =============================================================================
