@@ -543,7 +543,17 @@ start_cosmic() {
 
 	debug_log "COSMIC session başlatılıyor"
 
+	# CRITICAL FIX: COSMIC needs working systemd user session
+	# Do NOT set SYSTEMD_OFFLINE - let systemd manage the session properly
+	if ! systemctl --user is-active --quiet default.target 2>/dev/null; then
+		error "Systemd user session not active! COSMIC requires systemd user services to be running."
+	fi
+
+	# Ensure SYSTEMD_OFFLINE is NOT set (this breaks session services!)
+	unset SYSTEMD_OFFLINE
+
 	# COSMIC session'ı başlat
+	debug_log "Executing: cosmic-session"
 	exec cosmic-session >>"$COSMIC_LOG" 2>&1
 
 	error "COSMIC exec başarısız oldu!"

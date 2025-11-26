@@ -19,10 +19,25 @@
         # =============================================================================
 
         # Only run in login shell when no desktop is active
+        # CRITICAL: Also check if we're being called from a desktop session startup
+        # (gnome-session, cosmic-session, etc. may re-exec shell during startup)
         if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
-            
+
             # TTY1 special check: Don't interfere if session already active
             if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
+                return
+            fi
+
+            # CRITICAL FIX: Prevent re-running when called from desktop session startup
+            # Desktop sessions (GNOME, COSMIC) may re-exec shell with login flag
+            # Check if we're in a desktop session startup context
+            if [ -n "''${GNOME_DESKTOP_SESSION_ID:-}" ] || \
+               [ -n "''${GNOME_SHELL_SESSION_MODE:-}" ] || \
+               [ "''${XDG_SESSION_DESKTOP:-}" = "gnome" ] || \
+               [ "''${XDG_SESSION_DESKTOP:-}" = "cosmic" ] || \
+               [ "''${XDG_CURRENT_DESKTOP:-}" = "GNOME" ] || \
+               [ "''${XDG_CURRENT_DESKTOP:-}" = "COSMIC" ] || \
+               [ -n "''${COSMIC_SESSION:-}" ]; then
                 return
             fi
             

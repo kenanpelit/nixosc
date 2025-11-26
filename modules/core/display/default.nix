@@ -75,6 +75,50 @@ let
   };
 
   # ---------------------------------------------------------------------------
+  # Custom GNOME session wrapper (fixes systemd user session issues)
+  # ---------------------------------------------------------------------------
+  gnomeSessionWrapper = pkgs.writeTextFile {
+    name = "gnome-session-wrapper";
+    destination = "/share/wayland-sessions/gnome.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=GNOME
+      Comment=This session logs you into GNOME with systemd user session support
+
+      Type=Application
+      DesktopNames=GNOME
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+      X-GDM-SessionRegisters=true
+      X-GDM-CanRunHeadless=true
+
+      Exec=/etc/profiles/per-user/${username}/bin/gnome_tty
+    '';
+    passthru.providedSessions = [ "gnome" ];
+  };
+
+  # ---------------------------------------------------------------------------
+  # Custom COSMIC session wrapper (fixes systemd user session issues)
+  # ---------------------------------------------------------------------------
+  cosmicSessionWrapper = pkgs.writeTextFile {
+    name = "cosmic-session-wrapper";
+    destination = "/share/wayland-sessions/cosmic.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=COSMIC
+      Comment=This session logs you into COSMIC with systemd user session support
+
+      Type=Application
+      DesktopNames=COSMIC
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+
+      Exec=/etc/profiles/per-user/${username}/bin/cosmic_tty
+    '';
+    passthru.providedSessions = [ "cosmic" ];
+  };
+
+  # ---------------------------------------------------------------------------
   # Derived values
   # ---------------------------------------------------------------------------
   defaultSession =
@@ -236,12 +280,13 @@ in
     services.displayManager = {
       # Register custom sessions
       # NOTE:
-      #   - Hyprland: Custom session wrapper (hyprland_tty) ekledik
-      #   - GNOME: Explicitly add gnome.sessions package for session desktop files
-      #   - COSMIC: cosmic-session package adds its own session
+      #   - Tüm desktop'lar için custom wrapper session'lar kullanıyoruz
+      #   - Bu wrapper'lar systemd user session'ı düzgün başlatıyor
+      #   - Default binary'ler yerine *_tty scriptlerimizi çağırıyor
       sessionPackages =
         lib.optionals cfg.enableHyprland [ hyprlandOptimizedSession ] ++
-        lib.optionals cfg.enableGnome [ pkgs.gnome-session.sessions ];
+        lib.optionals cfg.enableGnome [ gnomeSessionWrapper ] ++
+        lib.optionals cfg.enableCosmic [ cosmicSessionWrapper ];
 
       # We pick GDM and explicitly disable SDDM to avoid conflicts
       gdm = {
@@ -272,8 +317,23 @@ in
     #     * cosmic.enable → cosmic-session, cosmic-comp
     #   - Manuel paket eklemeye gerek YOK!
     #
+    # CRITICAL FIXES:
+    #   - GNOME: extraGSettingsOverrides ile systemd user session problemlerini çöz
+    #   - Script'lerin session launch'ında systemd.offline ortam değişkeni sorun yaratıyor
+    #
     services.desktopManager = {
-      gnome.enable  = cfg.enableGnome;
+      gnome = mkIf cfg.enableGnome {
+        enable = true;
+
+        # CRITICAL: GNOME session systemd user services'e bağımlı
+        # GDM'den session başlatıldığında systemd user instance çalışmıyorsa
+        # gnome-session çalışmıyor ve TTY'ye geri atıyor
+        extraGSettingsOverrides = ''
+          [org.gnome.desktop.session]
+          session-name='gnome'
+        '';
+      };
+
       cosmic.enable = cfg.enableCosmic;
     };
 
