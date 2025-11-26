@@ -19,7 +19,7 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="2.0.0"
+readonly SCRIPT_VERSION="2.1.0-gdm-aware"
 readonly LOG_DIR="$HOME/.logs"
 readonly GNOME_LOG="$LOG_DIR/gnome.log"
 readonly DEBUG_LOG="$LOG_DIR/gnome_debug.log"
@@ -43,6 +43,8 @@ CATPPUCCIN_ACCENT="${CATPPUCCIN_ACCENT:-mauve}"
 DEBUG_MODE=false
 DRY_RUN=false
 USE_SYSTEMD=false
+GDM_MODE=false
+FORCE_TTY_MODE=false
 
 # =============================================================================
 # Logging Fonksiyonları
@@ -245,7 +247,39 @@ check_system() {
 }
 
 # =============================================================================
-# Session Detection - GDM vs TTY
+# GDM Detection - Script Başlangıcında Otomatik
+# =============================================================================
+# GDM session indicators (multiple checks for reliability):
+#   1. GDMSESSION environment variable (set by GDM)
+#   2. XDG_SESSION_CLASS=user (GDM sets this)
+#   3. DBUS_SESSION_BUS_ADDRESS already set (GDM provides D-Bus)
+#   4. Systemd user session already active (GDM starts it)
+
+detect_gdm_session() {
+  if [[ "$FORCE_TTY_MODE" == "true" ]]; then
+    GDM_MODE=false
+    return 0
+  fi
+
+  # More aggressive GDM detection
+  if [[ -n "${GDMSESSION:-}" ]] ||
+    [[ "${XDG_SESSION_CLASS:-}" == "user" ]] ||
+    [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" && -n "${XDG_SESSION_ID:-}" ]] ||
+    [[ "$(loginctl show-session "$XDG_SESSION_ID" -p Type 2>/dev/null)" == *"wayland"* ]]; then
+    GDM_MODE=true
+  else
+    GDM_MODE=false
+  fi
+
+  # Log detection result
+  debug_log "GDM Detection: GDM_MODE=$GDM_MODE"
+  debug_log "  GDMSESSION=${GDMSESSION:-unset}"
+  debug_log "  XDG_SESSION_CLASS=${XDG_SESSION_CLASS:-unset}"
+  debug_log "  DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:+set}"
+}
+
+# =============================================================================
+# Session Detection - GDM vs TTY (Legacy, deprecated)
 # =============================================================================
 
 detect_session_type() {
@@ -510,45 +544,25 @@ setup_dbus() {
   # -------------------------------------------------------------------------
   debug_log "TTY'den manuel başlatma tespit edildi"
 
-  # Mevcut D-Bus session kontrolü
-  if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
-    debug_log "D-Bus session zaten mevcut: $DBUS_SESSION_BUS_ADDRESS"
-    return 0
-  fi
-
-  # Systemd user bus kullan (öncelikli)
+  # CRITICAL: Always use systemd user bus for proper systemd integration
+  # GNOME requires access to org.freedesktop.systemd1 over D-Bus
   local user_bus="$XDG_RUNTIME_DIR/bus"
+
   if [[ -S "$user_bus" ]]; then
     export DBUS_SESSION_BUS_ADDRESS="unix:path=$user_bus"
     info "Systemd user bus kullanılıyor: $user_bus"
-    return 0
-  fi
 
-  # Mevcut dbus-daemon kontrolü
-  if pgrep -u "$(id -u)" dbus-daemon >/dev/null 2>&1; then
-    debug_log "D-Bus daemon zaten çalışıyor"
-
-    # Mevcut session'ı al
-    local dbus_addr=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name "dbus-*" -type s 2>/dev/null | head -n1)
-    if [[ -n "$dbus_addr" ]]; then
-      export DBUS_SESSION_BUS_ADDRESS="unix:path=$dbus_addr"
-      info "Mevcut D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
-      return 0
+    # Verify systemd is accessible via D-Bus
+    if dbus-send --session --print-reply --dest=org.freedesktop.systemd1 \
+       /org/freedesktop/systemd1 org.freedesktop.DBus.Peer.Ping &>/dev/null; then
+      info "✓ Systemd user manager D-Bus üzerinden erişilebilir"
+    else
+      warn "⚠ Systemd user manager D-Bus üzerinden erişilemiyor"
     fi
+    return 0
+  else
+    error "Systemd user bus socket bulunamadı: $user_bus\nGNOME systemd user session gerektirir!"
   fi
-
-  # Yeni D-Bus session başlat (son çare)
-  info "Yeni D-Bus session başlatılıyor (dbus-launch)..."
-
-  if ! command -v dbus-launch &>/dev/null; then
-    error "dbus-launch bulunamadı ve mevcut D-Bus yok!"
-  fi
-
-  debug_log "dbus-launch kullanılacak"
-  eval $(dbus-launch --sh-syntax --exit-with-session 2>/dev/null)
-  export DBUS_SESSION_BUS_ADDRESS
-  export DBUS_SESSION_BUS_PID
-  info "D-Bus session başlatıldı (PID: ${DBUS_SESSION_BUS_PID:-unknown})"
 }
 
 # =============================================================================
@@ -681,19 +695,33 @@ start_gnome_with_systemd() {
   info "Log: $GNOME_LOG"
   info "═══════════════════════════════════════════════════════════"
 
-  # Systemd graphical-session.target'ı başlat
-  # gnome-session.target manuel başlatılamaz, bu yüzden wayland target'ı kullanıyoruz
-  systemctl --user start gnome-session-wayland@gnome.target 2>&1 | tee -a "$GNOME_LOG"
+  # CRITICAL FIX: Don't use gnome-session-wayland@gnome.target
+  # This template unit is for systemd user session integration, not direct launch
+  # Instead, exec gnome-session directly like in direct mode
 
-  # GNOME başlayana kadar bekle
-  info "GNOME başlatıldı (gnome-session-wayland@gnome.target)"
-
-  # Session'ı sürdür - Target durana kadar bekle
-  while systemctl --user is-active --quiet gnome-session-wayland@gnome.target; do
-    sleep 2
+  # Wait for systemd user session to be ready
+  local max_wait=10
+  local wait_count=0
+  while ! systemctl --user is-active --quiet default.target 2>/dev/null; do
+    if [[ $wait_count -ge $max_wait ]]; then
+      error "Systemd user session not active after ${max_wait}s!"
+    fi
+    debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
+    sleep 1
+    ((wait_count++))
   done
 
-  info "GNOME session sonlandı."
+  info "✓ Systemd user session is active"
+
+  # Export environment to systemd before starting GNOME
+  systemctl --user import-environment \
+    GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
+    WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE \
+    XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS 2>/dev/null || true
+
+  # Start GNOME session directly (let it manage systemd targets)
+  info "Starting gnome-session..."
+  exec gnome-session --session=gnome 2>&1 | tee -a "$GNOME_LOG"
 }
 
 # =============================================================================
@@ -718,14 +746,29 @@ start_gnome_direct() {
   info "Log: $GNOME_LOG"
   info "═══════════════════════════════════════════════════════════"
 
-  # CRITICAL FIX: Check systemd user session before starting GNOME
-  # GNOME requires a working systemd user session
-  if ! systemctl --user is-active --quiet default.target 2>/dev/null; then
-    error "Systemd user session not active! GNOME requires systemd user services to be running."
+  # CRITICAL FIX: Only set SYSTEMD_OFFLINE=0 in TTY mode
+  # In GDM mode, systemd user session is already managed by GDM
+  # Setting SYSTEMD_OFFLINE when GDM is active can cause conflicts
+  if [[ "$GDM_MODE" == "false" ]]; then
+    export SYSTEMD_OFFLINE=0
+    debug_log "✓ SYSTEMD_OFFLINE=0 set (TTY mode)"
+  else
+    debug_log "✓ SYSTEMD_OFFLINE not set (GDM mode - GDM manages systemd)"
   fi
 
-  # Ensure SYSTEMD_OFFLINE is NOT set (this breaks session services!)
-  unset SYSTEMD_OFFLINE
+  # Wait for systemd user session to be ready
+  local max_wait=10
+  local wait_count=0
+  while ! systemctl --user is-active --quiet default.target 2>/dev/null; do
+    if [[ $wait_count -ge $max_wait ]]; then
+      error "Systemd user session not active after ${max_wait}s! GNOME requires systemd user services to be running."
+    fi
+    debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
+    sleep 1
+    ((wait_count++))
+  done
+
+  info "✓ Systemd user session is active"
 
   # Son environment export
   systemctl --user import-environment \
@@ -734,10 +777,9 @@ start_gnome_direct() {
     XDG_SESSION_DESKTOP 2>/dev/null || true
 
   # GNOME komutunu hazırla
-  # CRITICAL FIX: --builtin flag prevents gnome-session from relaunching with login shell
-  # Without this, gnome-session executes: exec -l zsh -c 'exec gnome-session ...'
-  # which causes .zprofile to run again, creating an infinite loop
-  local cmd="gnome-session --session=gnome --builtin"
+  # NOTE: Use systemd user bus instead of dbus-run-session
+  # dbus-run-session creates an isolated D-Bus session, preventing systemd integration
+  local cmd="gnome-session --session=gnome"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
     # Shell tracing'i kapat (temiz çıktı için)
@@ -833,6 +875,11 @@ parse_arguments() {
       info "Systemd modu aktif"
       shift
       ;;
+    --force-tty)
+      FORCE_TTY_MODE=true
+      info "Force TTY mode aktif"
+      shift
+      ;;
     -v | --version)
       echo "$SCRIPT_NAME version $SCRIPT_VERSION"
       exit 0
@@ -851,12 +898,19 @@ parse_arguments() {
 main() {
   parse_arguments "$@"
 
+  # GDM detection (en başta!)
+  detect_gdm_session
+
   debug_log "════════════════════════════════════════════════════════"
   debug_log "Script başlatıldı: $(date)"
   debug_log "Script version: $SCRIPT_VERSION"
   debug_log "Kullanıcı: $USER"
   debug_log "TTY: $(tty 2>/dev/null || echo 'unknown')"
   debug_log "PID: $$"
+  debug_log "GDM_MODE: $GDM_MODE | DEBUG: $DEBUG_MODE | DRY_RUN: $DRY_RUN"
+  debug_log "GDMSESSION: ${GDMSESSION:-unset}"
+  debug_log "XDG_SESSION_CLASS: ${XDG_SESSION_CLASS:-unset}"
+  debug_log "DBUS_SESSION_BUS_ADDRESS: ${DBUS_SESSION_BUS_ADDRESS:-unset}"
   debug_log "════════════════════════════════════════════════════════"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -868,9 +922,10 @@ main() {
   info "Başlatma zamanı: $(date '+%Y-%m-%d %H:%M:%S')"
   info "Kullanıcı: $USER | TTY: $(tty 2>/dev/null || echo 'bilinmiyor')"
   info "Catppuccin: $CATPPUCCIN_FLAVOR-$CATPPUCCIN_ACCENT"
+  info "Mode: $([ "$GDM_MODE" == "true" ] && echo "GDM Session" || echo "TTY Direct")"
 
   local session_type=$(detect_session_type)
-  print_box "Session Type: ${session_type^^}" "$C_MAGENTA"
+  print_box "Session Type: ${session_type^^} (GDM_MODE=$GDM_MODE)" "$C_MAGENTA"
   echo
 
   setup_directories
@@ -883,11 +938,11 @@ main() {
   setup_systemd_integration
 
   # Başlatma modu seçimi
-  if [[ "$USE_SYSTEMD" == "true" ]]; then
-    start_gnome_with_systemd
-  else
-    start_gnome_direct
-  fi
+  # CRITICAL FIX: Always use direct mode regardless of flag
+  # The "systemd mode" was broken because gnome-session-wayland@gnome.target
+  # is a template unit that expects to be started by GDM, not manually
+  # Direct mode properly integrates with systemd user session
+  start_gnome_direct
 
   error "Ana fonksiyon beklenmedik şekilde sonlandı!"
 }

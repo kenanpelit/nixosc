@@ -79,11 +79,11 @@ let
   # ---------------------------------------------------------------------------
   gnomeSessionWrapper = pkgs.writeTextFile {
     name = "gnome-session-wrapper";
-    destination = "/share/wayland-sessions/gnome.desktop";
+    destination = "/share/wayland-sessions/gnome-nixos.desktop";
     text = ''
       [Desktop Entry]
-      Name=GNOME
-      Comment=This session logs you into GNOME with systemd user session support
+      Name=GNOME (NixOS)
+      Comment=GNOME with systemd user session support and custom launcher
 
       Type=Application
       DesktopNames=GNOME
@@ -94,7 +94,7 @@ let
 
       Exec=/etc/profiles/per-user/${username}/bin/gnome_tty
     '';
-    passthru.providedSessions = [ "gnome" ];
+    passthru.providedSessions = [ "gnome-nixos" ];
   };
 
   # ---------------------------------------------------------------------------
@@ -102,11 +102,11 @@ let
   # ---------------------------------------------------------------------------
   cosmicSessionWrapper = pkgs.writeTextFile {
     name = "cosmic-session-wrapper";
-    destination = "/share/wayland-sessions/cosmic.desktop";
+    destination = "/share/wayland-sessions/cosmic-nixos.desktop";
     text = ''
       [Desktop Entry]
-      Name=COSMIC
-      Comment=This session logs you into COSMIC with systemd user session support
+      Name=COSMIC (NixOS)
+      Comment=COSMIC with systemd user session support and custom launcher
 
       Type=Application
       DesktopNames=COSMIC
@@ -115,7 +115,7 @@ let
 
       Exec=/etc/profiles/per-user/${username}/bin/cosmic_tty
     '';
-    passthru.providedSessions = [ "cosmic" ];
+    passthru.providedSessions = [ "cosmic-nixos" ];
   };
 
   # ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ let
   defaultSession =
     if cfg.defaultSession != null
     then cfg.defaultSession
-    else (if cfg.enableHyprland then "hyprland-optimized" else "gnome");
+    else (if cfg.enableHyprland then "hyprland-optimized" else "gnome-nixos");
 
   autoLoginUser =
     cfg.autoLogin.user or username;
@@ -448,10 +448,12 @@ in
         hyprland.default = [ "hyprland" "gtk" ];
 
         # GNOME → gnome backend + gtk fallback
-        gnome.default    = [ "gnome"    "gtk" ];
+        gnome.default        = [ "gnome"    "gtk" ];
+        "gnome-nixos".default = [ "gnome"    "gtk" ];
 
         # COSMIC → cosmic backend + gtk fallback
-        cosmic.default   = [ "cosmic"   "gtk" ];
+        cosmic.default        = [ "cosmic"   "gtk" ];
+        "cosmic-nixos".default = [ "cosmic"   "gtk" ];
       };
     };
 
