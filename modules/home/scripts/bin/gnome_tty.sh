@@ -718,6 +718,15 @@ start_gnome_direct() {
   info "Log: $GNOME_LOG"
   info "═══════════════════════════════════════════════════════════"
 
+  # CRITICAL FIX: Check systemd user session before starting GNOME
+  # GNOME requires a working systemd user session
+  if ! systemctl --user is-active --quiet default.target 2>/dev/null; then
+    error "Systemd user session not active! GNOME requires systemd user services to be running."
+  fi
+
+  # Ensure SYSTEMD_OFFLINE is NOT set (this breaks session services!)
+  unset SYSTEMD_OFFLINE
+
   # Son environment export
   systemctl --user import-environment \
     GNOME_KEYRING_CONTROL SSH_AUTH_SOCK \
@@ -725,17 +734,20 @@ start_gnome_direct() {
     XDG_SESSION_DESKTOP 2>/dev/null || true
 
   # GNOME komutunu hazırla
-  local cmd="gnome-session --session=gnome"
-  
+  # CRITICAL FIX: --builtin flag prevents gnome-session from relaunching with login shell
+  # Without this, gnome-session executes: exec -l zsh -c 'exec gnome-session ...'
+  # which causes .zprofile to run again, creating an infinite loop
+  local cmd="gnome-session --session=gnome --builtin"
+
   if [[ "$DEBUG_MODE" == "true" ]]; then
     # Shell tracing'i kapat (temiz çıktı için)
     set +x
-    
+
     cmd="$cmd --debug"
-    
+
     info "DEBUG MODE: Çıktılar hem ekrana hem log dosyasına yazılıyor..."
     info "Komut: $cmd"
-    
+
     # Output redirect (unbuffered tee ile)
     # stdbuf -o0 -e0 ile anlık yazmayı garantiye alıyoruz
     exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
