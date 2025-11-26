@@ -145,13 +145,6 @@ in
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
       GDK_SCALE = "1";
-      # Hyprland için ek ayarlar
-      GDK_BACKEND = "wayland,x11";
-      QT_QPA_PLATFORM = "wayland;xcb";
-      CLUTTER_BACKEND = "wayland";
-      XDG_CURRENT_DESKTOP = "Hyprland";
-      XDG_SESSION_DESKTOP = "Hyprland";
-      XDG_SESSION_TYPE = "wayland";
     };
 
     # ---------------------------------------------------------------------------
