@@ -17,7 +17,7 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="1.0.0"
+readonly SCRIPT_VERSION="1.1.0-gdm-aware"
 readonly LOG_DIR="$HOME/.logs"
 readonly COSMIC_LOG="$LOG_DIR/cosmic.log"
 readonly DEBUG_LOG="$LOG_DIR/cosmic_debug.log"
@@ -39,6 +39,40 @@ CATPPUCCIN_ACCENT="${CATPPUCCIN_ACCENT:-mauve}"
 # Debug modu flag
 DEBUG_MODE=false
 DRY_RUN=false
+GDM_MODE=false
+FORCE_TTY_MODE=false
+
+# =============================================================================
+# GDM Detection - Script Başlangıcında Otomatik
+# =============================================================================
+# GDM session indicators (multiple checks for reliability):
+#   1. GDMSESSION environment variable (set by GDM)
+#   2. XDG_SESSION_CLASS=user (GDM sets this)
+#   3. DBUS_SESSION_BUS_ADDRESS already set (GDM provides D-Bus)
+#   4. Systemd user session already active (GDM starts it)
+
+detect_gdm_session() {
+	if [[ "$FORCE_TTY_MODE" == "true" ]]; then
+		GDM_MODE=false
+		return 0
+	fi
+
+	# More aggressive GDM detection
+	if [[ -n "${GDMSESSION:-}" ]] ||
+		[[ "${XDG_SESSION_CLASS:-}" == "user" ]] ||
+		[[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" && -n "${XDG_SESSION_ID:-}" ]] ||
+		[[ "$(loginctl show-session "$XDG_SESSION_ID" -p Type 2>/dev/null)" == *"wayland"* ]]; then
+		GDM_MODE=true
+	else
+		GDM_MODE=false
+	fi
+
+	# Log detection result
+	debug_log "GDM Detection: GDM_MODE=$GDM_MODE"
+	debug_log "  GDMSESSION=${GDMSESSION:-unset}"
+	debug_log "  XDG_SESSION_CLASS=${XDG_SESSION_CLASS:-unset}"
+	debug_log "  DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:+set}"
+}
 
 # =============================================================================
 # Logging Fonksiyonları
@@ -255,8 +289,12 @@ cleanup_environment() {
 	unset XDG_CURRENT_DESKTOP
 	unset XDG_SESSION_DESKTOP
 	unset DESKTOP_SESSION
-	unset DBUS_SESSION_BUS_ADDRESS
-	unset DBUS_SESSION_BUS_PID
+
+	# CRITICAL: Don't unset DBUS_SESSION_BUS_ADDRESS!
+	# GDM provides this and COSMIC needs it to communicate with systemd
+	# Unsetting breaks COSMIC session startup completely
+	# unset DBUS_SESSION_BUS_ADDRESS  # REMOVED - breaks COSMIC!
+	# unset DBUS_SESSION_BUS_PID       # REMOVED - breaks COSMIC!
 
 	debug_log "Environment temizliği tamamlandı"
 }
@@ -428,36 +466,23 @@ setup_dbus() {
 		return 0
 	fi
 
-	# Mevcut D-Bus session kontrolü
-	if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
-		debug_log "D-Bus session zaten mevcut: $DBUS_SESSION_BUS_ADDRESS"
-		return 0
-	fi
+	# CRITICAL: Always use systemd user bus for proper systemd integration
+	# COSMIC requires access to systemd user session via D-Bus
+	local user_bus="$XDG_RUNTIME_DIR/bus"
 
-	# D-Bus user session kontrolü
-	if pgrep -u "$(id -u)" dbus-daemon >/dev/null 2>&1; then
-		debug_log "D-Bus daemon zaten çalışıyor"
+	if [[ -S "$user_bus" ]]; then
+		export DBUS_SESSION_BUS_ADDRESS="unix:path=$user_bus"
+		info "Systemd user bus kullanılıyor: $user_bus"
 
-		# Mevcut session'ı al
-		local dbus_addr=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name "dbus-*" -type s 2>/dev/null | head -n1)
-		if [[ -n "$dbus_addr" ]]; then
-			export DBUS_SESSION_BUS_ADDRESS="unix:path=$dbus_addr"
-			debug_log "Mevcut D-Bus session bulundu: $DBUS_SESSION_BUS_ADDRESS"
-			return 0
+		# Verify systemd is accessible via D-Bus
+		if dbus-send --session --print-reply --dest=org.freedesktop.systemd1 \
+		   /org/freedesktop/systemd1 org.freedesktop.DBus.Peer.Ping &>/dev/null; then
+			info "✓ Systemd user manager D-Bus üzerinden erişilebilir"
+		else
+			warn "⚠ Systemd user manager D-Bus üzerinden erişilemiyor"
 		fi
-	fi
-
-	info "D-Bus session başlatılıyor..."
-
-	# dbus-launch kullanarak başlat
-	if command -v dbus-launch &>/dev/null; then
-		debug_log "dbus-launch kullanılacak"
-		eval $(dbus-launch --sh-syntax --exit-with-session)
-		export DBUS_SESSION_BUS_ADDRESS
-		export DBUS_SESSION_BUS_PID
-		info "D-Bus session başlatıldı (PID: $DBUS_SESSION_BUS_PID)"
 	else
-		warn "dbus-launch bulunamadı, COSMIC otomatik başlatmayı deneyecek"
+		error "Systemd user bus socket bulunamadı: $user_bus\nCOSMIC systemd user session gerektirir!"
 	fi
 }
 
@@ -538,21 +563,50 @@ start_cosmic() {
 	info "Session: cosmic (Beta)"
 	info "Flavor: $CATPPUCCIN_FLAVOR | Accent: $CATPPUCCIN_ACCENT"
 	info "Log: $COSMIC_LOG"
+	info "Mode: $([ "$GDM_MODE" == "true" ] && echo "GDM Session" || echo "TTY Direct")"
 	info "═══════════════════════════════════════════════════════════"
 	warn "UYARI: COSMIC Beta aşamasında - hatalar beklenebilir"
 
 	debug_log "COSMIC session başlatılıyor"
 
-	# CRITICAL FIX: COSMIC needs working systemd user session
-	# Do NOT set SYSTEMD_OFFLINE - let systemd manage the session properly
-	if ! systemctl --user is-active --quiet default.target 2>/dev/null; then
-		error "Systemd user session not active! COSMIC requires systemd user services to be running."
+	# CRITICAL FIX: Only set SYSTEMD_OFFLINE=0 in TTY mode
+	# In GDM mode, systemd user session is already managed by GDM
+	# Setting SYSTEMD_OFFLINE when GDM is active can cause conflicts
+	if [[ "$GDM_MODE" == "false" ]]; then
+		export SYSTEMD_OFFLINE=0
+		debug_log "✓ SYSTEMD_OFFLINE=0 set (TTY mode)"
+	else
+		debug_log "✓ SYSTEMD_OFFLINE not set (GDM mode - GDM manages systemd)"
 	fi
 
-	# Ensure SYSTEMD_OFFLINE is NOT set (this breaks session services!)
-	unset SYSTEMD_OFFLINE
+	# Wait for systemd user session to be ready
+	local max_wait=10
+	local wait_count=0
+	while ! systemctl --user is-active --quiet default.target 2>/dev/null; do
+		if [[ $wait_count -ge $max_wait ]]; then
+			error "Systemd user session not active after ${max_wait}s! COSMIC requires systemd user services to be running."
+		fi
+		debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
+		sleep 1
+		((wait_count++))
+	done
+
+	info "✓ Systemd user session is active"
+
+	# Export environment to systemd before starting COSMIC
+	debug_log "Exporting environment to systemd user session"
+	systemctl --user import-environment \
+		WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE \
+		XDG_SESSION_DESKTOP DBUS_SESSION_BUS_ADDRESS \
+		COSMIC_DATA_CONTROL_ENABLED 2>/dev/null || true
+
+	# Update D-Bus activation environment
+	dbus-update-activation-environment --systemd \
+		WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE \
+		XDG_SESSION_DESKTOP 2>/dev/null || true
 
 	# COSMIC session'ı başlat
+	# Use systemd user bus instead of dbus-run-session for proper systemd integration
 	debug_log "Executing: cosmic-session"
 	exec cosmic-session >>"$COSMIC_LOG" 2>&1
 
@@ -621,6 +675,11 @@ parse_arguments() {
 			info "Dry-run modu aktif"
 			shift
 			;;
+		--force-tty)
+			FORCE_TTY_MODE=true
+			info "Force TTY mode aktif"
+			shift
+			;;
 		-v | --version)
 			echo "$SCRIPT_NAME version $SCRIPT_VERSION"
 			exit 0
@@ -639,11 +698,18 @@ parse_arguments() {
 main() {
 	parse_arguments "$@"
 
+	# GDM detection (en başta!)
+	detect_gdm_session
+
 	debug_log "════════════════════════════════════════════════════════"
 	debug_log "Script başlatıldı: $(date)"
 	debug_log "Script version: $SCRIPT_VERSION"
 	debug_log "Kullanıcı: $USER"
 	debug_log "TTY: $(tty 2>/dev/null || echo 'unknown')"
+	debug_log "GDM_MODE: $GDM_MODE | DEBUG: $DEBUG_MODE | DRY_RUN: $DRY_RUN"
+	debug_log "GDMSESSION: ${GDMSESSION:-unset}"
+	debug_log "XDG_SESSION_CLASS: ${XDG_SESSION_CLASS:-unset}"
+	debug_log "DBUS_SESSION_BUS_ADDRESS: ${DBUS_SESSION_BUS_ADDRESS:-unset}"
 	debug_log "════════════════════════════════════════════════════════"
 
 	if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -655,6 +721,7 @@ main() {
 	info "Başlatma zamanı: $(date '+%Y-%m-%d %H:%M:%S')"
 	info "Kullanıcı: $USER | TTY: $(tty 2>/dev/null || echo 'bilinmiyor')"
 	info "Catppuccin: $CATPPUCCIN_FLAVOR-$CATPPUCCIN_ACCENT"
+	info "Mode: $([ "$GDM_MODE" == "true" ] && echo "GDM Session" || echo "TTY Direct")"
 	echo
 
 	setup_directories
