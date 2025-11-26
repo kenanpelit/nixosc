@@ -322,7 +322,7 @@ setup_environment() {
   # -------------------------------------------------------------------------
   # Wayland Backend Tercihleri
   # -------------------------------------------------------------------------
-  export WAYLAND_DISPLAY=wayland-0
+  # export WAYLAND_DISPLAY=wayland-0  <-- REMOVED: Compositor sets this!
   export MOZ_ENABLE_WAYLAND=1
   export QT_QPA_PLATFORM="wayland;xcb"
   export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
@@ -682,13 +682,18 @@ start_gnome_with_systemd() {
   info "═══════════════════════════════════════════════════════════"
 
   # Systemd graphical-session.target'ı başlat
-  systemctl --user start gnome-session.target 2>&1 | tee -a "$GNOME_LOG"
+  # gnome-session.target manuel başlatılamaz, bu yüzden wayland target'ı kullanıyoruz
+  systemctl --user start gnome-session-wayland@gnome.target 2>&1 | tee -a "$GNOME_LOG"
 
   # GNOME başlayana kadar bekle
-  info "GNOME başlatıldı, graphical-session.target aktif"
+  info "GNOME başlatıldı (gnome-session-wayland@gnome.target)"
 
-  # Session'ı sürdür
-  wait
+  # Session'ı sürdür - Target durana kadar bekle
+  while systemctl --user is-active --quiet gnome-session-wayland@gnome.target; do
+    sleep 2
+  done
+
+  info "GNOME session sonlandı."
 }
 
 # =============================================================================
@@ -719,9 +724,28 @@ start_gnome_direct() {
     WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE \
     XDG_SESSION_DESKTOP 2>/dev/null || true
 
-  # GNOME başlat (exec ile - mevcut shell'i replace et)
-  info "GNOME session exec ediliyor..."
-  exec gnome-session --session=gnome >>"$GNOME_LOG" 2>&1
+  # GNOME komutunu hazırla
+  local cmd="gnome-session --session=gnome"
+  
+  if [[ "$DEBUG_MODE" == "true" ]]; then
+    # Shell tracing'i kapat (temiz çıktı için)
+    set +x
+    
+    cmd="$cmd --debug"
+    
+    info "DEBUG MODE: Çıktılar hem ekrana hem log dosyasına yazılıyor..."
+    info "Komut: $cmd"
+    
+    # Output redirect (unbuffered tee ile)
+    # stdbuf -o0 -e0 ile anlık yazmayı garantiye alıyoruz
+    exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
+  else
+    info "GNOME session exec ediliyor..."
+    exec >>"$GNOME_LOG" 2>&1
+  fi
+
+  # GNOME başlat
+  exec $cmd
 }
 
 # =============================================================================

@@ -54,7 +54,7 @@ find_node() {
     
     # Nix store'da en güncel nodejs'i bul
     local latest_node=$(find /nix/store -maxdepth 1 -name "*nodejs*" -type d 2>/dev/null | \
-                       grep -E "nodejs-[0-9]+\.[0-9]+" | \
+                       grep -E "nodejs-[0-9]+\\.[0-9]+" | \
                        sort -V | tail -1)
     
     if [ -n "$latest_node" ] && [ -f "$latest_node/bin/node" ]; then
@@ -80,17 +80,18 @@ EOF
     runHook postInstall
   '';
   
-  meta = with lib; {
-    description = "AI agent that brings the power of Gemini directly into your terminal";
-    longDescription = ''
-      Gemini CLI is the official command-line interface for Google's Gemini AI.
-      It provides interactive chat, code generation, and context-aware assistance
-      directly from your terminal with Google account authentication.
-    '';
-    homepage = "https://github.com/google-gemini/gemini-cli";
-    license = licenses.asl20;
-    maintainers = with maintainers; [ ];
-    platforms = platforms.unix;
-    mainProgram = "gemini";
-  };
+  meta = with lib;
+    {
+      description = "AI agent that brings the power of Gemini directly into your terminal";
+      longDescription = ''
+        Gemini CLI is the official command-line interface for Google's Gemini AI.
+        It provides interactive chat, code generation, and context-aware assistance
+        directly from your terminal with Google account authentication.
+      '';
+      homepage = "https://github.com/google-gemini/gemini-cli";
+      license = licenses.asl20;
+      maintainers = with maintainers; [ ];
+      platforms = platforms.unix;
+      mainProgram = "gemini";
+    };
 }

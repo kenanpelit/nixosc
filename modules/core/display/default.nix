@@ -248,7 +248,7 @@ in
         enable      = true;
         wayland     = true;
         autoSuspend = false;
-        
+
         # Disable debug mode to prevent G_DEBUG=fatal-warnings crash
         debug       = false;
       };
