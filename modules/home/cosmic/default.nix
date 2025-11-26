@@ -55,10 +55,6 @@
   # This prevents conflicts when switching between GNOME/Hyprland/COSMIC
   
   home.sessionVariables = {
-    # Desktop identification (low priority - won't override other DEs)
-    XDG_CURRENT_DESKTOP = lib.mkDefault "COSMIC";
-    XDG_SESSION_DESKTOP = lib.mkDefault "cosmic";
-    
     # Wayland-specific settings
     MOZ_ENABLE_WAYLAND = "1";           # Firefox Wayland support
     SDL_VIDEODRIVER = lib.mkDefault "wayland";  # SDL apps use Wayland
@@ -571,7 +567,6 @@
   # Environment for systemd user services running under COSMIC
   
   systemd.user.sessionVariables = {
-    XDG_CURRENT_DESKTOP = lib.mkDefault "COSMIC";
     NIXOS_OZONE_WL = "1";
   };
 }
