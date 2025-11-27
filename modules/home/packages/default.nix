@@ -169,6 +169,7 @@ in
     # Screenshot Tools
     satty           # Ekran görüntüsü annotasyon
     swappy          # Wayland ekran görüntüsü editörü
+    gnome-screenshot # GNOME ekran görüntüsü aracı
     
     # Music & Entertainment
     spotify         # Müzik streaming
@@ -330,7 +331,7 @@ in
     
     # Extensions
     gnomeExtensions.gsconnect # Telefon entegrasyonu
-    gnome-screenshot
+
 
     # ==============================================================================
     # Tarayıcılar

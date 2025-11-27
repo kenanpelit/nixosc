@@ -106,7 +106,7 @@ let
       modified          = "!";
       staged            = "+";
       untracked         = "?";
-      stashed           = "$";
+      stashed           = "\\$";
       ignore_submodules = true;     # major win on mono-repos
     };
 
