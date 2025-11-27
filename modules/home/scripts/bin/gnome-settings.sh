@@ -354,7 +354,6 @@ EXTENSIONS="[
   "notification-configurator@exposedcat",
   "notification-icons@jiggak.io",
   "no-titlebar-when-maximized@alec.ninja",
-  "soundbar@karthickk.gitlab.com",
   "space-bar@luchrioh",
   "tilingshell@ferrarodomenico.com",
   "tophat@fflewddur.github.io",
