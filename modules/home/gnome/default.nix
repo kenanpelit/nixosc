@@ -70,7 +70,9 @@ let
     { name = "Bluetooth Toggle"; command = "bluetooth_toggle"; binding = "F10"; }
     { name = "Mullvad Toggle"; command = "osc-mullvad toggle"; binding = "<Alt>F12"; }
     { name = "Gnome Start"; command = "semsumo launch --daily"; binding = "<Super><Alt>Return"; }
-    { name = "Screenshot Tool"; command = "gnome-screenshot -i"; binding = "<Super><Shift>s"; }
+    { name = "Screenshot Full Save"; command = "screenshot sf"; binding = "Print"; }
+    { name = "Screenshot Region Save"; command = "screenshot rf"; binding = "<Shift>Print"; }
+
     { name = "MPV Move Window"; command = "gnome-mpv-manager move"; binding = "<Alt><Shift>i"; }
     { name = "MPV Resize Center"; command = "gnome-mpv-manager resize"; binding = "<Alt><Ctrl>i"; }
     { name = "Play YouTube from Clipboard"; command = "gnome-mpv-manager play-yt"; binding = "<Alt>y"; }
@@ -147,29 +149,34 @@ in
     "org/gnome/shell" = {
       enabled-extensions = [
         "alt-tab-scroll-workaround@lucasresck.github.io"
-        "auto-move-windows@gnome-shell-extensions.gcampax.github.com"
-        "azwallpaper@azwallpaper.gitlab.com"
-        "bluetooth-quick-connect@bjarosze.gmail.com"
-        "clipboard-indicator@tudmotu.com"
-        "dash-to-panel@jderose9.github.com"
-        "disable-workspace-animation@ethnarque"
-        "extension-list@tu.berry"
-        "gsconnect@andyholmes.github.io"
-        "just-perfection-desktop@just-perfection"
-        "mediacontrols@cliffniff.github.com"
-        "mullvadindicator@pobega.github.com"
-        "no-overview@fthx"
-        "no-titlebar-when-maximized@alec.ninja"
-        "quick-settings-tweaks@qwreey"
-        "screenshort-cut@pauloimon"
-        "sound-percentage@subashghimire.info.np"
-        "space-bar@luchrioh"
-        "tilingshell@ferrarodomenico.com"
-        "tophat@fflewddur.github.io"
-        "trayIconsReloaded@selfmade.pl"
-        "weatheroclock@CleoMenezesJr.github.io"
-        "window-centering@hnjjhmtr27"
-        "zetadev@bootpaper"
+      	"audio-switch-shortcuts@dbatis.github.com"
+      	"auto-move-windows@gnome-shell-extensions.gcampax.github.com"
+      	"azwallpaper@azwallpaper.gitlab.com"
+      	"bluetooth-quick-connect@bjarosze.gmail.com"
+      	"clipboard-indicator@tudmotu.com"
+      	"copyous@boerdereinar.dev"
+      	"dash-to-panel@jderose9.github.com"
+      	"disable-three-finger-gestures-redux@cygnusx-1-org.github.com"
+      	"disable-workspace-animation@ethnarque"
+      	"extension-list@tu.berry"
+      	"gsconnect@andyholmes.github.io"
+      	"headphone-internal-switch@gustavomalta.github.com"
+      	"just-perfection-desktop@just-perfection"
+      	"launcher@hedgie.tech"
+      	"mediacontrols@cliffniff.github.com"
+      	"no-overview@fthx"
+      	"notification-configurator@exposedcat"
+      	"notification-icons@jiggak.io"
+      	"no-titlebar-when-maximized@alec.ninja"
+      	"soundbar@karthickk.gitlab.com"
+      	"space-bar@luchrioh"
+      	"tilingshell@ferrarodomenico.com"
+      	"tophat@fflewddur.github.io"
+      	"trayIconsReloaded@selfmade.pl"
+      	"veil@dagimg-dot"
+      	"vpn-indicator@fthx"
+      	"weatheroclock@CleoMenezesJr.github.io"
+      	"zetadev@bootpaper"
       ];
       favorite-apps = ["brave-browser.desktop" "kitty.desktop"];
       disabled-extensions = [];
