@@ -221,8 +221,10 @@
 #   └────────────────────────────────────────────────────────────────┘
 #
 #   These inputs must be passed via flake.nix:
-#     specialArgs = { 
+#     specialArgs = {
 #       inherit inputs username host;
+#       # Host metadata (role-aware configuration)
+#       inherit hostRole isPhysicalHost isVirtualHost;
 #     };
 #
 # Common Anti-Patterns to Avoid:
@@ -1092,4 +1094,3 @@
 # 2025-08-15: Migration from monolithic configuration.nix
 #
 # ==============================================================================
-

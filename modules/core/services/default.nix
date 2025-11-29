@@ -7,7 +7,7 @@
 # Purpose:     Unified system services, virtualization, gaming, and containerization
 # Author:      Kenan Pelit
 # Created:     2025-09-04
-# Modified:    2025-11-17
+# Modified:    2025-11-29
 #
 # Architecture:
 #   Base Services → Desktop Integration → Gaming Stack → Containers → VMs
@@ -15,9 +15,9 @@
 # Service Categories:
 #   1. Base Services       - GVFS, TRIM, D-Bus
 #   2. Desktop Integration - Bluetooth, thumbnailer, Flatpak
-#   3. Gaming Stack        - Steam, Gamescope, Proton-GE
-#   4. Containers          - Podman + registries
-#   5. Virtualization      - Libvirt/QEMU, SPICE, VFIO plumbing
+#   3. Gaming Stack        - Steam, Gamescope, Proton-GE (physical host only)
+#   4. Containers          - Podman + registries (physical host only)
+#   5. Virtualization      - Libvirt/QEMU, SPICE, VFIO plumbing (physical host only)
 #
 # Design Principles:
 #   • Only "host-level" services live here (no user apps)

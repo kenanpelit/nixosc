@@ -1,4 +1,14 @@
 # modules/home/wezterm/default.nix
+# ==============================================================================
+# WezTerm Terminal Configuration - Catppuccin Integrated
+# ==============================================================================
+# Purpose:
+#   - Configure WezTerm as a modern GPU-accelerated terminal.
+#   - Apply Catppuccin theming and keybindings consistent with other terminals.
+# Notes:
+#   - WezTerm is installed via the shared home packages module.
+#   - Shell/Prompt logic lives in zsh/starship modules; this file is WezTerm-specific.
+# ==============================================================================
 { config, lib, pkgs, ... }:
 let
   # Catppuccin modülünden otomatik renk alımı
@@ -267,4 +277,3 @@ in
     '';
   };
 }
-
