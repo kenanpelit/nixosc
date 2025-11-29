@@ -229,6 +229,9 @@
       username = "kenan";
       system   = "x86_64-linux";
       
+      # Import custom library
+      mylib = import ./lib { inherit inputs nixpkgs home-manager; };
+
       # Unified overlay list - applied consistently everywhere
       overlaysCommon = [
         inputs.nur.overlays.default
@@ -254,88 +257,6 @@
       lib = nixpkgs.lib;
 
       # ------------------------------------------------------------------------
-      #  HOST METADATA (Roles, flags) - single source of truth
-      # ------------------------------------------------------------------------
-      hostsMeta = {
-        hay = {
-          hostRole       = "physical";
-          isPhysicalHost = true;
-          isVirtualHost  = false;
-        };
-        vhay = {
-          hostRole       = "vm";
-          isPhysicalHost = false;
-          isVirtualHost  = true;
-        };
-      };
-
-      # ------------------------------------------------------------------------
-      #  SYSTEM BUILDER FUNCTION
-      # ------------------------------------------------------------------------
-      
-      mkSystem = { system, host, modules }:
-        let
-          hostMeta = hostsMeta.${host} or {
-            hostRole       = "unknown";
-            isPhysicalHost = false;
-            isVirtualHost  = false;
-          };
-        in
-        lib.nixosSystem {
-          modules = [
-            # Platform configuration
-            { nixpkgs.hostPlatform = system; }
-
-            # Apply overlays and nixpkgs config
-            {
-              nixpkgs.overlays = overlaysCommon;
-              nixpkgs.config   = nixpkgsConfigCommon;
-            }
-
-            # Theming modules
-            inputs.distro-grub-themes.nixosModules.${system}.default
-            inputs.catppuccin.nixosModules.catppuccin
-
-            # Home-manager as NixOS module (integrated mode)
-            inputs.home-manager.nixosModules.home-manager
-
-            # Empty system packages (managed elsewhere)
-            { environment.systemPackages = []; }
-
-            # Ensure insecure packages are allowed
-            {
-              nixpkgs.config.permittedInsecurePackages = 
-                nixpkgsConfigCommon.permittedInsecurePackages;
-            }
-          ] ++ modules;
-
-          specialArgs = {
-            inherit self inputs username host system;
-            inherit (hostMeta) hostRole isPhysicalHost isVirtualHost;
-          };
-        };
-
-      # ------------------------------------------------------------------------
-      #  HOME-MANAGER CONFIGURATION BUILDER
-      # ------------------------------------------------------------------------
-      
-      mkHomeConfiguration = { host }:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = pkgs;
-          extraSpecialArgs = { inherit inputs username host; };
-          modules = [
-            ./modules/home
-            {
-              home = {
-                username = username;
-                homeDirectory = "/home/${username}";
-                stateVersion = "25.11";
-              };
-            }
-          ];
-        };
-
-      # ------------------------------------------------------------------------
       #  POETRY2NIX SETUP
       # ------------------------------------------------------------------------
       
@@ -353,20 +274,35 @@
     in
     {
       # ------------------------------------------------------------------------
+      #  EXPORTED OVERLAYS
+      # ------------------------------------------------------------------------
+      
+      overlays = {
+        nur = inputs.nur.overlays.default;
+        default = final: prev: {
+          # Add custom overlays here
+        };
+      };
+
+      # ------------------------------------------------------------------------
       #  NIXOS SYSTEM CONFIGURATIONS
       # ------------------------------------------------------------------------
       
       nixosConfigurations = {
-        hay = mkSystem { 
-          inherit system; 
+        hay = mylib.mkSystem { 
+          inherit system username; 
           host = "hay"; 
           modules = [ ./hosts/hay ]; 
+          overlays = overlaysCommon;
+          nixpkgsConfig = nixpkgsConfigCommon;
         };
         
-        vhay = mkSystem { 
-          inherit system; 
+        vhay = mylib.mkSystem { 
+          inherit system username; 
           host = "vhay"; 
           modules = [ ./hosts/vhay ]; 
+          overlays = overlaysCommon;
+          nixpkgsConfig = nixpkgsConfigCommon;
         };
       };
 
@@ -377,8 +313,16 @@
       # ------------------------------------------------------------------------
       
       homeConfigurations = {
-        "kenan@hay" = mkHomeConfiguration { host = "hay"; };
-        "kenan@vhay" = mkHomeConfiguration { host = "vhay"; };
+        "kenan@hay" = mylib.mkHome { 
+          inherit username pkgs; 
+          host = "hay"; 
+          homeModules = [ ./modules/home ];
+        };
+        "kenan@vhay" = mylib.mkHome { 
+          inherit username pkgs; 
+          host = "vhay"; 
+          homeModules = [ ./modules/home ];
+        };
       };
 
       # ------------------------------------------------------------------------
