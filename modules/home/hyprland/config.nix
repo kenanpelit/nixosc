@@ -258,7 +258,6 @@ let
         layers_hog_keyboard_focus = true;    # Layer surfaces capture keyboard
         animate_manual_resizes = true;       # Animate when manually resizing
         animate_mouse_windowdragging = true; # Animate while dragging windows
-        new_window_takes_over_fullscreen = 2;# Bring new window above fullscreen apps
 
         # === Terminal Swallowing ===
         enable_swallow = true;               # Hide terminal when launching GUI apps
@@ -315,7 +314,6 @@ let
         new_status = "slave";            # Default new windows as slave
         mfact = 0.60;                    # Master area ratio (0.6 = 60%)
         orientation = "left";            # Master window on left side
-        inherit_fullscreen = true;       # Keep fullscreen on workspace change
         smart_resizing = true;           # Proportional resizing logic
         drop_at_cursor = false;          # Disable cursor drop placement
         allow_small_split = false;       # Prevent tiny sub-windows
