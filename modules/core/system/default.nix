@@ -4,14 +4,14 @@
 # ==============================================================================
 #
 # Module:    modules/core/system
-# Version:   17.0 (Power-tuning enabled, conflict-free)
-# Date:      2025-11-15
-# Platform:  ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, Meteor Lake)
+# Version:   17.1 (Host-role aware, power-tuning on bare metal)
+# Date:      2025-11-29
+# Platform:  ThinkPad E14 Gen 6 (Intel Core Ultra 7 155H, Meteor Lake) + QEMU/KVM guest (vhay)
 #
 # DESIGN PRINCIPLES
 # -----------------
 # 1. Intel HWP is the baseline – we guide it, we don't fight it.
-# 2. NixOS is the single source of truth for power policy on bare metal.
+# 2. NixOS is the single source of truth for power policy on bare metal (hay).
 # 3. Keep the knobs small but decisive:
 #      • ACPI Platform Profile (AC vs battery)
 #      • EPP (Energy Performance Preference)

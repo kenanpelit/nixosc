@@ -7,7 +7,7 @@
 # Purpose:     Network management, VPN, TCP optimization, DNS configuration
 # Author:      Kenan Pelit
 # Created:     2025-10-09
-# Modified:    2025-11-15
+# Modified:    2025-11-29
 #
 # Architecture:
 #   NetworkManager → systemd-resolved → VPN (Mullvad/WireGuard) → TCP Stack
@@ -31,7 +31,7 @@
 # Key Features:
 #   ✓ Dynamic TCP tuning (memory-aware profiles)
 #   ✓ BBR congestion control + FQ qdisc
-#   ✓ Mullvad VPN with killswitch support
+#   ✓ Mullvad VPN with killswitch support (physical host only)
 #   ✓ systemd-resolved (DNSSEC, cache, per-link DNS)
 #   ✓ NetworkManager (WiFi, Ethernet, VPN integration)
 #   ✓ IPv6 enabled with privacy extensions
@@ -45,7 +45,7 @@
 #
 # ==============================================================================
 
-{ config, lib, pkgs, host ? "", isPhysicalHost ? false, isVirtualHost ? false, ... }:
+{ config, lib, pkgs, isPhysicalHost ? false, isVirtualHost ? false, ... }:
 
 let
   inherit (lib) mkIf mkMerge mkDefault mkForce;
@@ -398,8 +398,6 @@ in
   # ============================================================================
 
   networking = {
-    hostName = host;
-
     # Firewall: default on, security module may override with nftables
     firewall.enable = mkDefault true;
 

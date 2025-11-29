@@ -1,4 +1,4 @@
-# modules/home/media/cava/default.nix
+# modules/home/cava/default.nix
 # ==============================================================================
 # Cava Audio Visualizer Configuration - Dynamic Catppuccin Theme
 # ==============================================================================
@@ -132,4 +132,3 @@ in
     cava-config = "cat ~/.config/cava/config | grep -A10 '\\[color\\]'";
   };
 }
-
