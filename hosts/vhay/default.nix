@@ -1,8 +1,9 @@
 # ==============================================================================
-# VHAY - Sanal Makine Konfigürasyonu
-# Açıklama: Geliştirme ortamı için VM yapılandırması
+# VHAY - NixOS Host Configuration
+# Main system configuration for the "vhay" virtual machine
 # ==============================================================================
 { pkgs, lib, inputs, username, ... }:
+
 {
   # ============================================================================
   # Imports
@@ -18,33 +19,15 @@
   networking.hostName = "vhay";
 
   # ============================================================================
-  # Temel Sistem Paketleri (VM ortamı)
+  # Networking
   # ============================================================================
-  environment.systemPackages = with pkgs; [
-    tmux
-    ncurses
-    git
-    neovim
-    htop
-    networkmanager
-  ];
-
-  # ============================================================================
-  # SSH / Güvenlik (Geliştirme odaklı, gevşek ayarlar)
-  # ============================================================================
-  services.openssh = {
-    enable = true;
-    ports  = [ 22 ];
-
-    settings = {
-      PasswordAuthentication = true;
-      PermitRootLogin        = "yes";
-      AllowUsers             = [ username ];
-    };
+  networking = {
+    networkmanager.enable = true;
   };
 
   # ============================================================================
-  # Zaman & Locale (hay ile uyumlu tutmak istersen buraya alabilirsin)
+  # Time & Locale
+  # (core/system ile aynı değerlere sahip; merge ederken tutarlı kalıyor)
   # ============================================================================
   time.timeZone = "Europe/Istanbul";
 
@@ -60,6 +43,34 @@
     LC_TELEPHONE      = "tr_TR.UTF-8";
     LC_TIME           = "tr_TR.UTF-8";
   };
+
+  # ============================================================================
+  # SSH / Security
+  # (Geliştirme odaklı, gevşek ayarlar)
+  # ============================================================================
+  services.openssh = {
+    enable = true;
+    ports  = [ 22 ];
+
+    settings = {
+      PasswordAuthentication = true;
+      PermitRootLogin        = "yes";
+      AllowUsers             = [ username ];
+    };
+  };
+
+  # ============================================================================
+  # System Packages
+  # (Temel VM paketleri)
+  # ============================================================================
+  environment.systemPackages = with pkgs; [
+    tmux
+    ncurses
+    git
+    neovim
+    htop
+    networkmanager
+  ];
 
   # ============================================================================
   # System State Version
