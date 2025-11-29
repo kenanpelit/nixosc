@@ -160,15 +160,7 @@ let
   };
 in {
   # =============================================================================
-  # Package Installation
-  # =============================================================================
-  home.packages = with pkgs; [
-    webcord-vencord
-  ];
-  
-  # =============================================================================
   # Theme Configuration - Merkezi Catppuccin ile
   # =============================================================================
   xdg.configFile."Vencord/themes/catppuccin-${flavor}.theme.css".text = discordTheme.css;
 }
-

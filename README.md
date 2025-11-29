@@ -17,7 +17,7 @@
             <img src="https://img.shields.io/github/repo-size/kenanpelit/nixosc?color=B16286&labelColor=282828&style=for-the-badge&logo=github&logoColor=B16286">
          </a>
          <a href="https://nixos.org">
-            <img src="https://img.shields.io/badge/NixOS-unstable-blue.svg?style=for-the-badge&labelColor=282828&logo=NixOS&logoColor=458588&color=458588">
+            <img src="https://img.shields.io/badge/NixOS-25.11-blue.svg?style=for-the-badge&labelColor=282828&logo=NixOS&logoColor=458588&color=458588">
          </a>
          <a href="https://github.com/kenanpelit/nixosc/blob/main/LICENSE">
             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&colorA=282828&colorB=98971A&logo=unlicense&logoColor=98971A&"/>
@@ -77,7 +77,7 @@ A comprehensive NixOS system configuration management suite that provides:
 
 | Component                | Technology                                                                                         |
 | ------------------------ | -------------------------------------------------------------------------------------------------- |
-| **Base System**          | [NixOS Unstable](https://nixos.org/) (State Version 25.11)                                         |
+| **Base System**          | [NixOS 25.11](https://nixos.org/) (State Version 25.11, nixpkgs `nixos-25.11`)                    |
 | **User Environment**     | [Home-Manager](https://github.com/nix-community/home-manager) (Dual mode: integrated + standalone) |
 | **Secrets Management**   | [SOPS-nix](https://github.com/Mic92/sops-nix) with age encryption                                  |
 | **Package Repositories** | [NUR](https://github.com/nix-community/NUR)                                                        |
@@ -87,7 +87,7 @@ A comprehensive NixOS system configuration management suite that provides:
 
 | Component                    | Implementation                                                                                                        |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Window Manager**           | [Hyprland](https://github.com/hyprwm/hyprland) v1119 (commit fbb31503)                                                |
+| **Window Manager**           | [Hyprland](https://github.com/hyprwm/hyprland) v1127 (commit 379ee99c)                                               |
 | **Bar**                      | [Waybar](https://github.com/Alexays/Waybar) with custom modules                                                       |
 | **Application Launcher**     | [rofi](https://github.com/lbonn/rofi) + [Walker](https://github.com/abenz1267/walker) v2.11.1                         |
 | **Notification Daemon**      | [Mako](https://github.com/emersion/mako) + [SwayOSD](https://github.com/ErikReider/SwayOSD)                           |
@@ -108,7 +108,7 @@ A comprehensive NixOS system configuration management suite that provides:
 | Component              | Implementation                                                                                                  |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Lockscreen**         | [Hyprlock](https://github.com/hyprwm/hyprlock) + [Swaylock-effects](https://github.com/mortie/swaylock-effects) |
-| **Network Management** | [iwd](https://git.kernel.org/pub/scm/network/wireless/iwd.git/) + [iwgtk](https://github.com/J-Lentz/iwgtk)     |
+| **Network Management** | [NetworkManager](https://networkmanager.dev/) (`nmcli`/`nmtui`/`nm-applet`) + iwd-based WiFi helpers            |
 | **Boot Loader**        | GRUB with custom [distro-grub-themes](https://github.com/AdisonCavani/distro-grub-themes)                       |
 
 ### Multimedia & Utilities
@@ -129,7 +129,7 @@ A comprehensive NixOS system configuration management suite that provides:
 | ---------- | -------------------------------------------------------------------------------------------------------------------- |
 | **Theme**  | [Catppuccin Mocha](https://github.com/catppuccin/catppuccin)                                                         |
 | **Cursor** | [catppuccin-mocha-lavender-cursors](https://github.com/catppuccin/cursors)                                           |
-| **Icons**  | [Papirus-Dark](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme)                                         |
+| **Icons**  | [Candy Beauty](https://github.com/arcolinux/a-candy-beauty-icon-theme-dev) + BeautyLine                              |
 | **Fonts**  | [Hack Nerd Font](https://github.com/ryanoasis/nerd-fonts) + [Maple Mono](https://github.com/subframe7536/maple-font) |
 
 ### Advanced Features
@@ -282,8 +282,8 @@ Some components need manual configuration:
 
 **Core System**:
 
-- nixpkgs (nixos-unstable)
-- home-manager (unstable branch)
+- nixpkgs (`nixos-25.11` channel)
+- home-manager (`release-25.11` branch)
 - nur (Nix User Repository)
 
 **Hyprland Ecosystem** (15+ inputs):
@@ -672,5 +672,3 @@ Special thanks to:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 <!-- Component Links -->
-
-

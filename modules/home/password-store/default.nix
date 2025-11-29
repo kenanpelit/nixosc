@@ -132,10 +132,6 @@
   #   secret-tool search --all
   #   secret-tool clear service myapp username myuser
   
-  home.packages = with pkgs; [
-    libsecret  # Provides secret-tool binary and libsecret library
-  ];
-
   # =============================================================================
   # Shell Aliases - Convenience Commands
   # =============================================================================
@@ -226,4 +222,3 @@
 #        • KeePassXC: Configure Secret Service integration in KeePassXC settings
 #
 # ==============================================================================
-

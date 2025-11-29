@@ -17,13 +17,6 @@ with lib;
   # =============================================================================
   config = lib.mkIf config.modules.tmux.enable {
     # ---------------------------------------------------------------------------
-    # Required Packages
-    # ---------------------------------------------------------------------------
-    home.packages = with pkgs; [
-      tmux      # Terminal multiplexer
-    ];
-    
-    # ---------------------------------------------------------------------------
     # Configuration Extraction Service
     # ---------------------------------------------------------------------------
     systemd.user.services.extract-tmux-config = {
@@ -68,4 +61,3 @@ with lib;
     xdg.configFile."tmux".enable = false;
   };
 }
-

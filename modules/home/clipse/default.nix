@@ -107,12 +107,4 @@
     PreviewedText = "#cdd6f4";    # text
     PreviewBorder = "#89b4fa";    # blue
   };
-
-  # =============================================================================
-  # Package Installation
-  # =============================================================================
-  home.packages = with pkgs; [
-    clipse
-    wl-clipboard  # Wayland clipboard utilities (required dependency)
-  ];
 }

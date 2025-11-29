@@ -45,7 +45,7 @@
 #
 # ==============================================================================
 
-{ config, lib, pkgs, host, ... }:
+{ config, lib, pkgs, isPhysicalHost ? false, isVirtualHost ? false, ... }:
 
 let
   inherit (lib) mkIf mkMerge mkDefault mkForce;
@@ -486,7 +486,7 @@ in
     # --------------------------------------------------------------------------
     # Mullvad VPN
     # --------------------------------------------------------------------------
-    mullvad-vpn = {
+    mullvad-vpn = mkIf isPhysicalHost {
       enable = true;
       package = mullvadPkg;
       enableExcludeWrapper = true;

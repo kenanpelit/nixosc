@@ -50,6 +50,7 @@ in
     atool         # Evrensel arşiv aracı
     p7zip         # 7-Zip sıkıştırma
     lftp          # FTP istemcisi
+    rsync         # Dosya senkronizasyon aracı
     scrcpy        # Android ekran yansıtma
     starship      # Minimal, blazing fast, and extremely customizable prompt for any shell
 
@@ -59,6 +60,7 @@ in
     # Version Control
     git           # Versiyon kontrol sistemi
     lazygit       # Terminal Git GUI
+    gh            # GitHub CLI
     tig           # Git metin arayüzü
     
     # Language Servers & Formatters
@@ -86,6 +88,7 @@ in
     tree-sitter           # Parser üreteci
     nix-search-tv         # Nix paket arayıcı
     gist                  # GitHub gist CLI
+    direnv                # Ortam yöneticisi (direnv)
     
     # Nix Development
     nvd                # Nix versiyon karşılaştırma
@@ -115,6 +118,7 @@ in
     ripgrep         # Hızlı metin arama
     most            # Sayfalayıcı
     glow            # Markdown görüntüleyici
+    fastfetch       # Hızlı sistem bilgisi aracı
     
     # System Utilities
     killall         # İsme göre süreç sonlandırma
@@ -123,6 +127,7 @@ in
     pwgen           # Parola üreteci
     tldr            # Basitleştirilmiş man sayfaları
     mimeo           # MIME işleyici
+    libnotify       # notify-send ve libnotify util
     
     # Navigation & Session
     zoxide          # Akıllı dizin atlayıcı
@@ -170,6 +175,10 @@ in
     satty           # Ekran görüntüsü annotasyon
     swappy          # Wayland ekran görüntüsü editörü
     gnome-screenshot # GNOME ekran görüntüsü aracı
+    grim            # Wayland ekran görüntüsü aracı
+    slurp           # Bölge seçici
+    wf-recorder     # Wayland ekran kaydedici
+    (inputs.hypr-contrib.packages.${pkgs.stdenv.hostPlatform.system}.grimblast) # Gelişmiş screenshot aracı
     
     # Music & Entertainment
     spotify         # Müzik streaming
@@ -177,6 +186,7 @@ in
     ani-cli         # Anime streaming CLI
     rmpc            # Modern MPD istemcisi
     mpc             # Minimal MPD istemcisi
+    audacious       # Hafif müzik oynatıcı
     #radiotray-ng    # İnternet radyo oynatıcı
     soundwireserver # Ses streaming sunucusu
     
@@ -199,6 +209,7 @@ in
     htop            # İnteraktif process viewer
     procs           # Modern process lister (ps alternatifi)
     hyperfine       # Command-line benchmarking tool
+    nvtopPackages.intel # GPU kullanım monitörü
     
     # Process Management
     cpulimit        # CPU kullanım sınırlayıcı
@@ -265,13 +276,19 @@ in
     evince           # GNOME belge görüntüleyici
     poppler-utils    # PDF komut satırı araçları
     img2pdf          # Resim → PDF dönüştürücü
+    nemo             # Nemo dosya yöneticisi
+    junction         # XDG MIME yönlendirici
     
     # Communication
     discord          # Oyuncu sohbet platformu
+    webcord-vencord  # Privacy-friendly Discord istemcisi
     catppuccin-discord # Discord Catppuccin teması
     #whatsie          # WhatsApp masaüstü - qtwebengine-5
     wasistlos        # Alternatif WhatsApp
     ferdium          # Çoklu servis yöneticisi
+    obsidian         # Not alma ve bilgi yönetimi
+    ulauncher        # Uygulama başlatıcı
+    rofi             # Uygulama başlatıcı (Rofi)
     
     # Security & Authentication
     ente-auth        # 2FA kimlik doğrulama
@@ -286,11 +303,15 @@ in
     efibootmgr       # EFI boot manager
     gnome-monitor-config # GNOME monitor yapılandırma yardımcısı
     wayland-utils    # Wayland yardımcı araçları
+    cosmic-edit      # COSMIC metin düzenleyici
+    cosmic-screenshot # COSMIC ekran görüntüsü aracı
 
     # Clipboard Management
     xclip            # X11 pano aracı
     cliphist         # Wayland pano geçmişi
     clipman          # Pano yöneticisi
+    clipse           # Wayland clipboard yöneticisi
+    copyq            # Gelişmiş pano yöneticisi
 
     # ==============================================================================
     # Hyprland & Wayland Araçları
@@ -303,19 +324,25 @@ in
     # System Control
     hyprsunset       # Ekran renk sıcaklığı
     hypridle         # Boşta kalma yöneticisi
+    hyprlock         # Wayland kilit ekranı
     brightnessctl    # Ekran parlaklığı kontrolü
     hyprshade        # Hyprland shader yönetimi
     hyprsysteminfo   # System information
+    swayosd          # Ses/parlaklık OSD yöneticisi
     
     # Display & Input
     wl-gammactl      # Wayland gamma kontrolü
     wl-gammarelay-applet # Gamma relay applet
+    wl-clip-persist    # Kalıcı clipboard yöneticisi
+    hyprpicker       # Renk seçici
     waynergy         # Synergy alternatifi (Wayland)
     input-leap       # Klavye/mouse paylaşımı
     
     # Wallpaper & Themes
     wpaperd          # Wayland duvar kağıdı daemon
     hyprpaper        # Hyprland duvar kağıdı daemon
+    waypaper         # Wayland duvar kağıdı yöneticisi
+    swww             # Wayland duvar kağıdı aracı
     # candy-icons removed - using custom candy-beauty from modules/home/candy
     beauty-line-icon-theme # Alternatif simge seti
     
@@ -328,9 +355,12 @@ in
     
     # Dialogs & Notifications
     zenity           # GTK dialog kutuları
+    mako             # Wayland bildirim daemoni
+    swaynotificationcenter # Wayland bildirim merkezi (SwayNC)
     
     # Extensions
     gnomeExtensions.gsconnect # Telefon entegrasyonu
+    kdePackages.kdeconnect-kde # KDE Connect cihaz entegrasyonu
 
 
     # ==============================================================================
