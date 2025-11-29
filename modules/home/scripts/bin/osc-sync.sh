@@ -77,6 +77,7 @@ DOT_PATHS=(
 	".config/nix"
 	".config/sops"
 	".config/subliminal"
+	".config/sway"
 	".config/ulauncher"
 	".config/walker"
 	".config/zsh/history"

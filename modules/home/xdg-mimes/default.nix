@@ -20,6 +20,7 @@ let
    terminal = [ "kitty.desktop" ];
    archive = [ "org.gnome.FileRoller.desktop" ];
    discord = [ "webcord.desktop" ];
+   mpv-handler = [ "open-in-mpv.desktop" ];
  };
  # =============================================================================
  # MIME Type Mapping
@@ -93,6 +94,7 @@ let
      "application/*tar"
    ];
    discord = [ "x-scheme-handler/discord" ];
+   mpv-handler = [ "x-scheme-handler/mpv" ];
  };
  # =============================================================================
  # Association Generation
@@ -129,13 +131,11 @@ in
  };
 
  # =============================================================================
- # Package Installation and Environment
+ # Environment
  # =============================================================================
- home.packages = with pkgs; [ junction ];
  home.sessionVariables = {
    TERMINAL = "kitty";
    BROWSER = "brave";
    WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
  };
 }
-

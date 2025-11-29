@@ -2,40 +2,38 @@
 #===============================================================================
 #
 #   Script: HyprFlow PipeWire Audio Switcher
-#   Version: 2.5.0
-#   Date: 2025-07-18
-#   Original Author: Kenan Pelit
-#   Original Repository: https://github.com/kenanpelit/nixosc
-#   Description: Advanced audio output switcher for Hyprland with PipeWire
-#                integration
+#   Version: 3.3.0
+#   Date: 2025-09-06
+#   Author: Kenan Pelit
+#   Repo: https://github.com/kenanpelit/nixosc
 #
-#   Features:
-#   - Dynamic sink detection and switching for PipeWire
-#   - Desktop notifications with icon support
-#   - Automatic sink input migration
-#   - Colored terminal output
-#   - Volume and microphone control
-#   - Enhanced error handling
-#   - Configuration file support
-#   - Init mode for setting default audio levels
-#   - Profile management
-#   - Interactive device selection with fzf
-#   - Device filtering and prioritization
+#   Description:
+#     Hyprland + PipeWire (wpctl) için gelişmiş ses/mikrofon anahtarlayıcı
+#     (harici config YOK). Kalıcı veriler ~/.cache/hyprflow/ altında tutulur.
 #
 #   License: MIT
 #
 #===============================================================================
 
-# Script terminates on error
-set -e
+# --- Genel ayarlar (env ile override edilebilir) --------------------------------
+DEBUG=${DEBUG:-false}
+DEFAULT_VOLUME=${DEFAULT_VOLUME:-15}
+DEFAULT_MIC_VOLUME=${DEFAULT_MIC_VOLUME:-5}
+VOLUME_STEP=${VOLUME_STEP:-5}
+NOTIFICATION_TIMEOUT=${NOTIFICATION_TIMEOUT:-3000}
+ENABLE_ICONS=${ENABLE_ICONS:-true}
+PREFER_BLUETOOTH=${PREFER_BLUETOOTH:-false}
+SAVE_PREFERENCES=${SAVE_PREFERENCES:-true}
+EXCLUDE_SINK_REGEX=${EXCLUDE_SINK_REGEX:-"HDMI|DisplayPort"} # HDMI/DP’leri döngüden çıkar
+VERSION="3.3.0"
 
-# Configuration
-CONFIG_DIR="$HOME/.config/hyprflow"
-CONFIG_FILE="$CONFIG_DIR/audio_switcher.conf"
-PROFILES_DIR="$CONFIG_DIR/profiles"
-STATE_FILE="$CONFIG_DIR/audio_state"
+# --- Kalıcı dosyalar (config yok; sadece state/profiller) -----------------------
+CACHE_DIR="${HOME}/.cache/hyprflow"
+STATE_FILE="${CACHE_DIR}/audio_state"
+PROFILES_DIR="${CACHE_DIR}/profiles"
+mkdir -p "${CACHE_DIR}" "${PROFILES_DIR}"
 
-# Color definitions
+# --- Renkler & ikonlar ----------------------------------------------------------
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -44,8 +42,6 @@ CYAN=$(tput setaf 6)
 MAGENTA=$(tput setaf 5)
 BOLD=$(tput bold)
 RESET=$(tput sgr0)
-
-# Icons
 ICON_SPEAKER="🔊"
 ICON_HEADPHONES="🎧"
 ICON_MICROPHONE="🎤"
@@ -54,909 +50,644 @@ ICON_CHECK="✓"
 ICON_CROSS="✗"
 ICON_WARNING="⚠️"
 
-# Debug mode
-DEBUG=false
-
-# Version
-VERSION="2.5.0"
-
-# Default init values
-DEFAULT_VOLUME=15
-DEFAULT_MIC_VOLUME=5
-
-# Create config directory if it doesn't exist
-if [ ! -d "$CONFIG_DIR" ]; then
-	mkdir -p "$CONFIG_DIR"
-fi
-
-# Create profiles directory if it doesn't exist
-if [ ! -d "$PROFILES_DIR" ]; then
-	mkdir -p "$PROFILES_DIR"
-fi
-
-# Create default config file if it doesn't exist
-if [ ! -f "$CONFIG_FILE" ]; then
-	cat >"$CONFIG_FILE" <<EOF
-# HyprFlow Audio Switcher Configuration
-
-# Debug mode (true/false)
-DEBUG=false
-
-# Volume step percentage
-VOLUME_STEP=5
-
-# Notification timeout in milliseconds
-NOTIFICATION_TIMEOUT=3000
-
-# Default volume level for init command (0-100)
-DEFAULT_VOLUME=15
-
-# Default microphone level for init command (0-100)
-DEFAULT_MIC_VOLUME=5
-
-# Enable device icons in notifications (true/false)
-ENABLE_ICONS=true
-
-# Prefer Bluetooth devices when available (true/false)
-PREFER_BLUETOOTH=false
-
-# Save last used devices (true/false)
-SAVE_PREFERENCES=true
-EOF
-fi
-
-# Load configuration
-if [ -f "$CONFIG_FILE" ]; then
-	source "$CONFIG_FILE"
-fi
-
-# Volume step from config or default
-VOLUME_STEP=${VOLUME_STEP:-5}
-
-# Notification timeout
-NOTIFICATION_TIMEOUT=${NOTIFICATION_TIMEOUT:-3000}
-
-# Default init values from config
-DEFAULT_VOLUME=${DEFAULT_VOLUME:-15}
-DEFAULT_MIC_VOLUME=${DEFAULT_MIC_VOLUME:-5}
-
-# Enable icons
-ENABLE_ICONS=${ENABLE_ICONS:-true}
-
-# Device preferences
-PREFER_BLUETOOTH=${PREFER_BLUETOOTH:-false}
-SAVE_PREFERENCES=${SAVE_PREFERENCES:-true}
-
-# Debug function
+# --- Yardımcılar ----------------------------------------------------------------
 debug_print() {
-	if [ "$DEBUG" = true ]; then
+	if [ "${DEBUG}" = true ]; then
+		local title="$1"
+		shift
 		echo
 		echo "${BLUE}=========================================${RESET}"
-		echo "${CYAN} $1 ${RESET}"
+		echo "${CYAN}${title}${RESET}"
 		echo "${BLUE}=========================================${RESET}"
-		shift
-		printf "${GREEN}$@${RESET}\n"
+		[ $# -gt 0 ] && printf "${GREEN}%s${RESET}\n" "$*"
 	fi
 }
+info() { echo "${CYAN}ℹ $1${RESET}"; }
+success() { echo "${GREEN}${ICON_CHECK} $1${RESET}"; }
+warning() { echo "${YELLOW}${ICON_WARNING} $1${RESET}"; }
+error() { echo "${RED}${ICON_CROSS} Error: $1${RESET}" >&2; }
 
-# Info message
-info() {
-	echo "${CYAN}ℹ $1${RESET}"
-}
-
-# Success message
-success() {
-	echo "${GREEN}${ICON_CHECK} $1${RESET}"
-}
-
-# Warning message
-warning() {
-	echo "${YELLOW}${ICON_WARNING} $1${RESET}"
-}
-
-# Error message
-error() {
-	echo "${RED}${ICON_CROSS} Error: $1${RESET}" >&2
-}
-
-# Check command exists
 check_command() {
-	if ! command -v "$1" &>/dev/null; then
-		error "$1 is required but not found. Please install it."
+	if ! command -v "$1" >/dev/null 2>&1; then
+		error "$1 is required but not found."
 		return 1
 	fi
-	return 0
 }
 
-# Safe notification function
 notify() {
-	local title="$1"
-	local message="$2"
-	local icon="${3:-}"
-
-	if command -v notify-send &>/dev/null; then
-		if [ "$ENABLE_ICONS" = true ] && [ -n "$icon" ]; then
-			notify-send -t "$NOTIFICATION_TIMEOUT" -i "$icon" "$title" "$message"
+	local title="$1" msg="$2" icon="${3:-}"
+	info "${title}: ${msg}"
+	if command -v notify-send >/dev/null 2>&1; then
+		if [ "${ENABLE_ICONS}" = true ] && [ -n "${icon}" ]; then
+			notify-send -t "${NOTIFICATION_TIMEOUT}" -i "${icon}" "${title}" "${msg}" || true
 		else
-			notify-send -t "$NOTIFICATION_TIMEOUT" "$title" "$message"
+			notify-send -t "${NOTIFICATION_TIMEOUT}" "${title}" "${msg}" || true
 		fi
 	fi
-	info "$title: $message"
 }
 
-# Check arguments
-for arg in "$@"; do
-	if [ "$arg" = "-d" ] || [ "$arg" = "--debug" ]; then
+# --- Argümanlardan debug & genel opsiyonlar ------------------------------------
+SHOW_HELP=false
+SHOW_VERSION=false
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-d | --debug)
 		DEBUG=true
-		# Remove argument
-		set -- "${@/$arg/}"
-	fi
+		shift
+		;;
+	-h | --help)
+		SHOW_HELP=true
+		shift
+		;;
+	-v | --version)
+		SHOW_VERSION=true
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	-*)
+		warning "Bilinmeyen seçenek: $1"
+		shift
+		;;
+	*) break ;;
+	esac
 done
 
-# Check dependencies
+# --- Bağımlılıklar --------------------------------------------------------------
 check_dependencies() {
-	local has_errors=false
-
-	# Check for PipeWire
-	if ! check_command "pw-cli"; then
-		warning "pw-cli not found. Falling back to PulseAudio compatibility layer."
-	fi
-
-	# Check for pactl (PulseAudio compatibility layer)
-	if ! check_command "pactl"; then
-		error "pactl not found. Please install PipeWire and its PulseAudio compatibility layer."
-		has_errors=true
-	fi
-
-	# Check for notify-send (optional)
-	if ! command -v notify-send &>/dev/null; then
-		warning "notify-send not found. Notifications will be disabled."
-	fi
-
-	# Check for fzf (optional)
-	if ! command -v fzf &>/dev/null; then
-		debug_print "Info" "fzf not found. Interactive mode will be disabled."
-	fi
-
-	if [ "$has_errors" = true ]; then
-		exit 1
-	fi
+	local failed=0
+	check_command wpctl || failed=1
+	command -v notify-send >/dev/null 2>&1 || warning "notify-send yok; bildirimler sadece terminalde görünecek."
+	command -v fzf >/dev/null 2>&1 || debug_print "Bilgi" "fzf yok; interaktif seçim kullanılamaz."
+	[ $failed -eq 1 ] && exit 1
 }
 
-# Save state
+# --- Kalıcı KV (STATE) ----------------------------------------------------------
 save_state() {
-	local key="$1"
-	local value="$2"
-
-	if [ "$SAVE_PREFERENCES" = true ]; then
-		echo "$key=$value" >>"$STATE_FILE.tmp"
-		grep -v "^$key=" "$STATE_FILE" 2>/dev/null >>"$STATE_FILE.tmp" || true
-		mv "$STATE_FILE.tmp" "$STATE_FILE"
+	local key="$1" value="$2"
+	[ "${SAVE_PREFERENCES}" = true ] || return 0
+	[ -n "${value}" ] || return 0
+	: >"${STATE_FILE}.tmp"
+	if [ -f "${STATE_FILE}" ]; then
+		grep -v "^${key}=" "${STATE_FILE}" >>"${STATE_FILE}.tmp" || true
 	fi
+	echo "${key}=${value}" >>"${STATE_FILE}.tmp"
+	mv "${STATE_FILE}.tmp" "${STATE_FILE}"
 }
-
-# Load state
 load_state() {
 	local key="$1"
-
-	if [ -f "$STATE_FILE" ]; then
-		grep "^$key=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2 || echo ""
-	else
-		echo ""
+	[ -f "${STATE_FILE}" ] || return 0
+	local value
+	value=$(grep "^${key}=" "${STATE_FILE}" 2>/dev/null | cut -d'=' -f2-)
+	if [ -n "${value}" ] && [ "$(echo "${value}" | tr -d '[:space:]')" != "" ]; then
+		echo "${value}"
 	fi
 }
+id_in_array() {
+	local n="$1"
+	shift
+	for x in "$@"; do [[ "$x" == "$n" ]] && return 0; done
+	return 1
+}
+__strip() { sed -E 's/^[[:space:]│└┌┐┘├┤┬┴─]+//'; }
 
-# Get device icon
+# --- İkon/isim yardımcıları -----------------------------------------------------
 get_device_icon() {
-	local device_name="$1"
-
-	case "$device_name" in
-	*[Bb]luetooth*) echo "$ICON_BLUETOOTH" ;;
+	local name="$1"
+	case "$name" in
+	*[Bb]luetooth* | *bluez*) echo "$ICON_BLUETOOTH" ;;
 	*[Hh]eadphone* | *[Hh]eadset*) echo "$ICON_HEADPHONES" ;;
 	*[Mm]ic* | *[Mm]icrophone*) echo "$ICON_MICROPHONE" ;;
 	*) echo "$ICON_SPEAKER" ;;
 	esac
 }
-
-# Get audio sinks
-get_sinks() {
-	check_command "pactl" || exit 1
-	SINKS=($(pactl list sinks short | awk '{print $2}'))
-	SINK_IDS=($(pactl list sinks short | awk '{print $1}'))
-	RUNNING_SINK=$(pactl get-default-sink)
-
-	INPUTS=($(pactl list sink-inputs short | awk '{print $1}'))
-
-	SINKS_COUNT=${#SINKS[@]}
-	debug_print "Ses Çıkışları" "Toplam: $SINKS_COUNT"
-
-	# Find running sink index
-	SINK_INDEX=-1
-	for i in "${!SINKS[@]}"; do
-		if [[ "${SINKS[$i]}" == "$RUNNING_SINK" ]]; then
-			SINK_INDEX=$i
-			break
-		fi
-	done
+get_sink_display_name() {
+	local raw="$1" id="$2"
+	local desc
+	desc=$(echo "$raw" | sed -e 's/bluez_output\.//; s/alsa_output\.//; s/\.analog-stereo//; s/[[:space:]]+$//')
+	local icon
+	icon=$(get_device_icon "$desc")
+	echo "${icon} ${desc}"
+}
+get_source_display_name() {
+	local raw="$1" id="$2"
+	local desc
+	desc=$(echo "$raw" | sed -e 's/bluez_input\.//; s/alsa_input\.//; s/\.analog-stereo//; s/[[:space:]]+$//')
+	local icon
+	icon=$(get_device_icon "$desc")
+	echo "${icon} ${desc}"
 }
 
-# Get audio sources (microphones)
-get_sources() {
-	check_command "pactl" || exit 1
-
-	# Get all sources but exclude monitors - we want actual input devices only
-	SOURCES=($(pactl list sources short | grep -v "monitor" | awk '{print $2}'))
-	SOURCE_IDS=($(pactl list sources short | grep -v "monitor" | awk '{print $1}'))
-	DEFAULT_SOURCE=$(pactl get-default-source)
-
-	SOURCES_COUNT=${#SOURCES[@]}
-	debug_print "Mikrofonlar" "Toplam: $SOURCES_COUNT"
-
-	# Find default source index
-	SOURCE_INDEX=-1
-	for i in "${!SOURCES[@]}"; do
-		if [[ "${SOURCES[$i]}" == "$DEFAULT_SOURCE" ]]; then
-			SOURCE_INDEX=$i
-			break
-		fi
-	done
-
-	debug_print "Aktif Mikrofon" "Index: $SOURCE_INDEX, Adı: $DEFAULT_SOURCE"
-}
-
-# Get sink description with better formatting
-get_sink_description() {
-	local sink_id="$1"
-	pactl list sinks | awk -v id="$sink_id" '
-        $1 == "Sink" && $2 == "#"id {found=1}
-        found && /Description:/ {
-            sub(/^[[:space:]]*Description:[[:space:]]*/, "")
-            # Remove unnecessary prefixes
-            gsub(/[Aa]nalog |[Dd]igital |[Ss]tereo |[Mm]ono |[Oo]utput|[Ii]nput/, "")
-            # Clean up common patterns
-            gsub(/\([^)]*\)/, "")  # Remove anything in parentheses
-            gsub(/[-_]/, " ")       # Replace underscores and hyphens with spaces
-            gsub(/ +/, " ")         # Collapse multiple spaces
-            sub(/^[[:space:]]+/, "") # Trim leading spaces
-            sub(/[[:space:]]+$/, "") # Trim trailing spaces
-            # Capitalize first letter
-            $0 = toupper(substr($0,1,1)) tolower(substr($0,2))
-            print
-            exit
-        }
+# --- Aktif ID’yi bloktan yıldız ile yakala -------------------------------------
+__find_active_from_block() {
+	sed -E 's/^[[:space:]│└┌┐┘├┤┬┴─]+//' <<<"$1" |
+		awk '
+      /^\*/ { line=$0; sub(/^\*[[:space:]]*/,"", line);
+               if (match(line, /^([0-9]+)/, m)) { print m[1]; exit } }
     '
 }
 
-# Get sink name with icon and improved formatting
-get_sink_display_name() {
-	local sink_name="$1"
-	local sink_id="$2"
-
-	# Get cleaned up description
-	local description=$(get_sink_description "$sink_id")
-
-	# If description is empty, use the sink name
-	if [ -z "$description" ]; then
-		description="$sink_name"
-		# Clean up sink name
-		description=$(echo "$description" | sed -e 's/alsa_output.//' -e 's/alsa_input.//' -e 's/\.analog-stereo//')
-	fi
-
-	local icon=$(get_device_icon "$description")
-	echo "$icon $description"
-}
-
-# Get source name with icon
-get_source_display_name() {
-	local source_name="$1"
-	local source_id="$2"
-
-	# Get human-readable description
-	local description=$(pactl list sources | awk -v id="$source_id" '
-		$1 == "Source" && $2 == "#"id {found=1}
-		found && /Description:/ {
-			sub(/^[[:space:]]*Description:[[:space:]]*/, "")
-			print
-			exit
-		}
-	')
-
-	local icon=$(get_device_icon "$description")
-	echo "$icon $description"
-}
-
-# Interactive sink selection
-select_sink_interactive() {
-	if ! command -v fzf &>/dev/null; then
-		warning "fzf not found. Please install fzf for interactive mode."
-		return 1
-	fi
-
-	get_sinks
-
-	if [[ $SINKS_COUNT -eq 0 ]]; then
-		error "No audio outputs found."
-		return 1
-	fi
-
-	# Create selection list
-	local selection_list=""
-	for i in "${!SINKS[@]}"; do
-		local display_name=$(get_sink_display_name "${SINKS[$i]}" "${SINK_IDS[$i]}")
-		local marker=""
-		if [[ $i -eq $SINK_INDEX ]]; then
-			marker=" ${GREEN}[current]${RESET}"
+# --- Bluetooth’u öne alma -------------------------------------------------------
+__prefer_bluetooth_arrays() {
+	local ids_bt=() names_bt=() ids_rest=() names_rest=()
+	for i in "${!SINK_IDS[@]}"; do
+		if echo "${SINKS[$i]}" | grep -qiE 'bluez|bluetooth'; then
+			ids_bt+=("${SINK_IDS[$i]}")
+			names_bt+=("${SINKS[$i]}")
+		else
+			ids_rest+=("${SINK_IDS[$i]}")
+			names_rest+=("${SINKS[$i]}")
 		fi
-		selection_list+="$i: $display_name$marker\n"
 	done
-
-	# Show selection dialog
-	local selected=$(echo -e "$selection_list" | fzf --ansi --height=10 --layout=reverse --header="Select Audio Output")
-
-	if [ -n "$selected" ]; then
-		local selected_index=$(echo "$selected" | cut -d':' -f1)
-		switch_to_sink_index "$selected_index"
-		return 0
-	fi
-
-	return 1
+	SINK_IDS=("${ids_bt[@]}" "${ids_rest[@]}")
+	SINKS=("${names_bt[@]}" "${names_rest[@]}")
 }
 
-# Interactive source selection
-select_source_interactive() {
-	if ! command -v fzf &>/dev/null; then
-		warning "fzf not found. Please install fzf for interactive mode."
-		return 1
-	fi
+# --- Sinks ----------------------------------------------------------------------
+get_sinks() {
+	check_command "wpctl" || exit 1
+	SINKS=()
+	SINK_IDS=()
+	local block
+	block="$(wpctl status | sed -n '/Sinks:/,/Sources:/p')"
 
-	get_sources
-
-	if [[ $SOURCES_COUNT -eq 0 ]]; then
-		error "No microphones found."
-		return 1
-	fi
-
-	# Create selection list
-	local selection_list=""
-	for i in "${!SOURCES[@]}"; do
-		local display_name=$(get_source_display_name "${SOURCES[$i]}" "${SOURCE_IDS[$i]}")
-		local marker=""
-		if [[ $i -eq $SOURCE_INDEX ]]; then
-			marker=" ${GREEN}[current]${RESET}"
+	while IFS= read -r line; do
+		line="$(echo "$line" | __strip)"
+		[[ "$line" =~ ^\*?[[:space:]]*[0-9]+\. ]] || continue
+		local id name
+		id="$(echo "$line" | sed -E 's/^\*?[[:space:]]*([0-9]+)\..*/\1/')"
+		name="$(echo "$line" | sed -E 's/^\*?[[:space:]]*[0-9]+\.\s*//; s/\[vol:.*\]//; s/[[:space:]]+$//')"
+		[[ -n "$id" && -n "$name" ]] || continue
+		if [[ -n "$EXCLUDE_SINK_REGEX" ]] && echo "$name" | grep -Eq "$EXCLUDE_SINK_REGEX"; then
+			continue
 		fi
-		selection_list+="$i: $display_name$marker\n"
-	done
+		SINK_IDS+=("$id")
+		SINKS+=("$name")
+	done <<<"$block"
 
-	# Show selection dialog
-	local selected=$(echo -e "$selection_list" | fzf --ansi --height=10 --layout=reverse --header="Select Microphone")
-
-	if [ -n "$selected" ]; then
-		local selected_index=$(echo "$selected" | cut -d':' -f1)
-		switch_to_source_index "$selected_index"
-		return 0
+	if [ "${PREFER_BLUETOOTH}" = true ] && (printf "%s\n" "${SINKS[@]}" | grep -qiE 'bluez|bluetooth'); then
+		__prefer_bluetooth_arrays
 	fi
 
-	return 1
-}
-
-# Switch to specific sink by index
-switch_to_sink_index() {
-	local index="$1"
-
-	if [[ $index -ge 0 ]] && [[ $index -lt ${#SINKS[@]} ]]; then
-		switch_sink "${SINKS[$index]}"
-	else
-		error "Invalid sink index: $index"
-		return 1
-	fi
-}
-
-# Switch to specific source by index
-switch_to_source_index() {
-	local index="$1"
-
-	if [[ $index -ge 0 ]] && [[ $index -lt ${#SOURCES[@]} ]]; then
-		switch_source "${SOURCES[$index]}"
-	else
-		error "Invalid source index: $index"
-		return 1
-	fi
-}
-
-# Switch audio output
-switch_sink() {
-	local target_sink=$1
-
-	# Set default sink
-	if ! pactl set-default-sink "$target_sink"; then
-		error "Failed to set default sink to $target_sink"
-		return 1
-	fi
-
-	# Move all inputs to the new sink
-	for input in "${INPUTS[@]}"; do
-		pactl move-sink-input "$input" "$target_sink" 2>/dev/null || true
-	done
-
-	# Save preference
-	save_state "last_sink" "$target_sink"
-
-	# Get the sink ID for display purposes
-	local sink_id=""
-	for i in "${!SINKS[@]}"; do
-		if [[ "${SINKS[$i]}" == "$target_sink" ]]; then
-			sink_id="${SINK_IDS[$i]}"
+	SINKS_COUNT=${#SINKS[@]}
+	local active_id
+	active_id="$(__find_active_from_block "$block")"
+	RUNNING_SINK=""
+	SINK_INDEX=-1
+	for i in "${!SINK_IDS[@]}"; do
+		if [[ "${SINK_IDS[$i]}" == "$active_id" ]]; then
+			SINK_INDEX=$i
+			RUNNING_SINK="${SINKS[$i]}"
 			break
 		fi
 	done
 
-	# Get display name for notification
-	local display_name=$(get_sink_display_name "$target_sink" "$sink_id")
-
-	# Further clean up for notification
-	display_name=$(echo "$display_name" | sed -e 's/HDMI/HDMI/' -e 's/Headset/Headset/' -e 's/Speakers/Hoparlör/')
-
-	notify "Ses Çıkışı Değiştirildi" "$display_name" "audio-card"
-	return 0
+	$DEBUG && {
+		echo "${BLUE}-- SINKS --${RESET}"
+		for i in "${!SINK_IDS[@]}"; do
+			local mark=""
+			[[ $i -eq $SINK_INDEX ]] && mark=" ${GREEN}[aktif]${RESET}"
+			echo "  $i: ID=${SINK_IDS[$i]}  ${SINKS[$i]}$mark"
+		done
+	}
 }
 
-# Switch microphone input
-switch_source() {
-	local target_source=$1
+# --- Sources --------------------------------------------------------------------
+get_sources() {
+	check_command "wpctl" || exit 1
+	SOURCES=()
+	SOURCE_IDS=()
+	local block
+	block="$(wpctl status | sed -n '/Sources:/,/Filters:/p')"
 
-	# Set default source
-	if ! pactl set-default-source "$target_source"; then
-		error "Failed to set default source to $target_source"
-		return 1
-	fi
+	while IFS= read -r line; do
+		line="$(echo "$line" | __strip)"
+		[[ "$line" =~ ^\*?[[:space:]]*[0-9]+\. ]] || continue
+		local id name
+		id="$(echo "$line" | sed -E 's/^\*?[[:space:]]*([0-9]+)\..*/\1/')"
+		name="$(echo "$line" | sed -E 's/^\*?[[:space:]]*[0-9]+\.\s*//; s/\[vol:.*\]//; s/[[:space:]]+$//')"
+		[[ "$name" =~ [Mm]onitor ]] && continue
+		[[ -n "$id" && -n "$name" ]] || continue
+		SOURCE_IDS+=("$id")
+		SOURCES+=("$name")
+	done <<<"$block"
 
-	# Save preference
-	save_state "last_source" "$target_source"
-
-	# Get display name for notification
-	local display_name=$(get_source_display_name "$target_source" "")
-	notify "Mikrofon Değiştirildi" "$display_name" "audio-input-microphone"
-	return 0
-}
-
-# Volume control
-control_volume() {
-	check_command "pactl" || exit 1
-
-	case $1 in
-	"up")
-		pactl set-sink-volume @DEFAULT_SINK@ +${VOLUME_STEP}%
-		notify_volume
-		;;
-	"down")
-		pactl set-sink-volume @DEFAULT_SINK@ -${VOLUME_STEP}%
-		notify_volume
-		;;
-	"set")
-		if [[ $2 =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
-			pactl set-sink-volume @DEFAULT_SINK@ ${2}%
-			notify_volume
-		else
-			error "Invalid volume level (0-100)"
-		fi
-		;;
-	"mute")
-		pactl set-sink-mute @DEFAULT_SINK@ toggle
-		notify_mute
-		;;
-	esac
-}
-
-# Microphone control
-control_mic() {
-	check_command "pactl" || exit 1
-
-	case $1 in
-	"up")
-		pactl set-source-volume @DEFAULT_SOURCE@ +${VOLUME_STEP}%
-		notify_mic
-		;;
-	"down")
-		pactl set-source-volume @DEFAULT_SOURCE@ -${VOLUME_STEP}%
-		notify_mic
-		;;
-	"set")
-		if [[ $2 =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
-			pactl set-source-volume @DEFAULT_SOURCE@ ${2}%
-			notify_mic
-		else
-			error "Invalid microphone level (0-100)"
-		fi
-		;;
-	"mute")
-		pactl set-source-mute @DEFAULT_SOURCE@ toggle
-		notify_mic_mute
-		;;
-	esac
-}
-
-# Initialize audio levels
-initialize_audio() {
-	check_command "pactl" || exit 1
-
-	info "Initializing audio levels..."
-
-	# Set default volume
-	debug_print "Başlangıç" "Ses seviyesi %$DEFAULT_VOLUME olarak ayarlanıyor..."
-	pactl set-sink-volume @DEFAULT_SINK@ ${DEFAULT_VOLUME}%
-
-	# Set default microphone volume
-	debug_print "Başlangıç" "Mikrofon seviyesi %$DEFAULT_MIC_VOLUME olarak ayarlanıyor..."
-	pactl set-source-volume @DEFAULT_SOURCE@ ${DEFAULT_MIC_VOLUME}%
-
-	# Ensure audio is not muted
-	pactl set-sink-mute @DEFAULT_SINK@ 0
-
-	# Load last used devices if available
-	if [ "$SAVE_PREFERENCES" = true ]; then
-		local last_sink=$(load_state "last_sink")
-		local last_source=$(load_state "last_source")
-
-		if [ -n "$last_sink" ]; then
-			pactl set-default-sink "$last_sink" 2>/dev/null || true
-		fi
-
-		if [ -n "$last_source" ]; then
-			pactl set-default-source "$last_source" 2>/dev/null || true
-		fi
-	fi
-
-	notify "Ses Ayarları" "Ses: %$DEFAULT_VOLUME, Mikrofon: %$DEFAULT_MIC_VOLUME" "audio-volume-medium"
-	success "Audio initialized successfully"
-}
-
-# Profile management
-save_profile() {
-	local profile_name="${1:-default}"
-	local profile_file="$PROFILES_DIR/$profile_name.profile"
-
-	info "Saving profile: $profile_name"
-
-	# Get current settings
-	local current_sink=$(pactl get-default-sink)
-	local current_source=$(pactl get-default-source)
-	local sink_volume=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
-	local source_volume=$(pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\d+(?=%)' | head -1)
-	local sink_muted=$(pactl get-sink-mute @DEFAULT_SINK@ | awk '{print $2}')
-	local source_muted=$(pactl get-source-mute @DEFAULT_SOURCE@ | awk '{print $2}')
-
-	# Save to profile file
-	cat >"$profile_file" <<EOF
-# Audio Profile: $profile_name
-# Created: $(date)
-
-PROFILE_SINK="$current_sink"
-PROFILE_SOURCE="$current_source"
-PROFILE_SINK_VOLUME="$sink_volume"
-PROFILE_SOURCE_VOLUME="$source_volume"
-PROFILE_SINK_MUTED="$sink_muted"
-PROFILE_SOURCE_MUTED="$source_muted"
-EOF
-
-	notify "Profile Saved" "$profile_name" "document-save"
-	success "Profile '$profile_name' saved successfully"
-}
-
-# Load profile
-load_profile() {
-	local profile_name="${1:-default}"
-	local profile_file="$PROFILES_DIR/$profile_name.profile"
-
-	if [ ! -f "$profile_file" ]; then
-		error "Profile not found: $profile_name"
-		return 1
-	fi
-
-	info "Loading profile: $profile_name"
-
-	# Load profile settings
-	source "$profile_file"
-
-	# Apply settings
-	if [ -n "$PROFILE_SINK" ]; then
-		pactl set-default-sink "$PROFILE_SINK" 2>/dev/null || warning "Could not set sink: $PROFILE_SINK"
-	fi
-
-	if [ -n "$PROFILE_SOURCE" ]; then
-		pactl set-default-source "$PROFILE_SOURCE" 2>/dev/null || warning "Could not set source: $PROFILE_SOURCE"
-	fi
-
-	if [ -n "$PROFILE_SINK_VOLUME" ]; then
-		pactl set-sink-volume @DEFAULT_SINK@ "${PROFILE_SINK_VOLUME}%" 2>/dev/null || true
-	fi
-
-	if [ -n "$PROFILE_SOURCE_VOLUME" ]; then
-		pactl set-source-volume @DEFAULT_SOURCE@ "${PROFILE_SOURCE_VOLUME}%" 2>/dev/null || true
-	fi
-
-	if [ "$PROFILE_SINK_MUTED" = "yes" ]; then
-		pactl set-sink-mute @DEFAULT_SINK@ 1 2>/dev/null || true
-	else
-		pactl set-sink-mute @DEFAULT_SINK@ 0 2>/dev/null || true
-	fi
-
-	if [ "$PROFILE_SOURCE_MUTED" = "yes" ]; then
-		pactl set-source-mute @DEFAULT_SOURCE@ 1 2>/dev/null || true
-	else
-		pactl set-source-mute @DEFAULT_SOURCE@ 0 2>/dev/null || true
-	fi
-
-	notify "Profile Loaded" "$profile_name" "document-open"
-	success "Profile '$profile_name' loaded successfully"
-}
-
-# List profiles
-list_profiles() {
-	info "Available profiles:"
-
-	if [ ! -d "$PROFILES_DIR" ] || [ -z "$(ls -A "$PROFILES_DIR" 2>/dev/null)" ]; then
-		echo "  No profiles found"
-		return
-	fi
-
-	for profile in "$PROFILES_DIR"/*.profile; do
-		if [ -f "$profile" ]; then
-			local profile_name=$(basename "$profile" .profile)
-			local created=$(grep "# Created:" "$profile" | cut -d: -f2-)
-			echo "  ${GREEN}$profile_name${RESET} - Created:$created"
+	SOURCES_COUNT=${#SOURCES[@]}
+	local active_id
+	active_id="$(__find_active_from_block "$block")"
+	DEFAULT_SOURCE=""
+	SOURCE_INDEX=-1
+	for i in "${!SOURCE_IDS[@]}"; do
+		if [[ "${SOURCE_IDS[$i]}" == "$active_id" ]]; then
+			SOURCE_INDEX=$i
+			DEFAULT_SOURCE="${SOURCES[$i]}"
+			break
 		fi
 	done
+
+	$DEBUG && {
+		echo "${BLUE}-- SOURCES --${RESET}"
+		for i in "${!SOURCE_IDS[@]}"; do
+			local mark=""
+			[[ $i -eq $SOURCE_INDEX ]] && mark=" ${GREEN}[aktif]${RESET}"
+			echo "  $i: ID=${SOURCE_IDS[$i]}  ${SOURCES[$i]}$mark"
+		done
+	}
 }
 
-# Notifications
+# --- Gerçek yüzde okumaları -----------------------------------------------------
+__percent_from_wpctl() {
+	local line
+	line="$(wpctl get-volume "$1" 2>/dev/null | head -n1)"
+	if [[ "$line" =~ ([0-9]+\.[0-9]+) ]]; then
+		awk -v v="${BASH_REMATCH[1]}" 'BEGIN{printf("%d", v*100 + 0.5)}'
+	else
+		echo ""
+	fi
+}
 notify_volume() {
-	local vol=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
+	local vol
+	vol="$(__percent_from_wpctl @DEFAULT_AUDIO_SINK@)"
+	[ -z "$vol" ] && vol="${DEFAULT_VOLUME}"
 	local icon="audio-volume-high"
-
-	if [ "$vol" -eq 0 ]; then
+	if ((vol == 0)); then
 		icon="audio-volume-muted"
-	elif [ "$vol" -lt 30 ]; then
+	elif ((vol < 30)); then
 		icon="audio-volume-low"
-	elif [ "$vol" -lt 70 ]; then
+	elif ((vol < 70)); then
 		icon="audio-volume-medium"
 	fi
-
 	notify "Ses Seviyesi" "Ses: ${vol}%" "$icon"
 }
-
-notify_mute() {
-	local mute=$(pactl get-sink-mute @DEFAULT_SINK@ | awk '{print $2}')
-	if [ "$mute" = "yes" ]; then
-		notify "Ses" "Ses Kapatıldı" "audio-volume-muted"
-	else
-		notify "Ses" "Ses Açıldı" "audio-volume-high"
-	fi
-}
-
 notify_mic() {
-	local vol=$(pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\d+(?=%)' | head -1)
+	local vol
+	vol="$(__percent_from_wpctl @DEFAULT_AUDIO_SOURCE@)"
+	[ -z "$vol" ] && vol="${DEFAULT_MIC_VOLUME}"
 	notify "Mikrofon Seviyesi" "Mikrofon: ${vol}%" "audio-input-microphone"
 }
+notify_mute() { notify "Ses" "Ses durumu değiştirildi" "audio-volume-muted"; }
+notify_mic_mute() { notify "Mikrofon" "Mikrofon durumu değiştirildi" "microphone-disabled"; }
 
-notify_mic_mute() {
-	local mute=$(pactl get-source-mute @DEFAULT_SOURCE@ | awk '{print $2}')
-	if [ "$mute" = "yes" ]; then
-		notify "Mikrofon" "Mikrofon Kapatıldı" "microphone-disabled"
-	else
-		notify "Mikrofon" "Mikrofon Açıldı" "audio-input-microphone"
-	fi
+# --- Streams’leri yeni varsayılan sink’e taşı ----------------------------------
+migrate_streams_to_default() {
+	local streams
+	streams="$(wpctl status | sed -n '/Streams:/,/Settings:/p' |
+		grep -E '^[[:space:]]*[0-9]+\.' |
+		__strip |
+		sed -E 's/^([0-9]+)\..*/\1/')"
+	while IFS= read -r sid; do
+		[[ -n "$sid" ]] || continue
+		wpctl move-node "$sid" @DEFAULT_AUDIO_SINK@ >/dev/null 2>&1 || true
+	done <<<"$streams"
 }
 
-# List devices
-list_devices() {
-	echo "${BOLD}Ses Çıkışları:${RESET}"
-	echo "─────────────────────────"
-
-	get_sinks
-	for i in "${!SINKS[@]}"; do
-		local display_name=$(get_sink_display_name "${SINKS[$i]}" "${SINK_IDS[$i]}")
-		local marker=""
-		if [[ $i -eq $SINK_INDEX ]]; then
-			marker=" ${GREEN}[aktif]${RESET}"
-		fi
-		echo "$i: $display_name$marker"
-	done
-
-	echo
-	echo "${BOLD}Mikrofonlar:${RESET}"
-	echo "─────────────────────────"
-
-	get_sources
-	for i in "${!SOURCES[@]}"; do
-		local display_name=$(get_source_display_name "${SOURCES[$i]}" "${SOURCE_IDS[$i]}")
-		local marker=""
-		if [[ $i -eq $SOURCE_INDEX ]]; then
-			marker=" ${GREEN}[aktif]${RESET}"
-		fi
-		echo "$i: $display_name$marker"
-	done
-}
-
-# Help
-print_help() {
-	cat <<EOF
-${BOLD}HyprFlow PipeWire Audio Switcher v$VERSION${RESET}
-
-${BOLD}Kullanım:${RESET}
-  $0 [-d|--debug] [komut] [parametreler]
-
-${BOLD}Komutlar:${RESET}
-  ${CYAN}Ses Çıkışı:${RESET}
-    switch              Sonraki ses çıkışına geç
-    switch-interactive  İnteraktif ses çıkışı seçimi (fzf gerektirir)
-    
-  ${CYAN}Mikrofon:${RESET}
-    switch-mic          Sonraki mikrofona geç
-    mic-interactive     İnteraktif mikrofon seçimi (fzf gerektirir)
-    
-  ${CYAN}Ses Kontrolü:${RESET}
-    volume up           Sesi artır
-    volume down         Sesi azalt
-    volume set N        Sesi %N olarak ayarla (0-100)
-    volume mute         Sesi aç/kapat
-    
-  ${CYAN}Mikrofon Kontrolü:${RESET}
-    mic up              Mikrofon sesini artır
-    mic down            Mikrofon sesini azalt
-    mic set N           Mikrofon sesini %N olarak ayarla (0-100)
-    mic mute            Mikrofonu aç/kapat
-    
-  ${CYAN}Profiller:${RESET}
-    save-profile [isim] Mevcut ayarları profil olarak kaydet
-    load-profile [isim] Profili yükle
-    list-profiles       Mevcut profilleri listele
-    
-  ${CYAN}Diğer:${RESET}
-    init                Ses ayarlarını başlangıç değerlerine getir
-    list                Tüm ses cihazlarını listele
-    help                Bu yardım mesajını göster
-    version             Versiyon bilgisini göster
-
-${BOLD}Örnekler:${RESET}
-  # Ses çıkışını değiştir
-  $0 switch
-  
-  # İnteraktif seçim
-  $0 switch-interactive
-  
-  # Ses seviyesini %50 yap
-  $0 volume set 50
-  
-  # Gaming profili kaydet
-  $0 save-profile gaming
-  
-  # Gaming profilini yükle
-  $0 load-profile gaming
-
-${BOLD}Konfigürasyon:${RESET}
-  Ayar dosyası: $CONFIG_FILE
-  Profiller: $PROFILES_DIR/
-
-EOF
-}
-
-# Version info
-print_version() {
-	echo "${BOLD}HyprFlow PipeWire Audio Switcher${RESET}"
-	echo "Version: $VERSION"
-	echo "Config: $CONFIG_FILE"
-	echo "Profiles: $PROFILES_DIR"
-}
-
-# Switch audio output
-handle_switch() {
-	get_sinks
-
-	if [[ $SINKS_COUNT -eq 0 ]]; then
-		error "No audio outputs found."
-		notify "Hata" "Ses çıkışı bulunamadı." "dialog-error"
+# --- Operasyonlar ---------------------------------------------------------------
+switch_sink() {
+	local target_sink_id="$1"
+	if ! wpctl set-default "${target_sink_id}"; then
+		error "Failed to set default sink: ${target_sink_id}"
 		return 1
 	fi
+	migrate_streams_to_default
+	save_state "last_sink" "${target_sink_id}"
 
-	if [[ $SINK_INDEX -lt 0 ]]; then
-		# If no sink index found, use the first sink
-		debug_print "Çıkış Değiştiriliyor" "İlk çıkışa geçiliyor..."
-		switch_to_sink_index 0
-	elif [[ $SINK_INDEX -eq $(($SINKS_COUNT - 1)) ]]; then
-		# If we're at the last sink, go to the first one
-		debug_print "Çıkış Değiştiriliyor" "İlk çıkışa geçiliyor..."
-		switch_to_sink_index 0
+	get_sinks
+	local display="ID ${target_sink_id}"
+	for i in "${!SINK_IDS[@]}"; do
+		if [[ "${SINK_IDS[$i]}" == "${target_sink_id}" ]]; then
+			display=$(get_sink_display_name "${SINKS[$i]}" "${target_sink_id}")
+			break
+		fi
+	done
+	notify "Ses Çıkışı Değiştirildi" "${display}" "audio-card"
+	return 0
+}
+switch_source() {
+	local target_source_id="$1"
+	if ! wpctl set-default "${target_source_id}"; then
+		error "Failed to set default source: ${target_source_id}"
+		return 1
+	fi
+	save_state "last_source" "${target_source_id}"
+
+	get_sources
+	local display="ID ${target_source_id}"
+	for i in "${!SOURCE_IDS[@]}"; do
+		if [[ "${SOURCE_IDS[$i]}" == "${target_source_id}" ]]; then
+			display=$(get_source_display_name "${SOURCES[$i]}" "${target_source_id}")
+			break
+		fi
+	done
+	notify "Mikrofon Değiştirildi" "${display}" "audio-input-microphone"
+	return 0
+}
+switch_to_sink_index() {
+	local index="$1"
+	if ((index >= 0 && index < ${#SINK_IDS[@]})); then
+		local id="${SINK_IDS[$index]}"
+		debug_print "Sink Değiştirme" "Index ${index} -> ID ${id} (${SINKS[$index]})"
+		switch_sink "${id}"
 	else
-		# Go to the next sink
-		local new_index=$(($SINK_INDEX + 1))
-		debug_print "Çıkış Değiştiriliyor" "Sonraki çıkışa geçiliyor..."
-		switch_to_sink_index $new_index
+		error "Invalid sink index: ${index} (0..$((${#SINK_IDS[@]} - 1)))"
+		return 1
 	fi
 }
-
-# Switch microphone input
+switch_to_source_index() {
+	local index="$1"
+	if ((index >= 0 && index < ${#SOURCE_IDS[@]})); then
+		local id="${SOURCE_IDS[$index]}"
+		debug_print "Source Değiştirme" "Index ${index} -> ID ${id} (${SOURCES[$index]})"
+		switch_source "${id}"
+	else
+		error "Invalid source index: ${index} (0..$((${#SOURCE_IDS[@]} - 1)))"
+		return 1
+	fi
+}
+handle_switch() {
+	get_sinks
+	if ((SINKS_COUNT == 0)); then
+		error "No eligible audio outputs (all excluded by EXCLUDE_SINK_REGEX?)."
+		notify "Hata" "Uygun ses çıkışı yok (EXCLUDE_SINK_REGEX çok kısıtlayıcı olabilir)." "dialog-error"
+		return 1
+	fi
+	if ((SINKS_COUNT == 1)); then
+		notify "Bilgi" "Sadece bir uygun ses cihazı mevcut" "dialog-information"
+		return 0
+	fi
+	local next_index
+	if ((SINK_INDEX < 0)); then
+		next_index=0
+		debug_print "İlk Cihaz" "Aktif mevcut listede değil, 0'a geçiliyor"
+	else
+		next_index=$(((SINK_INDEX + 1) % SINKS_COUNT))
+	fi
+	switch_to_sink_index "${next_index}"
+}
 handle_switch_mic() {
 	get_sources
-
-	if [[ $SOURCES_COUNT -eq 0 ]]; then
+	if ((SOURCES_COUNT == 0)); then
 		error "No microphones found."
 		notify "Hata" "Mikrofon bulunamadı." "dialog-error"
 		return 1
 	fi
-
-	if [ "$DEBUG" = true ]; then
-		echo "${CYAN}Mevcut mikrofonlar:${RESET}"
-		for i in "${!SOURCES[@]}"; do
-			local display_name=$(get_source_display_name "${SOURCES[$i]}" "${SOURCE_IDS[$i]}")
-			echo "$i: $display_name"
-			if [[ $i -eq $SOURCE_INDEX ]]; then
-				echo "   ${GREEN}[aktif]${RESET}"
-			fi
-		done
+	local next_index
+	if ((SOURCE_INDEX < 0)); then
+		next_index=0
+	else
+		next_index=$(((SOURCE_INDEX + 1) % SOURCES_COUNT))
 	fi
-
-	# If no source index found or invalid, use the first source
-	if [[ $SOURCE_INDEX -lt 0 ]]; then
-		debug_print "Mikrofon Değiştiriliyor" "İlk mikrofona geçiliyor..."
-		switch_to_source_index 0
-		return 0
-	fi
-
-	# Calculate next index with proper modulo for cycling
-	local next_index=$(((SOURCE_INDEX + 1) % SOURCES_COUNT))
-
-	debug_print "Mikrofon Değiştiriliyor" "Index $SOURCE_INDEX -> $next_index"
-	switch_to_source_index $next_index
+	switch_to_source_index "${next_index}"
 }
 
-# Main function
-main() {
-	# Check dependencies
-	check_dependencies
-
-	# Process command
-	case $1 in
-	"volume")
-		control_volume "$2" "$3"
+# --- Ses/Mic seviye kontrolü ---------------------------------------------------
+control_volume() {
+	check_command "wpctl" || exit 1
+	case "$1" in
+	up)
+		wpctl set-volume @DEFAULT_AUDIO_SINK@ ${VOLUME_STEP}%+
+		notify_volume
 		;;
-	"mic")
-		control_mic "$2" "$3"
+	down)
+		wpctl set-volume @DEFAULT_AUDIO_SINK@ ${VOLUME_STEP}%-
+		notify_volume
 		;;
-	"switch")
-		handle_switch
+	set)
+		if [[ "$2" =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
+			wpctl set-volume @DEFAULT_AUDIO_SINK@ ${2}%
+			notify_volume
+		else error "Invalid volume level (0-100)"; fi
 		;;
-	"switch-interactive")
-		select_sink_interactive
+	mute)
+		wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+		notify_mute
 		;;
-	"switch-mic")
-		handle_switch_mic
+	*)
+		error "Unknown volume subcommand"
+		return 1
 		;;
-	"mic-interactive")
-		select_source_interactive
+	esac
+}
+control_mic() {
+	check_command "wpctl" || exit 1
+	case "$1" in
+	up)
+		wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${VOLUME_STEP}%+
+		notify_mic
 		;;
-	"init")
-		initialize_audio
+	down)
+		wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${VOLUME_STEP}%-
+		notify_mic
 		;;
-	"save-profile")
-		save_profile "$2"
+	set)
+		if [[ "$2" =~ ^[0-9]+$ ]] && [ "$2" -le 100 ]; then
+			wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${2}%
+			notify_mic
+		else error "Invalid microphone level (0-100)"; fi
 		;;
-	"load-profile")
-		load_profile "$2"
+	mute)
+		wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+		notify_mic_mute
 		;;
-	"list-profiles")
-		list_profiles
-		;;
-	"version")
-		print_version
-		;;
-	"list")
-		list_devices
-		;;
-	"help" | *)
-		print_help
+	*)
+		error "Unknown mic subcommand"
+		return 1
 		;;
 	esac
 }
 
-# Run main function
+# --- Init / Profiller / Liste ---------------------------------------------------
+initialize_audio() {
+	check_command "wpctl" || exit 1
+	info "Initializing audio levels..."
+	wpctl set-volume @DEFAULT_AUDIO_SINK@ ${DEFAULT_VOLUME}% >/dev/null 2>&1 || true
+	wpctl set-volume @DEFAULT_AUDIO_SOURCE@ ${DEFAULT_MIC_VOLUME}% >/dev/null 2>&1 || true
+
+	get_sinks
+	get_sources
+	if [ "${SAVE_PREFERENCES}" = true ] && [ -f "${STATE_FILE}" ]; then
+		local last_sink last_source
+		last_sink="$(load_state "last_sink")"
+		last_source="$(load_state "last_source")"
+		if [[ -n "${last_sink}" && "${last_sink}" =~ ^[0-9]+$ ]] && id_in_array "${last_sink}" "${SINK_IDS[@]}"; then
+			wpctl set-default "${last_sink}" >/dev/null 2>&1 || debug_print "Uyarı" "Sink ayarlanamadı: ${last_sink}"
+		fi
+		if [[ -n "${last_source}" && "${last_source}" =~ ^[0-9]+$ ]] && id_in_array "${last_source}" "${SOURCE_IDS[@]}"; then
+			wpctl set-default "${last_source}" >/dev/null 2>&1 || debug_print "Uyarı" "Source ayarlanamadı: ${last_source}"
+		fi
+	fi
+	notify "Ses Ayarları" "Ses: %${DEFAULT_VOLUME}, Mikrofon: %${DEFAULT_MIC_VOLUME}" "audio-volume-medium"
+	success "Audio initialized successfully"
+}
+save_profile() {
+	local name="${1:-default}"
+	local file="${PROFILES_DIR}/${name}.profile"
+	info "Saving profile: ${name}"
+	get_sinks
+	get_sources
+	local cur_sink=""
+	local cur_source=""
+	((SINK_INDEX >= 0)) && cur_sink="${SINK_IDS[$SINK_INDEX]}"
+	((SOURCE_INDEX >= 0)) && cur_source="${SOURCE_IDS[$SOURCE_INDEX]}"
+	local sink_vol
+	sink_vol="$(__percent_from_wpctl @DEFAULT_AUDIO_SINK@)"
+	local src_vol
+	src_vol="$(__percent_from_wpctl @DEFAULT_AUDIO_SOURCE@)"
+	[ -z "${sink_vol}" ] && sink_vol="${DEFAULT_VOLUME}"
+	[ -z "${src_vol}" ] && src_vol="${DEFAULT_MIC_VOLUME}"
+	cat >"${file}" <<EOF
+# Audio Profile: ${name}
+# Created: $(date)
+PROFILE_SINK="${cur_sink}"
+PROFILE_SOURCE="${cur_source}"
+PROFILE_SINK_VOLUME="${sink_vol}"
+PROFILE_SOURCE_VOLUME="${src_vol}"
+EOF
+	notify "Profile Saved" "${name}" "document-save"
+	success "Profile '${name}' saved successfully"
+}
+load_profile() {
+	local name="${1:-default}"
+	local file="${PROFILES_DIR}/${name}.profile"
+	if [ ! -f "${file}" ]; then
+		error "Profile not found: ${name}"
+		return 1
+	fi
+	# shellcheck disable=SC1090
+	source "${file}"
+	[ -n "${PROFILE_SINK}" ] && wpctl set-default "${PROFILE_SINK}" >/dev/null 2>&1 || true
+	[ -n "${PROFILE_SOURCE}" ] && wpctl set-default "${PROFILE_SOURCE}" >/dev/null 2>&1 || true
+	[ -n "${PROFILE_SINK_VOLUME}" ] && wpctl set-volume @DEFAULT_AUDIO_SINK@ "${PROFILE_SINK_VOLUME}%" >/dev/null 2>&1 || true
+	[ -n "${PROFILE_SOURCE_VOLUME}" ] && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ "${PROFILE_SOURCE_VOLUME}%" >/dev/null 2>&1 || true
+	notify "Profile Loaded" "${name}" "document-open"
+	success "Profile '${name}' loaded successfully"
+}
+list_profiles() {
+	info "Available profiles:"
+	if [ -z "$(ls -A "${PROFILES_DIR}" 2>/dev/null)" ]; then
+		echo "  No profiles found"
+		return
+	fi
+	for profile in "${PROFILES_DIR}"/*.profile; do
+		[ -f "${profile}" ] || continue
+		local name
+		name="$(basename "${profile}" .profile)"
+		local created
+		created="$(grep "^# Created:" "${profile}" | cut -d: -f2-)"
+		echo "  ${GREEN}${name}${RESET} - Created:${created}"
+	done
+}
+list_devices() {
+	echo "${BOLD}Ses Çıkışları (filtre sonrası):${RESET}"
+	echo "─────────────────────────"
+	get_sinks
+	for i in "${!SINKS[@]}"; do
+		local disp
+		disp="$(get_sink_display_name "${SINKS[$i]}" "${SINK_IDS[$i]}")"
+		local mark=""
+		[[ $i -eq $SINK_INDEX ]] && mark=" ${GREEN}[aktif]${RESET}"
+		echo "$i: ${disp}${mark}"
+	done
+	echo
+	echo "${BOLD}Mikrofonlar:${RESET}"
+	echo "─────────────────────────"
+	get_sources
+	for i in "${!SOURCES[@]}"; do
+		local disp
+		disp="$(get_source_display_name "${SOURCES[$i]}" "${SOURCE_IDS[$i]}")"
+		local mark=""
+		[[ $i -eq $SOURCE_INDEX ]] && mark=" ${GREEN}[aktif]${RESET}"
+		echo "$i: ${disp}${mark}"
+	done
+}
+
+# --- CLI -----------------------------------------------------------------------
+print_help() {
+	cat <<EOF
+${BOLD}HyprFlow PipeWire Audio Switcher v${VERSION}${RESET}
+
+Kullanım:
+  $0 [-d|--debug] [--help] [--version] <komut> [parametreler]
+
+Komutlar:
+  ${CYAN}Ses Çıkışı:${RESET}
+    switch               Sonraki uygun ses çıkışına geç (EXCLUDE_SINK_REGEX'e göre)
+    switch-interactive   İnteraktif ses çıkışı seçimi (fzf)
+
+  ${CYAN}Mikrofon:${RESET}
+    switch-mic           Sonraki mikrofona geç
+    mic-interactive      İnteraktif mikrofon seçimi (fzf)
+
+  ${CYAN}Ses Kontrolü:${RESET}
+    volume up|down|set N|mute
+    mic    up|down|set N|mute
+
+  ${CYAN}Profiller:${RESET}
+    save-profile [isim]  Profili kaydet
+    load-profile [isim]  Profili yükle
+    list-profiles        Profilleri listele
+
+  ${CYAN}Diğer:${RESET}
+    init                 Varsayılan ses seviyelerini uygula + tercihler
+    list                 Cihazları listele (filtre sonrası)
+    version              Sürüm bilgisini göster
+    help                 Bu yardım
+
+Kalıcı klasör: ${CACHE_DIR}
+Profiller:      ${PROFILES_DIR}/
+
+ENV override örnekleri:
+  EXCLUDE_SINK_REGEX="HDMI|DisplayPort"  PREFER_BLUETOOTH=true  DEBUG=true
+EOF
+}
+print_version() {
+	echo "${BOLD}HyprFlow PipeWire Audio Switcher${RESET}"
+	echo "Version: ${VERSION}"
+	echo "Cache:   ${CACHE_DIR}"
+	echo "Profiles:${PROFILES_DIR}"
+}
+
+main() {
+	# set -e YOK; bilinçli. Kullanıcı isteği: daha toleranslı çalışsın.
+	check_dependencies
+	$SHOW_VERSION && {
+		print_version
+		exit 0
+	}
+	$SHOW_HELP && {
+		print_help
+		exit 0
+	}
+
+	case "$1" in
+	volume)
+		shift
+		control_volume "$@"
+		;;
+	mic)
+		shift
+		control_mic "$@"
+		;;
+	switch) handle_switch ;;
+	switch-interactive) select_sink_interactive ;;
+	switch-mic) handle_switch_mic ;;
+	mic-interactive) select_source_interactive ;;
+	init) initialize_audio ;;
+	save-profile)
+		shift
+		save_profile "$1"
+		;;
+	load-profile)
+		shift
+		load_profile "$1"
+		;;
+	list-profiles) list_profiles ;;
+	version) print_version ;;
+	list) list_devices ;;
+	help | "") print_help ;;
+	*) print_help ;;
+	esac
+}
+
 main "$@"

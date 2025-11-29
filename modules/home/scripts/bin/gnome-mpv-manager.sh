@@ -2,35 +2,15 @@
 
 ########################################
 #
-# Version: 1.1.0-gnome
-# Date: 2025-01-05
-# Author: Kenan Pelit (GNOME adaptation)
+# Version: 1.2.0-wayland
+# Date: 2025-11-02
+# Author: Kenan Pelit (Wayland adaptation)
 # Repository: github.com/kenanpelit/dotfiles
-# Description: GNOME-Flow - MPV Yönetim Aracı (GNOME Edition)
+# Description: GNOME-Flow - MPV Yönetim Aracı (Pure Wayland Edition)
 #
 # License: MIT
 #
 #######################################
-# GNOME-Flow - MPV Yönetim Aracı
-# GNOME masaüstü ortamında MPV pencere ve medya yönetimi için kapsamlı bir araç.
-#
-# Özellikler:
-# - Akıllı pencere konumlandırma ve döndürme (GNOME/Wayland)
-# - Pencere sabitleme ve odaklama
-# - Medya kontrolü (oynat/duraklat)
-# - YouTube video yönetimi (oynatma ve indirme)
-# - GNOME/Wayland uyumlu pencere yönetimi
-#
-# Gereksinimler:
-# - mpv: Medya oynatıcı
-# - wmctrl: X11/XWayland pencere yönetimi
-# - gdbus: GNOME Shell API erişimi (Wayland)
-# - jq: JSON işleme
-# - socat: Socket iletişimi
-# - wl-clipboard: Pano yönetimi (Wayland)
-# - xclip: Pano yönetimi (X11 fallback)
-# - yt-dlp: YouTube video indirme
-# - libnotify: Masaüstü bildirimleri
 
 # Renk ve sembol tanımları
 SUCCESS='\033[0;32m'
@@ -47,51 +27,49 @@ SOCKET_PATH="/tmp/mpvsocket"
 DOWNLOADS_DIR="$HOME/Downloads"
 NOTIFICATION_TIMEOUT=1000
 
-# Session type detection
-SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
-
 # Kullanım kılavuzu
 show_usage() {
 	cat <<EOF
-GNOME-Flow - MPV Yönetim Aracı v1.1.0-gnome
+GNOME-Flow - MPV Yönetim Aracı v1.2.0-wayland
 
 Kullanım: $(basename "$0") <komut>
 
 Komutlar:
     start       MPV'yi başlat veya aktif hale getir
-    move        MPV penceresini akıllıca konumlandır (GNOME)
+    move        MPV penceresini akıllıca konumlandır
     stick       Pencereyi always-on-top yap/kaldır
     playback    Medya oynatımını duraklat/devam ettir
     play-yt     Panodaki YouTube URL'sini oynat
     save-yt     Panodaki YouTube videosunu indir
-    resize      MPV penceresini yeniden boyutlandır
+    resize      MPV penceresini yeniden boyutlandır (40%)
     center      MPV penceresini ortala
+    maximize    MPV penceresini maximize et
+    unmaximize  MPV penceresini unmaximize et
 
 Örnekler:
     $(basename "$0") start     # MPV'yi başlat
     $(basename "$0") move      # Pencereyi bir sonraki köşeye taşır
     $(basename "$0") play-yt   # Kopyalanan YouTube linkini oynatır
-    $(basename "$0") resize    # Pencereyi %40 boyutunda ortalar
 
-GNOME/Wayland Uyumluluk:
-    Bu araç hem X11 hem de Wayland session'larında çalışır.
+Pure Wayland/GNOME:
+    Bu versiyon tamamen GNOME Shell JavaScript API kullanır.
 EOF
 	exit 1
 }
 
-# Başarı mesajı gösterme
+# Başarı mesajı
 show_success() {
 	echo -e "${SUCCESS}$CHECK_MARK $1${NC}"
 	notify-send -t $NOTIFICATION_TIMEOUT "GNOME-Flow" "$1"
 }
 
-# Hata mesajı gösterme
+# Hata mesajı
 show_error() {
 	echo -e "${ERROR}$CROSS_MARK Hata: $1${NC}" >&2
 	notify-send -u critical -t $NOTIFICATION_TIMEOUT "GNOME-Flow Hata" "$1"
 }
 
-# Bilgi mesajı gösterme
+# Bilgi mesajı
 show_info() {
 	echo -e "${INFO}$ARROW_MARK $1${NC}"
 	notify-send -t $NOTIFICATION_TIMEOUT "GNOME-Flow" "$1"
@@ -99,11 +77,10 @@ show_info() {
 
 # Proses kontrolü
 check_process() {
-	local process_name="$1"
-	pgrep -x "$process_name" >/dev/null
+	pgrep -x "$1" >/dev/null
 }
 
-# MPV durumunu kontrol et
+# MPV durumu kontrol
 check_mpv() {
 	if ! check_process "mpv"; then
 		show_error "MPV çalışmıyor"
@@ -112,207 +89,288 @@ check_mpv() {
 	return 0
 }
 
-# Clipboard content alma (xclip öncelikli)
+# Clipboard'dan içerik al
 get_clipboard() {
-	if command -v xclip >/dev/null 2>&1; then
-		xclip -selection clipboard -o 2>/dev/null || echo ""
-	elif command -v wl-paste >/dev/null 2>&1 && [[ "$SESSION_TYPE" == "wayland" ]]; then
+	if command -v wl-paste >/dev/null 2>&1; then
 		wl-paste 2>/dev/null || echo ""
 	else
-		show_error "Clipboard erişimi için xclip veya wl-paste gerekli"
+		show_error "wl-clipboard gerekli (wl-paste)"
 		return 1
 	fi
 }
 
-# MPV pencere ID'sini bul
-get_mpv_window_id() {
-	if command -v wmctrl >/dev/null 2>&1; then
-		wmctrl -l | grep -i mpv | head -1 | awk '{print $1}'
-	else
-		show_error "wmctrl bulunamadı, pencere yönetimi için gerekli"
-		return 1
-	fi
-}
-
-# GNOME Shell ile pencere yönetimi (Wayland)
-gnome_shell_eval() {
+# GNOME Shell eval wrapper
+gnome_eval() {
 	local script="$1"
-	if command -v gdbus >/dev/null 2>&1; then
-		gdbus call --session --dest org.gnome.Shell \
-			--object-path /org/gnome/Shell \
-			--method org.gnome.Shell.Eval "$script" 2>/dev/null
-	fi
+	gdbus call --session \
+		--dest org.gnome.Shell \
+		--object-path /org/gnome/Shell \
+		--method org.gnome.Shell.Eval \
+		"$script" 2>/dev/null
 }
 
-# MPV'yi başlat veya aktif hale getir
+# MPV penceresini bul ve işlem yap
+mpv_window_action() {
+	local action="$1"
+	local result
+
+	result=$(gnome_eval "
+		const windows = global.get_window_actors();
+		let mpvWindow = null;
+		
+		for (let w of windows) {
+			const metaWindow = w.get_meta_window();
+			const wmClass = metaWindow.get_wm_class();
+			if (wmClass && wmClass.toLowerCase().includes('mpv')) {
+				mpvWindow = metaWindow;
+				break;
+			}
+		}
+		
+		if (!mpvWindow) {
+			'NOT_FOUND';
+		} else {
+			$action
+		}
+	")
+
+	echo "$result"
+}
+
+# MPV'yi başlat
 start_mpv() {
-	local window_id
-	window_id=$(get_mpv_window_id)
-
-	if [[ -n "$window_id" ]]; then
-		echo -e "${CYAN}MPV zaten çalışıyor.${NC} Pencere aktif hale getiriliyor."
-		notify-send -i mpv -t 1000 "MPV Zaten Çalışıyor" "MPV aktif durumda, pencere öne getiriliyor."
-
-		# Pencereyi aktif hale getir
-		if command -v wmctrl >/dev/null 2>&1; then
-			wmctrl -i -a "$window_id"
-		fi
-	else
-		mpv --geometry=40%+50%+50% \
-			--player-operation-mode=pseudo-gui \
-			--input-ipc-server="$SOCKET_PATH" \
-			--idle \
-			--ontop \
-			-- >/dev/null 2>&1 &
-		disown
-		notify-send -i mpv -t 1000 "MPV Başlatılıyor" "MPV oynatıcı başlatıldı ve hazır."
+	if check_process "mpv"; then
+		show_info "MPV zaten çalışıyor, aktif hale getiriliyor"
+		mpv_window_action "mpvWindow.activate(global.get_current_time()); 'ACTIVATED';"
+		return 0
 	fi
+
+	mpv --geometry=40%+50%+50% \
+		--player-operation-mode=pseudo-gui \
+		--input-ipc-server="$SOCKET_PATH" \
+		--idle \
+		--ontop \
+		-- >/dev/null 2>&1 &
+	disown
+
+	show_success "MPV başlatıldı"
 }
 
-# Pencere konumunu değiştir (GNOME versiyonu)
+# Pencereyi döngüsel olarak taşı (4 köşe)
 move_window() {
-	local window_id
-	window_id=$(get_mpv_window_id)
+	check_mpv || return 1
 
-	if [[ -z "$window_id" ]]; then
+	local result
+	result=$(gnome_eval "
+		const windows = global.get_window_actors();
+		let mpvWindow = null;
+		
+		for (let w of windows) {
+			const metaWindow = w.get_meta_window();
+			const wmClass = metaWindow.get_wm_class();
+			if (wmClass && wmClass.toLowerCase().includes('mpv')) {
+				mpvWindow = metaWindow;
+				break;
+			}
+		}
+		
+		if (!mpvWindow) {
+			'NOT_FOUND';
+		} else {
+			const monitor = mpvWindow.get_monitor();
+			const workArea = mpvWindow.get_work_area_for_monitor(monitor);
+			const frame = mpvWindow.get_frame_rect();
+			
+			// Pencere boyutu (ekranın %40'ı)
+			const targetWidth = Math.floor(workArea.width * 0.4);
+			const targetHeight = Math.floor(workArea.height * 0.4);
+			const margin = 50;
+			
+			// Mevcut pozisyona göre hedef belirleme
+			const centerX = frame.x + frame.width / 2;
+			const centerY = frame.y + frame.height / 2;
+			const screenCenterX = workArea.x + workArea.width / 2;
+			const screenCenterY = workArea.y + workArea.height / 2;
+			
+			let newX, newY;
+			
+			if (centerX < screenCenterX && centerY < screenCenterY) {
+				// Sol üst -> Sağ üst
+				newX = workArea.x + workArea.width - targetWidth - margin;
+				newY = workArea.y + margin;
+			} else if (centerX > screenCenterX && centerY < screenCenterY) {
+				// Sağ üst -> Sağ alt
+				newX = workArea.x + workArea.width - targetWidth - margin;
+				newY = workArea.y + workArea.height - targetHeight - margin;
+			} else if (centerX > screenCenterX && centerY > screenCenterY) {
+				// Sağ alt -> Sol alt
+				newX = workArea.x + margin;
+				newY = workArea.y + workArea.height - targetHeight - margin;
+			} else {
+				// Sol alt -> Sol üst
+				newX = workArea.x + margin;
+				newY = workArea.y + margin;
+			}
+			
+			mpvWindow.unmaximize(Meta.MaximizeFlags.BOTH);
+			mpvWindow.move_resize_frame(true, newX, newY, targetWidth, targetHeight);
+			mpvWindow.activate(global.get_current_time());
+			
+			'MOVED:' + newX + ',' + newY;
+		}
+	")
+
+	if [[ "$result" == *"NOT_FOUND"* ]]; then
 		show_error "MPV penceresi bulunamadı"
 		return 1
+	elif [[ "$result" == *"MOVED:"* ]]; then
+		show_success "Pencere konumu güncellendi"
 	fi
-
-	# Pencereyi aktif hale getir
-	wmctrl -i -a "$window_id" 2>/dev/null
-	sleep 0.2
-
-	# Mevcut pencere pozisyonunu al
-	local window_info
-	window_info=$(wmctrl -lG | grep "$window_id")
-	local x_pos=$(echo "$window_info" | awk '{print $3}')
-	local y_pos=$(echo "$window_info" | awk '{print $4}')
-
-	# Ekran boyutunu al
-	local screen_width screen_height
-	if command -v xrandr >/dev/null 2>&1; then
-		screen_width=$(xrandr | grep '*' | awk '{print $1}' | cut -d'x' -f1 | head -1)
-		screen_height=$(xrandr | grep '*' | awk '{print $1}' | cut -d'x' -f2 | head -1)
-	else
-		screen_width=1920
-		screen_height=1080
-	fi
-
-	# Pencere boyutları (%40 ekran boyutu)
-	local window_width=$((screen_width * 40 / 100))
-	local window_height=$((screen_height * 40 / 100))
-	local margin=50
-
-	# Döngüsel konum belirleme (4 köşe)
-	if [[ $x_pos -lt $((screen_width / 2)) && $y_pos -lt $((screen_height / 2)) ]]; then
-		# Sol üst → Sağ üst
-		local new_x=$((screen_width - window_width - margin))
-		local new_y=$margin
-	elif [[ $x_pos -gt $((screen_width / 2)) && $y_pos -lt $((screen_height / 2)) ]]; then
-		# Sağ üst → Sağ alt
-		local new_x=$((screen_width - window_width - margin))
-		local new_y=$((screen_height - window_height - margin))
-	elif [[ $x_pos -gt $((screen_width / 2)) && $y_pos -gt $((screen_height / 2)) ]]; then
-		# Sağ alt → Sol alt
-		local new_x=$margin
-		local new_y=$((screen_height - window_height - margin))
-	else
-		# Sol alt → Sol üst (başa dön)
-		local new_x=$margin
-		local new_y=$margin
-	fi
-
-	# Pencereyi taşı ve boyutlandır
-	wmctrl -i -r "$window_id" -e "0,$new_x,$new_y,$window_width,$window_height"
-
-	show_success "Pencere konumu güncellendi ($new_x,$new_y)"
 }
 
-# Pencereyi always-on-top yap/kaldır
+# Always-on-top toggle
 toggle_stick() {
 	check_mpv || return 1
 
-	local window_id
-	window_id=$(get_mpv_window_id)
+	local result
+	result=$(gnome_eval "
+		const windows = global.get_window_actors();
+		let mpvWindow = null;
+		
+		for (let w of windows) {
+			const metaWindow = w.get_meta_window();
+			const wmClass = metaWindow.get_wm_class();
+			if (wmClass && wmClass.toLowerCase().includes('mpv')) {
+				mpvWindow = metaWindow;
+				break;
+			}
+		}
+		
+		if (!mpvWindow) {
+			'NOT_FOUND';
+		} else {
+			if (mpvWindow.is_above()) {
+				mpvWindow.unmake_above();
+				'REMOVED';
+			} else {
+				mpvWindow.make_above();
+				'ADDED';
+			}
+		}
+	")
 
-	if [[ -n "$window_id" ]]; then
-		wmctrl -i -r "$window_id" -b toggle,above
-		show_success "Pencere always-on-top durumu değiştirildi"
+	if [[ "$result" == *"ADDED"* ]]; then
+		show_success "Pencere always-on-top aktif"
+	elif [[ "$result" == *"REMOVED"* ]]; then
+		show_success "Pencere always-on-top kaldırıldı"
 	else
 		show_error "MPV penceresi bulunamadı"
 	fi
 }
 
-# MPV penceresini yeniden boyutlandır ve ortala
+# Pencereyi resize et ve ortala (%40)
 resize_window() {
-	local window_id
-	window_id=$(get_mpv_window_id)
+	check_mpv || return 1
 
-	if [[ -z "$window_id" ]]; then
-		show_error "MPV penceresi bulunamadı"
-		return 1
-	fi
+	local result
+	result=$(gnome_eval "
+		const windows = global.get_window_actors();
+		let mpvWindow = null;
+		
+		for (let w of windows) {
+			const metaWindow = w.get_meta_window();
+			const wmClass = metaWindow.get_wm_class();
+			if (wmClass && wmClass.toLowerCase().includes('mpv')) {
+				mpvWindow = metaWindow;
+				break;
+			}
+		}
+		
+		if (!mpvWindow) {
+			'NOT_FOUND';
+		} else {
+			const monitor = mpvWindow.get_monitor();
+			const workArea = mpvWindow.get_work_area_for_monitor(monitor);
+			
+			const width = Math.floor(workArea.width * 0.4);
+			const height = Math.floor(workArea.height * 0.4);
+			const x = workArea.x + Math.floor((workArea.width - width) / 2);
+			const y = workArea.y + Math.floor((workArea.height - height) / 2);
+			
+			mpvWindow.unmaximize(Meta.MaximizeFlags.BOTH);
+			mpvWindow.move_resize_frame(true, x, y, width, height);
+			mpvWindow.activate(global.get_current_time());
+			
+			'RESIZED';
+		}
+	")
 
-	# Ekran boyutunu al
-	local screen_width screen_height
-	if command -v xrandr >/dev/null 2>&1; then
-		screen_width=$(xrandr | grep '*' | awk '{print $1}' | cut -d'x' -f1 | head -1)
-		screen_height=$(xrandr | grep '*' | awk '{print $1}' | cut -d'x' -f2 | head -1)
+	if [[ "$result" == *"RESIZED"* ]]; then
+		show_success "Pencere %40 boyutunda ortalandı"
 	else
-		screen_width=1920
-		screen_height=1080
+		show_error "MPV penceresi bulunamadı"
 	fi
-
-	# %40 boyutunda ortala
-	local window_width=$((screen_width * 40 / 100))
-	local window_height=$((screen_height * 40 / 100))
-	local center_x=$(((screen_width - window_width) / 2))
-	local center_y=$(((screen_height - window_height) / 2))
-
-	wmctrl -i -r "$window_id" -e "0,$center_x,$center_y,$window_width,$window_height"
-	wmctrl -i -a "$window_id"
-
-	show_success "Pencere %40 boyutunda ortalandı"
 }
 
 # Pencereyi ortala (mevcut boyutla)
 center_window() {
-	local window_id
-	window_id=$(get_mpv_window_id)
+	check_mpv || return 1
 
-	if [[ -z "$window_id" ]]; then
-		show_error "MPV penceresi bulunamadı"
-		return 1
-	fi
+	local result
+	result=$(gnome_eval "
+		const windows = global.get_window_actors();
+		let mpvWindow = null;
+		
+		for (let w of windows) {
+			const metaWindow = w.get_meta_window();
+			const wmClass = metaWindow.get_wm_class();
+			if (wmClass && wmClass.toLowerCase().includes('mpv')) {
+				mpvWindow = metaWindow;
+				break;
+			}
+		}
+		
+		if (!mpvWindow) {
+			'NOT_FOUND';
+		} else {
+			const monitor = mpvWindow.get_monitor();
+			const workArea = mpvWindow.get_work_area_for_monitor(monitor);
+			const frame = mpvWindow.get_frame_rect();
+			
+			const x = workArea.x + Math.floor((workArea.width - frame.width) / 2);
+			const y = workArea.y + Math.floor((workArea.height - frame.height) / 2);
+			
+			mpvWindow.move_frame(true, x, y);
+			mpvWindow.activate(global.get_current_time());
+			
+			'CENTERED';
+		}
+	")
 
-	# Mevcut pencere bilgilerini al
-	local window_info
-	window_info=$(wmctrl -lG | grep "$window_id")
-	local window_width=$(echo "$window_info" | awk '{print $5}')
-	local window_height=$(echo "$window_info" | awk '{print $6}')
-
-	# Ekran boyutunu al
-	local screen_width screen_height
-	if command -v xrandr >/dev/null 2>&1; then
-		screen_width=$(xrandr | grep '*' | awk '{print $1}' | cut -d'x' -f1 | head -1)
-		screen_height=$(xrandr | grep '*' | awk '{print $1}' | cut -d'x' -f2 | head -1)
+	if [[ "$result" == *"CENTERED"* ]]; then
+		show_success "Pencere ortalandı"
 	else
-		screen_width=1920
-		screen_height=1080
+		show_error "MPV penceresi bulunamadı"
 	fi
-
-	# Ortala
-	local center_x=$(((screen_width - window_width) / 2))
-	local center_y=$(((screen_height - window_height) / 2))
-
-	wmctrl -i -r "$window_id" -e "0,$center_x,$center_y,$window_width,$window_height"
-	wmctrl -i -a "$window_id"
-
-	show_success "Pencere ortalandı"
 }
 
-# Oynatma durumunu değiştir
+# Maximize
+maximize_window() {
+	check_mpv || return 1
+
+	mpv_window_action "mpvWindow.maximize(Meta.MaximizeFlags.BOTH); 'MAXIMIZED';"
+	show_success "Pencere maximize edildi"
+}
+
+# Unmaximize
+unmaximize_window() {
+	check_mpv || return 1
+
+	mpv_window_action "mpvWindow.unmaximize(Meta.MaximizeFlags.BOTH); 'UNMAXIMIZED';"
+	show_success "Pencere unmaximize edildi"
+}
+
+# Oynatma toggle
 toggle_playback() {
 	check_mpv || return 1
 
@@ -321,37 +379,33 @@ toggle_playback() {
 		return 1
 	fi
 
-	# MPV'nin mevcut durumunu kontrol et
 	local status
 	status=$(echo '{ "command": ["get_property", "pause"] }' | socat - "$SOCKET_PATH" 2>/dev/null | grep -o '"data":true')
 
+	echo '{ "command": ["cycle", "pause"] }' | socat - "$SOCKET_PATH" >/dev/null 2>&1
+
 	if [[ "$status" == '"data":true' ]]; then
-		echo '{ "command": ["cycle", "pause"] }' | socat - "$SOCKET_PATH" >/dev/null 2>&1
 		show_success "Oynatma devam ediyor"
 	else
-		echo '{ "command": ["cycle", "pause"] }' | socat - "$SOCKET_PATH" >/dev/null 2>&1
 		show_success "Oynatma duraklatıldı"
 	fi
 }
 
-# YouTube video oynatma fonksiyonu
+# YouTube oynat
 play_youtube() {
 	local video_url
 	video_url=$(get_clipboard)
 
-	# YouTube URL'si olup olmadığını kontrol et
 	if ! [[ "$video_url" =~ ^https?://(www\.)?(youtube\.com|youtu\.?be)/ ]]; then
-		show_error "Kopyalanan URL geçerli bir YouTube URL'si değil."
+		show_error "Geçerli bir YouTube URL'si değil"
 		return 1
 	fi
 
-	# Video adını al
 	local video_name
 	video_name=$(yt-dlp --get-title "$video_url" 2>/dev/null || echo "YouTube Video")
 
-	notify-send -t 5000 "Playing Video" "$video_name"
+	show_info "Oynatılıyor: $video_name"
 
-	# MPV'yi YouTube video ile başlat
 	mpv --geometry=40%+50%+50% \
 		--player-operation-mode=pseudo-gui \
 		--input-ipc-server="$SOCKET_PATH" \
@@ -361,23 +415,22 @@ play_youtube() {
 		--speed=1 \
 		--af=rubberband=pitch-scale=0.981818181818181 \
 		"$video_url" >/dev/null 2>&1 &
+	disown
 
-	sleep 2
-	show_info "Video GNOME'da oynatılıyor: $video_name"
+	sleep 1
+	show_success "Video oynatılıyor: $video_name"
 }
 
-# YouTube video indirme fonksiyonu
+# YouTube indir
 download_youtube() {
 	local video_url
 	video_url=$(get_clipboard)
 
-	# YouTube URL'si olup olmadığını kontrol et
 	if ! [[ "$video_url" =~ ^https?://(www\.)?(youtube\.com|youtu\.?be)/ ]]; then
-		show_error "Kopyalanan URL geçerli bir YouTube URL'si değil."
+		show_error "Geçerli bir YouTube URL'si değil"
 		return 1
 	fi
 
-	# Video adını al
 	local video_title
 	video_title=$(yt-dlp --get-title "$video_url" 2>/dev/null || echo "Video")
 
@@ -400,7 +453,38 @@ download_youtube() {
 	fi
 }
 
-# Ana program fonksiyonu
+# Dependency kontrolü
+check_dependencies() {
+	local missing_deps=()
+
+	if ! command -v mpv >/dev/null 2>&1; then
+		missing_deps+=("mpv")
+	fi
+
+	if ! command -v gdbus >/dev/null 2>&1; then
+		missing_deps+=("glib2")
+	fi
+
+	if ! command -v socat >/dev/null 2>&1; then
+		missing_deps+=("socat")
+	fi
+
+	if ! command -v yt-dlp >/dev/null 2>&1; then
+		missing_deps+=("yt-dlp")
+	fi
+
+	if ! command -v wl-paste >/dev/null 2>&1; then
+		missing_deps+=("wl-clipboard")
+	fi
+
+	if [[ ${#missing_deps[@]} -gt 0 ]]; then
+		show_error "Eksik bağımlılıklar: ${missing_deps[*]}"
+		echo "Arch'ta kurmak için: sudo pacman -S ${missing_deps[*]}"
+		exit 1
+	fi
+}
+
+# Ana fonksiyon
 main() {
 	case "$1" in
 	"start")
@@ -427,45 +511,19 @@ main() {
 	"center")
 		center_window
 		;;
+	"maximize")
+		maximize_window
+		;;
+	"unmaximize")
+		unmaximize_window
+		;;
 	*)
 		show_usage
 		;;
 	esac
 }
 
-# Dependency check
-check_dependencies() {
-	local missing_deps=()
-
-	if ! command -v mpv >/dev/null 2>&1; then
-		missing_deps+=("mpv")
-	fi
-
-	if ! command -v wmctrl >/dev/null 2>&1; then
-		missing_deps+=("wmctrl")
-	fi
-
-	if ! command -v socat >/dev/null 2>&1; then
-		missing_deps+=("socat")
-	fi
-
-	if ! command -v yt-dlp >/dev/null 2>&1; then
-		missing_deps+=("yt-dlp")
-	fi
-
-	# xclip öncelikli clipboard kontrolü
-	if ! command -v xclip >/dev/null 2>&1 && ! command -v wl-paste >/dev/null 2>&1; then
-		missing_deps+=("xclip")
-	fi
-
-	if [[ ${#missing_deps[@]} -gt 0 ]]; then
-		show_error "Eksik bağımlılıklar: ${missing_deps[*]}"
-		echo "NixOS'ta kurmak için: nix-env -iA nixpkgs.{${missing_deps[*]}}"
-		exit 1
-	fi
-}
-
-# Gerekli argüman kontrolü ve dependency check
+# Script başlangıcı
 if [[ $# -eq 0 ]]; then
 	show_usage
 fi

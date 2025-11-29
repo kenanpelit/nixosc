@@ -26,5 +26,6 @@
    ./hyprlock.nix   # Screen locker
    ./hypridle.nix   # Idle management
    ./pyprland.nix   # Python plugins
+   ./keyring.nix    # Keyring
  ];
 }

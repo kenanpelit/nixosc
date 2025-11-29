@@ -129,9 +129,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # Install Firefox package
-    home.packages = [ cfg.package ];
-
     # Firefox configuration using Home Manager's firefox module
     programs.firefox = {
       enable = true;
@@ -240,4 +237,3 @@ in {
     };
   };
 }
-

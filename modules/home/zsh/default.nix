@@ -18,7 +18,6 @@
 
     # Interactive Shell Features
     ./zsh_unified.nix      # Key bindings, custom shell functions, command aliases and shortcuts
-    ./zsh_plugins.nix      # Plugin management and settings
     ./zsh_profile.nix
     
   ];

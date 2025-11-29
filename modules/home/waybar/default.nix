@@ -1,4 +1,14 @@
 # modules/home/waybar/default.nix
+# ==============================================================================
+# Waybar Status Bar Configuration (Hyprland / Wayland)
+# ==============================================================================
+# Purpose:
+#   - Configure Waybar modules, styling and Catppuccin-based theming.
+#   - Provide a shared status bar for Hyprland and other Wayland sessions.
+# Notes:
+#   - Uses Catppuccin colors via the global catppuccin module.
+#   - Behaviour (which modules are shown) is tuned for the hay/vhay hosts.
+# ==============================================================================
 { config, pkgs, lib, ... }:
 let
   # Catppuccin modülünden otomatik renk alımı
@@ -23,9 +33,9 @@ let
     # Typography with fallbacks
     font = "JetBrainsMono Nerd Font";
     font_fallback = "Fira Code Nerd Font, Hack Nerd Font, monospace";
-    font_size = "15px";
+    font_size = "14px";
     font_size_small = "13px";
-    font_size_large = "17px";
+    font_size_large = "16px";
     font_weight = "600";
     font_weight_light = "400";
     font_weight_bold = "700";
@@ -179,4 +189,3 @@ in
     };
   };
 }
-

@@ -705,7 +705,199 @@ migrate_favorites_format() {
 	log "Favorites file format updated to include ping times"
 }
 
-# Function to show comprehensive connection status
+# ----------------------------------------------------------------------------
+# Obfuscation (udp2tcp / shadowsocks / off / auto) — interactive & CLI
+# ----------------------------------------------------------------------------
+
+# Aktif obfuscation durumunu göster
+obf_show_status() {
+	echo -e "${BLUE}=== Obfuscation Status ===${NC}"
+
+	# Obfuscation mode (varsa) al
+	local obf_mode
+	obf_mode=$(mullvad obfuscation get 2>/dev/null | awk -F': ' '/^Obfuscation mode/ {print $2; exit}' | xargs || true)
+	if [[ -n "$obf_mode" ]]; then
+		echo -e "${PURPLE}Mode:${NC} ${obf_mode}"
+	fi
+
+	# Tek bir status çağrısı ile Relay, Features, Tunnel type ve Visible location al
+	local status_output relay_line features tunnel visible
+	status_output=$(mullvad status -v 2>/dev/null || true)
+
+	if [[ -z "$status_output" ]]; then
+		echo -e "${RED}Could not get mullvad status (is mullvad installed / running?)${NC}"
+		return 1
+	fi
+
+	# Relay: satırından sadece parantez içi host:port/proto'yu ve hostname kısmını al
+	relay_line=$(echo "$status_output" | awk '/Relay:/ { $1=""; sub(/^ +/,""); print; exit }' | sed 's/^Relay:[[:space:]]*//; s/^[[:space:]]*//; s/[[:space:]]*$//')
+	features=$(echo "$status_output" | awk -F'Features:' '/Features:/ {print $2; exit}' | xargs || true)
+	tunnel=$(echo "$status_output" | awk -F'Tunnel type:' '/Tunnel type:/ {print $2; exit}' | xargs || true)
+	visible=$(echo "$status_output" | awk -F'Visible location:' '/Visible location:/ {print $2; exit}' | xargs || true)
+
+	# Yazdırma (sadece dolu olanları)
+	[[ -n "$relay_line" ]] && echo -e "${CYAN}Relay:${NC} $relay_line"
+	[[ -n "$features" ]] && echo -e "${CYAN}Features:${NC} $features"
+	[[ -n "$tunnel" ]] && echo -e "${CYAN}Tunnel:${NC} $tunnel"
+	[[ -n "$visible" ]] && echo -e "${CYAN}Visible:${NC} $visible"
+}
+
+# Obfuscation modunu uygula + yeniden bağlan + doğrula
+obf_apply_mode() {
+	local mode="$1"
+	if [[ -z "$mode" ]]; then
+		echo -e "${RED}Usage:${NC} $SCRIPT_NAME obf <udp2tcp|shadowsocks|off|auto>"
+		return 1
+	fi
+
+	log "Setting obfuscation mode: $mode"
+	sudo mullvad obfuscation set mode "$mode" || {
+		log "Failed to set obfuscation mode: $mode"
+		notify "❌ MULLVAD VPN" "Failed to set obfuscation: $mode" "security-low"
+		return 1
+	}
+
+	# Yeniden bağlan
+	mullvad disconnect >/dev/null 2>&1 || true
+	connect_basic_vpn
+
+	echo
+	obf_show_status
+	notify "🛡️ MULLVAD VPN" "Obfuscation set to $mode" "security-high"
+}
+
+# Etkileşimli menü
+obf_menu() {
+	# ekran temizleyici (tput yoksa fallback)
+	local _clear
+	_clear=$(command -v tput >/dev/null 2>&1 && echo "tput clear" || echo "printf '\033c'")
+
+	while true; do
+		eval $_clear
+
+		local cur_mode
+		cur_mode=$(_obf_current_mode)
+		echo -e "${BLUE}===== Obfuscation Menu =====${NC}   ${PURPLE}[current: ${cur_mode:-unknown}]${NC}"
+		_obf_print_relay_and_features
+		echo
+
+		echo -e "${YELLOW}1)${NC} udp2tcp      ${CYAN}(WireGuard UDP -> TCP; DPI/UDP engeline karşı)${NC}"
+		echo -e "${YELLOW}2)${NC} shadowsocks  ${CYAN}(HTTPS benzeri kamuflaj; kurumsal/okul ağları)${NC}"
+		echo -e "${YELLOW}3)${NC} off         ${CYAN}(obfuscation kapalı; en iyi hız)${NC}"
+		echo -e "${YELLOW}4)${NC} auto        ${CYAN}(istemci karar versin)${NC}"
+		echo -e "${YELLOW}5)${NC} show        ${CYAN}(durumu göster)${NC}"
+		echo -e "${YELLOW}h)${NC} hunt443     ${CYAN}(udp2tcp ile TCP/443 düşen relay bulmayı dene)${NC}"
+		echo -e "${YELLOW}c)${NC} cycle       ${CYAN}(udp2tcp → shadowsocks → off → auto sırayla dene)${NC}"
+		echo -e "${YELLOW}r)${NC} refresh     ${CYAN}(ekranı/özeti tazele)${NC}"
+		echo -e "q) quit"
+		echo -en "${CYAN}Select option:${NC} "
+		read -r ans
+
+		case "$ans" in
+		1) obf_apply_mode "udp2tcp" ;;
+		2) obf_apply_mode "shadowsocks" ;;
+		3) obf_apply_mode "off" ;;
+		4) obf_apply_mode "auto" ;;
+		5) obf_show_status ;;
+		h | H) obf_hunt_tcp443 ;;
+		c | C) obf_cycle ;;
+		r | R) : ;; # sadece yenile
+		q | Q) break ;;
+		*) echo -e "${RED}Invalid selection${NC}" ;;
+		esac
+
+		echo
+		echo -en "${YELLOW}Enter'a basarak menüye dön...${NC} "
+		read -r _
+	done
+}
+
+# Sudo ön ısındırma (şifren sorulacaksa en başta sorup cache'lesin)
+obf_warm_sudo() {
+	if command -v sudo >/dev/null 2>&1; then
+		sudo -v 2>/dev/null || true
+	fi
+}
+
+# Relay & Features tek satırlık özet (yoksa ekleyin/koruyun)
+_obf_print_relay_and_features() {
+	local status relay features
+	status=$(mullvad status -v 2>/dev/null)
+	relay=$(echo "$status" | awk -F'Relay:' '/Relay:/ {print $2; exit}' | xargs)
+	features=$(echo "$status" | awk -F'Features:' '/Features:/ {print $2; exit}' | xargs)
+	[[ -n "$relay" ]] && echo -e "${CYAN}Relay:${NC} $relay"
+	[[ -n "$features" ]] && echo -e "${CYAN}Features:${NC} $features"
+}
+
+# 443 avcısı: udp2tcp modunda TCP/443'e düşen bir relay bulmaya çalış
+obf_hunt_tcp443() {
+	obf_warm_sudo
+	echo -e "${BLUE}>>> Hunting for udp2tcp over TCP/443 (max 10 deneme) ...${NC}"
+	sudo mullvad obfuscation set mode udp2tcp || {
+		echo -e "${RED}udp2tcp moduna geçilemedi${NC}"
+		return 1
+	}
+
+	# denemek için 10 rastgele relay (aynı ülke: mevcut ülkeyi bulur, yoksa global)
+	local current=$(mullvad status -v | awk -F'[() ]+' '/Relay:/ {print $3}')
+	local country=${current%%-*}
+	local tries=0
+	local picked
+
+	if [[ -n "$country" && "$country" =~ ^[a-z][a-z]$ ]]; then
+		mapfile -t pool < <(mullvad relay list | awk '/^[[:space:]]*[a-z]{2}-[a-z]{3}-(wg|ovpn)-/ {print $1}' | grep -E "^${country}-" | shuf | head -n 10)
+	else
+		mapfile -t pool < <(mullvad relay list | awk '/^[[:space:]]*[a-z]{2}-[a-z]{3}-(wg|ovpn)-/ {print $1}' | shuf | head -n 10)
+	fi
+
+	for picked in "${pool[@]}"; do
+		((tries++))
+		local c=$(echo "$picked" | cut -d'-' -f1)
+		local city=$(echo "$picked" | cut -d'-' -f2)
+		echo -e "${YELLOW}[$tries]${NC} trying ${c}-${city} → ${picked}"
+		mullvad relay set location "$c" "$city" "$picked" >/dev/null 2>&1
+		mullvad disconnect >/dev/null 2>&1 || true
+		mullvad connect >/dev/null 2>&1 || true
+		sleep 1
+		# kontrol: :443/TCP mi?
+		if mullvad status -v | awk '/Relay:/ && /:443\/TCP/ {found=1} END{exit !found}'; then
+			echo -e "${GREEN}✓ Found TCP/443 via ${picked}${NC}"
+			_obf_print_relay_and_features
+			notify "🛡️ MULLVAD VPN" "udp2tcp on TCP/443 via ${picked}" "security-high"
+			return 0
+		fi
+	done
+
+	echo -e "${RED}TCP/443 bulunamadı; mevcut bağlantı korunuyor.${NC}"
+	_obf_print_relay_and_features
+	return 1
+}
+
+# Hızlı döngü: udp2tcp → shadowsocks → off → auto (ardışık dene)
+obf_cycle() {
+	obf_warm_sudo
+	local modes=(udp2tcp shadowsocks off auto)
+	for m in "${modes[@]}"; do
+		echo -e "${BLUE}>>> Switching to ${m} ...${NC}"
+		sudo mullvad obfuscation set mode "$m" || {
+			echo -e "${RED}set failed${NC}"
+			continue
+		}
+		mullvad disconnect >/dev/null 2>&1 || true
+		mullvad connect >/dev/null 2>&1 || true
+		sleep 1
+		echo -e "${CYAN}Mode:${NC} $m"
+		_obf_print_relay_and_features
+		echo
+	done
+}
+
+# Geçerli obfuscation modunu yalın biçimde döndür
+_obf_current_mode() {
+	mullvad obfuscation get 2>/dev/null |
+		awk -F': ' '/^Obfuscation mode/ {print tolower($2)}'
+}
+
 show_status() {
 	echo -e "${BLUE}=== Mullvad VPN Connection Status ===${NC}"
 
@@ -1014,6 +1206,13 @@ show_help() {
 	echo -e "    ${CYAN}Asia/Pacific:${NC} au hk id jp my ph sg th"
 	echo -e "    ${CYAN}Africa/ME:${NC} il ng za"
 	echo -e "    ${CYAN}Other:${NC} nz"
+	echo -e ""
+	echo -e "${YELLOW}Obfuscation (Gizleme):${NC}"
+	echo -e "    ${GREEN}obf${NC}               Interactive menu for udp2tcp / shadowsocks / off / auto"
+	echo -e "    ${GREEN}obf <mode>${NC}        Set mode directly (udp2tcp|shadowsocks|off|auto) and reconnect"
+	echo -e "    ${GREEN}obf hunt443${NC}       Try to find a relay that yields TCP/443 in udp2tcp mode"
+	echo -e "    ${GREEN}obf cycle${NC}         Cycle udp2tcp → shadowsocks → off → auto (show status each)"
+	echo -e ""
 }
 
 # Main function to handle all commands
@@ -1112,6 +1311,20 @@ main() {
 			echo -e "${RED}Error: Missing timer duration or 'stop' command${NC}"
 			echo -e "Usage: ${YELLOW}$SCRIPT_NAME timer <minutes|stop>${NC}"
 		fi
+		;;
+
+	"obf" | "obfuscation")
+		case "${2:-}" in
+		"") obf_menu ;;
+		hunt443) obf_hunt_tcp443 ;;
+		cycle) obf_cycle ;;
+		udp2tcp | shadowsocks | off | auto) obf_apply_mode "$2" ;;
+		*)
+			echo -e "${RED}Unknown obf option:${NC} ${2:-<none>}"
+			echo "Use: obf [udp2tcp|shadowsocks|off|auto|hunt443|cycle]"
+			exit 1
+			;;
+		esac
 		;;
 
 	# Help and version info

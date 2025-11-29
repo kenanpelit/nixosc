@@ -13,6 +13,33 @@ let
       sm = 12;
     };
   };
+  
+  # Catppuccin Mocha Mauve color palette
+  colors = {
+    # Base colors
+    base = "#1e1e2e";
+    mantle = "#181825";
+    crust = "#11111b";
+    
+    # Text colors
+    text = "#cdd6f4";
+    subtext0 = "#a6adc8";
+    subtext1 = "#bac2de";
+    
+    # Surface colors
+    surface0 = "#313244";
+    surface1 = "#45475a";
+    surface2 = "#585b70";
+    
+    # Accent - Mauve
+    accent = "#cba6f7";
+    accentHover = "#b4befe";
+    
+    # Overlay
+    overlay0 = "#6c7086";
+    overlay1 = "#7f849c";
+    overlay2 = "#9399b2";
+  };
 in 
 {
   # =============================================================================
@@ -40,31 +67,40 @@ in
   ];
 
   # =============================================================================
-  # Qt Base Configuration - FIXED for Catppuccin compatibility
+  # Qt Base Configuration - Catppuccin Mocha Mauve
   # =============================================================================
   qt = {
     enable = true;
     platformTheme = {
-      name = "kvantum";  # CHANGED: gtk3 -> kvantum for Catppuccin compatibility
-      package = pkgs.libsForQt5.qtstyleplugin-kvantum;
+      name = "kvantum";
+      package = pkgs.kdePackages.qtstyleplugin-kvantum;  # Qt6 için güncellendi
     };
     style = {
       name = "kvantum";
-      package = pkgs.libsForQt5.qtstyleplugin-kvantum;
+      package = pkgs.kdePackages.qtstyleplugin-kvantum;
     };
   };
 
   # =============================================================================
-  # Session Variables - Updated for Kvantum
+  # Session Variables - Wayland + Dark Theme
   # =============================================================================
   home.sessionVariables = {
-    QT_QPA_PLATFORMTHEME = "kvantum";  # CHANGED: gtk3 -> kvantum
+    # Qt Platform Theme
+    QT_QPA_PLATFORMTHEME = "kvantum";
     QT_STYLE_OVERRIDE = "kvantum";
-    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
-    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-    # Wayland için ek ayarlar
+    
+    # Dark theme forcing
+    QT_QPA_SYSTEMTRAY_DARK_MODE = "1";
+    
+    # Wayland optimizations
     QT_QPA_PLATFORM = "wayland;xcb";
+    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
     QT_WAYLAND_FORCE_DPI = "96";
+    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+    
+    # Font rendering - GTK ile uyumlu
+    QT_FONT_DPI = "96";
+    QT_ENABLE_HIGHDPI_SCALING = "1";
   };
 
   # =============================================================================
@@ -72,39 +108,38 @@ in
   # =============================================================================
   xdg.configFile = {
     # ---------------------------------------------------------------------------
-    # Kvantum Theme Configuration - Catppuccin Mocha
+    # Kvantum Theme Configuration - Catppuccin Mocha Mauve
     # ---------------------------------------------------------------------------
     "Kvantum/kvantum.kvconfig".text = lib.generators.toINI {} {
       General = {
-        theme = "catppuccin-mocha-mauve";  # Mauve accent ile uyumlu
+        theme = "catppuccin-mocha-mauve";
       };
       Applications = {
-        # Belirli uygulamalar için özel ayarlar
+        # Qt uygulamaları için tema
         "dolphin,konqueror,gwenview,okular" = "catppuccin-mocha-mauve";
         "kate,kwrite,kdevelop" = "catppuccin-mocha-mauve";
+        # Polkit agent için özel tema
+        "polkit-kde-authentication-agent-1,hyprpolkitagent" = "catppuccin-mocha-mauve";
       };
     };
 
     # ---------------------------------------------------------------------------
-    # Qt5 Configuration - Enhanced
+    # Qt5 Configuration - Catppuccin Enhanced
     # ---------------------------------------------------------------------------
     "qt5ct/qt5ct.conf".text = lib.generators.toINI {} {
-      # Appearance Settings
       Appearance = {
         icon_theme = "a-candy-beauty-icon-theme";
         style = "kvantum";
-        custom_palette = false;
+        custom_palette = true;  # Custom palette aktif
         standard_dialogs = "gtk3";
         color_scheme_path = "";
       };
       
-      # Font Configuration - Catppuccin optimized
       Fonts = {
         fixed = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,400,0,0,0,0,0,Regular";
         general = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,400,0,0,0,0,0,Regular";
       };
       
-      # Interface Behavior
       Interface = {
         buttonbox_layout = 0;
         cursor_flash_time = 1000;
@@ -120,32 +155,31 @@ in
         gui_effects = "General,AnimateMenu,AnimateCombo,AnimateTooltip,FadeTooltip,AnimateToolBox";
       };
       
-      # PaletteEditor - Catppuccin Mocha colors
-      PaletteEditor = {
-        geometry = "@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\x2V\0\0\0\xb0\0\0\x4\x1\0\0\x2\x80\0\0\x2V\0\0\0\xb0\0\0\x4\x1\0\0\x2\x80\0\0\0\0\0\0\0\0\a\x80\0\0\x2V\0\0\0\xb0\0\0\x4\x1\0\0\x2\x80)";
+      # Catppuccin Mocha Mauve custom palette
+      Palette = {
+        active_colors = "${colors.text},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.text},${colors.text},${colors.text},${colors.base},${colors.surface0},${colors.overlay1},${colors.accent},${colors.text},${colors.accent},${colors.accent},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
+        disabled_colors = "${colors.overlay1},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.overlay1},${colors.overlay1},${colors.overlay1},${colors.base},${colors.surface0},${colors.overlay1},${colors.overlay0},${colors.overlay1},${colors.overlay0},${colors.overlay0},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
+        inactive_colors = "${colors.subtext0},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.subtext0},${colors.subtext0},${colors.subtext0},${colors.base},${colors.surface0},${colors.overlay1},${colors.accentHover},${colors.subtext0},${colors.accentHover},${colors.accentHover},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
       };
     };
 
     # ---------------------------------------------------------------------------
-    # Qt6 Configuration - Enhanced
+    # Qt6 Configuration - Catppuccin Enhanced
     # ---------------------------------------------------------------------------
     "qt6ct/qt6ct.conf".text = lib.generators.toINI {} {
-      # Appearance Settings
       Appearance = {
         icon_theme = "a-candy-beauty-icon-theme";
         style = "kvantum";
-        custom_palette = false;
+        custom_palette = true;
         standard_dialogs = "gtk3";
         color_scheme_path = "";
       };
       
-      # Font Configuration
       Fonts = {
         fixed = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,400,0,0,0,0,0,0,0,0,0,0,1,Regular";
         general = "${fonts.main.family},${toString fonts.sizes.sm},-1,5,400,0,0,0,0,0,0,0,0,0,0,1,Regular";
       };
       
-      # Interface Behavior
       Interface = {
         buttonbox_layout = 0;
         cursor_flash_time = 1000;
@@ -160,15 +194,22 @@ in
         wheel_scroll_lines = 3;
         gui_effects = "General,AnimateMenu,AnimateCombo,AnimateTooltip,FadeTooltip,AnimateToolBox";
       };
+      
+      # Catppuccin Mocha Mauve custom palette
+      Palette = {
+        active_colors = "${colors.text},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.text},${colors.text},${colors.text},${colors.base},${colors.surface0},${colors.overlay1},${colors.accent},${colors.text},${colors.accent},${colors.accent},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
+        disabled_colors = "${colors.overlay1},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.overlay1},${colors.overlay1},${colors.overlay1},${colors.base},${colors.surface0},${colors.overlay1},${colors.overlay0},${colors.overlay1},${colors.overlay0},${colors.overlay0},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
+        inactive_colors = "${colors.subtext0},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.subtext0},${colors.subtext0},${colors.subtext0},${colors.base},${colors.surface0},${colors.overlay1},${colors.accentHover},${colors.subtext0},${colors.accentHover},${colors.accentHover},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
+      };
     };
 
     # ---------------------------------------------------------------------------
-    # Catppuccin Kvantum Custom Config (Opsiyonel)
+    # Catppuccin Kvantum Enhanced Config
     # ---------------------------------------------------------------------------
     "Kvantum/catppuccin-mocha-mauve/catppuccin-mocha-mauve.kvconfig".text = ''
       [%General]
       author=Catppuccin
-      comment=Catppuccin Mocha Mauve
+      comment=Catppuccin Mocha Mauve - Hyprland Optimized
       alt_mnemonic=true
       left_tabs=true
       attach_active_tab=false
@@ -194,8 +235,8 @@ in
       menubar_mouse_tracking=true
       toolbutton_style=1
       double_click=false
-      translucent_windows=false
-      blurring=false
+      translucent_windows=true
+      blurring=true
       popup_blurring=true
       vertical_spin_indicators=false
       spin_button_width=16
@@ -214,19 +255,61 @@ in
       groupbox_top_label=true
       inline_spin_indicators=true
       joined_inactive_tabs=false
+      
+      [Hacks]
+      transparent_dolphin_view=true
+      transparent_ktitle_label=true
+      transparent_menutitle=true
+      respect_darkness=true
+      kcapacitybar_as_progressbar=true
+      force_size_grip=true
+      iconless_pushbutton=false
+      iconless_menu=false
+      disabled_icon_opacity=70
+      lxqtmainmenu_iconsize=22
+      normal_default_pushbutton=true
+      single_top_toolbar=true
+      tint_on_mouseover=0
+      transparent_pcmanfm_sidepane=true
+      transparent_pcmanfm_view=false
+      blur_translucent=true
+      opaque_colors=false
+      
+      [PanelButtonCommand]
+      frame=true
+      frame.element=button
+      frame.top=3
+      frame.bottom=3
+      frame.left=3
+      frame.right=3
+      interior=true
+      interior.element=button
+      indicator.size=8
+      text.normal.color=${colors.text}
+      text.focus.color=${colors.text}
+      text.press.color=${colors.accent}
+      text.toggle.color=${colors.accent}
+      text.shadow=0
+      text.margin=1
+      text.iconspacing=4
+      indicator.element=arrow
+      text.margin.top=2
+      text.margin.bottom=2
+      text.margin.left=2
+      text.margin.right=2
+      frame.expansion=0
     '';
   };
 
   # =============================================================================
-  # Additional Theme Consistency
+  # Additional Theme Files
   # =============================================================================
   home.file = {
-    # Ensure Kvantum finds our custom theme
+    # Kvantum theme directory marker
     ".config/Kvantum/catppuccin-mocha-mauve/.directory".text = ''
       [Desktop Entry]
       Name=Catppuccin Mocha Mauve
-      Comment=Catppuccin Mocha theme with Mauve accent
+      Comment=Catppuccin Mocha theme with Mauve accent - Hyprland optimized
     '';
   };
 }
-
