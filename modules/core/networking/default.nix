@@ -45,7 +45,7 @@
 #
 # ==============================================================================
 
-{ config, lib, pkgs, isPhysicalHost ? false, isVirtualHost ? false, ... }:
+{ config, lib, pkgs, host ? "", isPhysicalHost ? false, isVirtualHost ? false, ... }:
 
 let
   inherit (lib) mkIf mkMerge mkDefault mkForce;
