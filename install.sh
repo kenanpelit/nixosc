@@ -5,7 +5,7 @@
 # Location: /home/kenan/.nixosc/install.sh
 # ==============================================================================
 
-set -euo pipefail
+#set -euo pipefail
 
 # ==============================================================================
 # PART 1: CORE LIBRARY & VISUALS
@@ -24,10 +24,10 @@ readonly FLAKE_LOCK="flake.lock"
 
 # Merge Configuration
 readonly EXCLUDE_FILES=(
-    "modules/home/hyprland/config.nix"
-    "hosts/hay/hardware-configuration.nix"
-    "flake.json"
-    "flake.lock"
+  "modules/home/hyprland/config.nix"
+  "hosts/hay/hardware-configuration.nix"
+  "flake.json"
+  "flake.lock"
 )
 
 # Defaults
@@ -287,69 +287,78 @@ cmd_merge() {
     header
     log STEP "Branch Merge Operation"
 
-    # 1. Branch Selection
-    if [[ -z "$source_branch" ]] || [[ -z "$target_branch" ]]; then
-        if ! git rev-parse --git-dir >/dev/null 2>&1; then
-            log ERROR "Not a git repository."
-            return 1
-        fi
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        log ERROR "Not a git repository."
+        return 1
+    fi
 
+    local current_branch=$(git branch --show-current)
+    [[ -z "$current_branch" ]] && current_branch="HEAD"
+    log INFO "Current Branch: ${C_BOLD}${C_YELLOW}${current_branch}${C_RESET}"
+
+    # Default Source to Current if not provided
+    if [[ -z "$source_branch" ]]; then
+        source_branch="$current_branch"
+    fi
+
+    # Interactive Selection ONLY if Target is missing
+    if [[ -z "$target_branch" ]]; then
         mapfile -t branches < <(git branch --format='%(refname:short)')
         
-        if [[ ${#branches[@]} -eq 0 ]]; then
-            log ERROR "No branches found."
-            return 1
-        fi
-
-        echo -e "${C_CYAN}Available Branches:${C_RESET}"
+        echo -e "\n${C_CYAN}Available Local Branches:${C_RESET}"
         local i=0
         for branch in "${branches[@]}"; do
-            echo "  $i) $branch"
-            ((i++))
+             echo "  $i) $branch"
+             ((i++))
         done
         echo ""
 
-        if [[ -z "$source_branch" ]]; then
-            read -r -p "Select SOURCE branch (number or name): " src_sel
-            if [[ "$src_sel" =~ ^[0-9]+$ ]] && ((src_sel < ${#branches[@]})); then
-                source_branch="${branches[$src_sel]}"
-            else
-                source_branch="$src_sel"
-            fi
+        # Confirm/Change Source
+        read -r -p "Select SOURCE branch [Default: $source_branch]: " src_sel
+        src_sel="${src_sel:-$source_branch}"
+        
+        if [[ "$src_sel" =~ ^[0-9]+$ ]] && ((src_sel < ${#branches[@]})); then
+            source_branch="${branches[$src_sel]}"
+        else
+            source_branch="$src_sel"
         fi
 
-        if [[ -z "$target_branch" ]]; then
-            read -r -p "Select TARGET branch (number or name): " tgt_sel
+        # Select Target
+        while [[ -z "$target_branch" ]]; do
+            read -r -p "Select TARGET branch (name or number): " tgt_sel
+            if [[ -z "$tgt_sel" ]]; then continue; fi
+            
             if [[ "$tgt_sel" =~ ^[0-9]+$ ]] && ((tgt_sel < ${#branches[@]})); then
                 target_branch="${branches[$tgt_sel]}"
             else
                 target_branch="$tgt_sel"
             fi
-        fi
+        done
     fi
 
-    # 2. Validation
-    if [[ -z "$source_branch" ]] || [[ -z "$target_branch" ]]; then
-        log ERROR "Source and Target branches are required."
-        return 1
-    fi
-    
+    # Validation (Allow remote branches via rev-parse)
     if [[ "$source_branch" == "$target_branch" ]]; then
-        log ERROR "Source and Target cannot be the same."
+        log ERROR "Source and Target cannot be the same ($source_branch)."
         return 1
     fi
 
     log INFO "Source: ${C_BOLD}${source_branch}${C_RESET}"
     log INFO "Target: ${C_BOLD}${target_branch}${C_RESET}"
 
-    if ! git show-ref --verify --quiet refs/heads/"$source_branch"; then
+    if ! git rev-parse --verify "$source_branch" >/dev/null 2>&1; then
         log ERROR "Source branch '$source_branch' not found."
         return 1
     fi
 
-    if ! git show-ref --verify --quiet refs/heads/"$target_branch"; then
-        log ERROR "Target branch '$target_branch' not found."
-        return 1
+    # Check if target exists locally or remotely
+    if ! git rev-parse --verify "$target_branch" >/dev/null 2>&1; then
+        # Try origin/target if local doesn't exist
+        if git rev-parse --verify "origin/$target_branch" >/dev/null 2>&1; then
+            log WARN "Branch '$target_branch' found on remote, will be created locally."
+        else
+            log ERROR "Target branch '$target_branch' not found locally or on remote."
+            return 1
+        fi
     fi
 
     # Clean working directory check
@@ -360,8 +369,6 @@ cmd_merge() {
             return 1
         fi
     fi
-
-    local current_branch=$(git branch --show-current)
     
     # 3. Switch and Merge
     log INFO "Switching to target branch..."
@@ -387,7 +394,6 @@ cmd_merge() {
     if [[ -z "$staged_files" ]]; then
         log SUCCESS "Branches are already in sync (except excluded files)."
         
-        # Return to original branch if needed
         if [[ "$current_branch" != "$target_branch" ]]; then
              git checkout "$current_branch"
         fi
@@ -399,7 +405,11 @@ cmd_merge() {
 
     # 6. Commit Confirmation
     if [[ "$auto_yes" == "true" ]] || confirm "Commit these changes?"; then
-        local excluded_list=$(printf "- %s\n" "${EXCLUDE_FILES[@]}")
+        local excluded_list=""
+        for f in "${EXCLUDE_FILES[@]}"; do
+            excluded_list+="- $f\n"
+        done
+        
         local commit_msg="Merge from $source_branch to $target_branch (excluding specific files)\n\nExcluded files:\n$excluded_list\nAuto-generated by install.sh"
 
         git commit -m "$commit_msg"
@@ -418,7 +428,18 @@ cmd_merge() {
     # 8. Switch Back
     if [[ "$current_branch" != "$target_branch" ]]; then
         if [[ "$auto_yes" == "true" ]] || confirm "Switch back to $current_branch?"; then
+            
+            # Stash any excluded file changes to allow checkout
+            if [[ -n "$(git status --porcelain)" ]]; then
+                log INFO "Stashing excluded file changes for checkout..."
+                git stash push -m "Auto-stash by install.sh merge" >/dev/null
+            fi
+
             git checkout "$current_branch"
+            
+            # Restore stash if it was ours
+            # Note: We might not want to pop if the user wants to keep those exclusions clean
+            # But usually, we just want to go back.
             
             if [[ "$auto_yes" == "true" ]] || confirm "Push $current_branch as well?"; then
                 git push && log SUCCESS "Pushed $current_branch."
@@ -491,8 +512,9 @@ show_help() {
 }
 
 parse_args() {
-  # Compatibility: Flags first -> implied 'install', UNLESS it's help
-  if [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]]; then
+  # Compatibility: Flags first -> implied 'install'
+  # BUT verify it's not a standalone command flag like help or merge
+  if [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]]; then
     set -- "install" "$@"
   fi
 
@@ -520,53 +542,84 @@ parse_args() {
       local auto_yes="false"
       local src=""
       local tgt=""
-      
+
       # Parse remaining args for merge
       while [[ $# -gt 0 ]]; do
         case "$1" in
-          -y|--yes) auto_yes="true" ;; 
-          -*) ;; # Ignore other flags
-          *)
-            if [[ -z "$src" ]]; then src="$1"
-            elif [[ -z "$tgt" ]]; then tgt="$1"
-            fi
-            ;; 
+        -y | --yes) auto_yes="true" ;;
+        -*) ;; # Ignore other flags
+        *)
+          if [[ -z "$src" ]]; then
+            src="$1"
+          elif [[ -z "$tgt" ]]; then
+            tgt="$1"
+          fi
+          ;;
         esac
         shift
       done
-      
+
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
     --pre-install) cmd_pre-install ;;
 
     # Flags
-    -u | --update) config::set UPDATE_FLAKE true ;; 
-    -m | --merge)  cmd_merge "false"; exit 0 ;; 
-    -H | --host) 
+    -u | --update) config::set UPDATE_FLAKE true ;;
+    -m | --merge)
+      shift
+      local auto_yes="false"
+      local src=""
+      local tgt=""
+
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+        -y | --yes) auto_yes="true" ;;
+        -*) break ;; # Stop at next flag (e.g. -H)
+        *)
+          if [[ -z "$src" ]]; then
+            src="$1"
+          elif [[ -z "$tgt" ]]; then
+            tgt="$1"
+          fi
+          ;;
+        esac
+        shift
+      done
+
+      # Smart defaulting: if only one arg provided, assume it's TARGET, and SOURCE is current
+      if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then
+        tgt="$src"
+        src="" # Will be auto-detected as current in cmd_merge
+      fi
+
+      cmd_merge "$auto_yes" "$src" "$tgt"
+      exit 0
+      ;;
+    -H | --host)
       shift
       config::set HOSTNAME "$1"
-      ;; 
-    -p | --profile) 
+      ;;
+    -p | --profile)
       shift
       config::set PROFILE "$1"
-      ;; 
-    -a | --auto) 
+      ;;
+    -a | --auto)
       config::set AUTO_MODE true
       # Handle -a hostname
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
         config::set HOSTNAME "$2"
         shift
       fi
-      ;; 
-    -h | --help) 
+      ;;
+    -h | --help)
       show_help
       exit 0
-      ;; 
+      ;;
     *)
       log ERROR "Unknown option: $1"
       exit 1
-      ;; 
+      ;;
     esac
     shift
   done
@@ -591,17 +644,17 @@ show_menu() {
   1)
     [[ -z "${CONFIG[HOSTNAME]}" ]] && read -r -p "Hostname (hay/vhay): " h && config::set HOSTNAME "$h"
     cmd_install
-    ;; 
-  2) flake::update ;; 
-  3) 
+    ;;
+  2) flake::update ;;
+  3)
     read -r -p "Hostname (hay/vhay): " h
     config::set HOSTNAME "$h"
     cmd_pre-install
-    ;; 
-  4) cmd_merge "false" ;; 
-  5) cd "$WORK_DIR" && nvim . ;; 
-  q) exit 0 ;; 
-  *) show_menu ;; 
+    ;;
+  4) cmd_merge "false" ;;
+  5) cd "$WORK_DIR" && nvim . ;;
+  q) exit 0 ;;
+  *) show_menu ;;
   esac
 }
 
