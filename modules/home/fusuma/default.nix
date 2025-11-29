@@ -8,17 +8,8 @@
  # Service Configuration
  # =============================================================================
  services.fusuma = {
-   enable = true;
-   package = pkgs.fusuma;
-   
-   # =============================================================================
-   # Required Packages
-   # =============================================================================
-   extraPackages = with pkgs; [
-     coreutils
-     wtype
-     libinput
-   ];
+  enable = true;
+  package = pkgs.fusuma;
    # =============================================================================
    # Gesture Settings
    # =============================================================================
@@ -43,11 +34,11 @@
      swipe = {
        "3" = {
          right = {
-           command = "wtype -M ctrl -k TAB";
+           command = "${pkgs.wtype}/bin/wtype -M ctrl -k TAB";
            threshold = 0.6;
          };
          left = {
-           command = "wtype -M ctrl -M shift -k TAB";
+           command = "${pkgs.wtype}/bin/wtype -M ctrl -M shift -k TAB";
            threshold = 0.6;
          };
        };

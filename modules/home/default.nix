@@ -2,32 +2,37 @@
 # ==============================================================================
 # Home Manager Configuration
 # ==============================================================================
-# This configuration manages the import of all home-manager modules including:
-# - Desktop environments and window managers
-# - Application configurations and settings
-# - Development tools and utilities
-# - System customization and theming
-# - Terminal environments and shells
-# - Media and entertainment applications
+# Bu modül tüm home-manager modüllerini ve global temaları import eder:
+# - Masaüstü ortamları ve pencere yöneticileri
+# - Uygulama yapılandırmaları ve ayarları
+# - Geliştirme araçları ve yardımcı programlar
+# - Sistem özelleştirme ve temalandırma
+# - Terminal ortamları ve shell yapılandırmaları
+# - Medya ve eğlence uygulamaları
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 {
   imports = [
+    # Global tema modülleri
+    inputs.catppuccin.homeModules.catppuccin
+
     # =============================================================================
     # Desktop Environment & Window Management
     # =============================================================================
     ./hyprland      # Hyprland Wayland compositor configuration
     ./sway          # Sway tiling window manager
+    ./cosmic        # Cosmic tiling desktop
+    ./gnome         # Library with common API for various GNOME modules
     ./waybar        # Wayland status bar and system information
+    #./hyprpanel     # Bar/Panel for Hyprland with extensive customizability
     ./rofi          # Application launcher and menu system
     ./swaylock      # Screen locker for Wayland sessions
     #./swaync        # Notification center and control
     ./mako          # Lightweight notification daemon for Wayland
     ./swayosd       # On-screen display for system controls
-    ./gammastep     # Blue light filter and screen temperature
-    ./mhyprsunset   # Advanced screen temperature control
+    ./blue          # Blue light filter and screen temperature
     ./waypaper      # Wallpaper management for Wayland
     ./wpaperd       # Wallpaper daemon and rotation
     
@@ -39,7 +44,8 @@
     ./wezterm       # Cross-platform terminal with multiplexing
     ./tmux          # Terminal multiplexer and session management
     ./zsh           # Z shell configuration and plugins
-    ./p10k          # Powerlevel10k prompt theme
+    ./starship      # Z shell configuration
+    #./bash
     
     # =============================================================================
     # Development & Code Editing
@@ -55,6 +61,7 @@
     ./firefox       # Firefox browser with privacy enhancements
     ./chrome        # Google Chrome configuration
     ./brave         # Brave browser with ad blocking
+    ./vivaldi       # Vivaldi browser with ad blocking
     ./zen           # Zen browser setup and customization
     
     # =============================================================================
@@ -95,10 +102,11 @@
     # Productivity & Office
     # =============================================================================
     ./obsidian      # Knowledge management and note-taking
-    ./copyq         # Advanced clipboard manager
+    ./clipse        # Advanced clipboard manager
+    #./copyq         # Advanced clipboard manager
     ./search        # File and content search utilities
     #./ulauncher     # Extensible application launcher
-    #./walker        # Wayland application runner
+    ./walker        # Wayland application runner
     #./iwmenu        # Interactive WiFi management menu
     
     # =============================================================================
@@ -107,6 +115,11 @@
     ./anydesk       # Remote desktop access client
     ./transmission  # BitTorrent client configuration
     
+    # =============================================================================
+    # Device Integration & Sharing
+    # =============================================================================
+    ./connect       # KDE Connect (Hyprland-friendly device integration)
+
     # =============================================================================
     # Security & Privacy
     # =============================================================================
@@ -124,6 +137,7 @@
     ./xdg-mimes     # MIME type associations and defaults
     ./xdg-portal    # Desktop portal configuration
     ./xserver       # X11 server configuration and settings
+    ./candy         # Icon theme colored with sweet gradients
 
     # =============================================================================
     # Input & Gestures
@@ -135,17 +149,18 @@
     # AI & Machine Learning
     # =============================================================================
     #./ollama        # Local large language model management
+    ./ai            # Yeni AI modülü
     
     # =============================================================================
     # Document & Archive Management
     # =============================================================================
-    ./candy         # Document and archive viewer
     ./subliminal    # Subtitle download and management
-    ./zotfiles      # Zotero reference management integration
+    #./zotfiles      # Zotero reference management integration
     
     # =============================================================================
     # Package Management
     # =============================================================================
+    ./flatpak       # User-level Flatpak management (via nix-flatpak HM module)
     ./packages      # User-specific package configuration
     ./program       # Program-specific settings and overrides
   ];

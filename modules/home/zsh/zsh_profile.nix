@@ -7,234 +7,206 @@
         # =============================================================================
         # NixOS Multi-TTY Desktop Environment Auto-Start Configuration
         # =============================================================================
-        # TTY1: Hyprland (Primary Wayland Compositor)
-        # TTY2: GNOME Wayland (Secondary Desktop Environment)  
-        # TTY3: Available for manual use
-        # TTY4-6: QEMU VMs with Sway
+        # This profile handles ONLY TTY detection and session routing.
+        # All environment variables are set in their respective startup scripts.
+        # =============================================================================
+        # TTY Assignments:
+        #   TTY1: Display Manager - Session Selection
+        #   TTY2: Hyprland (via hyprland_tty script)
+        #   TTY3: GNOME (via gnome_tty script)
+        #   TTY4: COSMIC (via cosmic_tty script)
+        #   TTY5: Ubuntu VM (Sway)
         # =============================================================================
 
-        # Only run if this is a login shell and no desktop is running
+        # Only run in login shell when no desktop is active
+        # CRITICAL: Also check if we're being called from a desktop session startup
+        # (gnome-session, cosmic-session, etc. may re-exec shell during startup)
         if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
-            
-            # ==========================================================================
-            # TTY1: Hyprland Wayland Compositor
-            # ==========================================================================
-            if [ "''${XDG_VTNR}" = "1" ]; then
-                echo "=== TTY1: Starting Hyprland Wayland Compositor ==="
-                
-                # Clean any conflicting environment variables
-                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
-                unset GNOME_SHELL_SESSION_MODE MUTTER_DEBUG_DUMMY_MODE_SPECS
-                
-                # Set Hyprland-specific environment
-                export XDG_SESSION_TYPE=wayland
-                export XDG_SESSION_DESKTOP=Hyprland
-                export XDG_CURRENT_DESKTOP=Hyprland
-                export DESKTOP_SESSION=hyprland
-                
-                # Runtime directory setup
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
-                # Wayland backend preferences
-                export QT_QPA_PLATFORM="wayland;xcb"
-                export GDK_BACKEND="wayland,x11"
-                export MOZ_ENABLE_WAYLAND=1
-                export SDL_VIDEODRIVER=wayland
-                
-                echo "Environment: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP / $DESKTOP_SESSION"
-                
-                # Start Hyprland
-                if command -v hyprland_tty >/dev/null 2>&1; then
-                    exec hyprland_tty
-                else
-                    echo "ERROR: hyprland_tty script not found!"
-                    sleep 3
-                    exec startup-manager
-                fi
-            
-            # ==========================================================================
-            # TTY2: GNOME Wayland Desktop Environment
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "2" ]; then
-                echo "=== TTY2: Starting GNOME Wayland Desktop Environment ==="
-                
-                # Clean any conflicting environment variables from other DEs
-                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
-                unset HYPRLAND_INSTANCE_SIGNATURE WLR_NO_HARDWARE_CURSORS
-                
-                # Runtime directory setup
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                if [ ! -d "$XDG_RUNTIME_DIR" ]; then
-                    echo "Creating XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR"
-                    sudo mkdir -p "$XDG_RUNTIME_DIR"
-                    sudo chown $(id -u):$(id -g) "$XDG_RUNTIME_DIR"
-                    sudo chmod 700 "$XDG_RUNTIME_DIR"
-                fi
-                
-                # Set GNOME-specific environment variables
-                export XDG_SESSION_TYPE=wayland
-                export XDG_SESSION_DESKTOP=gnome
-                export XDG_CURRENT_DESKTOP=GNOME
-                export DESKTOP_SESSION=gnome
-                
-                # GNOME Wayland backend settings
-                export WAYLAND_DISPLAY=wayland-0
-                export QT_QPA_PLATFORM=wayland
-                export GDK_BACKEND=wayland
-                export MOZ_ENABLE_WAYLAND=1
-                
-                # GNOME-specific environment
-                export GNOME_SHELL_SESSION_MODE=user
-                export MUTTER_DEBUG_DUMMY_MODE_SPECS=1024x768
-                
-                # Keyring environment
-                export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
-                export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/keyring/ssh"
-                
-                echo "Environment: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP / $DESKTOP_SESSION"
-                echo "Runtime Dir: $XDG_RUNTIME_DIR"
-                
-                # Verify required GNOME components
-                if ! command -v gnome-session >/dev/null; then
-                    echo "ERROR: gnome-session not found!"
-                    echo "Available GNOME commands:"
-                    find /run/current-system/sw/bin -name "*gnome*" 2>/dev/null | head -10
-                    sleep 5
-                    exec startup-manager
-                fi
-                
-                if ! command -v gnome-shell >/dev/null; then
-                    echo "ERROR: gnome-shell not found!"
-                    sleep 5
-                    exec startup-manager
-                fi
-                
-                # Start GNOME with proper D-Bus session
-                if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
-                    echo "Starting GNOME with new D-Bus session..."
-                    if command -v dbus-run-session >/dev/null; then
-                        exec dbus-run-session -- gnome-session --session=gnome --debug 2>&1 | tee /tmp/gnome-session-tty2.log
-                    else
-                        echo "Starting D-Bus session manually..."
-                        eval $(dbus-launch --sh-syntax --exit-with-session)
-                        export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-                        exec gnome-session --session=gnome --debug 2>&1 | tee /tmp/gnome-session-tty2.log
-                    fi
-                else
-                    echo "Using existing D-Bus session for GNOME..."
-                    exec gnome-session --session=gnome --debug 2>&1 | tee /tmp/gnome-session-tty2.log
-                fi
-            
-            # ==========================================================================
-            # TTY3: Manual Use / Available
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "3" ]; then
-                echo "=== TTY3: Available for manual use ==="
-                echo "You can manually start any desktop environment here"
-                echo "Available options:"
-                echo "  - startup-manager (interactive selector)"
-                echo "  - sway (manual Sway compositor)"
-                echo "  - Any other window manager"
-                # Don't auto-exec anything, leave for manual use
-            
-            # ==========================================================================
-            # TTY4: Ubuntu QEMU VM with Sway
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "4" ]; then
-                echo "=== TTY4: Starting Ubuntu QEMU VM with Sway ==="
-                
-                # Clean environment for VM session
-                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
-                
-                # Set Sway environment for VM display
-                export XDG_SESSION_TYPE=wayland
-                export XDG_SESSION_DESKTOP=sway
-                export XDG_CURRENT_DESKTOP=sway
-                export DESKTOP_SESSION=sway
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
-                echo "Environment: $XDG_CURRENT_DESKTOP (for Ubuntu VM)"
-                
-                if [ -f ~/.config/sway/qemu_vmubuntu ]; then
-                    exec sway -c ~/.config/sway/qemu_vmubuntu
-                else
-                    echo "ERROR: Ubuntu VM Sway config not found!"
-                    sleep 3
-                    exec sway
-                fi
-            
-            # ==========================================================================
-            # TTY5: NixOS QEMU VM with Sway
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "5" ]; then
-                echo "=== TTY5: Starting NixOS QEMU VM with Sway ==="
-                
-                # Clean environment for VM session
-                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
-                
-                # Set Sway environment for VM display
-                export XDG_SESSION_TYPE=wayland
-                export XDG_SESSION_DESKTOP=sway
-                export XDG_CURRENT_DESKTOP=sway
-                export DESKTOP_SESSION=sway
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
-                echo "Environment: $XDG_CURRENT_DESKTOP (for NixOS VM)"
-                
-                if [ -f ~/.config/sway/qemu_vmnixos ]; then
-                    exec sway -c ~/.config/sway/qemu_vmnixos
-                else
-                    echo "ERROR: NixOS VM Sway config not found!"
-                    sleep 3
-                    exec sway
-                fi
-            
-            # ==========================================================================
-            # TTY6: Arch QEMU VM with Sway (Optional)
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "6" ]; then
-                echo "=== TTY6: Starting Arch QEMU VM with Sway ==="
-                
-                # Clean environment for VM session
-                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
-                
-                # Set Sway environment for VM display
-                export XDG_SESSION_TYPE=wayland
-                export XDG_SESSION_DESKTOP=sway
-                export XDG_CURRENT_DESKTOP=sway
-                export DESKTOP_SESSION=sway
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
-                echo "Environment: $XDG_CURRENT_DESKTOP (for Arch VM)"
-                
-                if [ -f ~/.config/sway/qemu_vmarch ]; then
-                    exec sway -c ~/.config/sway/qemu_vmarch
-                else
-                    echo "ERROR: Arch VM Sway config not found!"
-                    sleep 3
-                    exec sway
-                fi
-            
-            # ==========================================================================
-            # Other TTYs: No auto-start
-            # ==========================================================================
-            else
-                echo "=== TTY''${XDG_VTNR}: No auto-start configured ==="
-                echo "Available TTY assignments:"
-                echo "  TTY1: Hyprland (Primary)"
-                echo "  TTY2: GNOME Wayland"
-                echo "  TTY3: Manual use"
-                echo "  TTY4: Ubuntu VM"
-                echo "  TTY5: NixOS VM" 
-                echo "  TTY6: Arch VM"
-                echo ""
-                echo "Start desktop manually or switch to configured TTY"
+
+            # TTY1 special check: Don't interfere if session already active
+            if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
+                return
+            fi
+
+            # CRITICAL FIX: Prevent re-running when called from desktop session startup
+            # Desktop sessions (GNOME, COSMIC) may re-exec shell with login flag
+            # Check if we're in a desktop session startup context
+            # IMPORTANT: Only check for actual running sessions, not just env vars
+            if pgrep -x "gnome-shell" >/dev/null 2>&1 || \
+               pgrep -x "cosmic-comp" >/dev/null 2>&1 || \
+               [ -n "''${GNOME_DESKTOP_SESSION_ID:-}" ] || \
+               [ -n "''${GNOME_SHELL_SESSION_MODE:-}" ] || \
+               [ -n "''${COSMIC_SESSION:-}" ]; then
+                return
             fi
             
-        else
-            # Don't show environment info in non-login shells
-            :  # Do nothing silently
+            # ==========================================================================
+            # TTY1: Display Manager
+            # ==========================================================================
+            if [ "''${XDG_VTNR}" = "1" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY1: Display Manager                                     ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+                echo ""
+                echo "Available Desktop Sessions:"
+                echo "  • COSMIC   - Rust-based desktop environment"
+                echo "  • Hyprland - Dynamic tiling Wayland compositor"
+                echo "  • GNOME    - Traditional GNOME desktop"
+                echo ""
+                echo "Manual Start Commands:"
+                echo "  exec hyprland_tty    - Start Hyprland with optimizations"
+                echo "  exec gnome_tty       - Start GNOME with optimizations"
+                echo "  exec cosmic_tty      - Start COSMIC with optimizations"
+                echo ""
+            
+            # ==========================================================================
+            # TTY2: Hyprland Wayland Compositor
+            # ==========================================================================
+            elif [ "''${XDG_VTNR}" = "2" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY2: Launching Hyprland via hyprland_tty                 ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+                
+                # Minimum required variables - rest configured in hyprland_tty
+                export XDG_SESSION_TYPE=wayland
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                
+                # Check for hyprland_tty script
+                if command -v hyprland_tty >/dev/null 2>&1; then
+                    echo "Starting Hyprland with optimized configuration..."
+                    exec hyprland_tty
+                else
+                    echo "ERROR: hyprland_tty script not found in PATH"
+                    echo "Falling back to direct Hyprland launch (not recommended)"
+                    sleep 3
+                    exec Hyprland
+                fi
+            
+            # ==========================================================================
+            # TTY3: GNOME Desktop Environment
+            # ==========================================================================
+            elif [ "''${XDG_VTNR}" = "3" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY3: Launching GNOME via gnome_tty                       ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+
+                # CRITICAL: Only set XDG_RUNTIME_DIR - let gnome_tty handle everything else
+                # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+
+                # Check for gnome_tty script
+                if command -v gnome_tty >/dev/null 2>&1; then
+                    echo "Starting GNOME with optimized configuration..."
+                    exec gnome_tty
+                else
+                    echo "ERROR: gnome_tty script not found in PATH"
+                    echo "Falling back to direct GNOME launch (not recommended)"
+                    sleep 3
+
+                    # Fallback: Start GNOME with proper environment
+                    export XDG_SESSION_TYPE=wayland
+                    export SYSTEMD_OFFLINE=0
+
+                    # Start GNOME session directly (no dbus-run-session wrapper)
+                    exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                fi
+            
+            # ==========================================================================
+            # TTY4: COSMIC Desktop Environment
+            # ==========================================================================
+            elif [ "''${XDG_VTNR}" = "4" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY4: Launching COSMIC via cosmic_tty                     ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+
+                # CRITICAL: Only set XDG_RUNTIME_DIR - let cosmic_tty handle everything else
+                # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+
+                # Check for cosmic_tty script
+                if command -v cosmic_tty >/dev/null 2>&1; then
+                    echo "Starting COSMIC with optimized configuration..."
+                    exec cosmic_tty
+                else
+                    echo "ERROR: cosmic_tty script not found in PATH"
+                    echo "Falling back to direct COSMIC launch (not recommended)"
+                    echo "NOTE: COSMIC is in Beta - expect occasional issues"
+                    sleep 3
+
+                    # Fallback: COSMIC environment settings
+                    export XDG_SESSION_TYPE=wayland
+                    export XDG_SESSION_DESKTOP=cosmic
+                    export XDG_CURRENT_DESKTOP=COSMIC
+                    export DESKTOP_SESSION=cosmic
+                    export COSMIC_DATA_CONTROL_ENABLED=1
+                    export NIXOS_OZONE_WL=1
+                    export SYSTEMD_OFFLINE=0
+
+                    exec cosmic-session 2>&1 | tee /tmp/cosmic-session-tty4.log
+                fi
+            
+            # ==========================================================================
+            # TTY5: Ubuntu VM in Sway
+            # ==========================================================================
+            elif [ "''${XDG_VTNR}" = "5" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY5: Starting Ubuntu VM in Sway                          ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+                
+                # Clean environment
+                unset XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP DESKTOP_SESSION
+                
+                # Sway environment settings
+                export XDG_SESSION_TYPE=wayland
+                export XDG_SESSION_DESKTOP=sway
+                export XDG_CURRENT_DESKTOP=sway
+                export DESKTOP_SESSION=sway
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                
+                # Add user bin to PATH for svmubuntu command
+                export PATH="/etc/profiles/per-user/$(whoami)/bin:$PATH"
+                
+                echo "Environment: Sway compositor for Ubuntu VM"
+                echo "VM Command: svmubuntu"
+                
+                # Check Sway config
+                if [ -f ~/.config/sway/qemu_vmubuntu ]; then
+                    echo "Starting Sway with Ubuntu VM configuration..."
+                    exec sway -c ~/.config/sway/qemu_vmubuntu 2>&1 | tee /tmp/sway-tty5.log
+                else
+                    echo "ERROR: Sway config not found: ~/.config/sway/qemu_vmubuntu"
+                    echo "Expected location: ~/.config/sway/qemu_vmubuntu"
+                    echo "Please verify the configuration file exists"
+                    sleep 5
+                    return
+                fi
+            
+            # ==========================================================================
+            # Other TTYs: Manual use information
+            # ==========================================================================
+            else
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY''${XDG_VTNR}: No auto-start configured                ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+                echo ""
+                echo "Available TTY Assignments:"
+                echo "  TTY1: Display Manager (cosmic-greeter)"
+                echo "  TTY2: Hyprland (hyprland_tty)"
+                echo "  TTY3: GNOME (gnome_tty)"
+                echo "  TTY4: COSMIC (cosmic_tty)"
+                echo "  TTY5: Ubuntu VM (Sway)"
+                echo "  TTY6: Available for manual use"
+                echo ""
+                echo "Manual Start Commands:"
+                echo "  exec hyprland_tty    - Hyprland with optimizations"
+                echo "  exec gnome_tty       - GNOME with optimizations"
+                echo "  exec cosmic_tty      - COSMIC with optimizations"
+                echo "  exec sway            - Sway compositor"
+                echo ""
+            fi
+            
         fi
+        # Silent continue if not login shell or desktop already running
       '';
       executable = true;
     };

@@ -12,17 +12,17 @@ let
   askpass = pkgs.writeShellScriptBin "askpass" (
     builtins.readFile ./bin/askpass.sh
   );
+  bluetooth_toggle = pkgs.writeShellScriptBin "bluetooth_toggle" (
+    builtins.readFile ./bin/bluetooth_toggle.sh
+  );
+  brave-extensions = pkgs.writeShellScriptBin "brave-extensions" (
+    builtins.readFile ./bin/brave-extensions.sh
+  );
   brave_killer = pkgs.writeShellScriptBin "brave_killer" (
     builtins.readFile ./bin/brave_killer.sh
   );
   bulk_rename = pkgs.writeShellScriptBin "bulk_rename" (
     builtins.readFile ./bin/bulk_rename.sh
-  );
-  cdiff = pkgs.writeShellScriptBin "cdiff" (
-    builtins.readFile ./bin/cdiff.sh
-  );
-  chist = pkgs.writeShellScriptBin "chist" (
-    builtins.readFile ./bin/chist.sh
   );
   chroot_manager = pkgs.writeShellScriptBin "chroot_manager" (
     builtins.readFile ./bin/chroot_manager.sh
@@ -30,14 +30,20 @@ let
   clearam = pkgs.writeShellScriptBin "clearam" (
     builtins.readFile ./bin/clearam.sh
   );
+  clipmaster = pkgs.writeShellScriptBin "clipmaster" (
+    builtins.readFile ./bin/clipmaster.sh
+  );
   clustergit = pkgs.writeShellScriptBin "clustergit" (
     builtins.readFile ./bin/clustergit.sh
   );
-  cosmic-workspace-monitor = pkgs.writeShellScriptBin "cosmic-workspace-monitor" (
-    builtins.readFile ./bin/cosmic-workspace-monitor.sh
+  cosmic_tty = pkgs.writeShellScriptBin "cosmic_tty" (
+    builtins.readFile ./bin/cosmic_tty.sh
   );
   crypto-manager = pkgs.writeShellScriptBin "crypto-manager" (
     builtins.readFile ./bin/crypto-manager.sh
+  );
+  ente-run = pkgs.writeShellScriptBin "ente-run" (
+    builtins.readFile ./bin/ente-run.sh
   );
   gitgo = pkgs.writeShellScriptBin "gitgo" (
     builtins.readFile ./bin/gitgo.sh
@@ -48,35 +54,26 @@ let
   gnome-flow = pkgs.writeShellScriptBin "gnome-flow" (
     builtins.readFile ./bin/gnome-flow.sh
   );
+  gnome-kr-fix = pkgs.writeShellScriptBin "gnome-kr-fix" (
+    builtins.readFile ./bin/gnome-kr-fix.sh
+  );
+  gnome-monitor-set = pkgs.writeShellScriptBin "gnome-monitor-set" (
+    builtins.readFile ./bin/gnome-monitor-set.sh
+  );
   gnome-mpv-manager = pkgs.writeShellScriptBin "gnome-mpv-manager" (
     builtins.readFile ./bin/gnome-mpv-manager.sh
   );
   gnome-settings = pkgs.writeShellScriptBin "gnome-settings" (
     builtins.readFile ./bin/gnome-settings.sh
   );
+  gnome_tty = pkgs.writeShellScriptBin "gnome_tty" (
+    builtins.readFile ./bin/gnome_tty.sh
+  );
   hypr-airplane_mode = pkgs.writeShellScriptBin "hypr-airplane_mode" (
     builtins.readFile ./bin/hypr-airplane_mode.sh
   );
-  hypr-blue-gammastep-manager = pkgs.writeShellScriptBin "hypr-blue-gammastep-manager" (
-    builtins.readFile ./bin/hypr-blue-gammastep-manager.sh
-  );
-  hypr-blue-hyprsunset-manager = pkgs.writeShellScriptBin "hypr-blue-hyprsunset-manager" (
-    builtins.readFile ./bin/hypr-blue-hyprsunset-manager.sh
-  );
-  hypr-bluetooth_toggle = pkgs.writeShellScriptBin "hypr-bluetooth_toggle" (
-    builtins.readFile ./bin/hypr-bluetooth_toggle.sh
-  );
   hypr-colorpicker = pkgs.writeShellScriptBin "hypr-colorpicker" (
     builtins.readFile ./bin/hypr-colorpicker.sh
-  );
-  hypr-ctl_focusmonitor = pkgs.writeShellScriptBin "hypr-ctl_focusmonitor" (
-    builtins.readFile ./bin/hypr-ctl_focusmonitor.sh
-  );
-  hypr-ctl_setup_dual_monitors = pkgs.writeShellScriptBin "hypr-ctl_setup_dual_monitors" (
-    builtins.readFile ./bin/hypr-ctl_setup_dual_monitors.sh
-  );
-  hyprland_tty_all = pkgs.writeShellScriptBin "hyprland_tty_all" (
-    builtins.readFile ./bin/hyprland_tty_all.sh
   );
   hyprland_tty = pkgs.writeShellScriptBin "hyprland_tty" (
     builtins.readFile ./bin/hyprland_tty.sh
@@ -84,29 +81,29 @@ let
   hypr-layout_toggle = pkgs.writeShellScriptBin "hypr-layout_toggle" (
     builtins.readFile ./bin/hypr-layout_toggle.sh
   );
-  hypr_move_app_from_workspace = pkgs.writeShellScriptBin "hypr_move_app_from_workspace" (
-    builtins.readFile ./bin/hypr_move_app_from_workspace.sh
-  );
   hypr-mpv-manager = pkgs.writeShellScriptBin "hypr-mpv-manager" (
     builtins.readFile ./bin/hypr-mpv-manager.sh
+  );
+  hyprpaper-manager = pkgs.writeShellScriptBin "hyprpaper-manager" (
+    builtins.readFile ./bin/hyprpaper-manager.sh
   );
   hypr-start-batteryd = pkgs.writeShellScriptBin "hypr-start-batteryd" (
     builtins.readFile ./bin/hypr-start-batteryd.sh
   );
-  hypr-start-disable_wifi_power_save = pkgs.writeShellScriptBin "hypr-start-disable_wifi_power_save" (
-    builtins.readFile ./bin/hypr-start-disable_wifi_power_save.sh
+  hypr-switch = pkgs.writeShellScriptBin "hypr-switch" (
+    builtins.readFile ./bin/hypr-switch.sh
   );
   hypr-vlc_toggle = pkgs.writeShellScriptBin "hypr-vlc_toggle" (
     builtins.readFile ./bin/hypr-vlc_toggle.sh
+  );
+  hypr-wifi-power-save = pkgs.writeShellScriptBin "hypr-wifi-power-save" (
+    builtins.readFile ./bin/hypr-wifi-power-save.sh
   );
   hypr-workspace-monitor = pkgs.writeShellScriptBin "hypr-workspace-monitor" (
     builtins.readFile ./bin/hypr-workspace-monitor.sh
   );
   lofi = pkgs.writeShellScriptBin "lofi" (
     builtins.readFile ./bin/lofi.sh
-  );
-  m2w2 = pkgs.writeShellScriptBin "m2w2" (
-    builtins.readFile ./bin/m2w2.sh
   );
   mako-status = pkgs.writeShellScriptBin "mako-status" (
     builtins.readFile ./bin/mako-status.sh
@@ -135,17 +132,14 @@ let
   osc-cleaup-grub = pkgs.writeShellScriptBin "osc-cleaup-grub" (
     builtins.readFile ./bin/osc-cleaup-grub.sh
   );
-  osc-generate_nix = pkgs.writeShellScriptBin "osc-generate_nix" (
-    builtins.readFile ./bin/osc-generate_nix.sh
+  osc-fiup = pkgs.writeShellScriptBin "osc-fiup" (
+    builtins.readFile ./bin/osc-fiup.sh
   );
   osc-gist = pkgs.writeShellScriptBin "osc-gist" (
     builtins.readFile ./bin/osc-gist.sh
   );
   osc-gpg_unlock = pkgs.writeShellScriptBin "osc-gpg_unlock" (
     builtins.readFile ./bin/osc-gpg_unlock.sh
-  );
-  osc-hypr-update = pkgs.writeShellScriptBin "osc-hypr-update" (
-    builtins.readFile ./bin/osc-hypr-update.sh
   );
   osc-imagekeeper = pkgs.writeShellScriptBin "osc-imagekeeper" (
     builtins.readFile ./bin/osc-imagekeeper.sh
@@ -177,6 +171,9 @@ let
   osc-rsync = pkgs.writeShellScriptBin "osc-rsync" (
     builtins.readFile ./bin/osc-rsync.sh
   );
+  osc-safe-reboot = pkgs.writeShellScriptBin "osc-safe-reboot" (
+    builtins.readFile ./bin/osc-safe-reboot.sh
+  );
   osc-scrcpy = pkgs.writeShellScriptBin "osc-scrcpy" (
     builtins.readFile ./bin/osc-scrcpy.sh
   );
@@ -192,12 +189,6 @@ let
   osc-ssh = pkgs.writeShellScriptBin "osc-ssh" (
     builtins.readFile ./bin/osc-ssh.sh
   );
-  osc-start_gnome = pkgs.writeShellScriptBin "osc-start_gnome" (
-    builtins.readFile ./bin/osc-start_gnome.sh
-  );
-  osc-start_hypr = pkgs.writeShellScriptBin "osc-start_hypr" (
-    builtins.readFile ./bin/osc-start_hypr.sh
-  );
   osc-subliminal = pkgs.writeShellScriptBin "osc-subliminal" (
     builtins.readFile ./bin/osc-subliminal.sh
   );
@@ -206,6 +197,9 @@ let
   );
   osc-sync = pkgs.writeShellScriptBin "osc-sync" (
     builtins.readFile ./bin/osc-sync.sh
+  );
+  osc-system = pkgs.writeShellScriptBin "osc-system" (
+    builtins.readFile ./bin/osc-system.sh
   );
   osc-test = pkgs.writeShellScriptBin "osc-test" (
     builtins.readFile ./bin/osc-test.sh
@@ -237,9 +231,6 @@ let
   ports = pkgs.writeShellScriptBin "ports" (
     builtins.readFile ./bin/ports.sh
   );
-  power-menu = pkgs.writeShellScriptBin "power-menu" (
-    builtins.readFile ./bin/power-menu.sh
-  );
   profile_brave = pkgs.writeShellScriptBin "profile_brave" (
     builtins.readFile ./bin/profile_brave.sh
   );
@@ -255,12 +246,6 @@ let
   renew_env = pkgs.writeShellScriptBin "renew_env" (
     builtins.readFile ./bin/renew_env.sh
   );
-  rofi-frecency = pkgs.writeShellScriptBin "rofi-frecency" (
-    builtins.readFile ./bin/rofi-frecency.sh
-  );
-  rofi-hypr-keybinds = pkgs.writeShellScriptBin "rofi-hypr-keybinds" (
-    builtins.readFile ./bin/rofi-hypr-keybinds.sh
-  );
   rofi-iwmenu = pkgs.writeShellScriptBin "rofi-iwmenu" (
     builtins.readFile ./bin/rofi-iwmenu.sh
   );
@@ -269,12 +254,6 @@ let
   );
   rofi-performance = pkgs.writeShellScriptBin "rofi-performance" (
     builtins.readFile ./bin/rofi-performance.sh
-  );
-  rofi-power-menu = pkgs.writeShellScriptBin "rofi-power-menu" (
-    builtins.readFile ./bin/rofi-power-menu.sh
-  );
-  rofi-power = pkgs.writeShellScriptBin "rofi-power" (
-    builtins.readFile ./bin/rofi-power.sh
   );
   rofi-wifi = pkgs.writeShellScriptBin "rofi-wifi" (
     builtins.readFile ./bin/rofi-wifi.sh
@@ -294,23 +273,29 @@ let
   screenshot = pkgs.writeShellScriptBin "screenshot" (
     builtins.readFile ./bin/screenshot.sh
   );
+  semsumo = pkgs.writeShellScriptBin "semsumo" (
+    builtins.readFile ./bin/semsumo.sh
+  );
   sil_ayni_mp4 = pkgs.writeShellScriptBin "sil_ayni_mp4" (
     builtins.readFile ./bin/sil_ayni_mp4.sh
   );
   smart-suspend = pkgs.writeShellScriptBin "smart-suspend" (
     builtins.readFile ./bin/smart-suspend.sh
   );
+  sqm = pkgs.writeShellScriptBin "sqm" (
+    builtins.readFile ./bin/sqm.sh
+  );
   ssh-launcher = pkgs.writeShellScriptBin "ssh-launcher" (
     builtins.readFile ./bin/ssh-launcher.sh
   );
-  startup-manager = pkgs.writeShellScriptBin "startup-manager" (
-    builtins.readFile ./bin/startup-manager.sh
-  );
-  st = pkgs.writeShellScriptBin "st" (
-    builtins.readFile ./bin/st.sh
+  starship_toggle = pkgs.writeShellScriptBin "starship_toggle" (
+    builtins.readFile ./bin/starship_toggle.sh
   );
   svmarch = pkgs.writeShellScriptBin "svmarch" (
     builtins.readFile ./bin/svmarch.sh
+  );
+  svm_launcher = pkgs.writeShellScriptBin "svm_launcher" (
+    builtins.readFile ./bin/svm_launcher.sh
   );
   svmnixos = pkgs.writeShellScriptBin "svmnixos" (
     builtins.readFile ./bin/svmnixos.sh
@@ -324,6 +309,9 @@ let
   ter = pkgs.writeShellScriptBin "ter" (
     builtins.readFile ./bin/ter.sh
   );
+  tlp-status = pkgs.writeShellScriptBin "tlp-status" (
+    builtins.readFile ./bin/tlp-status.sh
+  );
   tm = pkgs.writeShellScriptBin "tm" (
     builtins.readFile ./bin/tm.sh
   );
@@ -336,8 +324,8 @@ let
   toggle-mic = pkgs.writeShellScriptBin "toggle-mic" (
     builtins.readFile ./bin/toggle-mic.sh
   );
-  toggle_oppacity = pkgs.writeShellScriptBin "toggle_oppacity" (
-    builtins.readFile ./bin/toggle_oppacity.sh
+  toggle_opacity = pkgs.writeShellScriptBin "toggle_opacity" (
+    builtins.readFile ./bin/toggle_opacity.sh
   );
   toggle_waybar = pkgs.writeShellScriptBin "toggle_waybar" (
     builtins.readFile ./bin/toggle_waybar.sh
@@ -372,14 +360,23 @@ let
   vv = pkgs.writeShellScriptBin "vv" (
     builtins.readFile ./bin/vv.sh
   );
-  wallpaper-manager = pkgs.writeShellScriptBin "wallpaper-manager" (
-    builtins.readFile ./bin/wallpaper-manager.sh
+  walk = pkgs.writeShellScriptBin "walk" (
+    builtins.readFile ./bin/walk.sh
+  );
+  waybar-status = pkgs.writeShellScriptBin "waybar-status" (
+    builtins.readFile ./bin/waybar-status.sh
   );
   workspace-switcher = pkgs.writeShellScriptBin "workspace-switcher" (
     builtins.readFile ./bin/workspace-switcher.sh
   );
   wrename = pkgs.writeShellScriptBin "wrename" (
     builtins.readFile ./bin/wrename.sh
+  );
+  ws-next = pkgs.writeShellScriptBin "ws-next" (
+    builtins.readFile ./bin/ws-next.sh
+  );
+  ws-prev = pkgs.writeShellScriptBin "ws-prev" (
+    builtins.readFile ./bin/ws-prev.sh
   );
   zen_profile_launcher = pkgs.writeShellScriptBin "zen_profile_launcher" (
     builtins.readFile ./bin/zen_profile_launcher.sh
@@ -393,38 +390,37 @@ in {
     anotes
     ascii
     askpass
+    bluetooth_toggle
+    brave-extensions
     brave_killer
     bulk_rename
-    cdiff
-    chist
     chroot_manager
     clearam
+    clipmaster
     clustergit
-    cosmic-workspace-monitor
+    cosmic_tty
     crypto-manager
+    ente-run
     gitgo
     gnome-extensions-installer
     gnome-flow
+    gnome-kr-fix
+    gnome-monitor-set
     gnome-mpv-manager
     gnome-settings
+    gnome_tty
     hypr-airplane_mode
-    hypr-blue-gammastep-manager
-    hypr-blue-hyprsunset-manager
-    hypr-bluetooth_toggle
     hypr-colorpicker
-    hypr-ctl_focusmonitor
-    hypr-ctl_setup_dual_monitors
-    hyprland_tty_all
     hyprland_tty
     hypr-layout_toggle
-    hypr_move_app_from_workspace
     hypr-mpv-manager
+    hyprpaper-manager
     hypr-start-batteryd
-    hypr-start-disable_wifi_power_save
+    hypr-switch
     hypr-vlc_toggle
+    hypr-wifi-power-save
     hypr-workspace-monitor
     lofi
-    m2w2
     mako-status
     monitor_brightness
     move_media_files
@@ -434,10 +430,9 @@ in {
     osc-backup
     osc-blocklist
     osc-cleaup-grub
-    osc-generate_nix
+    osc-fiup
     osc-gist
     osc-gpg_unlock
-    osc-hypr-update
     osc-imagekeeper
     osc-mullvad
     osc-nix-cleanup-script
@@ -448,16 +443,16 @@ in {
     osc-radio
     osc-rsync_backup
     osc-rsync
+    osc-safe-reboot
     osc-scrcpy
     osc-sops
     osc-soundctl
     osc-spotify
     osc-ssh
-    osc-start_gnome
-    osc-start_hypr
     osc-subliminal
     osc-symlink_manager
     osc-sync
+    osc-system
     osc-test
     osc-tmux-plugins-install
     osc-tv-splitter
@@ -468,40 +463,38 @@ in {
     pdfkes
     playlist
     ports
-    power-menu
     profile_brave
     profile_chrome
     publicip
     record
     renew_env
-    rofi-frecency
-    rofi-hypr-keybinds
     rofi-iwmenu
     rofi-launcher
     rofi-performance
-    rofi-power-menu
-    rofi-power
     rofi-wifi
     rsync_backup
     rsync-retry
     rsync-tool
     runbg
     screenshot
+    semsumo
     sil_ayni_mp4
     smart-suspend
+    sqm
     ssh-launcher
-    startup-manager
-    st
+    starship_toggle
     svmarch
+    svm_launcher
     svmnixos
     svmubuntu
     tarchiver
     ter
+    tlp-status
     tm
     toggle_blur
     toggle_float
     toggle-mic
-    toggle_oppacity
+    toggle_opacity
     toggle_waybar
     tsm
     tty_config
@@ -513,9 +506,12 @@ in {
     vnc-connect
     vpn-waybar
     vv
-    wallpaper-manager
+    walk
+    waybar-status
     workspace-switcher
     wrename
+    ws-next
+    ws-prev
     zen_profile_launcher
     zen_terminate_sessions
   ];

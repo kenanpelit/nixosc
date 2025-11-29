@@ -8,7 +8,7 @@
   # =============================================================================
   # Service Configuration
   # =============================================================================
-  services.mhyprsunset.enable = true;  # Enable HyprSunset service for automatic blue light filtering
+  services.blue.enable = true;  # Enable unified night light manager (Gammastep + HyprSunset)
   
   programs = {
     # ---------------------------------------------------------------------------
@@ -16,16 +16,6 @@
     # ---------------------------------------------------------------------------
     wezterm.enable = true;  # Modern GPU-accelerated terminal emulator
     kitty.enable = true;    # Fast, feature-rich, GPU based terminal emulator
-    
-    # ---------------------------------------------------------------------------
-    # Shell Configuration
-    # ---------------------------------------------------------------------------
-    zsh = {
-      enable = true;
-      autosuggestion.enable = true;     # Enable fish-like autosuggestions
-      enableCompletion = true;          # Enable completion system
-      syntaxHighlighting.enable = true; # Enable syntax highlighting
-    };
     
     # ---------------------------------------------------------------------------
     # Core Utilities
@@ -40,8 +30,8 @@
     # ---------------------------------------------------------------------------
     git = {
       enable = true;
-      delta.enable = true;  # Better diff viewer
       lfs.enable = true;    # Large File Storage support
+      # Delta is now configured separately in git/default.nix
     };
   };
 }

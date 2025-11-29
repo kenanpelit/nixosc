@@ -53,11 +53,11 @@ in
     };
     
     # ---------------------------------------------------------------------------
-    # Theme Settings - Catppuccin Mocha (Lower priority to avoid conflicts)
+    # Theme Settings - Catppuccin Mocha (High priority to enforce dark theme)
     # ---------------------------------------------------------------------------
     theme = {
-      name = lib.mkDefault "catppuccin-mocha-mauve-standard+normal";
-      package = lib.mkDefault (pkgs.catppuccin-gtk.override {
+      name = lib.mkForce "catppuccin-mocha-mauve-standard+normal";
+      package = lib.mkForce (pkgs.catppuccin-gtk.override {
         accents = [ "mauve" ];
         size = "standard";
         tweaks = [ "normal" ];
@@ -78,9 +78,9 @@ in
     # ---------------------------------------------------------------------------
     gtk2 = {
       configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
-      extraConfig = ''
-        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
+      extraConfig = lib.mkForce ''
         gtk-icon-theme-name = "a-candy-beauty-icon-theme"
+        gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
         gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
         gtk-application-prefer-dark-theme = 1
         gtk-button-images = 1
@@ -100,10 +100,10 @@ in
     # GTK3 Specific Settings
     # ---------------------------------------------------------------------------
     gtk3.extraConfig = {
-      gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
+      gtk-theme-name = lib.mkForce "catppuccin-mocha-mauve-standard+normal";
       gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
-      gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      gtk-application-prefer-dark-theme = 1;
+      gtk-font-name = lib.mkForce "${fonts.main.family} ${toString fonts.sizes.sm}";
+      gtk-application-prefer-dark-theme = lib.mkForce 1;
       gtk-button-images = 1;
       gtk-menu-images = 1;
       gtk-enable-event-sounds = 0;
@@ -119,12 +119,10 @@ in
     # GTK4 Specific Settings
     # ---------------------------------------------------------------------------
     gtk4.extraConfig = {
-      gtk-theme-name = "catppuccin-mocha-mauve-standard+normal";
+      gtk-theme-name = lib.mkForce "catppuccin-mocha-mauve-standard+normal";
       gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
-      gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}";
-      gtk-application-prefer-dark-theme = 1;
-      gtk-button-images = 1;
-      gtk-menu-images = 1;
+      gtk-font-name = lib.mkForce "${fonts.main.family} ${toString fonts.sizes.sm}";
+      gtk-application-prefer-dark-theme = lib.mkForce 1;
       gtk-enable-event-sounds = 0;
       gtk-enable-input-feedback-sounds = 0;
       gtk-xft-antialias = 1;
@@ -140,20 +138,13 @@ in
   # =============================================================================
   home = {
     # ---------------------------------------------------------------------------
-    # Environment Variables - Catppuccin Mocha (Lower priority)
+    # Environment Variables - Catppuccin Mocha (High priority)
     # ---------------------------------------------------------------------------
     sessionVariables = {
-      GTK_THEME = lib.mkDefault "catppuccin-mocha-mauve-standard+normal";
+      GTK_THEME = lib.mkForce "catppuccin-mocha-mauve-standard+normal";
       GTK_USE_PORTAL = "1";
       GTK_APPLICATION_PREFER_DARK_THEME = "1";
       GDK_SCALE = "1";
-      # Hyprland için ek ayarlar
-      GDK_BACKEND = "wayland,x11";
-      QT_QPA_PLATFORM = "wayland;xcb";
-      CLUTTER_BACKEND = "wayland";
-      XDG_CURRENT_DESKTOP = "Hyprland";
-      XDG_SESSION_DESKTOP = "Hyprland";
-      XDG_SESSION_TYPE = "wayland";
     };
 
     # ---------------------------------------------------------------------------
@@ -175,7 +166,7 @@ in
       nerd-fonts.hack
       nerd-fonts.symbols-only
       twemoji-color-font
-      noto-fonts-emoji
+      noto-fonts-color-emoji
       maple-mono.NF
       font-awesome
     ];

@@ -5,11 +5,6 @@
 { pkgs, ... }:
 {
   # =============================================================================
-  # Package Installation
-  # =============================================================================
-  home.packages = (with pkgs; [ waypaper ]);
-
-  # =============================================================================
   # Configuration
   # =============================================================================
   xdg.configFile."waypaper/config.ini".text = ''
@@ -18,7 +13,7 @@
     language = en
     folder = ~/Pictures/wallpapers/others
     monitors = All
-    wallpaper = ~/Pictures/wallpapers/nixos/nixos_blue.png
+    wallpaper = ~/Pictures/wallpapers/nixos/nixos.png
     
     # Display Settings
     backend = swww

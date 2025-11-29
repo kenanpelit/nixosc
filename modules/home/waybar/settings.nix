@@ -39,6 +39,8 @@
     
     # Center: Time, Weather & Personal Productivity
     modules-center = [
+      "custom/nlight"
+      "custom/blank"       # ⎵  Visual spacing
       "custom/mako-notifications" # 🔔 Mako notification status
       "custom/blank"       # ⎵  Visual spacing
       "custom/todo"        # 📋 Personal todo list integration
@@ -51,8 +53,7 @@
     
     # Right: System Monitoring & Controls
     modules-right = [
-      "cpu"                # 💻 CPU usage monitoring
-      "temperature"        # 🌡️ CPU temperature monitoring
+      "custom/system-status" # 💻 System status (CPU, temp, power)
       "memory"             # 🧠 RAM usage monitoring
       "disk"               # 💾 Disk usage monitoring
       "bluetooth"          # 📶 Bluetooth connectivity status
@@ -129,6 +130,60 @@
 
     # ┌─ Center Section: Time, Weather & Productivity ───────────────────────────────────────────┐
 
+    # 🌙 Night Light Control (wl-gammarelay-rs)
+    "custom/nlight" = {
+      # {t}=temperature(K), {bp}=brightness(%), {g}=gamma
+      # exec = ''wl-gammarelay-rs watch '{t}K {bp}% γ{g}' '';
+      exec = ''wl-gammarelay-rs watch '{t}K' '';
+      tail = true;                # watch akışı için şart
+      return-type = "text";       # boş bırakma
+      format = "󰖔 {}";           # ikon + birleşik metin
+
+      # Sıcaklık döngüsü (4000 ↔ 3700 ↔ 3100)
+      on-click = ''
+        current=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature | awk '{print $2}')
+        if [ "$current" -eq 4000 ]; then
+          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3500
+          notify-send -u low -t 1200 "󰖔 Night Light" "Gündüz: 3500K 🟡"
+        elif [ "$current" -eq 3500 ]; then
+          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3000
+          notify-send -u low -t 1200 "󰖔 Night Light" "Gece: 3000K 🟠"
+        else
+          busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 4000
+          notify-send -u low -t 1200 "󰖔 Night Light" "Normal: 4000K ⚪"
+        fi
+      '';
+
+        # Hızlı gece modu
+      on-click-middle = ''
+        busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 3000
+        notify-send -u low -t 1200 "󰖔 Night Light" "Hızlı Gece: 3000K 🟠"
+      '';
+
+      # Tam sıfırla
+      on-click-right = ''
+        busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 4000
+        busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Brightness d 1.0
+        busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Gamma d 1.0
+        notify-send -u low -t 1200 "󰖔 Night Light" "Sıfırlandı: 4000K • 100% • γ1.0"
+      '';
+
+      # Scroll: sıcaklık ince ayar
+      on-scroll-up   = "busctl --user -- call rs.wl-gammarelay / rs.wl.gammarelay UpdateTemperature n +100";
+      on-scroll-down = "busctl --user -- call rs.wl-gammarelay / rs.wl.gammarelay UpdateTemperature n -100";
+
+      tooltip = true;
+      tooltip-format = ''
+        󰖔 Night Light
+        Sıcaklık/Parlaklık/Γ: {}
+
+        Sol tık: 4000 ↔ 3500 ↔ 3000
+        Orta tık: 3000K (gece)
+        Sağ tık: Sıfırla (4000K, 100%, γ1.0)
+        Scroll: ±100K
+      '';
+    };
+
     # 🔔 Mako Notification Status & Controls
     "custom/mako-notifications" = {
       format = "{}";
@@ -172,40 +227,60 @@
 
     # 🌤️ Weather Information for Istanbul
     "custom/weather" = {
-      # Fetch weather from wttr.in with custom icon mapping
+      # Fetch weather from wttr.in with custom icon mapping and caching
       exec = ''
-        weather=$(curl -s --connect-timeout 5 'wttr.in/Istanbul?format=%c+%t' 2>/dev/null)
-        if [ -z "$weather" ]; then
-          echo "󰔏 N/A"
+        cache_file="/tmp/waybar_weather_cache"
+        cache_time=1800  # 30 minutes in seconds
+        
+        # Check if cache exists and is fresh
+        if [ -f "$cache_file" ] && [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -lt $cache_time ]; then
+          cat "$cache_file"
         else
-          # Map weather emoji to nerd font icons
-          if [[ "$weather" == *"☀"* ]]; then
-            icon="󰖙"    # Sunny
-          elif [[ "$weather" == *"⛅"* ]]; then
-            icon="󰖕"    # Partly cloudy
-          elif [[ "$weather" == *"☁"* ]]; then
-            icon="󰖐"    # Cloudy
-          elif [[ "$weather" == *"🌧"* ]]; then
-            icon="󰖖"    # Rainy
-          elif [[ "$weather" == *"⛈"* ]]; then
-            icon="󰙾"    # Thunderstorm
-          elif [[ "$weather" == *"🌨"* ]]; then
-            icon="󰖘"    # Snowy
-          elif [[ "$weather" == *"🌫"* ]]; then
-            icon="󰖑"    # Foggy
+          # Fetch new weather data with condition code
+          weather=$(curl -s --connect-timeout 5 'wttr.in/Istanbul?format=%c+%t+%C' 2>/dev/null)
+          
+          if [ -z "$weather" ]; then
+            echo "󰔏 N/A"
           else
-            icon="󰔏"    # Unknown/Default
+            # Extract condition text (lowercase for matching)
+            condition=$(echo "$weather" | awk '{print tolower($NF)}')
+            
+            # Map weather condition to nerd font icons
+            case "$condition" in
+              *sunny*|*clear*)
+                icon="󰖙" ;;  # Sunny
+              *partly*|*cloudy*)
+                icon="󰖕" ;;  # Partly cloudy
+              *overcast*|*cloud*)
+                icon="󰖐" ;;  # Cloudy
+              *rain*|*drizzle*|*shower*)
+                icon="󰖖" ;;  # Rainy
+              *thunder*|*storm*)
+                icon="󰙾" ;;  # Thunderstorm
+              *snow*|*sleet*|*ice*)
+                icon="󰖘" ;;  # Snowy
+              *fog*|*mist*|*haze*)
+                icon="󰖑" ;;  # Foggy
+              *)
+                icon="󰔏" ;;  # Unknown/Default
+            esac
+            
+            # Extract temperature
+            temp=$(echo "$weather" | grep -oP '[+-]?\d+°[CF]' | head -1)
+            output="$icon $temp"
+            
+            # Save to cache
+            echo "$output" > "$cache_file"
+            echo "$output"
           fi
-          # Extract temperature and format output
-          temp=$(echo "$weather" | sed 's/^[^+]*\(+[^°]*°[CF]\)/\1/')
-          echo "$icon $temp"
         fi
       '';
-      interval = 3600;          # Update every 30 minutes
+      interval = 1800;          # Update every 30 minutes
       format = "{}";
       on-click = "xdg-open 'https://wttr.in/Istanbul'";  # Detailed forecast
+      on-click-right = "rm -f /tmp/waybar_weather_cache && pkill -RTMIN+8 waybar";  # Force refresh
       tooltip = true;
-      tooltip-format = "Hava Durumu - Istanbul\nTıkla: Detaylı tahmin";
+      tooltip-format = "Hava Durumu - Istanbul\n󱎫 Sol: Detaylı tahmin\n󰑐 Sağ: Yenile";
     };
 
     # ┌─ Right Section: System Monitoring ───────────────────────────────────────────────────────┐
@@ -250,6 +325,15 @@
       input-filename = "temp1_input";           # Sensor input file
       tooltip = true;
       tooltip-format = "CPU Temperature: {temperatureC}°C\n󰑐 Sağ tık: System Monitor";
+    };
+
+    # 💻 System Status (CPU Frequency)
+    "custom/system-status" = {
+      exec = "waybar-status";
+      return-type = "json";
+      interval = 3;
+      format = "󰾆 {icon} {text}";
+      tooltip = true;
     };
 
     # 🎵 Media Player Control (MPRIS)
@@ -385,15 +469,15 @@
       
       scroll-step = 5;                          # Volume adjustment step
       max-volume = 100;                         # Maximum volume limit
-      on-click = "pactl set-sink-mute @DEFAULT_SINK@ toggle";           # Toggle mute
-      on-click-middle = "pactl set-sink-volume @DEFAULT_SINK@ 50%";     # Set to 50%
+      on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";          # Toggle mute
+      on-click-middle = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 50%";    # Set to 50%
       on-click-right = "pavucontrol";                                   # Audio control panel
-      on-scroll-down = "pactl set-sink-volume @DEFAULT_SINK@ -1%";      # Volume down
-      on-scroll-up = "pactl set-sink-volume @DEFAULT_SINK@ +1%";        # Volume up
+      on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 1%-";     # Volume down
+      on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 1%+";       # Volume up
       tooltip = true;
       tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\n󱎫 Sol: Mute Toggle\n󰦝 Orta: Set 50%\n󰑐 Sağ: Audio Control";
     };
-
+    
     # 🎤 Audio Input (Microphone)
     "pulseaudio#source" = {
       format = "{format_source}";
@@ -401,11 +485,11 @@
       format-source-muted = "<span foreground='${red}'>󰍭</span>";  # Muted microphone
       max-volume = 40;                          # Reasonable microphone limit
       scroll-step = 5;                          # Volume adjustment step
-      on-click = "pactl set-source-mute @DEFAULT_SOURCE@ toggle";       # Toggle mute
-      on-click-middle = "pactl set-source-volume @DEFAULT_SOURCE@ 40%"; # Set to 40%
+      on-click = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";        # Toggle mute
+      on-click-middle = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 40%";  # Set to 40%
       on-click-right = "pavucontrol";                                   # Audio control panel
-      on-scroll-down = "pactl set-source-volume @DEFAULT_SOURCE@ -1%";  # Volume down
-      on-scroll-up = "pactl set-source-volume @DEFAULT_SOURCE@ +1%";    # Volume up
+      on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 1%-";   # Volume down
+      on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 1%+";     # Volume up
       tooltip = true;
       tooltip-format = "Microphone: {volume}%\nDevice: {source_desc}\n\n󱎫 Sol: Mute Toggle\n󰦝 Orta: Set 40%\n󰑐 Sağ: Audio Control";
     };

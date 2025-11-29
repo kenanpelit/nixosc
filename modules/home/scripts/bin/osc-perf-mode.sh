@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# ThinkPad Performance Control (intel_pstate=active + EPP aware, RAPL windows)
-# - Balanced: enable cpu-power-limit.timer (module manages EPP/RAPL)
-# - Performance/Powersave: disable timer (manual control stays in place)
-# - Meteor Lake perf PL2 = 60W (short boosts), writes RAPL time windows.
+# ThinkPad Performance Control (intel_pstate passive mode + governor control)
+# - Optimized for passive mode operation
+# - Fixed RAPL power reading bug
+# - Enhanced status reporting
 
 set -euo pipefail
 
@@ -29,11 +29,11 @@ detect_cpu() {
 		echo "meteorlake"
 	elif echo "$model" | grep -qiE '8650U|8550U|8350U|8250U|Kaby *Lake'; then
 		echo "kabylaker"
-	else echo "kabylaker"; fi
+	else echo "generic"; fi
 }
 
 get_power_source() {
-	for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/AC/online /sys/class/power_supply/AC0/online; do
+	for PS in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
 		[[ -f "$PS" ]] && {
 			cat "$PS"
 			return
@@ -44,54 +44,73 @@ get_power_source() {
 
 pstate_mode() {
 	# Returns: active|passive|unknown
-	local m="unknown"
-	if grep -qw active /sys/devices/system/cpu/cpufreq/policy0/scaling_driver 2>/dev/null; then
-		m="active"
-	elif [[ -f /sys/devices/system/cpu/intel_pstate/status ]]; then
-		m="$(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo unknown)"
+	if [[ -f /sys/devices/system/cpu/intel_pstate/status ]]; then
+		cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown"
+	else
+		echo "unknown"
 	fi
-	echo "$m"
 }
 
 rapl_base="/sys/class/powercap/intel-rapl:0"
 rapl_ok() { [[ -d "$rapl_base" ]]; }
+
+# FIXED: Proper RAPL power reading with error handling
 read_pl() {
 	local n="$1"
-	cat "$rapl_base/constraint_${n}_power_limit_uw" 2>/dev/null || echo 0
+	local file="$rapl_base/constraint_${n}_power_limit_uw"
+	if [[ -r "$file" ]]; then
+		local value
+		value=$(cat "$file" 2>/dev/null || echo "0")
+		# Convert µW to W and ensure it's a valid number
+		if [[ "$value" =~ ^[0-9]+$ ]] && [[ "$value" -gt 0 ]]; then
+			echo "$((value / 1000000))"
+		else
+			echo "0"
+		fi
+	else
+		echo "0"
+	fi
 }
+
 write_pl() {
 	local n="$1" watts="$2"
-	echo $((watts * 1000000)) >"$rapl_base/constraint_${n}_power_limit_uw" 2>/dev/null || true
+	local file="$rapl_base/constraint_${n}_power_limit_uw"
+	if [[ -w "$file" ]]; then
+		echo $((watts * 1000000)) >"$file" 2>/dev/null && return 0
+	fi
+	return 1
 }
+
 write_tw() { # time window (µs)
 	local n="$1" us="$2"
-	echo "$us" >"$rapl_base/constraint_${n}_time_window_us" 2>/dev/null || true
+	local file="$rapl_base/constraint_${n}_time_window_us"
+	[[ -w "$file" ]] && echo "$us" >"$file" 2>/dev/null || true
 }
 
 set_governor_all() {
 	local gov="$1"
 	for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-		[[ -f "$g" ]] && echo "$gov" >"$g" 2>/dev/null || true
+		[[ -w "$g" ]] && echo "$gov" >"$g" 2>/dev/null || true
 	done
 }
 
 set_epp_all() {
 	local epp="$1"
 	for p in /sys/devices/system/cpu/cpufreq/policy*; do
-		[[ -f "$p/energy_performance_preference" ]] && echo "$epp" >"$p/energy_performance_preference" 2>/dev/null || true
+		[[ -w "$p/energy_performance_preference" ]] && echo "$epp" >"$p/energy_performance_preference" 2>/dev/null || true
 	done
 }
 
 set_min_all() {
 	local min="$1"
 	for p in /sys/devices/system/cpu/cpufreq/policy*; do
-		[[ -n "$min" && -f "$p/scaling_min_freq" ]] && echo "$min" >"$p/scaling_min_freq" 2>/dev/null || true
+		[[ -n "$min" && -w "$p/scaling_min_freq" ]] && echo "$min" >"$p/scaling_min_freq" 2>/dev/null || true
 	done
 }
 
 set_max_to_cpuinfo() {
 	for p in /sys/devices/system/cpu/cpufreq/policy*; do
-		if [[ -f "$p/cpuinfo_max_freq" && -f "$p/scaling_max_freq" ]]; then
+		if [[ -f "$p/cpuinfo_max_freq" && -w "$p/scaling_max_freq" ]]; then
 			cat "$p/cpuinfo_max_freq" >"$p/scaling_max_freq" 2>/dev/null || true
 		fi
 	done
@@ -99,27 +118,17 @@ set_max_to_cpuinfo() {
 
 set_turbo() {
 	local onoff="$1" # 1 = disable turbo, 0 = enable turbo
-	[[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]] && echo "$onoff" >/sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+	[[ -w /sys/devices/system/cpu/intel_pstate/no_turbo ]] && echo "$onoff" >/sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
 }
-
-timer_enable() { systemctl enable --now cpu-power-limit.timer 2>/dev/null || true; }
-timer_disable() { systemctl disable --now cpu-power-limit.timer 2>/dev/null || true; }
-service_reapply() { systemctl restart cpu-power-limit.service 2>/dev/null || true; }
 
 timer_status() {
-	local active="inactive" last=""
-	systemctl is-enabled cpu-power-limit.timer >/dev/null 2>&1 && active="enabled" || active="disabled"
-	last="$(systemctl show -p LastTriggerUSec --value cpu-power-limit.timer 2>/dev/null || true)"
-	[[ -z "$last" || "$last" = "0" ]] && last="never"
-	echo "$active|$last"
-}
-
-warn_if_not_active() {
-	local mode
-	mode="$(pstate_mode)"
-	if [[ "$mode" != "active" ]]; then
-		echo -e "${YELLOW}Note:${NC} intel_pstate mode seems to be '${mode}'. Meteor Lake generally prefers ${GREEN}active${NC} for HWP/EPP."
+	local active="disabled" last="never"
+	if systemctl is-enabled cpu-power-limit.timer >/dev/null 2>&1; then
+		active="enabled"
+		last="$(systemctl show -p LastTriggerUSec --value cpu-power-limit.timer 2>/dev/null || echo "never")"
+		[[ "$last" = "0" ]] && last="never"
 	fi
+	echo "$active|$last"
 }
 
 # ── Status ────────────────────────────────────────────────────────────────────
@@ -158,103 +167,129 @@ status() {
 		echo -e "mem_sleep: ${YELLOW}${mems}${NC}"
 	fi
 
-	# Frequencies (first 8 cores)
+	# Frequencies (current scaling_cur_freq)
 	echo -e "\nCPU Frequencies:"
-	if grep -q "cpu MHz" /proc/cpuinfo 2>/dev/null; then
-		grep "cpu MHz" /proc/cpuinfo | head -8 | awk '{printf "  Core %d: %s MHz\n", NR-1, $4}'
-	else
-		echo "  Frequency info not available"
-	fi
+	local i=0
+	for f in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq; do
+		[[ -f "$f" ]] || continue
+		local mhz
+		mhz=$(($(cat "$f") / 1000))
+		printf "  Core %2d: %4d MHz\n" "$i" "$mhz"
+		i=$((i + 1))
+		[[ $i -eq 8 ]] && break
+	done
 
-	# RAPL
+	# FIXED: RAPL power reading with proper error handling
 	if rapl_ok; then
 		pl1="$(read_pl 0)"
 		pl2="$(read_pl 1)"
 		echo -e "\nPower Limits:"
-		echo "  PL1: $((pl1 / 1000000))W"
-		echo "  PL2: $((pl2 / 1000000))W"
+		if [[ "$pl1" != "0" && "$pl2" != "0" ]]; then
+			echo "  PL1: ${pl1}W"
+			echo "  PL2: ${pl2}W"
+		else
+			echo "  ${RED}RAPL reading failed${NC}"
+		fi
 	else
 		echo -e "\nPower Limits: ${RED}RAPL not available${NC}"
 	fi
 
-	# Temp
-	temp="$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -rn | head -1 || echo 0)"
+	# Temp - use first thermal zone with reasonable temperature
+	temp="0"
+	for zone in /sys/class/thermal/thermal_zone*/temp; do
+		[[ -r "$zone" ]] || continue
+		local t
+		t=$(cat "$zone" 2>/dev/null || echo "0")
+		# Only consider reasonable temperatures (above 20°C)
+		if [[ "$t" -gt 20000 ]]; then
+			temp="$t"
+			break
+		fi
+	done
 	echo -e "\nCPU Temp: ${YELLOW}$((temp / 1000))°C${NC}"
 
 	# Battery thresholds
-	if [[ -f /sys/class/power_supply/BAT0/charge_control_start_threshold ]]; then
-		local s e
-		s=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold 2>/dev/null || echo "N/A")
-		e=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null || echo "N/A")
-		echo -e "Battery Thresholds: ${YELLOW}Start: ${s}% | Stop: ${e}%${NC}"
-	fi
+	for bat in /sys/class/power_supply/BAT*; do
+		[[ -d "$bat" ]] || continue
+		if [[ -r "$bat/charge_control_start_threshold" && -r "$bat/charge_control_end_threshold" ]]; then
+			local s e
+			s=$(cat "$bat/charge_control_start_threshold" 2>/dev/null || echo "N/A")
+			e=$(cat "$bat/charge_control_end_threshold" 2>/dev/null || echo "N/A")
+			echo -e "Battery Thresholds: ${YELLOW}Start: ${s}% | Stop: ${e}%${NC}"
+			break
+		fi
+	done
 
 	# Timer info
 	IFS='|' read -r tstat tlast < <(timer_status)
 	echo -e "cpu-power-limit.timer: ${YELLOW}${tstat}${NC} ${DIM}(last: ${tlast})${NC}"
 
-	warn_if_not_active
+	# P-state mode note
+	local mode
+	mode="$(pstate_mode)"
+	if [[ "$mode" == "passive" ]]; then
+		echo -e "${DIM}Note: intel_pstate running in 'passive' mode. Governor controls frequencies.${NC}"
+	fi
 }
 
 # ── Profiles ──────────────────────────────────────────────────────────────────
 apply_profile_balanced() {
-	echo -e "${YELLOW}Applying BALANCED (module-managed)${NC}"
-	timer_enable
-	service_reapply
+	echo -e "${YELLOW}Applying BALANCED mode${NC}"
+	set_governor_all "schedutil"
+	set_epp_all "balance_performance"
+	set_min_all ""
+	set_max_to_cpuinfo
+	set_turbo 0
+	echo -e "${GREEN}Balanced mode applied${NC}"
 }
 
 apply_profile_performance() {
-	echo -e "${GREEN}Applying PERFORMANCE (manual)${NC}"
-	timer_disable
-
-	local cpu
-	cpu="$(detect_cpu)"
-	# Governor + EPP
-	set_governor_all performance
-	set_epp_all performance
-	set_min_all 1600000
+	echo -e "${GREEN}Applying PERFORMANCE mode${NC}"
+	set_governor_all "performance"
+	set_epp_all "performance"
+	set_min_all "1400000"
 	set_max_to_cpuinfo
 	set_turbo 0
 
-	# RAPL + time windows
+	# Set RAPL limits if available
 	if rapl_ok; then
-		case "$cpu" in
-		meteorlake)
-			write_pl 0 42
-			write_pl 1 60
-			;; # PL2 60W for extra headroom
-		kabylaker)
-			write_pl 0 25
-			write_pl 1 35
-			;;
-		*)
-			write_pl 0 25
-			write_pl 1 35
-			;;
-		esac
-		write_tw 0 28000000 # ~28s sustained window
-		write_tw 1 10000    # 10ms turbo window
-		echo "RAPL applied (PL1/PL2 + time windows)"
-	fi
-}
-
-apply_profile_powersave() {
-	echo -e "${BLUE}Applying POWERSAVE (manual)${NC}"
-	timer_disable
-
-	local cpu
-	cpu="$(detect_cpu)"
-	set_governor_all powersave
-	set_epp_all power
-	set_min_all 800000
-	set_max_to_cpuinfo
-	set_turbo 1
-
-	if rapl_ok; then
+		local cpu
+		cpu="$(detect_cpu)"
 		case "$cpu" in
 		meteorlake)
 			write_pl 0 28
-			write_pl 1 42
+			write_pl 1 55
+			;;
+		kabylaker)
+			write_pl 0 25
+			write_pl 1 35
+			;;
+		*)
+			write_pl 0 25
+			write_pl 1 35
+			;;
+		esac
+		echo "RAPL limits applied"
+	fi
+	echo -e "${GREEN}Performance mode applied${NC}"
+}
+
+apply_profile_powersave() {
+	echo -e "${BLUE}Applying POWERSAVE mode${NC}"
+	set_governor_all "powersave"
+	set_epp_all "balance_power"
+	set_min_all "800000"
+	set_max_to_cpuinfo
+	set_turbo 0
+
+	# Conservative RAPL limits for battery
+	if rapl_ok; then
+		local cpu
+		cpu="$(detect_cpu)"
+		case "$cpu" in
+		meteorlake)
+			write_pl 0 20
+			write_pl 1 35
 			;;
 		kabylaker)
 			write_pl 0 15
@@ -265,15 +300,14 @@ apply_profile_powersave() {
 			write_pl 1 25
 			;;
 		esac
-		write_tw 0 28000000
-		write_tw 1 10000
-		echo "RAPL applied (battery-friendly limits + time windows)"
+		echo "RAPL limits applied"
 	fi
+	echo -e "${GREEN}Powersave mode applied${NC}"
 }
 
 apply_custom() {
 	echo -e "${YELLOW}Custom Settings${NC}"
-	read -rp "Governor (performance/powersave/schedutil[if avail], default=performance): " g
+	read -rp "Governor (performance/powersave, default=performance): " g
 	g="${g:-performance}"
 	set_governor_all "$g"
 
@@ -290,39 +324,20 @@ apply_custom() {
 		read -rp "PL2 watts (empty=skip): " pl2
 		[[ -n "${pl1:-}" ]] && write_pl 0 "$pl1"
 		[[ -n "${pl2:-}" ]] && write_pl 1 "$pl2"
-		read -rp "Set PL1 time window µs (empty=skip): " tw1
-		read -rp "Set PL2 time window µs (empty=skip): " tw2
-		[[ -n "${tw1:-}" ]] && write_tw 0 "$tw1"
-		[[ -n "${tw2:-}" ]] && write_tw 1 "$tw2"
 	fi
 
-	read -rp "Set scaling_min_freq (kHz, empty=skip): " mn
-	[[ -n "${mn:-}" ]] && set_min_all "$mn"
-
-	echo "Disable auto timer to keep your custom values? (y/N)"
-	read -r ans
-	[[ "${ans,,}" == "y" ]] && timer_disable || timer_enable
-
 	echo -e "${GREEN}Custom settings applied${NC}"
-}
-
-reset_defaults() {
-	echo -e "${YELLOW}Resetting to module defaults (timer ON + service re-apply)…${NC}"
-	timer_enable
-	service_reapply
-	echo -e "${GREEN}Done${NC}"
 }
 
 # ── UI ────────────────────────────────────────────────────────────────────────
 menu() {
 	echo -e "\n${BLUE}=== ThinkPad Performance Control ===${NC}"
 	echo "1) Show current status"
-	echo "2) PERFORMANCE mode (manual, timer OFF, PL2=60W on Meteor Lake)"
-	echo "3) BALANCED mode (module-managed, timer ON)"
-	echo "4) POWERSAVE mode (manual, timer OFF)"
+	echo "2) PERFORMANCE mode"
+	echo "3) BALANCED mode"
+	echo "4) POWERSAVE mode"
 	echo "5) CUSTOM settings"
-	echo "6) RESET to module defaults"
-	echo "7) Exit"
+	echo "6) Exit"
 	echo -n "Select option: "
 }
 
@@ -336,34 +351,24 @@ main() {
 			2)
 				need_root
 				apply_profile_performance
-				status
 				;;
 			3)
 				need_root
 				apply_profile_balanced
-				status
 				;;
 			4)
 				need_root
 				apply_profile_powersave
-				status
 				;;
 			5)
 				need_root
 				apply_custom
-				status
 				;;
-			6)
-				need_root
-				reset_defaults
-				status
-				;;
-			7) exit 0 ;;
+			6) exit 0 ;;
 			*) echo -e "${RED}Invalid option${NC}" ;;
 			esac
 			echo -e "\nPress Enter to continue…"
 			read -r
-			clear
 		done
 	else
 		case "$1" in
@@ -371,27 +376,18 @@ main() {
 		performance)
 			need_root
 			apply_profile_performance
-			status
 			;;
 		balanced)
 			need_root
 			apply_profile_balanced
-			status
 			;;
 		powersave)
 			need_root
 			apply_profile_powersave
-			status
 			;;
 		custom)
 			need_root
 			apply_custom
-			status
-			;;
-		reset)
-			need_root
-			reset_defaults
-			status
 			;;
 		--help | -h)
 			cat <<EOF
@@ -399,11 +395,10 @@ Usage: $0 [command]
 
 Commands:
   status        Show current status
-  performance   Manual performance (timer OFF, EPP=performance, PL2=60W on Meteor Lake)
-  balanced      Module-managed defaults (timer ON)
-  powersave     Manual battery saver (timer OFF, EPP=power)
-  custom        Interactive custom settings (incl. RAPL time windows)
-  reset         Re-enable timer and re-apply module defaults
+  performance   Performance mode (governor=performance, EPP=performance)
+  balanced      Balanced mode (governor=schedutil, EPP=balance_performance)  
+  powersave     Power save mode (governor=powersave, EPP=balance_power)
+  custom        Interactive custom settings
 EOF
 			;;
 		*)

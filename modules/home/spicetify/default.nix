@@ -6,7 +6,7 @@
 { pkgs, lib, inputs, ... }:
 let
   # Get Spicetify packages for current system
-  spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.system};
+  spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.stdenv.hostPlatform.system};
 in
 {
  

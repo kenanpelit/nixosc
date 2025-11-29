@@ -2,37 +2,65 @@
 
 #===============================================================================
 #
-#   Version: 1.2.0
-#   Date: 2025-05-26
-#   Author: Kenan Pelit (Improved)
+#   Version: 1.3.0
+#   Date: 2025-11-02
+#   Author: Kenan Pelit (Enhanced for Wayland/TTY)
 #   Description: Universal VM Manager
 #                Manages QEMU/KVM based virtual machines (Ubuntu/NixOS/etc.)
 #
-#   Features:
-#   - Easy VM creation and management
-#   - Automated ISO downloads with integrity checks
-#   - Multiple display backends (GTK, SPICE, Headless, VNC)
-#   - Configurable resources (CPU, Memory, Disk)
-#   - SSH port forwarding with connection testing
-#   - Both BIOS and UEFI boot support
-#   - 9P filesystem sharing
-#   - Enhanced input device handling
-#   - VM status monitoring and management
-#   - Improved error handling and logging
-#   - Auto SSH service setup for Ubuntu/Debian
-#
-#   License: MIT
+#   Enhancements in 1.3.0:
+#   - Better Wayland/Sway integration
+#   - D-Bus timeout handling
+#   - Accessibility bridge control
+#   - Font configuration initialization
+#   - TTY-specific optimizations
 #
 #===============================================================================
 
-set -euo pipefail # Strict error handling
+set -euo pipefail
+
+#set -x
+
+# ============================================================================
+# Environment Setup for Wayland/TTY
+# ============================================================================
+setup_wayland_environment() {
+	# Disable accessibility bridge to prevent AT-SPI errors
+	export NO_AT_BRIDGE=1
+	export GTK_A11Y=none
+
+	# D-Bus timeout configuration (30 seconds instead of default 25)
+	export DBUS_SESSION_BUS_TIMEOUT=30000
+
+	# Wayland display configuration
+	if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+		export QT_QPA_PLATFORM=wayland
+		export GDK_BACKEND=wayland
+		export SDL_VIDEODRIVER=wayland
+		export CLUTTER_BACKEND=wayland
+	fi
+
+	# Initialize fontconfig to prevent warnings
+	if command -v fc-cache >/dev/null 2>&1; then
+		fc-cache -f >/dev/null 2>&1 || true
+	fi
+
+	# Suppress GVFS warnings
+	export GVFS_DISABLE_FUSE=1
+
+	# XDG Portal configuration
+	export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
+}
+
+# Call environment setup at the start
+setup_wayland_environment
 
 # Colors for output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+readonly NC='\033[0m'
 
 # Logging functions
 log_info() { echo -e "${BLUE}[INFO]${NC} $*"; }
@@ -46,13 +74,13 @@ declare -A CONFIG=(
 	[ovmf_code]="/usr/share/edk2-ovmf/x64/OVMF.4m.fd"
 	[ovmf_vars_template]="/usr/share/edk2-ovmf/x64/OVMF_VARS.4m.fd"
 	[vm_name]="ubuntu"
-	[memory]="8G"
-	[cpus]="2"
+	[memory]="16G"
+	[cpus]="8"
 	[disk_size]="128G"
 	[ssh_port]="2255"
 	[vnc_port]="5900"
 	[iso_url]="https://mirror.rabisu.com/ubuntu/ubuntu-releases/24.04.2/ubuntu-24.04.2-desktop-amd64.iso"
-	[iso_checksum]="" # SHA256 checksum (optional)
+	[iso_checksum]=""
 	[display_mode]="gtk"
 	[boot_mode]="bios"
 	[shared_dir]="/run/user/$(id -u)"
@@ -133,6 +161,7 @@ Examples:
     $(basename "$0") start --vnc 5901
 
 Note: Use Ctrl+Alt+G to release mouse/keyboard grab in GUI mode
+      Enhanced for Wayland/Sway/TTY environments
 EOF
 }
 
@@ -146,7 +175,7 @@ setup_environment() {
 	[[ -n "${VM_SSH_PORT:-}" ]] && CONFIG[ssh_port]="$VM_SSH_PORT"
 	[[ -n "${VM_BOOT_MODE:-}" ]] && CONFIG[boot_mode]="$VM_BOOT_MODE"
 
-	# Update derived paths after potential base_dir change
+	# Update derived paths
 	CONFIG[iso_file]="${CONFIG[base_dir]}/$(basename "${CONFIG[iso_url]}")"
 	CONFIG[vars_file]="${CONFIG[base_dir]}/OVMF_VARS.fd"
 	CONFIG[disk_file]="${CONFIG[base_dir]}/disk.qcow2"
@@ -200,7 +229,7 @@ verify_iso() {
 }
 
 setup_vm_files() {
-	# Create disk image if it doesn't exist
+	# Create disk image
 	if [[ ! -f "${CONFIG[disk_file]}" ]]; then
 		log_info "Creating new disk image (${CONFIG[disk_size]})..."
 		if [[ "${CONFIG[boot_mode]}" == "bios" ]]; then
@@ -211,7 +240,7 @@ setup_vm_files() {
 		log_success "Disk image created"
 	fi
 
-	# Setup UEFI vars file
+	# Setup UEFI vars
 	if [[ "${CONFIG[boot_mode]}" == "uefi" && ! -f "${CONFIG[vars_file]}" ]]; then
 		if [[ ! -f "${CONFIG[ovmf_vars_template]}" ]]; then
 			log_error "OVMF template not found: ${CONFIG[ovmf_vars_template]}"
@@ -223,7 +252,7 @@ setup_vm_files() {
 		log_success "UEFI vars file created"
 	fi
 
-	# Download ISO if needed
+	# Download ISO
 	if [[ ! -f "${CONFIG[iso_file]}" ]]; then
 		log_info "Downloading ISO from ${CONFIG[iso_url]}..."
 		if ! wget --progress=bar:force:noscroll "${CONFIG[iso_url]}" -O "${CONFIG[iso_file]}"; then
@@ -234,7 +263,6 @@ setup_vm_files() {
 		log_success "ISO downloaded"
 	fi
 
-	# Verify ISO if checksum provided
 	verify_iso "${CONFIG[iso_file]}"
 }
 
@@ -254,21 +282,21 @@ build_qemu_command() {
 		cmd+=" -machine type=pc,accel=kvm"
 	fi
 
-	# UEFI boot configuration
+	# UEFI boot
 	if [[ "${CONFIG[boot_mode]}" == "uefi" ]]; then
 		cmd+=" -drive file=\"${CONFIG[ovmf_code]}\",if=pflash,format=raw,readonly=on"
 		cmd+=" -drive file=\"${CONFIG[vars_file]}\",if=pflash,format=raw"
 	fi
 
-	# Drive configuration
+	# Storage
 	cmd+=" -drive file=\"${CONFIG[disk_file]}\",if=virtio,cache=writeback"
 	cmd+=" -cdrom \"${CONFIG[iso_file]}\""
 
-	# Network configuration with SSH forwarding
+	# Network with SSH
 	cmd+=" -netdev user,id=net0,hostfwd=tcp::${CONFIG[ssh_port]}-:22"
 	cmd+=" -device virtio-net-pci,netdev=net0"
 
-	# Display configuration
+	# Display
 	case "${CONFIG[display_mode]}" in
 	gtk)
 		cmd+=" -device virtio-vga-gl"
@@ -290,7 +318,7 @@ build_qemu_command() {
 		;;
 	esac
 
-	# Input devices (only for graphical modes)
+	# Input devices
 	if [[ "${CONFIG[display_mode]}" != "none" ]]; then
 		cmd+=" -device qemu-xhci,id=xhci"
 		cmd+=" -device usb-tablet"
@@ -302,13 +330,13 @@ build_qemu_command() {
 	cmd+=" -device virtio-balloon-pci"
 	cmd+=" -device virtio-rng-pci"
 
-	# Shared directory (9P)
+	# Shared directory
 	if [[ -d "${CONFIG[shared_dir]}" ]]; then
 		cmd+=" -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare"
 		cmd+=" -fsdev local,security_model=passthrough,id=fsdev0,path=\"${CONFIG[shared_dir]}\""
 	fi
 
-	# Audio support (only for graphical modes)
+	# Audio
 	if [[ "${CONFIG[display_mode]}" != "none" ]]; then
 		cmd+=" -audiodev pa,id=snd0"
 		cmd+=" -device intel-hda"
@@ -321,7 +349,7 @@ build_qemu_command() {
 		cmd+=" -pidfile \"${CONFIG[pid_file]}\""
 	fi
 
-	# Monitor interface
+	# Monitor
 	cmd+=" -monitor unix:${CONFIG[base_dir]}/monitor.sock,server,nowait"
 
 	echo "$cmd"
@@ -349,13 +377,11 @@ vm_stop() {
 		pid=$(cat "${CONFIG[pid_file]}")
 		log_info "Stopping VM (PID: $pid)..."
 
-		# Try graceful shutdown first
+		# Graceful shutdown
 		echo "system_powerdown" | socat - "unix:${CONFIG[base_dir]}/monitor.sock" 2>/dev/null || true
-
-		# Wait a bit for graceful shutdown
 		sleep 5
 
-		# Force kill if still running
+		# Force if needed
 		if kill -0 "$pid" 2>/dev/null; then
 			log_warn "Forcing VM shutdown..."
 			kill -TERM "$pid"
@@ -377,15 +403,12 @@ vm_connect() {
 	fi
 
 	log_info "Connecting to VM via SSH (port ${CONFIG[ssh_port]})..."
-	log_info "Default credentials may be required for first connection"
 
-	# Test if SSH port is responding
 	if timeout 5 bash -c "cat < /dev/null > /dev/tcp/localhost/${CONFIG[ssh_port]}" 2>/dev/null; then
 		ssh -p "${CONFIG[ssh_port]}" -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" localhost
 	else
 		log_error "SSH port ${CONFIG[ssh_port]} is not responding"
 		log_info "VM might still be booting or SSH service is not running"
-		log_info "Try connecting manually: ssh -p ${CONFIG[ssh_port]} username@localhost"
 	fi
 }
 
@@ -396,7 +419,6 @@ vm_console() {
 	fi
 
 	log_info "Connecting to QEMU monitor console..."
-	log_info "Type 'help' for available commands, 'quit' to exit"
 	socat - "unix:${CONFIG[base_dir]}/monitor.sock"
 }
 
@@ -416,7 +438,15 @@ vm_reset() {
 parse_arguments() {
 	local command="start"
 
-	# Parse command first
+	# Handle help first, before any parsing
+	for arg in "$@"; do
+		if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+			show_help
+			exit 0
+		fi
+	done
+
+	# Parse command first (if not starting with -)
 	if [[ $# -gt 0 && ! "$1" =~ ^- ]]; then
 		command="$1"
 		shift
@@ -445,10 +475,10 @@ parse_arguments() {
 			shift 2
 			;;
 		--boot)
-			if [[ "$2" != "bios" && "$2" != "uefi" ]]; then
-				log_error "Boot mode must be either 'bios' or 'uefi'"
+			[[ "$2" != "bios" && "$2" != "uefi" ]] && {
+				log_error "Boot mode must be 'bios' or 'uefi'"
 				exit 1
-			fi
+			}
 			CONFIG[boot_mode]="$2"
 			shift 2
 			;;
@@ -467,10 +497,10 @@ parse_arguments() {
 			;;
 		--vnc)
 			CONFIG[display_mode]="vnc"
-			if [[ -n "${2:-}" && "$2" =~ ^[0-9]+$ ]]; then
+			[[ -n "${2:-}" && "$2" =~ ^[0-9]+$ ]] && {
 				CONFIG[vnc_port]="$2"
 				shift
-			fi
+			}
 			shift
 			;;
 		--base-dir)
@@ -501,13 +531,8 @@ parse_arguments() {
 			set -x
 			shift
 			;;
-		-h | --help)
-			show_help
-			exit 0
-			;;
 		*)
 			log_error "Unknown option: $1"
-			show_help
 			exit 1
 			;;
 		esac
@@ -518,6 +543,14 @@ parse_arguments() {
 
 main() {
 	local command
+
+	# Handle help before environment setup
+	for arg in "$@"; do
+		if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+			show_help
+			exit 0
+		fi
+	done
 
 	setup_environment
 	command=$(parse_arguments "$@")
@@ -546,30 +579,19 @@ main() {
 			fi
 		fi
 		;;
-	stop)
-		vm_stop
-		;;
-	status)
-		vm_status
-		;;
-	connect)
-		vm_connect
-		;;
-	console)
-		vm_console
-		;;
-	reset)
-		vm_reset
-		;;
+	stop) vm_stop ;;
+	status) vm_status ;;
+	connect) vm_connect ;;
+	console) vm_console ;;
+	reset) vm_reset ;;
 	*)
 		log_error "Unknown command: $command"
-		show_help
+		log_info "Use --help to see available commands"
 		exit 1
 		;;
 	esac
 }
 
-# Trap signals for cleanup
 trap 'log_info "Interrupted"; exit 130' INT TERM
 
 main "$@"

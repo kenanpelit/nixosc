@@ -9,50 +9,63 @@
   # =============================================================================
   programs.git = {
     enable = true;
-    userName = "kenanpelit";
-    userEmail = "kenanpelit@gmail.com";
     
     # ---------------------------------------------------------------------------
-    # Basic Settings
+    # User Settings
     # ---------------------------------------------------------------------------
-    extraConfig = {
+    settings = {
+      user = {
+        name = "kenanpelit";
+        email = "kenanpelit@gmail.com";
+      };
+      
+      # -------------------------------------------------------------------------
+      # Basic Settings
+      # -------------------------------------------------------------------------
       init.defaultBranch = "main";
       credential.helper = "store";
       merge.conflictstyle = "diff3";
       diff.colorMoved = "default";
+      
+      # -------------------------------------------------------------------------
+      # Core Settings
+      # -------------------------------------------------------------------------
       core = {
         editor = "vim";
         whitespace = "trailing-space,space-before-tab";
+        pager = "delta";  # Use delta as the default pager
       };
+      
+      # -------------------------------------------------------------------------
+      # Interactive Settings (for delta integration)
+      # -------------------------------------------------------------------------
+      interactive.diffFilter = "delta --color-only";
+      
+      # -------------------------------------------------------------------------
+      # Rebase and Pull Settings
+      # -------------------------------------------------------------------------
       rebase.autoStash = true;
       pull.rebase = true;
       push.autoSetupRemote = true;
     };
-    
-    # ---------------------------------------------------------------------------
-    # Delta Configuration (Git Diff Tool)
-    # ---------------------------------------------------------------------------
-    delta = {
-      enable = true;
-      options = {
-        line-numbers = true;
-        side-by-side = true;
-        diff-so-fancy = true;
-        navigate = true;
-        syntax-theme = "Nord";
-      };
-    };
   };
   
   # =============================================================================
-  # Additional Git Tools
+  # Delta Configuration (Better Git Diff Viewer)
   # =============================================================================
-  home.packages = with pkgs; [ 
-    gh              # GitHub CLI
-    lazygit         # Terminal UI for Git
-    onefetch        # Git repository summary
-    #git-lfs        # Git Large File Storage
-  ];
+  programs.delta = {
+    enable = true;
+    # Note: Git integration is handled manually via core.pager and interactive.diffFilter
+    # to avoid home-manager deprecation warnings
+    
+    options = {
+      line-numbers = true;
+      side-by-side = true;
+      diff-so-fancy = true;
+      navigate = true;
+      syntax-theme = "Nord";
+    };
+  };
   
   # =============================================================================
   # Complete Git Aliases - Oh-My-Zsh Git Plugin + Custom
@@ -423,4 +436,3 @@
     gwhen = "git log --follow --patch --"; # When file was changed
   };
 }
-
