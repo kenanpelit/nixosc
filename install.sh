@@ -64,7 +64,7 @@ fi
 
 # Logging System
 log::init() {
-  local log_file="${1:-$LOG_FILE}"
+  local log_file="${1:-"$LOG_FILE"}"
   mkdir -p "$(dirname "$log_file")"
   exec 3>>"$log_file"
   # Cleanup old logs
@@ -280,172 +280,184 @@ cmd_pre-install() {
 }
 
 cmd_merge() {
-    local auto_yes="${1:-false}"
-    local source_branch="${2:-}"
-    local target_branch="${3:-}"
-    
-    header
-    log STEP "Branch Merge Operation"
+  local auto_yes="${1:-false}"
+  local source_branch="${2:-}"
+  local target_branch="${3:-}"
 
-    if ! git rev-parse --git-dir >/dev/null 2>&1; then
-        log ERROR "Not a git repository."
-        return 1
+  header
+  log STEP "Branch Merge Operation"
+
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    log ERROR "Not a git repository."
+    return 1
+  fi
+
+  local current_branch=$(git branch --show-current)
+  [[ -z "$current_branch" ]] && current_branch="HEAD"
+  log INFO "Current Branch: ${C_BOLD}${C_YELLOW}${current_branch}${C_RESET}"
+
+  # Default Source to Current if not provided
+  if [[ -z "$source_branch" ]]; then
+    source_branch="$current_branch"
+  fi
+
+  # Interactive Selection ONLY if Target is missing
+  if [[ -z "$target_branch" ]]; then
+    # Fetch latest branches
+    git fetch -p >/dev/null 2>&1
+
+    # List local and remote branches, removing duplicates and 'origin/HEAD'
+    mapfile -t branches < <(git branch -a --format='%(refname:short)' | grep -v 'origin/HEAD' | sed 's/^origin\///' | sort -u)
+
+    echo -e "\n${C_CYAN}Available Branches (Local & Remote):${C_RESET}"
+    local i=0
+    for branch in "${branches[@]}"; do
+      echo "  $i) $branch"
+      ((i++))
+    done
+    echo ""
+
+    # Confirm/Change Source
+    read -r -p "Select SOURCE branch [Default: $source_branch]: " src_sel
+    src_sel="${src_sel:-$source_branch}"
+
+    if [[ "$src_sel" =~ ^[0-9]+$ ]] && ((src_sel < ${#branches[@]})); then
+      source_branch="${branches[$src_sel]}"
+    else
+      source_branch="$src_sel"
     fi
 
-    local current_branch=$(git branch --show-current)
-    [[ -z "$current_branch" ]] && current_branch="HEAD"
-    log INFO "Current Branch: ${C_BOLD}${C_YELLOW}${current_branch}${C_RESET}"
+    # Select Target
+    while [[ -z "$target_branch" ]]; do
+      read -r -p "Select TARGET branch (name or number): " tgt_sel
+      if [[ -z "$tgt_sel" ]]; then continue; fi
 
-    # Default Source to Current if not provided
-    if [[ -z "$source_branch" ]]; then
-        source_branch="$current_branch"
+      if [[ "$tgt_sel" =~ ^[0-9]+$ ]] && ((tgt_sel < ${#branches[@]})); then
+        target_branch="${branches[$tgt_sel]}"
+      else
+        target_branch="$tgt_sel"
+      fi
+    done
+  fi
+
+  # Validation (Allow remote branches via rev-parse)
+  if [[ "$source_branch" == "$target_branch" ]]; then
+    log ERROR "Source and Target cannot be the same ($source_branch)."
+    return 1
+  fi
+
+  log INFO "Source: ${C_BOLD}${source_branch}${C_RESET}"
+  log INFO "Target: ${C_BOLD}${target_branch}${C_RESET}"
+
+  if ! git rev-parse --verify "$source_branch" >/dev/null 2>&1; then
+    log ERROR "Source branch '$source_branch' not found."
+    return 1
+  fi
+
+  # Check if target exists locally or remotely
+  if ! git rev-parse --verify "$target_branch" >/dev/null 2>&1; then
+    # Try origin/target if local doesn't exist
+    if git rev-parse --verify "origin/$target_branch" >/dev/null 2>&1; then
+      log WARN "Branch '$target_branch' found on remote, will be created locally."
+    else
+      log ERROR "Target branch '$target_branch' not found locally or on remote."
+      return 1
     fi
+  fi
 
-    # Interactive Selection ONLY if Target is missing
-    if [[ -z "$target_branch" ]]; then
-        mapfile -t branches < <(git branch --format='%(refname:short)')
-        
-        echo -e "\n${C_CYAN}Available Local Branches:${C_RESET}"
-        local i=0
-        for branch in "${branches[@]}"; do
-             echo "  $i) $branch"
-             ((i++))
-        done
-        echo ""
-
-        # Confirm/Change Source
-        read -r -p "Select SOURCE branch [Default: $source_branch]: " src_sel
-        src_sel="${src_sel:-$source_branch}"
-        
-        if [[ "$src_sel" =~ ^[0-9]+$ ]] && ((src_sel < ${#branches[@]})); then
-            source_branch="${branches[$src_sel]}"
-        else
-            source_branch="$src_sel"
-        fi
-
-        # Select Target
-        while [[ -z "$target_branch" ]]; do
-            read -r -p "Select TARGET branch (name or number): " tgt_sel
-            if [[ -z "$tgt_sel" ]]; then continue; fi
-            
-            if [[ "$tgt_sel" =~ ^[0-9]+$ ]] && ((tgt_sel < ${#branches[@]})); then
-                target_branch="${branches[$tgt_sel]}"
-            else
-                target_branch="$tgt_sel"
-            fi
-        done
+  # Clean working directory check
+  if [[ -n "$(git status --porcelain)" ]]; then
+    log WARN "Working directory is dirty."
+    if [[ "$auto_yes" != "true" ]] && ! confirm "Continue anyway?"; then
+      log ERROR "Operation aborted."
+      return 1
     fi
+  fi
 
-    # Validation (Allow remote branches via rev-parse)
-    if [[ "$source_branch" == "$target_branch" ]]; then
-        log ERROR "Source and Target cannot be the same ($source_branch)."
-        return 1
+  # 3. Switch and Merge
+  log INFO "Switching to target branch..."
+  git checkout "$target_branch" || return 1
+
+  log INFO "Merging source branch (no commit)..."
+  if ! git merge --no-commit --no-ff "$source_branch"; then
+    log ERROR "Merge encountered conflicts!"
+    echo -e "${C_RED}Conflicting files:${C_RESET}"
+    git diff --name-only --diff-filter=U | sed 's/^/  - /'
+    echo ""
+    log WARN "The script cannot continue automatically."
+    log INFO "Please resolve conflicts manually, then commit and push."
+    return 1
+  fi
+
+  # 4. Handle Excludes
+  log INFO "Processing excluded files..."
+  for file in "${EXCLUDE_FILES[@]}"; do
+    if [[ -f "$file" ]]; then
+      log DEBUG "Excluding: $file"
+      git reset HEAD "$file" 2>/dev/null || true
+      git checkout HEAD -- "$file" 2>/dev/null || true
     fi
+  done
 
-    log INFO "Source: ${C_BOLD}${source_branch}${C_RESET}"
-    log INFO "Target: ${C_BOLD}${target_branch}${C_RESET}"
+  # 5. Show Changes
+  log STEP "Merge Summary"
+  local staged_files=$(git diff --cached --name-only)
 
-    if ! git rev-parse --verify "$source_branch" >/dev/null 2>&1; then
-        log ERROR "Source branch '$source_branch' not found."
-        return 1
+  if [[ -z "$staged_files" ]]; then
+    log SUCCESS "Branches are already in sync (except excluded files)."
+
+    if [[ "$current_branch" != "$target_branch" ]]; then
+      git checkout "$current_branch"
     fi
+    return 0
+  fi
 
-    # Check if target exists locally or remotely
-    if ! git rev-parse --verify "$target_branch" >/dev/null 2>&1; then
-        # Try origin/target if local doesn't exist
-        if git rev-parse --verify "origin/$target_branch" >/dev/null 2>&1; then
-            log WARN "Branch '$target_branch' found on remote, will be created locally."
-        else
-            log ERROR "Target branch '$target_branch' not found locally or on remote."
-            return 1
-        fi
-    fi
+  echo -e "${C_GREEN}Files to merge:${C_RESET}"
+  echo "$staged_files" | sed 's/^/  + /'
 
-    # Clean working directory check
-    if [[ -n "$(git status --porcelain)" ]]; then
-        log WARN "Working directory is dirty."
-        if [[ "$auto_yes" != "true" ]] && ! confirm "Continue anyway?"; then
-            log ERROR "Operation aborted."
-            return 1
-        fi
-    fi
-    
-    # 3. Switch and Merge
-    log INFO "Switching to target branch..."
-    git checkout "$target_branch" || return 1
-
-    log INFO "Merging source branch (no commit)..."
-    git merge --no-commit --no-ff "$source_branch" || true
-
-    # 4. Handle Excludes
-    log INFO "Processing excluded files..."
-    for file in "${EXCLUDE_FILES[@]}"; do
-        if [[ -f "$file" ]]; then
-            log DEBUG "Excluding: $file"
-            git reset HEAD "$file" 2>/dev/null || true
-            git checkout HEAD -- "$file" 2>/dev/null || true
-        fi
+  # 6. Commit Confirmation
+  if [[ "$auto_yes" == "true" ]] || confirm "Commit these changes?"; then
+    local excluded_list=""
+    for f in "${EXCLUDE_FILES[@]}"; do
+      excluded_list+="- $f\n"
     done
 
-    # 5. Show Changes
-    log STEP "Merge Summary"
-    local staged_files=$(git diff --cached --name-only)
-    
-    if [[ -z "$staged_files" ]]; then
-        log SUCCESS "Branches are already in sync (except excluded files)."
-        
-        if [[ "$current_branch" != "$target_branch" ]]; then
-             git checkout "$current_branch"
-        fi
-        return 0
+    local commit_msg="Merge from $source_branch to $target_branch (excluding specific files)\n\nExcluded files:\n$excluded_list\nAuto-generated by install.sh"
+
+    git commit -m "$commit_msg"
+    log SUCCESS "Merge committed."
+
+    # 7. Push Target
+    if [[ "$auto_yes" == "true" ]] || confirm "Push $target_branch to remote?"; then
+      git push && log SUCCESS "Pushed $target_branch."
     fi
+  else
+    log WARN "Merge aborted. Changes are staged."
+    log INFO "Use 'git reset --hard HEAD' to undo."
+    return 1
+  fi
 
-    echo -e "${C_GREEN}Files to merge:${C_RESET}"
-    echo "$staged_files" | sed 's/^/  + /'
+  # 8. Switch Back
+  if [[ "$current_branch" != "$target_branch" ]]; then
+    if [[ "$auto_yes" == "true" ]] || confirm "Switch back to $current_branch?"; then
 
-    # 6. Commit Confirmation
-    if [[ "$auto_yes" == "true" ]] || confirm "Commit these changes?"; then
-        local excluded_list=""
-        for f in "${EXCLUDE_FILES[@]}"; do
-            excluded_list+="- $f\n"
-        done
-        
-        local commit_msg="Merge from $source_branch to $target_branch (excluding specific files)\n\nExcluded files:\n$excluded_list\nAuto-generated by install.sh"
+      # Stash any excluded file changes to allow checkout
+      if [[ -n "$(git status --porcelain)" ]]; then
+        log INFO "Stashing excluded file changes for checkout..."
+        git stash push -m "Auto-stash by install.sh merge" >/dev/null
+      fi
 
-        git commit -m "$commit_msg"
-        log SUCCESS "Merge committed."
+      git checkout "$current_branch"
 
-        # 7. Push Target
-        if [[ "$auto_yes" == "true" ]] || confirm "Push $target_branch to remote?"; then
-            git push && log SUCCESS "Pushed $target_branch."
-        fi
-    else
-        log WARN "Merge aborted. Changes are staged."
-        log INFO "Use 'git reset --hard HEAD' to undo."
-        return 1
+      # Restore stash if it was ours
+      # Note: We might not want to pop if the user wants to keep those exclusions clean
+      # But usually, we just want to go back.
+
+      if [[ "$auto_yes" == "true" ]] || confirm "Push $current_branch as well?"; then
+        git push && log SUCCESS "Pushed $current_branch."
+      fi
     fi
-
-    # 8. Switch Back
-    if [[ "$current_branch" != "$target_branch" ]]; then
-        if [[ "$auto_yes" == "true" ]] || confirm "Switch back to $current_branch?"; then
-            
-            # Stash any excluded file changes to allow checkout
-            if [[ -n "$(git status --porcelain)" ]]; then
-                log INFO "Stashing excluded file changes for checkout..."
-                git stash push -m "Auto-stash by install.sh merge" >/dev/null
-            fi
-
-            git checkout "$current_branch"
-            
-            # Restore stash if it was ours
-            # Note: We might not want to pop if the user wants to keep those exclusions clean
-            # But usually, we just want to go back.
-            
-            if [[ "$auto_yes" == "true" ]] || confirm "Push $current_branch as well?"; then
-                git push && log SUCCESS "Pushed $current_branch."
-            fi
-        fi
-    fi
+  fi
 }
 
 cmd_install() {
@@ -559,6 +571,12 @@ parse_args() {
         shift
       done
 
+      # Smart defaulting: if only one arg provided, assume it's TARGET, and SOURCE is current
+      if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then
+        tgt="$src"
+        src="" # Will be auto-detected as current in cmd_merge
+      fi
+
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
@@ -669,3 +687,4 @@ main() {
 }
 
 main "$@"
+
