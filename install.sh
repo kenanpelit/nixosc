@@ -5,7 +5,7 @@
 # Location: /home/kenan/.nixosc/install.sh
 # ==============================================================================
 
-#set -euo pipefail
+set -euo pipefail
 
 # ==============================================================================
 # PART 1: CORE LIBRARY & VISUALS
@@ -64,7 +64,7 @@ fi
 
 # Logging System
 log::init() {
-  local log_file="${1:-$LOG_FILE}"
+  local log_file="${1:-"$LOG_FILE"}"
   mkdir -p "$(dirname "$log_file")"
   exec 3>>"$log_file"
   # Cleanup old logs
@@ -317,7 +317,7 @@ cmd_merge() {
     read -r -p "Select SOURCE branch [Default: $source_branch]: " src_sel
     src_sel="${src_sel:-$source_branch}"
 
-    if [[ "$src_sel" =~ ^[0-9]+$ ]] && ((src_sel < ${#branches[@]})); then
+    if [[ "$src_sel" =~ ^[0-9]+$ ]] && ((src_sel < ${#branches[@]} )); then
       source_branch="${branches[$src_sel]}"
     else
       source_branch="$src_sel"
@@ -328,7 +328,7 @@ cmd_merge() {
       read -r -p "Select TARGET branch (name or number): " tgt_sel
       if [[ -z "$tgt_sel" ]]; then continue; fi
 
-      if [[ "$tgt_sel" =~ ^[0-9]+$ ]] && ((tgt_sel < ${#branches[@]})); then
+      if [[ "$tgt_sel" =~ ^[0-9]+$ ]] && ((tgt_sel < ${#branches[@]} )); then
         target_branch="${branches[$tgt_sel]}"
       else
         target_branch="$tgt_sel"
@@ -375,7 +375,15 @@ cmd_merge() {
   git checkout "$target_branch" || return 1
 
   log INFO "Merging source branch (no commit)..."
-  git merge --no-commit --no-ff "$source_branch" || true
+  if ! git merge --no-commit --no-ff "$source_branch"; then
+    log ERROR "Merge encountered conflicts!"
+    echo -e "${C_RED}Conflicting files:${C_RESET}"
+    git diff --name-only --diff-filter=U | sed 's/^/  - /'
+    echo ""
+    log WARN "The script cannot continue automatically."
+    log INFO "Please resolve conflicts manually, then commit and push."
+    return 1
+  fi
 
   # 4. Handle Excludes
   log INFO "Processing excluded files..."
@@ -546,7 +554,7 @@ parse_args() {
       # Parse remaining args for merge
       while [[ $# -gt 0 ]]; do
         case "$1" in
-        -y | --yes) auto_yes="true" ;;
+        -y | --yes) auto_yes="true" ;; 
         -*) ;; # Ignore other flags
         *)
           if [[ -z "$src" ]]; then
@@ -554,35 +562,7 @@ parse_args() {
           elif [[ -z "$tgt" ]]; then
             tgt="$1"
           fi
-          ;;
-        esac
-        shift
-      done
-
-      cmd_merge "$auto_yes" "$src" "$tgt"
-      exit 0
-      ;;
-    --pre-install) cmd_pre-install ;;
-
-    # Flags
-    -u | --update) config::set UPDATE_FLAKE true ;;
-    -m | --merge)
-      shift
-      local auto_yes="false"
-      local src=""
-      local tgt=""
-
-      while [[ $# -gt 0 ]]; do
-        case "$1" in
-        -y | --yes) auto_yes="true" ;;
-        -*) break ;; # Stop at next flag (e.g. -H)
-        *)
-          if [[ -z "$src" ]]; then
-            src="$1"
-          elif [[ -z "$tgt" ]]; then
-            tgt="$1"
-          fi
-          ;;
+          ;; 
         esac
         shift
       done
@@ -596,30 +576,64 @@ parse_args() {
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
-    -H | --host)
+    --pre-install) cmd_pre-install ;; 
+
+    # Flags
+    -u | --update) config::set UPDATE_FLAKE true ;; 
+    -m | --merge) 
+      shift
+      local auto_yes="false"
+      local src=""
+      local tgt=""
+
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+        -y | --yes) auto_yes="true" ;; 
+        -*) break ;; # Stop at next flag (e.g. -H)
+        *)
+          if [[ -z "$src" ]]; then
+            src="$1"
+          elif [[ -z "$tgt" ]]; then
+            tgt="$1"
+          fi
+          ;; 
+        esac
+        shift
+      done
+
+      # Smart defaulting: if only one arg provided, assume it's TARGET, and SOURCE is current
+      if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then
+        tgt="$src"
+        src="" # Will be auto-detected as current in cmd_merge
+      fi
+
+      cmd_merge "$auto_yes" "$src" "$tgt"
+      exit 0
+      ;; 
+    -H | --host) 
       shift
       config::set HOSTNAME "$1"
-      ;;
-    -p | --profile)
+      ;; 
+    -p | --profile) 
       shift
       config::set PROFILE "$1"
-      ;;
-    -a | --auto)
+      ;; 
+    -a | --auto) 
       config::set AUTO_MODE true
       # Handle -a hostname
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
         config::set HOSTNAME "$2"
         shift
       fi
-      ;;
-    -h | --help)
+      ;; 
+    -h | --help) 
       show_help
       exit 0
-      ;;
+      ;; 
     *)
       log ERROR "Unknown option: $1"
       exit 1
-      ;;
+      ;; 
     esac
     shift
   done
@@ -644,17 +658,17 @@ show_menu() {
   1)
     [[ -z "${CONFIG[HOSTNAME]}" ]] && read -r -p "Hostname (hay/vhay): " h && config::set HOSTNAME "$h"
     cmd_install
-    ;;
-  2) flake::update ;;
-  3)
+    ;; 
+  2) flake::update ;; 
+  3) 
     read -r -p "Hostname (hay/vhay): " h
     config::set HOSTNAME "$h"
     cmd_pre-install
-    ;;
-  4) cmd_merge "false" ;;
-  5) cd "$WORK_DIR" && nvim . ;;
-  q) exit 0 ;;
-  *) show_menu ;;
+    ;; 
+  4) cmd_merge "false" ;; 
+  5) cd "$WORK_DIR" && nvim . ;; 
+  q) exit 0 ;; 
+  *) show_menu ;; 
   esac
 }
 
