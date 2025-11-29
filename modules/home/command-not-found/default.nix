@@ -1,4 +1,4 @@
-# modules/home/command-not-found.nix
+# modules/home/command-not-found/default.nix
 # ==============================================================================
 # Command Not Found Handler Configuration
 # ==============================================================================
