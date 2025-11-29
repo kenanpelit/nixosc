@@ -67,9 +67,6 @@ let
   };
 in
 {
-  # Install hyprlock package
-  home.packages = [ pkgs.hyprlock ];
-  
   # Generate hyprlock configuration with dynamic colors
   xdg.configFile."hypr/hyprlock.conf".text = ''
     # ==========================================================================
@@ -287,4 +284,3 @@ in
     }
   '';
 }
-

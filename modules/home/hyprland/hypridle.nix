@@ -13,12 +13,6 @@
 { config, lib, pkgs, ... }:
 
 {
-  # Ensure required tools are present (hypridle itself + brightnessctl used below)
-  home.packages = [
-    pkgs.hypridle
-    pkgs.brightnessctl
-  ];
-
   services.hypridle = {
     enable = true;
 
@@ -93,5 +87,4 @@
     };
   };
 }
-
 

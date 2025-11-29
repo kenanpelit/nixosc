@@ -17,16 +17,6 @@ with lib;
   # =============================================================================
   config = lib.mkIf config.modules.mpv.enable {
     # ---------------------------------------------------------------------------
-    # Required Packages
-    # ---------------------------------------------------------------------------
-    home.packages = with pkgs; [
-      mpv        # Media player
-      gnutar     # Archive handling
-      gzip       # Compression utility
-      coreutils  # Basic utilities
-    ];
-
-    # ---------------------------------------------------------------------------
     # Configuration Extraction Service
     # ---------------------------------------------------------------------------
     systemd.user.services.extract-mpv-config = {

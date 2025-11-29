@@ -2,19 +2,22 @@
 # ==============================================================================
 # Home Manager Configuration
 # ==============================================================================
-# This configuration manages the import of all home-manager modules including:
-# - Desktop environments and window managers
-# - Application configurations and settings
-# - Development tools and utilities
-# - System customization and theming
-# - Terminal environments and shells
-# - Media and entertainment applications
+# Bu modül tüm home-manager modüllerini ve global temaları import eder:
+# - Masaüstü ortamları ve pencere yöneticileri
+# - Uygulama yapılandırmaları ve ayarları
+# - Geliştirme araçları ve yardımcı programlar
+# - Sistem özelleştirme ve temalandırma
+# - Terminal ortamları ve shell yapılandırmaları
+# - Medya ve eğlence uygulamaları
 #
 # Author: Kenan Pelit
 # ==============================================================================
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 {
   imports = [
+    # Global tema modülleri
+    inputs.catppuccin.homeModules.catppuccin
+
     # =============================================================================
     # Desktop Environment & Window Management
     # =============================================================================
