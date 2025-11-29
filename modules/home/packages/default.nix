@@ -311,7 +311,7 @@ in
     cliphist         # Wayland pano geçmişi
     clipman          # Pano yöneticisi
     clipse           # Wayland clipboard yöneticisi
-    copyq            # Gelişmiş pano yöneticisi
+    #copyq            # Gelişmiş pano yöneticisi
 
     # ==============================================================================
     # Hyprland & Wayland Araçları
