@@ -1,7 +1,14 @@
 # modules/home/walker/default.nix
-#
-# Home Manager module for Walker - A fast application launcher for Wayland
-#
+# ==============================================================================
+# Walker Launcher & Elephant Backend Configuration
+# ==============================================================================
+# Purpose:
+#   - Configure Walker (Wayland application launcher) and its Elephant backend.
+#   - Provide options for theming, behaviour and provider management.
+# Notes:
+#   - Packages come from the zen/walker flake inputs (see flake.nix).
+#   - Application‑level shortcuts and integration live in other home modules.
+# ==============================================================================
 # Walker is a keyboard-driven application launcher with fuzzy search capabilities,
 # designed for modern Wayland compositors. It works together with Elephant backend
 # to provide quick access to applications, files, custom menus, and more.

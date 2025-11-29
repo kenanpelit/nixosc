@@ -1,4 +1,14 @@
 # modules/home/webcord/default.nix
+# ==============================================================================
+# WebCord (Discord Client) Configuration - Catppuccin Theming
+# ==============================================================================
+# Purpose:
+#   - Install and theme WebCord (Vencord) using Catppuccin colors.
+#   - Generate a .theme.css file based on the global catppuccin flavor/accent.
+# Notes:
+#   - The actual WebCord package is installed via modules/home/packages.
+#   - Discord/Vencord options are still toggled inside the app itself.
+# ==============================================================================
 { config, pkgs, lib, ... }:
 let
   # Catppuccin flavor'ları için renk setleri

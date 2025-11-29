@@ -14,7 +14,7 @@
 #
 # Security Layers:
 #   1. Network Firewall     - nftables packet filtering, DoS mitigation
-#   2. PAM/Polkit          - Authentication and authorization
+#   2. Polkit              - Authorization (desktop auth agent)
 #   3. AppArmor            - Mandatory access control (MAC)
 #   4. Audit Logging       - System activity monitoring
 #   5. SSH Hardening       - Secure remote access
@@ -30,7 +30,7 @@
 #
 # Module Boundaries:
 #   ✓ Firewall configuration          (THIS MODULE)
-#   ✓ PAM/Polkit authentication       (THIS MODULE)
+#   ✓ Polkit authentication agent     (THIS MODULE)
 #   ✓ AppArmor MAC                    (THIS MODULE)
 #   ✓ Audit logging                   (THIS MODULE)
 #   ✓ SSH client config               (THIS MODULE)

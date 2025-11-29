@@ -1,4 +1,14 @@
 # modules/home/waybar/default.nix
+# ==============================================================================
+# Waybar Status Bar Configuration (Hyprland / Wayland)
+# ==============================================================================
+# Purpose:
+#   - Configure Waybar modules, styling and Catppuccin-based theming.
+#   - Provide a shared status bar for Hyprland and other Wayland sessions.
+# Notes:
+#   - Uses Catppuccin colors via the global catppuccin module.
+#   - Behaviour (which modules are shown) is tuned for the hay/vhay hosts.
+# ==============================================================================
 { config, pkgs, lib, ... }:
 let
   # Catppuccin modülünden otomatik renk alımı
@@ -179,4 +189,3 @@ in
     };
   };
 }
-

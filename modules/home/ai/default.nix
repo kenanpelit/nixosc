@@ -1,4 +1,14 @@
 # modules/home/ai/default.nix
+# ==============================================================================
+# AI Tools & CLI Integration
+# ==============================================================================
+# Purpose:
+#   - Provide a unified way to enable / disable AI CLIs (Claude, Gemini, Codex).
+#   - Optionally run a local Ollama service with model presets.
+# Notes:
+#   - Core GUI / editor integration lives in other modules (e.g. nvim, browsers).
+#   - This module focuses on terminal workflows and background services.
+# ==============================================================================
 { config, lib, pkgs, ... }:
 with lib;
 let

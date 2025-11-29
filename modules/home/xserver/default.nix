@@ -1,4 +1,14 @@
 # modules/home/xserver/default.nix
+# ==============================================================================
+# X11 / Xwayland Session Environment (User-level)
+# ==============================================================================
+# Purpose:
+#   - Provide user-session environment tweaks for X11 / Xwayland clients.
+#   - Mainly used to set XDG variables and compatibility flags from home-manager.
+# Notes:
+#   - System-level X server and Xwayland config live in core/display.
+#   - This module focuses on per-user session variables.
+# ==============================================================================
 { config, lib, pkgs, ... }:
 {
   systemd.user.sessionVariables = {
