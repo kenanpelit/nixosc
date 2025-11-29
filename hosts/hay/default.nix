@@ -12,7 +12,6 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/core
-    inputs.home-manager.nixosModules.home-manager
   ];
 
   # ============================================================================
@@ -175,7 +174,8 @@
     htop lm_sensors powertop tldr ripgrep fd
 
     # Networking helpers
-    iw wireguard-tools networkmanagerapplet
+    networkmanager
+    wireguard-tools
   ];
 
   # ============================================================================
@@ -204,6 +204,7 @@
       terminal = "screen-256color";
     };
 
+    # NetworkManager için GUI applet
     nm-applet.enable = true;
   };
 

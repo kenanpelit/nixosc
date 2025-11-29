@@ -2,10 +2,10 @@
 # ==============================================================================
 # Obsidian Note-Taking App Configuration
 # ==============================================================================
-{ inputs, pkgs, host, ... }:
+# Not: Paket kurulumu artık modules/home/packages/default.nix tarafında
+# yönetiliyor. Bu modül ileride Obsidian ayarlarını (theme, plugin vs.)
+# taşımak için boş bir iskelet olarak bırakıldı.
+# ==============================================================================
+{ ... }:
 {
- # =============================================================================
- # Package Installation
- # =============================================================================
- home.packages = (with pkgs; [ obsidian ]);
 }

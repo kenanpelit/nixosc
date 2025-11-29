@@ -185,9 +185,5 @@
     use_system_icons=false
   '';
 
-  # CopyQ paketini sisteme ekleyelim
-  home.packages = with pkgs; [
-    copyq
-  ];
+  # Paket kurulumu merkezi paket modülünden geliyor (modules/home/packages)
 }
-

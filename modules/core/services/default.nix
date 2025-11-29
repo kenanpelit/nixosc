@@ -26,7 +26,7 @@
 #
 # ==============================================================================
 
-{ lib, pkgs, inputs, username, system, ... }:
+{ lib, pkgs, inputs, username, system, hostRole ? "unknown", isPhysicalHost ? false, isVirtualHost ? false, ... }:
 
 {
   # ============================================================================
@@ -168,7 +168,7 @@
     # --------------------------------------------------------------------------
     # Gaming Stack: Steam + Gamescope
     # --------------------------------------------------------------------------
-    steam = {
+    steam = lib.mkIf isPhysicalHost {
       enable = true;
 
       # Steam Remote Play portları (UDP 27031–27036, TCP 27036–27037)
@@ -182,7 +182,7 @@
       extraCompatPackages = [ pkgs.proton-ge-bin ];
     };
 
-    gamescope = {
+    gamescope = lib.mkIf isPhysicalHost {
       enable    = true;
       capSysNice = true;  # RT scheduling için gerekli capability
 
@@ -233,7 +233,7 @@
   # ============================================================================
   # Virtualisation (Layer 4: Containers & VMs)
   # ============================================================================
-  virtualisation = {
+  virtualisation = lib.mkIf isPhysicalHost {
     # --------------------------------------------------------------------------
     # Podman (rootless Docker alternatifi)
     # --------------------------------------------------------------------------

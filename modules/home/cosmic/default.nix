@@ -38,17 +38,6 @@
 
 {
   # ============================================================================
-  # Package Installation
-  # ============================================================================
-  # Minimal approach - system already provides cosmic-session and core apps
-  # Only install supplementary tools here
-  
-  home.packages = with pkgs; [
-    cosmic-edit          # Text editor with git integration
-    cosmic-screenshot    # Screenshot tool (works with cosmic portal)
-  ];
-
-  # ============================================================================
   # Session Environment Variables
   # ============================================================================
   # Using lib.mkDefault for low priority - allows other desktop modules to override
@@ -570,5 +559,4 @@
     NIXOS_OZONE_WL = "1";
   };
 }
-
 
