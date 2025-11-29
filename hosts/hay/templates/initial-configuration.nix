@@ -1,101 +1,97 @@
 # hosts/hay/templates/initial-configuration.nix
 # ==============================================================================
-# !!! IMPORTANT - PLEASE READ BEFORE PROCEEDING !!!
-# Before building your system, make sure to adjust the following settings
-# according to your preferences and location:
-#
-# 1. Time Zone: Currently set to "Europe/Istanbul"
-# 2. System Language: Currently set to "en_US.UTF-8"
-# 3. Regional Settings: Currently configured for Turkish (tr_TR.UTF-8)
-# 4. Keyboard Layout: Currently set to Turkish-F layout
-#
-# You can find your timezone from: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-# For keyboard layouts: run 'localectl list-x11-keymap-layouts' for available options
+# PRE-INSTALL CONFIGURATION (BOOTSTRAP)
 # ==============================================================================
+# This file is used to bootstrap the system from the NixOS installation media.
+# It provides a minimal, working configuration to boot the system and enable
+# Flakes, allowing the full configuration (modules/core) to be applied later.
+#
+# USAGE:
+# 1. Copy this file to /etc/nixos/configuration.nix
+# 2. Generate hardware-config: nixos-generate-config
+# 3. Install: nixos-install
+# ==============================================================================
+
 { config, pkgs, ... }:
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
-  
-  # =============================================================================
-  # Bootloader Configuration
-  # =============================================================================
-  boot.loader.systemd-boot.enable = false;
-  boot.loader.grub = {
-    enable = true;
-    device = "nodev";          # Install GRUB without specific device (EFI)
-    useOSProber = true;        # Enable OS prober for multi-boot
-    efiSupport = true;         # Enable EFI support
+  imports = [
+    ./hardware-configuration.nix
+  ];
+
+  # ============================================================================
+  # Boot Loader (GRUB + EFI)
+  # ============================================================================
+  boot.loader = {
+    systemd-boot.enable = false;
+    
+    grub = {
+      enable      = true;
+      device      = "nodev";
+      useOSProber = true;
+      efiSupport  = true;
+    };
+
+    efi = {
+      canTouchEfiVariables = true;
+      efiSysMountPoint     = "/boot";
+    };
   };
-  boot.loader.efi = {
-    canTouchEfiVariables = true;
-    efiSysMountPoint = "/boot";
-  };
-  
-  # Use latest kernel packages
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  
-  # =============================================================================
-  # Networking Configuration
-  # =============================================================================
+
+  # ============================================================================
+  # Networking & Hostname
+  # ============================================================================
   networking = {
-    hostName = "hay";         # Main system hostname
+    hostName              = "hay";
     networkmanager.enable = true;
   };
-  
-  # =============================================================================
-  # Timezone and Localization
-  # =============================================================================
+
+  # ============================================================================
+  # Locale & Time
+  # ============================================================================
   time.timeZone = "Europe/Istanbul";
+  
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
-    LC_ADDRESS = "tr_TR.UTF-8";
+    LC_ADDRESS        = "tr_TR.UTF-8";
     LC_IDENTIFICATION = "tr_TR.UTF-8";
-    LC_MEASUREMENT = "tr_TR.UTF-8";
-    LC_MONETARY = "tr_TR.UTF-8";
-    LC_NAME = "tr_TR.UTF-8";
-    LC_NUMERIC = "tr_TR.UTF-8";
-    LC_PAPER = "tr_TR.UTF-8";
-    LC_TELEPHONE = "tr_TR.UTF-8";
-    LC_TIME = "tr_TR.UTF-8";
+    LC_MEASUREMENT    = "tr_TR.UTF-8";
+    LC_MONETARY       = "tr_TR.UTF-8";
+    LC_NAME           = "tr_TR.UTF-8";
+    LC_NUMERIC        = "tr_TR.UTF-8";
+    LC_PAPER          = "tr_TR.UTF-8";
+    LC_TELEPHONE      = "tr_TR.UTF-8";
+    LC_TIME           = "tr_TR.UTF-8";
   };
 
-  # =============================================================================
-  # Keyboard Configuration
-  # =============================================================================
+  # ============================================================================
+  # Keyboard (TR-F)
+  # ============================================================================
   services.xserver.xkb = {
-    layout = "tr";             # Turkish keyboard layout
-    variant = "f";             # F-keyboard variant
-    options = "ctrl:nocaps";   # Use Caps Lock as Ctrl
+    layout  = "tr";
+    variant = "f";
+    options = "ctrl:nocaps";
   };
-  console.keyMap = "trf";      # Turkish-F console keymap
- 
-  # =============================================================================
-  # User Account Configuration
-  # =============================================================================
+  console.keyMap = "trf";
+
+  # ============================================================================
+  # User Account
+  # ============================================================================
   users.users.kenan = {
     isNormalUser = true;
-    description = "Kenan Pelit";
-    extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [];
+    description  = "Kenan Pelit";
+    extraGroups  = [ "networkmanager" "wheel" ];
+    # Set a password with 'passwd' after booting or use initialHashedPassword here
   };
 
-  # =============================================================================
-  # Package Management Configuration
-  # =============================================================================
-  nixpkgs.config = {
-    allowUnfree = true;
-  };
-
-  # =============================================================================
-  # System Packages
-  # =============================================================================
+  # ============================================================================
+  # Essential System Packages
+  # ============================================================================
+  nixpkgs.config.allowUnfree = true;
+  
   environment.systemPackages = with pkgs; [
     # System tools
     wget        # File downloader
-    vim         # Text editor
+    neovim      # Text editor
     git         # Version control
     htop        # System monitor
     tmux        # Terminal multiplexer
@@ -111,17 +107,18 @@
     openssl     # SSL/TLS toolkit
   ];
 
-  # =============================================================================
-  # Program Configurations
-  # =============================================================================
-  programs.gnupg.agent = {
-    enable = true;
-    enableSSHSupport = true;
-  };
-  
-  # =============================================================================
-  # System Version
-  # =============================================================================
+  # ============================================================================
+  # Flakes Support (CRITICAL FOR BOOTSTRAP)
+  # ============================================================================
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  # ============================================================================
+  # Services
+  # ============================================================================
+  services.openssh.enable = true;
+
+  # ============================================================================
+  # State Version
+  # ============================================================================
   system.stateVersion = "25.11";
 }
-
