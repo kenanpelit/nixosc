@@ -131,13 +131,11 @@ in
  };
 
  # =============================================================================
- # Package Installation and Environment
+ # Environment
  # =============================================================================
- home.packages = with pkgs; [ junction ];
  home.sessionVariables = {
    TERMINAL = "kitty";
    BROWSER = "brave";
    WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
  };
 }
-

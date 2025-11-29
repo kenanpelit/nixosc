@@ -299,14 +299,6 @@ in
     # ==========================================================================
     # 3) PAM / Polkit
     # ==========================================================================
-    security.pam = {
-      services = {
-        # GNOME Keyring - sadece GNOME aktifse
-        login.enableGnomeKeyring = mkIf config.my.display.enableGnome true;
-        gdm.enableGnomeKeyring   = mkIf config.my.display.enableGnome true;
-      };
-    };
-
     # Polkit GNOME authentication agent
     # NOT: Bu agent Hyprland için de çalışıyor, GNOME'da da
     systemd.user.services.polkit-gnome-authentication-agent-1 = {

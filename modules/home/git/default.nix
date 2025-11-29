@@ -68,16 +68,6 @@
   };
   
   # =============================================================================
-  # Additional Git Tools
-  # =============================================================================
-  home.packages = with pkgs; [ 
-    gh              # GitHub CLI
-    lazygit         # Terminal UI for Git
-    onefetch        # Git repository summary
-    #git-lfs        # Git Large File Storage
-  ];
-  
-  # =============================================================================
   # Complete Git Aliases - Oh-My-Zsh Git Plugin + Custom
   # =============================================================================
   programs.zsh.shellAliases = {
@@ -446,4 +436,3 @@
     gwhen = "git log --follow --patch --"; # When file was changed
   };
 }
-

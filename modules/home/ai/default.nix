@@ -65,8 +65,7 @@ in
     home.packages = with pkgs; 
       (optional cfg.claude-cli.enable cfg.claude-cli.package) ++
       (optional cfg.gemini-cli.enable cfg.gemini-cli.package) ++
-      (optional cfg.codex-cli.enable cfg.codex-cli.package) ++
-      (optional cfg.ollama.enable ollama);
+      (optional cfg.codex-cli.enable cfg.codex-cli.package);
     
     # Shell configuration for AI commands
     programs.zsh = mkIf config.programs.zsh.enable {

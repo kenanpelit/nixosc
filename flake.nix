@@ -254,10 +254,33 @@
       lib = nixpkgs.lib;
 
       # ------------------------------------------------------------------------
+      #  HOST METADATA (Roles, flags) - single source of truth
+      # ------------------------------------------------------------------------
+      hostsMeta = {
+        hay = {
+          hostRole       = "physical";
+          isPhysicalHost = true;
+          isVirtualHost  = false;
+        };
+        vhay = {
+          hostRole       = "vm";
+          isPhysicalHost = false;
+          isVirtualHost  = true;
+        };
+      };
+
+      # ------------------------------------------------------------------------
       #  SYSTEM BUILDER FUNCTION
       # ------------------------------------------------------------------------
       
       mkSystem = { system, host, modules }:
+        let
+          hostMeta = hostsMeta.${host} or {
+            hostRole       = "unknown";
+            isPhysicalHost = false;
+            isVirtualHost  = false;
+          };
+        in
         lib.nixosSystem {
           modules = [
             # Platform configuration
@@ -275,19 +298,6 @@
 
             # Home-manager as NixOS module (integrated mode)
             inputs.home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs   = true;
-                useUserPackages = true;
-                extraSpecialArgs = { inherit inputs username host; };
-                users.${username} = {
-                  imports = [
-                    inputs.catppuccin.homeModules.catppuccin
-                    ./modules/home
-                  ];
-                };
-              };
-            }
 
             # Empty system packages (managed elsewhere)
             { environment.systemPackages = []; }
@@ -299,7 +309,10 @@
             }
           ] ++ modules;
 
-          specialArgs = { inherit self inputs username host system; };
+          specialArgs = {
+            inherit self inputs username host system;
+            inherit (hostMeta) hostRole isPhysicalHost isVirtualHost;
+          };
         };
 
       # ------------------------------------------------------------------------
@@ -311,7 +324,6 @@
           pkgs = pkgs;
           extraSpecialArgs = { inherit inputs username host; };
           modules = [
-            inputs.catppuccin.homeModules.catppuccin
             ./modules/home
             {
               home = {

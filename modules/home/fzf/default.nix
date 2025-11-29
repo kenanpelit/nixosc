@@ -195,22 +195,5 @@ in
       FZF_PREVIEW_IMAGE_HANDLER = cfg.previewImageHandler;
     };
 
-    # -------------------------------------------------------------------------
-    # Required tools
-    # -------------------------------------------------------------------------
-    home.packages = with pkgs; [
-      fd                # Fast file finder
-      bat               # Better cat with syntax highlighting
-      eza               # Better ls with tree view
-      chafa             # Image preview in terminal
-      glow              # Markdown preview
-      atool             # Archive listing
-      ffmpegthumbnailer # Video thumbnails
-      poppler-utils     # PDF tools
-      odt2txt           # Office document converter
-      tree              # Directory tree viewer
-      mediainfo         # Media file information
-      exiftool          # Image metadata viewer
-    ];
   };
 }

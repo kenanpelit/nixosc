@@ -30,15 +30,15 @@
 #
 # ==============================================================================
 
-{ pkgs, config, lib, inputs, system, ... }:
+{ pkgs, config, lib, inputs, system, hostRole ? "unknown", isPhysicalHost ? false, isVirtualHost ? false, ... }:
 
 let
   # ============================================================================
   # HOST DETECTION
   # ============================================================================
   hostname          = config.networking.hostName or "";
-  isPhysicalMachine = hostname == "hay";   # ThinkPad E14 Gen 6 (bare metal)
-  isVirtualMachine  = hostname == "vhay";  # QEMU/KVM guest
+  isPhysicalMachine = isPhysicalHost;   # ThinkPad E14 Gen 6 (bare metal)
+  isVirtualMachine  = isVirtualHost;    # QEMU/KVM guest
 
   # ============================================================================
   # GLOBAL POWER FLAGS
@@ -683,4 +683,3 @@ in
   # ============================================================================
   system.stateVersion = "25.11";
 }
-

@@ -80,7 +80,4 @@
     Thumbs.db
   '';
 
-  home.packages = with pkgs; [
-    rsync
-  ];
 }
