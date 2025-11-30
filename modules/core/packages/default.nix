@@ -80,8 +80,7 @@
     # Bootloader, firmware support and basic configuration tooling.
 
     # ---- Bootloader & Theming ----
-    grub2                        # GRUB bootloader (UEFI/BIOS)
-    catppuccin-grub              # Catppuccin GRUB theme
+    # (Managed by boot.loader module)
 
     # ---- System Configuration Stack ----
     home-manager                 # User environment manager (CLI)
