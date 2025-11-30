@@ -6,10 +6,6 @@
 let
   isPhysicalMachine = isPhysicalHost;
   isVirtualMachine  = isVirtualHost;
-
-  # NixOS grub theme path from distro-grub-themes flake
-  grubThemePath =
-    "${inputs.distro-grub-themes.packages.${system}.nixos-grub-theme}";
 in
 {
   boot.loader = {
@@ -19,10 +15,9 @@ in
       efiSupport = isPhysicalMachine;
       useOSProber = true;
       configurationLimit = 10;
-      gfxmodeEfi  = "auto";
-      gfxmodeBios = "auto";
-      splashImage = null;
-      theme = grubThemePath; # path to theme directory (expects theme.txt inside)
+      gfxmodeEfi  = "1920x1200";
+      gfxmodeBios = if isVirtualMachine then "1920x1080" else "1920x1200";
+      theme = inputs.distro-grub-themes.packages.${system}.nixos-grub-theme;
     };
 
     efi = lib.mkIf isPhysicalMachine {
