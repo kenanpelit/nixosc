@@ -21,25 +21,9 @@
 
   # ============================================================================
   # Boot Loader
-  # (Kernel/power side is under modules/core/system; here only boot policy)
+  # (Managed by modules/core/boot)
   # ============================================================================
-  boot.loader = {
-    systemd-boot.enable = lib.mkForce false;
-
-    grub = {
-      enable           = true;
-      device           = "nodev";
-      useOSProber      = true;
-      efiSupport       = true;
-      configurationLimit = 10;
-    };
-
-    efi = {
-      canTouchEfiVariables = true;
-      efiSysMountPoint     = "/boot";
-    };
-  };
-
+  
   # ============================================================================
   # Display Stack (delegated to modules/core/display)
   # ============================================================================

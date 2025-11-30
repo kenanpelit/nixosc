@@ -6,6 +6,7 @@
 
 {
   imports = [
+    ./boot
     ./account
     ./system
     ./hardware
