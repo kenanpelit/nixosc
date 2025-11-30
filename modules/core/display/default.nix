@@ -251,8 +251,8 @@ in
       enable        = true;
       package       = hyprlandPkg;
       # IMPORTANT:
-      #   - Hyprland portal backend (xdg-desktop-portal-hyprland) buradan geliyor.
-      #   - XDG portal extraPortals kısmında tekrar eklemiyoruz ki unit çakışması olmasın.
+      #   - Hyprland portal backend (xdg-desktop-portal-hyprland) comes from here.
+      #   - We don't add it again in xdg.portal extraPortals to avoid unit conflicts.
       portalPackage = hyprPortalPkg;
     };
 
@@ -280,9 +280,9 @@ in
     services.displayManager = {
       # Register custom sessions
       # NOTE:
-      #   - Tüm desktop'lar için custom wrapper session'lar kullanıyoruz
-      #   - Bu wrapper'lar systemd user session'ı düzgün başlatıyor
-      #   - Default binary'ler yerine *_tty scriptlerimizi çağırıyor
+      #   - We use custom wrapper sessions for all desktops
+      #   - These wrappers properly start the systemd user session
+      #   - They call our *_tty scripts instead of default binaries
       sessionPackages =
         lib.optionals cfg.enableHyprland [ hyprlandOptimizedSession ] ++
         lib.optionals cfg.enableGnome [ gnomeSessionWrapper ] ++
@@ -312,22 +312,22 @@ in
     # Desktop environments (GNOME / COSMIC)
     # -------------------------------------------------------------------------
     # NOTE:
-    #   - Bu enable'lar otomatik olarak tüm gerekli paketleri yükler:
+    #   - These enables automatically install all necessary packages:
     #     * gnome.enable → gnome-session, gnome-shell, mutter, gdm session files
     #     * cosmic.enable → cosmic-session, cosmic-comp
-    #   - Manuel paket eklemeye gerek YOK!
+    #   - NO need to add packages manually!
     #
     # CRITICAL FIXES:
-    #   - GNOME: extraGSettingsOverrides ile systemd user session problemlerini çöz
-    #   - Script'lerin session launch'ında systemd.offline ortam değişkeni sorun yaratıyor
+    #   - GNOME: Fix systemd user session issues via extraGSettingsOverrides
+    #   - systemd.offline environment variable causes issues during session launch
     #
     services.desktopManager = {
       gnome = mkIf cfg.enableGnome {
         enable = true;
 
-        # CRITICAL: GNOME session systemd user services'e bağımlı
-        # GDM'den session başlatıldığında systemd user instance çalışmıyorsa
-        # gnome-session çalışmıyor ve TTY'ye geri atıyor
+        # CRITICAL: GNOME session depends on systemd user services
+        # If systemd user instance is not running when session starts from GDM
+        # gnome-session fails and drops back to TTY
         extraGSettingsOverrides = ''
           [org.gnome.desktop.session]
           session-name='gnome'
@@ -367,10 +367,10 @@ in
     # PAM integration for GNOME keyring
     # -------------------------------------------------------------------------
     # NOTE:
-    #   - Bu security modülünde değil, burada olmalı.
-    #   - GNOME enable olduğunda otomatik devreye girer.
-    #   - Login sırasında keyring'i unlock eder.
-    #   - GDM ve login PAM stack'lerine GNOME Keyring entegrasyonu ekler.
+    #   - This should be here, not in the security module.
+    #   - Automatically enabled when GNOME is enabled.
+    #   - Unlocks keyring during login.
+    #   - Adds GNOME Keyring integration to GDM and login PAM stacks.
     #
     security.pam.services = mkIf cfg.enableGnome {
       gdm.enableGnomeKeyring = true;
@@ -395,8 +395,8 @@ in
     services.dbus = {
       enable = true;
       # NOTE:
-      #   - Core xdg-desktop-portal burada.
-      #   - DE/WM backend'leri xdg.portal.extraPortals üzerinden geliyor.
+      #   - Core xdg-desktop-portal is here.
+      #   - DE/WM backends come via xdg.portal.extraPortals.
       packages = [ pkgs.xdg-desktop-portal ];
     };
 
@@ -404,23 +404,23 @@ in
     # XDG Desktop Portals (session-aware routing)
     # -------------------------------------------------------------------------
     # NOTE:
-    #   - Portal backend seçimi session bazlı yapılıyor.
-    #   - Hyprland: programs.hyprland.portalPackage sağlıyor.
-    #   - GNOME: xdg-desktop-portal-gnome kullanıyor.
-    #   - COSMIC: xdg-desktop-portal-cosmic kullanıyor.
-    #   - GTK portal tüm DE'lerde fallback olarak var.
+    #   - Portal backend selection is session-based.
+    #   - Hyprland: Provided by programs.hyprland.portalPackage.
+    #   - GNOME: Uses xdg-desktop-portal-gnome.
+    #   - COSMIC: Uses xdg-desktop-portal-cosmic.
+    #   - GTK portal exists as a fallback in all DEs.
     #
     xdg.portal = {
       enable = true;
       xdgOpenUsePortal = true;
 
-      # Burada sadece backend paketlerini DE/WM bazlı ekliyoruz.
-      # Hyprland portalını programs.hyprland.portalPackage sağlıyor; burada tekrar yok.
+      # We only add backend packages here based on DE/WM.
+      # Hyprland portal is provided by programs.hyprland.portalPackage; not repeated here.
       extraPortals =
         lib.concatLists [
           # Hyprland:
           #   - Backend: hyprland portal (programs.hyprland.portalPackage)
-          #   - Burada sadece GTK fallback dosya seçici vs. için.
+          #   - Here only for GTK fallback file picker etc.
           (lib.optionals cfg.enableHyprland [
             pkgs.xdg-desktop-portal-gtk
           ])
@@ -438,8 +438,8 @@ in
           ])
         ];
 
-      # Backend seçim haritası:
-      #   - Session name → backend tercih sırası
+      # Backend selection map:
+      #   - Session name → backend preference order
       config = {
         # Fallback for unknown sessions
         common.default = [ "gtk" ];
@@ -461,8 +461,8 @@ in
     # Hyprland session target (for user services)
     # -------------------------------------------------------------------------
     # NOTE:
-    #   - User services'lerin Hyprland başladıktan sonra çalışması için.
-    #   - Home-Manager services'leri buna bağlanabilir.
+    #   - For user services to run after Hyprland starts.
+    #   - Home-Manager services can bind to this.
     #
     systemd.user.targets.hyprland-session = mkIf cfg.enableHyprland {
       description = "Hyprland compositor session";

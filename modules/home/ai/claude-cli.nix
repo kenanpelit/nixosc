@@ -22,29 +22,29 @@ stdenv.mkDerivation rec {
 #!/usr/bin/env bash
 set -e
 
-# HOME değişkenini ayarla
+# Set HOME variable
 if [ -z "$HOME" ]; then
     export HOME=/tmp
 fi
 
-# NPM ayarları - local kullanıcı dizinleri ve uyarıları kapat
+# NPM settings - user local dirs and suppress warnings
 export NPM_CONFIG_CACHE="$HOME/.cache/npm"
 export NPM_CONFIG_PREFIX="$HOME/.local"
 export NPM_CONFIG_UPDATE_NOTIFIER=false
 export NO_UPDATE_NOTIFIER=1
 
-# Dizinleri oluştur
+# Create directories
 mkdir -p "$HOME/.cache/npm" "$HOME/.local/bin" "$HOME/.local/lib"
 
-# Dinamik olarak nodejs path'ini bul
+# Find nodejs path dynamically
 find_node() {
-    # Önce PATH'teki node'u dene
+    # First try node in PATH
     if command -v node >/dev/null 2>&1; then
         NODE_BIN=$(dirname $(command -v node))
         return 0
     fi
     
-    # Nix profile'larda node ara
+    # Search node in Nix profiles
     for profile_path in /etc/profiles/per-user/*/bin /nix/var/nix/profiles/*/bin ~/.nix-profile/bin; do
         if [ -f "$profile_path/node" ]; then
             NODE_BIN="$profile_path"
@@ -52,9 +52,9 @@ find_node() {
         fi
     done
     
-    # Nix store'da en güncel nodejs'i bul
+    # Find latest nodejs in Nix store
     local latest_node=$(find /nix/store -maxdepth 1 -name "*nodejs*" -type d 2>/dev/null | \
-                       grep -E "nodejs-[0-9]+\.[0-9]+" | \
+                       grep -E "nodejs-[0-9]+\\.[0-9]+" | \
                        sort -V | tail -1)
     
     if [ -n "$latest_node" ] && [ -f "$latest_node/bin/node" ]; then
@@ -62,17 +62,17 @@ find_node() {
         return 0
     fi
     
-    # Son çare: nix shell ile çalıştır
-    echo "Node.js bulunamadı, nix shell kullanılıyor..." >&2
+    # Last resort: run via nix shell
+    echo "Node.js not found, using nix shell..." >&2
     exec nix shell nixpkgs#nodejs_24 -c "$0" "$@"
 }
 
-# Node'u bul ve PATH'e ekle
+# Find Node and add to PATH
 find_node
 export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
 
-# npx ile en güncel sürümü çalıştır (versiyon belirtmeden)
-# npm uyarılarını stderr'e yazdırmasın diye 2>/dev/null ekleyebiliriz
+# Run latest version via npx (without specifying version)
+# Add 2>/dev/null to suppress npm warnings if desired
 exec "$NODE_BIN/npx" --yes @anthropic-ai/claude-code "$@"
 EOF
     

@@ -1,36 +1,36 @@
 # modules/home/gnupg/default.nix
 # ==============================================================================
-# GnuPG Yapılandırması
+# GnuPG Configuration
 # ==============================================================================
-# Bu modül GnuPG ve ilgili kriptografik ayarları yönetir:
-# - GPG agent yapılandırması
-# - SSH agent entegrasyonu
-# - Pinentry ayarları
-# - Önbellek zaman aşımları
+# This module manages GnuPG and related cryptographic settings:
+# - GPG agent configuration
+# - SSH agent integration
+# - Pinentry settings
+# - Cache timeouts
 #
-# Temel bileşenler:
-# - GnuPG program ayarları
-# - GPG agent servisi
-# - SSH desteği yapılandırması
+# Basic components:
+# - GnuPG program settings
+# - GPG agent service
+# - SSH support configuration
 #
-# Yazar: Kenan Pelit
+# Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, ... }:
 {
   programs.gpg = {
     enable = true;
     settings = {
-      # Temel Ayarlar
+      # Basic Settings
       use-agent = true;
       keyid-format = "LONG";
       with-fingerprint = true;
       
-      # Algoritma Tercihleri
+      # Algorithm Preferences
       personal-cipher-preferences = "AES256 AES192 AES";
       personal-digest-preferences = "SHA512 SHA384 SHA256";
       personal-compress-preferences = "ZLIB BZIP2 ZIP";
       
-      # Güvenlik Ayarları
+      # Security Settings
       require-cross-certification = true;
       no-emit-version = true;
       no-comments = true;
@@ -45,9 +45,9 @@
   services.gpg-agent = {
     enable = true;
     enableSshSupport = true;
-    defaultCacheTtl = 864000;        # Normal GPG için 10 gün
+    defaultCacheTtl = 864000;        # 10 days for normal GPG
     maxCacheTtl = 864000;
-    defaultCacheTtlSsh = 864000;     # SSH için de 10 gün
+    defaultCacheTtlSsh = 864000;     # 10 days for SSH as well
     maxCacheTtlSsh = 864000;
     pinentry = {
       package = pkgs.pinentry-gnome3;
@@ -61,4 +61,3 @@
     enableScDaemon = false;
   };
 }
-

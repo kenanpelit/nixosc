@@ -21,26 +21,26 @@ stdenv.mkDerivation rec {
     cat > $out/bin/ai-gemini << 'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-# HOME değişkenini ayarla
+# Set HOME variable
 if [ -z "$HOME" ]; then
     export HOME=/tmp
 fi
-# NPM ayarları - local kullanıcı dizinleri ve uyarıları kapat
+# NPM settings - user local dirs and suppress warnings
 export NPM_CONFIG_CACHE="$HOME/.cache/npm"
 export NPM_CONFIG_PREFIX="$HOME/.local"
 export NPM_CONFIG_UPDATE_NOTIFIER=false
 export NO_UPDATE_NOTIFIER=1
-# Dizinleri oluştur
+# Create directories
 mkdir -p "$HOME/.cache/npm" "$HOME/.local/bin" "$HOME/.local/lib"
-# Dinamik olarak nodejs path'ini bul
+# Find nodejs path dynamically
 find_node() {
-    # Önce PATH'teki node'u dene
+    # First try node in PATH
     if command -v node >/dev/null 2>&1; then
         NODE_BIN=$(dirname $(command -v node))
         return 0
     fi
     
-    # Nix profile'larda node ara
+    # Search node in Nix profiles
     for profile_path in /etc/profiles/per-user/*/bin /nix/var/nix/profiles/*/bin ~/.nix-profile/bin; do
         if [ -f "$profile_path/node" ]; then
             NODE_BIN="$profile_path"
@@ -48,9 +48,9 @@ find_node() {
         fi
     done
     
-    # Nix store'da en güncel nodejs'i bul
-    local latest_node=$(find /nix/store -maxdepth 1 -name "*nodejs*" -type d 2>/dev/null | \
-                       grep -E "nodejs-[0-9]+\\.[0-9]+" | \
+    # Find latest nodejs in Nix store
+    local latest_node=$(find /nix/store -maxdepth 1 -name "*nodejs*" -type d 2>/dev/null |
+                       grep -E "nodejs-[0-9]+\\.[0-9]+" |
                        sort -V | tail -1)
     
     if [ -n "$latest_node" ] && [ -f "$latest_node/bin/node" ]; then
@@ -58,14 +58,14 @@ find_node() {
         return 0
     fi
     
-    # Son çare: nix shell ile çalıştır
-    echo "Node.js bulunamadı, nix shell kullanılıyor..." >&2
+    # Last resort: run via nix shell
+    echo "Node.js not found, using nix shell..." >&2
     exec nix shell nixpkgs#nodejs_24 -c "$0" "$@"
 }
-# Node'u bul ve PATH'e ekle
+# Find Node and add to PATH
 find_node
 export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
-# npx ile @google/gemini-cli çalıştır (resmi Google Gemini CLI)
+# Run @google/gemini-cli via npx (official Google Gemini CLI)
 exec "$NODE_BIN/npx" --yes @google/gemini-cli "$@"
 EOF
     
@@ -75,15 +75,15 @@ EOF
     # (code) can discover the CLI via `gemini --version`.
     ln -s $out/bin/ai-gemini $out/bin/gemini
     
-    # Gemini nightly wrapper - ~/.npm-global/bin/gemini'yi çağırır
+    # Gemini nightly wrapper - calls ~/.npm-global/bin/gemini
     cat > $out/bin/ai-gemini-nightly << 'EOF'
 #!/usr/bin/env bash
 NPM_PREFIX=$(npm config get prefix)
 if [ -f "$NPM_PREFIX/bin/gemini" ]; then
     exec "$NPM_PREFIX/bin/gemini" "$@"
 else
-    echo "❌ Gemini nightly versiyonu kurulu değil!"
-    echo "💡 Kurmak için: ai-gemini-update"
+    echo "❌ Gemini nightly version is not installed!"
+    echo "💡 To install: ai-gemini-update"
     exit 1
 fi
 EOF
@@ -95,45 +95,45 @@ EOF
 #!/usr/bin/env bash
 set -e
 
-echo "🔍 Gemini CLI için en son nightly sürüm kontrol ediliyor..."
+echo "🔍 Checking for latest Gemini CLI nightly version..."
 
-# npm registry'den tüm versiyonları al ve en son nightly'yi bul
-LATEST_NIGHTLY=$(npm view @google/gemini-cli versions --json 2>/dev/null | \
-    grep -o '"[^"]*nightly[^"]*"' | \
-    sed 's/"//g' | \
-    sort -V | \
+# Get all versions from npm registry and find latest nightly
+LATEST_NIGHTLY=$(npm view @google/gemini-cli versions --json 2>/dev/null |
+    grep -o '"[^\"]*nightly[^\"]*"' |
+    sed 's/"//g' |
+    sort -V |
     tail -n1)
 
 if [ -z "$LATEST_NIGHTLY" ]; then
-    echo "❌ Nightly sürüm bilgisi alınamadı!"
+    echo "❌ Could not get nightly version info!"
     exit 1
 fi
 
-echo "📦 En son nightly sürüm: $LATEST_NIGHTLY"
+echo "📦 Latest nightly version: $LATEST_NIGHTLY"
 
-# Kurulu sürümü npm global prefix'ten kontrol et
+# Check installed version from npm global prefix
 NPM_PREFIX=$(npm config get prefix)
 if [ -f "$NPM_PREFIX/bin/gemini" ]; then
-    CURRENT_VERSION=$($NPM_PREFIX/bin/gemini --version 2>/dev/null || echo "bilinmiyor")
-    echo "💾 Kurulu sürüm: $CURRENT_VERSION"
+    CURRENT_VERSION=$($NPM_PREFIX/bin/gemini --version 2>/dev/null || echo "unknown")
+    echo "💾 Installed version: $CURRENT_VERSION"
     
-    # Versiyon karşılaştırması
+    # Version comparison
     if [ "$CURRENT_VERSION" = "$LATEST_NIGHTLY" ]; then
-        echo "✅ Zaten en son nightly sürüm kurulu!"
+        echo "✅ Latest nightly version is already installed!"
         exit 0
     fi
 else
-    echo "💾 Gemini CLI henüz kurulu değil"
+    echo "💾 Gemini CLI is not installed yet"
 fi
 
 echo ""
-echo "⬇️  En son nightly sürüm kuruluyor..."
+echo "⬇️  Installing latest nightly version..."
 
 npm install -g "@google/gemini-cli@''${LATEST_NIGHTLY}"
 
 echo ""
-echo "✨ Güncelleme tamamlandı!"
-echo "🎉 Yeni sürüm:"
+echo "✨ Update complete!"
+echo "🎉 New version:"
 $NPM_PREFIX/bin/gemini --version
 EOF
     

@@ -300,7 +300,7 @@ in
     # 3) PAM / Polkit
     # ==========================================================================
     # Polkit GNOME authentication agent
-    # NOT: Bu agent Hyprland için de çalışıyor, GNOME'da da
+    # NOTE: This agent works for Hyprland and GNOME
     systemd.user.services.polkit-gnome-authentication-agent-1 = {
       description = "PolicyKit GNOME Authentication Agent";
       wantedBy    = [ "graphical-session.target" ];
@@ -327,30 +327,30 @@ in
     # ==========================================================================
     # 5) Audit System — Activity Monitoring
     # ==========================================================================
-    # Not: Burada audit'i *kapalı* tutuyorsun, ama rule set hazır.
-    #      Daha önemlisi: auditd.service override sadece enable=true iken
-    #      devreye giriyor; böylece "Service has no ExecStart" hatası ortadan kalkıyor.
+    # Note: Keeping audit *disabled* here, but the rule set is ready.
+    #       More importantly: auditd.service override only activates when
+    #       enable=true; this eliminates the "Service has no ExecStart" error.
 
     security.audit = {
       enable = lib.mkDefault false;
 
       rules = [
-        # /etc/passwd / /etc/shadow değişiklikleri
+        # /etc/passwd / /etc/shadow modifications
         "-w /etc/passwd -p wa -k passwd_changes"
         "-w /etc/shadow -p wa -k shadow_changes"
 
-        # sudoers değişiklikleri
+        # sudoers modifications
         "-w /etc/sudoers -p wa -k sudoers_changes"
 
-        # dosya silme syscalls
+        # file deletion syscalls
         "-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F success=1 -k delete"
       ];
     };
 
-    # auditd unit override — sadece audit etkinse
+    # auditd unit override — only if audit enabled
     systemd.services.auditd = mkIf config.security.audit.enable {
       serviceConfig = {
-        # Küçük bir gecikme, log rotasyonu vs. için hook noktası
+        # Hook point for small delay, log rotation etc.
         ExecStartPost = "${pkgs.coreutils}/bin/sleep 1";
       };
     };
@@ -364,9 +364,9 @@ in
         Type            = "oneshot";
         ExecStart       = "${hblockUpdateScript}";
         PrivateTmp      = true;
-        NoNewPrivileges = false;   # chown için root ayrıcalığı gerekli
+        NoNewPrivileges = false;   # root required for chown
         ProtectSystem   = "strict";
-        ProtectHome     = false;   # /home erişimi gerekli
+        ProtectHome     = false;   # /home access required
         ReadWritePaths  = [ "/home" ];
       };
     };
@@ -408,7 +408,7 @@ in
     # 8) Environment — Packages, Aliases, Variables
     # ==========================================================================
     environment = {
-      # Yeni kullanıcılar için .bashrc içine hBlock entegrasyonu
+      # hBlock integration into .bashrc for new users
       etc."skel/.bashrc".text = mkAfter ''
         # hBlock DNS blocking via HOSTALIASES
         export HOSTALIASES="$HOME/.config/hblock/hosts"
@@ -489,17 +489,17 @@ in
 }
 
 # ==============================================================================
-# Notlar (Özet)
+# Notes (Summary)
 # ==============================================================================
 #
-# • auditd hatası:
-#   Önceki sürümde security.audit.enable = false iken auditd.serviceConfig
-#   tanımladığın için systemd "no ExecStart" diye bağırıyordu.
-#   Şimdi auditd override sadece config.security.audit.enable = true iken
-#   devreye giriyor → journalctl’daki hata kaybolmalı.
+# • auditd error:
+#   In the previous version, when security.audit.enable = false, systemd complained
+#   "no ExecStart" because auditd.serviceConfig was defined.
+#   Now, auditd override only activates when config.security.audit.enable = true
+#   -> the error in journalctl should disappear.
 #
-# • nftables / fail2ban / hBlock / ASSH / AppArmor davranışları korunuyor.
-# • customServicePort için (1401) ileride hangi servis olduğunu açıkça
-#   dokümante et; şu an sadece “Custom service” diye duruyor.
+# • nftables / fail2ban / hBlock / ASSH / AppArmor behaviors are preserved.
+# • For customServicePort (1401), document explicitly which service it is in future;
+#   currently it just says "Custom service".
 #
 # ==============================================================================
