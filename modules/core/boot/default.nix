@@ -9,7 +9,7 @@ let
 
   # NixOS grub theme path from distro-grub-themes flake
   grubThemePath =
-    "${inputs.distro-grub-themes.packages.${system}.nixos-grub-theme}/share/grub/themes/nixos";
+    "${inputs.distro-grub-themes.packages.${system}.nixos-grub-theme}";
 in
 {
   boot.loader = {
