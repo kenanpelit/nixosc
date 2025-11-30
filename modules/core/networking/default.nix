@@ -1,5 +1,13 @@
 # modules/core/networking/default.nix
-# NetworkManager and basic network defaults.
+# ==============================================================================
+# Networking Configuration
+# ==============================================================================
+# Configures network management and SSH client settings.
+# - NetworkManager enablement
+# - SSH client hardening and ASSH integration
+# - Shell aliases for SSH management
+#
+# ==============================================================================
 
 { lib, pkgs, ... }:
 

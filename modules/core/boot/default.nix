@@ -1,5 +1,13 @@
 # modules/core/boot/default.nix
-# Boot loader and theme.
+# ==============================================================================
+# Bootloader Configuration
+# ==============================================================================
+# Configures the GRUB bootloader and EFI settings.
+# - GRUB enablement and theme
+# - EFI support for physical machines
+# - OS prober enablement
+#
+# ==============================================================================
 
 { lib, inputs, system, isPhysicalHost ? false, isVirtualHost ? false, ... }:
 

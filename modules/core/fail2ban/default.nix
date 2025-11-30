@@ -1,5 +1,12 @@
-# modules/core/security/fail2ban/default.nix
-# fail2ban basic enablement.
+# modules/core/fail2ban/default.nix
+# ==============================================================================
+# Fail2ban Intrusion Prevention
+# ==============================================================================
+# Configures fail2ban service and shell aliases for monitoring.
+# - Enable fail2ban service
+# - Shell aliases for status and ban management
+#
+# ==============================================================================
 
 { ... }:
 {

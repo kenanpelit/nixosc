@@ -1,5 +1,13 @@
 # modules/core/bluetooth/default.nix
-# Bluetooth stack and services.
+# ==============================================================================
+# Bluetooth Configuration
+# ==============================================================================
+# Configures Bluetooth stack and services for physical hosts.
+# - Enables hardware support
+# - Configures settings (Experimental features)
+# - Enables Blueman service
+#
+# ==============================================================================
 
 { pkgs, lib, isPhysicalHost ? false, ... }:
 

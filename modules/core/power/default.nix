@@ -1,5 +1,17 @@
 # modules/core/power/default.nix
-# Power management hooks (RAPL, power source).
+# ==============================================================================
+# Power Management Services
+# ==============================================================================
+# Advanced power management tuning for physical hosts.
+# - ACPI Platform Profile (Performance/Low-Power)
+# - CPU Energy Performance Preference (EPP)
+# - Intel P-State Frequency Guard
+# - RAPL Power Limits (PL1/PL2) based on CPU model
+# - Thermal Guard (Dynamic PL2 throttling based on temp)
+# - Battery Charge Thresholds (75-80%)
+# - Auto-tuning on AC plug/unplug events
+#
+# ==============================================================================
 
 { pkgs, lib, config, hostRole ? "unknown", isPhysicalHost ? false, isVirtualHost ? false, ... }:
 

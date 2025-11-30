@@ -1,5 +1,15 @@
 # modules/core/nix/default.nix
-# Nix daemon, cache and helper defaults
+# ==============================================================================
+# Nix System Configuration
+# ==============================================================================
+# This module configures the Nix package manager, including:
+# - Binary cache settings (substituters and public keys)
+# - Garbage collection and store optimization
+# - Experimental features (flakes)
+# - Nix Helper (nh) integration
+#
+# ==============================================================================
+
 { config , lib , pkgs , inputs , username , cacheSubstituters ? [
     "https://cache.nixos.org"
     "https://nix-community.cachix.org"

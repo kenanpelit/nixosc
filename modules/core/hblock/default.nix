@@ -1,5 +1,13 @@
-# modules/core/security/hblock/default.nix
-# hBlock per-user HOSTALIASES updater.
+# modules/core/hblock/default.nix
+# ==============================================================================
+# hBlock DNS Ad-Blocking
+# ==============================================================================
+# Configures system-wide ad-blocking updates for user HOSTALIASES.
+# - Updates hBlock list periodically
+# - Configures per-user HOSTALIASES file
+# - Provides shell aliases for manual updates
+#
+# ==============================================================================
 
 { pkgs, lib, ... }:
 

@@ -1,5 +1,12 @@
-# modules/core/security/apparmor/default.nix
-# AppArmor enablement.
+# modules/core/apparmor/default.nix
+# ==============================================================================
+# AppArmor Configuration
+# ==============================================================================
+# Enables AppArmor Mandatory Access Control (MAC) and provides shell aliases.
+# - Enable AppArmor
+# - Shell aliases for status and enforcement management
+#
+# ==============================================================================
 
 { ... }:
 {

@@ -1,5 +1,12 @@
-# modules/core/networking/vpn/default.nix
-# Mullvad VPN service and autoconnect.
+# modules/core/vpn/default.nix
+# ==============================================================================
+# VPN Services Configuration
+# ==============================================================================
+# Configures VPN services (Mullvad) for physical hosts.
+# - Enables Mullvad VPN service
+# - Sets up autoconnect service on boot
+#
+# ==============================================================================
 
 { config, lib, pkgs, isPhysicalHost ? false, ... }:
 
