@@ -22,7 +22,7 @@ stdenv.mkDerivation rec {
 #!/usr/bin/env bash
 set -euo pipefail
 # Set HOME variable
-if [ -z "$HOME" ]; then
+if [ -z "${HOME:-}" ]; then
     export HOME=/tmp
 fi
 # NPM settings - user local dirs and suppress warnings
@@ -32,41 +32,12 @@ export NPM_CONFIG_UPDATE_NOTIFIER=false
 export NO_UPDATE_NOTIFIER=1
 # Create directories
 mkdir -p "$HOME/.cache/npm" "$HOME/.local/bin" "$HOME/.local/lib"
-# Find nodejs path dynamically
-find_node() {
-    # First try node in PATH
-    if command -v node >/dev/null 2>&1; then
-        NODE_BIN=$(dirname $(command -v node))
-        return 0
-    fi
-    
-    # Search node in Nix profiles
-    for profile_path in /etc/profiles/per-user/*/bin /nix/var/nix/profiles/*/bin ~/.nix-profile/bin; do
-        if [ -f "$profile_path/node" ]; then
-            NODE_BIN="$profile_path"
-            return 0
-        fi
-    done
-    
-    # Find latest nodejs in Nix store
-    local latest_node=$(find /nix/store -maxdepth 1 -name "*nodejs*" -type d 2>/dev/null |
-                       grep -E "nodejs-[0-9]+\\.[0-9]+" |
-                       sort -V | tail -1)
-    
-    if [ -n "$latest_node" ] && [ -f "$latest_node/bin/node" ]; then
-        NODE_BIN="$latest_node/bin"
-        return 0
-    fi
-    
-    # Last resort: run via nix shell
-    echo "Node.js not found, using nix shell..." >&2
-    exec nix shell nixpkgs#nodejs_24 -c "$0" "$@"
-}
-# Find Node and add to PATH
-find_node
-export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
+
+# Add nodejs to PATH
+export PATH="${nodejs}/bin:$HOME/.local/bin:$PATH"
+
 # Run @google/gemini-cli via npx (official Google Gemini CLI)
-exec "$NODE_BIN/npx" --yes @google/gemini-cli "$@"
+exec "${nodejs}/bin/npx" --yes @google/gemini-cli "$@"
 EOF
     
     chmod +x $out/bin/ai-gemini
@@ -75,10 +46,12 @@ EOF
     # (code) can discover the CLI via `gemini --version`.
     ln -s $out/bin/ai-gemini $out/bin/gemini
     
-    # Gemini nightly wrapper - calls ~/.npm-global/bin/gemini
+    # Gemini nightly wrapper
     cat > $out/bin/ai-gemini-nightly << 'EOF'
 #!/usr/bin/env bash
-NPM_PREFIX=$(npm config get prefix)
+export PATH="${nodejs}/bin:$HOME/.local/bin:$PATH"
+NPM_PREFIX="$HOME/.local"
+
 if [ -f "$NPM_PREFIX/bin/gemini" ]; then
     exec "$NPM_PREFIX/bin/gemini" "$@"
 else
@@ -90,16 +63,18 @@ EOF
     
     chmod +x $out/bin/ai-gemini-nightly
     
-    # Gemini nightly update script
+# Gemini nightly update script
     cat > $out/bin/ai-gemini-update << 'EOF'
 #!/usr/bin/env bash
 set -e
+export PATH="${nodejs}/bin:$HOME/.local/bin:$PATH"
+export NPM_CONFIG_PREFIX="$HOME/.local"
 
 echo "🔍 Checking for latest Gemini CLI nightly version..."
 
 # Get all versions from npm registry and find latest nightly
 LATEST_NIGHTLY=$(npm view @google/gemini-cli versions --json 2>/dev/null |
-    grep -o '"[^\"]*nightly[^\"]*"' |
+    grep -o '"[^"]*nightly[^"]*"' |
     sed 's/"//g' |
     sort -V |
     tail -n1)
@@ -111,13 +86,13 @@ fi
 
 echo "📦 Latest nightly version: $LATEST_NIGHTLY"
 
-# Check installed version from npm global prefix
-NPM_PREFIX=$(npm config get prefix)
+NPM_PREFIX="$HOME/.local"
+mkdir -p "$NPM_PREFIX/bin"
+
 if [ -f "$NPM_PREFIX/bin/gemini" ]; then
-    CURRENT_VERSION=$($NPM_PREFIX/bin/gemini --version 2>/dev/null || echo "unknown")
+    CURRENT_VERSION=$("$NPM_PREFIX/bin/gemini" --version 2>/dev/null || echo "unknown")
     echo "💾 Installed version: $CURRENT_VERSION"
     
-    # Version comparison
     if [ "$CURRENT_VERSION" = "$LATEST_NIGHTLY" ]; then
         echo "✅ Latest nightly version is already installed!"
         exit 0
@@ -134,7 +109,7 @@ npm install -g "@google/gemini-cli@''${LATEST_NIGHTLY}"
 echo ""
 echo "✨ Update complete!"
 echo "🎉 New version:"
-$NPM_PREFIX/bin/gemini --version
+"$NPM_PREFIX/bin/gemini" --version
 EOF
     
     chmod +x $out/bin/ai-gemini-update

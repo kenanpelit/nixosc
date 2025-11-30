@@ -111,19 +111,11 @@
 #      url = "github:hyprwm/hyprland/c249a9f4b8940d7356b756dc639f9cb18713e088"; # 1121 - Updated commit
     };
     
-    # Hyprland dependencies
-    hyprlang            = { url = "github:hyprwm/hyprlang";                      inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprutils           = { url = "github:hyprwm/hyprutils";                     inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprland-protocols  = { url = "github:hyprwm/hyprland-protocols";            inputs.nixpkgs.follows = "nixpkgs"; };
-    xdph                = { url = "github:hyprwm/xdg-desktop-portal-hyprland";   inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprwayland-scanner = { url = "github:hyprwm/hyprwayland-scanner";           inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprcursor          = { url = "github:hyprwm/hyprcursor";                    inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprgraphics        = { url = "github:hyprwm/hyprgraphics";                  inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprland-qtutils    = { url = "github:hyprwm/hyprland-qtutils";              inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprland-plugins    = { url = "github:hyprwm/hyprland-plugins";              inputs.nixpkgs.follows = "nixpkgs"; };
-    hypr-contrib        = { url = "github:hyprwm/contrib";                       inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprpicker          = { url = "github:hyprwm/hyprpicker";                    inputs.nixpkgs.follows = "nixpkgs"; };
-    hyprmag             = { url = "github:SIMULATAN/hyprmag";                    inputs.nixpkgs.follows = "nixpkgs"; };
+    # Hyprland extras actually used elsewhere
+    hypr-contrib = { 
+      url = "github:hyprwm/contrib"; 
+      inputs.nixpkgs.follows = "nixpkgs"; 
+    };
 
     pyprland = {
       url = "github:hyprland-community/pyprland";
@@ -248,6 +240,24 @@
         ];
       };
 
+      cacheSubstituters = [
+        "https://cache.nixos.org"
+        "https://nix-community.cachix.org"
+        "https://hyprland.cachix.org"
+        "https://nix-gaming.cachix.org"
+        "https://hyprland-community.cachix.org"
+        "https://cosmic.cachix.org"
+      ];
+
+      cachePublicKeys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+        "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
+        "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+        "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+      ];
+
       # Primary package set with overlays and config
       pkgs = import nixpkgs {
         inherit system;
@@ -296,6 +306,7 @@
           modules = [ ./hosts/hay ]; 
           overlays = overlaysCommon;
           nixpkgsConfig = nixpkgsConfigCommon;
+          specialArgs = { inherit cacheSubstituters cachePublicKeys; };
         };
         
         vhay = mylib.mkSystem { 
@@ -304,6 +315,7 @@
           modules = [ ./hosts/vhay ]; 
           overlays = overlaysCommon;
           nixpkgsConfig = nixpkgsConfigCommon;
+          specialArgs = { inherit cacheSubstituters cachePublicKeys; };
         };
       };
 
@@ -357,21 +369,13 @@
           };
         }
       );
-    };
 
-  # ============================================================================
-  #  BINARY CACHE CONFIGURATION
-  # ============================================================================
-  
-  nixConfig = {
-    extra-substituters = [
-      "https://hyprland-community.cachix.org"
-      "https://cosmic.cachix.org"
-    ];
-    
-    extra-trusted-public-keys = [
-      "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
-      "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
-    ];
-  };
+      # ----------------------------------------------------------------------
+      #  BINARY CACHE CONFIGURATION
+      # ----------------------------------------------------------------------
+      nixConfig = {
+        extra-substituters        = cacheSubstituters;
+        extra-trusted-public-keys = cachePublicKeys;
+      };
+    };
 }

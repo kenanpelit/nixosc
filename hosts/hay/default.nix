@@ -148,9 +148,9 @@
     ports  = [ 22 ];
 
     settings = {
-      PasswordAuthentication = true;   # Convenient but weak link here
+      PasswordAuthentication = false;
       AllowUsers             = [ username ];
-      PermitRootLogin        = "yes";  # In real life should be "no" or "prohibit-password"
+      PermitRootLogin        = "no";
     };
   };
 
@@ -213,11 +213,6 @@
   # ============================================================================
   nixpkgs.config = {
     allowUnfree = true;
-
-    allowUnfreePredicate = pkg:
-      builtins.elem (lib.getName pkg) [
-        "spotify"
-      ];
   };
 
   # ============================================================================
