@@ -97,6 +97,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-cosmic = {
+      url = "github:lilyinstarlight/nixos-cosmic";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --------------------------------------------------------------------------
     #  HYPRLAND ECOSYSTEM
     # --------------------------------------------------------------------------
@@ -208,6 +213,7 @@
     home-manager, 
     sops-nix, 
     distro-grub-themes, 
+    nixos-cosmic,
     poetry2nix, 
     systems, 
     pyprland,
