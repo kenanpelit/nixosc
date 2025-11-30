@@ -97,11 +97,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-cosmic = {
-      url = "github:lilyinstarlight/nixos-cosmic";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # --------------------------------------------------------------------------
     #  HYPRLAND ECOSYSTEM
     # --------------------------------------------------------------------------
@@ -213,7 +208,6 @@
     home-manager, 
     sops-nix, 
     distro-grub-themes, 
-    nixos-cosmic,
     poetry2nix, 
     systems, 
     pyprland,
@@ -231,19 +225,9 @@
       # Import custom library
       mylib = import ./lib { inherit inputs nixpkgs home-manager; };
 
-      # Fix for cosmic-edit hash mismatch
-      cosmicEditFix = final: prev: {
-        cosmic-edit = prev.cosmic-edit.overrideAttrs (old: {
-          src = old.src.overrideAttrs (oldSrc: {
-            outputHash = "sha256-GN1Zts+v3ARcrkN+ZkMUSGNOAlIhXSYWRtWAyqUfUrY=";
-          });
-        });
-      };
-
       # Unified overlay list - applied consistently everywhere
       overlaysCommon = [
         inputs.nur.overlays.default
-        cosmicEditFix
       ];
  
       # Central nixpkgs configuration

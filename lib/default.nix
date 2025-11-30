@@ -64,7 +64,6 @@ in
 
         # Theming modules
         inputs.catppuccin.nixosModules.catppuccin
-        inputs.nixos-cosmic.nixosModules.default
 
         # Home-manager as NixOS module (integrated mode)
         inputs.home-manager.nixosModules.home-manager
