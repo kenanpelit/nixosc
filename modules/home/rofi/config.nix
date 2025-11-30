@@ -1,7 +1,14 @@
 # modules/home/rofi/config.nix
 # ==============================================================================
-# Enhanced Rofi Appearance and Behavior Configuration
+# Rofi Core Configuration
 # ==============================================================================
+# Defines Rofi's core appearance and behavior settings.
+# - Modalities, layout, and display options
+# - Font, icons, and cache settings
+# - Custom formats and keybindings (defined within the .rasi file)
+#
+# ==============================================================================
+
 { pkgs, ... }:
 {
   # =============================================================================

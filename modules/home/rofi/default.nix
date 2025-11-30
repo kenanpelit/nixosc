@@ -1,7 +1,14 @@
 # modules/home/rofi/default.nix
 # ==============================================================================
-# Rofi Configuration - Catppuccin Dynamic Theme
+# Rofi Application Launcher Configuration
 # ==============================================================================
+# Configures Rofi for application launching, window switching, and custom menus.
+# - Integrates dynamic Catppuccin theming based on selected flavor.
+# - Imports core Rofi configuration from config.nix.
+# - Generates Rofi theme (theme.rasi) based on Catppuccin colors.
+#
+# ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   # Catppuccin modülünden otomatik renk alımı
