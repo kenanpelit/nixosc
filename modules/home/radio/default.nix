@@ -1,8 +1,8 @@
 # modules/home/radio/default.nix
-# radiotray-ng için bookmark yönetimi
+# Bookmark management for radiotray-ng
 { config, lib, pkgs, ... }:
 
 {
-  # Bookmark dosyasını radiotray-ng config dizinine kopyala
+  # Copy bookmark file to radiotray-ng config directory
   xdg.configFile."radiotray-ng/bookmarks.json".source = ./bookmarks.json;
 }

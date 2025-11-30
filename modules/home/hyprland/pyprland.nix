@@ -19,23 +19,23 @@
       "toggle_dpms",
       "expose",
       "workspaces_follow_focus",
-      "magnify",              # Yeni: Pencere büyütme
-      "layout_center",        # Yeni: Merkez layout
+      "magnify",              # New: Window magnification
+      "layout_center",        # New: Center layout
     ]
     
     # ---------------------------------------------------------------------------
     # Global Settings
     # ---------------------------------------------------------------------------
     [settings]
-    check_interval = 100        # ms - Daha hızlı response
-    debug = false              # Debug kapalı (production için)
+    check_interval = 100        # ms - Faster response
+    debug = false              # Debug disabled (for production)
     
     # ---------------------------------------------------------------------------
     # Workspace Settings - Enhanced
     # ---------------------------------------------------------------------------
     [workspaces_follow_focus]
     max_workspaces = 9
-    follow_mouse = true        # Fare workspace'i takip etsin
+    follow_mouse = true        # Follow mouse workspace
     
     # ---------------------------------------------------------------------------
     # Monitor Management - Enhanced  
@@ -43,37 +43,37 @@
     
     [shift_monitors]
     raise_monitor = true
-    focus_follows_mouse = true # Fare odağı takip etsin
+    focus_follows_mouse = true # Follow mouse focus
     
     # ---------------------------------------------------------------------------
     # Feature Configurations - Enhanced
     # ---------------------------------------------------------------------------
     [expose]
     include_special = false
-    include_floating = true    # Floating pencereler dahil
-    show_titles = true         # Pencere başlıklarını göster
+    include_floating = true    # Include floating windows
+    show_titles = true         # Show window titles
     
     [lost_windows]
     include_special = false
-    auto_recover = true        # Otomatik kayıp pencere kurtarma
+    auto_recover = true        # Auto recover lost windows
     
     [toggle_dpms]
     dpms_timeout = 600
-    multi_monitor = true       # Multi-monitor DPMS desteği
+    multi_monitor = true       # Multi-monitor DPMS support
     
     # ---------------------------------------------------------------------------
     # New: Magnify Plugin
     # ---------------------------------------------------------------------------
     [magnify]
-    factor = 1.5              # Büyütme faktörü
-    duration = 200            # Animasyon süresi (ms)
+    factor = 1.5              # Magnification factor
+    duration = 200            # Animation duration (ms)
     
     # ---------------------------------------------------------------------------
     # New: Layout Center Plugin  
     # ---------------------------------------------------------------------------
     [layout_center]
-    margin = 60               # Kenar boşluğu
-    reserve_workspaces = 1    # Rezerve workspace sayısı
+    margin = 60               # Margin
+    reserve_workspaces = 1    # Reserved workspaces count
     
     # ---------------------------------------------------------------------------
     # Volume Control Scratchpad - Enhanced
@@ -82,11 +82,11 @@
     animation = "fromRight"
     command = "pavucontrol"
     class = "org.pulseaudio.pavucontrol"
-    size = "45% 85%"          # Biraz daha büyük
-    margin = 20               # Kenar boşluğu
+    size = "45% 85%"          # Slightly larger
+    margin = 20               # Margin
     unfocus = "hide"
     lazy = true
-    excludes = "*"            # Tüm workspace'lerde kullanılabilir
+    excludes = "*"            # Available on all workspaces
     
     # ---------------------------------------------------------------------------
     # File Manager Scratchpad - Enhanced
@@ -94,8 +94,8 @@
     [scratchpads.yazi]
     animation = "fromTop"
     command = "kitty --class yazi yazi"
-    class = "yazi"            # Düzeltme: yazi class'ı
-    size = "80% 70%"          # Daha büyük
+    class = "yazi"            # Fix: yazi class
+    size = "80% 70%"          # Larger
     margin = 50
     unfocus = "hide"
     lazy = true
@@ -108,12 +108,12 @@
     animation = "fromTop"
     command = "spotify"
     class = "Spotify"
-    size = "85% 80%"          # Daha büyük
+    size = "85% 80%"          # Larger
     margin = 40
     unfocus = "hide"
     lazy = true
     excludes = "*"
-    preserve_aspect = true    # Aspect ratio koru
+    preserve_aspect = true    # Preserve aspect ratio
     
     # ---------------------------------------------------------------------------
     # Terminal Scratchpad - Enhanced
@@ -122,7 +122,7 @@
     animation = "fromTop"
     command = "kitty --class kitty-scratch"
     class = "kitty-scratch"
-    size = "80% 65%"          # Daha büyük
+    size = "80% 65%"          # Larger
     margin = 30
     unfocus = "hide"
     lazy = true
@@ -135,7 +135,7 @@
     animation = "fromRight"
     command = "__kitty-ncmpcpp.sh"
     class = "ncmpcpp"
-    size = "75% 75%"          # Daha büyük
+    size = "75% 75%"          # Larger
     margin = 30
     unfocus = "hide"
     lazy = true
@@ -148,7 +148,7 @@
     animation = "fromBottom"
     command = "kitty --class notes nvim"
     class = "notes"
-    size = "75% 55%"          # Daha büyük
+    size = "75% 55%"          # Larger
     margin = 40
     unfocus = "hide"
     lazy = true
@@ -187,7 +187,7 @@
     animation = "fromTop"
     command = "kitty --class quickterm"
     class = "quickterm"
-    size = "100% 40%"         # Full width, kısa yükseklik
+    size = "100% 40%"         # Full width, short height
     margin = 0
     unfocus = "hide"
     lazy = true

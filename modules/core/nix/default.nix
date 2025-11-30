@@ -1,35 +1,33 @@
 # modules/core/nix/default.nix
-# ==============================================================================
-# Nix Daemon & Package Management Configuration
-# ==============================================================================
+# Nix daemon, cache and helper defaults
+{ config , lib , pkgs , inputs , username , cacheSubstituters ? [
+    "https://cache.nixos.org"
+    "https://nix-community.cachix.org"
+    "https://hyprland.cachix.org"
+    "https://nix-gaming.cachix.org"
+    "https://hyprland-community.cachix.org"
+    "https://cosmic.cachix.org"
+  ]
+, cachePublicKeys ? [
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+    "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+    "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+    "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
+    "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+    "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+  ]
+, ...
+}:
 
-{ config, lib, pkgs, inputs, username, ... }:
-
-let
-  flakePath = "/home/${username}/.nixosc";
-in
-{
-  # ============================================================================
-  # Nix Daemon Configuration (Layer 1: Core Build System)
-  # ============================================================================
-
+let flakePath = "/home/${username}/.nixosc";
+in {
   nix = {
     settings = {
-      # ------------------------------------------------------------------------
-      # Access Control
-      # ------------------------------------------------------------------------
       allowed-users = [ username "root" ];
       trusted-users = [ username "root" ];
-
-      # ------------------------------------------------------------------------
-      # Build Performance
-      # ------------------------------------------------------------------------
       max-jobs = "auto";
       cores    = 0;
 
-      # ------------------------------------------------------------------------
-      # Store Management
-      # ------------------------------------------------------------------------
       auto-optimise-store = true;
       keep-outputs        = true;
       keep-derivations    = true;
@@ -38,9 +36,6 @@ in
       builders-use-substitutes = true;
       fsync-metadata           = false;
 
-      # ------------------------------------------------------------------------
-      # Security (URI Allowlist)
-      # ------------------------------------------------------------------------
       allowed-uris = [
         "github:"
         "gitlab:"
@@ -49,48 +44,24 @@ in
         "https:"
       ];
 
-      # ------------------------------------------------------------------------
-      # Binary Caches
-      # ------------------------------------------------------------------------
       connect-timeout = 100;
+      substituters        = cacheSubstituters;
+      trusted-public-keys = cachePublicKeys;
 
-      substituters = [
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
-        "https://hyprland.cachix.org"
-        "https://nix-gaming.cachix.org"
-      ];
-
-      trusted-public-keys = [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-        "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
-      ];
-
-      # ------------------------------------------------------------------------
-      # Debugging & Diagnostics
-      # ------------------------------------------------------------------------
       log-lines  = 25;
       show-trace = true;
 
-      # ------------------------------------------------------------------------
-      # Experimental Features (Modern Nix)
-      # ------------------------------------------------------------------------
       experimental-features = [
         "nix-command"
         "flakes"
       ];
-
-      # İstersen: CLI’de her seferinde --option warn-dirty=false yazmamak için:
-      # warn-dirty = false;
     };
 
     # ==========================================================================
     # Garbage Collection (Layer 3: Disk Space Management)
     # ==========================================================================
     gc = {
-      # NH temizliği açıksa Nix GC'yi otomatik çalıştırma — çifte iş yapma
+      # If NH clean is enabled, don't run Nix GC automatically — avoid double work
       automatic = !config.programs.nh.clean.enable;
 
       dates   = "Sun 03:00";
@@ -106,37 +77,7 @@ in
     };
   };
 
-  # ============================================================================
-  # Nixpkgs Configuration (Layer 5: Package Set)
-  # ============================================================================
-
-  nixpkgs = {
-    config = {
-      allowUnfree = true;
-
-      # İnce ayar istersen:
-      # allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-      #   "steam" "spotify" "discord"
-      # ];
-    };
-
-    overlays = [
-      # NUR (Nix User Repository)
-      inputs.nur.overlays.default
-
-      # Örnek custom overlay:
-      # (final: prev: {
-      #   myPackage = prev.myPackage.overrideAttrs (old: {
-      #     version = "custom";
-      #   });
-      # })
-    ];
-  };
-
-  # ============================================================================
-  # NH (Nix Helper) - Modern CLI (Layer 6: UX)
-  # ============================================================================
-
+  # NH (Nix Helper)
   programs.nh = {
     enable = true;
 
@@ -154,7 +95,7 @@ in
 
   environment.systemPackages = with pkgs; [
     nix-tree
-    # İleride açmak istersen:
+    # If you want to enable later:
     # nix-diff
     # nix-du
     # nvd

@@ -22,9 +22,9 @@ stdenv.mkDerivation rec {
 #!/usr/bin/env bash
 set -euo pipefail
 
-# HOME değişkenini ayarla
-if [ -z "$HOME" ]; then
-    export HOME=/tmp
+# Ensure HOME is set (avoid empty HOME in some sandboxed shells)
+if [ -z "${HOME:-}" ]; then
+  export HOME=/tmp
 fi
 
 # NPM ayarları
@@ -36,38 +36,10 @@ export NO_UPDATE_NOTIFIER=1
 # Dizinleri oluştur
 mkdir -p "$HOME/.cache/npm" "$HOME/.local/bin" "$HOME/.local/lib"
 
-# Node.js path'ini bul
-find_node() {
-    if command -v node >/dev/null 2>&1; then
-        NODE_BIN=$(dirname $(command -v node))
-        return 0
-    fi
-    
-    for profile_path in /etc/profiles/per-user/*/bin /nix/var/nix/profiles/*/bin ~/.nix-profile/bin; do
-        if [ -f "$profile_path/node" ]; then
-            NODE_BIN="$profile_path"
-            return 0
-        fi
-    done
-    
-    local latest_node=$(find /nix/store -maxdepth 1 -name "*nodejs*" -type d 2>/dev/null | \
-                       grep -E "nodejs-[0-9]+\\.[0-9]+" | \
-                       sort -V | tail -1)
-    
-    if [ -n "$latest_node" ] && [ -f "$latest_node/bin/node" ]; then
-        NODE_BIN="$latest_node/bin"
-        return 0
-    fi
-    
-    echo "Node.js bulunamadı, nix shell kullanılıyor..." >&2
-    exec nix shell nixpkgs#nodejs_24 -c "$0" "$@"
-}
-
-find_node
-export PATH="$NODE_BIN:$HOME/.local/bin:$PATH"
+export PATH="${nodejs}/bin:$HOME/.local/bin:$PATH"
 
 # OpenAI Codex CLI'yi npx ile çalıştır
-exec "$NODE_BIN/npx" --yes @openai/codex "$@"
+exec "${nodejs}/bin/npx" --yes @openai/codex "$@"
 EOF
     
     chmod +x $out/bin/ai-codex

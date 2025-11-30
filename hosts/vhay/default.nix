@@ -25,28 +25,13 @@
     networkmanager.enable = true;
   };
 
-  # ============================================================================
-  # Time & Locale
-  # (core/system ile aynı değerlere sahip; merge ederken tutarlı kalıyor)
-  # ============================================================================
+  # Timezone & Locale (Inherited from core/system)
   time.timeZone = "Europe/Istanbul";
 
-  i18n.defaultLocale = "en_US.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS        = "tr_TR.UTF-8";
-    LC_IDENTIFICATION = "tr_TR.UTF-8";
-    LC_MEASUREMENT    = "tr_TR.UTF-8";
-    LC_MONETARY       = "tr_TR.UTF-8";
-    LC_NAME           = "tr_TR.UTF-8";
-    LC_NUMERIC        = "tr_TR.UTF-8";
-    LC_PAPER          = "tr_TR.UTF-8";
-    LC_TELEPHONE      = "tr_TR.UTF-8";
-    LC_TIME           = "tr_TR.UTF-8";
-  };
 
   # ============================================================================
   # SSH / Security
-  # (Geliştirme odaklı, gevşek ayarlar)
+  # (Development oriented, loose settings)
   # ============================================================================
   services.openssh = {
     enable = true;
@@ -61,7 +46,7 @@
 
   # ============================================================================
   # System Packages
-  # (Temel VM paketleri)
+  # (Basic VM packages)
   # ============================================================================
   environment.systemPackages = with pkgs; [
     tmux

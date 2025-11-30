@@ -21,52 +21,36 @@
 
   # ============================================================================
   # Boot Loader
-  # (Çekirdek/power tarafı modules/core/system altında; burada sadece boot politikası)
+  # (Managed by modules/core/boot)
   # ============================================================================
-  boot.loader = {
-    systemd-boot.enable = lib.mkForce false;
-
-    grub = {
-      enable           = true;
-      device           = "nodev";
-      useOSProber      = true;
-      efiSupport       = true;
-      configurationLimit = 10;
-    };
-
-    efi = {
-      canTouchEfiVariables = true;
-      efiSysMountPoint     = "/boot";
-    };
-  };
-
+  
   # ============================================================================
   # Display Stack (delegated to modules/core/display)
   # ============================================================================
-  # Burada sadece high-level tercihleri söylüyoruz; implementasyon core/display’de.
+  # Here we only state high-level preferences; implementation is in core/display.
   my.display = {
     enable = true;
 
-    # Desktop / WM seçimleri
+    # Desktop / WM selections
     enableHyprland = true;
     enableGnome    = true;
     enableCosmic   = true;
 
-    # Ses
+    # Audio
     enableAudio = true;
 
     # Font stack
     fonts.enable         = true;
     fonts.hiDpiOptimized = true;
 
-    # Klavye (TR-F + Caps→Ctrl)
+    # Keyboard (TR-F + Caps->Ctrl)
     keyboard = {
       layout  = "tr";
       variant = "f";
       options = [ "ctrl:nocaps" ];
     };
 
-    # GDM auto-login (şu an kapalı, istersen user = username ile açarsın)
+    # GDM auto-login (currently disabled, uncomment user = username to enable)
     autoLogin = {
       enable = false;
       # user = username;
@@ -75,18 +59,18 @@
 
   # ============================================================================
   # Graphics / Wayland
-  # (Detaylı GPU/power tuning modules/core/system altında)
+  # (Detailed GPU/power tuning is under modules/core/system)
   # ============================================================================
   hardware.graphics = {
     enable      = true;
-    enable32Bit = true;  # Steam / 32-bit oyunlar için
+    enable32Bit = true;  # For Steam / 32-bit games
   };
 
   programs.xwayland.enable = true;
 
   environment.sessionVariables = {
-    NIXOS_OZONE_WL     = "1";  # Electron / Chromium için Wayland
-    MOZ_ENABLE_WAYLAND = "1";  # Firefox için Wayland
+    NIXOS_OZONE_WL     = "1";  # For Electron / Chromium Wayland support
+    MOZ_ENABLE_WAYLAND = "1";  # For Firefox Wayland support
   };
 
   # ============================================================================
@@ -103,18 +87,18 @@
         powersave          = false;
       };
 
-      # ÖNEMLİ NOT:
-      # Daha önce buraya statik IP profilleri (connectionConfig) yazıyorduk.
-      # Bu opsiyon INI key/value bekliyor; attrset verdiğin için build patlıyordu.
-      # Evde tek modem + tek makine senaryosunda:
-      #   - Statik IP’yi modemde MAC-based DHCP reservation ile çözmek,
-      #   - NetworkManager tarafını DHCP’de bırakmak çok daha temiz.
+      # IMPORTANT NOTE:
+      # Previously static IP profiles (connectionConfig) were here.
+      # This option expects INI key/value; passing attrset caused build failure.
+      # In a single modem + single machine scenario:
+      #   - Solve static IP via MAC-based DHCP reservation on modem,
+      #   - Keeping NetworkManager on DHCP is much cleaner.
       #
-      # Eğer ileride gerçekten deklaratif NM profili yazmak istersen,
-      # networking.networkmanager.ensureProfiles yoluna gitmek daha doğru.
+      # If you really want declarative NM profiles in the future,
+      # networking.networkmanager.ensureProfiles is the better way.
     };
 
-    wireless.enable = false;  # Eski wireless.* arayüzünü kapalı tut
+    wireless.enable = false;  # Keep old wireless.* interface disabled
     firewall = {
       allowPing           = false;
       logReversePathDrops = true;
@@ -123,7 +107,7 @@
 
   # ============================================================================
   # Time & Locale
-  # (core/system ile aynı değerlere sahip; merge ederken tutarlı kalıyor)
+  # (Same values as core/system; remains consistent when merged)
   # ============================================================================
   time.timeZone = "Europe/Istanbul";
 
@@ -148,9 +132,9 @@
     ports  = [ 22 ];
 
     settings = {
-      PasswordAuthentication = true;   # Konforlu ama zayıf halka burada
+      PasswordAuthentication = false;
       AllowUsers             = [ username ];
-      PermitRootLogin        = "yes";  # Gerçek hayatta "no" ya da "prohibit-password" olmalı
+      PermitRootLogin        = "no";
     };
   };
 
@@ -160,11 +144,11 @@
   # System Services
   # ============================================================================
   services.flatpak.enable = true;
-  # DBus, portals vs. core/display modülünde düzgün şekilde ele alınıyor.
+  # DBus, portals etc. are handled properly in core/display module.
 
   # ============================================================================
   # System Packages
-  # (Power / CPU tools core/system altında; burada genel günlük araçlar)
+  # (Power / CPU tools are under core/system; here general daily tools)
   # ============================================================================
   environment.systemPackages = with pkgs; [
     # Core tools
@@ -204,7 +188,7 @@
       terminal = "screen-256color";
     };
 
-    # NetworkManager için GUI applet
+    # GUI applet for NetworkManager
     nm-applet.enable = true;
   };
 
@@ -213,11 +197,6 @@
   # ============================================================================
   nixpkgs.config = {
     allowUnfree = true;
-
-    allowUnfreePredicate = pkg:
-      builtins.elem (lib.getName pkg) [
-        "spotify"
-      ];
   };
 
   # ============================================================================
