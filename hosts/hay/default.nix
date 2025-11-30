@@ -34,7 +34,7 @@
     # Desktop / WM selections
     enableHyprland = true;
     enableGnome    = true;
-    enableCosmic   = true;
+    enableCosmic   = false;
 
     # Audio
     enableAudio = true;
