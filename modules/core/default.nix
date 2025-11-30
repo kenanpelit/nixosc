@@ -10,6 +10,7 @@
     ./boot
     ./account
     ./system
+    ./locale
     ./hardware
     ./power
     ./logind
