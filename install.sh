@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# NixOS Installation Script v3.2.0 (Refined Edition)
+# NixOS Installation Script v3.2.2 (Refined Edition)
 # Modular, Flake-aware, Git-integrated, and Beautiful
-# Location: /home/kenan/.nixosc/install.sh
+# Location: flake root (./install.sh)
 # ==============================================================================
 
+# NOTE:
+#   - set -euo pipefail is intentionally left commented; this script runs a mix
+#     of best-effort and hard-fail operations. If you enable it, review error
+#     handling paths first.
 #set -euo pipefail
 
 # ==============================================================================
 # PART 1: CORE LIBRARY & VISUALS
 # ==============================================================================
 
+# Timer
+readonly START_TIME=$(date +%s)
+
 # Metadata
-readonly VERSION="3.2.0"
+readonly VERSION="3.2.2"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly WORK_DIR="/home/kenan/.nixosc"
+# Default flake root = script directory (no hard-coded /home path)
+readonly WORK_DIR="${SCRIPT_DIR}"
 
 # Configuration Paths
 readonly CONFIG_DIR="$HOME/.config/nixos"
@@ -122,6 +130,39 @@ confirm() {
 
 has_command() { command -v "$1" &>/dev/null; }
 
+# Host helpers
+host::validate() {
+  local hostname="$1"
+  local flake_dir="${CONFIG[FLAKE_DIR]:-$WORK_DIR}"
+
+  if [[ -z "$hostname" ]]; then
+    log ERROR "Hostname required."
+    return 1
+  fi
+
+  if [[ ! -d "$flake_dir/hosts/$hostname" ]]; then
+    log ERROR "Unknown host '${hostname}'."
+    if [[ -d "$flake_dir/hosts" ]]; then
+      log INFO "Available hosts under ${flake_dir}/hosts:"
+      find "$flake_dir/hosts" -maxdepth 1 -mindepth 1 -type d -printf '  - %f\n'
+    fi
+    return 1
+  fi
+}
+
+host::list() {
+  local flake_dir="${CONFIG[FLAKE_DIR]:-$WORK_DIR}"
+  if [[ ! -d "$flake_dir/hosts" ]]; then
+    log ERROR "No hosts directory found at ${flake_dir}/hosts"
+    return 1
+  fi
+
+  echo ""
+  log STEP "Available Hosts"
+  find "$flake_dir/hosts" -maxdepth 1 -mindepth 1 -type d -printf '  - %f\n'
+  echo ""
+}
+
 # ==============================================================================
 # PART 2: CONFIGURATION MANAGEMENT
 # ==============================================================================
@@ -199,10 +240,8 @@ flake::build() {
   local hostname="${1:-$(config::get HOSTNAME)}"
   local profile="${2:-$(config::get PROFILE)}"
 
-  [[ -z "$hostname" ]] && {
-    log ERROR "Hostname required."
-    return 1
-  }
+  # Validate host against flake structure
+  host::validate "$hostname" || return 1
 
   cd "${CONFIG[FLAKE_DIR]}" || return 1
 
@@ -245,6 +284,9 @@ cmd_pre-install() {
     return 1
   }
 
+  # Validate host directory before touching /etc/nixos
+  host::validate "$hostname" || return 1
+
   header
   log STEP "Bootstrap Initial Configuration"
 
@@ -253,7 +295,7 @@ cmd_pre-install() {
     return 1
   fi
 
-  local template_path="${WORK_DIR}/hosts/${hostname}/templates/initial-configuration.nix"
+  local template_path="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/hosts/${hostname}/templates/initial-configuration.nix"
   if [[ ! -f "$template_path" ]]; then
     log ERROR "Template not found: $template_path"
     return 1
@@ -487,15 +529,30 @@ cmd_install() {
 }
 
 show_summary() {
+  local end_time=$(date +%s)
+  local duration=$((end_time - START_TIME))
+  local minutes=$((duration / 60))
+  local seconds=$((duration % 60))
+
   echo ""
   hr
-  echo -e "${C_BOLD}${C_GREEN}   SYSTEM INSTALLATION COMPLETE   ${C_RESET}"
+  echo -e "${C_BOLD}${C_GREEN}${S_SUCCESS}  SYSTEM SUCCESSFULLY UPDATED${C_RESET}"
   hr
-  echo -e "   ${C_DIM}Hostname:${C_RESET}  ${C_BOLD}${CONFIG[HOSTNAME]}${C_RESET}"
-  echo -e "   ${C_DIM}User:${C_RESET}      ${C_BOLD}${CONFIG[USERNAME]}${C_RESET}"
-  [[ -n "${CONFIG[PROFILE]}" ]] &&
-    echo -e "   ${C_DIM}Profile:${C_RESET}   ${C_CYAN}${CONFIG[PROFILE]}${C_RESET}"
-  echo -e "   ${C_DIM}Time:${C_RESET}      $(date '+%Y-%m-%d %H:%M')"
+  echo ""
+  
+  # Manually aligned output with echo -e to prevent printf color code issues
+  echo -e "   ${C_DIM}Hostname   ${C_RESET}${C_BOLD}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
+  echo -e "   ${C_DIM}User       ${C_RESET}${C_CYAN}${CONFIG[USERNAME]}${C_RESET}"
+  
+  if [[ -n "${CONFIG[PROFILE]}" ]]; then
+      echo -e "   ${C_DIM}Profile    ${C_RESET}${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
+  fi
+  
+  echo ""
+  echo -e "   ${C_DIM}Time       ${C_RESET}$(date '+%H:%M:%S')"
+  echo -e "   ${C_DIM}Duration   ${C_RESET}${minutes} min ${seconds} sec"
+  
+  echo ""
   hr
   echo ""
 }
@@ -513,6 +570,7 @@ show_help() {
   echo "  update           Update flake inputs"
   echo "  build            Build only"
   echo "  merge            Merge branches (interactively)"
+  echo "  hosts            List available hosts (from ./hosts)"
   echo "  --pre-install    Bootstrap system"
   echo ""
   echo -e "${C_BOLD}Options:${C_RESET}"
@@ -530,15 +588,22 @@ parse_args() {
     set -- "install" "$@"
   fi
 
+  local action=""
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
     install)
+      action="install"
       # Handle implied hostname (install hay)
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]] && [[ "$2" != "update" && "$2" != "merge" ]]; then
         config::set HOSTNAME "$2"
         shift
       fi
-      cmd_install
+      ;;
+    hosts)
+      shift
+      host::list
+      exit 0
       ;;
     update)
       shift
@@ -641,18 +706,23 @@ parse_args() {
     esac
     shift
   done
+
+  if [[ "$action" == "install" ]]; then
+    cmd_install
+  fi
 }
 
 show_menu() {
   header
   echo "Current Host: ${C_BOLD}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
-  echo "Work Dir:     ${C_DIM}${WORK_DIR}${C_RESET}"
+  echo "Flake Dir:    ${C_DIM}${CONFIG[FLAKE_DIR]:-$WORK_DIR}${C_RESET}"
   echo ""
   echo "1) Install / Switch Config"
   echo "2) Update Flake Inputs"
   echo "3) Pre-Install Bootstrap"
   echo "4) Merge Branches"
   echo "5) Edit Config (Neovim)"
+   echo "6) List Hosts"
   echo "q) Exit"
   echo ""
   printf "${C_YELLOW}Select:${C_RESET} "
@@ -671,6 +741,7 @@ show_menu() {
     ;;
   4) cmd_merge "false" ;;
   5) cd "$WORK_DIR" && nvim . ;;
+  6) host::list; read -r -p "Press Enter to continue..." _ ;;
   q) exit 0 ;;
   *) show_menu ;;
   esac
@@ -687,4 +758,3 @@ main() {
 }
 
 main "$@"
-
