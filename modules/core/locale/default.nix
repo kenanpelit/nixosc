@@ -1,5 +1,13 @@
 # modules/core/locale/default.nix
-# Timezone, locale, keyboard and console.
+# ==============================================================================
+# Locale & Localization
+# ==============================================================================
+# Configures system localization, time zone, and console settings.
+# - Time zone (Europe/Istanbul)
+# - Locale settings (en_US with tr_TR formats)
+# - Console keyboard layout (Turkish F) and font
+#
+# ==============================================================================
 
 { pkgs, ... }:
 

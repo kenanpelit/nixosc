@@ -1,5 +1,13 @@
 # modules/core/virtualization/default.nix
-# Libvirt/QEMU/Spice setup for physical host.
+# ==============================================================================
+# Virtualization Configuration
+# ==============================================================================
+# Configures Libvirt/QEMU virtualization stack for physical hosts.
+# - Enables libvirtd service
+# - Configures QEMU with swtpm support
+# - Enables Spice USB redirection
+#
+# ==============================================================================
 
 { lib, pkgs, isPhysicalHost ? false, ... }:
 

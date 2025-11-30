@@ -1,5 +1,14 @@
-# modules/core/security/firewall/default.nix
-# Firewall rules (single authority).
+# modules/core/firewall/default.nix
+# ==============================================================================
+# Firewall Configuration
+# ==============================================================================
+# Configures the system firewall and related tools.
+# - Enables firewall
+# - Configures allowed TCP/UDP ports
+# - Installs conntrack-tools
+# - Provides shell aliases for firewall management
+#
+# ==============================================================================
 
 { lib, pkgs, ... }:
 

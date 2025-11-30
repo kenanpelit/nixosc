@@ -1,5 +1,13 @@
 # modules/core/sysctl/default.nix
-# Kernel/sysctl tuning (non-network basics).
+# ==============================================================================
+# Kernel Sysctl Tuning
+# ==============================================================================
+# General kernel parameter tuning (excluding network/TCP).
+# - Virtual memory swappiness
+# - NMI watchdog disablement
+# - Audit backlog limit
+#
+# ==============================================================================
 
 { ... }:
 

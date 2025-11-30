@@ -1,5 +1,12 @@
 # modules/core/fonts/default.nix
-# Fonts and fontconfig.
+# ==============================================================================
+# Font Configuration
+# ==============================================================================
+# Configures system fonts and font rendering.
+# - Installs core font packages (Noto, Nerd Fonts)
+# - Configures fontconfig for HiDPI (if enabled)
+#
+# ==============================================================================
 
 { lib, config, pkgs, ... }:
 

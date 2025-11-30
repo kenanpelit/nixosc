@@ -1,5 +1,14 @@
-# modules/core/display/defaul.nix
-# Display stack options; imports handled in core/default.nix.
+# modules/core/display/default.nix
+# ==============================================================================
+# Display Stack Options
+# ==============================================================================
+# Defines module options for the graphical display stack.
+# - Enablement toggles for DEs (Hyprland, GNOME, COSMIC)
+# - Display Manager settings (auto-login, default session)
+# - Keyboard layout options
+# - Font and audio stack toggles
+#
+# ==============================================================================
 
 { lib, ... }:
 
