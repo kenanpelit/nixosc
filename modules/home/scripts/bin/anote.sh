@@ -12,7 +12,7 @@
 # Geliştiren: Kenan Pelit
 # Repository: github.com/kenanpelit
 # İlham kaynağı: notekami projesi (https://github.com/gotbletu/fzf-nova)
-# Versiyon: 3.1 (Optimized)
+# Versiyon: 3.2 (Optimized)
 # Lisans: GPLv3
 
 # Katı mod - hataları daha iyi yakalamak için
@@ -56,7 +56,7 @@ show_anote_help() {
   AÇIKLAMA:   Terminal üzerinde basit cheatsheet, snippet, karalama ve not alma
               yöneticisi.
 
-  BAĞIMLILIKLAR:  fzf, bat, jq, grep, sed, awk ve bir clipboard aracı
+  BAĞIMLILIKLAR:  fzf, bat, grep, sed, awk ve bir clipboard aracı
                   (wl-copy, xclip, clipse veya tmux)
 
 KULLANIM: anote.sh <seçenekler>
@@ -142,7 +142,7 @@ EOF
 # Bağımlılık kontrolü
 check_dependencies() {
   local missing_deps=()
-  local required_deps=("fzf" "bat" "jq" "grep" "sed" "awk")
+  local required_deps=("fzf" "bat" "grep" "sed" "awk")
 
   for dep in "${required_deps[@]}"; do
     command -v "$dep" &>/dev/null || missing_deps+=("$dep")
@@ -190,116 +190,43 @@ EOF
   fi
 }
 
-# Güvenli geçmiş güncelleme fonksiyonu
+# Basit ve sağlam geçmiş güncelleme fonksiyonu
 update_history() {
   local dir="$1" file="$2"
   [[ -z "$dir" || -z "$file" ]] && return 1
 
+  mkdir -p "$CACHE_DIR"
   local timestamp
   timestamp=$(date +%s)
-  local temp_file="$CACHE_DIR/history.tmp"
 
-  # history.json dosyası yoksa veya bozuksa oluştur
-  if [[ ! -f "$HISTORY_FILE" ]] || ! jq empty "$HISTORY_FILE" 2>/dev/null; then
-    echo "{}" >"$HISTORY_FILE"
-  fi
+  # Format: "epoch<TAB>absolute_file_path"
+  {
+    printf '%s\t%s\n' "$timestamp" "$file"
+    if [[ -f "$HISTORY_FILE" ]]; then
+      cat "$HISTORY_FILE"
+    fi
+  } | awk -F'\t' 'NF == 2 { if (!seen[$2]++) print }' \
+    | sort -r -n -k1,1 \
+    | head -n 200 >"$HISTORY_FILE.tmp" 2>/dev/null
 
-  # Dizin ve dosya yollarında özel karakterleri escape et
-  local esc_dir esc_file
-  esc_dir=$(printf '%s' "$dir" | jq -R .)
-  esc_file=$(printf '%s' "$file" | jq -R .)
-
-  jq --argjson dir "$esc_dir" \
-    --argjson file "$esc_file" \
-    --arg time "$timestamp" '
-	   .[$dir] = (
-	       if has($dir) and (.[$dir] | type) == "array" then
-	           .[$dir] | map(select(.file != $file)) + [{
-	               "file": $file,
-	               "time": ($time | tonumber)
-	           }] | sort_by(-.time)[0:100]
-	       else
-	           [{
-	               "file": $file,
-	               "time": ($time | tonumber)
-	           }]
-	       end
-	   )
-	   ' "$HISTORY_FILE" >"$temp_file" 2>/dev/null || {
-    echo "{\"$dir\": [{\"file\": \"$file\", \"time\": $timestamp}]}" >"$HISTORY_FILE"
-    rm -f "$temp_file"
-    return 0
-  }
-
-  if [[ -s "$temp_file" ]]; then
-    mv "$temp_file" "$HISTORY_FILE"
-  fi
-  rm -f "$temp_file"
+  mv "$HISTORY_FILE.tmp" "$HISTORY_FILE"
 }
 
-# Geliştirilmiş geçmiş temizleme fonksiyonu
+# Geçmiş dosyasını basitçe temizle / daralt
 clean_history() {
-  local temp_file="$CACHE_DIR/history.tmp"
+  [[ -f "$HISTORY_FILE" ]] || return 0
 
-  if [[ -f "$HISTORY_FILE" ]]; then
-    # Önce JSON'un geçerliliğini kontrol et
-    if ! jq empty "$HISTORY_FILE" 2>/dev/null; then
-      echo "⚠️ Geçmiş dosyası bozuk, yeniden oluşturuluyor..."
-      echo "{}" >"$HISTORY_FILE"
-      return 0
-    fi
+  awk -F'\t' 'NF == 2 && $1 ~ /^[0-9]+$/ { if (!seen[$2]++) print }' "$HISTORY_FILE" 2>/dev/null \
+    | sort -r -n -k1,1 \
+    | head -n 200 >"$HISTORY_FILE.tmp" 2>/dev/null || return 0
 
-    jq '
-      to_entries
-      | map(
-          select(.value != null and (.value | type) == "array")
-          | .value = (
-              .value
-              | map(
-                  select(
-                    . != null
-                    and (. | type) == "object"
-                    and has("file")
-                    and (.file | type) == "string"
-                    and (.file | length) > 0
-                  )
-                )
-              | map(select(.file as $f | ($f | test("^/")) and ($f | test("\\.")) ))
-            )
-        )
-      | from_entries
-      | to_entries
-      | map(select(.value | length > 0))
-      | from_entries
-    ' "$HISTORY_FILE" >"$temp_file" 2>/dev/null || {
-      echo "{}" >"$HISTORY_FILE"
-      rm -f "$temp_file"
-      return 0
-    }
-
-    if [[ -s "$temp_file" ]]; then
-      mv "$temp_file" "$HISTORY_FILE"
-    else
-      echo "{}" >"$HISTORY_FILE"
-    fi
-
-    rm -f "$temp_file"
-  else
-    echo "{}" >"$HISTORY_FILE"
-  fi
+  mv "$HISTORY_FILE.tmp" "$HISTORY_FILE"
 }
 
-# Önbellek bakımı
+# Önbellek bakımı (geçmişi makul boyutta tut)
 maintain_cache() {
-  local last_clean_file="$CACHE_DIR/last_clean"
-  local current_time
-  current_time=$(date +%s)
-
-  if [[ ! -f "$last_clean_file" ]] ||
-    [[ $((current_time - $(cat "$last_clean_file"))) -gt $CLEANUP_INTERVAL ]]; then
-    clean_history
-    echo "$current_time" >"$last_clean_file"
-  fi
+  mkdir -p "$CACHE_DIR"
+  clean_history
 }
 
 # Önbellek güncelleme (snippet kullanım geçmişi için)
@@ -374,13 +301,17 @@ copy_to_clipboard() {
   # Başarı mesajı
   local preview
   if [[ ${#content} -gt 100 ]]; then
-    preview="$(echo "${content:0:50}...${content: -30}" | tr -d '\n')"
+    preview="$(printf '%s' "${content:0:50}...${content: -30}" | tr -d '\n')"
   else
-    preview="$(echo "$content" | tr -d '\n')"
+    preview="$(printf '%s' "$content" | tr -d '\n')"
   fi
 
   echo "✓ İçerik başarıyla panoya kopyalandı (${clipboard_tools})"
-  echo "$(tput setaf 8)Önizleme: ${preview}$(tput sgr0)"
+  if command -v tput >/dev/null 2>&1 && [[ -t 1 ]]; then
+    printf '%s\n' "$(tput setaf 8)Önizleme: ${preview}$(tput sgr0)"
+  else
+    echo "Önizleme: ${preview}"
+  fi
   return 0
 }
 
@@ -946,10 +877,16 @@ show_recent_files() {
   if [[ -f "$HISTORY_FILE" ]]; then
     echo "Son oluşturulan dosyalar:"
     echo
-    jq -r 'to_entries | .[].value[0:5] | .[].file' "$HISTORY_FILE" 2>/dev/null |
-      sort | uniq | head -10 | while read -r file; do
-      [[ -f "$file" ]] && echo "  - $file ($(stat -c %y "$file" | cut -d' ' -f1))"
-    done
+    while read -r ts file; do
+      [[ -f "$file" ]] || continue
+      local date_str
+      date_str=$(date -d "@$ts" +%Y-%m-%d 2>/dev/null || echo "?")
+      echo "  - $file ($date_str)"
+    done < <(
+      awk -F'\t' 'NF == 2 && $1 ~ /^[0-9]+$/ { print $1, $2 }' "$HISTORY_FILE" 2>/dev/null \
+        | sort -r -n -k1,1 \
+        | head -n 10
+    )
   else
     echo "Henüz kayıtlı geçmiş bulunmuyor."
   fi
