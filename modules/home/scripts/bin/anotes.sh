@@ -8,7 +8,7 @@
 #
 # Geliştiren: Kenan Pelit
 # Repository: github.com/kenanpelit
-# Versiyon: 1.2 (Optimized)
+# Versiyon: 1.3 (Optimized)
 # Lisans: GPLv3
 
 set -euo pipefail
@@ -23,12 +23,17 @@ readonly ANOTE_WINDOW_CLASS="${ANOTE_WINDOW_CLASS:-anote}"
 readonly ANOTE_DIR="${ANOTE_DIR:-$HOME/.anote}"
 readonly CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/anotes/config"
 
+export ANOTE_DIR
+
 # EDITOR değişkeni yoksa nvim'i varsayılan yap
 : "${EDITOR:=nvim}"
 export EDITOR
 
 # Konfigürasyon dosyası varsa yükle
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
+
+# Tercih edilmemişse terminal seçim modunu otomatik yap
+: "${PREFERRED_TERMINAL:=auto}"
 
 # =================================================================
 # FONKSİYONLAR
@@ -77,18 +82,31 @@ detect_terminal() {
     "foot:foot --app-id=$ANOTE_WINDOW_CLASS --title=$ANOTE_WINDOW_TITLE"
   )
 
-  for entry in "${terminals[@]}"; do
-    local term="${entry%%:*}"
-    local cmd="${entry#*:}"
+  local entry term cmd
 
+  # Önce yapılandırmada belirtilen terminali dene
+  if [[ "${PREFERRED_TERMINAL}" != "auto" ]]; then
+    for entry in "${terminals[@]}"; do
+      term="${entry%%:*}"
+      cmd="${entry#*:}"
+      if [[ "$term" == "$PREFERRED_TERMINAL" ]] && command -v "$term" &>/dev/null; then
+        TERMINAL_CMD="$cmd"
+        return 0
+      fi
+    done
+  fi
+
+  for entry in "${terminals[@]}"; do
+    term="${entry%%:*}"
+    cmd="${entry#*:}"
     if command -v "$term" &>/dev/null; then
       TERMINAL_CMD="$cmd"
       return 0
     fi
   done
 
-  echo "Hata: Desteklenen terminal bulunamadı (kitty, wezterm, alacritty, foot)" >&2
-  exit 1
+  echo "⚠ Desteklenen GUI terminal bulunamadı (kitty, wezterm, alacritty, foot)" >&2
+  return 1
 }
 
 check_anote() {
@@ -185,11 +203,12 @@ main() {
       shift
       ;;
     -a | --auto)
-      [[ -z "${2:-}" ]] && {
+      shift
+      [[ $# -eq 0 ]] && {
         echo "Hata: -a/--auto metin argümanı gerektirir" >&2
         exit 1
       }
-      "$ANOTE_CMD" -a "$2"
+      "$ANOTE_CMD" -a "$*"
       exit 0
       ;;
     -k | --kill)
@@ -225,15 +244,22 @@ main() {
     exit 0
   fi
 
-  detect_terminal
+  if detect_terminal; then
+    local cmd="$TERMINAL_CMD -e $ANOTE_CMD"
+    [[ ${#anote_args[@]} -gt 0 ]] && cmd+=" ${anote_args[*]}"
 
-  local cmd="$TERMINAL_CMD -e $ANOTE_CMD"
-  [[ ${#anote_args[@]} -gt 0 ]] && cmd+=" ${anote_args[*]}"
-
-  if [[ "$daemon" == true ]]; then
-    run_daemon bash -c "$cmd"
+    if [[ "$daemon" == true ]]; then
+      run_daemon bash -c "$cmd"
+    else
+      eval "$cmd"
+    fi
   else
-    eval "$cmd"
+    # GUI terminal bulunamadı; mevcut terminalde çalıştır
+    if [[ "$daemon" == true ]]; then
+      run_daemon "$ANOTE_CMD" "${anote_args[@]}"
+    else
+      "$ANOTE_CMD" "${anote_args[@]}"
+    fi
   fi
 }
 
