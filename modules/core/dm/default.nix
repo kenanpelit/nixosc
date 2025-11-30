@@ -14,6 +14,7 @@ in
       wayland = true;
     };
     services.desktopManager.gnome.enable = cfg.enableGnome;
+    services.desktopManager.cosmic.enable = cfg.enableCosmic;
     services.displayManager.autoLogin = {
       enable = cfg.autoLogin.enable;
       user   = cfg.autoLogin.user or null;
