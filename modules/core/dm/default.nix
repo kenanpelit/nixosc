@@ -13,6 +13,7 @@ in
       enable = true;
       wayland = true;
     };
+    services.xserver.desktopManager.gnome.enable = cfg.enableGnome;
     services.displayManager.autoLogin = {
       enable = cfg.autoLogin.enable;
       user   = cfg.autoLogin.user or null;
