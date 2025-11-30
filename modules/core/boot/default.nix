@@ -19,8 +19,9 @@ in
       efiSupport = isPhysicalMachine;
       useOSProber = true;
       configurationLimit = 10;
-      gfxmodeEfi  = "1920x1200";
-      gfxmodeBios = if isVirtualMachine then "1920x1080" else "1920x1200";
+      gfxmodeEfi  = "auto";
+      gfxmodeBios = "auto";
+      splashImage = null;
       theme = grubThemePath; # path to theme directory (expects theme.txt inside)
     };
 
