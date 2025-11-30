@@ -63,7 +63,6 @@ in
         }
 
         # Theming modules
-        inputs.distro-grub-themes.nixosModules.${system}.default
         inputs.catppuccin.nixosModules.catppuccin
 
         # Home-manager as NixOS module (integrated mode)
