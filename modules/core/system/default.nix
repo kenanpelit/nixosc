@@ -44,5 +44,7 @@ in
 
     services.upower.enable = true;
     services.spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
+
+    programs.zsh.enable = true;
   };
 }
