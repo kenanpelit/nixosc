@@ -6,6 +6,7 @@
 
 {
   imports = [
+    ./bluetooth
     ./boot
     ./account
     ./system
