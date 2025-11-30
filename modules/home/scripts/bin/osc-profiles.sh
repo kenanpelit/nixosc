@@ -1,13 +1,36 @@
 #!/usr/bin/env bash
 
-# ===================================================================
-# Gelişmiş NixOS Profil Yönetim Scripti
+# ==============================================================================
+# osc-profiles - NixOS System Profile Manager
 # Author: Kenan Pelit
-# Version: 1.1.0
-# Description: NixOS sistem profillerini yönetir, karşılaştırır ve yedekler
-# ===================================================================
+# Version: 1.2.3
+# Description:
+#   Lightweight, robust manager for NixOS system profiles:
+#   - list, inspect and compare profiles
+#   - delete old generations safely
+#   - create and rotate compressed backups
+#   - simple interactive TUI or one-shot CLI
+# ==============================================================================
 
-# Renkler ve Stiller - ASCII escape formatı
+set -o pipefail
+
+# Core paths
+SYSTEM_PROFILES="/nix/var/nix/profiles/system-profiles"
+SYSTEM_PROFILE="/nix/var/nix/profiles/system"
+
+BACKUP_DIR="${HOME}/.nix-profile-backups"
+CONFIG_DIR="${HOME}/.config/nixos-profiles"
+CONFIG_FILE="${CONFIG_DIR}/settings.conf"
+LOG_FILE="${CONFIG_DIR}/profile-manager.log"
+
+# Defaults (can be overridden by config)
+SORT_BY="date"      # one of: date, size, name
+SHOW_DETAILS=true   # show extra nix-store details
+AUTO_BACKUP=false   # automatically backup on delete/bulk delete
+CONFIRM_DELETE=true # ask before destructive actions
+MAX_BACKUPS=10      # maximum number of backup archives to keep
+
+# Colors (simple ANSI; terminals handle these fine)
 CYAN="\033[0;36m"
 ORANGE="\033[0;33m"
 BLUE="\033[0;34m"
@@ -19,17 +42,8 @@ YELLOW="\033[0;33m"
 PURPLE="\033[0;35m"
 NC="\033[0m"
 BOLD="\033[1m"
-DIM="\033[2m"
 
-# Sistem Dizinleri
-SYSTEM_PROFILES="/nix/var/nix/profiles/system-profiles"
-SYSTEM_PROFILE="/nix/var/nix/profiles/system"
-NIX_STORE="/nix/store"
-BACKUP_DIR="$HOME/.nix-profile-backups"
-CONFIG_DIR="$HOME/.config/nixos-profiles"
-CONFIG_FILE="$CONFIG_DIR/settings.conf"
-
-# Box Drawing Karakterleri
+# Box drawing
 TOP_CORNER="╭"
 BOT_CORNER="╰"
 VERTICAL="│"
@@ -38,978 +52,737 @@ LAST_TEE="└"
 HORIZONTAL="─"
 BAR="═"
 
-# Global Değişkenler
-SORT_BY="date"      # date, size, name
-SHOW_DETAILS=false  # Detaylı bilgileri göster/gizle
-AUTO_BACKUP=false   # Silme öncesi otomatik yedekleme
-CONFIRM_DELETE=true # Silme işlemi onay
-MAX_BACKUPS=10      # Maksimum yedek sayısı
+# ------------------------------------------------------------------------------
+# Helpers: logging, config, formatting
+# ------------------------------------------------------------------------------
 
-# Yapılandırma dosyası oluşturma/yükleme
-setup_config() {
-	mkdir -p "$CONFIG_DIR"
-
-	# Yapılandırma dosyası yoksa oluştur
-	if [[ ! -f "$CONFIG_FILE" ]]; then
-		echo "# NixOS Profil Yönetim Scripti Yapılandırması" >"$CONFIG_FILE"
-		echo "SORT_BY=\"$SORT_BY\"" >>"$CONFIG_FILE"
-		echo "SHOW_DETAILS=$SHOW_DETAILS" >>"$CONFIG_FILE"
-		echo "AUTO_BACKUP=$AUTO_BACKUP" >>"$CONFIG_FILE"
-		echo "CONFIRM_DELETE=$CONFIRM_DELETE" >>"$CONFIG_FILE"
-		echo "MAX_BACKUPS=$MAX_BACKUPS" >>"$CONFIG_FILE"
-	else
-		# Yapılandırma dosyasını yükle
-		source "$CONFIG_FILE"
-	fi
-}
-
-# Yapılandırma dosyasını güncelleme
-update_config() {
-	echo "# NixOS Profil Yönetim Scripti Yapılandırması" >"$CONFIG_FILE"
-	echo "SORT_BY=\"$SORT_BY\"" >>"$CONFIG_FILE"
-	echo "SHOW_DETAILS=$SHOW_DETAILS" >>"$CONFIG_FILE"
-	echo "AUTO_BACKUP=$AUTO_BACKUP" >>"$CONFIG_FILE"
-	echo "CONFIRM_DELETE=$CONFIRM_DELETE" >>"$CONFIG_FILE"
-	echo "MAX_BACKUPS=$MAX_BACKUPS" >>"$CONFIG_FILE"
-	echo -e "${GREEN}${BOLD}✓ Yapılandırma kaydedildi${NC}"
-}
-
-# Log fonksiyonu
 log_message() {
-	local level=$1
-	local message=$2
-	local log_file="$CONFIG_DIR/profile-manager.log"
-	local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  local level="$1"
+  shift
+  local message="$*"
+  local timestamp
 
-	mkdir -p "$(dirname "$log_file")"
-	echo "[$timestamp] [$level] $message" >>"$log_file"
+  timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+  mkdir -p "${CONFIG_DIR}"
+  echo "[$timestamp] [$level] $message" >>"${LOG_FILE}"
 
-	case $level in
-	"ERROR") echo -e "${RED}${BOLD}❌ $message${NC}" ;;
-	"WARNING") echo -e "${YELLOW}${BOLD}⚠️  $message${NC}" ;;
-	"INFO") echo -e "${BLUE}${BOLD}ℹ️  $message${NC}" ;;
-	"SUCCESS") echo -e "${GREEN}${BOLD}✅ $message${NC}" ;;
-	esac
+  case "${level}" in
+    ERROR)   printf '%b\n' "${RED}${BOLD}❌ ${message}${NC}" ;;
+    WARNING) printf '%b\n' "${YELLOW}${BOLD}⚠️  ${message}${NC}" ;;
+    SUCCESS) printf '%b\n' "${GREEN}${BOLD}✅ ${message}${NC}" ;;
+    INFO|*)  printf '%b\n' "${BLUE}${BOLD}ℹ️  ${message}${NC}" ;;
+  esac
 }
 
-# Yardımcı Fonksiyonlar
+load_config() {
+  mkdir -p "${CONFIG_DIR}"
+  if [[ -f "${CONFIG_FILE}" ]]; then
+    # shellcheck source=/dev/null
+    source "${CONFIG_FILE}" || log_message "WARNING" "Config could not be sourced, using defaults."
+  else
+    save_config
+  fi
+}
+
+save_config() {
+  mkdir -p "${CONFIG_DIR}"
+  cat >"${CONFIG_FILE}" <<EOF
+# osc-profiles configuration
+SORT_BY="${SORT_BY}"
+SHOW_DETAILS=${SHOW_DETAILS}
+AUTO_BACKUP=${AUTO_BACKUP}
+CONFIRM_DELETE=${CONFIRM_DELETE}
+MAX_BACKUPS=${MAX_BACKUPS}
+EOF
+  log_message "INFO" "Configuration saved to ${CONFIG_FILE}"
+}
+
 format_date() {
-	local path=$1
-	local date
+  # Accepts either an epoch value or a file path
+  local input="$1"
+  local epoch=""
 
-	if [[ "$path" == *"system-profiles"* ]]; then
-		date=$(stat -L -c %Y "$path" 2>/dev/null)
-	else
-		date=$(stat -L -c %Y "$path/system" 2>/dev/null)
-	fi
+  if [[ "${input}" =~ ^[0-9]+$ ]]; then
+    epoch="${input}"
+  elif [[ -e "${input}" ]]; then
+    epoch="$(stat -Lc %Y "${input}" 2>/dev/null || printf '')"
+  fi
 
-	if [ $? -eq 0 ] && [ -n "$date" ]; then
-		date -d "@$date" "+%Y-%m-%d %H:%M"
-	else
-		echo -e "${GRAY}$(date '+%Y-%m-%d %H:%M')${NC}"
-	fi
+  if [[ -n "${epoch}" ]]; then
+    date -d "@${epoch}" "+%Y-%m-%d %H:%M" 2>/dev/null || printf 'unknown'
+  else
+    printf 'unknown'
+  fi
 }
 
-format_size() {
-	local file=$1
-	if [ -L "$file" ]; then
-		local target=$(readlink -f "$file")
-		if [ -e "$target" ]; then
-			local size=$(du -sh "$target" 2>/dev/null | cut -f1)
-			if [ -n "$size" ]; then
-				echo -e "${BLUE}${size}${NC}"
-			else
-				echo -e "${GRAY}Boyut alınamadı${NC}"
-			fi
-		else
-			echo -e "${GRAY}Hedef bulunamadı${NC}"
-		fi
-	else
-		echo -e "${GRAY}Link değil${NC}"
-	fi
+human_size() {
+  local bytes="$1"
+  if command -v numfmt >/dev/null 2>&1; then
+    numfmt --to=iec-i --suffix=B "${bytes}" 2>/dev/null || printf "%sB" "${bytes}"
+  else
+    printf "%sB" "${bytes}"
+  fi
 }
 
-format_hash() {
-	local path=$1
-	local target
-
-	if [[ "$path" == *"system-profiles"* ]]; then
-		target=$(readlink -f "$path" 2>/dev/null)
-	else
-		target="$path" # Doğrudan path'i kullan
-	fi
-
-	if [ -n "$target" ]; then
-		local hash=$(basename "$target" 2>/dev/null)
-		if [ ${#hash} -ge 14 ]; then
-			echo -e "${ORANGE}${hash:0:7}...${hash: -7}${NC}"
-		else
-			echo -e "${ORANGE}${hash}${NC}"
-		fi
-	else
-		echo -e "${GRAY}Hash alınamadı${NC}"
-	fi
+profile_target() {
+  local link="$1"
+  readlink -f "${link}" 2>/dev/null || printf ''
 }
 
-# Geçerli profilleri filtrele
-filter_valid_profiles() {
-	local -a profiles=("$@")
-	local -a valid_profiles=()
+sorted_profile_paths() {
+  # Prints one profile symlink path per line sorted by current SORT_BY
+  [[ -d "${SYSTEM_PROFILES}" ]] || return 0
 
-	for profile in "${profiles[@]}"; do
-		if [ -L "$profile" ] && [ -e "$(readlink -f "$profile")" ]; then
-			valid_profiles+=("$profile")
-		fi
-	done
-
-	echo "${valid_profiles[@]}"
+  case "${SORT_BY}" in
+    date)
+      find "${SYSTEM_PROFILES}" -maxdepth 1 -type l -printf '%T@ %p\n' 2>/dev/null \
+        | sort -nr \
+        | awk '{ $1=""; sub(/^ /,""); print }'
+      ;;
+    size)
+      # sort by target store path size (descending)
+      while IFS= read -r link; do
+        local target size
+        target="$(profile_target "${link}")"
+        [[ -n "${target}" ]] || continue
+        size="$(du -sb "${target}" 2>/dev/null | awk '{print $1}')"
+        printf '%015d %s\n' "${size:-0}" "${link}"
+      done < <(find "${SYSTEM_PROFILES}" -maxdepth 1 -type l -print 2>/dev/null) \
+        | sort -nr \
+        | awk '{ $1=""; sub(/^ /,""); print }'
+      ;;
+    name|*)
+      find "${SYSTEM_PROFILES}" -maxdepth 1 -type l -printf '%f %p\n' 2>/dev/null \
+        | sort -k1,1 \
+        | awk '{ $1=""; sub(/^ /,""); print }'
+      ;;
+  esac
 }
+
+# ------------------------------------------------------------------------------
+# Profile inspection
+# ------------------------------------------------------------------------------
 
 get_profile_details() {
-	local profile=$1
-	local target=$(readlink -f "$profile")
-	local result=""
+  local target="$1"
+  [[ -n "${target}" ]] || return 0
 
-	# Paket sayısı
-	local package_count=$(nix-store -q --references "$target" 2>/dev/null | wc -l)
-	result+="Paket Sayısı: ${BLUE}${package_count}${NC}\n"
+  local result=""
 
-	# Bağımlılık sayısı
-	local dep_count=$(nix-store -q --requisites "$target" 2>/dev/null | wc -l)
-	result+="Bağımlılık: ${BLUE}${dep_count}${NC}\n"
+  # Package count
+  if command -v nix-store >/dev/null 2>&1; then
+    local pkg_count
+    pkg_count="$(nix-store -q --references "${target}" 2>/dev/null | wc -l | tr -d ' ')"
+    result+="Paket sayısı: ${BLUE}${pkg_count}${NC}\n"
+  fi
 
-	# Sıkıştırılmış boyut
-	local compressed_size=$(nix path-info -S "$target" 2>/dev/null | cut -f2)
-	if [ -n "$compressed_size" ]; then
-		result+="Sıkıştırılmış: ${BLUE}$(numfmt --to=iec-i --suffix=B "$compressed_size")${NC}\n"
-	fi
+  # Dependency count
+  if command -v nix-store >/dev/null 2>&1; then
+    local dep_count
+    dep_count="$(nix-store -q --requisites "${target}" 2>/dev/null | wc -l | tr -d ' ')"
+    result+="Bağımlılık: ${BLUE}${dep_count}${NC}\n"
+  fi
 
-	# Oluşturulma tarihi (derleme tarihi) - JQ hatası burada
-	# Bu bölümü kaldır veya aşağıdaki gibi güvenli hale getir
-	if command -v jq >/dev/null 2>&1; then
-		local json_output=$(nix path-info --json "$target" 2>/dev/null)
-		if [ -n "$json_output" ] && echo "$json_output" | jq -e 'if type=="array" then .[0].registrationTime else null end' &>/dev/null; then
-			local build_time=$(echo "$json_output" | jq -r 'if type=="array" then .[0].registrationTime else empty end')
-			if [ -n "$build_time" ]; then
-				result+="Derleme: ${BLUE}$(date -d "@$build_time" "+%Y-%m-%d %H:%M")${NC}\n"
-			fi
-		fi
-	fi
+  # Compressed size via nix path-info -S
+  if command -v nix >/dev/null 2>&1; then
+    local comp
+    comp="$(nix path-info -S "${target}" 2>/dev/null | awk 'NR==1{print $2}')"
+    if [[ -n "${comp}" ]]; then
+      result+="Sıkıştırılmış: ${BLUE}$(human_size "${comp}")${NC}\n"
+    fi
+  fi
 
-	echo -e "$result"
+  # Build / registration time (optional jq)
+  if command -v nix >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    local json build_time
+    json="$(nix path-info --json "${target}" 2>/dev/null || printf '')"
+    if [[ -n "${json}" ]]; then
+      build_time="$(printf '%s\n' "${json}" | jq -er '.[0].registrationTime // empty' 2>/dev/null || printf '')"
+      if [[ -n "${build_time}" ]]; then
+        result+="Derleme: ${BLUE}$(format_date "${build_time}")${NC}\n"
+      fi
+    fi
+  fi
+
+  [[ -n "${result}" ]] && printf '%b' "${result}"
 }
 
-# Profil Sıralama
-sort_profiles() {
-	local -a profiles=("$@")
-	local -a sorted=()
-
-	case $SORT_BY in
-	"date")
-		# Son değiştirme tarihine göre sırala
-		readarray -t sorted < <(for p in "${profiles[@]}"; do
-			local date=$(stat -L -c %Y "$p" 2>/dev/null || echo 0)
-			echo "$date|$p"
-		done | sort -rn | cut -d'|' -f2)
-		;;
-	"size")
-		# Boyuta göre sırala
-		readarray -t sorted < <(for p in "${profiles[@]}"; do
-			local size=$(du -b "$(readlink -f "$p")" 2>/dev/null | cut -f1)
-			echo "${size:-0}|$p"
-		done | sort -rn | cut -d'|' -f2)
-		;;
-	"name")
-		# İsme göre sırala (özel profillerle normal profilleri ayrı tut)
-		readarray -t sorted < <(for p in "${profiles[@]}"; do
-			local name=$(basename "$p")
-			# Özel profilleri (T1, T2 gibi) önce göster
-			if [[ "$name" =~ ^T[0-9] ]]; then
-				echo "0|$name|$p"
-			elif [[ "$name" =~ ^kenp ]]; then
-				echo "1|$name|$p"
-			else
-				echo "2|$name|$p"
-			fi
-		done | sort -t'|' -k1,1 -k2,2 | cut -d'|' -f3)
-		;;
-	esac
-
-	echo "${sorted[@]}"
-}
-
-# Başlık Yazdırma
 print_header() {
-	echo
-	echo -e "${CYAN}${BOLD}${TOP_CORNER}${BAR} NixOS Sistem Profilleri ${BAR}${NC}"
-	echo -e "${VERTICAL} Sıralama: ${ORANGE}${SORT_BY}${NC}"
-	echo -e "${VERTICAL} Detaylar: ${ORANGE}$([ "$SHOW_DETAILS" = true ] && echo "açık" || echo "kapalı")${NC}"
-	echo -e "${VERTICAL} Otomatik Yedekleme: ${ORANGE}$([ "$AUTO_BACKUP" = true ] && echo "açık" || echo "kapalı")${NC}"
-	echo
+  printf '\n'
+  printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} NixOS Sistem Profilleri ${BAR}${NC}"
+  printf '%b\n' "${VERTICAL} Sıralama: ${ORANGE}${SORT_BY}${NC}"
+  printf '%b\n' "${VERTICAL} Detaylar: ${ORANGE}$([[ "${SHOW_DETAILS}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
+  printf '%b\n' "${VERTICAL} Otomatik yedek: ${ORANGE}$([[ "${AUTO_BACKUP}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
+  printf '%b\n' "${VERTICAL} Silme onayı: ${ORANGE}$([[ "${CONFIRM_DELETE}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
+  printf '\n'
 }
 
-# Aktif Sistem Bilgileri
 print_active_system() {
-	local target=$(readlink -f "$SYSTEM_PROFILE")
-	local size=$(du -sh "$target" 2>/dev/null | cut -f1)
-	local date=$(stat -L -c %Y "$target")
-	local hash=$(basename "$target")
-	local uptime=$(uptime | sed 's/.*up \([^,]*\),.*/\1/') # Bu satırı değiştirin
-	local kernel=$(uname -r)
+  local target size hash uptime kernel
 
-	echo -e "${GREEN}${BOLD}⚡ Aktif Sistem Profili${NC}"
-	echo -e "${TEE}${HORIZONTAL} Hash    $(format_hash "$hash")"
-	echo -e "${TEE}${HORIZONTAL} Link    ${ORANGE}${target}${NC}"
-	echo -e "${TEE}${HORIZONTAL} Boyut   ${BLUE}${size}${NC}"
-	echo -e "${TEE}${HORIZONTAL} Çalışma ${PURPLE}${uptime}${NC}"
-	echo -e "${LAST_TEE}${HORIZONTAL} Çekirdek ${PURPLE}${kernel}${NC}"
+  target="$(profile_target "${SYSTEM_PROFILE}")"
+  if [[ -z "${target}" ]]; then
+    printf '%b\n\n' "${RED}${BOLD}Aktif sistem profili bulunamadı.${NC}"
+    return
+  fi
 
-	if [ "$SHOW_DETAILS" = true ]; then
-		local details=$(get_profile_details "$target")
-		echo -e "${VERTICAL}  ${GRAY}$details${NC}"
-	fi
-	echo
+  size="$(du -sh "${target}" 2>/dev/null | awk '{print $1}')"
+  hash="$(basename "${target}")"
+  uptime="$(uptime | sed 's/.*up \([^,]*\),.*/\1/' 2>/dev/null || echo 'bilinmiyor')"
+  kernel="$(uname -r)"
+
+  printf '%b\n' "${GREEN}${BOLD}⚡ Aktif Sistem Profili${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Hash    ${ORANGE}${hash}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Link    ${ORANGE}${target}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Boyut   ${BLUE}${size}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Çalışma ${PURPLE}${uptime}${NC}"
+  printf '%b\n' "${LAST_TEE}${HORIZONTAL} Çekirdek ${PURPLE}${kernel}${NC}"
+
+  if [[ "${SHOW_DETAILS}" == true ]]; then
+    local details
+    details="$(get_profile_details "${target}")"
+    [[ -n "${details}" ]] && printf '%b\n' "${VERTICAL}  ${GRAY}${details}${NC}"
+  fi
+
+  printf '\n'
 }
 
-# Profilleri Listeleme
 list_profiles() {
-	local show_numbers=$1
-	# Sadece geçerli sembolik linkleri bul
-	local -a profiles
-	mapfile -t profiles < <(find "$SYSTEM_PROFILES" -maxdepth 1 -type l -exec test -e {} \; -print)
+  # $1 = true/false -> show numeric index
+  local show_numbers="$1"
 
-	local -a valid_profiles
-	valid_profiles=($(filter_valid_profiles "${profiles[@]}"))
+  mapfile -t _profiles < <(sorted_profile_paths)
+  local total="${#_profiles[@]}"
 
-	local -a sorted_profiles
-	sorted_profiles=($(sort_profiles "${valid_profiles[@]}"))
+  printf '%b\n' "${GREEN}${BOLD}📦 Mevcut profiller (${total})${NC}"
 
-	local counter=1
-	local last_index=${#sorted_profiles[@]}
+  if (( total == 0 )); then
+    printf '%b\n\n' "   ${GRAY}Profil bulunamadı${NC}"
+    return 0
+  fi
 
-	echo -e "${GREEN}${BOLD}📦 Mevcut Profiller (${#sorted_profiles[@]})${NC}"
+  local idx=1
+  for profile in "${_profiles[@]}"; do
+    local name target hash size mtime label
+    name="$(basename "${profile}")"
+    target="$(profile_target "${profile}")"
+    hash="$(basename "${target}")"
+    size="$(du -sh "${target}" 2>/dev/null | awk '{print $1}')"
+    mtime="$(stat -Lc %Y "${profile}" 2>/dev/null || printf '0')"
 
-	if [ ${#sorted_profiles[@]} -eq 0 ]; then
-		echo -e "   ${GRAY}Profil bulunamadı${NC}"
-		return 0
-	fi
+    if [[ "${show_numbers}" == true ]]; then
+      label="${ORANGE}[${idx}]${NC} ${CYAN}${BOLD}${name}${NC}"
+    else
+      label="${CYAN}${BOLD}${name}${NC}"
+    fi
 
-	for profile in "${sorted_profiles[@]}"; do
-		local name=$(basename "$profile")
-		local target=$(readlink -f "$profile")
-		local hash=$(basename "$target")
-		local size=$(du -sh "$target" 2>/dev/null | cut -f1)
-		local date=$(stat -L -c %Y "$profile")
-		local is_last=$((counter == last_index))
-		local prefix="${TEE}"
-		local subprefix="${VERTICAL}  ${TEE}"
-		local last_subprefix="${VERTICAL}  ${LAST_TEE}"
+    printf '%b\n' "${TEE}${HORIZONTAL} ${label}"
+    printf '%b\n' "${VERTICAL}  ${HORIZONTAL} Hash   ${ORANGE}${hash}${NC}"
+    printf '%b\n' "${VERTICAL}  ${HORIZONTAL} Boyut  ${BLUE}${size}${NC}"
+    printf '%b\n' "${LAST_TEE}${HORIZONTAL} Tarih  ${GRAY}$(format_date "${mtime}")${NC}"
 
-		if [ $is_last -eq 1 ]; then
-			prefix="${LAST_TEE}"
-			subprefix="   ${TEE}"
-			last_subprefix="   ${LAST_TEE}"
-		fi
+    if [[ "${SHOW_DETAILS}" == true ]]; then
+      local details
+      details="$(get_profile_details "${target}")"
+      [[ -n "${details}" ]] && printf '%b\n' "   ${GRAY}${details}${NC}"
+    fi
 
-		if [ "$show_numbers" = true ]; then
-			echo -e "${prefix}${HORIZONTAL} ${ORANGE}[${counter}]${NC} ${CYAN}${BOLD}${name}${NC}"
-		else
-			echo -e "${prefix}${HORIZONTAL} ${CYAN}${BOLD}${name}${NC}"
-		fi
-		echo -e "${subprefix}${HORIZONTAL} Hash    $(format_hash "$hash")"
-		echo -e "${subprefix}${HORIZONTAL} Boyut   ${BLUE}${size}${NC}"
-		echo -e "${last_subprefix}${HORIZONTAL} Tarih   $(format_date "$date")"
+    ((idx++))
+  done
 
-		if [ "$SHOW_DETAILS" = true ]; then
-			local details=$(get_profile_details "$target")
-			echo -e "   ${GRAY}$details${NC}"
-		fi
-		((counter++))
-	done
-	echo
-	return ${#sorted_profiles[@]}
+  printf '\n'
+  return "${total}"
 }
 
-# Profil Karşılaştırma
-compare_profiles() {
-	local profile1=$1
-	local profile2=$2
+# ------------------------------------------------------------------------------
+# Mutating operations: backup, delete, bulk delete, compare
+# ------------------------------------------------------------------------------
 
-	if [[ ! -L $profile1 ]] || [[ ! -L $profile2 ]]; then
-		log_message "ERROR" "Geçersiz profil!"
-		return 1
-	fi
-
-	local target1=$(readlink -f "$profile1")
-	local target2=$(readlink -f "$profile2")
-
-	local name1=$(basename "$profile1")
-	local name2=$(basename "$profile2")
-
-	echo -e "${CYAN}${BOLD}🔍 Profil Karşılaştırması${NC}"
-	echo -e "${TEE}${HORIZONTAL} Profil 1: ${CYAN}${name1}${NC} ($(format_date "$profile1"))"
-	echo -e "${LAST_TEE}${HORIZONTAL} Profil 2: ${CYAN}${name2}${NC} ($(format_date "$profile2"))"
-	echo
-
-	# Paket farklılıkları
-	echo -e "${ORANGE}${BOLD}📦 Paket Farklılıkları:${NC}"
-
-	# Paketleri çıkar
-	local pkgs1=$(nix-store -q --references "$target1" 2>/dev/null)
-	local pkgs2=$(nix-store -q --references "$target2" 2>/dev/null)
-
-	# Paket farklılıklarını bul ve daha temiz göster
-	local only_in_1=$(comm -23 <(echo "$pkgs1" | sort) <(echo "$pkgs2" | sort))
-	local only_in_2=$(comm -13 <(echo "$pkgs1" | sort) <(echo "$pkgs2" | sort))
-
-	local count_1=$(echo "$only_in_1" | grep -v '^$' | wc -l)
-	local count_2=$(echo "$only_in_2" | grep -v '^$' | wc -l)
-
-	echo -e "${GREEN}Yalnızca '${name1}' profilinde olan paketler (${count_1}):${NC}"
-	if [ $count_1 -eq 0 ]; then
-		echo -e "   ${GRAY}Farklı paket yok${NC}"
-	else
-		echo "$only_in_1" | while read -r pkg; do
-			if [ -n "$pkg" ]; then
-				local pkgname=$(basename "$pkg" | cut -d'-' -f2-)
-				echo -e " + ${BLUE}${pkgname}${NC} (${GRAY}${pkg}${NC})"
-			fi
-		done
-	fi
-
-	echo
-	echo -e "${RED}Yalnızca '${name2}' profilinde olan paketler (${count_2}):${NC}"
-	if [ $count_2 -eq 0 ]; then
-		echo -e "   ${GRAY}Farklı paket yok${NC}"
-	else
-		echo "$only_in_2" | while read -r pkg; do
-			if [ -n "$pkg" ]; then
-				local pkgname=$(basename "$pkg" | cut -d'-' -f2-)
-				echo -e " - ${BLUE}${pkgname}${NC} (${GRAY}${pkg}${NC})"
-			fi
-		done
-	fi
-
-	# Özet bilgiler
-	echo
-	echo -e "${ORANGE}${BOLD}📊 Özet:${NC}"
-	echo -e "${TEE}${HORIZONTAL} '${name1}' özgü paket sayısı: ${GREEN}${count_1}${NC}"
-	echo -e "${TEE}${HORIZONTAL} '${name2}' özgü paket sayısı: ${RED}${count_2}${NC}"
-	echo -e "${LAST_TEE}${HORIZONTAL} Toplam farklılık: ${PURPLE}$((count_1 + count_2))${NC}"
-}
-
-# Eski yedekleri temizle
 clean_old_backups() {
-	if [ ! -d "$BACKUP_DIR" ]; then
-		return 0
-	fi
+  [[ -d "${BACKUP_DIR}" ]] || return 0
+  mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name '*.tar.gz' -printf '%T@ %p\n' 2>/dev/null | sort -n | awk '{ $1=""; sub(/^ /,""); print }')
+  local count="${#backups[@]}"
+  (( count <= MAX_BACKUPS )) && return 0
 
-	local -a backups
-	mapfile -t backups < <(find "$BACKUP_DIR" -name "*.tar.gz" -printf "%T@ %p\n" | sort -n | cut -d' ' -f2-)
-
-	local count=${#backups[@]}
-	if [ $count -le $MAX_BACKUPS ]; then
-		return 0
-	fi
-
-	local to_delete=$((count - MAX_BACKUPS))
-	for ((i = 0; i < to_delete; i++)); do
-		rm -f "${backups[$i]}"
-		log_message "INFO" "Eski yedek silindi: $(basename "${backups[$i]}")"
-	done
+  local remove=$((count - MAX_BACKUPS))
+  for ((i=0; i<remove; i++)); do
+    rm -f -- "${backups[$i]}" 2>/dev/null || true
+  done
 }
 
-# Profil Yedekleme
 backup_profile() {
-	local profile=$1
-	local name=$(basename "$profile")
-	local target=$(readlink -f "$profile")
-	local backup_path="$BACKUP_DIR/${name}-$(date +%Y%m%d-%H%M%S).tar.gz"
+  local profile_link="$1"
+  local target name ts archive
 
-	mkdir -p "$BACKUP_DIR"
+  target="$(profile_target "${profile_link}")"
+  if [[ -z "${target}" ]]; then
+    log_message "ERROR" "Yedeklenecek profil çözümlenemedi: ${profile_link}"
+    return 1
+  fi
 
-	echo -e "${CYAN}${BOLD}💾 Profil Yedekleniyor...${NC}"
-	echo -e "${TEE}${HORIZONTAL} Profil: ${CYAN}${name}${NC}"
-	echo -e "${LAST_TEE}${HORIZONTAL} Hedef: ${ORANGE}${backup_path}${NC}"
+  name="$(basename "${profile_link}")"
+  ts="$(date '+%Y%m%d-%H%M%S')"
+  mkdir -p "${BACKUP_DIR}"
+  archive="${BACKUP_DIR}/${name}-${ts}.tar.gz"
 
-	if tar -czf "$backup_path" -C "$(dirname "$target")" "$(basename "$target")"; then
-		log_message "SUCCESS" "Yedekleme başarılı: $name -> $backup_path"
-		clean_old_backups
-	else
-		log_message "ERROR" "Yedekleme başarısız: $name"
-		return 1
-	fi
+  log_message "INFO" "Profil yedekleniyor: ${name} -> ${archive}"
+  if sudo tar -C "${target}" -czf "${archive}" . 2>/dev/null; then
+    log_message "SUCCESS" "Yedek oluşturuldu: ${archive}"
+    clean_old_backups
+    return 0
+  else
+    log_message "ERROR" "Yedek oluşturulamadı: ${archive}"
+    rm -f -- "${archive}" 2>/dev/null || true
+    return 1
+  fi
 }
 
-# Profil Geri Yükleme
-restore_profile() {
-	local backup_file=$1
-	local name=$(basename "$backup_file" .tar.gz | cut -d'-' -f1)
-	local restore_path="$SYSTEM_PROFILES/$name"
+delete_profile_by_index() {
+  local index="$1"
+  mapfile -t _profiles < <(sorted_profile_paths)
+  local total="${#_profiles[@]}"
 
-	echo -e "${CYAN}${BOLD}📥 Profil Geri Yükleniyor...${NC}"
-	echo -e "${TEE}${HORIZONTAL} Yedek: ${CYAN}$(basename "$backup_file")${NC}"
-	echo -e "${LAST_TEE}${HORIZONTAL} Hedef: ${ORANGE}${restore_path}${NC}"
+  if ! [[ "${index}" =~ ^[0-9]+$ ]] || (( index < 1 || index > total )); then
+    log_message "ERROR" "Geçersiz profil numarası: ${index}"
+    return 1
+  fi
 
-	if [ -e "$restore_path" ]; then
-		if [ "$CONFIRM_DELETE" = true ]; then
-			echo -ne "${YELLOW}${BOLD}⚠️  Bu isimde bir profil zaten var. Üzerine yazılsın mı? (e/H) ${NC}"
-			read -r overwrite
-			if [[ ! $overwrite =~ ^[Ee]$ ]]; then
-				log_message "INFO" "Geri yükleme iptal edildi (kullanıcı tarafından): $backup_file"
-				return 0
-			fi
-		fi
+  local selected="${_profiles[$((index-1))]}"
+  local name
+  name="$(basename "${selected}")"
 
-		if [ "$AUTO_BACKUP" = true ]; then
-			backup_profile "$restore_path"
-		fi
+  local active_target selected_target
+  active_target="$(profile_target "${SYSTEM_PROFILE}")"
+  selected_target="$(profile_target "${selected}")"
 
-		sudo rm -f "$restore_path"
-	fi
+  if [[ -n "${active_target}" && "${active_target}" == "${selected_target}" ]]; then
+    log_message "ERROR" "Aktif profil silinemez: ${name}"
+    return 1
+  fi
 
-	local temp_dir=$(mktemp -d)
-	if tar -xzf "$backup_file" -C "$temp_dir" &&
-		sudo cp -a "$temp_dir"/* "$NIX_STORE/" &&
-		sudo ln -sf "$NIX_STORE/$(basename "$(tar -tzf "$backup_file" | head -1)")" "$restore_path"; then
-		rm -rf "$temp_dir"
-		log_message "SUCCESS" "Geri yükleme başarılı: $backup_file -> $restore_path"
-	else
-		rm -rf "$temp_dir"
-		log_message "ERROR" "Geri yükleme başarısız: $backup_file"
-		return 1
-	fi
+  if [[ "${CONFIRM_DELETE}" == true ]]; then
+    printf '%b' "${YELLOW}${BOLD}⚠️  '${name}' profili silinecek. Emin misiniz? (e/H) ${NC}"
+    read -r reply
+    [[ "${reply}" =~ ^[Ee]$ ]] || { log_message "INFO" "Silme iptal edildi."; return 0; }
+  fi
+
+  [[ "${AUTO_BACKUP}" == true ]] && backup_profile "${selected}" || true
+
+  if sudo rm -f -- "${selected}" 2>/dev/null; then
+    log_message "SUCCESS" "Profil silindi: ${name}"
+    return 0
+  else
+    log_message "ERROR" "Profil silinemedi: ${name}"
+    return 1
+  fi
 }
 
-# Profil Silme
-delete_profile() {
-	local profile_number=$1
-	local -a profiles
+bulk_delete_old_profiles() {
+  mapfile -t _profiles < <(sorted_profile_paths)
+  local total="${#_profiles[@]}"
+  (( total > 1 )) || { log_message "INFO" "Silinecek eski profil yok."; return 0; }
 
-	mapfile -t profiles < <(find "$SYSTEM_PROFILES" -maxdepth 1 -type l -printf "%T@ %p\n" | sort -nr | cut -d' ' -f2-)
+  local active_target
+  active_target="$(profile_target "${SYSTEM_PROFILE}")"
 
-	if [ $profile_number -gt 0 ] && [ $profile_number -le ${#profiles[@]} ]; then
-		local selected_profile=${profiles[$((profile_number - 1))]}
-		local profile_name=$(basename "$selected_profile")
-		local current_profile=$(readlink -f "$SYSTEM_PROFILE")
-		local selected_target=$(readlink -f "$selected_profile")
+  printf '%b' "${YELLOW}${BOLD}⚠️  Aktif profil dışındaki TÜM profiller silinecek. Emin misiniz? (e/H) ${NC}"
+  read -r reply
+  [[ "${reply}" =~ ^[Ee]$ ]] || { log_message "INFO" "Toplu silme iptal edildi."; return 0; }
 
-		# Aktif profil kontrolü
-		if [ "$current_profile" = "$selected_target" ]; then
-			log_message "ERROR" "Aktif profil silinemez!"
-			return 1
-		fi
-
-		if [ "$CONFIRM_DELETE" = true ]; then
-			echo -ne "${YELLOW}${BOLD}⚠️  '${profile_name}' profili silinecek. Emin misiniz? (e/H) ${NC}"
-			read -r confirm
-			if [[ ! $confirm =~ ^[Ee]$ ]]; then
-				log_message "INFO" "Silme işlemi iptal edildi (kullanıcı tarafından): $profile_name"
-				return 0
-			fi
-		fi
-
-		if [ "$AUTO_BACKUP" = true ]; then
-			backup_profile "$selected_profile"
-		fi
-
-		echo -e "${ORANGE}${BOLD}🗑️  Siliniyor: ${NC}${profile_name}"
-		if sudo nix profile wipe-history --profile "$selected_profile" && sudo rm -f "$selected_profile"; then
-			log_message "SUCCESS" "Profil başarıyla silindi: $profile_name"
-		else
-			log_message "ERROR" "Profil silinemedi: $profile_name"
-			return 1
-		fi
-	else
-		log_message "ERROR" "Geçersiz profil numarası: $profile_number"
-		return 1
-	fi
+  local p
+  for p in "${_profiles[@]}"; do
+    local t
+    t="$(profile_target "${p}")"
+    if [[ -n "${active_target}" && "${t}" == "${active_target}" ]]; then
+      continue
+    fi
+    [[ "${AUTO_BACKUP}" == true ]] && backup_profile "${p}" || true
+    sudo rm -f -- "${p}" 2>/dev/null || true
+    log_message "SUCCESS" "Profil silindi: $(basename "${p}")"
+  done
 }
 
-# Yedek Yönetimi Menüsü
-show_backup_menu() {
-	while true; do
-		clear
-		echo -e "${CYAN}${BOLD}${TOP_CORNER}${BAR} Yedek Yönetimi ${BAR}${NC}"
-		echo
+compare_profiles() {
+  local idx1="$1"
+  local idx2="$2"
 
-		# Yedekleri listele
-		local -a backups
-		if [ -d "$BACKUP_DIR" ]; then
-			mapfile -t backups < <(find "$BACKUP_DIR" -name "*.tar.gz" -printf "%T@ %p\n" | sort -nr | cut -d' ' -f2-)
-		fi
+  mapfile -t _profiles < <(sorted_profile_paths)
+  local total="${#_profiles[@]}"
 
-		echo -e "${GREEN}${BOLD}📦 Mevcut Yedekler (${#backups[@]})${NC}"
+  if ! [[ "${idx1}" =~ ^[0-9]+$ && "${idx2}" =~ ^[0-9]+$ ]] \
+     || (( idx1 < 1 || idx1 > total || idx2 < 1 || idx2 > total )); then
+    log_message "ERROR" "Geçersiz profil numarası."
+    return 1
+  fi
 
-		if [ ${#backups[@]} -eq 0 ]; then
-			echo -e "   ${GRAY}Yedek bulunamadı${NC}"
-		else
-			local counter=1
-			for backup in "${backups[@]}"; do
-				local backup_name=$(basename "$backup")
-				local backup_date=$(stat -c "%y" "$backup" | cut -d. -f1)
-				local backup_size=$(du -h "$backup" | cut -f1)
+  local p1="${_profiles[$((idx1-1))]}"
+  local p2="${_profiles[$((idx2-1))]}"
+  local t1 t2 n1 n2
 
-				if [ $counter -eq ${#backups[@]} ]; then
-					echo -e "${LAST_TEE}${HORIZONTAL} ${ORANGE}[${counter}]${NC} ${CYAN}${backup_name}${NC} (${BLUE}${backup_size}${NC}, ${GRAY}${backup_date}${NC})"
-				else
-					echo -e "${TEE}${HORIZONTAL} ${ORANGE}[${counter}]${NC} ${CYAN}${backup_name}${NC} (${BLUE}${backup_size}${NC}, ${GRAY}${backup_date}${NC})"
-				fi
-				((counter++))
-			done
-		fi
+  t1="$(profile_target "${p1}")"
+  t2="$(profile_target "${p2}")"
+  n1="$(basename "${p1}")"
+  n2="$(basename "${p2}")"
 
-		echo
-		echo -e "${BOLD}Yedek Yönetimi:${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}b${NC} - Aktif profili yedekle"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}c${NC} - Profili yedekle (numara ile)"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}r${NC} - Yedekten geri yükle"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}d${NC} - Yedek sil"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}p${NC} - Yedekleri temizle (${ORANGE}$MAX_BACKUPS${NC} adete kadar tut)"
-		echo -e "${LAST_TEE}${HORIZONTAL} ${WHITE}q${NC} - Ana menüye dön"
+  if [[ -z "${t1}" || -z "${t2}" ]]; then
+    log_message "ERROR" "Profil çözümlenemedi."
+    return 1
+  fi
 
-		echo
-		echo -ne "${BOLD}Komut: ${NC}"
-		read -r backup_cmd
+  printf '%b\n' "${CYAN}${BOLD}🔍 Profil Karşılaştırması${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Profil 1: ${CYAN}${n1}${NC}"
+  printf '%b\n' "${LAST_TEE}${HORIZONTAL} Profil 2: ${CYAN}${n2}${NC}"
+  printf '\n'
 
-		# Komut işleme...
-		case $backup_cmd in
-		b) backup_profile "$SYSTEM_PROFILE" ;;
-		c)
-			echo -ne "\n${BOLD}Yedeklenecek profil numarası: ${NC}"
-			read -r profile_num
-			# İşlemlere devam...
-			;;
-		# ... diğer komutlar ...
-		esac
+  if ! command -v nix-store >/dev/null 2>&1; then
+    log_message "ERROR" "nix-store bulunamadı; paket karşılaştırılamıyor."
+    return 1
+  fi
 
-		echo -ne "\n${GRAY}Devam etmek için Enter'a basın...${NC}"
-		read -r
-	done
+  local pkgs1 pkgs2 only1 only2 count1 count2
+  pkgs1="$(nix-store -q --references "${t1}" 2>/dev/null | sort)"
+  pkgs2="$(nix-store -q --references "${t2}" 2>/dev/null | sort)"
+
+  only1="$(comm -23 <(printf '%s\n' "${pkgs1}") <(printf '%s\n' "${pkgs2}"))"
+  only2="$(comm -13 <(printf '%s\n' "${pkgs1}") <(printf '%s\n' "${pkgs2}"))"
+
+  count1="$(printf '%s\n' "${only1}" | sed '/^$/d' | wc -l | tr -d ' ')"
+  count2="$(printf '%s\n' "${only2}" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+  printf '%b\n' "${ORANGE}${BOLD}📦 Paket Farklılıkları:${NC}"
+
+  printf '%b\n' "${GREEN}Yalnızca '${n1}' profilinde olan paketler (${count1}):${NC}"
+  if (( count1 == 0 )); then
+    printf '%b\n' "   ${GRAY}Farklı paket yok${NC}"
+  else
+    printf '%s\n' "${only1}" | sed '/^$/d' | while read -r pkg; do
+      local pkgname
+      pkgname="$(basename "${pkg}" | cut -d'-' -f2-)"
+      printf '%b\n' " + ${BLUE}${pkgname}${NC} (${GRAY}${pkg}${NC})"
+    done
+  fi
+
+  printf '\n'
+  printf '%b\n' "${RED}Yalnızca '${n2}' profilinde olan paketler (${count2}):${NC}"
+  if (( count2 == 0 )); then
+    printf '%b\n' "   ${GRAY}Farklı paket yok${NC}"
+  else
+    printf '%s\n' "${only2}" | sed '/^$/d' | while read -r pkg; do
+      local pkgname
+      pkgname="$(basename "${pkg}" | cut -d'-' -f2-)"
+      printf '%b\n' " - ${BLUE}${pkgname}${NC} (${GRAY}${pkg}${NC})"
+    done
+  fi
+
+  printf '\n'
+  printf '%b\n' "${ORANGE}${BOLD}📊 Özet:${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} '${n1}' özgü paket sayısı: ${GREEN}${count1}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} '${n2}' özgü paket sayısı: ${RED}${count2}${NC}"
+  printf '%b\n' "${LAST_TEE}${HORIZONTAL} Toplam farklılık: ${PURPLE}$((count1 + count2))${NC}"
 }
 
-# Ayarlar Menüsü
-show_settings_menu() {
-	while true; do
-		clear
-		echo -e "${CYAN}${BOLD}${TOP_CORNER}${BAR} Ayarlar Menüsü ${BAR}${NC}"
-		echo
-		echo -e "${BOLD}Mevcut Ayarlar:${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}1${NC} - Sıralama: ${ORANGE}$SORT_BY${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}2${NC} - Detaylar: ${ORANGE}$([ "$SHOW_DETAILS" = true ] && echo "Açık" || echo "Kapalı")${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}3${NC} - Otomatik Yedekleme: ${ORANGE}$([ "$AUTO_BACKUP" = true ] && echo "Açık" || echo "Kapalı")${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}4${NC} - Silme Onayı: ${ORANGE}$([ "$CONFIRM_DELETE" = true ] && echo "Açık" || echo "Kapalı")${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}5${NC} - Maksimum Yedek: ${ORANGE}$MAX_BACKUPS${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}s${NC} - Kaydet ve Çık"
-		echo -e "${LAST_TEE}${HORIZONTAL} ${WHITE}q${NC} - Kaydetmeden Çık"
-		echo
-		echo -ne "${BOLD}Komut: ${NC}"
-		read -r setting_cmd
+# ------------------------------------------------------------------------------
+# Stats & settings
+# ------------------------------------------------------------------------------
 
-		case $setting_cmd in
-		1)
-			echo -e "\n${CYAN}${BOLD}Sıralama Seçenekleri:${NC}"
-			echo -e "1) ${ORANGE}date${NC} - Tarihe göre"
-			echo -e "2) ${ORANGE}size${NC} - Boyuta göre"
-			echo -e "3) ${ORANGE}name${NC} - İsme göre"
-			echo -ne "\nSeçiminiz: "
-			read -r sort_choice
-			case $sort_choice in
-			1) SORT_BY="date" ;;
-			2) SORT_BY="size" ;;
-			3) SORT_BY="name" ;;
-			*) echo -e "${RED}${BOLD}❌ Hata: Geçersiz seçim!${NC}" ;;
-			esac
-			;;
-		2)
-			SHOW_DETAILS=$([ "$SHOW_DETAILS" = true ] && echo false || echo true)
-			echo -e "${GREEN}${BOLD}✓ Detaylar $([ "$SHOW_DETAILS" = true ] && echo "açıldı" || echo "kapatıldı")${NC}"
-			;;
-		3)
-			AUTO_BACKUP=$([ "$AUTO_BACKUP" = true ] && echo false || echo true)
-			echo -e "${GREEN}${BOLD}✓ Otomatik Yedekleme $([ "$AUTO_BACKUP" = true ] && echo "açıldı" || echo "kapatıldı")${NC}"
-			;;
-		4)
-			CONFIRM_DELETE=$([ "$CONFIRM_DELETE" = true ] && echo false || echo true)
-			echo -e "${GREEN}${BOLD}✓ Silme Onayı $([ "$CONFIRM_DELETE" = true ] && echo "açıldı" || echo "kapatıldı")${NC}"
-			;;
-		5)
-			echo -ne "\n${BOLD}Maksimum yedek sayısı (1-50): ${NC}"
-			read -r max_backups
-			if [[ $max_backups =~ ^[0-9]+$ ]] && [ $max_backups -ge 1 ] && [ $max_backups -le 50 ]; then
-				MAX_BACKUPS=$max_backups
-				echo -e "${GREEN}${BOLD}✓ Maksimum yedek sayısı güncellendi: $MAX_BACKUPS${NC}"
-			else
-				echo -e "${RED}${BOLD}❌ Hata: Geçersiz değer! (1-50 arası olmalı)${NC}"
-			fi
-			;;
-		s | S)
-			update_config
-			break
-			;;
-		q | Q)
-			echo -e "${YELLOW}${BOLD}⚠️  Değişiklikler kaydedilmedi${NC}"
-			break
-			;;
-		*)
-			echo -e "${RED}${BOLD}❌ Hata: Geçersiz komut!${NC}"
-			;;
-		esac
-
-		echo -ne "\n${GRAY}Devam etmek için Enter'a basın...${NC}"
-		read -r
-	done
-}
-
-# İnteraktif Ana Menü
-show_main_menu() {
-	while true; do
-		clear
-		print_header
-		print_active_system
-		list_profiles true
-		total_profiles=$?
-
-		echo -e "${BOLD}Ana Menü:${NC}"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}d${NC} - Profil sil"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}c${NC} - Profilleri karşılaştır"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}b${NC} - Yedek yönetimi"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}g${NC} - Günlüğü görüntüle"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}s${NC} - Sıralama değiştir (${ORANGE}$SORT_BY${NC})"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}t${NC} - Detayları $([ "$SHOW_DETAILS" = true ] && echo "gizle" || echo "göster")"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}a${NC} - Tüm eski profilleri sil"
-		echo -e "${TEE}${HORIZONTAL} ${WHITE}o${NC} - Ayarlar"
-		echo -e "${LAST_TEE}${HORIZONTAL} ${WHITE}q${NC} - Çıkış"
-		echo
-		echo -ne "${BOLD}Komut: ${NC}"
-		read -r cmd
-
-		case $cmd in
-		[dD])
-			while true; do
-				echo -ne "\n${BOLD}Silinecek profil numarası (çıkmak için 'q'): ${NC}"
-				read -r num
-				[ "$num" = "q" ] && break
-				delete_profile $num && break
-			done
-			;;
-		c)
-			echo -ne "1. profil numarası: "
-			read -r num1
-			echo -ne "2. profil numarası: "
-			read -r num2
-
-			if [[ $num1 =~ ^[0-9]+$ ]] && [[ $num2 =~ ^[0-9]+$ ]] &&
-				[ $num1 -gt 0 ] && [ $num2 -gt 0 ] &&
-				[ $num1 -le $total_profiles ] && [ $num2 -le $total_profiles ]; then
-				local profiles=($(find "$SYSTEM_PROFILES" -maxdepth 1 -type l -printf "%T@ %p\n" | sort -nr | cut -d' ' -f2-))
-				compare_profiles "${profiles[$((num1 - 1))]}" "${profiles[$((num2 - 1))]}"
-			else
-				log_message "ERROR" "Geçersiz profil numarası!"
-			fi
-			;;
-		b)
-			# Yedek yönetimi menüsünü göster
-			show_backup_menu
-			;;
-		g)
-			# Günlüğü görüntüle
-			local log_file="$CONFIG_DIR/profile-manager.log"
-			if [ -f "$log_file" ]; then
-				clear
-				echo -e "${CYAN}${BOLD}${TOP_CORNER}${BAR} Sistem Günlüğü ${BAR}${NC}"
-				echo
-				echo -e "${GREEN}${BOLD}📋 Son Olaylar:${NC}"
-
-				# En son 20 satırı göster, renklendir
-				tail -n 20 "$log_file" | while IFS= read -r line; do
-					if [[ $line == *"[ERROR]"* ]]; then
-						echo -e "${RED}$line${NC}"
-					elif [[ $line == *"[WARNING]"* ]]; then
-						echo -e "${YELLOW}$line${NC}"
-					elif [[ $line == *"[SUCCESS]"* ]]; then
-						echo -e "${GREEN}$line${NC}"
-					elif [[ $line == *"[INFO]"* ]]; then
-						echo -e "${BLUE}$line${NC}"
-					else
-						echo -e "${GRAY}$line${NC}"
-					fi
-				done
-			else
-				log_message "INFO" "Günlük dosyası bulunamadı!"
-			fi
-			;;
-		s)
-			echo -e "\n${CYAN}${BOLD}Sıralama Seçenekleri:${NC}"
-			echo -e "1) ${ORANGE}date${NC} - Tarihe göre"
-			echo -e "2) ${ORANGE}size${NC} - Boyuta göre"
-			echo -e "3) ${ORANGE}name${NC} - İsme göre"
-			echo -ne "\nSeçiminiz: "
-			read -r sort_choice
-			case $sort_choice in
-			1) SORT_BY="date" ;;
-			2) SORT_BY="size" ;;
-			3) SORT_BY="name" ;;
-			*) log_message "ERROR" "Geçersiz seçim: $sort_choice" ;;
-			esac
-			;;
-		t)
-			SHOW_DETAILS=$([ "$SHOW_DETAILS" = true ] && echo false || echo true)
-			echo -e "${GREEN}${BOLD}✓ Detaylar $([ "$SHOW_DETAILS" = true ] && echo "açıldı" || echo "kapatıldı")${NC}"
-			;;
-		o)
-			# Ayarlar menüsünü göster
-			show_settings_menu
-			;;
-		a)
-			echo -e "${ORANGE}${BOLD}⚠️  Tüm eski profiller silinecek!${NC}"
-			echo -ne "${RED}Onaylıyor musunuz? (e/H) ${NC}"
-			read -r confirm
-			if [[ $confirm =~ ^[Ee]$ ]]; then
-				local active_profile=$(readlink -f "$SYSTEM_PROFILE")
-				for profile in $(find "$SYSTEM_PROFILES" -maxdepth 1 -type l); do
-					local target=$(readlink -f "$profile")
-					if [ "$target" != "$active_profile" ]; then
-						if [ "$AUTO_BACKUP" = true ]; then
-							backup_profile "$profile"
-						fi
-
-						if sudo nix profile wipe-history --profile "$profile" && sudo rm -f "$profile"; then
-							log_message "SUCCESS" "Profil silindi: $(basename "$profile")"
-						else
-							log_message "ERROR" "Profil silinemedi: $(basename "$profile")"
-						fi
-					fi
-				done
-				log_message "SUCCESS" "Eski profiller temizlendi"
-			fi
-			;;
-		q)
-			break
-			;;
-		*)
-			log_message "ERROR" "Geçersiz komut: $cmd"
-			;;
-		esac
-
-		echo -ne "\n${GRAY}Devam etmek için Enter'a basın...${NC}"
-		read -r
-	done
-}
-
-# Yardım Menüsü Fonksiyonu
-show_help() {
-	echo -e "${CYAN}${BOLD}${TOP_CORNER}${BAR} NixOS Profil Yönetim Scripti ${BAR}${NC}"
-	echo -e "${VERTICAL} Author: Kenan Pelit"
-	echo -e "${VERTICAL} Version: 1.1.0"
-	echo -e "${BOT_CORNER}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${BAR}${NC}"
-	echo
-	echo -e "${GREEN}${BOLD}KULLANIM:${NC}"
-	echo -e "  $0 [SEÇENEK]"
-	echo
-	echo -e "${ORANGE}${BOLD}SEÇENEKLER:${NC}"
-	echo -e "${TEE}${HORIZONTAL} ${WHITE}-h, --help${NC}      Bu yardım mesajını göster"
-	echo -e "${TEE}${HORIZONTAL} ${WHITE}-m, --menu${NC}      İnteraktif menüyü başlat"
-	echo -e "${TEE}${HORIZONTAL} ${WHITE}-l, --list${NC}      Profilleri listele"
-	echo -e "${TEE}${HORIZONTAL} ${WHITE}-s, --stats${NC}     Sistem istatistiklerini göster"
-	echo -e "${LAST_TEE}${HORIZONTAL} ${WHITE}-b, --backup${NC}    Aktif profili yedekle"
-	echo
-	echo -e "${PURPLE}${BOLD}AÇIKLAMA:${NC}"
-	echo -e "  Bu script NixOS sistem profillerini yönetir, karşılaştırır ve yedekler."
-	echo -e "  Profilleri görüntüleyebilir, silebilir, yedekleyebilir ve geri yükleyebilirsiniz."
-	echo
-	echo -e "${BLUE}${BOLD}ÖRNEKLER:${NC}"
-	echo -e "  $0              # İnteraktif menüyü başlat"
-	echo -e "  $0 --list       # Profilleri listele"
-	echo -e "  $0 --stats      # Sistem istatistiklerini göster"
-	echo -e "  $0 --backup     # Aktif profili yedekle"
-	echo
-	echo -e "${GRAY}${BOLD}DOSYALAR:${NC}"
-	echo -e "  Yapılandırma: ${ORANGE}$CONFIG_FILE${NC}"
-	echo -e "  Günlük: ${ORANGE}$CONFIG_DIR/profile-manager.log${NC}"
-	echo -e "  Yedekler: ${ORANGE}$BACKUP_DIR${NC}"
-	echo
-}
-
-# İstatistik Fonksiyonu
 print_stats() {
-	echo -e "${CYAN}${BOLD}📊 Sistem İstatistikleri${NC}"
-	echo
+  mapfile -t _profiles < <(sorted_profile_paths)
+  local total="${#_profiles[@]}"
 
-	# Profil sayıları
-	local -a all_profiles
-	mapfile -t all_profiles < <(find "$SYSTEM_PROFILES" -maxdepth 1 -type l 2>/dev/null)
-	local -a valid_profiles
-	valid_profiles=($(filter_valid_profiles "${all_profiles[@]}"))
-	local broken_count=$((${#all_profiles[@]} - ${#valid_profiles[@]}))
+  printf '\n'
+  printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} Profil İstatistikleri ${BAR}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Toplam profil: ${BLUE}${total}${NC}"
 
-	echo -e "${GREEN}${BOLD}📦 Profil Bilgileri:${NC}"
-	echo -e "${TEE}${HORIZONTAL} Toplam Profil: ${BLUE}${#all_profiles[@]}${NC}"
-	echo -e "${TEE}${HORIZONTAL} Geçerli Profil: ${GREEN}${#valid_profiles[@]}${NC}"
-	echo -e "${TEE}${HORIZONTAL} Bozuk Profil: ${RED}${broken_count}${NC}"
+  if (( total == 0 )); then
+    printf '%b\n' "${LAST_TEE}${HORIZONTAL} ${GRAY}Profil bulunamadı${NC}"
+    printf '\n'
+    return 0
+  fi
 
-	# Disk kullanımı
-	if [ ${#valid_profiles[@]} -gt 0 ]; then
-		local total_size=0
-		local largest_size=0
-		local smallest_size=999999999999
-		local largest_profile=""
-		local smallest_profile=""
+  local total_size=0 largest_size=0 smallest_size=999999999999
+  local largest_name="" smallest_name=""
 
-		for profile in "${valid_profiles[@]}"; do
-			local target=$(readlink -f "$profile")
-			if [ -d "$target" ]; then
-				# du çıktısını temizle ve sadece sayısal değeri al
-				local size_bytes=$(du -sb "$target" 2>/dev/null | awk '{print $1}' | tr -d '\n\r ')
+  local p
+  for p in "${_profiles[@]}"; do
+    local target size
+    target="$(profile_target "${p}")"
+    [[ -n "${target}" ]] || continue
+    size="$(du -sb "${target}" 2>/dev/null | awk '{print $1}')"
+    [[ -n "${size}" ]] || continue
 
-				# Sadece sayısal değerler için işlem yap
-				if [[ "$size_bytes" =~ ^[0-9]+$ ]] && [ "$size_bytes" -gt 0 ]; then
-					total_size=$((total_size + size_bytes))
+    total_size=$((total_size + size))
+    if (( size > largest_size )); then
+      largest_size="${size}"
+      largest_name="$(basename "${p}")"
+    fi
+    if (( size < smallest_size )); then
+      smallest_size="${size}"
+      smallest_name="$(basename "${p}")"
+    fi
+  done
 
-					if [ "$size_bytes" -gt "$largest_size" ]; then
-						largest_size=$size_bytes
-						largest_profile=$(basename "$profile")
-					fi
+  if (( total_size > 0 )); then
+    local avg_size=$((total_size / total))
+    printf '%b\n' "${TEE}${HORIZONTAL} Ortalama boyut: ${BLUE}$(human_size "${avg_size}")${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} Toplam boyut:   ${BLUE}$(human_size "${total_size}")${NC}"
+    [[ -n "${largest_name}" ]] && printf '%b\n' "${TEE}${HORIZONTAL} En büyük:       ${PURPLE}${largest_name}${NC} (${BLUE}$(human_size "${largest_size}")${NC})"
+    [[ -n "${smallest_name}" ]] && printf '%b\n' "${LAST_TEE}${HORIZONTAL} En küçük:       ${PURPLE}${smallest_name}${NC} (${BLUE}$(human_size "${smallest_size}")${NC})"
+  else
+    printf '%b\n' "${LAST_TEE}${HORIZONTAL} ${GRAY}Boyut bilgisi alınamadı${NC}"
+  fi
 
-					if [ "$size_bytes" -lt "$smallest_size" ]; then
-						smallest_size=$size_bytes
-						smallest_profile=$(basename "$profile")
-					fi
-				fi
-			fi
-		done
+  printf '\n'
 
-		if [ "$total_size" -gt 0 ]; then
-			local avg_size=$((total_size / ${#valid_profiles[@]}))
+  # Backup stats
+  printf '%b\n' "${YELLOW}${BOLD}💾 Yedek Bilgileri:${NC}"
+  if [[ -d "${BACKUP_DIR}" ]]; then
+    mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name '*.tar.gz' 2>/dev/null)
+    local count="${#backups[@]}"
+    if (( count == 0 )); then
+      printf '%b\n' "${LAST_TEE}${HORIZONTAL} ${GRAY}Yedek bulunamadı${NC}"
+    else
+      local total_b=0
+      local oldest_name="" newest_name=""
+      local oldest_t=9999999999 newest_t=0
+      local b
+      for b in "${backups[@]}"; do
+        local sz tm
+        sz="$(du -sb "${b}" 2>/dev/null | awk '{print $1}')"
+        tm="$(stat -Lc %Y "${b}" 2>/dev/null || printf '0')"
+        total_b=$((total_b + sz))
+        if (( tm < oldest_t )); then
+          oldest_t="${tm}"
+          oldest_name="$(basename "${b}")"
+        fi
+        if (( tm > newest_t )); then
+          newest_t="${tm}"
+          newest_name="$(basename "${b}")"
+        fi
+      done
+      printf '%b\n' "${TEE}${HORIZONTAL} Yedek sayısı:   ${BLUE}${count}${NC}"
+      printf '%b\n' "${TEE}${HORIZONTAL} Toplam boyut:   ${BLUE}$(human_size "${total_b}")${NC}"
+      printf '%b\n' "${TEE}${HORIZONTAL} En eski:        ${GRAY}${oldest_name}${NC}"
+      printf '%b\n' "${LAST_TEE}${HORIZONTAL} En yeni:        ${GRAY}${newest_name}${NC}"
+    fi
+  else
+    printf '%b\n' "${LAST_TEE}${HORIZONTAL} ${GRAY}Yedek dizini yok${NC}"
+  fi
 
-			echo -e "${LAST_TEE}${HORIZONTAL} Ortalama Boyut: ${BLUE}$(numfmt --to=iec-i --suffix=B "$avg_size")${NC}"
-			echo
-			echo -e "${ORANGE}${BOLD}💾 Disk Kullanımı:${NC}"
-			echo -e "${TEE}${HORIZONTAL} Toplam Boyut: ${BLUE}$(numfmt --to=iec-i --suffix=B "$total_size")${NC}"
-
-			if [ -n "$largest_profile" ] && [ "$largest_size" -gt 0 ]; then
-				echo -e "${TEE}${HORIZONTAL} En Büyük: ${PURPLE}${largest_profile}${NC} (${BLUE}$(numfmt --to=iec-i --suffix=B "$largest_size")${NC})"
-			fi
-
-			if [ -n "$smallest_profile" ] && [ "$smallest_size" -lt 999999999999 ]; then
-				echo -e "${LAST_TEE}${HORIZONTAL} En Küçük: ${PURPLE}${smallest_profile}${NC} (${BLUE}$(numfmt --to=iec-i --suffix=B "$smallest_size")${NC})"
-			fi
-		else
-			echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Boyut bilgisi alınamadı${NC}"
-		fi
-	else
-		echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Geçerli profil bulunamadı${NC}"
-	fi
-
-	# Yedek bilgileri
-	echo
-	echo -e "${YELLOW}${BOLD}💾 Yedek Bilgileri:${NC}"
-	if [ -d "$BACKUP_DIR" ]; then
-		local -a backups
-		mapfile -t backups < <(find "$BACKUP_DIR" -name "*.tar.gz" 2>/dev/null)
-		local backup_count=${#backups[@]}
-
-		if [ $backup_count -gt 0 ]; then
-			local backup_total_size=0
-			local oldest_backup=""
-			local newest_backup=""
-			local oldest_time=9999999999
-			local newest_time=0
-
-			for backup in "${backups[@]}"; do
-				local backup_size=$(du -b "$backup" 2>/dev/null | cut -f1)
-				local backup_time=$(stat -c %Y "$backup" 2>/dev/null)
-
-				if [ -n "$backup_size" ]; then
-					backup_total_size=$((backup_total_size + backup_size))
-				fi
-
-				if [ -n "$backup_time" ]; then
-					if [ "$backup_time" -lt "$oldest_time" ]; then
-						oldest_time=$backup_time
-						oldest_backup=$(basename "$backup")
-					fi
-
-					if [ "$backup_time" -gt "$newest_time" ]; then
-						newest_time=$backup_time
-						newest_backup=$(basename "$backup")
-					fi
-				fi
-			done
-
-			echo -e "${TEE}${HORIZONTAL} Yedek Sayısı: ${BLUE}${backup_count}${NC}"
-			echo -e "${TEE}${HORIZONTAL} Toplam Boyut: ${BLUE}$(numfmt --to=iec-i --suffix=B "$backup_total_size")${NC}"
-			echo -e "${TEE}${HORIZONTAL} En Eski: ${GRAY}${oldest_backup}${NC}"
-			echo -e "${LAST_TEE}${HORIZONTAL} En Yeni: ${GRAY}${newest_backup}${NC}"
-		else
-			echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Yedek bulunamadı${NC}"
-		fi
-	else
-		echo -e "${LAST_TEE}${HORIZONTAL} ${GRAY}Yedek dizini yok${NC}"
-	fi
-
-	# Sistem bilgileri
-	echo
-	echo -e "${PURPLE}${BOLD}⚙️  Sistem Bilgileri:${NC}"
-	local current_target=$(readlink -f "$SYSTEM_PROFILE")
-	local current_hash=$(basename "$current_target")
-	local uptime_info=$(uptime | sed 's/.*up \([^,]*\),.*/\1/' 2>/dev/null || echo "Bilinmiyor")
-	local kernel_version=$(uname -r)
-	local nix_version=$(nix --version 2>/dev/null | head -1 | cut -d' ' -f3 || echo "Bilinmiyor")
-
-	echo -e "${TEE}${HORIZONTAL} Aktif Hash: ${ORANGE}${current_hash:0:14}...${NC}"
-	echo -e "${TEE}${HORIZONTAL} Çalışma Süresi: ${BLUE}${uptime_info}${NC}"
-	echo -e "${TEE}${HORIZONTAL} Çekirdek: ${BLUE}${kernel_version}${NC}"
-	echo -e "${LAST_TEE}${HORIZONTAL} Nix Sürümü: ${BLUE}${nix_version}${NC}"
-
-	# Yapılandırma bilgileri
-	echo
-	echo -e "${CYAN}${BOLD}⚙️  Yapılandırma:${NC}"
-	echo -e "${TEE}${HORIZONTAL} Sıralama: ${ORANGE}${SORT_BY}${NC}"
-	echo -e "${TEE}${HORIZONTAL} Detaylar: ${ORANGE}$([ "$SHOW_DETAILS" = true ] && echo "Açık" || echo "Kapalı")${NC}"
-	echo -e "${TEE}${HORIZONTAL} Otomatik Yedekleme: ${ORANGE}$([ "$AUTO_BACKUP" = true ] && echo "Açık" || echo "Kapalı")${NC}"
-	echo -e "${TEE}${HORIZONTAL} Silme Onayı: ${ORANGE}$([ "$CONFIRM_DELETE" = true ] && echo "Açık" || echo "Kapalı")${NC}"
-	echo -e "${LAST_TEE}${HORIZONTAL} Maksimum Yedek: ${ORANGE}${MAX_BACKUPS}${NC}"
-	echo
+  printf '\n'
 }
 
-# Ana Program işleme kısmı
+show_settings_menu() {
+  while true; do
+    clear
+    printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} Ayarlar Menüsü ${BAR}${NC}"
+    printf '\n'
+    printf '%b\n' "${TEE}${HORIZONTAL} 1 - Sıralama: ${ORANGE}${SORT_BY}${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} 2 - Detaylar: ${ORANGE}$([[ "${SHOW_DETAILS}" == true ]] && echo 'Açık' || echo 'Kapalı')${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} 3 - Otomatik yedek: ${ORANGE}$([[ "${AUTO_BACKUP}" == true ]] && echo 'Açık' || echo 'Kapalı')${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} 4 - Silme onayı: ${ORANGE}$([[ "${CONFIRM_DELETE}" == true ]] && echo 'Açık' || echo 'Kapalı')${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} 5 - Maksimum yedek: ${ORANGE}${MAX_BACKUPS}${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} s - Kaydet ve çık"
+    printf '%b\n' "${LAST_TEE}${HORIZONTAL} q - Kaydetmeden çık"
+    printf '\n'
+    printf '%b' "${BOLD}Komut: ${NC}"
+    read -r cmd
+
+    case "${cmd}" in
+      1)
+        printf '\n%b\n' "${CYAN}${BOLD}Sıralama Seçenekleri:${NC}"
+        printf '%b\n' "1) ${ORANGE}date${NC} - tarihe göre (yeni -> eski)"
+        printf '%b\n' "2) ${ORANGE}size${NC} - boyuta göre (büyük -> küçük)"
+        printf '%b\n' "3) ${ORANGE}name${NC} - isme göre (a -> z)"
+        printf '%b'  "Seçiminiz: "
+        read -r s
+        case "${s}" in
+          1) SORT_BY="date" ;;
+          2) SORT_BY="size" ;;
+          3) SORT_BY="name" ;;
+          *) log_message "ERROR" "Geçersiz sıralama seçimi: ${s}" ;;
+        esac
+        ;;
+      2) SHOW_DETAILS=$([[ "${SHOW_DETAILS}" == true ]] && echo false || echo true) ;;
+      3) AUTO_BACKUP=$([[ "${AUTO_BACKUP}" == true ]] && echo false || echo true) ;;
+      4) CONFIRM_DELETE=$([[ "${CONFIRM_DELETE}" == true ]] && echo false || echo true) ;;
+      5)
+        printf '\n%b' "${BOLD}Maksimum yedek sayısı (1-50): ${NC}"
+        read -r m
+        if [[ "${m}" =~ ^[0-9]+$ ]] && (( m >= 1 && m <= 50 )); then
+          MAX_BACKUPS="${m}"
+        else
+          log_message "ERROR" "Geçersiz değer: ${m}"
+        fi
+        ;;
+      s|S)
+        save_config
+        break
+        ;;
+      q|Q)
+        log_message "INFO" "Ayarlar kaydedilmedi."
+        break
+        ;;
+      *)
+        log_message "ERROR" "Geçersiz komut: ${cmd}"
+        ;;
+    esac
+
+    printf '\n%b' "${GRAY}Devam etmek için Enter'a basın...${NC}"
+    read -r _
+  done
+}
+
+# ------------------------------------------------------------------------------
+# UI: help & main menu
+# ------------------------------------------------------------------------------
+
+show_help() {
+  cat <<EOF
+osc-profiles - NixOS system profile manager
+
+Usage:
+  osc-profiles            # interactive menu
+  osc-profiles -m|--menu  # interactive menu
+  osc-profiles -l|--list  # list profiles (non-interactive)
+  osc-profiles -s|--stats # show statistics
+  osc-profiles -b|--backup # backup active system profile
+  osc-profiles -h|--help  # show this help
+
+Inside interactive menu:
+  d  - delete profile by index
+  c  - compare two profiles
+  b  - backup active profile
+  s  - change sort order
+  t  - toggle details
+  a  - delete all non-active profiles
+  g  - show log tail
+  o  - settings menu
+  q  - quit
+EOF
+}
+
+show_main_menu() {
+  while true; do
+    clear
+    print_header
+    print_active_system
+    list_profiles true
+    local total=$?
+
+    printf '%b\n' "${BOLD}Ana Menü:${NC}"
+    printf '%b\n' "${TEE}${HORIZONTAL} d - Profil sil"
+    printf '%b\n' "${TEE}${HORIZONTAL} c - Profilleri karşılaştır"
+    printf '%b\n' "${TEE}${HORIZONTAL} b - Aktif profili yedekle"
+    printf '%b\n' "${TEE}${HORIZONTAL} g - Günlüğü görüntüle"
+    printf '%b\n' "${TEE}${HORIZONTAL} s - Sıralama değiştir"
+    printf '%b\n' "${TEE}${HORIZONTAL} t - Detayları aç/kapat"
+    printf '%b\n' "${TEE}${HORIZONTAL} a - Tüm eski profilleri sil"
+    printf '%b\n' "${TEE}${HORIZONTAL} o - Ayarlar"
+    printf '%b\n' "${LAST_TEE}${HORIZONTAL} q - Çıkış"
+    printf '\n%b' "${BOLD}Komut: ${NC}"
+    read -r cmd
+
+    case "${cmd}" in
+      d|D)
+        while true; do
+          printf '\n%b' "${BOLD}Silinecek profil numarası (çıkmak için q): ${NC}"
+          read -r num
+          [[ "${num}" == "q" ]] && break
+          delete_profile_by_index "${num}" && break
+        done
+        ;;
+      c|C)
+        printf '%b' "1. profil numarası: "
+        read -r n1
+        printf '%b' "2. profil numarası: "
+        read -r n2
+        compare_profiles "${n1}" "${n2}"
+        ;;
+      b|B)
+        backup_profile "${SYSTEM_PROFILE}"
+        ;;
+      g|G)
+        clear
+        printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} Sistem Günlüğü ${BAR}${NC}"
+        printf '\n'
+        if [[ -f "${LOG_FILE}" ]]; then
+          tail -n 20 "${LOG_FILE}"
+        else
+          printf '%b\n' "${GRAY}Günlük dosyası bulunamadı.${NC}"
+        fi
+        printf '\n%b' "${GRAY}Devam etmek için Enter'a basın...${NC}"
+        read -r _
+        ;;
+      s|S)
+        printf '\n%b\n' "${CYAN}${BOLD}Sıralama Seçenekleri:${NC}"
+        printf '%b\n' "1) ${ORANGE}date${NC}"
+        printf '%b\n' "2) ${ORANGE}size${NC}"
+        printf '%b\n' "3) ${ORANGE}name${NC}"
+        printf '%b'  "Seçiminiz: "
+        read -r s
+        case "${s}" in
+          1) SORT_BY="date" ;;
+          2) SORT_BY="size" ;;
+          3) SORT_BY="name" ;;
+          *) log_message "ERROR" "Geçersiz seçim: ${s}" ;;
+        esac
+        ;;
+      t|T)
+        SHOW_DETAILS=$([[ "${SHOW_DETAILS}" == true ]] && echo false || echo true)
+        ;;
+      a|A)
+        bulk_delete_old_profiles
+        ;;
+      o|O)
+        show_settings_menu
+        ;;
+      q|Q)
+        break
+        ;;
+      *)
+        log_message "ERROR" "Geçersiz komut: ${cmd}"
+        ;;
+    esac
+
+    printf '\n'
+  done
+}
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+
 main() {
-	# Yapılandırma dosyasını yükle
-	setup_config
+  load_config
 
-	case "$1" in
-	-h | --help)
-		show_help
-		;;
-	-m | --menu)
-		show_main_menu
-		;;
-	-l | --list)
-		clear
-		print_header
-		print_active_system
-		list_profiles false
-		;;
-	-s | --stats)
-		clear
-		print_header
-		print_stats
-		;;
-	-b | --backup)
-		backup_profile "$SYSTEM_PROFILE"
-		;;
-	# Diğer seçenekler...
-	"")
-		show_main_menu
-		;;
-	*)
-		log_message "ERROR" "Geçersiz parametre: $1"
-		show_help
-		exit 1
-		;;
-	esac
+  case "${1:-}" in
+    -h|--help)
+      show_help
+      ;;
+    -m|--menu|"")
+      show_main_menu
+      ;;
+    -l|--list)
+      clear
+      print_header
+      print_active_system
+      list_profiles false
+      ;;
+    -s|--stats)
+      clear
+      print_header
+      print_stats
+      ;;
+    -b|--backup)
+      backup_profile "${SYSTEM_PROFILE}"
+      ;;
+    *)
+      log_message "ERROR" "Geçersiz parametre: $1"
+      show_help
+      exit 1
+      ;;
+  esac
 }
 
-# Programı çalıştır
 main "$@"
+
