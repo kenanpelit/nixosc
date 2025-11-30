@@ -1,7 +1,7 @@
 # modules/core/security/hblock/default.nix
 # hBlock per-user HOSTALIASES updater.
 
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   hblockUpdateScript = pkgs.writeShellScript "hblock-update" ''
@@ -46,5 +46,18 @@ in
       Type = "oneshot";
       ExecStart = "${hblockUpdateScript} || true";
     };
+  };
+
+  environment.systemPackages = [ pkgs.hblock ];
+
+  environment.etc."skel/.bashrc".text = lib.mkAfter ''
+    # hBlock DNS blocking via HOSTALIASES
+    export HOSTALIASES="$HOME/.config/hblock/hosts"
+  '';
+
+  environment.shellAliases = {
+    hblock-update-now = "sudo ${hblockUpdateScript}";
+    hblock-status     = "wc -l ~/.config/hblock/hosts";
+    hblock-check      = "head -20 ~/.config/hblock/hosts";
   };
 }
