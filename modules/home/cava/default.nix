@@ -4,10 +4,10 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
-  # Catppuccin modülünden otomatik renk alımı
+  # Automatic color extraction from Catppuccin module
   inherit (config.catppuccin) sources;
   
-  # Palette JSON'dan renkler - dinamik flavor desteği
+  # Colors from Palette JSON - dynamic flavor support
   colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
   
   # Dynamic Catppuccin gradient colors based on flavor

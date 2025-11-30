@@ -224,15 +224,15 @@ in
           approval_policy = "never"
           model_reasoning_effort = "high"
 
-          # NOTE: Gemini 3, Every Code içinde şu anda CLI agent
-          # üzerinden (Agents » gemini-3-pro, Command=gemini) kullanılıyor.
-          # Buraya model = "gemini-3-pro(-preview)" yazmak, Code'un
-          # OpenAI provider'ı üzerinden bilinmeyen bir modeli çağırmasına
-          # neden olup 400 model_not_found hatası üretiyor.
+          # NOTE: Gemini 3 is currently used within Every Code via CLI agent
+          # (Agents » gemini-3-pro, Command=gemini).
+          # Writing model = "gemini-3-pro(-preview)" here causes Code to
+          # call an unknown model via the OpenAI provider,
+          # resulting in a 400 model_not_found error.
           #
-          # Eğer ileride resmi dokümanda Gemini için geçerli
-          # `model_provider` ve `model` stringleri yayımlanırsa,
-          # aşağıdaki bloğu elle açıp doldurmak daha güvenli:
+          # If valid `model_provider` and `model` strings for Gemini
+          # are published in official documentation in the future,
+          # it is safer to manually uncomment and fill the block below:
           #
           # [profiles.gemini-3]
           # model = "gemini-3-pro-preview"
