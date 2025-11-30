@@ -70,6 +70,10 @@ exec "$NODE_BIN/npx" --yes @google/gemini-cli "$@"
 EOF
     
     chmod +x $out/bin/ai-gemini
+
+    # Provide a plain `gemini` binary so tools like Every Code
+    # (code) can discover the CLI via `gemini --version`.
+    ln -s $out/bin/ai-gemini $out/bin/gemini
     
     # Gemini nightly wrapper - ~/.npm-global/bin/gemini'yi çağırır
     cat > $out/bin/ai-gemini-nightly << 'EOF'
