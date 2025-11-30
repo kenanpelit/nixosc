@@ -518,7 +518,7 @@ in
   systemd.services."NetworkManager-wait-online".enable = false;
 
   # Network Profile Detection Service
-  systemd.services."network-profile-detect" = {
+  systemd.services."network-profile-detection" = {
     description = "Detect and cache network tuning profile based on system memory";
     wantedBy = [ "sysinit.target" ];
     before = [ "network-pre.target" ];
@@ -567,6 +567,19 @@ in
         
         # Safe sysctl helper: skip if key is missing, do not fail
         apply_sysctl() {
+          local key="$1"
+          shift
+          local val="$*"
+          if [ -z "$key" ]; then return; fi
+          
+          # Check if key exists in /proc/sys
+          local proc_path="/proc/sys/$(echo "$key" | sed 's/\./\//g')"
+          if [ -f "$proc_path" ]; then
+            sysctl -w "$key=$val" || true
+          else
+            echo "Skipping missing sysctl: $key"
+          fi
+        }
 
         case "$PROFILE" in
           ultra)
