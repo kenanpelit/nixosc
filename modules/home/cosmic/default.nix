@@ -558,4 +558,20 @@
   systemd.user.sessionVariables = {
     NIXOS_OZONE_WL = "1";
   };
+
+  home.packages = with pkgs; [
+    (writeShellScriptBin "cosmic_tty" ''
+      export XDG_SESSION_TYPE=wayland
+      export XDG_CURRENT_DESKTOP=COSMIC
+      export MOZ_ENABLE_WAYLAND=1
+      
+      if command -v cosmic-session >/dev/null; then
+        exec cosmic-session
+      else
+        # Fallback or debug info
+        echo "COSMIC session binary not found!" >&2
+        exit 1
+      fi
+    '')
+  ];
 }
