@@ -113,9 +113,9 @@
         }
       ];
 
-      # System-wide Flatpaks (user apps → home-manager tarafı)
+      # System-wide Flatpaks (user apps → home-manager side)
       packages = [
-        "com.github.tchx84.Flatseal"   # Permissions editor (fiilen zorunlu)
+        "com.github.tchx84.Flatseal"   # Permissions editor (practically mandatory)
         "io.github.everestapi.Olympus" # Celeste mod manager
       ];
 
@@ -124,14 +124,14 @@
         Context = {
           sockets = [ "wayland" ];
 
-          # X11 tamamen kapatılsın istenirse:
+          # If X11 should be completely disabled:
           # "!sockets" = [ "x11" "fallback-x11" ];
         };
       };
     };
   };
 
-  # nix-flatpak managed install service – rebuild sırasında gereksiz I/O'yu kes.
+  # nix-flatpak managed install service – cut unnecessary I/O during rebuild.
   systemd.services.flatpak-managed-install.enable = false;
 
   # ============================================================================
@@ -171,36 +171,36 @@
     steam = lib.mkIf isPhysicalHost {
       enable = true;
 
-      # Steam Remote Play portları (UDP 27031–27036, TCP 27036–27037)
+      # Steam Remote Play ports (UDP 27031–27036, TCP 27036–27037)
       remotePlay.openFirewall      = true;
       dedicatedServer.openFirewall = false;
 
-      # Gamescope session (login manager'dan seçilebilen "Gamescope Session")
+      # Gamescope session (selectable "Gamescope Session" from login manager)
       gamescopeSession.enable = true;
 
-      # Proton-GE: oyun uyumluluğu için community Proton
+      # Proton-GE: community Proton for game compatibility
       extraCompatPackages = [ pkgs.proton-ge-bin ];
     };
 
     gamescope = lib.mkIf isPhysicalHost {
       enable    = true;
-      capSysNice = true;  # RT scheduling için gerekli capability
+      capSysNice = true;  # capability required for RT scheduling
 
       args = [
         "--rt"                # RT scheduler
-        "--expose-wayland"    # Wayland soketini expose et
+        "--expose-wayland"    # Expose Wayland socket
         "--adaptive-sync"     # VRR/FreeSync/G-Sync
         "--immediate-flips"   # Minimum latency
-        "--force-grab-cursor" # FPS oyunlarda imleci zorla kilitle
+        "--force-grab-cursor" # Force cursor grab in FPS games
       ];
     };
 
     # --------------------------------------------------------------------------
     # Desktop Core
     # --------------------------------------------------------------------------
-    dconf.enable = true;  # GNOME / GTK ayar veritabanı
+    dconf.enable = true;  # GNOME / GTK settings database
 
-    # Sadece shell'i sistem çapında açar; config'ler home-manager'da.
+    # Enables shell system-wide only; configs are in home-manager.
     zsh.enable = true;
 
     # --------------------------------------------------------------------------
@@ -209,7 +209,7 @@
     nix-ld = {
       enable = true;
 
-      # Eksik kütüphaneler çıktıkça doldurulacak "parking lot".
+      # "Parking lot" to fill as missing libraries appear.
       libraries = with pkgs; [
         # stdenv.cc.cc.lib
         # zlib
@@ -227,7 +227,7 @@
     spice-gtk
     spice-protocol
     virt-viewer
-    # virt-manager  # Core packages modülünde duruyor; burada tekrar eklemeye gerek yok.
+    # virt-manager  # Located in core packages module; no need to add again here.
   ];
 
   # ============================================================================
@@ -235,18 +235,18 @@
   # ============================================================================
   virtualisation = lib.mkIf isPhysicalHost {
     # --------------------------------------------------------------------------
-    # Podman (rootless Docker alternatifi)
+    # Podman (rootless Docker alternative)
     # --------------------------------------------------------------------------
     podman = {
       enable = true;
 
-      # Docker soketi uyumluluğu – tooling tarafında "docker" takıntısını kırmak için.
+      # Docker socket compatibility – to break "docker" obsession in tooling.
       dockerCompat = true;
 
       # Rootless network DNS
       defaultNetwork.settings.dns_enabled = true;
 
-      # Haftalık auto-prune – disk şişmesine izin verme.
+      # Weekly auto-prune – prevent disk bloat.
       autoPrune = {
         enable = true;
         flags  = [ "--all" ];
@@ -261,7 +261,7 @@
       ];
     };
 
-    # Container registry konfigürasyonu – TEK otorite burası olsun.
+    # Container registry configuration – let this be the SINGLE authority.
     containers.registries = {
       search = [ "docker.io" "quay.io" ];
       insecure = [
@@ -273,25 +273,25 @@
     };
 
     # --------------------------------------------------------------------------
-    # Libvirt / QEMU (tam sanallaştırma)
+    # Libvirt / QEMU (full virtualization)
     # --------------------------------------------------------------------------
     libvirtd = {
       enable = true;
 
       qemu.swtpm.enable = true;
 
-      # OVMF notu:
-      # - OVMF paketini core packages'te taşıyorsun.
-      # - OVMF otomatik enable/detect ediliyor, ekstra override gerekmedikçe dokunma.
+      # OVMF note:
+      # - You are carrying the OVMF package in core packages.
+      # - OVMF is auto enabled/detected, don't touch unless extra override needed.
       # qemu.ovmf.enable = true;
     };
 
-    # SPICE USB redirection – libvirt ile USB'yi VM'e geçirmek için
+    # SPICE USB redirection – to pass USB to VM via libvirt
     spiceUSBRedirection.enable = true;
   };
 
   # ============================================================================
-  # Udev Rules (Layer 5: KVM / VFIO erişim izinleri)
+  # Udev Rules (Layer 5: KVM / VFIO permissions)
   # ============================================================================
   services.udev.extraRules = ''
     # --------------------------------------------------------------------------
@@ -300,13 +300,13 @@
     SUBSYSTEM=="vfio", GROUP="libvirtd"
 
     # --------------------------------------------------------------------------
-    # KVM & vhost-net – hızlandırma
+    # KVM & vhost-net – acceleration
     # --------------------------------------------------------------------------
     KERNEL=="kvm",            GROUP="kvm", MODE="0664"
     SUBSYSTEM=="misc", KERNEL=="vhost-net", GROUP="kvm", MODE="0664"
 
     # --------------------------------------------------------------------------
-    # Örnek USB passthrough kuralları (devre dışı)
+    # Example USB passthrough rules (disabled)
     # --------------------------------------------------------------------------
     # SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c534", GROUP="libvirtd"
     # SUBSYSTEM=="usb", ATTR{idVendor}=="1050", ATTR{idProduct}=="0407", GROUP="libvirtd"
@@ -315,5 +315,5 @@
   # ============================================================================
   # Security wrappers
   # ============================================================================
-  # SPICE USB wrapper'ı spiceUSBRedirection.enable ile zaten hallediliyor.
+  # SPICE USB wrapper is already handled by spiceUSBRedirection.enable.
 }

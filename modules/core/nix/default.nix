@@ -82,7 +82,7 @@ in
         "flakes"
       ];
 
-      # İstersen: CLI’de her seferinde --option warn-dirty=false yazmamak için:
+      # Optional: To avoid typing --option warn-dirty=false every time:
       # warn-dirty = false;
     };
 
@@ -90,7 +90,7 @@ in
     # Garbage Collection (Layer 3: Disk Space Management)
     # ==========================================================================
     gc = {
-      # NH temizliği açıksa Nix GC'yi otomatik çalıştırma — çifte iş yapma
+      # If NH clean is enabled, don't run Nix GC automatically — avoid double work
       automatic = !config.programs.nh.clean.enable;
 
       dates   = "Sun 03:00";
@@ -114,7 +114,7 @@ in
     config = {
       allowUnfree = true;
 
-      # İnce ayar istersen:
+      # If you want fine-tuning:
       # allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
       #   "steam" "spotify" "discord"
       # ];
@@ -124,7 +124,7 @@ in
       # NUR (Nix User Repository)
       inputs.nur.overlays.default
 
-      # Örnek custom overlay:
+      # Example custom overlay:
       # (final: prev: {
       #   myPackage = prev.myPackage.overrideAttrs (old: {
       #     version = "custom";
@@ -154,7 +154,7 @@ in
 
   environment.systemPackages = with pkgs; [
     nix-tree
-    # İleride açmak istersen:
+    # If you want to enable later:
     # nix-diff
     # nix-du
     # nvd

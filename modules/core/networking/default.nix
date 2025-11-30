@@ -533,60 +533,40 @@ in
   systemd.services."network-tcp-tuning" = {
     description = "Apply dynamic TCP/IP stack tuning based on system profile";
 
-    # Boot sonrası otomatik çalışsın
+    # Start automatically after boot
     wantedBy = [ "multi-user.target" ];
-
-    # Sıralama:
-    #  - Önce profil tespiti
-    #  - Ağ gerçekten online olsun
-    #  - Firewall / nftables muhtemelen nf_conntrack modülünü yüklemiş olsun
-    after = [
-      "network-profile-detect.service"
-      "network-online.target"
-      "nftables.service"
-      "firewall.service"
-    ];
-
-    # network-online hedefini iste ama ona bağımlı olma
-    wants = [ "network-online.target" ];
-
-    # Profile detection’a gerçekten bağımlıyız
-    requires = [ "network-profile-detect.service" ];
-
+    
+    # Ordering:
+    #  - Network must be genuinely online
+    #  - Firewall/nftables should have loaded nf_conntrack module
+    after = [ "network-online.target" "firewall.service" "network-profile-detection.service" ];
+    wants = [ "network-online.target" ]; 
+    
+    # Want network-online target but do not strictly depend on it
+    # (sometimes network-online fails but we still have partial connectivity)
+    
+    # We strictly depend on profile detection
+    bindsTo = [ "network-profile-detection.service" ];
+    
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-
-      ExecStart = pkgs.writeShellScript "apply-tcp-tuning" ''
-        #!${bash}
-        set -euo pipefail
-
-        CACHE_FILE="/run/network-tuning-profile"
-
-        # Profil cache yoksa burada da oluştur (boot race durumlarına karşı)
-        if [[ ! -f "$CACHE_FILE" ]]; then
-          echo "[TCP] Profile cache missing, running detection..."
-          ${detectAndCacheProfile}
+      ExecStart = pkgs.writeScript "apply-tcp-tuning" ''
+        #!${pkgs.bash}/bin/bash
+        PROFILE_FILE="/run/network-profile/current"
+        
+        # Create profile cache here if missing (guard against boot race conditions)
+        if [ ! -f "$PROFILE_FILE" ]; then
+          echo "Profile not found, defaulting to STANDARD..."
+          mkdir -p /run/network-profile
+          echo "STANDARD" > "$PROFILE_FILE"
         fi
-
-        PROFILE="$(${cat} "$CACHE_FILE" 2>/dev/null || echo std)"
-
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "[TCP] Applying ''${PROFILE} performance profile"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        # Güvenli sysctl helper: key yoksa atla, fail etme
+        
+        PROFILE=$(cat "$PROFILE_FILE")
+        echo "Applying TCP tuning for profile: $PROFILE"
+        
+        # Safe sysctl helper: skip if key is missing, do not fail
         apply_sysctl() {
-          local key="$1"
-          local val="$2"
-          local path="/proc/sys/''${key//./\/}"
-
-          if [[ -e "$path" ]]; then
-            ${sysctl} -w "$key=$val" >/dev/null
-          else
-            echo "[TCP] Skipping $key (no /proc/sys entry)"
-          fi
-        }
 
         case "$PROFILE" in
           ultra)

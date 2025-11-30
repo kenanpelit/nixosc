@@ -438,8 +438,8 @@
     # ==========================================================================
     # Dock Configuration Files
     # ==========================================================================
-    # Oturum açıldığında dock boyutunu XS yap
-    # (Not: Servis tanımları xdg.configFile dışında tepe seviyeye taşındı.)
+    # Set dock size to XS on session start
+    # (Note: Service definitions moved to top level outside xdg.configFile)
 
     # ==========================================================================
     # Terminal Configuration (JSON format)
@@ -559,4 +559,3 @@
     NIXOS_OZONE_WL = "1";
   };
 }
-

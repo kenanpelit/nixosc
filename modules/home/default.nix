@@ -2,20 +2,20 @@
 # ==============================================================================
 # Home Manager Configuration
 # ==============================================================================
-# Bu modül tüm home-manager modüllerini ve global temaları import eder:
-# - Masaüstü ortamları ve pencere yöneticileri
-# - Uygulama yapılandırmaları ve ayarları
-# - Geliştirme araçları ve yardımcı programlar
-# - Sistem özelleştirme ve temalandırma
-# - Terminal ortamları ve shell yapılandırmaları
-# - Medya ve eğlence uygulamaları
+# This module imports all home-manager modules and global themes:
+# - Desktop environments and window managers
+# - Application configurations and settings
+# - Development tools and utilities
+# - System customization and theming
+# - Terminal environments and shell configurations
+# - Media and entertainment applications
 #
 # Author: Kenan Pelit
 # ==============================================================================
 { config, lib, pkgs, inputs, ... }:
 {
   imports = [
-    # Global tema modülleri
+    # Global theme modules
     inputs.catppuccin.homeModules.catppuccin
 
     # =============================================================================
@@ -149,7 +149,7 @@
     # AI & Machine Learning
     # =============================================================================
     #./ollama        # Local large language model management
-    ./ai            # Yeni AI modülü
+    ./ai            # AI & LLM configuration
     
     # =============================================================================
     # Document & Archive Management
