@@ -115,12 +115,6 @@ let
 in
 {
   # ==============================================================================
-  # SYSTEMD SERVICES
-  # ==============================================================================
-  # REMOVED: systemd.user.services.gnome-keyring-secrets
-  # Reason: Already defined in modules/home/hyprland/keyring.nix, causing conflict.
-
-  # ==============================================================================
   # DCONF SETTINGS
   # ==============================================================================
   dconf.settings = {
@@ -511,4 +505,19 @@ in
     };
 
   } // customBindingsDconf; # Merge generated custom keybindings
+
+  # ==============================================================================
+  # GNOME AUTOSTART ENTRIES
+  # ==============================================================================
+  # Run gnome-monitor-set only for GNOME sessions using the XDG autostart
+  # mechanism. Hyprland and other desktops will ignore OnlyShowIn=GNOME.
+  xdg.configFile."autostart/gnome-monitor-set.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=GNOME Monitor Set
+    Comment=Set external monitor as primary on GNOME login
+    Exec=gnome-monitor-set
+    OnlyShowIn=GNOME;
+    X-GNOME-Autostart-enabled=true
+  '';
 }
