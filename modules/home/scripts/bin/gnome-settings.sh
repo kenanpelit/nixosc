@@ -20,9 +20,9 @@ echo "📝 Log dosyası: $LOG_FILE"
 echo "🕐 Başlama zamanı: $(date)"
 
 # Font ayarları
-MAIN_FONT="Monaspace Neon"
-EDITOR_FONT="Monaspace Neon"
-TERMINAL_FONT="Monaspace Neon"
+MAIN_FONT="JetBrainsMono Nerd Font"
+EDITOR_FONT="JetBrainsMono Nerd Font"
+TERMINAL_FONT="JetBrainsMono Nerd Font"
 FONT_SIZE_SM="12"
 FONT_SIZE_MD="13"
 FONT_SIZE_XL="15"

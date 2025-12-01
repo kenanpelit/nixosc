@@ -69,14 +69,25 @@ in {
       fontconfig = {
         defaultFonts = {
           monospace = [
-            "Monaspace Neon"
-            "Monaspace Argon"
-            "Maple Mono NF"
-            "Hack Nerd Font Mono"
+            # --- TIER 1: GÜNLÜK SÜRÜCÜ (STABILITY KING) ---
+            "JetBrainsMono Nerd Font"
             "JetBrains Mono"
-            "Fira Code"
-            "Source Code Pro"
-            "Liberation Mono"
+
+            # --- TIER 2: MODERN & YENİLİKÇİ (TEXTURE HEALING) ---
+            "Monaspace Neon"
+
+            # --- TIER 3: ESTETİK & RICING (WEEKEND FONT) ---
+            "Maple Mono NF"
+            "Maple Mono"
+
+            # --- TIER 4: GÜVENLİ LİMAN (FALLBACK) ---
+            "Hack Nerd Font"
+            "Hack"
+
+            # --- TIER 5: ESKİ TOPRAK ---
+            "FiraCode Nerd Font"
+
+            # EMOJI GARANTİSİ
             "Noto Color Emoji"
           ];
 

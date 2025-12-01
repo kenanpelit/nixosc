@@ -7,7 +7,7 @@ let
   # Font ayarları
   fonts = {
     main = {
-      family = "Monaspace Neon";
+      family = "JetBrainsMono Nerd Font";
     };
     sizes = {
       sm = 12;

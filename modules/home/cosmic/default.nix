@@ -448,8 +448,8 @@
     
     "cosmic/com.system76.CosmicTerm/v1/config" = {
       text = builtins.toJSON {
-        # Font settings - Monaspace for consistency
-        font_name = "Monaspace Neon";
+        # Font settings - JetBrainsMono NF for consistency
+        font_name = "JetBrainsMono Nerd Font";
         font_size = 14;
         font_weight = 400;              # Regular weight
         dim_font_weight = 400;
