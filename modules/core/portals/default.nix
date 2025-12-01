@@ -13,15 +13,25 @@
 
 let
   cfg = config.my.display;
+  flatpakEnabled = config.services.flatpak.enable or false;
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 in
 {
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf (cfg.enable || flatpakEnabled) {
+    # Required when Home Manager installs portals via user packages
+    environment.pathsToLink = [
+      "/share/applications"
+      "/share/xdg-desktop-portal"
+    ];
+
     xdg.portal = {
       enable = true;
-      extraPortals = [ hyprPortalPkg ];
-      config.common.default = [ "hyprland" "gtk" ];
+      extraPortals =
+        (lib.optional cfg.enableHyprland hyprPortalPkg)
+        ++ [ pkgs.xdg-desktop-portal-gtk ];
+      config.common.default =
+        if cfg.enableHyprland then [ "hyprland" "gtk" ] else [ "gtk" ];
     };
   };
 }
