@@ -203,7 +203,6 @@ in
     audacious       # Hafif müzik oynatıcı
     #radiotray-ng    # İnternet radyo oynatıcı
     soundwireserver # Ses streaming sunucusu
-    
     # Torrent
     transmission_4   # BitTorrent istemcisi
     pirate-get       # Pirate Bay CLI
