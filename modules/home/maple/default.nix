@@ -1,11 +1,10 @@
 # modules/home/maple/default.nix
 # ==============================================================================
-# Local Maple Mono (7.8) font package set as a Home Manager module.
-# - Provides a package matrix via config._module.args.mapleFonts
-# - Hashes read from hashes.json (use fakeSha256 by default; replace after build)
+# Local Maple Mono (7.8) font package set.
+# - Returns an attrset of all Maple variants (NF/CN/NL/Variable/TTF/OTF/Woff2).
 # ==============================================================================
 
-{ lib, pkgs, ... }:
+{ lib, pkgs }:
 
 let
   hashes = lib.importJSON ./hashes.json;
@@ -86,6 +85,4 @@ let
         })
       typeVariants;
 in
-{
-  config._module.args.mapleFonts = mapleFonts;
-}
+mapleFonts
