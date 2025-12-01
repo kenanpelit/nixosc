@@ -124,8 +124,7 @@ in
     home.packages = with pkgs;
       (optional cfg.claude-cli.enable cfg.claude-cli.package) ++
       (optional cfg.gemini-cli.enable cfg.gemini-cli.package) ++
-      (optional cfg.codex-cli.enable cfg.codex-cli.package) ++
-      (optional cfg.every-code.enable cfg.every-code.package);
+      (optional cfg.codex-cli.enable cfg.codex-cli.package);
     
     # Shell configuration for AI commands
     programs.zsh = mkIf config.programs.zsh.enable { shellAliases = aliases; };
@@ -159,60 +158,11 @@ in
       (mkIf cfg.ollama.enable {
         OLLAMA_HOST = "127.0.0.1:11434";
       })
-      (mkIf cfg.every-code.enable {
-        CODE_HOME = "${config.xdg.configHome}/code";
-      })
     ];
     
     # Desktop entries
     xdg.desktopEntries = desktopEntries;
 
-    # Every Code configuration (uses CODE_HOME, which we point to XDG config)
-    # Use force = true so Home Manager can safely overwrite an existing
-    # config/backup pair without failing activation.
-    xdg.configFile = mkIf cfg.every-code.enable {
-      "code/config.toml" = {
-        force = true;
-        text = ''
-          model = "gpt-5.1"
-          model_provider = "openai"
-          approval_policy = "on-request"
-          model_reasoning_effort = "medium"
-          sandbox_mode = "workspace-write"
-
-          [tui.theme]
-          # Valid themes include:
-          #   light-photon, light-photon-ansi16, light-prism-rainbow,
-          #   light-vivid-triad, light-porcelain, light-sandbar, light-glacier,
-          #   dark-carbon-night, dark-carbon-ansi16, dark-shinobi-dusk,
-          #   dark-oled-black-pro, dark-amber-terminal, dark-aurora-flux,
-          #   dark-charcoal-rainbow, dark-zen-garden, dark-paper-light-pro, custom
-          name = "dark-aurora-flux"
-
-          # Default OpenAI profile
-          [profiles.gpt-5]
-          model = "gpt-5.1"
-          model_provider = "openai"
-          approval_policy = "never"
-          model_reasoning_effort = "high"
-
-          # NOTE: Gemini 3 is currently used within Every Code via CLI agent
-          # (Agents » gemini-3-pro, Command=gemini).
-          # Writing model = "gemini-3-pro(-preview)" here causes Code to
-          # call an unknown model via the OpenAI provider,
-          # resulting in a 400 model_not_found error.
-          #
-          # If valid `model_provider` and `model` strings for Gemini
-          # are published in official documentation in the future,
-          # it is safer to manually uncomment and fill the block below:
-          #
-          # [profiles.gemini-3]
-          # model = "gemini-3-pro-preview"
-          # model_provider = "<gemini-provider>" # e.g. google / gemini (see docs or /settings)
-          # approval_policy = "on-request"
-          # model_reasoning_effort = "medium"
-        '';
-      };
-    };
+    xdg.configFile = { };
   };
 }
