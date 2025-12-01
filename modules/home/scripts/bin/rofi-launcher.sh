@@ -108,6 +108,7 @@ readonly POWER_CONFIRM_ACTIONS=(reboot shutdown hibernate)
 
 readonly THEME_CACHE_DIR="${CACHE_DIR}/power-menu-themes"
 readonly POWER_THEME_FILE="${THEME_CACHE_DIR}/theme-${POWER_MENU_THEME}.rasi"
+mkdir -p "$THEME_CACHE_DIR"
 
 # Power menu options
 POWER_DRYRUN=false
@@ -472,6 +473,103 @@ element selected {
 
 element.urgent {
 	text-color: @urgent;
+}
+EOF
+		;;
+	"catppuccin")
+		cat >"$theme_file" <<'EOF'
+* {
+	font: "Maple Mono NF 12";
+	bg0: #1e1e2e;
+	bg1: #313244;
+	fg0: #cdd6f4;
+	fg1: #a6adc8;
+	accent: #89b4fa;
+	urgent: #f38ba8;
+	selected: rgba(137, 180, 250, 0.18);
+}
+
+window {
+	background-color: @bg0;
+	text-color: @fg0;
+	width: 420px;
+	padding: 16px;
+	border: 2px solid @accent;
+	border-radius: 14px;
+	location: center;
+	anchor: center;
+}
+
+mainbox {
+	background-color: transparent;
+	children: [ inputbar, listview ];
+	spacing: 12px;
+}
+
+inputbar {
+	background-color: @bg1;
+	text-color: @fg0;
+	padding: 10px 14px;
+	border-radius: 10px;
+	children: [ prompt, entry ];
+	spacing: 8px;
+}
+
+prompt {
+	background-color: transparent;
+	text-color: @accent;
+	font: "Maple Mono NF Bold 12";
+}
+
+entry {
+	background-color: transparent;
+	text-color: @fg0;
+	placeholder: "Type to filter...";
+	placeholder-color: @fg1;
+}
+
+listview {
+	background-color: transparent;
+	columns: 1;
+	lines: 6;
+	spacing: 8px;
+	cycle: true;
+	dynamic: true;
+	scrollbar: false;
+}
+
+element {
+	background-color: @bg1;
+	text-color: @fg0;
+	padding: 12px;
+	border-radius: 10px;
+	orientation: horizontal;
+	spacing: 12px;
+}
+
+element-icon {
+	background-color: transparent;
+	size: 20px;
+	text-color: inherit;
+}
+
+element-text {
+	background-color: transparent;
+	text-color: inherit;
+	vertical-align: 0.5;
+	horizontal-align: 0.0;
+}
+
+element selected {
+	background-color: @selected;
+	text-color: @accent;
+	border: 1px solid @accent;
+}
+
+element.urgent {
+	background-color: rgba(243, 139, 168, 0.12);
+	text-color: @urgent;
+	border: 1px solid @urgent;
 }
 EOF
 		;;
