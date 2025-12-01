@@ -448,7 +448,7 @@
     
     "cosmic/com.system76.CosmicTerm/v1/config" = {
       text = builtins.toJSON {
-        # Font settings - Maple Mono for consistency
+        # Font settings - Monaspace for consistency
         font_name = "Monaspace Neon";
         font_size = 14;
         font_weight = 400;              # Regular weight
