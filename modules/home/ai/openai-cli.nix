@@ -1,4 +1,15 @@
 # modules/home/ai/openai-cli.nix
+# ==============================================================================
+# OpenAI Codex CLI Wrapper
+# ==============================================================================
+# Provides a Nix wrapper for the @openai/codex CLI tool.
+# - Installs the CLI tool using npx within a sandboxed environment.
+# - Ensures Node.js and npm are correctly configured.
+# - Creates `ai-codex` and `codex` executables in the user's PATH.
+#
+# Requires OpenAI API access.
+# ==============================================================================
+
 { lib, stdenv, makeWrapper, nodejs }:
 stdenv.mkDerivation rec {
   pname = "openai-codex-cli";
