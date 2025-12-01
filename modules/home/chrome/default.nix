@@ -40,6 +40,11 @@ let
     else if cfg.variant == "dev" then previews.google-chrome-dev
     else previews.google-chrome;
 
+  chromeBinary =
+    if cfg.variant == "beta" then "google-chrome-beta"
+    else if cfg.variant == "dev" then "google-chrome-unstable"
+    else "google-chrome-stable";
+
   desktopFile =
     if cfg.variant == "beta" then "google-chrome-beta.desktop"
     else if cfg.variant == "dev" then "google-chrome-dev.desktop"
@@ -261,7 +266,7 @@ EOF
         CHROME_FLAGS+=( "--disable-features=${disabledFeatures}" )
         ''}
 
-        exec ${chromePackage}/bin/google-chrome "''${CHROME_FLAGS[@]}" "$@"
+        exec ${chromePackage}/bin/${chromeBinary} "''${CHROME_FLAGS[@]}" "$@"
       '';
     };
 
