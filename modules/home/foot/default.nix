@@ -13,7 +13,7 @@ let
   # Font ve efekt ayarları
   fonts = {
     notifications = {
-      family = "Monaspace Neon";
+      family = "JetBrainsMono Nerd Font";
     };
     sizes = {
       sm = 12;

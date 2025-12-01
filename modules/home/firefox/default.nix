@@ -159,7 +159,7 @@ in {
         # Firefox settings
         settings = {
           # Fonts
-          "font.name.monospace.x-western" = "Monaspace Neon";
+          "font.name.monospace.x-western" = "JetBrainsMono Nerd Font";
 
           # File Picker Settings
           "widget.use-xdg-desktop-portal.file-picker" = 1;

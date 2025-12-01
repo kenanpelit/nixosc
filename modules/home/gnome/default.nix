@@ -46,8 +46,8 @@ let
 
   # --- Fonts ---
   fonts = {
-    main = "Monaspace Neon"; 
-    terminal = "Monaspace Neon";
+    main = "JetBrainsMono Nerd Font"; 
+    terminal = "JetBrainsMono Nerd Font";
     size_sm = "12";
     size_md = "13";
     size_xl = "15";

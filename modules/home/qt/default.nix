@@ -7,7 +7,7 @@ let
   # Font ayarları - GTK ile uyumlu
   fonts = {
     main = {
-      family = "Monaspace Neon";  # GTK ile aynı font
+      family = "JetBrainsMono Nerd Font";  # GTK ile aynı font
     };
     sizes = {
       sm = 12;

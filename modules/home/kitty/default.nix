@@ -6,7 +6,7 @@
 let
   # Typography configuration
   typography = {
-    family = "Monaspace Neon";
+    family = "JetBrainsMono Nerd Font";
     size = 13;
     features = [ "liga" "calt" ];
   };

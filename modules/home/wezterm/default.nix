@@ -20,7 +20,7 @@ let
   # Font ve efekt ayarları
   fonts = {
     terminal = {
-      family = "Monaspace Neon";
+      family = "JetBrainsMono Nerd Font";
     };
   };
 

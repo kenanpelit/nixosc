@@ -96,7 +96,7 @@ in
       text = cmd[update:1000] echo "$(date +"%A")"
       color = ${dynamicColors.text}
       font_size = 42
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, 300
       halign = center
       valign = center
@@ -108,7 +108,7 @@ in
       text = cmd[update:1000] echo "$(date +"%d %B %Y")"
       color = ${dynamicColors.subtext0}
       font_size = 26
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, 250
       halign = center
       valign = center
@@ -120,7 +120,7 @@ in
       text = cmd[update:1000] echo "$(date +"%H:%M")"
       color = ${dynamicColors.subtext0}
       font_size = 22
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, 200
       halign = center
       valign = center
@@ -165,7 +165,7 @@ in
       text = $USER
       color = ${dynamicColors.text}
       font_size = 16
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, -130
       halign = center
       valign = center
@@ -188,7 +188,7 @@ in
       inner_color = ${dynamicColors.surface0}
       font_color = ${dynamicColors.text}
       fade_on_empty = true
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       placeholder_text = 
       hide_input = false
       check_color = ${dynamicColors.green}      # Correct password
@@ -205,7 +205,7 @@ in
       text = Press Enter to unlock
       color = ${dynamicColors.subtext1}
       font_size = 12
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, -260
       halign = center
       valign = center
@@ -222,7 +222,7 @@ in
       text = cmd[update:60000] echo "⏱ Uptime: $(cat /proc/uptime | awk '{printf "%.0f hours", $1/3600}')"
       color = ${dynamicColors.subtext1}
       font_size = 14
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, -320
       halign = center
       valign = center
@@ -235,7 +235,7 @@ in
       text = cmd[update:5000] if pgrep -f spotify > /dev/null; then echo "🎵 $(playerctl --player=spotify metadata title 2>/dev/null || echo 'Spotify Running')"; else echo "🎵 No Player"; fi
       color = ${dynamicColors.subtext1}
       font_size = 14
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, -350
       halign = center
       valign = center
@@ -248,7 +248,7 @@ in
       text = cmd[update:30000] if [ -f /sys/class/power_supply/BAT0/capacity ]; then echo "🔋 $(cat /sys/class/power_supply/BAT0/capacity)%"; else echo ""; fi
       color = ${dynamicColors.subtext1}
       font_size = 14
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, -380
       halign = center
       valign = center
@@ -264,7 +264,7 @@ in
       text = 󰐥  󰜉  󰤄
       color = ${dynamicColors.text}
       font_size = 40
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 0, 100
       halign = center
       valign = bottom
@@ -277,7 +277,7 @@ in
       text = Catppuccin ${lib.strings.toUpper config.catppuccin.flavor}
       color = ${dynamicColors.subtext1}
       font_size = 10
-      font_family = Monaspace Neon
+      font_family = JetBrainsMono Nerd Font
       position = 20, 20
       halign = left
       valign = top

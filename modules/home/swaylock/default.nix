@@ -8,7 +8,7 @@ let
   # Font ayarları
   fonts = {
     notifications = {
-      family = "Monaspace Neon";
+      family = "JetBrainsMono Nerd Font";
     };
     sizes = {
       xl = 15;

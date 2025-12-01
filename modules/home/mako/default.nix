@@ -52,7 +52,7 @@ in
       margin = "15,20,0,0";
       
       # Typography - consistent with system theme
-      font = "Monaspace Neon 12";
+      font = "JetBrainsMono Nerd Font 12";
       
       # NOTE: Basic colors (background-color, text-color, border-color, progress-color) 
       # are managed by Catppuccin module for consistency
