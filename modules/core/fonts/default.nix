@@ -33,7 +33,9 @@ in {
       packages = with pkgs; [
         # Coding / Nerd fonts (primary: Monaspace)
         monaspace
-        nerd-fonts.symbols-only
+        nerd-fonts.monaspace       # NF-patched Monaspace for icons
+        nerd-fonts.symbols-only    # Extra NF symbols fallback
+
         # Fallback / alternates
         maple-mono.NF
         maple-mono.NF-CN-unhinted
