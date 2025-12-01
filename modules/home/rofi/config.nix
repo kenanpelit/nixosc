@@ -1,7 +1,14 @@
 # modules/home/rofi/config.nix
 # ==============================================================================
-# Enhanced Rofi Appearance and Behavior Configuration
+# Rofi Core Configuration
 # ==============================================================================
+# Defines Rofi's core appearance and behavior settings.
+# - Modalities, layout, and display options
+# - Font, icons, and cache settings
+# - Custom formats and keybindings (defined within the .rasi file)
+#
+# ==============================================================================
+
 { pkgs, ... }:
 {
   # =============================================================================
@@ -16,7 +23,7 @@
       lines: 8;
       columns: 3;
       cycle: true;
-      font: "Hack Nerd Font Bold 13";
+      font: "Maple Mono NF Bold 13";
 
       /* Display Settings */
       show-icons: true;
@@ -120,7 +127,7 @@
       text-color: @bg-col;
       border-radius: 6px;
       margin: 2px;
-      font: "Hack Nerd Font Bold 13";
+      font: "Maple Mono NF Bold 13";
     }
 
 
@@ -255,7 +262,7 @@
     button selected {
       background-color: @green;
       text-color: @bg-col;
-      font: "Hack Nerd Font Bold 13";
+      font: "Maple Mono NF Bold 13";
     }
 
     /* Scrollbar */
@@ -290,4 +297,3 @@
     }
   '';
 }
-

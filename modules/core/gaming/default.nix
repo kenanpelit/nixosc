@@ -1,5 +1,12 @@
 # modules/core/gaming/default.nix
-# Steam/Gamescope stack for physical hosts.
+# ==============================================================================
+# Gaming Configuration
+# ==============================================================================
+# Configures gaming-related software and optimizations for physical hosts.
+# - Steam (with Remote Play and Proton GE)
+# - Gamescope (Compositor for gaming)
+#
+# ==============================================================================
 
 { lib, pkgs, isPhysicalHost ? false, ... }:
 

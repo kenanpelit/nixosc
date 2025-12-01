@@ -1,7 +1,15 @@
-# modules/core/security/hblock/default.nix
-# hBlock per-user HOSTALIASES updater.
+# modules/core/hblock/default.nix
+# ==============================================================================
+# hBlock DNS Ad-Blocking
+# ==============================================================================
+# Configures system-wide ad-blocking updates for user HOSTALIASES.
+# - Updates hBlock list periodically
+# - Configures per-user HOSTALIASES file
+# - Provides shell aliases for manual updates
+#
+# ==============================================================================
 
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   hblockUpdateScript = pkgs.writeShellScript "hblock-update" ''
@@ -41,10 +49,32 @@ in
     description = "hBlock per-user HOSTALIASES updater";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = [ ]; # started via timer
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${hblockUpdateScript} || true";
     };
+  };
+
+  systemd.timers.hblock-update = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Sun *-*-* 01:00";
+      Persistent = true;
+      Unit = "hblock-update.service";
+    };
+  };
+
+  environment.systemPackages = [ pkgs.hblock ];
+
+  environment.etc."skel/.bashrc".text = lib.mkAfter ''
+    # hBlock DNS blocking via HOSTALIASES
+    export HOSTALIASES="$HOME/.config/hblock/hosts"
+  '';
+
+  environment.shellAliases = {
+    hblock-update-now = "sudo ${hblockUpdateScript}";
+    hblock-status     = "wc -l ~/.config/hblock/hosts";
+    hblock-check      = "head -20 ~/.config/hblock/hosts";
   };
 }

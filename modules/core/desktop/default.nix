@@ -1,5 +1,15 @@
 # modules/core/desktop/default.nix
-# Desktop integration services (dbus, gvfs, fwupd, etc).
+# ==============================================================================
+# Desktop Integration Services
+# ==============================================================================
+# Configures essential desktop services independent of the specific DE.
+# - DBus and GCR/Keyring
+# - GVFS and Tumbler (thumbnails)
+# - Firmware updates (fwupd)
+# - Input gestures (touchegg disabled by default)
+# - Printing and Avahi (disabled by default)
+#
+# ==============================================================================
 
 { pkgs, lib, isVirtualHost ? false, ... }:
 

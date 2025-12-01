@@ -1,7 +1,12 @@
 # modules/home/sway/default.nix
-# Enhanced Sway VM Configuration
-# This module configures Sway window manager for virtual machine management
-# Provides easy launching and window management for different VM types
+# ==============================================================================
+# Sway Window Manager Configuration
+# ==============================================================================
+# Configures Sway specifically for VM management use cases.
+# - Defines VM launching scripts/configs
+# - Sets window rules for QEMU (fullscreen)
+#
+# ==============================================================================
 
 { config, lib, pkgs, ... }:
 

@@ -1,5 +1,13 @@
 # modules/core/system/default.nix
-# Host metadata and imports for system submodules.
+# ==============================================================================
+# Core System Metadata & Defaults
+# ==============================================================================
+# Defines custom host metadata options and applies global system defaults.
+# - Host Role (physical/vm)
+# - Global service enablement (upower, spice-vdagentd)
+# - Global shell enablement (zsh)
+#
+# ==============================================================================
 
 { lib, config, hostRole ? "unknown", isPhysicalHost ? false, isVirtualHost ? false, ... }:
 
@@ -44,5 +52,7 @@ in
 
     services.upower.enable = true;
     services.spice-vdagentd.enable = lib.mkIf isVirtualMachine true;
+
+    programs.zsh.enable = true;
   };
 }

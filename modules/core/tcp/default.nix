@@ -1,5 +1,14 @@
-# modules/core/networking/tcp/default.nix
-# TCP/IP sysctl tuning (profiled).
+# modules/core/tcp/default.nix
+# ==============================================================================
+# TCP/IP Network Tuning
+# ==============================================================================
+# Advanced TCP/IP sysctl optimizations for high performance.
+# - BBR congestion control
+# - buffer sizes (rmem/wmem)
+# - fastopen, keepalive, and security settings (rp_filter)
+# - profiles: ultra, high, std (default: ultra)
+#
+# ==============================================================================
 
 { lib, ... }:
 

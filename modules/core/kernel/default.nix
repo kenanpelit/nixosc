@@ -1,5 +1,15 @@
 # modules/core/kernel/default.nix
-# Kernel package, modules, params, blacklist.
+# ==============================================================================
+# Kernel Configuration
+# ==============================================================================
+# Configures the Linux kernel, modules, and parameters.
+# - Kernel package (latest)
+# - Core modules (msr, coretemp, i915)
+# - Host-specific modules (thinkpad_acpi for physical)
+# - Kernel boot parameters (Intel p-state, power saving, graphics)
+# - Blacklisted modules (intel_rapl_mmio to avoid conflicts)
+#
+# ==============================================================================
 
 { pkgs, lib, isPhysicalHost ? false, ... }:
 

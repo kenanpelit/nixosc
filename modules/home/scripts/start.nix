@@ -1,3 +1,13 @@
+# modules/home/scripts/start.nix
+# ==============================================================================
+# Custom Startup Scripts (Wrappers)
+# ==============================================================================
+# Defines and builds various custom shell scripts used for launching applications
+# with specific arguments, environment variables, or profiles. These are primarily
+# used as wrappers for web browsers and other complex applications.
+#
+# ==============================================================================
+
 { pkgs, ... }:
 let
   start-brave-ai = pkgs.writeShellScriptBin "start-brave-ai" (

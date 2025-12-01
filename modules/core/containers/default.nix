@@ -1,5 +1,13 @@
 # modules/core/containers/default.nix
-# Podman container config (physical host).
+# ==============================================================================
+# Container Runtime Configuration
+# ==============================================================================
+# Configures Podman as the container engine for physical hosts.
+# - Enables Podman
+# - Enables Docker compatibility mode
+# - Configures DNS for container networking
+#
+# ==============================================================================
 
 { lib, isPhysicalHost ? false, ... }:
 
