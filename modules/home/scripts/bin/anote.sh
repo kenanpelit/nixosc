@@ -38,6 +38,8 @@ readonly TIMESTAMP="$(date +%Y-%m-%d\ %H:%M:%S)"
 readonly SCRATCH_FILE="$SCRATCH_DIR/$(date +%Y-%m).txt"
 readonly HISTORY_FILE="$CACHE_DIR/history.json"
 readonly CLEANUP_INTERVAL=$((7 * 24 * 60 * 60)) # 7 gün
+# tmux popup'larında fzf'nin tekrar bölünmemesi ve tam alanı kullanması için
+readonly FORCE_FULLSCREEN_FZF_IN_TMUX="${ANOTE_FORCE_FULLSCREEN_FZF_IN_TMUX:-true}"
 
 # Varsa konfigürasyon dosyasını yükle (burada FZF_DEFAULT_OPTS'i override edebilirsin)
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
@@ -137,6 +139,20 @@ NOTLAR:
 - Karmaşık komutlar için açıklama ekleyin
 - Örneklerle kullanımı gösterin
 EOF
+}
+
+# tmux içindeysek (özellikle display-popup'ta) fzf'nin tmux split/popup açmasını
+# engelleyip mevcut terminal alanını tam kullanmasını sağla
+configure_fzf_for_tmux() {
+  if [[ "$FORCE_FULLSCREEN_FZF_IN_TMUX" == "true" ]] &&
+    [[ "$TERM_PROGRAM" == "tmux" || -n "${TMUX:-}" ]]; then
+    export FZF_TMUX=0
+    if [[ -n "${FZF_DEFAULT_OPTS:-}" ]]; then
+      export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --height=100%"
+    else
+      export FZF_DEFAULT_OPTS="--height=100%"
+    fi
+  fi
 }
 
 # Bağımlılık kontrolü
@@ -949,6 +965,7 @@ main() {
   check_dependencies
   create_required_directories
   maintain_cache
+  configure_fzf_for_tmux
 
   case "$1" in
   -h | --help)
