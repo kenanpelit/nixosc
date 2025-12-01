@@ -36,6 +36,7 @@ in {
 
         # Emoji & icons
         noto-fonts-color-emoji
+        noto-fonts-emoji
         font-awesome
         material-design-icons
 
@@ -45,6 +46,7 @@ in {
         noto-fonts
         noto-fonts-cjk-sans
         noto-fonts-cjk-serif
+        noto-fonts-cjk-sc
         inter
         roboto
         ubuntu-classic
@@ -71,6 +73,7 @@ in {
           serif = [
             "Liberation Serif"
             "Noto Serif"
+            "Noto Serif CJK SC"
             "DejaVu Serif"
           ];
 
@@ -78,6 +81,7 @@ in {
             "Liberation Sans"
             "Inter"
             "Noto Sans"
+            "Noto Sans CJK SC"
             "DejaVu Sans"
           ];
         };
@@ -94,6 +98,7 @@ in {
         };
 
         antialias = true;
+        useEmbeddedBitmaps = false;
       };
     };
 
