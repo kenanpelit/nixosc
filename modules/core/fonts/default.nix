@@ -12,7 +12,7 @@
 let
   inherit (lib) mkOption mkEnableOption mkIf types;
   cfg = config.my.display;
-  mapleFonts = pkgs.callPackage ../../home/maple { };
+  mapleFonts = import ../../home/maple { inherit lib pkgs; };
 in {
   options.my.display.fonts = {
     enable = mkEnableOption "system font stack (packages + fontconfig)";

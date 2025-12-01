@@ -25,7 +25,7 @@
 { inputs, pkgs, ... }:
 
 let
-  mapleFonts = pkgs.callPackage ../maple { };
+  mapleFonts = import ../maple { inherit lib pkgs; };
   # Python Ortamı (Kullanıcı için)
   customPython = pkgs.python3.withPackages (ps: with ps; [
     ipython        # Gelişmiş Python shell
