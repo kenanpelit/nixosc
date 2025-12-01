@@ -27,11 +27,6 @@ let
         codex = "${cfg.codex-cli.package}/bin/ai-codex";
         ai-codex = "${cfg.codex-cli.package}/bin/ai-codex";
       })
-      (mkIf cfg.every-code.enable {
-        code = "${cfg.every-code.package}/bin/code";
-        "ai-code-gemini" = "${cfg.every-code.package}/bin/code -m gemini-3-pro";
-        "ai-code-gpt" = "${cfg.every-code.package}/bin/code";
-      })
     ];
 
   desktopEntries =
@@ -66,16 +61,6 @@ let
           categories = [ "Development" "ConsoleOnly" ];
         };
       })
-      (mkIf cfg.every-code.enable {
-        every-code = {
-          name = "Every Code";
-          comment = "Every Code (code) – local coding agent";
-          exec = "${cfg.every-code.package}/bin/code";
-          icon = "terminal";
-          terminal = true;
-          categories = [ "Development" "ConsoleOnly" ];
-        };
-      })
     ];
 in
 {
@@ -99,19 +84,6 @@ in
       };
     };
 
-    every-code = {
-      enable = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Enable Every Code (code) CLI orchestrator";
-      };
-      package = mkOption {
-        type = types.package;
-        default = pkgs.callPackage ./code-cli.nix { };
-        description = "Every Code CLI package to use (@just-every/code).";
-      };
-    };
-    
     gemini-cli = {
       enable = mkOption {
         type = types.bool;
