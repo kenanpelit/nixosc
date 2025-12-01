@@ -7,7 +7,7 @@ let
   # Font ayarları
   fonts = {
     main = {
-      family = "Inter";
+      family = "Maple Mono NF";
     };
     sizes = {
       sm = 12;
