@@ -1,17 +1,25 @@
 # modules/home/packages/default.nix
 # ==============================================================================
-# User Home Packages Configuration
+# User-Level Package Installation
 # ==============================================================================
+# This module defines the core set of packages to be installed for the user,
+# categorized for clarity and maintainability.
 #
-# Kullanıcı seviyesinde paket yapılandırması:
-# - Geliştirme araçları ve yardımcı programlar
-# - Medya uygulamaları ve editörler
-# - Terminal ve shell araçları
-# - Masaüstü uygulamaları
-# - Dosya yönetimi araçları
+# Categories:
+# - File Management & Navigation
+# - Development Tools
+# - Terminal Utilities
+# - Media Tools
+# - System Monitoring & Performance
+# - Network Tools
+# - Desktop Applications (Specific)
+# - Hyprland & Wayland Tools
+# - Browsers (Text-based)
+# - Preview Tools (for file managers)
+# - VPN Tools
+# - Productivity & Time Management
+# - Entertainment & Terminal Games
 #
-# Author: Kenan Pelit
-# Updated: 2025-11-15
 # ==============================================================================
 
 { inputs, pkgs, ... }:
