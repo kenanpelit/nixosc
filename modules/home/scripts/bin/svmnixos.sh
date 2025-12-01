@@ -50,7 +50,7 @@ declare -A CONFIG=(
   [disk_size]="128G"
   [ssh_port]="2288"
   [vnc_port]="5900"
-  [iso_url]="https://channels.nixos.org/nixos-25.11/latest-nixos-gnome-x86_64-linux.iso"
+  [iso_url]="https://channels.nixos.org/nixos-25.11/latest-nixos-graphical-x86_64-linux.iso"
   [iso_checksum]="" # SHA256 checksum (optional)
   [display_mode]="gtk"
   [boot_mode]="bios"
@@ -59,7 +59,7 @@ declare -A CONFIG=(
 )
 
 # Derived paths
-CONFIG[iso_file]="${CONFIG[base_dir]}/latest-nixos-gnome-x86_64-linux.iso"
+CONFIG[iso_file]="${CONFIG[base_dir]}/latest-nixos-graphical-x86_64-linux.iso"
 CONFIG[vars_file]="${CONFIG[base_dir]}/OVMF_VARS.fd"
 CONFIG[disk_file]="${CONFIG[base_dir]}/disk.qcow2"
 CONFIG[pid_file]="${CONFIG[base_dir]}/${CONFIG[vm_name]}.pid"
@@ -146,7 +146,7 @@ setup_environment() {
   [[ -n "${VMNIXOS_BOOT_MODE:-}" ]] && CONFIG[boot_mode]="$VMNIXOS_BOOT_MODE"
 
   # Update derived paths after potential base_dir change
-  CONFIG[iso_file]="${CONFIG[base_dir]}/latest-nixos-gnome-x86_64-linux.iso"
+  CONFIG[iso_file]="${CONFIG[base_dir]}/latest-nixos-graphical-x86_64-linux.iso"
   CONFIG[vars_file]="${CONFIG[base_dir]}/OVMF_VARS.fd"
   CONFIG[disk_file]="${CONFIG[base_dir]}/disk.qcow2"
   CONFIG[pid_file]="${CONFIG[base_dir]}/${CONFIG[vm_name]}.pid"

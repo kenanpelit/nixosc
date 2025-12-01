@@ -33,13 +33,13 @@ declare -A CONFIG=(
   [cpus]="8"
   [disk_size]="128G"
   [ssh_port]="2288"
-  [iso_url]="https://channels.nixos.org/nixos-25.11/latest-nixos-gnome-x86_64-linux.iso"
+  [iso_url]="https://channels.nixos.org/nixos-25.11/latest-nixos-graphical-x86_64-linux.iso"
   [display_mode]="gtk"
   [boot_mode]="bios"
 )
 
 # Derived paths
-CONFIG[iso_file]="${CONFIG[base_dir]}/latest-nixos-gnome-x86_64-linux.iso"
+CONFIG[iso_file]="${CONFIG[base_dir]}/latest-nixos-graphical-x86_64-linux.iso"
 CONFIG[vars_file]="${CONFIG[base_dir]}/OVMF_VARS.fd"
 CONFIG[disk_file]="${CONFIG[base_dir]}/disk.qcow2"
 
