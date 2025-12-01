@@ -49,10 +49,19 @@ in
     description = "hBlock per-user HOSTALIASES updater";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = [ ]; # started via timer
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${hblockUpdateScript} || true";
+    };
+  };
+
+  systemd.timers.hblock-update = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Sun *-*-* 01:00";
+      Persistent = true;
+      Unit = "hblock-update.service";
     };
   };
 
