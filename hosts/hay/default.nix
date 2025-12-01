@@ -1,7 +1,24 @@
 # hosts/hay/default.nix
 # ==============================================================================
-# HAY - NixOS Host Configuration
-# Main system configuration for the "hay" workstation
+# HAY Workstation: Main Host Configuration
+# ==============================================================================
+# This module defines the specific configuration for the 'hay' workstation,
+# primarily serving as a central point for host-specific overrides and
+# enablement of core and home modules.
+#
+# Key Configurations:
+# - Imports hardware configuration and all core system modules.
+# - Sets the hostname to 'hay'.
+# - Configures display stack preferences (enabled DEs, keyboard layout, auto-login).
+# - Defines graphics and Wayland environment variables.
+# - Manages NetworkManager, WiFi, and basic firewall settings.
+# - Sets timezone and locale.
+# - Configures SSH server access and security policies.
+# - Enables specific system services and user packages.
+# - Activates ZRAM swap.
+# - Configures user-level programs (GnuPG, Zsh, Tmux).
+# - Specifies Nixpkgs overrides and system state version.
+#
 # ==============================================================================
 { pkgs, lib, inputs, username, ... }:
 
