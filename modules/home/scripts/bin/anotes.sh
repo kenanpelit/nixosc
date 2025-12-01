@@ -35,6 +35,10 @@ export EDITOR
 # Tercih edilmemişse terminal seçim modunu otomatik yap
 : "${PREFERRED_TERMINAL:=auto}"
 
+# FZF listelerinin yukarıdan aşağı görünmesi için varsayılan yerleşim
+: "${FZF_DEFAULT_OPTS:=--layout=reverse}"
+export FZF_DEFAULT_OPTS
+
 # =================================================================
 # FONKSİYONLAR
 # =================================================================
