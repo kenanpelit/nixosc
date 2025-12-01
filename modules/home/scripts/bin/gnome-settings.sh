@@ -22,7 +22,7 @@ echo "🕐 Başlama zamanı: $(date)"
 # Font ayarları
 MAIN_FONT="Inter"
 EDITOR_FONT="Inter"
-TERMINAL_FONT="Inter"
+TERMINAL_FONT="Maple Mono NF"
 FONT_SIZE_SM="12"
 FONT_SIZE_MD="13"
 FONT_SIZE_XL="15"

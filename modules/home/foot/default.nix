@@ -13,7 +13,7 @@ let
   # Font ve efekt ayarları
   fonts = {
     notifications = {
-      family = "Inter";
+      family = "Maple Mono NF";
     };
     sizes = {
       sm = 12;

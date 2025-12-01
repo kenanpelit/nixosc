@@ -6,7 +6,7 @@
 let
   # Typography configuration
   typography = {
-    family = "Inter";
+    family = "Maple Mono NF";
     size = 13;
     features = [ "liga" "calt" ];
   };
