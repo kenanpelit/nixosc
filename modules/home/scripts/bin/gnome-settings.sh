@@ -22,7 +22,7 @@ echo "🕐 Başlama zamanı: $(date)"
 # Font ayarları
 MAIN_FONT="Monaspace Neon"
 EDITOR_FONT="Monaspace Neon"
-TERMINAL_FONT="Hack Nerd Font"
+TERMINAL_FONT="Monaspace Neon"
 FONT_SIZE_SM="12"
 FONT_SIZE_MD="13"
 FONT_SIZE_XL="15"
