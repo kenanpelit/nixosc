@@ -7,7 +7,7 @@ let
   # Typography configuration
   typography = {
     family = "Monaspace Neon";
-    size = 13.3;
+    size = 13;
     features = [ "liga" "calt" ];
   };
   
