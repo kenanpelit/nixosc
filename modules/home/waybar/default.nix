@@ -31,8 +31,8 @@ let
   # Enhanced configuration with dynamic Catppuccin colors
   custom = {
     # Typography with fallbacks
-    font = "Inter";
-    font_fallback = "Inter Variable, Maple Mono NF, Monaspace Neon, JetBrainsMono Nerd Font, Symbols Nerd Font Mono, monospace";
+    font = "Maple Mono NF";
+    font_fallback = "Maple Mono, Maple Mono NF CN, Monaspace Neon, Hack Nerd Font, Symbols Nerd Font Mono, monospace";
     font_size = "14px";
     font_size_small = "13px";
     font_size_large = "16px";

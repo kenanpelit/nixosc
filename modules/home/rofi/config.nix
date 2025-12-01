@@ -23,7 +23,7 @@
       lines: 8;
       columns: 3;
       cycle: true;
-      font: "Inter Bold 13";
+      font: "Maple Mono NF Bold 13";
 
       /* Display Settings */
       show-icons: true;
@@ -127,7 +127,7 @@
       text-color: @bg-col;
       border-radius: 6px;
       margin: 2px;
-      font: "Inter Bold 13";
+      font: "Maple Mono NF Bold 13";
     }
 
 
@@ -262,7 +262,7 @@
     button selected {
       background-color: @green;
       text-color: @bg-col;
-      font: "Inter Bold 13";
+      font: "Maple Mono NF Bold 13";
     }
 
     /* Scrollbar */

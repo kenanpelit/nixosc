@@ -8,7 +8,7 @@ let
   # Font ayarları
   fonts = {
     notifications = {
-      family = "Inter";
+      family = "Maple Mono NF";
     };
     sizes = {
       xl = 15;

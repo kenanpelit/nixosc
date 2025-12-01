@@ -2,9 +2,9 @@
 # ==============================================================================
 # Font Stack & Rendering Defaults
 # ==============================================================================
-# Centralizes font packages, fontconfig defaults, Inter as primary system font
-# (Maple Mono retained as a fallback), HiDPI tuning, and disables embedded
-# bitmaps for cleaner rendering.
+# Centralizes font packages, fontconfig defaults, Maple Mono NF as the primary
+# system font (UI + mono), HiDPI tuning, and disables embedded bitmaps for
+# cleaner rendering.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:
@@ -31,37 +31,30 @@ in {
   config = mkIf cfg.fonts.enable {
     fonts = {
       packages = with pkgs; [
-        # Primary UI font
-        inter
-
-        # Primary monospace fallback set
+        # Primary (UI + mono)
         maple-mono.NF
         maple-mono.NF-CN-unhinted
         maple-mono.truetype
 
-        # Alternates / fallbacks
+        # Extra symbols / light fallbacks
+        nerd-fonts.symbols-only
         monaspace
-        nerd-fonts.monaspace       # NF-patched Monaspace for icons
-        nerd-fonts.symbols-only    # Extra NF symbols fallback
+        nerd-fonts.monaspace
         nerd-fonts.hack
-        cascadia-code
         fira-code
         fira-code-symbols
-        jetbrains-mono
-        source-code-pro
 
         # Emoji & icons
         noto-fonts-color-emoji
         font-awesome
         material-design-icons
 
-        # General UI / document fonts
+        # General UI / document fonts (minimal, kept for compatibility)
         liberation_ttf
         dejavu_fonts
         noto-fonts
         noto-fonts-cjk-sans
         noto-fonts-cjk-serif
-        inter
         roboto
         ubuntu-classic
         open-sans
@@ -73,19 +66,13 @@ in {
       fontconfig = {
         defaultFonts = {
           monospace = [
-            # Primary system font (also for mono to force consistency)
-            "Inter"
-            "Inter Variable"
-
-            # Maple as preferred mono fallback
+            # Primary everywhere
             "Maple Mono NF"
             "Maple Mono"
             "Maple Mono NF CN"
 
-            # Additional fallbacks
+            # Minimal fallbacks
             "Monaspace Neon"
-            "JetBrainsMono Nerd Font"
-            "JetBrains Mono"
             "Hack Nerd Font"
             "Hack"
             "FiraCode Nerd Font"
@@ -95,6 +82,8 @@ in {
           emoji = [ "Noto Color Emoji" ];
 
           serif = [
+            "Maple Mono NF"
+            "Maple Mono"
             "Liberation Serif"
             "Noto Serif"
             "Noto Serif CJK SC"
@@ -102,10 +91,11 @@ in {
           ];
 
           sansSerif = [
-            "Liberation Sans"
-            "Inter"
+            "Maple Mono NF"
+            "Maple Mono"
             "Noto Sans"
             "Noto Sans CJK SC"
+            "Liberation Sans"
             "DejaVu Sans"
           ];
         };
