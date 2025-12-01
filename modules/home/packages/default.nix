@@ -25,6 +25,7 @@
 { inputs, pkgs, ... }:
 
 let
+  mapleFonts = pkgs.callPackage ../maple { };
   # Python Ortamı (Kullanıcı için)
   customPython = pkgs.python3.withPackages (ps: with ps; [
     ipython        # Gelişmiş Python shell
@@ -36,6 +37,11 @@ let
 in
 {
   home.packages = with pkgs; [
+    # Maple Mono 7.8 from local package set
+    mapleFonts."NF"
+    mapleFonts."NF-CN-unhinted"
+    mapleFonts."TTF"
+
     # ==============================================================================
     # Dosya Yönetimi ve Navigasyon
     # ==============================================================================
