@@ -4,6 +4,7 @@
 # ==============================================================================
 # Centralizes font packages, fontconfig defaults, Maple Mono NF as primary
 # monospace, HiDPI tuning, and disables embedded bitmaps for cleaner rendering.
+# ==============================================================================
 
 { lib, config, pkgs, ... }:
 
