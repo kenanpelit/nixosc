@@ -37,7 +37,6 @@ in {
 
         # Emoji & icons
         noto-fonts-color-emoji
-        noto-fonts-emoji
         font-awesome
         material-design-icons
 
