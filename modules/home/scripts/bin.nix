@@ -1,3 +1,17 @@
+# modules/home/scripts/bin.nix
+# ==============================================================================
+# Custom Binary Scripts
+# ==============================================================================
+# Defines and builds various custom shell scripts as executables available in the
+# user's PATH. These scripts provide helper functions for:
+# - System management (power, network, processes)
+# - Desktop environment integration (Hyprland, GNOME)
+# - Application launchers and controls
+# - File management and utilities
+# - Development workflows
+#
+# ==============================================================================
+
 { pkgs, ... }:
 let
   anote = pkgs.writeShellScriptBin "anote" (
