@@ -12,6 +12,7 @@
 let
   inherit (lib) mkOption mkEnableOption mkIf types;
   cfg = config.my.display;
+  mapleFonts = pkgs.callPackage ../../home/maple { };
 in {
   options.my.display.fonts = {
     enable = mkEnableOption "system font stack (packages + fontconfig)";
@@ -31,10 +32,10 @@ in {
   config = mkIf cfg.fonts.enable {
     fonts = {
       packages = with pkgs; [
-        # Primary (UI + mono)
-        maple-mono.NF
-        maple-mono.NF-CN-unhinted
-        maple-mono.truetype
+        # Primary (UI + mono) from local Maple 7.8 set
+        mapleFonts."NF"
+        mapleFonts."NF-CN-unhinted"
+        mapleFonts."TTF"
 
         # Extra symbols / light fallbacks
         nerd-fonts.symbols-only
