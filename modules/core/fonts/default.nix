@@ -27,6 +27,7 @@ in {
       packages = with pkgs; [
         # Coding / Nerd fonts
         maple-mono.NF
+        maple-mono.NF-CN-unhinted
         nerd-fonts.hack
         cascadia-code
         fira-code
