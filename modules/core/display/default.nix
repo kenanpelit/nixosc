@@ -37,11 +37,6 @@ in {
       options = mkOption { type = types.listOf types.str; default = [ "ctrl:nocaps" ]; };
     };
 
-    fonts = {
-      enable = mkEnableOption "font stack";
-      hiDpiOptimized = mkEnableOption "HiDPI font tuning";
-    };
-
     enableAudio = mkEnableOption "PipeWire audio stack";
   };
 }
