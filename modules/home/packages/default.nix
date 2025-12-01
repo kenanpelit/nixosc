@@ -40,7 +40,7 @@ in
     # Maple Mono 7.8 from local package set
     mapleFonts."NF"
     mapleFonts."NF-CN-unhinted"
-    mapleFonts."TTF"
+    mapleFonts.truetype
 
     # ==============================================================================
     # Dosya Yönetimi ve Navigasyon
