@@ -30,7 +30,7 @@ MODE="default"
 # Command prefixes for custom mode
 readonly CMD_PREFIXES=("start-")
 readonly CUSTOM_BIN_DIRS=(
-	"/etc/profiles/per-user/kenan/bin"
+	"/etc/profiles/per-user/${USER:-kenan}/bin"
 	"$HOME/.local/bin"
 	"$HOME/bin"
 )
@@ -989,7 +989,7 @@ POWER MENU ENVIRONMENT:
 
 CUSTOM COMMANDS:
     Search locations:
-    - /etc/profiles/per-user/kenan/bin
+    - /etc/profiles/per-user/${USER:-kenan}/bin
     - \$HOME/.local/bin
     - \$HOME/bin
     - All directories in \$PATH
