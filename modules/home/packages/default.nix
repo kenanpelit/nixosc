@@ -22,7 +22,7 @@
 #
 # ==============================================================================
 
-{ inputs, pkgs, ... }:
+{ inputs, pkgs, lib, ... }:
 
 let
   mapleFonts = import ../maple { inherit lib pkgs; };
