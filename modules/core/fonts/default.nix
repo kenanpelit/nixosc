@@ -1,30 +1,104 @@
 # modules/core/fonts/default.nix
-# ==============================================================================
-# Font Configuration
-# ==============================================================================
-# Configures system fonts and font rendering.
-# - Installs core font packages (Noto, Nerd Fonts)
-# - Configures fontconfig for HiDPI (if enabled)
-#
-# ==============================================================================
+# Font stack configuration and tuning.
 
 { lib, config, pkgs, ... }:
 
-let cfg = config.my.display;
+let
+  inherit (lib) mkOption mkEnableOption mkIf types;
+  cfg = config.my.display;
 in {
-  config = lib.mkIf cfg.fonts.enable {
+  options.my.display.fonts = {
+    enable = mkEnableOption "system font stack (packages + fontconfig)";
+
+    hiDpiOptimized = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        If true, fontconfig is tuned for HiDPI/modern LCD panels:
+          - subpixel RGB
+          - slight hinting
+          - antialias enabled
+      '';
+    };
+  };
+
+  config = mkIf cfg.fonts.enable {
     fonts = {
-      packages = [
-        pkgs.noto-fonts
-        pkgs.noto-fonts-cjk-sans
-        pkgs.noto-fonts-color-emoji
-        pkgs.nerd-fonts.fira-code
+      packages = with pkgs; [
+        # Coding / Nerd fonts
+        maple-mono.NF
+        nerd-fonts.hack
+        cascadia-code
+        fira-code
+        fira-code-symbols
+        jetbrains-mono
+        source-code-pro
+
+        # Emoji & icons
+        noto-fonts-color-emoji
+        font-awesome
+        material-design-icons
+
+        # General UI / document fonts
+        liberation_ttf
+        dejavu_fonts
+        noto-fonts
+        noto-fonts-cjk-sans
+        noto-fonts-cjk-serif
+        inter
+        roboto
+        ubuntu-classic
+        open-sans
       ];
-      fontconfig = lib.mkIf cfg.fonts.hiDpiOptimized {
-        hinting.style = "full";
+
+      enableDefaultPackages = true;
+      fontDir.enable = true;
+
+      fontconfig = {
+        defaultFonts = {
+          monospace = [
+            "Maple Mono NF"
+            "Hack Nerd Font Mono"
+            "JetBrains Mono"
+            "Fira Code"
+            "Source Code Pro"
+            "Liberation Mono"
+            "Noto Color Emoji"
+          ];
+
+          emoji = [ "Noto Color Emoji" ];
+
+          serif = [
+            "Liberation Serif"
+            "Noto Serif"
+            "DejaVu Serif"
+          ];
+
+          sansSerif = [
+            "Liberation Sans"
+            "Inter"
+            "Noto Sans"
+            "DejaVu Sans"
+          ];
+        };
+
+        subpixel = mkIf cfg.fonts.hiDpiOptimized {
+          rgba      = "rgb";
+          lcdfilter = "default";
+        };
+
+        hinting = {
+          enable   = true;
+          autohint = false;
+          style    = if cfg.fonts.hiDpiOptimized then "slight" else "medium";
+        };
+
         antialias = true;
-        subpixel.rgba = "rgb";
       };
+    };
+
+    environment.variables = {
+      FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
     };
   };
 }
