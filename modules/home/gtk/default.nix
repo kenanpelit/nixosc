@@ -7,7 +7,7 @@ let
   # Font ayarları
   fonts = {
     main = {
-      family = "JetBrainsMono Nerd Font";
+      family = "Maple Mono NF";
     };
     sizes = {
       sm = 12;

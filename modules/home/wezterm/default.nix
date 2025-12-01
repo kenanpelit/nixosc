@@ -20,7 +20,7 @@ let
   # Font ve efekt ayarları
   fonts = {
     terminal = {
-      family = "JetBrainsMono Nerd Font";
+      family = "Maple Mono NF";
     };
   };
 

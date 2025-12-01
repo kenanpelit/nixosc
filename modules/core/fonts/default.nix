@@ -2,9 +2,9 @@
 # ==============================================================================
 # Font Stack & Rendering Defaults
 # ==============================================================================
-# Centralizes font packages, fontconfig defaults, Monaspace as primary
-# monospace (Maple Mono as fallback), HiDPI tuning, and disables embedded
-# bitmaps for cleaner rendering.
+# Centralizes font packages, fontconfig defaults, Maple Mono as primary
+# monospace (Monaspace/JetBrains/Hack as fallbacks), HiDPI tuning, and
+# disables embedded bitmaps for cleaner rendering.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:
@@ -31,16 +31,17 @@ in {
   config = mkIf cfg.fonts.enable {
     fonts = {
       packages = with pkgs; [
-        # Coding / Nerd fonts (primary: Monaspace)
+        # Primary: Maple Mono (NF + CN variants)
+        maple-mono.NF
+        maple-mono.NF-CN-unhinted
+        maple-mono.truetype
+
+        # Alternates / fallbacks
         monaspace
         nerd-fonts.monaspace       # NF-patched Monaspace for icons
         nerd-fonts.symbols-only    # Extra NF symbols fallback
-
-        # Fallback / alternates
-        maple-mono.NF
-        maple-mono.NF-CN-unhinted
-        cascadia-code
         nerd-fonts.hack
+        cascadia-code
         fira-code
         fira-code-symbols
         jetbrains-mono
@@ -69,25 +70,22 @@ in {
       fontconfig = {
         defaultFonts = {
           monospace = [
-            # --- TIER 1: GÜNLÜK SÜRÜCÜ (STABILITY KING) ---
-            "JetBrainsMono Nerd Font"
-            "JetBrains Mono"
-
-            # --- TIER 2: MODERN & YENİLİKÇİ (TEXTURE HEALING) ---
-            "Monaspace Neon"
-
-            # --- TIER 3: ESTETİK & RICING (WEEKEND FONT) ---
+            # --- TIER 1: GÜNLÜK SÜRÜCÜ ---
             "Maple Mono NF"
             "Maple Mono"
+            "Maple Mono NF CN"
 
-            # --- TIER 4: GÜVENLİ LİMAN (FALLBACK) ---
+            # --- TIER 2: MODERN & YENİLİKÇİ ---
+            "Monaspace Neon"
+
+            # --- TIER 3: GÜVENLİ LİMAN ---
+            "JetBrainsMono Nerd Font"
+            "JetBrains Mono"
             "Hack Nerd Font"
             "Hack"
-
-            # --- TIER 5: ESKİ TOPRAK ---
             "FiraCode Nerd Font"
 
-            # EMOJI GARANTİSİ
+            # Emoji fallback
             "Noto Color Emoji"
           ];
 

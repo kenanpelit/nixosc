@@ -6,7 +6,7 @@
 let
   # Typography configuration
   typography = {
-    family = "JetBrainsMono Nerd Font";
+    family = "Maple Mono NF";
     size = 13;
     features = [ "liga" "calt" ];
   };

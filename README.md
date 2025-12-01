@@ -130,7 +130,7 @@ A comprehensive NixOS system configuration management suite that provides:
 | **Theme**  | [Catppuccin Mocha](https://github.com/catppuccin/catppuccin)                                                         |
 | **Cursor** | [catppuccin-mocha-lavender-cursors](https://github.com/catppuccin/cursors)                                           |
 | **Icons**  | [Candy Beauty](https://github.com/arcolinux/a-candy-beauty-icon-theme-dev) + BeautyLine                              |
-| **Fonts**  | [Monaspace](https://github.com/githubnext/monaspace) + [Nerd Fonts symbols](https://github.com/ryanoasis/nerd-fonts) (Maple Mono kept as fallback) |
+| **Fonts**  | [Maple Mono NF](https://github.com/subframe7536/maple-font) (primary) + [Nerd Fonts symbols](https://github.com/ryanoasis/nerd-fonts) + Monaspace/JetBrains as fallbacks |
 
 ### Advanced Features
 
