@@ -23,6 +23,7 @@ in {
       "msr"      # RAPL MSR access
       "coretemp" # CPU temperature
       "i915"     # Intel iGPU
+      "iwlwifi"  # Intel Wi-Fi (force load when autoload fails)
     ] ++ lib.optionals isPhysicalMachine [
       "thinkpad_acpi"
     ];
