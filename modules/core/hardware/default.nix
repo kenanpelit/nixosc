@@ -1,5 +1,14 @@
 # modules/core/hardware/default.nix
-# Graphics, firmware, trackpoint, misc hw.
+# ==============================================================================
+# Hardware Configuration
+# ==============================================================================
+# Configures hardware-specific settings for physical and virtual hosts.
+# - Graphics drivers (Intel/Mesa)
+# - Firmware (Redistributable/All)
+# - CPU Microcode (Intel)
+# - Input devices (Trackpoint)
+#
+# ==============================================================================
 
 { pkgs, lib, isPhysicalHost ? false, isVirtualHost ? false, ... }:
 

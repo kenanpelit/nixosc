@@ -19,7 +19,7 @@ let
   # Font ve efekt ayarları
   fonts = {
     notifications = {
-      family = "Hack Nerd Font";
+      family = "Maple Mono NF";
     };
   };
 

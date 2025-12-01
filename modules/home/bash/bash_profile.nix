@@ -1,9 +1,15 @@
-
 # modules/home/bash/bash_profile.nix
 # ==============================================================================
-# AUTO-GENERATED from zsh_profile.nix (converted for Bash)
-# Review & edit as needed.
+# Bash Profile Configuration (TTY Auto-Start)
 # ==============================================================================
+# This configuration manages Bash's .bash_profile for TTY session routing.
+# - Auto-starts specific desktop environments (Hyprland, GNOME, Sway) on assigned TTYs.
+# - Provides fallback mechanisms for direct DE launches if helper scripts are missing.
+# - Displays informative messages for unassigned TTYs.
+#
+# Auto-generated from zsh_profile.nix for Bash compatibility.
+# ==============================================================================
+
 { config, lib, pkgs, ... }:
 {
   xdg.configFile."bash/.bash_profile".text = ''

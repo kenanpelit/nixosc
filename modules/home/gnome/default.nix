@@ -1,6 +1,14 @@
 # modules/home/gnome/default.nix
 # ==============================================================================
-# GNOME Configuration (Converted from gnome-settings.sh) & Services
+# GNOME Desktop Configuration
+# ==============================================================================
+# Comprehensive configuration for the GNOME desktop environment via dconf.
+# - Interface and window manager settings
+# - Shell extensions configuration
+# - Custom keybindings and shortcuts
+# - Terminal, Text Editor, and other app preferences
+# - Power, privacy, and hardware settings
+#
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
@@ -39,7 +47,7 @@ let
   # --- Fonts ---
   fonts = {
     main = "Maple Mono NF"; 
-    terminal = "Hack Nerd Font";
+    terminal = "Maple Mono NF";
     size_sm = "12";
     size_md = "13";
     size_xl = "15";

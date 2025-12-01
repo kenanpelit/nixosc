@@ -1,5 +1,12 @@
 # modules/core/logind/default.nix
-# logind/lid/power policy.
+# ==============================================================================
+# Logind Power Policy
+# ==============================================================================
+# Configures systemd-logind settings for power button and lid switch behavior.
+# - Lid switch action (suspend)
+# - Power key action (ignore/poweroff)
+#
+# ==============================================================================
 
 { lib, ... }:
 

@@ -1,5 +1,14 @@
 # modules/core/sessions/default.nix
-# Session wrappers for Hyprland/GNOME/COSMIC.
+# ==============================================================================
+# Desktop Session Definitions
+# ==============================================================================
+# Configures custom Wayland sessions for GDM.
+# - Hyprland (Optimized): Runs via hyprland_tty script
+# - GNOME (NixOS): Runs via gnome_tty script
+# - COSMIC (NixOS): Runs via cosmic_tty script
+# - Installs necessary packages for enabled sessions (Hyprland, portals)
+#
+# ==============================================================================
 
 { pkgs, lib, inputs, config, username, ... }:
 

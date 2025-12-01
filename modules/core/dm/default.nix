@@ -1,5 +1,15 @@
 # modules/core/dm/default.nix
-# Display manager (GDM) and session selection.
+# ==============================================================================
+# Display Manager Configuration
+# ==============================================================================
+# Configures GDM (GNOME Display Manager) and session handling.
+# - Enables GDM (Wayland mode)
+# - Manages desktop environment enablement (GNOME, etc.)
+# - Configures auto-login settings
+# - Sets the default session based on enabled DEs
+# - Applies keyboard layout settings to XServer
+#
+# ==============================================================================
 
 { lib, config, ... }:
 
@@ -13,6 +23,7 @@ in
       enable = true;
       wayland = true;
     };
+    services.desktopManager.gnome.enable = cfg.enableGnome;
     services.displayManager.autoLogin = {
       enable = cfg.autoLogin.enable;
       user   = cfg.autoLogin.user or null;

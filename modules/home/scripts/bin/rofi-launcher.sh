@@ -101,7 +101,7 @@ readonly POWER_CONFIRM_ACTIONS=(reboot shutdown hibernate)
 # Power menu theme configuration
 : "${POWER_MENU_LINES:=6}"
 : "${POWER_MENU_WIDTH_CH:=32}"
-: "${POWER_MENU_FONT:=JetBrainsMono Nerd Font 12}"
+: "${POWER_MENU_FONT:=Maple Mono NF 12}"
 : "${POWER_MENU_BORDER:=2}"
 : "${POWER_MENU_PADDING:=12}"
 : "${POWER_MENU_THEME:=modern}"
@@ -318,7 +318,7 @@ generate_power_theme() {
 	"glass")
 		cat >"$theme_file" <<'EOF'
 * {
-	font: "JetBrainsMono Nerd Font 12";
+	font: "Maple Mono NF 12";
 	background: rgba(26, 27, 38, 0.85);
 	background-alt: rgba(26, 27, 38, 0.95);
 	foreground: #c0caf5;
@@ -358,7 +358,7 @@ inputbar {
 prompt {
 	background-color: transparent;
 	text-color: @active;
-	font: "JetBrainsMono Nerd Font Bold 12";
+	font: "Maple Mono NF Bold 12";
 }
 
 entry {
@@ -419,7 +419,7 @@ EOF
 	"minimal")
 		cat >"$theme_file" <<'EOF'
 * {
-	font: "Inter 11";
+	font: "Maple Mono NF 11";
 	background: #ffffff;
 	background-alt: #f5f5f5;
 	foreground: #333333;

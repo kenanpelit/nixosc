@@ -6,8 +6,8 @@
 let
   # Typography configuration
   typography = {
-    family = "Hack Nerd Font";
-    size = 13.3;
+    family = "Maple Mono NF";
+    size = 13;
     features = [ "liga" "calt" ];
   };
   
@@ -152,4 +152,3 @@ in {
     };
   };
 }
-

@@ -448,7 +448,7 @@
     
     "cosmic/com.system76.CosmicTerm/v1/config" = {
       text = builtins.toJSON {
-        # Font settings - Maple Mono for consistency
+        # Font settings - Maple Mono NF for consistency
         font_name = "Maple Mono NF";
         font_size = 14;
         font_weight = 400;              # Regular weight

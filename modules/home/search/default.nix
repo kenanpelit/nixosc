@@ -1,4 +1,12 @@
 # modules/home/search/default.nix
+# ==============================================================================
+# Global Search Configuration
+# ==============================================================================
+# Configures system-wide search utilities and integrations.
+# - Integrates with nix-search-tv for Nix package and option search.
+#
+# ==============================================================================
+
 { config, lib, pkgs, ... }:
 
 {

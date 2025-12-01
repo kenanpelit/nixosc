@@ -25,120 +25,118 @@
 # ==============================================================================
 #
 # ├── account/          # User account management and configuration
-# ├── audio/            # Audio system configuration (PipeWire/PulseAudio)
+# ├── apparmor/         # Mandatory Access Control (MAC) using AppArmor
+# ├── audio/            # PipeWire audio stack configuration
 # ├── bluetooth/        # Bluetooth stack and device management
-# ├── boot/             # Boot loader and kernel configuration
-# ├── cache/            # Build cache and substituter configuration
-# ├── containers/       # Container registry and runtime configuration
-# ├── dns/              # DNS configuration and nameserver management
-# ├── firewall/         # Firewall rules and network security
-# ├── flatpak/          # Flatpak application sandboxing and management
-# ├── fonts/            # Font configuration and rendering optimization
-# ├── gamescope/        # Gaming compositor and performance optimization
+# ├── boot/             # Bootloader (GRUB) and EFI configuration
+# ├── containers/       # Podman container engine configuration
+# ├── desktop/          # Essential desktop integration services
+# ├── display/          # Display stack options and desktop environment toggles
+# ├── dm/               # Display Manager (GDM) and session selection
+# ├── dns/              # systemd-resolved DNS configuration
+# ├── fail2ban/         # Intrusion prevention service
+# ├── firewall/         # System firewall rules (nftables)
+# ├── flatpak/          # Flatpak application management
+# ├── fonts/            # System-wide font configuration
+# ├── gaming/           # Gaming-related software and optimizations
 # ├── hardware/         # Hardware-specific settings and drivers
-# ├── hblock/           # DNS-based ad blocking and filtering
-# ├── home/             # Home directory management and user environment
-# ├── keyring/          # Credential storage and GNOME keyring integration
-# ├── nh/               # Nix Helper tool for easier system management
+# ├── hblock/           # DNS-based ad blocking
+# ├── kernel/           # Linux kernel parameters and modules
+# ├── locale/           # Localization, timezone, and console keyboard
+# ├── logind/           # systemd-logind power and lid switch policy
+# ├── networking/       # NetworkManager and SSH client settings
 # ├── nix/              # Nix daemon settings and store optimization
-# ├── nixpkgs/          # Package configuration, overlays, and unfree packages
-# ├── packages/         # System-wide package management
-# ├── pam/              # Pluggable Authentication Modules
-# ├── podman/           # Podman container engine and Docker compatibility
-# ├── power/            # Power management and thermal control
-# ├── powersave/        # Network power optimization and WiFi tuning
-# ├── programs/         # Core program defaults and system-wide settings
-# ├── security/         # System security policies and hardening
-# ├── services/         # Core system services and daemons
-# ├── sops/             # Secrets management and encryption
-# ├── spice/            # SPICE guest services and USB redirection
-# ├── ssh/              # SSH server and client configuration
-# ├── steam/            # Steam gaming platform and compatibility layers
-# ├── system/           # Core system settings and configuration
-# ├── tcp/              # TCP optimization and network performance
-# ├── transmission/     # BitTorrent client and network configuration
-# ├── vm/               # Virtual machine configuration and management
-# ├── vpn/              # VPN client configuration and routing
-# ├── wayland/          # Wayland compositor and protocols
-# ├── wireless/         # WiFi management and wireless networking
-# ├── x11/              # X11 display server configuration
-# ├── xdg/              # Desktop portals and integration
-# └── default.nix       # Core module coordination (imports all above)
-#
+# ├── packages/         # Essential system-wide packages
+# ├── polkit/           # Privilege escalation management
+# ├── portals/          # XDG portals for Wayland integration
+# ├── power/            # Advanced power management services
+# ├── sessions/         # Desktop session definitions for GDM
+# ├── sops/             # System-level secrets management
+# ├── sysctl/           # Kernel sysctl tuning
+# ├── system/           # Core system metadata and global defaults
+# ├── tcp/              # TCP/IP network tuning
+# ├── virtualization/   # Libvirt/QEMU virtualization stack
+# ├── vpn/              # VPN client configuration (Mullvad)
+# └── default.nix       # Orchestrates all core module imports
+
 # ==============================================================================
 # Home User Configuration (/modules/home)
 # ==============================================================================
 #
-# ├── anydesk/          # Remote desktop client
-# ├── audacious/        # Audio player
-# ├── bat/              # Text file viewer with syntax highlighting
-# ├── brave/            # Brave web browser
-# ├── btop/             # System monitor and process viewer
-# ├── candy/            # Icon theme and visual customization
-# ├── cava/             # Audio visualizer
-# ├── chrome/           # Google Chrome browser configuration
-# ├── command-not-found/ # Command suggestions for missing packages
-# ├── copyq/            # Clipboard manager
-# ├── elektron/         # Elektron audio workstation
-# ├── fastfetch/        # System information display tool
-# ├── firefox/          # Firefox web browser configuration
-# ├── foot/             # Lightweight Wayland terminal emulator
-# ├── fusuma/           # Touchpad gesture recognition
-# ├── fzf/              # Fuzzy finder for command line
-# ├── gammastep/        # Color temperature adjustment
-# ├── git/              # Git version control configuration
-# ├── gnome/            # GNOME desktop environment settings
-# ├── gnupg/            # GPG encryption and key management
-# ├── gtk/              # GTK theme and application settings
-# ├── hyprland/         # Hyprland compositor configuration
-# ├── iwmenu/           # Interactive menu interface
-# ├── kitty/            # Terminal emulator
-# ├── lazygit/          # Terminal UI for Git
-# ├── mhyprsunset/      # Automated sunset/sunrise theme switching
-# ├── mpd/              # Music Player Daemon
-# ├── mpv/              # Media player
-# ├── nemo/             # File manager
-# ├── nvim/             # Neovim text editor configuration
-# ├── obsidian/         # Knowledge management and note-taking
-# ├── ollama/           # Large language model runner
-# ├── p10k/             # Powerlevel10k shell theme
-# ├── packages/         # User-specific package management
-# ├── password-store/   # Password manager (pass)
-# ├── program/          # Program-specific configurations
-# ├── qt/               # Qt application theme and settings
-# ├── radio/            # Radio streaming applications
-# ├── rofi/             # Application launcher and window switcher
-# ├── rsync/            # File synchronization tool
-# ├── scripts/          # Custom utility scripts
-# ├── search/           # Search tools and configuration
-# ├── sesh/             # Session management tool
-# ├── sops/             # Secrets management
-# ├── spicetify/        # Spotify client customization
-# ├── subliminal/       # Subtitle download tool
-# ├── sway/             # Sway window manager configuration
-# ├── swaylock/         # Screen locker for Wayland
-# ├── swaync/           # Notification center for Sway
-# ├── swayosd/          # On-screen display for Sway
-# ├── tmux/             # Terminal multiplexer
-# ├── touchegg/         # Touchscreen gesture recognition
-# ├── transmission/     # BitTorrent client
-# ├── ulauncher/        # Application launcher
-# ├── walker/           # Application walker/launcher
-# ├── waybar/           # Status bar for Wayland compositors
-# ├── waypaper/         # Wallpaper manager for Wayland
-# ├── webcord/          # Discord client for Linux
-# ├── wezterm/          # Terminal emulator
-# ├── wpaperd/          # Dynamic wallpaper daemon
-# ├── xdg-dirs/         # XDG user directories
-# ├── xdg-mimes/        # MIME type associations
-# ├── xdg-portal/       # Desktop portal configuration
-# ├── xserver/          # X server configuration
-# ├── yazi/             # Terminal file manager
-# ├── ytdlp/            # YouTube-dl fork for video downloading
-# ├── zen/              # Zen browser configuration
-# ├── zotfiles/         # Reference management tool
-# ├── zsh/              # Z shell configuration
-# └── default.nix       # Home module coordination (imports all above)
+# ├── ai/                 # AI/LLM CLI tools (Claude, Gemini, OpenAI)
+# ├── anydesk/            # Remote desktop client configuration
+# ├── audacious/          # Audacious music player settings
+# ├── bash/               # Bash shell configuration and profiles
+# ├── blue/               # Blue light filter (Gammastep/HyprSunset)
+# ├── btop/               # Btop system monitor settings
+# ├── candy/              # Icon theme (A-Candy-Beauty)
+# ├── catppuccin/         # Global Catppuccin theme configuration
+# ├── cava/               # Cava audio visualizer
+# ├── chrome/             # Google Chrome browser configuration
+# ├── clipse/             # Clipse clipboard manager
+# ├── command-not-found/  # Nix-index for command suggestions
+# ├── connect/            # KDE Connect integration
+# ├── cosmic/             # COSMIC desktop environment user config
+# ├── copyq/              # CopyQ clipboard manager
+# ├── elektron/           # Electron app wrappers
+# ├── fastfetch/          # Fastfetch system info tool
+# ├── firefox/            # Firefox browser configuration
+# ├── flatpak/            # User-level Flatpak management
+# ├── foot/               # Foot terminal emulator
+# ├── fzf/                # FZF fuzzy finder
+# ├── git/                # Git configuration and aliases
+# ├── gnome/              # GNOME desktop environment settings
+# ├── gnupg/              # GnuPG setup and gpg-agent
+# ├── gtk/                # GTK theme and settings
+# ├── hyprland/           # Hyprland Wayland compositor configuration
+# ├── hyprpanel/          # Hyprpanel status bar (if enabled)
+# ├── iwmenu/             # Interactive WiFi menu (iwgtk based)
+# ├── kitty/              # Kitty terminal emulator
+# ├── lazygit/            # Lazygit TUI for Git
+# ├── mako/               # Mako Wayland notification daemon
+# ├── mpd/                # Music Player Daemon (MPD)
+# ├── mpv/                # MPV media player configuration
+# ├── nemo/               # Nemo file manager
+# ├── nvim/               # Neovim text editor
+# ├── obsidian/           # Obsidian note-taking app
+# ├── ollama/             # Ollama LLM service (user-level)
+# ├── packages/           # User-specific packages (system-independent)
+# ├── password-store/     # Pass password manager
+# ├── program/            # Core program defaults (user-level)
+# ├── qt/                 # Qt theme and settings
+# ├── radio/              # Radiotray-ng bookmarks
+# ├── rofi/               # Rofi application launcher
+# ├── rsync/              # Rsync home directory backup excludes
+# ├── scripts/            # Custom shell scripts (bin/start)
+# ├── search/             # Global search utilities
+# ├── sesh/               # Terminal session manager
+# ├── sops/               # User-level SOPS secrets management
+# ├── spicetify/          # Spicetify for Spotify theming
+# ├── starship/           # Starship shell prompt
+# ├── subliminal/         # Subliminal subtitle downloader
+# ├── sway/               # Sway tiling window manager
+# ├── swaylock/           # Swaylock screen locker
+# ├── swaync/             # Sway Notification Center
+# ├── swayosd/            # Sway On-Screen Display
+# ├── tmux/               # Tmux terminal multiplexer
+# ├── touchegg/           # Touchégg gesture management
+# ├── transmission/       # Transmission BitTorrent client
+# ├── ulauncher/          # Ulauncher application launcher
+# ├── vivaldi/            # Vivaldi browser configuration
+# ├── walker/             # Walker Wayland launcher
+# ├── waybar/             # Waybar status bar
+# ├── waypaper/           # Waypaper wallpaper manager
+# ├── webcord/            # WebCord (Discord client)
+# ├── wezterm/            # WezTerm terminal emulator
+# ├── wpaperd/            # Wpaperd dynamic wallpaper daemon
+# ├── xdg-dirs/           # XDG user directories
+# ├── xdg-mimes/          # XDG MIME type associations
+# ├── xdg-portal/         # XDG portal configuration
+# ├── xserver/            # X11/XWayland session environment
+# ├── yazi/               # Yazi terminal file manager
+# ├── ytdlp/              # yt-dlp video downloader
+# ├── zen/                # Zen browser configuration
+# ├── zotfiles/           # Zotero attachment management
+# └── zsh/                # Zsh shell configuration
 #
 # Each directory contains its own default.nix for modular configuration
-# ==============================================================================

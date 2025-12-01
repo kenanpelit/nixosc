@@ -1,5 +1,13 @@
 # modules/core/audio/default.nix
-# PipeWire audio stack.
+# ==============================================================================
+# Audio Configuration
+# ==============================================================================
+# Configures the PipeWire audio stack.
+# - Enables PipeWire service
+# - Enables ALSA, PulseAudio, and JACK compatibility
+# - Enables 32-bit ALSA support
+#
+# ==============================================================================
 
 { lib, config, pkgs, ... }:
 

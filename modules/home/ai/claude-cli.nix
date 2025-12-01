@@ -1,4 +1,15 @@
 # modules/home/ai/claude-cli.nix
+# ==============================================================================
+# Anthropic Claude CLI Wrapper
+# ==============================================================================
+# Provides a Nix wrapper for the @anthropic-ai/claude-code CLI tool.
+# - Installs the CLI tool using npx within a sandboxed environment.
+# - Ensures Node.js and npm are correctly configured.
+# - Creates `claude` and `ai-claude` executables in the user's PATH.
+#
+# Requires Anthropic API access.
+# ==============================================================================
+
 { lib, stdenv, makeWrapper, nodejs }:
 
 stdenv.mkDerivation rec {
