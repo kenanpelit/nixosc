@@ -2,8 +2,9 @@
 # ==============================================================================
 # Font Stack & Rendering Defaults
 # ==============================================================================
-# Centralizes font packages, fontconfig defaults, Maple Mono NF as primary
-# monospace, HiDPI tuning, and disables embedded bitmaps for cleaner rendering.
+# Centralizes font packages, fontconfig defaults, Monaspace as primary
+# monospace (Maple Mono as fallback), HiDPI tuning, and disables embedded
+# bitmaps for cleaner rendering.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:
@@ -30,11 +31,14 @@ in {
   config = mkIf cfg.fonts.enable {
     fonts = {
       packages = with pkgs; [
-        # Coding / Nerd fonts
+        # Coding / Nerd fonts (primary: Monaspace)
+        monaspace
+        nerd-fonts.symbols-only
+        # Fallback / alternates
         maple-mono.NF
         maple-mono.NF-CN-unhinted
-        nerd-fonts.hack
         cascadia-code
+        nerd-fonts.hack
         fira-code
         fira-code-symbols
         jetbrains-mono
@@ -63,6 +67,8 @@ in {
       fontconfig = {
         defaultFonts = {
           monospace = [
+            "Monaspace Neon"
+            "Monaspace Argon"
             "Maple Mono NF"
             "Hack Nerd Font Mono"
             "JetBrains Mono"
