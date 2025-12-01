@@ -1,36 +1,28 @@
 # modules/home/maple/default.nix
 # ==============================================================================
-# Local Maple Mono (7.8) font package set.
-# - Uses hashes from ./hashes.json; falls back to lib.fakeSha256 so you can
-#   build once and paste the reported hashes to that file.
-# - Exposes the full Maple Mono matrix (NF/CN/Normal/NL/Variable/TTF/OTF/Woff2).
+# Local Maple Mono (7.8) font package set as a Home Manager module.
+# - Provides a package matrix via config._module.args.mapleFonts
+# - Hashes read from hashes.json (use fakeSha256 by default; replace after build)
 # ==============================================================================
 
-{ lib
-, stdenv
-, unzip
-, fetchurl
-}:
+{ lib, pkgs, ... }:
 
 let
   hashes = lib.importJSON ./hashes.json;
-
   version = "7.8";
 
   maple-font =
     { pname, hash, desc }:
-    stdenv.mkDerivation rec {
-      inherit pname;
-      inherit version;
+    pkgs.stdenv.mkDerivation rec {
+      inherit pname version;
 
-      src = fetchurl {
+      src = pkgs.fetchurl {
         url = "https://github.com/subframe7536/Maple-font/releases/download/v${version}/${pname}.zip";
         sha256 = hash;
       };
 
-      # Archive may not contain a subdir
       sourceRoot = ".";
-      nativeBuildInputs = [ unzip ];
+      nativeBuildInputs = [ pkgs.unzip ];
 
       installPhase = ''
         find . -name '*.ttf'   -exec install -Dt $out/share/fonts/truetype {} \;
@@ -43,7 +35,6 @@ let
         description = "Maple Mono ${desc} font set (v${version})";
         license = licenses.ofl;
         platforms = platforms.all;
-        maintainers = with maintainers; [ oluceps ];
       };
     };
 
@@ -69,9 +60,9 @@ let
 
   getHash = name: hashes.${name} or lib.fakeSha256;
 
-  combinedFonts =
+  mapleFonts =
     lib.concatMapAttrs
-      (ligName: ligVariant:
+      (_: ligVariant:
         lib.concatMapAttrs
           (_: typeVariant:
             let pname = "MapleMono${ligVariant.suffix}-${typeVariant.suffix}";
@@ -81,10 +72,8 @@ let
                 desc = "${ligVariant.desc} ${typeVariant.desc}";
                 hash = getHash pname;
               };
-            }
-          )
-          typeVariants
-      )
+            })
+          typeVariants)
       ligatureVariants
     //
     lib.mapAttrs
@@ -94,8 +83,9 @@ let
           inherit pname;
           inherit (value) desc;
           hash = getHash pname;
-        }
-      )
+        })
       typeVariants;
 in
-combinedFonts
+{
+  config._module.args.mapleFonts = mapleFonts;
+}
