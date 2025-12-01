@@ -1,6 +1,9 @@
 # modules/core/fonts/default.nix
-# Central font stack: packages, fontconfig defaults, HiDPI tuning, Maple Mono as
-# primary monospace, embedded bitmaps disabled for cleaner rendering.
+# ==============================================================================
+# Font Stack & Rendering Defaults
+# ==============================================================================
+# Centralizes font packages, fontconfig defaults, Maple Mono NF as primary
+# monospace, HiDPI tuning, and disables embedded bitmaps for cleaner rendering.
 
 { lib, config, pkgs, ... }:
 
