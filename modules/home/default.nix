@@ -161,7 +161,7 @@
     # Package Management
     # =============================================================================
     ./flatpak       # User-level Flatpak management (via nix-flatpak HM module)
-    ./maple         # Local Maple Mono font package set
+    #./maple         # Local Maple Mono font package set
     ./packages      # User-specific package configuration
     ./program       # Program-specific settings and overrides
   ];
