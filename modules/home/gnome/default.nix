@@ -46,8 +46,8 @@ let
 
   # --- Fonts ---
   fonts = {
-    main = "Maple Mono NF"; 
-    terminal = "Maple Mono NF";
+    main = "Inter"; 
+    terminal = "Inter";
     size_sm = "12";
     size_md = "13";
     size_xl = "15";
