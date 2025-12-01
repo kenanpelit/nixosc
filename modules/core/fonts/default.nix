@@ -35,7 +35,7 @@ in {
         # Primary (UI + mono) from local Maple 7.8 set
         mapleFonts."NF"
         mapleFonts."NF-CN-unhinted"
-        mapleFonts."TTF"
+        mapleFonts.truetype
 
         # Extra symbols / light fallbacks
         nerd-fonts.symbols-only
