@@ -20,7 +20,7 @@ let
   # Font ve efekt ayarları
   fonts = {
     terminal = {
-      family = "Maple Mono NF";
+      family = "Inter";
     };
   };
 

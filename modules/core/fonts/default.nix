@@ -2,9 +2,9 @@
 # ==============================================================================
 # Font Stack & Rendering Defaults
 # ==============================================================================
-# Centralizes font packages, fontconfig defaults, Maple Mono as primary
-# monospace (Monaspace/JetBrains/Hack as fallbacks), HiDPI tuning, and
-# disables embedded bitmaps for cleaner rendering.
+# Centralizes font packages, fontconfig defaults, Inter as primary system font
+# (Maple Mono retained as a fallback), HiDPI tuning, and disables embedded
+# bitmaps for cleaner rendering.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:
@@ -31,7 +31,10 @@ in {
   config = mkIf cfg.fonts.enable {
     fonts = {
       packages = with pkgs; [
-        # Primary: Maple Mono (NF + CN variants)
+        # Primary UI font
+        inter
+
+        # Primary monospace fallback set
         maple-mono.NF
         maple-mono.NF-CN-unhinted
         maple-mono.truetype
@@ -70,22 +73,22 @@ in {
       fontconfig = {
         defaultFonts = {
           monospace = [
-            # --- TIER 1: GÜNLÜK SÜRÜCÜ ---
+            # Primary system font (also for mono to force consistency)
+            "Inter"
+            "Inter Variable"
+
+            # Maple as preferred mono fallback
             "Maple Mono NF"
             "Maple Mono"
             "Maple Mono NF CN"
 
-            # --- TIER 2: MODERN & YENİLİKÇİ ---
+            # Additional fallbacks
             "Monaspace Neon"
-
-            # --- TIER 3: GÜVENLİ LİMAN ---
             "JetBrainsMono Nerd Font"
             "JetBrains Mono"
             "Hack Nerd Font"
             "Hack"
             "FiraCode Nerd Font"
-
-            # Emoji fallback
             "Noto Color Emoji"
           ];
 
