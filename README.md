@@ -61,8 +61,8 @@ A comprehensive NixOS system configuration management suite that provides:
   - [hay](hosts/hay/) - 💻 Laptop configuration (GRUB, Hyprland, GNOME, COSMIC)
   - [vhay](hosts/vhay/) - 🗄️ VM configuration (Development optimized)
 - [modules](modules) - 🍱 Modularized NixOS configurations
-  - [core](modules/core/) - ⚙️ 9 core system modules (1095+ lines with documentation)
-    - account, system, nix, packages, display, networking, security, services, sops
+  - [core](modules/core/) - ⚙️ Flat, one-dir-per-topic core modules
+    - account, system (hardware/power/logind), nix, packages, display (dm/sessions/portals/audio/fonts), networking (vpn/tcp/dns), security (firewall/polkit/apparmor/audit/hblock/fail2ban), services (desktop/flatpak/gaming/containers/virtualization), sops, boot, kernel, locale, sysctl
   - [home](modules/home/) - 🏠 78+ application-specific Home-Manager modules
     - Desktop, Terminal, Development, Browsers, Media, Communication, Files, Security, Theming, etc.
   - [scripts](modules/home/scripts/) - 🔧 20+ utility scripts and binaries
