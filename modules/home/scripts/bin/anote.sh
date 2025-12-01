@@ -44,6 +44,9 @@ readonly FORCE_FULLSCREEN_FZF_IN_TMUX="${ANOTE_FORCE_FULLSCREEN_FZF_IN_TMUX:-tru
 # Varsa konfigürasyon dosyasını yükle (burada FZF_DEFAULT_OPTS'i override edebilirsin)
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
 
+# FZF listelerinin yukarıdan aşağı görünmesi için varsayılan yerleşim
+: "${FZF_DEFAULT_OPTS:=--layout=reverse}"
+
 # =================================================================
 # YARDIMCI FONKSİYONLAR
 # =================================================================
