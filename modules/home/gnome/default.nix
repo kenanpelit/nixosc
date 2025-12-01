@@ -46,8 +46,8 @@ let
 
   # --- Fonts ---
   fonts = {
-    main = "JetBrainsMono Nerd Font"; 
-    terminal = "JetBrainsMono Nerd Font";
+    main = "Maple Mono NF"; 
+    terminal = "Maple Mono NF";
     size_sm = "12";
     size_md = "13";
     size_xl = "15";
