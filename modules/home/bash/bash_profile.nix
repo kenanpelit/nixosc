@@ -1,4 +1,3 @@
-
 # modules/home/bash/bash_profile.nix
 # ==============================================================================
 # Bash Profile Configuration (TTY Auto-Start)
