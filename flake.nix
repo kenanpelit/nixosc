@@ -228,6 +228,9 @@
       # Unified overlay list - applied consistently everywhere
       overlaysCommon = [
         inputs.nur.overlays.default
+        (final: prev: {
+          maple-mono = import ./modules/home/maple { lib = final.lib; pkgs = final; };
+        })
       ];
  
       # Central nixpkgs configuration
