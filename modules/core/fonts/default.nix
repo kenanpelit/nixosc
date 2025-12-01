@@ -33,9 +33,9 @@ in {
     fonts = {
       packages = with pkgs; [
         # Primary (UI + mono) from local Maple 7.8 set
-        mapleFonts."NF"
-        mapleFonts."NF-CN-unhinted"
-        mapleFonts.truetype
+        #mapleFonts."NF"
+        #mapleFonts."NF-CN-unhinted"
+        #mapleFonts.truetype
 
         # Extra symbols / light fallbacks
         nerd-fonts.symbols-only
