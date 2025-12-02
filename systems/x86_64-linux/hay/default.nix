@@ -2,8 +2,11 @@
 # ==============================================================================
 # HAY Workstation: Main Host Configuration
 # ==============================================================================
-{ pkgs, lib, inputs, username, ... }:
+{ pkgs, lib, inputs, ... }:
 
+let
+  username = "kenan";
+in
 {
   imports = [
     ./hardware-configuration.nix
