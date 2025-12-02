@@ -34,7 +34,6 @@ in
     enable = true;
     enableHyprland = true;
     enableGnome    = true;
-    enableCosmic   = false;
     enableAudio    = true;
 
     fonts.enable         = true;
