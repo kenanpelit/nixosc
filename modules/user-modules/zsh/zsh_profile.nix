@@ -14,13 +14,12 @@
         #   TTY1: Display Manager - Session Selection
         #   TTY2: Hyprland (via hyprland_tty script)
         #   TTY3: GNOME (via gnome_tty script)
-        #   TTY4: COSMIC (via cosmic_tty script)
         #   TTY5: Ubuntu VM (Sway)
         # =============================================================================
 
         # Only run in login shell when no desktop is active
         # CRITICAL: Also check if we're being called from a desktop session startup
-        # (gnome-session, cosmic-session, etc. may re-exec shell during startup)
+        # (gnome-session etc. may re-exec shell during startup)
         if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
 
             # TTY1 special check: Don't interfere if session already active
@@ -29,14 +28,12 @@
             fi
 
             # CRITICAL FIX: Prevent re-running when called from desktop session startup
-            # Desktop sessions (GNOME, COSMIC) may re-exec shell with login flag
+            # Desktop sessions (GNOME) may re-exec shell with login flag
             # Check if we're in a desktop session startup context
             # IMPORTANT: Only check for actual running sessions, not just env vars
             if pgrep -x "gnome-shell" >/dev/null 2>&1 || \
-               pgrep -x "cosmic-comp" >/dev/null 2>&1 || \
                [ -n "''${GNOME_DESKTOP_SESSION_ID:-}" ] || \
-               [ -n "''${GNOME_SHELL_SESSION_MODE:-}" ] || \
-               [ -n "''${COSMIC_SESSION:-}" ]; then
+               [ -n "''${GNOME_SHELL_SESSION_MODE:-}" ]; then
                 return
             fi
             
@@ -49,14 +46,12 @@
                 echo "╚════════════════════════════════════════════════════════════╝"
                 echo ""
                 echo "Available Desktop Sessions:"
-                echo "  • COSMIC   - Rust-based desktop environment"
                 echo "  • Hyprland - Dynamic tiling Wayland compositor"
                 echo "  • GNOME    - Traditional GNOME desktop"
                 echo ""
                 echo "Manual Start Commands:"
                 echo "  exec hyprland_tty    - Start Hyprland with optimizations"
                 echo "  exec gnome_tty       - Start GNOME with optimizations"
-                echo "  exec cosmic_tty      - Start COSMIC with optimizations"
                 echo ""
             
             # ==========================================================================
@@ -112,40 +107,6 @@
                 fi
             
             # ==========================================================================
-            # TTY4: COSMIC Desktop Environment
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "4" ]; then
-                echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY4: Launching COSMIC via cosmic_tty                     ║"
-                echo "╚════════════════════════════════════════════════════════════╝"
-
-                # CRITICAL: Only set XDG_RUNTIME_DIR - let cosmic_tty handle everything else
-                # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-
-                # Check for cosmic_tty script
-                if command -v cosmic_tty >/dev/null 2>&1; then
-                    echo "Starting COSMIC with optimized configuration..."
-                    exec cosmic_tty
-                else
-                    echo "ERROR: cosmic_tty script not found in PATH"
-                    echo "Falling back to direct COSMIC launch (not recommended)"
-                    echo "NOTE: COSMIC is in Beta - expect occasional issues"
-                    sleep 3
-
-                    # Fallback: COSMIC environment settings
-                    export XDG_SESSION_TYPE=wayland
-                    export XDG_SESSION_DESKTOP=cosmic
-                    export XDG_CURRENT_DESKTOP=COSMIC
-                    export DESKTOP_SESSION=cosmic
-                    export COSMIC_DATA_CONTROL_ENABLED=1
-                    export NIXOS_OZONE_WL=1
-                    export SYSTEMD_OFFLINE=0
-
-                    exec cosmic-session 2>&1 | tee /tmp/cosmic-session-tty4.log
-                fi
-            
-            # ==========================================================================
             # TTY5: Ubuntu VM in Sway
             # ==========================================================================
             elif [ "''${XDG_VTNR}" = "5" ]; then
@@ -190,17 +151,15 @@
                 echo "╚════════════════════════════════════════════════════════════╝"
                 echo ""
                 echo "Available TTY Assignments:"
-                echo "  TTY1: Display Manager (cosmic-greeter)"
+                echo "  TTY1: Display Manager (gdm)"
                 echo "  TTY2: Hyprland (hyprland_tty)"
                 echo "  TTY3: GNOME (gnome_tty)"
-                echo "  TTY4: COSMIC (cosmic_tty)"
                 echo "  TTY5: Ubuntu VM (Sway)"
                 echo "  TTY6: Available for manual use"
                 echo ""
                 echo "Manual Start Commands:"
                 echo "  exec hyprland_tty    - Hyprland with optimizations"
                 echo "  exec gnome_tty       - GNOME with optimizations"
-                echo "  exec cosmic_tty      - COSMIC with optimizations"
                 echo "  exec sway            - Sway compositor"
                 echo ""
             fi

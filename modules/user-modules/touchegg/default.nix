@@ -207,102 +207,6 @@ let
         </application>
       </touchégg>
     '';
-
-    # COSMIC Configuration
-    cosmic = ''
-      <touchégg>
-        <settings>
-          <property name="animation_delay">150</property>
-          <property name="action_execute_threshold">10</property>
-          <property name="color">auto</property>
-          <property name="borderColor">auto</property>
-        </settings>
-
-        <application name="All">
-          <!-- Three Finger Gestures - COSMIC Workspace Navigation -->
-          
-          <!-- 3 Finger Left: Previous Workspace -->
-          <gesture type="SWIPE" fingers="3" direction="LEFT">
-            <action type="SEND_KEYS">
-              <repeat>false</repeat>
-              <keys>Super_L+Control_L+Left</keys>
-              <on>begin</on>
-            </action>
-          </gesture>
-
-          <!-- 3 Finger Right: Next Workspace -->
-          <gesture type="SWIPE" fingers="3" direction="RIGHT">
-            <action type="SEND_KEYS">
-              <repeat>false</repeat>
-              <keys>Super_L+Control_L+Right</keys>
-              <on>begin</on>
-            </action>
-          </gesture>
-
-          <!-- 3 Finger Up: Launcher/Activities -->
-          <gesture type="SWIPE" fingers="3" direction="UP">
-            <action type="SEND_KEYS">
-              <repeat>false</repeat>
-              <keys>Super_L</keys>
-              <on>begin</on>
-            </action>
-          </gesture>
-
-          <!-- 3 Finger Down: Show Desktop -->
-          <gesture type="SWIPE" fingers="3" direction="DOWN">
-            <action type="SHOW_DESKTOP">
-              <animate>true</animate>
-            </action>
-          </gesture>
-
-          <!-- Four Finger Gestures - Window Management -->
-          
-          <!-- 4 Finger Up: Maximize Window -->
-          <gesture type="SWIPE" fingers="4" direction="UP">
-            <action type="MAXIMIZE_RESTORE_WINDOW"/>
-          </gesture>
-
-          <!-- 4 Finger Down: Close Window -->
-          <gesture type="SWIPE" fingers="4" direction="DOWN">
-            <action type="CLOSE_WINDOW"/>
-          </gesture>
-
-          <!-- 4 Finger Left: Move Window to Left Workspace -->
-          <gesture type="SWIPE" fingers="4" direction="LEFT">
-            <action type="SEND_KEYS">
-              <repeat>false</repeat>
-              <keys>Super_L+Shift_L+Left</keys>
-              <on>begin</on>
-            </action>
-          </gesture>
-
-          <!-- 4 Finger Right: Move Window to Right Workspace -->
-          <gesture type="SWIPE" fingers="4" direction="RIGHT">
-            <action type="SEND_KEYS">
-              <repeat>false</repeat>
-              <keys>Super_L+Shift_L+Right</keys>
-              <on>begin</on>
-            </action>
-          </gesture>
-
-          <!-- Pinch Gestures -->
-          
-          <!-- Pinch In: Maximize -->
-          <gesture type="PINCH" fingers="3" direction="IN">
-            <action type="MAXIMIZE_RESTORE_WINDOW">
-              <animate>true</animate>
-            </action>
-          </gesture>
-
-          <!-- Pinch Out: Restore -->
-          <gesture type="PINCH" fingers="3" direction="OUT">
-            <action type="MAXIMIZE_RESTORE_WINDOW">
-              <animate>true</animate>
-            </action>
-          </gesture>
-        </application>
-      </touchégg>
-    '';
   };
 
   # Config selector script
@@ -323,10 +227,6 @@ let
       hyprland)
         echo "Touchégg: Configuring for Hyprland"
         CONFIG_SOURCE="$CONFIG_DIR/hyprland.conf"
-        ;;
-      cosmic)
-        echo "Touchégg: Configuring for COSMIC"
-        CONFIG_SOURCE="$CONFIG_DIR/cosmic.conf"
         ;;
       *)
         echo "Touchégg: Unknown desktop '$DESKTOP', using Hyprland config as fallback"
@@ -352,7 +252,6 @@ in
   xdg.configFile = {
     "touchegg/hyprland.conf".text = toucheggConfigs.hyprland;
     "touchegg/gnome.conf".text = toucheggConfigs.gnome;
-    "touchegg/cosmic.conf".text = toucheggConfigs.cosmic;
   };
 
   # =============================================================================
