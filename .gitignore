@@ -1,6 +1,4 @@
 # Secrets and security files
-hay
-hay/*
 secrets/home-secrets.yaml
 secrets/wireless-secrets.yaml
 secrets/subliminal.toml
@@ -19,7 +17,6 @@ assets/mpv
 assets/oh-my-tmux
 assets/tmux
 assets/grub
-hosts/hay/configuration.nix
 hosts/vhay/configuration.nix
 *.tar.gz
 !*.enc.tar.gz
