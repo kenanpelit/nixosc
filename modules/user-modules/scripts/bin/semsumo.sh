@@ -25,7 +25,8 @@
 
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="8.0.0"
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
+# Snowfall düzenine göre start scriptleri burada tutuluyor
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/user-modules/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
