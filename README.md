@@ -1,165 +1,155 @@
-# NixOS Configuration (Snowfall Edition)
+# NixOS Configuration Suite (nixosc)
 
 <div align="center">
-  <img src=".github/assets/logo/nixos-logo.png" height="120" alt="NixOS Logo" />
-  <h1>NixOS Dotfiles & System Configuration</h1>
-  
-  <p>
-    <b>Modern • Modular • Declarative • Beautiful</b>
-  </p>
+   <img src="./.github/assets/logo/nixos-logo.png" width="100px" />
+   <br>
+      Kenan's NixOS Configuration Suite
+   <br>
+      <img src="./.github/assets/pallet/pallet-0.png" width="600px" /> <br>
 
-  ![NixOS](https://img.shields.io/badge/NixOS-25.11-5277C3?style=for-the-badge&logo=nixos&logoColor=white)
-  ![Snowfall](https://img.shields.io/badge/Snowfall-Lib-blue?style=for-the-badge)
-  ![Hyprland](https://img.shields.io/badge/Desktop-Hyprland-00a4a6?style=for-the-badge)
-  ![Catppuccin](https://img.shields.io/badge/Theme-Catppuccin-F5C2E7?style=for-the-badge)
+   <div>
+      <p></p>
+      <div>
+         <a href="https://github.com/kenanpelit/nixosc/stargazers">
+            <img src="https://img.shields.io/github/stars/kenanpelit/nixosc?color=FABD2F&labelColor=282828&style=for-the-badge&logo=starship&logoColor=FABD2F">
+         </a>
+         <a href="https://github.com/kenanpelit/nixosc/">
+            <img src="https://img.shields.io/github/repo-size/kenanpelit/nixosc?color=B16286&labelColor=282828&style=for-the-badge&logo=github&logoColor=B16286">
+         </a>
+         <a href="https://nixos.org">
+            <img src="https://img.shields.io/badge/NixOS-25.11-blue.svg?style=for-the-badge&labelColor=282828&logo=NixOS&logoColor=458588&color=458588">
+         </a>
+         <a href="https://github.com/kenanpelit/nixosc/blob/main/LICENSE">
+            <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&colorA=282828&colorB=98971A&logo=unlicense&logoColor=98971A&"/>
+         </a>
+      </div>
+      <br>
+   </div>
 </div>
 
----
+## 🖼️ Gallery
 
-## 📖 Overview
+<p align="center">
+   <img src="./.github/assets/screenshots/1.png" style="margin-bottom: 10px;"/> <br>
+   <img src="./.github/assets/screenshots/hyprlock.png" style="margin-bottom: 10px;" /> <br>
+   <img src="./.github/assets/screenshots/grub.png" style="margin-bottom: 10px;" /> <br>
+</p>
 
-This repository hosts a comprehensive **NixOS** configuration managed with the **Snowfall Lib** framework. It unifies system-level configuration (NixOS) and user environment (Home Manager) into a single, cohesive flake.
+## 📋 Project Overview
 
-It is designed to be **host-agnostic**, adapting its behavior dynamically based on whether it's running on a physical workstation or a virtual machine.
+**NixOS Configuration Suite (nixosc)** - Snowfall Edition
 
-### ✨ Key Features
+A comprehensive NixOS system configuration management suite built on the **Snowfall Lib** framework. It provides a unified, modular approach to managing both system-level configuration (NixOS) and user environments (Home Manager).
 
-*   **❄️ Snowfall Architecture:** Structured, auto-discovered modules for zero-boilerplate management.
-*   **🎨 Hyprland Desktop:** A fully customized tiling window manager experience with **Waybar**, **Rofi**, **Mako**, and **Hyprlock**.
-*   **🖌️ Theming:** Global **Catppuccin Mocha** theme integration across GTK, QT, and TUI applications.
-*   **🐚 Advanced Shell:** Modular **Zsh** configuration with **Starship**, **Zoxide**, **FZF**, and **Tmux**.
-*   **🔒 Security:** Declarative secrets management with **SOPS** (Age encryption) and strict firewall rules.
-*   **🤖 Automation:** `install.sh` script for unified system building, updating, and bootstrapping.
+- **Architecture:** Snowfall Lib (Automatic module discovery)
+- **Desktop:** Hyprland (Wayland) with Waybar, Rofi, Mako
+- **Theme:** Catppuccin Mocha everywhere
+- **Shell:** Zsh + Starship + Tmux
+- **Secrets:** SOPS-Nix with Age encryption
 
----
+## 🗃️ Repository Structure
 
-## 📸 Gallery
+The project follows modern Snowfall Lib standards:
 
-<div align="center">
-  <img src=".github/assets/screenshots/desktop.png" width="48%" alt="Desktop" />
-  <img src=".github/assets/screenshots/terminal.png" width="48%" alt="Terminal" />
-</div>
+- [flake.nix](flake.nix) - Core configuration entry point
+- [install.sh](install.sh) - Unified installation & management tool
+- [systems](systems) - ❄️ Host configurations
+  - [hay](systems/x86_64-linux/hay/) - 💻 Laptop/Workstation
+  - [vhay](systems/x86_64-linux/vhay/) - 🗄️ Virtual Machine
+- [modules](modules) - 🍱 Modular configurations
+  - [nixos](modules/nixos/) - ⚙️ System-level modules (hardware, services)
+  - [user-modules](modules/user-modules/) - 🏠 User-level modules (home-manager apps)
+- [packages](packages/) - 📦 Custom packages (e.g. Maple Mono)
+- [overlays](overlays/) - 🔧 Nixpkgs overlays
+- [secrets](secrets/) - 🔐 SOPS-encrypted secrets
+- [assets](assets/) - 📦 Binary assets and configs
 
-> *More screenshots available in `.github/assets/screenshots`*
+## 🧩 Components & Technologies
 
----
+### Core Systems
 
-## 📂 Architecture
+| Component                | Technology                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| **Base System**          | [NixOS 25.11](https://nixos.org/)                                                                  |
+| **Framework**            | [Snowfall Lib](https://github.com/snowfallorg/lib)                                                 |
+| **User Environment**     | [Home-Manager](https://github.com/nix-community/home-manager)                                      |
+| **Secrets Management**   | [SOPS-nix](https://github.com/Mic92/sops-nix) with Age                                             |
 
-The project structure follows modern Nix standards:
+### Desktop Environment
 
-```
-.
-├── ❄️ systems/              # Host Definitions
-│   └── x86_64-linux/     # Architecture
-│       ├── hay/          # Physical Workstation (Desktop/Laptop)
-│       └── vhay/         # Virtual Machine (Testing/Dev)
-│
-├── ❄️ modules/              # Modular Configuration
-│   ├── nixos/            # System-level modules (Services, Boot, Hardware)
-│   └── user-modules/     # User-level modules (Home Manager apps, Dotfiles)
-│
-├── ❄️ packages/             # Custom Packages (e.g. Maple Mono, Custom Scripts)
-├── ❄️ overlays/             # Nixpkgs Overlays (Modifications)
-├── 🔒 secrets/              # Encrypted Secrets (SOPS + Age)
-└── 📜 install.sh            # The Master Control Script
-```
+| Component                    | Implementation                                                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Window Manager**           | [Hyprland](https://github.com/hyprwm/hyprland)                                                                        |
+| **Bar**                      | [Waybar](https://github.com/Alexays/Waybar)                                                                           |
+| **Launcher**                 | [Rofi](https://github.com/lbonn/rofi) + [Walker](https://github.com/abenz1267/walker)                                 |
+| **Notifications**            | [Mako](https://github.com/emersion/mako)                                                                              |
+| **Lock Screen**              | [Hyprlock](https://github.com/hyprwm/hyprlock)                                                                        |
 
----
+## 🚀 Installation
 
-## 📦 Software Stack
+> [!CAUTION]
+> This configuration is tailored for specific hardware. Review `hardware-configuration.nix` before applying.
 
-A curated list of applications included in this configuration:
-
-### 🖥️ Desktop & GUI
-*   **Window Manager:** Hyprland (w/ Waybar, Hyprpaper, Hyprlock)
-*   **Browser:** Zen Browser, Brave, Firefox
-*   **Communication:** Discord (WebCord), WhatsApp (Wasistlos)
-*   **Media:** MPV, VLC, Spotify, OBS Studio
-*   **Productivity:** LibreOffice, Obsidian, Zathura
-
-### 💻 Terminal & CLI
-*   **Shell:** Zsh + Starship
-*   **Terminal:** WezTerm, Kitty, Foot
-*   **Multiplexer:** Tmux
-*   **Editors:** Neovim, Helix
-*   **File Manager:** Yazi, Ranger
-*   **Utils:** FZF, Zoxide, Eza, Bat, Ripgrep, Htop, Btop
-
-### 🛠️ Development
-*   **Languages:** Python, Go, Lua, Nix, Bash
-*   **Tools:** Git, Lazygit, Docker/Podman, Direnv, Devenv
-*   **Nix:** Nix-Shell, Flakes, Home-Manager
-
----
-
-## 🚀 Installation & Usage
-
-This configuration comes with a powerful `install.sh` script to manage the system.
-
-### 1. Bootstrap (Fresh Install)
-Boot from the NixOS ISO and clone this repo:
+### 1. Clone & Setup
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/kenanpelit/nixosc.git ~/.nixosc
+git clone https://github.com/kenanpelit/nixosc ~/.nixosc
 cd ~/.nixosc
-
-# 2. Generate hardware config (if new hardware)
-nixos-generate-config --show-hardware-config > systems/x86_64-linux/<host>/hardware-configuration.nix
-
-# 3. Bootstrap the system
-./install.sh --pre-install hay
-# (This copies initial config to /etc/nixos)
-
-# 4. Install
-sudo nixos-install --flake .#hay
 ```
 
-### 2. Daily Management (Build & Switch)
-To apply changes to your current system:
+### 2. Install / Switch
+
+Use the helper script to build and switch configurations:
 
 ```bash
-# Switch to 'hay' configuration
+# For Physical Machine (hay)
 ./install.sh install hay
 
-# Switch to 'vhay' configuration
+# For Virtual Machine (vhay)
 ./install.sh install vhay
 ```
 
-### 3. Updates
-To update flake inputs (packages) and rebuild:
+### 3. Update
+
+To update flake inputs:
 
 ```bash
-# Update all inputs
 ./install.sh update
-
-# Update specific input
-./install.sh update hyprland
 ```
-
----
 
 ## ⚙️ Customization Guide
 
 ### Adding a Package
-*   **System-wide:** Add to `modules/nixos/packages/default.nix`
-*   **User-specific:** Add to `modules/user-modules/packages/default.nix`
+*   **System-wide:** Edit `modules/nixos/packages/default.nix`.
+*   **User-specific:** Edit `modules/user-modules/packages/default.nix`.
 
-### Adding a New Module
-Just create a directory! **Auto-import** handles the rest.
-*   `modules/nixos/my-new-service/default.nix` → Automatically loaded for system.
-*   `modules/user-modules/my-new-app/default.nix` → Automatically loaded for user.
+### Creating a New Module
+Just create a directory! **Snowfall Lib** automatically imports `default.nix` files.
+*   System module: `modules/nixos/my-service/default.nix`
+*   User module: `modules/user-modules/my-app/default.nix`
 
-### Secrets (SOPS)
-Secrets are encrypted with Age. To edit secrets:
-
+### Managing Secrets
+Secrets are encrypted with Age and managed by SOPS.
+To edit secrets:
 ```bash
 sops secrets/wireless-secrets.enc.yaml
 ```
 
----
+## ⌨️ Keybindings (Hyprland)
 
-## 📜 License
+- `$mainMod` = `SUPER` key
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+| Key | Action |
+| :--- | :--- |
+| `$mainMod + Enter` | Open Terminal (Wezterm) |
+| `$mainMod + B` | Open Browser |
+| `$mainMod + D` | Open Launcher (Rofi) |
+| `$mainMod + Q` | Close Window |
+| `$mainMod + F` | Fullscreen |
+| `$mainMod + Space` | Toggle Floating |
+| `$mainMod + 1-9` | Switch Workspace |
+| `$mainMod + Shift + 1-9` | Move Window to Workspace |
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
