@@ -83,6 +83,9 @@ in
       ];
     };
   };
+
+  # SwayOSD binary for volume/brightness keybindings
+  home.packages = [ pkgs.swayosd ];
   
   # =============================================================================
   # SwayOSD Dynamic Catppuccin Styling
