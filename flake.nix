@@ -1,8 +1,46 @@
+# ==============================================================================
+#  NixOS Configuration Flake - Snowfall Edition
+# ==============================================================================
+#
+#  Author:  Kenan Pelit
+#  Repo:    https://github.com/kenanpelit/nixosc
+#  License: MIT
+#  Date:    2025-12-02
+#
+# ------------------------------------------------------------------------------
+#  ARCHITECTURE
+# ------------------------------------------------------------------------------
+#
+#  This configuration uses the Snowfall Lib framework for structured, modular,
+#  and automatic system management.
+#
+#  Structure:
+#    ├── systems/           # Host configurations (Physical & VM)
+#    ├── modules/           # Modular configuration blocks
+#    │   ├── nixos/         # System-level modules (services, hardware)
+#    │   └── user-modules/  # User-level modules (home-manager)
+#    ├── packages/          # Custom packages
+#    └── overlays/          # Nixpkgs overlays
+#
+# ------------------------------------------------------------------------------
+#  USAGE
+# ------------------------------------------------------------------------------
+#
+#  Build & Switch:
+#    $ ./install.sh install <host>
+#
+#  Update Inputs:
+#    $ ./install.sh update
+#
+# ==============================================================================
+
 {
-  description = "Kenan's NixOS Configuration - Snowfall Edition";
+  description = "Kenan's NixOS Configuration - Modern, Modular, Snowfall-based";
 
   inputs = {
-    # Core
+    # ==========================================================================
+    # Core Dependencies
+    # ==========================================================================
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
     
     snowfall-lib = {
@@ -15,7 +53,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # System
+    # ==========================================================================
+    # System Components
+    # ==========================================================================
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -26,7 +66,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Hyprland
+    # ==========================================================================
+    # Desktop Environment (Hyprland)
+    # ==========================================================================
     hyprland = {
       url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -42,11 +84,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # ==========================================================================
     # Theming
+    # ==========================================================================
     catppuccin.url = "github:catppuccin/nix";
     distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
 
-    # Tools
+    # ==========================================================================
+    # Development Tools
+    # ==========================================================================
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -62,7 +108,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Apps
+    # ==========================================================================
+    # Applications
+    # ==========================================================================
     walker.url = "github:abenz1267/walker/v2.11.3";
     
     elephant = {
@@ -81,10 +129,12 @@
     };
 
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
+    
     spicetify-nix = {
       url = "github:gerg-l/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 
@@ -100,13 +150,14 @@
       src = ./.;
 
       snowfall = {
-        namespace = "my"; # Opsiyonel namespace
+        namespace = "my"; # Custom namespace for internal modules
         
-        # Modül yolları (varsayılan değerler)
-        # modules.nixos = "./modules/nixos";
-        # modules.home = "./modules/home";
+        # Default paths are used:
+        # modules/nixos -> System modules
+        # modules/home  -> (Not used, we use modules/user-modules manually)
       };
 
+      # Global Nixpkgs configuration
       channels-config = {
         allowUnfree = true;
         permittedInsecurePackages = [
@@ -116,22 +167,20 @@
         ];
       };
 
+      # Overlays applied to all systems
       overlays = with inputs; [
         nur.overlays.default
+        (import ./overlays/maple.nix) # Local Maple font overlay (if using custom version)
       ];
 
-      # Tüm sistemlere otomatik eklenecek modüller
+      # Modules automatically added to all NixOS systems
       systems.modules.nixos = with inputs; [
         home-manager.nixosModules.home-manager
         catppuccin.nixosModules.catppuccin
         sops-nix.nixosModules.sops
-        # Global argümanları modül sistemine enjekte et
-        ({ ... }: {
-          _module.args.username = "kenan";
-        })
       ];
 
-      # Sistemlere özel argümanlar
+      # Special arguments available to all modules
       systems.specialArgs = {
         username = "kenan";
       };
