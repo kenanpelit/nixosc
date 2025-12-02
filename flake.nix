@@ -184,5 +184,9 @@
       systems.specialArgs = {
         username = "kenan";
       };
+
+      outputs-builder = channels: {
+        formatter = inputs.alejandra.defaultPackage.${channels.nixpkgs.system};
+      };
     };
 }
