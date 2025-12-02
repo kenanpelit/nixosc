@@ -17,6 +17,7 @@ let
   
   # Secret Files
   wirelessSecretsFile = "${sopsDir}/wireless-secrets.enc.yaml";
+  hasWirelessSecrets = builtins.pathExists wirelessSecretsFile;
 in
 {
   imports = [ inputs.sops-nix.nixosModules.sops ];
@@ -25,8 +26,7 @@ in
   # Core SOPS Configuration
   # ============================================================================
   sops = {
-    defaultSopsFile = wirelessSecretsFile;
-    validateSopsFiles = false; # Don't fail if secrets are missing during build
+    validateSopsFiles = hasWirelessSecrets;
 
     age = {
       keyFile = sopsAgeKeyFile;
@@ -35,10 +35,13 @@ in
 
     gnupg.sshKeyPaths = [ ]; # Disable GPG
 
+  } // lib.optionalAttrs hasWirelessSecrets {
+    defaultSopsFile = wirelessSecretsFile;
+
     # --------------------------------------------------------------------------
     # Secrets Definition
     # --------------------------------------------------------------------------
-    secrets = mkIf (builtins.pathExists wirelessSecretsFile) {
+    secrets = {
       "wireless_ken_5_password" = {
         key   = "ken_5_password";
         owner = "root";
