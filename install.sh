@@ -33,7 +33,7 @@ readonly FLAKE_LOCK="flake.lock"
 # Merge Configuration
 readonly EXCLUDE_FILES=(
   "modules/home/hyprland/config.nix"
-  "hosts/hay/hardware-configuration.nix"
+  "systems/x86_64-linux/hay/hardware-configuration.nix"
   "flake.json"
   "flake.lock"
 )
@@ -41,6 +41,7 @@ readonly EXCLUDE_FILES=(
 # Defaults
 readonly DEFAULT_USERNAME='kenan'
 readonly DEFAULT_TZ="Europe/Istanbul"
+readonly SYSTEM_ARCH="x86_64-linux"
 
 # UI Colors (TrueColor / Adaptive)
 if [[ -t 1 ]]; then
@@ -134,17 +135,18 @@ has_command() { command -v "$1" &>/dev/null; }
 host::validate() {
   local hostname="$1"
   local flake_dir="${CONFIG[FLAKE_DIR]:-$WORK_DIR}"
+  local system_dir="$flake_dir/systems/$SYSTEM_ARCH"
 
   if [[ -z "$hostname" ]]; then
     log ERROR "Hostname required."
     return 1
   fi
 
-  if [[ ! -d "$flake_dir/hosts/$hostname" ]]; then
+  if [[ ! -d "$system_dir/$hostname" ]]; then
     log ERROR "Unknown host '${hostname}'."
-    if [[ -d "$flake_dir/hosts" ]]; then
-      log INFO "Available hosts under ${flake_dir}/hosts:"
-      find "$flake_dir/hosts" -maxdepth 1 -mindepth 1 -type d -printf '  - %f\n'
+    if [[ -d "$system_dir" ]]; then
+      log INFO "Available hosts under ${system_dir}:"
+      find "$system_dir" -maxdepth 1 -mindepth 1 -type d -printf '  - %f\n'
     fi
     return 1
   fi
@@ -152,14 +154,16 @@ host::validate() {
 
 host::list() {
   local flake_dir="${CONFIG[FLAKE_DIR]:-$WORK_DIR}"
-  if [[ ! -d "$flake_dir/hosts" ]]; then
-    log ERROR "No hosts directory found at ${flake_dir}/hosts"
+  local system_dir="$flake_dir/systems/$SYSTEM_ARCH"
+
+  if [[ ! -d "$system_dir" ]]; then
+    log ERROR "No systems directory found at ${system_dir}"
     return 1
   fi
 
   echo ""
-  log STEP "Available Hosts"
-  find "$flake_dir/hosts" -maxdepth 1 -mindepth 1 -type d -printf '  - %f\n'
+  log STEP "Available Hosts ($SYSTEM_ARCH)"
+  find "$system_dir" -maxdepth 1 -mindepth 1 -type d -printf '  - %f\n'
   echo ""
 }
 
