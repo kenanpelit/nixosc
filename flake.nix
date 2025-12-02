@@ -170,7 +170,6 @@
       # Overlays applied to all systems
       overlays = with inputs; [
         nur.overlays.default
-        (import ./overlays/maple.nix) # Local Maple font overlay (if using custom version)
       ];
 
       # Modules automatically added to all NixOS systems
