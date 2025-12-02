@@ -24,6 +24,7 @@ readonly WORK_DIR="${SCRIPT_DIR}"
 readonly CONFIG_DIR="$HOME/.config/nixos"
 readonly LOG_FILE="$HOME/.nixosb/nixos-install.log"
 readonly SYSTEM_ARCH="x86_64-linux"
+readonly DEFAULT_HOST="hay"
 
 # Merge Configuration - Files to preserve during merges
 readonly EXCLUDE_FILES=(
@@ -195,6 +196,26 @@ EOF
 
 config::get() { echo "${CONFIG[$1]:-}"; }
 config::set() { CONFIG[$1]="$2"; }
+
+# ==============================================================================
+# Profile helpers (auto profile name like 251201 -> YYMMDD, next free day)
+# ==============================================================================
+profile::exists() {
+  local name="$1"
+  [[ -z "$name" ]] && return 1
+  [[ -e "/nix/var/nix/profiles/system-profiles/${name}" ]]
+}
+
+profile::next_available() {
+  local base_date="${1:-$(date +%Y-%m-%d)}"
+  local offset=0
+  while :; do
+    local candidate
+    candidate=$(date -d "${base_date} +${offset} day" +%y%m%d)
+    profile::exists "$candidate" || { echo "$candidate"; return 0; }
+    offset=$((offset + 1))
+  done
+}
 
 # ==============================================================================
 # PART 3: FLAKE & GIT LOGIC
@@ -491,6 +512,7 @@ show_help() {
   echo ""
   echo -e "${C_BOLD}Commands:${C_RESET}"
   echo "  install          Build & Switch configuration"
+  echo "  auto             Auto mode: update + install with next free YYMMDD profile"
   echo "  update           Update flake inputs"
   echo "  build            Build only"
   echo "  merge            Merge branches (interactively)"
@@ -511,9 +533,17 @@ parse_args() {
   fi
 
   local action=""
+  local auto_host=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
+    auto)
+      action="auto"
+      if [[ -n "${2:-}" && ! "${2}" =~ ^- ]]; then
+        auto_host="$2"
+        shift
+      fi
+      ;; 
     install)
       action="install"
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]] && [[ "$2" != "update" && "$2" != "merge" ]]; then
@@ -544,11 +574,19 @@ parse_args() {
       ;; 
     --pre-install) cmd_pre-install ;; 
     -u | --update) config::set UPDATE_FLAKE true ;; 
-        -m | --merge)
-          shift
-          local auto_yes="false" src="" tgt=""
-          while [[ $# -gt 0 ]]; do
-            case "$1" in
+    -au | -ua)
+      config::set AUTO_MODE true
+      config::set UPDATE_FLAKE true
+      if [[ -n "${2:-}" && ! "${2}" =~ ^- ]]; then
+        config::set HOSTNAME "$2"
+        shift
+      fi
+      ;;
+    -m | --merge)
+      shift
+      local auto_yes="false" src="" tgt=""
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
             -y | --yes) auto_yes="true" ;;
             -*) break ;; # Stop at next flag (e.g. -H) if we want to support install -m
             *) if [[ -z "$src" ]]; then src="$1"; elif [[ -z "$tgt" ]]; then tgt="$1"; fi ;;
@@ -571,6 +609,17 @@ parse_args() {
     esac
     shift
   done
+
+  if [[ "$action" == "auto" ]]; then
+    local host="${auto_host:-$(config::get HOSTNAME)}"
+    [[ -z "$host" ]] && host="$DEFAULT_HOST"
+    config::set AUTO_MODE true
+    config::set UPDATE_FLAKE true
+    config::set HOSTNAME "$host"
+    config::set PROFILE "$(profile::next_available)"
+    cmd_install "$host"
+    return
+  fi
 
   if [[ "$action" == "install" ]]; then
     cmd_install
