@@ -70,8 +70,9 @@
     # Desktop Environment (Hyprland)
     # ==========================================================================
     hyprland = {
-      url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
       inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:hyprwm/hyprland/f82a8630d7a51dab4cc70924f500bf70e723db12"; # 1202 - Updated commit
+#      url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
     };
 
     hypr-contrib = {
