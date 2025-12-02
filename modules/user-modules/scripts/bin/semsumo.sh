@@ -1131,7 +1131,6 @@ show_help() {
   echo "    clean                 Remove all generated scripts"
   echo "    status                Show running applications status"
   echo "    kill                  Stop all managed applications"
-  echo "    nix-gen               Generate Nix expressions for bin/ and start/ directories"
   echo "    help                  Show this help"
   echo
   echo -e "${BOLD}Generate Options:${NC}"
@@ -1161,7 +1160,6 @@ show_help() {
   echo "    $0 brave launch brave-kenp          # Launch specific profile"
   echo "    $0 list                             # List all profiles"
   echo "    $0 status                           # Check running apps"
-  echo "    $0 nix-gen                          # Generate Nix expressions"
   echo
   echo -e "${BOLD}Detected:${NC} Window Manager = $WM_TYPE"
   echo -e "${BOLD}Locations:${NC}"
@@ -1202,10 +1200,6 @@ parse_args() {
     ;;
   kill)
     kill_all
-    exit 0
-    ;;
-  nix-gen)
-    generate_nix_expressions
     exit 0
     ;;
   help | --help | -h)
