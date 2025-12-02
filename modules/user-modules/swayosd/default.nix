@@ -83,6 +83,9 @@ in
       ];
     };
   };
+
+  # SwayOSD binary for volume/brightness keybindings
+  home.packages = [ pkgs.swayosd ];
   
   # =============================================================================
   # SwayOSD Dynamic Catppuccin Styling
@@ -160,7 +163,6 @@ in
                     ${accentColor.hex}, 
                     alpha(${accentColor.hex}, 0.8));
         box-shadow: 0 1px 3px alpha(${accentColor.hex}, 0.4);
-        transition: all 0.2s ease;
     }
     
     /* Volume/Brightness specific styling */
@@ -200,36 +202,6 @@ in
         opacity: 0.7;
     }
     
-    /* Animation for state changes */
-    window {
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    progress {
-        transition: background 0.3s ease, box-shadow 0.2s ease;
-    }
-    
-    /* High contrast mode support */
-    @media (prefers-contrast: high) {
-        window {
-            border: 2px solid ${accentColor.hex};
-        }
-        
-        progress {
-            background: ${accentColor.hex};
-        }
-        
-        trough {
-            background: ${colors.surface0.hex};
-        }
-    }
-    
-    /* Reduced motion support */
-    @media (prefers-reduced-motion: reduce) {
-        * {
-            transition: none !important;
-            animation: none !important;
-        }
-    }
+    /* (Transitions removed: GTK CSS parser logs warnings on unsupported media/animation features) */
   '';
 }
