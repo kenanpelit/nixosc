@@ -2,11 +2,8 @@
 # ==============================================================================
 # HAY Workstation: Main Host Configuration
 # ==============================================================================
-{ pkgs, lib, inputs, ... }:
+{ pkgs, lib, inputs, config, ... }:
 
-let
-  username = "kenan";
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -21,6 +18,9 @@ in
     isPhysicalHost = true;
     isVirtualHost  = false;
   };
+
+  # Set User (Defaults to "kenan" but good to be explicit)
+  my.user.name = "kenan";
 
   # ============================================================================
   # Host Identity
@@ -47,7 +47,7 @@ in
 
     autoLogin = {
       enable = false;
-      # user = username;
+      # user = config.my.user.name; # Can use config variable here if enabled
     };
   };
 
@@ -114,7 +114,7 @@ in
 
     settings = {
       PasswordAuthentication = false;
-      AllowUsers             = [ username ];
+      AllowUsers             = [ config.my.user.name ];
       PermitRootLogin        = "no";
     };
   };
@@ -169,3 +169,4 @@ in
   # ============================================================================
   system.stateVersion = "25.11";
 }
+
