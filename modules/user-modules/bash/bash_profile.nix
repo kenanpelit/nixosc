@@ -29,7 +29,6 @@
             #   TTY1: Display Manager - Session Selection
             #   TTY2: Hyprland (hyprland_tty script ile)
             #   TTY3: GNOME (gnome_tty script ile)
-            #   TTY4: COSMIC (cosmic_tty script ile)
             #   TTY5: Ubuntu VM (Sway)
             # =============================================================================
 
@@ -51,14 +50,12 @@
                     echo "╚════════════════════════════════════════════════════════════╝"
                     echo ""
                     echo "Available Desktop Sessions:"
-                    echo "  • COSMIC   - Rust-based desktop"
                     echo "  • Hyprland - Dynamic tiling Wayland compositor"
                     echo "  • GNOME    - Traditional GNOME desktop"
                     echo ""
                     echo "Manual Start Commands:"
                     echo "  exec hyprland_tty    - Start Hyprland with optimizations"
                     echo "  exec gnome_tty       - Start GNOME with optimizations"
-                    echo "  exec cosmic_tty      - Start COSMIC with optimizations"
                     echo ""
             
                 # ==========================================================================
@@ -118,45 +115,6 @@
                     fi
             
                 # ==========================================================================
-                # TTY4: COSMIC Desktop Environment
-                # ==========================================================================
-                # Tüm environment ayarları cosmic_tty script'inde yapılır
-                elif [ "''${XDG_VTNR}" = "4" ]; then
-                    echo "╔════════════════════════════════════════════════════════════╗"
-                    echo "║  TTY4: Launching COSMIC via cosmic_tty                     ║"
-                    echo "╚════════════════════════════════════════════════════════════╝"
-                
-                    # Minimum gerekli değişkenler - geri kalanı cosmic_tty'de
-                    export XDG_SESSION_TYPE=wayland
-                    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                
-                    # cosmic_tty script'i kontrol et
-                    if command -v cosmic_tty >/dev/null 2>&1; then
-                        echo "Starting COSMIC with optimized configuration..."
-                        exec cosmic_tty
-                    else
-                        echo "ERROR: cosmic_tty script not found in PATH"
-                        echo "Falling back to direct COSMIC launch (not recommended)"
-                        echo "NOTE: COSMIC is in Beta - expect occasional issues"
-                        sleep 3
-                    
-                        # COSMIC environment ayarları
-                        export XDG_SESSION_DESKTOP=cosmic
-                        export XDG_CURRENT_DESKTOP=COSMIC
-                        export DESKTOP_SESSION=cosmic
-                        export COSMIC_DATA_CONTROL_ENABLED=1
-                        export NIXOS_OZONE_WL=1
-                    
-                        # D-Bus kontrolü
-                        if ! pgrep -u $(id -u) dbus-daemon >/dev/null 2>&1; then
-                            eval $(dbus-launch --sh-syntax)
-                            export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-                        fi
-                    
-                        exec cosmic-session 2>&1 | tee /tmp/cosmic-session-tty4.log
-                    fi
-            
-                # ==========================================================================
                 # TTY5: Ubuntu VM in Sway
                 # ==========================================================================
                 elif [ "''${XDG_VTNR}" = "5" ]; then
@@ -195,17 +153,15 @@
                     echo "╚════════════════════════════════════════════════════════════╝"
                     echo ""
                     echo "Available TTY Assignments:"
-                    echo "  TTY1: Display Manager (cosmic-greeter)"
+                    echo "  TTY1: Display Manager (gdm)"
                     echo "  TTY2: Hyprland (hyprland_tty)"
                     echo "  TTY3: GNOME (gnome_tty)"
-                    echo "  TTY4: COSMIC (cosmic_tty)"
                     echo "  TTY5: Ubuntu VM (Sway)"
                     echo "  TTY6: TTY6"
                     echo ""
                     echo "Manual Start Commands:"
                     echo "  exec hyprland_tty    - Hyprland with optimizations"
                     echo "  exec gnome_tty       - GNOME with optimizations"
-                    echo "  exec cosmic_tty      - COSMIC with optimizations"
                     echo ""
                 fi
             

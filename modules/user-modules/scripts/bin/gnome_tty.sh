@@ -316,9 +316,6 @@ cleanup_environment() {
   unset WLR_RENDERER
   unset HYPRLAND_CMD
 
-  # COSMIC kalıntıları
-  unset COSMIC_DATA_CONTROL_ENABLED
-
   # Sway kalıntıları
   unset SWAYSOCK
   unset I3SOCK
