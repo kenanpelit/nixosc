@@ -1,46 +1,19 @@
----
+# .sops.yaml
+# ==============================================================================
+# SOPS Encryption Rules
+# ==============================================================================
 creation_rules:
- # =============================================================================
- # Binary Files (tar.gz, zip, etc.)
- # encrypted_regex is NOT USED for binary files
- # =============================================================================
- - path_regex: ^(secrets|assets)/.*\.(tar\.gz|tgz|zip|bin|gz|bz2|xz|7z|rar)$
-   # no encrypted_regex! (unnecessary for binary files)
-   key_groups: &default_age_key
-     - age:
-         - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
+  # Text-based secrets (YAML, JSON, ENV, INI)
+  # Uses 'encrypted_regex' to encrypt values but keep keys readable
+  - path_regex: .*\.enc\.(yaml|json|env|ini|toml)$
+    encrypted_regex: "^(data|stringData|.*_password|.*_secret|.*_key|.*_token)$"
+    key_groups:
+      - age:
+          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
 
- # =============================================================================
- # Text/Structured Files (YAML, JSON, ENV, etc.)
- # encrypted_regex makes sense only for these files
- # =============================================================================
- - path_regex: ^(secrets|assets)/.*\.(yaml|yml|json|env|txt|conf|toml)$
-   encrypted_regex: '^(.*)$'
-   key_groups: *default_age_key
-
- # =============================================================================
- # All Other Files (Fallback)
- # NO encrypted_regex (unknown types might be binary)
- # =============================================================================
- - path_regex: ^(secrets|assets)/.*$
-   # don't use encrypted_regex (type unknown, might be binary)
-   key_groups: *default_age_key
-
- # =============================================================================
- # Special Directory Rules
- # =============================================================================
- - path_regex: ^config/.*\.secret\.yaml$
-   encrypted_regex: '^(.*)$'  # regex can be used since it's YAML
-   key_groups: *default_age_key
-
- # =============================================================================
- # File Extension Rules
- # =============================================================================
- - path_regex: .*\.(secret|encrypted|enc)\.(yaml|yml|json|toml)$
-   encrypted_regex: '^(.*)$'  # for text formats
-   key_groups: *default_age_key
-
- - path_regex: .*\.(secret|encrypted|enc)\.(tar\.gz|zip|bin)$
-   # NO encrypted_regex (for binary files)
-   key_groups: *default_age_key
-
+  # Binary secrets (Archives, Blobs)
+  # Encrypts the entire file content
+  - path_regex: .*\.enc\.(tar\.gz|tgz|zip|bin)$
+    key_groups:
+      - age:
+          - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
