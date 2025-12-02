@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# NixOS Installation Script v4.0.0 (Snowfall Edition)
+# NixOS Installation Script v4.0.1 (Snowfall Edition)
 # Modular, Flake-aware, Git-integrated, and Beautiful
 # Location: flake root (./install.sh)
 # ==============================================================================
@@ -16,7 +16,7 @@
 readonly START_TIME=$(date +%s)
 
 # Metadata
-readonly VERSION="4.0.0"
+readonly VERSION="4.0.1"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly WORK_DIR="${SCRIPT_DIR}"
 
@@ -75,12 +75,12 @@ log() {
   local timestamp="$(date '+%H:%M:%S')"
 
   case "$level" in
-  INFO) printf "${C_BLUE}${S_INFO}  ${C_RESET}%b\n" "$msg" ;; 
-  SUCCESS) printf "${C_GREEN}${S_SUCCESS}  ${C_RESET}%b\n" "$msg" ;; 
-  WARN) printf "${C_YELLOW}${S_WARN}  ${C_RESET}%b\n" "$msg" ;; 
-  ERROR) printf "${C_RED}${S_ERROR}  ${C_RESET}%b\n" "$msg" >&2 ;; 
-  STEP) printf "\n${C_PURPLE}${S_ARROW}  ${C_BOLD}%b${C_RESET}\n" "$msg" ;; 
-  DEBUG) [[ "${DEBUG:-false}" == "true" ]] && printf "${C_GRAY}${S_BULLET}  %b${C_RESET}\n" "$msg" ;; 
+  INFO) printf "${C_BLUE}${S_INFO}  ${C_RESET}%b\n" "$msg" ;;
+  SUCCESS) printf "${C_GREEN}${S_SUCCESS}  ${C_RESET}%b\n" "$msg" ;;
+  WARN) printf "${C_YELLOW}${S_WARN}  ${C_RESET}%b\n" "$msg" ;;
+  ERROR) printf "${C_RED}${S_ERROR}  ${C_RESET}%b\n" "$msg" >&2 ;;
+  STEP) printf "\n${C_PURPLE}${S_ARROW}  ${C_BOLD}%b${C_RESET}\n" "$msg" ;;
+  DEBUG) [[ "${DEBUG:-false}" == "true" ]] && printf "${C_GRAY}${S_BULLET}  %b${C_RESET}\n" "$msg" ;;
   esac
 
   if [[ -e /proc/self/fd/3 ]]; then
@@ -267,6 +267,57 @@ flake::build() {
 # PART 4: INSTALLATION COMMANDS
 # ==============================================================================
 
+# Define show_summary FIRST because it is called by cmd_install
+show_summary() {
+  local end_time=$(date +%s)
+  local duration=$((end_time - START_TIME))
+  local minutes=$((duration / 60))
+  local seconds=$((duration % 60))
+
+  echo ""
+  hr
+  echo -e "${C_BOLD}${C_GREEN}${S_SUCCESS}  SYSTEM SUCCESSFULLY UPDATED${C_RESET}"
+  hr
+  echo ""
+  echo -e "   ${C_DIM}Hostname   ${C_RESET}${C_BOLD}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
+  echo -e "   ${C_DIM}User       ${C_RESET}${C_CYAN}${CONFIG[USERNAME]}${C_RESET}"
+  if [[ -n "${CONFIG[PROFILE]}" ]]; then
+      echo -e "   ${C_DIM}Profile    ${C_RESET}${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
+  fi
+  echo ""
+  echo -e "   ${C_DIM}Time       ${C_RESET}$(date '+%H:%M:%S')"
+  echo -e "   ${C_DIM}Duration   ${C_RESET}${minutes} min ${seconds} sec"
+  echo ""
+  hr
+  echo ""
+}
+
+cmd_install() {
+  local hostname="${1:-$(config::get HOSTNAME)}"
+  [[ -z "$hostname" ]] && {
+    log ERROR "Hostname not specified."
+    return 1
+  }
+
+  config::set HOSTNAME "$hostname"
+  config::save
+
+  header
+
+  # Optional Update
+  if [[ "${CONFIG[UPDATE_FLAKE]}" == "true" ]]; then
+    flake::update
+  fi
+
+  # Build System
+  if flake::build "$hostname"; then
+    show_summary
+  else
+    log ERROR "Installation aborted due to errors."
+    exit 1
+  fi
+}
+
 cmd_pre-install() {
   local hostname="${1:-$(config::get HOSTNAME)}"
   [[ -z "$hostname" ]] && {
@@ -430,30 +481,6 @@ cmd_merge() {
   fi
 }
 
-show_summary() {
-  local end_time=$(date +%s)
-  local duration=$((end_time - START_TIME))
-  local minutes=$((duration / 60))
-  local seconds=$((duration % 60))
-
-  echo ""
-  hr
-  echo -e "${C_BOLD}${C_GREEN}${S_SUCCESS}  SYSTEM SUCCESSFULLY UPDATED${C_RESET}"
-  hr
-  echo ""
-  echo -e "   ${C_DIM}Hostname   ${C_RESET}${C_BOLD}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
-  echo -e "   ${C_DIM}User       ${C_RESET}${C_CYAN}${CONFIG[USERNAME]}${C_RESET}"
-  if [[ -n "${CONFIG[PROFILE]}" ]]; then
-      echo -e "   ${C_DIM}Profile    ${C_RESET}${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
-  fi
-  echo ""
-  echo -e "   ${C_DIM}Time       ${C_RESET}$(date '+%H:%M:%S')"
-  echo -e "   ${C_DIM}Duration   ${C_RESET}${minutes} min ${seconds} sec"
-  echo ""
-  hr
-  echo ""
-}
-
 # ==============================================================================
 # PART 5: CLI & MENUS
 # ==============================================================================
@@ -517,11 +544,23 @@ parse_args() {
       ;; 
     --pre-install) cmd_pre-install ;; 
     -u | --update) config::set UPDATE_FLAKE true ;; 
-    -m | --merge) 
-      # Merge logic here is tricky mixed with install, kept simple for now
-      log WARN "Merge flag with install is mostly for post-hook usage."
-      ;; 
-    -H | --host) shift; config::set HOSTNAME "$1" ;; 
+        -m | --merge)
+          shift
+          local auto_yes="false" src="" tgt=""
+          while [[ $# -gt 0 ]]; do
+            case "$1" in
+            -y | --yes) auto_yes="true" ;;
+            -*) break ;; # Stop at next flag (e.g. -H) if we want to support install -m
+            *) if [[ -z "$src" ]]; then src="$1"; elif [[ -z "$tgt" ]]; then tgt="$1"; fi ;;
+            esac
+            shift
+          done
+          # If we are in "install" mode (hostname set), this should just set a flag.
+          # But since -m was excluded from auto-install injection, we assume standalone merge.
+          if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then tgt="$src"; src=""; fi
+          cmd_merge "$auto_yes" "$src" "$tgt"
+          exit 0
+          ;;    -H | --host) shift; config::set HOSTNAME "$1" ;; 
     -p | --profile) shift; config::set PROFILE "$1" ;; 
     -a | --auto) 
       config::set AUTO_MODE true
