@@ -1,12 +1,13 @@
+# modules/nixos/common/default.nix
+# ==============================================================================
+# Common System Configuration
+# ==============================================================================
+# This module contains configuration applied to ALL hosts managed by this flake.
+# ==============================================================================
+
 { pkgs, lib, config, ... }:
 
 {
-  # ============================================================================
-  # Common System Configuration
-  # ============================================================================
-  # This module contains configuration applied to ALL hosts managed by this flake.
-  # ============================================================================
-
   # -- Time & Locale -----------------------------------------------------------
   time.timeZone = lib.mkDefault "Europe/Istanbul";
   i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
