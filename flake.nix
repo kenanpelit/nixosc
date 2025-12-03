@@ -152,54 +152,59 @@
   };
 
   outputs = inputs:
-    inputs.snowfall-lib.mkFlake {
-      inherit inputs;
-      src = ./.;
+    let
+      lib = inputs.nixpkgs.lib;
+    in
+    lib.removeAttrs
+      (inputs.snowfall-lib.mkFlake {
+        inherit inputs;
+        src = ./.;
 
-      snowfall = {
-        namespace = "my"; # Custom namespace for internal modules
-        
-        # Default paths are used:
-        # modules/nixos -> System modules
-        # modules/home  -> (Not used, we use modules/user-modules manually)
-      };
+        snowfall = {
+          namespace = "my"; # Custom namespace for internal modules
+          
+          # Default paths are used:
+          # modules/nixos -> System modules
+          # modules/home  -> (Not used, we use modules/user-modules manually)
+        };
 
-      # Global Nixpkgs configuration
-      channels-config = {
-        allowUnfree = true;
-        permittedInsecurePackages = [
-          "electron-36.9.5"
-          "ventoy-1.1.07"
-          "libsoup-2.74.3"
-        ];
-      };
-
-      # Overlays applied to all systems
-      overlays = with inputs; [
-        nur.overlays.default
-      ];
-
-      # Modules automatically added to all NixOS systems
-      systems.modules.nixos = with inputs; [
-        home-manager.nixosModules.home-manager
-        catppuccin.nixosModules.catppuccin
-        sops-nix.nixosModules.sops
-      ];
-
-      # Special arguments available to all modules
-      systems.specialArgs = {
-        username = "kenan";
-      };
-
-      outputs-builder = channels: {
-        formatter = inputs.alejandra.defaultPackage.${channels.nixpkgs.system};
-        devShells.default = channels.nixpkgs.mkShell {
-          packages = [
-            inputs.alejandra.defaultPackage.${channels.nixpkgs.system}
-            inputs.statix.packages.${channels.nixpkgs.system}.default
-            inputs.deadnix.packages.${channels.nixpkgs.system}.default
+        # Global Nixpkgs configuration
+        channels-config = {
+          allowUnfree = true;
+          permittedInsecurePackages = [
+            "electron-36.9.5"
+            "ventoy-1.1.07"
+            "libsoup-2.74.3"
           ];
         };
-      };
-    };
+
+        # Overlays applied to all systems
+        overlays = with inputs; [
+          nur.overlays.default
+        ];
+
+        # Modules automatically added to all NixOS systems
+        systems.modules.nixos = with inputs; [
+          home-manager.nixosModules.home-manager
+          catppuccin.nixosModules.catppuccin
+          sops-nix.nixosModules.sops
+        ];
+
+        # Special arguments available to all modules
+        systems.specialArgs = {
+          username = "kenan";
+        };
+
+        outputs-builder = channels: {
+          formatter = inputs.alejandra.defaultPackage.${channels.nixpkgs.system};
+          devShells.default = channels.nixpkgs.mkShell {
+            packages = [
+              inputs.alejandra.defaultPackage.${channels.nixpkgs.system}
+              inputs.statix.packages.${channels.nixpkgs.system}.default
+              inputs.deadnix.packages.${channels.nixpkgs.system}.default
+            ];
+          };
+        };
+      })
+      [ "snowfall" ];
 }
