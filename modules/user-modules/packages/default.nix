@@ -121,6 +121,7 @@ in
     keepassxc gopass      # Password managers
     ente-auth             # 2FA
     age sops              # Encryption
+    pwgen                 # Password generator
 
     # -- Hyprland & Wayland ----------------------------------------------------
     hyprlock hypridle     # Lock & Idle
