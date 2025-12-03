@@ -166,36 +166,6 @@
           },
 
           -- =======================================================================
-          -- Claude Code AI Integration
-          -- =======================================================================
-          {
-            "coder/claudecode.nvim",
-            dependencies = { "folke/snacks.nvim" },
-            config = true,
-            keys = {
-              -- AI Group
-              { "<leader>a", nil, desc = "AI/Claude" },
-
-              -- Core Commands
-              { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
-              { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
-
-              -- Conversation Management
-              { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Chat" },
-              { "<leader>aC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Chat" },
-
-              -- Context Management
-              { "<leader>am", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Select Model" },
-              { "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add Current Buffer" },
-              { "<leader>as", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send Selection" },
-
-              -- Diff Operations
-              { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Accept Diff" },
-              { "<leader>ad", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny Diff" },
-            },
-          },
-
-          -- =======================================================================
           -- Tokyo Night Theme
           -- =======================================================================
           {
