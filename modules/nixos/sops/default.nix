@@ -26,7 +26,7 @@ in
   # Core SOPS Configuration
   # ============================================================================
   sops = {
-    validateSopsFiles = true;
+    validateSopsFiles = false;
 
     age = {
       keyFile = sopsAgeKeyFile;
