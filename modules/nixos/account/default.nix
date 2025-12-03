@@ -101,7 +101,6 @@ in
       users.${userName} = {
         # Import user modules and external HM modules
         imports = [ 
-          ../../user-modules
           inputs.catppuccin.homeModules.catppuccin
         ]; 
 

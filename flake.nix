@@ -100,9 +100,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
+    statix = {
+      url = "github:nerdypepper/statix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    deadnix = {
+      url = "github:astro/deadnix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     alejandra = {
@@ -188,6 +193,13 @@
 
       outputs-builder = channels: {
         formatter = inputs.alejandra.defaultPackage.${channels.nixpkgs.system};
+        devShells.default = channels.nixpkgs.mkShell {
+          packages = [
+            inputs.alejandra.defaultPackage.${channels.nixpkgs.system}
+            inputs.statix.packages.${channels.nixpkgs.system}.default
+            inputs.deadnix.packages.${channels.nixpkgs.system}.default
+          ];
+        };
       };
     };
 }
