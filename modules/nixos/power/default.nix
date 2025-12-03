@@ -129,7 +129,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_EPP="balance_performance"
+            TARGET_EPP="performance"
           else
             TARGET_EPP="balance_power"
           fi
@@ -167,7 +167,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_MIN=40
+            TARGET_MIN=60
           else
             TARGET_MIN=30
           fi
