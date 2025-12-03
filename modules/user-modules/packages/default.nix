@@ -129,6 +129,7 @@ in
     mako                  # Notifications
     brightnessctl         # Brightness control
     wl-gammactl           # Gamma control
+    gnome-monitor-config  # Display layout manager
     hyprpicker            # Color picker
     
     # -- Browsers --------------------------------------------------------------
