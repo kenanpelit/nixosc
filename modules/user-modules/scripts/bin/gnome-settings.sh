@@ -335,34 +335,7 @@ echo "🐚 Shell ayarları uygulanıyor..."
 dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.desktop']"
 
 # Extensions - NixOS'ta yüklü olanlar
-EXTENSIONS="[
-  "audio-switch-shortcuts@dbatis.github.com",
-  "auto-move-windows@gnome-shell-extensions.gcampax.github.com",
-  "azwallpaper@azwallpaper.gitlab.com",
-  "bluetooth-quick-connect@bjarosze.gmail.com",
-  "clipboard-indicator@tudmotu.com",
-  "copyous@boerdereinar.dev",
-  "dash-to-panel@jderose9.github.com",
-  "disable-workspace-animation@ethnarque",
-  "extension-list@tu.berry",
-  "gsconnect@andyholmes.github.io",
-  "headphone-internal-switch@gustavomalta.github.com",
-  "just-perfection-desktop@just-perfection",
-  "launcher@hedgie.tech",
-  "mediacontrols@cliffniff.github.com",
-  "no-overview@fthx",
-  "notification-configurator@exposedcat",
-  "notification-icons@jiggak.io",
-  "no-titlebar-when-maximized@alec.ninja",
-  "space-bar@luchrioh",
-  "tilingshell@ferrarodomenico.com",
-  "tophat@fflewddur.github.io",
-  "trayIconsReloaded@selfmade.pl",
-  "veil@dagimg-dot",
-  "vpn-indicator@fthx",
-  "weatheroclock@CleoMenezesJr.github.io",
-  "zetadev@bootpaper",
-]"
+EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
 
 dconf write /org/gnome/shell/enabled-extensions "$EXTENSIONS"
 dconf write /org/gnome/shell/disabled-extensions "@as []"
@@ -426,16 +399,7 @@ dconf write /org/gnome/shell/extensions/spotify-controls/show-album-art "false"
 dconf write /org/gnome/shell/extensions/spotify-controls/compact-mode "true"
 
 # Auto Move Windows
-AUTO_MOVE_LIST="[
-'brave-browser.desktop:1',
-'kitty.desktop:2',
-'discord.desktop:5',
-'webcord.desktop:5',
-'whatsie.desktop:9',
-'ferdium.desktop:9',
-'spotify.desktop:8',
-'brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7'
-]"
+AUTO_MOVE_LIST="['brave-browser.desktop:1','kitty.desktop:2','discord.desktop:5','webcord.desktop:5','whatsie.desktop:9','ferdium.desktop:9','spotify.desktop:8','brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7']"
 dconf write /org/gnome/shell/extensions/auto-move-windows/application-list "$AUTO_MOVE_LIST"
 
 # =============================================================================
