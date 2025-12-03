@@ -173,7 +173,7 @@
             "kiddos/gemini.nvim",
             opts = {
               model_config = {
-                model_id = "gemini-2.5-flash",
+                model_id = "gemini-3-pro-preview",
                 temperature = 0.10,
                 top_k = 128,
                 response_mime_type = "text/plain",
