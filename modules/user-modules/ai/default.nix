@@ -3,7 +3,7 @@
 # AI Tools & CLI Integration
 # ==============================================================================
 # Purpose:
-#   - Provide a unified way to enable / disable AI CLIs (Claude, Gemini, Codex).
+#   - Provide a unified way to enable / disable AI CLIs (Gemini, Codex).
 #   - Optionally run a local Ollama service with model presets.
 # Notes:
 #   - Core GUI / editor integration lives in other modules (e.g. nvim, browsers).
@@ -15,10 +15,6 @@ let
   cfg = config.modules.home.ai;
   aliases =
     mkMerge [
-      (mkIf cfg.claude-cli.enable {
-        claude = "${cfg.claude-cli.package}/bin/claude";
-        ai-claude = "${cfg.claude-cli.package}/bin/claude";
-      })
       (mkIf cfg.gemini-cli.enable {
         gemini = "${cfg.gemini-cli.package}/bin/ai-gemini";
         ai-gemini = "${cfg.gemini-cli.package}/bin/ai-gemini";
@@ -31,16 +27,6 @@ let
 
   desktopEntries =
     mkMerge [
-      (mkIf cfg.claude-cli.enable {
-        claude-cli = {
-          name = "Claude Code";
-          comment = "Anthropic's agentic coding tool";
-          exec = "${cfg.claude-cli.package}/bin/claude";
-          icon = "terminal";
-          terminal = true;
-          categories = [ "Development" "ConsoleOnly" ];
-        };
-      })
       (mkIf cfg.gemini-cli.enable {
         gemini-cli = {
           name = "Gemini CLI";
@@ -71,19 +57,6 @@ in
       description = "Enable AI tools and interfaces";
     };
     
-    claude-cli = {
-      enable = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Enable Claude CLI (Claude Code)";
-      };
-      package = mkOption {
-        type = types.package;
-        default = pkgs.callPackage ./claude-cli.nix { };
-        description = "Claude CLI package to use";
-      };
-    };
-
     gemini-cli = {
       enable = mkOption {
         type = types.bool;
@@ -122,7 +95,6 @@ in
   
   config = mkIf cfg.enable {
     home.packages = with pkgs;
-      (optional cfg.claude-cli.enable cfg.claude-cli.package) ++
       (optional cfg.gemini-cli.enable cfg.gemini-cli.package) ++
       (optional cfg.codex-cli.enable cfg.codex-cli.package);
     
