@@ -71,7 +71,8 @@
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/f82a8630d7a51dab4cc70924f500bf70e723db12"; # 1202 - Updated commit
+      url = "github:hyprwm/hyprland/3cf0280b11f370c11e6839275e547779a33f4a19"; # 1203 - Updated commit
+#      url = "github:hyprwm/hyprland/f82a8630d7a51dab4cc70924f500bf70e723db12"; # 1202 - Updated commit
 #      url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
     };
 
