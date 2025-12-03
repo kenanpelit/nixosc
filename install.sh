@@ -43,18 +43,19 @@ if [[ -t 1 ]]; then
   readonly C_BOLD='\033[1m'
   readonly C_DIM='\033[2m'
   readonly C_RED='\033[38;5;196m'
-  readonly C_GREEN='\033[38;5;46m'
-  readonly C_YELLOW='\033[38;5;226m'
-  readonly C_BLUE='\033[38;5;33m'
-  readonly C_PURPLE='\033[38;5;129m'
-  readonly C_CYAN='\033[38;5;51m'
+  readonly C_GREEN='\033[38;5;77m'      # More vivid green
+  readonly C_YELLOW='\033[38;5;220m'    # Gold/Yellow
+  readonly C_BLUE='\033[38;5;39m'       # NixOS Blue-ish
+  readonly C_PURPLE='\033[38;5;141m'    # Softer Purple
+  readonly C_CYAN='\033[38;5;80m'       # Bright Cyan
   readonly C_WHITE='\033[38;5;255m'
-  readonly C_GRAY='\033[38;5;244m'
-  readonly S_SUCCESS="✔"
-  readonly S_ERROR="✖"
+  readonly C_GRAY='\033[38;5;240m'
+  
+  readonly S_SUCCESS="✓"
+  readonly S_ERROR="✗"
   readonly S_WARN="⚠"
   readonly S_INFO="ℹ"
-  readonly S_ARROW="➜"
+  readonly S_ARROW="❯"    # More modern arrow
   readonly S_BULLET="•"
 else
   readonly C_RESET='' C_BOLD='' C_DIM='' C_RED='' C_GREEN='' C_YELLOW='' C_BLUE='' C_PURPLE='' C_CYAN='' C_WHITE='' C_GRAY=''
@@ -76,12 +77,12 @@ log() {
   local timestamp="$(date '+%H:%M:%S')"
 
   case "$level" in
-  INFO) printf "${C_BLUE}${S_INFO}  ${C_RESET}%b\n" "$msg" ;;
-  SUCCESS) printf "${C_GREEN}${S_SUCCESS}  ${C_RESET}%b\n" "$msg" ;;
-  WARN) printf "${C_YELLOW}${S_WARN}  ${C_RESET}%b\n" "$msg" ;;
-  ERROR) printf "${C_RED}${S_ERROR}  ${C_RESET}%b\n" "$msg" >&2 ;;
-  STEP) printf "\n${C_PURPLE}${S_ARROW}  ${C_BOLD}%b${C_RESET}\n" "$msg" ;;
-  DEBUG) [[ "${DEBUG:-false}" == "true" ]] && printf "${C_GRAY}${S_BULLET}  %b${C_RESET}\n" "$msg" ;;
+  INFO)    printf "  ${C_BLUE}${S_INFO}${C_RESET}  %b\n" "$msg" ;;
+  SUCCESS) printf "  ${C_GREEN}${S_SUCCESS}${C_RESET}  %b\n" "$msg" ;;
+  WARN)    printf "  ${C_YELLOW}${S_WARN}${C_RESET}  %b\n" "$msg" ;;
+  ERROR)   printf "  ${C_RED}${S_ERROR}${C_RESET}  %b\n" "$msg" >&2 ;;
+  STEP)    printf "\n${C_PURPLE}${S_ARROW} ${C_BOLD}%b${C_RESET}\n" "$msg" ;;
+  DEBUG)   [[ "${DEBUG:-false}" == "true" ]] && printf "  ${C_GRAY}${S_BULLET}${C_RESET}  %b\n" "$msg" ;;
   esac
 
   if [[ -e /proc/self/fd/3 ]]; then
@@ -92,12 +93,16 @@ log() {
 
 header() {
   clear
-  echo -e "${C_CYAN}"
+  echo -e "${C_BLUE}"
   cat <<'EOF'
-    NixOS Config Manager
+   _   _ _      ____   ____ 
+  | \ | (_)_  _/ __ \ / ___|
+  |  \| | \ \/ / | | | \___ \
+  | |\  | |>  <| |_| |___) |
+  |_| \_|_/_/\_\\____/|____/ 
 EOF
   echo -e "${C_RESET}"
-  echo -e "${C_DIM}    v${VERSION} | ${WORK_DIR}${C_RESET}\n"
+  echo -e "${C_DIM}  Snowfall Edition v${VERSION} | ${WORK_DIR}${C_RESET}\n"
 }
 
 hr() {
