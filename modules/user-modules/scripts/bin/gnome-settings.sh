@@ -844,13 +844,8 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'$MPV_MGR playback'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/name "'MPV Toggle Playback'"
 
-# 28..36) Workspaces 1..9 (history switcher)
-for i in {1..9}; do
-  idx=$((27 + i)) # 28..36
-  dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/binding "'<Super>$i'"
-  dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/command "'$WORKSW $i'"
-  dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${idx}/name "'Workspace $i (with history)'"
-done
+# 28..36) Workspaces 1..9 (history switcher) - REMOVED (Restored standard GNOME behavior)
+# The slots 28..36 are now free or reserved.
 
 # 37) Shutdown
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/binding "'<Ctrl><Alt><Shift>s'"
@@ -897,18 +892,18 @@ for i in {1..9}; do
   dconf write /org/gnome/shell/keybindings/switch-to-application-$i "@as []"
 done
 
-# Workspace geçiş kısayollarını kapat (Super+[1-9])
+# Workspace geçiş kısayollarını AYARLA (Super+[1-9])
 for i in {1..9}; do
-  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "@as []"
-  #dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "@as []"
+  dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-$i "['<Super>$i']"
+  dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-$i "['<Super><Shift>$i']"
 done
 
-# Space Bar extension'ının workspace switching kısayolunu kapat
-echo "🔧 Space Bar extension kısayolları devre dışı bırakılıyor..."
-dconf write /org/gnome/shell/extensions/space-bar/shortcuts/enable-activate-workspace-shortcuts false
+# Space Bar extension'ının workspace switching kısayolunu etkinleştir (veya varsayılana bırak)
+echo "🔧 Space Bar extension kısayolları kontrol ediliyor..."
+dconf write /org/gnome/shell/extensions/space-bar/shortcuts/enable-activate-workspace-shortcuts true
 
-echo "✅ Varsayılan Super+[1-9] kısayolları kapatıldı."
-echo "💡 Artık sadece Alt+[1-9] ile workspace geçişi yapabilirsiniz."
+echo "✅ Varsayılan Super+[1-9] kısayolları ayarlandı."
+echo "💡 Super+[1-9] ile workspace geçişi yapabilirsiniz."
 
 # =============================================================================
 # EXTENSION COMPLEX CONFIGURATIONS
