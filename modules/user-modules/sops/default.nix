@@ -38,11 +38,13 @@ in
         format = "binary";
       };
       
+      /*
       "tmux_config" = {
         sopsFile = "${assetsDir}/tmux.enc.tar.gz";
         path = "${homeDir}/.backup/tmux.tar.gz";
         format = "binary";
       };
+      */
       
       "mpv_config" = {
         sopsFile = "${assetsDir}/mpv.enc.tar.gz";
