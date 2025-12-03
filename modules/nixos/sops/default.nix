@@ -17,7 +17,7 @@ let
   
   # Secret Files
   wirelessSecretsFile = "${sopsDir}/wireless-secrets.enc.yaml";
-  hasWirelessSecrets = builtins.pathExists wirelessSecretsFile;
+  enableWirelessSecrets = config.my.host.isPhysicalHost;
 in
 {
   imports = [ inputs.sops-nix.nixosModules.sops ];
@@ -26,7 +26,7 @@ in
   # Core SOPS Configuration
   # ============================================================================
   sops = {
-    validateSopsFiles = hasWirelessSecrets;
+    validateSopsFiles = false; # Changed to false to avoid build-time checks if file missing
 
     age = {
       keyFile = sopsAgeKeyFile;
@@ -35,7 +35,7 @@ in
 
     gnupg.sshKeyPaths = [ ]; # Disable GPG
 
-  } // lib.optionalAttrs hasWirelessSecrets {
+  } // lib.optionalAttrs enableWirelessSecrets {
     defaultSopsFile = wirelessSecretsFile;
 
     # --------------------------------------------------------------------------

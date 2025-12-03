@@ -88,37 +88,8 @@
   };
 
   # ============================================================================
-  # Time & Locale
+  # Security
   # ============================================================================
-  time.timeZone = "Europe/Istanbul";
-
-  i18n.defaultLocale = "en_US.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS        = "tr_TR.UTF-8";
-    LC_IDENTIFICATION = "tr_TR.UTF-8";
-    LC_MEASUREMENT    = "tr_TR.UTF-8";
-    LC_MONETARY       = "tr_TR.UTF-8";
-    LC_NAME           = "tr_TR.UTF-8";
-    LC_NUMERIC        = "tr_TR.UTF-8";
-    LC_PAPER          = "tr_TR.UTF-8";
-    LC_TELEPHONE      = "tr_TR.UTF-8";
-    LC_TIME           = "tr_TR.UTF-8";
-  };
-
-  # ============================================================================
-  # SSH / Security
-  # ============================================================================
-  services.openssh = {
-    enable = true;
-    ports  = [ 22 ];
-
-    settings = {
-      PasswordAuthentication = false;
-      AllowUsers             = [ config.my.user.name ];
-      PermitRootLogin        = "no";
-    };
-  };
-
   security.polkit.enable = true;
 
   # ============================================================================
@@ -130,10 +101,9 @@
   # System Packages
   # ============================================================================
   environment.systemPackages = with pkgs; [
-    wget git tmux ncurses file sops age vim
-    htop lm_sensors powertop tldr ripgrep fd
+    lm_sensors powertop tldr
     networkmanager wireguard-tools
-    pv gnupg openssl
+    gnupg openssl
   ];
 
   # ============================================================================
