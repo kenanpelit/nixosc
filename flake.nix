@@ -195,16 +195,15 @@
           username = "kenan";
         };
 
-        outputs-builder = channels: {
-          formatter = inputs.alejandra.defaultPackage.${channels.nixpkgs.system};
-          devShells.default = channels.nixpkgs.mkShell {
-            packages = [
-              inputs.alejandra.defaultPackage.${channels.nixpkgs.system}
-              inputs.statix.packages.${channels.nixpkgs.system}.default
-              inputs.deadnix.packages.${channels.nixpkgs.system}.default
-            ];
-          };
-        };
-      })
+              outputs-builder = channels: {
+                formatter = inputs.alejandra.packages.${channels.nixpkgs.system}.default;
+                devShells.default = channels.nixpkgs.mkShell {
+                  packages = [
+                    inputs.alejandra.packages.${channels.nixpkgs.system}.default
+                    inputs.statix.packages.${channels.nixpkgs.system}.default
+                    inputs.deadnix.packages.${channels.nixpkgs.system}.default
+                  ];
+                };
+              };      })
       [ "snowfall" ];
 }
