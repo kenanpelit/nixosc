@@ -29,7 +29,7 @@
 
 let 
   username = config.my.user.name or "kenan";
-  flakePath = "/home/${username}/.nixosc";
+  flakePath = toString inputs.self;
 in {
   nix = {
     settings = {

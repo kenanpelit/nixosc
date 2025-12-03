@@ -26,7 +26,7 @@ in
   # Core SOPS Configuration
   # ============================================================================
   sops = {
-    validateSopsFiles = false; # Changed to false to avoid build-time checks if file missing
+    validateSopsFiles = true;
 
     age = {
       keyFile = sopsAgeKeyFile;
