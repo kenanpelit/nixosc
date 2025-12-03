@@ -63,6 +63,9 @@ in
     neovim
     htop
     networkmanager
+    
+    # Utils for osc-sync
+    pv gnupg sops age openssl file
   ];
 
   # ============================================================================
