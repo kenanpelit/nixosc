@@ -14,6 +14,7 @@
     coreutils                    # Basic tools (ls, cp, mv, rm)
     procps                       # Process monitoring (ps, top, kill)
     sysstat                      # Performance monitoring (sar, iostat)
+    pv                           # Monitor the progress of data through a pipe
     acl                          # Access Control Lists support
     lsb-release                  # Distro information
     man-pages                    # System manual pages
