@@ -133,6 +133,7 @@
     wget git tmux ncurses file sops age vim
     htop lm_sensors powertop tldr ripgrep fd
     networkmanager wireguard-tools
+    pv gnupg openssl
   ];
 
   # ============================================================================

@@ -15,6 +15,7 @@
     procps                       # Process monitoring (ps, top, kill)
     sysstat                      # Performance monitoring (sar, iostat)
     pv                           # Monitor the progress of data through a pipe
+    file                         # File type identifier
     acl                          # Access Control Lists support
     lsb-release                  # Distro information
     man-pages                    # System manual pages
