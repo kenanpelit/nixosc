@@ -318,7 +318,6 @@ show_summary() {
   echo -e "   ${C_DIM}Duration   ${C_RESET}${minutes} min ${seconds} sec"
   echo ""
   hr
-  echo ""
 }
 
 cmd_install() {
@@ -653,7 +652,7 @@ parse_args() {
     local host="${auto_host:-$(config::get HOSTNAME)}"
     [[ -z "$host" ]] && host="$DEFAULT_HOST"
     config::set AUTO_MODE true
-    config::set UPDATE_FLAKE true
+    # config::set UPDATE_FLAKE true (Disabled: prevents auto-upgrade on every build)
     config::set HOSTNAME "$host"
     config::set PROFILE "$(profile::next_available)"
     cmd_install "$host"
