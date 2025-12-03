@@ -87,17 +87,6 @@ let
     { name = "Download YouTube Video"; command = "gnome-mpv-manager save-yt"; binding = "<Alt><Shift>y"; }
     { name = "MPV Toggle Playback"; command = "gnome-mpv-manager playback"; binding = "<Alt>p"; }
     
-    # Workspaces 1-9 (Using workspace-switcher wrappers for history)
-    { name = "Workspace 1"; command = "workspace-switcher 1"; binding = "<Super>1"; }
-    { name = "Workspace 2"; command = "workspace-switcher 2"; binding = "<Super>2"; }
-    { name = "Workspace 3"; command = "workspace-switcher 3"; binding = "<Super>3"; }
-    { name = "Workspace 4"; command = "workspace-switcher 4"; binding = "<Super>4"; }
-    { name = "Workspace 5"; command = "workspace-switcher 5"; binding = "<Super>5"; }
-    { name = "Workspace 6"; command = "workspace-switcher 6"; binding = "<Super>6"; }
-    { name = "Workspace 7"; command = "workspace-switcher 7"; binding = "<Super>7"; }
-    { name = "Workspace 8"; command = "workspace-switcher 8"; binding = "<Super>8"; }
-    { name = "Workspace 9"; command = "workspace-switcher 9"; binding = "<Super>9"; }
-    
     { name = "Shutdown Computer"; command = "gnome-session-quit --power-off --no-prompt"; binding = "<Ctrl><Alt><Shift>s"; }
     { name = "Restart Computer"; command = "gnome-session-quit --reboot --no-prompt"; binding = "<Ctrl><Alt>r"; }
     { name = "Logout"; command = "gnome-session-quit --logout --no-prompt"; binding = "<Ctrl><Alt>q"; }
@@ -134,17 +123,44 @@ in
       accent-color = "purple";
     };
 
-    # --- Window Manager ---
+    # --- Window Manager Preferences ---
     "org/gnome/desktop/wm/preferences" = {
-      # REMOVED: button-layout = "appmenu:minimize,maximize,close"; (Conflict: User wants "appmenu" from GTK module)
-      # REMOVED: theme & titlebar-font to avoid potential conflicts as well.
-      
       num-workspaces = 9;
       workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
       focus-mode = "click";
       focus-new-windows = "smart";
       auto-raise = false;
       raise-on-click = true;
+    };
+
+    # --- Window Manager Keybindings ---
+    "org/gnome/desktop/wm/keybindings" = {
+      close = ["<Super>q"];
+      toggle-fullscreen = ["<Super>f"];
+      toggle-maximized = ["<Super>m"];
+      minimize = ["<Super>h"];
+      
+      # Standard Workspace Switching
+      switch-to-workspace-1 = ["<Super>1"];
+      switch-to-workspace-2 = ["<Super>2"];
+      switch-to-workspace-3 = ["<Super>3"];
+      switch-to-workspace-4 = ["<Super>4"];
+      switch-to-workspace-5 = ["<Super>5"];
+      switch-to-workspace-6 = ["<Super>6"];
+      switch-to-workspace-7 = ["<Super>7"];
+      switch-to-workspace-8 = ["<Super>8"];
+      switch-to-workspace-9 = ["<Super>9"];
+      
+      # Move Window to Workspace
+      move-to-workspace-1 = ["<Super><Shift>1"];
+      move-to-workspace-2 = ["<Super><Shift>2"];
+      move-to-workspace-3 = ["<Super><Shift>3"];
+      move-to-workspace-4 = ["<Super><Shift>4"];
+      move-to-workspace-5 = ["<Super><Shift>5"];
+      move-to-workspace-6 = ["<Super><Shift>6"];
+      move-to-workspace-7 = ["<Super><Shift>7"];
+      move-to-workspace-8 = ["<Super><Shift>8"];
+      move-to-workspace-9 = ["<Super><Shift>9"];
     };
 
     # --- Shell Extensions ---
@@ -245,7 +261,7 @@ in
 
     # --- Space Bar ---
     "org/gnome/shell/extensions/space-bar/shortcuts" = {
-      enable-activate-workspace-shortcuts = false;
+      enable-activate-workspace-shortcuts = true; # Re-enabled for standard switching
     };
     "org/gnome/shell/extensions/space-bar/appearance" = {
       application-styles = ''
