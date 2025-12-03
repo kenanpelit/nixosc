@@ -176,7 +176,7 @@ setup_encryption() {
 			[[ -z "$age_public_key" ]] && error "Public key bulunamadı"
 
 			export SOPS_CONFIG_FILE="$sops_config"
-			sops --encrypt --age "$age_public_key" "$1" >"$2" || return 1
+			sops --encrypt --age "$age_public_key" --filename-override "$2" "$1" >"$2" || return 1
 		}
 		decrypt_file() {
 			export SOPS_CONFIG_FILE="${HOME}/.nixosc/.sops.yaml"
