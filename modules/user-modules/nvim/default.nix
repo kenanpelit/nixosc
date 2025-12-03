@@ -171,6 +171,7 @@
           -- =======================================================================
           {
             "kiddos/gemini.nvim",
+            dependencies = { "nvim-lua/plenary.nvim", "MunifTanjim/nui.nvim" },
             opts = {
               model_config = {
                 model_id = "gemini-3-pro-preview",
@@ -310,6 +311,9 @@
                 end,
               },
             },
+            config = function(_, opts)
+              require("gemini").setup(opts)
+            end,
           },
 
           -- =======================================================================
