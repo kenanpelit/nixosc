@@ -25,7 +25,7 @@
      # ---------------------------------------------------------------------------
      # Build Settings
      # ---------------------------------------------------------------------------
-     useFetchCargoVendor = true;
+     # useFetchCargoVendor = true; # Defaults to true in new nixpkgs
      cargoHash = "sha256-y2jEMsPhfc/w1dLPkWY5l7gAKmbdRKAaxoUFZo9LRTE=";
      
      nativeBuildInputs = with pkgs; [
