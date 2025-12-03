@@ -43,19 +43,19 @@ if [[ -t 1 ]]; then
   readonly C_BOLD='\033[1m'
   readonly C_DIM='\033[2m'
   readonly C_RED='\033[38;5;196m'
-  readonly C_GREEN='\033[38;5;77m'      # More vivid green
-  readonly C_YELLOW='\033[38;5;220m'    # Gold/Yellow
-  readonly C_BLUE='\033[38;5;39m'       # NixOS Blue-ish
-  readonly C_PURPLE='\033[38;5;141m'    # Softer Purple
-  readonly C_CYAN='\033[38;5;80m'       # Bright Cyan
+  readonly C_GREEN='\033[38;5;77m'   # More vivid green
+  readonly C_YELLOW='\033[38;5;220m' # Gold/Yellow
+  readonly C_BLUE='\033[38;5;39m'    # NixOS Blue-ish
+  readonly C_PURPLE='\033[38;5;141m' # Softer Purple
+  readonly C_CYAN='\033[38;5;80m'    # Bright Cyan
   readonly C_WHITE='\033[38;5;255m'
   readonly C_GRAY='\033[38;5;240m'
-  
+
   readonly S_SUCCESS="✓"
   readonly S_ERROR="✗"
   readonly S_WARN="⚠"
   readonly S_INFO="ℹ"
-  readonly S_ARROW="❯"    # More modern arrow
+  readonly S_ARROW="❯" # More modern arrow
   readonly S_BULLET="•"
 else
   readonly C_RESET='' C_BOLD='' C_DIM='' C_RED='' C_GREEN='' C_YELLOW='' C_BLUE='' C_PURPLE='' C_CYAN='' C_WHITE='' C_GRAY=''
@@ -77,12 +77,12 @@ log() {
   local timestamp="$(date '+%H:%M:%S')"
 
   case "$level" in
-  INFO)    printf "  ${C_BLUE}${S_INFO}${C_RESET}  %b\n" "$msg" ;;
+  INFO) printf "  ${C_BLUE}${S_INFO}${C_RESET}  %b\n" "$msg" ;;
   SUCCESS) printf "  ${C_GREEN}${S_SUCCESS}${C_RESET}  %b\n" "$msg" ;;
-  WARN)    printf "  ${C_YELLOW}${S_WARN}${C_RESET}  %b\n" "$msg" ;;
-  ERROR)   printf "  ${C_RED}${S_ERROR}${C_RESET}  %b\n" "$msg" >&2 ;;
-  STEP)    printf "\n${C_PURPLE}${S_ARROW} ${C_BOLD}%b${C_RESET}\n" "$msg" ;;
-  DEBUG)   [[ "${DEBUG:-false}" == "true" ]] && printf "  ${C_GRAY}${S_BULLET}${C_RESET}  %b\n" "$msg" ;;
+  WARN) printf "  ${C_YELLOW}${S_WARN}${C_RESET}  %b\n" "$msg" ;;
+  ERROR) printf "  ${C_RED}${S_ERROR}${C_RESET}  %b\n" "$msg" >&2 ;;
+  STEP) printf "\n${C_PURPLE}${S_ARROW} ${C_BOLD}%b${C_RESET}\n" "$msg" ;;
+  DEBUG) [[ "${DEBUG:-false}" == "true" ]] && printf "  ${C_GRAY}${S_BULLET}${C_RESET}  %b\n" "$msg" ;;
   esac
 
   if [[ -e /proc/self/fd/3 ]]; then
@@ -97,7 +97,7 @@ header() {
   cat <<'EOF'
    _   _ _      ____   ____ 
   | \ | (_)_  _/ __ \ / ___|
-  |  \| | \ \/ / | | | \___ \
+  |  \| | \ \/ / | | |\___ \
   | |\  | |>  <| |_| |___) |
   |_| \_|_/_/\_\\____/|____/ 
 EOF
@@ -217,7 +217,10 @@ profile::next_available() {
   while :; do
     local candidate
     candidate=$(date -d "${base_date} +${offset} day" +%y%m%d)
-    profile::exists "$candidate" || { echo "$candidate"; return 0; }
+    profile::exists "$candidate" || {
+      echo "$candidate"
+      return 0
+    }
     offset=$((offset + 1))
   done
 }
@@ -308,7 +311,7 @@ show_summary() {
   echo -e "   ${C_DIM}Hostname   ${C_RESET}${C_BOLD}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
   echo -e "   ${C_DIM}User       ${C_RESET}${C_CYAN}${CONFIG[USERNAME]}${C_RESET}"
   if [[ -n "${CONFIG[PROFILE]}" ]]; then
-      echo -e "   ${C_DIM}Profile    ${C_RESET}${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
+    echo -e "   ${C_DIM}Profile    ${C_RESET}${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
   fi
   echo ""
   echo -e "   ${C_DIM}Time       ${C_RESET}$(date '+%H:%M:%S')"
@@ -548,37 +551,49 @@ parse_args() {
         auto_host="$2"
         shift
       fi
-      ;; 
+      ;;
     install)
       action="install"
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]] && [[ "$2" != "update" && "$2" != "merge" ]]; then
         config::set HOSTNAME "$2"
         shift
       fi
-      ;; 
+      ;;
     hosts)
-      shift; host::list; exit 0 ;; 
+      shift
+      host::list
+      exit 0
+      ;;
     update)
-      shift; flake::update "${1:-}"; exit 0 ;; 
+      shift
+      flake::update "${1:-}"
+      exit 0
+      ;;
     build)
-      shift; flake::build "$@"; exit 0 ;; 
+      shift
+      flake::build "$@"
+      exit 0
+      ;;
     merge)
       shift
       local auto_yes="false" src="" tgt=""
       while [[ $# -gt 0 ]]; do
         case "$1" in
-        -y | --yes) auto_yes="true" ;; 
-        -*) ;; 
-        *) if [[ -z "$src" ]]; then src="$1"; elif [[ -z "$tgt" ]]; then tgt="$1"; fi ;; 
+        -y | --yes) auto_yes="true" ;;
+        -*) ;;
+        *) if [[ -z "$src" ]]; then src="$1"; elif [[ -z "$tgt" ]]; then tgt="$1"; fi ;;
         esac
         shift
       done
-      if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then tgt="$src"; src=""; fi
+      if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then
+        tgt="$src"
+        src=""
+      fi
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
-      ;; 
-    --pre-install) cmd_pre-install ;; 
-    -u | --update) config::set UPDATE_FLAKE true ;; 
+      ;;
+    --pre-install) cmd_pre-install ;;
+    -u | --update) config::set UPDATE_FLAKE true ;;
     -au | -ua)
       config::set AUTO_MODE true
       config::set UPDATE_FLAKE true
@@ -592,25 +607,44 @@ parse_args() {
       local auto_yes="false" src="" tgt=""
       while [[ $# -gt 0 ]]; do
         case "$1" in
-            -y | --yes) auto_yes="true" ;;
-            -*) break ;; # Stop at next flag (e.g. -H) if we want to support install -m
-            *) if [[ -z "$src" ]]; then src="$1"; elif [[ -z "$tgt" ]]; then tgt="$1"; fi ;;
-            esac
-            shift
-          done
-          # If we are in "install" mode (hostname set), this should just set a flag.
-          # But since -m was excluded from auto-install injection, we assume standalone merge.
-          if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then tgt="$src"; src=""; fi
-          cmd_merge "$auto_yes" "$src" "$tgt"
-          exit 0
-          ;;    -H | --host) shift; config::set HOSTNAME "$1" ;; 
-    -p | --profile) shift; config::set PROFILE "$1" ;; 
-    -a | --auto) 
+        -y | --yes) auto_yes="true" ;;
+        -*) break ;; # Stop at next flag (e.g. -H) if we want to support install -m
+        *) if [[ -z "$src" ]]; then src="$1"; elif [[ -z "$tgt" ]]; then tgt="$1"; fi ;;
+        esac
+        shift
+      done
+      # If we are in "install" mode (hostname set), this should just set a flag.
+      # But since -m was excluded from auto-install injection, we assume standalone merge.
+      if [[ -n "$src" ]] && [[ -z "$tgt" ]]; then
+        tgt="$src"
+        src=""
+      fi
+      cmd_merge "$auto_yes" "$src" "$tgt"
+      exit 0
+      ;;
+    -H | --host)
+      shift
+      config::set HOSTNAME "$1"
+      ;;
+    -p | --profile)
+      shift
+      config::set PROFILE "$1"
+      ;;
+    -a | --auto)
       config::set AUTO_MODE true
-      if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then config::set HOSTNAME "$2"; shift; fi
-      ;; 
-    -h | --help) show_help; exit 0 ;; 
-    *) log ERROR "Unknown option: $1"; exit 1 ;; 
+      if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
+        config::set HOSTNAME "$2"
+        shift
+      fi
+      ;;
+    -h | --help)
+      show_help
+      exit 0
+      ;;
+    *)
+      log ERROR "Unknown option: $1"
+      exit 1
+      ;;
     esac
     shift
   done
@@ -648,21 +682,24 @@ show_menu() {
   read -r choice
 
   case "$choice" in
-  1) 
+  1)
     [[ -z "${CONFIG[HOSTNAME]}" ]] && read -r -p "Hostname (hay/vhay): " h && config::set HOSTNAME "$h"
     cmd_install
-    ;; 
-  2) flake::update ;; 
-  3) 
+    ;;
+  2) flake::update ;;
+  3)
     read -r -p "Hostname (hay/vhay): " h
     config::set HOSTNAME "$h"
     cmd_pre-install
-    ;; 
-  4) cmd_merge "false" ;; 
-  5) cd "$WORK_DIR" && nvim . ;; 
-  6) host::list; read -r -p "Press Enter to continue..." _ ;; 
-  q) exit 0 ;; 
-  *) show_menu ;; 
+    ;;
+  4) cmd_merge "false" ;;
+  5) cd "$WORK_DIR" && nvim . ;;
+  6)
+    host::list
+    read -r -p "Press Enter to continue..." _
+    ;;
+  q) exit 0 ;;
+  *) show_menu ;;
   esac
 }
 
