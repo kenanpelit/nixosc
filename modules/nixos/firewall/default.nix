@@ -40,7 +40,8 @@ in
       allowPing = false;
       logReversePathDrops = true;
       allowedTCPPorts =
-        (optional cfg.allowTransmissionPorts transmissionWebPort)
+        [ 22 ] # SSH
+        ++ (optional cfg.allowTransmissionPorts transmissionWebPort)
         ++ (optional cfg.allowCustomServicePort customServicePort);
       allowedUDPPorts =
         optional cfg.allowTransmissionPorts transmissionPeerPort;
