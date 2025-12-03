@@ -17,38 +17,22 @@ excludes = [
 ]
 
 [formatter.nix]
-command = "nixfmt"
-options = [ "-sv", "-w" ,"80" ]
+command = "alejandra"
 includes = [ "*.nix" ]
 excludes = [ ]
+
+[formatter.deadnix]
+command = "deadnix"
+options = ["--edit"]
+includes = ["*.nix"]
+
+[formatter.statix]
+command = "statix"
+options = ["fix"]
+includes = ["*.nix"]
 
 [formatter.sh]
 command = "shfmt"
 options = [ "-l", "-w", "-ci", "-sr", "-i", "4" ]
 includes = [ "*.sh" ]
 excludes = []
-
-
-# Log paths that did not match any formatters at the specified log level
-# Possible values are <debug|info|warn|error|fatal>
-# Env $TREEFMT_ON_UNMATCHED
-# on-unmatched = "info"
-
-# The root directory from which treefmt will start walking the filesystem
-# Defaults to the directory containing the config file
-# Env $TREEFMT_TREE_ROOT
-# tree-root = "/tmp/foo"
-
-# File to search for to find the tree root (if tree-root is not set)
-# Env $TREEFMT_TREE_ROOT_FILE
-# tree-root-file = ".git/config"
-
-# Set the verbosity of logs
-# 0 = warn, 1 = info, 2 = debug
-# Env $TREEFMT_VERBOSE
-# verbose = 0
-
-# The method used to traverse the files within the tree root
-# Currently, we support 'auto', 'git' or 'filesystem'
-# Env $TREEFMT_WALK
-# walk = "filesystem"
