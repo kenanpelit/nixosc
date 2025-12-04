@@ -99,6 +99,9 @@ let
   
 in
 {
+  # Allow enabling via my.user.walker.enable (alias)
+  options.my.user.walker.enable = mkEnableOption "Walker launcher (my.user.* alias)";
+
   options.programs.walker = {
     # Enable by default when module is imported
     # Can be disabled with: programs.walker.enable = false;
@@ -206,19 +209,24 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    # Install Walker and Elephant packages
-    home.packages = [ 
-      cfg.package
-      elephantPkg
-    ];
+  config = mkMerge [
+    {
+      programs.walker.enable = mkDefault config.my.user.walker.enable;
+    }
 
-    # Elephant provider directory with automatic provider installation
-    # Providers MUST be in ~/.config/elephant/providers/ (documented requirement)
-    home.file.".config/elephant/providers" = {
-      source = "${elephantPkg}/lib/elephant/providers";
-      recursive = true;
-    };
+    (mkIf cfg.enable {
+      # Install Walker and Elephant packages
+      home.packages = [ 
+        cfg.package
+        elephantPkg
+      ];
+
+      # Elephant provider directory with automatic provider installation
+      # Providers MUST be in ~/.config/elephant/providers/ (documented requirement)
+      home.file.".config/elephant/providers" = {
+        source = "${elephantPkg}/lib/elephant/providers";
+        recursive = true;
+      };
 
     # ==========================================================================
     # Elephant Backend Service
