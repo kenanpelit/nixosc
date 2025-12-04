@@ -16,7 +16,7 @@ in
     # =============================================================================
     # Service Configuration
     # =============================================================================
-    services.blue.enable = true;  # Enable unified night light manager (Gammastep + HyprSunset)
+    my.user.blue.enable = true;  # Enable unified night light manager (Gammastep + HyprSunset)
     
     programs = {
       # ---------------------------------------------------------------------------
@@ -44,4 +44,3 @@ in
     };
   };
 }
-
