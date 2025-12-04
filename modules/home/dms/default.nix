@@ -5,7 +5,7 @@
 { inputs, lib, config, ... }:
 let
   cfg = config.my.user.dms;
-  dmsPkg = inputs.dankMaterialShell.packages.${config.pkgs.stdenv.hostPlatform.system}.default or inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  dmsPkg = inputs.dankMaterialShell.packages.${config.home.sessionVariables.NIXPKGS_SYSTEM or "x86_64-linux"}.default;
 in
 {
   # Always import the upstream DMS Home Manager module; actual enable is gated below
