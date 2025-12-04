@@ -42,7 +42,10 @@
   my.user.wpaperd.enable = true;
   my.user.waypaper.enable = true;
   my.user.touchegg.enable = false;
-  my.user.lisgd.enable = true;
+  my.user.lisgd = {
+    enable = true;
+    device = "/dev/input/event8";
+  };
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
 
