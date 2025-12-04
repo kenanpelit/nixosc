@@ -44,7 +44,7 @@
   my.user.touchegg.enable = false;
   my.user.lisgd = {
     enable = true;
-    device = "/dev/input/event8";
+    device = "/dev/input/event9";
   };
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
