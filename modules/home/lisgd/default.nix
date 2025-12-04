@@ -25,9 +25,10 @@ in
 
   config = lib.mkIf cfg.enable (
     let
+      devicePath = lib.escapeShellArg (cfg.device or defaultDevice);
       lisgdRunner = pkgs.writeShellScript "lisgd-run" ''
         exec ${pkgs.lisgd}/bin/lisgd \
-          --device=${lib.escapeShellArg (cfg.device or defaultDevice)} \
+          -d ${devicePath} \
           -g "3,RL,*,*,R,hypr-workspace-monitor -wl" \
           -g "3,LR,*,*,R,hypr-workspace-monitor -wr" \
           -g "3,DU,*,*,R,hypr-workspace-monitor -wt" \
