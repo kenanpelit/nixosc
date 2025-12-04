@@ -1,9 +1,5 @@
 { lib, pkgs, config, osConfig, ... }:
 {
-  # Import user modules
-  # Note: Currently imports all modules from user-modules directory
-  imports = [ ../../../../modules/user-modules ];
-
   # Set the state version for Home Manager
   # Configure user-specific settings here if needed
   home.stateVersion = "25.11";
