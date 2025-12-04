@@ -12,7 +12,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Import upstream DMS Home Manager module
+    # Bring in the DMS Home Manager module when enabled
     imports = [ inputs.dankMaterialShell.homeModules.dankMaterialShell.default ];
 
     programs.dankMaterialShell.enable = true;
