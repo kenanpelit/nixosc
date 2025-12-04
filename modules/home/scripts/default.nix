@@ -17,10 +17,9 @@ in
     enable = lib.mkEnableOption "custom user scripts";
   };
 
-  config = lib.mkIf cfg.enable {
-    imports = [
-      ./bin.nix
-      ./start.nix
-    ];
-  };
+  # Import script sets only when enabled
+  imports = lib.optionals cfg.enable [
+    ./bin.nix
+    ./start.nix
+  ];
 }
