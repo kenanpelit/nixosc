@@ -7,14 +7,14 @@ let
   cfg = config.my.user.dms;
 in
 {
+  # Always import the upstream DMS Home Manager module; actual enable is gated below
+  imports = [ inputs.dankMaterialShell.homeModules.dankMaterialShell.default ];
+
   options.my.user.dms = {
     enable = lib.mkEnableOption "DankMaterialShell";
   };
 
   config = lib.mkIf cfg.enable {
-    # Bring in the DMS Home Manager module when enabled
-    imports = [ inputs.dankMaterialShell.homeModules.dankMaterialShell.default ];
-
     programs.dankMaterialShell.enable = true;
   };
 }
