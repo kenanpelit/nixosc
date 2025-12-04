@@ -154,6 +154,29 @@
         "type": "github"
       }
     },
+    "dankMaterialShell": {
+      "inputs": {
+        "dgop": [
+          "dgop"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764882578,
+        "narHash": "sha256-qMElSZNeWWI1jLBqo2okc+O77LhO77ZRGVBWwF3Sj/8=",
+        "owner": "AvengeMedia",
+        "repo": "DankMaterialShell",
+        "rev": "63d121b7967d4afabd53987a6d81f1f125bb27a8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "AvengeMedia",
+        "repo": "DankMaterialShell",
+        "type": "github"
+      }
+    },
     "deadnix": {
       "inputs": {
         "nixpkgs": [
@@ -204,6 +227,26 @@
       "original": {
         "owner": "cachix",
         "repo": "devenv",
+        "type": "github"
+      }
+    },
+    "dgop": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1762835999,
+        "narHash": "sha256-UykYGrGFOFTmDpKTLNxj1wvd1gbDG4TkqLNSbV0TYwk=",
+        "owner": "AvengeMedia",
+        "repo": "dgop",
+        "rev": "799301991cd5dcea9b64245f9d500dcc76615653",
+        "type": "github"
+      },
+      "original": {
+        "owner": "AvengeMedia",
+        "repo": "dgop",
         "type": "github"
       }
     },
@@ -1334,7 +1377,9 @@
         "browser-previews": "browser-previews",
         "cachix-pkgs": "cachix-pkgs",
         "catppuccin": "catppuccin",
+        "dankMaterialShell": "dankMaterialShell",
         "deadnix": "deadnix",
+        "dgop": "dgop",
         "distro-grub-themes": "distro-grub-themes",
         "elephant": "elephant",
         "home-manager": "home-manager",
