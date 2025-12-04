@@ -103,7 +103,7 @@
   
   # Other
   my.user.flatpak.enable = true;
-  my.user.elektron.enable = true;
+  my.user.electron.enable = true;
 
   # ============================================================================
   # Development
