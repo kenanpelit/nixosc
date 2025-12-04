@@ -11,8 +11,8 @@ in
     enable = lib.mkEnableOption "Waypaper";
   };
 
-  # Import config submodule only when enabled
-  imports = lib.optionals cfg.enable [
+  # Submodule is internally gated; import unconditionally
+  imports = [
     ./config.nix    # Config settings
   ];
 }

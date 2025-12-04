@@ -7,7 +7,7 @@
 #
 # ==============================================================================
 
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
 let
   scripts = lib.filterAttrs (name: type:
@@ -17,6 +17,7 @@ let
   mkScript = name: _: pkgs.writeShellScriptBin
     (lib.removeSuffix ".sh" name)
     (builtins.readFile (./bin + "/${name}"));
-in {
+  cfg = config.my.user.scripts;
+in lib.mkIf cfg.enable {
   home.packages = builtins.attrValues (lib.mapAttrs mkScript scripts);
 }

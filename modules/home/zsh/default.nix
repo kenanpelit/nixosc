@@ -13,8 +13,8 @@ in
     enable = lib.mkEnableOption "zsh configuration";
   };
 
-  # Import zsh submodules only when enabled
-  imports = lib.optionals cfg.enable [
+  # Submodules are internally gated; import unconditionally
+  imports = [
     # Core Configuration (must load first)
     ./zsh.nix              # Base ZSH settings and environment
 

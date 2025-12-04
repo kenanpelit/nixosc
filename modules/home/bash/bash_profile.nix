@@ -11,7 +11,10 @@
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
-{
+let
+  cfg = config.my.user.bash;
+in
+lib.mkIf cfg.enable {
   xdg.configFile."bash/.bash_profile".text = ''
     # Source interactive shell config
     if [ -f "$HOME/.bashrc" ]; then

@@ -119,8 +119,10 @@ let
     log "Cache cleanup complete"
   '';
 
+  cfg = config.my.user.zsh;
+
 in
-{
+lib.mkIf cfg.enable {
   # ============================================================================
   # Home Manager Activation Hooks
   # 

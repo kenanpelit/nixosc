@@ -3,7 +3,10 @@
 # Pyprland Configuration (Python Plugins for Hyprland) - Enhanced
 # ==============================================================================
 { config, lib, pkgs, ... }:
-{
+let
+  cfg = config.my.desktop.hyprland;
+in
+lib.mkIf cfg.enable {
   # =============================================================================
   # Configuration File
   # =============================================================================

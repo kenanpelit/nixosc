@@ -65,8 +65,10 @@ let
     # UI elements
     border    = mkRgba colors.overlay0.rgb 0.8;  # Input borders
   };
+
+  cfg = config.my.desktop.hyprland;
 in
-{
+lib.mkIf cfg.enable {
   # Generate hyprlock configuration with dynamic colors
   xdg.configFile."hypr/hyprlock.conf".text = ''
     # ==========================================================================

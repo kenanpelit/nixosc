@@ -1,6 +1,9 @@
 # modules/home/zsh/zsh_profile.nix
 { config, lib, pkgs, ... }:
-{
+let
+  cfg = config.my.user.zsh;
+in
+lib.mkIf cfg.enable {
   xdg.configFile = {
     "zsh/.zprofile" = {
       text = ''
