@@ -10,6 +10,15 @@ in
 {
   options.my.user.lisgd = {
     enable = lib.mkEnableOption "lisgd gesture daemon";
+
+    device = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = ''
+        Input device path to bind (e.g. `/dev/input/event8`). If null, lisgd
+        will auto-detect.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -29,6 +38,7 @@ in
         ExecStart = toString (
           lib.concatStringsSep " " [
             "${pkgs.lisgd}/bin/lisgd"
+            (lib.optionalString (cfg.device != null) "--device=${cfg.device}")
             "-g '3,LEFT,hypr-workspace-monitor -wl'"
             "-g '3,RIGHT,hypr-workspace-monitor -wr'"
             "-g '3,UP,hypr-workspace-monitor -wt'"
