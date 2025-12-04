@@ -2,10 +2,10 @@
 # ==============================================================================
 # DankMaterialShell (DMS) - Home Manager integration
 # ==============================================================================
-{ inputs, lib, config, ... }:
+{ inputs, lib, config, pkgs, ... }:
 let
   cfg = config.my.user.dms;
-  dmsPkg = inputs.dankMaterialShell.packages.${config.home.sessionVariables.NIXPKGS_SYSTEM or "x86_64-linux"}.default;
+  dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   # Always import the upstream DMS Home Manager module; actual enable is gated below
@@ -29,7 +29,7 @@ in
       };
       Service = {
         Type = "simple";
-        ExecStart = "${dmsPkg}/bin/dms";
+        ExecStart = "${dmsPkg}/bin/dms run --daemon --session";
         Restart = "on-failure";
         RestartSec = 3;
         Environment = [
