@@ -285,17 +285,15 @@ in
         Restart = "on-failure";
         RestartSec = "3s";
 
-        # Ensure commands in gestures are found
-        path = [
-          config.home.profileDirectory
-          pkgs.hyprland
-          pkgs.jq
-          pkgs.coreutils
-        ];
-
         Environment = [
           "XDG_RUNTIME_DIR=/run/user/%U"
           "XDG_CURRENT_DESKTOP=Hyprland"
+          "PATH=${lib.makeBinPath [
+            config.home.profileDirectory
+            pkgs.hyprland
+            pkgs.jq
+            pkgs.coreutils
+          ]}"
         ];
       };
   
