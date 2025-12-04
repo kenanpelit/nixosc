@@ -31,8 +31,10 @@ let
 
       alphaHex = toHex alphaInt;
     in "0x${alphaHex}${hex}";
- in
-{
+
+  cfg = config.my.desktop.hyprland;
+in
+lib.mkIf cfg.enable {
   wayland.windowManager.hyprland = {
     settings = {
       # =====================================================
@@ -1486,4 +1488,3 @@ let
     '';
   };
 }
-

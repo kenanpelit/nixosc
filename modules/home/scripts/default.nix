@@ -17,8 +17,8 @@ in
     enable = lib.mkEnableOption "custom user scripts";
   };
 
-  # Import script sets only when enabled
-  imports = lib.optionals cfg.enable [
+  # Submodules are internally gated; import unconditionally
+  imports = [
     ./bin.nix
     ./start.nix
   ];

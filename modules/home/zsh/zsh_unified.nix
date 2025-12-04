@@ -15,7 +15,10 @@
 # ==============================================================================
 
 { lib, pkgs, config, ... }:
-{
+let
+  cfg = config.my.user.zsh;
+in
+lib.mkIf cfg.enable {
   programs.zsh = {
     enable = true;
     defaultKeymap = "viins";

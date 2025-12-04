@@ -11,8 +11,10 @@
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
-
-{
+let
+  cfg = config.my.desktop.hyprland;
+in
+lib.mkIf cfg.enable {
   services.hypridle = {
     enable = true;
 
@@ -87,4 +89,3 @@
     };
   };
 }
-

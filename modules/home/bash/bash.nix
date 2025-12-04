@@ -10,8 +10,9 @@
 
 let
   enableStarship = true;
+  cfg = config.my.user.bash;
 in
-{
+lib.mkIf cfg.enable {
   programs.bash = {
     enable = true;
 

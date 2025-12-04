@@ -8,7 +8,10 @@
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
-{
+let
+  cfg = config.my.desktop.hyprland;
+in
+lib.mkIf cfg.enable {
   # Secret Service - ONLY for Hyprland sessions
   systemd.user.services.gnome-keyring-secrets = {
     Unit = {

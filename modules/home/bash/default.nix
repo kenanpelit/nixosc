@@ -13,8 +13,8 @@ in
     enable = lib.mkEnableOption "Bash shell configuration";
   };
 
-  # Import bash submodules only when enabled
-  imports = lib.optionals cfg.enable [
+  # Submodules are gated internally; import unconditionally here
+  imports = [
     # Core Configuration
     ./bash.nix              # Base Bash settings
     

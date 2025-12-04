@@ -11,8 +11,8 @@ in
     enable = lib.mkEnableOption "Hyprland window manager";
   };
 
-  # Import Hyprland submodules only when enabled
-  imports = lib.optionals cfg.enable [
+  # Submodules are internally gated; import unconditionally
+  imports = [
     # ---------------------------------------------------------------------------
     # Core Modules
     # ---------------------------------------------------------------------------
