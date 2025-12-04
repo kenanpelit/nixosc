@@ -8,11 +8,10 @@
 let
   inherit (lib) mkIf;
   username = config.my.user.name;
-  homeDir  = "/home/${username}";
-  
+
   # Paths
-  sopsDir        = "${homeDir}/.nixosc/secrets";
-  sopsAgeKeyDir  = "${homeDir}/.config/sops/age";
+  sopsDir        = "${inputs.self}/secrets";
+  sopsAgeKeyDir  = "/home/${username}/.config/sops/age";
   sopsAgeKeyFile = "${sopsAgeKeyDir}/keys.txt";
   
   # Secret Files
@@ -75,6 +74,5 @@ in
   # Ensure SOPS directory structure exists with correct permissions
   systemd.tmpfiles.rules = [
     "d ${sopsAgeKeyDir} 0700 ${username} users -"
-    "d ${sopsDir}       0750 ${username} users -"
   ];
 }
