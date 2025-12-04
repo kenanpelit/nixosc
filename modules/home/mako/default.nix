@@ -46,41 +46,43 @@ in
     # =============================================================================
     services.mako = {
       enable = true;
-      
-      # Positioning - optimal for Hyprland
-      anchor = "top-right";
-      margin = "15,20,0,0";
-      
-      # Typography - consistent with system theme
-      font = "Maple Mono NF 12";
-      
-      # Dimensions - optimized
-      width = 540;
-      height = 320;
-      padding = "18,20";
-      borderSize = 2;
-      borderRadius = 12;  # Modern rounded corners
 
-      # History settings
-      maxHistory = 50;
-  
-      # Visual enhancements (non-conflicting)
-      icons = true;
-      maxIconSize = 64;
-      
-      # Timing - user-friendly
-      defaultTimeout = 8000;
-      ignoreTimeout = false;
-      
-      # Organization
-      groupBy = "app-name";
-      layer = "overlay";
-      maxVisible = 4;
-     
-      # Enhanced format with custom icons and colors
-      markup = true;
-      format = ''<span color="${colors.blue}" size="12pt" weight="600">%a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="12pt">%b</span>'';
-    
+      settings = {
+        # Positioning - optimal for Hyprland
+        anchor = "top-right";
+        margin = "15,20,0,0";
+
+        # Typography - consistent with system theme
+        font = "Maple Mono NF 12";
+
+        # Dimensions - optimized
+        width = 540;
+        height = 320;
+        padding = "18,20";
+        "border-size" = 2;
+        "border-radius" = 12;  # Modern rounded corners
+
+        # History settings
+        "max-history" = 50;
+
+        # Visual enhancements (non-conflicting)
+        icons = true;
+        "max-icon-size" = 64;
+
+        # Timing - user-friendly
+        "default-timeout" = 8000;
+        "ignore-timeout" = false;
+
+        # Organization
+        "group-by" = "app-name";
+        layer = "overlay";
+        "max-visible" = 4;
+
+        # Enhanced format with custom icons and colors
+        markup = true;
+        format = ''<span color="${colors.blue}" size="12pt" weight="600">%a</span>\n<span color="${colors.text}" size="13pt" weight="700">%s</span>\n<span color="${colors.subtext1}" size="12pt">%b</span>'';
+      };
+
       # =============================================================================
       # App-specific Custom Formatting - The Magic! ✨
       # =============================================================================
