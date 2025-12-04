@@ -295,6 +295,15 @@ in
               pkgs.coreutils
             ]
           }"
+          "WAYLAND_DISPLAY=%E{WAYLAND_DISPLAY}"
+          "HYPRLAND_INSTANCE_SIGNATURE=%E{HYPRLAND_INSTANCE_SIGNATURE}"
+          "XDG_SESSION_TYPE=wayland"
+        ];
+
+        PassEnvironment = [
+          "WAYLAND_DISPLAY"
+          "HYPRLAND_INSTANCE_SIGNATURE"
+          "XDG_RUNTIME_DIR"
         ];
       };
   
