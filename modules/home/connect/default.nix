@@ -6,6 +6,8 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.connect;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
 in
 {
   options.my.user.connect = {
@@ -59,7 +61,7 @@ in
     # -------------------------------------------------------
     # Post-activation message
     # -------------------------------------------------------
-    home.activation.kdeconnectHint = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.kdeconnectHint = dag.entryAfter [ "writeBoundary" ] ''
       echo ""
       echo "🔗 KDE Connect auto-enabled!"
       echo "📱 Setup: Install KDE Connect on your phone and pair"

@@ -5,6 +5,8 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.xdg-dirs;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
 in
 {
   options.my.user.xdg-dirs = {
@@ -42,7 +44,7 @@ in
     };
     
     # Mevcut istenmeyen klasörleri temizle (isteğe bağlı)
-    home.activation.cleanUnwantedDirs = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    home.activation.cleanUnwantedDirs = dag.entryAfter ["writeBoundary"] ''
       # Boş Desktop, Public, Templates klasörlerini sil
       [ -d "$HOME/Desktop" ] && [ -z "$(ls -A "$HOME/Desktop" 2>/dev/null)" ] && rmdir "$HOME/Desktop" 2>/dev/null || true
       [ -d "$HOME/Public" ] && [ -z "$(ls -A "$HOME/Public" 2>/dev/null)" ] && rmdir "$HOME/Public" 2>/dev/null || true
@@ -50,4 +52,3 @@ in
     '';
   };
 }
-

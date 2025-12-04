@@ -18,6 +18,8 @@
 { config, pkgs, lib, ... }:
 
 let
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   # Check whether Catppuccin integration is desired
   catppuccinEnabled =
     (config.catppuccin.enable or false)
@@ -174,7 +176,7 @@ in
     # Write Stylus CSS into profile
     # -------------------------------------------------------------------------
 
-    home.activation.braveTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.braveTheme = dag.entryAfter [ "writeBoundary" ] ''
       PROFILE_DIR="$HOME/${profilePath}"
       STYLUS_DIR="$PROFILE_DIR/Stylus"
 
@@ -276,4 +278,3 @@ EOFCSS
     };
   };
 }
-

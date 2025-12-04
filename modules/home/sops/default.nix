@@ -7,6 +7,8 @@
 
 let
   cfg = config.my.user.sops;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   homeDir = config.home.homeDirectory;
   secretsDir = "${homeDir}/.nixosc/secrets";
   assetsDir = "${homeDir}/.nixosc/assets";
@@ -61,7 +63,7 @@ in
     };
   
     # Ensure directories exist
-    home.activation.createSopsDirs = lib.hm.dag.entryBefore ["writeBoundary"] ''
+    home.activation.createSopsDirs = dag.entryBefore ["writeBoundary"] ''
       $DRY_RUN_CMD mkdir -p "${homeDir}/.config/sops/age"
       $DRY_RUN_CMD mkdir -p "${homeDir}/.config/github"
       $DRY_RUN_CMD mkdir -p "${homeDir}/.config/nix"

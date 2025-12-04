@@ -13,6 +13,8 @@
 { config, pkgs, lib, ... }:
 
 let
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   profilePath = ".config/BraveSoftware/Brave-Browser/${config.my.browser.brave.profile}";
 
   # Initial preferences applied only when Preferences does NOT exist.
@@ -138,7 +140,7 @@ in
     #   * Preferences does NOT exist
     # - After first run, user's changes are respected
 
-    home.activation.braveInitialSetup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.braveInitialSetup = dag.entryAfter [ "writeBoundary" ] ''
       PROFILE_DIR="$HOME/${profilePath}"
       PREFS_FILE="$PROFILE_DIR/Preferences"
       SETUP_MARKER="$PROFILE_DIR/.nixos-initial-setup-done"

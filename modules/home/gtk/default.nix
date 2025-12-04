@@ -5,6 +5,8 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.gtk;
+  hmLib = lib.hm or config.lib;
+  gvariant = hmLib.gvariant or config.lib.gvariant;
   # Font ayarları
   fonts = {
     main = {
@@ -24,7 +26,7 @@ in
     # =============================================================================
     # DConf Settings - Minimal to avoid conflicts with GTK
     # =============================================================================
-    dconf.settings = with lib.hm.gvariant; {
+    dconf.settings = with gvariant; {
       # ---------------------------------------------------------------------------
       # Desktop Interface Settings - Only non-conflicting settings
       # ---------------------------------------------------------------------------
