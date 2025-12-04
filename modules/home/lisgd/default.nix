@@ -59,6 +59,9 @@ in
             "XDG_RUNTIME_DIR=/run/user/%U"
             "XDG_CURRENT_DESKTOP=Hyprland"
             "XDG_SESSION_TYPE=wayland"
+            "WAYLAND_DISPLAY=%E{WAYLAND_DISPLAY}"
+            "HYPRLAND_INSTANCE_SIGNATURE=%E{HYPRLAND_INSTANCE_SIGNATURE}"
+            "HYPRLAND_SOCKET=/run/user/%U/hypr/%E{HYPRLAND_INSTANCE_SIGNATURE}/.socket.sock"
             "PATH=${config.home.profileDirectory}/bin:${
               lib.makeBinPath [
                 pkgs.hyprland
