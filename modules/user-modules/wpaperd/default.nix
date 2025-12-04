@@ -12,12 +12,12 @@
 # ==============================================================================
 { config, lib, pkgs, username, ... }:
 let
-  cfg = config.modules.home.wpaperd;
+  cfg = config.my.user.wpaperd;
 in {
   # =============================================================================
   # Module Options
   # =============================================================================
-  options.modules.home.wpaperd = {
+  options.my.user.wpaperd = {
     enable = lib.mkEnableOption "wpaperd wallpaper daemon";
     
     wallpaperPath = lib.mkOption {

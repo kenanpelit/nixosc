@@ -17,10 +17,10 @@
 { config, lib, pkgs, username, ... }:
 
 let
-  cfg = config.services.blue;
+  cfg = config.my.user.blue;
 in
 {
-  options.services.blue = {
+  options.my.user.blue = {
     enable = lib.mkEnableOption "Hypr Blue Manager servisi (Gammastep + HyprSunset + wl-gammarelay)";
 
     package = lib.mkOption {

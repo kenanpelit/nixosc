@@ -14,6 +14,7 @@
 { config, lib, pkgs, ... }:
 
 let
+  cfg = config.my.desktop.gnome;
   # --- Catppuccin Mocha Palette ---
   colors = {
     base = "#1e1e2e";
@@ -111,437 +112,443 @@ let
 
 in
 {
-  # ==============================================================================
-  # DCONF SETTINGS
-  # ==============================================================================
-  dconf.settings = {
-    # --- Interface (Handled by modules/home/gtk/default.nix) ---
-    "org/gnome/desktop/interface" = {
-      show-battery-percentage = true;
-      clock-show-weekday = true;
-      clock-show-date = true;
-      accent-color = "purple";
-    };
+  options.my.desktop.gnome = {
+    enable = lib.mkEnableOption "GNOME desktop configuration";
+  };
 
-    # --- Window Manager Preferences ---
-    "org/gnome/desktop/wm/preferences" = {
-      num-workspaces = 9;
-      workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
-      focus-mode = "click";
-      focus-new-windows = "smart";
-      auto-raise = false;
-      raise-on-click = true;
-    };
-
-    # --- Window Manager Keybindings ---
-    "org/gnome/desktop/wm/keybindings" = {
-      close = ["<Super>q"];
-      toggle-fullscreen = ["<Super>f"];
-      toggle-maximized = ["<Super>m"];
-      minimize = ["<Super>h"];
+  config = lib.mkIf cfg.enable {
+    # ==============================================================================
+    # DCONF SETTINGS
+    # ==============================================================================
+    dconf.settings = {
+      # --- Interface (Handled by modules/home/gtk/default.nix) ---
+      "org/gnome/desktop/interface" = {
+        show-battery-percentage = true;
+        clock-show-weekday = true;
+        clock-show-date = true;
+        accent-color = "purple";
+      };
+  
+      # --- Window Manager Preferences ---
+      "org/gnome/desktop/wm/preferences" = {
+        num-workspaces = 9;
+        workspace-names = ["1" "2" "3" "4" "5" "6" "7" "8" "9"];
+        focus-mode = "click";
+        focus-new-windows = "smart";
+        auto-raise = false;
+        raise-on-click = true;
+      };
+  
+      # --- Window Manager Keybindings ---
+      "org/gnome/desktop/wm/keybindings" = {
+        close = ["<Super>q"];
+        toggle-fullscreen = ["<Super>f"];
+        toggle-maximized = ["<Super>m"];
+        minimize = ["<Super>h"];
+        
+        # Standard Workspace Switching
+        switch-to-workspace-1 = ["<Super>1"];
+        switch-to-workspace-2 = ["<Super>2"];
+        switch-to-workspace-3 = ["<Super>3"];
+        switch-to-workspace-4 = ["<Super>4"];
+        switch-to-workspace-5 = ["<Super>5"];
+        switch-to-workspace-6 = ["<Super>6"];
+        switch-to-workspace-7 = ["<Super>7"];
+        switch-to-workspace-8 = ["<Super>8"];
+        switch-to-workspace-9 = ["<Super>9"];
+        
+        # Move Window to Workspace
+        move-to-workspace-1 = ["<Super><Shift>1"];
+        move-to-workspace-2 = ["<Super><Shift>2"];
+        move-to-workspace-3 = ["<Super><Shift>3"];
+        move-to-workspace-4 = ["<Super><Shift>4"];
+        move-to-workspace-5 = ["<Super><Shift>5"];
+        move-to-workspace-6 = ["<Super><Shift>6"];
+        move-to-workspace-7 = ["<Super><Shift>7"];
+        move-to-workspace-8 = ["<Super><Shift>8"];
+        move-to-workspace-9 = ["<Super><Shift>9"];
+      };
+  
+      # --- Shell Extensions ---
+      "org/gnome/shell" = {
+        enabled-extensions = [
+          "alt-tab-scroll-workaround@lucasresck.github.io"
+        	"audio-switch-shortcuts@dbatis.github.com"
+        	"auto-move-windows@gnome-shell-extensions.gcampax.github.com"
+        	"azwallpaper@azwallpaper.gitlab.com"
+        	"bluetooth-quick-connect@bjarosze.gmail.com"
+        	"clipboard-indicator@tudmotu.com"
+        	"copyous@boerdereinar.dev"
+        	"dash-to-panel@jderose9.github.com"
+        	"disable-three-finger-gestures-redux@cygnusx-1-org.github.com"
+        	"disable-workspace-animation@ethnarque"
+        	"extension-list@tu.berry"
+        	"gsconnect@andyholmes.github.io"
+        	"headphone-internal-switch@gustavomalta.github.com"
+        	"just-perfection-desktop@just-perfection"
+        	"launcher@hedgie.tech"
+        	"mediacontrols@cliffniff.github.com"
+        	"no-overview@fthx"
+        	"notification-configurator@exposedcat"
+        	"notification-icons@jiggak.io"
+        	"no-titlebar-when-maximized@alec.ninja"
+        	"space-bar@luchrioh"
+        	"tilingshell@ferrarodomenico.com"
+        	"tophat@fflewddur.github.io"
+        	"trayIconsReloaded@selfmade.pl"
+        	"veil@dagimg-dot"
+        	"vpn-indicator@fthx"
+        	"weatheroclock@CleoMenezesJr.github.io"
+        	"zetadev@bootpaper"
+        ];
+        favorite-apps = ["brave-browser.desktop" "kitty.desktop"];
+        disabled-extensions = [];
+      };
+  
+      # --- Keybindings Management ---
+      "org/gnome/settings-daemon/plugins/media-keys" = {
+        custom-keybindings = customBindingsPaths;
+      };
+  
+      # --- Dash to Panel ---
+      "org/gnome/shell/extensions/dash-to-panel" = {
+        panel-element-positions-monitors-sync = true;
+        trans-use-custom-bg = true;
+        trans-bg-color = colors.base;
+        trans-use-custom-opacity = true;
+        trans-panel-opacity = 0.95;
+        appicon-margin = 8;
+        appicon-padding = 4;
+        show-favorites = true;
+        show-running-apps = true;
+        show-window-previews = true;
+        isolate-workspaces = false;
+        group-apps = true;
+        dot-position = "BOTTOM";
+        window-preview-title-position = "TOP";
+        hotkeys-overlay-combo = "TEMPORARILY";
+        intellihide = false;
+        # JSON configs
+        # FIX: panel-positions was incorrectly set to '28' (size) instead of 'TOP'
+        panel-positions = ''{"CMN-0x00000000":"TOP","DEL-KRXTR88N909L":"TOP"}''; 
+        panel-sizes = ''{"CMN-0x00000000":28,"DEL-KRXTR88N909L":28}'';
+        panel-lengths = ''{"CMN-0x00000000":100,"DEL-KRXTR88N909L":100}'';
+        panel-anchors = ''{"CMN-0x00000000":"MIDDLE","DEL-KRXTR88N909L":"MIDDLE"}'';
+      };
+  
+      # --- Tiling Shell ---
+      "org/gnome/shell/extensions/tilingshell" = {
+        border-color = colors.mauve;
+        active-window-border-color = colors.lavender;
+        enable-tiling-system = true;
+        auto-tile = true;
+        snap-assist = true;
+        default-layout = "split";
+        inner-gaps = 4;
+        outer-gaps = 4;
+        show-border = true;
+        border-width = 2;
+        enable-animations = true;
+        
+        # Keybindings
+        tile-left = ["<Super><Shift>Left"];
+        tile-right = ["<Super><Shift>Right"];
+        tile-up = ["<Super><Shift>Up"];
+        tile-down = ["<Super><Shift>Down"];
+        toggle-tiling = ["<Super>t"];
+        toggle-floating = ["<Super>f"];
+        
+        # Focus
+        focus-left = ["<Super>Left"];
+        focus-right = ["<Super>Right"];
+        focus-up = ["<Super>Up"];
+        focus-down = ["<Super>Down"];
+      };
+  
+      # --- Space Bar ---
+      "org/gnome/shell/extensions/space-bar/shortcuts" = {
+        enable-activate-workspace-shortcuts = true; # Re-enabled for standard switching
+      };
+      "org/gnome/shell/extensions/space-bar/appearance" = {
+        application-styles = ''
+          .space-bar {
+            -natural-hpadding: 12px;
+            background-color: ${colors.base};
+          }
+  
+          .space-bar-workspace-label.active {
+            margin: 0 4px;
+            background-color: ${colors.mauve};
+            color: ${colors.base};
+            border-color: transparent;
+            font-weight: 700;
+            border-radius: 6px;
+            border-width: 0px;
+            padding: 4px 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          }
+  
+          .space-bar-workspace-label.inactive {
+            margin: 0 4px;
+            background-color: ${colors.surface0};
+            color: ${colors.text};
+            border-color: transparent;
+            font-weight: 500;
+            border-radius: 6px;
+            border-width: 0px;
+            padding: 4px 10px;
+            transition: all 0.2s ease;
+          }
+  
+          .space-bar-workspace-label.inactive:hover {
+            background-color: ${colors.surface1};
+            color: ${colors.subtext1};
+          }
+  
+          .space-bar-workspace-label.inactive.empty {
+            margin: 0 4px;
+            background-color: transparent;
+            color: ${colors.overlay0};
+            border-color: transparent;
+            font-weight: 400;
+            border-radius: 6px;
+            border-width: 0px;
+            padding: 4px 10px;
+          }
+        '';
+      };
+  
+  
+      # --- Text Editor ---
+      "org/gnome/TextEditor" = {
+        custom-font = "${fonts.main} ${fonts.size_xl}";
+        style-scheme = "catppuccin-mocha";
+        style-variant = "dark";
+        show-line-numbers = true;
+        highlight-current-line = true;
+        indent-style = "space";
+        tab-width = 4;
+        restore-session = false;
+        show-grid = false;
+        show-right-margin = false;
+        use-system-font = false;
+        wrap-text = false;
+      };
+  
+      # --- Terminal Profile (Legacy) ---
+      "org/gnome/terminal/legacy/profiles:/:catppuccin-mocha" = {
+        visible-name = "Catppuccin Mocha";
+        background-color = colors.base;
+        foreground-color = colors.text;
+        use-theme-colors = false; # Set to false to use custom colors
+        use-theme-transparency = false; # Set to false to use custom transparency
+        use-transparent-background = true;
+        background-transparency-percent = 10;
+        bold-color = colors.text;
+        bold-color-same-as-fg = true;
+        cursor-colors-set = true;
+        cursor-background-color = colors.rosewater;
+        cursor-foreground-color = colors.base;
+        highlight-colors-set = true;
+        highlight-background-color = colors.surface2;
+        highlight-foreground-color = colors.text;
+        palette = [
+          colors.surface1 colors.red colors.green colors.yellow colors.blue colors.pink colors.teal colors.subtext1
+          colors.surface2 colors.red colors.green colors.yellow colors.blue colors.pink colors.teal colors.subtext0
+        ];
+      };
       
-      # Standard Workspace Switching
-      switch-to-workspace-1 = ["<Super>1"];
-      switch-to-workspace-2 = ["<Super>2"];
-      switch-to-workspace-3 = ["<Super>3"];
-      switch-to-workspace-4 = ["<Super>4"];
-      switch-to-workspace-5 = ["<Super>5"];
-      switch-to-workspace-6 = ["<Super>6"];
-      switch-to-workspace-7 = ["<Super>7"];
-      switch-to-workspace-8 = ["<Super>8"];
-      switch-to-workspace-9 = ["<Super>9"];
+      # --- Night Light ---
+      "org/gnome/settings-daemon/plugins/color" = {
+        night-light-enabled = true;
+        night-light-schedule-automatic = false;
+        night-light-temperature = 2800;
+        night-light-schedule-from = 0.0;
+        night-light-schedule-to = 0.0; # 24h in some GNOME versions
+      };
+  
+      # --- Mutter ---
+      "org/gnome/mutter" = {
+        edge-tiling = true;
+        dynamic-workspaces = false;
+        workspaces-only-on-primary = false;
+        center-new-windows = true;
+        focus-change-on-pointer-rest = true;
+        auto-maximize = false;
+        attach-modal-dialogs = true;
+      };
+  
+      # --- App Switcher ---
+      "org/gnome/shell/app-switcher" = {
+        current-workspace-only = false;
+      };
+      "org/gnome/shell/window-switcher" = {
+        current-workspace-only = true;
+      };
+  
+      # --- Clipboard Indicator ---
+      "org/gnome/shell/extensions/clipboard-indicator" = {
+        toggle-menu = ["<Super>v"];
+        clear-history = []; # @as []
+        prev-entry = []; # @as []
+        next-entry = []; # @as []
+        cache-size = 50;
+        display-mode = 0;
+      };
+  
+      # --- GSConnect ---
+      "org/gnome/shell/extensions/gsconnect" = {
+        show-indicators = true;
+        show-offline = false;
+      };
+  
+      # --- Bluetooth Quick Connect ---
+      "org/gnome/shell/extensions/bluetooth-quick-connect" = {
+        show-battery-icon-on = true;
+        show-battery-value-on = true;
+      };
+  
+      # --- Vitals ---
+      "org/gnome/shell/extensions/vitals" = {
+        hot-sensors = ["_processor_usage_" "_memory_usage_" "_network-rx_max_" "_network-tx_max_"];
+        position-in-panel = 2;
+        use-higher-precision = false;
+        alphabetize = true;
+        include-static-info = false;
+        show-icons = true;
+        show-battery = true;
+        unit-fahrenheit = false;
+        memory-measurement = 0;
+        network-speed-format = 1;
+        storage-measurement = 0;
+        hide-zeros = true;
+        menu-centered = false;
+      };
+  
+      # --- Spotify Controls ---
+      "org/gnome/shell/extensions/spotify-controls" = {
+        show-track-info = false;
+        position = "middle-right";
+        show-notifications = true;
+        track-length = 30;
+        show-pause-icon = true;
+        show-next-icon = true;
+        show-prev-icon = true;
+        button-color = "default";
+        hide-on-no-spotify = true;
+        show-volume-control = false;
+        show-album-art = false;
+        compact-mode = true;
+      };
+  
+      # --- Auto Move Windows ---
+      "org/gnome/shell/extensions/auto-move-windows" = {
+        application-list = [
+          "brave-browser.desktop:1"
+          "kitty.desktop:2"
+          "discord.desktop:5"
+          "webcord.desktop:5"
+          "whatsie.desktop:9"
+          "ferdium.desktop:9"
+          "spotify.desktop:8"
+          "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"
+        ];
+      };
+  
+      # --- Privacy ---
+      "org/gnome/desktop/privacy" = {
+        report-technical-problems = false;
+        send-software-usage-stats = false;
+        disable-microphone = false;
+        disable-camera = false;
+      };
+  
+      # --- Power ---
+      "org/gnome/settings-daemon/plugins/power" = {
+        sleep-inactive-ac-type = "suspend";
+        sleep-inactive-ac-timeout = 3600;
+        sleep-inactive-battery-type = "suspend";
+        sleep-inactive-battery-timeout = 3600;
+        power-button-action = "interactive";
+        handle-lid-switch = false;
+      };
+  
+      # --- Session ---
+      "org/gnome/desktop/session" = {
+        idle-delay = 0; # uint32 0
+      };
       
-      # Move Window to Workspace
-      move-to-workspace-1 = ["<Super><Shift>1"];
-      move-to-workspace-2 = ["<Super><Shift>2"];
-      move-to-workspace-3 = ["<Super><Shift>3"];
-      move-to-workspace-4 = ["<Super><Shift>4"];
-      move-to-workspace-5 = ["<Super><Shift>5"];
-      move-to-workspace-6 = ["<Super><Shift>6"];
-      move-to-workspace-7 = ["<Super><Shift>7"];
-      move-to-workspace-8 = ["<Super><Shift>8"];
-      move-to-workspace-9 = ["<Super><Shift>9"];
-    };
-
-    # --- Shell Extensions ---
-    "org/gnome/shell" = {
-      enabled-extensions = [
-        "alt-tab-scroll-workaround@lucasresck.github.io"
-      	"audio-switch-shortcuts@dbatis.github.com"
-      	"auto-move-windows@gnome-shell-extensions.gcampax.github.com"
-      	"azwallpaper@azwallpaper.gitlab.com"
-      	"bluetooth-quick-connect@bjarosze.gmail.com"
-      	"clipboard-indicator@tudmotu.com"
-      	"copyous@boerdereinar.dev"
-      	"dash-to-panel@jderose9.github.com"
-      	"disable-three-finger-gestures-redux@cygnusx-1-org.github.com"
-      	"disable-workspace-animation@ethnarque"
-      	"extension-list@tu.berry"
-      	"gsconnect@andyholmes.github.io"
-      	"headphone-internal-switch@gustavomalta.github.com"
-      	"just-perfection-desktop@just-perfection"
-      	"launcher@hedgie.tech"
-      	"mediacontrols@cliffniff.github.com"
-      	"no-overview@fthx"
-      	"notification-configurator@exposedcat"
-      	"notification-icons@jiggak.io"
-      	"no-titlebar-when-maximized@alec.ninja"
-      	"space-bar@luchrioh"
-      	"tilingshell@ferrarodomenico.com"
-      	"tophat@fflewddur.github.io"
-      	"trayIconsReloaded@selfmade.pl"
-      	"veil@dagimg-dot"
-      	"vpn-indicator@fthx"
-      	"weatheroclock@CleoMenezesJr.github.io"
-      	"zetadev@bootpaper"
-      ];
-      favorite-apps = ["brave-browser.desktop" "kitty.desktop"];
-      disabled-extensions = [];
-    };
-
-    # --- Keybindings Management ---
-    "org/gnome/settings-daemon/plugins/media-keys" = {
-      custom-keybindings = customBindingsPaths;
-    };
-
-    # --- Dash to Panel ---
-    "org/gnome/shell/extensions/dash-to-panel" = {
-      panel-element-positions-monitors-sync = true;
-      trans-use-custom-bg = true;
-      trans-bg-color = colors.base;
-      trans-use-custom-opacity = true;
-      trans-panel-opacity = 0.95;
-      appicon-margin = 8;
-      appicon-padding = 4;
-      show-favorites = true;
-      show-running-apps = true;
-      show-window-previews = true;
-      isolate-workspaces = false;
-      group-apps = true;
-      dot-position = "BOTTOM";
-      window-preview-title-position = "TOP";
-      hotkeys-overlay-combo = "TEMPORARILY";
-      intellihide = false;
-      # JSON configs
-      # FIX: panel-positions was incorrectly set to '28' (size) instead of 'TOP'
-      panel-positions = ''{"CMN-0x00000000":"TOP","DEL-KRXTR88N909L":"TOP"}''; 
-      panel-sizes = ''{"CMN-0x00000000":28,"DEL-KRXTR88N909L":28}'';
-      panel-lengths = ''{"CMN-0x00000000":100,"DEL-KRXTR88N909L":100}'';
-      panel-anchors = ''{"CMN-0x00000000":"MIDDLE","DEL-KRXTR88N909L":"MIDDLE"}'';
-    };
-
-    # --- Tiling Shell ---
-    "org/gnome/shell/extensions/tilingshell" = {
-      border-color = colors.mauve;
-      active-window-border-color = colors.lavender;
-      enable-tiling-system = true;
-      auto-tile = true;
-      snap-assist = true;
-      default-layout = "split";
-      inner-gaps = 4;
-      outer-gaps = 4;
-      show-border = true;
-      border-width = 2;
-      enable-animations = true;
+      # --- Touchpad ---
+      "org/gnome/desktop/peripherals/touchpad" = {
+        tap-to-click = true;
+        two-finger-scrolling-enabled = true;
+        natural-scroll = false;
+        disable-while-typing = true;
+        click-method = "fingers";
+        send-events = "enabled";
+        speed = 0.8;
+        accel-profile = "default";
+        scroll-method = "two-finger-scrolling";
+        middle-click-emulation = false;
+      };
+  
+      # --- Mouse ---
+      "org/gnome/desktop/peripherals/mouse" = {
+        natural-scroll = false;
+        speed = 0.0;
+      };
+  
+      # --- Sound ---
+      "org/gnome/desktop/sound" = {
+        event-sounds = true;
+        theme-name = "freedesktop";
+      };
+  
+      # --- Screensaver ---
+      "org/gnome/desktop/screensaver" = {
+        lock-enabled = true;
+        lock-delay = 0; # uint32 0
+        idle-activation-enabled = true;
+      };
       
-      # Keybindings
-      tile-left = ["<Super><Shift>Left"];
-      tile-right = ["<Super><Shift>Right"];
-      tile-up = ["<Super><Shift>Up"];
-      tile-down = ["<Super><Shift>Down"];
-      toggle-tiling = ["<Super>t"];
-      toggle-floating = ["<Super>f"];
-      
-      # Focus
-      focus-left = ["<Super>Left"];
-      focus-right = ["<Super>Right"];
-      focus-up = ["<Super>Up"];
-      focus-down = ["<Super>Down"];
-    };
-
-    # --- Space Bar ---
-    "org/gnome/shell/extensions/space-bar/shortcuts" = {
-      enable-activate-workspace-shortcuts = true; # Re-enabled for standard switching
-    };
-    "org/gnome/shell/extensions/space-bar/appearance" = {
-      application-styles = ''
-        .space-bar {
-          -natural-hpadding: 12px;
-          background-color: ${colors.base};
-        }
-
-        .space-bar-workspace-label.active {
-          margin: 0 4px;
-          background-color: ${colors.mauve};
-          color: ${colors.base};
-          border-color: transparent;
-          font-weight: 700;
-          border-radius: 6px;
-          border-width: 0px;
-          padding: 4px 10px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .space-bar-workspace-label.inactive {
-          margin: 0 4px;
-          background-color: ${colors.surface0};
-          color: ${colors.text};
-          border-color: transparent;
-          font-weight: 500;
-          border-radius: 6px;
-          border-width: 0px;
-          padding: 4px 10px;
-          transition: all 0.2s ease;
-        }
-
-        .space-bar-workspace-label.inactive:hover {
-          background-color: ${colors.surface1};
-          color: ${colors.subtext1};
-        }
-
-        .space-bar-workspace-label.inactive.empty {
-          margin: 0 4px;
-          background-color: transparent;
-          color: ${colors.overlay0};
-          border-color: transparent;
-          font-weight: 400;
-          border-radius: 6px;
-          border-width: 0px;
-          padding: 4px 10px;
-        }
-      '';
-    };
-
-
-    # --- Text Editor ---
-    "org/gnome/TextEditor" = {
-      custom-font = "${fonts.main} ${fonts.size_xl}";
-      style-scheme = "catppuccin-mocha";
-      style-variant = "dark";
-      show-line-numbers = true;
-      highlight-current-line = true;
-      indent-style = "space";
-      tab-width = 4;
-      restore-session = false;
-      show-grid = false;
-      show-right-margin = false;
-      use-system-font = false;
-      wrap-text = false;
-    };
-
-    # --- Terminal Profile (Legacy) ---
-    "org/gnome/terminal/legacy/profiles:/:catppuccin-mocha" = {
-      visible-name = "Catppuccin Mocha";
-      background-color = colors.base;
-      foreground-color = colors.text;
-      use-theme-colors = false; # Set to false to use custom colors
-      use-theme-transparency = false; # Set to false to use custom transparency
-      use-transparent-background = true;
-      background-transparency-percent = 10;
-      bold-color = colors.text;
-      bold-color-same-as-fg = true;
-      cursor-colors-set = true;
-      cursor-background-color = colors.rosewater;
-      cursor-foreground-color = colors.base;
-      highlight-colors-set = true;
-      highlight-background-color = colors.surface2;
-      highlight-foreground-color = colors.text;
-      palette = [
-        colors.surface1 colors.red colors.green colors.yellow colors.blue colors.pink colors.teal colors.subtext1
-        colors.surface2 colors.red colors.green colors.yellow colors.blue colors.pink colors.teal colors.subtext0
-      ];
-    };
-    
-    # --- Night Light ---
-    "org/gnome/settings-daemon/plugins/color" = {
-      night-light-enabled = true;
-      night-light-schedule-automatic = false;
-      night-light-temperature = 2800;
-      night-light-schedule-from = 0.0;
-      night-light-schedule-to = 0.0; # 24h in some GNOME versions
-    };
-
-    # --- Mutter ---
-    "org/gnome/mutter" = {
-      edge-tiling = true;
-      dynamic-workspaces = false;
-      workspaces-only-on-primary = false;
-      center-new-windows = true;
-      focus-change-on-pointer-rest = true;
-      auto-maximize = false;
-      attach-modal-dialogs = true;
-    };
-
-    # --- App Switcher ---
-    "org/gnome/shell/app-switcher" = {
-      current-workspace-only = false;
-    };
-    "org/gnome/shell/window-switcher" = {
-      current-workspace-only = true;
-    };
-
-    # --- Clipboard Indicator ---
-    "org/gnome/shell/extensions/clipboard-indicator" = {
-      toggle-menu = ["<Super>v"];
-      clear-history = []; # @as []
-      prev-entry = []; # @as []
-      next-entry = []; # @as []
-      cache-size = 50;
-      display-mode = 0;
-    };
-
-    # --- GSConnect ---
-    "org/gnome/shell/extensions/gsconnect" = {
-      show-indicators = true;
-      show-offline = false;
-    };
-
-    # --- Bluetooth Quick Connect ---
-    "org/gnome/shell/extensions/bluetooth-quick-connect" = {
-      show-battery-icon-on = true;
-      show-battery-value-on = true;
-    };
-
-    # --- Vitals ---
-    "org/gnome/shell/extensions/vitals" = {
-      hot-sensors = ["_processor_usage_" "_memory_usage_" "_network-rx_max_" "_network-tx_max_"];
-      position-in-panel = 2;
-      use-higher-precision = false;
-      alphabetize = true;
-      include-static-info = false;
-      show-icons = true;
-      show-battery = true;
-      unit-fahrenheit = false;
-      memory-measurement = 0;
-      network-speed-format = 1;
-      storage-measurement = 0;
-      hide-zeros = true;
-      menu-centered = false;
-    };
-
-    # --- Spotify Controls ---
-    "org/gnome/shell/extensions/spotify-controls" = {
-      show-track-info = false;
-      position = "middle-right";
-      show-notifications = true;
-      track-length = 30;
-      show-pause-icon = true;
-      show-next-icon = true;
-      show-prev-icon = true;
-      button-color = "default";
-      hide-on-no-spotify = true;
-      show-volume-control = false;
-      show-album-art = false;
-      compact-mode = true;
-    };
-
-    # --- Auto Move Windows ---
-    "org/gnome/shell/extensions/auto-move-windows" = {
-      application-list = [
-        "brave-browser.desktop:1"
-        "kitty.desktop:2"
-        "discord.desktop:5"
-        "webcord.desktop:5"
-        "whatsie.desktop:9"
-        "ferdium.desktop:9"
-        "spotify.desktop:8"
-        "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"
-      ];
-    };
-
-    # --- Privacy ---
-    "org/gnome/desktop/privacy" = {
-      report-technical-problems = false;
-      send-software-usage-stats = false;
-      disable-microphone = false;
-      disable-camera = false;
-    };
-
-    # --- Power ---
-    "org/gnome/settings-daemon/plugins/power" = {
-      sleep-inactive-ac-type = "suspend";
-      sleep-inactive-ac-timeout = 3600;
-      sleep-inactive-battery-type = "suspend";
-      sleep-inactive-battery-timeout = 3600;
-      power-button-action = "interactive";
-      handle-lid-switch = false;
-    };
-
-    # --- Session ---
-    "org/gnome/desktop/session" = {
-      idle-delay = 0; # uint32 0
-    };
-    
-    # --- Touchpad ---
-    "org/gnome/desktop/peripherals/touchpad" = {
-      tap-to-click = true;
-      two-finger-scrolling-enabled = true;
-      natural-scroll = false;
-      disable-while-typing = true;
-      click-method = "fingers";
-      send-events = "enabled";
-      speed = 0.8;
-      accel-profile = "default";
-      scroll-method = "two-finger-scrolling";
-      middle-click-emulation = false;
-    };
-
-    # --- Mouse ---
-    "org/gnome/desktop/peripherals/mouse" = {
-      natural-scroll = false;
-      speed = 0.0;
-    };
-
-    # --- Sound ---
-    "org/gnome/desktop/sound" = {
-      event-sounds = true;
-      theme-name = "freedesktop";
-    };
-
-    # --- Screensaver ---
-    "org/gnome/desktop/screensaver" = {
-      lock-enabled = true;
-      lock-delay = 0; # uint32 0
-      idle-activation-enabled = true;
-    };
-    
-    # --- Lockdown (for lock screen) ---
-    "org/gnome/desktop/lockdown" = {
-      disable-lock-screen = false;
-    };
-
-    # --- Nautilus ---
-    "org/gnome/nautilus/preferences" = {
-      default-folder-viewer = "list-view";
-      search-filter-time-type = "last_modified";
-      show-hidden-files = false;
-      show-create-link = true;
-    };
-    "org/gnome/nautilus/list-view" = {
-      use-tree-view = true;
-      default-zoom-level = "small";
-    };
-
-    # --- Notifications ---
-    "org/gnome/desktop/notifications" = {
-      show-in-lock-screen = false;
-      show-banners = true;
-    };
-
-  } // customBindingsDconf; # Merge generated custom keybindings
-
-  # ==============================================================================
-  # GNOME AUTOSTART ENTRIES
-  # ==============================================================================
-  # Run gnome-monitor-set only for GNOME sessions using the XDG autostart
-  # mechanism. Hyprland and other desktops will ignore OnlyShowIn=GNOME.
-  xdg.configFile."autostart/gnome-monitor-set.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=GNOME Monitor Set
-    Comment=Set external monitor as primary on GNOME login
-    Exec=gnome-monitor-set
-    OnlyShowIn=GNOME;
-    X-GNOME-Autostart-enabled=true
-  '';
+      # --- Lockdown (for lock screen) ---
+      "org/gnome/desktop/lockdown" = {
+        disable-lock-screen = false;
+      };
+  
+      # --- Nautilus ---
+      "org/gnome/nautilus/preferences" = {
+        default-folder-viewer = "list-view";
+        search-filter-time-type = "last_modified";
+        show-hidden-files = false;
+        show-create-link = true;
+      };
+      "org/gnome/nautilus/list-view" = {
+        use-tree-view = true;
+        default-zoom-level = "small";
+      };
+  
+      # --- Notifications ---
+      "org/gnome/desktop/notifications" = {
+        show-in-lock-screen = false;
+        show-banners = true;
+      };
+  
+    } // customBindingsDconf; # Merge generated custom keybindings
+  
+    # ==============================================================================
+    # GNOME AUTOSTART ENTRIES
+    # ==============================================================================
+    # Run gnome-monitor-set only for GNOME sessions using the XDG autostart
+    # mechanism. Hyprland and other desktops will ignore OnlyShowIn=GNOME.
+    xdg.configFile."autostart/gnome-monitor-set.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=GNOME Monitor Set
+      Comment=Set external monitor as primary on GNOME login
+      Exec=gnome-monitor-set
+      OnlyShowIn=GNOME;
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
 }

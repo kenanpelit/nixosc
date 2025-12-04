@@ -12,9 +12,9 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
-  cfg = config.modules.home.ollama;
+  cfg = config.my.user.ollama;
 in {
-  options.modules.home.ollama = {
+  options.my.user.ollama = {
     enable = lib.mkEnableOption "ollama configuration";
     
     # Startup models

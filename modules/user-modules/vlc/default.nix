@@ -11,6 +11,7 @@
 # ==============================================================================
 { config, pkgs, lib, ... }:
 let
+  cfg = config.my.user.vlc;
   # Merkezi catppuccin konfigürasyonundan ayarları al
   flavor = config.catppuccin.flavor or "mocha";
   accent = config.catppuccin.accent or "mauve";
@@ -158,36 +159,42 @@ let
   
 in
 {
-  # =============================================================================
-  # VLC Package Installation
-  # =============================================================================
-  # VLC Configuration with Catppuccin Colors
-  # =============================================================================
-  xdg.configFile = {
-    "vlc/vlcrc".text = vlcConfig;
+  options.my.user.vlc = {
+    enable = lib.mkEnableOption "VLC media player";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # VLC Package Installation
+    # =============================================================================
+    # VLC Configuration with Catppuccin Colors
+    # =============================================================================
+    xdg.configFile = {
+      "vlc/vlcrc".text = vlcConfig;
+      
+      # Custom Catppuccin-inspired skin (placeholder)
+      "vlc/skins2/catppuccin-${flavor}.vlt".source = catppuccinSkin;
+    };
     
-    # Custom Catppuccin-inspired skin (placeholder)
-    "vlc/skins2/catppuccin-${flavor}.vlt".source = catppuccinSkin;
-  };
-  
-  # =============================================================================
-  # Desktop Integration
-  # =============================================================================
-  xdg.mimeApps.defaultApplications = {
-    "video/mp4" = ["vlc.desktop"];
-    "video/x-matroska" = ["vlc.desktop"];
-    "video/webm" = ["vlc.desktop"];
-    "video/x-msvideo" = ["vlc.desktop"];
-    "audio/mpeg" = ["vlc.desktop"];
-    "audio/flac" = ["vlc.desktop"];
-    "audio/x-wav" = ["vlc.desktop"];
-  };
-  
-  # =============================================================================
-  # QT Theme Integration (VLC QT interface için)
-  # =============================================================================
-  home.sessionVariables = {
-    # VLC'nin sistem temasını kullanması için
-    VLC_QT_THEME = "dark";
+    # =============================================================================
+    # Desktop Integration
+    # =============================================================================
+    xdg.mimeApps.defaultApplications = {
+      "video/mp4" = ["vlc.desktop"];
+      "video/x-matroska" = ["vlc.desktop"];
+      "video/webm" = ["vlc.desktop"];
+      "video/x-msvideo" = ["vlc.desktop"];
+      "audio/mpeg" = ["vlc.desktop"];
+      "audio/flac" = ["vlc.desktop"];
+      "audio/x-wav" = ["vlc.desktop"];
+    };
+    
+    # =============================================================================
+    # QT Theme Integration (VLC QT interface için)
+    # =============================================================================
+    home.sessionVariables = {
+      # VLC'nin sistem temasını kullanması için
+      VLC_QT_THEME = "dark";
+    };
   };
 }

@@ -12,7 +12,7 @@
 { config, lib, pkgs, ... }:
 with lib;
 let
-  cfg = config.modules.home.ai;
+  cfg = config.my.user.ai;
   aliases =
     mkMerge [
       (mkIf cfg.gemini-cli.enable {
@@ -50,10 +50,10 @@ let
     ];
 in
 {
-  options.modules.home.ai = {
+  options.my.user.ai = {
     enable = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable AI tools and interfaces";
     };
     

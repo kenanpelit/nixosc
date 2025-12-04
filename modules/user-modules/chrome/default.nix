@@ -98,7 +98,7 @@ in
   options.my.browser.chrome-preview = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Enable Chrome preview browser installation and configuration.";
     };
 

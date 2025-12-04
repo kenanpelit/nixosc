@@ -2,43 +2,52 @@
 # ==============================================================================
 # Command Not Found Handler Configuration
 # ==============================================================================
-{ pkgs, ... }:
+{ pkgs, lib, config, ... }:
+let
+  cfg = config.my.user.command-not-found;
+in
 {
-  # =============================================================================
-  # Nix-Index Configuration
-  # =============================================================================
-  programs.nix-index = {
-    enable = true;
-    enableZshIntegration = true;
-    enableBashIntegration = true;
+  options.my.user.command-not-found = {
+    enable = lib.mkEnableOption "command-not-found handler";
   };
 
-  # =============================================================================
-  # Automated Update Timer
-  # =============================================================================
-  systemd.user.timers."nix-index-update" = {
-    Unit = {
-      Description = "Update nix-index database weekly";
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Nix-Index Configuration
+    # =============================================================================
+    programs.nix-index = {
+      enable = true;
+      enableZshIntegration = true;
+      enableBashIntegration = true;
     };
-    Timer = {
-      OnCalendar = "weekly";
-      Persistent = true;
-    };
-    Install = {
-      WantedBy = [ "timers.target" ];
-    };
-  };
 
-  # =============================================================================
-  # Update Service Configuration
-  # =============================================================================
-  systemd.user.services."nix-index-update" = {
-    Unit = {
-      Description = "Update nix-index database";
+    # =============================================================================
+    # Automated Update Timer
+    # =============================================================================
+    systemd.user.timers."nix-index-update" = {
+      Unit = {
+        Description = "Update nix-index database weekly";
+      };
+      Timer = {
+        OnCalendar = "weekly";
+        Persistent = true;
+      };
+      Install = {
+        WantedBy = [ "timers.target" ];
+      };
     };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.nix-index}/bin/nix-index";
+
+    # =============================================================================
+    # Update Service Configuration
+    # =============================================================================
+    systemd.user.services."nix-index-update" = {
+      Unit = {
+        Description = "Update nix-index database";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.nix-index}/bin/nix-index";
+      };
     };
   };
 }

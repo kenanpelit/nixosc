@@ -104,7 +104,7 @@ in
     # Can be disabled with: programs.walker.enable = false;
     enable = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       example = false;
       description = mdDoc ''
         Whether to enable Walker application launcher.

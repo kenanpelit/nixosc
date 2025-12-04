@@ -4,18 +4,21 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 with lib;
+let
+  cfg = config.my.user.zotfiles;
+in
 {
   # =============================================================================
   # Core Module Configuration Options
   # =============================================================================
-  options.modules.zotfiles = {
+  options.my.user.zotfiles = {
     enable = lib.mkEnableOption "Encrypted dotfiles extraction and management";
   };
   
   # =============================================================================
   # Module Implementation Details
   # =============================================================================
-  config = lib.mkIf config.modules.zotfiles.enable {
+  config = lib.mkIf cfg.enable {
     # ---------------------------------------------------------------------------
     # Automated Extraction Service Configuration
     # ---------------------------------------------------------------------------

@@ -2,9 +2,10 @@
 # ==============================================================================
 # XDG MIME Type Configuration
 # ==============================================================================
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 with lib;
 let
+ cfg = config.my.user.xdg-mimes;
  # =============================================================================
  # Default Applications Map
  # =============================================================================
@@ -110,32 +111,38 @@ let
    );
 in
 {
- # =============================================================================
- # XDG Configuration
- # =============================================================================
- xdg.configFile."mimeapps.list".force = true;
- xdg.mimeApps.enable = true;
- xdg.mimeApps.associations.added = associations;
- xdg.mimeApps.defaultApplications = associations;
+  options.my.user.xdg-mimes = {
+    enable = lib.mkEnableOption "XDG MIME associations";
+  };
 
- # =============================================================================
- # Desktop Entry Configuration
- # =============================================================================
- xdg.desktopEntries.kitty-nvim = {
-   name = "Kitty+Neovim";
-   genericName = "Text Editor";
-   exec = "kitty -e nvim %F";
-   terminal = false;
-   categories = [ "Utility" "TextEditor" ];
-   mimeType = [ "text/plain" ];
- };
-
- # =============================================================================
- # Environment
- # =============================================================================
- home.sessionVariables = {
-   TERMINAL = "kitty";
-   BROWSER = "brave";
-   WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
- };
+  config = lib.mkIf cfg.enable {
+   # =============================================================================
+   # XDG Configuration
+   # =============================================================================
+   xdg.configFile."mimeapps.list".force = true;
+   xdg.mimeApps.enable = true;
+   xdg.mimeApps.associations.added = associations;
+   xdg.mimeApps.defaultApplications = associations;
+  
+   # =============================================================================
+   # Desktop Entry Configuration
+   # =============================================================================
+   xdg.desktopEntries.kitty-nvim = {
+     name = "Kitty+Neovim";
+     genericName = "Text Editor";
+     exec = "kitty -e nvim %F";
+     terminal = false;
+     categories = [ "Utility" "TextEditor" ];
+     mimeType = [ "text/plain" ];
+   };
+  
+   # =============================================================================
+   # Environment
+   # =============================================================================
+   home.sessionVariables = {
+     TERMINAL = "kitty";
+     BROWSER = "brave";
+     WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
+   };
+  };
 }

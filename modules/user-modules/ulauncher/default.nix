@@ -2,8 +2,9 @@
 # ==============================================================================
 # Ulauncher Application Launcher Configuration
 # ==============================================================================
-{ pkgs, lib, ... }: 
+{ pkgs, lib, config, ... }: 
 let
+  cfg = config.my.user.ulauncher;
   ulauncher_config = ./config;
   
   # =============================================================================
@@ -55,41 +56,47 @@ let
     sed -i "s|\\\$HOME|$HOME|g" "$shortcutsFile"
   '';
 in {
-  # =============================================================================
-  # Service Configuration
-  # =============================================================================
-  systemd.user.services.ulauncher = {
-    Unit = {
-      Description = "ulauncher application launcher service";
-      Documentation = "https://ulauncher.io";
-      After = ["graphical-session-pre.target"];
-      PartOf = ["graphical-session.target"];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.ulauncher}/bin/ulauncher --hide-window'";
-      Restart = "on-failure";
-      RestartSec = 3;
-    };
-    Install = {
-      WantedBy = ["graphical-session.target"];
-    };
+  options.my.user.ulauncher = {
+    enable = lib.mkEnableOption "Ulauncher";
   };
 
-  # =============================================================================
-  # Configuration Files
-  # =============================================================================
-  xdg.configFile = {
-    "ulauncher" = {
-      recursive = true;
-      source = "${ulauncher_config}";
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Service Configuration
+    # =============================================================================
+    systemd.user.services.ulauncher = {
+      Unit = {
+        Description = "ulauncher application launcher service";
+        Documentation = "https://ulauncher.io";
+        After = ["graphical-session-pre.target"];
+        PartOf = ["graphical-session.target"];
+      };
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.ulauncher}/bin/ulauncher --hide-window'";
+        Restart = "on-failure";
+        RestartSec = 3;
+      };
+      Install = {
+        WantedBy = ["graphical-session.target"];
+      };
     };
+  
+    # =============================================================================
+    # Configuration Files
+    # =============================================================================
+    xdg.configFile = {
+      "ulauncher" = {
+        recursive = true;
+        source = "${ulauncher_config}";
+      };
+    };
+  
+    # =============================================================================
+    # Activation Script
+    # =============================================================================
+    home.activation.manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
+    '';
   };
-
-  # =============================================================================
-  # Activation Script
-  # =============================================================================
-  home.activation.manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
-  '';
 }

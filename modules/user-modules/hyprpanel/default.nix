@@ -3,10 +3,10 @@
 with lib;
 
 let
-  cfg = config.my.programs.hyprpanel;
+  cfg = config.my.user.hyprpanel;
 in
 {
-  options.my.programs.hyprpanel = {
+  options.my.user.hyprpanel = {
     enable = mkEnableOption "Hyprpanel - A modern panel for Hyprland";
 
     package = mkOption {

@@ -2,8 +2,9 @@
 # ==============================================================================
 # Candy Beauty Icon Theme Configuration (Updated to specific commit)
 # ==============================================================================
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 let
+  cfg = config.my.user.candy;
   # =============================================================================
   # Theme Package Definition
   # =============================================================================
@@ -112,21 +113,27 @@ EOF
   };
 in 
 {
-  # =============================================================================
-  # Theme Installation and Configuration
-  # =============================================================================
-  home.packages = [ candy-beauty ];
-  
-  # =============================================================================
-  # GTK Theme Configuration (Opsiyonel)
-  # =============================================================================
-  # Eğer bu icon theme'ini varsayılan yapmak istersen:
-  # gtk = {
-  #   enable = true;
-  #   iconTheme = {
-  #     name = "a-candy-beauty-icon-theme";  # Gerçek tema adını kontrol et
-  #     package = candy-beauty;
-  #   };
-  # };
+  options.my.user.candy = {
+    enable = lib.mkEnableOption "Candy icon theme";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Theme Installation and Configuration
+    # =============================================================================
+    home.packages = [ candy-beauty ];
+    
+    # =============================================================================
+    # GTK Theme Configuration (Opsiyonel)
+    # =============================================================================
+    # Eğer bu icon theme'ini varsayılan yapmak istersen:
+    # gtk = {
+    #   enable = true;
+    #   iconTheme = {
+    #     name = "a-candy-beauty-icon-theme";  # Gerçek tema adını kontrol et
+    #     package = candy-beauty;
+    #   };
+    # };
+  };
 }
 

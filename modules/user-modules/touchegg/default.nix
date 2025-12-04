@@ -3,8 +3,8 @@
 # Touchégg Multi-Desktop Gesture Configuration
 # ==============================================================================
 { config, pkgs, lib, ... }:
-
 let
+  cfg = config.my.user.touchegg;
   # Desktop-specific configurations
   toucheggConfigs = {
     # Hyprland Configuration
@@ -246,47 +246,53 @@ let
 
 in
 {
-  # =============================================================================
-  # Desktop-Specific Configuration Files
-  # =============================================================================
-  xdg.configFile = {
-    "touchegg/hyprland.conf".text = toucheggConfigs.hyprland;
-    "touchegg/gnome.conf".text = toucheggConfigs.gnome;
+  options.my.user.touchegg = {
+    enable = lib.mkEnableOption "Touchégg daemon";
   };
 
-  # =============================================================================
-  # Systemd Service Configuration
-  # =============================================================================
-  systemd.user.services.touchegg = {
-    Unit = {
-      Description = "Touchégg Multi-Desktop Gesture Daemon";
-      Documentation = "https://github.com/JoseExposito/touchegg";
-      After = [ "graphical-session-pre.target" "dbus.service" ];
-      PartOf = [ "graphical-session.target" ];
-      Requires = [ "dbus.service" ];
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Desktop-Specific Configuration Files
+    # =============================================================================
+    xdg.configFile = {
+      "touchegg/hyprland.conf".text = toucheggConfigs.hyprland;
+      "touchegg/gnome.conf".text = toucheggConfigs.gnome;
     };
-
-    Service = {
-      Type = "simple";
-      
-      # Select correct config before starting
-      ExecStartPre = [
-        "${pkgs.coreutils}/bin/sleep 2"
-        "${selectToucheggConfig}"
-      ];
-      
-      ExecStart = "${pkgs.touchegg}/bin/touchegg --daemon";
-      
-      Restart = "on-failure";
-      RestartSec = "3s";
-      
-      Environment = [
-        "XDG_RUNTIME_DIR=/run/user/%U"
-      ];
-    };
-
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
+  
+    # =============================================================================
+    # Systemd Service Configuration
+    # =============================================================================
+    systemd.user.services.touchegg = {
+      Unit = {
+        Description = "Touchégg Multi-Desktop Gesture Daemon";
+        Documentation = "https://github.com/JoseExposito/touchegg";
+        After = [ "graphical-session-pre.target" "dbus.service" ];
+        PartOf = [ "graphical-session.target" ];
+        Requires = [ "dbus.service" ];
+      };
+  
+      Service = {
+        Type = "simple";
+        
+        # Select correct config before starting
+        ExecStartPre = [
+          "${pkgs.coreutils}/bin/sleep 2"
+          "${selectToucheggConfig}"
+        ];
+        
+        ExecStart = "${pkgs.touchegg}/bin/touchegg --daemon";
+        
+        Restart = "on-failure";
+        RestartSec = "3s";
+        
+        Environment = [
+          "XDG_RUNTIME_DIR=/run/user/%U"
+        ];
+      };
+  
+      Install = {
+        WantedBy = [ "graphical-session.target" ];
+      };
     };
   };
 }

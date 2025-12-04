@@ -8,13 +8,21 @@
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
-
+let
+  cfg = config.my.user.search;
+in
 {
-  xdg.configFile."television/nix_channels.toml".text = ''
-    [[cable_channel]]
-    name = "nixpkgs"
-    source_command = "nix-search-tv print"
-    preview_command = "nix-search-tv preview {}"
-  '';
+  options.my.user.search = {
+    enable = lib.mkEnableOption "Search utilities configuration";
+  };
+
+  config = lib.mkIf cfg.enable {
+    xdg.configFile."television/nix_channels.toml".text = ''
+      [[cable_channel]]
+      name = "nixpkgs"
+      source_command = "nix-search-tv print"
+      preview_command = "nix-search-tv preview {}"
+    '';
+  };
 }
 
