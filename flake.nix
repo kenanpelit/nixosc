@@ -5,29 +5,33 @@
 #  Author:  Kenan Pelit
 #  Repo:    https://github.com/kenanpelit/nixosc
 #  License: MIT
-#  Date:    2025-12-02
+#  Date:    2025-12-06
 #
 # ------------------------------------------------------------------------------
 #  ARCHITECTURE
 # ------------------------------------------------------------------------------
 #
-#  This configuration uses the Snowfall Lib framework for structured, modular,
-#  and automatic system management.
+#  Snowfall Lib v4 layout, with NixOS + Home Manager under one flake.
 #
-#  Structure:
-#    ├── systems/           # Host configurations (Physical & VM)
-#    ├── modules/           # Modular configuration blocks
-#    │   ├── nixos/         # System-level modules (services, hardware)
-#    │   └── user-modules/  # User-level modules (home-manager)
-#    ├── packages/          # Custom packages
-#    └── overlays/          # Nixpkgs overlays
+#  Structure (workspace-write sandbox friendly):
+#    ├── systems/              # Host configs per arch (hay, vhay, …)
+#    ├── homes/                # Home Manager profiles (e.g. kenan@hay)
+#    ├── modules/
+#    │   ├── nixos/            # System-level modules (services, hardware)
+#    │   └── home/             # User-level modules (HM apps/services)
+#    ├── overlays/             # Nixpkgs overlays
+#    ├── secrets/              # sops-nix secrets (age key in ~/.config/sops/age)
+#    ├── assets/               # Encrypted dotfiles, mpv/tmux bundles, etc.
+#    └── wallpapers/           # Theming assets
 #
 # ------------------------------------------------------------------------------
 #  USAGE
 # ------------------------------------------------------------------------------
 #
 #  Build & Switch:
-#    $ ./install.sh install <host>
+#    $ ./install.sh install <host>        # system + home for host
+#    $ nixos-rebuild switch --flake .#hay # direct call
+#    $ home-manager switch --flake .#kenan@hay # home only
 #
 #  Update Inputs:
 #    $ ./install.sh update
