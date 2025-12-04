@@ -25,6 +25,17 @@ in
     # Ensure binary is available
     home.packages = [ pkgs.lisgd ];
 
+    lisgdRunner = pkgs.writeShellScript "lisgd-run" ''
+      exec ${pkgs.lisgd}/bin/lisgd \
+        ${lib.optionalString (cfg.device != null) "--device=${cfg.device}"} \
+        -g "3,RL,*,*,R,hypr-workspace-monitor -wl" \
+        -g "3,LR,*,*,R,hypr-workspace-monitor -wr" \
+        -g "3,DU,*,*,R,hypr-workspace-monitor -wt" \
+        -g "3,UD,*,*,R,hypr-workspace-monitor -mt" \
+        -g "4,RL,*,*,R,hypr-workspace-monitor -msf" \
+        -g "4,LR,*,*,R,hypr-workspace-monitor -ms"
+    '';
+
     systemd.user.services.lisgd = {
       Unit = {
         Description = "lisgd - libinput swipe gesture daemon";
@@ -34,17 +45,7 @@ in
 
       Service = {
         Type = "simple";
-        # Gestures mirror the old touchegg setup
-        ExecStart = ''
-          ${pkgs.lisgd}/bin/lisgd \
-            ${lib.optionalString (cfg.device != null) "--device=${cfg.device}"} \
-            -g "3,RL,*,*,R,hypr-workspace-monitor -wl" \
-            -g "3,LR,*,*,R,hypr-workspace-monitor -wr" \
-            -g "3,DU,*,*,R,hypr-workspace-monitor -wt" \
-            -g "3,UD,*,*,R,hypr-workspace-monitor -mt" \
-            -g "4,RL,*,*,R,hypr-workspace-monitor -msf" \
-            -g "4,LR,*,*,R,hypr-workspace-monitor -ms"
-        '';
+        ExecStart = "${lisgdRunner}";
 
         Restart = "on-failure";
         RestartSec = "2s";
