@@ -32,7 +32,7 @@
   
   # Components
   my.user.waybar.enable = true;
-  my.user.hyprpanel.enable = true;
+  my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
   my.user.walker.enable = true;
   my.user.ulauncher.enable = true;
