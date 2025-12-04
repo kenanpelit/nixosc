@@ -31,7 +31,7 @@
   my.desktop.sway.enable = true; # VM management
   
   # Components
-  my.user.waybar.enable = true;
+  my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
   my.user.walker.enable = true;
