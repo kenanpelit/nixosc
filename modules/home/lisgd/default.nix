@@ -35,18 +35,16 @@ in
       Service = {
         Type = "simple";
         # Gestures mirror the old touchegg setup
-        ExecStart = toString (
-          lib.concatStringsSep " " [
-            "${pkgs.lisgd}/bin/lisgd"
-            (lib.optionalString (cfg.device != null) "--device=${cfg.device}")
-            "-g '3,LEFT,hypr-workspace-monitor -wl'"
-            "-g '3,RIGHT,hypr-workspace-monitor -wr'"
-            "-g '3,UP,hypr-workspace-monitor -wt'"
-            "-g '3,DOWN,hypr-workspace-monitor -mt'"
-            "-g '4,LEFT,hypr-workspace-monitor -msf'"
-            "-g '4,RIGHT,hypr-workspace-monitor -ms'"
-          ]
-        );
+        ExecStart = ''
+          ${pkgs.lisgd}/bin/lisgd \
+            ${lib.optionalString (cfg.device != null) "--device=${cfg.device}"} \
+            -g "3,RL,*,*,R,hypr-workspace-monitor -wl" \
+            -g "3,LR,*,*,R,hypr-workspace-monitor -wr" \
+            -g "3,DU,*,*,R,hypr-workspace-monitor -wt" \
+            -g "3,UD,*,*,R,hypr-workspace-monitor -mt" \
+            -g "4,RL,*,*,R,hypr-workspace-monitor -msf" \
+            -g "4,LR,*,*,R,hypr-workspace-monitor -ms"
+        '';
 
         Restart = "on-failure";
         RestartSec = "2s";
