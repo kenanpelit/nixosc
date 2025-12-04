@@ -29,7 +29,8 @@ in
       };
       Service = {
         Type = "simple";
-        ExecStart = "${dmsPkg}/bin/dms run --daemon --session";
+        # Keep in foreground so systemd tracks the process
+        ExecStart = "${dmsPkg}/bin/dms run --session";
         Restart = "on-failure";
         RestartSec = 3;
         Environment = [
