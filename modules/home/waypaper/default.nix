@@ -11,12 +11,8 @@ in
     enable = lib.mkEnableOption "Waypaper";
   };
 
-  config = lib.mkIf cfg.enable {
-    # =============================================================================
-    # Module Imports
-    # =============================================================================
-    imports = [
-      ./config.nix    # Config settings
-    ];
-  };
+  # Import config submodule only when enabled
+  imports = lib.optionals cfg.enable [
+    ./config.nix    # Config settings
+  ];
 }
