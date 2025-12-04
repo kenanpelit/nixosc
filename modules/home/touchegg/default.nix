@@ -288,12 +288,13 @@ in
         Environment = [
           "XDG_RUNTIME_DIR=/run/user/%U"
           "XDG_CURRENT_DESKTOP=Hyprland"
-          "PATH=${lib.makeBinPath [
-            config.home.profileDirectory
-            pkgs.hyprland
-            pkgs.jq
-            pkgs.coreutils
-          ]}"
+          "PATH=${config.home.profileDirectory}/bin:${
+            lib.makeBinPath [
+              pkgs.hyprland
+              pkgs.jq
+              pkgs.coreutils
+            ]
+          }"
         ];
       };
   
