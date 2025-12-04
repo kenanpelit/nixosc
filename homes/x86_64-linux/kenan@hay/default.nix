@@ -41,9 +41,9 @@
   my.user.swayosd.enable = true;
   my.user.wpaperd.enable = true;
   my.user.waypaper.enable = true;
-  my.user.touchegg.enable = false;
-  my.user.lisgd = {
-    enable = true;
+  my.user.touchegg.enable = true;
+  my.user.lisgd.enable = {
+    enable = false;
     device = "/dev/input/event9";
   };
   my.user.fusuma.enable = true;
