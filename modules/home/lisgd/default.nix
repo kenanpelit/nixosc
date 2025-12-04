@@ -6,6 +6,8 @@
 
 let
   cfg = config.my.user.lisgd;
+  # Stable by-path symlink for the ELAN06C6 touchpad on this machine
+  defaultDevice = "/dev/input/by-path/pci-0000:00:15.0-platform-i2c_designware.0-event-mouse";
 in
 {
   options.my.user.lisgd = {
@@ -21,59 +23,62 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    # Ensure binary is available
-    home.packages = [ pkgs.lisgd ];
+  config = lib.mkIf cfg.enable (
+    let
+      lisgdRunner = pkgs.writeShellScript "lisgd-run" ''
+        exec ${pkgs.lisgd}/bin/lisgd \
+          --device=${lib.escapeShellArg (cfg.device or defaultDevice)} \
+          -g "3,RL,*,*,R,hypr-workspace-monitor -wl" \
+          -g "3,LR,*,*,R,hypr-workspace-monitor -wr" \
+          -g "3,DU,*,*,R,hypr-workspace-monitor -wt" \
+          -g "3,UD,*,*,R,hypr-workspace-monitor -mt" \
+          -g "4,RL,*,*,R,hypr-workspace-monitor -msf" \
+          -g "4,LR,*,*,R,hypr-workspace-monitor -ms"
+      '';
+    in
+    {
+      # Ensure binary is available
+      home.packages = [ pkgs.lisgd ];
 
-    lisgdRunner = pkgs.writeShellScript "lisgd-run" ''
-      exec ${pkgs.lisgd}/bin/lisgd \
-        ${lib.optionalString (cfg.device != null) "--device=${cfg.device}"} \
-        -g "3,RL,*,*,R,hypr-workspace-monitor -wl" \
-        -g "3,LR,*,*,R,hypr-workspace-monitor -wr" \
-        -g "3,DU,*,*,R,hypr-workspace-monitor -wt" \
-        -g "3,UD,*,*,R,hypr-workspace-monitor -mt" \
-        -g "4,RL,*,*,R,hypr-workspace-monitor -msf" \
-        -g "4,LR,*,*,R,hypr-workspace-monitor -ms"
-    '';
+      systemd.user.services.lisgd = {
+        Unit = {
+          Description = "lisgd - libinput swipe gesture daemon";
+          After = [ "graphical-session.target" ];
+          PartOf = [ "graphical-session.target" ];
+        };
 
-    systemd.user.services.lisgd = {
-      Unit = {
-        Description = "lisgd - libinput swipe gesture daemon";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
+        Service = {
+          Type = "simple";
+          ExecStart = lisgdRunner;
+
+          Restart = "on-failure";
+          RestartSec = "2s";
+
+          Environment = [
+            "XDG_RUNTIME_DIR=/run/user/%U"
+            "XDG_CURRENT_DESKTOP=Hyprland"
+            "XDG_SESSION_TYPE=wayland"
+            "PATH=${config.home.profileDirectory}/bin:${
+              lib.makeBinPath [
+                pkgs.hyprland
+                pkgs.jq
+                pkgs.coreutils
+              ]
+            }"
+          ];
+
+          PassEnvironment = [
+            "WAYLAND_DISPLAY"
+            "HYPRLAND_INSTANCE_SIGNATURE"
+            "XDG_RUNTIME_DIR"
+            "HYPRLAND_SOCKET"
+          ];
+        };
+
+        Install = {
+          WantedBy = [ "graphical-session.target" ];
+        };
       };
-
-      Service = {
-        Type = "simple";
-        ExecStart = "${lisgdRunner}";
-
-        Restart = "on-failure";
-        RestartSec = "2s";
-
-        Environment = [
-          "XDG_RUNTIME_DIR=/run/user/%U"
-          "XDG_CURRENT_DESKTOP=Hyprland"
-          "XDG_SESSION_TYPE=wayland"
-          "PATH=${config.home.profileDirectory}/bin:${
-            lib.makeBinPath [
-              pkgs.hyprland
-              pkgs.jq
-              pkgs.coreutils
-            ]
-          }"
-        ];
-
-        PassEnvironment = [
-          "WAYLAND_DISPLAY"
-          "HYPRLAND_INSTANCE_SIGNATURE"
-          "XDG_RUNTIME_DIR"
-          "HYPRLAND_SOCKET"
-        ];
-      };
-
-      Install = {
-        WantedBy = [ "graphical-session.target" ];
-      };
-    };
-  };
+    }
+  );
 }
