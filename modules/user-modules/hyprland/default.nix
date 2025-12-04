@@ -2,30 +2,39 @@
 # ==============================================================================
 # Hyprland Window Manager Configuration Root
 # ==============================================================================
-{ inputs, ... }:
+{ inputs, lib, config, ... }:
+let
+  cfg = config.my.desktop.hyprland;
+in
 {
- # =============================================================================
- # Module Imports
- # =============================================================================
- imports = [
-   # ---------------------------------------------------------------------------
-   # Core Modules
-   # ---------------------------------------------------------------------------
-   # Base Hyprland home-manager module
-   inputs.hyprland.homeManagerModules.default
-   
-   # ---------------------------------------------------------------------------
-   # Basic Configuration
-   # ---------------------------------------------------------------------------
-   ./hyprland.nix   # Main Hyprland configuration
-   ./config.nix     # General settings
-   
-   # ---------------------------------------------------------------------------
-   # Extensions & Components 
-   # ---------------------------------------------------------------------------
-   ./hyprlock.nix   # Screen locker
-   ./hypridle.nix   # Idle management
-   ./pyprland.nix   # Python plugins
-   ./keyring.nix    # Keyring
- ];
+  options.my.desktop.hyprland = {
+    enable = lib.mkEnableOption "Hyprland window manager";
+  };
+
+  config = lib.mkIf cfg.enable {
+   # =============================================================================
+   # Module Imports
+   # =============================================================================
+   imports = [
+     # ---------------------------------------------------------------------------
+     # Core Modules
+     # ---------------------------------------------------------------------------
+     # Base Hyprland home-manager module
+     inputs.hyprland.homeManagerModules.default
+     
+     # ---------------------------------------------------------------------------
+     # Basic Configuration
+     # ---------------------------------------------------------------------------
+     ./hyprland.nix   # Main Hyprland configuration
+     ./config.nix     # General settings
+     
+     # ---------------------------------------------------------------------------
+     # Extensions & Components 
+     # ---------------------------------------------------------------------------
+     ./hyprlock.nix   # Screen locker
+     ./hypridle.nix   # Idle management
+     ./pyprland.nix   # Python plugins
+     ./keyring.nix    # Keyring
+   ];
+  };
 }

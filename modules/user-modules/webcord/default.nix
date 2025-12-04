@@ -2,15 +2,9 @@
 # ==============================================================================
 # WebCord (Discord Client) Configuration - Catppuccin Theming
 # ==============================================================================
-# Purpose:
-#   - Install and theme WebCord (Vencord) using Catppuccin colors.
-#   - Generate a .theme.css file based on the global catppuccin flavor/accent.
-# Notes:
-#   - The actual WebCord package is installed via modules/home/packages.
-#   - Discord/Vencord options are still toggled inside the app itself.
-# ==============================================================================
 { config, pkgs, lib, ... }:
 let
+  cfg = config.my.user.webcord;
   # Catppuccin flavor'ları için renk setleri
   catppuccinColors = {
     mocha = {
@@ -169,8 +163,14 @@ let
     '';
   };
 in {
-  # =============================================================================
-  # Theme Configuration - Merkezi Catppuccin ile
-  # =============================================================================
-  xdg.configFile."Vencord/themes/catppuccin-${flavor}.theme.css".text = discordTheme.css;
+  options.my.user.webcord = {
+    enable = lib.mkEnableOption "WebCord theme";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Theme Configuration - Merkezi Catppuccin ile
+    # =============================================================================
+    xdg.configFile."Vencord/themes/catppuccin-${flavor}.theme.css".text = discordTheme.css;
+  };
 }

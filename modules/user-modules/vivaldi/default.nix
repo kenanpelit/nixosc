@@ -28,7 +28,7 @@ in {
   options.my.browser.vivaldi = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Enable Vivaldi browser installation and configuration";
     };
 

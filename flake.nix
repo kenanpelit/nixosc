@@ -188,6 +188,7 @@
           home-manager.nixosModules.home-manager
           catppuccin.nixosModules.catppuccin
           sops-nix.nixosModules.sops
+          nix-flatpak.nixosModules.nix-flatpak
         ];
 
         # Special arguments available to all modules
@@ -197,6 +198,16 @@
 
               outputs-builder = channels: {
                 formatter = inputs.alejandra.packages.${channels.nixpkgs.system}.default;
+                
+                checks = {
+                  statix = channels.nixpkgs.runCommand "statix-check" {
+                    nativeBuildInputs = [ inputs.statix.packages.${channels.nixpkgs.system}.default ];
+                  } ''
+                    statix check ${./.}
+                    touch $out
+                  '';
+                };
+
                 devShells.default = channels.nixpkgs.mkShell {
                   packages = [
                     inputs.alejandra.packages.${channels.nixpkgs.system}.default

@@ -40,11 +40,16 @@ let
   };
 in
 {
-  # =============================================================================
-  # Mako Configuration - Advanced Configuration
-  # =============================================================================
-  services.mako = {
-    enable = true;
+  options.my.user.mako = {
+    enable = lib.mkEnableOption "Mako notification daemon";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Mako Configuration - Advanced Configuration
+    # =============================================================================
+    services.mako = {
+      enable = true;
     
     settings = {
       # Positioning - optimal for Hyprland

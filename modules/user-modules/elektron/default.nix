@@ -13,9 +13,9 @@
 
 with lib;
 let
-  cfg = config.modules.home.electron;
+  cfg = config.my.user.electron;
 in {
-  options.modules.home.electron = {
+  options.my.user.electron = {
     enable = mkEnableOption "electron module";
     
     package = mkOption {

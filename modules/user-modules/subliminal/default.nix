@@ -8,7 +8,15 @@
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
-
+let
+  cfg = config.my.user.subliminal;
+in
 {
-  home.file.".config/subliminal/.keep".text = "";
+  options.my.user.subliminal = {
+    enable = lib.mkEnableOption "Subliminal subtitle downloader";
+  };
+
+  config = lib.mkIf cfg.enable {
+    home.file.".config/subliminal/.keep".text = "";
+  };
 }

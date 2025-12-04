@@ -2,8 +2,9 @@
 # ==============================================================================
 # AnyDesk Remote Desktop Configuration
 # ==============================================================================
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 let
+  cfg = config.my.user.anydesk;
   # =============================================================================
   # Custom Script Configuration
   # =============================================================================
@@ -16,23 +17,29 @@ let
   '';
 in
 {
-  # =============================================================================
-  # Package Installation
-  # =============================================================================
-  home.packages = [
-    run-anydesk
-  ];
+  options.my.user.anydesk = {
+    enable = lib.mkEnableOption "AnyDesk remote desktop";
+  };
 
-  # =============================================================================
-  # Desktop Entry Configuration
-  # =============================================================================
-  xdg.desktopEntries.anydesk = {
-    name = "RunAnyDesk";
-    exec = "run-anydesk %u";
-    icon = "anydesk";
-    terminal = false;
-    type = "Application";
-    categories = [ "Network" "RemoteAccess" ];
-    mimeType = [ "x-scheme-handler/anydesk" ];
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Package Installation
+    # =============================================================================
+    home.packages = [
+      run-anydesk
+    ];
+
+    # =============================================================================
+    # Desktop Entry Configuration
+    # =============================================================================
+    xdg.desktopEntries.anydesk = {
+      name = "RunAnyDesk";
+      exec = "run-anydesk %u";
+      icon = "anydesk";
+      terminal = false;
+      type = "Application";
+      categories = [ "Network" "RemoteAccess" ];
+      mimeType = [ "x-scheme-handler/anydesk" ];
+    };
   };
 }

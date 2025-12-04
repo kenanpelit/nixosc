@@ -8,10 +8,19 @@
 #
 # ==============================================================================
 
-{ ... }:
+{ lib, config, ... }:
+let
+  cfg = config.my.user.scripts;
+in
 {
-  imports = [
-    ./bin.nix
-    ./start.nix
-  ];
+  options.my.user.scripts = {
+    enable = lib.mkEnableOption "custom user scripts";
+  };
+
+  config = lib.mkIf cfg.enable {
+    imports = [
+      ./bin.nix
+      ./start.nix
+    ];
+  };
 }

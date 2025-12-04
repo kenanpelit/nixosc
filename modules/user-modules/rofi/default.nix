@@ -11,6 +11,7 @@
 
 { config, lib, pkgs, ... }:
 let
+  cfg = config.my.user.rofi;
   # Catppuccin modülünden otomatik renk alımı
   inherit (config.catppuccin) sources;
   
@@ -43,15 +44,18 @@ let
   };
 in
 {
-  # =============================================================================
-  # Module Imports
-  # =============================================================================
+  options.my.user.rofi = {
+    enable = lib.mkEnableOption "Rofi application launcher";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # Theme Configuration
+    # =============================================================================
+    xdg.configFile."rofi/theme.rasi".text = rofiTheme.theme;
+  };
+  
   imports = [
     ./config.nix   # Main configuration
   ];
-  
-  # =============================================================================
-  # Theme Configuration
-  # =============================================================================
-  xdg.configFile."rofi/theme.rasi".text = rofiTheme.theme;
 }

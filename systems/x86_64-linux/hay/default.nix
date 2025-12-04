@@ -138,9 +138,8 @@
   # ============================================================================
   # User Modules
   # ============================================================================
-  home-manager.users.kenan = {
-    imports = [ ../../../modules/user-modules ];
-  };
+  # Home Manager configuration is now handled in:
+  # homes/x86_64-linux/kenan@hay/default.nix
 
   # ============================================================================
   # System State Version

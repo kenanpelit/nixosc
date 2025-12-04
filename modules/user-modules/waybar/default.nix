@@ -2,15 +2,9 @@
 # ==============================================================================
 # Waybar Status Bar Configuration (Hyprland / Wayland)
 # ==============================================================================
-# Purpose:
-#   - Configure Waybar modules, styling and Catppuccin-based theming.
-#   - Provide a shared status bar for Hyprland and other Wayland sessions.
-# Notes:
-#   - Uses Catppuccin colors via the global catppuccin module.
-#   - Behaviour (which modules are shown) is tuned for the hay/vhay hosts.
-# ==============================================================================
 { config, pkgs, lib, ... }:
 let
+  cfg = config.my.user.waybar;
   # Catppuccin modülünden otomatik renk alımı
   inherit (config.catppuccin) sources;
   
@@ -129,63 +123,69 @@ let
 
 in
 {
-  # Enhanced Waybar program configuration
-  programs.waybar = {
-    enable = true;
-    
-    # Extended package with additional features
-    package = pkgs.waybar.overrideAttrs (oa: {
-      mesonFlags = (oa.mesonFlags or [ ]) ++ [ 
-        "-Dexperimental=true"     # Enable experimental features
-        "-Dcava=enabled"          # Audio visualizer support
-        "-Dmpris=enabled"         # Media player integration
-        "-Dpulseaudio=enabled"    # PulseAudio support
-        "-Drfkill=enabled"        # RF kill switch support
-        "-Dsndio=disabled"        # Disable sndio (not needed)
-      ];
-      
-      # Add additional build inputs for enhanced functionality
-      buildInputs = (oa.buildInputs or []) ++ (with pkgs; [
-        playerctl    # For better MPRIS control
-        libpulseaudio # Enhanced audio support
-      ]);
-    });
-    
-    # Configuration files with enhanced structure
-    settings = import ./settings.nix { 
-      inherit custom;
-    };
-    
-    # Enhanced styling with dynamic design system
-    style = import ./style.nix { 
-      inherit custom;
-    };
+  options.my.user.waybar = {
+    enable = lib.mkEnableOption "Waybar status bar";
   };
 
-  # Systemd servis
-  systemd.user.services.waybar = {
-    Unit = {
-      Description = "Waybar - Modern Wayland bar with Dynamic Catppuccin Theme (${config.catppuccin.flavor})";
-      Documentation = "https://github.com/Alexays/Waybar/wiki";
-      After = ["hyprland-session.target" "graphical-session.target"];
-      PartOf = ["hyprland-session.target"];
-      Wants = ["graphical-session.target"];
+  # Enhanced Waybar program configuration
+  config = lib.mkIf cfg.enable {
+    programs.waybar = {
+      enable = true;
+      
+      # Extended package with additional features
+      package = pkgs.waybar.overrideAttrs (oa: {
+        mesonFlags = (oa.mesonFlags or [ ]) ++ [ 
+          "-Dexperimental=true"     # Enable experimental features
+          "-Dcava=enabled"          # Audio visualizer support
+          "-Dmpris=enabled"         # Media player integration
+          "-Dpulseaudio=enabled"    # PulseAudio support
+          "-Drfkill=enabled"        # RF kill switch support
+          "-Dsndio=disabled"        # Disable sndio (not needed)
+        ];
+        
+        # Add additional build inputs for enhanced functionality
+        buildInputs = (oa.buildInputs or []) ++ (with pkgs; [
+          playerctl    # For better MPRIS control
+          libpulseaudio # Enhanced audio support
+        ]);
+      });
+      
+      # Configuration files with enhanced structure
+      settings = import ./settings.nix { 
+        inherit custom;
+      };
+      
+      # Enhanced styling with dynamic design system
+      style = import ./style.nix { 
+        inherit custom;
+      };
     };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.waybar}/bin/waybar --log-level error";
-      ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR2 $MAINPID";
-      Restart = "on-failure";
-      RestartSec = "2s";
-      KillMode = "mixed";
-      Environment = [
-        "XDG_CURRENT_DESKTOP=Hyprland"
-        "XDG_SESSION_TYPE=wayland"
-        "CATPPUCCIN_FLAVOR=${config.catppuccin.flavor}"  # Debug için
-      ];
-    };
-    Install = {
-      WantedBy = ["hyprland-session.target"];
+  
+    # Systemd servis
+    systemd.user.services.waybar = {
+      Unit = {
+        Description = "Waybar - Modern Wayland bar with Dynamic Catppuccin Theme (${config.catppuccin.flavor})";
+        Documentation = "https://github.com/Alexays/Waybar/wiki";
+        After = ["hyprland-session.target" "graphical-session.target"];
+        PartOf = ["hyprland-session.target"];
+        Wants = ["graphical-session.target"];
+      };
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.waybar}/bin/waybar --log-level error";
+        ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR2 $MAINPID";
+        Restart = "on-failure";
+        RestartSec = "2s";
+        KillMode = "mixed";
+        Environment = [
+          "XDG_CURRENT_DESKTOP=Hyprland"
+          "XDG_SESSION_TYPE=wayland"
+          "CATPPUCCIN_FLAVOR=${config.catppuccin.flavor}"  # Debug için
+        ];
+      };
+      Install = {
+        WantedBy = ["hyprland-session.target"];
+      };
     };
   };
 }

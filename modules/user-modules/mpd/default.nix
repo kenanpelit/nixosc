@@ -3,31 +3,40 @@
 # Music Player Daemon Configuration
 # ==============================================================================
 { config, pkgs, lib, ... }:
+let
+  cfg = config.my.user.mpd;
+in
 {
-  # =============================================================================
-  # MPD Service Configuration
-  # =============================================================================
-  services.mpd = {
-    enable = true;
-    musicDirectory = "${config.home.homeDirectory}/Music";
-    
-    # ---------------------------------------------------------------------------
-    # Audio and Performance Settings
-    # ---------------------------------------------------------------------------
-    extraConfig = ''
-      # Audio Output Configuration
-      audio_output {
-        type "pipewire"
-        name "PipeWire Sound Server"
-        mixer_type "software"
-      }
+  options.my.user.mpd = {
+    enable = lib.mkEnableOption "Music Player Daemon";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # =============================================================================
+    # MPD Service Configuration
+    # =============================================================================
+    services.mpd = {
+      enable = true;
+      musicDirectory = "${config.home.homeDirectory}/Music";
       
-      # Playback Settings
-      restore_paused "yes"
-      auto_update "yes"
-      
-      # Performance Tuning
-      audio_buffer_size "4096"
-    '';
+      # ---------------------------------------------------------------------------
+      # Audio and Performance Settings
+      # ---------------------------------------------------------------------------
+      extraConfig = ''
+        # Audio Output Configuration
+        audio_output {
+          type "pipewire"
+          name "PipeWire Sound Server"
+          mixer_type "software"
+        }
+        
+        # Playback Settings
+        restore_paused "yes"
+        auto_update "yes"
+        
+        # Performance Tuning
+        audio_buffer_size "4096"
+      '';
+    };
   };
 }

@@ -13,6 +13,7 @@
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
+  cfg = config.my.user.transmission;
   settingsDir = ".config/transmission-daemon";
   settingsFormat = pkgs.formats.json {};
   
@@ -148,7 +149,11 @@ let
   
 in
 {
-  config = {
+  options.my.user.transmission = {
+    enable = lib.mkEnableOption "Transmission daemon";
+  };
+
+  config = lib.mkIf cfg.enable {
     # =============================================================================
     # Systemd Service Configuration
     # =============================================================================

@@ -17,7 +17,7 @@
 { config, pkgs, lib, ... }:
 
 let
-  cfg = config.my.tools.fzf;
+  cfg = config.my.user.fzf;
 
   # Catppuccin source from your central module
   inherit (config.catppuccin) sources;
@@ -73,10 +73,10 @@ in
   # Options
   # ============================================================================
 
-  options.my.tools.fzf = {
+  options.my.user.fzf = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Enable FZF fuzzy finder with advanced previews.";
     };
 
