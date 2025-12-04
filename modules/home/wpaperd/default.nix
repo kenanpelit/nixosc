@@ -13,6 +13,8 @@
 { config, lib, pkgs, username, ... }:
 let
   cfg = config.my.user.wpaperd;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
 in {
   # =============================================================================
   # Module Options
@@ -138,7 +140,7 @@ in {
     # ---------------------------------------------------------------------------
     # Create wallpaper directory if it doesn't exist
     # ---------------------------------------------------------------------------
-    home.activation.createWallpaperDir = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    home.activation.createWallpaperDir = dag.entryAfter ["writeBoundary"] ''
       mkdir -p "${cfg.wallpaperPath}"
     '';
   };

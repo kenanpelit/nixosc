@@ -120,6 +120,8 @@ let
   '';
 
   cfg = config.my.user.zsh;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
 
 in
 lib.mkIf cfg.enable {
@@ -134,7 +136,7 @@ lib.mkIf cfg.enable {
     # Directory structure setup
     # Creates all necessary directories for ZSH operation
     {
-      zshCacheSetup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      zshCacheSetup = dag.entryAfter [ "writeBoundary" ] ''
         run mkdir -p "${xdg.cache}/.zcompcache" "${xdg.data}" "${xdg.state}"
         run mkdir -p "${xdg.data}/zinit"
         run echo "✓ ZSH directory structure initialized"
@@ -144,7 +146,7 @@ lib.mkIf cfg.enable {
     # Asynchronous cache cleanup
     # Runs in background to avoid slowing down activation
     {
-      zshCacheCleanup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      zshCacheCleanup = dag.entryAfter [ "writeBoundary" ] ''
         (
           set +e
           trap 'exit 0' EXIT ERR

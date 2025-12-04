@@ -7,6 +7,8 @@
 { config, lib, pkgs, ... }:
 
 let
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   # History file paths
   historyFile = "${config.home.homeDirectory}/.config/zsh/history";
   exampleHistory = ./history;
@@ -20,7 +22,7 @@ in
     # =============================================================================
     # History File Management
     # =============================================================================
-    appendZshHistory = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    appendZshHistory = dag.entryAfter ["writeBoundary"] ''
       # Ensure proper file permissions
       $DRY_RUN_CMD install -m 644 -o ${user} -g ${group} /dev/null "${historyFile}" 2>/dev/null || true
       

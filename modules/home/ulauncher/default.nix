@@ -5,6 +5,8 @@
 { pkgs, lib, config, ... }: 
 let
   cfg = config.my.user.ulauncher;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   ulauncher_config = ./config;
   
   # =============================================================================
@@ -95,7 +97,7 @@ in {
     # =============================================================================
     # Activation Script
     # =============================================================================
-    home.activation.manageShortcuts = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    home.activation.manageShortcuts = dag.entryAfter ["writeBoundary"] ''
       ${manageShortcutsScript}/bin/manage-ulauncher-shortcuts
     '';
   };

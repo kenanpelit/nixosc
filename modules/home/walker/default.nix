@@ -16,6 +16,8 @@ let
     mdDoc;
 
   cfg = config.programs.walker;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
 
   tomlFormat = pkgs.formats.toml { };
 
@@ -192,7 +194,7 @@ in
       '';
 
       # Activation notice
-      home.activation.walkerInfo = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      home.activation.walkerInfo = dag.entryAfter [ "writeBoundary" ] ''
         ${pkgs.coreutils}/bin/cat << 'EOF'
         Walker + Elephant configured.
         Services: elephant, walker${if cfg.runAsService then " (enabled)" else " (disabled)"}.
