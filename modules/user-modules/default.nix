@@ -1,15 +1,78 @@
 { lib, ... }:
 {
-  imports = let
-    path = ./.;
-    dir = builtins.readDir path;
-    skipNames = [ "experimental" "archive" ".git" ".direnv" ];
-    validFiles = lib.filterAttrs (name: type:
-      !(lib.hasPrefix "." name) &&
-      !(lib.elem name skipNames) &&
-      ((type == "directory") ||
-       (type == "regular" && lib.hasSuffix ".nix" name && name != "default.nix"))
-    ) dir;
-  in
-    lib.mapAttrsToList (name: type: path + "/${name}") validFiles;
+  imports = [
+    ./ai
+    ./anydesk
+    ./audacious
+    ./bash
+    ./blue
+    ./brave
+    ./btop
+    ./candy
+    ./catppuccin
+    ./cava
+    ./chrome
+    ./clipse
+    ./command-not-found
+    ./connect
+    ./copyq
+    ./elektron
+    ./fastfetch
+    ./firefox
+    ./flatpak
+    ./foot
+    ./fusuma
+    ./fzf
+    ./git
+    ./gnome
+    ./gnupg
+    ./gtk
+    ./hyprland
+    ./hyprpanel
+    ./kitty
+    ./lazygit
+    ./mako
+    ./mpd
+    ./mpv
+    ./nemo
+    ./nvim
+    ./obsidian
+    ./ollama
+    ./packages
+    ./password-store
+    ./program
+    ./qt
+    ./radio
+    ./rofi
+    ./rsync
+    ./scripts
+    ./search
+    ./sesh
+    ./sops
+    ./starship
+    ./subliminal
+    ./sway
+    ./swaylock
+    ./swayosd
+    ./tmux
+    ./touchegg
+    ./transmission
+    ./ulauncher
+    ./vivaldi
+    ./vlc
+    ./walker
+    ./waybar
+    ./waypaper
+    ./webcord
+    ./wezterm
+    ./wpaperd
+    ./xdg-dirs
+    ./xdg-mimes
+    ./xdg-portal
+    ./xserver
+    ./yazi
+    ./ytdlp
+    ./zen
+    ./zotfiles
+  ];
 }
