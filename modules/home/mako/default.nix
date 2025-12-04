@@ -67,7 +67,6 @@ in
       # Visual enhancements (non-conflicting)
       icons = true;
       maxIconSize = 64;
-      iconLocation = "left";
       
       # Timing - user-friendly
       defaultTimeout = 8000;
