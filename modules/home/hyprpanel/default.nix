@@ -11,8 +11,19 @@ in
 
     package = mkOption {
       type = types.package;
-      default = inputs.hyprpanel.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      defaultText = literalExpression "inputs.hyprpanel.packages.\${pkgs.stdenv.hostPlatform.system}.default";
+      default =
+        if inputs ? hyprpanel then
+          inputs.hyprpanel.packages.${pkgs.stdenv.hostPlatform.system}.default
+        else if pkgs ? hyprpanel then
+          pkgs.hyprpanel
+        else
+          throw "hyprpanel package not found; add inputs.hyprpanel or provide pkgs.hyprpanel";
+      defaultText = literalExpression ''
+        if inputs ? hyprpanel then
+          inputs.hyprpanel.packages.${pkgs.stdenv.hostPlatform.system}.default
+        else
+          pkgs.hyprpanel
+      '';
       description = "The Hyprpanel package to use.";
     };
 
@@ -117,4 +128,3 @@ in
     };
   };
 }
-
