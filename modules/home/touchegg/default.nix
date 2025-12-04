@@ -270,10 +270,10 @@ in
         PartOf = [ "graphical-session.target" ];
         Requires = [ "dbus.service" ];
       };
-  
+
       Service = {
         Type = "simple";
-        
+
         # Select correct config before starting
         ExecStartPre = [
           "${pkgs.coreutils}/bin/sleep 2"
@@ -284,9 +284,18 @@ in
         
         Restart = "on-failure";
         RestartSec = "3s";
-        
+
+        # Ensure commands in gestures are found
+        path = [
+          config.home.profileDirectory
+          pkgs.hyprland
+          pkgs.jq
+          pkgs.coreutils
+        ];
+
         Environment = [
           "XDG_RUNTIME_DIR=/run/user/%U"
+          "XDG_CURRENT_DESKTOP=Hyprland"
         ];
       };
   
