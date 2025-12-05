@@ -218,11 +218,11 @@
         };
 
               outputs-builder = channels: {
-                formatter = inputs.alejandra.packages.${channels.nixpkgs.system}.default;
+                formatter = inputs.alejandra.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default;
                 
                 checks = {
                   statix = channels.nixpkgs.runCommand "statix-check" {
-                    nativeBuildInputs = [ inputs.statix.packages.${channels.nixpkgs.system}.default ];
+                    nativeBuildInputs = [ inputs.statix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default ];
                   } ''
                     statix check ${./.}
                     touch $out
@@ -231,9 +231,9 @@
 
                 devShells.default = channels.nixpkgs.mkShell {
                   packages = [
-                    inputs.alejandra.packages.${channels.nixpkgs.system}.default
-                    inputs.statix.packages.${channels.nixpkgs.system}.default
-                    inputs.deadnix.packages.${channels.nixpkgs.system}.default
+                    inputs.alejandra.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
+                    inputs.statix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
+                    inputs.deadnix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
                   ];
                 };
               };      })
