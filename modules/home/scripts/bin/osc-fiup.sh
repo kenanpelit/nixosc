@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hyprland / Walker / Elephant Updater Script with Git Auto-Commit
+# Hyprland / Walker / Elephant / DankMaterialShell Updater Script with Git Auto-Commit
 set -euo pipefail
 
 # Colors
@@ -11,7 +11,7 @@ NC='\033[0m'
 
 FLAKE_PATH="$HOME/.nixosc/flake.nix"
 NIXOS_PATH="$HOME/.nixosc"
-MAX_HISTORY=5 # How many old Hyprland commits to keep as commented history
+MAX_HISTORY=5
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
@@ -19,10 +19,11 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {hypr|hyprland|walker}"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {hypr|hyprland|walker|dank}"
   echo
   echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
+  echo "  dank            : Update DankMaterialShell to latest commit on main"
 }
 
 # ---------------------------------------------------------------------------
@@ -42,10 +43,8 @@ check_git_repo() {
 
 git_commit_changes() {
   local commit_msg="$1"
-
   cd "$NIXOS_PATH"
 
-  # Only look at flake.nix for changes
   if git diff --quiet "$FLAKE_PATH"; then
     log_info "No changes in flake.nix, skipping git commit"
     return
@@ -71,155 +70,196 @@ backup_flake() {
 }
 
 # ---------------------------------------------------------------------------
-# Hyprland specific: commit getter and flake updater
+# Generic commit-based updater
 # ---------------------------------------------------------------------------
 
-# Get latest Hyprland commit hash from GitHub
-get_latest_hypr_commit() {
+get_latest_commit() {
+  local repo="$1"
+  local branch="${2:-main}"
   local response
-  response=$(curl -s --max-time 30 "https://api.github.com/repos/hyprwm/Hyprland/commits/main")
+  response=$(curl -s --max-time 30 "https://api.github.com/repos/$repo/commits/$branch")
   if [[ -z "$response" ]]; then
-    log_error "Failed to reach GitHub API for Hyprland"
+    log_error "Failed to reach GitHub API for $repo"
     exit 1
   fi
 
   local commit_hash
   commit_hash=$(echo "$response" | sed -n 's/.*"sha":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
   if [[ -z "$commit_hash" ]]; then
-    log_error "Could not extract Hyprland commit hash"
+    log_error "Could not extract commit hash for $repo"
     exit 1
   fi
   echo "${commit_hash:0:40}"
 }
 
-# Get current Hyprland commit from flake.nix
-get_current_hypr_commit() {
-  local current_hash
+get_current_commit() {
+  local repo="$1"
+  local url_line
+
   # Try active URL first
-  current_hash=$(
-    command grep 'url = "github:hyprwm/hyprland/' "$FLAKE_PATH" |
+  url_line=$(
+    command grep "url = \"github:$repo" "$FLAKE_PATH" 2>/dev/null |
       command grep -v '^[[:space:]]*#' |
-      head -1 |
-      sed 's/.*\/\([^"]*\)".*/\1/'
+      head -1
   )
 
-  # Fallback to last commented URL if no active one
-  if [[ -z "$current_hash" ]]; then
-    current_hash=$(
-      command grep '#.*url = "github:hyprwm/hyprland/' "$FLAKE_PATH" |
-        tail -1 |
-        sed 's/.*\/\([^"]*\)".*/\1/'
+  # Fallback to last commented URL
+  if [[ -z "$url_line" ]]; then
+    url_line=$(
+      command grep "#.*url = \"github:$repo" "$FLAKE_PATH" 2>/dev/null |
+        tail -1
     )
   fi
-  echo "${current_hash:-unknown}"
+
+  if [[ -z "$url_line" ]]; then
+    echo "unknown"
+    return
+  fi
+
+  # Extract commit hash if present (40 hex chars after repo/)
+  if [[ "$url_line" =~ github:$repo/([a-f0-9]{40}) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  # Or any ref after repo/
+  elif [[ "$url_line" =~ github:$repo/([^\"\;]+) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  # No ref, just repo URL
+  else
+    echo "none"
+  fi
 }
 
-# Update Hyprland input in flake.nix and keep MAX_HISTORY commented URLs
-update_hypr_flake() {
-  local new_commit="$1"
+update_commit_flake() {
+  local input_name="$1"
+  local repo="$2"
+  local new_commit="$3"
   local today
   today=$(date +%m%d)
 
-  log_info "Updating Hyprland section in flake.nix..."
+  log_info "Updating $input_name section in flake.nix..."
   backup_flake
 
-  python3 -c "
+  python3 <<PYEOF
 import re
 
 flake_path = '$FLAKE_PATH'
 max_history = $MAX_HISTORY
 new_commit = '$new_commit'
 today = '$today'
+input_name = '$input_name'
+repo = '$repo'
 
 with open(flake_path, 'r') as f:
     content = f.read()
 
 lines = content.split('\n')
 new_lines = []
-in_hyprland = False
+in_input = False
 url_lines = []
+found_input = False
 
-for line in lines:
-    if 'hyprland = {' in line:
-        in_hyprland = True
+for i, line in enumerate(lines):
+    # Match input block start
+    if re.match(rf'\s*{re.escape(input_name)}\s*=\s*\{{', line):
+        in_input = True
+        found_input = True
         new_lines.append(line)
-    elif in_hyprland and 'url = \"github:hyprwm/hyprland/' in line:
-        # Collect existing URL lines
-        url_lines.append(line.strip())
-    elif in_hyprland and line.strip() == '};':
-        # Insert new URL at the top
-        new_lines.append(f'      url = \"github:hyprwm/hyprland/{new_commit}\"; # {today} - Updated commit')
+        continue
+    
+    if in_input:
+        # Collect URL lines (both active and commented)
+        if f'github:{repo}' in line:
+            url_lines.append(line.strip())
+            continue
+        
+        # End of input block
+        if line.strip() == '};':
+            # Insert new URL
+            new_lines.append(f'      url = "github:{repo}/{new_commit}"; # {today} - Updated commit')
+            
+            # Add old URLs as comments (up to max_history)
+            count = 0
+            for url_line in url_lines:
+                if count >= max_history:
+                    break
+                if url_line.startswith('#'):
+                    new_lines.append('      ' + url_line)
+                else:
+                    new_lines.append('#      ' + url_line)
+                count += 1
+            
+            new_lines.append(line)
+            in_input = False
+            url_lines = []
+            continue
+    
+    new_lines.append(line)
 
-        # Add old URLs as comments (up to max_history)
-        count = 0
-        for url_line in url_lines:
-            if count >= max_history:
-                break
-
-            if url_line.startswith('#'):
-                cleaned = re.sub(r'^#+\\s*', '#      ', url_line)
-                new_lines.append(cleaned)
-            else:
-                new_lines.append('#      ' + url_line)
-            count += 1
-
-        new_lines.append(line)
-        in_hyprland = False
-        url_lines = []
-    elif not (in_hyprland and 'url = \"github:hyprwm/hyprland/' in line):
-        new_lines.append(line)
+if not found_input:
+    print(f"ERROR: Input '{input_name}' not found in flake.nix")
+    exit(1)
 
 with open(flake_path, 'w') as f:
     f.write('\n'.join(new_lines))
-"
+PYEOF
 }
 
-update_hyprland() {
-  log_info "Hyprland commit updater starting..."
+update_commit_input() {
+  local input_name="$1"
+  local repo="$2"
+  local repo_lower="$3"
+  local branch="${4:-main}"
+  local display_name="$5"
+
+  log_info "$display_name commit updater starting..."
 
   local current_commit
-  current_commit=$(get_current_hypr_commit)
-  log_info "Current Hyprland commit: $current_commit"
+  current_commit=$(get_current_commit "$repo_lower")
+  log_info "Current $display_name commit: $current_commit"
 
   local latest_commit
-  latest_commit=$(get_latest_hypr_commit)
-  log_info "Latest Hyprland commit:  $latest_commit"
+  latest_commit=$(get_latest_commit "$repo" "$branch")
+  log_info "Latest $display_name commit:  $latest_commit"
 
   if [[ "$current_commit" == "$latest_commit" ]]; then
-    log_success "Hyprland is already at the latest commit."
+    log_success "$display_name is already at the latest commit."
     exit 0
   fi
 
-  update_hypr_flake "$latest_commit"
+  update_commit_flake "$input_name" "$repo_lower" "$latest_commit"
 
-  if command grep -q "url = \"github:hyprwm/hyprland/$latest_commit\"" "$FLAKE_PATH"; then
-    log_success "flake.nix updated successfully for Hyprland!"
+  if command grep -q "github:$repo_lower/$latest_commit" "$FLAKE_PATH"; then
+    log_success "flake.nix updated successfully for $display_name!"
     log_info "Old commit: $current_commit"
     log_info "New commit: $latest_commit"
 
-    local commit_date
-    commit_date=$(date +%m%d)
-    git_commit_changes "hyprland: update to latest $commit_date"
+    git_commit_changes "$input_name: update to latest $(date +%m%d)"
 
     echo
     log_info "To rebuild:"
-    echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#$(hostname)${NC}"
+    echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#\$(hostname)${NC}"
     echo
     log_info "To push:"
     echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
   else
-    log_error "Hyprland update failed: new URL not found in flake.nix!"
+    log_error "$display_name update failed: new URL not found in flake.nix!"
     exit 1
   fi
 }
 
+update_hyprland() {
+  update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
+}
+
+update_dank() {
+  update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "master" "DankMaterialShell"
+}
+
 # ---------------------------------------------------------------------------
-# Walker / Elephant: release getter and flake updater
+# Walker / Elephant
 # ---------------------------------------------------------------------------
 
-# Get latest GitHub release tag (e.g. v2.11.1)
 get_latest_release_tag() {
-  local repo="$1" # e.g. abenz1267/walker
+  local repo="$1"
   local response
   response=$(curl -s --max-time 30 "https://api.github.com/repos/$repo/releases/latest")
   if [[ -z "$response" ]]; then
@@ -236,12 +276,10 @@ get_latest_release_tag() {
   echo "$tag"
 }
 
-# Get current version (tag) for a given github:owner/repo input
 get_current_repo_version() {
-  local repo="$1" # e.g. abenz1267/walker
+  local repo="$1"
   local current
 
-  # Active (non-commented) line
   current=$(
     command grep "url = \"github:$repo/" "$FLAKE_PATH" 2>/dev/null |
       command grep -v '^[[:space:]]*#' |
@@ -249,7 +287,6 @@ get_current_repo_version() {
       sed 's#.*'"$repo"'/\([^"]*\)".*#\1#'
   )
 
-  # Fallback: last commented line
   if [[ -z "$current" ]]; then
     current=$(
       command grep "#.*url = \"github:$repo/" "$FLAKE_PATH" 2>/dev/null |
@@ -261,10 +298,9 @@ get_current_repo_version() {
   echo "${current:-unknown}"
 }
 
-# Update url = "github:<repo>/<tag>"; for all occurrences (active + commented)
 update_repo_url() {
-  local repo="$1"    # e.g. abenz1267/walker
-  local new_tag="$2" # e.g. v2.11.1
+  local repo="$1"
+  local new_tag="$2"
 
   python3 - "$FLAKE_PATH" "$repo" "$new_tag" <<'PY'
 import sys
@@ -275,11 +311,10 @@ flake_path, repo, tag = sys.argv[1:]
 path = Path(flake_path)
 content = path.read_text()
 
-pattern = rf'(url = "github:{re.escape(repo)}/)[^"]*(";)'  # match any current tag
+pattern = rf'(url = "github:{re.escape(repo)}/)[^"]*(";)'
 new_content, count = re.subn(pattern, rf'\1{tag}\2', content)
 
 if count == 0:
-    # Nothing updated -> signal error to caller
     sys.exit(1)
 
 path.write_text(new_content)
@@ -293,10 +328,10 @@ update_walker_and_elephant() {
 
   local walker_repo="abenz1267/walker"
   local elephant_repo="abenz1267/elephant"
+  local updated_any=false
 
   local current_walker current_elephant
   local latest_walker latest_elephant
-  local updated_any=false
 
   current_walker=$(get_current_repo_version "$walker_repo")
   current_elephant=$(get_current_repo_version "$elephant_repo")
@@ -310,7 +345,6 @@ update_walker_and_elephant() {
   log_info "Latest Walker release:    $latest_walker"
   log_info "Latest Elephant release:  $latest_elephant"
 
-  # Walker update
   if [[ "$current_walker" == "$latest_walker" ]]; then
     log_success "Walker is already at latest release."
   else
@@ -323,7 +357,6 @@ update_walker_and_elephant() {
     fi
   fi
 
-  # Elephant update
   if [[ "$current_elephant" == "$latest_elephant" ]]; then
     log_success "Elephant is already at latest release."
   else
@@ -341,21 +374,11 @@ update_walker_and_elephant() {
     return
   fi
 
-  # Quick sanity check
-  if ! command grep -q "url = \"github:$walker_repo/$latest_walker\"" "$FLAKE_PATH"; then
-    log_warning "Walker new version not clearly visible in flake.nix; double-check manually."
-  fi
-  if ! command grep -q "url = \"github:$elephant_repo/$latest_elephant\"" "$FLAKE_PATH"; then
-    log_warning "Elephant new version not clearly visible in flake.nix; double-check manually."
-  fi
-
-  local commit_msg
-  commit_msg="walker/elephant: bump to latest releases (walker: $latest_walker, elephant: $latest_elephant)"
-  git_commit_changes "$commit_msg"
+  git_commit_changes "walker/elephant: bump to latest releases (walker: $latest_walker, elephant: $latest_elephant)"
 
   echo
-  log_info "If these inputs are used in your NixOS/Home-Manager config, you probably want to rebuild:"
-  echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#$(hostname)${NC}"
+  log_info "To rebuild:"
+  echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#\$(hostname)${NC}"
   echo
   log_info "To push:"
   echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
@@ -384,8 +407,10 @@ main() {
     update_hyprland
     ;;
   walker)
-    # As requested: 'walker' updates BOTH walker and elephant
     update_walker_and_elephant
+    ;;
+  dank | dankmaterialshell)
+    update_dank
     ;;
   *)
     log_error "Unknown target: $target"
