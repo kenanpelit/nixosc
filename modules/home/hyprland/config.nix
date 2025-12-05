@@ -1181,7 +1181,7 @@ lib.mkIf cfg.enable {
         "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"  # Show keybinds
         "$mainMod, Space, exec, dms ipc call spotlight toggle"  # DMS spotlight
         "ALT, Space, exec, rofi-launcher custom || pkill rofi"  # Custom launcher
-        "$mainMod CTRL, Space, exec, rofi-launcher default || pkill rofi"  # Default launcher
+        #"$mainMod CTRL, Space, exec, rofi-launcher default || pkill rofi"  # Default launcher
         "$mainMod, backspace, exec, dms ipc call powermenu toggle"  # Power menu
         "$mainMod, Y, exec, dms ipc call dankdash wallpaper"  # DankDash wallpaper
 
@@ -1193,8 +1193,6 @@ lib.mkIf cfg.enable {
         # === Basic Window Management ===
         "$mainMod, Q, killactive"  # Close active window
         "ALT, F4, killactive"  # Alternative close
-        #"$mainMod SHIFT, F, exec, hyprctl dispatch fullscreen 1 toggle"  # Maximize toggle
-        #"$mainMod CTRL, F, exec, hyprctl dispatch fullscreen 0 toggle"   # True fullscreen toggle
         "$mainMod SHIFT, F, fullscreen, 1"  # Maximize fullscreen
         "$mainMod CTRL, F, fullscreen, 0"  # True fullscreen
         "$mainMod, F, exec, toggle_float"  # Toggle floating
@@ -1238,62 +1236,39 @@ lib.mkIf cfg.enable {
         # === Wallpaper Management ===
         "$mainMod, W, exec, hyprpaper-manager select"  # Select wallpaper
         "ALT, 0, exec, hyprpaper-manager now"  # Current wallpaper info
-        "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'"  # Waypaper GUI
 
         # === System Tools ===
-        #"ALT, L, exec, hyprlock"  # Lock screen
         "ALT, L, exec, dms ipc call lock lock"  # Lock screen
-        "$mainMod, C, exec, hyprpicker -a"  # Color picker
+        "$mainMod SHIFT, C, exec, hyprpicker -a"  # Color picker
         "$mainMod, N, exec, dms ipc call notifications toggle"  # Notification center
         "$mainMod, comma, exec, dms ipc call settings focusOrToggle"  # Settings modal
-        "$mainMod, M, exec, dms ipc call processlist focusOrToggle"  # Process list modal
+        "$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"  # Process list modal
         "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"  # System monitor
 
         # === Monitor and Display Management ===
         "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"  # Cycle monitors
         "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"  # Focus previous monitor
         "$mainMod, E, exec, pypr shift_monitors +1"  # Shift to next monitor
-        #"$mainMod SHIFT, B, exec, toggle_waybar"  # Toggle waybar
 
         # === Special Applications ===
-        "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"  # Discord
-        "$mainMod SHIFT, K, exec, hyprctl dispatch exec '[workspace 1 silent] start-brave-kenp'"  # Brave browser
-        "$mainMod SHIFT, C, exec, hyprctl dispatch exec '[workspace 4 silent] start-brave-compecta'"  # Work browser
-        "$mainMod SHIFT, S, exec, hyprctl dispatch exec '[workspace 8 silent] start-spotify'"  # Spotify
-        "$mainMod SHIFT, X, exec, hyprctl dispatch exec '[workspace 11 silent] SoundWireServer'"  # SoundWire
-        "ALT CTRL, W, exec, whatsie -w"  # WhatsApp
         "ALT, T, exec, start-kkenp"  # Custom launcher
-        "ALT CTRL, C, exec, start-mkenp"  # Custom launcher
         "$mainMod ALT, RETURN, exec, semsumo launch --daily"  # Daily planner
+        "mainMod, D, exec dms ipc call dash toggle """
 
         # === System Functions ===
         ",F10, exec, bluetooth_toggle"  # Bluetooth toggle
         "ALT, F12, exec, osc-mullvad toggle"  # VPN toggle
-        "$mainMod SHIFT, M, exec, anotes"  # Notes application
-        "$mainMod CTRL, M, exec, anotes -t"  # Notes with terminal
+        "$mainMod, M, exec, anotes"  # Notes application
 
         # === Screenshot Shortcuts ===
-        # Region capture
+        # capture
         ",Print, exec, screenshot ri"  # Region to clipboard
-        "$mainMod SHIFT, Print, exec, screenshot rf"  # Region to file
-        "CTRL, Print, exec, screenshot rc"  # Region copy
         "$mainMod CTRL, Print, exec, screenshot rec"  # Region record
-        
-        # Screen capture
         "$mainMod, Print, exec, screenshot si"  # Screen to clipboard
-        "SHIFT, Print, exec, screenshot sf"  # Screen to file
-        "CTRL SHIFT, Print, exec, screenshot sc"  # Screen copy
+        "ALT, Print, exec, screenshot wi"  # Window to clipboard
+        "$mainMod ALT, Print, exec, screenshot p"  # Pick window
         "$mainMod SHIFT CTRL, Print, exec, screenshot sec"  # Screen record
         
-        # Window capture
-        "ALT, Print, exec, screenshot wi"  # Window to clipboard
-        "ALT SHIFT, Print, exec, screenshot wf"  # Window to file
-        "ALT CTRL, Print, exec, screenshot wc"  # Window copy
-        
-        # Special captures
-        "$mainMod ALT, Print, exec, screenshot p"  # Pick window
-        "$mainMod ALT CTRL, Print, exec, screenshot o"  # OCR
-
         # === Workspace Window Movement ===
         # Move windows from specific workspaces to current workspace
         "$mainMod CTRL, 1, exec, hypr-workspace-monitor -am 1"
