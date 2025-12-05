@@ -164,16 +164,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1764882578,
-        "narHash": "sha256-qMElSZNeWWI1jLBqo2okc+O77LhO77ZRGVBWwF3Sj/8=",
+        "lastModified": 1764964774,
+        "narHash": "sha256-LNOs6lgxckt55mEzHwV4odse1kWD+PiwLdCMbkE9yDU=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "63d121b7967d4afabd53987a6d81f1f125bb27a8",
+        "rev": "6d0c56554fba353db582893540f39c53935b6460",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
+        "rev": "6d0c56554fba353db582893540f39c53935b6460",
         "type": "github"
       }
     },
@@ -832,6 +833,7 @@
         "hyprlang": "hyprlang",
         "hyprutils": "hyprutils",
         "hyprwayland-scanner": "hyprwayland-scanner",
+        "hyprwire": "hyprwire",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -840,17 +842,17 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1764725443,
-        "narHash": "sha256-A2UyZwPSHSdNfvW17J5GhxIo1TS0Z0rYv+Xgdp+w5wc=",
+        "lastModified": 1764956925,
+        "narHash": "sha256-EOcE188ewyfa0AAnX/BkfkCgYZcTdPA56c6MoKW9m2Q=",
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "3cf0280b11f370c11e6839275e547779a33f4a19",
+        "rev": "6a1daff5f30ea71e6d678554aa59fc5670864d24",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "3cf0280b11f370c11e6839275e547779a33f4a19",
+        "rev": "6a1daff5f30ea71e6d678554aa59fc5670864d24",
         "type": "github"
       }
     },
@@ -1053,6 +1055,35 @@
       "original": {
         "owner": "hyprwm",
         "repo": "hyprwayland-scanner",
+        "type": "github"
+      }
+    },
+    "hyprwire": {
+      "inputs": {
+        "hyprutils": [
+          "hyprland",
+          "hyprutils"
+        ],
+        "nixpkgs": [
+          "hyprland",
+          "nixpkgs"
+        ],
+        "systems": [
+          "hyprland",
+          "systems"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764773840,
+        "narHash": "sha256-9UcCdwe7vPgEcJJ64JseBQL0ZJZoxp/2iFuvfRI+9zk=",
+        "owner": "hyprwm",
+        "repo": "hyprwire",
+        "rev": "3f1997d6aeced318fb141810fded2255da811293",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hyprwm",
+        "repo": "hyprwire",
         "type": "github"
       }
     },
