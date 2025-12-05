@@ -124,7 +124,10 @@
   
   # AI
   my.user.ai.enable = true;
-  my.user.ollama.enable = true;
+  my.user.ollama = {
+    enable = true;
+    useGPU = false;
+  };
 
   # ============================================================================
   # Theming
