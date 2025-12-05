@@ -53,9 +53,6 @@ lib.mkIf cfg.enable {
         # Clipboard persistence - maintains clipboard content after program closure
         "wl-clip-persist --clipboard both"
         
-        # Clipboard history manager with text and image support
-        "wl-paste --watch cliphist store"
-        
         # Advanced clipboard manager with searchable history
         "clipse -listen"
         
@@ -70,10 +67,6 @@ lib.mkIf cfg.enable {
         
         # Initialize audio control system
         "osc-soundctl init"
-        
-        # Initialize screen locker for security
-        #"hyprlock"
-        "dms ipc call lock lock"
       ];
 
       # =====================================================
