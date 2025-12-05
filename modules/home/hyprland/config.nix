@@ -520,13 +520,6 @@ lib.mkIf cfg.enable {
 
         # === IMAGE VIEWERS ===
         {
-          name = "viewnior-float";
-          "match:class" = "^(Viewnior)$";
-          float = true;
-          center = true;
-          size = "1200 800";
-        }
-        {
           name = "imv-float";
           "match:class" = "^(imv)$";
           float = true;
@@ -551,43 +544,12 @@ lib.mkIf cfg.enable {
           workspace = 5;
         }
 
-        # === PRODUCTIVITY APPLICATIONS ===
-        {
-          name = "aseprite-tile";
-          "match:class" = "^(Aseprite)$";
-          tile = true;
-          workspace = 4;
-          opacity = "1.0 override 1.0 override";
-        }
-        {
-          name = "gimp-workspace";
-          "match:class" = "^(Gimp-2.10)$";
-          workspace = 4;
-        }
-        {
-          name = "neovide-tile";
-          "match:class" = "^(neovide)$";
-          tile = true;
-        }
-        {
-          name = "unity-opacity";
-          "match:class" = "^(Unity)$";
-          opacity = "1.0 override 1.0 override";
-        }
-
         # === DOCUMENT VIEWER ===
         {
           name = "evince-workspace";
           "match:class" = "^(evince)$";
           workspace = 3;
           opacity = "1.0 override 1.0 override";
-        }
-
-        # === OBS STUDIO ===
-        {
-          name = "obs-workspace";
-          "match:class" = "^(com.obsproject.Studio)$";
-          workspace = 8;
         }
 
         # === SYSTEM UTILITIES ===
@@ -605,20 +567,6 @@ lib.mkIf cfg.enable {
           fullscreen = true;
         }
 
-        # === FILE MANAGEMENT ===
-        {
-          name = "udiskie-float";
-          "match:class" = "^(udiskie)$";
-          float = true;
-        }
-        {
-          name = "fileroller-float";
-          "match:class" = "^(org.gnome.FileRoller)$";
-          float = true;
-          center = true;
-          size = "850 500";
-        }
-
         # === TERMINAL FILE MANAGERS ===
         {
           name = "yazi-float";
@@ -626,13 +574,6 @@ lib.mkIf cfg.enable {
           float = true;
           center = true;
           size = "1920 1080";
-        }
-        {
-          name = "ranger-float";
-          "match:class" = "^(ranger)$";
-          float = true;
-          size = "(monitor_w*0.75) (monitor_h*0.60)";
-          center = true;
         }
 
         # === SYSTEM MONITOR ===
@@ -692,11 +633,6 @@ lib.mkIf cfg.enable {
         }
 
         # === COMMUNICATION - WHATSAPP ===
-        {
-          name = "whatsapp-class";
-          "match:class" = "^(Whats)$";
-          workspace = "9 silent";
-        }
         {
           name = "whatsapp-brave";
           "match:title" = "^(web.whatsapp.com)$";
@@ -883,25 +819,7 @@ lib.mkIf cfg.enable {
           workspace = "special:dropdown";
         }
 
-        # === SHORTWAVE RADIO ===
-        {
-          name = "shortwave-float";
-          "match:class" = "^(de.haeckerfelix.Shortwave)$";
-          float = true;
-          size = "(monitor_w*0.30) (monitor_h*0.80)";
-          move = "(monitor_w*0.65) (monitor_h*0.10)";
-          workspace = 8;
-        }
-
         # === AUTHENTICATION & SECURITY ===
-        {
-          name = "otpclient-float";
-          "match:class" = "^(otpclient)$";
-          float = true;
-          size = "(monitor_w*0.20) (monitor_w*0.20)";
-          move = "(monitor_w*0.79) (monitor_h*0.40)";
-          opacity = "1.0 1.0";
-        }
         {
           name = "ente-auth-float";
           "match:class" = "^(io.ente.auth)$";
@@ -939,29 +857,8 @@ lib.mkIf cfg.enable {
 
         # === NETWORK MANAGEMENT ===
         {
-          name = "iwgtk-large";
-          "match:class" = "^(org.twosheds.iwgtk)$";
-          float = true;
-          size = "1536 864";
-          center = true;
-        }
-        {
-          name = "iwgtk-small";
-          "match:class" = "^(iwgtk)$";
-          float = true;
-          size = "360 440";
-          center = true;
-        }
-        {
           name = "nm-connection-editor";
           "match:class" = "^(nm-connection-editor)$";
-          float = true;
-          size = "1200 800";
-          center = true;
-        }
-        {
-          name = "network-displays";
-          "match:class" = "^(org.gnome.NetworkDisplays)$";
           float = true;
           size = "1200 800";
           center = true;
@@ -972,18 +869,6 @@ lib.mkIf cfg.enable {
           float = true;
           size = "360 440";
           center = true;
-        }
-
-        # === GAMING & EMULATION ===
-        {
-          name = "sameboy-float";
-          "match:class" = "^(.sameboy-wrapped)$";
-          float = true;
-        }
-        {
-          name = "soundwire-float";
-          "match:class" = "^(SoundWireServer)$";
-          float = true;
         }
 
         # === GENERIC DIALOG RULES ===
@@ -1050,13 +935,6 @@ lib.mkIf cfg.enable {
           "match:class" = "^(confirmreset)$";
           float = true;
         }
-        {
-          name = "zenity-dialog";
-          "match:class" = "^(zenity)$";
-          float = true;
-          center = true;
-          size = "850 500";
-        }
 
         # === BROWSER SPECIFIC ===
         {
@@ -1088,17 +966,6 @@ lib.mkIf cfg.enable {
           opacity = "1.0 override 1.0 override";
         }
 
-        # === XWAYLAND VIDEO BRIDGE ===
-        {
-          name = "xwayland-video-bridge";
-          "match:class" = "^(xwaylandvideobridge)$";
-          opacity = "0.0 override";
-          no_anim = true;
-          no_initial_focus = true;
-          max_size = "1 1";
-          no_blur = true;
-        }
-
         # === CONTEXT MENU OPTIMIZATION ===
         {
           name = "context-menu-noshadow";
@@ -1122,11 +989,6 @@ lib.mkIf cfg.enable {
         {
           name = "foot-opacity";
           "match:class" = "^(foot)$";
-          opacity = "1.0 override 1.0 override";
-        }
-        {
-          name = "alacritty-opacity";
-          "match:class" = "^(Alacritty)$";
           opacity = "1.0 override 1.0 override";
         }
 
