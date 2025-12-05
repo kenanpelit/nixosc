@@ -36,7 +36,7 @@ let
         exclude_hidden = true;
         exclude_dirs = [
           "node_modules" "__pycache__" "venv" "target" "dist" "build" ".cache"
-          ".git" ".direnv" ".nix-defexpr"
+          ".git" ".direnv" ".nix-defexpr" ".kenp"
         ];
       }
       {
@@ -49,6 +49,12 @@ let
       }
       {
         path = "${homeDir}/Documents";
+        max_depth = 0; # sınırsız
+        exclude_hidden = false;
+        exclude_dirs = [ ];
+      }
+      {
+        path = "${homeDir}/.anotes";
         max_depth = 0; # sınırsız
         exclude_hidden = false;
         exclude_dirs = [ ];
