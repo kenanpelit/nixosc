@@ -1189,7 +1189,8 @@ lib.mkIf cfg.enable {
         "ALT, Space, exec, rofi-launcher custom || pkill rofi"  # Custom launcher
         "ALT CTRL, Space, exec, dms ipc call spotlight toggle"  # Custom launcher
         "$mainMod CTRL, Space, exec, rofi-launcher default || pkill rofi"  # Default launcher
-        "$mainMod, backspace, exec, rofi-launcher power || pkill rofi"  # Power menu
+        #"$mainMod, backspace, exec, rofi-launcher power || pkill rofi"  # Power menu
+        "$mainMod, backspace, exec, dms ipc call powermenu toggle"  # Power menu
         "$mainMod, Space, exec, walk"  # Walk launcher
 
         # === Terminal Emulators ===
