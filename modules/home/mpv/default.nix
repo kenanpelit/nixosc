@@ -22,6 +22,7 @@ with lib;
     systemd.user.services.extract-mpv-config = {
       Unit = {
         Description = "Extract MPV configuration";
+        ConditionPathExists = "/home/${config.home.username}/.backup/mpv.tar.gz";
         Requires = [ "sops-nix.service" ];
         After = [ "sops-nix.service" ];
       };
@@ -34,7 +35,7 @@ with lib;
             # Check for backup file
             if [ ! -f "/home/${config.home.username}/.backup/mpv.tar.gz" ]; then
               echo "MPV tar dosyası henüz hazır değil..."
-              exit 1
+              exit 0
             fi
             
             # Clean old config

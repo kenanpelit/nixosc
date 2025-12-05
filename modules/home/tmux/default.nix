@@ -22,6 +22,7 @@ with lib;
     systemd.user.services.extract-tmux-config = {
       Unit = {
         Description = "Extract tmux configuration";
+        ConditionPathExists = "/home/${config.home.username}/.backup/tmux.tar.gz";
         Requires = [ "sops-nix.service" ];
         After = [ "sops-nix.service" ];
       };
@@ -34,7 +35,7 @@ with lib;
             # Check for backup file
             if [ ! -f "/home/${config.home.username}/.backup/tmux.tar.gz" ]; then
               echo "Required tar file is not ready yet..."
-              exit 1
+              exit 0
             fi
            
             echo "Cleaning up old configuration..."

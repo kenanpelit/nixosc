@@ -28,6 +28,7 @@ in
         # Ensure SOPS decryption is available before starting
         Requires = [ "sops-nix.service" ];
         After = [ "sops-nix.service" ];
+        ConditionPathExists = "/home/${config.home.username}/.nixosc/assets/dotfiles.enc.tar.gz";
       };
       
       Service = {
@@ -42,7 +43,7 @@ in
             # Verify encrypted archive exists
             if [ ! -f "$DOTFILES_PATH" ]; then
               echo "[ERROR] Encrypted dotfiles archive not found at: $DOTFILES_PATH"
-              exit 1
+              exit 0
             fi
             
             echo "[INFO] Beginning extraction of encrypted dotfiles..."
