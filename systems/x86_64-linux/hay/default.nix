@@ -143,13 +143,7 @@
     enable = true;
     compositor = {
       name = "hyprland";
-      customConfig = ''
-        input {
-          kb_layout = "tr"
-          kb_variant = "f"
-          kb_options = "ctrl:nocaps"
-        }
-      '';
+      customConfig = "";
     };
     configHome = "/home/${config.my.user.name}";
     configFiles = [ "/home/${config.my.user.name}/.config/DankMaterialShell/settings.json" ];
