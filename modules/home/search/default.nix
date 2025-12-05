@@ -12,6 +12,54 @@ let
   cfg = config.my.user.search;
   homeDir = config.home.homeDirectory;
 
+  dsearchPkgs = inputs.dsearch.packages.${pkgs.stdenv.hostPlatform.system};
+  tomlFormat = pkgs.formats.toml { };
+
+  # Upstream dsearch HM modülü pkgs.system kullanıyor; uyarıyı kesmek için yerel modül.
+  dsearchModule = { config, lib, pkgs, ... }:
+    let
+      dcfg = config.programs.dsearch;
+    in {
+      options.programs.dsearch = {
+        enable = lib.mkEnableOption "danksearch";
+        package = lib.mkPackageOption dsearchPkgs "dsearch" { };
+
+        config = lib.mkOption {
+          type = lib.types.nullOr tomlFormat.type;
+          default = null;
+          description = "dsearch configuration (TOML).";
+        };
+      };
+
+      config = lib.mkIf dcfg.enable {
+        home.packages = [ dcfg.package ];
+
+        systemd.user.services.dsearch = {
+          Unit = {
+            Description = "dsearch - Fast filesystem search service";
+            Documentation = "https://github.com/AvengeMedia/dsearch";
+            After = [ "network.target" ];
+          };
+
+          Service = {
+            Type = "simple";
+            ExecStart = "${lib.getExe dcfg.package} serve";
+            Restart = "on-failure";
+            RestartSec = "5s";
+            StandardOutput = "journal";
+            StandardError = "journal";
+            SyslogIdentifier = "dsearch";
+          };
+
+          Install.WantedBy = [ "default.target" ];
+        };
+
+        xdg.configFile."danksearch/config.toml" = lib.mkIf (dcfg.config != null) {
+          source = tomlFormat.generate "dsearch.config.toml" dcfg.config;
+        };
+      };
+    };
+
   # Varsayılan dsearch konfigürasyonu; kullanıcı cfg.dsearchConfig ile üzerine yazabilir
   defaultDsearchConfig = {
     index_path = "${homeDir}/.cache/danksearch/index";
@@ -63,8 +111,8 @@ let
   };
 in
 {
-  # Bring in the upstream dsearch Home Manager module
-  imports = [ inputs.dsearch.homeModules.default ];
+  # Yerel dsearch modülü (pkgs.system uyarısı olmadan)
+  imports = [ dsearchModule ];
 
   options.my.user.search = {
     enable = lib.mkEnableOption "Search utilities configuration";
