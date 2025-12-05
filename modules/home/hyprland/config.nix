@@ -1132,10 +1132,6 @@ lib.mkIf cfg.enable {
         }
       ];
 
-      # === Layer Rules ===
-      layerrule = [
-        "noanim, ^(dms)$"  # Keep DMS layers snappy
-      ];
 
       # =====================================================
       # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
