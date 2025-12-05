@@ -24,14 +24,18 @@ in {
     description = "Mullvad autoconnect on boot";
     wants = [ "network-online.target" "mullvad-daemon.service" ];
     after  = [ "network-online.target" "NetworkManager.service" "mullvad-daemon.service" ];
+    unitConfig.ConditionPathExists = "/var/lib/mullvad-vpn/account-history.json";
     serviceConfig = {
       Type = "oneshot";
-      Restart = "on-failure";
-      RestartSec = 5;
+      Restart = "no";
       ExecStart = lib.getExe (pkgs.writeShellScriptBin "mullvad-autoconnect" ''
         #!${pkgs.bash}/bin/bash
         set -euo pipefail
-        ${mullvadPkg}/bin/mullvad connect
+        if ! ${mullvadPkg}/bin/mullvad account get >/dev/null 2>&1; then
+          echo "Mullvad account not logged in; skipping autoconnect."
+          exit 0
+        fi
+        ${mullvadPkg}/bin/mullvad connect || exit 0
       '');
     };
     wantedBy = [ "multi-user.target" ];

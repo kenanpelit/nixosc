@@ -30,6 +30,7 @@ with lib;
       Service = {
         Type = "oneshot";
         RemainAfterExit = true;
+        SuccessExitStatus = [ 0 1 2 ];
         ExecStart = let
           extractScript = pkgs.writeShellScript "extract-mpv-config" ''
             # Check for backup file
@@ -48,7 +49,7 @@ with lib;
             
             # Extract configuration
             echo "Tar dosyası açılıyor..."
-            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/mpv.tar.gz -C $HOME/.config/
+            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/mpv.tar.gz -C $HOME/.config/ || exit 0
           '';
         in "${extractScript}";
       };

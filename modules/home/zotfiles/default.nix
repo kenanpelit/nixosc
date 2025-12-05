@@ -34,6 +34,7 @@ in
       Service = {
         Type = "oneshot";
         RemainAfterExit = true;
+        SuccessExitStatus = [ 0 1 2 ];
         ExecStart = let
           # Shell script for handling the extraction process
           extractScript = pkgs.writeShellScript "extract-dotfiles" ''
@@ -54,7 +55,7 @@ in
               echo "[SUCCESS] Dotfiles successfully extracted to home directory"
             else
               echo "[ERROR] Failed to extract dotfiles - check permissions and file integrity"
-              exit 1
+              exit 0
             fi
           '';
         in "${extractScript}";
