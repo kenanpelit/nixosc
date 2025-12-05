@@ -146,10 +146,16 @@
     configFiles = [ "/home/${config.my.user.name}/.config/DankMaterialShell/settings.json" ];
     logs = {
       save = true;
-      path = "/var/log/dms-greeter.log";
+      path = "/var/log/dms-greeter/dms-greeter.log";
     };
     quickshell.package = pkgs.quickshell;
   };
+
+  # Log dosyasını garantile
+  systemd.tmpfiles.rules = [
+    "d /var/log/dms-greeter 0755 root root -"
+    "f /var/log/dms-greeter/dms-greeter.log 0644 root root -"
+  ];
 
   # ============================================================================
   # User Modules
