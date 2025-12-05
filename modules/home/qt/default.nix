@@ -132,7 +132,9 @@ in
       # ---------------------------------------------------------------------------
       # Qt5 Configuration - Catppuccin Enhanced
       # ---------------------------------------------------------------------------
-      "qt5ct/qt5ct.conf".text = lib.generators.toINI {} {
+      "qt5ct/qt5ct.conf" = {
+        force = true;
+        text = lib.generators.toINI {} {
         Appearance = {
           icon_theme = "a-candy-beauty-icon-theme";
           style = "kvantum";
@@ -167,12 +169,15 @@ in
           disabled_colors = "${colors.overlay1},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.overlay1},${colors.overlay1},${colors.overlay1},${colors.base},${colors.surface0},${colors.overlay1},${colors.overlay0},${colors.overlay1},${colors.overlay0},${colors.overlay0},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
           inactive_colors = "${colors.subtext0},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.subtext0},${colors.subtext0},${colors.subtext0},${colors.base},${colors.surface0},${colors.overlay1},${colors.accentHover},${colors.subtext0},${colors.accentHover},${colors.accentHover},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
         };
+        };
       };
-  
+
       # ---------------------------------------------------------------------------
       # Qt6 Configuration - Catppuccin Enhanced
       # ---------------------------------------------------------------------------
-      "qt6ct/qt6ct.conf".text = lib.generators.toINI {} {
+      "qt6ct/qt6ct.conf" = {
+        force = true;
+        text = lib.generators.toINI {} {
         Appearance = {
           icon_theme = "a-candy-beauty-icon-theme";
           style = "kvantum";
@@ -206,6 +211,7 @@ in
           active_colors = "${colors.text},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.text},${colors.text},${colors.text},${colors.base},${colors.surface0},${colors.overlay1},${colors.accent},${colors.text},${colors.accent},${colors.accent},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
           disabled_colors = "${colors.overlay1},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.overlay1},${colors.overlay1},${colors.overlay1},${colors.base},${colors.surface0},${colors.overlay1},${colors.overlay0},${colors.overlay1},${colors.overlay0},${colors.overlay0},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
           inactive_colors = "${colors.subtext0},${colors.surface0},${colors.surface2},${colors.surface1},${colors.surface0},${colors.overlay0},${colors.subtext0},${colors.subtext0},${colors.subtext0},${colors.base},${colors.surface0},${colors.overlay1},${colors.accentHover},${colors.subtext0},${colors.accentHover},${colors.accentHover},${colors.mantle},${colors.text},${colors.surface1},${colors.text},${colors.overlay0}";
+        };
         };
       };
   
