@@ -8,6 +8,8 @@ let
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
   dmsEditor = config.home.sessionVariables.DMS_SCREENSHOT_EDITOR or "swappy";
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
 in
 {
   # Always import the upstream DMS Home Manager module; actual enable is gated below
@@ -94,7 +96,7 @@ in
     };
 
     # Ensure DMS plugins are present; install from registry when missing
-    home.activation.dmsPlugins = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.dmsPlugins = dag.entryAfter [ "writeBoundary" ] ''
       pluginsDir="$HOME/.config/DankMaterialShell/plugins"
       mkdir -p "$pluginsDir"
 
