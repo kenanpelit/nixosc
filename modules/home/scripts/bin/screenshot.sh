@@ -21,11 +21,7 @@ BORDER_WIDTH="3"                # Daha kalın sınır
 COLOR_PICKER_BORDER="#e01b24ff" # Canlı kırmızı
 
 # Düzenleyici uygulamaları (öncelik sırasına göre)
-EDITORS=()
-if [[ -n "$DMS_SCREENSHOT_EDITOR" ]]; then
-	EDITORS+=("$DMS_SCREENSHOT_EDITOR")
-fi
-EDITORS+=("swappy" "satty" "gimp" "krita")
+EDITORS=("swappy" "satty" "gimp" "krita")
 
 # Dosya adı formatı
 FILENAME_FORMAT="screenshot_%Y-%m-%d_%H-%M-%S.png"
