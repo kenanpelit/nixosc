@@ -54,8 +54,7 @@ lib.mkIf cfg.enable {
         "wl-clip-persist --clipboard both"
         
         # Clipboard history manager with text and image support
-        "wl-paste --type text --watch cliphist store"
-        "wl-paste --type image --watch cliphist store"
+        "wl-paste --watch cliphist store"
         
         # Advanced clipboard manager with searchable history
         "clipse -listen"
@@ -73,7 +72,8 @@ lib.mkIf cfg.enable {
         "osc-soundctl init"
         
         # Initialize screen locker for security
-        "hyprlock"
+        #"hyprlock"
+        "dms ipc call lock lock"
       ];
 
       # =====================================================
@@ -1187,6 +1187,7 @@ lib.mkIf cfg.enable {
         # === Application Launchers ===
         "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"  # Show keybinds
         "ALT, Space, exec, rofi-launcher custom || pkill rofi"  # Custom launcher
+        "ALT CTRL, Space, exec, dms ipc call spotlight toggle"  # Custom launcher
         "$mainMod CTRL, Space, exec, rofi-launcher default || pkill rofi"  # Default launcher
         "$mainMod, backspace, exec, rofi-launcher power || pkill rofi"  # Power menu
         "$mainMod, Space, exec, walk"  # Walk launcher
@@ -1238,17 +1239,19 @@ lib.mkIf cfg.enable {
         "$mainMod SHIFT, W, exec, hyprctl dispatch exec '[float; center; size 925 615] waypaper'"  # Waypaper GUI
 
         # === System Tools ===
-        "ALT, L, exec, hyprlock"  # Lock screen
+        #"ALT, L, exec, hyprlock"  # Lock screen
+        "ALT, L, exec, dms ipc call lock lock"  # Lock screen
         "$mainMod, C, exec, hyprpicker -a"  # Color picker
-        "$mainMod, N, exec, makoctl restore"  # Restore notification
-        "$mainMod CTRL, N, exec, makoctl dismiss --all"  # Dismiss all notifications
+        #"$mainMod, N, exec, makoctl restore"  # Restore notification
+        #"$mainMod CTRL, N, exec, makoctl dismiss --all"  # Dismiss all notifications
+        "$mainMod, N, exec, dms ipc call notifications toggle"  # Restore notification
         "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"  # System monitor
 
         # === Monitor and Display Management ===
         "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"  # Cycle monitors
         "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"  # Focus previous monitor
         "$mainMod, E, exec, pypr shift_monitors +1"  # Shift to next monitor
-        "$mainMod SHIFT, B, exec, toggle_waybar"  # Toggle waybar
+        #"$mainMod SHIFT, B, exec, toggle_waybar"  # Toggle waybar
 
         # === Special Applications ===
         "$mainMod SHIFT, D, exec, webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"  # Discord
@@ -1266,7 +1269,6 @@ lib.mkIf cfg.enable {
         "ALT, F12, exec, osc-mullvad toggle"  # VPN toggle
         "$mainMod, M, exec, anotes"  # Notes application
         "$mainMod CTRL, M, exec, anotes -t"  # Notes with terminal
-        "$mainMod, B, exec, hypr-start-manager tcopyb"  # Clipboard manager
 
         # === Screenshot Shortcuts ===
         # Region capture
@@ -1390,6 +1392,7 @@ lib.mkIf cfg.enable {
 
         # === Clipboard Manager ===
         "$mainMod, V, exec, kitty --class clipse -e clipse"  # Clipse clipboard
+        "$mainMod CTRL, V, exec, dms ipc call clipboard toggle"  # DMS clipboard
         "$mainMod CTRL, V, exec, clipmaster all"  # Clipmaster
          
         # === Layout Management ===
