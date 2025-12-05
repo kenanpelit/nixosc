@@ -135,6 +135,9 @@
     nm-applet.enable = true;
   };
 
+  # Greetd vars for greeter permissions
+  services.greetd.settings.default_session.user = lib.mkDefault "greeter";
+
   # DankGreeter (system-level)
   programs.dankMaterialShell.greeter = {
     enable = true;
@@ -153,8 +156,8 @@
 
   # Log dosyasını garantile
   systemd.tmpfiles.rules = [
-    "d /var/log/dms-greeter 0755 root root -"
-    "f /var/log/dms-greeter/dms-greeter.log 0644 root root -"
+    "d /var/log/dms-greeter 0755 greeter greeter -"
+    "f /var/log/dms-greeter/dms-greeter.log 0644 greeter greeter -"
   ];
 
   # ============================================================================
