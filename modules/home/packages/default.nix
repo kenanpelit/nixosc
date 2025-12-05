@@ -41,6 +41,7 @@ in
       gtrash trash-cli      # Trash management
       unzip p7zip atool     # Archive management
       rsync lftp            # File transfer
+      nemo                  # File manager
       tree                  # Directory tree viewer
       czkawka fdupes        # Duplicate file finders
       detox                 # Filename sanitizer
