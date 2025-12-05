@@ -6,6 +6,7 @@
 let
   cfg = config.my.user.dms;
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  dmsEditor = config.home.sessionVariables.DMS_SCREENSHOT_EDITOR or "swappy";
 in
 {
   # Always import the upstream DMS Home Manager module; actual enable is gated below
@@ -27,13 +28,6 @@ in
 
     # Default screenshot editor for DMS (can be overridden by user env)
     home.sessionVariables.DMS_SCREENSHOT_EDITOR = "swappy";
-    # Systemd service env'ine de enjekte et
-    let
-      dmsScreenshotEditor = config.home.sessionVariables.DMS_SCREENSHOT_EDITOR or "swappy";
-    in
-    systemd.user.services.dms.Service.Environment = [
-      "DMS_SCREENSHOT_EDITOR=${dmsScreenshotEditor}"
-    ] ++ (systemd.user.services.dms.Service.Environment or []);
 
     systemd.user.services.dms = {
       Unit = {
@@ -50,6 +44,7 @@ in
         TimeoutStopSec = 10;
         KillSignal = "SIGINT";
         Environment = [
+          "DMS_SCREENSHOT_EDITOR=${dmsEditor}"
           "XDG_RUNTIME_DIR=/run/user/%U"
           "XDG_CURRENT_DESKTOP=Hyprland"
           "XDG_SESSION_TYPE=wayland"
