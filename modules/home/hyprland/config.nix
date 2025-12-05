@@ -1253,7 +1253,7 @@ lib.mkIf cfg.enable {
         # === Special Applications ===
         "ALT, T, exec, start-kkenp"  # Custom launcher
         "$mainMod ALT, RETURN, exec, semsumo launch --daily"  # Daily planner
-        "mainMod, D, exec dms ipc call dash toggle ''"
+        "mainMod, D, exec, dms ipc call dash toggle ''"
 
         # === System Functions ===
         ",F10, exec, bluetooth_toggle"  # Bluetooth toggle
