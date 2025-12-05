@@ -1132,6 +1132,11 @@ lib.mkIf cfg.enable {
         }
       ];
 
+      # === Layer Rules ===
+      layerrule = [
+        "noanim, ^(dms)$"  # Keep DMS layers snappy
+      ];
+
       # =====================================================
       # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
       # =====================================================
@@ -1179,12 +1184,11 @@ lib.mkIf cfg.enable {
       bind = [
         # === Application Launchers ===
         "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"  # Show keybinds
+        "$mainMod, Space, exec, dms ipc call spotlight toggle"  # DMS spotlight
         "ALT, Space, exec, rofi-launcher custom || pkill rofi"  # Custom launcher
-        "ALT CTRL, Space, exec, dms ipc call spotlight toggle"  # Custom launcher
         "$mainMod CTRL, Space, exec, rofi-launcher default || pkill rofi"  # Default launcher
-        #"$mainMod, backspace, exec, rofi-launcher power || pkill rofi"  # Power menu
         "$mainMod, backspace, exec, dms ipc call powermenu toggle"  # Power menu
-        "$mainMod, Space, exec, walk"  # Walk launcher
+        "$mainMod, Y, exec, dms ipc call dankdash wallpaper"  # DankDash wallpaper
 
         # === Terminal Emulators ===
         "$mainMod, Return, exec, kitty"  # Standard terminal
@@ -1245,9 +1249,9 @@ lib.mkIf cfg.enable {
         #"ALT, L, exec, hyprlock"  # Lock screen
         "ALT, L, exec, dms ipc call lock lock"  # Lock screen
         "$mainMod, C, exec, hyprpicker -a"  # Color picker
-        #"$mainMod, N, exec, makoctl restore"  # Restore notification
-        #"$mainMod CTRL, N, exec, makoctl dismiss --all"  # Dismiss all notifications
-        "$mainMod, N, exec, dms ipc call notifications toggle"  # Restore notification
+        "$mainMod, N, exec, dms ipc call notifications toggle"  # Notification center
+        "$mainMod, comma, exec, dms ipc call settings focusOrToggle"  # Settings modal
+        "$mainMod, M, exec, dms ipc call processlist focusOrToggle"  # Process list modal
         "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"  # System monitor
 
         # === Monitor and Display Management ===
@@ -1270,7 +1274,7 @@ lib.mkIf cfg.enable {
         # === System Functions ===
         ",F10, exec, bluetooth_toggle"  # Bluetooth toggle
         "ALT, F12, exec, osc-mullvad toggle"  # VPN toggle
-        "$mainMod, M, exec, anotes"  # Notes application
+        "$mainMod SHIFT, M, exec, anotes"  # Notes application
         "$mainMod CTRL, M, exec, anotes -t"  # Notes with terminal
 
         # === Screenshot Shortcuts ===
@@ -1412,10 +1416,8 @@ lib.mkIf cfg.enable {
         "$mainMod, page_up, exec, hypr-workspace-monitor -wl"  # Workspace left
         "$mainMod, page_down, exec, hypr-workspace-monitor -wr"  # Workspace right
 
-        # === Window Navigation ===
-        "$mainMod, Tab, cyclenext"  # Cycle next window
-        "$mainMod, Tab, bringactivetotop"  # Bring to top
-        "$mainMod, Tab, changegroupactive"  # Change active group
+        # === Window/Workspace Overview ===
+        "$mainMod, Tab, exec, dms ipc call hypr toggleOverview"  # Hypr workspace overview
 
         # === Special Workspace (Scratchpad) ===
         "$mainMod, minus, movetoworkspace, special:scratchpad"  # Send to scratchpad
