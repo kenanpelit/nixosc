@@ -30,6 +30,7 @@ with lib;
       Service = {
         Type = "oneshot";
         RemainAfterExit = true;
+        SuccessExitStatus = [ 0 1 2 ];
         ExecStart = let
           extractScript = pkgs.writeShellScript "extract-tmux-config" ''
             # Check for backup file
@@ -45,7 +46,7 @@ with lib;
             mkdir -p $HOME/.config/tmux
            
             echo "Extracting tmux configuration..."
-            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/tmux.tar.gz -C $HOME/.config/
+            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/tmux.tar.gz -C $HOME/.config/ || exit 0
           '';
         in "${extractScript}";
       };
