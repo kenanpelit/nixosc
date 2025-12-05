@@ -86,6 +86,13 @@ lib.mkIf cfg.enable {
         "7, monitor:Chimei Innolux Corporation 0x143F, default:true"
         "8, monitor:Chimei Innolux Corporation 0x143F"
         "9, monitor:Chimei Innolux Corporation 0x143F"
+        # Smart borders (workspace rules)
+        "w[tv1]s[false], bordersize:0, rounding:false"
+        "f[1]s[false], bordersize:0, rounding:false"
+        "w[t2-99]s[false], bordersize:3, rounding:true"
+        # Special workspaces
+        "special:dropdown, gapsout:0, gapsin:0"
+        "special:scratchpad, gapsout:0, gapsin:0"
       ];
 
       # =====================================================
@@ -1151,47 +1158,6 @@ lib.mkIf cfg.enable {
           "match:float" = true;
           rounding = 10;
         }
-      ];
-
-      # =====================================================
-      # WORKSPACE RULES - MONITOR-AWARE CONFIGURATION
-      # =====================================================
-      # Optimized for dual monitor setup:
-      # - Primary: Dell UP2716D (2560x1440) - Workspaces 1-6
-      # - Secondary: Chimei Innolux (1920x1200) - Workspaces 7-9
-      # - Smart Borders: Dynamic border adjustment based on window count
-       
-      workspace = [
-        # === SMART BORDERS CONFIGURATION ===
-        # Automatic border adjustment based on window count
-        # - Single window: Borderless for maximum focus and screen real estate
-        # - Multiple windows: 3px borders for clear visual separation
-        # - Fullscreen: Borderless for immersive content viewing
-        
-        # Single Tiled Window: No borders, no rounding
-        # - Applies when exactly 1 tiled window exists on workspace
-        # - Excludes special workspaces (dropdown, scratchpad)
-        "w[tv1]s[false], bordersize:0, rounding:false"
-        
-        # Fullscreen Mode: No borders, no rounding
-        # - Applies when 1 fullscreen window exists on workspace
-        # - Excludes special workspaces
-        "f[1]s[false], bordersize:0, rounding:false"
-        
-        # Multiple Windows: Standard 3px borders with rounding
-        # - Applies when 2 or more tiled windows exist on workspace
-        # - Provides clear visual separation between windows
-        "w[t2-99]s[false], bordersize:3, rounding:true"
-        
-        # === SPECIAL WORKSPACES ===
-        
-        # Dropdown Terminal
-        # - Quick access terminal (minimal styling)
-        "special:dropdown, gapsout:0, gapsin:0"
-        
-        # Scratchpad
-        # - Temporary workspace for background tasks
-        "special:scratchpad, gapsout:0, gapsin:0"
       ];
 
       # =====================================================
