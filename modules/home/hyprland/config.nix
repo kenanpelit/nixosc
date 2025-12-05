@@ -31,6 +31,48 @@ let
   mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-workspace-monitor -am ${toString n}") nums;
 
   # ============================================================================
+  # USER CONFIGURATION (Edit these sections frequently)
+  # ============================================================================
+  
+  # --- Startup Applications ---
+  startupServices = [
+    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
+    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
+    "nm-applet --indicator"
+    "wl-clip-persist --clipboard both"
+    "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors 24"
+    "hypr-switch"
+    "osc-soundctl init"
+  ];
+
+  # --- Monitor Configuration ---
+  monitorConfig = [
+    "desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1"
+    "desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1"
+    ",preferred,auto,1"
+  ];
+
+  # --- Workspace Configuration ---
+  workspaceConfig = [
+    "1, monitor:DELL UP2716D KRXTR88N909L, default:true"
+    "2, monitor:DELL UP2716D KRXTR88N909L"
+    "3, monitor:DELL UP2716D KRXTR88N909L"
+    "4, monitor:DELL UP2716D KRXTR88N909L"
+    "5, monitor:DELL UP2716D KRXTR88N909L"
+    "6, monitor:DELL UP2716D KRXTR88N909L"
+    "7, monitor:Chimei Innolux Corporation 0x143F, default:true"
+    "8, monitor:Chimei Innolux Corporation 0x143F"
+    "9, monitor:Chimei Innolux Corporation 0x143F"
+    # Smart borders
+    "w[tv1]s[false], bordersize:0, rounding:false"
+    "f[1]s[false], bordersize:0, rounding:false"
+    "w[t2-99]s[false], bordersize:3, rounding:true"
+    # Special workspaces
+    "special:dropdown, gapsout:0, gapsin:0"
+    "special:scratchpad, gapsout:0, gapsin:0"
+  ];
+
+  # ============================================================================
   # WINDOW RULES DEFINITIONS
   # ============================================================================
   
@@ -740,45 +782,11 @@ lib.mkIf cfg.enable {
   wayland.windowManager.hyprland = {
     settings = {
       # =====================================================
-      # STARTUP APPLICATIONS & SERVICES
+      # CORE CONFIGURATION (Mapped from lists above)
       # =====================================================
-      exec-once = [
-        "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
-        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
-        "nm-applet --indicator"
-        "wl-clip-persist --clipboard both"
-        "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors 24"
-        "hypr-switch"
-        "osc-soundctl init"
-      ];
-
-      # =====================================================
-      # HARDWARE CONFIGURATION
-      # =====================================================
-      monitor = [
-        "desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1"
-        "desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1"
-        ",preferred,auto,1"
-      ];
-
-      workspace = [
-        "1, monitor:DELL UP2716D KRXTR88N909L, default:true"
-        "2, monitor:DELL UP2716D KRXTR88N909L"
-        "3, monitor:DELL UP2716D KRXTR88N909L"
-        "4, monitor:DELL UP2716D KRXTR88N909L"
-        "5, monitor:DELL UP2716D KRXTR88N909L"
-        "6, monitor:DELL UP2716D KRXTR88N909L"
-        "7, monitor:Chimei Innolux Corporation 0x143F, default:true"
-        "8, monitor:Chimei Innolux Corporation 0x143F"
-        "9, monitor:Chimei Innolux Corporation 0x143F"
-        # Rules
-        "w[tv1]s[false], bordersize:0, rounding:false"
-        "f[1]s[false], bordersize:0, rounding:false"
-        "w[t2-99]s[false], bordersize:3, rounding:true"
-        # Special
-        "special:dropdown, gapsout:0, gapsin:0"
-        "special:scratchpad, gapsout:0, gapsin:0"
-      ];
+      exec-once = startupServices;
+      monitor = monitorConfig;
+      workspace = workspaceConfig;
 
       input = {
         kb_layout = "tr";
