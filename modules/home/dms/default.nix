@@ -7,6 +7,7 @@ let
   cfg = config.my.user.dms;
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
   dmsEditor = config.home.sessionVariables.DMS_SCREENSHOT_EDITOR or "swappy";
+  pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
 in
 {
   # Always import the upstream DMS Home Manager module; actual enable is gated below
@@ -14,6 +15,38 @@ in
 
   options.my.user.dms = {
     enable = lib.mkEnableOption "DankMaterialShell";
+
+    plugins = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [
+        "alarmClock"
+        "calculator"
+        "commandRunner"
+        "dankActions"
+        "dankBatteryAlerts"
+        "dankHooks"
+        "dankPomodoroTimer"
+        "displayMirror"
+        "displaySettings"
+        "dockerManager"
+        "dolarBlue"
+        "easyEffects"
+        "emojiLauncher"
+        "gitmojiLauncher"
+        "grimblast"
+        "linuxWallpaperEngine"
+        "powerUsagePlugin"
+        "pulsarX3"
+        "wallpaperDiscovery"
+        "wallpaperShufflerPlugin"
+        "webSearch"
+        "worldClock"
+      ];
+      description = ''
+        Plugins to ensure are installed via the DMS plugin registry. Missing ones
+        are installed during Home Manager activation using `dms plugins install`.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -59,5 +92,20 @@ in
       };
       Install.WantedBy = [ "graphical-session.target" ];
     };
+
+    # Ensure DMS plugins are present; install from registry when missing
+    home.activation.dmsPlugins = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      pluginsDir="$HOME/.config/DankMaterialShell/plugins"
+      mkdir -p "$pluginsDir"
+
+      for plugin in ${pluginList}; do
+        if [ ! -d "$pluginsDir/$plugin" ]; then
+          echo "[dms] installing plugin: $plugin"
+          if ! ${dmsPkg}/bin/dms plugins install "$plugin"; then
+            echo "[dms] warning: failed to install plugin $plugin" >&2
+          fi
+        fi
+      done
+    '';
   };
 }
