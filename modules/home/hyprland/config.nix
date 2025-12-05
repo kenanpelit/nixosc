@@ -8,6 +8,10 @@ let
   
   # Dynamic color palette based on selected flavor (mocha, latte, frappe, macchiato)
   colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
+  # Helpers for binding generation
+  mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
+  mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
+  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-workspace-monitor -am ${toString n}") nums;
   
   # Color format converter for Hyprland (RGBA hex: 0xAARRGGBB)
   # Alpha: 0.0-1.0 float value, converted to hex format
@@ -1271,15 +1275,7 @@ lib.mkIf cfg.enable {
         
         # === Workspace Window Movement ===
         # Move windows from specific workspaces to current workspace
-        "$mainMod CTRL, 1, exec, hypr-workspace-monitor -am 1"
-        "$mainMod CTRL, 2, exec, hypr-workspace-monitor -am 2"
-        "$mainMod CTRL, 3, exec, hypr-workspace-monitor -am 3"
-        "$mainMod CTRL, 4, exec, hypr-workspace-monitor -am 4"
-        "$mainMod CTRL, 5, exec, hypr-workspace-monitor -am 5"
-        "$mainMod CTRL, 6, exec, hypr-workspace-monitor -am 6"
-        "$mainMod CTRL, 7, exec, hypr-workspace-monitor -am 7"
-        "$mainMod CTRL, 8, exec, hypr-workspace-monitor -am 8"
-        "$mainMod CTRL, 9, exec, hypr-workspace-monitor -am 9"
+      ] ++ mkMoveMonitor (lib.range 1 9) ++ [
 
         # === Focus Movement (Arrow Keys) ===
         "$mainMod, left, movefocus, l"
@@ -1294,30 +1290,14 @@ lib.mkIf cfg.enable {
         "$mainMod, l, movefocus, r"
 
         # === Workspace Switching ===
-        "$mainMod, 1, workspace, 1"
-        "$mainMod, 2, workspace, 2"
-        "$mainMod, 3, workspace, 3"
-        "$mainMod, 4, workspace, 4"
-        "$mainMod, 5, workspace, 5"
-        "$mainMod, 6, workspace, 6"
-        "$mainMod, 7, workspace, 7"
-        "$mainMod, 8, workspace, 8"
-        "$mainMod, 9, workspace, 9"
+      ] ++ mkWorkspaces (lib.range 1 9) ++ [
 
         # === Ergonomic Workspace Cycling ===
         "$mainMod, bracketleft, workspace, e-1"   # Previous workspace
         "$mainMod, bracketright, workspace, e+1"  # Next workspace
 
         # === Move to Workspace (Silent) ===
-        "$mainMod SHIFT, 1, movetoworkspacesilent, 1"
-        "$mainMod SHIFT, 2, movetoworkspacesilent, 2"
-        "$mainMod SHIFT, 3, movetoworkspacesilent, 3"
-        "$mainMod SHIFT, 4, movetoworkspacesilent, 4"
-        "$mainMod SHIFT, 5, movetoworkspacesilent, 5"
-        "$mainMod SHIFT, 6, movetoworkspacesilent, 6"
-        "$mainMod SHIFT, 7, movetoworkspacesilent, 7"
-        "$mainMod SHIFT, 8, movetoworkspacesilent, 8"
-        "$mainMod SHIFT, 9, movetoworkspacesilent, 9"
+      ] ++ mkMoveWorkspaces (lib.range 1 9) ++ [
         "$mainMod CTRL, c, movetoworkspace, empty"  # Move to empty workspace
 
         # === Window Movement (Arrow Keys) ===
