@@ -38,7 +38,7 @@
   my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
   my.user.swaylock.enable = true;
-  my.user.swayosd.enable = true;
+  my.user.swayosd.enable = false;
   my.user.wpaperd.enable = false;
   my.user.waypaper.enable = false;
   my.user.touchegg.enable = true;

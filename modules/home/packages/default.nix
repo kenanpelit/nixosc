@@ -132,7 +132,7 @@ in
       # -- Hyprland & Wayland ----------------------------------------------------
       hyprlock hypridle     # Lock & Idle
       hyprpaper wpaperd     # Wallpaper
-      mako                  # Notifications
+      #mako                  # Notifications
       brightnessctl         # Brightness control
       wl-gammactl           # Gamma control
       gnome-monitor-config  # Display layout manager

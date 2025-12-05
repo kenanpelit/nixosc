@@ -1393,7 +1393,7 @@ lib.mkIf cfg.enable {
         # === Clipboard Manager ===
         "$mainMod, V, exec, kitty --class clipse -e clipse"  # Clipse clipboard
         "$mainMod CTRL, V, exec, dms ipc call clipboard toggle"  # DMS clipboard
-        "$mainMod CTRL, V, exec, clipmaster all"  # Clipmaster
+        #"$mainMod CTRL, V, exec, clipmaster all"  # Clipmaster
          
         # === Layout Management ===
         "$mainMod CTRL, J, exec, hypr-layout_toggle"  # Toggle layout
