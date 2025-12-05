@@ -36,11 +36,11 @@
   my.user.rofi.enable = true;
   my.user.walker.enable = true;
   my.user.ulauncher.enable = true;
-  my.user.mako.enable = true;
+  my.user.mako.enable = false;
   my.user.swaylock.enable = true;
   my.user.swayosd.enable = true;
-  my.user.wpaperd.enable = true;
-  my.user.waypaper.enable = true;
+  my.user.wpaperd.enable = false;
+  my.user.waypaper.enable = false;
   my.user.touchegg.enable = true;
   my.user.dms.enable = true;
   my.user.fusuma.enable = true;
