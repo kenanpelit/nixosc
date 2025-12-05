@@ -1224,6 +1224,15 @@ lib.mkIf cfg.enable {
         "ALT CTRL, E, exec, mpc-control toggle"  # MPD toggle
         "ALT, i, exec, hypr-vlc_toggle"  # VLC toggle
 
+        # === Audio Control ===
+        ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
+        ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
+        ", XF86AudioMute, exec, dms ipc call audio mute"
+
+        # === Brightness Controls === 
+        ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
+        ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
+
         # === MPV Management ===
         "CTRL ALT, 1, exec, hypr-mpv-manager start"  # Start MPV
         "ALT, 1, exec, hypr-mpv-manager playback"  # MPV playback control
