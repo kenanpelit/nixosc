@@ -277,17 +277,15 @@ check_system() {
 		info "Intel Arc optimizasyonları aktif"
 	fi
 
-	# Hyprland binary kontrolü
-	if command -v Hyprland &>/dev/null; then
-		HYPRLAND_BINARY="Hyprland"
-	elif command -v hyprland &>/dev/null; then
-		HYPRLAND_BINARY="hyprland"
+	# Hyprland binary kontrolü (yeni launcher)
+	if command -v start-hyprland &>/dev/null; then
+		HYPRLAND_BINARY="start-hyprland"
 	else
-		error "Hyprland binary bulunamadı! PATH: $PATH"
+		error "start-hyprland bulunamadı! PATH: $PATH"
 	fi
 
 	local hypr_version=$("$HYPRLAND_BINARY" --version 2>&1 | head -n1 || echo "Unknown")
-	info "Hyprland version: $hypr_version"
+	info "Hyprland launcher version: $hypr_version"
 
 	info "Sistem kontrolleri tamamlandı"
 }
