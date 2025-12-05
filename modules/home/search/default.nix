@@ -7,13 +7,22 @@
 #
 # ==============================================================================
 
-{ config, lib, pkgs, ... }:
+{ inputs, config, lib, pkgs, ... }:
 let
   cfg = config.my.user.search;
 in
 {
+  # Bring in the upstream dsearch Home Manager module
+  imports = [ inputs.dsearch.homeModules.default ];
+
   options.my.user.search = {
     enable = lib.mkEnableOption "Search utilities configuration";
+
+    dsearchConfig = lib.mkOption {
+      type = lib.types.attrs;
+      default = { };
+      description = "dsearch yapılandırması (boş bırakılırsa varsayılanı kullanır).";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -23,6 +32,10 @@ in
       source_command = "nix-search-tv print"
       preview_command = "nix-search-tv preview {}"
     '';
+
+    programs.dsearch = {
+      enable = true;
+      config = cfg.dsearchConfig;
+    };
   };
 }
-

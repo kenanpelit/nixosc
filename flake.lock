@@ -269,6 +269,26 @@
         "type": "github"
       }
     },
+    "dsearch": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1762206307,
+        "narHash": "sha256-iyeIqpFn49CwftVeiYHaw2mSfJeZw2gX7urOzwnWQiA=",
+        "owner": "AvengeMedia",
+        "repo": "danksearch",
+        "rev": "b2ec55d4bc4c1be15a7d25c9db952a400f97c2ae",
+        "type": "github"
+      },
+      "original": {
+        "owner": "AvengeMedia",
+        "repo": "danksearch",
+        "type": "github"
+      }
+    },
     "elephant": {
       "inputs": {
         "nixpkgs": [
@@ -1381,6 +1401,7 @@
         "deadnix": "deadnix",
         "dgop": "dgop",
         "distro-grub-themes": "distro-grub-themes",
+        "dsearch": "dsearch",
         "elephant": "elephant",
         "home-manager": "home-manager",
         "hypr-contrib": "hypr-contrib",
