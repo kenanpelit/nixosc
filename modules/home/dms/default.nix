@@ -27,6 +27,13 @@ in
 
     # Default screenshot editor for DMS (can be overridden by user env)
     home.sessionVariables.DMS_SCREENSHOT_EDITOR = "swappy";
+    # Systemd service env'ine de enjekte et
+    let
+      dmsScreenshotEditor = config.home.sessionVariables.DMS_SCREENSHOT_EDITOR or "swappy";
+    in
+    systemd.user.services.dms.Service.Environment = [
+      "DMS_SCREENSHOT_EDITOR=${dmsScreenshotEditor}"
+    ] ++ (systemd.user.services.dms.Service.Environment or []);
 
     systemd.user.services.dms = {
       Unit = {
