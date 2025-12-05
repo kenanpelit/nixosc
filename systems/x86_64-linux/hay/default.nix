@@ -135,31 +135,6 @@
     nm-applet.enable = true;
   };
 
-  # Greetd vars for greeter permissions
-  services.greetd.settings.default_session.user = lib.mkDefault "greeter";
-
-  # DankGreeter (system-level)
-  programs.dankMaterialShell.greeter = {
-    enable = true;
-    compositor = {
-      name = "hyprland";
-      customConfig = "";
-    };
-    configHome = "/home/${config.my.user.name}";
-    configFiles = [ "/home/${config.my.user.name}/.config/DankMaterialShell/settings.json" ];
-    logs = {
-      save = true;
-      path = "/var/log/dms-greeter/dms-greeter.log";
-    };
-    quickshell.package = pkgs.quickshell;
-  };
-
-  # Log dosyasını garantile
-  systemd.tmpfiles.rules = [
-    "d /var/log/dms-greeter 0755 greeter greeter -"
-    "f /var/log/dms-greeter/dms-greeter.log 0644 greeter greeter -"
-  ];
-
   # ============================================================================
   # User Modules
   # ============================================================================
