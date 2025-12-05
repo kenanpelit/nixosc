@@ -207,6 +207,7 @@
         systems.modules.nixos = with inputs; [
           home-manager.nixosModules.home-manager
           dankMaterialShell.nixosModules.dankMaterialShell
+          dankMaterialShell.nixosModules.greeter
           catppuccin.nixosModules.catppuccin
           sops-nix.nixosModules.sops
           nix-flatpak.nixosModules.nix-flatpak

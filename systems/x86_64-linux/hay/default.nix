@@ -135,6 +135,22 @@
     nm-applet.enable = true;
   };
 
+  # DankGreeter (system-level)
+  programs.dankMaterialShell.greeter = {
+    enable = true;
+    compositor = {
+      name = "hyprland";
+      customConfig = "";
+    };
+    configHome = "/home/${config.my.user.name}";
+    configFiles = [ "/home/${config.my.user.name}/.config/DankMaterialShell/settings.json" ];
+    logs = {
+      save = true;
+      path = "/var/log/dms-greeter.log";
+    };
+    quickshell.package = pkgs.quickshell;
+  };
+
   # ============================================================================
   # User Modules
   # ============================================================================
@@ -146,4 +162,3 @@
   # ============================================================================
   system.stateVersion = "25.11";
 }
-
