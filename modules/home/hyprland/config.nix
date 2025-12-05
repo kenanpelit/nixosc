@@ -57,20 +57,35 @@ lib.mkIf cfg.enable {
         # Clipboard persistence - maintains clipboard content after program closure
         "wl-clip-persist --clipboard both"
         
-        # Advanced clipboard manager with searchable history
-        "clipse -listen"
-        
         # Set system cursor theme and size - Dynamic Catppuccin theme
         "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors 24"
-        
-        # Custom wallpaper manager service
-        "hyprpaper-manager start"
         
         # Initialize workspace layout configuration
         "hypr-switch"
         
         # Initialize audio control system
         "osc-soundctl init"
+      ];
+
+      # =====================================================
+      # MONITORS & WORKSPACES
+      # =====================================================
+      monitor = [
+        "desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1"
+        "desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1"
+        ",preferred,auto,1"
+      ];
+
+      workspace = [
+        "1, monitor:DELL UP2716D KRXTR88N909L, default:true"
+        "2, monitor:DELL UP2716D KRXTR88N909L"
+        "3, monitor:DELL UP2716D KRXTR88N909L"
+        "4, monitor:DELL UP2716D KRXTR88N909L"
+        "5, monitor:DELL UP2716D KRXTR88N909L"
+        "6, monitor:DELL UP2716D KRXTR88N909L"
+        "7, monitor:Chimei Innolux Corporation 0x143F, default:true"
+        "8, monitor:Chimei Innolux Corporation 0x143F"
+        "9, monitor:Chimei Innolux Corporation 0x143F"
       ];
 
       # =====================================================
@@ -93,6 +108,8 @@ lib.mkIf cfg.enable {
         "HYPRLAND_LOG_WLR,1"                           # Enable wlroots logging
         "HYPRLAND_NO_RT,1"                             # Disable real-time scheduling (safer)
         "HYPRLAND_NO_SD_NOTIFY,1"                      # Prevent systemd notification loops
+        # Disable watchdog warning (start-hyprland used)
+        "HYPRLAND_NO_WATCHDOG_WARNING,1"
 
         # === Dynamic GTK Theme (auto-updates with Catppuccin flavor) ===
         "GTK_THEME,catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal"  
@@ -1392,36 +1409,9 @@ lib.mkIf cfg.enable {
     };
 
     # =====================================================
-    # EXTRA CONFIGURATION - MONITORS & SUBMAPS
+    # EXTRA CONFIGURATION - SUBMAPS
     # =====================================================
     extraConfig = ''
-      # === Monitor Configuration ===
-      # Primary monitor - Dell 2560x1440
-      monitor=desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1
-      # Secondary monitor - Chimei Innolux 1920x1200
-      monitor=desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1
-      # Fallback for unknown monitors
-      monitor=,preferred,auto,1
-
-      # === Workspace to Monitor Assignments ===
-      # Primary monitor (Dell) - Workspaces 1-6
-      workspace = 1, monitor:DELL UP2716D KRXTR88N909L, default:true
-      workspace = 2, monitor:DELL UP2716D KRXTR88N909L
-      workspace = 3, monitor:DELL UP2716D KRXTR88N909L
-      workspace = 4, monitor:DELL UP2716D KRXTR88N909L
-      workspace = 5, monitor:DELL UP2716D KRXTR88N909L
-      workspace = 6, monitor:DELL UP2716D KRXTR88N909L
-      
-      # Secondary monitor (Chimei) - Workspaces 7-9
-      workspace = 7, monitor:Chimei Innolux Corporation 0x143F, default:true
-      workspace = 8, monitor:Chimei Innolux Corporation 0x143F
-      workspace = 9, monitor:Chimei Innolux Corporation 0x143F
-
-      # === XWayland Configuration ===
-      xwayland {
-        force_zero_scaling = true
-      }
-
       # === Resize Submap - Precise Window Resizing ===
       # Enter with $mainMod+R, exit with ESC or RETURN
       submap = resize

@@ -37,6 +37,38 @@ lib.mkIf cfg.enable {
     };
   };
 
+  # Clipse listener as a user service
+  systemd.user.services.clipse-listen = {
+    Unit = {
+      Description = "Clipse listener";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.clipse}/bin/clipse -listen";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    Install.WantedBy = [ "hyprland-session.target" ];
+  };
+
+  # Hyprpaper manager as a user service
+  systemd.user.services.hyprpaper-manager = {
+    Unit = {
+      Description = "Hyprpaper manager";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "hyprpaper-manager start";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    Install.WantedBy = [ "hyprland-session.target" ];
+  };
+
   # =============================================================================
   # Window Manager Configuration
   # =============================================================================
