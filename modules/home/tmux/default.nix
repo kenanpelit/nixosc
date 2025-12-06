@@ -1,65 +1,57 @@
 # modules/home/tmux/default.nix
 # ==============================================================================
-# Tmux Terminal Multiplexer Configuration
+# Tmux Terminal Multiplexer Configuration (direct files + encrypted fzf payload)
 # ==============================================================================
 { config, lib, pkgs, ... }:
-with lib;
+let
+  cfg = config.my.user.tmux;
+
+  mkConfigDir = path: {
+    source = path;
+    recursive = true;
+  };
+in
 {
-  # =============================================================================
-  # Module Options
-  # =============================================================================
   options.my.user.tmux = {
     enable = lib.mkEnableOption "tmux configuration";
   };
- 
-  # =============================================================================
-  # Module Implementation
-  # =============================================================================
-  config = lib.mkIf config.my.user.tmux.enable {
-    # ---------------------------------------------------------------------------
-    # Configuration Extraction Service
-    # ---------------------------------------------------------------------------
-    systemd.user.services.extract-tmux-config = {
+
+  config = lib.mkIf cfg.enable {
+    programs.tmux = {
+      enable = true;
+      terminal = "screen-256color";
+      shortcut = "a";
+      baseIndex = 1;
+      clock24 = true;
+      sensibleOnTop = true;
+      plugins = [ ]; # managed via config files below
+    };
+
+    xdg.configFile = {
+      "tmux/tmux.conf".source = ./config/tmux.conf;
+      "tmux/tmux.conf.local".source = ./config/tmux.conf.local;
+      "tmux/plugins" = mkConfigDir ./config/plugins;
+      # fzf directory is populated via SOPS secret below
+    };
+
+    # Unpack encrypted fzf bundle if present (managed by sops home secrets)
+    systemd.user.services.tmux-fzf-install = {
       Unit = {
-        Description = "Extract tmux configuration";
-        ConditionPathExists = "/home/${config.home.username}/.backup/tmux.tar.gz";
-        Requires = [ "sops-nix.service" ];
+        Description = "Install tmux fzf bundle from secret tar.gz";
+        ConditionPathExists = "/home/${config.home.username}/.backup/fzf.tar.gz";
         After = [ "sops-nix.service" ];
+        Requires = [ "sops-nix.service" ];
       };
-     
       Service = {
         Type = "oneshot";
-        RemainAfterExit = true;
-        SuccessExitStatus = [ 0 1 2 ];
-        ExecStart = let
-          extractScript = pkgs.writeShellScript "extract-tmux-config" ''
-            # Check for backup file
-            if [ ! -f "/home/${config.home.username}/.backup/tmux.tar.gz" ]; then
-              echo "Required tar file is not ready yet..."
-              exit 0
-            fi
-           
-            echo "Cleaning up old configuration..."
-            rm -rf $HOME/.config/tmux
-           
-            echo "Creating directory..."
-            mkdir -p $HOME/.config/tmux
-           
-            echo "Extracting tmux configuration..."
-            ${pkgs.gnutar}/bin/tar --no-same-owner -xzf /home/${config.home.username}/.backup/tmux.tar.gz -C $HOME/.config/ || exit 0
-          '';
-        in "${extractScript}";
+        ExecStart = pkgs.writeShellScript "install-tmux-fzf" ''
+          set -e
+          dest="$HOME/.config/tmux"
+          mkdir -p "$dest"
+          ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/fzf.tar.gz" -C "$dest"
+        '';
       };
-     
-      Install = {
-        WantedBy = [ "default.target" ];
-      };
+      Install.WantedBy = [ "default.target" ];
     };
-    
-    # ---------------------------------------------------------------------------
-    # Disable home-manager tmux management
-    # ---------------------------------------------------------------------------
-    programs.tmux.enable = false;
-    xdg.configFile."tmux".enable = false;
   };
 }

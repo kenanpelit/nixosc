@@ -13,7 +13,7 @@ creation_rules:
 
   # Binary secrets (Archives, Blobs)
   # Encrypts the entire file content
-  - path_regex: .*\.enc\.(tar\.gz|tgz|zip|bin)$
+  - path_regex: (.*\.enc\.(tar\.gz|tgz|zip|bin)$|.*fzf\.enc\.tar\.gz$)
     key_groups:
       - age:
           - "age1wwh5yf2j0jygr8p3z44j32hsf7l6x08sr0gmqzzmfq3wrrfw6v7sxq2fyp"
