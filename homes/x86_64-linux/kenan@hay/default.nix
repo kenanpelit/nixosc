@@ -41,7 +41,7 @@
   my.user.swayosd.enable = false;
   my.user.wpaperd.enable = false;
   my.user.waypaper.enable = false;
-  my.user.touchegg.enable = true;
+  my.user.touchegg.enable = false;
   my.user.dms.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
