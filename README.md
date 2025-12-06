@@ -140,17 +140,17 @@ sops secrets/wireless-secrets.enc.yaml
 ## ⌨️ Keybindings (Hyprland + DMS)
 
 - `$mainMod` = `SUPER` key
-- DMS kendi içinde launcher/panel kısa yollarını taşır.
-- Temel Hyprland kısayolları:
+- DMS ships its own launcher/panel shortcuts.
+- Core Hyprland bindings:
   - `$mainMod + Enter` — Terminal
-  - `$mainMod + B` — Tarayıcı
-  - `$mainMod + D` — Launcher (Rofi fallback, DMS içinde ayrı launcher da var)
-  - `$mainMod + Q` — Pencereyi kapat
-  - `$mainMod + F` — Tam ekran
-  - `$mainMod + Space` — Floating aç/kapa
-  - `$mainMod + 1-9` — Çalışma alanı geçişi
-  - `$mainMod + Shift + 1-9` — Pencereyi ilgili çalışma alanına taşı
-- Tam liste için: `modules/home/hyprland/config.nix`
+  - `$mainMod + B` — Browser
+  - `$mainMod + D` — Launcher (Rofi fallback; DMS has its own launcher)
+  - `$mainMod + Q` — Close window
+  - `$mainMod + F` — Fullscreen
+  - `$mainMod + Space` — Toggle floating
+  - `$mainMod + 1-9` — Switch workspace
+  - `$mainMod + Shift + 1-9` — Move window to workspace
+- Full list: `modules/home/hyprland/config.nix`
 
 ## 📄 License
 
