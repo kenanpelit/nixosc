@@ -10,8 +10,8 @@ let
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
   homeDir = config.home.homeDirectory;
-  secretsDir = "${homeDir}/.nixosc/secrets";
-  assetsDir = "${homeDir}/.nixosc/assets";
+  secretsDir = ../../../secrets;
+  assetsDir = ../../../assets;
 in
 {
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
@@ -22,7 +22,7 @@ in
 
   config = lib.mkIf cfg.enable {
     sops = {
-      defaultSopsFile = "${secretsDir}/home-secrets.enc.yaml";
+      defaultSopsFile = secretsDir + "/home-secrets.enc.yaml";
       validateSopsFiles = false;
   
       age.keyFile = "${homeDir}/.config/sops/age/keys.txt";
@@ -41,22 +41,16 @@ in
         };
         
         "subliminal_config" = {
-          sopsFile = "${secretsDir}/subliminal.enc.toml";
+          sopsFile = secretsDir + "/subliminal.enc.toml";
           path = "${homeDir}/.config/subliminal/subliminal.toml";
           format = "binary";
         };
         
-        /*
-        "tmux_config" = {
-          sopsFile = "${assetsDir}/tmux.enc.tar.gz";
-          path = "${homeDir}/.backup/tmux.tar.gz";
-          format = "binary";
-        };
-        */
-        
-        "mpv_config" = {
-          sopsFile = "${assetsDir}/mpv.enc.tar.gz";
-          path = "${homeDir}/.backup/mpv.tar.gz";
+        # mpv configs now live in modules/home/mpv/config (no encrypted tar)
+      } // lib.optionalAttrs (builtins.pathExists (assetsDir + "/fzf.enc.tar.gz")) {
+        "tmux_fzf" = {
+          sopsFile = assetsDir + "/fzf.enc.tar.gz";
+          path = "${homeDir}/.backup/fzf.tar.gz";
           format = "binary";
         };
       };

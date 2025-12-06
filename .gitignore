@@ -14,15 +14,13 @@ secrets/nix.conf
 #modules/home/scripts/bin
 #modules/home/scripts/bin.nix
 assets/mpv
-assets/oh-my-tmux
-assets/tmux
+assets/fzf
 assets/grub
 hosts/vhay/configuration.nix
 *.tar.gz
 !*.enc.tar.gz
 assets/dot.enc.tar.gz
 assets/dotfiles.enc.tar.gz
-
 
 # IDE and editor files
 *.swp
