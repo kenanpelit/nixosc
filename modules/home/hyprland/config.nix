@@ -598,10 +598,12 @@ let
   appBinds = [
     # Launchers
     "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
-    "$mainMod, Space, exec, dms ipc call spotlight toggle"
+    #"$mainMod, Space, exec, dms ipc call spotlight toggle"
+    "$mainMod, Space, exec, noctalia-shell ipc call launcher toggle"
     "ALT, Space, exec, rofi-launcher custom || pkill rofi"
-    "$mainMod, backspace, exec, dms ipc call powermenu toggle"
-    "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
+    #"$mainMod, backspace, exec, dms ipc call powermenu toggle"
+    "$mainMod, backspace, exec, noctalia-shell ipc call sessionMenu toggle"
+    #"$mainMod, Y, exec, dms ipc call dankdash wallpaper"
     
     # Terminals
     "$mainMod, Return, exec, kitty"
@@ -617,9 +619,12 @@ let
     # Audio Control
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
-    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
-    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
-    ", XF86AudioMute, exec, dms ipc call audio mute"
+    #", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
+    ", XF86AudioRaiseVolume, exec, noctalia-shell ipc call volume increase"
+    #", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
+    ", XF86AudioLowerVolume, exec, noctalia-shell ipc call volume decrease"
+    #", XF86AudioMute, exec, dms ipc call audio mute"
+    ", XF86AudioMute, exec, noctalia-shell ipc call volume muteOutput"
     ", XF86AudioMicMute, exec, toggle-mic"
     
     # Playback Control
@@ -634,8 +639,10 @@ let
     ",XF86AudioStop,exec, playerctl stop"
     
     # Brightness
-    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
-    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
+    #", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
+    #", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
+    ", XF86MonBrightnessUp, exec, noctalia-shell ipc call brightness increase"
+    ", XF86MonBrightnessDown, exec, noctalia-shell ipc call brightness decrease"
     
     # MPV Manager
     "CTRL ALT, 1, exec, hypr-mpv-manager start"
@@ -674,9 +681,9 @@ let
     # Tools
     "ALT, L, exec, dms ipc call lock lock"
     "$mainMod SHIFT, C, exec, hyprpicker -a"
-    "$mainMod, N, exec, dms ipc call notifications toggle"
-    "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
-    "$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"
+    #"$mainMod, N, exec, dms ipc call notifications toggle"
+    #"$mainMod, comma, exec, dms ipc call settings focusOrToggle"
+    #"$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"
     "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"
     
     # Wallpaper
@@ -693,7 +700,7 @@ let
     
     # Clipboard
     "$mainMod, V, exec, kitty --class clipse -e clipse"
-    "$mainMod CTRL, V, exec, dms ipc call clipboard toggle"
+    #"$mainMod CTRL, V, exec, dms ipc call clipboard toggle"
   ];
 
   screenshotBinds = [
@@ -708,7 +715,7 @@ let
   specialAppsBinds = [
     "ALT, T, exec, start-kkenp"
     "$mainMod ALT, RETURN, exec, semsumo launch --daily"
-    "$mainMod, D, exec, dms ipc call dash toggle ''"
+    #"$mainMod, D, exec, dms ipc call dash toggle ''"
     "$mainMod, M, exec, anotes"
   ];
 
