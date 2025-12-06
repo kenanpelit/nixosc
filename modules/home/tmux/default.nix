@@ -38,15 +38,15 @@ in
     systemd.user.services.tmux-fzf-install = {
       Unit = {
         Description = "Install tmux fzf bundle from secret tar.gz";
-        ConditionPathExists = "/home/${config.home.username}/.backup/tmux-fzf.tar.gz";
+        ConditionPathExists = "/home/${config.home.username}/.backup/fzf.tar.gz";
       };
       Service = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "install-tmux-fzf" ''
           set -e
-          dest="$HOME/.config/tmux/fzf"
+          dest="$HOME/.config/fzf"
           mkdir -p "$dest"
-          ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/tmux-fzf.tar.gz" -C "$dest"
+          ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/fzf.tar.gz" -C "$dest"
         '';
       };
       Install.WantedBy = [ "default.target" ];
