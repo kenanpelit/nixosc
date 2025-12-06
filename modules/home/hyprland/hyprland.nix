@@ -71,22 +71,6 @@ lib.mkIf cfg.enable {
     };
   };
 
-  # Hyprpaper manager as a user service
-  systemd.user.services.hyprpaper-manager = {
-    Unit = {
-      Description = "Hyprpaper manager";
-      After = [ "hyprland-session.target" ];
-      PartOf = [ "hyprland-session.target" ];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "hyprpaper-manager start";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-    Install.WantedBy = [ "hyprland-session.target" ];
-  };
-
   # =============================================================================
   # Window Manager Configuration
   # =============================================================================
