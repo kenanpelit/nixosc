@@ -5,29 +5,33 @@
 #  Author:  Kenan Pelit
 #  Repo:    https://github.com/kenanpelit/nixosc
 #  License: MIT
-#  Date:    2025-12-02
+#  Date:    2025-12-06
 #
 # ------------------------------------------------------------------------------
 #  ARCHITECTURE
 # ------------------------------------------------------------------------------
 #
-#  This configuration uses the Snowfall Lib framework for structured, modular,
-#  and automatic system management.
+#  Snowfall Lib v4 layout, with NixOS + Home Manager under one flake.
 #
-#  Structure:
-#    ├── systems/           # Host configurations (Physical & VM)
-#    ├── modules/           # Modular configuration blocks
-#    │   ├── nixos/         # System-level modules (services, hardware)
-#    │   └── user-modules/  # User-level modules (home-manager)
-#    ├── packages/          # Custom packages
-#    └── overlays/          # Nixpkgs overlays
+#  Structure (workspace-write sandbox friendly):
+#    ├── systems/              # Host configs per arch (hay, vhay, …)
+#    ├── homes/                # Home Manager profiles (e.g. kenan@hay)
+#    ├── modules/
+#    │   ├── nixos/            # System-level modules (services, hardware)
+#    │   └── home/             # User-level modules (HM apps/services)
+#    ├── overlays/             # Nixpkgs overlays
+#    ├── secrets/              # sops-nix secrets (age key in ~/.config/sops/age)
+#    ├── assets/               # Encrypted dotfiles, mpv/tmux bundles, etc.
+#    └── wallpapers/           # Theming assets
 #
 # ------------------------------------------------------------------------------
 #  USAGE
 # ------------------------------------------------------------------------------
 #
 #  Build & Switch:
-#    $ ./install.sh install <host>
+#    $ ./install.sh install <host>        # system + home for host
+#    $ nixos-rebuild switch --flake .#hay # direct call
+#    $ home-manager switch --flake .#kenan@hay # home only
 #
 #  Update Inputs:
 #    $ ./install.sh update
@@ -71,8 +75,11 @@
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/f82a8630d7a51dab4cc70924f500bf70e723db12"; # 1202 - Updated commit
-#      url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
+      url = "github:hyprwm/hyprland/222dbe99d0d2d8a61f3b3202f8ef1794b0b081b7"; # 1206 - Updated commit
+#      url = "github:hyprwm/hyprland/6a1daff5f30ea71e6d678554aa59fc5670864d24"; # 1205 - Updated commit
+      #      url = "github:hyprwm/hyprland/3cf0280b11f370c11e6839275e547779a33f4a19"; # 1203 - Updated commit
+      #      url = "github:hyprwm/hyprland/f82a8630d7a51dab4cc70924f500bf70e723db12"; # 1202 - Updated commit
+      #      url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
     };
 
     hypr-contrib = {
@@ -99,13 +106,37 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
+    statix = {
+      url = "github:nerdypepper/statix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    dgop = {
+      url = "github:AvengeMedia/dgop";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    dankMaterialShell = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.dgop.follows = "dgop";
+      url = "github:AvengeMedia/DankMaterialShell/2ddc448150b0576afe528ae5700ac031f94c9547"; # 1206 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/52d5e21fc4299aad7dad96482f6c4cd215e1e06c"; # 1205 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/6d0c56554fba353db582893540f39c53935b6460"; # 1205 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell";
+    };
+
+    deadnix = {
+      url = "github:astro/deadnix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     alejandra = {
       url = "github:kamadorueda/alejandra";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    dsearch = {
+      url = "github:AvengeMedia/danksearch";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -146,43 +177,70 @@
   };
 
   outputs = inputs:
-    inputs.snowfall-lib.mkFlake {
-      inherit inputs;
-      src = ./.;
+    let
+      lib = inputs.nixpkgs.lib;
+    in
+    lib.removeAttrs
+      (inputs.snowfall-lib.mkFlake {
+        inherit inputs;
+        src = ./.;
 
-      snowfall = {
-        namespace = "my"; # Custom namespace for internal modules
-        
-        # Default paths are used:
-        # modules/nixos -> System modules
-        # modules/home  -> (Not used, we use modules/user-modules manually)
-      };
+        snowfall = {
+          namespace = "my"; # Custom namespace for internal modules
+          
+          # Default paths are used:
+          # modules/nixos -> System modules
+          # modules/home  -> (Not used, we use modules/user-modules manually)
+        };
 
-      # Global Nixpkgs configuration
-      channels-config = {
-        allowUnfree = true;
-        permittedInsecurePackages = [
-          "electron-36.9.5"
-          "ventoy-1.1.07"
-          "libsoup-2.74.3"
+        # Global Nixpkgs configuration
+        channels-config = {
+          allowUnfree = true;
+          permittedInsecurePackages = [
+            "electron-36.9.5"
+            "ventoy-1.1.07"
+            "libsoup-2.74.3"
+          ];
+        };
+
+        # Overlays applied to all systems
+        overlays = with inputs; [
+          nur.overlays.default
         ];
-      };
 
-      # Overlays applied to all systems
-      overlays = with inputs; [
-        nur.overlays.default
-      ];
+        # Modules automatically added to all NixOS systems
+        systems.modules.nixos = with inputs; [
+          home-manager.nixosModules.home-manager
+          dankMaterialShell.nixosModules.dankMaterialShell
+          catppuccin.nixosModules.catppuccin
+          sops-nix.nixosModules.sops
+          nix-flatpak.nixosModules.nix-flatpak
+        ];
 
-      # Modules automatically added to all NixOS systems
-      systems.modules.nixos = with inputs; [
-        home-manager.nixosModules.home-manager
-        catppuccin.nixosModules.catppuccin
-        sops-nix.nixosModules.sops
-      ];
+        # Special arguments available to all modules
+        systems.specialArgs = {
+          username = "kenan";
+        };
 
-      # Special arguments available to all modules
-      systems.specialArgs = {
-        username = "kenan";
-      };
-    };
+              outputs-builder = channels: {
+                formatter = inputs.alejandra.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default;
+                
+                checks = {
+                  statix = channels.nixpkgs.runCommand "statix-check" {
+                    nativeBuildInputs = [ inputs.statix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default ];
+                  } ''
+                    statix check ${./.}
+                    touch $out
+                  '';
+                };
+
+                devShells.default = channels.nixpkgs.mkShell {
+                  packages = [
+                    inputs.alejandra.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
+                    inputs.statix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
+                    inputs.deadnix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
+                  ];
+                };
+              };      })
+      [ "snowfall" ];
 }

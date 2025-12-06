@@ -8,15 +8,15 @@
 let
   inherit (lib) mkIf;
   username = config.my.user.name;
-  homeDir  = "/home/${username}";
-  
+
   # Paths
-  sopsDir        = "${homeDir}/.nixosc/secrets";
-  sopsAgeKeyDir  = "${homeDir}/.config/sops/age";
+  sopsDir        = "${inputs.self}/secrets";
+  sopsAgeKeyDir  = "/home/${username}/.config/sops/age";
   sopsAgeKeyFile = "${sopsAgeKeyDir}/keys.txt";
   
   # Secret Files
   wirelessSecretsFile = "${sopsDir}/wireless-secrets.enc.yaml";
+  enableWirelessSecrets = config.my.host.isPhysicalHost;
 in
 {
   imports = [ inputs.sops-nix.nixosModules.sops ];
@@ -25,8 +25,7 @@ in
   # Core SOPS Configuration
   # ============================================================================
   sops = {
-    defaultSopsFile = wirelessSecretsFile;
-    validateSopsFiles = false; # Don't fail if secrets are missing during build
+    validateSopsFiles = false;
 
     age = {
       keyFile = sopsAgeKeyFile;
@@ -35,10 +34,13 @@ in
 
     gnupg.sshKeyPaths = [ ]; # Disable GPG
 
+  } // lib.optionalAttrs enableWirelessSecrets {
+    defaultSopsFile = wirelessSecretsFile;
+
     # --------------------------------------------------------------------------
     # Secrets Definition
     # --------------------------------------------------------------------------
-    secrets = mkIf (builtins.pathExists wirelessSecretsFile) {
+    secrets = {
       "wireless_ken_5_password" = {
         key   = "ken_5_password";
         owner = "root";
@@ -72,6 +74,5 @@ in
   # Ensure SOPS directory structure exists with correct permissions
   systemd.tmpfiles.rules = [
     "d ${sopsAgeKeyDir} 0700 ${username} users -"
-    "d ${sopsDir}       0750 ${username} users -"
   ];
 }

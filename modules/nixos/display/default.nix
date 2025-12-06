@@ -18,7 +18,6 @@ in {
     enable = mkEnableOption "display stack (DM/DE/portals/fonts/audio)";
     enableHyprland = mkEnableOption "Hyprland Wayland compositor";
     enableGnome    = mkEnableOption "GNOME desktop environment";
-    enableCosmic   = mkEnableOption "COSMIC desktop environment";
 
     defaultSession = mkOption {
       type = types.nullOr types.str;
