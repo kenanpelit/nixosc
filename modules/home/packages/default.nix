@@ -81,6 +81,8 @@ in
       
       # -- Network Tools ---------------------------------------------------------
       curl wget aria2       # Downloaders
+      transmission-remote   # Transmission CLI remote control
+      pirate-get            # Pirate Bay magnet search/download helper
       dig                   # DNS tools
       nmap mtr iputils fping # Network diagnostics
       iftop iptraf-ng       # Traffic monitoring
