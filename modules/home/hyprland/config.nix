@@ -710,8 +710,8 @@ let
     "ALT, F12, exec, osc-mullvad toggle"
   
     # Clipboard
-    "$mainMod, V, exec, kitty --class clipse -e clipse"
-    "$mainMod CTRL, V, exec, dms ipc call clipboard toggle"
+    "$mainMod, V, exec, dms ipc call clipboard toggle"
+    "$mainMod CTRL, V, exec, kitty --class clipse -e clipse"
   
     # Keybinds Cheatsheet
      "$mainMod, slash, exec, dms ipc call keybinds toggle hyprland"
