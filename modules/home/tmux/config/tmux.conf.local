@@ -1,0 +1,586 @@
+# : << 'EOF'
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ❱❱❱ Enhanced tmux Configuration v2.0 - Catppuccin Mocha Theme
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 
+# Detaylı yorumlarla her satırın ne iş yaptığını açıklayan tmux konfigürasyonu
+# Hem yeni başlayanlar hem de ileri seviye kullanıcılar için hazırlanmıştır
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 1. General Configuration ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Terminal settings - Modern terminal desteği için geliştirilmiş ayarlar
+set -g default-terminal "tmux-256color"                           # tmux'un 256 renk desteğini etkinleştir
+# RGB destekleri + E3 override; E3=@ ile uzak terminalin scrollback silme kaçış kodunu yoksayar
+# screen* için smcup/rmcup devre dışı: byobu/tmux alt ekrana geçip scrollback'i kesemesin
+# * için smcup/rmcup devre dışı: diğer uçlarda da alt ekranı tamamen yok say
+set -ag terminal-overrides ",xterm-256color:RGB,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,screen*:smcup@:rmcup@:E3=@,*:E3=@,*:smcup@:rmcup@"
+set -as terminal-features ",*:RGB"                               # Tüm terminaller için RGB renk özelliği etkinleştir
+#set -g update-environment "DISPLAY WAYLAND_DISPLAY SSH_AUTH_SOCK XDG_CURRENT_DESKTOP SWAYSOCK I3SOCK"  # tmux attach edildiğinde güncellenecek ortam değişkenleri
+set -g update-environment "SSH_AUTH_SOCK"
+
+
+# Window settings - Pencere davranışları ve görünüm ayarları
+set -g set-titles on                                             # Terminal penceresi başlığını tmux'un ayarlamasına izin ver
+set -g set-titles-string '#h ❐ #S ❙ #I ❙ #W'                     # Pencere başlığı formatı: hostname ❐ session ❙ window_index ❙ window_name
+set -g status-position top                                       # Status bar'ı ekranın üstüne konumlandır
+set -g allow-rename on                                           # Pencerelerin otomatik yeniden adlandırılmasına izin ver
+set -g automatic-rename on                                       # Çalışan komuta göre otomatik pencere adlandırmayı etkinleştir
+set -g automatic-rename-format '#{b:pane_current_path}'          # Otomatik isim formatı: bulunulan dizinin adı
+
+# Performance tweaks - Performans ve yanıt süresi optimizasyonları
+set -sg repeat-time 300                                          # Tekrarlanan tuş kombinasyonları için bekleme süresi (ms)
+set -g aggressive-resize on                                      # Ekran boyutlandırmayı agresif yap (daha hızlı)
+set -g escape-time 0                                             # ESC tuşu gecikmesini sıfırla (vim/nvim uyumluluğu için)
+set -g focus-events on                                           # Focus olaylarını etkinleştir (vim/nvim entegrasyonu)
+set -g history-limit 100000                                      # Scrollback geçmişini 100,000 satıra çıkar (varsayılan: 2000)
+setw -g alternate-screen off                                     # Alt ekranı kapat: uzak byobu/tmux temizlemeleri scrollback'i silmesin
+set -g renumber-windows on                                       # Pencere kapandığında diğerlerini yeniden numaralandır
+set -g base-index 1                                              # Pencereleri 1'den başlat (varsayılan: 0) - daha ergonomik
+set -g pane-base-index 1                                         # Panel'leri 1'den başlat (varsayılan: 0) - daha ergonomik
+
+# Session behavior - Oturum davranışı ayarları
+set -g detach-on-destroy off                                     # Son pencere kapandığında tmux'tan çıkma (diğer session'a geç)
+
+# Mouse mode - Fare desteği ayarları
+set -g mouse on                                                  # Fare desteğini etkinleştir (kaydırma, panel seçimi, boyutlandırma)
+set -g pane-border-style "fg=colour239"                          # İnaktif panel kenarlığı rengi (koyu gri)
+set -g pane-border-lines single                                  # Panel kenarlığı stili (tek çizgi)
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 2. Key Binding Setup   ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Prefix key setting - Ana kısayol tuşu ayarları
+unbind-key C-b                                                   # Varsayılan prefix tuşu (Ctrl-b) bağını kaldır
+set -g prefix C-a                                                # Yeni prefix tuşunu Ctrl-a yap (screen ile uyumlu ve daha kolay)
+bind C-a send-prefix                                             # Ctrl-a'yı uygulamaya gönderme komutu
+bind C-a last-window                                             # Ctrl-a Ctrl-a ile son aktif pencereye geç
+
+# System shortcuts - Sistem kısayolları
+bind R source-file ~/.config/tmux/tmux.conf.local \; display-message "Config reloaded!"  # R tuşu ile konfigürasyonu yeniden yükle
+
+# Window management - Pencere yönetimi kısayolları
+bind A command-prompt "rename-window %%"                         # A tuşu ile pencereyi yeniden adlandır
+bind q confirm-before -p "Kill window #W? (y/n)" kill-window     # q tuşu ile pencereyi kapat (onay iste)
+bind C-q confirm-before -p "Kill pane? (y/n)" kill-pane          # Ctrl-q ile panel'i kapat (onay iste)
+bind x kill-pane                                                 # x tuşu ile panel'i direk kapat (onaysız)
+bind C-n next-window                                             # Ctrl-n ile sonraki pencereye geç
+bind C-p previous-window                                         # Ctrl-p ile önceki pencereye geç
+
+# Pane display settings - Panel gösterim ayarları
+bind -T prefix ü display-panes -d 0                             # ü tuşu ile panel numaralarını göster (Türkçe klavye desteği)
+set -g display-panes-time 5000                                  # Panel numaralarını 5 saniye boyunca göster
+
+# Enhanced pane navigation - Gelişmiş panel navigasyonu (Vim tarzı)
+bind h select-pane -L                                            # h tuşu ile sol panel'e geç
+bind j select-pane -D                                            # j tuşu ile alt panel'e geç
+bind k select-pane -U                                            # k tuşu ile üst panel'e geç
+bind l select-pane -R                                            # l tuşu ile sağ panel'e geç
+
+# Pane resizing - Panel boyutlandırma (tekrarlanabilir komutlar)
+bind -r H resize-pane -L 5                                       # H tuşu ile panel'i sola doğru 5 birim küçült (-r: tekrarlanabilir)
+bind -r J resize-pane -D 5                                       # J tuşu ile panel'i aşağı doğru 5 birim büyüt
+bind -r K resize-pane -U 5                                       # K tuşu ile panel'i yukarı doğru 5 birim büyüt
+bind -r L resize-pane -R 5                                       # L tuşu ile panel'i sağa doğru 5 birim büyüt
+
+# Pane splitting - Panel bölme işlemleri
+bind | split-window -h -c "#{pane_current_path}"                # | tuşu ile dikey bölme (mevcut dizinde)
+bind - split-window -v -c "#{pane_current_path}"                # - tuşu ile yatay bölme (mevcut dizinde)
+
+# Alternate screen toggle shortcuts (varsayılan: kapalı)
+bind 8 setw -g alternate-screen on \; display-message "alternate-screen on"   # prefix + aS ile alt ekranı aç
+bind 9 setw -g alternate-screen off \; display-message "alternate-screen off" # prefix + aD ile alt ekranı kapat
+
+# System integration - Sistem entegrasyonu
+# clear-history kaldırıldı; aksi halde copy-mode geçmişi yukarı kaydırmaz
+bind -n C-l send-keys C-l                                      # Ctrl-l ile sadece ekranı temizle (geçmişi koru)
+
+# Copy mode settings - Kopyalama modu ayarları
+set-window-option -g mode-keys vi                               # Kopyalama modunda vi tuş bağlarını kullan
+
+# Enhanced copy mode bindings - Geliştirilmiş kopyalama modu kısayolları
+bind Enter copy-mode                                             # Enter ile kopyalama moduna gir
+bind -T copy-mode-vi v send-keys -X begin-selection             # v tuşu ile seçimi başlat (vi tarzı)
+bind -T copy-mode-vi C-v send-keys -X rectangle-toggle          # Ctrl-v ile dikdörtgen seçim modunu aç/kapat
+bind -T copy-mode-vi h send-keys -X cursor-left                 # h tuşu ile imleci sola hareket ettir
+bind -T copy-mode-vi l send-keys -X cursor-right                # l tuşu ile imleci sağa hareket ettir
+bind -T copy-mode-vi k send-keys -X cursor-up                   # k tuşu ile imleci yukarı hareket ettir
+bind -T copy-mode-vi j send-keys -X cursor-down                 # j tuşu ile imleci aşağı hareket ettir
+bind -T copy-mode-vi e send-keys -X next-word-end               # e tuşu ile sonraki kelimenin sonuna git
+bind -T copy-mode-vi K send-keys -N 5 -X cursor-up              # K tuşu ile 5 satır yukarı git
+bind -T copy-mode-vi J send-keys -N 5 -X cursor-down            # J tuşu ile 5 satır aşağı git
+
+# Smart clipboard integration - Akıllı clipboard entegrasyonu (sistem algılayarak)
+if-shell 'command -v wl-copy >/dev/null 2>&1' {                 # Wayland clipboard aracı mevcut mu kontrol et
+    # Wayland environment - Wayland masaüstü ortamı
+    bind -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel "wl-copy"     # Enter ile kopyala ve clipboard'a gönder
+    bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "wl-copy"         # y ile kopyala ve clipboard'a gönder
+    bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "wl-copy"  # Fare sürükleme ile kopyala
+    bind > choose-buffer 'run "tmux save-buffer -b %% - | wl-copy"'            # > ile buffer'ı clipboard'a kopyala
+    bind < run 'wl-paste | tmux load-buffer - && tmux paste-buffer'            # < ile clipboard'dan yapıştır
+} {                                                              # Wayland yoksa X11 kontrol et
+    if-shell 'command -v xclip >/dev/null 2>&1' {                # X11 clipboard aracı mevcut mu kontrol et
+        # X11 environment - X11 masaüstü ortamı
+        bind -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"     # Enter ile X11 clipboard'a kopyala
+        bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"         # y ile X11 clipboard'a kopyala
+        bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"  # Fare ile X11 clipboard'a kopyala
+        bind > choose-buffer 'run "tmux save-buffer -b %% - | xclip -selection clipboard"'            # > ile buffer'ı X11 clipboard'a kopyala
+        bind < run 'xclip -selection clipboard -o | tmux load-buffer - && tmux paste-buffer'          # < ile X11 clipboard'dan yapıştır
+    } {                                                          # Ne Wayland ne de X11 varsa
+        # Fallback for other environments - Diğer ortamlar için fallback
+        bind -T copy-mode-vi Enter send-keys -X copy-selection-and-cancel       # Enter ile sadece tmux içinde kopyala
+        bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel           # y ile sadece tmux içinde kopyala
+        bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-selection-and-cancel  # Fare ile sadece tmux içinde kopyala
+    }
+}
+
+# Buffer management - Buffer (kopyalama geçmişi) yönetimi
+bind + choose-buffer 'delete-buffer -b %%'                      # + tuşu ile buffer sil (listeden seç)
+bind b choose-buffer                                             # b tuşu ile buffer listesini göster
+
+# Utility popups - Yardımcı popup pencereler (anote ve tm araçları için)
+bind 'e' display-popup -w 60% -h 60% -E "anote -t"              # e tuşu ile metin notu popup'ı (anote -t)
+bind 'E' display-popup -w 60% -h 60% -E "anote -Ms"             # E tuşu ile markdown notu popup'ı (anote -Ms)
+bind 'i' display-popup -w 60% -h 60% -E "anote -S"              # i tuşu ile snippet popup'ı (anote -S)
+bind -n M-m display-popup -w 60% -h 60% -E "anote"              # Alt-m ile genel not popup'ı (anote) - global tuş
+bind -n M-h display-popup -w 60% -h 60% -E "tm buffer"          # Alt-h ile buffer yönetimi popup'ı (tm buffer) - global tuş
+bind -n M-b display-popup -w 60% -h 60% -E "tm clip"            # Alt-b ile clipboard yönetimi popup'ı (tm clip) - global tuş
+bind -n M-k display-popup -w 60% -h 60% -E "tm speed"           # Alt-k ile hız testi popup'ı (tm speed) - global tuş
+
+# New window creation with layout commands - Yeni pencere oluştururken otomatik layout komutları gönder
+bind c new-window -c  send-keys "tm tmx --layout 3" Enter       # c tuşu ile yeni pencere oluştur ve layout 3 komutunu gönder
+bind n new-window -c  send-keys "tm tmx --layout 4" Enter       # n tuşu ile yeni pencere oluştur ve layout 4 komutunu gönder
+bind 0 new-window -c  send-keys "tm tmx --layout 1" Enter       # 0 tuşu ile yeni pencere oluştur ve layout 1 komutunu gönder
+
+# Quick terminal popup - Hızlı terminal popup'ı
+bind T display-popup -w 80% -h 80%                              # T tuşu ile büyük terminal popup'ı aç(%80x%80 boyutunda)
+
+# Plugin management - Plugin yönetimi
+bind -n M-p display-message "Plugin Yükleniyor..." \; \         # Alt-p ile plugin güncelleme mesajı göster
+  display-popup -w 60% -h 60% -E "bash -c 'osc-tmux-plugins-install'"  # Plugin yükleme scriptini çalıştır
+
+# Layout shortcuts - Hızlı layout değiştirme kısayolları
+bind 1 select-layout even-horizontal                             # 1 tuşu ile yatay eşit bölünmüş layout
+bind 2 select-layout even-vertical                               # 2 tuşu ile dikey eşit bölünmüş layout
+bind 3 select-layout main-horizontal                             # 3 tuşu ile ana panel yatay layout
+bind 4 select-layout main-vertical                               # 4 tuşu ile ana panel dikey layout
+bind 5 select-layout tiled                                       # 5 tuşu ile döşenmiş (tiled) layout
+
+# Panel controls - Panel kontrolleri
+bind z resize-pane -Z                                            # z tuşu ile aktif panel'i zoom yap/geri al
+bind Y set-window-option synchronize-panes\; display-message "synchronize-panes is now #{?pane_synchronized,on,off}"  # Y ile panel senkronizasyonunu aç/kapat
+
+# Session management with sesh - Sesh ile gelişmiş oturum yönetimi
+bind -r C-t run-shell "sesh connect \"\$(sesh list --icons | fzf-tmux -p 60%,70% \
+    --no-sort \
+    --ansi \
+    --border-label ' ⚡ sesh ' \
+    --prompt '⚡  ' \
+    --header 'CTRL-a: all | CTRL-t: tmux | CTRL-g: config | CTRL-x: zoxide | CTRL-d: kill' \
+    --bind 'ctrl-a:change-prompt(⚡  )+reload(sesh list --icons)' \
+    --bind 'ctrl-t:change-prompt(🪟  )+reload(sesh list -t --icons)' \
+    --bind 'ctrl-g:change-prompt(⚙️  )+reload(sesh list -c --icons)' \
+    --bind 'ctrl-x:change-prompt(📁  )+reload(sesh list -z --icons)' \
+    --bind 'ctrl-d:execute(tmux kill-session -t {2..})+reload(sesh list --icons)' \
+    --bind 'ctrl-r:reload(sesh list --icons)'\
+)\""
+
+bind Tab run-shell "sesh last"
+
+# Session workflow shortcuts - Oturum iş akışı kısayolları
+bind S command-prompt -p "New session:" "new-session -d -s '%%'"  # S tuşu ile yeni session oluştur (isim sor)
+bind K command-prompt -p "Rename session:" "rename-session '%%'"  # K tuşu ile mevcut session'ı yeniden adlandır
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 3. Theme: Catppuccin Mocha         ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Catppuccin Mocha Color Palette - Catppuccin Mocha renk paleti
+# Bu renkler Catppuccin tema ailesinin Mocha varyantından alınmıştır
+tmux_conf_theme_colour_1="#1e1e2e"    # Base - En koyu arka plan rengi
+tmux_conf_theme_colour_2="#313244"    # Surface0 - Orta arka plan rengi
+tmux_conf_theme_colour_3="#45475a"    # Surface1 - Açık arka plan rengi
+tmux_conf_theme_colour_4="#6c7086"    # Overlay0 - Sessiz metin rengi
+tmux_conf_theme_colour_5="#a6adc8"    # Subtext0 - Ana metin rengi (okunabilirlik için optimize edilmiş)
+tmux_conf_theme_colour_6="#9399b2"    # Overlay2 - Yorum/ikincil metin rengi
+
+# Alternative text colors - Farklı parlaklık seviyeleri için alternatif metin renkleri
+tmux_conf_theme_colour_5_bright="#cdd6f4"  # Orijinal parlak metin
+tmux_conf_theme_colour_5_medium="#bac2de"  # Subtext1 - Orta parlaklık
+tmux_conf_theme_colour_5_dim="#a6adc8"     # Subtext0 - Daha soluk metin
+
+# Mocha accent colors - Mocha aksent renkleri
+tmux_conf_theme_colour_7="#f38ba8"     # Pink - Pembe
+tmux_conf_theme_colour_8="#fab387"     # Peach - Şeftali
+tmux_conf_theme_colour_9="#f9e2af"     # Yellow - Sarı
+tmux_conf_theme_colour_10="#a6e3a1"    # Green - Yeşil
+tmux_conf_theme_colour_11="#94e2d5"    # Teal - Deniz mavisi
+tmux_conf_theme_colour_12="#89dceb"    # Sky - Gök mavisi
+tmux_conf_theme_colour_13="#89b4fa"    # Blue - Mavi
+tmux_conf_theme_colour_14="#b4befe"    # Lavender - Lavanta
+tmux_conf_theme_colour_15="#cba6f7"    # Mauve/Purple - Eflatun/Mor
+tmux_conf_theme_colour_16="#f5e0dc"    # Rosewater - Gül suyu
+tmux_conf_theme_colour_17="#f2cdcd"    # Flamingo - Flamingo
+tmux_conf_theme_colour_18="#ffffff"    # Pure white - Saf beyaz
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 4. Visual Appearance Settings      ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Window style - Genel pencere stili ayarları
+tmux_conf_theme_window_fg="$tmux_conf_theme_colour_5"           # Pencere metni rengi
+tmux_conf_theme_window_bg="$tmux_conf_theme_colour_1"           # Pencere arka plan rengi
+
+# Pane styling - Panel stil ayarları
+tmux_conf_theme_highlight_focused_pane=true                     # Aktif panel'i vurgula
+tmux_conf_theme_focused_pane_bg="$tmux_conf_theme_colour_1"     # Aktif panel arka plan rengi
+tmux_conf_theme_pane_border_style=thin                          # Panel kenarlık stili (ince)
+tmux_conf_theme_pane_border="$tmux_conf_theme_colour_4"         # İnaktif panel kenarlık rengi
+tmux_conf_theme_pane_active_border="$tmux_conf_theme_colour_15" # Aktif panel kenarlık rengi
+tmux_conf_theme_pane_indicator="$tmux_conf_theme_colour_13"     # Panel gösterge rengi
+tmux_conf_theme_pane_active_indicator="$tmux_conf_theme_colour_15"  # Aktif panel gösterge rengi
+
+# Status line message styles - Status satırı mesaj stilleri
+tmux_conf_theme_message_fg="$tmux_conf_theme_colour_1"          # Mesaj metni rengi
+tmux_conf_theme_message_bg="$tmux_conf_theme_colour_14"         # Mesaj arka plan rengi
+tmux_conf_theme_message_attr="bold"                             # Mesaj metin özniteliği (kalın)
+tmux_conf_theme_message_command_fg="$tmux_conf_theme_colour_9"  # Komut mesajı metni rengi
+tmux_conf_theme_message_command_bg="$tmux_conf_theme_colour_1"  # Komut mesajı arka plan rengi
+tmux_conf_theme_message_command_attr="bold"                     # Komut mesajı metin özniteliği
+
+# Window modes style - Pencere modları stili (kopyalama modu vs)
+tmux_conf_theme_mode_fg="$tmux_conf_theme_colour_1"             # Mod metni rengi
+tmux_conf_theme_mode_bg="$tmux_conf_theme_colour_15"            # Mod arka plan rengi
+tmux_conf_theme_mode_attr="bold"                                # Mod metin özniteliği
+
+# Status line base style - Status satırı temel stili
+tmux_conf_theme_status_fg="$tmux_conf_theme_colour_5"           # Status metni rengi
+tmux_conf_theme_status_bg="$tmux_conf_theme_colour_1"           # Status arka plan rengi
+tmux_conf_theme_status_attr="none"                              # Status metin özniteliği (yok)
+
+# Window status style - Pencere status stili
+tmux_conf_theme_window_status_fg="$tmux_conf_theme_colour_6"              # İnaktif pencere metni rengi
+tmux_conf_theme_window_status_bg="$tmux_conf_theme_colour_1"              # İnaktif pencere arka plan rengi
+tmux_conf_theme_window_status_attr="none"                                 # İnaktif pencere metin özniteliği
+tmux_conf_theme_window_status_format="#[bold]#I #[nobold]#W#{?window_activity_flag,#[fg=$tmux_conf_theme_colour_8] ●,}#{?window_bell_flag,#[fg=$tmux_conf_theme_colour_7] ⚠,}"  # İnaktif pencere formatı: kalın index + normal isim + aktivite/alarm göstergesi
+
+# Current window status style - Aktif pencere status stili
+tmux_conf_theme_window_status_current_fg="$tmux_conf_theme_colour_1"      # Aktif pencere metni rengi
+tmux_conf_theme_window_status_current_bg="$tmux_conf_theme_colour_15"     # Aktif pencere arka plan rengi
+tmux_conf_theme_window_status_current_attr="bold"                         # Aktif pencere metin özniteliği (kalın)
+tmux_conf_theme_window_status_current_format="#I #W"                      # Aktif pencere formatı: index + isim (basit)
+
+# Activity/bell status styles - Aktivite/alarm status stilleri
+tmux_conf_theme_window_status_activity_fg="$tmux_conf_theme_colour_5_medium"  # Aktivite olan pencere metni rengi
+tmux_conf_theme_window_status_activity_bg="default"                           # Aktivite olan pencere arka planı (varsayılan)
+tmux_conf_theme_window_status_activity_attr="underscore"                      # Aktivite olan pencere özniteliği (alt çizgi)
+tmux_conf_theme_window_status_bell_fg="$tmux_conf_theme_colour_8"             # Alarm olan pencere metni rengi
+tmux_conf_theme_window_status_bell_bg="default"                               # Alarm olan pencere arka planı
+tmux_conf_theme_window_status_bell_attr="blink,bold"                          # Alarm olan pencere özniteliği (yanıp sön + kalın)
+
+# Last window status style - Son aktif pencere status stili
+tmux_conf_theme_window_status_last_fg="$tmux_conf_theme_colour_13"        # Son aktif pencere metni rengi
+tmux_conf_theme_window_status_last_bg="default"                           # Son aktif pencere arka planı
+tmux_conf_theme_window_status_last_attr="none"                            # Son aktif pencere özniteliği
+
+# Status separators
+tmux_conf_theme_left_separator_main=''
+tmux_conf_theme_left_separator_sub=''
+tmux_conf_theme_right_separator_main=''
+tmux_conf_theme_right_separator_sub=''
+
+# Status line content - Status satırı içeriği
+tmux_conf_theme_status_left=" ◉ #S | ⧉ #{pairing} | #{online_status} |"   # Sol status içeriği: session adı | pairing durumu | çevrimiçi durum
+tmux_conf_theme_status_right=" #{prefix} | #{mouse} | ⟲ #{synchronized} | ◉ #{continuum_status} | ♪ #{playerctl_status} #{playerctl_short} | #{kripto} | ⚿ #{ssh_status} | ⌘ #{hostname} |"  # Sağ status içeriği: prefix | fare | senkronizasyon | continuum | müzik | kripto | ssh | hostname
+
+# Status line color schemes - Status satırı renk şemaları
+# Sol status renkleri (her bölüm için ayrı renk: session, pairing, online_status)
+tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_5_medium,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_1"
+# Sol status arka plan renkleri
+tmux_conf_theme_status_left_bg="$tmux_conf_theme_colour_15,$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_3,$tmux_conf_theme_colour_2"
+# Sol status metin öznitelikleri
+tmux_conf_theme_status_left_attr="bold,none,bold,bold,bold"
+
+# Sağ status renkleri (her bölüm için: prefix, mouse, sync, continuum, playerctl, kripto, ssh, hostname)
+tmux_conf_theme_status_right_fg="$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_6,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_6,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_5,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_5_medium"
+# Sağ status arka plan renkleri
+tmux_conf_theme_status_right_bg="$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_1,$tmux_conf_theme_colour_2,$tmux_conf_theme_colour_4,$tmux_conf_theme_colour_13,$tmux_conf_theme_colour_15,$tmux_conf_theme_colour_15"
+# Sağ status metin öznitelikleri
+tmux_conf_theme_status_right_attr="none,none,none,none,none,none,bold,bold,bold"
+
+# Clock style - Saat stili ayarları
+tmux_conf_theme_clock_colour="$tmux_conf_theme_colour_15"       # Saat rengi
+tmux_conf_theme_clock_style="24"                               # Saat formatı (24 saat)
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 5. Core Functionality Settings     ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Copy to OS clipboard - İşletim sistemi clipboard'ına kopyalama
+tmux_conf_copy_to_os_clipboard=true                            # OS clipboard entegrasyonunu etkinleştir
+
+# Session handling - Oturum işleme davranışları
+tmux_conf_new_session_prompt=false                             # Yeni session oluştururken isim sorma
+tmux_conf_new_session_retain_current_path=true                 # Yeni session mevcut dizinde başlasın
+tmux_conf_new_window_retain_current_path=true                  # Yeni pencere mevcut dizinde açılsın
+tmux_conf_new_window_reconnect_ssh=true                        # Yeni pencerede SSH bağlantısını yeniden kur
+tmux_conf_new_pane_retain_current_path=true                    # Yeni panel mevcut dizinde açılsın
+tmux_conf_new_pane_reconnect_ssh=true                          # Yeni panelde SSH bağlantısını yeniden kur
+
+# Urlscan options - URL tarama seçenekleri
+tmux_conf_urlscan_options="--compact --dedupe"                 # Compact görünüm ve dublikasyon kaldır
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 6. Plugin Configuration            ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Plugin management settings - Plugin yönetimi ayarları
+tmux_conf_update_plugins_on_launch=false                       # tmux başlatıldığında pluginleri güncelleme
+tmux_conf_update_plugins_on_reload=false                       # Config reload edildiğinde pluginleri güncelleme
+tmux_conf_uninstall_plugins_on_reload=false                    # Config reload edildiğinde kullanılmayan pluginleri kaldırma
+
+# Plugin list - Plugin listesi (her satır bir plugin)
+set -g @plugin 'tmux-plugins/tpm'                              # TPM - Tmux Plugin Manager (plugin yöneticisi)
+set -g @plugin 'tmux-plugins/tmux-sensible'                    # Mantıklı varsayılan ayarlar
+set -g @plugin 'tmux-plugins/tmux-open'                        # Dosya/URL açma desteği
+set -g @plugin 'kenanpelit/tmux-fzf-url'                       # FZF ile URL tarama
+set -g @plugin 'tmux-plugins/tmux-prefix-highlight'            # Prefix tuşu vurgulama
+set -g @plugin 'tmux-plugins/tmux-online-status'               # Çevrimiçi durum göstergesi
+set -g @plugin 'sainnhe/tmux-fzf'                              # FZF entegrasyonu (ana menü)
+set -g @plugin 'kenanpelit/tmux-ssh-status'                    # SSH bağlantı durum göstergesi
+set -g @plugin 'lljbash/tmux-update-display'                   # Display güncelleme desteği
+set -g @plugin 'roosta/tmux-fuzzback'                          # Geçmiş arama (fuzzback)
+set -g @plugin 'joshmedeski/tmux-nerd-font-window-name'        # Nerd Font simgeleri ile pencere isimleri
+set -g @plugin 'vascomfnunes/tmux-kripto'                      # Kripto para fiyatları göstergesi
+set -g @plugin 'TheSast/tmux-nav-master'                       # Gelişmiş navigasyon
+set -g @plugin 'omerxx/tmux-sessionx'                          # Gelişmiş session yöneticisi
+set -g @plugin 'richin13/tmux-plugin-playerctl'                # Müzik oynatıcı kontrolü
+set -g @plugin 'tmux-plugins/tmux-resurrect'                   # Session kaydetme/yükleme
+set -g @plugin 'tmux-plugins/tmux-continuum'                   # Otomatik session kaydetme
+set -g @plugin 'tmux-plugins/tmux-sessionist'                  # Session yönetimi araçları
+set -g @plugin 'fcsonline/tmux-thumbs'                         # Hızlı text kopyalama (hint based)
+set -g @plugin 'tmux-plugins/tmux-yank'                        # Gelişmiş kopyalama
+set -g @plugin 'tmux-plugins/tmux-copycat'                     # Gelişmiş arama (regex, dosya, git vs)
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Plugin Settings - Detaylı Plugin Konfigürasyonları               ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# tmux-open settings - tmux-open plugin ayarları
+set -g @open-G 'https://www.google.com.tr/search?q='           # G tuşu ile Google Türkiye'de ara
+
+# tmux-online-status settings - Çevrimiçi durum göstergesi ayarları
+set -g @online_icon "✓"                                        # Çevrimiçi simgesi
+set -g @offline_icon "✘"                                       # Çevrimdışı simgesi
+
+# tmux-prefix-highlight settings - Prefix vurgulama ayarları
+set -g @prefix_highlight_fg 'white'                            # Prefix vurgu metni rengi
+set -g @prefix_highlight_bg 'blue'                             # Prefix vurgu arka plan rengi
+set -g @prefix_highlight_prefix_prompt 'Wait'                  # Prefix beklerken gösterilecek metin
+set -g @prefix_highlight_copy_prompt 'Copy'                    # Copy modunda gösterilecek metin
+set -g @prefix_highlight_sync_prompt 'Sync'                    # Sync modunda gösterilecek metin
+
+# tmux-fzf-url settings - URL tarama ayarları
+set -g @fzf-url-bind 'u'                                       # u tuşu ile URL tarayıcısını aç
+set -g @fzf-url-history-limit '2000'                           # URL geçmişi limiti (2000 satır)
+set -g @fzf-url-fzf-options '-w 50% -h 50% --multi -0 --no-preview --no-border'  # FZF görünüm seçenekleri
+
+# tmux-fzf settings - Ana FZF menü ayarları
+set -g @fzf-bind 'C-f'                                         # Ctrl-f ile ana FZF menüsünü aç
+set -g @fzf-order 'session|window|pane|command|keybinding|clipboard|process'  # Menü öğelerinin sırası
+set -g @fzf-options '-p -w 50% -h 30% -m'                      # FZF popup seçenekleri
+
+# tmux-fuzzback settings - Geçmiş arama ayarları
+set -g @fuzzback-bind 'm'                                      # m tuşu ile geçmiş arama
+set -g @fuzzback-popup 1                                       # Popup modunda çalıştır
+set -g @fuzzback-popup-size '70%'                              # Popup boyutu (%70)
+
+# tmux-kripto settings - Kripto para ayarları
+set -g @kripto_id "bitcoin"                                    # Takip edilecek kripto para (Bitcoin)
+set -g @kripto_currency_symbol " $"                            # Para birimi simgesi
+set -g @kripto_ttl 300                                         # Güncelleme sıklığı (300 saniye)
+
+# tmux-plugin-playerctl settings - Müzik oynatıcı ayarları
+set -g @short_length "40"                                      # Şarkı adı kısaltma uzunluğu
+set -g @status_playing "▶"                                     # Oynatılıyor simgesi
+set -g @status_paused "■"                                      # Duraklatıldı simgesi
+set -g @status_stopped "■"                                     # Durduruldu simgesi
+
+# tmux-resurrect settings - Session kaydetme ayarları
+set -g @resurrect-strategy-nvim 'session'                      # Neovim session stratejisi
+set -g @resurrect-strategy-vim 'session'                       # Vim session stratejisi
+set -g @resurrect-capture-pane-contents 'on'                   # Panel içeriğini kaydet
+set -g @resurrect-processes 'ssh psql mysql sqlite3 npm yarn'  # Kaydedilecek process'ler
+
+# tmux-continuum settings - Otomatik kaydetme ayarları
+set -g @continuum-restore 'off'                                # Otomatik yüklemeyi kapat (elle kontrol et)
+set -g @continuum-save-interval '10'                           # Kaydetme aralığı (10 dakika)
+
+# tmux-sessionx settings - Gelişmiş session yöneticisi ayarları
+set -g @sessionx-bind 'O'                                      # O tuşu ile SessionX'i aç
+set -g @sessionx-window-height '75%'                           # SessionX pencere yüksekliği
+set -g @sessionx-window-width '75%'                            # SessionX pencere genişliği
+
+# tmux-thumbs settings - Hızlı kopyalama ayarları
+set -g @thumbs-key Space                                       # Space tuşu ile thumbs'ı aktifleştir
+set -g @thumbs-alphabet qwerty                                 # Qwerty klavye düzeni (dvorak'tan değiştirildi)
+set -g @thumbs-reverse enabled                                 # Tersten göster (en son öğeler üstte)
+set -g @thumbs-unique enabled                                  # Benzersiz harfler kullan
+set -g @thumbs-position off_left                               # Sol taraftan göster
+set -g @thumbs-osc52 1                                         # OSC52 clipboard desteği
+set -g @thumbs-contrast 1                                      # Yüksek kontrast (belirgin görünüm)
+
+# Enhanced patterns for thumbs - Thumbs için gelişmiş pattern'ler
+set -g @thumbs-regexp-1 '[a-zA-Z0-9_-]+\.[a-zA-Z]{2,4}'       # Dosya adları (uzantı ile)
+set -g @thumbs-regexp-2 '\b[0-9a-f]{7,40}\b'                  # Git hash'leri
+set -g @thumbs-regexp-3 '\b[A-Z][A-Z0-9_-]*\b'                # SABITLERI (CONSTANTS)
+set -g @thumbs-regexp-4 'https?://[^\s]+'                     # HTTP/HTTPS URL'leri
+
+# tmux-yank settings - Gelişmiş kopyalama ayarları
+set -g @yank_action 'copy-pipe-no-clear'                       # Kopyala ama seçimi temizleme
+set -g @yank_with_mouse on                                     # Fare ile kopyalamayı etkinleştir
+set -g @yank_selection 'clipboard'                             # Sistem clipboard'ına kopyala
+set -g @yank_selection_mouse 'clipboard'                       # Fare ile de sistem clipboard'ına kopyala
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Custom Key Bindings - Özel Tuş Bağlantıları                      ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# tmux-thumbs custom binding - Thumbs için özel tuş bağlantısı
+bind-key Space run-shell tmux-thumbs                           # Space tuşu ile tmux-thumbs'ı çalıştır
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ Key Bindings Reference - Tuş Kılavuzu                            ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Prefix: Ctrl-a (Ana kısayol tuşu)
+#
+# Session Management - Oturum Yönetimi:
+#   Ctrl-a Ctrl-t  - İnteraktif session değiştirici (sesh + fzf)
+#   Ctrl-a Tab     - Son kullanılan session'a geç
+#   Ctrl-a S       - Yeni session oluştur
+#   Ctrl-a K       - Session'ı yeniden adlandır
+#
+# Window Management - Pencere Yönetimi:
+#   Ctrl-a c       - Yeni pencere oluştur (tm tmx --layout 3 ile)
+#   Ctrl-a n       - Yeni pencere oluştur (tm tmx --layout 4 ile)
+#   Ctrl-a 0       - Yeni pencere oluştur (tm tmx --layout 1 ile)
+#   Ctrl-a A       - Pencereyi yeniden adlandır
+#   Ctrl-a q       - Pencereyi kapat (onay iste)
+#   Ctrl-a C-n     - Sonraki pencereye geç
+#   Ctrl-a C-p     - Önceki pencereye geç
+#   Ctrl-a C-a     - Son aktif pencereye geç (toggle)
+#   Ctrl-a 1-5     - Layout presetleri (YENİ)
+#
+# Pane Management - Panel Yönetimi:
+#   Ctrl-a |/-     - Yatay/dikey bölme (YENİ)
+#   Ctrl-a hjkl    - Panel navigasyonu (YENİ - Vim tarzı)
+#   Ctrl-a HJKL    - Panel boyutlandırma (YENİ - tekrarlanabilir)
+#   Ctrl-a x       - Panel'i kapat
+#   Ctrl-a C-q     - Panel'i kapat (onay iste)
+#   Ctrl-a ü       - Panel numaralarını göster (5 saniye)
+#   Ctrl-a z       - Zoom toggle (YENİ)
+#   Ctrl-a Y       - Panel senkronizasyonu (YENİ)
+#
+# Copy Mode & Clipboard - Kopyalama Modu & Clipboard:
+#   Ctrl-a Enter   - Kopyalama moduna gir (vi tarzı)
+#   Ctrl-a >       - Buffer'ı clipboard'a kopyala
+#   Ctrl-a <       - Clipboard'dan yükle
+#   Ctrl-a +       - Buffer sil
+#   Ctrl-a b       - Buffer seç
+#
+# Utility Popups - Yardımcı Popup'lar:
+#   Ctrl-a e       - Metin notu popup'ı (anote -t)
+#   Ctrl-a E       - Markdown notu popup'ı (anote -Ms)
+#   Ctrl-a i       - Snippet popup'ı (anote -S)
+#   Alt-m          - Genel not popup'ı (anote)
+#   Alt-h          - Buffer yönetimi popup'ı (tm buffer)
+#   Alt-b          - Clipboard yönetimi popup'ı (tm clip)
+#   Alt-k          - Hız testi popup'ı (tm speed)
+#   Ctrl-a T       - Terminal popup'ı
+#
+# Plugin Bindings - Plugin Kısayolları:
+#   Ctrl-a u       - URL tarama (tmux-fzf-url)
+#   Ctrl-a C-f     - Tmux FZF menü
+#   Ctrl-a m       - Fuzzback (geçmiş arama)
+#   Ctrl-a Space   - Tmux thumbs (hızlı kopyalama)
+#   Ctrl-a O       - SessionX
+#
+# Plugin Search Features - Plugin Arama Özellikleri (tmux-copycat):
+#   Ctrl-a /       - Regex arama
+#   Ctrl-a Ctrl-f  - Dosya arama
+#   Ctrl-a Ctrl-g  - Git arama
+#   Ctrl-a Alt-h   - SHA arama
+#   Ctrl-a Ctrl-u  - URL arama
+#   Ctrl-a Ctrl-d  - Sayı arama
+#   Ctrl-a Alt-i   - IP arama
+#
+# System & Advanced - Sistem & Gelişmiş:
+#   Ctrl-l         - Ekran ve geçmişi temizle (global kısayol)
+#   Ctrl-a R       - Konfigürasyonu yeniden yükle (YENİ)
+#   Alt-p          - Plugin güncelle
+#
+# Mouse Support - Fare Desteği:
+#   - Kaydırma, panel seçimi için fare desteği
+#   - Sürükleyerek panel boyutlandırma
+#   - Tıklayarak panel seçimi
+#
+# Theme Features - Tema Özellikleri:
+#   - Catppuccin Mocha renk şeması
+#   - Powerline ayırıcı desteği
+#   - Üstte status bar
+#   - Aktivite/alarm göstergeleri
+#   - Plugin status entegrasyonu
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 7. Custom Functions - Özel Fonksiyonlar                          ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Status satırı entegrasyonu için özel değişkenler
+# Özel #{foo} değişkeni tanımlamak için, '# EOF' ve '# "$@"' satırları arasında
+# POSIX shell fonksiyonu tanımla. Açılış süslü parantez { karakterinin
+# fonksiyon adı ile aynı satırda olması gerekir, yoksa parser algılamaz.
+
+# EOF
+
+# Örnek özel fonksiyonlar (yorumlu - kullanmak için yorumları kaldır):
+
+# Kullanım: #{weather}
+# weather() {
+#   curl -f -s -m 2 'wttr.in?format=3' || printf '\n'    # Hava durumu bilgisini al (3 format)
+#   sleep 900  # 15 dakika bekle, ağ isteklerini kısıtla
+# }
+
+# Kullanım: #{online}
+# online() {
+#   ping -c 1 1.1.1.1 >/dev/null 2>&1 && printf '✓' || printf '✘'  # İnternet bağlantısını kontrol et
+# }
+
+# Kullanım: #{wan_ip_v4}
+# wan_ip_v4() {
+#   curl -f -s -m 2 -4 ifconfig.me                       # Dış IP adresini al (IPv4)
+#   sleep 300  # 5 dakika bekle, ağ isteklerini kısıtla
+# }
+
+# Kullanım: #{wan_ip_v6}
+# wan_ip_v6() {
+#   curl -f -s -m 2 -6 ifconfig.me                       # Dış IP adresini al (IPv6)
+#   sleep 300  # 5 dakika bekle, ağ isteklerini kısıtla
+# }
+
+# Kullanım: #{github_stars}, #{github_stars tmux/tmux}, ...
+# github_stars() {
+#   repository=${1##*https://github.com/}                # GitHub URL'sinden repo adını çıkar
+#   repository=${repository%% *}                          # Boşluktan sonrasını kes
+#   repository=${repository%%.git}                        # .git uzantısını kaldır
+#   url="https://api.github.com/repos/${repository:-gpakosz/.tmux}"  # API URL'sini oluştur
+#   curl -s "$url" | perl -MJSON::PP=decode_json -CO -0777 -E '$response = decode_json(readline *STDIN); say ($response->{stargazers_count})'  # Star sayısını al
+#   sleep 300  # 5 dakika bekle, ağ isteklerini kısıtla
+# }
+
+# "$@"
+# # /!\ Bu satırı kaldırma
+# #     Bu satırın altına yazma
