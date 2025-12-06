@@ -599,10 +599,8 @@ let
     # Launchers
     "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
     "$mainMod, Space, exec, dms ipc call spotlight toggle"
-    #"$mainMod, Space, exec, noctalia-shell ipc call launcher toggle"
     "ALT, Space, exec, rofi-launcher custom || pkill rofi"
     "$mainMod, backspace, exec, dms ipc call powermenu toggle"
-    #"$mainMod, backspace, exec, noctalia-shell ipc call sessionMenu toggle"
     "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
     
     # Terminals
@@ -620,11 +618,8 @@ let
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
     ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
-    #", XF86AudioRaiseVolume, exec, noctalia-shell ipc call volume increase"
     ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
-    #", XF86AudioLowerVolume, exec, noctalia-shell ipc call volume decrease"
     ", XF86AudioMute, exec, dms ipc call audio mute"
-    #", XF86AudioMute, exec, noctalia-shell ipc call volume muteOutput"
     ", XF86AudioMicMute, exec, toggle-mic"
     
     # Playback Control
@@ -641,8 +636,6 @@ let
     # Brightness
     ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
     ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
-    #", XF86MonBrightnessUp, exec, noctalia-shell ipc call brightness increase"
-    #", XF86MonBrightnessDown, exec, noctalia-shell ipc call brightness decrease"
     
     # MPV Manager
     "CTRL ALT, 1, exec, hypr-mpv-manager start"
