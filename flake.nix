@@ -87,6 +87,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    ax-shell = {
+      url = "github:poogas/Ax-Shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     pyprland = {
       url = "github:hyprland-community/pyprland";
       inputs.nixpkgs.follows = "nixpkgs";
