@@ -602,12 +602,12 @@ let
     "ALT, Space, exec, rofi-launcher custom || pkill rofi"
     "$mainMod, backspace, exec, dms ipc call powermenu toggle"
     "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
-    
+   
     # Terminals
     "$mainMod, Return, exec, kitty"
     "ALT, Return, exec, [float; center; size 950 650] kitty"
     "$mainMod SHIFT, Return, exec, [fullscreen] kitty"
-    
+  
     # File Managers
     "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
     "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal nemo'"
@@ -620,23 +620,25 @@ let
     ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
     ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
     ", XF86AudioMute, exec, dms ipc call audio mute"
-    ", XF86AudioMicMute, exec, toggle-mic"
-    
-    # Playback Control
+    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
+   
+    # Playback Control (DMS MPRIS)
+    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
+    ", XF86AudioNext, exec, dms ipc call mpris next"
+    ", XF86AudioPrev, exec, dms ipc call mpris previous"
+    ", XF86AudioStop, exec, dms ipc call mpris stop"
+  
+    # Spotify & MPV (özel scriptler)
     "ALT, E, exec, osc-spotify"
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"
     "ALT CTRL, E, exec, mpc-control toggle"
     "ALT, i, exec, hypr-vlc_toggle"
-    ",XF86AudioPlay,exec, playerctl play-pause"
-    ",XF86AudioNext,exec, playerctl next"
-    ",XF86AudioPrev,exec, playerctl previous"
-    ",XF86AudioStop,exec, playerctl stop"
-    
+  
     # Brightness
     ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
     ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
-    
+  
     # MPV Manager
     "CTRL ALT, 1, exec, hypr-mpv-manager start"
     "ALT, 1, exec, hypr-mpv-manager playback"
@@ -659,45 +661,67 @@ let
     "$mainMod, G, togglegroup"
     "$mainMod, T, exec, toggle_opacity"
     "$mainMod, S, pin"
-    
+  
     # Layout
     "$mainMod CTRL, J, exec, hypr-layout_toggle"
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
     "$mainMod, R, submap, resize"
-    
+  
     # Splitting
     "$mainMod ALT, left, exec, hyprctl dispatch splitratio -0.2"
     "$mainMod ALT, right, exec, hyprctl dispatch splitratio +0.2"
   ];
 
   systemBinds = [
-    # Tools
+    # Lock & Power
     "ALT, L, exec, dms ipc call lock lock"
-    "$mainMod SHIFT, C, exec, hyprpicker -a"
+    "$mainMod, backspace, exec, dms ipc call powermenu toggle"
+    "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
+  
+    # DMS Panels & Widgets
     "$mainMod, N, exec, dms ipc call notifications toggle"
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
     "$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod, D, exec, dms ipc call dash toggle ''"
+    "$mainMod CTRL, D, exec, dms ipc call control-center toggle"
+  
+    # Theme & Night Mode
+    "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
+    "$mainMod SHIFT, N, exec, dms ipc call night toggle"
+  
+    # Bar & Dock
+    "$mainMod, B, exec, dms ipc call bar toggle index 0"
+    "$mainMod SHIFT, B, exec, dms ipc call dock toggle"
+    "$mainMod CTRL, B, exec, dms ipc call bar toggleAutoHide index 0"
+  
+    # Tools
+    "$mainMod SHIFT, C, exec, hyprpicker -a"
     "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"
-    
+  
     # Wallpaper
-
-    
+    "$mainMod, W, exec, dms ipc call wallpaper next"
+    "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
+    "$mainMod CTRL, W, exec, dms ipc call file browse wallpaper"
+  
     # Monitor
     "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"
     "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"
     "$mainMod, E, exec, pypr shift_monitors +1"
-    
+  
     # Connectivity
-    ",F10, exec, bluetooth_toggle"
+    ", F10, exec, bluetooth_toggle"
     "ALT, F12, exec, osc-mullvad toggle"
-    
+  
     # Clipboard
     "$mainMod, V, exec, kitty --class clipse -e clipse"
     "$mainMod CTRL, V, exec, dms ipc call clipboard toggle"
+  
+    # Keybinds Cheatsheet
+     "$mainMod, slash, exec, dms ipc call keybinds toggle hyprland"
   ];
 
   screenshotBinds = [
-    ",Print, exec, screenshot ri"
+    ", Print, exec, screenshot ri"
     "$mainMod CTRL, Print, exec, screenshot rec"
     "$mainMod, Print, exec, screenshot si"
     "ALT, Print, exec, screenshot wi"
@@ -708,8 +732,8 @@ let
   specialAppsBinds = [
     "ALT, T, exec, start-kkenp"
     "$mainMod ALT, RETURN, exec, semsumo launch --daily"
-    "$mainMod, D, exec, dms ipc call dash toggle ''"
     "$mainMod, M, exec, anotes"
+    "$mainMod CTRL, N, exec, dms ipc call notepad open"
   ];
 
   navBinds = [
