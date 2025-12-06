@@ -39,6 +39,8 @@ in
       Unit = {
         Description = "Install tmux fzf bundle from secret tar.gz";
         ConditionPathExists = "/home/${config.home.username}/.backup/fzf.tar.gz";
+        After = [ "sops-nix.service" ];
+        Requires = [ "sops-nix.service" ];
       };
       Service = {
         Type = "oneshot";
