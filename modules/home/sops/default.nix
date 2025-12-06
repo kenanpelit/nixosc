@@ -50,7 +50,7 @@ in
       } // lib.optionalAttrs (builtins.pathExists "${assetsDir}/fzf.env.tar.gz") {
         "tmux_fzf" = {
           sopsFile = "${assetsDir}/fzf.env.tar.gz";
-          path = "${homeDir}/.backup/tmux-fzf.tar.gz";
+          path = "${homeDir}/.backup/fzf.tar.gz";
           format = "binary";
         };
       };
