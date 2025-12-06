@@ -63,7 +63,7 @@ lib.mkIf cfg.enable {
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 10 && /etc/profiles/per-user/${config.home.username}/bin/bluetooth_toggle'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && /etc/profiles/per-user/${config.home.username}/bin/bluetooth_toggle'";
     };
 
     Install = {
