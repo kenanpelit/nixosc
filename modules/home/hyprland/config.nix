@@ -784,9 +784,7 @@ lib.mkIf cfg.enable {
       # =====================================================
       # CORE CONFIGURATION (Mapped from lists above)
       # =====================================================
-      exec-once =
-        startupServices
-        ++ (config.programs.ax-shell.hyprlandExecOnce or [ ]);
+      exec-once = startupServices;
       monitor = monitorConfig;
       workspace = workspaceConfig;
 
@@ -1031,8 +1029,7 @@ lib.mkIf cfg.enable {
         navBinds ++
         mkMoveMonitor (lib.range 1 9) ++
         mkWorkspaces (lib.range 1 9) ++
-        mkMoveWorkspaces (lib.range 1 9) ++
-        (config.programs.ax-shell.hyprlandBinds or [ ]);
+        mkMoveWorkspaces (lib.range 1 9);
 
       bindm = [
         "$mainMod, mouse:272, movewindow"

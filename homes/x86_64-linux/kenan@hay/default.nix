@@ -45,13 +45,6 @@
   my.user.dms.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
-  my.user.ax-shell = {
-    enable = true;
-    settings = {
-      terminalCommand = "kitty -e";
-      wallpapersDir = "/home/${config.home.username}/.nixosc/wallpapers";
-    };
-  };
 
   # ============================================================================
   # Browsers
