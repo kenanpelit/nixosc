@@ -211,10 +211,17 @@
         # Overlays applied to all systems
         overlays = with inputs; [
           nur.overlays.default
-          (final: prev: {
-            # Provide ax-shell package for modules expecting pkgs.ax-shell
-            ax-shell = inputs.ax-shell.packages.${prev.stdenv.hostPlatform.system}.default;
-          })
+          (final: prev:
+            let
+              axShellPkg = inputs.ax-shell.packages.${prev.stdenv.hostPlatform.system}.default;
+              droppedNvtop = prev.lib.remove prev.nvtop (axShellPkg.buildInputs or [ ]);
+            in {
+              # Provide ax-shell package for modules expecting pkgs.ax-shell
+              ax-shell = axShellPkg.overrideAttrs (old: {
+                # Ax-Shell pulls in nvtop (NVIDIA-centric). Drop it for non-NVIDIA hosts.
+                buildInputs = droppedNvtop;
+              });
+            })
         ];
 
         # Modules automatically added to all NixOS systems
