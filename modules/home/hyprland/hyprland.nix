@@ -53,6 +53,24 @@ lib.mkIf cfg.enable {
     Install.WantedBy = [ "hyprland-session.target" ];
   };
 
+  # Auto-run bluetooth_toggle shortly after session start
+  systemd.user.services.bluetooth-auto-toggle = {
+    Unit = {
+      Description = "Auto toggle/connect Bluetooth on login";
+      After = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
+    };
+
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 10 && /etc/profiles/per-user/${config.home.username}/bin/bluetooth_toggle'";
+    };
+
+    Install = {
+      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
+    };
+  };
+
   # Hyprpaper manager as a user service
   systemd.user.services.hyprpaper-manager = {
     Unit = {
