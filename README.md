@@ -42,7 +42,7 @@
 A comprehensive NixOS system configuration management suite built on the **Snowfall Lib** framework. It provides a unified, modular approach to managing both system-level configuration (NixOS) and user environments (Home Manager).
 
 - **Architecture:** Snowfall Lib (automatic module discovery)
-- **Desktop:** Hyprland (Wayland) with **DankMaterialShell (DMS)** shell; Waybar disabled
+- **Desktop:** Hyprland (Wayland) with **DankMaterialShell (DMS)** shell and widgets (Waybar disabled)
 - **Launchers:** DMS launcher + Walker + Rofi (fallback)
 - **Theme:** Catppuccin Mocha everywhere
 - **Shell:** Zsh + Starship + Tmux
@@ -57,7 +57,7 @@ The project follows modern Snowfall Lib standards:
 - [systems](systems) - ❄️ Host configurations
   - [hay](systems/x86_64-linux/hay/) - 💻 Laptop/Workstation
   - [vhay](systems/x86_64-linux/vhay/) - 🗄️ Virtual Machine
-- [modules](modules) - 🍱 Modular configurations
+  - [modules](modules) - 🍱 Modular configurations
   - [nixos](modules/nixos/) - ⚙️ System-level modules (hardware, services)
   - [home](modules/home/) - 🏠 User-level modules (Home Manager apps/services)
 - [packages](packages/) - 📦 Custom packages (e.g. Maple Mono) and scripts
@@ -137,17 +137,20 @@ To edit secrets:
 sops secrets/wireless-secrets.enc.yaml
 ```
 
-## ⌨️ Keybindings (Hyprland)
+## ⌨️ Keybindings (Hyprland + DMS)
 
 - `$mainMod` = `SUPER` key
-- DMS ships its own launcher/bindings; base Hyprland binds include:
-  - `$mainMod + Enter` — Open terminal
-  - `$mainMod + B` — Open browser
-  - `$mainMod + D` — Open launcher (Rofi fallback; DMS launcher bound in-shell)
+- DMS ships its own launcher/panel shortcuts.
+- Core Hyprland bindings:
+  - `$mainMod + Enter` — Terminal
+  - `$mainMod + B` — Browser
+  - `$mainMod + D` — Launcher (Rofi fallback; DMS has its own launcher)
   - `$mainMod + Q` — Close window
   - `$mainMod + F` — Fullscreen
   - `$mainMod + Space` — Toggle floating
-  - `$mainMod + 1-9` / `Shift` — Switch/move window to workspace
+  - `$mainMod + 1-9` — Switch workspace
+  - `$mainMod + Shift + 1-9` — Move window to workspace
+- Full list: `modules/home/hyprland/config.nix`
 
 ## 📄 License
 
