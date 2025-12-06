@@ -680,8 +680,8 @@ let
     "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"
     
     # Wallpaper
-    "$mainMod, W, exec, hyprpaper-manager select"
-    "ALT, 0, exec, hyprpaper-manager now"
+    "$mainMod, W, exec, hyprpaper select"
+    "ALT, 0, exec, hyprpaper"
     
     # Monitor
     "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"
