@@ -836,6 +836,7 @@ lib.mkIf cfg.enable {
       gestures = {
         workspace_swipe_distance = 300;
         workspace_swipe_touch = true;
+        workspace_swipe_fingers = 3;
         workspace_swipe_touch_invert = false;
         workspace_swipe_invert = true;
         workspace_swipe_min_speed_to_force = 20;
