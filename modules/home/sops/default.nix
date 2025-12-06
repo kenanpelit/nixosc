@@ -54,11 +54,7 @@ in
         };
         */
         
-        "mpv_config" = {
-          sopsFile = "${assetsDir}/mpv.enc.tar.gz";
-          path = "${homeDir}/.backup/mpv.tar.gz";
-          format = "binary";
-        };
+        # mpv configs now live in modules/home/mpv/config (no encrypted tar)
       };
     };
   
