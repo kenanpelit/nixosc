@@ -47,9 +47,9 @@ in
         };
         
         # mpv configs now live in modules/home/mpv/config (no encrypted tar)
-      } // lib.optionalAttrs (builtins.pathExists "${assetsDir}/tmux-fzf.enc.tar.gz") {
+      } // lib.optionalAttrs (builtins.pathExists "${assetsDir}/fzf.env.tar.gz") {
         "tmux_fzf" = {
-          sopsFile = "${assetsDir}/tmux-fzf.enc.tar.gz";
+          sopsFile = "${assetsDir}/fzf.env.tar.gz";
           path = "${homeDir}/.backup/tmux-fzf.tar.gz";
           format = "binary";
         };
