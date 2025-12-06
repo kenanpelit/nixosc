@@ -214,10 +214,7 @@
           (final: prev:
             let
               axShellPkg = inputs.ax-shell.packages.${prev.stdenv.hostPlatform.system}.default;
-              nvtopPkg = prev.nvtop or null;
-              droppedNvtop =
-                if nvtopPkg == null then axShellPkg.buildInputs or [ ]
-                else prev.lib.remove nvtopPkg (axShellPkg.buildInputs or [ ]);
+              droppedNvtop = prev.lib.remove prev.nvtop (axShellPkg.buildInputs or [ ]);
             in {
               # Provide ax-shell package for modules expecting pkgs.ax-shell
               ax-shell = axShellPkg.overrideAttrs (old: {
