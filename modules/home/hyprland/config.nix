@@ -599,14 +599,13 @@ let
     # Launchers
     "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
     "$mainMod, Space, exec, dms ipc call spotlight toggle"
-    "ALT, Space, exec, rofi-launcher custom || pkill rofi"
+    "ALT, Space, exec, rofi-launcher || pkill rofi"
     "$mainMod, backspace, exec, dms ipc call powermenu toggle"
     "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
    
     # Terminals
     "$mainMod, Return, exec, kitty"
     "ALT, Return, exec, [float; center; size 950 650] kitty"
-    "$mainMod SHIFT, Return, exec, [fullscreen] kitty"
   
     # File Managers
     "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
@@ -652,7 +651,6 @@ let
   windowControlBinds = [
     # Basic Actions
     "$mainMod, Q, killactive"
-    "ALT, F4, killactive"
     "$mainMod SHIFT, F, fullscreen, 1"
     "$mainMod CTRL, F, fullscreen, 0"
     "$mainMod, F, exec, toggle_float"
@@ -676,7 +674,6 @@ let
     # Lock & Power
     # Lock screen
     "ALT, L, exec, hyprlock"
-    "$mainMod, backspace, exec, dms ipc call powermenu toggle"
     "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
   
     # DMS Panels & Widgets
@@ -697,7 +694,6 @@ let
   
     # Tools
     "$mainMod SHIFT, C, exec, hyprpicker -a"
-    "$mainMod CTRL, Escape, exec, hyprctl dispatch exec '[workspace 12] resources'"
   
     # Wallpaper
     "$mainMod, W, exec, dms ipc call wallpaper next"
