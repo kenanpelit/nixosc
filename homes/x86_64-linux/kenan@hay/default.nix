@@ -34,10 +34,10 @@
   my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
-  my.user.walker.enable = true;
+  my.user.walker.enable = false;
   my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
-  my.user.swaylock.enable = true;
+  my.user.swaylock.enable = false;
   my.user.swayosd.enable = false;
   my.user.wpaperd.enable = false;
   my.user.waypaper.enable = false;
