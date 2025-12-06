@@ -44,7 +44,7 @@ in
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "install-tmux-fzf" ''
           set -e
-          dest="$HOME/.config/fzf"
+          dest="$HOME/.config/tmux/fzf"
           mkdir -p "$dest"
           ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/fzf.tar.gz" -C "$dest"
         '';
