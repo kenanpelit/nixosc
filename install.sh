@@ -28,6 +28,9 @@ readonly DEFAULT_HOST="hay"
 
 # Merge Configuration - Files to preserve during merges
 readonly EXCLUDE_FILES=(
+  # Keep user Hyprland config pinned on target branch
+  "modules/home/hyprland/config.nix"
+  # Legacy path (pre-home move) for safety
   "modules/user-modules/hyprland/config.nix"
   "systems/${SYSTEM_ARCH}/hay/hardware-configuration.nix"
   "systems/${SYSTEM_ARCH}/vhay/hardware-configuration.nix"
@@ -458,7 +461,8 @@ cmd_merge() {
   git checkout "$target_branch" || return 1
 
   log INFO "Merging source branch (no commit)..."
-  if ! git merge --no-commit --no-ff "$source_branch"; then
+  # Prefer incoming (source) changes, we'll re-apply exclusions after
+  if ! git merge --no-commit --no-ff -X theirs "$source_branch"; then
     log ERROR "Merge encountered conflicts! Please resolve manually."
     return 1
   fi
