@@ -81,7 +81,7 @@ in
       
       # -- Network Tools ---------------------------------------------------------
       curl wget aria2       # Downloaders
-      transmission-remote   # Transmission CLI remote control
+      transmission_4        # Transmission suite (includes transmission-remote CLI)
       pirate-get            # Pirate Bay magnet search/download helper
       dig                   # DNS tools
       nmap mtr iputils fping # Network diagnostics
