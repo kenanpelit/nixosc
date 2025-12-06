@@ -6,8 +6,8 @@
 let
   cfg = config.my.user.mpv;
 
-  mpvConf = builtins.readFile ../../assets/mpv/mpv.conf;
-  inputConf = builtins.readFile ../../assets/mpv/input.conf;
+  mpvConf = builtins.readFile ./config/mpv.conf;
+  inputConf = builtins.readFile ./config/input.conf;
 
   # Helper to copy whole script/script-opts folders
   mkConfigDir = path: {
@@ -26,10 +26,10 @@ in
     xdg.configFile = {
       "mpv/mpv.conf".text = mpvConf;
       "mpv/input.conf".text = inputConf;
-      "mpv/fonts" = mkConfigDir ../../assets/mpv/fonts;
-      "mpv/scripts" = mkConfigDir ../../assets/mpv/scripts;
-      "mpv/script-opts" = mkConfigDir ../../assets/mpv/script-opts;
-      "mpv/script-modules" = mkConfigDir ../../assets/mpv/script-modules;
+      "mpv/fonts" = mkConfigDir ./config/fonts;
+      "mpv/scripts" = mkConfigDir ./config/scripts;
+      "mpv/script-opts" = mkConfigDir ./config/script-opts;
+      "mpv/script-modules" = mkConfigDir ./config/script-modules;
     };
   };
 }
