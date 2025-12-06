@@ -14,9 +14,8 @@
 # Terminal settings - Modern terminal desteği için geliştirilmiş ayarlar
 set -g default-terminal "tmux-256color"                           # tmux'un 256 renk desteğini etkinleştir
 # RGB destekleri + E3 override; E3=@ ile uzak terminalin scrollback silme kaçış kodunu yoksayar
-# screen* için smcup/rmcup devre dışı: byobu/tmux alt ekrana geçip scrollback'i kesemesin
-# * için smcup/rmcup devre dışı: diğer uçlarda da alt ekranı tamamen yok say
-set -ag terminal-overrides ",xterm-256color:RGB,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,screen*:smcup@:rmcup@:E3=@,*:E3=@,*:smcup@:rmcup@"
+# Alt ekranı (alternate screen) devre dışı bırakan smcup/rmcup overrides'larını kaldırdık ki tam ekran uygulamalar çıktıktan sonra görüntü kalmasın
+set -ag terminal-overrides ",xterm-256color:RGB,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,*:E3=@"
 set -as terminal-features ",*:RGB"                               # Tüm terminaller için RGB renk özelliği etkinleştir
 #set -g update-environment "DISPLAY WAYLAND_DISPLAY SSH_AUTH_SOCK XDG_CURRENT_DESKTOP SWAYSOCK I3SOCK"  # tmux attach edildiğinde güncellenecek ortam değişkenleri
 set -g update-environment "SSH_AUTH_SOCK"
@@ -36,7 +35,7 @@ set -g aggressive-resize on                                      # Ekran boyutla
 set -g escape-time 0                                             # ESC tuşu gecikmesini sıfırla (vim/nvim uyumluluğu için)
 set -g focus-events on                                           # Focus olaylarını etkinleştir (vim/nvim entegrasyonu)
 set -g history-limit 100000                                      # Scrollback geçmişini 100,000 satıra çıkar (varsayılan: 2000)
-setw -g alternate-screen off                                     # Alt ekranı kapat: uzak byobu/tmux temizlemeleri scrollback'i silmesin
+setw -g alternate-screen on                                      # Alt ekranı aç: tam ekran uygulamalar çıkınca ekranı otomatik temizlesin
 set -g renumber-windows on                                       # Pencere kapandığında diğerlerini yeniden numaralandır
 set -g base-index 1                                              # Pencereleri 1'den başlat (varsayılan: 0) - daha ergonomik
 set -g pane-base-index 1                                         # Panel'leri 1'den başlat (varsayılan: 0) - daha ergonomik
