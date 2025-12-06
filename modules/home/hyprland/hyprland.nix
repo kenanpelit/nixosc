@@ -81,8 +81,5 @@ lib.mkIf cfg.enable {
       #hidpi = true;
     };
     systemd.enable = true;
-    plugins = [
-      inputs.hyprland-plugins.packages.${pkgs.system}.hyprscrolling
-    ];
   };
 }

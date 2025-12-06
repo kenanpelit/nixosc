@@ -75,16 +75,11 @@
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      #url = "github:hyprwm/hyprland/222dbe99d0d2d8a61f3b3202f8ef1794b0b081b7"; # 1206 - Updated commit
-      url = "github:hyprwm/hyprland/6a1daff5f30ea71e6d678554aa59fc5670864d24"; # 1205 - Updated commit
+      url = "github:hyprwm/hyprland/222dbe99d0d2d8a61f3b3202f8ef1794b0b081b7"; # 1206 - Updated commit
+#      url = "github:hyprwm/hyprland/6a1daff5f30ea71e6d678554aa59fc5670864d24"; # 1205 - Updated commit
       #      url = "github:hyprwm/hyprland/3cf0280b11f370c11e6839275e547779a33f4a19"; # 1203 - Updated commit
       #      url = "github:hyprwm/hyprland/f82a8630d7a51dab4cc70924f500bf70e723db12"; # 1202 - Updated commit
       #      url = "github:hyprwm/hyprland/bb963fb00263bac78a0c633d1d0d02ae4763222c";
-    };
-
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
     };
 
     hypr-contrib = {
@@ -124,8 +119,8 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      #url = "github:AvengeMedia/DankMaterialShell/2ddc448150b0576afe528ae5700ac031f94c9547"; # 1206 - Updated commit
-      url = "github:AvengeMedia/DankMaterialShell/52d5e21fc4299aad7dad96482f6c4cd215e1e06c"; # 1205 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/2ddc448150b0576afe528ae5700ac031f94c9547"; # 1206 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/52d5e21fc4299aad7dad96482f6c4cd215e1e06c"; # 1205 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/6d0c56554fba353db582893540f39c53935b6460"; # 1205 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell";
     };

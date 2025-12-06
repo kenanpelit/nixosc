@@ -775,15 +775,6 @@ let
     "$mainMod ALT, l, moveactive, 80 0"
   ];
 
-  scrollingBinds = [
-    "$mainMod, period, layoutmsg, move +col"
-    "$mainMod, slash, layoutmsg, move -col"
-    "$mainMod SHIFT, period, layoutmsg, movewindowto r"
-    "$mainMod SHIFT, slash, layoutmsg, movewindowto l"
-    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
-    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
-  ];
-
   cfg = config.my.desktop.hyprland;
 in
 lib.mkIf cfg.enable {
@@ -886,7 +877,7 @@ lib.mkIf cfg.enable {
         border_size = 2;
         "col.active_border" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
         "col.inactive_border" = mkColor colors.overlay0.hex 0.66;
-        layout = "scrolling";
+        layout = "master";
         allow_tearing = false;
         resize_on_border = true;
         extend_border_grab_area = 15;
@@ -983,13 +974,6 @@ lib.mkIf cfg.enable {
         allow_session_lock_restore = true;
       };
 
-      plugin = {
-        hyprscrolling = {
-          column_width = 0.5;
-          fullscreen_on_one_column = false;
-        };
-      };
-
       dwindle = {
         pseudotile = true;
         preserve_split = true;
@@ -1042,7 +1026,6 @@ lib.mkIf cfg.enable {
         screenshotBinds ++
         specialAppsBinds ++
         navBinds ++
-        scrollingBinds ++
         mkMoveMonitor (lib.range 1 9) ++
         mkWorkspaces (lib.range 1 9) ++
         mkMoveWorkspaces (lib.range 1 9);
