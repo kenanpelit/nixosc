@@ -2,11 +2,8 @@
 # ==============================================================================
 # HAY Workstation: Main Host Configuration
 # ==============================================================================
-{ pkgs, lib, inputs, ... }:
+{ pkgs, lib, inputs, config, ... }:
 
-let
-  username = "kenan";
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -21,6 +18,9 @@ in
     isPhysicalHost = true;
     isVirtualHost  = false;
   };
+
+  # Set User (Defaults to "kenan" but good to be explicit)
+  my.user.name = "kenan";
 
   # ============================================================================
   # Host Identity
@@ -47,7 +47,7 @@ in
 
     autoLogin = {
       enable = false;
-      # user = username;
+      # user = config.my.user.name; # Can use config variable here if enabled
     };
   };
 
@@ -88,37 +88,8 @@ in
   };
 
   # ============================================================================
-  # Time & Locale
+  # Security
   # ============================================================================
-  time.timeZone = "Europe/Istanbul";
-
-  i18n.defaultLocale = "en_US.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS        = "tr_TR.UTF-8";
-    LC_IDENTIFICATION = "tr_TR.UTF-8";
-    LC_MEASUREMENT    = "tr_TR.UTF-8";
-    LC_MONETARY       = "tr_TR.UTF-8";
-    LC_NAME           = "tr_TR.UTF-8";
-    LC_NUMERIC        = "tr_TR.UTF-8";
-    LC_PAPER          = "tr_TR.UTF-8";
-    LC_TELEPHONE      = "tr_TR.UTF-8";
-    LC_TIME           = "tr_TR.UTF-8";
-  };
-
-  # ============================================================================
-  # SSH / Security
-  # ============================================================================
-  services.openssh = {
-    enable = true;
-    ports  = [ 22 ];
-
-    settings = {
-      PasswordAuthentication = false;
-      AllowUsers             = [ username ];
-      PermitRootLogin        = "no";
-    };
-  };
-
   security.polkit.enable = true;
 
   # ============================================================================
@@ -130,9 +101,9 @@ in
   # System Packages
   # ============================================================================
   environment.systemPackages = with pkgs; [
-    wget git tmux ncurses file sops age vim
-    htop lm_sensors powertop tldr ripgrep fd
+    lm_sensors powertop tldr
     networkmanager wireguard-tools
+    gnupg openssl
   ];
 
   # ============================================================================
@@ -165,11 +136,10 @@ in
   };
 
   # ============================================================================
-  # Nixpkgs / Licensing
+  # User Modules
   # ============================================================================
-  nixpkgs.config = {
-    allowUnfree = true;
-  };
+  # Home Manager configuration is now handled in:
+  # homes/x86_64-linux/kenan@hay/default.nix
 
   # ============================================================================
   # System State Version

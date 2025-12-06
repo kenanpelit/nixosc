@@ -41,8 +41,9 @@
 
 A comprehensive NixOS system configuration management suite built on the **Snowfall Lib** framework. It provides a unified, modular approach to managing both system-level configuration (NixOS) and user environments (Home Manager).
 
-- **Architecture:** Snowfall Lib (Automatic module discovery)
-- **Desktop:** Hyprland (Wayland) with Waybar, Rofi, Mako
+- **Architecture:** Snowfall Lib (automatic module discovery)
+- **Desktop:** Hyprland (Wayland) with **DankMaterialShell (DMS)** shell; Waybar disabled
+- **Launchers:** DMS launcher + Walker + Rofi (fallback)
 - **Theme:** Catppuccin Mocha everywhere
 - **Shell:** Zsh + Starship + Tmux
 - **Secrets:** SOPS-Nix with Age encryption
@@ -58,8 +59,8 @@ The project follows modern Snowfall Lib standards:
   - [vhay](systems/x86_64-linux/vhay/) - 🗄️ Virtual Machine
 - [modules](modules) - 🍱 Modular configurations
   - [nixos](modules/nixos/) - ⚙️ System-level modules (hardware, services)
-  - [user-modules](modules/user-modules/) - 🏠 User-level modules (home-manager apps)
-- [packages](packages/) - 📦 Custom packages (e.g. Maple Mono)
+  - [home](modules/home/) - 🏠 User-level modules (Home Manager apps/services)
+- [packages](packages/) - 📦 Custom packages (e.g. Maple Mono) and scripts
 - [overlays](overlays/) - 🔧 Nixpkgs overlays
 - [secrets](secrets/) - 🔐 SOPS-encrypted secrets
 - [assets](assets/) - 📦 Binary assets and configs
@@ -80,10 +81,11 @@ The project follows modern Snowfall Lib standards:
 | Component                    | Implementation                                                                                                        |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | **Window Manager**           | [Hyprland](https://github.com/hyprwm/hyprland)                                                                        |
-| **Bar**                      | [Waybar](https://github.com/Alexays/Waybar)                                                                           |
-| **Launcher**                 | [Rofi](https://github.com/lbonn/rofi) + [Walker](https://github.com/abenz1267/walker)                                 |
-| **Notifications**            | [Mako](https://github.com/emersion/mako)                                                                              |
+| **Shell / Panel**            | [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS)                                           |
+| **Launcher**                 | DMS launcher + [Walker](https://github.com/abenz1267/walker) + [Rofi](https://github.com/lbonn/rofi) (fallback)       |
+| **Notifications & Widgets**  | DMS built-ins                                                                                                         |
 | **Lock Screen**              | [Hyprlock](https://github.com/hyprwm/hyprlock)                                                                        |
+| **Wallpaper**                | Managed by DMS (hyprpaper disabled)                                                                                   |
 
 ## 🚀 Installation
 
@@ -121,12 +123,12 @@ To update flake inputs:
 
 ### Adding a Package
 *   **System-wide:** Edit `modules/nixos/packages/default.nix`.
-*   **User-specific:** Edit `modules/user-modules/packages/default.nix`.
+*   **User-specific:** Edit `modules/home/packages/default.nix`.
 
 ### Creating a New Module
 Just create a directory! **Snowfall Lib** automatically imports `default.nix` files.
 *   System module: `modules/nixos/my-service/default.nix`
-*   User module: `modules/user-modules/my-app/default.nix`
+*   User module: `modules/home/my-app/default.nix`
 
 ### Managing Secrets
 Secrets are encrypted with Age and managed by SOPS.
@@ -138,17 +140,14 @@ sops secrets/wireless-secrets.enc.yaml
 ## ⌨️ Keybindings (Hyprland)
 
 - `$mainMod` = `SUPER` key
-
-| Key | Action |
-| :--- | :--- |
-| `$mainMod + Enter` | Open Terminal (Wezterm) |
-| `$mainMod + B` | Open Browser |
-| `$mainMod + D` | Open Launcher (Rofi) |
-| `$mainMod + Q` | Close Window |
-| `$mainMod + F` | Fullscreen |
-| `$mainMod + Space` | Toggle Floating |
-| `$mainMod + 1-9` | Switch Workspace |
-| `$mainMod + Shift + 1-9` | Move Window to Workspace |
+- DMS ships its own launcher/bindings; base Hyprland binds include:
+  - `$mainMod + Enter` — Open terminal
+  - `$mainMod + B` — Open browser
+  - `$mainMod + D` — Open launcher (Rofi fallback; DMS launcher bound in-shell)
+  - `$mainMod + Q` — Close window
+  - `$mainMod + F` — Fullscreen
+  - `$mainMod + Space` — Toggle floating
+  - `$mainMod + 1-9` / `Shift` — Switch/move window to workspace
 
 ## 📄 License
 
