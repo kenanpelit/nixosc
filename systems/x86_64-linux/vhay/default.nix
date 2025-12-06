@@ -4,9 +4,6 @@
 # ==============================================================================
 { pkgs, lib, inputs, ... }:
 
-let
-  username = "kenan";
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -34,35 +31,13 @@ in
     networkmanager.enable = true;
   };
 
-  # Timezone & Locale (Inherited from core/system)
-  time.timeZone = "Europe/Istanbul";
-
-  # ============================================================================
-  # SSH / Security
-  # (Development oriented, loose settings)
-  # ============================================================================
-  services.openssh = {
-    enable = true;
-    ports  = [ 22 ];
-
-    settings = {
-      PasswordAuthentication = true;
-      PermitRootLogin        = "yes";
-      AllowUsers             = [ username ];
-    };
-  };
-
   # ============================================================================
   # System Packages
   # (Basic VM packages)
   # ============================================================================
   environment.systemPackages = with pkgs; [
-    tmux
-    ncurses
-    git
-    neovim
-    htop
     networkmanager
+    openssl
   ];
 
   # ============================================================================
