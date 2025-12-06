@@ -32,7 +32,6 @@ in
       if cfg.defaultSession != null then cfg.defaultSession
       else if cfg.enableHyprland then "hyprland-optimized"
       else if cfg.enableGnome then "gnome"
-      else if cfg.enableCosmic then "cosmic"
       else null;
 
     services.xserver.xkb.layout  = cfg.keyboard.layout;
