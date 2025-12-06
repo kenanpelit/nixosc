@@ -213,8 +213,7 @@
           nur.overlays.default
           (final: prev:
             let
-              axShellPkgs = inputs.ax-shell.packages.${prev.stdenv.hostPlatform.system};
-              axShellPkg = axShellPkgs.default;
+              axShellPkg = inputs.ax-shell.packages.${prev.stdenv.hostPlatform.system}.default;
               nvtopPkg = prev.nvtop or null;
               droppedNvtop =
                 if nvtopPkg == null then axShellPkg.buildInputs or [ ]
@@ -225,12 +224,6 @@
                 # Ax-Shell pulls in nvtop (NVIDIA-centric). Drop it for non-NVIDIA hosts.
                 buildInputs = droppedNvtop;
               });
-
-              # Ax-Shell module expects pkgs.ax-send; export from input if missing
-              ax-send =
-                if prev ? ax-send then prev.ax-send
-                else if axShellPkgs ? ax-send then axShellPkgs.ax-send
-                else axShellPkgs.default;
             })
         ];
 
