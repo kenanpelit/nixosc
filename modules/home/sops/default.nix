@@ -46,15 +46,13 @@ in
           format = "binary";
         };
         
-        /*
-        "tmux_config" = {
-          sopsFile = "${assetsDir}/tmux.enc.tar.gz";
-          path = "${homeDir}/.backup/tmux.tar.gz";
+        # mpv configs now live in modules/home/mpv/config (no encrypted tar)
+      } // lib.optionalAttrs (builtins.pathExists "${assetsDir}/tmux-fzf.enc.tar.gz") {
+        "tmux_fzf" = {
+          sopsFile = "${assetsDir}/tmux-fzf.enc.tar.gz";
+          path = "${homeDir}/.backup/tmux-fzf.tar.gz";
           format = "binary";
         };
-        */
-        
-        # mpv configs now live in modules/home/mpv/config (no encrypted tar)
       };
     };
   
