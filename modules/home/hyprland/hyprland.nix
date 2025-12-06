@@ -21,19 +21,19 @@ lib.mkIf cfg.enable {
   systemd.user.services.cliphist-watcher = {
     Unit = {
       Description = "Cliphist clipboard watcher";
-      After = [ "hyprland-session.target" "graphical-session.target" ];
-      PartOf = [ "hyprland-session.target" ];
+      After = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
     };
 
     Service = {
       Type = "simple";
       ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
-      Restart = "on-failure";
+      Restart = "always";
       RestartSec = 2;
     };
 
     Install = {
-      WantedBy = [ "hyprland-session.target" ];
+      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
     };
   };
 
