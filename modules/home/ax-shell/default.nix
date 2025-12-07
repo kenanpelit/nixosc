@@ -8,6 +8,8 @@ let
   cfg = config.my.user.ax-shell;
   axPkg = inputs.ax-shell.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in {
+  imports = [ inputs.ax-shell.homeManagerModules.default ];
+
   options.my.user.ax-shell = {
     enable = lib.mkEnableOption "Ax-Shell Hyprland shell";
   };
