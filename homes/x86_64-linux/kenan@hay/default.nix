@@ -31,6 +31,7 @@
   my.desktop.sway.enable = true; # VM management
   
   # Components
+  my.user.noctalia.enable = true;
   my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
@@ -42,7 +43,7 @@
   my.user.wpaperd.enable = false;
   my.user.waypaper.enable = false;
   my.user.touchegg.enable = true;
-  my.user.dms.enable = true;
+  my.user.dms.enable = false;
   my.user.ax-shell.enable = false;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
