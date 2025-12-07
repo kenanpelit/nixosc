@@ -61,6 +61,32 @@ in
     home.file.".config/DankMaterialShell/.keep".text = "";
     home.file.".cache/DankMaterialShell/.keep".text = "";
 
+    # Custom DMS theme (Tokyo Night inspired)
+    home.file.".config/DankMaterialShell/themes/tokyo-night.json".text = ''
+      {
+        "name": "Tokyo Night",
+        "primary": "#7aa2f7",
+        "primaryText": "#1a1b26",
+        "primaryContainer": "#2f334d",
+        "secondary": "#bb9af7",
+        "surfaceTint": "#7aa2f7",
+        "surface": "#1a1b26",
+        "surfaceText": "#c0caf5",
+        "surfaceVariant": "#24283b",
+        "surfaceVariantText": "#9aa5ce",
+        "surfaceContainer": "#1f2335",
+        "surfaceContainerHigh": "#252a3f",
+        "surfaceContainerHighest": "#2c3047",
+        "background": "#0f111a",
+        "backgroundText": "#c0caf5",
+        "outline": "#414868",
+        "error": "#f7768e",
+        "warning": "#e0af68",
+        "info": "#7dcfff",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '';
+
     # Default screenshot editor for DMS (can be overridden by user env)
     home.sessionVariables.DMS_SCREENSHOT_EDITOR = "swappy";
 
