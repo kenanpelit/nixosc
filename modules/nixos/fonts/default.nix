@@ -49,6 +49,7 @@ in {
         noto-fonts-color-emoji
         font-awesome
         material-design-icons
+        emoji-color-font
 
         # General UI / document fonts (minimal, kept for compatibility)
         liberation_ttf
@@ -114,6 +115,23 @@ in {
 
         antialias = true;
         useEmbeddedBitmaps = false;
+        # Force emoji fallback into Inter/Fira
+        confFiles = [
+          (pkgs.writeText "01-emoji.conf" ''
+            <?xml version="1.0"?>
+            <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+            <fontconfig>
+              <alias>
+                <family>Inter</family>
+                <prefer><family>Noto Color Emoji</family></prefer>
+              </alias>
+              <alias>
+                <family>Fira Code</family>
+                <prefer><family>Noto Color Emoji</family></prefer>
+              </alias>
+            </fontconfig>
+          '')
+        ];
       };
     };
 
