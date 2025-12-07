@@ -66,6 +66,11 @@ in
       [Appearance]
       icon_theme=a-candy-beauty
     '';
+    # Kvantum config hint for icon theme (platform = kvantum)
+    xdg.configFile."Kvantum/kvantum.kvconfig".text = ''
+      [General]
+      iconTheme=a-candy-beauty-icon-theme
+    '';
 
     # Custom DMS theme (Tokyo Night inspired)
     home.file.".config/DankMaterialShell/themes/tokyo-night.json".text = ''
@@ -276,7 +281,11 @@ in
     '';
 
     # Default screenshot editor for DMS (can be overridden by user env)
-    home.sessionVariables.DMS_SCREENSHOT_EDITOR = "swappy";
+    home.sessionVariables = {
+      DMS_SCREENSHOT_EDITOR = "swappy";
+      QT_ICON_THEME = "a-candy-beauty-icon-theme";
+      XDG_ICON_THEME = "a-candy-beauty-icon-theme";
+    };
 
     systemd.user.services.dms = {
       Unit = {
@@ -297,6 +306,9 @@ in
           "XDG_RUNTIME_DIR=/run/user/%U"
           "XDG_CURRENT_DESKTOP=Hyprland"
           "XDG_SESSION_TYPE=wayland"
+          "QT_ICON_THEME=a-candy-beauty-icon-theme"
+          "XDG_ICON_THEME=a-candy-beauty-icon-theme"
+          "QT_QPA_PLATFORMTHEME=kvantum"
         ];
         PassEnvironment = [
           "WAYLAND_DISPLAY"
