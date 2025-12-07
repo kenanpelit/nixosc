@@ -94,8 +94,8 @@ let
       ".cpp" ".h" ".java" ".rb" ".php" ".sh"
     ];
 
-    # Yalnızca var olan dizinleri ekle
-    index_paths = lib.filter (p: builtins.pathExists p.path) defaultIndexPaths;
+    # Tek path: HOME (Downloads ve .kenp hariç)
+    index_paths = defaultIndexPaths;
   };
 in
 {
