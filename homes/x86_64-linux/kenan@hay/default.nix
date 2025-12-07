@@ -43,21 +43,9 @@
   my.user.waypaper.enable = false;
   my.user.touchegg.enable = true;
   my.user.dms.enable = false;
-  # Noctalia is wired directly below (programs.noctalia-shell)
   my.user.ax-shell.enable = false;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
-
-  # Noctalia direct HM setup (avoids my.user option wiring)
-  imports = [
-    inputs.noctalia.homeModules.default
-  ];
-  programs.noctalia-shell = {
-    enable = true;
-    package = inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default;
-    systemd.enable = true;
-    settings = { };
-  };
 
   # ============================================================================
   # Browsers

@@ -135,6 +135,9 @@
     nm-applet.enable = true;
   };
 
+  # Enable Noctalia shell (Noctalia HM module wired via my.user.noctalia)
+  my.user.noctalia.enable = true;
+
   # ============================================================================
   # User Modules
   # ============================================================================
