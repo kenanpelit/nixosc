@@ -114,6 +114,37 @@ in {
 
         antialias = true;
         useEmbeddedBitmaps = false;
+        # Force emoji fallback into Inter/Fira
+        localConf = ''
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+          <fontconfig>
+            <!-- Prefer Noto, explicitly reject Twitter Color Emoji -->
+            <rejectfont>
+              <pattern>
+                <patelt name="family">
+                  <string>Twitter Color Emoji</string>
+                </patelt>
+              </pattern>
+            </rejectfont>
+
+            <alias>
+              <family>emoji</family>
+              <prefer>
+                <family>Noto Color Emoji</family>
+                <family>Twitter Color Emoji</family>
+              </prefer>
+            </alias>
+            <alias>
+              <family>Inter</family>
+              <prefer><family>Noto Color Emoji</family></prefer>
+            </alias>
+            <alias>
+              <family>Fira Code</family>
+              <prefer><family>Noto Color Emoji</family></prefer>
+            </alias>
+          </fontconfig>
+        '';
       };
     };
 
