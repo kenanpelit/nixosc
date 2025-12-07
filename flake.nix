@@ -217,9 +217,6 @@
           catppuccin.nixosModules.catppuccin
           sops-nix.nixosModules.sops
           nix-flatpak.nixosModules.nix-flatpak
-          ({ config, ... }: {
-            home-manager.users.kenan.home-manager.backupFileExtension = ".bak";
-          })
         ];
 
         # Special arguments available to all modules
