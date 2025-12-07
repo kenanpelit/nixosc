@@ -234,23 +234,47 @@
           username = "kenan";
         };
 
-              outputs-builder = channels: {
-                formatter = inputs.alejandra.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default;
+              outputs-builder = channels: let
+                system = channels.nixpkgs.stdenv.hostPlatform.system;
+                alejandra = inputs.alejandra.packages.${system}.default;
+                statix = inputs.statix.packages.${system}.default;
+                deadnix = inputs.deadnix.packages.${system}.default;
+                treefmt = channels.nixpkgs.treefmt;
+              in {
+                formatter = alejandra;
                 
                 checks = {
                   statix = channels.nixpkgs.runCommand "statix-check" {
-                    nativeBuildInputs = [ inputs.statix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default ];
+                    nativeBuildInputs = [ statix ];
                   } ''
                     statix check ${./.}
                     touch $out
                   '';
+
+                  deadnix = channels.nixpkgs.runCommand "deadnix-check" {
+                    nativeBuildInputs = [ deadnix ];
+                  } ''
+                    deadnix --fail ${./.}
+                    touch $out
+                  '';
+
+                  treefmt = channels.nixpkgs.runCommand "treefmt-check" {
+                    nativeBuildInputs = [ treefmt ];
+                  } ''
+                    treefmt --fail-on-change --clear-cache --check ${./.}
+                    touch $out
+                  '';
+
+                  nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
+                  nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
+                  home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
                 };
 
                 devShells.default = channels.nixpkgs.mkShell {
                   packages = [
-                    inputs.alejandra.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
-                    inputs.statix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
-                    inputs.deadnix.packages.${channels.nixpkgs.stdenv.hostPlatform.system}.default
+                    alejandra
+                    statix
+                    deadnix
                   ];
                 };
               };      })
