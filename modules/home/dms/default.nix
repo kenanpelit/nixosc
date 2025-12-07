@@ -71,6 +71,11 @@ in
       [General]
       iconTheme=a-candy-beauty-icon-theme
     '';
+    # Export icon theme globally for Qt (systemd --user env)
+    xdg.configFile."environment.d/99-dms-icons.conf".text = ''
+      QT_ICON_THEME=a-candy-beauty-icon-theme
+      XDG_ICON_THEME=a-candy-beauty-icon-theme
+    '';
 
     # Custom DMS theme (Tokyo Night inspired)
     home.file.".config/DankMaterialShell/themes/tokyo-night.json".text = ''
