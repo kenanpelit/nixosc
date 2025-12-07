@@ -214,6 +214,10 @@
         # Overlays applied to all systems
         overlays = with inputs; [
           nur.overlays.default
+          (final: prev: let system = prev.stdenv.hostPlatform.system; ax = inputs.ax-shell.packages.${system}; in {
+            ax-shell = ax.default;
+            ax-send  = ax.ax-send or ax.default;
+          })
         ];
 
         # Modules automatically added to all NixOS systems
