@@ -89,7 +89,7 @@ in
     home-manager = mkIf cfg.home.enable {
       useGlobalPkgs   = true;
       useUserPackages = true;
-      backupFileExtension = "backup";
+      backupFileExtension = "bak";
 
       # Pass arguments to Home Manager modules
       extraSpecialArgs = {
