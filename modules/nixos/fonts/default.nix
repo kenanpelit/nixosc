@@ -119,6 +119,15 @@ in {
           <?xml version="1.0"?>
           <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
           <fontconfig>
+            <!-- Prefer Noto, explicitly reject Twitter Color Emoji -->
+            <rejectfont>
+              <pattern>
+                <patelt name="family">
+                  <string>Twitter Color Emoji</string>
+                </patelt>
+              </pattern>
+            </rejectfont>
+
             <alias>
               <family>emoji</family>
               <prefer>
