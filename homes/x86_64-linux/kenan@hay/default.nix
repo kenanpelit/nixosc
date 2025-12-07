@@ -3,6 +3,7 @@
   # Set the state version for Home Manager
   # Configure user-specific settings here if needed
   home.stateVersion = "25.11";
+  # No HM backup override to avoid option-resolution errors
   # Home Manager backup extension for file collisions
   home-manager.backupFileExtension = lib.mkDefault ".bak";
 
