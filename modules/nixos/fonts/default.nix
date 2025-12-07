@@ -120,6 +120,13 @@ in {
           <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
           <fontconfig>
             <alias>
+              <family>emoji</family>
+              <prefer>
+                <family>Noto Color Emoji</family>
+                <family>Twitter Color Emoji</family>
+              </prefer>
+            </alias>
+            <alias>
               <family>Inter</family>
               <prefer><family>Noto Color Emoji</family></prefer>
             </alias>
