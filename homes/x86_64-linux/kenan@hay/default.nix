@@ -31,7 +31,6 @@
   my.desktop.sway.enable = true; # VM management
   
   # Components
-  my.user.noctalia.enable = true;
   my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
