@@ -61,35 +61,20 @@ let
     };
 
   # Varsayılan dsearch konfigürasyonu; kullanıcı cfg.dsearchConfig ile üzerine yazabilir
+  # Tüm ev dizini için tek indeks; Downloads ve .kenp hariç, diğer yaygın çöp klasörleri de dışarıda
   defaultIndexPaths = [
     {
       path = homeDir;
-      max_depth = 6;
-      exclude_hidden = true;
-      exclude_dirs = [
-        "node_modules" "__pycache__" "venv" "target" "dist" "build" ".cache"
-        ".git" ".direnv" ".nix-defexpr" ".kenp"
-      ];
-    }
-    {
-      path = "${homeDir}/repos";
-      max_depth = 8;
-      exclude_hidden = true;
-      exclude_dirs = [
-        "node_modules" "venv" "target" ".git" "dist" "build" ".direnv" ".cache"
-      ];
-    }
-    {
-      path = "${homeDir}/Documents";
       max_depth = 0; # sınırsız
-      exclude_hidden = false;
-      exclude_dirs = [ ];
-    }
-    {
-      path = "${homeDir}/.anotes";
-      max_depth = 0; # sınırsız
-      exclude_hidden = false;
-      exclude_dirs = [ ];
+      exclude_hidden = false; # gizliler de taransın (.config, .anotes vs.)
+      exclude_dirs = [
+        # İstenen hariç tutulanlar
+        "Downloads"
+        ".kenp"
+        # Gürültü/çöp klasörleri
+        ".cache" ".direnv" ".nix-defexpr" ".git" ".venv" "venv"
+        "node_modules" "dist" "build" "target" "__pycache__"
+      ];
     }
   ];
 
