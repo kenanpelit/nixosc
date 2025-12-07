@@ -61,6 +61,12 @@ in
     home.file.".config/DankMaterialShell/.keep".text = "";
     home.file.".cache/DankMaterialShell/.keep".text = "";
 
+    # Ensure Qt icon theme matches Candy (Kvantum/qt6ct fallback)
+    xdg.configFile."qt6ct/qt6ct.conf".text = ''
+      [Appearance]
+      icon_theme=a-candy-beauty
+    '';
+
     # Custom DMS theme (Tokyo Night inspired)
     home.file.".config/DankMaterialShell/themes/tokyo-night.json".text = ''
       {
