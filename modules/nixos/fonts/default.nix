@@ -49,7 +49,6 @@ in {
         noto-fonts-color-emoji
         font-awesome
         material-design-icons
-        emoji-color-font
 
         # General UI / document fonts (minimal, kept for compatibility)
         liberation_ttf
