@@ -30,5 +30,12 @@ in {
         wallpapersDir = "${config.home.homeDirectory}/wallpapers";
       };
     };
+
+    # Ensure GI typelibs are visible for Gtk/Gio Python bindings used by ax-shell
+    home.sessionVariables.GI_TYPELIB_PATH = lib.mkForce (lib.concatStringsSep ":" [
+      "${pkgs.glib.dev}/lib/girepository-1.0"
+      "${pkgs.gtk3}/lib/girepository-1.0"
+      "${pkgs.gtk4}/lib/girepository-1.0"
+    ]);
   };
 }
