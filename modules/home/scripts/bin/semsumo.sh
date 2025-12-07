@@ -110,9 +110,24 @@ declare -A BRAVE_BROWSERS=(
   ["brave-whatsapp"]="profile_brave|--whatsapp --class whatsapp --title whatsapp|9|secure|1|true"
 )
 
-# Other browser profiles (empty by default to avoid set -u exits)
-declare -A ZEN_BROWSERS=()
-declare -A CHROME_BROWSERS=()
+# Browser Applications - Zen
+declare -A ZEN_BROWSERS=(
+  ["zen-kenp"]="zen|-P Kenp --class Kenp --name Kenp --restore-session|1|secure|1|false"
+  ["zen-novpn"]="zen|-P NoVpn --class AI --name AI --restore-session|3|bypass|1|false"
+  ["zen-compecta"]="zen|-P CompecTA --class CompecTA --name CompecTA --restore-session|4|secure|1|false"
+  ["zen-discord"]="zen|-P Discord --class Discord --name Discord --restore-session|5|secure|1|true"
+  ["zen-proxy"]="zen|-P Proxy --class Proxy --name Proxy --restore-session|7|bypass|1|false"
+  ["zen-spotify"]="zen|-P Spotify --class Spotify --name Spotify --restore-session|7|bypass|1|true"
+  ["zen-whats"]="zen|-P Whats --class Whats --name Whats --restore-session|9|secure|1|true"
+)
+
+# Browser Applications - Chrome
+declare -A CHROME_BROWSERS=(
+  ["chrome-kenp"]="profile_chrome|Kenp --class Kenp|1|secure|1|false"
+  ["chrome-compecta"]="profile_chrome|CompecTA --class CompecTA|4|secure|1|false"
+  ["chrome-ai"]="profile_chrome|AI --class AI|3|secure|1|false"
+  ["chrome-whats"]="profile_chrome|Whats --class Whats|9|secure|1|false"
+)
 
 # Applications - UPDATED
 declare -A APPS=(
