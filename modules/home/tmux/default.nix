@@ -20,7 +20,7 @@ in
       baseIndex = 1;
       clock24 = true;
       sensibleOnTop = true;
-      plugins = [ pkgs.tmuxPlugins.tpm ]; # TPM fetches plugins listed in tmux.conf.local
+      plugins = [ ]; # TPM will self-install from tmux.conf.local
     };
 
     home.sessionVariables.TMUX_PLUGIN_MANAGER_PATH = "${config.xdg.configHome}/tmux/plugins";
