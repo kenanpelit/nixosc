@@ -11,7 +11,6 @@ let
   dag = hmLib.dag or config.lib.dag;
   homeDir = config.home.homeDirectory;
   secretsDir = ../../../secrets;
-  assetsDir = ../../../assets;
 in
 {
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
@@ -47,9 +46,9 @@ in
         };
         
         # mpv configs now live in modules/home/mpv/config (no encrypted tar)
-      } // lib.optionalAttrs (builtins.pathExists (assetsDir + "/fzf.enc.tar.gz")) {
+      } // lib.optionalAttrs (builtins.pathExists (secretsDir + "/fzf.enc.tar.gz")) {
         "tmux_fzf" = {
-          sopsFile = assetsDir + "/fzf.enc.tar.gz";
+          sopsFile = secretsDir + "/fzf.enc.tar.gz";
           path = "${homeDir}/.backup/fzf.tar.gz";
           format = "binary";
         };
