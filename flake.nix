@@ -46,6 +46,7 @@
     # Core Dependencies
     # ==========================================================================
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     
     snowfall-lib = {
       url = "github:snowfallorg/lib";
@@ -181,6 +182,11 @@
     yazi-plugins = {
       url = "github:yazi-rs/plugins";
       flake = false;
+    };
+
+    noctalia = {
+      url = "github:noctalia-dev/noctalia-shell";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
 
