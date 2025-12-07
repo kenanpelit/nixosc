@@ -64,7 +64,7 @@ in
     # Ensure Qt icon theme matches Candy (Kvantum/qt6ct fallback)
     xdg.configFile."qt6ct/qt6ct.conf".text = ''
       [Appearance]
-      icon_theme=a-candy-beauty
+      icon_theme=a-candy-beauty-icon-theme
     '';
     # Kvantum config hint for icon theme (platform = kvantum)
     xdg.configFile."Kvantum/kvantum.kvconfig".text = ''
