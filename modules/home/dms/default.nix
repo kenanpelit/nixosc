@@ -75,6 +75,7 @@ in
     xdg.configFile."environment.d/99-dms-icons.conf".text = ''
       QT_ICON_THEME=a-candy-beauty-icon-theme
       XDG_ICON_THEME=a-candy-beauty-icon-theme
+      QT_QPA_PLATFORMTHEME=gtk3
     '';
 
     # Custom DMS theme (Tokyo Night inspired)
@@ -313,7 +314,7 @@ in
           "XDG_SESSION_TYPE=wayland"
           "QT_ICON_THEME=a-candy-beauty-icon-theme"
           "XDG_ICON_THEME=a-candy-beauty-icon-theme"
-          "QT_QPA_PLATFORMTHEME=kvantum"
+          "QT_QPA_PLATFORMTHEME=gtk3"
         ];
         PassEnvironment = [
           "WAYLAND_DISPLAY"
