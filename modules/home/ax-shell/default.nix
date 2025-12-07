@@ -13,8 +13,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    imports = [ inputs.ax-shell.homeManagerModules.default ];
-
     programs.ax-shell = {
       enable = true;
       package = axPkg;
