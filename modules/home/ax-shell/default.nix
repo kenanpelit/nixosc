@@ -6,7 +6,12 @@
 { inputs, lib, pkgs, config, ... }:
 let
   cfg = config.my.user.ax-shell;
-  axPkg = inputs.ax-shell.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  system = pkgs.stdenv.hostPlatform.system;
+  axPkg = inputs.ax-shell.packages.${system}.default;
+  overlay = final: prev: {
+    ax-shell = inputs.ax-shell.packages.${system}.default;
+    ax-send  = inputs.ax-shell.packages.${system}.ax-send or inputs.ax-shell.packages.${system}.default;
+  };
 in {
   imports = [ inputs.ax-shell.homeManagerModules.default ];
 
@@ -15,6 +20,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    nixpkgs.overlays = [ overlay ];
+
     programs.ax-shell = {
       enable = true;
       package = axPkg;
