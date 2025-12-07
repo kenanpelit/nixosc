@@ -61,38 +61,6 @@ let
     };
 
   # Varsayılan dsearch konfigürasyonu; kullanıcı cfg.dsearchConfig ile üzerine yazabilir
-  defaultIndexPaths = [
-    {
-      path = homeDir;
-      max_depth = 6;
-      exclude_hidden = true;
-      exclude_dirs = [
-        "node_modules" "__pycache__" "venv" "target" "dist" "build" ".cache"
-        ".git" ".direnv" ".nix-defexpr" ".kenp"
-      ];
-    }
-    {
-      path = "${homeDir}/repos";
-      max_depth = 8;
-      exclude_hidden = true;
-      exclude_dirs = [
-        "node_modules" "venv" "target" ".git" "dist" "build" ".direnv" ".cache"
-      ];
-    }
-    {
-      path = "${homeDir}/Documents";
-      max_depth = 0; # sınırsız
-      exclude_hidden = false;
-      exclude_dirs = [ ];
-    }
-    {
-      path = "${homeDir}/.anotes";
-      max_depth = 0; # sınırsız
-      exclude_hidden = false;
-      exclude_dirs = [ ];
-    }
-  ];
-
   defaultDsearchConfig = {
     index_path = "${homeDir}/.cache/danksearch/index";
     listen_addr = ":43654";
@@ -109,8 +77,37 @@ let
       ".cpp" ".h" ".java" ".rb" ".php" ".sh"
     ];
 
-    # Yalnızca var olan dizinleri ekle
-    index_paths = lib.filter (p: builtins.pathExists p.path) defaultIndexPaths;
+    index_paths = [
+      {
+        path = homeDir;
+        max_depth = 6;
+        exclude_hidden = true;
+        exclude_dirs = [
+          "node_modules" "__pycache__" "venv" "target" "dist" "build" ".cache"
+          ".git" ".direnv" ".nix-defexpr" ".kenp"
+        ];
+      }
+      {
+        path = "${homeDir}/repos";
+        max_depth = 8;
+        exclude_hidden = true;
+        exclude_dirs = [
+          "node_modules" "venv" "target" ".git" "dist" "build" ".direnv" ".cache"
+        ];
+      }
+      {
+        path = "${homeDir}/Documents";
+        max_depth = 0; # sınırsız
+        exclude_hidden = false;
+        exclude_dirs = [ ];
+      }
+      {
+        path = "${homeDir}/.anotes";
+        max_depth = 0; # sınırsız
+        exclude_hidden = false;
+        exclude_dirs = [ ];
+      }
+    ];
   };
 in
 {
@@ -140,5 +137,10 @@ in
       # Kullanıcı ayarlarıyla birleştirilmiş varsayılan TOML
       config = lib.recursiveUpdate defaultDsearchConfig cfg.dsearchConfig;
     };
+
+    # Belirli dizinlerin var olduğundan emin ol (symlink veya normal dizin)
+    home.activation.ensureSearchDirs = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+      $DRY_RUN_CMD mkdir -p "${homeDir}/repos" "${homeDir}/.anotes" "${homeDir}/Documents"
+    '';
   };
 }
