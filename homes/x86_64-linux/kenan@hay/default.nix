@@ -4,9 +4,7 @@
   # Configure user-specific settings here if needed
   home.stateVersion = "25.11";
   # Home Manager backup extension for file collisions
-  home.file.".hm-backup-config".text = ""
-    // Force creation to ensure HM options exist; see lib warning
-    ; home-manager.backupFileExtension = ".bak";
+  home-manager.backupFileExtension = lib.mkDefault ".bak";
 
   # ============================================================================
   # System & Core
