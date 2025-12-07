@@ -21,7 +21,11 @@ in {
       enable = true;
       package = noctaliaPkg;
       systemd.enable = true;
-      settings = { };
+      # Basic tweaks; keep the rest at upstream defaults
+      settings = {
+        appLauncher.enableClipboardHistory = true;
+        appLauncher.enableClipPreview = true;
+      };
     };
   };
 }
