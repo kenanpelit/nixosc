@@ -36,6 +36,9 @@
 # Enable strict mode
 set -euo pipefail
 
+# Ensure common Nix profiles are in PATH so dependencies resolve when invoked from minimal services
+PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER}/bin:${PATH}"
+
 #######################################
 # CONFIGURATION & CONSTANTS
 #######################################
