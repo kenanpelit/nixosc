@@ -601,7 +601,7 @@ let
     "$mainMod, Space, exec, noctalia-shell ipc call launcher toggle"
     "ALT, Space, exec, rofi-launcher || pkill rofi"
     "$mainMod, backspace, exec, noctalia-shell ipc call sessionMenu toggle"
-    "$mainMod, Y, exec, noctalia-shell ipc call wallpaper random"
+    "$mainMod, W, exec, noctalia-shell ipc call wallpaper random"
    
     # Terminals
     "$mainMod, Return, exec, kitty"
@@ -674,30 +674,27 @@ let
     # Lock & Power
     # Lock screen
     "ALT, L, exec, hyprlock"
-    "$mainMod CTRL, L, exec, noctalia-shell ipc call idleInhibitor toggle"
+    "$mainMod ALT, L, exec, noctalia-shell ipc call lockScreen lock"
+    #"$mainMod CTRL, L, exec, noctalia-shell ipc call idleInhibitor toggle"
   
     # DMS Panels & Widgets
-    "$mainMod, N, exec, noctalia-shell ipc call notifications toggleDND"
-    "$mainMod, comma, exec, noctalia-shell ipc call settings toggle"
+    "$mainMod, N, exec, noctalia-shell ipc call notifications toggleHistory"
+    "$mainMod CTRL, N, exec, noctalia-shell ipc call notifications dismissAll"
     "$mainMod CTRL, M, exec, noctalia-shell ipc call state all"
-    "$mainMod, D, exec, noctalia-shell ipc call dock toggle"
     "$mainMod CTRL, D, exec, noctalia-shell ipc call controlCenter toggle"
   
     # Theme & Night Mode
     "$mainMod SHIFT, T, exec, noctalia-shell ipc call darkMode toggle"
-    "$mainMod SHIFT, N, exec, noctalia-shell ipc call darkMode toggle"
   
     # Bar & Dock
     "$mainMod, B, exec, noctalia-shell ipc call bar toggle"
     "$mainMod SHIFT, B, exec, noctalia-shell ipc call dock toggle"
-    "$mainMod CTRL, B, exec, noctalia-shell ipc call bar toggleAutoHide"
   
     # Tools
     "$mainMod SHIFT, C, exec, hyprpicker -a"
   
     # Wallpaper
     "$mainMod, W, exec, noctalia-shell ipc call wallpaper random"
-    "$mainMod SHIFT, W, exec, noctalia-shell ipc call wallpaper random"
     "$mainMod CTRL, W, exec, noctalia-shell ipc call wallpaper toggleAutomation"
   
     # Monitor
@@ -730,7 +727,6 @@ let
     "ALT, T, exec, start-kkenp"
     "$mainMod ALT, RETURN, exec, semsumo launch --daily"
     "$mainMod, M, exec, anotes"
-    "$mainMod CTRL, N, exec, noctalia-shell ipc call launcher calculator"
   ];
 
   navBinds = [
