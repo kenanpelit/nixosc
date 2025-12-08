@@ -5,8 +5,6 @@
 { config, pkgs, lib, ... }: 
 let
   cfg = config.my.user.clipse;
-  logPath = "${config.home.homeDirectory}/.local/state/clipse/clipse.log";
-  hmLib = lib.hm or config.lib;
 in
 {
   options.my.user.clipse = {
@@ -25,7 +23,6 @@ in
       allowDuplicates = false;
       themeFile = "custom_theme.json";
       tempDir = "tmp_files";
-      logFile = logPath;
       
       keyBindings = {
         # Navigation - Vim style
