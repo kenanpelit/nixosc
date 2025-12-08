@@ -138,6 +138,14 @@
   # Noctalia shell is available via my.user.noctalia (disabled by default)
   my.user.noctalia.enable = false;
 
+  # Use DMS greeter (greetd) with Hyprland compositor; keyboard: tr(f)
+  my.greeter.dms = {
+    enable = true;
+    compositor = "hyprland";
+    layout = "tr";
+    variant = "f";
+  };
+
   # ============================================================================
   # User Modules
   # ============================================================================
