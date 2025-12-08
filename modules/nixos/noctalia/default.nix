@@ -37,7 +37,6 @@ in {
 
       # Avoid HM backup conflicts on existing *.bak files
       xdg.configFile."noctalia/settings.json".force = true;
-      xdg.configFile."noctalia/colors.json".force = true;
     };
   };
 }
