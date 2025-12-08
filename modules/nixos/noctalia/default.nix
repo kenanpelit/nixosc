@@ -16,22 +16,24 @@ in {
     # Expose upstream HM module to the user's Home Manager evaluation
     home-manager.sharedModules = [ inputs.noctalia.homeModules.default ];
 
-    # Enable Noctalia for the primary user
-    home-manager.users.${user}.programs.noctalia-shell = {
-      enable = true;
-      package = noctaliaPkg;
-      systemd.enable = true;
-      # Basic tweaks; keep the rest at upstream defaults
-      settings = {
-        appLauncher.enableClipboardHistory = true;
-        appLauncher.enableClipPreview = true;
+    # Enable Noctalia for the primary user and set env overrides
+    home-manager.users.${user} = {
+      programs.noctalia-shell = {
+        enable = true;
+        package = noctaliaPkg;
+        systemd.enable = true;
+        # Basic tweaks; keep the rest at upstream defaults
+        settings = {
+          appLauncher.enableClipboardHistory = true;
+          appLauncher.enableClipPreview = true;
+        };
       };
-    };
 
-    # Force icon theme for Noctalia/Qt lookups
-    home-manager.users.${user}.systemd.user.services.noctalia-shell.Service.Environment = [
-      "QT_ICON_THEME=a-candy-beauty-icon-theme"
-      "XDG_ICON_THEME=a-candy-beauty-icon-theme"
-    ];
+      # Force icon theme for Noctalia/Qt lookups
+      systemd.user.services.noctalia-shell.Service.Environment = [
+        "QT_ICON_THEME=a-candy-beauty-icon-theme"
+        "XDG_ICON_THEME=a-candy-beauty-icon-theme"
+      ];
+    };
   };
 }
