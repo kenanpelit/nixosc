@@ -6,6 +6,7 @@
 let
   cfg = config.my.user.clipse;
   logPath = "${config.home.homeDirectory}/.local/state/clipse/clipse.log";
+  hmLib = lib.hm or config.lib;
 in
 {
   options.my.user.clipse = {
@@ -118,7 +119,7 @@ in
     };
 
     # Ensure log file exists and is writable so the daemon stays up
-    home.activation.clipseLog = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.clipseLog = hmLib.dag.entryAfter [ "writeBoundary" ] ''
       mkdir -p "${config.home.homeDirectory}/.local/state/clipse"
       : > "${logPath}"
       chmod 600 "${logPath}"
