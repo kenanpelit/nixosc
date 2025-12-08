@@ -27,5 +27,11 @@ in {
         appLauncher.enableClipPreview = true;
       };
     };
+
+    # Force icon theme for Noctalia/Qt lookups
+    home-manager.users.${user}.systemd.user.services.noctalia-shell.Service.Environment = [
+      "QT_ICON_THEME=a-candy-beauty-icon-theme"
+      "XDG_ICON_THEME=a-candy-beauty-icon-theme"
+    ];
   };
 }
