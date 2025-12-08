@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#set -euo pipefail
 
 #===============================================================================
 #
@@ -27,10 +26,9 @@
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="8.0.0"
 # Snowfall düzenine göre start scriptleri burada tutuluyor
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/user-modules/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
-LOGGING_ENABLED=true
 readonly DEFAULT_FINAL_WORKSPACE="2"
 readonly DEFAULT_WAIT_TIME=1
 readonly DEFAULT_APP_TIMEOUT=4
@@ -110,25 +108,6 @@ declare -A BRAVE_BROWSERS=(
   ["brave-whatsapp"]="profile_brave|--whatsapp --class whatsapp --title whatsapp|9|secure|1|true"
 )
 
-# Browser Applications - Zen
-declare -A ZEN_BROWSERS=(
-  ["zen-kenp"]="zen|-P Kenp --class Kenp --name Kenp --restore-session|1|secure|1|false"
-  ["zen-novpn"]="zen|-P NoVpn --class AI --name AI --restore-session|3|bypass|1|false"
-  ["zen-compecta"]="zen|-P CompecTA --class CompecTA --name CompecTA --restore-session|4|secure|1|false"
-  ["zen-discord"]="zen|-P Discord --class Discord --name Discord --restore-session|5|secure|1|true"
-  ["zen-proxy"]="zen|-P Proxy --class Proxy --name Proxy --restore-session|7|bypass|1|false"
-  ["zen-spotify"]="zen|-P Spotify --class Spotify --name Spotify --restore-session|7|bypass|1|true"
-  ["zen-whats"]="zen|-P Whats --class Whats --name Whats --restore-session|9|secure|1|true"
-)
-
-# Browser Applications - Chrome
-declare -A CHROME_BROWSERS=(
-  ["chrome-kenp"]="profile_chrome|Kenp --class Kenp|1|secure|1|false"
-  ["chrome-compecta"]="profile_chrome|CompecTA --class CompecTA|4|secure|1|false"
-  ["chrome-ai"]="profile_chrome|AI --class AI|3|secure|1|false"
-  ["chrome-whats"]="profile_chrome|Whats --class Whats|9|secure|1|false"
-)
-
 # Applications - UPDATED
 declare -A APPS=(
   ["discord"]="discord|-m --class=discord --title=discord|5|secure|1|true"
@@ -136,32 +115,6 @@ declare -A APPS=(
   ["spotify"]="spotify|--class Spotify -T Spotify|8|bypass|1|false"
   ["mpv"]="mpv|--player-operation-mode=pseudo-gui --input-ipc-server=/tmp/mpvsocket|6|bypass|1|true"
   ["ferdium"]="ferdium||9|secure|1|false"
-)
-
-# Hyprland class/title patterns for faster checks
-declare -A HYPR_CLASS_MAP=(
-  ["kkenp"]="TmuxKenp"
-  ["mkenp"]="TmuxKenp"
-  ["wkenp"]="TmuxKenp|wezterm"
-  ["kitty-single"]="kitty"
-  ["wezterm"]="wezterm|org.wezfurlong.wezterm"
-  ["wezterm-rmpc"]="rmpc"
-  ["brave-kenp"]="Kenp|Kenp Browser"
-  ["brave-ai"]="Ai|Ai Browser"
-  ["brave-compecta"]="CompecTA|CompecTA Browser"
-  ["brave-whats"]="Whats|Whats Browser"
-  ["brave-exclude"]="Exclude|Exclude Browser"
-  ["brave-youtube"]="brave-youtube"
-  ["brave-tiktok"]="brave-tiktok"
-  ["brave-spotify"]="brave-spotify"
-  ["brave-discord"]="brave-discord"
-  ["brave-whatsapp"]="brave-whatsapp"
-  ["zen-*"]="zen"
-  ["chrome-*"]="chrome|google-chrome"
-  ["discord"]="discord|Discord"
-  ["webcord"]="WebCord"
-  ["spotify"]="spotify|Spotify"
-  ["ferdium"]="ferdium|Ferdium"
 )
 
 #-------------------------------------------------------------------------------
@@ -206,16 +159,11 @@ log() {
 
   echo -e "${color}${BOLD}[$level]${NC} ${PURPLE}[$module]${NC} $message"
 
-  if [[ "$LOGGING_ENABLED" == "true" ]]; then
-    if { mkdir -p "$LOG_DIR" && touch "$LOG_FILE" && printf '[%s] [%s] [%s] %s\n' "$timestamp" "$level" "$module" "$message" >>"$LOG_FILE"; } 2>/dev/null; then
-      :
-    else
-      LOGGING_ENABLED=false
-    fi
-  fi
+  mkdir -p "$LOG_DIR"
+  echo "[$timestamp] [$level] [$module] $message" >>"$LOG_FILE"
 
   if [[ "$notify" == "true" && -x "$(command -v notify-send)" ]]; then
-    notify-send -a "$SCRIPT_NAME" "$module: $message" || true
+    notify-send -a "$SCRIPT_NAME" "$module: $message"
   fi
 }
 
@@ -277,26 +225,118 @@ is_app_running() {
   local profile="$1"
   local search_pattern="${2:-}"
 
-  # For Hyprland, check window existence with a single clients query
+  # For browser profiles, check if windows exist on Hyprland
   if [[ "$WM_TYPE" == "hyprland" ]] && command -v hyprctl &>/dev/null && command -v jq &>/dev/null; then
-    local clients_json
-    clients_json=$(hyprctl clients -j 2>/dev/null || true)
-    if [[ -n "$clients_json" ]]; then
-      local class_pattern=""
-      if [[ -v HYPR_CLASS_MAP["$profile"] ]]; then
-        class_pattern="${HYPR_CLASS_MAP[$profile]}"
-      elif [[ "$profile" == zen-* ]]; then
-        class_pattern="${profile#zen-}"
-      elif [[ "$profile" == chrome-* ]]; then
-        class_pattern="${profile#chrome-}"
+    case "$profile" in
+    # Terminal profiles
+    kkenp | mkenp)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "TmuxKenp")' >/dev/null 2>&1; then
+        return 0
       fi
-
-      if [[ -n "$class_pattern" ]]; then
-        if echo "$clients_json" | jq -e ".[] | select(.class | test(\"$class_pattern\"; \"i\"))" >/dev/null 2>&1; then
-          return 0
-        fi
+      return 1
+      ;;
+    wkenp)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "TmuxKenp" or .class == "wezterm")' >/dev/null 2>&1; then
+        return 0
       fi
-    fi
+      return 1
+      ;;
+    kitty-single)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "kitty")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    wezterm)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "wezterm" or .class == "org.wezfurlong.wezterm")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    wezterm-rmpc)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "rmpc")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    # Brave browser profiles
+    brave-kenp)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Kenp" or .initialTitle == "Kenp Browser")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-ai)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Ai" or .initialTitle == "Ai Browser")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-compecta)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "CompecTA" or .initialTitle == "CompecTA Browser")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-whats)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Whats" or .initialTitle == "Whats Browser")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-exclude)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Exclude" or .initialTitle == "Exclude Browser")' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-youtube)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-youtube"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-tiktok)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-tiktok"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-spotify)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-spotify"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-discord)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-discord"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    brave-whatsapp)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-whatsapp"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    # Zen browser profiles
+    zen-*)
+      local profile_class="${profile#zen-}"
+      if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    # Chrome browser profiles
+    chrome-*)
+      local profile_class="${profile#chrome-}"
+      if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"chrome|google-chrome\"; \"i\")) | select(.title | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    esac
   fi
 
   # Fallback to process check
@@ -611,7 +651,6 @@ SCRIPT_HEREDOC_START
 }
 
 generate_all_scripts() {
-  set +e
   log "INFO" "GENERATE" "Generating scripts for ALL profiles..."
   local count=0
 
@@ -641,7 +680,6 @@ generate_all_scripts() {
   done
 
   log "SUCCESS" "GENERATE" "Generated $count unified scripts in $SCRIPTS_DIR"
-  set -e
 }
 
 generate_daily_scripts() {
@@ -1305,7 +1343,7 @@ check_dependencies() {
   fi
 }
 
-trap 'log "ERROR" "TRAP" "Script interrupted"; exit 1' INT TERM
+trap 'log "ERROR" "TRAP" "Script interrupted"; exit 1' ERR INT TERM
 
 check_dependencies
 main "$@"
