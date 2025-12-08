@@ -115,5 +115,9 @@ in
       PreviewedText = "#cdd6f4";    # text
       PreviewBorder = "#89b4fa";    # blue
     };
+
+    # Ensure log file exists and is writable so the daemon stays up
+    home.file.".config/clipse/clipse.log".text = "";
+    home.file.".config/clipse/clipse.log".force = true;
   };
 }
