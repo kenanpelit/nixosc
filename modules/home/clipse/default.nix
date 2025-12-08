@@ -124,5 +124,8 @@ in
       : > "${logPath}"
       chmod 600 "${logPath}"
     '';
+
+    # Remove any stale log in the old location
+    home.file.".config/clipse/clipse.log".enable = false;
   };
 }
