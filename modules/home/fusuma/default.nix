@@ -67,8 +67,8 @@ in
         };
         pinch = {
           "3" = {
-            in.command = "${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1";
-            out.command = "${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0";
+            "in" = { command = "${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1"; };
+            out = { command = "${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0"; };
           };
         };
       };
