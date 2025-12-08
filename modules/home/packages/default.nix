@@ -120,7 +120,6 @@ in
       qalculate-gtk         # Calculator
       # nwg-shell stack
       nwg-shell nwg-panel nwg-drawer nwg-dock-hyprland nwg-menu nwg-look nwg-displays nwg-clipman azote
-      nwg-bar nwg-dock nwg-launchers nwg-icon-picker nwg-readme-browser nwg-hello nwg-wrapper nwg-hello
       
       # Communication
       discord webcord-vencord
