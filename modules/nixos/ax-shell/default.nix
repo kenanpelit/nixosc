@@ -17,7 +17,7 @@ in {
 
     # Enable for primary user
     home-manager.users.${user}.programs.ax-shell = {
-      enable = false;
+      enable = true;
       package = axPkg;
       settings = {
         terminalCommand = "foot -e";
