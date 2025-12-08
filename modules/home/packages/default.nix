@@ -118,6 +118,8 @@ in
       obsidian              # Note taking
       zathura evince        # PDF viewers
       qalculate-gtk         # Calculator
+      # nwg-shell stack
+      nwg-shell nwg-panel nwg-drawer nwg-dock-hyprland nwg-menu nwg-look nwg-displays nwg-clipman azote
       
       # Communication
       discord webcord-vencord
