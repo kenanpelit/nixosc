@@ -41,8 +41,8 @@ lib.mkIf cfg.enable {
   systemd.user.services.clipse-listen = {
     Unit = {
       Description = "Clipse listener";
-      After = [ "hyprland-session.target" ];
-      PartOf = [ "hyprland-session.target" ];
+      After = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
     };
     Service = {
       Type = "simple";
@@ -50,7 +50,7 @@ lib.mkIf cfg.enable {
       Restart = "on-failure";
       RestartSec = 2;
     };
-    Install.WantedBy = [ "hyprland-session.target" ];
+    Install.WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
   };
 
   # Auto-run bluetooth_toggle shortly after session start
