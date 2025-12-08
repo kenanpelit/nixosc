@@ -674,7 +674,8 @@ let
   systemBinds = [
     # Lock & Power
     # Lock screen
-    "ALT, L, exec, hyprlock"
+    "CTRL ALT, L, exec, hyprlock"
+    "ALT, L, exec, dms ipc call lock lock"
     "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
   
     # DMS Panels & Widgets
