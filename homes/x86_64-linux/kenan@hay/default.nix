@@ -43,6 +43,7 @@
   my.user.waypaper.enable = false;
   my.user.touchegg.enable = true;
   my.user.dms.enable = true;
+  my.user.ax-shell.enable = false;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
 
@@ -101,7 +102,7 @@
   my.user.pass.enable = true;
   
   # Search
-  my.user.search.enable = true;
+  my.user.search.enable = false;
   
   # Other
   my.user.flatpak.enable = true;
