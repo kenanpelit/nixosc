@@ -134,9 +134,6 @@ in
       obsidian              # Note taking
       zathura evince        # PDF viewers
       qalculate-gtk         # Calculator
-      # nwg-shell stack (components only, guarded by availability)
-    ] ++ nwgPkgs;
-      
       # Communication
       discord webcord-vencord
       catppuccin-discord
@@ -171,6 +168,6 @@ in
       localsend             # File sharing
       ventoy                # Bootable USB tool
       gparted               # Partition manager
-    ];
+    ] ++ nwgPkgs;
   };
 }
