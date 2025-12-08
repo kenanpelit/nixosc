@@ -38,22 +38,6 @@ lib.mkIf cfg.enable {
     };
   };
 
-  # Clipse listener as a user service
-  systemd.user.services.clipse-listen = {
-    Unit = {
-      Description = "Clipse listener";
-      After = [ "graphical-session.target" "hyprland-session.target" ];
-      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.clipse}/bin/clipse -listen";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-    Install.WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
-  };
-
   # Auto-run bluetooth_toggle shortly after session start
   systemd.user.services.bluetooth-auto-toggle = {
     Unit = {
