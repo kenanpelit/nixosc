@@ -43,7 +43,7 @@ in {
       configHome = "/home/${user}";
       logs = {
         save = true;
-        path = "/var/log/dms-greeter.log";
+        path = "/var/log/greeter/dms-greeter.log";
       };
     };
 
@@ -52,5 +52,11 @@ in {
       user = "greeter";
       command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} XKB_DEFAULT_VARIANT=${cfg.variant} dms-greeter --command ${cfg.compositor}";
     };
+
+    # Ensure log directory exists and is writable by greeter user
+    systemd.tmpfiles.rules = [
+      "d /var/log/greeter 0755 greeter greeter -"
+      "f /var/log/greeter/dms-greeter.log 0664 greeter greeter -"
+    ];
   };
 }
