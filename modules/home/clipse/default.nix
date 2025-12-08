@@ -5,6 +5,7 @@
 { config, pkgs, lib, ... }: 
 let
   cfg = config.my.user.clipse;
+  logPath = "${config.home.homeDirectory}/.local/state/clipse/clipse.log";
 in
 {
   options.my.user.clipse = {
@@ -23,7 +24,7 @@ in
       allowDuplicates = false;
       themeFile = "custom_theme.json";
       tempDir = "tmp_files";
-      logFile = "clipse.log";
+      logFile = logPath;
       
       keyBindings = {
         # Navigation - Vim style
@@ -117,7 +118,10 @@ in
     };
 
     # Ensure log file exists and is writable so the daemon stays up
-    home.file.".config/clipse/clipse.log".text = "";
-    home.file.".config/clipse/clipse.log".force = true;
+    home.activation.clipseLog = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      mkdir -p "${config.home.homeDirectory}/.local/state/clipse"
+      : > "${logPath}"
+      chmod 600 "${logPath}"
+    '';
   };
 }
