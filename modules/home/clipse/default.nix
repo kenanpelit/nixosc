@@ -5,6 +5,7 @@
 { config, pkgs, lib, ... }: 
 let
   cfg = config.my.user.clipse;
+  hmLib = lib.hm or config.lib;
 in
 {
   options.my.user.clipse = {
