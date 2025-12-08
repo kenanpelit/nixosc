@@ -601,7 +601,6 @@ let
     "$mainMod, Space, exec, noctalia-shell ipc call launcher toggle"
     "ALT, Space, exec, rofi-launcher || pkill rofi"
     "$mainMod, backspace, exec, noctalia-shell ipc call sessionMenu toggle"
-    "$mainMod, W, exec, noctalia-shell ipc call wallpaper random"
    
     # Terminals
     "$mainMod, Return, exec, kitty"
@@ -673,15 +672,15 @@ let
   systemBinds = [
     # Lock & Power
     # Lock screen
-    "ALT, L, exec, hyprlock"
-    "$mainMod ALT, L, exec, noctalia-shell ipc call lockScreen lock"
+    "$mainMod ALT, L, exec, hyprlock"
+    "ALT, L, exec, noctalia-shell ipc call lockScreen lock"
     #"$mainMod CTRL, L, exec, noctalia-shell ipc call idleInhibitor toggle"
   
     # DMS Panels & Widgets
     "$mainMod, N, exec, noctalia-shell ipc call notifications toggleHistory"
     "$mainMod CTRL, N, exec, noctalia-shell ipc call notifications dismissAll"
-    "$mainMod CTRL, M, exec, noctalia-shell ipc call state all"
-    "$mainMod CTRL, D, exec, noctalia-shell ipc call controlCenter toggle"
+    "$mainMod CTRL, D, exec, noctalia-shell ipc call calendar toggle"
+    "$mainMod , D, exec, noctalia-shell ipc call controlCenter toggle"
   
     # Theme & Night Mode
     "$mainMod SHIFT, T, exec, noctalia-shell ipc call darkMode toggle"
