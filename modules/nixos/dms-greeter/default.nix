@@ -40,6 +40,13 @@ in {
     programs.dankMaterialShell.greeter = {
       enable = true;
       compositor.name = cfg.compositor;
+      compositor.customConfig = lib.mkIf (cfg.compositor == "hyprland") ''
+        # Keyboard layout for greeter session
+        input {
+          kb_layout = "${cfg.layout}";
+          kb_variant = "${cfg.variant}";
+        }
+      '';
       configHome = "/home/${user}";
       logs = {
         save = true;
