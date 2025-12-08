@@ -47,9 +47,6 @@ lib.mkIf cfg.enable {
     };
     Service = {
       Type = "simple";
-      ExecStartPre = [
-        "${pkgs.bash}/bin/bash -c 'mkdir -p \"${config.home.homeDirectory}/.local/state/clipse\" && : > \"${clipseLogPath}\" && chmod 600 \"${clipseLogPath}\"'"
-      ];
       ExecStart = "${pkgs.clipse}/bin/clipse -listen";
       Restart = "on-failure";
       RestartSec = 2;
