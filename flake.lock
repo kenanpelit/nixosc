@@ -185,20 +185,21 @@
         ],
         "nixpkgs": [
           "nixpkgs"
-        ]
+        ],
+        "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1765128809,
-        "narHash": "sha256-rnRINQsZ++y7Z6XDskYEFc1DGFJaf57ukx1M7s4bZ/k=",
+        "lastModified": 1765175849,
+        "narHash": "sha256-AHuE4CihI1gGmeCZ+Q9be2IeV3hFbAd5OaVbJoehZl8=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "308c8c3ea77300c463ba4ece1a41ec9a3f2e5701",
+        "rev": "c570e20308ef4714a6c591a2da2f7989455da021",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "308c8c3ea77300c463ba4ece1a41ec9a3f2e5701",
+        "rev": "c570e20308ef4714a6c591a2da2f7989455da021",
         "type": "github"
       }
     },
@@ -967,17 +968,17 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1765128547,
-        "narHash": "sha256-E+aDmHrM2udXZutUjt1WZH6eW6mO39YanGQBA3Ldvb0=",
+        "lastModified": 1765141510,
+        "narHash": "sha256-IjlKl72fJ40zZFiag9VTF37249jHCRHAE4RP7bI0OXA=",
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "c26e91f074a1ffa5a7ef7fc0da247bcecada50ea",
+        "rev": "a5b7c91329313503e8864761f24ef43fb630f35c",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "c26e91f074a1ffa5a7ef7fc0da247bcecada50ea",
+        "rev": "a5b7c91329313503e8864761f24ef43fb630f35c",
         "type": "github"
       }
     },
@@ -1565,6 +1566,28 @@
         "owner": "hyprland-community",
         "repo": "pyprland",
         "type": "github"
+      }
+    },
+    "quickshell": {
+      "inputs": {
+        "nixpkgs": [
+          "dankMaterialShell",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764663772,
+        "narHash": "sha256-sHqLmm0wAt3PC4vczJeBozI1/f4rv9yp3IjkClHDXDs=",
+        "ref": "refs/heads/master",
+        "rev": "26531fc46ef17e9365b03770edd3fb9206fcb460",
+        "revCount": 713,
+        "type": "git",
+        "url": "https://git.outfoxxed.me/quickshell/quickshell"
+      },
+      "original": {
+        "rev": "26531fc46ef17e9365b03770edd3fb9206fcb460",
+        "type": "git",
+        "url": "https://git.outfoxxed.me/quickshell/quickshell"
       }
     },
     "root": {
