@@ -18,6 +18,10 @@ in
     services.fusuma = {
       enable = true;
       package = pkgs.fusuma;
+      extraPackages = with pkgs; [
+        hyprland
+        jq
+      ];
       # =============================================================================
       # Gesture Settings
       # =============================================================================
