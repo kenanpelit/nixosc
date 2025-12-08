@@ -598,9 +598,10 @@ let
   appBinds = [
     # Launchers
     "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
-    "$mainMod, Space, exec, noctalia-shell ipc call launcher toggle"
+    "$mainMod, Space, exec, dms ipc call spotlight toggle"
     "ALT, Space, exec, rofi-launcher || pkill rofi"
-    "$mainMod, backspace, exec, noctalia-shell ipc call sessionMenu toggle"
+    "$mainMod, backspace, exec, dms ipc call powermenu toggle"
+    "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
    
     # Terminals
     "$mainMod, Return, exec, kitty"
@@ -615,16 +616,16 @@ let
     # Audio Control
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
-    ", XF86AudioRaiseVolume, exec, noctalia-shell ipc call volume increase"
-    ", XF86AudioLowerVolume, exec, noctalia-shell ipc call volume decrease"
-    ", XF86AudioMute, exec, noctalia-shell ipc call volume muteOutput"
-    ", XF86AudioMicMute, exec, noctalia-shell ipc call volume muteInput"
+    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
+    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
+    ", XF86AudioMute, exec, dms ipc call audio mute"
+    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
    
     # Playback Control (DMS MPRIS)
-    ", XF86AudioPlay, exec, noctalia-shell ipc call media playPause"
-    ", XF86AudioNext, exec, noctalia-shell ipc call media next"
-    ", XF86AudioPrev, exec, noctalia-shell ipc call media previous"
-    ", XF86AudioStop, exec, noctalia-shell ipc call media stop"
+    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
+    ", XF86AudioNext, exec, dms ipc call mpris next"
+    ", XF86AudioPrev, exec, dms ipc call mpris previous"
+    ", XF86AudioStop, exec, dms ipc call mpris stop"
   
     # Spotify & MPV (özel scriptler)
     "ALT, E, exec, osc-spotify"
@@ -634,8 +635,8 @@ let
     "ALT, i, exec, hypr-vlc_toggle"
   
     # Brightness
-    ", XF86MonBrightnessUp, exec, noctalia-shell ipc call brightness increase"
-    ", XF86MonBrightnessDown, exec, noctalia-shell ipc call brightness decrease"
+    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
+    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
   
     # MPV Manager
     "CTRL ALT, 1, exec, hypr-mpv-manager start"
@@ -672,45 +673,48 @@ let
   systemBinds = [
     # Lock & Power
     # Lock screen
-    "$mainMod ALT, L, exec, hyprlock"
-    "ALT, L, exec, noctalia-shell ipc call lockScreen lock"
-    #"$mainMod CTRL, L, exec, noctalia-shell ipc call idleInhibitor toggle"
+    "ALT, L, exec, hyprlock"
+    "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
   
     # DMS Panels & Widgets
-    "$mainMod, N, exec, noctalia-shell ipc call notifications toggleHistory"
-    "$mainMod CTRL, N, exec, noctalia-shell ipc call notifications dismissAll"
-    "$mainMod CTRL, D, exec, noctalia-shell ipc call calendar toggle"
-    "$mainMod , D, exec, noctalia-shell ipc call controlCenter toggle"
+    "$mainMod, N, exec, dms ipc call notifications toggle"
+    "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
+    "$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod, D, exec, dms ipc call dash toggle ''"
+    "$mainMod CTRL, D, exec, dms ipc call control-center toggle"
   
     # Theme & Night Mode
-    "$mainMod SHIFT, T, exec, noctalia-shell ipc call darkMode toggle"
+    "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
+    "$mainMod SHIFT, N, exec, dms ipc call night toggle"
   
     # Bar & Dock
-    "$mainMod, B, exec, noctalia-shell ipc call bar toggle"
-    "$mainMod SHIFT, B, exec, noctalia-shell ipc call dock toggle"
+    "$mainMod, B, exec, dms ipc call bar toggle index 0"
+    "$mainMod SHIFT, B, exec, dms ipc call dock toggle"
+    "$mainMod CTRL, B, exec, dms ipc call bar toggleAutoHide index 0"
   
     # Tools
     "$mainMod SHIFT, C, exec, hyprpicker -a"
   
     # Wallpaper
-    "$mainMod, W, exec, noctalia-shell ipc call wallpaper random"
-    "$mainMod CTRL, W, exec, noctalia-shell ipc call wallpaper toggleAutomation"
+    "$mainMod, W, exec, dms ipc call wallpaper next"
+    "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
+    "$mainMod CTRL, W, exec, dms ipc call file browse wallpaper"
   
     # Monitor
     "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"
     "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"
     "$mainMod, E, exec, pypr shift_monitors +1"
-
+  
     # Connectivity
     ", F10, exec, bluetooth_toggle"
     "ALT, F12, exec, osc-mullvad toggle"
-
+  
     # Clipboard
-    "$mainMod, V, exec, noctalia-shell ipc call launcher clipboard"
+    "$mainMod, V, exec, dms ipc call clipboard toggle"
     "$mainMod CTRL, V, exec, kitty --class clipse -e clipse"
-
+  
     # Keybinds Cheatsheet
-     "$mainMod, slash, exec, noctalia-shell ipc call settings toggle"
+     "$mainMod, slash, exec, dms ipc call keybinds toggle hyprland"
   ];
 
   screenshotBinds = [
@@ -726,6 +730,7 @@ let
     "ALT, T, exec, start-kkenp"
     "$mainMod ALT, RETURN, exec, semsumo launch --daily"
     "$mainMod, M, exec, anotes"
+    "$mainMod CTRL, N, exec, dms ipc call notepad open"
   ];
 
   navBinds = [
@@ -737,7 +742,7 @@ let
     "$mainMod, page_down, exec, hypr-workspace-monitor -wr"
     "$mainMod, bracketleft, workspace, e-1"
     "$mainMod, bracketright, workspace, e+1"
-    "$mainMod, Tab, exec, noctalia-shell ipc call launcher toggle"
+    "$mainMod, Tab, exec, dms ipc call hypr toggleOverview"
     "$mainMod CTRL, c, movetoworkspace, empty"
     "$mainMod, mouse_down, workspace, e-1"
     "$mainMod, mouse_up, workspace, e+1"
