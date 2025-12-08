@@ -14,22 +14,6 @@ let
   customPython = pkgs.python3.withPackages (ps: with ps; [
     ipython libtmux pip pipx
   ]);
-  nwgPkgs = lib.flatten [
-    (lib.optional (pkgs ? nwg-panel) pkgs.nwg-panel)
-    (lib.optional (pkgs ? nwg-drawer) pkgs.nwg-drawer)
-    (lib.optional (pkgs ? nwg-dock-hyprland) pkgs.nwg-dock-hyprland)
-    (lib.optional (pkgs ? nwg-dock) pkgs.nwg-dock)
-    (lib.optional (pkgs ? nwg-menu) pkgs.nwg-menu)
-    (lib.optional (pkgs ? nwg-look) pkgs.nwg-look)
-    (lib.optional (pkgs ? nwg-displays) pkgs.nwg-displays)
-    (lib.optional (pkgs ? nwg-clipman) pkgs.nwg-clipman)
-    (lib.optional (pkgs ? azote) pkgs.azote)
-    (lib.optional (pkgs ? nwg-bar) pkgs.nwg-bar)
-    (lib.optional (pkgs ? nwg-launchers) pkgs.nwg-launchers)
-    (lib.optional (pkgs ? nwg-icon-picker) pkgs.nwg-icon-picker)
-    (lib.optional (pkgs ? nwg-readme-browser) pkgs.nwg-readme-browser)
-    (lib.optional (pkgs ? nwg-wrapper) pkgs.nwg-wrapper)
-  ];
 in
 {
   options.my.user.packages = {
@@ -134,8 +118,9 @@ in
       obsidian              # Note taking
       zathura evince        # PDF viewers
       qalculate-gtk         # Calculator
-      # nwg-shell stack (components only, guarded by availability)
-    ] ++ nwgPkgs;
+      # nwg-shell stack
+      nwg-shell nwg-panel nwg-drawer nwg-dock-hyprland nwg-menu nwg-look nwg-displays nwg-clipman azote
+      nwg-bar nwg-dock nwg-launchers nwg-icon-picker nwg-readme-browser nwg-hello nwg-wrapper nwg-hello
       
       # Communication
       discord webcord-vencord
