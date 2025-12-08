@@ -23,7 +23,6 @@ in
       allowDuplicates = false;
       themeFile = "custom_theme.json";
       tempDir = "tmp_files";
-      logFile = "clipse.log";
       
       keyBindings = {
         # Navigation - Vim style
@@ -115,5 +114,9 @@ in
       PreviewedText = "#cdd6f4";    # text
       PreviewBorder = "#89b4fa";    # blue
     };
+
+    # Ensure log file exists and is writable so the daemon stays up
+    # Remove any stale log in the old location
+    home.file.".config/clipse/clipse.log".enable = false;
   };
 }

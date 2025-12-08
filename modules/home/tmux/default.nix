@@ -6,10 +6,6 @@
 let
   cfg = config.my.user.tmux;
 
-  mkConfigDir = path: {
-    source = path;
-    recursive = true;
-  };
 in
 {
   options.my.user.tmux = {
@@ -24,13 +20,14 @@ in
       baseIndex = 1;
       clock24 = true;
       sensibleOnTop = true;
-      plugins = [ ]; # managed via config files below
+      plugins = [ ]; # TPM will self-install from tmux.conf.local
     };
+
+    home.sessionVariables.TMUX_PLUGIN_MANAGER_PATH = "${config.xdg.configHome}/tmux/plugins";
 
     xdg.configFile = {
       "tmux/tmux.conf".source = ./config/tmux.conf;
       "tmux/tmux.conf.local".source = ./config/tmux.conf.local;
-      "tmux/plugins" = mkConfigDir ./config/plugins;
       # fzf directory is populated via SOPS secret below
     };
 

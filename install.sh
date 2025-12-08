@@ -229,6 +229,23 @@ profile::next_available() {
 }
 
 # ==============================================================================
+# PART 2.5: ASSET SYNC (Wallpapers)
+# ==============================================================================
+wallpapers::sync() {
+  local src="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/wallpapers"
+  local dest="$HOME/Pictures/wallpapers"
+
+  if [[ ! -d "$src" ]]; then
+    log DEBUG "No wallpapers directory at $src; skipping sync."
+    return 0
+  fi
+
+  log INFO "Syncing wallpapers to ${dest} (existing files kept)..."
+  mkdir -p "$dest"
+  rsync -a --ignore-existing --exclude '.gitkeep' "$src"/ "$dest"/
+}
+
+# ==============================================================================
 # PART 3: FLAKE & GIT LOGIC
 # ==============================================================================
 
@@ -339,6 +356,9 @@ cmd_install() {
   if [[ "${CONFIG[UPDATE_FLAKE]}" == "true" ]]; then
     flake::update
   fi
+
+  # Sync wallpapers (non-destructive)
+  wallpapers::sync
 
   # Build System
   if flake::build "$hostname"; then

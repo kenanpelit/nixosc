@@ -135,6 +135,9 @@
     nm-applet.enable = true;
   };
 
+  # Noctalia shell is available via my.user.noctalia (disabled by default)
+  my.user.noctalia.enable = false;
+
   # ============================================================================
   # User Modules
   # ============================================================================

@@ -39,8 +39,6 @@ in
         "linuxWallpaperEngine"
         "powerUsagePlugin"
         "pulsarX3"
-        "wallpaperDiscovery"
-        "wallpaperShufflerPlugin"
         "webSearch"
         "worldClock"
       ];

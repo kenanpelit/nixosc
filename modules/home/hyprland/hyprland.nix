@@ -5,6 +5,7 @@
 { inputs, pkgs, config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
+  clipseLogPath = "${config.home.homeDirectory}/.local/state/clipse/clipse.log";
 in
 lib.mkIf cfg.enable {
   # =============================================================================
@@ -35,22 +36,6 @@ lib.mkIf cfg.enable {
     Install = {
       WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
     };
-  };
-
-  # Clipse listener as a user service
-  systemd.user.services.clipse-listen = {
-    Unit = {
-      Description = "Clipse listener";
-      After = [ "hyprland-session.target" ];
-      PartOf = [ "hyprland-session.target" ];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.clipse}/bin/clipse -listen";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-    Install.WantedBy = [ "hyprland-session.target" ];
   };
 
   # Auto-run bluetooth_toggle shortly after session start
