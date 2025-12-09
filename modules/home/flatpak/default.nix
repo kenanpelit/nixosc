@@ -1,9 +1,7 @@
 # modules/home/flatpak/default.nix
 # ==============================================================================
-# Home Manager module for flatpak.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for user-level Flatpak tweaks (remotes/overrides).
+# Keep per-user Flatpak config here instead of editing ~/.local manually.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:

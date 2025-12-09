@@ -1,9 +1,7 @@
 # modules/home/rsync/default.nix
 # ==============================================================================
-# Home Manager module for rsync.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for rsync CLI and helper scripts.
+# Installs rsync and keeps any user defaults managed here.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

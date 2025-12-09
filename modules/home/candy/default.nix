@@ -1,9 +1,8 @@
 # modules/home/candy/default.nix
 # ==============================================================================
-# Home Manager module for candy.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Candy shell theme/integration.
+# Installs theme assets and keeps user config in one place.
+# Adjust theme hooks here instead of scattering in shell rc files.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
@@ -140,4 +139,3 @@ in
     # };
   };
 }
-

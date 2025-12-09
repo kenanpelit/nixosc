@@ -1,9 +1,7 @@
 # modules/home/search/default.nix
 # ==============================================================================
-# Home Manager module for search.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for search helpers (locate/ripgrep wrappers etc.).
+# Installs search tooling and configures defaults per user.
 # ==============================================================================
 
 { inputs, config, lib, pkgs, ... }:

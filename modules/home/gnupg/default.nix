@@ -1,9 +1,7 @@
 # modules/home/gnupg/default.nix
 # ==============================================================================
-# Home Manager module for gnupg.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for GnuPG: agent, keyring, and gpg.conf defaults.
+# Keep GPG setup consistent by managing it here via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

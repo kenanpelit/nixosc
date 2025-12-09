@@ -1,9 +1,7 @@
 # modules/home/zsh/default.nix
 # ==============================================================================
-# Home Manager module for zsh.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Zsh shell: plugins, prompts, and rc/profile setup.
+# Centralize Zsh configuration via Home Manager instead of loose dotfiles.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

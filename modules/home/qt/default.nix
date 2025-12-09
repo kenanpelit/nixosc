@@ -1,9 +1,7 @@
 # modules/home/qt/default.nix
 # ==============================================================================
-# Home Manager module for qt.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Qt theming and platform options (QT_QPA_PLATFORM etc.).
+# Centralize Qt look-and-feel settings under Home Manager.
 # ==============================================================================
 
 { lib, pkgs, config, ... }:

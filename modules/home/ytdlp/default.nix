@@ -1,9 +1,7 @@
 # modules/home/ytdlp/default.nix
 # ==============================================================================
-# Home Manager module for ytdlp.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for yt-dlp video downloader.
+# Installs yt-dlp and manages user config/aliases via Home Manager.
 # ==============================================================================
 
 { config, username, lib, ... }:

@@ -1,9 +1,7 @@
 # modules/home/gtk/default.nix
 # ==============================================================================
-# Home Manager module for gtk.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for GTK theming and settings (icons, cursors, fonts).
+# Centralize user GTK defaults here instead of manual gsettings tweaks.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

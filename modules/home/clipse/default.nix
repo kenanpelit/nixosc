@@ -1,9 +1,8 @@
 # modules/home/clipse/default.nix
 # ==============================================================================
-# Home Manager module for clipse.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Clipse clipboard helper.
+# Installs the CLI and manages user config through Home Manager.
+# Adjust behaviour here instead of manual config files.
 # ==============================================================================
 
 { config, pkgs, lib, ... }: 

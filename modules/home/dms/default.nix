@@ -1,9 +1,8 @@
 # modules/home/dms/default.nix
 # ==============================================================================
-# Home Manager module for dms.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for DankMaterialShell: imports upstream HM module plus local
+# settings/themes splits. Exposes screenshot editor and plugin list options.
+# Central place to manage DMS runtime config for the user session.
 # ==============================================================================
 
 { inputs, lib, config, pkgs, ... }:

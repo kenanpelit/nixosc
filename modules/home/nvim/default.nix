@@ -1,9 +1,7 @@
 # modules/home/nvim/default.nix
 # ==============================================================================
-# Home Manager module for nvim.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Neovim: installs nvim and manages user config/plugins.
+# Centralize editor settings here instead of ad-hoc init.lua in $HOME.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

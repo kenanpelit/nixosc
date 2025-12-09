@@ -1,9 +1,7 @@
 # modules/home/sops/default.nix
 # ==============================================================================
-# Home Manager module for sops.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for sops/age user-side secret management.
+# Installs sops/age tools and configures key locations via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, inputs, ... }:

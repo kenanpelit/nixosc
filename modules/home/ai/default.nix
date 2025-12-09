@@ -1,9 +1,8 @@
 # modules/home/ai/default.nix
 # ==============================================================================
-# Home Manager module for ai.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for AI tooling: CLI wrappers and helper binaries for LLM flows.
+# Installs selected AI tools and exposes per-user settings in one place.
+# Tweak model/runtime choices here instead of scattering shell snippets.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

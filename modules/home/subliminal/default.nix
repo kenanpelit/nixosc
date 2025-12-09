@@ -1,9 +1,7 @@
 # modules/home/subliminal/default.nix
 # ==============================================================================
-# Home Manager module for subliminal.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Subliminal subtitle fetcher.
+# Installs tool and centralizes subtitle provider config via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

@@ -1,9 +1,7 @@
 # modules/home/program/default.nix
 # ==============================================================================
-# Home Manager module for program.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module bundling core user programs (base CLI/GUI set).
+# Keeps common app enables in one place instead of per-module duplication.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

@@ -1,9 +1,7 @@
 # modules/home/hyprland/default.nix
 # ==============================================================================
-# Home Manager module for hyprland.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Hyprland user config: binds, env, plugins, extras.
+# Manages compositor settings via Home Manager instead of loose dotfiles.
 # ==============================================================================
 
 { inputs, lib, config, ... }:

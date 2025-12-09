@@ -1,9 +1,7 @@
 # modules/home/wezterm/default.nix
 # ==============================================================================
-# Home Manager module for wezterm.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for WezTerm terminal: install package and write config.
+# Manage font/theme/keybind defaults here instead of manual wezterm.lua edits.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

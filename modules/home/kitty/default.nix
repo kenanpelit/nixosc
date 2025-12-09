@@ -1,9 +1,8 @@
 # modules/home/kitty/default.nix
 # ==============================================================================
-# Home Manager module for kitty.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Kitty terminal: install package and write kitty.conf.
+# Manages font/theme/keybind defaults via Home Manager.
+# Edit terminal settings here instead of ~/.config/kitty by hand.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

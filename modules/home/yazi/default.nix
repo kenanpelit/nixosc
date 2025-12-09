@@ -1,9 +1,8 @@
 # modules/home/yazi/default.nix
 # ==============================================================================
-# Home Manager module for yazi.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Yazi TUI file manager.
+# Installs yazi and writes user config/theme via Home Manager.
+# Keep yazi tweaks here instead of editing config manually.
 # ==============================================================================
 
 { inputs, pkgs, lib, config, ... }:
@@ -55,4 +54,3 @@ in
     '';
   };
 }
-

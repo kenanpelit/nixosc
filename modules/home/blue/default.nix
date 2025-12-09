@@ -1,9 +1,9 @@
 # modules/home/blue/default.nix
 # ==============================================================================
-# Home Manager module for blue.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Hypr Blue Manager: unified night-light control
+# (Gammastep / Hyprsunset / wl-gammarelay). Provides per-user service,
+# temperature/brightness presets, and package wiring. Centralize night-light
+# policy here instead of scattering scripts in the session config.
 # ==============================================================================
 
 { config, lib, pkgs, username, ... }:
@@ -218,4 +218,3 @@ in
     };
   };
 }
-

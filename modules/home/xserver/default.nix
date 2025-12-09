@@ -1,9 +1,7 @@
 # modules/home/xserver/default.nix
 # ==============================================================================
-# Home Manager module for xserver.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for X11 user utilities (xset, xrandr helpers, etc.).
+# Installs X11-related tools and config via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

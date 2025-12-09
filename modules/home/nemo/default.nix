@@ -1,9 +1,8 @@
 # modules/home/nemo/default.nix
 # ==============================================================================
-# Home Manager module for nemo.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Nemo file manager.
+# Installs nemo and applies user-level defaults via Home Manager.
+# Keep file manager tweaks here instead of editing dconf manually.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

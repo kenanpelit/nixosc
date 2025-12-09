@@ -1,9 +1,8 @@
 # modules/home/cava/default.nix
 # ==============================================================================
-# Home Manager module for cava.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for CAVA audio visualizer.
+# Installs the tool and lets you manage user-level config via Home Manager.
+# Centralize visualizer tweaks here instead of editing config manually.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

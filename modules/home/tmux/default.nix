@@ -1,9 +1,7 @@
 # modules/home/tmux/default.nix
 # ==============================================================================
-# Home Manager module for tmux.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for tmux: installs tmux and writes tmux.conf defaults.
+# Centralize keybinds/plugins here instead of manual config management.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

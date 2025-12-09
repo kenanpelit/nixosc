@@ -1,9 +1,8 @@
 # modules/home/firefox/default.nix
 # ==============================================================================
-# Home Manager module for firefox.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Firefox: install browser and wire profiles (kenp/compecta/proxy).
+# Leaves profile.ini untouched so manual profiles work; manages policies/settings here.
+# Adjust extensions/search/etc. via this module instead of manual profile edits.
 # ==============================================================================
 
 { config, lib, pkgs, username ? "kenan", ... }:

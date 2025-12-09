@@ -1,9 +1,8 @@
 # modules/home/ollama/default.nix
 # ==============================================================================
-# Home Manager module for ollama.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Ollama local LLM runtime.
+# Installs ollama client and controls user service flags.
+# Manage model runtime options here instead of manual service setup.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

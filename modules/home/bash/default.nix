@@ -1,9 +1,8 @@
 # modules/home/bash/default.nix
 # ==============================================================================
-# Home Manager module for bash.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Bash shell defaults: rc/profile, aliases, completions.
+# Centralizes bash configuration under Home Manager instead of loose dotfiles.
+# Edit prompt/options here to keep bash setup consistent per user.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

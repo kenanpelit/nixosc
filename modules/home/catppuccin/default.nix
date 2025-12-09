@@ -1,9 +1,8 @@
 # modules/home/catppuccin/default.nix
 # ==============================================================================
-# Home Manager module for catppuccin.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Catppuccin theming across supported apps.
+# Enables flavor/accent and app-specific toggles from one place.
+# Keep theme wiring centralized instead of per-app manual configs.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

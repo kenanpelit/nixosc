@@ -1,9 +1,8 @@
 # modules/home/btop/default.nix
 # ==============================================================================
-# Home Manager module for btop.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for btop resource monitor with theme defaults.
+# Installs btop and sets user config via Home Manager.
+# Tweak colors/behaviour here instead of editing btop.conf manually.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
