@@ -31,7 +31,7 @@ let
   ghosttyConfig = ''
     # Appearance
     font-family = "Maple Mono NF"
-    font-size = 11
+    font-size = 12
     background = "#1e1e2e"
     foreground = "#cdd6f4"
     cursor-color = "#cba6f7"
