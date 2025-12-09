@@ -12,7 +12,7 @@
 #   - Automatic window manager detection (Hyprland, GNOME, generic Wayland/X11)
 #   - Application startup verification with timeout (Hyprland)
 #   - Startup script generation for all profiles
-#   - Multi-browser support (Brave, Zen, Chrome)
+#   - Multi-browser support (Brave, Chrome)
 #   - VPN bypass/secure mode support
 #   - Terminal session management
 #   - Config-free operation (no external config files needed)
@@ -320,14 +320,6 @@ is_app_running() {
       fi
       return 1
       ;;
-    # Zen browser profiles
-    zen-*)
-      local profile_class="${profile#zen-}"
-      if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
-        return 0
-      fi
-      return 1
-      ;;
     # Chrome browser profiles
     chrome-*)
       local profile_class="${profile#chrome-}"
@@ -406,7 +398,6 @@ get_class_pattern() {
 
   case "$profile" in
   brave-*) echo "brave" ;;
-  zen-*) echo "zen" ;;
   chrome-*) echo "chrome|Google-chrome" ;;
   discord) echo "discord|Discord" ;;
   spotify) echo "spotify|Spotify" ;;
@@ -462,7 +453,6 @@ parse_config() {
 get_browser_profiles() {
   case "$BROWSER_TYPE" in
   "brave") echo "BRAVE_BROWSERS" ;;
-  "zen") echo "ZEN_BROWSERS" ;;
   "chrome") echo "CHROME_BROWSERS" ;;
   *)
     log "ERROR" "BROWSER" "Invalid browser type: $BROWSER_TYPE"
@@ -664,11 +654,6 @@ generate_all_scripts() {
     ((count++))
   done
 
-  for profile in "${!ZEN_BROWSERS[@]}"; do
-    generate_script "$profile" "${ZEN_BROWSERS[$profile]}"
-    ((count++))
-  done
-
   for profile in "${!CHROME_BROWSERS[@]}"; do
     generate_script "$profile" "${CHROME_BROWSERS[$profile]}"
     ((count++))
@@ -850,8 +835,6 @@ launch_profile() {
     launch_application "$profile" "${TERMINALS[$profile]}" "terminal"
   elif [[ -v BRAVE_BROWSERS["$profile"] && "$BROWSER_TYPE" == "brave" ]]; then
     launch_application "$profile" "${BRAVE_BROWSERS[$profile]}" "brave"
-  elif [[ -v ZEN_BROWSERS["$profile"] && "$BROWSER_TYPE" == "zen" ]]; then
-    launch_application "$profile" "${ZEN_BROWSERS[$profile]}" "zen"
   elif [[ -v CHROME_BROWSERS["$profile"] && "$BROWSER_TYPE" == "chrome" ]]; then
     launch_application "$profile" "${CHROME_BROWSERS[$profile]}" "chrome"
   elif [[ -v APPS["$profile"] ]]; then
@@ -1121,7 +1104,6 @@ show_help() {
   echo
   echo -e "${BOLD}Browser Types:${NC}"
   echo "    brave                 Use Brave Browser profiles (default)"
-  echo "    zen                   Use Zen Browser profiles"
   echo "    chrome                Use Chrome Browser profiles"
   echo
   echo -e "${BOLD}Commands:${NC}"
@@ -1172,7 +1154,7 @@ show_help() {
 #-------------------------------------------------------------------------------
 
 parse_args() {
-  if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "zen" || "$1" == "chrome") ]]; then
+  if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "chrome") ]]; then
     BROWSER_TYPE="$1"
     shift
   fi
@@ -1330,7 +1312,6 @@ check_dependencies() {
 
   case "$BROWSER_TYPE" in
   brave) command -v profile_brave >/dev/null 2>&1 || missing_deps+=("profile_brave") ;;
-  zen) command -v zen >/dev/null 2>&1 || missing_deps+=("zen") ;;
   chrome) command -v profile_chrome >/dev/null 2>&1 || missing_deps+=("profile_chrome") ;;
   esac
 
