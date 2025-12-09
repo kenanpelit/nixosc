@@ -7,7 +7,7 @@
 # - Search engines and custom shortcuts
 # - Privacy and security settings
 # - Browser behavior customization
-# - Profile management
+# - Manual profiles (Kenp/Compecta/Proxy) handled outside HM; no profiles.ini written
 #
 # Author: Kenan Pelit
 # ==============================================================================
