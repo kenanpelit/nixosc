@@ -42,6 +42,9 @@ in
         optional cfg.allowTransmissionPorts transmissionPeerPort;
     };
 
+    # Use native nftables routing instead of iptables
+    networking.nftables.enable = true;
+
     environment.shellAliases = {
       fw-list         = "sudo nft list ruleset";
       fw-list-filter  = "sudo nft list table inet filter";
@@ -49,7 +52,7 @@ in
       fw-list-input   = "sudo nft list chain inet filter input";
       fw-list-forward = "sudo nft list chain inet filter forward";
 
-      fw-stats         = "sudo nft list ruleset -a -s";
+      fw-stats         = "sudo nft -a -s list ruleset";
       fw-counters      = "sudo nft list ruleset | grep -E 'counter|packets'";
       fw-reset-counters = "sudo nft reset counters table inet filter";
 
