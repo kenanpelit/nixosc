@@ -715,6 +715,7 @@ let
     "$mainMod, Space, exec, dms ipc call spotlight toggle"
     "$mainMod, backspace, exec, dms ipc call powermenu toggle"
     "$mainMod, delete, exec, dms ipc call lock lock"
+    "ALT, L, exec, dms ipc call lock lock"
     "$mainMod SHIFT, delete, exec, dms ipc call inhibit toggle"
 
     # Dash & panels
