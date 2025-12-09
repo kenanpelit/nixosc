@@ -1,9 +1,8 @@
 # modules/nixos/nix/default.nix
 # ==============================================================================
-# NixOS module for nix (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# Nix daemon and CLI policy: gc schedules, experimental features, substituters.
+# Centralize Nix settings so builds behave consistently across hosts.
+# Tweak evaluation/build knobs here instead of host-local edits.
 # ==============================================================================
 
 { config , lib , pkgs , inputs , cacheSubstituters ? [

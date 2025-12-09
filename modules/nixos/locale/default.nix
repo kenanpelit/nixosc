@@ -1,9 +1,8 @@
 # modules/nixos/locale/default.nix
 # ==============================================================================
-# NixOS module for locale (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS locale/timezone defaults: language, keymap, and time settings.
+# Define internationalization once for all hosts here.
+# Keep locale policy consistent by adjusting this module.
 # ==============================================================================
 
 { pkgs, ... }:

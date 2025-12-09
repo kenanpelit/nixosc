@@ -1,9 +1,8 @@
 # modules/nixos/portals/default.nix
 # ==============================================================================
-# NixOS module for portals (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS XDG portal selection (desktop/flatpak integration).
+# Centralize portal backends to keep file pickers/screenshare consistent.
+# Tweak portal providers here instead of per-session overrides.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:

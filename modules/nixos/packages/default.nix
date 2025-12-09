@@ -1,9 +1,8 @@
 # modules/nixos/packages/default.nix
 # ==============================================================================
-# NixOS module for packages (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS system package sets and overlays shared across hosts.
+# Keep baseline packages and pinned sources defined centrally here.
+# Add/remove system packages in this module for consistency.
 # ==============================================================================
 
 { pkgs, ... }:

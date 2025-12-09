@@ -1,9 +1,8 @@
 # modules/nixos/containers/default.nix
 # ==============================================================================
-# NixOS module for containers (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS containers/Podman configuration: runtimes, registries, storage.
+# Centralize container host defaults to keep OCI setup consistent.
+# Adjust daemon toggles here instead of per-machine hacks.
 # ==============================================================================
 
 { lib, config, ... }:

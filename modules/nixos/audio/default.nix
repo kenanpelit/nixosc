@@ -1,9 +1,8 @@
 # modules/nixos/audio/default.nix
 # ==============================================================================
-# NixOS module for audio (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS audio stack: PipeWire core with ALSA/Pulse/JACK shims and 32-bit support.
+# Central place to toggle sound services and compatibility layers per host.
+# Keep sound policy here instead of scattering overrides across modules.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:

@@ -1,9 +1,8 @@
 # modules/nixos/account/default.nix
 # ==============================================================================
-# NixOS module for account (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS accounts and sudo/polkit defaults: users, groups, shells.
+# Centralizes base identities and privileges shared across hosts.
+# Tweak user/group policy here instead of duplicating in host configs.
 # ==============================================================================
 
 { pkgs, lib, config, inputs, ... }:

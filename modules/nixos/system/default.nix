@@ -1,9 +1,8 @@
 # modules/nixos/system/default.nix
 # ==============================================================================
-# NixOS module for system (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS core system defaults: state version, base services, global options.
+# Central home for settings shared by all host configs.
+# Extend this file for cross-host system behaviour instead of duplicating.
 # ==============================================================================
 
 { lib, config, ... }:

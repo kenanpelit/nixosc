@@ -1,9 +1,8 @@
 # modules/nixos/bluetooth/default.nix
 # ==============================================================================
-# NixOS module for bluetooth (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS Bluetooth stack: BlueZ services, power tweaks, controller defaults.
+# One place to enable/disable adapters and audio integration per machine.
+# Keep BT policy here to avoid scattered per-host overrides.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

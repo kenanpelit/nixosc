@@ -1,9 +1,8 @@
 # modules/nixos/display/default.nix
 # ==============================================================================
-# NixOS module for display (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS display stack wiring: Wayland/X defaults, GPU drivers, session bits.
+# Central place for compositor/display-manager related settings.
+# Avoid per-host drift by keeping display policy defined here.
 # ==============================================================================
 
 { lib, ... }:

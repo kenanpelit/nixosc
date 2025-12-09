@@ -1,9 +1,8 @@
 # modules/nixos/desktop/default.nix
 # ==============================================================================
-# NixOS module for desktop (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS desktop glue: themes, portals, session defaults shared across WMs/DEs.
+# Keep cross-desktop settings here for consistent look-and-feel.
+# Modify global desktop policy here instead of per-session tweaks.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

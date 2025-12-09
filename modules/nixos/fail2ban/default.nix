@@ -1,9 +1,8 @@
 # modules/nixos/fail2ban/default.nix
 # ==============================================================================
-# NixOS module for fail2ban (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS fail2ban service: jail defaults, log backends, ban settings.
+# Configure intrusion bans centrally to reuse across hosts.
+# Tweak jail policies here rather than per-machine copies.
 # ==============================================================================
 
 { ... }:

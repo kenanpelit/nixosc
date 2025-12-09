@@ -1,9 +1,8 @@
 # modules/nixos/audit/default.nix
 # ==============================================================================
-# NixOS module for audit (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS auditd configuration: kernel audit, logging, and retention policy.
+# Central place to enable auditing and tune rules per host.
+# Avoid scattered audit settings by keeping them defined here.
 # ==============================================================================
 
 { pkgs, ... }:

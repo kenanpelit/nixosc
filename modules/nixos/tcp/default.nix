@@ -1,9 +1,8 @@
 # modules/nixos/tcp/default.nix
 # ==============================================================================
-# NixOS module for tcp (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS TCP/IP tuning: backlog, congestion control, and network stack knobs.
+# Keep low-level network tunables centralized for all hosts.
+# Adjust kernel TCP settings here instead of scattered sysctl edits.
 # ==============================================================================
 
 { lib, ... }:

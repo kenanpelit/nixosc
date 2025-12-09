@@ -1,9 +1,8 @@
 # modules/nixos/power/default.nix
 # ==============================================================================
-# NixOS module for power (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS power management: CPU scaling, TLP/auto-cpufreq, laptop policies.
+# Set power profiles and battery-friendly defaults in one place.
+# Keep power behaviour consistent by editing this module.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

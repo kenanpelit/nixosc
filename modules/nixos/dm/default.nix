@@ -1,9 +1,8 @@
 # modules/nixos/dm/default.nix
 # ==============================================================================
-# NixOS module for dm (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS display-manager/greeter wiring (e.g., greetd/lightdm settings).
+# Centralize login UI toggles and session registration here.
+# Keep DM choices consistent across hosts from this module.
 # ==============================================================================
 
 { lib, config, ... }:

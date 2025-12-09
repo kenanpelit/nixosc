@@ -1,9 +1,8 @@
 # modules/nixos/hardware/default.nix
 # ==============================================================================
-# NixOS module for hardware (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS hardware enablement: CPU/GPU quirks, firmware, microcode, sensors.
+# Collects common hardware toggles so hosts stay consistent.
+# Update this file for new devices instead of per-host patches.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

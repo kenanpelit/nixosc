@@ -1,9 +1,8 @@
 # modules/nixos/firewall/default.nix
 # ==============================================================================
-# NixOS module for firewall (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS firewall policy: nftables/iptables defaults, open ports, and helpers.
+# Central place to manage network exposure across all hosts.
+# Keep rules consistent by editing this module instead of per-host hacks.
 # ==============================================================================
 
 { lib, pkgs, config, ... }:
