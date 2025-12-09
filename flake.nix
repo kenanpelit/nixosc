@@ -88,11 +88,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    ax-shell = {
-      url = "github:poogas/Ax-Shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     pyprland = {
       url = "github:hyprland-community/pyprland";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -182,11 +177,6 @@
       url = "github:yazi-rs/plugins";
       flake = false;
     };
-
-    noctalia = {
-      url = "github:noctalia-dev/noctalia-shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = inputs:
@@ -219,10 +209,6 @@
         # Overlays applied to all systems
         overlays = with inputs; [
           nur.overlays.default
-          (final: prev: let system = prev.stdenv.hostPlatform.system; ax = inputs.ax-shell.packages.${system}; in {
-            ax-shell = ax.default;
-            ax-send  = ax.ax-send or ax.default;
-          })
         ];
 
         # Modules automatically added to all NixOS systems

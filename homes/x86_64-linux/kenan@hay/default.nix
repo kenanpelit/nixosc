@@ -43,7 +43,6 @@
   my.user.waypaper.enable = false;
   my.user.touchegg.enable = false;
   my.user.dms.enable = true;
-  my.user.ax-shell.enable = false;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
 
