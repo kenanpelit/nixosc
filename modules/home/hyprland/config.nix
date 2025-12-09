@@ -8,7 +8,20 @@ let
   # HELPERS & COLORS
   # ============================================================================
   inherit (config.catppuccin) sources;
-  colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
+  flavor = config.catppuccin.flavor;
+  accent = config.catppuccin.accent;
+  themeName = "catppuccin-${flavor}-${accent}";
+  cursorName = "${themeName}-cursors";
+  colors = (lib.importJSON "${sources.palette}/palette.json").${flavor}.colors;
+  activeBorder = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
+  inactiveBorder = mkColor colors.overlay0.hex 0.66;
+  inactiveGroupBorder = "${mkColor colors.surface1.hex 0.66} ${mkColor colors.overlay0.hex 0.66} 45deg";
+  primaryMonitor = "DELL UP2716D KRXTR88N909L";
+  secondaryMonitor = "Chimei Innolux Corporation 0x143F";
+  primaryMonitorDesc = "desc:Dell Inc. ${primaryMonitor}";
+  secondaryMonitorDesc = "desc:${secondaryMonitor}";
+  mkWorkspaceEntry = { monitor, index, isDefault ? false }:
+    "${toString index}, monitor:${monitor}${lib.optionalString isDefault ", default:true"}";
 
   # Color format converter (Hex -> 0xAARRGGBB)
   mkColor = color: alpha:
@@ -41,37 +54,31 @@ let
     "nm-applet --indicator"
     "clipse -listen"
     "wl-clip-persist --clipboard both"
-    "hyprctl setcursor catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors 24"
+    "hyprctl setcursor ${cursorName} 24"
     "hypr-switch"
     "osc-soundctl init"
   ];
 
   # --- Monitor Configuration ---
   monitorConfig = [
-    "desc:Dell Inc. DELL UP2716D KRXTR88N909L,2560x1440@59,0x0,1"
-    "desc:Chimei Innolux Corporation 0x143F,1920x1200@60,320x1440,1"
+    "${primaryMonitorDesc},2560x1440@59,0x0,1"
+    "${secondaryMonitorDesc},1920x1200@60,320x1440,1"
     ",preferred,auto,1"
   ];
 
   # --- Workspace Configuration ---
-  workspaceConfig = [
-    "1, monitor:DELL UP2716D KRXTR88N909L, default:true"
-    "2, monitor:DELL UP2716D KRXTR88N909L"
-    "3, monitor:DELL UP2716D KRXTR88N909L"
-    "4, monitor:DELL UP2716D KRXTR88N909L"
-    "5, monitor:DELL UP2716D KRXTR88N909L"
-    "6, monitor:DELL UP2716D KRXTR88N909L"
-    "7, monitor:Chimei Innolux Corporation 0x143F, default:true"
-    "8, monitor:Chimei Innolux Corporation 0x143F"
-    "9, monitor:Chimei Innolux Corporation 0x143F"
-    # Smart borders
-    "w[tv1]s[false], bordersize:0, rounding:false"
-    "f[1]s[false], bordersize:0, rounding:false"
-    "w[t2-99]s[false], bordersize:3, rounding:true"
-    # Special workspaces
-    "special:dropdown, gapsout:0, gapsin:0"
-    "special:scratchpad, gapsout:0, gapsin:0"
-  ];
+  workspaceConfig =
+    (map (n: mkWorkspaceEntry { monitor = primaryMonitor; index = n; isDefault = n == 1; }) (lib.range 1 6))
+    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitor; index = n; isDefault = n == 7; }) (lib.range 7 9))
+    ++ [
+      # Smart borders
+      "w[tv1]s[false], bordersize:0, rounding:false"
+      "f[1]s[false], bordersize:0, rounding:false"
+      "w[t2-99]s[false], bordersize:3, rounding:true"
+      # Special workspaces
+      "special:dropdown, gapsout:0, gapsin:0"
+      "special:scratchpad, gapsout:0, gapsin:0"
+    ];
 
   # ============================================================================
   # WINDOW RULES DEFINITIONS
@@ -610,7 +617,7 @@ let
   
     # File Managers
     "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
-    "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal nemo'"
+    "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] env GTK_THEME=${themeName}-standard+normal nemo'"
   ];
 
   mediaBinds = [
@@ -674,7 +681,7 @@ let
   systemBinds = [
     # Lock & Power
     # Lock screen
-    "CTRL ALT, L, exec, hyprlock"
+    #"CTRL ALT, L, exec, hyprlock"
     "ALT, L, exec, dms ipc call lock lock"
     "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
   
@@ -867,13 +874,13 @@ lib.mkIf cfg.enable {
         "HYPRLAND_NO_RT,1"
         "HYPRLAND_NO_SD_NOTIFY,1"
         "HYPRLAND_NO_WATCHDOG_WARNING,1"
-        "GTK_THEME,catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-standard+normal"
+        "GTK_THEME,${themeName}-standard+normal"
         "GTK_USE_PORTAL,1"
-        "GTK_APPLICATION_PREFER_DARK_THEME,${if (config.catppuccin.flavor == "latte") then "0" else "1"}"
+        "GTK_APPLICATION_PREFER_DARK_THEME,${if (flavor == "latte") then "0" else "1"}"
         "GDK_SCALE,1"
-        "XCURSOR_THEME,catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors"
+        "XCURSOR_THEME,${cursorName}"
         "XCURSOR_SIZE,24"
-        "HYPRCURSOR_THEME,catppuccin-${config.catppuccin.flavor}-${config.catppuccin.accent}-cursors"
+        "HYPRCURSOR_THEME,${cursorName}"
         "HYPRCURSOR_SIZE,32"
         "QT_QPA_PLATFORM,wayland;xcb"
         "QT_QPA_PLATFORMTHEME,kvantum"
@@ -893,7 +900,7 @@ lib.mkIf cfg.enable {
         "TERMINAL,kitty"
         "TERM,xterm-256color"
         "BROWSER,brave"
-        "CATPPUCCIN_FLAVOR,${config.catppuccin.flavor}"
+        "CATPPUCCIN_FLAVOR,${flavor}"
       ];
 
       general = {
@@ -901,8 +908,8 @@ lib.mkIf cfg.enable {
         gaps_in = 0;
         gaps_out = 0;
         border_size = 2;
-        "col.active_border" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
-        "col.inactive_border" = mkColor colors.overlay0.hex 0.66;
+        "col.active_border" = activeBorder;
+        "col.inactive_border" = inactiveBorder;
         layout = "master";
         allow_tearing = false;
         resize_on_border = true;
@@ -911,10 +918,10 @@ lib.mkIf cfg.enable {
       };
 
       group = {
-        "col.border_active" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
-        "col.border_inactive" = "${mkColor colors.surface1.hex 0.66} ${mkColor colors.overlay0.hex 0.66} 45deg";
-        "col.border_locked_active" = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
-        "col.border_locked_inactive" = "${mkColor colors.surface1.hex 0.66} ${mkColor colors.overlay0.hex 0.66} 45deg";
+        "col.border_active" = activeBorder;
+        "col.border_inactive" = inactiveGroupBorder;
+        "col.border_locked_active" = activeBorder;
+        "col.border_locked_inactive" = inactiveGroupBorder;
         groupbar = {
           render_titles = false;
           gradients = false;
