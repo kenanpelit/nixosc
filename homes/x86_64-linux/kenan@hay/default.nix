@@ -34,7 +34,7 @@
   my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
-  my.user.walker.enable = false;
+  my.user.walker.enable = true;
   my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
   my.user.dms.enable = true;
