@@ -26,7 +26,7 @@
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="8.0.0"
 # Snowfall düzenine göre start scriptleri burada tutuluyor
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/user-modules/scripts/start"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
@@ -106,6 +106,14 @@ declare -A BRAVE_BROWSERS=(
   ["brave-spotify"]="profile_brave|--spotify --class spotify --title spotify|8|secure|1|true"
   ["brave-discord"]="profile_brave|--discord --class discord --title discord|5|secure|1|true"
   ["brave-whatsapp"]="profile_brave|--whatsapp --class whatsapp --title whatsapp|9|secure|1|true"
+)
+
+# Browser Applications - Chrome
+declare -A CHROME_BROWSERS=(
+  ["chrome-kenp"]="profile_chrome|Kenp --class Kenp|1|secure|1|false"
+  ["chrome-ai"]="profile_chrome|AI --class AI|3|secure|1|false"
+  ["chrome-compecta"]="profile_chrome|CompecTA --class CompecTA|4|secure|1|false"
+  ["chrome-whats"]="profile_chrome|Whats --class Whats|9|secure|1|false"
 )
 
 # Applications - UPDATED
