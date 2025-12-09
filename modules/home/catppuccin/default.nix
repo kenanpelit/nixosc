@@ -24,7 +24,7 @@ in
       accent = "mauve";     # Accent color (rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue, lavender)
       
       # === Terminal Applications ===
-      kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal (kept for fallback; primary terminal is Ghostty)
+      kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal
       # wezterm - uses built-in Catppuccin, no module needed
       
       # === System Monitoring ===
