@@ -30,6 +30,7 @@
     # -- Core Libraries --------------------------------------------------------
     libdrm                       # Direct Rendering Manager (GPU)
     libinput                     # Input device handling
+    libinput-gestures            # Gesture mapper for libinput
     libnotify                    # Desktop notifications
     openssl                      # Cryptography library
 
