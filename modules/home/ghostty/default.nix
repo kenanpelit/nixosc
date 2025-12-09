@@ -28,7 +28,7 @@ let
 
   ghosttyConfig = ''
     # Appearance
-    font = "Maple Mono NF"
+    font-family = "Maple Mono NF"
     font-size = 11
     background = "#1e1e2e"
     foreground = "#cdd6f4"
@@ -37,7 +37,6 @@ let
     window-decoration = false
     window-padding-x = 10
     window-padding-y = 10
-    transparency = 0.0
 
     # Palette (Catppuccin Mocha)
     palette = 0=${palette.black}
@@ -58,16 +57,9 @@ let
     palette = 15=${palette.brightWhite}
 
     # Behaviour
-    scrollback-length = 10000
-    copy-on-select = true
+    scrollback = 10000
+    clipboard-copy-on-select = true
     confirm-close-surface = false
-    detect-password-input = true
-
-    # Tabs & windows
-    tab-bar = overlay
-    tab-bar-style = native
-    new-tab-command = "${config.home.sessionVariables.SHELL or "zsh"}"
-    new-window-command = "${config.home.sessionVariables.SHELL or "zsh"}"
 
     # Keybindings (familiar to kitty/alacritty users)
     keybind = ctrl+shift+t=new_tab
