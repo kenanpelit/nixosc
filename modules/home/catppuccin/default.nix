@@ -24,8 +24,7 @@ in
       accent = "mauve";     # Accent color (rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue, lavender)
       
       # === Terminal Applications ===
-      kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal
-      foot.enable = lib.mkDefault false;        # Lightweight Wayland terminal
+      kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal (kept for fallback; primary terminal is Ghostty)
       # wezterm - uses built-in Catppuccin, no module needed
       
       # === System Monitoring ===
@@ -47,7 +46,7 @@ in
       waybar.enable = lib.mkDefault true;       # Status bar
       mako.enable = lib.mkDefault true;         # Notification daemon
       rofi.enable = lib.mkDefault true;         # Application launcher
-      swaylock.enable = lib.mkDefault true;     # Screen locker
+      swaylock.enable = lib.mkDefault false;    # Screen locker (removed from system)
       
       # === Media Applications ===
       mpv.enable = lib.mkDefault true;          # Media player
@@ -58,4 +57,3 @@ in
     };
   };
 }
-
