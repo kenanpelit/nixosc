@@ -1,14 +1,11 @@
 # modules/home/elektron/default.nix
-# ==============================================================================
-# Elektron (Electron Apps) Wrapper Configuration
-# ==============================================================================
-# Purpose:
-#   - Provide a small abstraction layer for Electron-based apps.
-#   - Allow choosing a specific Electron package via cfg.package.
-# Notes:
-#   - Concrete app configuration (e.g. WebCord, Discord) lives in other modules.
-#   - This module is intentionally minimal and focuses on package wiring.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for elektron.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, ... }:
 
 with lib;

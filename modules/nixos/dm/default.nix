@@ -1,15 +1,10 @@
-# modules/core/dm/default.nix
-# ==============================================================================
-# Display Manager Configuration
-# ==============================================================================
-# Configures GDM (GNOME Display Manager) and session handling.
-# - Enables GDM (Wayland mode)
-# - Manages desktop environment enablement (GNOME, etc.)
-# - Configures auto-login settings
-# - Sets the default session based on enabled DEs
-# - Applies keyboard layout settings to XServer
-#
-# ==============================================================================
+# modules/nixos/dm/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for dm (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, config, ... }:
 

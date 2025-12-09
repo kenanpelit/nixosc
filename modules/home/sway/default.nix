@@ -1,12 +1,10 @@
 # modules/home/sway/default.nix
-# ==============================================================================
-# Sway Window Manager Configuration
-# ==============================================================================
-# Configures Sway specifically for VM management use cases.
-# - Defines VM launching scripts/configs
-# - Sets window rules for QEMU (fullscreen)
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for sway.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 let

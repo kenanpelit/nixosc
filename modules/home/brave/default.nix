@@ -1,15 +1,10 @@
 # modules/home/brave/default.nix
-# ==============================================================================
-# Brave Browser Configuration - NixOS + Home Manager
-# ==============================================================================
-# Goals:
-# - Keep user profile and preferences under the user's control
-# - Only set sane defaults on first install (handled in initial-setup.nix)
-# - Use a launcher wrapper for consistent flags (Wayland, VA-API, etc.)
-# - Optional integration with extensions and Catppuccin theme modules
-#
-# Author: Kenan Pelit
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for brave.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { inputs, pkgs, config, lib, ... }:
 

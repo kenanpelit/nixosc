@@ -1,8 +1,11 @@
 # modules/nixos/dms-greeter/default.nix
-# ==============================================================================
-# DMS Greeter (greetd) integration using DankMaterialShell aesthetics.
-# Imports upstream module, disables GDM, and configures greetd command.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# NixOS module for dms-greeter (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
+
 { lib, config, inputs, ... }:
 let
   cfg = config.my.greeter.dms or { enable = false; };

@@ -1,8 +1,11 @@
 # modules/home/cliphist/default.nix
-# ==============================================================================
-# Cliphist configuration (database path, limits, filtering flags).
-# Generates ~/.config/cliphist/config and ensures cliphist is installed.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for cliphist.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.cliphist;

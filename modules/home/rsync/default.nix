@@ -1,11 +1,10 @@
 # modules/home/rsync/default.nix
-# ==============================================================================
-# Rsync Configuration
-# ==============================================================================
-# Configures Rsync for home directory backups.
-# - Defines exclusion patterns for common temporary files, caches, and development artifacts.
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for rsync.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 let

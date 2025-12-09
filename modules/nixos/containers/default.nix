@@ -1,13 +1,10 @@
-# modules/core/containers/default.nix
-# ==============================================================================
-# Container Runtime Configuration
-# ==============================================================================
-# Configures Podman as the container engine for physical hosts.
-# - Enables Podman
-# - Enables Docker compatibility mode
-# - Configures DNS for container networking
-#
-# ==============================================================================
+# modules/nixos/containers/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for containers (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, config, ... }:
 

@@ -1,10 +1,10 @@
 # modules/nixos/account/default.nix
-# ==============================================================================
-# User Account & Home Manager Integration
-# ==============================================================================
-# Manages the primary user account, groups, sudo privileges, and integrates
-# Home Manager into the NixOS configuration.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# NixOS module for account (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { pkgs, lib, config, inputs, ... }:
 

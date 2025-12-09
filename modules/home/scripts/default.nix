@@ -1,12 +1,10 @@
 # modules/home/scripts/default.nix
-# ==============================================================================
-# Custom Scripts Module
-# ==============================================================================
-# This module imports custom shell scripts for various functionalities.
-# - Binaries (scripts intended to be in PATH)
-# - Startup scripts (scripts executed on session start)
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for scripts.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { lib, config, ... }:
 let

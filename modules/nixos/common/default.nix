@@ -1,9 +1,10 @@
 # modules/nixos/common/default.nix
-# ==============================================================================
-# Common System Configuration
-# ==============================================================================
-# This module contains configuration applied to ALL hosts managed by this flake.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# NixOS module for common (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { pkgs, lib, config, ... }:
 

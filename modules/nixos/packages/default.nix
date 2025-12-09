@@ -1,10 +1,10 @@
 # modules/nixos/packages/default.nix
-# ==============================================================================
-# System Core Packages
-# ==============================================================================
-# Essential infrastructure tools, services, and drivers available system-wide.
-# User applications should generally go to home-manager.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# NixOS module for packages (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { pkgs, ... }:
 

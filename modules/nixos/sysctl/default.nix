@@ -1,13 +1,10 @@
-# modules/core/sysctl/default.nix
-# ==============================================================================
-# Kernel Sysctl Tuning
-# ==============================================================================
-# General kernel parameter tuning (excluding network/TCP).
-# - Virtual memory swappiness
-# - NMI watchdog disablement
-# - Audit backlog limit
-#
-# ==============================================================================
+# modules/nixos/sysctl/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for sysctl (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { ... }:
 

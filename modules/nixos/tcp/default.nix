@@ -1,14 +1,10 @@
-# modules/core/tcp/default.nix
-# ==============================================================================
-# TCP/IP Network Tuning
-# ==============================================================================
-# Advanced TCP/IP sysctl optimizations for high performance.
-# - BBR congestion control
-# - buffer sizes (rmem/wmem)
-# - fastopen, keepalive, and security settings (rp_filter)
-# - profiles: ultra, high, std (default: ultra)
-#
-# ==============================================================================
+# modules/nixos/tcp/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for tcp (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, ... }:
 

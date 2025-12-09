@@ -1,14 +1,10 @@
-# modules/core/hardware/default.nix
-# ==============================================================================
-# Hardware Configuration
-# ==============================================================================
-# Configures hardware-specific settings for physical and virtual hosts.
-# - Graphics drivers (Intel/Mesa)
-# - Firmware (Redistributable/All)
-# - CPU Microcode (Intel)
-# - Input devices (Trackpoint)
-#
-# ==============================================================================
+# modules/nixos/hardware/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for hardware (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { pkgs, lib, config, ... }:
 

@@ -1,12 +1,10 @@
-# modules/core/apparmor/default.nix
-# ==============================================================================
-# AppArmor Configuration
-# ==============================================================================
-# Enables AppArmor Mandatory Access Control (MAC) and provides shell aliases.
-# - Enable AppArmor
-# - Shell aliases for status and enforcement management
-#
-# ==============================================================================
+# modules/nixos/apparmor/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for apparmor (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { ... }:
 {

@@ -1,11 +1,10 @@
 # modules/home/subliminal/default.nix
-# ==============================================================================
-# Subliminal Subtitle Downloader Configuration
-# ==============================================================================
-# This module provides a placeholder for Subliminal configuration.
-# The actual configuration is managed via a SOPS-encrypted TOML file.
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for subliminal.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 let

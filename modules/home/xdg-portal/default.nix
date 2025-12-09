@@ -1,7 +1,11 @@
 # modules/home/xdg-portal/default.nix
-# ==============================================================================
-# XDG Portal Configuration
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for xdg-portal.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.xdg-portal;

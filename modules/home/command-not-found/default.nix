@@ -1,7 +1,11 @@
 # modules/home/command-not-found/default.nix
-# ==============================================================================
-# Command Not Found Handler Configuration
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for command-not-found.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.command-not-found;

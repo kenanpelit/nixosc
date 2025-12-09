@@ -1,15 +1,10 @@
 # modules/home/gnome/default.nix
-# ==============================================================================
-# GNOME Desktop Configuration
-# ==============================================================================
-# Comprehensive configuration for the GNOME desktop environment via dconf.
-# - Interface and window manager settings
-# - Shell extensions configuration
-# - Custom keybindings and shortcuts
-# - Terminal, Text Editor, and other app preferences
-# - Power, privacy, and hardware settings
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for gnome.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 

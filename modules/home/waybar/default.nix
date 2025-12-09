@@ -1,7 +1,11 @@
 # modules/home/waybar/default.nix
-# ==============================================================================
-# Waybar Status Bar Configuration (Hyprland / Wayland)
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for waybar.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.waybar;

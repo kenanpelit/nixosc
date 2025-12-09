@@ -1,7 +1,11 @@
 # modules/home/dms/default.nix
-# ==============================================================================
-# DankMaterialShell (DMS) - Home Manager integration
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for dms.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { inputs, lib, config, pkgs, ... }:
 {
   # Upstream DMS module + local splits (settings, themes)

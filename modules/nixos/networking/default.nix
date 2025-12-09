@@ -1,13 +1,10 @@
-# modules/core/networking/default.nix
-# ==============================================================================
-# Networking Configuration
-# ==============================================================================
-# Configures network management and SSH client settings.
-# - NetworkManager enablement
-# - SSH client hardening and ASSH integration
-# - Shell aliases for SSH management
-#
-# ==============================================================================
+# modules/nixos/networking/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for networking (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, pkgs, ... }:
 

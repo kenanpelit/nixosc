@@ -1,13 +1,10 @@
-# modules/core/portals/default.nix
-# ==============================================================================
-# XDG Desktop Portals
-# ==============================================================================
-# Configures XDG portals for Wayland desktop integration.
-# - Enables portal support
-# - Adds Hyprland portal backend if display stack is enabled
-# - Sets default portals to hyprland and gtk
-#
-# ==============================================================================
+# modules/nixos/portals/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for portals (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { pkgs, lib, inputs, config, ... }:
 

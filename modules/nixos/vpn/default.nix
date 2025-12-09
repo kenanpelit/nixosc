@@ -1,12 +1,10 @@
-# modules/core/vpn/default.nix
-# ==============================================================================
-# VPN Services Configuration
-# ==============================================================================
-# Configures VPN services (Mullvad) for physical hosts.
-# - Enables Mullvad VPN service
-# - Sets up autoconnect service on boot
-#
-# ==============================================================================
+# modules/nixos/vpn/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for vpn (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 

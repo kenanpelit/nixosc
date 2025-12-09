@@ -1,19 +1,11 @@
 # modules/home/blue/default.nix
-# ==============================================================================
-# Hypr Blue Manager Service Configuration
-# ==============================================================================
-# Unified Gammastep + HyprSunset + wl-gammarelay service for automatic
-# color temperature adjustment in Hyprland.
-#
-# Features:
-#   - Single service manages all three tools
-#   - Each tool can be enabled/disabled independently
-#   - Configurable temperature profiles (4000K, 3500K, 3000K)
-#   - Time-based automatic adjustments
-#
-# Author: Kenan Pelit
-# Version: 3.0.0
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for blue.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, username, ... }:
 
 let

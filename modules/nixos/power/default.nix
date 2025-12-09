@@ -1,17 +1,10 @@
-# modules/core/power/default.nix
-# ==============================================================================
-# Power Management Services
-# ==============================================================================
-# Advanced power management tuning for physical hosts.
-# - ACPI Platform Profile (Performance/Low-Power)
-# - CPU Energy Performance Preference (EPP)
-# - Intel P-State Frequency Guard
-# - RAPL Power Limits (PL1/PL2) based on CPU model
-# - Thermal Guard (Dynamic PL2 throttling based on temp)
-# - Battery Charge Thresholds (75-80%)
-# - Auto-tuning on AC plug/unplug events
-#
-# ==============================================================================
+# modules/nixos/power/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for power (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { pkgs, lib, config, ... }:
 

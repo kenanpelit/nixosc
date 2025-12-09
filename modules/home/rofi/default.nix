@@ -1,13 +1,10 @@
 # modules/home/rofi/default.nix
-# ==============================================================================
-# Rofi Application Launcher Configuration
-# ==============================================================================
-# Configures Rofi for application launching, window switching, and custom menus.
-# - Integrates dynamic Catppuccin theming based on selected flavor.
-# - Imports core Rofi configuration from config.nix.
-# - Generates Rofi theme (theme.rasi) based on Catppuccin colors.
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for rofi.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 let
