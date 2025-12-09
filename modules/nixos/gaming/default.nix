@@ -1,9 +1,8 @@
 # modules/nixos/gaming/default.nix
 # ==============================================================================
-# NixOS module for gaming (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS gaming stack: Steam/gamemode/gamescope toggles and drivers.
+# Centralize gaming-related services and performance settings per host.
+# Adjust here to keep play environment consistent across machines.
 # ==============================================================================
 
 { lib, pkgs, config, ... }:

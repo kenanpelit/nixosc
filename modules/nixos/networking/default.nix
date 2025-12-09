@@ -1,9 +1,8 @@
 # modules/nixos/networking/default.nix
 # ==============================================================================
-# NixOS module for networking (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS networking base: NetworkManager, hostname, hosts file, DHCP/DNS hooks.
+# Keep core network defaults here for consistency across machines.
+# Adjust connectivity policy in this module instead of per-host tweaks.
 # ==============================================================================
 
 { lib, pkgs, ... }:

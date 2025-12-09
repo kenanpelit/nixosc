@@ -1,9 +1,8 @@
 # modules/nixos/apparmor/default.nix
 # ==============================================================================
-# NixOS module for apparmor (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS AppArmor policy toggle and profile plumbing.
+# Enable/disable LSM support and manage profile loading in one place.
+# Keep confinement policy centralized instead of host-specific tweaks.
 # ==============================================================================
 
 { ... }:

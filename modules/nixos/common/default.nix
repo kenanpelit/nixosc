@@ -1,9 +1,8 @@
 # modules/nixos/common/default.nix
 # ==============================================================================
-# NixOS module for common (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# Shared NixOS defaults imported by every host (base packages, nix settings).
+# Keep cross-host tweaks here to reduce duplication in individual configs.
+# Extend this file for values that should apply everywhere.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

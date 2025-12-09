@@ -1,9 +1,8 @@
 # modules/nixos/sessions/default.nix
 # ==============================================================================
-# NixOS module for sessions (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS session definitions for DE/WM entries and login sessions.
+# Register available sessions centrally for all display managers.
+# Keep session metadata consistent by editing this file.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:

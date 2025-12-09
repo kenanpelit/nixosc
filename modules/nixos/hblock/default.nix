@@ -1,9 +1,8 @@
 # modules/nixos/hblock/default.nix
 # ==============================================================================
-# NixOS module for hblock (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS hBlock integration: host file-based ad/malware blocking service.
+# Manage blocklists and timer settings centrally for all hosts.
+# Keep DNS-level blocking consistent by editing this module.
 # ==============================================================================
 
 { pkgs, lib, ... }:

@@ -1,9 +1,8 @@
 # modules/nixos/sops/default.nix
 # ==============================================================================
-# NixOS module for sops (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS sops-nix integration: secret files, key sources, and imports.
+# Manage encrypted config centrally to reuse across hosts.
+# Adjust secret wiring here instead of duplicating per-machine.
 # ==============================================================================
 
 { config, lib, pkgs, inputs, ... }:

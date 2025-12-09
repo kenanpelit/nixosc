@@ -1,9 +1,8 @@
 # modules/nixos/flatpak/default.nix
 # ==============================================================================
-# NixOS module for flatpak (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS Flatpak integration: system-wide remotes, overrides, and portals.
+# Manage Flatpak enablement and permissions centrally for all hosts.
+# Edit here to keep Flatpak policy consistent instead of per-user tweaks.
 # ==============================================================================
 
 { inputs, lib, ... }:

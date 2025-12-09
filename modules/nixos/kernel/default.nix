@@ -1,9 +1,8 @@
 # modules/nixos/kernel/default.nix
 # ==============================================================================
-# NixOS module for kernel (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS kernel selection and module options: packages, parameters, extra modules.
+# Centralize kernel policy and overrides for every host.
+# Tune kernel behaviour here instead of ad-hoc per-machine tweaks.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
@@ -106,4 +105,3 @@ in
     ];
   };
 }
-

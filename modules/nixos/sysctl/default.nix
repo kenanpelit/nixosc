@@ -1,9 +1,8 @@
 # modules/nixos/sysctl/default.nix
 # ==============================================================================
-# NixOS module for sysctl (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS sysctl tunables: kernel networking/performance knobs.
+# Keep sysctl values centralized for consistency across hosts.
+# Edit here instead of sprinkling sysctl settings in host configs.
 # ==============================================================================
 
 { ... }:

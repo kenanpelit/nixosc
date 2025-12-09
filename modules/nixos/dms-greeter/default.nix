@@ -1,9 +1,8 @@
 # modules/nixos/dms-greeter/default.nix
 # ==============================================================================
-# NixOS module for dms-greeter (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS integration for DankMaterialShell greeter service.
+# Handles system service enablement and greeter assets in one place.
+# Adjust greeter behaviour here instead of host-specific tweaks.
 # ==============================================================================
 
 { lib, config, inputs, ... }:

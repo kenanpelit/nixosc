@@ -1,9 +1,8 @@
 # modules/nixos/vpn/default.nix
 # ==============================================================================
-# NixOS module for vpn (system-wide stack).
-# Provides host defaults and service toggles declared in this file.
-# Keeps machine-wide settings centralized under modules/nixos.
-# Extend or override options here instead of ad-hoc host tweaks.
+# NixOS VPN tooling: WireGuard/OpenVPN defaults and helpers.
+# Centralize tunnel configuration knobs shared across hosts.
+# Manage VPN policy here instead of per-host configs.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
