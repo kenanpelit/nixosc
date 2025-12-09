@@ -46,7 +46,6 @@ in
       waybar.enable = lib.mkDefault true;       # Status bar
       mako.enable = lib.mkDefault true;         # Notification daemon
       rofi.enable = lib.mkDefault true;         # Application launcher
-      swaylock.enable = lib.mkDefault false;    # Screen locker (removed from system)
       
       # === Media Applications ===
       mpv.enable = lib.mkDefault true;          # Media player
