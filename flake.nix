@@ -70,17 +70,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
     # ==========================================================================
     # Desktop Environment (Hyprland)
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:hyprwm/hyprland/6712fb954f2e4f701878b97f19b7185a2cd0e192"; # 1209 - Updated commit
-#      url = "github:hyprwm/hyprland/efe665b4558370af6e89921c487cd92890183961"; # 1209 - Updated commit
-      #      url = "github:hyprwm/hyprland/a5b7c91329313503e8864761f24ef43fb630f35c"; # 1208 - Updated commit
-      #      url = "github:hyprwm/hyprland/c26e91f074a1ffa5a7ef7fc0da247bcecada50ea"; # 1207 - Updated commit
-      #      url = "github:hyprwm/hyprland/f8d5aad1a1f61e1b6443c27394a38c8c54d39e9e"; # 1207 - Updated commit
-      #      url = "github:hyprwm/hyprland/222dbe99d0d2d8a61f3b3202f8ef1794b0b081b7"; # 1206 - Updated commit
     };
 
     hypr-contrib = {
@@ -121,11 +118,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
       url = "github:AvengeMedia/DankMaterialShell/2b73077b50fcaa345a3014b229b65680e72d67cb"; # 1210 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/e307de83e21bbf9fc3a92593dee502ab6ead9d9d"; # 1209 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/993f14a31fb22c2413d99f77dfbc735437f9dad7"; # 1209 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/542a279fcb9a6cf37ab36b165540b8333bac4443"; # 1209 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/bc27253cbf6add52fbb8561aafb8169ac2e0b6ca"; # 1209 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/deaac3fdf0e17ee88ed9e6393975193413e9625f"; # 1208 - Updated commit
     };
 
     deadnix = {
@@ -214,7 +206,6 @@
           home-manager.nixosModules.home-manager
           dankMaterialShell.nixosModules.dankMaterialShell
           catppuccin.nixosModules.catppuccin
-          sops-nix.nixosModules.sops
           nix-flatpak.nixosModules.nix-flatpak
         ];
 
