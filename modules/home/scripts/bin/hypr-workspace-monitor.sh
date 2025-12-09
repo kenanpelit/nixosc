@@ -36,6 +36,18 @@
 # Enable strict mode
 set -euo pipefail
 
+# Ensure runtime metadata for non-login invocations (e.g., from services)
+: "${XDG_RUNTIME_DIR:="/run/user/$(id -u)"}"
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+	# Grab the first available Hyprland instance if none exported
+	if first_sig=$(ls "$XDG_RUNTIME_DIR"/hypr 2>/dev/null | head -n1); then
+		export HYPRLAND_INSTANCE_SIGNATURE="$first_sig"
+	fi
+fi
+
+# Ensure common Nix profiles are in PATH so dependencies resolve when invoked from minimal services
+PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER}/bin:${PATH}"
+
 #######################################
 # CONFIGURATION & CONSTANTS
 #######################################
@@ -48,6 +60,7 @@ readonly PREVIOUS_WS_FILE="$CACHE_DIR/previous_workspace"
 readonly DEBUG_FILE="$CACHE_DIR/debug.log"
 readonly NOTIFICATION_TIMEOUT=3000
 readonly SCRIPT_NAME="HyprFlow"
+readonly MAX_WORKSPACE=20
 
 # Terminal colors
 readonly RED='\033[0;31m'
@@ -158,8 +171,8 @@ validate_workspace() {
 		log_error "Invalid workspace number: $ws (must be a positive integer)"
 		return 1
 	fi
-	if [ "$ws" -lt 1 ] || [ "$ws" -gt 10 ]; then
-		log_error "Workspace number out of range: $ws (valid range: 1-10)"
+	if [ "$ws" -lt 1 ] || [ "$ws" -gt "$MAX_WORKSPACE" ]; then
+		log_error "Workspace number out of range: $ws (valid range: 1-${MAX_WORKSPACE})"
 		return 1
 	fi
 	return 0
@@ -208,7 +221,7 @@ safe_read_file() {
 	if [ -f "$file" ] && [ -r "$file" ]; then
 		local content
 		content=$(cat "$file" 2>/dev/null | head -1 | tr -d '\n\r')
-		if [[ "$content" =~ ^[0-9]+$ ]] && [ "$content" -ge 1 ] && [ "$content" -le 10 ]; then
+		if [[ "$content" =~ ^[0-9]+$ ]] && [ "$content" -ge 1 ] && [ "$content" -le "$MAX_WORKSPACE" ]; then
 			echo "$content"
 		else
 			log_debug "Invalid content in $file: '$content', using default: $default"
