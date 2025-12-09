@@ -26,6 +26,8 @@ let
     brightWhite = "#f5e0dc";
   };
 
+  shellCmd = config.home.sessionVariables.SHELL or "zsh";
+
   ghosttyConfig = ''
     # Appearance
     font-family = "Maple Mono NF"
@@ -37,6 +39,8 @@ let
     window-decoration = false
     window-padding-x = 10
     window-padding-y = 10
+    background-opacity = 1.0
+    window-show-tab-bar = auto
 
     # Palette (Catppuccin Mocha)
     palette = 0=${palette.black}
@@ -58,8 +62,9 @@ let
 
     # Behaviour
     scrollback = 10000
-    clipboard-copy-on-select = true
+    copy-on-select = true
     confirm-close-surface = false
+    command = "${shellCmd}"
 
     # Keybindings (familiar to kitty/alacritty users)
     keybind = ctrl+shift+t=new_tab
