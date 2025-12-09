@@ -30,8 +30,13 @@ let
 
   ghosttyConfig = ''
     # Appearance
+    # Prefer Maple Mono; fall back to common Nerd Fonts with ligatures
     font-family = "Maple Mono NF"
+    font-family = "JetBrainsMono Nerd Font"
+    font-family = "Iosevka Nerd Font"
+    font-family = "FiraCode Nerd Font"
     font-size = 13
+    font-feature = liga,clig,calt
     background = "#1e1e2e"
     foreground = "#cdd6f4"
     cursor-color = "#cba6f7"
