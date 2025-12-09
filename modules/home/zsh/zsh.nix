@@ -295,6 +295,7 @@ lib.mkIf cfg.enable {
         path=(
           $HOME/.local/bin
           $HOME/bin
+          $HOME/.iptv/bin
           /usr/local/bin
           $path
         )
