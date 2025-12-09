@@ -39,31 +39,31 @@
 
 **NixOS Configuration Suite (nixosc)** - Snowfall Edition
 
-A comprehensive NixOS system configuration management suite built on the **Snowfall Lib** framework. It provides a unified, modular approach to managing both system-level configuration (NixOS) and user environments (Home Manager).
+A comprehensive NixOS configuration built on **Snowfall Lib**, managing both system (NixOS) and user (Home Manager) layers from a single flake.
 
-- **Architecture:** Snowfall Lib (automatic module discovery)
-- **Desktop:** Hyprland (Wayland) with **DankMaterialShell (DMS)** shell and widgets (Waybar disabled)
-- **Launchers:** DMS launcher + Walker + Rofi (fallback)
-- **Theme:** Catppuccin Mocha everywhere
-- **Shell:** Zsh + Starship + Tmux
-- **Secrets:** SOPS-Nix with Age encryption
+- **Architecture:** Snowfall Lib (auto module discovery)
+- **Desktop:** Hyprland + **DankMaterialShell (DMS)**; Waybar/Hyprpanel disabled by default
+- **Launchers:** DMS Spotlight + Rofi fallback; Ulauncher extension set (Walker off)
+- **Theme:** Catppuccin (Mocha by default) end-to-end
+- **Shell:** Zsh + Starship + Tmux + Kitty/Wezterm
+- **Secrets:** SOPS-Nix (Age)
 
 ## 🗃️ Repository Structure
 
-The project follows modern Snowfall Lib standards:
+Snowfall layout (all modules auto-imported via `default.nix`):
 
 - [flake.nix](flake.nix) - Core configuration entry point
 - [install.sh](install.sh) - Unified installation & management tool
 - [systems](systems) - ❄️ Host configurations
-  - [hay](systems/x86_64-linux/hay/) - 💻 Laptop/Workstation
-  - [vhay](systems/x86_64-linux/vhay/) - 🗄️ Virtual Machine
-  - [modules](modules) - 🍱 Modular configurations
-  - [nixos](modules/nixos/) - ⚙️ System-level modules (hardware, services)
-  - [home](modules/home/) - 🏠 User-level modules (Home Manager apps/services)
-- [packages](packages/) - 📦 Custom packages (e.g. Maple Mono) and scripts
+  - [hay](systems/x86_64-linux/hay/) - Laptop/Workstation
+  - [vhay](systems/x86_64-linux/vhay/) - VM profile
+- [modules](modules) - 🍱 Modular configs
+  - [nixos](modules/nixos/) - System-level (hardware, services, security, networking…)
+  - [home](modules/home/) - User-level (apps, theming, shells, Hyprland, DMS, scripts)
+- [homes](homes) - Home-Manager profiles per host/user
 - [overlays](overlays/) - 🔧 Nixpkgs overlays
-- [secrets](secrets/) - 🔐 SOPS-encrypted secrets
-- [assets](assets/) - 📦 Binary assets and configs
+- [secrets](secrets/) - 🔐 SOPS-encrypted material
+- [wallpapers](wallpapers/) - Theme assets used by DMS/Hyprland
 
 ## 🧩 Components & Technologies
 
@@ -74,7 +74,7 @@ The project follows modern Snowfall Lib standards:
 | **Base System**          | [NixOS 25.11](https://nixos.org/)                                                                  |
 | **Framework**            | [Snowfall Lib](https://github.com/snowfallorg/lib)                                                 |
 | **User Environment**     | [Home-Manager](https://github.com/nix-community/home-manager)                                      |
-| **Secrets Management**   | [SOPS-nix](https://github.com/Mic92/sops-nix) with Age                                             |
+| **Secrets Management**   | [SOPS-nix](https://github.com/Mic92/sops-nix) (Age)                                                |
 
 ### Desktop Environment
 
@@ -82,10 +82,11 @@ The project follows modern Snowfall Lib standards:
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | **Window Manager**           | [Hyprland](https://github.com/hyprwm/hyprland)                                                                        |
 | **Shell / Panel**            | [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS)                                           |
-| **Launcher**                 | DMS launcher + [Walker](https://github.com/abenz1267/walker) + [Rofi](https://github.com/lbonn/rofi) (fallback)       |
+| **Launcher**                 | DMS Spotlight + [Rofi](https://github.com/lbonn/rofi) fallback (Ulauncher enabled; Walker disabled)                    |
 | **Notifications & Widgets**  | DMS built-ins                                                                                                         |
-| **Lock Screen**              | [Hyprlock](https://github.com/hyprwm/hyprlock)                                                                        |
-| **Wallpaper**                | Managed by DMS (hyprpaper disabled)                                                                                   |
+| **Lock / Power**             | DMS lock/powermenu (Hyprlock module removed)                                                                          |
+| **Wallpaper**                | DMS wallpaper engine (Hyprpaper present; Waypaper/Wpaperd removed)                                                    |
+| **Browsers**                 | Brave primary; Chrome profiles optional; Zen/Vivaldi removed                                                          |
 
 ## 🚀 Installation
 
@@ -140,16 +141,14 @@ sops secrets/wireless-secrets.enc.yaml
 ## ⌨️ Keybindings (Hyprland + DMS)
 
 - `$mainMod` = `SUPER` key
-- DMS ships its own launcher/panel shortcuts.
-- Core Hyprland bindings:
-  - `$mainMod + Enter` — Terminal
-  - `$mainMod + B` — Browser
-  - `$mainMod + D` — Launcher (Rofi fallback; DMS has its own launcher)
+- DMS ships Spotlight/panel shortcuts (`$mainMod+Space`, powermenu, control-center, etc.).
+- Hyprland core (summary):
+  - `$mainMod + Enter` — Kitty
   - `$mainMod + Q` — Close window
-  - `$mainMod + F` — Fullscreen
-  - `$mainMod + Space` — Toggle floating
-  - `$mainMod + 1-9` — Switch workspace
-  - `$mainMod + Shift + 1-9` — Move window to workspace
+  - `$mainMod + F` — Toggle float; `$mainMod+Shift+F` — Fullscreen
+  - `$mainMod + h/j/k/l` or arrows — Move focus; `Shift` moves window; `Ctrl` resizes
+  - `$mainMod + 1-9` — Workspace; `Shift+1-9` — move window; `Ctrl+1-9` — monitor-aware move
+  - `$mainMod + Tab` — DMS Hypr overview
 - Full list: `modules/home/hyprland/config.nix`
 
 ## 📄 License
