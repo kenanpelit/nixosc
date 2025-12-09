@@ -118,9 +118,9 @@ declare -A CHROME_BROWSERS=(
 
 # Browser Applications - Firefox
 declare -A FIREFOX_BROWSERS=(
-  ["firefox-kenp"]="firefox|-P Kenp --class Kenp --name Kenp --new-window --new-instance|1|secure|1|false"
-  ["firefox-compecta"]="firefox|-P Compecta --class Compecta --name Compecta --new-window --new-instance|4|secure|1|false"
-  ["firefox-proxy"]="firefox|-P Proxy --class Proxy --name Proxy --new-window --new-instance|6|bypass|1|false"
+  ["firefox-kenp"]="firefox|-P kenp --class Kenp --name Kenp --new-window --new-instance|1|secure|1|false"
+  ["firefox-compecta"]="firefox|-P compecta --class Compecta --name Compecta --new-window --new-instance|4|secure|1|false"
+  ["firefox-proxy"]="firefox|-P proxy --class Proxy --name Proxy --new-window --new-instance|6|bypass|1|false"
 )
 
 # Applications - UPDATED
