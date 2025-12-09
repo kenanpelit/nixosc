@@ -1,4 +1,10 @@
 { lib, pkgs, config, osConfig, ... }:
+# ==============================================================================
+# Home Manager profile for kenan@hay (x86_64-linux).
+# Role: daily-driver Hyprland/GNOME setup with curated apps, terminals,
+# theming (Catppuccin), and dev tools. Adjust module toggles below to
+# enable/disable components per host while keeping user defaults consistent.
+# ==============================================================================
 {
   # Set the state version for Home Manager
   # Configure user-specific settings here if needed
