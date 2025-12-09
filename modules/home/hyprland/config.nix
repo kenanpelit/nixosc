@@ -737,15 +737,15 @@ let
     # Launchers & power
     "$mainMod, Space, exec, dms ipc call spotlight toggle"
     "$mainMod, backspace, exec, dms ipc call powermenu toggle"
-    "ALT, L, exec, dms ipc call lock lock"
-    "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
+    "$mainMod, delete, exec, dms ipc call lock lock"
+    "$mainMod SHIFT, delete, exec, dms ipc call inhibit toggle"
 
     # Dash & panels
     "$mainMod, D, exec, dms ipc call dash toggle ''"
-    "$mainMod CTRL, D, exec, dms ipc call control-center toggle"
+    "$mainMod, C, exec, dms ipc call control-center toggle"
     "$mainMod, N, exec, dms ipc call notifications toggle"
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
-    "$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
 
     # Theme & night mode
     "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
@@ -779,6 +779,8 @@ let
     ", XF86AudioStop, exec, dms ipc call mpris stop"
     ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
     ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
+    "$mainMod ALT, A, exec, dms ipc call audio cycleoutput"
+    "$mainMod ALT, B, exec, dms ipc call brightness toggleExponential backlight:intel_backlight"
   ];
 
   cfg = config.my.desktop.hyprland;
