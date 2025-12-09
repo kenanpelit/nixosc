@@ -1,16 +1,11 @@
 # modules/home/firefox/default.nix
-# ==============================================================================
-# Firefox Core Configuration - Fixed for Home Manager Compatibility
-# ==============================================================================
-# This configuration manages Firefox browser setup including:
-# - Extension management and installation
-# - Search engines and custom shortcuts
-# - Privacy and security settings
-# - Browser behavior customization
-# - Manual profiles (Kenp/Compecta/Proxy) handled outside HM; no profiles.ini written
-#
-# Author: Kenan Pelit
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for firefox.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, username ? "kenan", ... }:
 let
   cfg = config.my.browser.firefox;

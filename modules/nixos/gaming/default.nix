@@ -1,12 +1,10 @@
-# modules/core/gaming/default.nix
-# ==============================================================================
-# Gaming Configuration
-# ==============================================================================
-# Configures gaming-related software and optimizations for physical hosts.
-# - Steam (with Remote Play and Proton GE)
-# - Gamescope (Compositor for gaming)
-#
-# ==============================================================================
+# modules/nixos/gaming/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for gaming (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, pkgs, config, ... }:
 

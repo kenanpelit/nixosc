@@ -1,7 +1,11 @@
 # modules/home/mpd/default.nix
-# ==============================================================================
-# Music Player Daemon Configuration
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for mpd.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.mpd;

@@ -1,11 +1,10 @@
 # modules/home/search/default.nix
-# ==============================================================================
-# Global Search Configuration
-# ==============================================================================
-# Configures system-wide search utilities and integrations.
-# - Integrates with nix-search-tv for Nix package and option search.
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for search.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { inputs, config, lib, pkgs, ... }:
 let

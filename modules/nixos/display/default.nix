@@ -1,14 +1,10 @@
-# modules/core/display/default.nix
-# ==============================================================================
-# Display Stack Options
-# ==============================================================================
-# Defines module options for the graphical display stack.
-# - Enablement toggles for DEs (Hyprland, GNOME, COSMIC)
-# - Display Manager settings (auto-login, default session)
-# - Keyboard layout options
-# - Font and audio stack toggles
-#
-# ==============================================================================
+# modules/nixos/display/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for display (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, ... }:
 

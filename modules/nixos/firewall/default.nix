@@ -1,14 +1,10 @@
-# modules/core/firewall/default.nix
-# ==============================================================================
-# Firewall Configuration
-# ==============================================================================
-# Configures the system firewall and related tools.
-# - Enables firewall
-# - Configures allowed TCP/UDP ports
-# - Installs conntrack-tools
-# - Provides shell aliases for firewall management
-#
-# ==============================================================================
+# modules/nixos/firewall/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for firewall (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, pkgs, config, ... }:
 

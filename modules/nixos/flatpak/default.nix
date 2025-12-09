@@ -1,13 +1,10 @@
-# modules/core/flatpak/default.nix
-# ==============================================================================
-# Flatpak Configuration
-# ==============================================================================
-# Enables Flatpak support via the nix-flatpak module.
-# - Configures Flathub remote
-# - Installs base Flatpak applications (Flatseal, Olympus)
-# - Sets global overrides (Wayland socket)
-#
-# ==============================================================================
+# modules/nixos/flatpak/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for flatpak (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { inputs, lib, ... }:
 

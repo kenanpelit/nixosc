@@ -1,11 +1,10 @@
 # modules/home/radio/default.nix
-# ==============================================================================
-# Radio Tray NG Bookmark Configuration
-# ==============================================================================
-# Manages bookmarks for the Radiotray-NG internet radio player.
-# - Copies the bookmarks.json file to the Radiotray-NG configuration directory.
-#
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for radio.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 let

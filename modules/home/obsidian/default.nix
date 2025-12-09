@@ -1,11 +1,11 @@
 # modules/home/obsidian/default.nix
-# ==============================================================================
-# Obsidian Note-Taking App Configuration
-# ==============================================================================
-# Not: Paket kurulumu artık modules/home/packages/default.nix tarafında
-# yönetiliyor. Bu modül ileride Obsidian ayarlarını (theme, plugin vs.)
-# taşımak için boş bir iskelet olarak bırakıldı.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for obsidian.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { lib, config, ... }:
 let
   cfg = config.my.user.obsidian;

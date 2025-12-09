@@ -1,7 +1,11 @@
 # modules/home/mako/default.nix
-# ==============================================================================
-# Mako Notification Daemon Configuration - Catppuccin Mocha Themed
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for mako.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.mako;

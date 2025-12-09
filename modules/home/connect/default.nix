@@ -1,7 +1,10 @@
 # modules/home/connect/default.nix
-# =============================================================================
-# Home-Manager module: KDE Connect (Auto-enabled)
-# =============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for connect.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
 
 { config, lib, pkgs, ... }:
 let

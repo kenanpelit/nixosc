@@ -1,7 +1,11 @@
 # modules/home/hyprland/default.nix
-# ==============================================================================
-# Hyprland Window Manager Configuration Root
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for hyprland.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { inputs, lib, config, ... }:
 let
   cfg = config.my.desktop.hyprland;

@@ -1,9 +1,11 @@
 # modules/home/bash/default.nix
-# ==============================================================================
-# Bash Configuration Root
-# Author: Kenan Pelit
-# Description: Centralized Bash configuration with modular structure
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for bash.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.bash;

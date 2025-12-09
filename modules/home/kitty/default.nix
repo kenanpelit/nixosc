@@ -1,7 +1,11 @@
 # modules/home/kitty/default.nix
-# ==============================================================================
-# Kitty Terminal Emulator Configuration - Pure Catppuccin Module
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for kitty.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.kitty;

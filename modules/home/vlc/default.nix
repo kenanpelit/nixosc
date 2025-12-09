@@ -1,14 +1,11 @@
 # modules/home/vlc/default.nix
-# ==============================================================================
-# VLC Media Player Catppuccin Configuration
-# ==============================================================================
-# This configuration manages VLC with Catppuccin-inspired theming including:
-# - Dark interface themes
-# - Custom configuration with Catppuccin colors
-# - Integration with system color scheme
-#
-# Author: Kenan Pelit
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for vlc.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.vlc;

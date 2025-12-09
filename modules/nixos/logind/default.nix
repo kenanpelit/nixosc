@@ -1,12 +1,10 @@
-# modules/core/logind/default.nix
-# ==============================================================================
-# Logind Power Policy
-# ==============================================================================
-# Configures systemd-logind settings for power button and lid switch behavior.
-# - Lid switch action (suspend)
-# - Power key action (ignore/poweroff)
-#
-# ==============================================================================
+# modules/nixos/logind/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for logind (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, ... }:
 

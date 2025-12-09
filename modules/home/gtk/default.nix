@@ -1,7 +1,11 @@
 # modules/home/gtk/default.nix
-# ==============================================================================
-# GTK Theme and Configuration - Catppuccin Mocha
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for gtk.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.gtk;

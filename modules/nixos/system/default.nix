@@ -1,13 +1,10 @@
-# modules/core/system/default.nix
-# ==============================================================================
-# Core System Metadata & Defaults
-# ==============================================================================
-# Defines custom host metadata options and applies global system defaults.
-# - Host Role (physical/vm)
-# - Global service enablement (upower, spice-vdagentd)
-# - Global shell enablement (zsh)
-#
-# ==============================================================================
+# modules/nixos/system/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for system (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, config, ... }:
 

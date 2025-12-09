@@ -1,8 +1,11 @@
 # modules/home/program/default.nix
-# ==============================================================================
-# Core Programs Configuration
-# This module configures core system programs and utilities
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for program.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.core-programs;

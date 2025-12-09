@@ -1,7 +1,11 @@
 # modules/home/ghostty/default.nix
-# ==============================================================================
-# Ghostty terminal setup (Catppuccin Mocha themed) with sensible defaults
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for ghostty.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.ghostty;

@@ -1,15 +1,11 @@
 # modules/home/ollama/default.nix
-# ==============================================================================
-# Ollama LLM Configuration
-# ==============================================================================
-# This configuration manages Ollama LLM settings including:
-# - Service configuration and model management
-# - GPU acceleration settings
-# - Shell aliases and environment variables
-# - API and network configuration
-#
-# Author: Kenan Pelit
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Home Manager module for ollama.
+# Exposes my.user options to install packages and write user config.
+# Keeps per-user defaults centralized instead of scattered dotfiles.
+# Adjust feature flags and templates in the module body below.
+# ------------------------------------------------------------------------------
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.ollama;

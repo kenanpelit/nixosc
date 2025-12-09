@@ -1,13 +1,10 @@
-# modules/core/boot/default.nix
-# ==============================================================================
-# Bootloader Configuration
-# ==============================================================================
-# Configures the GRUB bootloader and EFI settings.
-# - GRUB enablement and theme
-# - EFI support for physical machines
-# - OS prober enablement
-#
-# ==============================================================================
+# modules/nixos/boot/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for boot (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { lib, inputs, system, config, ... }:
 

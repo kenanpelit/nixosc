@@ -1,14 +1,10 @@
-# modules/core/nix/default.nix
-# ==============================================================================
-# Nix System Configuration
-# ==============================================================================
-# This module configures the Nix package manager, including:
-# - Binary cache settings (substituters and public keys)
-# - Garbage collection and store optimization
-# - Experimental features (flakes)
-# - Nix Helper (nh) integration
-#
-# ==============================================================================
+# modules/nixos/nix/default.nix
+# ------------------------------------------------------------------------------
+# NixOS module for nix (system-wide stack).
+# Provides host defaults and service toggles declared in this file.
+# Keeps machine-wide settings centralized under modules/nixos.
+# Extend or override options here instead of ad-hoc host tweaks.
+# ------------------------------------------------------------------------------
 
 { config , lib , pkgs , inputs , cacheSubstituters ? [
     "https://cache.nixos.org"
