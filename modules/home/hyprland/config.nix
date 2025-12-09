@@ -42,6 +42,21 @@ let
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
   mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
   mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-workspace-monitor -am ${toString n}") nums;
+  moveStep = 80;
+  resizeStep = 80;
+  directions = [
+    { arrow = "left"; vim = "h"; dir = "l"; delta = "-${toString moveStep} 0"; resizeDelta = "-${toString resizeStep} 0"; }
+    { arrow = "right"; vim = "l"; dir = "r"; delta = "${toString moveStep} 0"; resizeDelta = "${toString resizeStep} 0"; }
+    { arrow = "up"; vim = "k"; dir = "u"; delta = "0 -${toString moveStep}"; resizeDelta = "0 -${toString resizeStep}"; }
+    { arrow = "down"; vim = "j"; dir = "d"; delta = "0 ${toString moveStep}"; resizeDelta = "0 ${toString resizeStep}"; }
+  ];
+  mkDirectionalBinds = mod: command: field:
+    lib.concatMap
+      (d: [
+        "${mod}, ${d.arrow}, ${command}, ${builtins.getAttr field d}"
+        "${mod}, ${d.vim}, ${command}, ${builtins.getAttr field d}"
+      ])
+      directions;
 
   # ============================================================================
   # USER CONFIGURATION (Edit these sections frequently)
@@ -755,55 +770,16 @@ let
     "$mainMod CTRL, c, movetoworkspace, empty"
     "$mainMod, mouse_down, workspace, e-1"
     "$mainMod, mouse_up, workspace, e+1"
-    
+  ]
+  ++ [
     # Scratchpad
     "$mainMod, minus, movetoworkspace, special:scratchpad"
     "$mainMod SHIFT, minus, togglespecialworkspace, scratchpad"
-    
-    # Focus Move (Arrow)
-    "$mainMod, left, movefocus, l"
-    "$mainMod, right, movefocus, r"
-    "$mainMod, up, movefocus, u"
-    "$mainMod, down, movefocus, d"
-    # Focus Move (Vim)
-    "$mainMod, h, movefocus, l"
-    "$mainMod, j, movefocus, d"
-    "$mainMod, k, movefocus, u"
-    "$mainMod, l, movefocus, r"
-    
-    # Window Move (Arrow)
-    "$mainMod SHIFT, left, movewindow, l"
-    "$mainMod SHIFT, right, movewindow, r"
-    "$mainMod SHIFT, up, movewindow, u"
-    "$mainMod SHIFT, down, movewindow, d"
-    # Window Move (Vim)
-    "$mainMod SHIFT, h, movewindow, l"
-    "$mainMod SHIFT, j, movewindow, d"
-    "$mainMod SHIFT, k, movewindow, u"
-    "$mainMod SHIFT, l, movewindow, r"
-    
-    # Resize (Arrow)
-    "$mainMod CTRL, left, resizeactive, -80 0"
-    "$mainMod CTRL, right, resizeactive, 80 0"
-    "$mainMod CTRL, up, resizeactive, 0 -80"
-    "$mainMod CTRL, down, resizeactive, 0 80"
-    # Resize (Vim)
-    "$mainMod CTRL, h, resizeactive, -80 0"
-    "$mainMod CTRL, j, resizeactive, 0 80"
-    "$mainMod CTRL, k, resizeactive, 0 -80"
-    "$mainMod CTRL, l, resizeactive, 80 0"
-    
-    # Position (Arrow)
-    "$mainMod ALT, left, moveactive,  -80 0"
-    "$mainMod ALT, right, moveactive, 80 0"
-    "$mainMod ALT, up, moveactive, 0 -80"
-    "$mainMod ALT, down, moveactive, 0 80"
-    # Position (Vim)
-    "$mainMod ALT, h, moveactive,  -80 0"
-    "$mainMod ALT, j, moveactive, 0 80"
-    "$mainMod ALT, k, moveactive, 0 -80"
-    "$mainMod ALT, l, moveactive, 80 0"
-  ];
+  ]
+  ++ mkDirectionalBinds "$mainMod" "movefocus" "dir"
+  ++ mkDirectionalBinds "$mainMod SHIFT" "movewindow" "dir"
+  ++ mkDirectionalBinds "$mainMod CTRL" "resizeactive" "resizeDelta"
+  ++ mkDirectionalBinds "$mainMod ALT" "moveactive" "delta";
 
   cfg = config.my.desktop.hyprland;
 in
