@@ -1,6 +1,8 @@
-# Hyprland Window Manager Configuration - Dynamic Catppuccin Theme
 # modules/home/hyprland/config.nix
-# Complete optimized configuration with performance enhancements and dynamic theming
+# ==============================================================================
+# Hyprland window manager config: Catppuccin-driven colors, perf tweaks,
+# keybinds/layout, and helper scripts. Centralize WM setup here.
+# ==============================================================================
 { config, lib, pkgs, ... }:
 
 let

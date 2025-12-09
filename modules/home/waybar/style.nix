@@ -1,4 +1,8 @@
 # modules/home/waybar/style.nix
+# ==============================================================================
+# Waybar CSS theme fragment fed by the main settings.nix (colors/fonts).
+# Adjust bar styling here; layout/modules live in settings.nix.
+# ==============================================================================
 { custom }:
 ''
   * {
@@ -533,4 +537,3 @@
     font-weight: 500;
   }
 ''
-

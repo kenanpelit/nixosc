@@ -1,3 +1,9 @@
+#
+# modules/home/dms/settings.nix
+# ==============================================================================
+# DMS core settings: service wiring, env vars, plugins, and key options.
+# Consumed by default.nix alongside themes.nix; keep runtime config here.
+# ==============================================================================
 { inputs, lib, config, pkgs, ... }:
 let
   cfg = config.my.user.dms;

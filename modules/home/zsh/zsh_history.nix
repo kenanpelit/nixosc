@@ -1,8 +1,7 @@
 # modules/home/zsh/zsh_history
 # ==============================================================================
-# ZSH History Management
-# Author: Kenan Pelit
-# Description: History file configuration and example command management
+# Zsh history management: history file settings and example commands.
+# Centralize history tuning here instead of ad-hoc shell options.
 # ==============================================================================
 { config, lib, pkgs, ... }:
 

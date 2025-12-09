@@ -1,6 +1,7 @@
 # modules/home/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Screen Locker - Dynamic Catppuccin Theme Support
+# Hyprlock user config with Catppuccin theming and static wallpaper setup.
+# Centralize lock screen styling/options here for Hyprland sessions.
 # ==============================================================================
 # 
 # FEATURES:

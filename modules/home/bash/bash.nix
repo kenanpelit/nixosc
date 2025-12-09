@@ -1,10 +1,8 @@
 # modules/home/bash/bash.nix
 # ==============================================================================
-# Bash Configuration - Fast, minimal, modular
-# Author: Kenan Pelit
-# Notes:
-#   - Mirrors the intent of zsh.nix but uses built-in bash features.
-#   - Prompt handled by starship (portable) instead of p10k.
+# Bash shell config: fast/minimal setup mirroring zsh but using built-ins.
+# Prompt via Starship; modular rc/profile pieces live alongside.
+# Edit here to adjust Bash-specific aliases/options beyond default.nix.
 # ==============================================================================
 { config, pkgs, lib, ... }:
 

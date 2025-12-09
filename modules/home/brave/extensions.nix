@@ -1,17 +1,8 @@
 # modules/home/brave/extensions.nix
 # ==============================================================================
-# Brave Browser Extensions Configuration
-# ==============================================================================
-# How this works (NixOS + Home Manager context):
-#
-# - We use a per-profile managed_preferences.json under $HOME to suggest/force
-#   installation of extensions from Chrome Web Store.
-# - Additionally, we provide a manual helper script (brave-install-extensions)
-#   that patches the real Preferences file using jq.
-# - Home Manager itself does NOT continuously overwrite Preferences; it only
-#   writes managed_preferences.json and the helper script.
-#
-# Author: Kenan Pelit
+# Brave extensions wiring: writes managed_preferences.json and a helper script
+# (brave-install-extensions) to seed/patch extensions from the Chrome Web Store.
+# Managed prefs are recommended, not forced, so users can remove them.
 # ==============================================================================
 
 { inputs, pkgs, config, lib, ... }:

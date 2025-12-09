@@ -1,10 +1,7 @@
 # modules/home/hyprland/keyring.nix
 # ==============================================================================
-# Hyprland Keyring Configuration
-# ==============================================================================
-# Configures GNOME Keyring's secret service specifically for Hyprland sessions.
-# - Ensures secret service is running within Hyprland.
-#
+# Hyprland keyring config: start GNOME Keyring secret service under Hyprland.
+# Keep secret-service setup here for Wayland session compatibility.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

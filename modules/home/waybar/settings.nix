@@ -1,15 +1,9 @@
 # modules/home/waybar/settings.nix
-# ═══════════════════════════════════════════════════════════════════════════════════════════════
-# Waybar Configuration - Modern Unified Layout
-# ═══════════════════════════════════════════════════════════════════════════════════════════════
-# A comprehensive, single-bar configuration featuring system monitoring, media controls,
-# connectivity status, and productivity tools optimized for Hyprland window manager.
-#
-# Layout Philosophy:
-# • Left   → Navigation & Window Management
-# • Center → Time, Weather & Personal Productivity  
-# • Right  → System Status & Controls
-# ═══════════════════════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
+# Waybar settings: module layout, intervals, and behaviour for the Hyprland bar.
+# Single-bar setup with navigation, time/weather, media, and system status.
+# Edit here to change bar modules/order; styles live in style.nix.
+# ==============================================================================
 
 { custom }:
 {
