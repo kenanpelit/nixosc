@@ -2,7 +2,7 @@
 let
   cfg = config.my.user.dms;
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  dmsEditor = config.home.sessionVariables.DMS_SCREENSHOT_EDITOR or "swappy";
+  dmsEditor = cfg.screenshotEditor;
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
@@ -88,4 +88,4 @@ lib.mkIf cfg.enable {
       fi
     done
   '';
-};
+}

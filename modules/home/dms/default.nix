@@ -14,6 +14,12 @@
   options.my.user.dms = {
     enable = lib.mkEnableOption "DankMaterialShell";
 
+    screenshotEditor = lib.mkOption {
+      type = lib.types.str;
+      default = "swappy";
+      description = "Preferred DMS screenshot editor (exported as DMS_SCREENSHOT_EDITOR).";
+    };
+
     plugins = lib.mkOption {
       type = with lib.types; listOf str;
       default = [
