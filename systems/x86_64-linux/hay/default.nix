@@ -1,6 +1,8 @@
 # systems/x86_64-linux/hay/default.nix
 # ==============================================================================
-# HAY Workstation: Main Host Configuration
+# HAY physical workstation: main NixOS host config.
+# Imports hardware config; module imports handled via flake/Snowfall.
+# Set host metadata and enable services/desktops below.
 # ==============================================================================
 { pkgs, lib, inputs, config, ... }:
 
