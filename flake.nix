@@ -146,10 +146,10 @@
     # ==========================================================================
     # Applications
     # ==========================================================================
-    walker.url = "github:abenz1267/walker/v2.11.3";
+    walker.url = "github:abenz1267/walker/v2.12.1";
     
     elephant = {
-      url = "github:abenz1267/elephant/v2.16.1";
+      url = "github:abenz1267/elephant/v2.17.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
