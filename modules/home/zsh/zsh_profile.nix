@@ -1,4 +1,8 @@
 # modules/home/zsh/zsh_profile.nix
+# ==============================================================================
+# Zsh login profile: environment for login shells, sources zshrc/starship.
+# Keeps login shell env consistent; complements zsh.nix rc settings.
+# ==============================================================================
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.zsh;

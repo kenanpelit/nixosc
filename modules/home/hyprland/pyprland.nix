@@ -1,6 +1,7 @@
 # modules/home/hyprland/pyprland.nix
 # ==============================================================================
-# Pyprland Configuration (Python Plugins for Hyprland) - Enhanced
+# Pyprland plugin configuration for Hyprland (Python-based plugins).
+# Enable/disable plugins and options here to extend Hyprland functionality.
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let

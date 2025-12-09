@@ -1,6 +1,7 @@
 # modules/home/hyprland/hyprland.nix
 # ==============================================================================
-# Hyprland Main Configuration
+# Hyprland main module: enables compositor, sets env vars, integrates plugins,
+# and imports detailed configs (binds/layout/services).
 # ==============================================================================
 { inputs, pkgs, config, lib, ... }:
 let

@@ -1,11 +1,8 @@
 # modules/home/hyprland/hypridle.nix
 # ==============================================================================
-# Hypridle (Idle, Screen & Power Management) - Clean HM Module Version
-# ------------------------------------------------------------------------------
-# Why this file?
-# - Uses Home-Manager's services.hypridle (no manual systemd units needed)
-# - Starts only under Hyprland session targets
-# - Safe shell wrappers (|| true) avoid breaking on missing devices
+# Hypridle user config: idle/screen/power management under Hyprland session.
+# Uses HM services.hypridle, session targets, and safe wrappers for devices.
+# ==============================================================================
 # - Locks via hyprlock and coordinates sleep/wake DPMS properly
 # - Sensible defaults with clear, English comments
 # ==============================================================================

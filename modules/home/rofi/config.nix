@@ -1,12 +1,8 @@
 # modules/home/rofi/config.nix
 # ==============================================================================
-# Rofi Core Configuration
-# ==============================================================================
-# Defines Rofi's core appearance and behavior settings.
-# - Modalities, layout, and display options
-# - Font, icons, and cache settings
-# - Custom formats and keybindings (defined within the .rasi file)
-#
+# Rofi core config: main config.rasi template for layout/fonts/widgets.
+# Drives launcher look/behaviour; keybindings styled inside the Rasi.
+# Edit here to adjust global Rofi appearance instead of ad-hoc files.
 # ==============================================================================
 
 { pkgs, ... }:

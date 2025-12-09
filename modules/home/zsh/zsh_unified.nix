@@ -1,17 +1,8 @@
 # modules/home/zsh/zsh_unified.nix
 # ==============================================================================
-# ZSH Unified Configuration
-# ==============================================================================
-# Consolidates various Zsh configurations including:
-# - Shell aliases for common commands (navigation, file ops, system info)
-# - Replacements for standard utilities (ls, cat, diff, grep, find)
-# - Podman container management aliases
-# - Media & download aliases (yt-dlp, pipe-viewer)
-# - NixOS management aliases (nix-switch, hm-switch, nix-clean)
-# - Utility functions (wanip, transfer, Yazi integration)
-# - Enhanced Vi mode keybindings and history navigation
-# - FZF integration for history, files, and directories
-#
+# Zsh unified config fragment: aliases/helpers (core utils, media, nix, podman),
+# extra functions, vi-mode tweaks, and FZF integrations.
+# Keeps shell conveniences centralized instead of scattered snippets.
 # ==============================================================================
 
 { lib, pkgs, config, ... }:

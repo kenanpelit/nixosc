@@ -1,3 +1,8 @@
+# modules/home/dms/themes.nix
+# ==============================================================================
+# DMS theme definitions: palette files for DankMaterialShell keybind UI, etc.
+# Imported by default.nix; add/adjust themes here.
+# ==============================================================================
 { lib, config, pkgs, ... }:
 let
   cfg = config.my.user.dms;
