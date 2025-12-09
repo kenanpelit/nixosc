@@ -1,10 +1,10 @@
 # modules/nixos/virtualization/default.nix
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # NixOS module for virtualization (system-wide stack).
 # Provides host defaults and service toggles declared in this file.
 # Keeps machine-wide settings centralized under modules/nixos.
 # Extend or override options here instead of ad-hoc host tweaks.
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 { lib, pkgs, config, ... }:
 
