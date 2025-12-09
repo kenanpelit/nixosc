@@ -75,6 +75,12 @@ check_bluetooth_power() { if ! bluetoothctl show | grep -q "Powered: yes"; then
 	fi
 fi; }
 
+# Pil yüzdesi (BluetoothCTL üzerinden; bazı cihazlar desteklemez)
+get_battery_percentage() {
+	local addr="$1"
+	bluetoothctl info "$addr" 2>/dev/null | awk -F': ' '/Battery Percentage/ {gsub(/[[:space:]]*/,"",$2); print $2}'
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Backend seçimi
 # ──────────────────────────────────────────────────────────────────────────────
@@ -378,7 +384,14 @@ manage_bluetooth_connection() {
 		log "Bağlanılıyor..." "INFO"
 		if timeout "$BLUETOOTH_TIMEOUT" bluetoothctl connect "$device_address" >/dev/null 2>&1; then
 			log "Bağlantı başarıyla kuruldu." "SUCCESS"
-			send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+			local battery
+			battery="$(get_battery_percentage "$device_address")"
+			if [ -n "$battery" ]; then
+				send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu. Pil: $battery"
+				log "Pil durumu: $battery" "INFO"
+			else
+				send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+			fi
 			configure_audio "bluetooth"
 			log "Cihaz $device_name ($device_address) şimdi bağlandı" "INFO"
 		else
