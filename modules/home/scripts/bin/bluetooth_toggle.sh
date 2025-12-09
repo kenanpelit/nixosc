@@ -423,6 +423,7 @@ Seçenekler:
   -q, --quiet          Sadece hata mesajlarını göster
   --backend=wpctl      Backend'i wpctl olarak zorla
   --backend=pactl      Backend'i pactl olarak zorla
+  --battery            Sadece pil yüzdesini bildir ve çık
 
 Örnekler:
   $0
@@ -436,6 +437,10 @@ EOF
 parse_arguments() {
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
+		--battery)
+			MODE_BATTERY_ONLY=true
+			shift
+			;;
 		-h | --help)
 			show_help
 			exit 0
@@ -481,10 +486,23 @@ trap cleanup SIGINT SIGTERM
 
 main() {
 	parse_arguments "$@"
-	detect_backend
 	DEVICE_ADDRESS="${DEVICE_ADDRESS:-$DEFAULT_DEVICE_ADDRESS}"
 	DEVICE_NAME="${DEVICE_NAME:-$DEFAULT_DEVICE_NAME}"
 
+	if [ "${MODE_BATTERY_ONLY:-false}" = true ]; then
+		local battery
+		battery="$(get_battery_percentage "$DEVICE_ADDRESS")"
+		if [ -n "$battery" ]; then
+			send_notification "$DEVICE_NAME Pil" "$DEVICE_NAME ($DEVICE_ADDRESS) pil: $battery"
+			log "Pil durumu: $battery" "INFO"
+			exit 0
+		else
+			log "Pil bilgisi alınamadı." "WARNING"
+			exit 1
+		fi
+	fi
+
+	detect_backend
 	check_command bluetoothctl
 	check_command timeout
 	[ "$AUDIO_BACKEND" = "pactl" ] && check_command pactl
