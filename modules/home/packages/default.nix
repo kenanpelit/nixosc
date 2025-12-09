@@ -76,6 +76,7 @@ in
       tldr                  # Simplified man pages
       killall               # Process killer
       wl-clipboard clipse   # Clipboard tools
+      wtype                 # Wayland key typer for scripts/gestures
       libnotify             # Notification tools
       translate-shell       # Translator
       
