@@ -37,11 +37,6 @@
   my.user.walker.enable = false;
   my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
-  my.user.swaylock.enable = false;
-  my.user.swayosd.enable = false;
-  my.user.wpaperd.enable = false;
-  my.user.waypaper.enable = false;
-  my.user.touchegg.enable = false;
   my.user.dms.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
@@ -55,8 +50,6 @@
   };
   my.browser.firefox.enable = true;
   my.browser.chrome-preview.enable = true;
-  my.browser.zen.enable = true;
-  my.browser.vivaldi.enable = false;
 
   # ============================================================================
   # Communication
@@ -82,7 +75,6 @@
   # File Management
   my.user.nemo.enable = true;
   my.user.yazi.enable = true;
-  my.user.zotfiles.enable = true;
   my.user.rsync.enable = true;
   
   # Productivity
@@ -116,7 +108,6 @@
   # Terminals
   my.user.kitty.enable = true;
   my.user.wezterm.enable = true;
-  my.user.foot.enable = true;
   my.user.tmux.enable = true;
   my.user.sesh.enable = true;
   

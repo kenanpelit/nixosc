@@ -69,7 +69,7 @@ in
       nvd cachix nix-output-monitor nix-search-tv
   
       # -- Terminal Utilities ----------------------------------------------------
-      tmux wezterm foot     # Terminal multiplexer & emulators
+      tmux wezterm          # Terminal multiplexer & emulators
       starship              # Cross-shell prompt
       fastfetch neofetch    # System info
       htop btop procs       # Process viewers
@@ -136,7 +136,7 @@ in
   
       # -- Hyprland & Wayland ----------------------------------------------------
       hyprlock hypridle     # Lock & Idle
-      hyprpaper wpaperd     # Wallpaper
+      hyprpaper             # Wallpaper
       #mako                  # Notifications
       brightnessctl         # Brightness control
       wl-gammactl           # Gamma control

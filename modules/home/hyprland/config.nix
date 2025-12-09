@@ -281,11 +281,6 @@ let
       pin = true;
     }
     {
-      name = "waypaper-pin";
-      "match:class" = "^(waypaper)$";
-      pin = true;
-    }
-    {
       name = "dropdown-terminal";
       "match:class" = "^(dropdown)$";
       float = true;
@@ -311,17 +306,6 @@ let
   # --- Workspace Assignment Rules ---
   workspaceRules = [
     # Browsers
-    {
-      name = "zen-browser";
-      "match:class" = "^(zen)$";
-      workspace = 1;
-    }
-    {
-      name = "zen-private";
-      "match:class" = "^(Kenp)$";
-      "match:title" = "^(Zen Browser Private Browsing)$";
-      workspace = "6 silent";
-    }
     {
       name = "brave-private";
       "match:title" = "^(New Private Tab - Brave)$";
@@ -590,16 +574,6 @@ let
     {
       name = "kitty-opacity";
       "match:class" = "^(kitty)$";
-      opacity = "1.0 override 1.0 override";
-    }
-    {
-      name = "foot-opacity";
-      "match:class" = "^(foot)$";
-      opacity = "1.0 override 1.0 override";
-    }
-    {
-      name = "zen-opacity";
-      "match:class" = "^(zen)$";
       opacity = "1.0 override 1.0 override";
     }
     {
@@ -977,7 +951,7 @@ lib.mkIf cfg.enable {
         animate_manual_resizes = true;
         animate_mouse_windowdragging = true;
         enable_swallow = true;
-        swallow_regex = "^(kitty|foot|alacritty|wezterm)$";
+        swallow_regex = "^(kitty|alacritty|wezterm)$";
         swallow_exception_regex = "^(wev|Wayland-desktop|wl-clipboard)$";
         mouse_move_focuses_monitor = true;
         initial_workspace_tracking = 1;

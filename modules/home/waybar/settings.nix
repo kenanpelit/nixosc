@@ -561,7 +561,6 @@
       # Custom icons for specific applications
       special-icons = {
         firefox = "󰈹";        # Firefox browser
-        zen-browser = "󰈹";    # Zen browser
         telegram = "󰔁";       # Telegram messenger
         discord = "󰙯";        # Discord chat
         spotify = "󰓇";        # Spotify music
@@ -570,4 +569,3 @@
     };
   };
 }
-
