@@ -337,19 +337,19 @@ is_app_running() {
       ;;
     # Firefox profiles
     firefox-kenp)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("Kenp"; "i"))' >/dev/null 2>&1; then
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("kenp"; "i"))' >/dev/null 2>&1; then
         return 0
       fi
       return 1
       ;;
     firefox-compecta)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("CompectA"; "i"))' >/dev/null 2>&1; then
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("compecta"; "i"))' >/dev/null 2>&1; then
         return 0
       fi
       return 1
       ;;
     firefox-proxy)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("Proxy"; "i"))' >/dev/null 2>&1; then
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("proxy"; "i"))' >/dev/null 2>&1; then
         return 0
       fi
       return 1
