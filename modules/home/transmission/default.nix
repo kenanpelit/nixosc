@@ -1,9 +1,8 @@
 # modules/home/transmission/default.nix
 # ==============================================================================
-# Home Manager module for transmission.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Transmission BitTorrent client (GTK/CLI).
+# Installs client and sets user defaults via Home Manager.
+# Manage torrent settings here instead of per-profile config files.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

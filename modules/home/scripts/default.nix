@@ -1,9 +1,8 @@
 # modules/home/scripts/default.nix
 # ==============================================================================
-# Home Manager module for scripts.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module packaging custom user scripts into $PATH.
+# Build and install script set from modules/home/scripts/bin.
+# Keep script distribution centralized here instead of manual copies.
 # ==============================================================================
 
 { lib, config, ... }:

@@ -1,9 +1,7 @@
 # modules/home/xdg-portal/default.nix
 # ==============================================================================
-# Home Manager module for xdg-portal.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for per-user XDG portal helpers (if needed on Wayland).
+# Keep portal preferences here instead of manual env tweaks.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

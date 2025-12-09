@@ -1,9 +1,7 @@
 # modules/home/sway/default.nix
 # ==============================================================================
-# Home Manager module for sway.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Sway session helpers (VM/testing usage).
+# Installs sway-related utilities and user config via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
@@ -61,4 +59,3 @@ in
     }; # End of xdg.configFile
   };
 } # End of module
-

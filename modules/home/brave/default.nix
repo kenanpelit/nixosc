@@ -1,9 +1,7 @@
 # modules/home/brave/default.nix
 # ==============================================================================
-# Home Manager module for brave.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Brave browser: install, set default, and wire user profile.
+# Manage browser defaults here instead of manual installs or profile hacks.
 # ==============================================================================
 
 { inputs, pkgs, config, lib, ... }:

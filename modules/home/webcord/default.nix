@@ -1,9 +1,7 @@
 # modules/home/webcord/default.nix
 # ==============================================================================
-# Home Manager module for webcord.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for WebCord/Discord client.
+# Installs client and keeps desktop integration managed via Home Manager.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

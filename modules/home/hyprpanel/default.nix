@@ -1,9 +1,8 @@
 # modules/home/hyprpanel/default.nix
 # ==============================================================================
-# Home Manager module for hyprpanel.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Hyprpanel bar/dock configuration.
+# Installs Hyprpanel and applies user theme/layout settings.
+# Centralize bar tweaks here instead of manual config fragments.
 # ==============================================================================
 
 { inputs, config, lib, pkgs, ... }:

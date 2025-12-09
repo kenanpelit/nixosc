@@ -1,9 +1,7 @@
 # modules/home/walker/default.nix
 # ==============================================================================
-# Home Manager module for walker.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Walker launcher integration.
+# Installs walker and applies user configuration/themes via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, inputs, ... }:

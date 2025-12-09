@@ -1,9 +1,8 @@
 # modules/home/elektron/default.nix
 # ==============================================================================
-# Home Manager module for elektron.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Electron runtime and per-app wrappers.
+# Installs electron and optional electron-based apps with Wayland flags.
+# Manage app packages/env here instead of individual launcher tweaks.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

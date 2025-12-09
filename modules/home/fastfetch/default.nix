@@ -1,9 +1,8 @@
 # modules/home/fastfetch/default.nix
 # ==============================================================================
-# Home Manager module for fastfetch.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Fastfetch system summary.
+# Installs fastfetch and manages its user config via Home Manager.
+# Tweak output/theme here instead of ad-hoc config files.
 # ==============================================================================
 
 { pkgs, username, lib, config, ... }:

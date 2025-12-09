@@ -1,9 +1,8 @@
 # modules/home/copyq/default.nix
 # ==============================================================================
-# Home Manager module for copyq.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for CopyQ clipboard manager.
+# Installs app and keeps user config managed via Home Manager.
+# Tune clipboard history/UI here instead of editing CopyQ settings manually.
 # ==============================================================================
 
 {

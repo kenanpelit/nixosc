@@ -1,9 +1,8 @@
 # modules/home/mpv/default.nix
 # ==============================================================================
-# Home Manager module for mpv.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for MPV media player.
+# Installs mpv and writes user config/keymaps via Home Manager.
+# Adjust playback defaults here instead of manual config edits.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

@@ -1,9 +1,8 @@
 # modules/home/anydesk/default.nix
 # ==============================================================================
-# Home Manager module for anydesk.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for AnyDesk remote desktop client.
+# Installs the client and keeps user-level settings in one place.
+# Adjust launch/desktop integration here instead of manual installs.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

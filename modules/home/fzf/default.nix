@@ -1,9 +1,8 @@
 # modules/home/fzf/default.nix
 # ==============================================================================
-# Home Manager module for fzf.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for fzf fuzzy finder: install and shell integrations.
+# Centralize keybindings/completion setup under Home Manager.
+# Tweak fzf defaults here instead of shell rc fragments.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

@@ -1,9 +1,8 @@
 # modules/home/mako/default.nix
 # ==============================================================================
-# Home Manager module for mako.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Mako Wayland notification daemon.
+# Installs mako and applies user notification theme/options.
+# Keep notification styling here instead of editing mako.conf manually.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

@@ -1,9 +1,8 @@
 # modules/home/ghostty/default.nix
 # ==============================================================================
-# Home Manager module for ghostty.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Ghostty terminal: installs package and writes config.
+# Sets font/theme/palette/keybind defaults via Home Manager.
+# Adjust terminal behaviour here instead of manual ~/.config edits.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

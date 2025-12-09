@@ -1,9 +1,7 @@
 # modules/home/password-store/default.nix
 # ==============================================================================
-# Home Manager module for password-store.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for pass/Password Store utilities.
+# Installs pass and related helpers; manages user config centrally.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

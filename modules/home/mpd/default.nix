@@ -1,9 +1,8 @@
 # modules/home/mpd/default.nix
 # ==============================================================================
-# Home Manager module for mpd.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for MPD client helpers (ncmpcpp/mpc etc.).
+# Installs tools and manages user-side MPD client config.
+# Keep player settings here instead of scattered dotfiles.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

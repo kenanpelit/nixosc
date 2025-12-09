@@ -1,9 +1,7 @@
 # modules/home/vlc/default.nix
 # ==============================================================================
-# Home Manager module for vlc.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for VLC media player.
+# Installs VLC and keeps user prefs managed by Home Manager.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

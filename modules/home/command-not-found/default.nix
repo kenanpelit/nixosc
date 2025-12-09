@@ -1,9 +1,7 @@
 # modules/home/command-not-found/default.nix
 # ==============================================================================
-# Home Manager module for command-not-found.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module enabling command-not-found suggestions in the shell.
+# Centralizes the hook so shells get helpful package hints uniformly.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

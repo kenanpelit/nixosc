@@ -1,9 +1,8 @@
 # modules/home/sesh/default.nix
 # ==============================================================================
-# Home Manager module for sesh.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Sesh session manager integration (term multiplexing).
+# Installs sesh and writes its config via Home Manager.
+# Keep session definitions here instead of manual config files.
 # ==============================================================================
 
 { config, lib, pkgs, username, ... }:
@@ -256,4 +255,3 @@ in
     '';
   };
 }
-

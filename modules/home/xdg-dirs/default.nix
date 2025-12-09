@@ -1,9 +1,7 @@
 # modules/home/xdg-dirs/default.nix
 # ==============================================================================
-# Home Manager module for xdg-dirs.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for XDG user directories.
+# Defines standard dirs via Home Manager instead of manual xdg-user-dirs updates.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

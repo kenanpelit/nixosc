@@ -1,9 +1,8 @@
 # modules/home/waybar/default.nix
 # ==============================================================================
-# Home Manager module for waybar.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Waybar status bar: install and load themed config.
+# Manages bar modules/colors via Home Manager (Catppuccin integration).
+# Keep bar layout here instead of manual config edits.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

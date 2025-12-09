@@ -1,9 +1,8 @@
 # modules/home/cliphist/default.nix
 # ==============================================================================
-# Home Manager module for cliphist.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for cliphist Wayland clipboard history backend.
+# Installs the tool and configures user service/hooks via Home Manager.
+# Keep clipboard history setup here instead of ad-hoc scripts.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

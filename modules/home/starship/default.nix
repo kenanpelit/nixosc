@@ -1,9 +1,8 @@
 # modules/home/starship/default.nix
 # ==============================================================================
-# Home Manager module for starship.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Starship prompt configuration.
+# Installs starship and writes prompt settings via Home Manager.
+# Keep prompt tweaks here instead of editing starship.toml manually.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

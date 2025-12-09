@@ -1,9 +1,7 @@
 # modules/home/packages/default.nix
 # ==============================================================================
-# Home Manager module for packages.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module aggregating user package set (pkgs for home.packages).
+# Central place to list per-user tools instead of sprinkling in modules.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:

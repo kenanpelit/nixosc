@@ -1,9 +1,7 @@
 # modules/home/obsidian/default.nix
 # ==============================================================================
-# Home Manager module for obsidian.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Obsidian notes client.
+# Installs the app and desktop entry; manage user settings centrally here.
 # ==============================================================================
 
 { lib, config, ... }:

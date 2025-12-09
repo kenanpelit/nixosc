@@ -1,9 +1,8 @@
 # modules/home/gnome/default.nix
 # ==============================================================================
-# Home Manager module for gnome.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for GNOME session helpers (extensions/desktop files).
+# Installs user-side GNOME tools and configs via Home Manager.
+# Centralize GNOME tweaks here instead of manual dconf edits.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

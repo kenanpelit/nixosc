@@ -1,9 +1,7 @@
 # modules/home/rofi/default.nix
 # ==============================================================================
-# Home Manager module for rofi.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Rofi launcher: install and manage theme/config.
+# Centralize launcher styling and keybinds here instead of manual configs.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

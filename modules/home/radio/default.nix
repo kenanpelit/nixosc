@@ -1,9 +1,7 @@
 # modules/home/radio/default.nix
 # ==============================================================================
-# Home Manager module for radio.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for internet radio tools/scripts.
+# Installs player helpers and manages user presets via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

@@ -1,9 +1,7 @@
 # modules/home/git/default.nix
 # ==============================================================================
-# Home Manager module for git.
-# Exposes my.user options to install packages and write user config.
-# Keeps per-user defaults centralized instead of scattered dotfiles.
-# Adjust feature flags and templates in the module body below.
+# Home module for Git: global config, aliases, and helpers.
+# Manage user git settings here instead of scattered .gitconfig edits.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
