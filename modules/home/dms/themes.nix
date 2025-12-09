@@ -273,6 +273,54 @@ let
         "matugen_type": "scheme-tonal-spot"
       }
     '')
+    (mkTheme "material-ocean-deep" ''
+      {
+        "name": "Material Ocean Deep",
+        "primary": "#64ffda",
+        "primaryText": "#0b0d14",
+        "primaryContainer": "#1b1f2c",
+        "secondary": "#80cbc4",
+        "surfaceTint": "#64ffda",
+        "surface": "#0a0c12",
+        "surfaceText": "#d7e3f4",
+        "surfaceVariant": "#1a1f2d",
+        "surfaceVariantText": "#9fb0c6",
+        "surfaceContainer": "#131826",
+        "surfaceContainerHigh": "#191f2f",
+        "surfaceContainerHighest": "#20283a",
+        "background": "#070910",
+        "backgroundText": "#cfd8e4",
+        "outline": "#323a4a",
+        "error": "#ff6e6e",
+        "warning": "#ffb86c",
+        "info": "#7ad7ff",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
+    (mkTheme "material-ocean-pastel" ''
+      {
+        "name": "Material Ocean Pastel",
+        "primary": "#9be8ff",
+        "primaryText": "#11131c",
+        "primaryContainer": "#22283a",
+        "secondary": "#a8e3d8",
+        "surfaceTint": "#9be8ff",
+        "surface": "#12141d",
+        "surfaceText": "#e7edf7",
+        "surfaceVariant": "#1f2434",
+        "surfaceVariantText": "#c0c8d6",
+        "surfaceContainer": "#171c2a",
+        "surfaceContainerHigh": "#1d2231",
+        "surfaceContainerHighest": "#252c3d",
+        "background": "#0e1119",
+        "backgroundText": "#dbe2ef",
+        "outline": "#3d4557",
+        "error": "#ff7b93",
+        "warning": "#ffd39f",
+        "info": "#94c4ff",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
   ];
 
 in
