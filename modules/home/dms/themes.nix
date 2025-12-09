@@ -1,79 +1,15 @@
-# modules/home/dms/default.nix
-# ==============================================================================
-# DankMaterialShell (DMS) - Home Manager integration
-# ==============================================================================
-{ inputs, lib, config, pkgs, ... }:
-{
-  # Upstream DMS module + local splits (settings, themes)
-  imports = [
-    inputs.dankMaterialShell.homeModules.dankMaterialShell.default
-    ./settings.nix
-    ./themes.nix
-  ];
+{ lib, config, pkgs, ... }:
+let
+  cfg = config.my.user.dms;
 
-  options.my.user.dms = {
-    enable = lib.mkEnableOption "DankMaterialShell";
-
-    plugins = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [
-        "alarmClock"
-        "calculator"
-        "commandRunner"
-        "dankActions"
-        "dankBatteryAlerts"
-        "dankHooks"
-        "dankPomodoroTimer"
-        "displayMirror"
-        "displaySettings"
-        "dockerManager"
-        "dolarBlue"
-        "easyEffects"
-        "emojiLauncher"
-        "gitmojiLauncher"
-        "grimblast"
-        "linuxWallpaperEngine"
-        "powerUsagePlugin"
-        "pulsarX3"
-        "webSearch"
-        "worldClock"
-      ];
-      description = ''
-        Plugins to ensure are installed via the DMS plugin registry. Missing ones
-        are installed during Home Manager activation using `dms plugins install`.
-      '';
-    };
+  # Helper to write a theme file
+  mkTheme = name: body: {
+    path = "DankMaterialShell/themes/${name}.json";
+    text = body;
   };
 
-  config = lib.mkIf cfg.enable {
-    programs.dankMaterialShell.enable = true;
-
-    # Autostart DMS for the user session
-    home.packages = [ dmsPkg ];
-
-    # Ensure DMS config/cache dirs exist
-    home.file.".config/DankMaterialShell/.keep".text = "";
-    home.file.".cache/DankMaterialShell/.keep".text = "";
-
-    # Ensure Qt icon theme matches Candy (Kvantum/qt6ct fallback)
-    xdg.configFile."qt6ct/qt6ct.conf".text = ''
-      [Appearance]
-      icon_theme=a-candy-beauty-icon-theme
-    '';
-    # Kvantum config hint for icon theme (platform = kvantum)
-    xdg.configFile."Kvantum/kvantum.kvconfig".text = ''
-      [General]
-      iconTheme=a-candy-beauty-icon-theme
-    '';
-    # Export icon theme globally for Qt (systemd --user env)
-    xdg.configFile."environment.d/99-dms-icons.conf".text = ''
-      QT_ICON_THEME=a-candy-beauty-icon-theme
-      XDG_ICON_THEME=a-candy-beauty-icon-theme
-      QT_QPA_PLATFORMTHEME=gtk3
-    '';
-
-    # Custom DMS theme (Tokyo Night inspired)
-    home.file.".config/DankMaterialShell/themes/tokyo-night.json".text = ''
+  themes = [
+    (mkTheme "tokyo-night" ''
       {
         "name": "Tokyo Night",
         "primary": "#7aa2f7",
@@ -96,10 +32,8 @@
         "info": "#7dcfff",
         "matugen_type": "scheme-tonal-spot"
       }
-    '';
-
-    # Catppuccin Mocha (dark)
-    home.file.".config/DankMaterialShell/themes/catppuccin-mocha.json".text = ''
+    '')
+    (mkTheme "catppuccin-mocha" ''
       {
         "name": "Catppuccin Mocha",
         "primary": "#cba6f7",
@@ -122,10 +56,8 @@
         "info": "#89b4fa",
         "matugen_type": "scheme-tonal-spot"
       }
-    '';
-
-    # Nord (dark)
-    home.file.".config/DankMaterialShell/themes/nord.json".text = ''
+    '')
+    (mkTheme "nord" ''
       {
         "name": "Nord Dark",
         "primary": "#88c0d0",
@@ -148,10 +80,8 @@
         "info": "#5e81ac",
         "matugen_type": "scheme-tonal-spot"
       }
-    '';
-
-    # Gruvbox (dark)
-    home.file.".config/DankMaterialShell/themes/gruvbox-dark.json".text = ''
+    '')
+    (mkTheme "gruvbox-dark" ''
       {
         "name": "Gruvbox Dark",
         "primary": "#d79921",
@@ -174,10 +104,8 @@
         "info": "#83a598",
         "matugen_type": "scheme-tonal-spot"
       }
-    '';
-
-    # Dracula (dark)
-    home.file.".config/DankMaterialShell/themes/dracula.json".text = ''
+    '')
+    (mkTheme "dracula" ''
       {
         "name": "Dracula",
         "primary": "#bd93f9",
@@ -200,10 +128,8 @@
         "info": "#8be9fd",
         "matugen_type": "scheme-tonal-spot"
       }
-    '';
-
-    # Solarized Dark
-    home.file.".config/DankMaterialShell/themes/solarized-dark.json".text = ''
+    '')
+    (mkTheme "solarized-dark" ''
       {
         "name": "Solarized Dark",
         "primary": "#268bd2",
@@ -226,10 +152,8 @@
         "info": "#2aa198",
         "matugen_type": "scheme-tonal-spot"
       }
-    '';
-
-    # Hotline Miami (neon, dark)
-    home.file.".config/DankMaterialShell/themes/hotline-miami.json".text = ''
+    '')
+    (mkTheme "hotline-miami" ''
       {
         "name": "Hotline Miami",
         "primary": "#ff71ce",
@@ -252,10 +176,8 @@
         "info": "#01fdf6",
         "matugen_type": "scheme-expressive"
       }
-    '';
-
-    # Cyberpunk Electric (neon, dark)
-    home.file.".config/DankMaterialShell/themes/cyberpunk-electric.json".text = ''
+    '')
+    (mkTheme "cyberpunk-electric" ''
       {
         "name": "Cyberpunk Electric",
         "primary": "#00ffcc",
@@ -278,62 +200,83 @@
         "info": "#00ffcc",
         "matugen_type": "scheme-expressive"
       }
-    '';
+    '')
+    (mkTheme "onedark" ''
+      {
+        "name": "One Dark",
+        "primary": "#61afef",
+        "primaryText": "#1e222a",
+        "primaryContainer": "#2b2f37",
+        "secondary": "#c678dd",
+        "surfaceTint": "#61afef",
+        "surface": "#1e222a",
+        "surfaceText": "#abb2bf",
+        "surfaceVariant": "#2c323c",
+        "surfaceVariantText": "#d7dae0",
+        "surfaceContainer": "#20252d",
+        "surfaceContainerHigh": "#252b34",
+        "surfaceContainerHighest": "#2b323c",
+        "background": "#13161c",
+        "backgroundText": "#e6e6e6",
+        "outline": "#444b58",
+        "error": "#e06c75",
+        "warning": "#e5c07b",
+        "info": "#56b6c2",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
+    (mkTheme "everforest" ''
+      {
+        "name": "Everforest Dark",
+        "primary": "#a7c080",
+        "primaryText": "#2e383c",
+        "primaryContainer": "#323c41",
+        "secondary": "#e67e80",
+        "surfaceTint": "#a7c080",
+        "surface": "#2b3339",
+        "surfaceText": "#d3c6aa",
+        "surfaceVariant": "#343f44",
+        "surfaceVariantText": "#c0c5ce",
+        "surfaceContainer": "#2d363c",
+        "surfaceContainerHigh": "#333d44",
+        "surfaceContainerHighest": "#39444c",
+        "background": "#232a2f",
+        "backgroundText": "#d3c6aa",
+        "outline": "#465258",
+        "error": "#e67e80",
+        "warning": "#dbbc7f",
+        "info": "#7fbbb3",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
+    (mkTheme "material-ocean" ''
+      {
+        "name": "Material Ocean",
+        "primary": "#84ffff",
+        "primaryText": "#0f111a",
+        "primaryContainer": "#1f2230",
+        "secondary": "#80cbc4",
+        "surfaceTint": "#84ffff",
+        "surface": "#0f111a",
+        "surfaceText": "#cdd6f4",
+        "surfaceVariant": "#1f2433",
+        "surfaceVariantText": "#a6adc8",
+        "surfaceContainer": "#161926",
+        "surfaceContainerHigh": "#1c2030",
+        "surfaceContainerHighest": "#23283a",
+        "background": "#0b0d14",
+        "backgroundText": "#d8dee9",
+        "outline": "#39404f",
+        "error": "#ff5370",
+        "warning": "#ffcb6b",
+        "info": "#82aaff",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
+  ];
 
-    # Default screenshot editor for DMS (can be overridden by user env)
-    home.sessionVariables = {
-      DMS_SCREENSHOT_EDITOR = "swappy";
-      QT_ICON_THEME = "a-candy-beauty-icon-theme";
-      XDG_ICON_THEME = "a-candy-beauty-icon-theme";
-    };
-
-    systemd.user.services.dms = {
-      Unit = {
-        Description = "DankMaterialShell";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
-      };
-      Service = {
-        Type = "simple";
-        # Keep in foreground so systemd tracks the process
-        ExecStart = "${dmsPkg}/bin/dms run --session";
-        Restart = "on-failure";
-        RestartSec = 3;
-        TimeoutStopSec = 10;
-        KillSignal = "SIGINT";
-        Environment = [
-          "DMS_SCREENSHOT_EDITOR=${dmsEditor}"
-          "XDG_RUNTIME_DIR=/run/user/%U"
-          "XDG_CURRENT_DESKTOP=Hyprland"
-          "XDG_SESSION_TYPE=wayland"
-          "QT_ICON_THEME=a-candy-beauty-icon-theme"
-          "XDG_ICON_THEME=a-candy-beauty-icon-theme"
-          "QT_QPA_PLATFORMTHEME=gtk3"
-        ];
-        PassEnvironment = [
-          "WAYLAND_DISPLAY"
-          "HYPRLAND_INSTANCE_SIGNATURE"
-          "HYPRLAND_SOCKET"
-        ];
-        StandardOutput = "journal";
-        StandardError = "journal";
-      };
-      Install.WantedBy = [ "graphical-session.target" ];
-    };
-
-    # Ensure DMS plugins are present; install from registry when missing
-    home.activation.dmsPlugins = dag.entryAfter [ "writeBoundary" ] ''
-      pluginsDir="$HOME/.config/DankMaterialShell/plugins"
-      mkdir -p "$pluginsDir"
-
-      for plugin in ${pluginList}; do
-        if [ ! -d "$pluginsDir/$plugin" ]; then
-          echo "[dms] installing plugin: $plugin"
-          if ! ${dmsPkg}/bin/dms plugins install "$plugin"; then
-            echo "[dms] warning: failed to install plugin $plugin" >&2
-          fi
-        fi
-      done
-    '';
-  };
+in
+lib.mkIf cfg.enable {
+  # Write theme JSON files
+  xdg.configFile = lib.listToAttrs (map (t: { name = t.path; value.text = t.text; }) themes);
 }
