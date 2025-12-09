@@ -1,10 +1,10 @@
 # modules/home/lazygit/default.nix
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Home Manager module for lazygit.
 # Exposes my.user options to install packages and write user config.
 # Keeps per-user defaults centralized instead of scattered dotfiles.
 # Adjust feature flags and templates in the module body below.
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 { inputs, pkgs, lib, config, ... }:
 let

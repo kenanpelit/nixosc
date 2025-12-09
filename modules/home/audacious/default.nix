@@ -1,10 +1,10 @@
 # modules/home/audacious/default.nix
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Home Manager module for audacious.
 # Exposes my.user options to install packages and write user config.
 # Keeps per-user defaults centralized instead of scattered dotfiles.
 # Adjust feature flags and templates in the module body below.
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 { pkgs, username, lib, config, ... }:
 let

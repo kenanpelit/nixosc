@@ -1,10 +1,10 @@
 # modules/home/xdg-mimes/default.nix
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Home Manager module for xdg-mimes.
 # Exposes my.user options to install packages and write user config.
 # Keeps per-user defaults centralized instead of scattered dotfiles.
 # Adjust feature flags and templates in the module body below.
-# ------------------------------------------------------------------------------
+# ==============================================================================
 
 { pkgs, lib, config, ... }:
 with lib;
