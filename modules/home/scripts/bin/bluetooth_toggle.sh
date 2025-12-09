@@ -78,7 +78,15 @@ fi; }
 # Pil yüzdesi (BluetoothCTL üzerinden; bazı cihazlar desteklemez)
 get_battery_percentage() {
 	local addr="$1"
-	bluetoothctl info "$addr" 2>/dev/null | awk -F': ' '/Battery Percentage/ {gsub(/[[:space:]]*/,"",$2); print $2}'
+	local raw pct
+	raw="$(bluetoothctl info "$addr" 2>/dev/null | awk -F': ' '/Battery Percentage/ {gsub(/[[:space:]]*/,"",$2); print $2; exit}')"
+	[ -z "$raw" ] && return 0
+	if echo "$raw" | grep -q '([0-9]\+)'; then
+		pct="$(echo "$raw" | sed -n 's/.*(\([0-9]\+\)).*/\1/p')"
+	else
+		pct="$(echo "$raw" | tr -cd '0-9')"
+	fi
+	[ -n "$pct" ] && echo "${pct}%"
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
