@@ -116,6 +116,13 @@ declare -A CHROME_BROWSERS=(
   ["chrome-whats"]="profile_chrome|Whats --class Whats|9|secure|1|false"
 )
 
+# Browser Applications - Firefox
+declare -A FIREFOX_BROWSERS=(
+  ["firefox-kenp"]="firefox|-P Kenp --class Kenp --name Kenp --new-window --new-instance|1|secure|1|false"
+  ["firefox-compecta"]="firefox|-P Compecta --class Compecta --name Compecta --new-window --new-instance|4|secure|1|false"
+  ["firefox-proxy"]="firefox|-P Proxy --class Proxy --name Proxy --new-window --new-instance|6|bypass|1|false"
+)
+
 # Applications - UPDATED
 declare -A APPS=(
   ["discord"]="discord|-m --class=discord --title=discord|5|secure|1|true"
@@ -328,6 +335,25 @@ is_app_running() {
       fi
       return 1
       ;;
+    # Firefox profiles
+    firefox-kenp)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("Kenp"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    firefox-compecta)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("CompectA"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    firefox-proxy)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("Proxy"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
     # Chrome browser profiles
     chrome-*)
       local profile_class="${profile#chrome-}"
@@ -407,6 +433,10 @@ get_class_pattern() {
   case "$profile" in
   brave-*) echo "brave" ;;
   chrome-*) echo "chrome|Google-chrome" ;;
+  firefox-*)
+    local profile_class="${profile#firefox-}"
+    echo "${profile_class^}"
+    ;;
   discord) echo "discord|Discord" ;;
   spotify) echo "spotify|Spotify" ;;
   ferdium) echo "ferdium|Ferdium" ;;
@@ -462,6 +492,7 @@ get_browser_profiles() {
   case "$BROWSER_TYPE" in
   "brave") echo "BRAVE_BROWSERS" ;;
   "chrome") echo "CHROME_BROWSERS" ;;
+  "firefox") echo "FIREFOX_BROWSERS" ;;
   *)
     log "ERROR" "BROWSER" "Invalid browser type: $BROWSER_TYPE"
     return 1
@@ -662,6 +693,11 @@ generate_all_scripts() {
     ((count++))
   done
 
+  for profile in "${!FIREFOX_BROWSERS[@]}"; do
+    generate_script "$profile" "${FIREFOX_BROWSERS[$profile]}"
+    ((count++))
+  done
+
   for profile in "${!CHROME_BROWSERS[@]}"; do
     generate_script "$profile" "${CHROME_BROWSERS[$profile]}"
     ((count++))
@@ -843,6 +879,8 @@ launch_profile() {
     launch_application "$profile" "${TERMINALS[$profile]}" "terminal"
   elif [[ -v BRAVE_BROWSERS["$profile"] && "$BROWSER_TYPE" == "brave" ]]; then
     launch_application "$profile" "${BRAVE_BROWSERS[$profile]}" "brave"
+  elif [[ -v FIREFOX_BROWSERS["$profile"] && "$BROWSER_TYPE" == "firefox" ]]; then
+    launch_application "$profile" "${FIREFOX_BROWSERS[$profile]}" "firefox"
   elif [[ -v CHROME_BROWSERS["$profile"] && "$BROWSER_TYPE" == "chrome" ]]; then
     launch_application "$profile" "${CHROME_BROWSERS[$profile]}" "chrome"
   elif [[ -v APPS["$profile"] ]]; then
@@ -1112,6 +1150,7 @@ show_help() {
   echo
   echo -e "${BOLD}Browser Types:${NC}"
   echo "    brave                 Use Brave Browser profiles (default)"
+  echo "    firefox               Use Firefox profiles"
   echo "    chrome                Use Chrome Browser profiles"
   echo
   echo -e "${BOLD}Commands:${NC}"
@@ -1162,7 +1201,7 @@ show_help() {
 #-------------------------------------------------------------------------------
 
 parse_args() {
-  if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "chrome") ]]; then
+  if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "chrome" || "$1" == "firefox") ]]; then
     BROWSER_TYPE="$1"
     shift
   fi
@@ -1321,6 +1360,7 @@ check_dependencies() {
   case "$BROWSER_TYPE" in
   brave) command -v profile_brave >/dev/null 2>&1 || missing_deps+=("profile_brave") ;;
   chrome) command -v profile_chrome >/dev/null 2>&1 || missing_deps+=("profile_chrome") ;;
+  firefox) command -v firefox >/dev/null 2>&1 || missing_deps+=("firefox") ;;
   esac
 
   if [[ "$WM_TYPE" == "hyprland" ]] && ! command -v jq >/dev/null 2>&1; then
