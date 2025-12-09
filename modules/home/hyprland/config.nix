@@ -737,15 +737,15 @@ let
     # Launchers & power
     "$mainMod, Space, exec, dms ipc call spotlight toggle"
     "$mainMod, backspace, exec, dms ipc call powermenu toggle"
-    "ALT, L, exec, dms ipc call lock lock"
-    "$mainMod CTRL, L, exec, dms ipc call inhibit toggle"
+    "$mainMod, delete, exec, dms ipc call lock lock"
+    "$mainMod SHIFT, delete, exec, dms ipc call inhibit toggle"
 
     # Dash & panels
     "$mainMod, D, exec, dms ipc call dash toggle ''"
-    "$mainMod CTRL, D, exec, dms ipc call control-center toggle"
+    "$mainMod, C, exec, dms ipc call control-center toggle"
     "$mainMod, N, exec, dms ipc call notifications toggle"
-    "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
-    "$mainMod CTRL, M, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod, O, exec, dms ipc call settings focusOrToggle"
+    "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
 
     # Theme & night mode
     "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
