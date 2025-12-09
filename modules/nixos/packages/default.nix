@@ -48,6 +48,8 @@
     gnome-keyring                # Password and secret manager
     pinentry-gnome3              # Graphical PIN entry for GPG
     iptables                     # Firewall administration
+    nftables                     # Modern packet filtering framework
+    conntrack-tools              # Connection tracking userspace tools
     hblock                       # Ad-blocking via hosts file
 
     # -- Network ---------------------------------------------------------------

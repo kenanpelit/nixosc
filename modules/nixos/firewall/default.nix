@@ -42,8 +42,6 @@ in
         optional cfg.allowTransmissionPorts transmissionPeerPort;
     };
 
-    environment.systemPackages = with pkgs; [ conntrack-tools ];
-
     environment.shellAliases = {
       fw-list         = "sudo nft list ruleset";
       fw-list-filter  = "sudo nft list table inet filter";
