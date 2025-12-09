@@ -9,6 +9,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    inputs.nixos-hardware.nixosModules.common-cpu-intel
     # Modules are now automatically imported by flake.nix via Snowfall Lib
   ];
 
