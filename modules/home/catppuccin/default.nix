@@ -25,8 +25,6 @@ in
       
       # === Terminal Applications ===
       kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal
-      wezterm.enable = lib.mkDefault true;      # Wayland/pty terminal
-      ghostty.enable = lib.mkDefault true;      # Modern terminal
 
       # === System Monitoring ===
       btop.enable = lib.mkDefault true;         # System resource monitor
@@ -41,7 +39,6 @@ in
       tmux.enable = lib.mkDefault true;         # Terminal multiplexer
       nvim.enable = lib.mkDefault true;         # Neovim (if you use it)
       lazygit.enable = lib.mkDefault true;      # Git TUI
-      obsidian.enable = lib.mkDefault true;     # Notes (Catppuccin-supported)
       
       # === Wayland/Hyprland Ecosystem ===
       hyprland.enable = lib.mkDefault true;     # Wayland compositor
