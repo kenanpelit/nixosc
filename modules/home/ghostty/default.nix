@@ -31,7 +31,7 @@ let
   ghosttyConfig = ''
     # Appearance
     font-family = "Maple Mono NF"
-    font-size = 12
+    font-size = 13
     background = "#1e1e2e"
     foreground = "#cdd6f4"
     cursor-color = "#cba6f7"
@@ -61,7 +61,7 @@ let
     palette = 15=${palette.brightWhite}
 
     # Behaviour
-    scrollback = 10000
+    scrollback-limit = 10485760
     copy-on-select = true
     confirm-close-surface = false
     command = "${shellCmd}"
