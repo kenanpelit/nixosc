@@ -75,21 +75,16 @@
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/a5b7c91329313503e8864761f24ef43fb630f35c"; # 1208 - Updated commit
-#      url = "github:hyprwm/hyprland/c26e91f074a1ffa5a7ef7fc0da247bcecada50ea"; # 1207 - Updated commit
+      url = "github:hyprwm/hyprland/efe665b4558370af6e89921c487cd92890183961"; # 1209 - Updated commit
+#      url = "github:hyprwm/hyprland/a5b7c91329313503e8864761f24ef43fb630f35c"; # 1208 - Updated commit
+      #      url = "github:hyprwm/hyprland/c26e91f074a1ffa5a7ef7fc0da247bcecada50ea"; # 1207 - Updated commit
       #      url = "github:hyprwm/hyprland/f8d5aad1a1f61e1b6443c27394a38c8c54d39e9e"; # 1207 - Updated commit
       #      url = "github:hyprwm/hyprland/222dbe99d0d2d8a61f3b3202f8ef1794b0b081b7"; # 1206 - Updated commit
       #      url = "github:hyprwm/hyprland/6a1daff5f30ea71e6d678554aa59fc5670864d24"; # 1205 - Updated commit
-      #      url = "github:hyprwm/hyprland/3cf0280b11f370c11e6839275e547779a33f4a19"; # 1203 - Updated commit
     };
 
     hypr-contrib = {
       url = "github:hyprwm/contrib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    ax-shell = {
-      url = "github:poogas/Ax-Shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -125,11 +120,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/c570e20308ef4714a6c591a2da2f7989455da021"; # 1208 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/bc27253cbf6add52fbb8561aafb8169ac2e0b6ca"; # 1209 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/deaac3fdf0e17ee88ed9e6393975193413e9625f"; # 1208 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/52fcd3ad98b3441de222bf465645f1c560fcb7c6"; # 1208 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/cd580090dc62b6138797e1aa923fa3235732c857"; # 1208 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/c570e20308ef4714a6c591a2da2f7989455da021"; # 1208 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/308c8c3ea77300c463ba4ece1a41ec9a3f2e5701"; # 1207 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/511cb938060f3c5d6302ff5d02cff4d6c22ccfb4"; # 1207 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/2ddc448150b0576afe528ae5700ac031f94c9547"; # 1206 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/52d5e21fc4299aad7dad96482f6c4cd215e1e06c"; # 1205 - Updated commit
     };
 
     deadnix = {
@@ -181,11 +177,6 @@
       url = "github:yazi-rs/plugins";
       flake = false;
     };
-
-    noctalia = {
-      url = "github:noctalia-dev/noctalia-shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = inputs:
@@ -218,10 +209,6 @@
         # Overlays applied to all systems
         overlays = with inputs; [
           nur.overlays.default
-          (final: prev: let system = prev.stdenv.hostPlatform.system; ax = inputs.ax-shell.packages.${system}; in {
-            ax-shell = ax.default;
-            ax-send  = ax.ax-send or ax.default;
-          })
         ];
 
         # Modules automatically added to all NixOS systems
