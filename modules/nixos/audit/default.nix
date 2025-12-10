@@ -8,6 +8,9 @@
 { pkgs, ... }:
 {
   security.audit.enable = true;
+  # Prevent kauditd backlog overflow by enlarging the queue
+  security.audit.rules = [ "-b 8192" ];
+  boot.kernelParams = [ "audit_backlog_limit=8192" ];
 
   environment.systemPackages = [ pkgs.audit ];
 
