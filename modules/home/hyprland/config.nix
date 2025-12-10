@@ -596,7 +596,7 @@ let
     # Launchers
     "$mainMod, F1, exec, rofi-launcher keys || pkill rofi"
     "ALT, Space, exec, rofi-launcher || pkill rofi"
-    "$mainMod CTRL, Space, exec, walker --width=800 --minheight=300 --maxheight=700"
+    "$mainMod CTRL, Space, exec, walk"
    
     # Terminals
     "$mainMod, Return, exec, kitty"
