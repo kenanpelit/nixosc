@@ -57,6 +57,22 @@ lib.mkIf cfg.enable {
     };
   };
 
+  # Run hypr-set at session start to normalize monitors and audio
+  systemd.user.services.hypr-set = {
+    Unit = {
+      Description = "Hyprland session bootstrap (monitors + audio)";
+      After = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'hypr-set'";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
+    };
+  };
+
   # =============================================================================
   # Window Manager Configuration
   # =============================================================================
