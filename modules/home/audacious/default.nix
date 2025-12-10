@@ -5,9 +5,10 @@
 # Tweak plugins/themes here instead of editing upstream dotfiles manually.
 # ==============================================================================
 
-{ pkgs, username, lib, config, ... }:
+{ pkgs, lib, config, ... }:
 let
   cfg = config.my.user.audacious;
+  username = config.home.username;
 in
 {
   options.my.user.audacious = {

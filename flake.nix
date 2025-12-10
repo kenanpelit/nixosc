@@ -212,6 +212,10 @@
           nix-flatpak.nixosModules.nix-flatpak
         ];
 
+        homes.modules = with inputs; [
+          catppuccin.homeModules.catppuccin
+        ];
+
         # Special arguments available to all modules
         systems.specialArgs = {
           username = "kenan";

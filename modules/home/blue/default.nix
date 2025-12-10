@@ -6,10 +6,11 @@
 # policy here instead of scattering scripts in the session config.
 # ==============================================================================
 
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.my.user.blue;
+  username = config.home.username;
 in
 {
   options.my.user.blue = {

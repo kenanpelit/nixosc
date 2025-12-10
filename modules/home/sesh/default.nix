@@ -5,9 +5,10 @@
 # Keep session definitions here instead of manual config files.
 # ==============================================================================
 
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.my.user.sesh;
+  username = config.home.username;
 in
 {
   options.my.user.sesh = {
