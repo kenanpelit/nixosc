@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# hypr-airplane_mode.sh - Hyprland kablosuz/kablolu güç yönetimi toggle’ı
+# rfkill/Wi‑Fi/Bluetooth durumunu değiştirip oturum bildirimleriyle haber verir.
 
 #######################################
 #

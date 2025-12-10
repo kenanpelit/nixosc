@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# renew_env.sh - Shell env yenileme aracı
+# Env değişkenlerini yeniden yükler, session dosyalarını kaynaştırıp path’i tazeler.
 
 #set -eu
 

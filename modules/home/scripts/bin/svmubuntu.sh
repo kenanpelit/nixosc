@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# svmubuntu.sh - Ubuntu VM başlatıcısı
+# Ubuntu imajını belirlenmiş kaynaklarla çalıştırmak için kısayol.
 
 #===============================================================================
 #

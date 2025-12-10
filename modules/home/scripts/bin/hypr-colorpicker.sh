@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# hypr-colorpicker.sh - Hyprland renk seçici entegrasyonu
+# Hyprpicker/wayland-rgb ile renk alır, klavye/bildirimle geri bildirir.
 
 #######################################
 #

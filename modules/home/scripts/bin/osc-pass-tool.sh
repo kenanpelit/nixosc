@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-pass-tool.sh - pass/rofi parola yöneticisi
+# Rofi arayüzüyle parolaları kopyalar, OTP üretir, clip temizliği yapar.
 
 # Pass dizinini ayarla
 export PASSWORD_STORE_DIR="$HOME/.pass"

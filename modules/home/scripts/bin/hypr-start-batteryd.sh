@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# hypr-start-batteryd.sh - Hyprland oturumunda batteryd başlatıcı
+# Güç izleme daemon’unu tek seferlik başlatır; log ve pid kontrolü içerir.
 
 #######################################
 #

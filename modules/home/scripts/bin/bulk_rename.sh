@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# bulk_rename.sh - Uzantı bazlı toplu yeniden adlandırma aracı
+# Seçilen dizindeki dosyaları önizleme, yedekleme ve otomatik sıfırlama
+# ile ardışık numaralarla yeniden adlandırır.
 
 # Hata durumunda script'i durdur
 set -e

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# vnc-connect.sh - VNC istemci başlatıcı
+# Belirlenmiş VNC sunucularına bağlanmak için hafif wrapper (host/port parametreli).
 
 # Pass'dan VNC parolasını al
 VNC_PASS=$(pass vncpass 2>/dev/null)

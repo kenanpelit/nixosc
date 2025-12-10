@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-proxy.sh - Sistem proxy anahtarlayıcı
+# HTTP/HTTPS/SOCKS proxy ayarlarını aç/kapat, ortam değişkenlerini ve servisleri günceller.
 
 # SSH SOCKS Proxy Yönetim Scripti
 # Kullanım: ./ssh-proxy.sh [start|stop|restart|status] [hostname] [port]

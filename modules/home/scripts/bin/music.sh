@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# music.sh - Müzik playlist başlatıcı
+# mpv/mpc tabanlı listeleri oynatır, rastgele veya belirtilen kaynakları çağırır.
 
 if (ps aux | grep audacious | grep -v grep > /dev/null); then
     pkill audacious

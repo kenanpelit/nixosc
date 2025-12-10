@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# gnome-flow.sh - GNOME workspace/pencere yöneticisi
+# wmctrl odaklı kısayol setiyle çalışma alanları, MPV/ekran kontrolleri
+# ve hyprflow benzeri akışı GNOME’da sağlayan yardımcı.
 
 #######################################
 # GNOME WORKSPACE & WINDOW CONTROL

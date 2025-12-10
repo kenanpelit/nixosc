@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-imagekeeper.sh - Resim arşivleyici/temizleyici
+# Belirli klasörlerdeki görselleri düzenler, eşleşmeyenleri ayıklar, loglar.
 
 # ImageKeeper - Görsel Dosya Yönetim Aracı
 # Bozuk ve duplicate görsel dosyaları tespit eder

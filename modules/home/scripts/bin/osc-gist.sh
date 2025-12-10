@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-gist.sh - GitHub Gist yükleyici
+# Seçilen dosyayı veya stdin’i gizli/genel Gist’e yükler, URL çıktısı verir.
 
 # Kullanım fonksiyonu
 usage() {
