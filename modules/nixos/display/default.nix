@@ -13,6 +13,7 @@ in {
     enable = mkEnableOption "display stack (DM/DE/portals/fonts/audio)";
     enableHyprland = mkEnableOption "Hyprland Wayland compositor";
     enableGnome    = mkEnableOption "GNOME desktop environment";
+    enableNiri     = mkEnableOption "Niri Wayland compositor";
 
     defaultSession = mkOption {
       type = types.nullOr types.str;
