@@ -17,9 +17,13 @@ let
     # Start helper daemons
     spawn-at-startup "niriusd"
     spawn-at-startup "niriswitcher"
+    spawn-at-startup "dms run"
 
     # Keybindings (DMS-centric, mirrors Hyprland defaults)
     binds {
+      # Terminals
+      "Super+Return" = spawn "kitty";
+
       # Launchers & power
       "Super+Space" = spawn "dms ipc call spotlight toggle";
       "Super+Backspace" = spawn "dms ipc call powermenu toggle";
