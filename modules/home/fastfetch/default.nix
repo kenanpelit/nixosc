@@ -5,9 +5,10 @@
 # Tweak output/theme here instead of ad-hoc config files.
 # ==============================================================================
 
-{ pkgs, username, lib, config, ... }:
+{ pkgs, lib, config, ... }:
 let
   cfg = config.my.user.fastfetch;
+  username = config.home.username;
 in
 {
   options.my.user.fastfetch = {

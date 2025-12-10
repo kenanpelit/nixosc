@@ -4,9 +4,10 @@
 # Installs yt-dlp and manages user config/aliases via Home Manager.
 # ==============================================================================
 
-{ config, username, lib, ... }:
+{ config, lib, ... }:
 let
   cfg = config.my.user.ytdlp;
+  username = config.home.username;
 in
 {
   options.my.user.ytdlp = {

@@ -39,10 +39,10 @@ let
     }
 
     binds {
-      # Terminals
+      // Terminals
       Super+Return { spawn "${kittyCmd}"; }
 
-      # Core navigation (close/quit/focus/move)
+      // Core navigation (close/quit/focus/move)
       Super+Q { close-window; }
       Super+Shift+E { quit skip-confirmation=true; }
       Super+Left { focus-column-left; }
@@ -62,19 +62,19 @@ let
       Super+Esc { toggle-keyboard-shortcuts-inhibit; }
       Super+Tab { overview; }
 
-      # Built-in screenshots
+      // Built-in screenshots
       Print { screenshot; }
       Ctrl+Print { screenshot-screen write-to-disk=false; }
       Alt+Print { screenshot-window write-to-disk=false; }
 
-      # DMS launchers & power
+      // DMS launchers & power
       Super+Space { spawn "${dmsCmd}" "ipc" "call" "spotlight" "toggle"; }
       Super+Backspace { spawn "${dmsCmd}" "ipc" "call" "powermenu" "toggle"; }
       Super+Delete { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
       Alt+L { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
       Super+Shift+Delete { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
 
-      # Dash & panels
+      // Dash & panels
       Super+D { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" ""; }
       Super+C { spawn "${dmsCmd}" "ipc" "call" "control-center" "toggle"; }
       Super+N { spawn "${dmsCmd}" "ipc" "call" "notifications" "toggle"; }
@@ -82,27 +82,27 @@ let
       Super+Shift+P { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
       Super+Shift+K { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
 
-      # Theme & night mode
+      // Theme & night mode
       Super+Shift+T { spawn "${dmsCmd}" "ipc" "call" "theme" "toggle"; }
       Super+Shift+N { spawn "${dmsCmd}" "ipc" "call" "night" "toggle"; }
 
-      # Bar & Dock
+      // Bar & Dock
       Super+B { spawn "${dmsCmd}" "ipc" "call" "bar" "toggle" "index" "0"; }
       Super+Shift+B { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
       Super+Ctrl+B { spawn "${dmsCmd}" "ipc" "call" "bar" "toggleAutoHide" "index" "0"; }
 
-      # Wallpaper
+      // Wallpaper
       Super+Y { spawn "${dmsCmd}" "ipc" "call" "dankdash" "wallpaper"; }
       Super+W { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "next"; }
       Super+Shift+W { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "prev"; }
       Super+Ctrl+W { spawn "${dmsCmd}" "ipc" "call" "file" "browse" "wallpaper"; }
 
-      # Notes, clipboard, cheatsheet
+      // Notes, clipboard, cheatsheet
       Super+Ctrl+N { spawn "${dmsCmd}" "ipc" "call" "notepad" "open"; }
       Super+V { spawn "${dmsCmd}" "ipc" "call" "clipboard" "toggle"; }
       Super+slash { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "hyprland"; }
 
-      # Audio & brightness (XF86 keys)
+      // Audio & brightness (XF86 keys)
       XF86AudioRaiseVolume { spawn "${dmsCmd}" "ipc" "call" "audio" "increment" "3"; }
       XF86AudioLowerVolume { spawn "${dmsCmd}" "ipc" "call" "audio" "decrement" "3"; }
       XF86AudioMute { spawn "${dmsCmd}" "ipc" "call" "audio" "mute"; }

@@ -25,9 +25,10 @@
 # Date:   2025-10-04
 # ==============================================================================
 
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, ... }:
 
 let
+  username = config.home.username;
   # Import Catppuccin palette for dynamic theming
   inherit (config.catppuccin) sources;
   colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;
