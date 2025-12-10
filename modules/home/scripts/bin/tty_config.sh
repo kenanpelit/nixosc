@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# tty_config.sh - TTY profil yükleyici
+# TTY için font/renk/keyboard ayarlarını uygular, konsol deneyimini standartlar.
 
 # Hata kontrolü
 set -e

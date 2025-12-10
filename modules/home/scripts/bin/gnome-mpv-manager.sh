@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# gnome-mpv-manager.sh - GNOME/Wayland MPV kontrol aracı
+# MPV oynatıcıyı play/pause, ses, altyazı ve pencere davranışlarıyla
+# yönetir; Wayland uyumlu komut setiyle çalışır.
 
 ########################################
 #

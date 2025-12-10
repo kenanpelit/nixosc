@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-tmux-plugins-install.sh - tmux plugin kurucu
+# TPM/tmux config’e göre eksik pluginleri indirip kurar, günceller.
 
 #######################################
 #

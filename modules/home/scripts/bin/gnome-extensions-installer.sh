@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# gnome-extensions-installer.sh - GNOME uzantı kurucu/güncelleyici
+# Yüklü listeye göre uzantıları indirir, günceller veya yeniden kurar;
+# sürüm ve durum raporu üretir.
 
 #===============================================================================
 #

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# move_media_files.sh - Medya dosyası toplayıcı/taşıyıcı
+# Belirtilen dizinden video/ses dosyalarını hedef arşive taşır, log tutar.
 
 # Kullanıcıdan hedef dizini al, Tab ile tamamlama etkin
 read -e -p "Lütfen dosyaların taşınacağı hedef dizinin tam yolunu girin: " target_dir

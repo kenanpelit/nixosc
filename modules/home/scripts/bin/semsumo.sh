@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# semsumo.sh - Uygulama başlatıcı toplu script
+# Sık kullanılan tarayıcı/profil ve yardımcı uygulamaları doğru env ile başlatır.
 
 #===============================================================================
 #

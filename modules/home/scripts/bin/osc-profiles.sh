@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-profiles.sh - Profil seçici/uygulayıcı
+# Çevresel profilleri (network/proxy/theme vb.) seçip uygular, durumu bildirir.
 
 # ==============================================================================
 # osc-profiles - NixOS System Profile Manager
@@ -785,4 +787,3 @@ main() {
 }
 
 main "$@"
-

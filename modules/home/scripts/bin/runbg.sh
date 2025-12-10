@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# runbg.sh - Arkaplanda komut çalıştırıcı
+# Çıktıyı loglayıp nohup benzeri arkaplan süreç başlatmak için hafif sarmalayıcı.
 
 [ $# -eq 0 ] && { # $# is number of args
     echo "$(basename $0): missing command" >&2

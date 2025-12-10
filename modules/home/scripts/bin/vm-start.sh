@@ -1,4 +1,6 @@
 #!/usr/bin/env zsh
+# vm-start.sh - Basit libvirt VM başlatıcı
+# win10 VM’ini başlatır, Hyprland workspace 6’ya geçip virsh ile çalıştırır.
 
 # VM name
 vm_name="win10"

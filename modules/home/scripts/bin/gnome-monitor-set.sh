@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# gnome-monitor-set.sh - Harici monitörü GNOME'da birincil yapar
+# Harici ekranı algılayıp primary olarak ayarlar, mevcut çözünürlük
+# ve düzeni koruyarak bildirim/panel yönünü düzeltir.
 
 ################################################################################
 # GNOME Harici Monitör Birincil Yapma Script'i

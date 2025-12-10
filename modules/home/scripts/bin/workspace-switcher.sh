@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# workspace-switcher.sh - Hyprland workspace gezgini
+# Çalışma alanları arasında ileri/geri geçiş ve wrap logic’i sağlar.
 
 set -x
 

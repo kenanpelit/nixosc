@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# record.sh - Ekran kayıt yardımcı scripti
+# wf-recorder/obs vb. için çıktı dosya adlarını ve hedeflerini yönetir.
 
 TMP_FILE_UNOPTIMIZED="/tmp/recording_unoptimized.gif"
 TMP_PALETTE_FILE="/tmp/palette.png"

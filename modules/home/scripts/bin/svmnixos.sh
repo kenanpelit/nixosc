@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# svmnixos.sh - NixOS VM başlatıcısı
+# NixOS imajını uygun CPU/RAM/display ayarlarıyla çalıştırır.
 
 #===============================================================================
 #

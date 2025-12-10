@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-rsync_backup.sh - rsync tabanlı yedekleme aracı
+# Kaynaktan hedefe artımlı yedek alır, log ve dry-run seçenekleri içerir.
 
 ###############################################################################
 # Betik Adı     : backup.sh

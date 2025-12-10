@@ -1,4 +1,7 @@
 #!/usr/bin/env zsh
+# ascii.sh - Renkli ASCII tablo çıktısı
+# Tput ve ANSI renkleriyle temel/uzatılmış ASCII karakterlerini sütunlar
+# halinde gösterir; hızlı referans için basit terminal aracı.
 
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)

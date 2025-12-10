@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# toggle_waybar.sh - Waybar görünürlük toggler
+# Waybar sürecini durdurup başlatır veya layer görünürlüğünü değiştirir.
 
 SERVICE=".waybar-wrapped"
 

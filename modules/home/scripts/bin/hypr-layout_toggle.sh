@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# hypr-layout_toggle.sh - Hyprland layout anahtarlayıcı
+# Tiling/float düzenleri veya belirli layout’lar arasında hızlı geçiş yapar.
 
 # layout-toggle.sh - Hyprland Master/Dwindle Layout Toggle Script
 # Version: 1.0

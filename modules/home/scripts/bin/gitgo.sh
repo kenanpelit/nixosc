@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# gitgo.sh - Etkileşimli Git araç kutusu
+# Branch yönetimi, stash/rebase/merge, diff/clean ve kurtarma akışlarını
+# menü tabanlı arayüzle hızlandıran kapsamlı yardımcı.
 
 #   Version: 1.1.0
 #   Date: 2025-04-18

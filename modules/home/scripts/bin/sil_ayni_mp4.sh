@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# sil_ayni_mp4.sh - Yinelenen mp4 dosya temizleyici
+# Aynı isim/içerik eşleşmelerini bulup siler, işlem öncesi onay alır.
 
 # Dosya türünü ve kontrol edilecek dizini belirleyin
 file_extension="mp4"

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# rsync-retry.sh - rsync hata/yeniden deneme sarmalayıcısı
+# Ağ kopmaları durumunda tekrar deneyerek aktarımı tamamlamaya çalışır.
 
 ###############################################################################
 # Script Name  : retry-rsync.sh
