@@ -5,11 +5,15 @@
 # Keep theme wiring centralized instead of per-app manual configs.
 # ==============================================================================
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 let
   cfg = config.my.user.catppuccin;
 in
 {
+  imports = [
+    inputs.catppuccin.homeModules.catppuccin
+  ];
+
   options.my.user.catppuccin = {
     enable = lib.mkEnableOption "Catppuccin global theme";
   };
