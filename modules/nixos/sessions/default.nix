@@ -57,7 +57,6 @@ let
     passthru.providedSessions = [ "gnome-nixos" ];
   };
 
-  niriSession = null;
 in
 {
   config = lib.mkIf cfg.enable {
