@@ -72,7 +72,6 @@ let
     "clipse -listen"
     "wl-clip-persist --clipboard both"
     "hyprctl setcursor ${cursorName} 24"
-    "hypr-init"
   ];
 
   # --- Monitor Configuration ---
