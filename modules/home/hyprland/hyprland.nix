@@ -57,8 +57,8 @@ lib.mkIf cfg.enable {
     };
   };
 
-  # Run hypr-set at session start to normalize monitors and audio
-  systemd.user.services.hypr-set = {
+  # Run hypr-init at session start to normalize monitors and audio
+  systemd.user.services.hypr-init = {
     Unit = {
       Description = "Hyprland session bootstrap (monitors + audio)";
       After = [ "graphical-session.target" "hyprland-session.target" ];
@@ -66,7 +66,7 @@ lib.mkIf cfg.enable {
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-set'";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-init'";
     };
     Install = {
       WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
