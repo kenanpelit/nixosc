@@ -16,7 +16,7 @@ in {
     enable = lib.mkEnableOption "DMS Greeter via greetd";
 
     compositor = lib.mkOption {
-      type = lib.types.enum [ "hyprland" "niri" "sway" "mangowc" ];
+      type = lib.types.enum [ "hyprland" "sway" "mangowc" ];
       default = "hyprland";
       description = "Compositor used by dms-greeter.";
     };
