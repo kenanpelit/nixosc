@@ -98,10 +98,8 @@ in
       };
 
       users.${userName} = {
-        # Import user modules and external HM modules
-        imports = [ 
-          inputs.catppuccin.homeModules.catppuccin
-        ]; 
+        # Import user modules (Catppuccin HM module is pulled via my.user.catppuccin)
+        imports = [];
 
         home = {
           username      = userName;
