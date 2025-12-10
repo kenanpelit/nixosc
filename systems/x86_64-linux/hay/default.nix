@@ -37,8 +37,6 @@
     enable = true;
     enableHyprland = true;
     enableGnome    = true;
-    enableNiri     = true;
-    defaultSession = "niri";
     enableAudio    = true;
 
     fonts.enable         = true;
