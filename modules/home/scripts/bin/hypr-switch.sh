@@ -65,7 +65,15 @@ check_hyprland() {
 list_monitors() {
 	info "Available monitors:"
 	if command -v jq &>/dev/null; then
-		hyprctl monitors -j | jq -r '.[] | "  \(.name)\t(\(.width)x\(.height) @ \(.refreshRate)Hz)\t\(if .focused then \"ACTIVE\" else \"\" end)"'
+		hyprctl monitors -j | jq -r '
+      .[] |
+      (
+        "  " +
+        .name + "\t(" +
+        (.width|tostring) + "x" + (.height|tostring) +
+        " @ " + (.refreshRate|tostring) + "Hz)\t" +
+        (if .focused then "ACTIVE" else "" end)
+      )'
 	else
 		hyprctl monitors | grep "^Monitor"
 	fi
