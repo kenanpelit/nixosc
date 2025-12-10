@@ -2,7 +2,8 @@
 # ==============================================================================
 # Home module for the niri compositor with DMS integration and kitty on Super+Return.
 # Generates a clean config.kdl using absolute paths; starts dms/nirius/niriswitcher
-# at session startup and maps keybinds similar to the Hyprland setup.
+# at session startup and maps keybinds similar to the Hyprland setup. Includes
+# core niri navigation binds (focus/move/close/overview/screenshot).
 # ==============================================================================
 { config, lib, pkgs, ... }:
 let
@@ -41,7 +42,7 @@ let
       # Terminals
       Super+Return { spawn "${kittyCmd}"; }
 
-      # Core navigation (defaults-like)
+      # Core navigation (close/quit/focus/move)
       Super+Q { close-window; }
       Super+Shift+E { quit skip-confirmation=true; }
       Super+Left { focus-column-left; }
@@ -61,7 +62,7 @@ let
       Super+Esc { toggle-keyboard-shortcuts-inhibit; }
       Super+Tab { overview; }
 
-      # Screenshots (built-in)
+      # Built-in screenshots
       Print { screenshot; }
       Ctrl+Print { screenshot-screen write-to-disk=false; }
       Alt+Print { screenshot-window write-to-disk=false; }

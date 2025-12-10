@@ -70,7 +70,7 @@ let
       X-GDM-SessionType=wayland
       X-Session-Type=wayland
 
-      Exec=${pkgs.niri}/bin/niri
+      Exec=${pkgs.niri}/bin/niri-session
 
       Keywords=wayland;wm;tiling;niri;compositor;
     '';
