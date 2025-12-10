@@ -66,7 +66,7 @@ lib.mkIf cfg.enable {
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'hypr-set'";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-set'";
     };
     Install = {
       WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
