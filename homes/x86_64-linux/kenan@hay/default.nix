@@ -35,7 +35,6 @@
   my.desktop.hyprland.enable = true;
   my.desktop.gnome.enable = true;
   my.desktop.sway.enable = true; # VM management
-  my.desktop.niri.enable = true;
   
   # Components
   my.user.waybar.enable = false;
