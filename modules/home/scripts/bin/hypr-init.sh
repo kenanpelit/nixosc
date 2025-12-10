@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# hypr-set - Session bootstrap for Hyprland (monitors + audio)
+# hypr-init - Session bootstrap for Hyprland (monitors + audio)
 # ------------------------------------------------------------------------------
 # Runs early in the Hyprland session to:
 #   1) Normalize monitor/workspace focus via hypr-switch
@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-LOG_TAG="hypr-set"
+LOG_TAG="hypr-init"
 log() { printf '[%s] %s\n' "$LOG_TAG" "$*"; }
 warn() { printf '[%s] WARN: %s\n' "$LOG_TAG" "$*" >&2; }
 
@@ -34,4 +34,4 @@ run_if_present hypr-switch
 # Step 2: audio defaults (volume + last sink/source)
 run_if_present osc-soundctl init
 
-log "hypr-set completed."
+log "hypr-init completed."
