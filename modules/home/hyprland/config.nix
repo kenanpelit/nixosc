@@ -722,6 +722,7 @@ let
     "$mainMod, N, exec, dms ipc call notifications toggle"
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
     "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod SHIFT, K, exec, dms ipc call settings openWith keybinds"
 
     # Theme & night mode
     "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
