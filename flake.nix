@@ -77,7 +77,8 @@
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
+      url = "github:hyprwm/hyprland/75f6435f70dee8f8b685a02c52db7ba16f5db39c"; # 1212 - Updated commit
+#      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
       # url = "github:hyprwm/hyprland/9aa313402b1be3df2925076bb1292d03e68bb47f"; # 1211 - Glaze override hatası veriyor
     };
 
