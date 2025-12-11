@@ -8,6 +8,7 @@
 let
   cfg = config.my.user.dms;
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  qsPkg = pkgs.quickshell;
   dmsEditor = cfg.screenshotEditor;
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
   hmLib = lib.hm or config.lib;
@@ -17,7 +18,7 @@ lib.mkIf cfg.enable {
   programs.dankMaterialShell.enable = true;
 
   # Autostart DMS for the user session
-  home.packages = [ dmsPkg ];
+  home.packages = [ dmsPkg qsPkg ];
 
   # Ensure DMS config/cache dirs exist
   home.file.".config/DankMaterialShell/.keep".text = "";
@@ -65,6 +66,7 @@ lib.mkIf cfg.enable {
         "XDG_RUNTIME_DIR=/run/user/%U"
         "XDG_CURRENT_DESKTOP=Hyprland"
         "XDG_SESSION_TYPE=wayland"
+        "PATH=${qsPkg}/bin:/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         "QT_ICON_THEME=a-candy-beauty-icon-theme"
         "XDG_ICON_THEME=a-candy-beauty-icon-theme"
         "QT_QPA_PLATFORMTHEME=gtk3"
