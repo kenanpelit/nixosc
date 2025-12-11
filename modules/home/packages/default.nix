@@ -57,6 +57,7 @@ in
       nixd nil nixfmt-rfc-style
       shellcheck shfmt
       treefmt inputs.alejandra.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+      inputs.dgop.packages.${pkgs.stdenv.hostPlatform.system}.default
       
       # Debugging & Analysis
       gdb strace lsof
