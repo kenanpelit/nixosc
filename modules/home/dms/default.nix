@@ -52,4 +52,12 @@
       '';
     };
   };
+
+  # Stub option so settings.nix can enable the program even when upstream HM
+  # module is not imported.
+  options.programs.dankMaterialShell.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
+    description = "Enable DankMaterialShell (stub option for local DMS setup).";
+  };
 }
