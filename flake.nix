@@ -79,7 +79,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
       # url = "github:hyprwm/hyprland/9aa313402b1be3df2925076bb1292d03e68bb47f"; # 1211 - Glaze override hatası veriyor
-      # url = "github:hyprwm/hyprland/6712fb954f2e4f701878b97f19b7185a2cd0e192"; # 1209 - Updated commit
     };
 
     hypr-contrib = {
@@ -119,8 +118,9 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/38db6a41d54f30c5c042fda548d2443852fa3896"; # 1211 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/72cfd37ab796b26b19bc0227070d09dcc0a1c6a0"; # 1211 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/0709f263af1ecfc9d1a6fa0ad7ac2bf0cbf41da2"; # 1211 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/38db6a41d54f30c5c042fda548d2443852fa3896"; # 1211 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/72cfd37ab796b26b19bc0227070d09dcc0a1c6a0"; # 1211 - Updated commit
     };
 
     deadnix = {
