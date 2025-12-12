@@ -85,7 +85,12 @@ in
     environment.systemPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandPkg)
       (lib.optional cfg.enableHyprland hyprPortalPkg)
+      (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
+      
+      (lib.optional cfg.enableGnome gnomeSessionWrapper)
+      
       (lib.optional cfg.enableNiri pkgs.niri)
+      (lib.optional cfg.enableNiri niriSession)
     ];
   };
 }
