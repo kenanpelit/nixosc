@@ -50,8 +50,6 @@ in {
     };
 
     # Ensure greetd uses requested keyboard layout when invoking the greeter
-    # Variant is optional; skip if empty to avoid invalid values.
-    systemd.services.greetd.serviceConfig.Environment = lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
     services.greetd.settings.default_session = lib.mkDefault {
       user = "greeter";
       command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} dms-greeter --command ${cfg.compositor}";
