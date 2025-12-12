@@ -349,6 +349,30 @@ let
         "matugen_type": "scheme-tonal-spot"
       }
     '')
+    (mkTheme "catppuccin-cyan" ''
+      {
+        "name": "Catppuccin Cyan",
+        "primary": "#00ffff",
+        "primaryText": "#0b1620",
+        "primaryContainer": "#12313d",
+        "secondary": "#89dceb",
+        "surfaceTint": "#00ffff",
+        "surface": "#0f111a",
+        "surfaceText": "#cdd6f4",
+        "surfaceVariant": "#1f2a34",
+        "surfaceVariantText": "#9ac7d8",
+        "surfaceContainer": "#151b24",
+        "surfaceContainerHigh": "#1b222d",
+        "surfaceContainerHighest": "#212a37",
+        "background": "#0a0d14",
+        "backgroundText": "#cdd6f4",
+        "outline": "#2f4f5c",
+        "error": "#f38ba8",
+        "warning": "#f9e2af",
+        "info": "#00ffff",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
   ];
 
 in
