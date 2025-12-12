@@ -57,6 +57,20 @@ let
     passthru.providedSessions = [ "gnome-nixos" ];
   };
 
+  niriSession = pkgs.writeTextFile {
+    name = "niri-session";
+    destination = "/share/wayland-sessions/niri.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=Niri
+      Comment=Scrollable-tiling Wayland compositor
+      Exec=${pkgs.niri}/bin/niri-session
+      Type=Application
+      DesktopNames=niri
+    '';
+    passthru.providedSessions = [ "niri" ];
+  };
+
 in
 {
   config = lib.mkIf cfg.enable {
@@ -64,12 +78,14 @@ in
     services.displayManager.sessionPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
+      (lib.optional cfg.enableNiri niriSession)
     ];
 
     # Packages needed for sessions/portals
     environment.systemPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandPkg)
       (lib.optional cfg.enableHyprland hyprPortalPkg)
+      (lib.optional cfg.enableNiri pkgs.niri)
     ];
   };
 }
