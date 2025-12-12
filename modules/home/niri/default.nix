@@ -172,8 +172,8 @@ let
     spawn-at-startup "${niriusCmd}"
     spawn-at-startup "${niriswitcherCmd}"
     
-    // Start DMS manually
-    spawn-at-startup "${dmsCmd}" "run"
+    // Start DMS manually (Disabled: DMS is managed by systemd service)
+    // spawn-at-startup "${dmsCmd}" "run"
     spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 
     // --- Input Configuration ---
