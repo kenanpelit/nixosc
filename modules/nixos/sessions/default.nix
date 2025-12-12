@@ -64,7 +64,7 @@ let
       [Desktop Entry]
       Name=Niri
       Comment=Scrollable-tiling Wayland compositor
-      Exec=${pkgs.niri}/bin/niri-session
+      Exec=${pkgs.coreutils}/bin/env SYSTEMD_OFFLINE=0 ${pkgs.niri}/bin/niri-session
       Type=Application
       DesktopNames=niri
     '';
