@@ -9,11 +9,13 @@
 
 let
   cfg = config.my.display;
+  dmsGreeterEnabled = config.my.greeter.dms.enable or false;
 in
 {
   config = lib.mkIf cfg.enable {
     services.xserver.enable = true;
-    services.displayManager.gdm = {
+
+    services.displayManager.gdm = lib.mkIf (!dmsGreeterEnabled) {
       enable = true;
       wayland = true;
     };
