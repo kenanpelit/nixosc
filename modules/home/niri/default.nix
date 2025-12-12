@@ -127,7 +127,7 @@ let
       Mod+Shift+K     { move-window-up }
       Mod+Shift+J     { move-window-down }
 
-      // --- Moving Workspaces to Outputs ---
+      // --- Moving Workspaces (Monitors) ---
       Mod+Ctrl+Left  { move-column-to-monitor-left }
       Mod+Ctrl+Right { move-column-to-monitor-right }
       Mod+Ctrl+Up    { move-column-to-monitor-up }
