@@ -11,8 +11,15 @@ let
   user = config.my.user.name or "kenan";
   compositorCmd =
     if cfg.compositor == "hyprland"
-    then "${pkgs.hyprland}/bin/start-hyprland"
+    then "${(config.programs.hyprland.package or pkgs.hyprland)}/bin/start-hyprland"
     else cfg.compositor;
+  hyprGreeterConfig = pkgs.writeText "greetd-hypr.conf" ''
+    env = DMS_RUN_GREETER,1
+
+    misc {
+      disable_hyprland_logo = true
+    }
+  '';
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
 
@@ -56,7 +63,10 @@ in {
     # Ensure greetd uses requested keyboard layout when invoking the greeter
     services.greetd.settings.default_session = lib.mkDefault {
       user = "greeter";
-      command = "dms-greeter --command ${compositorCmd}";
+      command =
+        if lib.hasInfix "Hyprland" compositorCmd || lib.hasInfix "start-hyprland" compositorCmd
+        then "dms-greeter --command ${compositorCmd} -C /etc/greetd/hypr.conf"
+        else "dms-greeter --command ${compositorCmd}";
       environment =
         [ "XKB_DEFAULT_LAYOUT=${cfg.layout}" ]
         ++ lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
@@ -67,5 +77,8 @@ in {
       "d /var/log/greeter 0755 greeter greeter -"
       "f /var/log/greeter/dms-greeter.log 0664 greeter greeter -"
     ];
+
+    # Provide baseline Hyprland greeter config
+    environment.etc."greetd/hypr.conf".source = hyprGreeterConfig;
   };
 }
