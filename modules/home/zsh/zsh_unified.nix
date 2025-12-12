@@ -1054,7 +1054,7 @@ lib.mkIf cfg.enable {
       download_nixpkgs_cache_index() {
         local arch="$(uname -m | sed 's/^arm64$/aarch64/')"
         local os="$(uname | tr 'A-Z' 'a-z')"
-        local filename="index-$arch-$os"
+        local filename="index-${arch}-${os}"
         local cache="$HOME/.cache/nix-index"
         mkdir -p "$cache" && cd "$cache" || return
         if command -v wget >/dev/null 2>&1; then
