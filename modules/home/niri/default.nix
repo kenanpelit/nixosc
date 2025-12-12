@@ -21,19 +21,19 @@ let
   # 1. Layout: Transparent background for wallpaper integration
   dmsLayout = ''
     layout {
-      gaps 5
-      center-focused-column "never"
+      gaps 5;
+      center-focused-column "never";
       preset-column-widths {
-        proportion 0.33333
-        proportion 0.5
-        proportion 0.66667
+        proportion 0.33333;
+        proportion 0.5;
+        proportion 0.66667;
       }
-      default-column-width { proportion 0.5 }
+      default-column-width { proportion 0.5; }
     }
   '';
 
   # 2. Keybindings: Full DMS IPC integration + Niri Core
-  # WRAPPED IN "binds {}" BLOCK AND REMOVED SEMICOLONS
+  # WRAPPED IN "binds {}" BLOCK AND ADDED SEMICOLONS
   dmsBinds = ''
     binds {
       // ========================================================================
@@ -41,108 +41,108 @@ let
       // ========================================================================
 
       // --- Launchers & Modals ---
-      Mod+Space hotkey-overlay-title="Application Launcher" { spawn "${dmsCmd}" "ipc" "call" "spotlight" "toggle" }
-      Mod+D hotkey-overlay-title="Dashboard" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" "" }
-      Mod+Shift+D hotkey-overlay-title="Dash Overview" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" "overview" }
-      Mod+M hotkey-overlay-title="Task Manager" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle" }
-      Mod+Shift+P hotkey-overlay-title="Task Manager (Alt)" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle" }
-      Mod+Comma hotkey-overlay-title="Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "focusOrToggle" }
-      Mod+N hotkey-overlay-title="Notification Center" { spawn "${dmsCmd}" "ipc" "call" "notifications" "toggle" }
-      Mod+C hotkey-overlay-title="Control Center" { spawn "${dmsCmd}" "ipc" "call" "control-center" "toggle" }
-      Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "${dmsCmd}" "ipc" "call" "clipboard" "toggle" }
-      Mod+Backspace hotkey-overlay-title="Power Menu" { spawn "${dmsCmd}" "ipc" "call" "powermenu" "toggle" }
-      Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "${dmsCmd}" "ipc" "call" "notepad" "open" }
+      Mod+Space hotkey-overlay-title="Application Launcher" { spawn "${dmsCmd}" "ipc" "call" "spotlight" "toggle"; }
+      Mod+D hotkey-overlay-title="Dashboard" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" ""; }
+      Mod+Shift+D hotkey-overlay-title="Dash Overview" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" "overview"; }
+      Mod+M hotkey-overlay-title="Task Manager" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
+      Mod+Shift+P hotkey-overlay-title="Task Manager (Alt)" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
+      Mod+Comma hotkey-overlay-title="Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "focusOrToggle"; }
+      Mod+N hotkey-overlay-title="Notification Center" { spawn "${dmsCmd}" "ipc" "call" "notifications" "toggle"; }
+      Mod+C hotkey-overlay-title="Control Center" { spawn "${dmsCmd}" "ipc" "call" "control-center" "toggle"; }
+      Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "${dmsCmd}" "ipc" "call" "clipboard" "toggle"; }
+      Mod+Backspace hotkey-overlay-title="Power Menu" { spawn "${dmsCmd}" "ipc" "call" "powermenu" "toggle"; }
+      Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "${dmsCmd}" "ipc" "call" "notepad" "open"; }
 
       // --- Wallpaper & Theming ---
-      Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "${dmsCmd}" "ipc" "call" "dankdash" "wallpaper" }
-      Mod+W hotkey-overlay-title="Next Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "next" }
-      Mod+Shift+W hotkey-overlay-title="Prev Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "prev" }
-      Mod+Shift+T hotkey-overlay-title="Toggle Theme (Light/Dark)" { spawn "${dmsCmd}" "ipc" "call" "theme" "toggle" }
-      Mod+Shift+N hotkey-overlay-title="Toggle Night Mode" { spawn "${dmsCmd}" "ipc" "call" "night" "toggle" }
+      Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "${dmsCmd}" "ipc" "call" "dankdash" "wallpaper"; }
+      Mod+W hotkey-overlay-title="Next Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "next"; }
+      Mod+Shift+W hotkey-overlay-title="Prev Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "prev"; }
+      Mod+Shift+T hotkey-overlay-title="Toggle Theme (Light/Dark)" { spawn "${dmsCmd}" "ipc" "call" "theme" "toggle"; }
+      Mod+Shift+N hotkey-overlay-title="Toggle Night Mode" { spawn "${dmsCmd}" "ipc" "call" "night" "toggle"; }
 
       // --- Bar & Dock ---
-      Mod+B hotkey-overlay-title="Toggle Bar" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggle" "index" "0" }
-      Mod+Ctrl+B hotkey-overlay-title="Toggle Bar AutoHide" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggleAutoHide" "index" "0" }
-      Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle" }
+      Mod+B hotkey-overlay-title="Toggle Bar" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggle" "index" "0"; }
+      Mod+Ctrl+B hotkey-overlay-title="Toggle Bar AutoHide" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggleAutoHide" "index" "0"; }
+      Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
 
       // --- Security & Inhibit ---
-      Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock" }
-      Mod+Delete hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock" }
-      Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle" }
+      Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+      Mod+Delete hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+      Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
 
       // --- Audio Controls ---
-      XF86AudioRaiseVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "increment" "5" }
-      XF86AudioLowerVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "decrement" "5" }
-      XF86AudioMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "mute" }
-      XF86AudioMicMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "micmute" }
-      Mod+Alt+A hotkey-overlay-title="Cycle Audio Output" { spawn "${dmsCmd}" "ipc" "call" "audio" "cycleoutput" }
+      XF86AudioRaiseVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "increment" "5"; }
+      XF86AudioLowerVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "decrement" "5"; }
+      XF86AudioMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "mute"; }
+      XF86AudioMicMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "micmute"; }
+      Mod+Alt+A hotkey-overlay-title="Cycle Audio Output" { spawn "${dmsCmd}" "ipc" "call" "audio" "cycleoutput"; }
 
       // --- Media Controls (MPRIS) ---
-      XF86AudioPlay allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "playPause" }
-      XF86AudioNext allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "next" }
-      XF86AudioPrev allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "previous" }
-      XF86AudioStop allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "stop" }
+      XF86AudioPlay allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "playPause"; }
+      XF86AudioNext allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "next"; }
+      XF86AudioPrev allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "previous"; }
+      XF86AudioStop allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "stop"; }
 
       // --- Brightness Controls ---
-      XF86MonBrightnessUp allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "increment" "5" "" }
-      XF86MonBrightnessDown allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "decrement" "5" "" }
-      Mod+Alt+B hotkey-overlay-title="Toggle Exponential Brightness" { spawn "${dmsCmd}" "ipc" "call" "brightness" "toggleExponential" }
+      XF86MonBrightnessUp allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "increment" "5" ""; }
+      XF86MonBrightnessDown allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "decrement" "5" ""; }
+      Mod+Alt+B hotkey-overlay-title="Toggle Exponential Brightness" { spawn "${dmsCmd}" "ipc" "call" "brightness" "toggleExponential"; }
 
       // --- Help / Cheatsheet ---
-      Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri" }
-      Mod+Shift+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds" }
+      Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
+      Mod+Shift+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
 
       // ========================================================================
       // NIRI CORE BINDINGS
       // ========================================================================
 
       // --- Applications ---
-      Mod+Return { spawn "${kittyCmd}" }
-      Mod+T { spawn "${kittyCmd}" }
+      Mod+Return { spawn "${kittyCmd}"; }
+      Mod+T { spawn "${kittyCmd}"; }
 
       // --- Window Management ---
-      Mod+Q { close-window }
-      Mod+Shift+E { quit skip-confirmation=true }
-      Mod+F { maximize-column }
-      Mod+Shift+F { fullscreen-window }
-      Mod+O { toggle-window-rule-opacity }
+      Mod+Q { close-window; }
+      Mod+Shift+E { quit skip-confirmation=true; }
+      Mod+F { maximize-column; }
+      Mod+Shift+F { fullscreen-window; }
+      Mod+O { toggle-window-rule-opacity; }
 
       // --- Navigation ---
-      Mod+Left  { focus-column-left }
-      Mod+Right { focus-column-right }
-      Mod+Up    { focus-workspace-up }
-      Mod+Down  { focus-workspace-down }
-      Mod+H     { focus-column-left }
-      Mod+L     { focus-column-right }
-      Mod+K     { focus-workspace-up }
-      Mod+J     { focus-workspace-down }
+      Mod+Left  { focus-column-left; }
+      Mod+Right { focus-column-right; }
+      Mod+Up    { focus-workspace-up; }
+      Mod+Down  { focus-workspace-down; }
+      Mod+H     { focus-column-left; }
+      Mod+L     { focus-column-right; }
+      Mod+K     { focus-workspace-up; }
+      Mod+J     { focus-workspace-down; }
 
       // --- Moving Windows ---
-      Mod+Shift+Left  { move-column-left }
-      Mod+Shift+Right { move-column-right }
-      Mod+Shift+Up    { move-window-up }
-      Mod+Shift+Down  { move-window-down }
-      Mod+Shift+H     { move-column-left }
-      Mod+Shift+L     { move-column-right }
-      Mod+Shift+K     { move-window-up }
-      Mod+Shift+J     { move-window-down }
+      Mod+Shift+Left  { move-column-left; }
+      Mod+Shift+Right { move-column-right; }
+      Mod+Shift+Up    { move-window-up; }
+      Mod+Shift+Down  { move-window-down; }
+      Mod+Shift+H     { move-column-left; }
+      Mod+Shift+L     { move-column-right; }
+      Mod+Shift+K     { move-window-up; }
+      Mod+Shift+J     { move-window-down; }
 
       // --- Moving Workspaces (Monitors) ---
-      Mod+Ctrl+Left  { move-column-to-monitor-left }
-      Mod+Ctrl+Right { move-column-to-monitor-right }
-      Mod+Ctrl+Up    { move-column-to-monitor-up }
-      Mod+Ctrl+Down  { move-column-to-monitor-down }
+      Mod+Ctrl+Left  { move-column-to-monitor-left; }
+      Mod+Ctrl+Right { move-column-to-monitor-right; }
+      Mod+Ctrl+Up    { move-column-to-monitor-up; }
+      Mod+Ctrl+Down  { move-column-to-monitor-down; }
 
       // --- Screenshots (DMS Niri integration) ---
-      Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot" }
-      Ctrl+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotScreen" }
-      Alt+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotWindow" }
+      Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
+      Ctrl+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotScreen"; }
+      Alt+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotWindow"; }
       
       // --- Mouse Wheel Integration ---
-      Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down }
-      Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up }
-      Mod+WheelScrollRight                { focus-column-right }
-      Mod+WheelScrollLeft                 { focus-column-left }
+      Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+      Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
+      Mod+WheelScrollRight                { focus-column-right; }
+      Mod+WheelScrollLeft                 { focus-column-left; }
     }
   '';
 
