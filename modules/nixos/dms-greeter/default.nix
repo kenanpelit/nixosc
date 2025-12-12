@@ -33,7 +33,7 @@ in {
 
     variant = lib.mkOption {
       type = lib.types.str;
-      default = "";
+      default = "f";
       description = "Keyboard layout variant passed to greetd (XKB_DEFAULT_VARIANT). Leave empty to skip.";
     };
   };
