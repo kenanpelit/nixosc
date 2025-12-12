@@ -28,129 +28,128 @@ let
         proportion 0.5
         proportion 0.66667
       }
-      default-column-width { proportion 0.5; }
+      default-column-width { proportion 0.5 }
     }
   '';
 
   # 2. Keybindings: Full DMS IPC integration + Niri Core
+  # WRAPPED IN "binds {}" BLOCK AND REMOVED SEMICOLONS
   dmsBinds = ''
-    // ========================================================================
-    // DANK MATERIAL SHELL (DMS) - IPC BINDINGS
-    // ========================================================================
+    binds {
+      // ========================================================================
+      // DANK MATERIAL SHELL (DMS) - IPC BINDINGS
+      // ========================================================================
 
-    // --- Launchers & Modals ---
-    Mod+Space hotkey-overlay-title="Application Launcher" { spawn "${dmsCmd}" "ipc" "call" "spotlight" "toggle"; }
-    Mod+D hotkey-overlay-title="Dashboard" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" ""; }
-    Mod+Shift+D hotkey-overlay-title="Dash Overview" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" "overview"; }
-    Mod+M hotkey-overlay-title="Task Manager" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
-    Mod+Shift+P hotkey-overlay-title="Task Manager (Alt)" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
-    Mod+Comma hotkey-overlay-title="Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "focusOrToggle"; }
-    Mod+N hotkey-overlay-title="Notification Center" { spawn "${dmsCmd}" "ipc" "call" "notifications" "toggle"; }
-    Mod+C hotkey-overlay-title="Control Center" { spawn "${dmsCmd}" "ipc" "call" "control-center" "toggle"; }
-    Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "${dmsCmd}" "ipc" "call" "clipboard" "toggle"; }
-    Mod+Backspace hotkey-overlay-title="Power Menu" { spawn "${dmsCmd}" "ipc" "call" "powermenu" "toggle"; }
-    Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "${dmsCmd}" "ipc" "call" "notepad" "open"; }
+      // --- Launchers & Modals ---
+      Mod+Space hotkey-overlay-title="Application Launcher" { spawn "${dmsCmd}" "ipc" "call" "spotlight" "toggle"; }
+      Mod+D hotkey-overlay-title="Dashboard" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" ""; }
+      Mod+Shift+D hotkey-overlay-title="Dash Overview" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" "overview"; }
+      Mod+M hotkey-overlay-title="Task Manager" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
+      Mod+Shift+P hotkey-overlay-title="Task Manager (Alt)" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
+      Mod+Comma hotkey-overlay-title="Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "focusOrToggle"; }
+      Mod+N hotkey-overlay-title="Notification Center" { spawn "${dmsCmd}" "ipc" "call" "notifications" "toggle"; }
+      Mod+C hotkey-overlay-title="Control Center" { spawn "${dmsCmd}" "ipc" "call" "control-center" "toggle"; }
+      Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "${dmsCmd}" "ipc" "call" "clipboard" "toggle"; }
+      Mod+Backspace hotkey-overlay-title="Power Menu" { spawn "${dmsCmd}" "ipc" "call" "powermenu" "toggle"; }
+      Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "${dmsCmd}" "ipc" "call" "notepad" "open"; }
 
-    // --- Wallpaper & Theming ---
-    Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "${dmsCmd}" "ipc" "call" "dankdash" "wallpaper"; }
-    Mod+W hotkey-overlay-title="Next Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "next"; }
-    Mod+Shift+W hotkey-overlay-title="Prev Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "prev"; }
-    Mod+Shift+T hotkey-overlay-title="Toggle Theme (Light/Dark)" { spawn "${dmsCmd}" "ipc" "call" "theme" "toggle"; }
-    Mod+Shift+N hotkey-overlay-title="Toggle Night Mode" { spawn "${dmsCmd}" "ipc" "call" "night" "toggle"; }
+      // --- Wallpaper & Theming ---
+      Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "${dmsCmd}" "ipc" "call" "dankdash" "wallpaper"; }
+      Mod+W hotkey-overlay-title="Next Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "next"; }
+      Mod+Shift+W hotkey-overlay-title="Prev Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "prev"; }
+      Mod+Shift+T hotkey-overlay-title="Toggle Theme (Light/Dark)" { spawn "${dmsCmd}" "ipc" "call" "theme" "toggle"; }
+      Mod+Shift+N hotkey-overlay-title="Toggle Night Mode" { spawn "${dmsCmd}" "ipc" "call" "night" "toggle"; }
 
-    // --- Bar & Dock ---
-    Mod+B hotkey-overlay-title="Toggle Bar" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggle" "index" "0"; }
-    Mod+Ctrl+B hotkey-overlay-title="Toggle Bar AutoHide" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggleAutoHide" "index" "0"; }
-    Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
+      // --- Bar & Dock ---
+      Mod+B hotkey-overlay-title="Toggle Bar" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggle" "index" "0"; }
+      Mod+Ctrl+B hotkey-overlay-title="Toggle Bar AutoHide" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggleAutoHide" "index" "0"; }
+      Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
 
-    // --- Security & Inhibit ---
-    Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
-    Mod+Delete hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
-    Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
+      // --- Security & Inhibit ---
+      Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+      Mod+Delete hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+      Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
 
-    // --- Audio Controls ---
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "increment" "5"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "decrement" "5"; }
-    XF86AudioMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "mute"; }
-    XF86AudioMicMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "micmute"; }
-    Mod+Alt+A hotkey-overlay-title="Cycle Audio Output" { spawn "${dmsCmd}" "ipc" "call" "audio" "cycleoutput"; }
+      // --- Audio Controls ---
+      XF86AudioRaiseVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "increment" "5"; }
+      XF86AudioLowerVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "decrement" "5"; }
+      XF86AudioMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "mute"; }
+      XF86AudioMicMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "micmute"; }
+      Mod+Alt+A hotkey-overlay-title="Cycle Audio Output" { spawn "${dmsCmd}" "ipc" "call" "audio" "cycleoutput"; }
 
-    // --- Media Controls (MPRIS) ---
-    XF86AudioPlay allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "playPause"; }
-    XF86AudioNext allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "next"; }
-    XF86AudioPrev allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "previous"; }
-    XF86AudioStop allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "stop"; }
+      // --- Media Controls (MPRIS) ---
+      XF86AudioPlay allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "playPause"; }
+      XF86AudioNext allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "next"; }
+      XF86AudioPrev allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "previous"; }
+      XF86AudioStop allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "stop"; }
 
-    // --- Brightness Controls ---
-    XF86MonBrightnessUp allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "increment" "5" ""; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "decrement" "5" ""; }
-    Mod+Alt+B hotkey-overlay-title="Toggle Exponential Brightness" { spawn "${dmsCmd}" "ipc" "call" "brightness" "toggleExponential"; }
+      // --- Brightness Controls ---
+      XF86MonBrightnessUp allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "increment" "5" ""; }
+      XF86MonBrightnessDown allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "decrement" "5" ""; }
+      Mod+Alt+B hotkey-overlay-title="Toggle Exponential Brightness" { spawn "${dmsCmd}" "ipc" "call" "brightness" "toggleExponential"; }
 
-    // --- Help / Cheatsheet ---
-    Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
-    Mod+Shift+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
+      // --- Help / Cheatsheet ---
+      Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
+      Mod+Shift+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
 
-    // ========================================================================
-    // NIRI CORE BINDINGS
-    // ========================================================================
+      // ========================================================================
+      // NIRI CORE BINDINGS
+      // ========================================================================
 
-    // --- Applications ---
-    Mod+Return { spawn "${kittyCmd}"; }
-    Mod+T { spawn "${kittyCmd}"; }
+      // --- Applications ---
+      Mod+Return { spawn "${kittyCmd}"; }
+      Mod+T { spawn "${kittyCmd}"; }
 
-    // --- Window Management ---
-    Mod+Q { close-window; }
-    Mod+Shift+E { quit skip-confirmation=true; }
-    Mod+F { toggle-maximize; }
-    Mod+Shift+F { toggle-fullscreen; }
-    Mod+Tab { overview; }
-    Mod+O { toggle-window-rule-opacity; }
+      // --- Window Management ---
+      Mod+Q { close-window; }
+      Mod+Shift+E { quit skip-confirmation=true; }
+      Mod+F { toggle-maximize; }
+      Mod+Shift+F { toggle-fullscreen; }
+      Mod+Tab { overview; }
+      Mod+O { toggle-window-rule-opacity; }
 
-    // --- Navigation ---
-    Mod+Left  { focus-column-left; }
-    Mod+Right { focus-column-right; }
-    Mod+Up    { focus-workspace-up; }
-    Mod+Down  { focus-workspace-down; }
-    Mod+H     { focus-column-left; }
-    Mod+L     { focus-column-right; }
-    Mod+K     { focus-workspace-up; }
-    Mod+J     { focus-workspace-down; }
+      // --- Navigation ---
+      Mod+Left  { focus-column-left; }
+      Mod+Right { focus-column-right; }
+      Mod+Up    { focus-workspace-up; }
+      Mod+Down  { focus-workspace-down; }
+      Mod+H     { focus-column-left; }
+      Mod+L     { focus-column-right; }
+      Mod+K     { focus-workspace-up; }
+      Mod+J     { focus-workspace-down; }
 
-    // --- Moving Windows ---
-    Mod+Shift+Left  { move-column-left; }
-    Mod+Shift+Right { move-column-right; }
-    Mod+Shift+Up    { move-window-up; }
-    Mod+Shift+Down  { move-window-down; }
-    Mod+Shift+H     { move-column-left; }
-    Mod+Shift+L     { move-column-right; }
-    Mod+Shift+K     { move-window-up; }
-    Mod+Shift+J     { move-window-down; }
+      // --- Moving Windows ---
+      Mod+Shift+Left  { move-column-left; }
+      Mod+Shift+Right { move-column-right; }
+      Mod+Shift+Up    { move-window-up; }
+      Mod+Shift+Down  { move-window-down; }
+      Mod+Shift+H     { move-column-left; }
+      Mod+Shift+L     { move-column-right; }
+      Mod+Shift+K     { move-window-up; }
+      Mod+Shift+J     { move-window-down; }
 
-    // --- Moving Workspaces to Outputs ---
-    Mod+Ctrl+Left  { move-workspace-to-output-left; }
-    Mod+Ctrl+Right { move-workspace-to-output-right; }
-    Mod+Ctrl+Up    { move-workspace-to-output-up; }
-    Mod+Ctrl+Down  { move-workspace-to-output-down; }
+      // --- Moving Workspaces to Outputs ---
+      Mod+Ctrl+Left  { move-workspace-to-output-left; }
+      Mod+Ctrl+Right { move-workspace-to-output-right; }
+      Mod+Ctrl+Up    { move-workspace-to-output-up; }
+      Mod+Ctrl+Down  { move-workspace-to-output-down; }
 
-    // --- Screenshots (DMS Niri integration) ---
-    Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
-    Ctrl+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotScreen"; }
-    Alt+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotWindow"; }
-    
-    // --- Mouse Wheel Integration ---
-    Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
-    Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
-    Mod+WheelScrollRight                { focus-column-right; }
-    Mod+WheelScrollLeft                 { focus-column-left; }
+      // --- Screenshots (DMS Niri integration) ---
+      Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
+      Ctrl+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotScreen"; }
+      Alt+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotWindow"; }
+      
+      // --- Mouse Wheel Integration ---
+      Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+      Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
+      Mod+WheelScrollRight                { focus-column-right; }
+      Mod+WheelScrollLeft                 { focus-column-left; }
+    }
   '';
 
-  # 3. Colors (Placeholder for now, DMS handles most theming)
+  # 3. Colors (Placeholder)
   dmsColors = ''
-    // Colors can be defined here if needed specifically for Niri borders
-    // window-rule {
-    //     geometry-corner-radius 12
-    //     clip-to-geometry true
-    // }
+    // Colors placeholder
   '';
 
   # ----------------------------------------------------------------------------
@@ -162,87 +161,80 @@ let
     // ========================================================================
 
     environment {
-      XDG_CURRENT_DESKTOP "niri";
-      QT_QPA_PLATFORM "wayland";
-      ELECTRON_OZONE_PLATFORM_HINT "auto";
-      QT_QPA_PLATFORMTHEME "gtk3";
-      QT_QPA_PLATFORMTHEME_QT6 "gtk3";
-      DISPLAY ":0";
+      XDG_CURRENT_DESKTOP "niri"
+      QT_QPA_PLATFORM "wayland"
+      ELECTRON_OZONE_PLATFORM_HINT "auto"
+      QT_QPA_PLATFORMTHEME "gtk3"
+      QT_QPA_PLATFORMTHEME_QT6 "gtk3"
+      DISPLAY ":0"
     }
 
     // --- Startup Applications ---
-    spawn-at-startup "${niriusCmd}";
-    spawn-at-startup "${niriswitcherCmd}";
+    spawn-at-startup "${niriusCmd}"
+    spawn-at-startup "${niriswitcherCmd}"
     
-    // Start DMS manually (since we are not using the systemd service integration yet)
-    spawn-at-startup "${dmsCmd}" "run";
-    spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &";
+    // Start DMS manually
+    spawn-at-startup "${dmsCmd}" "run"
+    spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 
     // --- Input Configuration ---
     input {
       keyboard {
-        mod-key "Super";
         xkb {
-          layout "tr";
-          variant "f";
-          options "ctrl:nocaps";
+          layout "tr"
+          variant "f"
+          options "ctrl:nocaps"
         }
       }
       touchpad {
-        tap;
-        natural-scroll;
+        tap
+        natural-scroll
       }
     }
 
     // --- Includes (Modular Config) ---
-    include "dms/layout.kdl";
-    include "dms/binds.kdl";
-    include "dms/colors.kdl";
-    // include "dms/alttab.kdl"; // Created but empty for now
+    include "dms/layout.kdl"
+    include "dms/binds.kdl"
+    include "dms/colors.kdl"
 
     // --- DMS Layer Rules (Wallpaper Integration) ---
-    // Tells niri to place the DMS wallpaper on the overview background
     layer-rule {
-        match namespace="^quickshell$";
-        place-within-backdrop true;
+        match namespace="^quickshell$"
+        place-within-backdrop true
     }
 
     layer-rule {
-        match namespace="dms:blurwallpaper";
-        place-within-backdrop true;
+        match namespace="dms:blurwallpaper"
+        place-within-backdrop true
     }
     
     // --- Window Rules ---
-    // General look and feel
     window-rule {
-        geometry-corner-radius 12;
-        clip-to-geometry true;
+        geometry-corner-radius 12
+        clip-to-geometry true
     }
 
-    // Transparent/Floating rules for DMS
     window-rule {
-        match app-id=r#"org.quickshell$#";
-        open-floating true;
+        match app-id=r#"org.quickshell$"#
+        open-floating true
     }
     
-    // Remove borders for specific apps usually styled by DMS or self-styled
     window-rule {
-        match app-id=r#"^org\.gnome\."#;
-        draw-border-with-background false;
+        match app-id=r#"^org\.gnome\."#
+        draw-border-with-background false
     }
     window-rule {
-        match app-id=r#"^org\.wezfurlong\.wezterm$"#;
-        match app-id="Alacritty";
-        match app-id="zen";
-        match app-id="com.mitchellh.ghostty";
-        match app-id="kitty";
-        draw-border-with-background false;
+        match app-id=r#"^org\.wezfurlong\.wezterm$"#
+        match app-id="Alacritty"
+        match app-id="zen"
+        match app-id="com.mitchellh.ghostty"
+        match app-id="kitty"
+        draw-border-with-background false
     }
 
-    // Dim inactive windows
     window-rule {
-        match is-active=false;
-        opacity 0.9;
+        match is-active=false
+        opacity 0.9
     }
   '';
 
