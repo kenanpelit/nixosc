@@ -61,7 +61,7 @@
     enable     = true;
     compositor = "hyprland";
     layout     = "tr";
-    variant    = "f";
+    variant    = "";
   };
 
   # ============================================================================
