@@ -37,6 +37,7 @@
     enable = true;
     enableHyprland = true;
     enableGnome    = true;
+    enableNiri     = true;
     enableAudio    = true;
 
     fonts.enable         = true;
