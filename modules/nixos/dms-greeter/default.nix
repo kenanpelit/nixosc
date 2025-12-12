@@ -9,6 +9,10 @@
 let
   cfg = config.my.greeter.dms or { enable = false; };
   user = config.my.user.name or "kenan";
+  compositorCmd =
+    if cfg.compositor == "hyprland"
+    then "start-hyprland"
+    else cfg.compositor;
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
 
@@ -35,11 +39,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # Resolve compositor command; Hyprland needs start-hyprland wrapper
-    # to ensure env and session are initialized correctly.
-    _module.args.dmsGreeterCompositorCmd = lib.mkForce
-      (if cfg.compositor == "hyprland" then "start-hyprland" else cfg.compositor);
-
     # Prefer greetd over GDM
     services.displayManager.gdm.enable = lib.mkForce false;
     services.greetd.enable = true;
@@ -57,7 +56,7 @@ in {
     # Ensure greetd uses requested keyboard layout when invoking the greeter
     services.greetd.settings.default_session = lib.mkDefault {
       user = "greeter";
-      command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} dms-greeter --command ${dmsGreeterCompositorCmd}";
+      command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} dms-greeter --command ${compositorCmd}";
     };
 
     # Ensure log directory exists and is writable by greeter user
