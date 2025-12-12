@@ -21,7 +21,7 @@ in {
 
     compositor = lib.mkOption {
       type = lib.types.str;
-      default = "hyprland";
+      default = "${config.programs.hyprland.package or pkgs.hyprland}/bin/start-hyprland";
       description = "Compositor command/name passed to dms-greeter (e.g., hyprland, start-hyprland).";
     };
 
