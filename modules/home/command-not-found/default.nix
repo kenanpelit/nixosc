@@ -29,7 +29,7 @@ in
     # =============================================================================
     # Download weekly via systemd timer; also refresh on activation to repair
     # corrupt db in ~/.cache/nix-index/files.
-    # Note: The database is xz-compressed, so we pipe through xz -d.
+    # Note: The database file is not compressed, downloaded directly.
     systemd.user.timers."nix-index-download" = {
       Unit.Description = "Download prebuilt nix-index database weekly";
       Timer = {
@@ -48,7 +48,7 @@ in
           mkdir -p "$cache"
           tmp="$cache/files.tmp"
           dest="$cache/files"
-          ${pkgs.curl}/bin/curl -fL "${dbUrl}" | ${pkgs.xz}/bin/xz -d > "$tmp"
+          ${pkgs.curl}/bin/curl -fL "${dbUrl}" -o "$tmp"
           mv "$tmp" "$dest"
         '');
       };
@@ -61,7 +61,7 @@ in
       if [ ! -f "$dest" ] || ! ${pkgs.nix-index}/bin/nix-locate --db "$cache" --top-level coreutils >/dev/null 2>&1; then
         mkdir -p "$cache"
         tmp="$cache/files.tmp"
-        if ${pkgs.curl}/bin/curl -fL "${dbUrl}" | ${pkgs.xz}/bin/xz -d > "$tmp"; then
+        if ${pkgs.curl}/bin/curl -fL "${dbUrl}" -o "$tmp"; then
           mv "$tmp" "$dest"
         else
           rm -f "$tmp"
