@@ -47,7 +47,6 @@
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
   my.user.ghostty.enable = true;
-  my.user.cliphist.enable = false;
 
   # ============================================================================
   # Browsers
@@ -91,7 +90,6 @@
   my.user.transmission.enable = true;
   
   # Clipboard
-  my.user.cliphist.enable = true;
   my.user.copyq.enable = true;
   my.user.clipse.enable = true;
   
