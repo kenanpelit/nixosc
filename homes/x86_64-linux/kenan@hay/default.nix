@@ -47,6 +47,7 @@
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
   my.user.ghostty.enable = true;
+  my.user.cliphist.enable = false;
 
   # ============================================================================
   # Browsers

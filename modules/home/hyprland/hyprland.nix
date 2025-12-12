@@ -19,25 +19,7 @@ lib.mkIf cfg.enable {
     "xdg-desktop-autostart.target"
   ];
   
-  # Dedicated clipboard history watcher service
-  systemd.user.services.cliphist-watcher = {
-    Unit = {
-      Description = "Cliphist clipboard watcher";
-      After = [ "graphical-session.target" "hyprland-session.target" ];
-      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
-    };
-
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
-      Restart = "always";
-      RestartSec = 2;
-    };
-
-    Install = {
-      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
-    };
-  };
+  # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 
   # Auto-run bluetooth_toggle shortly after session start
   systemd.user.services.bluetooth-auto-toggle = {
