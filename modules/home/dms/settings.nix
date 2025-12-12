@@ -64,7 +64,6 @@ lib.mkIf cfg.enable {
       Environment = [
         "DMS_SCREENSHOT_EDITOR=${dmsEditor}"
         "XDG_RUNTIME_DIR=/run/user/%U"
-        "XDG_CURRENT_DESKTOP=Hyprland"
         "XDG_SESSION_TYPE=wayland"
         "PATH=${qsPkg}/bin:/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         "QT_ICON_THEME=a-candy-beauty-icon-theme"
