@@ -1048,5 +1048,22 @@ lib.mkIf cfg.enable {
         fi
       }
     '';
+
+    initExtra = ''
+      # download_nixpkgs_cache_index: pull prebuilt nix-index db manually
+      download_nixpkgs_cache_index() {
+        local arch="$(uname -m | sed 's/^arm64$/aarch64/')"
+        local os="$(uname | tr 'A-Z' 'a-z')"
+        local filename="index-${arch}-${os}"
+        local cache="$HOME/.cache/nix-index"
+        mkdir -p "$cache" && cd "$cache" || return
+        if command -v wget >/dev/null 2>&1; then
+          wget -q -N "https://github.com/nix-community/nix-index-database/releases/latest/download/${filename}"
+        else
+          curl -fL -O "https://github.com/nix-community/nix-index-database/releases/latest/download/${filename}"
+        fi
+        ln -sf "$filename" files
+      }
+    '';
   };
 }
