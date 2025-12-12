@@ -206,6 +206,13 @@
         # Overlays applied to all systems
         overlays = with inputs; [
           nur.overlays.default
+          # Work around hyprland overlays expecting glaze.override { enableSSL = ... }
+          # by ignoring override args and returning the base glaze.
+          (final: prev: {
+            glaze = prev.glaze // {
+              override = _args: prev.glaze;
+            };
+          })
         ];
 
         # Modules automatically added to all NixOS systems
