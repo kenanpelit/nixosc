@@ -62,9 +62,9 @@ let
     destination = "/share/wayland-sessions/niri.desktop";
     text = ''
       [Desktop Entry]
-      Name=Niri
-      Comment=Scrollable-tiling Wayland compositor
-      Exec=${pkgs.coreutils}/bin/env SYSTEMD_OFFLINE=0 ${pkgs.niri}/bin/niri-session
+      Name=Niri (Optimized)
+      Comment=Scrollable-tiling Wayland compositor (via niri_tty)
+      Exec=/etc/profiles/per-user/${username}/bin/niri_tty
       Type=Application
       DesktopNames=niri
     '';
