@@ -174,7 +174,7 @@ let
     
     // Start DMS manually (Disabled: DMS is managed by systemd service)
     // spawn-at-startup "${dmsCmd}" "run"
-    spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
+    // spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 
     // --- Input Configuration ---
     input {
