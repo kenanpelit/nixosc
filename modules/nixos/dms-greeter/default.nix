@@ -5,13 +5,13 @@
 # Adjust greeter behaviour here instead of host-specific tweaks.
 # ==============================================================================
 
-{ lib, config, inputs, ... }:
+{ lib, config, inputs, pkgs, ... }:
 let
   cfg = config.my.greeter.dms or { enable = false; };
   user = config.my.user.name or "kenan";
   compositorCmd =
     if cfg.compositor == "hyprland"
-    then "start-hyprland"
+    then "${pkgs.hyprland}/bin/start-hyprland"
     else cfg.compositor;
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
