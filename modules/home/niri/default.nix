@@ -192,6 +192,24 @@ let
       }
     }
 
+    // --- Monitor Configuration ---
+    // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
+    // Replacing "Monitor Name" with actual names is required.
+
+    // Primary: DELL UP2716D
+    output "DP-1" {
+        mode "2560x1440@59.951"; // or @60
+        position x=0 y=0;
+        scale 1.0;
+    }
+
+    // Secondary: Chimei Innolux (Laptop?)
+    output "eDP-1" {
+        mode "1920x1200@60";
+        position x=320 y=1440;
+        scale 1.0;
+    }
+
     // --- Includes (Modular Config) ---
     include "dms/layout.kdl"
     include "dms/binds.kdl"
