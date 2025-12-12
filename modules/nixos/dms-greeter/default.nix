@@ -56,7 +56,10 @@ in {
     # Ensure greetd uses requested keyboard layout when invoking the greeter
     services.greetd.settings.default_session = lib.mkDefault {
       user = "greeter";
-      command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} dms-greeter --command ${compositorCmd}";
+      command = "dms-greeter --command ${compositorCmd}";
+      environment =
+        [ "XKB_DEFAULT_LAYOUT=${cfg.layout}" ]
+        ++ lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
     };
 
     # Ensure log directory exists and is writable by greeter user
