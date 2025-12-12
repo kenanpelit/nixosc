@@ -64,7 +64,7 @@ in {
     services.greetd.settings.default_session = lib.mkDefault {
       user = "greeter";
       command =
-        if lib.hasInfix "Hyprland" compositorCmd || lib.hasInfix "start-hyprland" compositorCmd
+        if lib.hasInfix "start-hyprland" compositorCmd || lib.hasInfix "Hyprland" compositorCmd
         then "dms-greeter --command ${compositorCmd} -C /etc/greetd/hypr.conf"
         else "dms-greeter --command ${compositorCmd}";
       environment =
