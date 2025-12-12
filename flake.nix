@@ -206,12 +206,6 @@
         # Overlays applied to all systems
         overlays = with inputs; [
           nur.overlays.default
-          # Hyprland 9aa* overlay expects glaze.override enableSSL; strip that param for compatibility
-          (final: prev: let g = prev.glaze; in {
-            glaze = g // {
-              override = attrs: g.override (builtins.removeAttrs attrs [ "enableSSL" ]);
-            };
-          })
         ];
 
         # Modules automatically added to all NixOS systems
