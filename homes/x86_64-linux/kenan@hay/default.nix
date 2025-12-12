@@ -90,7 +90,7 @@
   my.user.transmission.enable = true;
   
   # Clipboard
-  my.user.copyq.enable = true;
+  my.user.copyq.enable = false;
   my.user.clipse.enable = true;
   
   # Security
