@@ -74,7 +74,7 @@ in
       htop btop procs       # Process viewers
       tldr                  # Simplified man pages
       killall               # Process killer
-      wl-clipboard clipse copyq # Clipboard tools
+      wl-clipboard clipse      # Clipboard tools
       wtype                 # Wayland key typer for scripts/gestures
       libnotify             # Notification tools
       translate-shell       # Translator
@@ -153,6 +153,7 @@ in
       localsend             # File sharing
       ventoy                # Bootable USB tool
       gparted               # Partition manager
-    ];
+    ]
+    ++ lib.optionals config.my.user.copyq.enable [ copyq ];
   };
 }
