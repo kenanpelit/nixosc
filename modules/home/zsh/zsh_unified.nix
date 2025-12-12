@@ -1049,7 +1049,7 @@ lib.mkIf cfg.enable {
       }
     '';
 
-    initExtra = ''
+    initContent = lib.mkAfter ''
       # download_nixpkgs_cache_index: pull prebuilt nix-index db manually
       download_nixpkgs_cache_index() {
         local arch="$(uname -m | sed 's/^arm64$/aarch64/')"
