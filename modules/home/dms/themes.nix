@@ -326,6 +326,29 @@ let
         "matugen_type": "scheme-tonal-spot"
       }
     '')
+    (mkTheme "synthwave-electric-dark" ''
+      {
+        "name": "Synthwave Electric Dark",
+        "primary": "#FF6600",
+        "primaryText": "#000000",
+        "primaryContainer": "#CC5200",
+        "secondary": "#0080FF",
+        "surface": "#0A0A15",
+        "surfaceText": "#E6F0FF",
+        "surfaceVariant": "#1A1A33",
+        "surfaceVariantText": "#CCE0FF",
+        "surfaceTint": "#FF6600",
+        "background": "#000008",
+        "backgroundText": "#F0F8FF",
+        "outline": "#4D80FF",
+        "surfaceContainer": "#151529",
+        "surfaceContainerHigh": "#212147",
+        "error": "#FF3366",
+        "warning": "#FFCC00",
+        "info": "#0080FF",
+        "matugen_type": "scheme-tonal-spot"
+      }
+    '')
   ];
 
 in
