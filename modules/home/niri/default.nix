@@ -90,7 +90,7 @@ let
 
       // --- Help / Cheatsheet ---
       Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
-      Mod+Shift+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
+      Mod+Alt+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
 
       // ========================================================================
       // NIRI CORE BINDINGS
