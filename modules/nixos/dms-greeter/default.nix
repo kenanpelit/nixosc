@@ -35,6 +35,11 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # Resolve compositor command; Hyprland needs start-hyprland wrapper
+    # to ensure env and session are initialized correctly.
+    _module.args.dmsGreeterCompositorCmd = lib.mkForce
+      (if cfg.compositor == "hyprland" then "start-hyprland" else cfg.compositor);
+
     # Prefer greetd over GDM
     services.displayManager.gdm.enable = lib.mkForce false;
     services.greetd.enable = true;
@@ -52,7 +57,7 @@ in {
     # Ensure greetd uses requested keyboard layout when invoking the greeter
     services.greetd.settings.default_session = lib.mkDefault {
       user = "greeter";
-      command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} dms-greeter --command ${cfg.compositor}";
+      command = "env XKB_DEFAULT_LAYOUT=${cfg.layout} dms-greeter --command ${dmsGreeterCompositorCmd}";
     };
 
     # Ensure log directory exists and is writable by greeter user
