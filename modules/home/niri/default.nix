@@ -67,7 +67,7 @@ let
       Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
 
       // --- Security & Inhibit ---
-      Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+      Mod+Ctrl+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
       Mod+Delete hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
       Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
 
@@ -91,7 +91,7 @@ let
 
       // --- Help / Cheatsheet ---
       Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
-      Mod+Alt+K hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
+      Mod+Shift+Slash hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
 
       // ========================================================================
       // NIRI CORE BINDINGS
@@ -117,6 +117,16 @@ let
       Mod+L     { focus-column-right; }
       Mod+K     { focus-workspace-up; }
       Mod+J     { focus-workspace-down; }
+
+      // --- Focus Monitor ---
+      Mod+Alt+Left  { focus-monitor-left; }
+      Mod+Alt+Right { focus-monitor-right; }
+      Mod+Alt+Up    { focus-monitor-up; }
+      Mod+Alt+Down  { focus-monitor-down; }
+      Mod+Alt+H     { focus-monitor-left; }
+      Mod+Alt+L     { focus-monitor-right; }
+      Mod+Alt+K     { focus-monitor-up; }
+      Mod+Alt+J     { focus-monitor-down; }
 
       // --- Moving Windows ---
       Mod+Shift+Left  { move-column-left; }
@@ -193,19 +203,16 @@ let
     }
 
     // --- Monitor Configuration ---
-    // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
-    // Replacing "Monitor Name" with actual names is required.
-
     // Primary: DELL UP2716D
-    output "DP-1" {
-        mode "2560x1440@59.951"; // or @60
+    output "DP-3" {
+        mode "2560x1440@59.951";
         position x=0 y=0;
         scale 1.0;
     }
 
-    // Secondary: Chimei Innolux (Laptop?)
+    // Secondary: Chimei Innolux
     output "eDP-1" {
-        mode "1920x1200@60";
+        mode "1920x1200@60.003";
         position x=320 y=1440;
         scale 1.0;
     }
