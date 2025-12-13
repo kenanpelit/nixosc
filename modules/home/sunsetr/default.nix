@@ -18,8 +18,8 @@ let
     adaptive_interval = 1
 
     # Time-based config
-    night_temp = 3300
-    day_temp = 6500
+    night_temp = 3500
+    day_temp = 4000
     night_gamma = 90
     day_gamma = 100
     update_interval = 60
@@ -34,8 +34,8 @@ let
     transition_duration = 45
 
     # Geolocation
-    latitude = 30.267153
-    longitude = -97.743057
+    latitude = 41.0082    # Istanbul
+    longitude = 28.9784   # Istanbul
   '';
 in
 {
