@@ -292,6 +292,11 @@ let
     window-rule { match app-id="audacious"; open-on-workspace "5"; }
     window-rule { match app-id="transmission"; open-on-workspace "7"; }
     window-rule { match app-id="org.keepassxc.KeePassXC"; open-on-workspace "7"; }
+    
+    // User Profiles
+    window-rule { match app-id="Kenp"; open-on-workspace "1"; }
+    window-rule { match app-id="brave-youtube.com__-Default"; open-on-workspace "7"; }
+    window-rule { match app-id="ferdium"; open-on-workspace "9"; }
 
     // --- Privacy (Block from Screencast) ---
     window-rule {
@@ -310,6 +315,16 @@ let
         match app-id="kitty";
         match app-id="firefox";
         match app-id="Brave-browser";
+        
+        // User Profiles
+        match app-id="Kenp";
+        match app-id="Ai";
+        match app-id="CompecTA";
+        match app-id="Whats";
+        match app-id="Exclude";
+        match app-id="brave-youtube.com__-Default";
+        match app-id="ferdium";
+        
         draw-border-with-background false;
     }
 
