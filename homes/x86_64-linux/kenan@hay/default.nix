@@ -86,7 +86,7 @@
   my.user.yazi.enable = true;
   my.user.rsync.enable = true;
   my.user.sunsetr.enable = false;
-  
+
   # Productivity
   my.user.obsidian.enable = true;
   my.user.anydesk.enable = true;
@@ -107,6 +107,9 @@
   # Other
   my.user.flatpak.enable = true;
   my.user.electron.enable = true;
+
+  # Night light manager (Gammastep/HyprSunset only; wl-gammarelay disabled)
+  my.user.blue.enableWlGammarelay = false;
 
   # ============================================================================
   # Development
