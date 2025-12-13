@@ -347,6 +347,17 @@ let
       }
     }
 
+    // --- Named Workspaces (Static 1-9) ---
+    workspace "1" {}
+    workspace "2" {}
+    workspace "3" {}
+    workspace "4" {}
+    workspace "5" {}
+    workspace "6" {}
+    workspace "7" {}
+    workspace "8" {}
+    workspace "9" {}
+
     // --- Monitor Configuration ---
     // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
     // Replacing "Monitor Name" with actual names is required.
