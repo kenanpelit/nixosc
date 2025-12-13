@@ -285,21 +285,6 @@ let
         // default-floating-position x=0 y=0 relative-to="center";
     }
 
-    // --- Workspace Assignments ---
-    window-rule { match app-id="discord"; open-on-workspace "5"; }
-    window-rule { match app-id="WebCord"; open-on-workspace "5"; }
-    window-rule { match app-id=r#"^(Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
-    window-rule { match app-id="audacious"; open-on-workspace "5"; }
-    window-rule { match app-id="transmission"; open-on-workspace "7"; }
-    window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"#; open-on-workspace "7"; }
-
-    // User Profiles (Brave custom classes)
-    window-rule { match app-id="Kenp"; open-on-workspace "1"; }
-    window-rule { match app-id="Ai"; open-on-workspace "3"; }
-    window-rule { match app-id="CompecTA"; open-on-workspace "4"; }
-    window-rule { match app-id="brave-youtube.com__-Default"; open-on-workspace "7"; }
-    window-rule { match app-id="ferdium"; open-on-workspace "9"; }
-
     // --- Privacy (Block from Screencast) ---
     window-rule {
         match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
