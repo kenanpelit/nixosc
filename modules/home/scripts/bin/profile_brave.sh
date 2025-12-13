@@ -655,6 +655,8 @@ main() {
 
 	# Pencere ayarları
 	cmd+=("--class=$window_class")
+	cmd+=("--name=$window_class")
+	cmd+=("--app-id=$window_class")
 	cmd+=("--window-name=$window_title")
 
 	# Ek parametreler
