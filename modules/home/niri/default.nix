@@ -228,11 +228,11 @@ let
     }
 
     // --- Workspace Assignments ---
-    window-rule { match app-id="discord"; open-on-workspace 5; }
-    window-rule { match app-id="WebCord"; open-on-workspace 5; }
-    window-rule { match app-id="Spotify"; open-on-workspace 8; }
-    window-rule { match app-id="vlc"; open-on-workspace 6; }
-    window-rule { match app-id="audacious"; open-on-workspace 5; }
+    window-rule { match app-id="discord"; open-on-workspace "5"; }
+    window-rule { match app-id="WebCord"; open-on-workspace "5"; }
+    window-rule { match app-id="Spotify"; open-on-workspace "8"; }
+    window-rule { match app-id="vlc"; open-on-workspace "6"; }
+    window-rule { match app-id="audacious"; open-on-workspace "5"; }
 
     // --- No Border Apps ---
     window-rule {
