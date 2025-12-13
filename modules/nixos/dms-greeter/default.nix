@@ -28,8 +28,8 @@ in {
 
     compositor = lib.mkOption {
       type = lib.types.str;
-      default = "${config.programs.hyprland.package or pkgs.hyprland}/bin/start-hyprland";
-      description = "Compositor command/name passed to dms-greeter (e.g., hyprland, start-hyprland).";
+      default = "hyprland"; # valid names: hyprland, niri, sway
+      description = "Compositor name passed to dms-greeter (hyprland, niri, or sway).";
     };
 
     layout = lib.mkOption {
