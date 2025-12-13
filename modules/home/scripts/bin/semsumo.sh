@@ -589,8 +589,8 @@ if [[ "$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
     fi
 fi
 
-# Switch to workspace
-if [[ "$WORKSPACE" != "0" ]]; then
+# Switch to workspace (skip for Niri to avoid creating workspaces)
+if [[ "$WORKSPACE" != "0" && "$WM_TYPE" != "niri" ]]; then
     case "$WM_TYPE" in
     hyprland)
         if command -v hyprctl >/dev/null 2>&1; then
