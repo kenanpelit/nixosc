@@ -47,6 +47,7 @@
   my.user.dms.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
+  my.user.sunsetr.enable = true;
   my.user.ghostty.enable = true;
 
   # ============================================================================
