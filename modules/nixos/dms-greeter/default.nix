@@ -68,7 +68,10 @@ in {
         then "dms-greeter --command ${compositorCmd} -C /etc/greetd/hypr.conf"
         else "dms-greeter --command ${compositorCmd}";
       environment =
-        [ "XKB_DEFAULT_LAYOUT=${cfg.layout}" ]
+        [
+          "XKB_DEFAULT_LAYOUT=${cfg.layout}"
+          "XDG_CACHE_HOME=/var/cache/greeter"
+        ]
         ++ lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
     };
 
@@ -76,6 +79,7 @@ in {
     systemd.tmpfiles.rules = [
       "d /var/log/greeter 0755 greeter greeter -"
       "f /var/log/greeter/dms-greeter.log 0664 greeter greeter -"
+      "d /var/cache/greeter 0755 greeter greeter -"
     ];
 
     # Provide baseline Hyprland greeter config
