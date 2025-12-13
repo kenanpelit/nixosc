@@ -37,7 +37,7 @@ in
 
     enableWlGammarelay = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "wl-gammarelay'i aktif et";
     };
 
