@@ -171,6 +171,7 @@ hypr_wallpaper() {
 
 niri_require() {
   command -v niri >/dev/null 2>&1 || die "niri not found in PATH"
+  niri msg version >/dev/null 2>&1 || die "niri IPC erişilemiyor (NIRI_SOCKET yok/erişim yok)"
 }
 
 niri_focused_window_geometry() {
@@ -195,7 +196,8 @@ niri_focused_output_size() {
   # Try to parse "<W>x<H>@" from a "Mode:" line.
   local info mode w h
   info="$(niri msg focused-output 2>/dev/null || true)"
-  mode="$(echo "$info" | sed -n 's/^[[:space:]]*Mode:[[:space:]]*\\([0-9]\\+x[0-9]\\+\\)@.*$/\\1/p' | head -n1)"
+  # Grab first WxH occurrence (handles different label formats)
+  mode="$(echo "$info" | sed -n 's/.*\\([0-9]\\{3,5\\}x[0-9]\\{3,5\\}\\).*/\\1/p' | head -n1)"
   w="${mode%x*}"
   h="${mode#*x}"
   [[ -n "$w" && -n "$h" && "$w" != "$mode" ]] || return 1
@@ -214,15 +216,12 @@ niri_move_floating_cycle_corners() {
 
   local geo out x y w h ow oh margin_x margin_y corner next tx ty dx dy
   geo="$(niri_focused_window_geometry)" || {
-    # Fallback: just push window to top-right; niri will clamp.
-    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-    notify "mpv-manager" "Niri: top-right (fallback)"
-    return 0
+    notify "mpv-manager" "Niri: pencere konumu okunamadı (move iptal)"
+    return 1
   }
   out="$(niri_focused_output_size)" || {
-    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-    notify "mpv-manager" "Niri: top-right (fallback)"
-    return 0
+    notify "mpv-manager" "Niri: output boyutu okunamadı (move iptal)"
+    return 1
   }
 
   read -r x y w h <<<"$geo"
