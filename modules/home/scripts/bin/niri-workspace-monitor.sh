@@ -37,10 +37,31 @@ niri_action() {
 
 # Workspace Functions
 get_current_workspace() {
-    # Niri workspaces are 1-based indexes in the UI usually.
-    # We parse 'niri msg workspaces' to find the active one's index.
-    # Note: This relies on jq finding the index of the active workspace object.
-    niri_msg workspaces | jq -r 'to_entries | .[] | select(.value.is_active) | .key + 1'
+    # Fetch workspaces JSON
+    local output
+    output=$($NIRI_MSG workspaces 2>/dev/null)
+
+    # Check if output is valid JSON (basic check)
+    if [[ -z "$output" ]] || [[ "${output:0:1}" != "[" ]]; then
+        # Fallback if IPC fails or returns non-JSON
+        echo "1"
+        return
+    fi
+
+    # Extract active workspace ID
+    # Note: Niri workspace IDs are usually persistent integers.
+    # If using indexes (1-based from list order):
+    # echo "$output" | jq -r 'to_entries | .[] | select(.value.is_active) | .key + 1'
+    
+    # Using ID directly (safest if IDs correspond to numbers user sees)
+    local id
+    id=$(echo "$output" | jq -r '.[] | select(.is_active) | .id' 2>/dev/null)
+    
+    if [[ -n "$id" ]] && [[ "$id" != "null" ]]; then
+        echo "$id"
+    else
+        echo "1"
+    fi
 }
 
 get_previous_workspace() {
