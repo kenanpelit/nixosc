@@ -39,15 +39,6 @@ die() {
   exit 1
 }
 
-sign() {
-  local n="$1"
-  if [[ "$n" -ge 0 ]]; then
-    echo "+$n"
-  else
-    echo "$n"
-  fi
-}
-
 have_socket() {
   [[ -S "$SOCKET_PATH" ]]
 }
@@ -174,82 +165,39 @@ niri_require() {
   niri msg version >/dev/null 2>&1 || die "niri IPC erişilemiyor (NIRI_SOCKET yok/erişim yok)"
 }
 
-niri_focused_window_geometry() {
-  # Outputs: "x y w h" from `niri msg focused-window`
-  # Example lines:
-  #   Workspace-view position: 32, 490
-  #   Window size: 2160 x 1224
-  local info x y w h
-  info="$(niri msg focused-window 2>/dev/null || true)"
-
-  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\)$/\\1/p' | tail -n1)"
-  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\)$/\\2/p' | tail -n1)"
-  w="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\)$/\\1/p' | tail -n1)"
-  h="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\)$/\\2/p' | tail -n1)"
-
-  [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]] || return 1
-  echo "$x $y $w $h"
-}
-
-niri_focused_output_size() {
-  # Output: "W H" from `niri msg focused-output`
-  # Try to parse "<W>x<H>@" from a "Mode:" line.
-  local info mode w h
-  info="$(niri msg focused-output 2>/dev/null || true)"
-  # Grab first WxH occurrence (handles different label formats)
-  mode="$(echo "$info" | sed -n 's/.*\\([0-9]\\{3,5\\}x[0-9]\\{3,5\\}\\).*/\\1/p' | head -n1)"
-  w="${mode%x*}"
-  h="${mode#*x}"
-  [[ -n "$w" && -n "$h" && "$w" != "$mode" ]] || return 1
-  echo "$w $h"
-}
-
-niri_move_floating_cycle_corners() {
+niri_move_top_right() {
   niri_require
 
   # Ensure focused window is floating so we can move it.
   niri msg action move-window-to-floating >/dev/null 2>&1 || true
 
-  # Best-effort: force a sane PiP-ish size in Niri.
-  niri msg action set-window-width 640 >/dev/null 2>&1 || true
-  niri msg action set-window-height 360 >/dev/null 2>&1 || true
-
-  local geo out x y w h ow margin_x margin_y tx ty dx dy
-  geo="$(niri_focused_window_geometry)" || {
-    notify "mpv-manager" "Niri: pencere konumu okunamadı (top-right)"
-    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-    return 0
-  }
-  out="$(niri_focused_output_size)" || {
-    notify "mpv-manager" "Niri: output boyutu okunamadı (top-right)"
-    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-    return 0
-  }
-
-  read -r x y w h <<<"$geo"
-  read -r ow _ <<<"$out"
-
-  margin_x=32
-  margin_y=96
-
-  # Always move to top-right
-  tx=$((ow - w - margin_x))
-  ty=$margin_y
-
-  dx=$((tx - x))
-  dy=$((ty - y))
-
-  niri msg action move-floating-window -x "$(sign "$dx")" -y "$(sign "$dy")" >/dev/null 2>&1 || {
-    # If relative move fails, fall back to "push to corner"
-    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-  }
+  # First push to the top-right edge (niri clamps internally),
+  # then pull back a bit so the window is fully visible.
+  niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
+  niri msg action move-floating-window -x -720 -y +120 >/dev/null 2>&1 || true
   notify "mpv-manager" "Niri: top-right"
 }
 
 start_mpv() {
   case "$(compositor)" in
     hyprland) hypr_start_mpv ;;
-    *) 
+    niri)
+      command -v mpv >/dev/null 2>&1 || die "mpv not found"
+      if mpv_running && have_socket; then
+        notify "mpv-manager" "MPV zaten çalışıyor"
+        return 0
+      fi
+      rm -f "$SOCKET_PATH" 2>/dev/null || true
+      mpv --player-operation-mode=pseudo-gui \
+        --input-ipc-server="$SOCKET_PATH" \
+        --idle \
+        --autofit=640x360 \
+        --autofit-larger=640x360 \
+        -- >/dev/null 2>&1 &
+      disown || true
+      notify "mpv-manager" "MPV başlatıldı (Niri 640x360)"
+      ;;
+    *)
       command -v mpv >/dev/null 2>&1 || die "mpv not found"
       if mpv_running && have_socket; then
         notify "mpv-manager" "MPV zaten çalışıyor"
@@ -290,11 +238,21 @@ play_youtube() {
   fi
 
   rm -f "$SOCKET_PATH" 2>/dev/null || true
-  mpv --player-operation-mode=pseudo-gui \
-    --input-ipc-server="$SOCKET_PATH" \
-    --idle \
-    --no-audio-display \
-    "$url" >/dev/null 2>&1 &
+  if [[ "$(compositor)" == "niri" ]]; then
+    mpv --player-operation-mode=pseudo-gui \
+      --input-ipc-server="$SOCKET_PATH" \
+      --idle \
+      --no-audio-display \
+      --autofit=640x360 \
+      --autofit-larger=640x360 \
+      "$url" >/dev/null 2>&1 &
+  else
+    mpv --player-operation-mode=pseudo-gui \
+      --input-ipc-server="$SOCKET_PATH" \
+      --idle \
+      --no-audio-display \
+      "$url" >/dev/null 2>&1 &
+  fi
   disown || true
   notify "mpv-manager" "YouTube oynatılıyor"
 }
@@ -328,7 +286,7 @@ main() {
           ;;
         niri)
           case "$cmd" in
-            move) niri_move_floating_cycle_corners ;;
+            move) niri_move_top_right ;;
             stick)
               # Niri'de Hyprland'daki "pin" yok; en yakın karşılık pencereyi floating'e almak.
               niri_require
