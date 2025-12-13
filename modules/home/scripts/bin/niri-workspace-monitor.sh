@@ -12,6 +12,7 @@ readonly VERSION="1.0.0"
 readonly CACHE_DIR="$HOME/.cache/niri/toggle"
 readonly CURRENT_WS_FILE="$CACHE_DIR/current_workspace"
 readonly PREVIOUS_WS_FILE="$CACHE_DIR/previous_workspace"
+readonly NIRI_MSG="niri msg"
 
 # =============================================================================
 # HELPERS
