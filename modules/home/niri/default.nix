@@ -24,7 +24,6 @@ let
       gaps 5;
       center-focused-column "never";
       background-color "#00000000";
-      prefer-no-csd;
       preset-column-widths {
         proportion 0.33333;
         proportion 0.5;
