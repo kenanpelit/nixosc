@@ -202,14 +202,27 @@ in
         BusName = "rs.wl-gammarelay";
         ExecStart = pkgs.writeShellScript "wl-gammarelay-start.sh" ''
           set -eu
-          # Try to find an existing Wayland socket
-          if [ -n ''${WAYLAND_DISPLAY:-} ] && [ -S ''${XDG_RUNTIME_DIR:-/run/user/$UID}/''${WAYLAND_DISPLAY} ]; then
-            export WAYLAND_DISPLAY=''${WAYLAND_DISPLAY}
-          else
-            SOCK=$(ls ''${XDG_RUNTIME_DIR:-/run/user/$UID}/wayland-* 2>/dev/null | head -n1 || true)
+          RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$UID}"
+
+          # Try to find an existing Wayland socket, wait briefly if needed
+          for _ in $(seq 1 10); do
+            if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -S "$RUNTIME_DIR/''${WAYLAND_DISPLAY}" ]; then
+              export WAYLAND_DISPLAY="''${WAYLAND_DISPLAY}"
+              break
+            fi
+
+            SOCK=$(ls "$RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)
             if [ -n "$SOCK" ]; then
               export WAYLAND_DISPLAY="$(basename "$SOCK")"
+              break
             fi
+
+            sleep 0.5
+          done
+
+          if [ -z "''${WAYLAND_DISPLAY:-}" ]; then
+            echo "wl-gammarelay: no Wayland socket found under $RUNTIME_DIR" >&2
+            exit 1
           fi
 
           exec ${pkgs.wl-gammarelay-rs}/bin/wl-gammarelay-rs
@@ -226,6 +239,7 @@ in
         SuccessExitStatus = [ 0 2 ];
         Restart = "on-failure";
         RestartSec = 3;
+        Environment = [ "XDG_RUNTIME_DIR=%t" ];
       };
 
       Install.WantedBy = [ "graphical-session.target" ];
