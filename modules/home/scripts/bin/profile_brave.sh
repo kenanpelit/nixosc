@@ -656,7 +656,6 @@ main() {
 	# Pencere ayarları
 	cmd+=("--class=$window_class")
 	cmd+=("--name=$window_class")
-	cmd+=("--app-id=$window_class")
 	cmd+=("--window-name=$window_title")
 
 	# Ek parametreler
@@ -676,7 +675,7 @@ main() {
 	fi
 
 	# Komutu çalıştır ve çıktısını yakala
-	if "${cmd[@]}" &>/dev/null & then
+	if "${cmd[@]}" >/dev/null 2> >(tail -n 20 >&2) & then
 		local brave_pid=$!
 		log "INFO" "Brave başlatıldı (PID: $brave_pid)"
 
