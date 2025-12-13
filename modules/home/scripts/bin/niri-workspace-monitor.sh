@@ -9,18 +9,30 @@ set -euo pipefail
 # =============================================================================
 readonly SCRIPT_NAME="NiriFlow"
 readonly VERSION="1.0.0"
-readonly CACHE_DIR="$HOME/.cache/niri/toggle"
+readonly NIRI_MSG="niri msg"
+
+# Prefer user cache dir; fall back to runtime dir if cache has bad perms (e.g. created by root)
+cache_root="${XDG_CACHE_HOME:-$HOME/.cache}"
+cache_dir_candidate="$cache_root/niri/toggle"
+if ! mkdir -p "$cache_dir_candidate" 2>/dev/null || [[ ! -w "$cache_dir_candidate" ]]; then
+    cache_root="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    cache_dir_candidate="$cache_root/niri-flow"
+    mkdir -p "$cache_dir_candidate" 2>/dev/null || true
+fi
+
+readonly CACHE_DIR="$cache_dir_candidate"
 readonly CURRENT_WS_FILE="$CACHE_DIR/current_workspace"
 readonly PREVIOUS_WS_FILE="$CACHE_DIR/previous_workspace"
-readonly NIRI_MSG="niri msg"
+readonly MONITOR_STATE_FILE="$CACHE_DIR/monitor_state"
 
 # =============================================================================
 # HELPERS
 # =============================================================================
 
 init_environment() {
-    mkdir -p "$CACHE_DIR"
-    if [ ! -f "$PREVIOUS_WS_FILE" ]; then echo "1" > "$PREVIOUS_WS_FILE"; fi
+    mkdir -p "$CACHE_DIR" 2>/dev/null || true
+    if [ ! -f "$PREVIOUS_WS_FILE" ]; then echo "1" > "$PREVIOUS_WS_FILE" 2>/dev/null || true; fi
+    if [ ! -f "$MONITOR_STATE_FILE" ]; then echo "right" > "$MONITOR_STATE_FILE" 2>/dev/null || true; fi
 }
 
 log() {
@@ -150,6 +162,46 @@ focus_monitor() {
     esac
 }
 
+# Toggle between left/right monitors (simple 2-monitor setups)
+toggle_monitor_focus() {
+    local state
+    state="$(cat "$MONITOR_STATE_FILE" 2>/dev/null || echo "right")"
+
+    if [[ "$state" == "right" ]]; then
+        focus_monitor "right"
+        echo "left" > "$MONITOR_STATE_FILE"
+    else
+        focus_monitor "left"
+        echo "right" > "$MONITOR_STATE_FILE"
+    fi
+}
+
+# Browser tab navigation (works compositor-agnostic; uses wtype/ydotool)
+navigate_browser_tab() {
+    local direction=$1
+
+    if command -v wtype >/dev/null 2>&1; then
+        if [[ "$direction" == "next" ]]; then
+            wtype -M ctrl -k tab 2>/dev/null || true
+        else
+            wtype -M ctrl -M shift -k tab 2>/dev/null || true
+        fi
+        return 0
+    fi
+
+    if command -v ydotool >/dev/null 2>&1; then
+        if [[ "$direction" == "next" ]]; then
+            ydotool key ctrl+tab 2>/dev/null || true
+        else
+            ydotool key ctrl+shift+tab 2>/dev/null || true
+        fi
+        return 0
+    fi
+
+    log "Browser tab navigation requires wtype or ydotool"
+    return 1
+}
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -198,6 +250,15 @@ main() {
             -mr) focus_monitor "right"; shift ;;
             -mu) focus_monitor "up"; shift ;;
             -md) focus_monitor "down"; shift ;;
+
+            # HyprFlow-compatible monitor aliases (used by Fusuma configs)
+            -ms)  focus_monitor "right"; shift ;; # monitor shift (best-effort)
+            -msf) focus_monitor "right"; shift ;; # monitor shift with focus (best-effort)
+            -mt)  toggle_monitor_focus; shift ;;  # toggle monitor focus
+
+            # HyprFlow-compatible browser tab aliases (used by Fusuma configs)
+            -tn) navigate_browser_tab "next"; shift ;;
+            -tp) navigate_browser_tab "prev"; shift ;;
             
             # Help
             -h|--help)
@@ -208,6 +269,9 @@ main() {
                 echo "  -wn N    Focus workspace N"
                 echo "  -mw N    Move window to workspace N"
                 echo "  -ml/mr   Focus monitor left/right"
+                echo "  -ms/-msf Focus monitor right (alias)"
+                echo "  -mt      Toggle monitor focus (left/right)"
+                echo "  -tn/-tp  Next/previous browser tab (wtype/ydotool)"
                 exit 0
                 ;;
             *)
