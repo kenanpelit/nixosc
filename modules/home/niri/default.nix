@@ -256,8 +256,11 @@ let
         match app-id="mpv";
         match title="^Picture-in-Picture$";
         open-floating true;
-        default-column-width { fixed 600; }
-        default-window-height { fixed 340; }
+        // Hyprland'daki mpv PiP (0.19w x 0.19h, sol alt) karşılığı
+        default-column-width { proportion 0.19; }
+        default-window-height { proportion 0.19; }
+        default-floating-position x=32 y=32 relative-to="bottom-left";
+        opacity 1.0;
     }
     
     window-rule {
