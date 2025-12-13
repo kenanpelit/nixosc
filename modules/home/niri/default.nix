@@ -301,6 +301,15 @@ let
         // default-floating-position x=0 y=0 relative-to="center";
     }
 
+    // --- Tmux (Kenp) ---
+    // Tmux penceresini her zaman 2. workspace'e aç.
+    window-rule {
+        match app-id="TmuxKenp";
+        match app-id="Tmux";
+        open-on-workspace "2";
+        open-focused true;
+    }
+
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
         match app-id="org.pulseaudio.pavucontrol";
