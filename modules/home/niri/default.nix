@@ -416,6 +416,8 @@ let
       DISPLAY ":0";
     }
 
+    prefer-no-csd;
+
     // --- Startup Applications ---
     spawn-at-startup "${niriusCmd}";
     spawn-at-startup "${niriswitcherCmd}";
