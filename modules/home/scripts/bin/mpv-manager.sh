@@ -174,7 +174,8 @@ niri_move_top_right() {
   # First push to the top-right edge (niri clamps internally),
   # then pull back a bit so the window is fully visible.
   niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-  niri msg action move-floating-window -x -720 -y +120 >/dev/null 2>&1 || true
+  # Target: ~40px from right edge, ~100px from top edge
+  niri msg action move-floating-window -x -40 -y +100 >/dev/null 2>&1 || true
   notify "mpv-manager" "Niri: top-right"
 }
 
