@@ -199,6 +199,109 @@ let
     }
   '';
 
+  # 3. Rules (Window & Layer)
+  dmsRules = ''
+    // --- General Styling ---
+    window-rule {
+        geometry-corner-radius 12;
+        clip-to-geometry true;
+    }
+
+    // --- Floating Windows ---
+    window-rule {
+        match app-id=r#"org.quickshell$"#;
+        open-floating true;
+    }
+    
+    // MPV Picture-in-Picture
+    window-rule {
+        match app-id="mpv";
+        open-floating true;
+        default-column-width { fixed 600; }
+    }
+    
+    // Dialogs
+    window-rule {
+        match title="Open File";
+        match title="File Upload";
+        open-floating true;
+    }
+
+    // --- Workspace Assignments ---
+    window-rule { match app-id="discord"; open-on-workspace 5; }
+    window-rule { match app-id="WebCord"; open-on-workspace 5; }
+    window-rule { match app-id="Spotify"; open-on-workspace 8; }
+    window-rule { match app-id="vlc"; open-on-workspace 6; }
+    window-rule { match app-id="audacious"; open-on-workspace 5; }
+
+    // --- No Border Apps ---
+    window-rule {
+        match app-id=r#"^org\.gnome\."#;
+        match app-id=r#"^org\.wezfurlong\.wezterm$"#;
+        match app-id="Alacritty";
+        match app-id="zen";
+        match app-id="com.mitchellh.ghostty";
+        match app-id="kitty";
+        match app-id="firefox";
+        match app-id="Brave-browser";
+        draw-border-with-background false;
+    }
+
+    // --- Inactive Dimming ---
+    window-rule {
+        match is-active=false;
+        opacity 0.95;
+    }
+
+    // --- Layer Rules ---
+    layer-rule {
+        match namespace="^quickshell$";
+        place-within-backdrop true;
+    }
+    layer-rule {
+        match namespace="dms:blurwallpaper";
+        place-within-backdrop true;
+    }
+  '';
+
+  # 4. Animations
+  dmsAnimations = ''
+    animations {
+        workspace-switch { spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; }
+        window-open { duration-ms 150; curve "ease-out-expo"; }
+        window-close { duration-ms 150; curve "ease-out-quad"; }
+        horizontal-view-movement { spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; }
+        window-movement { spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; }
+        window-resize { spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; }
+        screenshot-ui-open { duration-ms 200; curve "ease-out-quad"; }
+    }
+  '';
+
+  # 5. Gestures
+  dmsGestures = ''
+    gestures {
+        dnd-edge-view-scroll {
+            trigger-width 30;
+            delay-ms 100;
+            max-speed 1500;
+        }
+        hot-corners {
+            top-left;
+        }
+    }
+  '';
+
+  # 6. Recent Windows (Alt-Tab)
+  dmsRecentWindows = ''
+    recent-windows {
+        debounce-ms 0;
+        highlight {
+            active-color "#cba6f7ff"; // Catppuccin Mauve
+            corner-radius 12;
+        }
+    }
+  '';
+
   # 3. Colors (Placeholder)
   dmsColors = ''
     // Colors placeholder
@@ -213,46 +316,49 @@ let
     // ========================================================================
 
     environment {
-      XDG_CURRENT_DESKTOP "niri"
-      QT_QPA_PLATFORM "wayland"
-      ELECTRON_OZONE_PLATFORM_HINT "auto"
-      QT_QPA_PLATFORMTHEME "gtk3"
-      QT_QPA_PLATFORMTHEME_QT6 "gtk3"
-      DISPLAY ":0"
+      XDG_CURRENT_DESKTOP "niri";
+      QT_QPA_PLATFORM "wayland";
+      ELECTRON_OZONE_PLATFORM_HINT "auto";
+      QT_QPA_PLATFORMTHEME "gtk3";
+      QT_QPA_PLATFORMTHEME_QT6 "gtk3";
+      DISPLAY ":0";
     }
 
     // --- Startup Applications ---
-    spawn-at-startup "${niriusCmd}"
-    spawn-at-startup "${niriswitcherCmd}"
+    spawn-at-startup "${niriusCmd}";
+    spawn-at-startup "${niriswitcherCmd}";
     
     // Start DMS manually (Disabled: DMS is managed by systemd service)
-    // spawn-at-startup "${dmsCmd}" "run"
+    // spawn-at-startup "${dmsCmd}" "run";
     // spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 
     // --- Input Configuration ---
     input {
       keyboard {
         xkb {
-          layout "tr"
-          variant "f"
-          options "ctrl:nocaps"
+          layout "tr";
+          variant "f";
+          options "ctrl:nocaps";
         }
       }
       touchpad {
-        tap
-        natural-scroll
+        tap;
+        natural-scroll;
       }
     }
 
     // --- Monitor Configuration ---
+    // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
+    // Replacing "Monitor Name" with actual names is required.
+
     // Primary: DELL UP2716D
     output "DP-3" {
-        mode "2560x1440@59.951";
+        mode "2560x1440@59.951"; // or @60
         position x=0 y=0;
         scale 1.0;
     }
 
-    // Secondary: Chimei Innolux
+    // Secondary: Chimei Innolux (Laptop?)
     output "eDP-1" {
         mode "1920x1200@60.003";
         position x=320 y=1440;
@@ -260,49 +366,13 @@ let
     }
 
     // --- Includes (Modular Config) ---
-    include "dms/layout.kdl"
-    include "dms/binds.kdl"
-    include "dms/colors.kdl"
-
-    // --- DMS Layer Rules (Wallpaper Integration) ---
-    layer-rule {
-        match namespace="^quickshell$"
-        place-within-backdrop true
-    }
-
-    layer-rule {
-        match namespace="dms:blurwallpaper"
-        place-within-backdrop true
-    }
-    
-    // --- Window Rules ---
-    window-rule {
-        geometry-corner-radius 12
-        clip-to-geometry true
-    }
-
-    window-rule {
-        match app-id=r#"org.quickshell$"#
-        open-floating true
-    }
-    
-    window-rule {
-        match app-id=r#"^org\.gnome\."#
-        draw-border-with-background false
-    }
-    window-rule {
-        match app-id=r#"^org\.wezfurlong\.wezterm$"#
-        match app-id="Alacritty"
-        match app-id="zen"
-        match app-id="com.mitchellh.ghostty"
-        match app-id="kitty"
-        draw-border-with-background false
-    }
-
-    window-rule {
-        match is-active=false
-        opacity 0.9
-    }
+    include "dms/layout.kdl";
+    include "dms/binds.kdl";
+    include "dms/rules.kdl";
+    include "dms/animations.kdl";
+    include "dms/gestures.kdl";
+    include "dms/recent-windows.kdl";
+    include "dms/colors.kdl";
   '';
 
 in
@@ -338,7 +408,11 @@ in
     # DMS Sub-configs
     xdg.configFile."niri/dms/layout.kdl".text = dmsLayout;
     xdg.configFile."niri/dms/binds.kdl".text = dmsBinds;
+    xdg.configFile."niri/dms/rules.kdl".text = dmsRules;
+    xdg.configFile."niri/dms/animations.kdl".text = dmsAnimations;
+    xdg.configFile."niri/dms/gestures.kdl".text = dmsGestures;
+    xdg.configFile."niri/dms/recent-windows.kdl".text = dmsRecentWindows;
     xdg.configFile."niri/dms/colors.kdl".text = dmsColors;
-    xdg.configFile."niri/dms/alttab.kdl".text = ""; # Placeholder
+    xdg.configFile."niri/dms/alttab.kdl".text = ""; # Placeholder (deprecated by recent-windows)
   };
 }
