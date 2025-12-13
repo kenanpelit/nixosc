@@ -142,8 +142,8 @@ in
     systemd.user.services.blue = {
       Unit = {
         Description = "Hypr Blue Manager - Unified Color Temperature Manager";
-        After = [ "hyprland-session.target" ] ++ lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
-        PartOf = [ "hyprland-session.target" ];
+        After = [ "graphical-session.target" ] ++ lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
+        PartOf = [ "graphical-session.target" ];
         Wants = lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
       };
 
@@ -184,7 +184,7 @@ in
         KillSignal = "SIGTERM";
       };
 
-      Install.WantedBy = [ "hyprland-session.target" ];
+      Install.WantedBy = [ "graphical-session.target" ];
     };
 
     # Separate wl-gammarelay daemon service
@@ -192,8 +192,8 @@ in
     systemd.user.services.wl-gammarelay = lib.mkIf cfg.enableWlGammarelay {
       Unit = {
         Description = "wl-gammarelay - Wayland Color Temperature Daemon";
-        After = [ "hyprland-session.target" ];
-        PartOf = [ "hyprland-session.target" ];
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
         Before = [ "blue.service" ];
       };
 
@@ -215,7 +215,7 @@ in
         RestartSec = 3;
       };
 
-      Install.WantedBy = [ "hyprland-session.target" ];
+      Install.WantedBy = [ "graphical-session.target" ];
     };
   };
 }
