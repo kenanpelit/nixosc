@@ -1,0 +1,50 @@
+# modules/home/sunsetr/default.nix
+# =============================================================================
+# Home module for sunsetr (Wayland gamma/temperature manager).
+# Writes config.toml with provided settings and installs the package.
+# =============================================================================
+{ config, lib, pkgs, ... }:
+let
+  cfg = config.my.user.sunsetr;
+  sunsetrConfig = ''
+    # Backend
+    backend = "auto"         # "auto", "hyprland", "hyprsunset" or "wayland"
+    transition_mode = "geo"  # "geo", "finish_by", "start_at", "center", "static"
+
+    # Smoothing
+    smoothing = true
+    startup_duration = 0.5
+    shutdown_duration = 0.5
+    adaptive_interval = 1
+
+    # Time-based config
+    night_temp = 3300
+    day_temp = 6500
+    night_gamma = 90
+    day_gamma = 100
+    update_interval = 60
+
+    # Static config
+    static_temp = 6500
+    static_gamma = 100
+
+    # Manual transitions
+    sunset = "19:00:00"
+    sunrise = "06:00:00"
+    transition_duration = 45
+
+    # Geolocation
+    latitude = 30.267153
+    longitude = -97.743057
+  '';
+in
+{
+  options.my.user.sunsetr = {
+    enable = lib.mkEnableOption "sunsetr gamma/temperature manager";
+  };
+
+  config = lib.mkIf cfg.enable {
+    home.packages = [ pkgs.sunsetr ];
+    xdg.configFile."sunsetr/config.toml".text = sunsetrConfig;
+  };
+}
