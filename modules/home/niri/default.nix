@@ -152,6 +152,12 @@ let
       Mod+Ctrl+Right { move-column-to-monitor-right; }
       Mod+Ctrl+Up    { move-column-to-monitor-up; }
       Mod+Ctrl+Down  { move-column-to-monitor-down; }
+      
+      // --- Alternative Workspace Control (PageUp/Down) ---
+      Mod+Page_Up       { focus-workspace-up; }
+      Mod+Page_Down     { focus-workspace-down; }
+      Mod+Shift+Page_Up { move-column-to-workspace-up; }
+      Mod+Shift+Page_Down { move-column-to-workspace-down; }
 
       // --- Screenshots (DMS Niri integration) ---
       Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
