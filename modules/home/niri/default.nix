@@ -323,13 +323,49 @@ let
   # 4. Animations
   dmsAnimations = ''
     animations {
-        workspace-switch { spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; }
-        window-open { duration-ms 150; curve "ease-out-expo"; }
-        window-close { duration-ms 150; curve "ease-out-quad"; }
-        horizontal-view-movement { spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; }
-        window-movement { spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; }
-        window-resize { spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; }
-        screenshot-ui-open { duration-ms 200; curve "ease-out-quad"; }
+        // Workspace Switching (Spring for snappy feel)
+        workspace-switch { 
+            spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; 
+        }
+
+        // Window Open/Close (Easing)
+        window-open { 
+            duration-ms 150; 
+            curve "ease-out-expo"; 
+        }
+        window-close { 
+            duration-ms 150; 
+            curve "ease-out-quad"; 
+        }
+
+        // View Movement (Springs)
+        horizontal-view-movement { 
+            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+        }
+        window-movement { 
+            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+        }
+        window-resize { 
+            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+        }
+
+        // UI Animations
+        config-notification-open-close { 
+            spring damping-ratio=0.6 stiffness=1000 epsilon=0.001; 
+        }
+        exit-confirmation-open-close { 
+            spring damping-ratio=0.6 stiffness=500 epsilon=0.01; 
+        }
+        screenshot-ui-open { 
+            duration-ms 200; 
+            curve "ease-out-quad"; 
+        }
+        overview-open-close { 
+            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+        }
+        recent-windows-close { 
+            spring damping-ratio=1.0 stiffness=800 epsilon=0.001; 
+        }
     }
   '';
 
