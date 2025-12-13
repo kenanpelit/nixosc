@@ -200,13 +200,13 @@ let
       Alt+I { spawn "hypr-vlc_toggle"; }
 
       // --- MPV Manager ---
-      Ctrl+Alt+1 { spawn "hypr-mpv-manager" "start"; }
-      Alt+1 { spawn "hypr-mpv-manager" "playback"; }
-      Alt+2 { spawn "hypr-mpv-manager" "play-yt"; }
-      Alt+3 { spawn "hypr-mpv-manager" "stick"; }
-      Alt+4 { spawn "hypr-mpv-manager" "move"; }
-      Alt+5 { spawn "hypr-mpv-manager" "save-yt"; }
-      Alt+6 { spawn "hypr-mpv-manager" "wallpaper"; }
+      Ctrl+Alt+1 { spawn "mpv-manager" "start"; }
+      Alt+1 { spawn "mpv-manager" "playback"; }
+      Alt+2 { spawn "mpv-manager" "play-yt"; }
+      Alt+3 { spawn "mpv-manager" "stick"; }
+      Alt+4 { spawn "mpv-manager" "move"; }
+      Alt+5 { spawn "mpv-manager" "save-yt"; }
+      Alt+6 { spawn "mpv-manager" "wallpaper"; }
 
       // --- Workspace Switching (1-9) ---
       Mod+1 { focus-workspace "1"; }
