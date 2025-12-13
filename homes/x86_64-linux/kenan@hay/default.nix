@@ -84,7 +84,7 @@
   my.user.nemo.enable = true;
   my.user.yazi.enable = true;
   my.user.rsync.enable = true;
-  my.user.sunsetr.enable = true;
+  my.user.sunsetr.enable = false;
   
   # Productivity
   my.user.obsidian.enable = true;
