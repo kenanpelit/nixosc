@@ -123,8 +123,6 @@
 
     # ┌─ Center Section: Time, Weather & Productivity ───────────────────────────────────────────┐
 
-    # Night light module removed (wl-gammarelay not used)
-
     # 🔔 Mako Notification Status & Controls
     "custom/mako-notifications" = {
       format = "{}";
