@@ -142,6 +142,9 @@ detect_window_manager() {
   if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
     WM_TYPE="hyprland"
     log "INFO" "DETECT" "Detected Hyprland window manager"
+  elif command -v niri &>/dev/null && [[ "$XDG_CURRENT_DESKTOP" == "niri" ]]; then
+    WM_TYPE="niri"
+    log "INFO" "DETECT" "Detected Niri window manager"
   elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
     WM_TYPE="gnome"
     log "INFO" "DETECT" "Detected GNOME desktop environment"
@@ -215,6 +218,13 @@ switch_workspace() {
         hyprctl dispatch workspace "$workspace"
         sleep 1
       fi
+    fi
+    ;;
+  niri)
+    if command -v niri >/dev/null 2>&1; then
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri)"
+      niri msg action focus-workspace "$workspace"
+      sleep 1
     fi
     ;;
   gnome)
@@ -462,6 +472,14 @@ make_fullscreen() {
       sleep 1
     fi
     ;;
+  niri)
+    if command -v niri >/dev/null 2>&1; then
+      log "INFO" "FULLSCREEN" "Making window fullscreen (Niri)"
+      sleep 1
+      niri msg action fullscreen-window
+      sleep 1
+    fi
+    ;;
   gnome)
     if command -v gdbus >/dev/null 2>&1; then
       log "INFO" "FULLSCREEN" "Making window fullscreen (GNOME)"
@@ -543,6 +561,8 @@ readonly WAIT_TIME=WAIT_VALUE
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
     WM_TYPE="hyprland"
+elif command -v niri &>/dev/null && [[ "$XDG_CURRENT_DESKTOP" == "niri" ]]; then
+    WM_TYPE="niri"
 elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
     WM_TYPE="gnome"
 else
@@ -572,6 +592,13 @@ if [[ "$WORKSPACE" != "0" ]]; then
                 hyprctl dispatch workspace "$WORKSPACE"
                 sleep 1
             fi
+        fi
+        ;;
+    niri)
+        if command -v niri >/dev/null 2>&1; then
+            echo "Switching to workspace $WORKSPACE..."
+            niri msg action focus-workspace "$WORKSPACE"
+            sleep 1
         fi
         ;;
     gnome|*)
@@ -649,6 +676,9 @@ if [[ "$FULLSCREEN" == "true" ]]; then
     case "$WM_TYPE" in
     hyprland)
         command -v hyprctl >/dev/null 2>&1 && hyprctl dispatch fullscreen 1
+        ;;
+    niri)
+        command -v niri >/dev/null 2>&1 && niri msg action fullscreen-window
         ;;
     gnome)
         if command -v gdbus >/dev/null 2>&1; then
