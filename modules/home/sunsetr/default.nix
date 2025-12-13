@@ -7,6 +7,7 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.sunsetr;
+  dag = lib.hm.dag;
 
   configDir = "${config.xdg.configHome}/sunsetr";
 
@@ -118,7 +119,29 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ pkgs.sunsetr ];
 
-    xdg.configFile."sunsetr/sunsetr.toml".text = toml;
+    # NOTE: Do NOT manage this file via `xdg.configFile` (it becomes read-only / a Nix store symlink).
+    # sunsetr needs to be able to edit it (e.g. `sunsetr geo`).
+    home.activation.sunsetrConfig = dag.entryAfter [ "writeBoundary" ] ''
+      CFG_DIR="${configDir}"
+      CFG_FILE="$CFG_DIR/sunsetr.toml"
+
+      # Ensure directory exists
+      if [ ! -d "$CFG_DIR" ]; then
+        $DRY_RUN_CMD mkdir -p "$CFG_DIR"
+      fi
+
+      # If previously managed by Nix (symlink), replace with a writable file.
+      if [ -L "$CFG_FILE" ]; then
+        $DRY_RUN_CMD rm -f "$CFG_FILE"
+      fi
+
+      # Only create a default config once; keep user's edits afterwards.
+      if [ ! -f "$CFG_FILE" ]; then
+        $DRY_RUN_CMD cat > "$CFG_FILE" << 'EOFSUNSETR'
+${toml}
+EOFSUNSETR
+      fi
+    '';
 
     systemd.user.services.sunsetr = lib.mkIf cfg.enableService {
       Unit = {
