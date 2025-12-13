@@ -48,7 +48,6 @@
   my.user.fusuma.enable = true;
   my.user.blue.enable = true;
   my.user.ghostty.enable = true;
-  my.user.blue.enableWlGammarelay = true;
 
   # ============================================================================
   # Browsers
@@ -108,8 +107,7 @@
   my.user.flatpak.enable = true;
   my.user.electron.enable = true;
 
-  # Night light manager (Gammastep/HyprSunset only; wl-gammarelay disabled)
-  my.user.blue.enableWlGammarelay = false;
+  # Night light manager (Gammastep/HyprSunset only)
 
   # ============================================================================
   # Development
