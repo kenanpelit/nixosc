@@ -285,15 +285,14 @@ let
         // default-floating-position x=0 y=0 relative-to="center";
     }
 
-    // --- Workspace Assignments ---
-    window-rule { match app-id="discord"; open-on-workspace "5"; }
-    window-rule { match app-id="WebCord"; open-on-workspace "5"; }
+    // --- Workspace Assignments (semsumo profiles) ---
+    window-rule { match app-id=r#"^(discord|WebCord)$"#; open-on-workspace "5"; }
     window-rule { match app-id=r#"^(Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
     window-rule { match app-id="audacious"; open-on-workspace "5"; }
     window-rule { match app-id="transmission"; open-on-workspace "7"; }
     window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"#; open-on-workspace "7"; }
 
-    // User Profiles (Brave custom classes)
+    // Brave custom classes (semsumo daily)
     window-rule { match app-id="Kenp"; open-on-workspace "1"; }
     window-rule { match app-id="Ai"; open-on-workspace "3"; }
     window-rule { match app-id="CompecTA"; open-on-workspace "4"; }
