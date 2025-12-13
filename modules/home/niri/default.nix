@@ -477,6 +477,7 @@ let
     // --- Startup Applications ---
     spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
     spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
+    spawn-at-startup "clipse" "-listen";
     ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${niriusCmd}";''}
     ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${niriswitcherCmd}";''}
     
