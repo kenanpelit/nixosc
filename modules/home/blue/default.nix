@@ -9,6 +9,7 @@
 let
   cfg = config.my.user.blue;
   username = config.home.username;
+  sunsetrEnabled = lib.attrByPath [ "my" "user" "sunsetr" "enable" ] false config;
 in
 {
   options.my.user.blue = {
@@ -95,7 +96,14 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkMerge [
+    (lib.mkIf (cfg.enable && sunsetrEnabled) {
+      warnings = [
+        "my.user.blue ve my.user.sunsetr aynı anda aktif: çakışmayı önlemek için blue.service tanımlanmayacak (sunsetr kullanılacak)."
+      ];
+    })
+
+    (lib.mkIf (cfg.enable && !sunsetrEnabled) {
     # Install required packages based on enabled tools
     home.packages = [
       cfg.package
@@ -145,5 +153,6 @@ in
       Install.WantedBy = [ "graphical-session.target" ];
     };
 
-  };
+  })
+  ];
 }
