@@ -155,6 +155,24 @@ let
       Mod+WheelScrollRight                { focus-column-right; }
       Mod+WheelScrollLeft                 { focus-column-left; }
 
+      // --- Custom Applications (Imported from Hyprland) ---
+      // Launchers
+      F1 { spawn "rofi-launcher" "keys"; }
+      Alt+Space { spawn "rofi-launcher"; }
+      Mod+Ctrl+Space { spawn "walk"; }
+
+      // File Managers
+      Alt+F { spawn "kitty" "-e" "yazi"; }
+      Alt+Ctrl+F { spawn "nemo"; }
+
+      // Special Apps
+      Alt+T { spawn "start-kkenp"; }
+      Mod+Shift+M { spawn "anotes"; } // Mod+M is DMS Task Manager
+
+      // Tools
+      Mod+Shift+C { spawn "hyprpicker" "-a"; }
+      Mod+Ctrl+V { spawn "kitty" "--class" "clipse" "-e" "clipse"; }
+
       // --- Workspace Switching (1-9) ---
       Mod+1 { focus-workspace 1; }
       Mod+2 { focus-workspace 2; }
