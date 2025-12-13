@@ -165,18 +165,42 @@ niri_require() {
   niri msg version >/dev/null 2>&1 || die "niri IPC erişilemiyor (NIRI_SOCKET yok/erişim yok)"
 }
 
+niri_focused_window_xy() {
+  # Output: "x y" from `niri msg focused-window`
+  # Example line: "Workspace-view position: 1880, 100"
+  local info xy
+  info="$(niri msg focused-window 2>/dev/null || true)"
+  xy="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\).*$/\\1 \\2/p' | tail -n1)"
+  [[ -n "$xy" ]] || return 1
+  echo "$xy"
+}
+
 niri_move_top_right() {
   niri_require
 
   # Ensure focused window is floating so we can move it.
   niri msg action move-window-to-floating >/dev/null 2>&1 || true
 
-  # First push to the top-right edge (niri clamps internally),
-  # then pull back a bit so the window is fully visible.
-  niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
-  # Target: ~40px from right edge, ~100px from top edge
-  niri msg action move-floating-window -x -40 -y +100 >/dev/null 2>&1 || true
-  notify "mpv-manager" "Niri: top-right"
+  # Force a sane PiP-ish size in Niri.
+  niri msg action set-window-width 640 >/dev/null 2>&1 || true
+  niri msg action set-window-height 360 >/dev/null 2>&1 || true
+
+  # Absolute-ish placement by computing a relative delta to a fixed target.
+  # Default target tuned for your setup; override with env vars if needed.
+  local target_x target_y x y dx dy
+  target_x="${MPV_NIRI_TARGET_X:-1880}"
+  target_y="${MPV_NIRI_TARGET_Y:-100}"
+
+  read -r x y <<<"$(niri_focused_window_xy)" || {
+    notify "mpv-manager" "Niri: pencere konumu okunamadı"
+    return 1
+  }
+
+  dx=$((target_x - x))
+  dy=$((target_y - y))
+
+  niri msg action move-floating-window -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 || true
+  notify "mpv-manager" "Niri: mpv -> (${target_x}, ${target_y})"
 }
 
 start_mpv() {
