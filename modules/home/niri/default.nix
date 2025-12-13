@@ -6,11 +6,10 @@
 
 let
   cfg = config.my.desktop.niri;
-  username = config.home.username;
   
   # Binaries
   kittyCmd = "${pkgs.kitty}/bin/kitty";
-  dmsCmd = "/etc/profiles/per-user/${username}/bin/dms";
+  dmsCmd = "${config.home.profileDirectory}/bin/dms";
   niriusCmd = "${pkgs.nirius}/bin/niriusd";
   niriswitcherCmd = "${pkgs.niriswitcher}/bin/niriswitcher";
 
@@ -416,6 +415,52 @@ let
   # ----------------------------------------------------------------------------
   # Main Niri Config
   # ----------------------------------------------------------------------------
+  hardwareConfigDefault = ''
+    // --- Named Workspaces (Static 1-9) ---
+    // Primary Monitor (DP-3)
+    workspace "1" { open-on-output "DP-3"; }
+    workspace "2" { open-on-output "DP-3"; }
+    workspace "3" { open-on-output "DP-3"; }
+    workspace "4" { open-on-output "DP-3"; }
+    workspace "5" { open-on-output "DP-3"; }
+    workspace "6" { open-on-output "DP-3"; }
+    
+    // Secondary Monitor (eDP-1)
+    workspace "7" { open-on-output "eDP-1"; }
+    
+    // Spotify Workspace (Custom Layout)
+    workspace "8" { 
+        open-on-output "eDP-1";
+        layout {
+            gaps 20;
+            border {
+                on;
+                width 4;
+                active-color "#cba6f7ff";
+            }
+        }
+    }
+    
+    workspace "9" { open-on-output "eDP-1"; }
+
+    // --- Monitor Configuration ---
+    // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
+
+    // Primary: DELL UP2716D
+    output "DP-3" {
+        mode "2560x1440@59.951"; // or @60
+        position x=0 y=0;
+        scale 1.0;
+    }
+
+    // Secondary: Chimei Innolux (Laptop?)
+    output "eDP-1" {
+        mode "1920x1200@60.003";
+        position x=320 y=1440;
+        scale 1.0;
+    }
+  '';
+
   niriConfig = ''
     // ========================================================================
     // Niri Configuration - Optimized for DankMaterialShell
@@ -427,14 +472,15 @@ let
       ELECTRON_OZONE_PLATFORM_HINT "auto";
       QT_QPA_PLATFORMTHEME "gtk3";
       QT_QPA_PLATFORMTHEME_QT6 "gtk3";
-      DISPLAY ":0";
     }
 
     prefer-no-csd;
 
     // --- Startup Applications ---
-    spawn-at-startup "${niriusCmd}";
-    spawn-at-startup "${niriswitcherCmd}";
+    spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
+    spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
+    ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${niriusCmd}";''}
+    ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${niriswitcherCmd}";''}
     
     // Start DMS manually (Disabled: DMS is managed by systemd service)
     // spawn-at-startup "${dmsCmd}" "run";
@@ -465,52 +511,8 @@ let
         lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
     }
 
-    // --- Named Workspaces (Static 1-9) ---
-    // Primary Monitor (DP-3)
-    workspace "1" { open-on-output "DP-3"; }
-    workspace "2" { open-on-output "DP-3"; }
-    workspace "3" { open-on-output "DP-3"; }
-    workspace "4" { open-on-output "DP-3"; }
-    workspace "5" { open-on-output "DP-3"; }
-    workspace "6" { open-on-output "DP-3"; }
-    
-    // Secondary Monitor (eDP-1)
-    workspace "7" { open-on-output "eDP-1"; }
-    
-    // Spotify Workspace (Custom Layout)
-    workspace "8" { 
-        open-on-output "eDP-1";
-        layout {
-            gaps 20;
-            border {
-                on;
-                width 4;
-                active-color "#cba6f7ff";
-            }
-        }
-    }
-    
-    workspace "9" { open-on-output "eDP-1"; }
-
-    // --- Monitor Configuration ---
-    // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
-    // Replacing "Monitor Name" with actual names is required.
-
-    // Primary: DELL UP2716D
-    output "DP-3" {
-        mode "2560x1440@59.951"; // or @60
-        position x=0 y=0;
-        scale 1.0;
-    }
-
-    // Secondary: Chimei Innolux (Laptop?)
-    output "eDP-1" {
-        mode "1920x1200@60.003";
-        position x=320 y=1440;
-        scale 1.0;
-    }
-
     // --- Includes (Modular Config) ---
+    include "dms/hardware.kdl";
     include "dms/layout.kdl";
     include "dms/binds.kdl";
     include "dms/rules.kdl";
@@ -539,6 +541,16 @@ in
       default = true;
       description = "Install niriswitcher application switcher.";
     };
+    enableHardwareConfig = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable static output/workspace pinning for Niri (host-specific).";
+    };
+    hardwareConfig = lib.mkOption {
+      type = lib.types.lines;
+      default = hardwareConfigDefault;
+      description = "Niri KDL snippet for outputs/workspaces (written to niri/dms/hardware.kdl).";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -551,6 +563,8 @@ in
     xdg.configFile."niri/config.kdl".text = niriConfig;
 
     # DMS Sub-configs
+    xdg.configFile."niri/dms/hardware.kdl".text =
+      if cfg.enableHardwareConfig then cfg.hardwareConfig else "";
     xdg.configFile."niri/dms/layout.kdl".text = dmsLayout;
     xdg.configFile."niri/dms/binds.kdl".text = dmsBinds;
     xdg.configFile."niri/dms/rules.kdl".text = dmsRules;
