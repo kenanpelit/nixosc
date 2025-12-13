@@ -15,15 +15,15 @@ let
     hypr="${config.home.profileDirectory}/bin/hypr-workspace-monitor"
     niri="${config.home.profileDirectory}/bin/niri-workspace-monitor"
 
-    if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
       exec "$hypr" "$@"
     fi
 
-    if [[ -n "${NIRI_SOCKET:-}" ]]; then
+    if [[ -n "''${NIRI_SOCKET:-}" ]]; then
       exec "$niri" "$@"
     fi
 
-    case "${XDG_CURRENT_DESKTOP:-}${XDG_SESSION_DESKTOP:-}" in
+    case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
         exec "$hypr" "$@"
         ;;
@@ -43,7 +43,7 @@ let
     mode="${1:-toggle}"
     shift || true
 
-    if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
       case "$mode" in
         in|on|1) exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1 ;;
         out|off|0) exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0 ;;
@@ -52,7 +52,7 @@ let
       esac
     fi
 
-    if [[ -n "${NIRI_SOCKET:-}" ]]; then
+    if [[ -n "''${NIRI_SOCKET:-}" ]]; then
       if command -v niri >/dev/null 2>&1; then
         exec niri msg action fullscreen-window
       fi
@@ -60,7 +60,7 @@ let
       exit 127
     fi
 
-    case "${XDG_CURRENT_DESKTOP:-}${XDG_SESSION_DESKTOP:-}" in
+    case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
         exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1
         ;;
