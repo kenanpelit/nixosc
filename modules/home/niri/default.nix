@@ -336,14 +336,14 @@ let
     input {
       keyboard {
         xkb {
-          layout "tr";
-          variant "f";
-          options "ctrl:nocaps";
+          layout "tr"
+          variant "f"
+          options "ctrl:nocaps"
         }
       }
       touchpad {
-        tap;
-        natural-scroll;
+        tap
+        // natural-scroll
       }
     }
 
