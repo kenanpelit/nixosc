@@ -207,32 +207,62 @@ let
         clip-to-geometry true;
     }
 
-    // --- Floating Windows ---
+    // --- Floating Windows & Shadows ---
+    window-rule {
+        match is-floating=true;
+        shadow { on; }
+    }
+
     window-rule {
         match app-id=r#"org.quickshell$"#;
         open-floating true;
     }
     
-    // MPV Picture-in-Picture
+    // --- Media & PIP ---
     window-rule {
         match app-id="mpv";
+        match title="^Picture-in-Picture$";
         open-floating true;
         default-column-width { fixed 600; }
+        default-window-height { fixed 340; }
     }
     
-    // Dialogs
     window-rule {
-        match title="Open File";
-        match title="File Upload";
+        match app-id="vlc";
+        open-on-workspace "6";
+    }
+
+    // --- Dialogs & Tools (Floating) ---
+    window-rule {
+        match title="^Open File$";
+        match title="^File Upload$";
+        match title="^Save As$";
+        match title="^Confirm to replace files$";
+        match title="^File Operation Progress$";
+        match app-id="pavucontrol";
+        match app-id="org.pulseaudio.pavucontrol";
+        match app-id="nm-connection-editor";
+        match app-id="blueman-manager";
+        match app-id="polkit-gnome-authentication-agent-1";
+        match app-id="hyprland-share-picker"; 
         open-floating true;
+        default-floating-position x=0 y=0 relative-to="center";
     }
 
     // --- Workspace Assignments ---
     window-rule { match app-id="discord"; open-on-workspace "5"; }
     window-rule { match app-id="WebCord"; open-on-workspace "5"; }
     window-rule { match app-id="Spotify"; open-on-workspace "8"; }
-    window-rule { match app-id="vlc"; open-on-workspace "6"; }
     window-rule { match app-id="audacious"; open-on-workspace "5"; }
+    window-rule { match app-id="transmission"; open-on-workspace "7"; }
+    window-rule { match app-id="org.keepassxc.KeePassXC"; open-on-workspace "7"; }
+
+    // --- Privacy (Block from Screencast) ---
+    window-rule {
+        match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
+        match app-id=r#"^org\.gnome\.World\.Secrets$"#;
+        block-out-from "screencast";
+    }
 
     // --- No Border Apps ---
     window-rule {
@@ -261,6 +291,10 @@ let
     layer-rule {
         match namespace="dms:blurwallpaper";
         place-within-backdrop true;
+    }
+    layer-rule {
+        match namespace="^notifications$";
+        block-out-from "screencast";
     }
   '';
 
