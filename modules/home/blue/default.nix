@@ -203,10 +203,10 @@ in
         ExecStart = pkgs.writeShellScript "wl-gammarelay-start.sh" ''
           set -eu
           # Try to find an existing Wayland socket
-          if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/$UID}/${WAYLAND_DISPLAY}" ]; then
-            export WAYLAND_DISPLAY
+          if [ -n ''${WAYLAND_DISPLAY:-} ] && [ -S ''${XDG_RUNTIME_DIR:-/run/user/$UID}/''${WAYLAND_DISPLAY} ]; then
+            export WAYLAND_DISPLAY=''${WAYLAND_DISPLAY}
           else
-            SOCK=$(ls "${XDG_RUNTIME_DIR:-/run/user/$UID}"/wayland-* 2>/dev/null | head -n1 || true)
+            SOCK=$(ls ''${XDG_RUNTIME_DIR:-/run/user/$UID}/wayland-* 2>/dev/null | head -n1 || true)
             if [ -n "$SOCK" ]; then
               export WAYLAND_DISPLAY="$(basename "$SOCK")"
             fi
