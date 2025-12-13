@@ -7,7 +7,10 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.sunsetr;
-  dag = lib.hm.dag;
+  dag =
+    if lib ? hm && lib.hm ? dag
+    then lib.hm.dag
+    else config.lib.dag;
 
   configDir = "${config.xdg.configHome}/sunsetr";
 
