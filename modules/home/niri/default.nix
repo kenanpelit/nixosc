@@ -306,6 +306,9 @@ let
     window-rule {
         match app-id="TmuxKenp";
         match app-id="Tmux";
+        // Bazı terminallerde (özellikle kitty/wezterm) app-id "kitty" kalabiliyor,
+        // ama başlık "Tmux" olduğu için bunu da yakalayalım.
+        match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title="^Tmux$"#;
         open-on-workspace "2";
         open-focused true;
     }
