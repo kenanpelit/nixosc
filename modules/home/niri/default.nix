@@ -92,7 +92,8 @@ let
 
       // --- Help / Cheatsheet ---
       Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
-      Mod+Shift+Slash hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
+      Mod+Alt+Slash hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
+      Mod+Shift+Slash { show-hotkey-overlay; }
 
       // ========================================================================
       // NIRI CORE BINDINGS
@@ -108,6 +109,13 @@ let
       Mod+F { maximize-column; }
       Mod+Shift+F { fullscreen-window; }
       Mod+O { toggle-window-rule-opacity; }
+      Mod+R { switch-preset-column-width; }
+      Mod+Shift+Space { toggle-window-floating; }
+      Mod+Grave { switch-focus-between-floating-and-tiling; }
+
+      // --- Column/Window Manipulation ---
+      Mod+BracketLeft { consume-or-expel-window-left; }
+      Mod+BracketRight { consume-or-expel-window-right; }
 
       // --- Navigation ---
       Mod+Left  { focus-column-left; }
@@ -139,11 +147,11 @@ let
       Mod+Shift+K     { move-window-up; }
       Mod+Shift+J     { move-window-down; }
 
-      // --- Moving Workspaces (Monitors) ---
+      // --- Moving Workspaces (Monitors/Workspaces) ---
       Mod+Ctrl+Left  { move-column-to-monitor-left; }
       Mod+Ctrl+Right { move-column-to-monitor-right; }
-      Mod+Ctrl+Up    { move-column-to-monitor-up; }
-      Mod+Ctrl+Down  { move-column-to-monitor-down; }
+      Mod+Ctrl+Up    { move-column-to-workspace-up; }
+      Mod+Ctrl+Down  { move-column-to-workspace-down; }
 
       // --- Screenshots (DMS Niri integration) ---
       Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
