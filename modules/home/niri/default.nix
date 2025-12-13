@@ -172,6 +172,8 @@ let
       // Tools
       Mod+Shift+C { spawn "hyprpicker" "-a"; }
       Mod+Ctrl+V { spawn "kitty" "--class" "clipse" "-e" "clipse"; }
+      F10 { spawn "bluetooth_toggle"; }
+      Alt+F12 { spawn "osc-mullvad" "toggle"; }
 
       // --- Workspace Switching (1-9) ---
       Mod+1 { focus-workspace 1; }
