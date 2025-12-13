@@ -273,13 +273,22 @@ let
         match title="^Confirm to replace files$";
         match title="^File Operation Progress$";
         match app-id="pavucontrol";
-        match app-id="org.pulseaudio.pavucontrol";
         match app-id="nm-connection-editor";
         match app-id="blueman-manager";
         match app-id="polkit-gnome-authentication-agent-1";
         match app-id="hyprland-share-picker"; 
         open-floating true;
         // default-floating-position x=0 y=0 relative-to="center";
+    }
+
+    // --- Audio Mixer (pavucontrol) ---
+    window-rule {
+        match app-id="org.pulseaudio.pavucontrol";
+        open-floating true;
+        default-column-width { fixed 560; }
+        default-window-height { fixed 520; }
+        default-floating-position x=32 y=96 relative-to="top-right";
+        open-focused true;
     }
 
     // --- Clipboard (Clipse) ---
