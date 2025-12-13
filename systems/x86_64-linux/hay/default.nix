@@ -60,7 +60,7 @@
   # ============================================================================
   my.greeter.dms = {
     enable     = true;
-    compositor = "hyprland";
+    compositor = "start-hyprland";
     layout     = "tr";
     variant    = "f";
   };
