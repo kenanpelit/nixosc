@@ -260,6 +260,12 @@ let
         default-column-width { fixed 640; }
         default-window-height { fixed 360; }
         default-floating-position x=32 y=96 relative-to="top-right";
+        // Niri floating boyutu bazen "hatırlanmış" veya uygulama tarafından büyütülmüş olabiliyor,
+        // bu yüzden min=max ile zorla sabitle.
+        min-width 640;
+        max-width 640;
+        min-height 360;
+        max-height 360;
         opacity 1.0;
     }
 
