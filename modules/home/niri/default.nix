@@ -543,7 +543,7 @@ in
     };
     enableHardwareConfig = lib.mkOption {
       type = lib.types.bool;
-      default = false;
+      default = true;
       description = "Enable static output/workspace pinning for Niri (host-specific).";
     };
     hardwareConfig = lib.mkOption {
