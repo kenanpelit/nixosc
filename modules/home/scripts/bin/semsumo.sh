@@ -443,7 +443,15 @@ get_class_pattern() {
   fi
 
   case "$profile" in
-  brave-*) echo "brave|brave-browser" ;;
+  brave-*)
+    # If a profile name (first arg) is provided and not a flag, use it as class
+    local first_arg="${args%% *}"
+    if [[ -n "$first_arg" && "$first_arg" != -* ]]; then
+      echo "$first_arg"
+    else
+      echo "brave|brave-browser"
+    fi
+    ;;
   chrome-*) echo "chrome|Google-chrome" ;;
   firefox-*)
     local profile_class="${profile#firefox-}"
