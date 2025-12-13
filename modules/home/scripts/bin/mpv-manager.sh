@@ -39,6 +39,15 @@ die() {
   exit 1
 }
 
+sign() {
+  local n="$1"
+  if [[ "$n" -ge 0 ]]; then
+    echo "+$n"
+  else
+    echo "$n"
+  fi
+}
+
 have_socket() {
   [[ -S "$SOCKET_PATH" ]]
 }
@@ -160,6 +169,87 @@ hypr_wallpaper() {
   notify "mpv-manager" "Wallpaper ayarlandı ($output)"
 }
 
+niri_require() {
+  command -v niri >/dev/null 2>&1 || die "niri not found in PATH"
+}
+
+niri_focused_window_geometry() {
+  # Outputs: "x y w h" from `niri msg focused-window`
+  # Example lines:
+  #   Workspace-view position: 32, 490
+  #   Window size: 2160 x 1224
+  local info x y w h
+  info="$(niri msg focused-window 2>/dev/null || true)"
+
+  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\)$/\\1/p' | tail -n1)"
+  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\)$/\\2/p' | tail -n1)"
+  w="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\)$/\\1/p' | tail -n1)"
+  h="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\)$/\\2/p' | tail -n1)"
+
+  [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]] || return 1
+  echo "$x $y $w $h"
+}
+
+niri_focused_output_size() {
+  # Output: "W H" from `niri msg focused-output`
+  # Try to parse "<W>x<H>@" from a "Mode:" line.
+  local info mode w h
+  info="$(niri msg focused-output 2>/dev/null || true)"
+  mode="$(echo "$info" | sed -n 's/^[[:space:]]*Mode:[[:space:]]*\\([0-9]\\+x[0-9]\\+\\)@.*$/\\1/p' | head -n1)"
+  w="${mode%x*}"
+  h="${mode#*x}"
+  [[ -n "$w" && -n "$h" && "$w" != "$mode" ]] || return 1
+  echo "$w $h"
+}
+
+niri_move_floating_cycle_corners() {
+  niri_require
+
+  # Ensure focused window is floating so we can move it.
+  niri msg action move-window-to-floating >/dev/null 2>&1 || true
+
+  local geo out x y w h ow oh margin_x margin_y corner next tx ty dx dy
+  geo="$(niri_focused_window_geometry)" || die "Niri: focused-window geometry okunamadı"
+  out="$(niri_focused_output_size)" || die "Niri: focused-output boyutu okunamadı"
+
+  read -r x y w h <<<"$geo"
+  read -r ow oh <<<"$out"
+
+  margin_x=32
+  margin_y=96
+
+  # Determine quadrant and cycle TL -> TR -> BR -> BL -> TL
+  if [[ "$x" -lt $((ow / 2)) && "$y" -lt $((oh / 2)) ]]; then
+    corner="tl"
+  elif [[ "$x" -ge $((ow / 2)) && "$y" -lt $((oh / 2)) ]]; then
+    corner="tr"
+  elif [[ "$x" -ge $((ow / 2)) && "$y" -ge $((oh / 2)) ]]; then
+    corner="br"
+  else
+    corner="bl"
+  fi
+
+  case "$corner" in
+    tl) next="tr" ;;
+    tr) next="br" ;;
+    br) next="bl" ;;
+    bl) next="tl" ;;
+  esac
+
+  case "$next" in
+    tl) tx=$margin_x; ty=$margin_y ;;
+    tr) tx=$((ow - w - margin_x)); ty=$margin_y ;;
+    br) tx=$((ow - w - margin_x)); ty=$((oh - h - margin_x)) ;;
+    bl) tx=$margin_x; ty=$((oh - h - margin_x)) ;;
+  esac
+
+  dx=$((tx - x))
+  dy=$((ty - y))
+
+  niri msg action move-floating-window -x "$(sign "$dx")" -y "$(sign "$dy")" >/dev/null 2>&1 || die "Niri: move-floating-window başarısız"
+  notify "mpv-manager" "Niri: MPV taşındı ($next)"
+}
+
 start_mpv() {
   case "$(compositor)" in
     hyprland) hypr_start_mpv ;;
@@ -242,13 +332,12 @@ main() {
           ;;
         niri)
           case "$cmd" in
+            move) niri_move_floating_cycle_corners ;;
             stick)
-              if command -v niri >/dev/null 2>&1; then
-                niri msg action toggle-window-floating >/dev/null 2>&1 || true
-                notify "mpv-manager" "Niri: toggle-window-floating"
-                exit 0
-              fi
-              die "niri not found in PATH"
+              # Niri'de Hyprland'daki "pin" yok; en yakın karşılık pencereyi floating'e almak.
+              niri_require
+              niri msg action move-window-to-floating >/dev/null 2>&1 || true
+              notify "mpv-manager" "Niri: window -> floating"
               ;;
             *)
               die "Bu komut Niri'de desteklenmiyor: $cmd"
