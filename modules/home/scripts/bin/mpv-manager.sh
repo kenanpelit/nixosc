@@ -175,32 +175,74 @@ niri_focused_window_xy() {
   echo "$xy"
 }
 
+niri_focused_window_xywh() {
+  # Output: "x y w h" from `niri msg focused-window`
+  local info x y w h
+  info="$(niri msg focused-window 2>/dev/null || true)"
+
+  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
+  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
+  w="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
+  h="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
+
+  [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]] || return 1
+  echo "$x $y $w $h"
+}
+
+niri_focused_output_wh() {
+  # Output: "W H" from `niri msg focused-output`
+  # Parse first "<W>x<H>" found.
+  local info mode w h
+  info="$(niri msg focused-output 2>/dev/null || true)"
+  mode="$(echo "$info" | sed -n 's/.*\\([0-9]\\{3,5\\}x[0-9]\\{3,5\\}\\).*/\\1/p' | head -n1)"
+  w="${mode%x*}"
+  h="${mode#*x}"
+  [[ -n "$w" && -n "$h" && "$w" != "$mode" ]] || return 1
+  echo "$w $h"
+}
+
 niri_move_top_right() {
   niri_require
 
   # Ensure focused window is floating so we can move it.
   niri msg action move-window-to-floating >/dev/null 2>&1 || true
 
-  # Force a sane PiP-ish size in Niri.
-  niri msg action set-window-width 640 >/dev/null 2>&1 || true
-  niri msg action set-window-height 360 >/dev/null 2>&1 || true
+  # Force a sane PiP-ish size in Niri (overridable).
+  local target_w target_h
+  target_w="${MPV_NIRI_WIDTH:-640}"
+  target_h="${MPV_NIRI_HEIGHT:-360}"
+  niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
+  niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
 
-  # Absolute-ish placement by computing a relative delta to a fixed target.
-  # Default target tuned for your setup; override with env vars if needed.
-  local target_x target_y x y dx dy
-  target_x="${MPV_NIRI_TARGET_X:-1880}"
-  target_y="${MPV_NIRI_TARGET_Y:-100}"
+  # Compute target position based on focused output size + current window size.
+  local margin_x margin_y x y w h ow tx ty dx dy
+  margin_x="${MPV_NIRI_MARGIN_X:-40}"
+  margin_y="${MPV_NIRI_MARGIN_Y:-100}"
 
-  read -r x y <<<"$(niri_focused_window_xy)" || {
+  read -r x y w h <<<"$(niri_focused_window_xywh)" || {
     notify "mpv-manager" "Niri: pencere konumu okunamadı"
     return 1
   }
+  read -r ow _ <<<"$(niri_focused_output_wh)" || {
+    notify "mpv-manager" "Niri: output boyutu okunamadı"
+    return 1
+  }
 
-  dx=$((target_x - x))
-  dy=$((target_y - y))
+  tx=$((ow - w - margin_x))
+  ty=$((margin_y))
+  dx=$((tx - x))
+  dy=$((ty - y))
 
+  # Apply twice to converge if niri adjusts/clamps after resize.
   niri msg action move-floating-window -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 || true
-  notify "mpv-manager" "Niri: mpv -> (${target_x}, ${target_y})"
+  read -r x y w h <<<"$(niri_focused_window_xywh)" 2>/dev/null || true
+  if [[ -n "${x:-}" && -n "${y:-}" ]]; then
+    dx=$((tx - x))
+    dy=$((ty - y))
+    niri msg action move-floating-window -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 || true
+  fi
+
+  notify "mpv-manager" "Niri: mpv -> top-right (${tx}, ${ty})"
 }
 
 start_mpv() {
