@@ -55,14 +55,21 @@ in
       };
       Service = {
         Type = "simple";
-        ExecStart = "${pkgs.sunsetr}/bin/sunsetr --background --config %h/.config/sunsetr";
+        ExecStart = pkgs.writeShellScript "sunsetr-run.sh" ''
+          SOCK1="$XDG_RUNTIME_DIR/niri/socket"
+          SOCK2="$XDG_RUNTIME_DIR/niri/ipc.sock"
+
+          if [ -S "$SOCK1" ]; then
+            export NIRI_SOCKET="$SOCK1"
+          elif [ -S "$SOCK2" ]; then
+            export NIRI_SOCKET="$SOCK2"
+          fi
+
+          exec ${pkgs.sunsetr}/bin/sunsetr --background --config %h/.config/sunsetr
+        '';
         Restart = "on-failure";
         RestartSec = 10;
-        Environment = [
-          "XDG_CURRENT_DESKTOP=niri"
-          "NIRI_SOCKET=%t/niri/socket"
-          "WAYLAND_DISPLAY=niri"
-        ];
+        Environment = [ "XDG_CURRENT_DESKTOP=niri" ];
       };
       Install = {
         WantedBy = [ "graphical-session.target" ];
