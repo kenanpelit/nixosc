@@ -324,6 +324,14 @@ let
         open-focused true;
     }
 
+    // --- WebCord / Discord ---
+    window-rule {
+        match app-id="WebCord";
+        match app-id="discord";
+        open-on-workspace "5";
+        open-focused true;
+    }
+
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
         match app-id="org.pulseaudio.pavucontrol";
