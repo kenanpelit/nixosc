@@ -215,16 +215,43 @@ setup_environment() {
 # Systemd Integration
 # =============================================================================
 setup_systemd_integration() {
-    # Import environment to systemd user session
-    local vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP GTK_THEME XCURSOR_THEME SYSTEMD_OFFLINE NIXOS_OZONE_WL"
-    
-    systemctl --user import-environment $vars 2>/dev/null || true
-    dbus-update-activation-environment --systemd --all 2>/dev/null || true
-    
-    # Restart critical user services for correct environment
-    if [[ "$GDM_MODE" == "true" ]]; then
-        systemctl --user restart dms.service 2>/dev/null || true
-    fi
+	# Import environment to systemd user session
+	local vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP GTK_THEME XCURSOR_THEME SYSTEMD_OFFLINE NIXOS_OZONE_WL"
+
+	if systemctl --user import-environment $vars 2>/dev/null; then
+		debug_log "Systemd environment import başarılı"
+	else
+		warn "Systemd import başarısız (systemd user session yok olabilir)"
+	fi
+
+	if dbus-update-activation-environment --systemd --all 2>/dev/null; then
+		debug_log "DBus activation environment güncellendi"
+	else
+		warn "DBus update başarısız"
+	fi
+
+	# Restart critical user services for correct environment
+	if [[ "$GDM_MODE" == "true" ]]; then
+		systemctl --user restart dms.service 2>/dev/null || true
+	fi
+}
+
+# =============================================================================
+# Cleanup old Niri processes (TTY mode)
+# =============================================================================
+cleanup_old_processes() {
+	if [[ "$GDM_MODE" == "true" ]]; then
+		return 0
+	fi
+
+	local niri_pids
+	niri_pids=$(pgrep -f "niri-session|niri" 2>/dev/null || true)
+	if [[ -n "$niri_pids" ]]; then
+		echo "$niri_pids" | xargs -r kill -TERM 2>/dev/null || true
+		sleep 2
+		niri_pids=$(pgrep -f "niri-session|niri" 2>/dev/null || true)
+		[[ -n "$niri_pids" ]] && echo "$niri_pids" | xargs -r kill -KILL 2>/dev/null || true
+	fi
 }
 
 # =============================================================================
@@ -232,30 +259,42 @@ setup_systemd_integration() {
 # =============================================================================
 start_niri() {
 	print_header "NIRI BAŞLATILIYOR"
-    
-    if [[ "$GDM_MODE" == "true" ]]; then
-        # GDM modunda exec (systemd journal logging)
-        exec "$NIRI_BINARY" 2>&1 | systemd-cat -t niri-gdm
-    else
-        # TTY modunda exec (file logging)
-        exec "$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
-    fi
+
+	if [[ "$DRY_RUN" == "true" ]]; then
+		info "[DRY-RUN] Niri başlatılmayacak"
+		exit 0
+	fi
+
+	if [[ "$GDM_MODE" == "true" ]]; then
+		# GDM modunda exec (systemd journal logging)
+		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY"
+	else
+		# TTY modunda exec (file logging)
+		exec "$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
+	fi
 }
 
 # =============================================================================
 # Main
 # =============================================================================
 main() {
+	# Argument parsing (minimal)
+	for arg in "$@"; do
+		case "$arg" in
+		--dry-run) DRY_RUN=true ;;
+		--force-tty) FORCE_TTY_MODE=true ;;
+		--debug) DEBUG_MODE=true ;;
+		esac
+	done
+
 	detect_gdm_session
-    
-    if [[ "$1" == "--dry-run" ]]; then DRY_RUN=true; fi
-    if [[ "$1" == "--force-tty" ]]; then GDM_MODE=false; fi
 
 	setup_directories
 	rotate_logs
 	check_system
 	setup_environment
 	setup_systemd_integration
+	cleanup_old_processes
 	start_niri
 }
 
