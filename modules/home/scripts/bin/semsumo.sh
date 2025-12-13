@@ -443,7 +443,7 @@ get_class_pattern() {
   fi
 
   case "$profile" in
-  brave-*) echo "brave" ;;
+  brave-*) echo "brave|brave-browser" ;;
   chrome-*) echo "chrome|Google-chrome" ;;
   firefox-*)
     local profile_class="${profile#firefox-}"
