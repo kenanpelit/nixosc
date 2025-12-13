@@ -309,7 +309,6 @@ let
     window-rule {
         match app-id=r#"^org\.gnome\."#;
         match app-id=r#"^org\.wezfurlong\.wezterm$"#;
-        match app-id="Alacritty";
         match app-id="zen";
         match app-id="com.mitchellh.ghostty";
         match app-id="kitty";
