@@ -17,7 +17,7 @@ in
     # =============================================================================
     # Service Configuration
     # =============================================================================
-    my.user.blue.enable = true;  # Enable unified night light manager (Gammastep + HyprSunset)
+    my.user.blue.enable = lib.mkDefault true;  # Enable unified night light manager (Gammastep + HyprSunset)
     
     programs = {
       # ---------------------------------------------------------------------------
