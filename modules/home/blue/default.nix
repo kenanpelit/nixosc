@@ -1,9 +1,7 @@
 # modules/home/blue/default.nix
 # ==============================================================================
 # Home module for Hypr Blue Manager: unified night-light control
-# (Gammastep / Hyprsunset / wl-gammarelay). Provides per-user service,
-# temperature/brightness presets, and package wiring. Centralize night-light
-# policy here instead of scattering scripts in the session config.
+# (Gammastep / Hyprsunset). Provides per-user service and presets.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
@@ -14,7 +12,7 @@ let
 in
 {
   options.my.user.blue = {
-    enable = lib.mkEnableOption "Hypr Blue Manager servisi (Gammastep + HyprSunset + wl-gammarelay)";
+    enable = lib.mkEnableOption "Hypr Blue Manager servisi (Gammastep + HyprSunset)";
 
     package = lib.mkOption {
       type = lib.types.package;
@@ -33,12 +31,6 @@ in
       type = lib.types.bool;
       default = true;
       description = "HyprSunset'i aktif et";
-    };
-
-    enableWlGammarelay = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "wl-gammarelay'i aktif et";
     };
 
     # Temperature settings
@@ -95,33 +87,6 @@ in
       };
     };
 
-    # wl-gammarelay specific settings
-    wlGammarelay = {
-      tempDay = lib.mkOption {
-        type = lib.types.int;
-        default = cfg.temperature.day;
-        description = "wl-gammarelay gündüz sıcaklığı";
-      };
-
-      tempNight = lib.mkOption {
-        type = lib.types.int;
-        default = cfg.temperature.night;
-        description = "wl-gammarelay gece sıcaklığı";
-      };
-
-      brightness = lib.mkOption {
-        type = lib.types.float;
-        default = 1.0;
-        description = "wl-gammarelay parlaklık (0.1-1.0)";
-      };
-
-      gamma = lib.mkOption {
-        type = lib.types.float;
-        default = 1.0;
-        description = "wl-gammarelay gamma (0.1-2.0)";
-      };
-    };
-
     # Other settings
     checkInterval = lib.mkOption {
       type = lib.types.int;
@@ -135,16 +100,14 @@ in
     home.packages = [
       cfg.package
     ] ++ lib.optionals cfg.enableGammastep [ pkgs.gammastep ]
-      ++ lib.optionals cfg.enableHyprsunset [ pkgs.hyprsunset ]
-      ++ lib.optionals cfg.enableWlGammarelay [ pkgs.wl-gammarelay-rs ];
+      ++ lib.optionals cfg.enableHyprsunset [ pkgs.hyprsunset ];
 
     # Single unified service that manages everything
     systemd.user.services.blue = {
       Unit = {
         Description = "Hypr Blue Manager - Unified Color Temperature Manager";
-        After = [ "graphical-session.target" ] ++ lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
+        After = [ "graphical-session.target" ];
         PartOf = [ "graphical-session.target" ];
-        Wants = lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
       };
 
  
@@ -161,7 +124,6 @@ in
           "daemon"
           "--enable-gammastep ${lib.boolToString cfg.enableGammastep}"
           "--enable-hyprsunset ${lib.boolToString cfg.enableHyprsunset}"
-          "--enable-wlgamma ${lib.boolToString cfg.enableWlGammarelay}"
           "--temp-day ${toString cfg.temperature.day}"
           "--temp-night ${toString cfg.temperature.night}"
           "--gs-temp-day ${toString cfg.gammastep.tempDay}"
@@ -170,10 +132,6 @@ in
           "--bright-night ${toString cfg.gammastep.brightnessNight}"
           "--location ${cfg.gammastep.location}"
           "--gamma ${cfg.gammastep.gamma}"
-          "--wl-temp-day ${toString cfg.wlGammarelay.tempDay}"
-          "--wl-temp-night ${toString cfg.wlGammarelay.tempNight}"
-          "--wl-brightness ${toString cfg.wlGammarelay.brightness}"
-          "--wl-gamma ${toString cfg.wlGammarelay.gamma}"
           "--interval ${toString cfg.checkInterval}"
         ]);
 
@@ -187,68 +145,5 @@ in
       Install.WantedBy = [ "graphical-session.target" ];
     };
 
-    # Separate wl-gammarelay daemon service
-    # This ensures wl-gammarelay is always running and initialized with correct temperature
-    systemd.user.services.wl-gammarelay = lib.mkIf cfg.enableWlGammarelay {
-      Unit = {
-        Description = "wl-gammarelay - Wayland Color Temperature Daemon";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
-        Before = [ "blue.service" ];
-      };
-
-      Service = {
-        Type = "dbus";
-        BusName = "rs.wl-gammarelay";
-        ExecStart = pkgs.writeShellScript "wl-gammarelay-start.sh" ''
-          set -eu
-          RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$UID}"
-
-          # Try to find an existing Wayland socket, wait briefly if needed
-          for _ in $(seq 1 10); do
-            if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -S "$RUNTIME_DIR/''${WAYLAND_DISPLAY}" ]; then
-              export WAYLAND_DISPLAY="''${WAYLAND_DISPLAY}"
-              break
-            fi
-
-            SOCK=$(ls "$RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)
-            if [ -n "$SOCK" ]; then
-              export WAYLAND_DISPLAY="$(basename "$SOCK")"
-              break
-            fi
-
-            sleep 0.5
-          done
-
-          # Fallback to wayland-1 if nothing found
-          if [ -z "''${WAYLAND_DISPLAY:-}" ] && [ -S "$RUNTIME_DIR/wayland-1" ]; then
-            export WAYLAND_DISPLAY="wayland-1"
-          fi
-
-          if [ -z "''${WAYLAND_DISPLAY:-}" ]; then
-            echo "wl-gammarelay: no Wayland socket found under $RUNTIME_DIR" >&2
-            ls "$RUNTIME_DIR"/wayland-* 2>/dev/null >&2 || true
-            exit 1
-          fi
-
-          exec ${pkgs.wl-gammarelay-rs}/bin/wl-gammarelay-rs
-        '';
-        
-        # Initialize with configured day temperature
-        ExecStartPost = [
-          "${pkgs.coreutils}/bin/sleep 1"
-          "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q ${toString cfg.wlGammarelay.tempDay}"
-          "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Brightness d ${toString cfg.wlGammarelay.brightness}"
-          "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Gamma d ${toString cfg.wlGammarelay.gamma}"
-        ];
-
-        SuccessExitStatus = [ 0 2 ];
-        Restart = "on-failure";
-        RestartSec = 3;
-        Environment = [ "XDG_RUNTIME_DIR=%t" ];
-      };
-
-      Install.WantedBy = [ "graphical-session.target" ];
-    };
   };
 }
