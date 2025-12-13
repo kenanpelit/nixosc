@@ -406,6 +406,11 @@ let
             // natural-scroll
           }
         }
+    // --- Switch Events ---
+    switch-events {
+        lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+    }
+
     // --- Named Workspaces (Static 1-9) ---
     // Primary Monitor (DP-3)
     workspace "1" { open-on-output "DP-3"; }
