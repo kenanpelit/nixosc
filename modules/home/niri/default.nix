@@ -395,17 +395,16 @@ let
               options "ctrl:nocaps"
             }
           }
-          touchpad {
-            tap
-            dwt
-            drag-lock
-            middle-emulation
-            click-method "clickfinger"
-            accel-profile "flat"
-            accel-speed 0.0
-            // natural-scroll
-          }
-        }
+                touchpad {
+                  tap
+                  dwt
+                  drag-lock
+                  middle-emulation
+                  click-method "clickfinger"
+                  accel-profile "flat"
+                  accel-speed 0.4
+                  // natural-scroll
+                }        }
     // --- Switch Events ---
     switch-events {
         lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
