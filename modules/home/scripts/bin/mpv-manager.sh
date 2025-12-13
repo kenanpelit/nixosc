@@ -214,52 +214,36 @@ niri_move_floating_cycle_corners() {
   niri msg action set-window-width 640 >/dev/null 2>&1 || true
   niri msg action set-window-height 360 >/dev/null 2>&1 || true
 
-  local geo out x y w h ow oh margin_x margin_y corner next tx ty dx dy
+  local geo out x y w h ow margin_x margin_y tx ty dx dy
   geo="$(niri_focused_window_geometry)" || {
-    notify "mpv-manager" "Niri: pencere konumu okunamadı (move iptal)"
-    return 1
+    notify "mpv-manager" "Niri: pencere konumu okunamadı (top-right)"
+    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
+    return 0
   }
   out="$(niri_focused_output_size)" || {
-    notify "mpv-manager" "Niri: output boyutu okunamadı (move iptal)"
-    return 1
+    notify "mpv-manager" "Niri: output boyutu okunamadı (top-right)"
+    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
+    return 0
   }
 
   read -r x y w h <<<"$geo"
-  read -r ow oh <<<"$out"
+  read -r ow _ <<<"$out"
 
   margin_x=32
   margin_y=96
 
-  # Determine quadrant and cycle TL -> TR -> BR -> BL -> TL
-  if [[ "$x" -lt $((ow / 2)) && "$y" -lt $((oh / 2)) ]]; then
-    corner="tl"
-  elif [[ "$x" -ge $((ow / 2)) && "$y" -lt $((oh / 2)) ]]; then
-    corner="tr"
-  elif [[ "$x" -ge $((ow / 2)) && "$y" -ge $((oh / 2)) ]]; then
-    corner="br"
-  else
-    corner="bl"
-  fi
-
-  case "$corner" in
-    tl) next="tr" ;;
-    tr) next="br" ;;
-    br) next="bl" ;;
-    bl) next="tl" ;;
-  esac
-
-  case "$next" in
-    tl) tx=$margin_x; ty=$margin_y ;;
-    tr) tx=$((ow - w - margin_x)); ty=$margin_y ;;
-    br) tx=$((ow - w - margin_x)); ty=$((oh - h - margin_x)) ;;
-    bl) tx=$margin_x; ty=$((oh - h - margin_x)) ;;
-  esac
+  # Always move to top-right
+  tx=$((ow - w - margin_x))
+  ty=$margin_y
 
   dx=$((tx - x))
   dy=$((ty - y))
 
-  niri msg action move-floating-window -x "$(sign "$dx")" -y "$(sign "$dy")" >/dev/null 2>&1 || die "Niri: move-floating-window başarısız"
-  notify "mpv-manager" "Niri: MPV taşındı ($next)"
+  niri msg action move-floating-window -x "$(sign "$dx")" -y "$(sign "$dy")" >/dev/null 2>&1 || {
+    # If relative move fails, fall back to "push to corner"
+    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
+  }
+  notify "mpv-manager" "Niri: top-right"
 }
 
 start_mpv() {
