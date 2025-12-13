@@ -50,13 +50,14 @@ in
     systemd.user.services.sunsetr = {
       Unit = {
         Description = "sunsetr gamma/temperature manager";
-        After = [ "graphical-session-pre.target" ];
+        After = [ "graphical-session-pre.target" "tray.target" ];
         PartOf = [ "graphical-session.target" ];
       };
       Service = {
-        ExecStart = "${pkgs.sunsetr}/bin/sunsetr --background";
+        Type = "simple";
+        ExecStart = "${pkgs.sunsetr}/bin/sunsetr --background --config %h/.config/sunsetr";
         Restart = "on-failure";
-        RestartSec = 5;
+        RestartSec = 10;
         Environment = "XDG_CURRENT_DESKTOP=niri";
       };
       Install = {
