@@ -80,7 +80,7 @@ declare -A DAILY_PROFILES=(
   ["brave-kenp"]="BRAVE_BROWSERS"     # Workspace 1
   ["brave-ai"]="BRAVE_BROWSERS"       # Workspace 3
   ["brave-compecta"]="BRAVE_BROWSERS" # Workspace 4
-  ["discord"]="APPS"                  # Workspace 5
+  ["webcord"]="APPS"                  # Workspace 5
   ["brave-youtube"]="BRAVE_BROWSERS"  # Workspace 7
   ["spotify"]="APPS"                  # Workspace 8
   ["ferdium"]="APPS"                  # Workspace 9
@@ -799,7 +799,7 @@ ensure_windows_on_correct_workspace() {
   declare -A WINDOW_WORKSPACE_MAP=(
     ["TmuxKenp"]="2"                    # Terminal
     ["Kenp"]="1"                        # Main browser (multiple windows possible)
-    ["discord|Discord"]="5"             # Discord
+    ["discord|Discord|WebCord"]="5"     # Discord/WebCord
     ["brave-youtube.com__-Default"]="7" # YouTube
     ["spotify|Spotify"]="8"             # Spotify
     ["ferdium|Ferdium"]="9"             # Ferdium
@@ -933,7 +933,7 @@ launch_daily_profiles() {
   # 2. Main browser (workspace 1)
   # 3. AI browser (workspace 3)
   # 4. Work browser (workspace 4)
-  # 5. Discord (workspace 5)
+  # 5. WebCord (workspace 5)
   # 6. YouTube (workspace 7 - default on secondary monitor)
   # 7. Spotify (workspace 8)
   # 8. Ferdium/WhatsApp (workspace 9)
@@ -943,7 +943,7 @@ launch_daily_profiles() {
     "brave-kenp"     # WS 1: Main browser
     "brave-ai"       # WS 3: AI workspace
     "brave-compecta" # WS 4: Work
-    "discord"        # WS 5: Discord
+    "webcord"        # WS 5: WebCord
     "brave-youtube"  # WS 7: YouTube
     "spotify"        # WS 8: Spotify
     "ferdium"        # WS 9: WhatsApp/Ferdium
