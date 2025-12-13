@@ -1,13 +1,29 @@
 #!/usr/bin/env bash
-# mpv-manager.sh - compositor-agnostic MPV helper
-# - Hyprland: delegates to hypr-mpv-manager if available (full feature set)
-# - Niri/other: provides core MPV controls via IPC (start/playback/play-yt/save-yt)
+# mpv-manager.sh - compositor-aware MPV helper
+# - Hyprland: window management via hyprctl (move/stick/wallpaper + IPC controls)
+# - Niri/other: IPC controls (start/playback/play-yt/save-yt), best-effort helpers
 
 set -euo pipefail
 
 SOCKET_PATH="/tmp/mpvsocket"
 DOWNLOADS_DIR="${HOME}/Downloads"
 NOTIFICATION_TIMEOUT=1200
+
+compositor() {
+  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    echo "hyprland"
+    return
+  fi
+  if [[ -n "${NIRI_SOCKET:-}" ]]; then
+    echo "niri"
+    return
+  fi
+  case "${XDG_CURRENT_DESKTOP:-}${XDG_SESSION_DESKTOP:-}" in
+    *Hyprland*|*hyprland*) echo "hyprland" ;;
+    *niri*|*Niri*) echo "niri" ;;
+    *) echo "unknown" ;;
+  esac
+}
 
 notify() {
   local title="$1"
@@ -47,21 +63,34 @@ Commands:
   play-yt     Play YouTube URL from clipboard
   save-yt     Download YouTube URL from clipboard (yt-dlp)
 
-Hyprland-only (delegated to hypr-mpv-manager when present):
+Window management (Hyprland; limited elsewhere):
   move | stick | wallpaper
 EOF
 }
 
-maybe_delegate_to_hypr() {
-  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hypr-mpv-manager >/dev/null 2>&1; then
-    exec hypr-mpv-manager "$@"
-  fi
+require_hypr() {
+  command -v hyprctl >/dev/null 2>&1 || die "hyprctl not found"
+  command -v jq >/dev/null 2>&1 || die "jq not found"
 }
 
-start_mpv() {
+hypr_find_mpv_window() {
+  hyprctl clients -j | jq -c 'map(select(.initialClass == "mpv" or .class == "mpv")) | .[0] // empty'
+}
+
+hypr_focus_mpv() {
+  local window_info address
+  window_info="$(hypr_find_mpv_window)"
+  address="$(echo "$window_info" | jq -r '.address // empty')"
+  [[ -n "$address" ]] || return 1
+  hyprctl dispatch focuswindow "address:$address" >/dev/null
+  return 0
+}
+
+hypr_start_mpv() {
+  require_hypr
   command -v mpv >/dev/null 2>&1 || die "mpv not found"
 
-  if mpv_running && have_socket; then
+  if hypr_focus_mpv; then
     notify "mpv-manager" "MPV zaten çalışıyor"
     return 0
   fi
@@ -70,6 +99,82 @@ start_mpv() {
   mpv --player-operation-mode=pseudo-gui --input-ipc-server="$SOCKET_PATH" --idle -- >/dev/null 2>&1 &
   disown || true
   notify "mpv-manager" "MPV başlatıldı"
+}
+
+hypr_move_window() {
+  require_hypr
+
+  local window_info address x_pos y_pos size
+  window_info="$(hypr_find_mpv_window)"
+  address="$(echo "$window_info" | jq -r '.address // empty')"
+  [[ -n "$address" ]] || die "MPV penceresi bulunamadı"
+
+  hyprctl dispatch focuswindow "address:$address" >/dev/null
+  sleep 0.1
+
+  x_pos="$(echo "$window_info" | jq -r '.at[0] // 0')"
+  y_pos="$(echo "$window_info" | jq -r '.at[1] // 0')"
+  size="$(echo "$window_info" | jq -r '.size[0] // 0')"
+
+  if [[ "$size" -gt 300 ]]; then
+    if [[ "$x_pos" -lt 500 && "$y_pos" -lt 500 ]]; then
+      hyprctl dispatch moveactive exact 80% 7% >/dev/null
+    elif [[ "$x_pos" -gt 1000 && "$y_pos" -lt 500 ]]; then
+      hyprctl dispatch moveactive exact 80% 77% >/dev/null
+    elif [[ "$x_pos" -gt 1000 && "$y_pos" -gt 500 ]]; then
+      hyprctl dispatch moveactive exact 1% 77% >/dev/null
+    else
+      hyprctl dispatch moveactive exact 1% 7% >/dev/null
+    fi
+  else
+    if [[ "$x_pos" -lt 500 && "$y_pos" -lt 500 ]]; then
+      hyprctl dispatch moveactive exact 84% 7% >/dev/null
+    elif [[ "$x_pos" -gt 1000 && "$y_pos" -lt 500 ]]; then
+      hyprctl dispatch moveactive exact 84% 80% >/dev/null
+    elif [[ "$x_pos" -gt 1000 && "$y_pos" -gt 500 ]]; then
+      hyprctl dispatch moveactive exact 3% 80% >/dev/null
+    else
+      hyprctl dispatch moveactive exact 3% 7% >/dev/null
+    fi
+  fi
+
+  notify "mpv-manager" "Pencere konumu güncellendi"
+}
+
+hypr_toggle_stick() {
+  require_hypr
+  hyprctl dispatch pin mpv >/dev/null
+  notify "mpv-manager" "Pencere durumu değiştirildi"
+}
+
+hypr_wallpaper() {
+  command -v mpvpaper >/dev/null 2>&1 || die "mpvpaper not found"
+  command -v wl-paste >/dev/null 2>&1 || die "wl-paste not found"
+
+  local output="${MPV_WALLPAPER_OUTPUT:-eDP-1}"
+  local source
+  source="$(wl-paste 2>/dev/null || true)"
+  [[ -n "$source" ]] || die "Panoda video/URL yok"
+
+  mpvpaper "$output" "$source" >/dev/null 2>&1 || die "mpvpaper başarısız oldu (output=$output)"
+  notify "mpv-manager" "Wallpaper ayarlandı ($output)"
+}
+
+start_mpv() {
+  case "$(compositor)" in
+    hyprland) hypr_start_mpv ;;
+    *) 
+      command -v mpv >/dev/null 2>&1 || die "mpv not found"
+      if mpv_running && have_socket; then
+        notify "mpv-manager" "MPV zaten çalışıyor"
+        return 0
+      fi
+      rm -f "$SOCKET_PATH" 2>/dev/null || true
+      mpv --player-operation-mode=pseudo-gui --input-ipc-server="$SOCKET_PATH" --idle -- >/dev/null 2>&1 &
+      disown || true
+      notify "mpv-manager" "MPV başlatıldı"
+      ;;
+  esac
 }
 
 toggle_playback() {
@@ -127,8 +232,33 @@ main() {
 
   case "$cmd" in
     move|stick|wallpaper)
-      maybe_delegate_to_hypr "$cmd" "$@"
-      die "Bu komut Hyprland için (hypr-mpv-manager) destekleniyor: $cmd"
+      case "$(compositor)" in
+        hyprland)
+          case "$cmd" in
+            move) hypr_move_window ;;
+            stick) hypr_toggle_stick ;;
+            wallpaper) hypr_wallpaper ;;
+          esac
+          ;;
+        niri)
+          case "$cmd" in
+            stick)
+              if command -v niri >/dev/null 2>&1; then
+                niri msg action toggle-window-floating >/dev/null 2>&1 || true
+                notify "mpv-manager" "Niri: toggle-window-floating"
+                exit 0
+              fi
+              die "niri not found in PATH"
+              ;;
+            *)
+              die "Bu komut Niri'de desteklenmiyor: $cmd"
+              ;;
+          esac
+          ;;
+        *)
+          die "Bu komut bu ortamda desteklenmiyor: $cmd"
+          ;;
+      esac
       ;;
     start)
       start_mpv
@@ -153,4 +283,3 @@ main() {
 }
 
 main "$@"
-

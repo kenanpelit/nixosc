@@ -622,13 +622,13 @@ let
     "ALT, i, exec, hypr-vlc_toggle"
   
     # MPV Manager
-    "CTRL ALT, 1, exec, hypr-mpv-manager start"
-    "ALT, 1, exec, hypr-mpv-manager playback"
-    "ALT, 2, exec, hypr-mpv-manager play-yt"
-    "ALT, 3, exec, hypr-mpv-manager stick"
-    "ALT, 4, exec, hypr-mpv-manager move"
-    "ALT, 5, exec, hypr-mpv-manager save-yt"
-    "ALT, 6, exec, hypr-mpv-manager wallpaper"
+    "CTRL ALT, 1, exec, mpv-manager start"
+    "ALT, 1, exec, mpv-manager playback"
+    "ALT, 2, exec, mpv-manager play-yt"
+    "ALT, 3, exec, mpv-manager stick"
+    "ALT, 4, exec, mpv-manager move"
+    "ALT, 5, exec, mpv-manager save-yt"
+    "ALT, 6, exec, mpv-manager wallpaper"
   ];
 
   windowControlBinds = [
