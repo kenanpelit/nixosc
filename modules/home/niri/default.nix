@@ -150,8 +150,8 @@ let
       // --- Moving Workspaces (Monitors/Workspaces) ---
       Mod+Ctrl+Left  { move-column-to-monitor-left; }
       Mod+Ctrl+Right { move-column-to-monitor-right; }
-      Mod+Ctrl+Up    { move-column-to-workspace-up; }
-      Mod+Ctrl+Down  { move-column-to-workspace-down; }
+      Mod+Ctrl+Up    { move-column-to-monitor-up; }
+      Mod+Ctrl+Down  { move-column-to-monitor-down; }
 
       // --- Screenshots (DMS Niri integration) ---
       Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
