@@ -46,5 +46,22 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ pkgs.sunsetr ];
     xdg.configFile."sunsetr/config.toml".text = sunsetrConfig;
+
+    systemd.user.services.sunsetr = {
+      Unit = {
+        Description = "sunsetr gamma/temperature manager";
+        After = [ "graphical-session-pre.target" ];
+        PartOf = [ "graphical-session.target" ];
+      };
+      Service = {
+        ExecStart = "${pkgs.sunsetr}/bin/sunsetr --background";
+        Restart = "on-failure";
+        RestartSec = 5;
+        Environment = "XDG_CURRENT_DESKTOP=niri";
+      };
+      Install = {
+        WantedBy = [ "graphical-session.target" ];
+      };
+    };
   };
 }
