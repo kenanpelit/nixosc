@@ -157,6 +157,8 @@ let
       Mod+WheelScrollLeft                 { focus-column-left; }
 
       // --- Custom Applications (Imported from Hyprland) ---
+      Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
+
       // Launchers
       F1 { spawn "rofi-launcher" "keys"; }
       Alt+Space { spawn "rofi-launcher"; }
