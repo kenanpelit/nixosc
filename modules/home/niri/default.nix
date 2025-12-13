@@ -246,7 +246,7 @@ let
         match app-id="polkit-gnome-authentication-agent-1";
         match app-id="hyprland-share-picker"; 
         open-floating true;
-        default-floating-position x=0 y=0 relative-to="center";
+        // default-floating-position x=0 y=0 relative-to="center";
     }
 
     // --- Workspace Assignments ---
