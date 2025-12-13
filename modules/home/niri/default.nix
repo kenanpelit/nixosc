@@ -451,6 +451,33 @@ let
         lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
     }
 
+    // --- Named Workspaces (Static 1-9) ---
+    // Primary Monitor (DP-3)
+    workspace "1" { open-on-output "DP-3"; }
+    workspace "2" { open-on-output "DP-3"; }
+    workspace "3" { open-on-output "DP-3"; }
+    workspace "4" { open-on-output "DP-3"; }
+    workspace "5" { open-on-output "DP-3"; }
+    workspace "6" { open-on-output "DP-3"; }
+    
+    // Secondary Monitor (eDP-1)
+    workspace "7" { open-on-output "eDP-1"; }
+    
+    // Spotify Workspace (Custom Layout)
+    workspace "8" { 
+        open-on-output "eDP-1";
+        layout {
+            gaps 20;
+            border {
+                on;
+                width 4;
+                active-color "#cba6f7ff";
+            }
+        }
+    }
+    
+    workspace "9" { open-on-output "eDP-1"; }
+
     // --- Monitor Configuration ---
     // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
     // Replacing "Monitor Name" with actual names is required.
