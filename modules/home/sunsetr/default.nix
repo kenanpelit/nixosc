@@ -149,6 +149,7 @@ EOFSUNSETR
     systemd.user.services.sunsetr = lib.mkIf cfg.enableService {
       Unit = {
         Description = "sunsetr gamma/temperature manager";
+        Conflicts = [ "blue.service" ];
         PartOf = [ "graphical-session.target" ];
         After = [ "graphical-session.target" ];
       };
