@@ -387,24 +387,25 @@ let
     // spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 
     // --- Input Configuration ---
-        input {
-          keyboard {
-            xkb {
-              layout "tr"
-              variant "f"
-              options "ctrl:nocaps"
-            }
-          }
-                touchpad {
-                  tap
-                  dwt
-                  drag-lock
-                  middle-emulation
-                  click-method "clickfinger"
-                  accel-profile "flat"
-                  accel-speed 0.4
-                  // natural-scroll
-                }        }
+    input {
+      keyboard {
+        xkb {
+          layout "tr"
+          variant "f"
+          options "ctrl:nocaps"
+        }
+      }
+      touchpad {
+        tap
+        dwt
+        drag-lock
+        middle-emulation
+        click-method "clickfinger"
+        accel-profile "flat"
+        accel-speed 0.4
+        // natural-scroll
+      }
+    }
     // --- Switch Events ---
     switch-events {
         lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
