@@ -175,6 +175,25 @@ let
       F10 { spawn "bluetooth_toggle"; }
       Alt+F12 { spawn "osc-mullvad" "toggle"; }
 
+      // --- Audio & Media Scripts ---
+      Alt+A { spawn "osc-soundctl" "switch"; }
+      Alt+Ctrl+A { spawn "osc-soundctl" "switch-mic"; }
+      
+      Alt+E { spawn "osc-spotify"; }
+      Alt+Ctrl+N { spawn "osc-spotify" "next"; }
+      Alt+Ctrl+B { spawn "osc-spotify" "prev"; }
+      Alt+Ctrl+E { spawn "mpc-control" "toggle"; }
+      Alt+I { spawn "hypr-vlc_toggle"; }
+
+      // --- MPV Manager ---
+      Ctrl+Alt+1 { spawn "hypr-mpv-manager" "start"; }
+      Alt+1 { spawn "hypr-mpv-manager" "playback"; }
+      Alt+2 { spawn "hypr-mpv-manager" "play-yt"; }
+      Alt+3 { spawn "hypr-mpv-manager" "stick"; }
+      Alt+4 { spawn "hypr-mpv-manager" "move"; }
+      Alt+5 { spawn "hypr-mpv-manager" "save-yt"; }
+      Alt+6 { spawn "hypr-mpv-manager" "wallpaper"; }
+
       // --- Workspace Switching (1-9) ---
       Mod+1 { focus-workspace "1"; }
       Mod+2 { focus-workspace "2"; }
