@@ -5,8 +5,8 @@
 
 # Detect session
 if [[ "$XDG_CURRENT_DESKTOP" == "niri" ]] || [[ "$XDG_SESSION_DESKTOP" == "niri" ]]; then
-    exec niri-workspace-monitor.sh "$@"
+  exec niri-workspace-monitor "$@"
 else
-    # Default to Hyprland
-    exec hypr-workspace-monitor.sh "$@"
+  # Default to Hyprland
+  exec hypr-workspace-monitor "$@"
 fi
