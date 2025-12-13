@@ -176,7 +176,7 @@ toggle_monitor_focus() {
     fi
 }
 
-# Browser tab navigation (works compositor-agnostic; uses wtype/ydotool)
+# Browser tab navigation (works compositor-agnostic; uses wtype)
 navigate_browser_tab() {
     local direction=$1
 
@@ -189,16 +189,7 @@ navigate_browser_tab() {
         return 0
     fi
 
-    if command -v ydotool >/dev/null 2>&1; then
-        if [[ "$direction" == "next" ]]; then
-            ydotool key ctrl+tab 2>/dev/null || true
-        else
-            ydotool key ctrl+shift+tab 2>/dev/null || true
-        fi
-        return 0
-    fi
-
-    log "Browser tab navigation requires wtype or ydotool"
+    log "Browser tab navigation requires wtype"
     return 1
 }
 
@@ -271,7 +262,7 @@ main() {
                 echo "  -ml/mr   Focus monitor left/right"
                 echo "  -ms/-msf Focus monitor right (alias)"
                 echo "  -mt      Toggle monitor focus (left/right)"
-                echo "  -tn/-tp  Next/previous browser tab (wtype/ydotool)"
+                echo "  -tn/-tp  Next/previous browser tab (wtype)"
                 exit 0
                 ;;
             *)
