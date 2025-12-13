@@ -139,6 +139,7 @@ in
       #mako                  # Notifications
       brightnessctl         # Brightness control
       wl-gammactl           # Gamma control
+      sunsetr               # Gamma/temperature scheduler
       gnome-monitor-config  # Display layout manager
       hyprpicker            # Color picker
       
