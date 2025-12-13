@@ -58,7 +58,11 @@ in
         ExecStart = "${pkgs.sunsetr}/bin/sunsetr --background --config %h/.config/sunsetr";
         Restart = "on-failure";
         RestartSec = 10;
-        Environment = "XDG_CURRENT_DESKTOP=niri";
+        Environment = [
+          "XDG_CURRENT_DESKTOP=niri"
+          "NIRI_SOCKET=%t/niri/socket"
+          "WAYLAND_DISPLAY=niri"
+        ];
       };
       Install = {
         WantedBy = [ "graphical-session.target" ];
