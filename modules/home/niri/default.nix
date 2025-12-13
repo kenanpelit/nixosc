@@ -248,6 +248,14 @@ let
 
     // --- Dialogs & Tools (Floating) ---
     window-rule {
+        match app-id="clipse";
+        open-floating true;
+        default-column-width { proportion 0.25; }
+        default-window-height { proportion 0.80; }
+        default-floating-position x=30 y=100 relative-to="top-right";
+    }
+
+    window-rule {
         match title="^Open File$";
         match title="^File Upload$";
         match title="^Save As$";
