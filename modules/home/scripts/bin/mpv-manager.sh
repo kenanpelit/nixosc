@@ -165,16 +165,6 @@ niri_require() {
   niri msg version >/dev/null 2>&1 || die "niri IPC erişilemiyor (NIRI_SOCKET yok/erişim yok)"
 }
 
-niri_focused_window_xy() {
-  # Output: "x y" from `niri msg focused-window`
-  # Example line: "Workspace-view position: 1880, 100"
-  local info xy
-  info="$(niri msg focused-window 2>/dev/null || true)"
-  xy="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\).*$/\\1 \\2/p' | tail -n1)"
-  [[ -n "$xy" ]] || return 1
-  echo "$xy"
-}
-
 niri_focused_window_xywh() {
   # Output: "x y w h" from `niri msg focused-window`
   local info x y w h
@@ -190,11 +180,27 @@ niri_focused_window_xywh() {
 }
 
 niri_focused_output_wh() {
-  # Output: "W H" from `niri msg focused-output`
-  # Parse first "<W>x<H>" found.
+  # Output: "W H" for the focused output.
+  # Try focused-output, then fall back to outputs list.
   local info mode w h
+
   info="$(niri msg focused-output 2>/dev/null || true)"
   mode="$(echo "$info" | sed -n 's/.*\\([0-9]\\{3,5\\}x[0-9]\\{3,5\\}\\).*/\\1/p' | head -n1)"
+
+  if [[ -z "$mode" ]]; then
+    info="$(niri msg outputs 2>/dev/null || true)"
+    mode="$(
+      awk '
+        BEGIN { focused = 0 }
+        /Focused:[[:space:]]+yes/ { focused = 1 }
+        focused && match($0, /([0-9]{3,5}x[0-9]{3,5})/, m) { print m[1]; exit }
+      ' <<<"$info"
+    )"
+    if [[ -z "$mode" ]]; then
+      mode="$(echo "$info" | sed -n 's/.*\\([0-9]\\{3,5\\}x[0-9]\\{3,5\\}\\).*/\\1/p' | head -n1)"
+    fi
+  fi
+
   w="${mode%x*}"
   h="${mode#*x}"
   [[ -n "$w" && -n "$h" && "$w" != "$mode" ]] || return 1
@@ -215,21 +221,29 @@ niri_move_top_right() {
   niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
 
   # Compute target position based on focused output size + current window size.
-  local margin_x margin_y x y w h ow tx ty dx dy
+  local margin_x margin_y x y w h ow oh tx ty dx dy
   margin_x="${MPV_NIRI_MARGIN_X:-40}"
   margin_y="${MPV_NIRI_MARGIN_Y:-100}"
 
   read -r x y w h <<<"$(niri_focused_window_xywh)" || {
-    notify "mpv-manager" "Niri: pencere konumu okunamadı"
+    notify "mpv-manager" "Niri: focused-window okunamadı"
     return 1
   }
-  read -r ow _ <<<"$(niri_focused_output_wh)" || {
-    notify "mpv-manager" "Niri: output boyutu okunamadı"
-    return 1
-  }
+  if read -r ow oh <<<"$(niri_focused_output_wh)"; then
+    tx=$((ow - w - margin_x))
+    ty=$((margin_y))
 
-  tx=$((ow - w - margin_x))
-  ty=$((margin_y))
+    # Clamp (keep visible even if sizes are weird)
+    if [[ "$tx" -lt 0 ]]; then tx=0; fi
+    if [[ "$ty" -lt 0 ]]; then ty=0; fi
+    if [[ "$tx" -gt $((ow - 1)) ]]; then tx=$((ow - 1)); fi
+    if [[ "$ty" -gt $((oh - 1)) ]]; then ty=$((oh - 1)); fi
+  else
+    # Fallback: use user-provided absolute coordinates if output size cannot be read.
+    tx="${MPV_NIRI_TARGET_X:-1880}"
+    ty="${MPV_NIRI_TARGET_Y:-100}"
+  fi
+
   dx=$((tx - x))
   dy=$((ty - y))
 
@@ -242,7 +256,7 @@ niri_move_top_right() {
     niri msg action move-floating-window -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 || true
   fi
 
-  notify "mpv-manager" "Niri: mpv -> top-right (${tx}, ${ty})"
+  notify "mpv-manager" "Niri: mpv -> (${tx}, ${ty})"
 }
 
 start_mpv() {
