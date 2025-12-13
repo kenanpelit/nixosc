@@ -317,6 +317,13 @@ let
         open-focused true;
     }
 
+    // --- Spotify ---
+    window-rule {
+        match app-id="spotify";
+        open-on-workspace "8";
+        open-focused true;
+    }
+
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
         match app-id="org.pulseaudio.pavucontrol";
