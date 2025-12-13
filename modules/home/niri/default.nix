@@ -210,28 +210,6 @@ let
       Alt+4 { spawn "hypr-mpv-manager" "move"; }
       Alt+5 { spawn "hypr-mpv-manager" "save-yt"; }
       Alt+6 { spawn "hypr-mpv-manager" "wallpaper"; }
-
-      // --- Workspace Switching (1-9) ---
-      Mod+1 { focus-workspace "1"; }
-      Mod+2 { focus-workspace "2"; }
-      Mod+3 { focus-workspace "3"; }
-      Mod+4 { focus-workspace "4"; }
-      Mod+5 { focus-workspace "5"; }
-      Mod+6 { focus-workspace "6"; }
-      Mod+7 { focus-workspace "7"; }
-      Mod+8 { focus-workspace "8"; }
-      Mod+9 { focus-workspace "9"; }
-
-      // --- Move Column to Workspace (1-9) ---
-      Mod+Shift+1 { move-column-to-workspace "1"; }
-      Mod+Shift+2 { move-column-to-workspace "2"; }
-      Mod+Shift+3 { move-column-to-workspace "3"; }
-      Mod+Shift+4 { move-column-to-workspace "4"; }
-      Mod+Shift+5 { move-column-to-workspace "5"; }
-      Mod+Shift+6 { move-column-to-workspace "6"; }
-      Mod+Shift+7 { move-column-to-workspace "7"; }
-      Mod+Shift+8 { move-column-to-workspace "8"; }
-      Mod+Shift+9 { move-column-to-workspace "9"; }
     }
   '';
 
@@ -284,14 +262,6 @@ let
         open-floating true;
         // default-floating-position x=0 y=0 relative-to="center";
     }
-
-    // --- Workspace Assignments ---
-    window-rule { match app-id="discord"; open-on-workspace "5"; }
-    window-rule { match app-id="WebCord"; open-on-workspace "5"; }
-    window-rule { match app-id="Spotify"; open-on-workspace "8"; }
-    window-rule { match app-id="audacious"; open-on-workspace "5"; }
-    window-rule { match app-id="transmission"; open-on-workspace "7"; }
-    window-rule { match app-id="org.keepassxc.KeePassXC"; open-on-workspace "7"; }
 
     // --- Privacy (Block from Screencast) ---
     window-rule {
@@ -464,33 +434,6 @@ let
     switch-events {
         lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
     }
-
-    // --- Named Workspaces (Static 1-9) ---
-    // Primary Monitor (DP-3)
-    workspace "1" { open-on-output "DP-3"; }
-    workspace "2" { open-on-output "DP-3"; }
-    workspace "3" { open-on-output "DP-3"; }
-    workspace "4" { open-on-output "DP-3"; }
-    workspace "5" { open-on-output "DP-3"; }
-    workspace "6" { open-on-output "DP-3"; }
-    
-    // Secondary Monitor (eDP-1)
-    workspace "7" { open-on-output "eDP-1"; }
-    
-    // Spotify Workspace (Custom Layout)
-    workspace "8" { 
-        open-on-output "eDP-1";
-        layout {
-            gaps 20;
-            border {
-                on;
-                width 4;
-                active-color "#cba6f7ff";
-            }
-        }
-    }
-    
-    workspace "9" { open-on-output "eDP-1"; }
 
     // --- Monitor Configuration ---
     // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
