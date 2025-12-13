@@ -310,6 +310,13 @@ let
         open-focused true;
     }
 
+    // --- Ferdium (WhatsApp vs.) ---
+    window-rule {
+        match app-id="ferdium";
+        open-on-workspace "9";
+        open-focused true;
+    }
+
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
         match app-id="org.pulseaudio.pavucontrol";
