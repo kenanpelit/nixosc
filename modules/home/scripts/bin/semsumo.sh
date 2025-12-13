@@ -222,9 +222,9 @@ switch_workspace() {
     ;;
   niri)
     if command -v niri >/dev/null 2>&1; then
-      log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri)"
-      niri msg action focus-workspace "$workspace"
-      sleep 1
+      log "INFO" "WORKSPACE" "Workspace switching disabled for Niri (Dynamic Mode)"
+      # niri msg action focus-workspace "$workspace"
+      # sleep 1
     fi
     ;;
   gnome)
@@ -596,9 +596,9 @@ if [[ "$WORKSPACE" != "0" ]]; then
         ;;
     niri)
         if command -v niri >/dev/null 2>&1; then
-            echo "Switching to workspace $WORKSPACE..."
-            niri msg action focus-workspace "$WORKSPACE"
-            sleep 1
+            echo "Workspace switching disabled for Niri (Dynamic Mode)"
+            # niri msg action focus-workspace "$WORKSPACE"
+            # sleep 1
         fi
         ;;
     gnome|*)
