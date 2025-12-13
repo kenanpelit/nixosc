@@ -396,7 +396,7 @@ let
       }
       touchpad {
         tap
-        natural-scroll
+       // natural-scroll
       }
     }
 
