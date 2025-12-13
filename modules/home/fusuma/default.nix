@@ -45,27 +45,27 @@ in
         swipe = {
           "3" = {
             right = {
-              command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -tn";
+              command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -tn";
               threshold = 0.6;
             };
             left = {
-              command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -tp";
+              command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -tp";
               threshold = 0.6;
             };
             up = {
-              command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -wt";
+              command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -wt";
               threshold = 0.6;
             };
             down = {
-              command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -mt";
+              command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -mt";
               threshold = 0.6;
             };
           };
           "4" = {
-            up.command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -msf";
-            down.command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -ms";
-            right.command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -wr";
-            left.command = "${config.home.profileDirectory}/bin/hypr-workspace-monitor -wl";
+            up.command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -msf";
+            down.command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -ms";
+            right.command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -wr";
+            left.command = "${config.home.profileDirectory}/bin/universal-workspace-monitor -wl";
           };
         };
         pinch = {
