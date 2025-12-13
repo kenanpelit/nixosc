@@ -208,9 +208,22 @@ niri_move_floating_cycle_corners() {
   # Ensure focused window is floating so we can move it.
   niri msg action move-window-to-floating >/dev/null 2>&1 || true
 
+  # Best-effort: force a sane PiP-ish size in Niri.
+  niri msg action set-window-width 640 >/dev/null 2>&1 || true
+  niri msg action set-window-height 360 >/dev/null 2>&1 || true
+
   local geo out x y w h ow oh margin_x margin_y corner next tx ty dx dy
-  geo="$(niri_focused_window_geometry)" || die "Niri: focused-window geometry okunamadı"
-  out="$(niri_focused_output_size)" || die "Niri: focused-output boyutu okunamadı"
+  geo="$(niri_focused_window_geometry)" || {
+    # Fallback: just push window to top-right; niri will clamp.
+    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
+    notify "mpv-manager" "Niri: top-right (fallback)"
+    return 0
+  }
+  out="$(niri_focused_output_size)" || {
+    niri msg action move-floating-window -x +99999 -y -99999 >/dev/null 2>&1 || true
+    notify "mpv-manager" "Niri: top-right (fallback)"
+    return 0
+  }
 
   read -r x y w h <<<"$geo"
   read -r ow oh <<<"$out"

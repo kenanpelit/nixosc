@@ -252,6 +252,17 @@ let
     }
     
     // --- Media & PIP ---
+    // MPV: açık videoları küçük floating olarak sağ üste al (dosya/URL başlığı genelde "... - mpv")
+    window-rule {
+        match app-id="mpv";
+        match title=r#".* - mpv$"#;
+        open-floating true;
+        default-column-width { fixed 640; }
+        default-window-height { fixed 360; }
+        default-floating-position x=32 y=96 relative-to="top-right";
+        opacity 1.0;
+    }
+
     window-rule {
         match app-id="mpv";
         match title="^Picture-in-Picture$";
