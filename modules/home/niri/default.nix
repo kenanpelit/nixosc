@@ -286,11 +286,12 @@ let
     // Hyprland'daki "clipse-float" kuralının Niri karşılığı.
     // `kitty --class clipse -e clipse` ile açılan pencere Wayland app-id olarak "clipse" gelir.
     window-rule {
-        match app-id=r#"^clipse$"#;
+        match app-id="clipse";
         open-floating true;
         default-column-width { proportion 0.25; }
         default-window-height { proportion 0.80; }
-        default-floating-position x=32 y=96 relative-to="top-right";
+        default-floating-position x=32 y=144 relative-to="top-right";
+        open-focused true;
     }
 
     // --- Workspace Assignments (semsumo profiles) ---
