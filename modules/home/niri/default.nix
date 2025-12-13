@@ -422,7 +422,20 @@ let
     
     // Secondary Monitor (eDP-1)
     workspace "7" { open-on-output "eDP-1"; }
-    workspace "8" { open-on-output "eDP-1"; }
+    
+    // Spotify Workspace (Custom Layout)
+    workspace "8" { 
+        open-on-output "eDP-1";
+        layout {
+            gaps 20;
+            border {
+                on;
+                width 4;
+                active-color "#cba6f7ff";
+            }
+        }
+    }
+    
     workspace "9" { open-on-output "eDP-1"; }
 
     // --- Monitor Configuration ---
