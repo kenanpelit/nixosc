@@ -21,18 +21,18 @@ let
     shutdown_duration = ${toString cfg.settings.smoothing.shutdownDuration}
     adaptive_interval = ${toString cfg.settings.smoothing.adaptiveInterval}
 
-    [Time-based config]
+    ["Time-based config"]
     night_temp = ${toString cfg.settings.time.nightTemp}
     day_temp = ${toString cfg.settings.time.dayTemp}
     night_gamma = ${toString cfg.settings.time.nightGamma}
     day_gamma = ${toString cfg.settings.time.dayGamma}
     update_interval = ${toString cfg.settings.time.updateInterval}
 
-    [Static config]
+    ["Static config"]
     static_temp = ${toString cfg.settings.static.temp}
     static_gamma = ${toString cfg.settings.static.gamma}
 
-    [Manual transitions]
+    ["Manual transitions"]
     sunset = "${cfg.settings.manual.sunset}"
     sunrise = "${cfg.settings.manual.sunrise}"
     transition_duration = ${toString cfg.settings.manual.transitionDuration}
@@ -138,4 +138,3 @@ in
     };
   };
 }
-
