@@ -59,7 +59,7 @@
   # Greeter (DMS Greeter via greetd)
   # ============================================================================
   my.greeter.dms = {
-    enable     = false;
+    enable     = true;
     compositor = "hyprland";
     layout     = "tr";
     variant    = "f";
