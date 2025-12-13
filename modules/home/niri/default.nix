@@ -404,7 +404,7 @@ let
         middle-emulation
         click-method "clickfinger"
         accel-profile "flat"
-        accel-speed 0.4
+        accel-speed 0.8
         // natural-scroll
       }
     }
