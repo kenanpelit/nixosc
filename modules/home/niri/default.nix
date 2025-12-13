@@ -387,20 +387,25 @@ let
     // spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 
     // --- Input Configuration ---
-    input {
-      keyboard {
-        xkb {
-          layout "tr"
-          variant "f"
-          options "ctrl:nocaps"
+        input {
+          keyboard {
+            xkb {
+              layout "tr"
+              variant "f"
+              options "ctrl:nocaps"
+            }
+          }
+          touchpad {
+            tap
+            dwt
+            drag-lock
+            middle-emulation
+            click-method "clickfinger"
+            accel-profile "flat"
+            accel-speed 0.0
+            // natural-scroll
+          }
         }
-      }
-      touchpad {
-        tap
-       // natural-scroll
-      }
-    }
-
     // --- Named Workspaces (Static 1-9) ---
     // Primary Monitor (DP-3)
     workspace "1" { open-on-output "DP-3"; }
