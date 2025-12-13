@@ -282,6 +282,17 @@ let
         // default-floating-position x=0 y=0 relative-to="center";
     }
 
+    // --- Clipboard (Clipse) ---
+    // Hyprland'daki "clipse-float" kuralının Niri karşılığı.
+    // `kitty --class clipse -e clipse` ile açılan pencere Wayland app-id olarak "clipse" gelir.
+    window-rule {
+        match app-id=r#"^clipse$"#;
+        open-floating true;
+        default-column-width { proportion 0.25; }
+        default-window-height { proportion 0.80; }
+        default-floating-position x=32 y=96 relative-to="top-right";
+    }
+
     // --- Workspace Assignments (semsumo profiles) ---
     window-rule { match app-id=r#"^(discord|WebCord)$"#; open-on-workspace "5"; }
     window-rule { match app-id=r#"^(Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
