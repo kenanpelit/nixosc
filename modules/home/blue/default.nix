@@ -220,8 +220,14 @@ in
             sleep 0.5
           done
 
+          # Fallback to wayland-1 if nothing found
+          if [ -z "''${WAYLAND_DISPLAY:-}" ] && [ -S "$RUNTIME_DIR/wayland-1" ]; then
+            export WAYLAND_DISPLAY="wayland-1"
+          fi
+
           if [ -z "''${WAYLAND_DISPLAY:-}" ]; then
             echo "wl-gammarelay: no Wayland socket found under $RUNTIME_DIR" >&2
+            ls "$RUNTIME_DIR"/wayland-* 2>/dev/null >&2 || true
             exit 1
           fi
 
