@@ -2,11 +2,11 @@
 
 #######################################
 #
-# Version: 3.0.2
-# Date: 2025-11-18
+# Version: 3.0.3
+# Date: 2025-12-13
 # Author: Kenan Pelit (Modified)
 # Repository: github.com/kenanpelit/dotfiles
-# Description: Unified Gammastep + HyprSunset + wl-gammarelay Manager
+# Description: Unified Gammastep + HyprSunset Manager
 #
 # License: MIT
 #
@@ -24,11 +24,11 @@
 #########################################################################
 # Unified Night Light Manager
 #
-# This script manages Gammastep, HyprSunset, and wl-gammarelay together.
+# This script manages Gammastep and HyprSunset together. wl-gammarelay support removed.
 # All three tools work simultaneously to achieve the desired color tone.
 #
 # Features:
-#   - Simultaneous start/stop of Gammastep, HyprSunset, and wl-gammarelay
+#   - Simultaneous start/stop of Gammastep and HyprSunset
 #   - Time-based automatic color temperature adjustment
 #   - Waybar integration
 #   - System notifications
@@ -38,8 +38,7 @@
 # Requirements:
 #   - gammastep (optional)
 #   - hyprsunset (optional)
-#   - wl-gammarelay-rs (optional)
-#   - libnotify (for notify-send)
+#   - #   - libnotify (for notify-send)
 #   - waybar (optional)
 #
 #########################################################################
@@ -54,7 +53,7 @@ declare -r LAST_TEMP_FILE="$HOME/.cache/hypr-blue.last"
 # Tool activity checks
 ENABLE_GAMMASTEP=true
 ENABLE_HYPRSUNSET=true
-ENABLE_WLGAMMARELAY=true
+ENABLE_WLGAMMARELAY=false
 
 # Gammastep settings
 MODE="wayland"
@@ -76,12 +75,6 @@ TEMP_NIGHT=3500 # Night temperature
 GAMMASTEP_TEMP_DAY=4000
 GAMMASTEP_TEMP_NIGHT=3500
 
-# wl-gammarelay temperature settings
-WLGAMMA_TEMP_DAY=4000
-WLGAMMA_TEMP_NIGHT=3500
-WLGAMMA_BRIGHTNESS=1.0
-WLGAMMA_GAMMA=1.0
-
 # Other settings
 CHECK_INTERVAL=3600
 CLEANUP_ON_EXIT=false
@@ -96,7 +89,7 @@ log() {
 # Usage information
 usage() {
   cat <<EOF
-Hypr Blue Manager - Unified Gammastep + HyprSunset + wl-gammarelay Manager
+Hypr Blue Manager - Unified Gammastep + HyprSunset Manager
 
 USAGE:
     $(basename "$0") [COMMAND] [PARAMETERS]
@@ -112,8 +105,7 @@ COMMANDS:
 TOOL CONTROL:
     --enable-gammastep BOOL     Enable Gammastep (true/false, default: $ENABLE_GAMMASTEP)
     --enable-hyprsunset BOOL    Enable HyprSunset (true/false, default: $ENABLE_HYPRSUNSET)
-    --enable-wlgamma BOOL       Enable wl-gammarelay (true/false, default: $ENABLE_WLGAMMARELAY)
-
+    
 HYPRSUNSET PARAMETERS:
     --temp-day VALUE            Day temperature (Kelvin, default: $TEMP_DAY)
     --temp-night VALUE          Night temperature (Kelvin, default: $TEMP_NIGHT)
@@ -127,11 +119,7 @@ GAMMASTEP PARAMETERS:
     --gamma VALUE               Gamma value (format: r,g,b, default: $GAMMA)
 
 WL-GAMMARELAY PARAMETERS:
-    --wl-temp-day VALUE         wl-gammarelay day temperature (Kelvin, default: $WLGAMMA_TEMP_DAY)
-    --wl-temp-night VALUE       wl-gammarelay night temperature (Kelvin, default: $WLGAMMA_TEMP_NIGHT)
-    --wl-brightness VALUE       wl-gammarelay brightness (0.1-1.0, default: $WLGAMMA_BRIGHTNESS)
-    --wl-gamma VALUE            wl-gammarelay gamma (0.1-2.0, default: $WLGAMMA_GAMMA)
-
+                
 OTHER PARAMETERS:
     --interval VALUE            Check interval (seconds, default: $CHECK_INTERVAL)
 
@@ -210,14 +198,6 @@ check_dependencies() {
     fi
   fi
 
-  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
-    if command -v busctl >/dev/null 2>&1; then
-      ((available_tools++))
-    else
-      log "WARNING: wl-gammarelay active but busctl not found"
-      ENABLE_WLGAMMARELAY=false
-    fi
-  fi
 
   if [[ $available_tools -eq 0 ]]; then
     echo "Error: No tools available or active"
@@ -364,79 +344,11 @@ start_or_update_hyprsunset() {
 }
 
 # Start or check wl-gammarelay daemon
-start_wlgammarelay() {
-  if [[ "$ENABLE_WLGAMMARELAY" != "true" ]]; then
-    log "wl-gammarelay disabled, skipping"
-    return 0
-  fi
-
-  log "Checking wl-gammarelay..."
-
-  # Check if service is already running
-  if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
-    log "wl-gammarelay already running (service or manual)"
-    # Get current temperature
-    local current_temp=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature 2>/dev/null | awk '{print $2}')
-    log "wl-gammarelay current temperature: ${current_temp}K"
-
-    # If at default 6500K, set to desired temperature
-    if [[ "$current_temp" == "6500" ]]; then
-      local target_temp=$(get_wlgamma_temp)
-      log "wl-gammarelay is at 6500K, setting to ${target_temp}K"
-      set_wlgamma_temperature "$target_temp"
-    fi
-    return 0
-  fi
-
-  # Start wl-gammarelay if not running
-  if command -v wl-gammarelay-rs >/dev/null 2>&1; then
-    log "Starting wl-gammarelay..."
-    wl-gammarelay-rs >/dev/null 2>&1 &
-    local wl_pid=$!
-    disown
-
-    # Wait for start
-    for i in {1..10}; do
-      if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
-        log "wl-gammarelay started (PID: $wl_pid)"
-        sleep 1
-        # Set initial temperature
-        local target_temp=$(get_wlgamma_temp)
-        set_wlgamma_temperature "$target_temp"
-        return 0
-      fi
-      sleep 0.5
-    done
-
-    log "WARNING: wl-gammarelay failed to start or is not responding"
-    return 1
-  else
-    log "WARNING: wl-gammarelay-rs command not found"
-    return 1
-  fi
-}
 
 # Stop wl-gammarelay daemon (only if we started it)
-stop_wlgammarelay() {
-  if [[ "$ENABLE_WLGAMMARELAY" != "true" ]]; then
-    return 0
-  fi
-
-  log "Stopping wl-gammarelay..."
-
-  # Just reset temperature, don't kill daemon
-  # (other services might be using it)
-  if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
-    busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q 6500 >/dev/null 2>&1
-    log "wl-gammarelay temperature reset (6500K)"
-  fi
-}
 
 # Set wl-gammarelay temperature
 set_wlgamma_temperature() {
-  if [[ "$ENABLE_WLGAMMARELAY" != "true" ]]; then
-    return 0
-  fi
 
   local temp=$1
   log "Setting wl-gammarelay temperature: ${temp}K"
@@ -483,51 +395,6 @@ adjust_temperature() {
     start_or_update_hyprsunset "$hs_temp"
   fi
 
-  # wl-gammarelay
-  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
-    local wl_temp=$(get_wlgamma_temp)
-    set_wlgamma_temperature "$wl_temp"
-  fi
-
-  log "Temperature adjustment complete (period: $period)"
-}
-
-# Cleanup function
-cleanup() {
-  local exit_code=$?
-  log "Cleanup called (exit code: $exit_code)"
-
-  if [[ "$CLEANUP_ON_EXIT" == "true" ]]; then
-    log "Cleaning up..."
-
-    # Stop Gammastep
-    stop_gammastep
-
-    # Reset wl-gammarelay
-    stop_wlgammarelay
-
-    # Stop HyprSunset daemon
-    if [[ -f "$PID_FILE" ]]; then
-      local pid=$(cat "$PID_FILE" 2>/dev/null)
-      if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-        kill -TERM "$pid" 2>/dev/null
-        sleep 2
-        kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null
-      fi
-      rm -f "$PID_FILE"
-    fi
-
-    rm -f "$STATE_FILE"
-
-    # Reset HyprSunset temperature
-    if [[ "$ENABLE_HYPRSUNSET" == "true" ]] && command -v hyprsunset >/dev/null 2>&1; then
-      hyprsunset -i >/dev/null 2>&1
-    fi
-
-    log "Cleanup complete"
-  else
-    log "Normal exit - cleanup skipped"
-  fi
 }
 
 # Daemon cleanup
@@ -562,12 +429,6 @@ daemon_loop() {
   start_wlgammarelay
 
   # If wl-gammarelay is disabled but running externally, adjust it too
-  if [[ "$ENABLE_WLGAMMARELAY" != "true" ]] && busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
-    log "External wl-gammarelay found, setting temperature"
-    local temp=$(get_wlgamma_temp)
-    busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q "$temp" >/dev/null 2>&1
-    log "External wl-gammarelay set to ${temp}K"
-  fi
 
   # Adjust temperature based on current time at first startup
   local hour=$(get_current_hour)
@@ -582,124 +443,7 @@ daemon_loop() {
     start_or_update_hyprsunset "$hs_temp"
   fi
 
-  # wl-gammarelay
-  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
-    local wl_temp=$(get_wlgamma_temp)
-    set_wlgamma_temperature "$wl_temp"
-  fi
 
-  log "First startup temperature adjustment complete"
-
-  while [[ -f "$STATE_FILE" ]]; do
-    sleep "$CHECK_INTERVAL"
-
-    if [[ ! -f "$STATE_FILE" ]]; then
-      log "State file deleted, daemon terminating"
-      break
-    fi
-
-    # Check if Gammastep is running
-    if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
-      if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
-        local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
-        if ! kill -0 "$gs_pid" 2>/dev/null; then
-          log "Gammastep stopped, restarting"
-          start_gammastep
-        fi
-      else
-        log "Gammastep PID file missing, restarting"
-        start_gammastep
-      fi
-    fi
-
-    adjust_temperature
-    log "Next check: in ${CHECK_INTERVAL} seconds"
-  done
-
-  log "Fork daemon loop ended"
-}
-
-# Daemon mode (for systemd)
-daemon_mode() {
-  # Clear log file (avoid mixing old logs)
-  >"$LOG_FILE"
-
-  log "Systemd daemon mode started (PID: $$"
-  log "Parameters: Gammastep=$ENABLE_GAMMASTEP, HyprSunset=$ENABLE_HYPRSUNSET, wl-gammarelay=$ENABLE_WLGAMMARELAY"
-
-  touch "$STATE_FILE"
-  echo "$$" >"$PID_FILE"
-
-  trap 'cleanup_daemon; exit 0' EXIT INT TERM
-
-  # Initial adjustments
-  start_gammastep
-  start_wlgammarelay
-
-  # If wl-gammarelay is disabled but running externally, adjust it too
-  if [[ "$ENABLE_WLGAMMARELAY" != "true" ]] && busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
-    log "External wl-gammarelay found, setting temperature"
-    local temp=$(get_wlgamma_temp)
-    busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q "$temp" >/dev/null 2>&1
-    log "External wl-gammarelay set to ${temp}K"
-  fi
-
-  # Adjust temperature based on current time at first startup
-  local hour=$(get_current_hour)
-  local period="night"
-  [[ "$hour" -ge 6 && "$hour" -lt 18 ]] && period="day"
-
-  log "First startup: Current hour $hour, period: $period - setting temperature"
-
-  # HyprSunset
-  if [[ "$ENABLE_HYPRSUNSET" == "true" ]]; then
-    local hs_temp=$(get_hyprsunset_temp)
-    start_or_update_hyprsunset "$hs_temp"
-  fi
-
-  # wl-gammarelay
-  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
-    local wl_temp=$(get_wlgamma_temp)
-    set_wlgamma_temperature "$wl_temp"
-  fi
-
-  log "First startup temperature adjustment complete"
-
-  while true; do
-    sleep "$CHECK_INTERVAL"
-
-    if [[ ! -f "$STATE_FILE" ]]; then
-      log "State file deleted, daemon terminating"
-      break
-    fi
-
-    # Gammastep check
-    if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
-      if [[ -f "$GAMMASTEP_PID_FILE" ]]; then
-        local gs_pid=$(cat "$GAMMASTEP_PID_FILE")
-        if ! kill -0 "$gs_pid" 2>/dev/null; then
-          log "Gammastep stopped, restarting"
-          start_gammastep
-        fi
-      else
-        start_gammastep
-      fi
-    fi
-
-    adjust_temperature
-    log "Next check: in ${CHECK_INTERVAL} seconds"
-  done
-
-  log "Daemon mode ended"
-}
-
-# Start service (fork mode)
-start_service() {
-  if [[ -f "$STATE_FILE" ]]; then
-    log "Service already running"
-    echo "Hypr Blue Manager already running"
-    return 1
-  fi
 
   log "Starting Hypr Blue Manager (fork mode)"
   log "Active tools: Gammastep=$ENABLE_GAMMASTEP, HyprSunset=$ENABLE_HYPRSUNSET, wl-gammarelay=$ENABLE_WLGAMMARELAY"
@@ -831,7 +575,7 @@ show_status() {
   echo "--- Tool Status ---"
   echo "Gammastep: $([ "$ENABLE_GAMMASTEP" == "true" ] && echo "ACTIVE" || echo "OFF")"
   echo "HyprSunset: $([ "$ENABLE_HYPRSUNSET" == "true" ] && echo "ACTIVE" || echo "OFF")"
-  echo "wl-gammarelay: $([ "$ENABLE_WLGAMMARELAY" == "true" ] && echo "ACTIVE" || echo "OFF")"
+  echo "wl-gammarelay: OFF (removed)"
 
   if [[ "$ENABLE_GAMMASTEP" == "true" ]]; then
     echo ""
@@ -868,21 +612,6 @@ show_status() {
     fi
   fi
 
-  if [[ "$ENABLE_WLGAMMARELAY" == "true" ]]; then
-    echo ""
-    echo "--- wl-gammarelay Details ---"
-    if busctl --user status rs.wl-gammarelay >/dev/null 2>&1; then
-      echo "Status: RUNNING"
-      local current_temp=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature 2>/dev/null | awk '{print $2}')
-      [[ -n "$current_temp" ]] && echo "Current temperature: ${current_temp}K"
-    else
-      echo "Status: STOPPED or NOT FOUND"
-    fi
-    echo "Day temperature: ${WLGAMMA_TEMP_DAY}K (06:00-18:00)"
-    echo "Night temperature: ${WLGAMMA_TEMP_NIGHT}K (18:00-06:00)"
-    echo "Brightness: $WLGAMMA_BRIGHTNESS"
-    echo "Gamma: $WLGAMMA_GAMMA"
-  fi
 
   echo ""
   echo "--- Location and Gamma ---"
