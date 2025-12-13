@@ -162,16 +162,77 @@ hypr_wallpaper() {
 
 niri_require() {
   command -v niri >/dev/null 2>&1 || die "niri not found in PATH"
+  if [[ -z "${NIRI_SOCKET:-}" || ! -S "${NIRI_SOCKET:-/dev/null}" ]]; then
+    local runtime candidate
+    runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    for candidate in \
+      "$runtime"/niri.*.sock \
+      "$runtime"/niri.wayland-*.sock \
+      "$runtime"/niri*.sock; do
+      if [[ -S "$candidate" && "$candidate" != *nirius* ]]; then
+        export NIRI_SOCKET="$candidate"
+        break
+      fi
+    done
+  fi
+
   niri msg version >/dev/null 2>&1 || die "niri IPC erişilemiyor (NIRI_SOCKET yok/erişim yok)"
+}
+
+niri_find_window_id_by_app_id() {
+  niri_require
+  local app_id="$1"
+  local id=""
+
+  if command -v jq >/dev/null 2>&1; then
+    id="$(
+      niri msg -j windows 2>/dev/null \
+        | jq -r --arg app "$app_id" '.. | objects | select(.app_id? == $app) | .id? // empty' \
+        | head -n1
+    )"
+    [[ -n "$id" ]] && { echo "$id"; return 0; }
+  fi
+
+  id="$(
+    niri msg windows 2>/dev/null | awk -v app="$app_id" '
+      /^Window ID[[:space:]]+/ {
+        id=$3
+        gsub(":", "", id)
+        inwin=1
+        next
+      }
+      inwin && /App ID:/ {
+        if ($0 ~ "\"" app "\"") { print id; exit }
+        inwin=0
+      }
+    '
+  )"
+
+  [[ -n "$id" ]] || return 1
+  echo "$id"
 }
 
 niri_focused_window_xywh() {
   # Output: "x y w h" from `niri msg focused-window`
   local info x y w h
+  if command -v jq >/dev/null 2>&1; then
+    info="$(niri msg -j focused-window 2>/dev/null || true)"
+    if [[ -n "$info" ]]; then
+      x="$(jq -r '.workspace_view_position.x? // empty' <<<"$info" 2>/dev/null | head -n1)"
+      y="$(jq -r '.workspace_view_position.y? // empty' <<<"$info" 2>/dev/null | head -n1)"
+      w="$(jq -r '.window_size.width? // empty' <<<"$info" 2>/dev/null | head -n1)"
+      h="$(jq -r '.window_size.height? // empty' <<<"$info" 2>/dev/null | head -n1)"
+      if [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]]; then
+        echo "$x $y $w $h"
+        return 0
+      fi
+    fi
+  fi
+
   info="$(niri msg focused-window 2>/dev/null || true)"
 
-  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
-  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\),[[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
+  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\)[, ][[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
+  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\)[, ][[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
   w="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
   h="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
 
@@ -183,6 +244,18 @@ niri_focused_output_wh() {
   # Output: "W H" for the focused output.
   # Try focused-output, then fall back to outputs list.
   local info mode w h
+
+  if command -v jq >/dev/null 2>&1; then
+    info="$(niri msg -j focused-output 2>/dev/null || true)"
+    if [[ -n "$info" ]]; then
+      w="$(jq -r '.current_mode.width? // .mode.width? // empty' <<<"$info" 2>/dev/null | head -n1)"
+      h="$(jq -r '.current_mode.height? // .mode.height? // empty' <<<"$info" 2>/dev/null | head -n1)"
+      if [[ -n "$w" && -n "$h" ]]; then
+        echo "$w $h"
+        return 0
+      fi
+    fi
+  fi
 
   info="$(niri msg focused-output 2>/dev/null || true)"
   mode="$(echo "$info" | sed -n 's/.*\\([0-9]\\{3,5\\}x[0-9]\\{3,5\\}\\).*/\\1/p' | head -n1)"
@@ -207,23 +280,133 @@ niri_focused_output_wh() {
   echo "$w $h"
 }
 
+niri_abs() {
+  local n="$1"
+  if [[ "$n" -lt 0 ]]; then
+    echo $(( -n ))
+  else
+    echo "$n"
+  fi
+}
+
+niri_clamp() {
+  local n="$1"
+  local min="$2"
+  local max="$3"
+  if [[ "$max" -lt "$min" ]]; then
+    max="$min"
+  fi
+  if [[ "$n" -lt "$min" ]]; then
+    echo "$min"
+  elif [[ "$n" -gt "$max" ]]; then
+    echo "$max"
+  else
+    echo "$n"
+  fi
+}
+
+niri_move_cycle_corners() {
+  niri_require
+
+  local mpv_id
+  if mpv_id="$(niri_find_window_id_by_app_id "mpv" 2>/dev/null)"; then
+    niri msg action focus-window --id "$mpv_id" >/dev/null 2>&1 || true
+    niri msg action move-window-to-floating --id "$mpv_id" >/dev/null 2>&1 || true
+  else
+    mpv_id=""
+    niri msg action move-window-to-floating >/dev/null 2>&1 || true
+  fi
+
+  local margin_x margin_y x y w h ow oh
+  # Varsayılanlar: kullanıcının örneğine yakın (x≈1887, y≈105, 640x360, 2560w ekran)
+  margin_x="${MPV_NIRI_MARGIN_X:-33}"
+  margin_y="${MPV_NIRI_MARGIN_Y:-105}"
+
+  read -r x y w h <<<"$(niri_focused_window_xywh)" || die "Niri: focused-window okunamadı"
+  read -r ow oh <<<"$(niri_focused_output_wh)" || die "Niri: output boyutu okunamadı"
+
+  local max_x max_y
+  max_x=$((ow - w))
+  max_y=$((oh - h))
+  if [[ "$max_x" -lt 0 ]]; then max_x=0; fi
+  if [[ "$max_y" -lt 0 ]]; then max_y=0; fi
+
+  # Corner targets (BL -> TR -> BR -> TL -> BL)
+  local tl_x tl_y tr_x tr_y br_x br_y bl_x bl_y
+  tl_x=$margin_x; tl_y=$margin_y
+  tr_x=$((ow - w - margin_x)); tr_y=$margin_y
+  br_x=$((ow - w - margin_x)); br_y=$((oh - h - margin_y))
+  bl_x=$margin_x; bl_y=$((oh - h - margin_y))
+
+  # Clamp to keep fully visible on screen
+  tl_x="$(niri_clamp "$tl_x" 0 "$max_x")"
+  tr_x="$(niri_clamp "$tr_x" 0 "$max_x")"
+  br_x="$(niri_clamp "$br_x" 0 "$max_x")"
+  bl_x="$(niri_clamp "$bl_x" 0 "$max_x")"
+  tl_y="$(niri_clamp "$tl_y" 0 "$max_y")"
+  tr_y="$(niri_clamp "$tr_y" 0 "$max_y")"
+  br_y="$(niri_clamp "$br_y" 0 "$max_y")"
+  bl_y="$(niri_clamp "$bl_y" 0 "$max_y")"
+
+  local d_tl d_tr d_br d_bl current next tx ty
+  d_tl=$(( $(niri_abs $((x - tl_x))) + $(niri_abs $((y - tl_y))) ))
+  d_tr=$(( $(niri_abs $((x - tr_x))) + $(niri_abs $((y - tr_y))) ))
+  d_br=$(( $(niri_abs $((x - br_x))) + $(niri_abs $((y - br_y))) ))
+  d_bl=$(( $(niri_abs $((x - bl_x))) + $(niri_abs $((y - bl_y))) ))
+
+  # Determine nearest
+  current="tl"
+  if [[ "$d_tr" -le "$d_tl" && "$d_tr" -le "$d_br" && "$d_tr" -le "$d_bl" ]]; then
+    current="tr"
+  elif [[ "$d_br" -le "$d_tl" && "$d_br" -le "$d_tr" && "$d_br" -le "$d_bl" ]]; then
+    current="br"
+  elif [[ "$d_bl" -le "$d_tl" && "$d_bl" -le "$d_tr" && "$d_bl" -le "$d_br" ]]; then
+    current="bl"
+  fi
+
+  case "$current" in
+    bl) next="tr"; tx=$tr_x; ty=$tr_y ;;
+    tr) next="br"; tx=$br_x; ty=$br_y ;;
+    br) next="tl"; tx=$tl_x; ty=$tl_y ;;
+    tl) next="bl"; tx=$bl_x; ty=$bl_y ;;
+  esac
+
+  local dx dy
+  dx=$((tx - x))
+  dy=$((ty - y))
+  if [[ -n "${mpv_id:-}" ]]; then
+    niri msg action move-floating-window --id "$mpv_id" -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 \
+      || die "Niri: move-floating-window başarısız"
+  else
+    niri msg action move-floating-window -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 \
+      || die "Niri: move-floating-window başarısız"
+  fi
+
+  # Second pass to converge after resize/clamp
+  read -r x y w h <<<"$(niri_focused_window_xywh)" 2>/dev/null || true
+  if [[ -n "${x:-}" && -n "${y:-}" ]]; then
+    dx=$((tx - x))
+    dy=$((ty - y))
+    if [[ -n "${mpv_id:-}" ]]; then
+      niri msg action move-floating-window --id "$mpv_id" -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 || true
+    else
+      niri msg action move-floating-window -x "$(printf '%+d' "$dx")" -y "$(printf '%+d' "$dy")" >/dev/null 2>&1 || true
+    fi
+  fi
+
+  notify "mpv-manager" "Niri: ${current} -> ${next}"
+}
+
 niri_move_top_right() {
   niri_require
 
   # Ensure focused window is floating so we can move it.
   niri msg action move-window-to-floating >/dev/null 2>&1 || true
 
-  # Force a sane PiP-ish size in Niri (overridable).
-  local target_w target_h
-  target_w="${MPV_NIRI_WIDTH:-640}"
-  target_h="${MPV_NIRI_HEIGHT:-360}"
-  niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
-  niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
-
   # Compute target position based on focused output size + current window size.
   local margin_x margin_y x y w h ow oh tx ty dx dy
-  margin_x="${MPV_NIRI_MARGIN_X:-40}"
-  margin_y="${MPV_NIRI_MARGIN_Y:-100}"
+  margin_x="${MPV_NIRI_MARGIN_X:-33}"
+  margin_y="${MPV_NIRI_MARGIN_Y:-105}"
 
   read -r x y w h <<<"$(niri_focused_window_xywh)" || {
     notify "mpv-manager" "Niri: focused-window okunamadı"
@@ -234,14 +417,15 @@ niri_move_top_right() {
     ty=$((margin_y))
 
     # Clamp (keep visible even if sizes are weird)
-    if [[ "$tx" -lt 0 ]]; then tx=0; fi
-    if [[ "$ty" -lt 0 ]]; then ty=0; fi
-    if [[ "$tx" -gt $((ow - 1)) ]]; then tx=$((ow - 1)); fi
-    if [[ "$ty" -gt $((oh - 1)) ]]; then ty=$((oh - 1)); fi
+    local max_x max_y
+    max_x=$((ow - w))
+    max_y=$((oh - h))
+    if [[ "$max_x" -lt 0 ]]; then max_x=0; fi
+    if [[ "$max_y" -lt 0 ]]; then max_y=0; fi
+    tx="$(niri_clamp "$tx" 0 "$max_x")"
+    ty="$(niri_clamp "$ty" 0 "$max_y")"
   else
-    # Fallback: use user-provided absolute coordinates if output size cannot be read.
-    tx="${MPV_NIRI_TARGET_X:-1880}"
-    ty="${MPV_NIRI_TARGET_Y:-100}"
+    die "Niri: output boyutu okunamadı"
   fi
 
   dx=$((tx - x))
@@ -367,7 +551,7 @@ main() {
           ;;
         niri)
           case "$cmd" in
-            move) niri_move_top_right ;;
+            move) niri_move_cycle_corners ;;
             stick)
               # Niri'de Hyprland'daki "pin" yok; en yakın karşılık pencereyi floating'e almak.
               niri_require
