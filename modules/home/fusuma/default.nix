@@ -40,7 +40,7 @@ let
     #!/usr/bin/env bash
     set -euo pipefail
 
-    mode="${1:-toggle}"
+    mode="''${1:-toggle}"
     shift || true
 
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
