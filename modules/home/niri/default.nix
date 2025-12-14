@@ -364,7 +364,6 @@ let
         open-floating true;
         default-column-width { fixed 900; }
         default-window-height { fixed 650; }
-        default-floating-position x=0 y=0 relative-to="center";
         open-focused true;
     }
 
@@ -373,7 +372,6 @@ let
         open-floating true;
         default-column-width { fixed 520; }
         default-window-height { fixed 240; }
-        default-floating-position x=0 y=0 relative-to="center";
         open-focused true;
     }
 
@@ -382,7 +380,6 @@ let
         open-floating true;
         default-column-width { proportion 0.60; }
         default-window-height { proportion 0.75; }
-        default-floating-position x=0 y=0 relative-to="center";
         open-focused true;
     }
 
