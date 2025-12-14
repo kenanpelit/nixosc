@@ -53,17 +53,16 @@ readonly LOG_FILE="${HOME}/.config/brave-launcher/brave-launcher.log"
 	BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
 	# Niri/Hyprland'da farklı profilleri ayrı process + ayrı app-id ile açabilmek için
 	# profile bazlı ayrı user-data-dir kullanırız; profil dizinini symlink'leyerek veri çoğaltmayız.
-	ISOLATED_ROOT="${HOME}/.local/state/brave-isolated"
+	# Not: v2 ile önceki denemelerde oluşan bozuk isolated dizinlerden ayrıştırıyoruz.
+	ISOLATED_ROOT="${HOME}/.local/state/brave-isolated-v2"
 
 # Wayland ve dokunmatik yüzey için varsayılan bayraklar
-DEFAULT_FLAGS=(
-	"--restore-last-session"
-	"--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,VaapiVideoDecoder"
-	"--ozone-platform=wayland"
-	"--new-window"
-	"--disable-web-security"
-	"--disable-features=VizDisplayCompositor"
-)
+	DEFAULT_FLAGS=(
+		"--restore-last-session"
+		"--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,VaapiVideoDecoder"
+		"--ozone-platform=wayland"
+		"--new-window"
+	)
 
 # Proxy ayarları
 PROXY_ENABLED=false
@@ -237,9 +236,30 @@ check_dependencies() {
 	echo "  $SCRIPT_NAME --whatsapp"
 	echo "  $SCRIPT_NAME Proxy --proxy=127.0.0.1:9050"
 	echo
-	list_profiles
-	exit "${1:-0}"
-}
+		list_profiles
+		exit "${1:-0}"
+	}
+
+	ensure_isolated_userdata() {
+		local isolated_dir="$1"
+		mkdir -p "$isolated_dir"
+
+		# Local State olmadan Brave bazı profilleri "sıfırdan" açıp uyarı/hata verebiliyor.
+		# Symlink yerine kopyalıyoruz: her instance kendi Local State'ini yazabilsin.
+		if [[ -f "${BRAVE_PROFILES_DIR}/Local State" && ! -f "${isolated_dir}/Local State" ]]; then
+			cp -f "${BRAVE_PROFILES_DIR}/Local State" "${isolated_dir}/Local State" 2>/dev/null || true
+		fi
+
+		# First Run yoksa ilk kurulum ekranları/uyarıları çıkabiliyor.
+		if [[ -f "${BRAVE_PROFILES_DIR}/First Run" && ! -f "${isolated_dir}/First Run" ]]; then
+			cp -f "${BRAVE_PROFILES_DIR}/First Run" "${isolated_dir}/First Run" 2>/dev/null || true
+		fi
+
+		# Bazı sürümler "Last Version" dosyasına bakıyor.
+		if [[ -f "${BRAVE_PROFILES_DIR}/Last Version" && ! -f "${isolated_dir}/Last Version" ]]; then
+			cp -f "${BRAVE_PROFILES_DIR}/Last Version" "${isolated_dir}/Last Version" 2>/dev/null || true
+		fi
+	}
 
 # Profil listesi (geliştirilmiş)
 list_profiles() {
@@ -649,19 +669,28 @@ validate_profile() {
 		fi
 
 		# Komut oluştur
-		local cmd=("$BRAVE_CMD")
-		if [[ "$separate_mode" == "true" ]]; then
-			local isolated_dir="${ISOLATED_ROOT}/${window_class}"
-			mkdir -p "$isolated_dir"
+			local cmd=("$BRAVE_CMD")
+			if [[ "$separate_mode" == "true" ]]; then
+				local isolated_dir="${ISOLATED_ROOT}/${window_class}"
+				ensure_isolated_userdata "$isolated_dir"
 
-			# Profil dizinini (Default / Profile X) symlink'le.
-			# Not: Aynı profile_key'i iki farklı isolated_dir ile aynı anda açarsan Brave kilitlenir.
-			if [[ ! -e "$isolated_dir/$profile_key" ]]; then
-				ln -s "${BRAVE_PROFILES_DIR}/${profile_key}" "$isolated_dir/$profile_key"
+				# Profil dizinini (Default / Profile X) symlink'le.
+				# Not: Aynı profile_key'i iki farklı isolated_dir ile aynı anda açarsan Brave kilitlenir.
+				if [[ -e "$isolated_dir/$profile_key" && ! -L "$isolated_dir/$profile_key" ]]; then
+					log "ERROR" "Isolated dizinde '$profile_key' zaten var ama symlink değil: $isolated_dir/$profile_key"
+					log "INFO" "Çözüm: $isolated_dir dizinini sil veya farklı --class kullan"
+					exit 1
+				fi
+				if [[ ! -e "$isolated_dir/$profile_key" ]]; then
+					ln -s "${BRAVE_PROFILES_DIR}/${profile_key}" "$isolated_dir/$profile_key" 2>/dev/null || true
+				fi
+				if [[ ! -e "$isolated_dir/$profile_key" ]]; then
+					log "ERROR" "Profil symlink oluşturulamadı: $isolated_dir/$profile_key"
+					exit 1
+				fi
+
+				cmd+=("--user-data-dir=$isolated_dir")
 			fi
-
-			cmd+=("--user-data-dir=$isolated_dir")
-		fi
 		cmd+=("--profile-directory=$profile_key")
 
 	# İnkognito modu
