@@ -674,16 +674,18 @@ validate_profile() {
 				local isolated_dir="${ISOLATED_ROOT}/${window_class}"
 				ensure_isolated_userdata "$isolated_dir"
 
-				# Profil dizinini (Default / Profile X) symlink'le.
-				# Not: Aynı profile_key'i iki farklı isolated_dir ile aynı anda açarsan Brave kilitlenir.
-				if [[ -e "$isolated_dir/$profile_key" && ! -L "$isolated_dir/$profile_key" ]]; then
-					log "ERROR" "Isolated dizinde '$profile_key' zaten var ama symlink değil: $isolated_dir/$profile_key"
-					log "INFO" "Çözüm: $isolated_dir dizinini sil veya farklı --class kullan"
-					exit 1
-				fi
-				if [[ ! -e "$isolated_dir/$profile_key" ]]; then
-					ln -s "${BRAVE_PROFILES_DIR}/${profile_key}" "$isolated_dir/$profile_key" 2>/dev/null || true
-				fi
+			# Profil dizinini (Default / Profile X) symlink'le.
+			# Not: Aynı profile_key'i iki farklı isolated_dir ile aynı anda açarsan Brave kilitlenir.
+			if [[ -e "$isolated_dir/$profile_key" && ! -L "$isolated_dir/$profile_key" ]]; then
+				# Bu genelde ilk denemede Brave'in isolated_dir altında yeni/boş bir profil dizini
+				# oluşturmasından kaynaklanır. Veriyi kaybetmemek için yedekleyip symlink'e çevir.
+				local backup="${isolated_dir}/${profile_key}.bak-$(date +%Y%m%d%H%M%S)"
+				log "WARN" "Isolated dizinde '$profile_key' symlink değil; yedeklenip düzeltilecek: $isolated_dir/$profile_key -> $backup"
+				mv "$isolated_dir/$profile_key" "$backup" 2>/dev/null || true
+			fi
+			if [[ ! -e "$isolated_dir/$profile_key" ]]; then
+				ln -s "${BRAVE_PROFILES_DIR}/${profile_key}" "$isolated_dir/$profile_key" 2>/dev/null || true
+			fi
 				if [[ ! -e "$isolated_dir/$profile_key" ]]; then
 					log "ERROR" "Profil symlink oluşturulamadı: $isolated_dir/$profile_key"
 					exit 1
