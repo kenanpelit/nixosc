@@ -65,7 +65,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: profile_brave --whatsapp --class whatsapp --title whatsapp"
+echo "COMMAND: profile_brave --whatsapp --separate --class whatsapp --title whatsapp"
 echo "VPN MODE: $VPN_MODE"
 
 # Start application with VPN mode
@@ -74,14 +74,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude profile_brave --whatsapp --class whatsapp --title whatsapp &
+                mullvad-exclude profile_brave --whatsapp --separate --class whatsapp --title whatsapp &
             else
                 echo "WARNING: mullvad-exclude not found"
-                profile_brave --whatsapp --class whatsapp --title whatsapp &
+                profile_brave --whatsapp --separate --class whatsapp --title whatsapp &
             fi
         else
             echo "VPN not connected"
-            profile_brave --whatsapp --class whatsapp --title whatsapp &
+            profile_brave --whatsapp --separate --class whatsapp --title whatsapp &
         fi
         ;;
     secure|*)
@@ -90,7 +90,7 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        profile_brave --whatsapp --class whatsapp --title whatsapp &
+        profile_brave --whatsapp --separate --class whatsapp --title whatsapp &
         ;;
 esac
 
