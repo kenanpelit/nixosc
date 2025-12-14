@@ -268,14 +268,21 @@ let
     }
 
     window-rule {
-        match app-id=r#"org.quickshell$"#;
+        match app-id=r#"^org\.quickshell$"#;
         open-floating true;
     }
     
+    // --- VRR (on-demand) ---
+    // Sadece variable-refresh-rate on-demand=true olan output'larda etkili olur.
+    window-rule {
+        match app-id=r#"^mpv$"#;
+        variable-refresh-rate true;
+    }
+
     // --- Media & PIP ---
     // MPV: açık videoları küçük floating olarak sağ üste al (dosya/URL başlığı genelde "... - mpv")
     window-rule {
-        match app-id="mpv";
+        match app-id=r#"^mpv$"#;
         match title=r#".* - mpv$"#;
         open-floating true;
         default-column-width { fixed 640; }
@@ -291,7 +298,7 @@ let
     }
 
     window-rule {
-        match app-id="mpv";
+        match app-id=r#"^mpv$"#;
         match title="^Picture-in-Picture$";
         open-floating true;
         // Hyprland'daki mpv PiP (0.19w x 0.19h, sol alt) karşılığı
@@ -302,7 +309,7 @@ let
     }
     
     window-rule {
-        match app-id="vlc";
+        match app-id=r#"^vlc$"#;
         open-on-workspace "6";
     }
 
@@ -313,11 +320,11 @@ let
         match title="^Save As$";
         match title="^Confirm to replace files$";
         match title="^File Operation Progress$";
-        match app-id="pavucontrol";
-        match app-id="nm-connection-editor";
-        match app-id="blueman-manager";
-        match app-id="polkit-gnome-authentication-agent-1";
-        match app-id="hyprland-share-picker"; 
+        match app-id=r#"^pavucontrol$"#;
+        match app-id=r#"^nm-connection-editor$"#;
+        match app-id=r#"^blueman-manager$"#;
+        match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+        match app-id=r#"^hyprland-share-picker$"#;
         open-floating true;
         // default-floating-position x=0 y=0 relative-to="center";
     }
@@ -325,8 +332,7 @@ let
     // --- Tmux (Kenp) ---
     // Tmux penceresini her zaman 2. workspace'e aç.
     window-rule {
-        match app-id="TmuxKenp";
-        match app-id="Tmux";
+        match app-id=r#"^(TmuxKenp|Tmux)$"#;
         // Bazı terminallerde (özellikle kitty/wezterm) app-id "kitty" kalabiliyor,
         // ama başlık "Tmux" olduğu için bunu da yakalayalım.
         match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
@@ -337,7 +343,7 @@ let
 
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
-        match app-id="org.pulseaudio.pavucontrol";
+        match app-id=r#"^org\.pulseaudio\.pavucontrol$"#;
         open-floating true;
         default-column-width { fixed 560; }
         default-window-height { fixed 520; }
@@ -349,7 +355,7 @@ let
     // Hyprland'daki "clipse-float" kuralının Niri karşılığı.
     // `kitty --class clipse -e clipse` ile açılan pencere Wayland app-id olarak "clipse" gelir.
     window-rule {
-        match app-id="clipse";
+        match app-id=r#"^clipse$"#;
         open-floating true;
         default-column-width { proportion 0.25; }
         default-window-height { proportion 0.80; }
@@ -407,7 +413,7 @@ let
     // --- No Border Apps ---
     window-rule {
         match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
-        match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube.com__-Default|ferdium)$"#;
+        match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube\.com__-Default|ferdium)$"#;
         draw-border-with-background false;
     }
 
@@ -419,11 +425,7 @@ let
 
     // --- Layer Rules ---
     layer-rule {
-        match namespace="^quickshell$";
-        place-within-backdrop true;
-    }
-    layer-rule {
-        match namespace="dms:blurwallpaper";
+        match namespace=r#"^dms:blurwallpaper$"#;
         place-within-backdrop true;
     }
     layer-rule {
@@ -490,7 +492,7 @@ let
             max-speed 1500;
         }
         hot-corners {
-            top-left;
+            off;
         }
     }
   '';
@@ -534,8 +536,9 @@ let
             gaps 20;
             border {
                 on;
-                width 4;
-                active-color "#cba6f7ff";
+                width 1;
+                active-gradient from="#89dceb" to="#cba6f7" angle=45;
+                inactive-color "#313244";
             }
         }
     }
@@ -557,6 +560,7 @@ let
         mode "1920x1200@60.003";
         position x=320 y=1440;
         scale 1.0;
+        variable-refresh-rate on-demand=true;
     }
   '';
 
