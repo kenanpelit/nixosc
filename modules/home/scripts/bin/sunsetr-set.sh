@@ -99,9 +99,14 @@ main() {
     cfg_dir="$CONFIG_ROOT/profiles/$profile"
   fi
 
+  if [[ "$preset" != "list" && "$preset" != "-l" && "$preset" != "--list" ]]; then
+    echo "[INFO] Preset: $preset"
+    echo "[INFO] Profil: $profile"
+    echo "[INFO] Config: $cfg_dir/sunsetr.toml"
+  fi
+
   ensure_config_dir "$cfg_dir"
   apply_preset "$preset" "$cfg_dir"
 }
 
 main "$@"
-
