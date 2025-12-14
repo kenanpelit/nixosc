@@ -194,7 +194,8 @@ let
       Alt+Ctrl+A { spawn "osc-soundctl" "switch-mic"; }
 
       // --- Monitor Focus ---
-      Mod+A { spawn "niri" "msg" "action" "focus-monitor-previous"; }
+      Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
+      Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
       
       Alt+E { spawn "osc-spotify"; }
       Alt+Ctrl+N { spawn "osc-spotify" "next"; }
