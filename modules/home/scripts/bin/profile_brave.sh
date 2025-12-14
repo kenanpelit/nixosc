@@ -46,10 +46,14 @@ readonly INFO="ℹ"
 readonly CONFIG_FILE="${HOME}/.config/brave-launcher/config.conf"
 readonly LOG_FILE="${HOME}/.config/brave-launcher/brave-launcher.log"
 
-# Varsayılan konfigürasyon
-BRAVE_CMD="brave"
-LOCAL_STATE_PATH="${HOME}/.config/BraveSoftware/Brave-Browser/Local State"
-BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
+	# Varsayılan konfigürasyon
+	BRAVE_CMD="brave"
+	# Brave'in varsayılan user-data-dir'i (profil/Local State burada)
+	LOCAL_STATE_PATH="${HOME}/.config/BraveSoftware/Brave-Browser/Local State"
+	BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
+	# Niri/Hyprland'da farklı profilleri ayrı process + ayrı app-id ile açabilmek için
+	# profile bazlı ayrı user-data-dir kullanırız; profil dizinini symlink'leyerek veri çoğaltmayız.
+	ISOLATED_ROOT="${HOME}/.local/state/brave-isolated"
 
 # Wayland ve dokunmatik yüzey için varsayılan bayraklar
 DEFAULT_FLAGS=(
@@ -191,8 +195,8 @@ check_dependencies() {
 	fi
 }
 
-# Kullanım bilgisi
-usage() {
+	# Kullanım bilgisi
+	usage() {
 	echo -e "${BOLD}Brave Profil Başlatıcı v${SCRIPT_VERSION}${RESET}"
 	echo
 	echo -e "${BOLD}Kullanım:${RESET}"
@@ -207,8 +211,10 @@ usage() {
 	echo "  --title=BASLIK             Pencere başlığını ayarlar"
 	echo "  --proxy[=host:port]        Proxy ile başlatır"
 	echo "  --Proxy                    Proxy profili ile başlatır"
-	echo "  --proxy-type=TYPE          Proxy türü (socks5, http, https)"
-	echo "  --incognito                İnkognito modunda başlatır"
+		echo "  --proxy-type=TYPE          Proxy türü (socks5, http, https)"
+		echo "  --separate                 Her profil için ayrı Brave instance (user-data-dir) kullan"
+		echo "  --no-separate              Tek instance davranışı (varsayılan Chromium)"
+		echo "  --incognito                İnkognito modunda başlatır"
 	echo "  --kill-profile             Bu profil için çalışan örnekleri kapat"
 	echo "  --kill-all                 Tüm Brave örneklerini kapat"
 	echo "  --create-profile=ISIM      Yeni profil oluştur"
@@ -471,7 +477,7 @@ validate_profile() {
 }
 
 # Ana işlev
-main() {
+	main() {
 	# Konfigürasyonu yükle
 	load_config
 
@@ -560,22 +566,26 @@ main() {
 	local profile_name="$1"
 	shift
 
-	# Varsayılan değerler
-	local window_class=""
-	local window_title=""
-	local brave_args=()
-	local kill_profile=false
-	local incognito_mode=false
+		# Varsayılan değerler
+		local window_class=""
+		local window_title=""
+		local brave_args=()
+		local kill_profile=false
+		local incognito_mode=false
+		# Niri/Hyprland'da workspace rule'ların düzgün çalışması için default: ayrı instance
+		local separate_mode="auto"
 
 	# Parametreleri güvenli şekilde işle
-	while [[ $# -gt 0 ]]; do
-		case "${1:-}" in
-		--class=*) window_class="${1#*=}" ;;
-		--title=*) window_title="${1#*=}" ;;
-		--proxy=*)
-			IFS=':' read -r PROXY_HOST PROXY_PORT <<<"${1#*=}"
-			PROXY_ENABLED=true
-			;;
+		while [[ $# -gt 0 ]]; do
+			case "${1:-}" in
+			--class=*) window_class="${1#*=}" ;;
+			--title=*) window_title="${1#*=}" ;;
+			--separate) separate_mode="true" ;;
+			--no-separate) separate_mode="false" ;;
+			--proxy=*)
+				IFS=':' read -r PROXY_HOST PROXY_PORT <<<"${1#*=}"
+				PROXY_ENABLED=true
+				;;
 		--proxy) PROXY_ENABLED=true ;;
 		--proxy-host=*)
 			PROXY_HOST="${1#*=}"
@@ -618,9 +628,9 @@ main() {
 		kill_profile_brave "$profile_key"
 	fi
 
-	# Pencere ayarları
-	[[ -z "$window_class" ]] && window_class="$profile_name"
-	[[ -z "$window_title" ]] && window_title="$profile_name Browser"
+		# Pencere ayarları
+		[[ -z "$window_class" ]] && window_class="$profile_name"
+		[[ -z "$window_title" ]] && window_title="$profile_name Browser"
 
 	# İnkognito modu
 	if $incognito_mode; then
@@ -629,8 +639,30 @@ main() {
 		log "INFO" "İnkognito modu etkinleştirildi"
 	fi
 
-	# Komut oluştur
-	local cmd=("$BRAVE_CMD" "--profile-directory=$profile_key")
+		# separate_mode auto: Wayland (niri/hyprland) için aç, X11 için kapalı
+		if [[ "$separate_mode" == "auto" ]]; then
+			if [[ -n "${WAYLAND_DISPLAY:-}" ]] || [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
+				separate_mode="true"
+			else
+				separate_mode="false"
+			fi
+		fi
+
+		# Komut oluştur
+		local cmd=("$BRAVE_CMD")
+		if [[ "$separate_mode" == "true" ]]; then
+			local isolated_dir="${ISOLATED_ROOT}/${window_class}"
+			mkdir -p "$isolated_dir"
+
+			# Profil dizinini (Default / Profile X) symlink'le.
+			# Not: Aynı profile_key'i iki farklı isolated_dir ile aynı anda açarsan Brave kilitlenir.
+			if [[ ! -e "$isolated_dir/$profile_key" ]]; then
+				ln -s "${BRAVE_PROFILES_DIR}/${profile_key}" "$isolated_dir/$profile_key"
+			fi
+
+			cmd+=("--user-data-dir=$isolated_dir")
+		fi
+		cmd+=("--profile-directory=$profile_key")
 
 	# İnkognito modu
 	if $incognito_mode; then
