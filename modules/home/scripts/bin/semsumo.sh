@@ -98,16 +98,16 @@ declare -A TERMINALS=(
 
 # Browser Applications - Brave - UPDATED
 declare -A BRAVE_BROWSERS=(
-  ["brave-kenp"]="profile_brave|Kenp --restore-last-session|1|secure|2|false"
-  ["brave-ai"]="profile_brave|Ai --restore-last-session|3|secure|2|false"
-  ["brave-compecta"]="profile_brave|CompecTA --restore-last-session|4|secure|2|false"
-  ["brave-whats"]="profile_brave|Whats --restore-last-session|9|secure|1|false"
-  ["brave-exclude"]="profile_brave|Exclude --restore-last-session|6|bypass|1|false"
-  ["brave-youtube"]="profile_brave|--youtube --class brave-youtube.com__-Default|7|secure|1|false"
-  ["brave-tiktok"]="profile_brave|--tiktok --class tiktok --title tiktok|6|secure|1|true"
-  ["brave-spotify"]="profile_brave|--spotify --class spotify --title spotify|8|secure|1|true"
-  ["brave-discord"]="profile_brave|--discord --class discord --title discord|5|secure|1|true"
-  ["brave-whatsapp"]="profile_brave|--whatsapp --class whatsapp --title whatsapp|9|secure|1|true"
+  ["brave-kenp"]="profile_brave|Kenp --separate --restore-last-session|1|secure|2|false"
+  ["brave-ai"]="profile_brave|Ai --separate --restore-last-session|3|secure|2|false"
+  ["brave-compecta"]="profile_brave|CompecTA --separate --restore-last-session|4|secure|2|false"
+  ["brave-whats"]="profile_brave|Whats --separate --restore-last-session|9|secure|1|false"
+  ["brave-exclude"]="profile_brave|Exclude --separate --restore-last-session|6|bypass|1|false"
+  ["brave-youtube"]="profile_brave|--youtube --separate --class brave-youtube.com__-Default|7|secure|1|false"
+  ["brave-tiktok"]="profile_brave|--tiktok --separate --class tiktok --title tiktok|6|secure|1|true"
+  ["brave-spotify"]="profile_brave|--spotify --separate --class spotify --title spotify|8|secure|1|true"
+  ["brave-discord"]="profile_brave|--discord --separate --class discord --title discord|5|secure|1|true"
+  ["brave-whatsapp"]="profile_brave|--whatsapp --separate --class whatsapp --title whatsapp|9|secure|1|true"
 )
 
 # Browser Applications - Chrome
