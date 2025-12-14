@@ -192,6 +192,9 @@ let
       // --- Audio & Media Scripts ---
       Alt+A { spawn "osc-soundctl" "switch"; }
       Alt+Ctrl+A { spawn "osc-soundctl" "switch-mic"; }
+
+      // --- Monitor Focus ---
+      Mod+A { spawn "niri" "msg" "action" "focus-monitor-previous"; }
       
       Alt+E { spawn "osc-spotify"; }
       Alt+Ctrl+N { spawn "osc-spotify" "next"; }
