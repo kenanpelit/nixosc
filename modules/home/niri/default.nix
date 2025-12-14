@@ -125,8 +125,6 @@ let
       Mod+J     { focus-workspace-down; }
 
       // --- Focus Monitor ---
-      Mod+Alt+Left  { focus-monitor-left; }
-      Mod+Alt+Right { focus-monitor-right; }
       Mod+Alt+Up    { focus-monitor-up; }
       Mod+Alt+Down  { focus-monitor-down; }
       Mod+Alt+H     { focus-monitor-left; }
