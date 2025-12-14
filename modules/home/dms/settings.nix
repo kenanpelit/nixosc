@@ -72,8 +72,13 @@ lib.mkIf cfg.enable {
       ];
       PassEnvironment = [
         "WAYLAND_DISPLAY"
+        "NIRI_SOCKET"
         "HYPRLAND_INSTANCE_SIGNATURE"
         "HYPRLAND_SOCKET"
+        "SWAYSOCK"
+        "XDG_CURRENT_DESKTOP"
+        "XDG_SESSION_TYPE"
+        "XDG_SESSION_DESKTOP"
       ];
       StandardOutput = "journal";
       StandardError = "journal";
