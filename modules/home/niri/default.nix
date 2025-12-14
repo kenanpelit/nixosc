@@ -170,6 +170,10 @@ let
       // --- Custom Applications (Imported from Hyprland) ---
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
 
+      // --- Splitting / Column width ---
+      Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+      Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+
       // Launchers
       F1 { spawn "rofi-launcher" "keys"; }
       Alt+Space { spawn "rofi-launcher"; }
