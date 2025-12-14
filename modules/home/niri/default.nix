@@ -310,6 +310,7 @@ let
         // ama başlık "Tmux" olduğu için bunu da yakalayalım.
         match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
         open-on-workspace "2";
+        open-maximized true;
         open-focused true;
     }
 
