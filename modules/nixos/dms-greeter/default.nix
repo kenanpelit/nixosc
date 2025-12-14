@@ -9,17 +9,30 @@
 let
   cfg = config.my.greeter.dms or { enable = false; };
   user = config.my.user.name or "kenan";
-  compositorCmd =
-    if cfg.compositor == "hyprland"
-    then "${(config.programs.hyprland.package or pkgs.hyprland)}/bin/start-hyprland"
-    else cfg.compositor;
-  hyprGreeterConfig = pkgs.writeText "greetd-hypr.conf" ''
-    env = DMS_RUN_GREETER,1
+  greeterHome = "/var/lib/dms-greeter";
 
-    misc {
-      disable_hyprland_logo = true
-    }
+  hyprPkg =
+    if config.programs ? hyprland && config.programs.hyprland ? package
+    then config.programs.hyprland.package
+    else pkgs.hyprland;
+
+  # DMS greeter, Hyprland'ı `Hyprland` binary adıyla çalıştırıyor.
+  # Hyprland ise start-hyprland wrapper'ı olmadan başlatılınca uyarı basıyor.
+  # Greeter oturumunda PATH'in başına bu wrapper'ı koyarak uyarıyı bitiriyoruz.
+  hyprlandGreeterHyprlandWrapper = pkgs.writeShellScriptBin "Hyprland" ''
+    set -euo pipefail
+    wrapper_dir="$(cd "$(dirname "$0")" && pwd -P)"
+    path=":''${PATH:-}:"
+    path="''${path//:''${wrapper_dir}:/:}"
+    path="''${path%:}"
+    export PATH="${hyprPkg}/bin''${path}"
+    exec "${hyprPkg}/bin/start-hyprland" "$@"
   '';
+
+  greeterPath =
+    if cfg.compositor == "hyprland"
+    then "${lib.makeBinPath [ hyprlandGreeterHyprlandWrapper ]}:/run/current-system/sw/bin"
+    else "/run/current-system/sw/bin";
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
 
@@ -27,7 +40,7 @@ in {
     enable = lib.mkEnableOption "DMS Greeter via greetd";
 
     compositor = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.enum [ "hyprland" "niri" "sway" ];
       default = "hyprland"; # valid names: hyprland, niri, sway
       description = "Compositor name passed to dms-greeter (hyprland, niri, or sway).";
     };
@@ -46,8 +59,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # Prefer greetd over GDM
-    services.displayManager.gdm.enable = lib.mkForce false;
     services.greetd.enable = true;
 
     programs.dankMaterialShell.greeter = {
@@ -56,33 +67,27 @@ in {
       configHome = "/home/${user}";
       logs = {
         save = true;
-        path = "/var/log/greeter/dms-greeter.log";
+        path = "/var/log/dms-greeter/dms-greeter.log";
       };
     };
 
-    # Ensure greetd uses requested keyboard layout when invoking the greeter
-    services.greetd.settings.default_session = lib.mkDefault {
-      user = "greeter";
-      command =
-        if lib.hasInfix "start-hyprland" compositorCmd || lib.hasInfix "Hyprland" compositorCmd
-        then "dms-greeter --command ${compositorCmd} -C /etc/greetd/hypr.conf"
-        else "dms-greeter --command ${compositorCmd}";
-      environment =
-        [
-          "XKB_DEFAULT_LAYOUT=${cfg.layout}"
-          "XDG_CACHE_HOME=/var/cache/greeter"
-        ]
-        ++ lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
-    };
+    # Greeter kullanıcısının HOME'u genelde /var/empty oluyor; Hyprland/Qt cache gibi
+    # şeyler buraya yazmaya çalışınca hata basıyor. HOME + cache'i writable yapalım.
+    services.greetd.settings.default_session.user = lib.mkDefault "greeter";
+    services.greetd.settings.default_session.environment =
+      [
+        "XKB_DEFAULT_LAYOUT=${cfg.layout}"
+        "HOME=${greeterHome}"
+        "XDG_CACHE_HOME=${greeterHome}/.cache"
+        "XDG_STATE_HOME=${greeterHome}/.local/state"
+        "PATH=${greeterPath}"
+      ]
+      ++ lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
 
     # Ensure log directory exists and is writable by greeter user
     systemd.tmpfiles.rules = [
-      "d /var/log/greeter 0755 greeter greeter -"
-      "f /var/log/greeter/dms-greeter.log 0664 greeter greeter -"
-      "d /var/cache/greeter 0755 greeter greeter -"
+      "d /var/log/dms-greeter 0755 greeter greeter -"
+      "f /var/log/dms-greeter/dms-greeter.log 0664 greeter greeter -"
     ];
-
-    # Provide baseline Hyprland greeter config
-    environment.etc."greetd/hypr.conf".source = hyprGreeterConfig;
   };
 }
