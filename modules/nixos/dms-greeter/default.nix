@@ -63,7 +63,7 @@ let
     ]
   );
 
-  dmsShellPkg = inputs.dankMaterialShell.packages.${pkgs.system}.dms-shell;
+  dmsShellPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.dms-shell;
   dmsGreeterAsset = "${inputs.dankMaterialShell}/quickshell/Modules/Greetd/assets/dms-greeter";
 
   # NOTE: greetd 0.10.3 crashes on multiline TOML arrays (like `environment = [ ... ]`).
