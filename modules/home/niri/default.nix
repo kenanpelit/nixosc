@@ -23,6 +23,19 @@ let
       gaps 5;
       center-focused-column "never";
       background-color "#00000000";
+      // Catppuccin + cyan makyaj
+      focus-ring {
+        on;
+        width 4;
+        active-gradient from="#74c7ec" to="#cba6f7" angle=45;
+        inactive-color "#45475a";
+      }
+      border {
+        on;
+        width 2;
+        active-gradient from="#89dceb" to="#74c7ec" angle=45;
+        inactive-color "#313244";
+      }
       preset-column-widths {
         proportion 0.33333;
         proportion 0.5;
