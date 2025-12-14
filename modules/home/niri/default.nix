@@ -346,8 +346,8 @@ let
     // --- Workspace Assignments (semsumo profiles) ---
     window-rule { match app-id=r#"^(discord|WebCord)$"#; open-on-workspace "5"; }
     window-rule { match app-id=r#"^(spotify|Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
-    window-rule { match app-id="audacious"; open-on-workspace "5"; }
-    window-rule { match app-id="transmission"; open-on-workspace "7"; }
+    window-rule { match app-id=r#"^audacious$"#; open-on-workspace "5"; }
+    window-rule { match app-id=r#"^transmission$"#; open-on-workspace "7"; }
     window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"#; open-on-workspace "7"; }
 
     // Brave custom classes (semsumo daily)
@@ -357,6 +357,34 @@ let
     window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; }
     window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; }
     window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }
+
+    // --- Better Dialog Placement (centered floating) ---
+    window-rule {
+        match app-id=r#"^(blueman-manager|nm-connection-editor)$"#;
+        open-floating true;
+        default-column-width { fixed 900; }
+        default-window-height { fixed 650; }
+        default-floating-position x=0 y=0 relative-to="center";
+        open-focused true;
+    }
+
+    window-rule {
+        match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+        open-floating true;
+        default-column-width { fixed 520; }
+        default-window-height { fixed 240; }
+        default-floating-position x=0 y=0 relative-to="center";
+        open-focused true;
+    }
+
+    window-rule {
+        match title=r#"^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress)$"#;
+        open-floating true;
+        default-column-width { proportion 0.60; }
+        default-window-height { proportion 0.75; }
+        default-floating-position x=0 y=0 relative-to="center";
+        open-focused true;
+    }
 
     // --- Privacy (Block from Screencast) ---
     window-rule {
