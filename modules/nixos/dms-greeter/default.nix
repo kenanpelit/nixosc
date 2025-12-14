@@ -11,10 +11,23 @@ let
   user = config.my.user.name or "kenan";
   greeterHome = "/var/lib/dms-greeter";
 
+  # Upstream module options (we import `inputs.dankMaterialShell.nixosModules.greeter`).
+  dmsGreeterCfg = config.programs.dankMaterialShell.greeter;
+
   hyprPkg =
     if config.programs ? hyprland && config.programs.hyprland ? package
     then config.programs.hyprland.package
     else pkgs.hyprland;
+
+  niriPkg =
+    if config.programs ? niri && config.programs.niri ? package
+    then config.programs.niri.package
+    else pkgs.niri;
+
+  swayPkg =
+    if config.programs ? sway && config.programs.sway ? package
+    then config.programs.sway.package
+    else pkgs.sway;
 
   # DMS greeter, Hyprland'ı `Hyprland` binary adıyla çalıştırıyor.
   # Hyprland ise start-hyprland wrapper'ı olmadan başlatılınca uyarı basıyor.
@@ -29,10 +42,55 @@ let
     exec "${hyprPkg}/bin/start-hyprland" "$@"
   '';
 
-  greeterPath =
-    if cfg.compositor == "hyprland"
-    then "${lib.makeBinPath [ hyprlandGreeterHyprlandWrapper ]}:/run/current-system/sw/bin"
-    else "/run/current-system/sw/bin";
+  compositorPkg =
+    if cfg.compositor == "hyprland" then hyprPkg else if cfg.compositor == "niri" then niriPkg else swayPkg;
+
+  greeterPath = lib.makeBinPath (
+    (lib.optionals (cfg.compositor == "hyprland") [ hyprlandGreeterHyprlandWrapper ])
+    ++ [
+      dmsGreeterCfg.quickshell.package
+      compositorPkg
+    ]
+  );
+
+  dmsShellPkg = inputs.dankMaterialShell.packages.${pkgs.system}.dms-shell;
+  dmsGreeterAsset = "${inputs.dankMaterialShell}/quickshell/Modules/Greetd/assets/dms-greeter";
+
+  # NOTE: greetd 0.10.3 crashes on multiline TOML arrays (like `environment = [ ... ]`).
+  # NixOS generates multiline arrays for `services.greetd.settings.*.environment`, so we must
+  # avoid it and set env vars inside the command wrapper instead.
+  greeterCommand = pkgs.writeShellScriptBin "dms-greeter" ''
+    set -euo pipefail
+
+    export XKB_DEFAULT_LAYOUT=${lib.escapeShellArg cfg.layout}
+    ${lib.optionalString (cfg.variant != "") ''
+      export XKB_DEFAULT_VARIANT=${lib.escapeShellArg cfg.variant}
+    ''}
+
+    export HOME=${lib.escapeShellArg greeterHome}
+    export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
+    export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
+    export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
+
+    exec ${
+      lib.escapeShellArgs (
+        [
+          "sh"
+          dmsGreeterAsset
+          "--cache-dir"
+          greeterHome
+          "--command"
+          cfg.compositor
+          "-p"
+          "${dmsShellPkg}/share/quickshell/dms"
+        ]
+        ++ lib.optionals (dmsGreeterCfg.compositor.customConfig != "") [
+          "-C"
+          "${pkgs.writeText "dmsgreeter-compositor-config" dmsGreeterCfg.compositor.customConfig}"
+        ]
+      )
+    } ${lib.optionalString dmsGreeterCfg.logs.save "> ${lib.escapeShellArg dmsGreeterCfg.logs.path} 2>&1"}
+  '';
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
 
@@ -74,15 +132,7 @@ in {
     # Greeter kullanıcısının HOME'u genelde /var/empty oluyor; Hyprland/Qt cache gibi
     # şeyler buraya yazmaya çalışınca hata basıyor. HOME + cache'i writable yapalım.
     services.greetd.settings.default_session.user = lib.mkDefault "greeter";
-    services.greetd.settings.default_session.environment =
-      [
-        "XKB_DEFAULT_LAYOUT=${cfg.layout}"
-        "HOME=${greeterHome}"
-        "XDG_CACHE_HOME=${greeterHome}/.cache"
-        "XDG_STATE_HOME=${greeterHome}/.local/state"
-        "PATH=${greeterPath}"
-      ]
-      ++ lib.optional (cfg.variant != "") "XKB_DEFAULT_VARIANT=${cfg.variant}";
+    services.greetd.settings.default_session.command = lib.mkForce (lib.getExe greeterCommand);
 
     # Ensure log directory exists and is writable by greeter user
     systemd.tmpfiles.rules = [
