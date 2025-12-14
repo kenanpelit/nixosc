@@ -8,7 +8,11 @@ set -euo pipefail
 # çoğunlukla lock isteğinin (Alt+L + lid-close gibi) üst üste gelmesinden olur.
 #
 # Bu wrapper önce logind LockedHint ile "zaten kilitli mi?" kontrol eder,
-# kilitliyse sessizce çıkar; değilse DMS lock çağırır.
+# kilitliyse sessizce çıkar.
+#
+# Modlar:
+#   - (varsayılan) dms: dms kilit ekranı (içerideyken güzel UI)
+#   - --logind: loginctl lock-session (lid-close gibi durumlarda daha güvenli)
 
 is_locked() {
   [[ -n "${XDG_SESSION_ID:-}" ]] || return 1
@@ -23,5 +27,21 @@ if is_locked; then
   exit 0
 fi
 
-exec dms ipc call lock lock
+mode="dms"
+if [[ "${1:-}" == "--logind" ]]; then
+  mode="logind"
+  shift || true
+fi
 
+case "$mode" in
+logind)
+  if command -v loginctl >/dev/null 2>&1; then
+    exec loginctl lock-session
+  fi
+  # Fallback: DMS
+  exec dms ipc call lock lock
+  ;;
+*)
+  exec dms ipc call lock lock
+  ;;
+esac
