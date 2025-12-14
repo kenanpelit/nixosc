@@ -14,39 +14,39 @@ let
 
   configDir = "${config.xdg.configHome}/sunsetr";
 
-  toml = ''
+  mkToml = settings: ''
     [Backend]
-    backend = "${cfg.settings.backend}"
-    transition_mode = "${cfg.settings.transitionMode}"
+    backend = "${settings.backend}"
+    transition_mode = "${settings.transitionMode}"
 
     [Smoothing]
-    smoothing = ${lib.boolToString cfg.settings.smoothing.enable}
-    startup_duration = ${toString cfg.settings.smoothing.startupDuration}
-    shutdown_duration = ${toString cfg.settings.smoothing.shutdownDuration}
-    adaptive_interval = ${toString cfg.settings.smoothing.adaptiveInterval}
+    smoothing = ${lib.boolToString settings.smoothing.enable}
+    startup_duration = ${toString settings.smoothing.startupDuration}
+    shutdown_duration = ${toString settings.smoothing.shutdownDuration}
+    adaptive_interval = ${toString settings.smoothing.adaptiveInterval}
 
     ["Time-based config"]
-    night_temp = ${toString cfg.settings.time.nightTemp}
-    day_temp = ${toString cfg.settings.time.dayTemp}
-    night_gamma = ${toString cfg.settings.time.nightGamma}
-    day_gamma = ${toString cfg.settings.time.dayGamma}
-    update_interval = ${toString cfg.settings.time.updateInterval}
+    night_temp = ${toString settings.time.nightTemp}
+    day_temp = ${toString settings.time.dayTemp}
+    night_gamma = ${toString settings.time.nightGamma}
+    day_gamma = ${toString settings.time.dayGamma}
+    update_interval = ${toString settings.time.updateInterval}
 
     ["Static config"]
-    static_temp = ${toString cfg.settings.static.temp}
-    static_gamma = ${toString cfg.settings.static.gamma}
+    static_temp = ${toString settings.static.temp}
+    static_gamma = ${toString settings.static.gamma}
 
     ["Manual transitions"]
-    sunset = "${cfg.settings.manual.sunset}"
-    sunrise = "${cfg.settings.manual.sunrise}"
-    transition_duration = ${toString cfg.settings.manual.transitionDuration}
+    sunset = "${settings.manual.sunset}"
+    sunrise = "${settings.manual.sunrise}"
+    transition_duration = ${toString settings.manual.transitionDuration}
 
     [Geolocation]
-    latitude = ${toString cfg.settings.geo.latitude}
-    longitude = ${toString cfg.settings.geo.longitude}
+    latitude = ${toString settings.geo.latitude}
+    longitude = ${toString settings.geo.longitude}
   '';
 
-  sunsetrRun = pkgs.writeShellScript "sunsetr-run.sh" ''
+  mkSunsetrRun = cfgDir: pkgs.writeShellScript "sunsetr-run-${lib.replaceStrings ["/"] ["-"] cfgDir}.sh" ''
     set -euo pipefail
 
     : "''${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
@@ -60,20 +60,17 @@ let
       sleep 0.25
     done
 
-    exec ${pkgs.sunsetr}/bin/sunsetr --config ${lib.escapeShellArg configDir}
+    exec ${pkgs.sunsetr}/bin/sunsetr --config ${lib.escapeShellArg cfgDir}
   '';
-in
-{
-  options.my.user.sunsetr = {
-    enable = lib.mkEnableOption "sunsetr night light manager";
 
-    enableService = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Run sunsetr as a user systemd service.";
-    };
+  mkConfigDirForProfile = name: "${configDir}/profiles/${name}";
 
-    settings = {
+  profileNames = builtins.attrNames cfg.profiles;
+  profileUnitName = name: "sunsetr-${name}.service";
+  allUnitNames = [ "sunsetr.service" ] ++ map profileUnitName profileNames;
+
+  settingsModule = { ... }: {
+    options = {
       backend = lib.mkOption {
         type = lib.types.enum [ "auto" "hyprland" "hyprsunset" "wayland" ];
         default = "auto";
@@ -118,9 +115,65 @@ in
       };
     };
   };
+in
+{
+  options.my.user.sunsetr = {
+    enable = lib.mkEnableOption "sunsetr night light manager";
+
+    enableService = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Run sunsetr as a user systemd service.";
+    };
+
+    settings = lib.mkOption {
+      type = lib.types.submodule settingsModule;
+      default = { };
+      description = "Default sunsetr settings (written to ~/.config/sunsetr/sunsetr.toml).";
+    };
+
+    profiles = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }: {
+        options = {
+          enableService = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Run this profile as a separate user systemd service.";
+          };
+
+          settings = lib.mkOption {
+            type = lib.types.submodule settingsModule;
+            default = { };
+            description = "sunsetr settings for this profile.";
+          };
+        };
+      }));
+      default = { };
+      description = "Additional sunsetr profiles (each uses its own config dir).";
+    };
+  };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ pkgs.sunsetr ];
+    home.packages =
+      let
+        wrapper = pkgs.writeShellScriptBin "sunsetr-profile" ''
+          set -euo pipefail
+          name="''${1:-}"
+          if [[ -z "$name" ]]; then
+            echo "Usage: sunsetr-profile <default|PROFILE> [sunsetr args...]" >&2
+            echo "Profiles: default ${lib.concatStringsSep " " profileNames}" >&2
+            exit 2
+          fi
+          shift || true
+
+          if [[ "$name" == "default" ]]; then
+            exec ${pkgs.sunsetr}/bin/sunsetr --config ${lib.escapeShellArg configDir} "$@"
+          fi
+
+          exec ${pkgs.sunsetr}/bin/sunsetr --config ${lib.escapeShellArg configDir}/profiles/"$name" "$@"
+        '';
+      in
+      [ pkgs.sunsetr wrapper ];
 
     # NOTE: Do NOT manage this file via `xdg.configFile` (it becomes read-only / a Nix store symlink).
     # sunsetr needs to be able to edit it (e.g. `sunsetr geo`).
@@ -141,27 +194,88 @@ in
       # Only create a default config once; keep user's edits afterwards.
       if [ ! -f "$CFG_FILE" ]; then
         $DRY_RUN_CMD cat > "$CFG_FILE" << 'EOFSUNSETR'
-${toml}
+${mkToml cfg.settings}
 EOFSUNSETR
       fi
     '';
 
-    systemd.user.services.sunsetr = lib.mkIf cfg.enableService {
-      Unit = {
-        Description = "sunsetr gamma/temperature manager";
-        Conflicts = [ "blue.service" ];
-        PartOf = [ "graphical-session.target" ];
-        After = [ "graphical-session.target" ];
-      };
-      Service = {
-        Type = "simple";
-        ExecStart = sunsetrRun;
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install = {
-        WantedBy = [ "graphical-session.target" ];
-      };
-    };
+    home.activation.sunsetrProfiles = dag.entryAfter [ "writeBoundary" ] (lib.concatStringsSep "\n" (
+      map (name:
+        let
+          pCfgDir = mkConfigDirForProfile name;
+          pToml = mkToml cfg.profiles.${name}.settings;
+        in
+        ''
+          CFG_DIR="${pCfgDir}"
+          CFG_FILE="$CFG_DIR/sunsetr.toml"
+
+          if [ ! -d "$CFG_DIR" ]; then
+            $DRY_RUN_CMD mkdir -p "$CFG_DIR"
+          fi
+
+          if [ -L "$CFG_FILE" ]; then
+            $DRY_RUN_CMD rm -f "$CFG_FILE"
+          fi
+
+          if [ ! -f "$CFG_FILE" ]; then
+            $DRY_RUN_CMD cat > "$CFG_FILE" << 'EOFSUNSETR'
+${pToml}
+EOFSUNSETR
+          fi
+        ''
+      ) profileNames
+    ));
+
+    systemd.user.services =
+      let
+        baseSvc = lib.mkIf cfg.enableService {
+          sunsetr = {
+            Unit = {
+              Description = "sunsetr gamma/temperature manager";
+              Conflicts = [ "blue.service" ] ++ (lib.remove "sunsetr.service" allUnitNames);
+              PartOf = [ "graphical-session.target" ];
+              After = [ "graphical-session.target" ];
+            };
+            Service = {
+              Type = "simple";
+              ExecStart = mkSunsetrRun configDir;
+              Restart = "on-failure";
+              RestartSec = 2;
+            };
+            Install = {
+              WantedBy = [ "graphical-session.target" ];
+            };
+          };
+        };
+
+        profileSvcs = lib.mkMerge (map (name:
+          let
+            unit = profileUnitName name;
+            dir = mkConfigDirForProfile name;
+            run = mkSunsetrRun dir;
+            p = cfg.profiles.${name};
+          in
+          lib.mkIf p.enableService {
+            ${lib.removeSuffix ".service" unit} = {
+              Unit = {
+                Description = "sunsetr profile (${name})";
+                Conflicts = [ "blue.service" ] ++ (lib.remove unit allUnitNames);
+                PartOf = [ "graphical-session.target" ];
+                After = [ "graphical-session.target" ];
+              };
+              Service = {
+                Type = "simple";
+                ExecStart = run;
+                Restart = "on-failure";
+                RestartSec = 2;
+              };
+              Install = {
+                WantedBy = [ "graphical-session.target" ];
+              };
+            };
+          }
+        ) profileNames);
+      in
+      lib.mkMerge [ baseSvc profileSvcs ];
   };
 }
