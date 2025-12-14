@@ -24,21 +24,8 @@ send_notify() {
 }
 
 #--- Brave/Chromium fix fonksiyonu ---------------------------------------------
-fix_browser_flags() {
-	local base="$HOME/.config/BraveSoftware/Brave-Browser"
-	local profiles=("$base"/Default "$base"/Profile*)
-
-	for p in "${profiles[@]}"; do
-		[[ -d "$p" ]] || continue
-
-		# Preferences dosyası
-		if [[ -f "$p/Preferences" ]]; then
-			sed -i \
-				-e 's/"exited_cleanly":[^,]*/"exited_cleanly":true/' \
-				-e 's/"exit_type":"[^"]*"/"exit_type":"Normal"/' \
-				"$p/Preferences" || true
-		fi
-	done
+fix_profile_files_in_dir() {
+	local base="$1"
 
 	# Local State dosyası
 	if [[ -f "$base/Local State" ]]; then
@@ -46,6 +33,38 @@ fix_browser_flags() {
 			-e 's/"exited_cleanly":[^,]*/"exited_cleanly":true/' \
 			-e 's/"exit_type":"[^"]*"/"exit_type":"Normal"/' \
 			"$base/Local State" || true
+	fi
+
+	# Profile*/Default Preferences
+	local profiles=("$base"/Default "$base"/Profile*)
+	for p in "${profiles[@]}"; do
+		[[ -d "$p" ]] || continue
+		if [[ -f "$p/Preferences" ]]; then
+			sed -i \
+				-e 's/"exited_cleanly":[^,]*/"exited_cleanly":true/' \
+				-e 's/"exit_type":"[^"]*"/"exit_type":"Normal"/' \
+				"$p/Preferences" || true
+		fi
+	done
+}
+
+fix_browser_flags() {
+	# Brave - ana dizin
+	fix_profile_files_in_dir "$HOME/.config/BraveSoftware/Brave-Browser"
+
+	# Brave isolated (profile_brave --separate ile)
+	# ~/.brave/isolated/<Class>/Local State + Profile*/Default
+	if [[ -d "$HOME/.brave/isolated" ]]; then
+		local d
+		for d in "$HOME/.brave/isolated"/*; do
+			[[ -d "$d" ]] || continue
+			fix_profile_files_in_dir "$d"
+		done
+	fi
+
+	# Chromium (opsiyonel)
+	if [[ -d "$HOME/.config/chromium" ]]; then
+		fix_profile_files_in_dir "$HOME/.config/chromium"
 	fi
 }
 
