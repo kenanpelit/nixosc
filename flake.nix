@@ -146,7 +146,7 @@
     walker.url = "github:abenz1267/walker/v2.12.2";
     
     elephant = {
-      url = "github:abenz1267/elephant/v2.17.1";
+      url = "github:abenz1267/elephant/v2.17.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
