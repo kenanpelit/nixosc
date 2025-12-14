@@ -61,7 +61,6 @@ readonly LOG_FILE="${HOME}/.config/brave-launcher/brave-launcher.log"
 		"--restore-last-session"
 		"--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,VaapiVideoDecoder"
 		"--ozone-platform=wayland"
-		"--new-window"
 	)
 
 # Proxy ayarları
@@ -398,18 +397,18 @@ create_profile() {
 }
 
 # Uygulama başlatıcıları (geliştirilmiş)
-launch_app() {
-	local app_name="$1"
-	local app_url="$2"
-	local profile="${3:-Kenp}"
+	launch_app() {
+		local app_name="$1"
+		local app_url="$2"
+		local profile="${3:-Kenp}"
 	shift 3
 
 	log "SUCCESS" "$app_name başlatılıyor..."
 
 	# exec yerine normal çağrı
-	"$0" "$profile" --app="$app_url" \
-		--class="$app_name" --title="$app_name" "$@"
-}
+		"$0" "$profile" --new-window --app="$app_url" \
+			--class="$app_name" --title="$app_name" "$@"
+	}
 
 launch_whatsapp() { launch_app "WhatsApp" "https://web.whatsapp.com" "Kenp" "$@"; }
 launch_youtube() { launch_app "YouTube" "https://youtube.com" "Kenp" "$@"; }
