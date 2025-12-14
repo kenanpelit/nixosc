@@ -15,6 +15,7 @@ Kullanım:
   sunsetr-set night
   sunsetr-set night night
   sunsetr-set focus work
+  sunsetr-set apply night
 
 Notlar:
   - profile verilmezse "default" kullanılır.
@@ -89,10 +90,29 @@ EOF
   esac
 }
 
+activate_profile() {
+  local profile="${1:-default}"
+  local cfg_dir="$CONFIG_ROOT"
+  if [[ "$profile" != "default" ]]; then
+    cfg_dir="$CONFIG_ROOT/profiles/$profile"
+  fi
+
+  ensure_config_dir "$cfg_dir"
+  echo "[INFO] Aktif ediliyor: $profile ($cfg_dir)"
+
+  # Tek instance: önce durdur, sonra yeni config ile background başlat.
+  sunsetr stop >/dev/null 2>&1 || true
+  exec sunsetr --background --config "$cfg_dir"
+}
+
 main() {
   [[ $# -ge 1 ]] || { usage; exit 2; }
   local preset="$1"
   local profile="${2:-default}"
+
+  if [[ "$preset" == "apply" ]]; then
+    activate_profile "${2:-default}"
+  fi
 
   local cfg_dir="$CONFIG_ROOT"
   if [[ "$profile" != "default" ]]; then
