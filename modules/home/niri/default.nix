@@ -26,13 +26,13 @@ let
       // Catppuccin + cyan makyaj
       focus-ring {
         on;
-        width 4;
+        width 2;
         active-gradient from="#74c7ec" to="#cba6f7" angle=45;
         inactive-color "#45475a";
       }
       border {
         on;
-        width 2;
+        width 1;
         active-gradient from="#89dceb" to="#74c7ec" angle=45;
         inactive-color "#313244";
       }
