@@ -117,8 +117,11 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/848991cf5bfd7edf884bcb36697eca0573f8f344"; # 1215 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995"; # 1214 - Updated commit
+      # NOTE: Bu input buildGoModule vendorHash sebebiyle bazen "hash mismatch" ile kırılabiliyor.
+      # Çalışan (vendorHash uyumlu) commit:
+      url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995"; # 1214 - Stable commit
+      # Son commit (şu an vendorHash mismatch veriyorsa tekrar açma):
+      # url = "github:AvengeMedia/DankMaterialShell/848991cf5bfd7edf884bcb36697eca0573f8f344"; # 1215 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/e4e20fb43a4627ab6d1581b14d6f7b5dab7d0820"; # 1213 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/ca39196f132a86eef58c3f5365c7c1058f081a8a"; # 1213 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/b2ac9c6c1ac6625b266a242720e02960ffad13d2"; # 1213 - Updated commit
