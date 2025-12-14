@@ -365,11 +365,12 @@ let
     window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"#; open-on-workspace "7"; }
 
     // Brave custom classes (semsumo daily)
-    window-rule { match app-id="Kenp"; open-on-workspace "1"; }
-    window-rule { match app-id="Ai"; open-on-workspace "3"; }
-    window-rule { match app-id="CompecTA"; open-on-workspace "4"; }
-    window-rule { match app-id="brave-youtube.com__-Default"; open-on-workspace "7"; }
-    window-rule { match app-id="ferdium"; open-on-workspace "9"; }
+    // Not: match app-id regex'i "herhangi bir yerde" eşleşir; bu yüzden ^...$ ile sabitliyoruz.
+    window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; }
+    window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; }
+    window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; }
+    window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; }
+    window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }
 
     // --- Privacy (Block from Screencast) ---
     window-rule {
