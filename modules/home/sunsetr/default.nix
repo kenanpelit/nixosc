@@ -167,10 +167,26 @@ in
           shift || true
 
           if [[ "$name" == "default" ]]; then
-            exec ${pkgs.sunsetr}/bin/sunsetr --config ${lib.escapeShellArg configDir} "$@"
+            cfg_dir=${lib.escapeShellArg configDir}
+          else
+            cfg_dir=${lib.escapeShellArg configDir}/profiles/"$name"
           fi
 
-          exec ${pkgs.sunsetr}/bin/sunsetr --config ${lib.escapeShellArg configDir}/profiles/"$name" "$@"
+          # İsteğe bağlı: profile dizini yoksa oluştur (Nix'te profile tanımlamadan da kullanılabilsin).
+          mkdir -p "$cfg_dir"
+
+          # Profil config'i yoksa default'tan kopyala (sonra `sunsetr geo/set` ile özelleştirirsin).
+          if [[ ! -f "$cfg_dir/sunsetr.toml" && -f ${lib.escapeShellArg configDir}/sunsetr.toml ]]; then
+            cp -f ${lib.escapeShellArg configDir}/sunsetr.toml "$cfg_dir/sunsetr.toml" 2>/dev/null || true
+          fi
+
+          subcmd="''${1:-}"
+          if [[ "$subcmd" == "status" || "$subcmd" == "S" ]]; then
+            shift || true
+            exec ${pkgs.sunsetr}/bin/sunsetr status --config "$cfg_dir" "$@"
+          fi
+
+          exec ${pkgs.sunsetr}/bin/sunsetr --config "$cfg_dir" "$@"
         '';
       in
       [ pkgs.sunsetr wrapper ];
