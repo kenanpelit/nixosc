@@ -95,4 +95,22 @@ lib.mkIf cfg.enable {
       fi
     done
   '';
+
+  # Lock davranışı:
+  # `loginctlLockIntegration=true` iken DMS bazen loginctl üzerinden kilitleyip
+  # kendi (güzel) lock UI'ını devreye sokmayabiliyor ve "başka" bir lock ekranı
+  # görünüyormuş gibi oluyor. Niri/Hyprland altında tutarlı olması için bunu
+  # kapatıyoruz ve DMS'in WlSessionLock UI'ını her zaman kullandırıyoruz.
+  home.activation.dmsLockSettings = dag.entryAfter [ "writeBoundary" ] ''
+    settings="$HOME/.config/DankMaterialShell/settings.json"
+    if [ -f "$settings" ]; then
+      current="$(${pkgs.jq}/bin/jq -r '.loginctlLockIntegration // empty' "$settings" 2>/dev/null || true)"
+      if [ "$current" != "false" ]; then
+        tmp="$(mktemp)"
+        ${pkgs.jq}/bin/jq '.loginctlLockIntegration = false' "$settings" >"$tmp"
+        mv "$tmp" "$settings"
+        ${pkgs.systemd}/bin/systemctl --user try-restart dms.service >/dev/null 2>&1 || true
+      fi
+    fi
+  '';
 }
