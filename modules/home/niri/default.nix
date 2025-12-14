@@ -321,28 +321,6 @@ let
         open-focused true;
     }
 
-    // --- Ferdium (WhatsApp vs.) ---
-    window-rule {
-        match app-id="ferdium";
-        open-on-workspace "9";
-        open-focused true;
-    }
-
-    // --- Spotify ---
-    window-rule {
-        match app-id="spotify";
-        open-on-workspace "8";
-        open-focused true;
-    }
-
-    // --- WebCord / Discord ---
-    window-rule {
-        match app-id="WebCord";
-        match app-id="discord";
-        open-on-workspace "5";
-        open-focused true;
-    }
-
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
         match app-id="org.pulseaudio.pavucontrol";
@@ -367,7 +345,7 @@ let
 
     // --- Workspace Assignments (semsumo profiles) ---
     window-rule { match app-id=r#"^(discord|WebCord)$"#; open-on-workspace "5"; }
-    window-rule { match app-id=r#"^(Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
+    window-rule { match app-id=r#"^(spotify|Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
     window-rule { match app-id="audacious"; open-on-workspace "5"; }
     window-rule { match app-id="transmission"; open-on-workspace "7"; }
     window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"#; open-on-workspace "7"; }
