@@ -7,23 +7,22 @@ set -euo pipefail
 #   "refusing lock as already locked with an active client"
 # çoğunlukla lock isteğinin (Alt+L + lid-close gibi) üst üste gelmesinden olur.
 #
-# Bu wrapper önce logind LockedHint ile "zaten kilitli mi?" kontrol eder,
-# kilitliyse sessizce çıkar.
+# Bu wrapper önce DMS üzerinden "zaten kilitli mi?" kontrol eder.
+# (DMS kendi session-lock state'ini biliyor; bu LockedHint'ten daha güvenilir.)
 #
 # Modlar:
 #   - (varsayılan) dms: dms kilit ekranı (içerideyken güzel UI)
 #   - --logind: loginctl lock-session (lid-close gibi durumlarda daha güvenli)
 
-is_locked() {
-  [[ -n "${XDG_SESSION_ID:-}" ]] || return 1
-  command -v loginctl >/dev/null 2>&1 || return 1
-
-  local hint
-  hint="$(loginctl show-session "${XDG_SESSION_ID}" -p LockedHint --value 2>/dev/null || true)"
-  [[ "$hint" == "yes" ]]
+is_dms_locked() {
+  command -v dms >/dev/null 2>&1 || return 1
+  # `dms ipc call lock isLocked` -> "true"/"false"
+  local out
+  out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
+  [[ "$out" == "true" ]]
 }
 
-if is_locked; then
+if is_dms_locked; then
   exit 0
 fi
 

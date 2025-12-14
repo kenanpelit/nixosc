@@ -629,9 +629,8 @@ let
     }
     // --- Switch Events ---
     switch-events {
-        // Kapak kapanırken ayrı bir kilit UI başlatmak yerine logind üzerinden kilitle.
-        // Böylece DMS/başka locker ile çakışma ihtimali azalır.
-        lid-close { spawn "${niriLockCmd}" "--logind"; }
+        // Kapak kapanınca da aynı (DMS) kilidi kullan.
+        lid-close { spawn "${niriLockCmd}"; }
     }
 
     // --- Includes (Modular Config) ---
