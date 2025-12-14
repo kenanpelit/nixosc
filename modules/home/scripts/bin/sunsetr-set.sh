@@ -28,6 +28,14 @@ die() {
   exit 1
 }
 
+notify() {
+  local title="$1"
+  local body="$2"
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -t 1400 "$title" "$body" 2>/dev/null || true
+  fi
+}
+
 ensure_config_dir() {
   local cfg_dir="$1"
   mkdir -p "$cfg_dir"
@@ -99,6 +107,7 @@ activate_profile() {
 
   ensure_config_dir "$cfg_dir"
   echo "[INFO] Aktif ediliyor: $profile ($cfg_dir)"
+  notify "sunsetr" "Profil aktif: $profile"
 
   # Tek instance: önce durdur, sonra yeni config ile background başlat.
   sunsetr stop >/dev/null 2>&1 || true
@@ -127,6 +136,7 @@ main() {
 
   ensure_config_dir "$cfg_dir"
   apply_preset "$preset" "$cfg_dir"
+  notify "sunsetr" "Preset yazıldı: $preset → $profile"
 }
 
 main "$@"
