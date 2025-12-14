@@ -10,6 +10,7 @@ let
   # Binaries
   kittyCmd = "${pkgs.kitty}/bin/kitty";
   dmsCmd = "${config.home.profileDirectory}/bin/dms";
+  niriLockCmd = "${config.home.profileDirectory}/bin/niri-lock";
   niriusCmd = "${pkgs.nirius}/bin/niriusd";
   niriswitcherCmd = "${pkgs.niriswitcher}/bin/niriswitcher";
 
@@ -79,7 +80,7 @@ let
       Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
 
       // --- Security & Inhibit ---
-      Alt+L hotkey-overlay-title="Lock Screen" { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+      Alt+L hotkey-overlay-title="Lock Screen" { spawn "${niriLockCmd}"; }
       Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
 
       // --- Audio Controls ---
@@ -628,7 +629,7 @@ let
     }
     // --- Switch Events ---
     switch-events {
-        lid-close { spawn "${dmsCmd}" "ipc" "call" "lock" "lock"; }
+        lid-close { spawn "${niriLockCmd}"; }
     }
 
     // --- Includes (Modular Config) ---
