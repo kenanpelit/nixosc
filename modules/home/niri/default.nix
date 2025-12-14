@@ -574,11 +574,25 @@ let
         tap
         dwt
         drag-lock
+        tap-button-map "left-middle-right"
         middle-emulation
         click-method "clickfinger"
         accel-profile "flat"
         accel-speed 1.0
-        // natural-scroll
+        natural-scroll
+        // Dikey biraz hızlı, yatay biraz daha hızlı olsun; istersen sayıları değiştiririz.
+        scroll-factor vertical=1.0 horizontal=1.2
+      }
+      trackpoint {
+        // Trackpoint genelde hassas olduğu için hafif yavaşlatıp (flat + düşük speed)
+        // daha stabil hale getiriyoruz.
+        accel-profile "flat"
+        accel-speed 0.4
+        middle-emulation
+        // Trackpoint ile scroll için (butona basılı tutup yön vererek):
+        scroll-method "on-button-down"
+        scroll-button 273
+        scroll-button-lock
       }
     }
     // --- Switch Events ---
