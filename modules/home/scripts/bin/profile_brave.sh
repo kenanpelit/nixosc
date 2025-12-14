@@ -260,6 +260,52 @@ check_dependencies() {
 		fi
 	}
 
+	ensure_isolated_profile_dir() {
+		local isolated_dir="$1"
+		local profile_key="$2"
+		local src="${BRAVE_PROFILES_DIR}/${profile_key}"
+		local dst="${isolated_dir}/${profile_key}"
+
+		if [[ ! -d "$src" ]]; then
+			log "ERROR" "Kaynak profil dizini bulunamadı: $src"
+			exit 1
+		fi
+
+		# Eğer Brave daha önce isolated_dir altında boş/bozuk bir profil dizini oluşturduysa,
+		# veya önceki sürüm symlink bıraktıysa, bunu yedekleyip temiz bir kopya oluştur.
+		local need_copy="false"
+		if [[ -L "$dst" ]]; then
+			need_copy="true"
+		elif [[ -e "$dst" && ! -d "$dst" ]]; then
+			log "ERROR" "Isolated profilde beklenmeyen dosya türü: $dst"
+			exit 1
+		elif [[ -d "$dst" ]]; then
+			# "Preferences" yoksa genelde bozuk/yarım profildir.
+			if [[ ! -f "$dst/Preferences" ]]; then
+				need_copy="true"
+			fi
+		else
+			need_copy="true"
+		fi
+
+		if [[ "$need_copy" == "true" ]]; then
+			local backup=""
+			if [[ -e "$dst" ]]; then
+				backup="${dst}.bak-$(date +%Y%m%d%H%M%S)"
+				log "WARN" "Isolated profile '$profile_key' yedekleniyor: $dst -> $backup"
+				mv "$dst" "$backup" 2>/dev/null || true
+			fi
+
+			log "INFO" "Profil kopyalanıyor (ilk kurulum): $src -> $dst"
+			# -a: izinler/symlink/timestamp; -L: kaynak içindeki symlink'leri dereference et
+			cp -aL "$src" "$dst" 2>/dev/null || {
+				log "ERROR" "Profil kopyalanamadı: $src -> $dst"
+				[[ -n "$backup" ]] && log "INFO" "Yedek duruyor: $backup"
+				exit 1
+			}
+		fi
+	}
+
 # Profil listesi (geliştirilmiş)
 list_profiles() {
 	echo -e "${BOLD}Mevcut profiller:${RESET}"
@@ -672,27 +718,11 @@ validate_profile() {
 			if [[ "$separate_mode" == "true" ]]; then
 				local isolated_dir="${ISOLATED_ROOT}/${window_class}"
 				ensure_isolated_userdata "$isolated_dir"
-
-			# Profil dizinini (Default / Profile X) symlink'le.
-			# Not: Aynı profile_key'i iki farklı isolated_dir ile aynı anda açarsan Brave kilitlenir.
-			if [[ -e "$isolated_dir/$profile_key" && ! -L "$isolated_dir/$profile_key" ]]; then
-				# Bu genelde ilk denemede Brave'in isolated_dir altında yeni/boş bir profil dizini
-				# oluşturmasından kaynaklanır. Veriyi kaybetmemek için yedekleyip symlink'e çevir.
-				local backup="${isolated_dir}/${profile_key}.bak-$(date +%Y%m%d%H%M%S)"
-				log "WARN" "Isolated dizinde '$profile_key' symlink değil; yedeklenip düzeltilecek: $isolated_dir/$profile_key -> $backup"
-				mv "$isolated_dir/$profile_key" "$backup" 2>/dev/null || true
-			fi
-			if [[ ! -e "$isolated_dir/$profile_key" ]]; then
-				ln -s "${BRAVE_PROFILES_DIR}/${profile_key}" "$isolated_dir/$profile_key" 2>/dev/null || true
-			fi
-				if [[ ! -e "$isolated_dir/$profile_key" ]]; then
-					log "ERROR" "Profil symlink oluşturulamadı: $isolated_dir/$profile_key"
-					exit 1
-				fi
+				ensure_isolated_profile_dir "$isolated_dir" "$profile_key"
 
 				cmd+=("--user-data-dir=$isolated_dir")
 			fi
-		cmd+=("--profile-directory=$profile_key")
+			cmd+=("--profile-directory=$profile_key")
 
 	# İnkognito modu
 	if $incognito_mode; then
