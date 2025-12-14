@@ -23,6 +23,51 @@ send_notify() {
   fi
 }
 
+reboot_with_fallbacks() {
+  local errors=()
+
+  if ! command -v systemctl &>/dev/null; then
+    send_notify "OSC Safe Reboot" "systemctl bulunamadı" "critical"
+    echo "[ERROR] systemctl not found"
+    return 1
+  fi
+
+  echo "[STEP] Reboot deneniyor..."
+  send_notify "OSC Safe Reboot" "Reboot deneniyor..." "critical"
+
+  if systemctl reboot; then
+    return 0
+  else
+    errors+=("systemctl reboot")
+  fi
+
+  if systemctl reboot -i; then
+    return 0
+  else
+    errors+=("systemctl reboot -i")
+  fi
+
+  if systemctl reboot -f; then
+    return 0
+  else
+    errors+=("systemctl reboot -f")
+  fi
+
+  if command -v sudo &>/dev/null; then
+    if sudo -n systemctl reboot -f; then
+      return 0
+    else
+      errors+=("sudo -n systemctl reboot -f")
+    fi
+  fi
+
+  echo "[ERROR] Reboot başarısız oldu. Denenenler:"
+  printf '  - %s\n' "${errors[@]}"
+  echo "[INFO] Elle dene: sudo systemctl reboot -f"
+  send_notify "OSC Safe Reboot" "Reboot başarısız. Elle dene: sudo systemctl reboot -f" "critical"
+  return 1
+}
+
 #--- Brave/Chromium fix fonksiyonu ---------------------------------------------
 fix_profile_files_in_dir() {
   local base="$1"
@@ -108,10 +153,6 @@ graceful_shutdown
 
 echo "[STEP] Brave/Chromium flag fix..."
 fix_browser_flags
-send_notify "✅ Güvenli Reboot" "Browser flag'leri düzeltildi"
+send_notify "OSC Safe Reboot" "Browser dosyaları güncellendi (clean exit)" "normal"
 
-echo "[STEP] Reboot başlatılıyor..."
-send_notify "🔌 Sistem Yeniden Başlatılıyor" "3 saniye sonra reboot..." "critical"
-sleep 1
-
-exec systemctl reboot -i
+reboot_with_fallbacks
