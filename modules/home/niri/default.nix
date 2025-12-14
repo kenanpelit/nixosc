@@ -196,6 +196,7 @@ let
       // --- Monitor Focus ---
       Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
       Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
+      Mod+Escape { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
       
       Alt+E { spawn "osc-spotify"; }
       Alt+Ctrl+N { spawn "osc-spotify" "next"; }
