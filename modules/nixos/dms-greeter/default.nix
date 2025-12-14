@@ -39,7 +39,17 @@ let
     path="''${path//:''${wrapper_dir}:/:}"
     path="''${path%:}"
     export PATH="${hyprPkg}/bin''${path}"
-    exec "${hyprPkg}/bin/start-hyprland" "$@"
+
+    if [ -x "${hyprPkg}/bin/start-hyprland" ]; then
+      exec "${hyprPkg}/bin/start-hyprland" "$@"
+    fi
+
+    if [ -x "${hyprPkg}/bin/Hyprland" ]; then
+      exec "${hyprPkg}/bin/Hyprland" "$@"
+    fi
+
+    echo "dms-greeter: Hyprland executable not found in ${hyprPkg}/bin" >&2
+    exit 127
   '';
 
   compositorPkg =
