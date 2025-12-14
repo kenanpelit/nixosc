@@ -37,6 +37,23 @@ let
         active-gradient from="#89dceb" to="#74c7ec" angle=45;
         inactive-color "#313244";
       }
+      tab-indicator {
+        hide-when-single-tab;
+        place-within-column;
+        width 4;
+        gap 6;
+        length total-proportion=0.9;
+        position "top";
+        gaps-between-tabs 4;
+        corner-radius 8;
+        active-gradient from="#74c7ec" to="#cba6f7" angle=45;
+        inactive-color "#45475a";
+        urgent-color "#f38ba8";
+      }
+      insert-hint {
+        color "#89dceb80";
+        gradient from="#89dceb80" to="#cba6f780" angle=45 relative-to="workspace-view";
+      }
       preset-column-widths {
         proportion 0.33333;
         proportion 0.5;
@@ -501,9 +518,16 @@ let
   dmsRecentWindows = ''
     recent-windows {
         debounce-ms 0;
+        open-delay-ms 0;
         highlight {
             active-color "#cba6f7ff"; // Catppuccin Mauve
+            urgent-color "#f38ba8ff"; // Catppuccin Red
+            padding 24;
             corner-radius 12;
+        }
+        previews {
+            max-height 720;
+            max-scale 0.6;
         }
     }
   '';
@@ -577,11 +601,17 @@ let
       QT_QPA_PLATFORMTHEME_QT6 "gtk3";
     }
 
+    cursor {
+      hide-when-typing;
+      hide-after-inactive-ms 1000;
+    }
+
     prefer-no-csd;
 
     // Açılışta "important hotkeys" ekranını gösterme.
     hotkey-overlay {
       skip-at-startup;
+      hide-not-bound;
     }
 
     // --- Startup Applications ---
@@ -599,6 +629,7 @@ let
 
     // --- Input Configuration ---
     input {
+      workspace-auto-back-and-forth;
       keyboard {
         xkb {
           layout "tr"
