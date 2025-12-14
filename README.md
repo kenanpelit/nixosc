@@ -42,8 +42,9 @@
 A comprehensive NixOS configuration built on **Snowfall Lib**, managing both system (NixOS) and user (Home Manager) layers from a single flake.
 
 - **Architecture:** Snowfall Lib (auto module discovery)
-- **Desktop:** Hyprland + **DankMaterialShell (DMS)**; Waybar/Hyprpanel disabled by default
-- **Launchers:** DMS Spotlight + Rofi fallback; Ulauncher extension set (Walker off)
+- **Desktop:** Hyprland + Niri + GNOME (optional) + **DankMaterialShell (DMS)**; Waybar/Hyprpanel disabled by default
+- **Greeter:** greetd + DMS Greeter (`dms-greeter`) on supported hosts
+- **Launchers:** DMS Spotlight + Walker (Elephant) + Rofi; Ulauncher is also configured
 - **Theme:** Catppuccin (Mocha by default) end-to-end
 - **Shell:** Zsh + Starship + Tmux + Kitty/Wezterm
 - **Secrets:** SOPS-Nix (Age)
@@ -80,11 +81,12 @@ Snowfall layout (all modules auto-imported via `default.nix`):
 
 | Component                    | Implementation                                                                                                        |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Window Manager**           | [Hyprland](https://github.com/hyprwm/hyprland)                                                                        |
+| **Compositors / Sessions**   | Hyprland (optimized), Niri, GNOME                                                                                    |
 | **Shell / Panel**            | [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS)                                           |
-| **Launcher**                 | DMS Spotlight + [Rofi](https://github.com/lbonn/rofi) fallback (Ulauncher enabled; Walker disabled)                    |
+| **Greeter**                  | `greetd` + DMS Greeter (`dms-greeter`)                                                                                |
+| **Launcher**                 | DMS Spotlight + [Walker](https://github.com/abenz1267/walker) + [Rofi](https://github.com/lbonn/rofi) (+ Ulauncher)   |
 | **Notifications & Widgets**  | DMS built-ins                                                                                                         |
-| **Lock / Power**             | DMS lock/powermenu (Hyprlock module removed)                                                                          |
+| **Lock / Power**             | DMS lock/powermenu (DMS uses wl-session-lock; Niri uses `niri-lock` wrapper for consistent UI)                        |
 | **Wallpaper**                | DMS wallpaper engine (Hyprpaper present; Waypaper/Wpaperd removed)                                                    |
 | **Browsers**                 | Brave primary; Chrome profiles optional; Zen/Vivaldi removed                                                          |
 
@@ -120,6 +122,25 @@ To update flake inputs:
 ./install.sh update
 ```
 
+## 🪪 Greeter (greetd + DMS Greeter)
+
+This repo can run the login screen using DMS Greeter (`dms-greeter`) under `greetd`.
+
+Host example: `systems/x86_64-linux/hay/default.nix`
+
+```nix
+my.greeter.dms = {
+  enable = true;
+  compositor = "hyprland"; # hyprland | niri | sway
+  layout = "tr";
+  variant = "f";
+};
+```
+
+Notes:
+- Logs: `/var/log/dms-greeter/dms-greeter.log`
+- The module sets a writable greeter `HOME` (`/var/lib/dms-greeter`) to avoid cache/shader warnings.
+
 ## ⚙️ Customization Guide
 
 ### Adding a Package
@@ -138,7 +159,17 @@ To edit secrets:
 sops secrets/wireless-secrets.enc.yaml
 ```
 
-## ⌨️ Keybindings (Hyprland + DMS)
+## ⌨️ Keybindings (Niri / Hyprland + DMS)
+
+### Niri + DMS
+
+- `Mod` is the main modifier (typically `SUPER` in a normal session).
+- `Alt + L` — DMS lock (via `niri-lock`)
+- `Mod + Space` — DMS Spotlight
+- Reload config (no restart): `niri msg action load-config-file`
+- Full config generator: `modules/home/niri/default.nix`
+
+### Hyprland + DMS
 
 - `$mainMod` = `SUPER` key
 - DMS ships Spotlight/panel shortcuts (`$mainMod+Space`, powermenu, control-center, etc.).
@@ -150,6 +181,16 @@ sops secrets/wireless-secrets.enc.yaml
   - `$mainMod + 1-9` — Workspace; `Shift+1-9` — move window; `Ctrl+1-9` — monitor-aware move
   - `$mainMod + Tab` — DMS Hypr overview
 - Full list: `modules/home/hyprland/config.nix`
+
+## 🛠 Troubleshooting
+
+### DMS warnings about Niri config writes
+
+DMS may log lines like:
+- `NiriService: Failed to write layout config`
+- `NiriService: Failed to write alttab config`
+
+This repo intentionally manages `~/.config/niri/dms/*.kdl` via Home Manager (read-only symlinks), so DMS' auto-generator can't overwrite them.
 
 ## 📄 License
 
