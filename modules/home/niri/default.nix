@@ -370,7 +370,7 @@ let
     window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; }
     window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; }
     window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; }
-    window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; }
+    window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; }
     window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }
 
     // --- Privacy (Block from Screencast) ---
