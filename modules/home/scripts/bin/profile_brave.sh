@@ -53,8 +53,7 @@ readonly LOG_FILE="${HOME}/.config/brave-launcher/brave-launcher.log"
 	BRAVE_PROFILES_DIR="${HOME}/.config/BraveSoftware/Brave-Browser"
 	# Niri/Hyprland'da farklı profilleri ayrı process + ayrı app-id ile açabilmek için
 	# profile bazlı ayrı user-data-dir kullanırız; profil dizinini symlink'leyerek veri çoğaltmayız.
-	# Not: v2 ile önceki denemelerde oluşan bozuk isolated dizinlerden ayrıştırıyoruz.
-	ISOLATED_ROOT="${HOME}/.local/state/brave-isolated-v2"
+	ISOLATED_ROOT="${HOME}/.local/state/brave-isolated"
 
 # Wayland ve dokunmatik yüzey için varsayılan bayraklar
 	DEFAULT_FLAGS=(
