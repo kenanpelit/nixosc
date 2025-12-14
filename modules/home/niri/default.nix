@@ -579,7 +579,7 @@ let
         click-method "clickfinger"
         accel-profile "flat"
         accel-speed 1.0
-        natural-scroll
+        // natural-scroll
         // Dikey biraz hızlı, yatay biraz daha hızlı olsun; istersen sayıları değiştiririz.
         scroll-factor vertical=1.0 horizontal=1.2
       }
