@@ -228,13 +228,23 @@ switch_workspace() {
     fi
     ;;
   gnome)
-    if command -v wmctrl >/dev/null 2>&1; then
-      local target_workspace=$((workspace - 1))
-      log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME)"
+    local target_workspace=$((workspace - 1))
+    # Wayland'da wmctrl çalışmadığı için önce gdbus (org.gnome.Shell.Eval) deneriz.
+    if command -v gdbus >/dev/null 2>&1; then
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME via gdbus)"
+      gdbus call --session \
+        --dest org.gnome.Shell \
+        --object-path /org/gnome/Shell \
+        --method org.gnome.Shell.Eval \
+        "global.workspace_manager.get_workspace_by_index($target_workspace).activate(global.get_current_time());" \
+        >/dev/null 2>&1 || true
+      sleep 1
+    elif command -v wmctrl >/dev/null 2>&1; then
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME via wmctrl)"
       wmctrl -s "$target_workspace"
       sleep 1
     else
-      log "WARN" "WORKSPACE" "wmctrl not found - install for workspace switching"
+      log "WARN" "WORKSPACE" "GNOME workspace switching needs gdbus (preferred) or wmctrl"
     fi
     ;;
   *)
@@ -244,6 +254,26 @@ switch_workspace() {
       wmctrl -s "$target_workspace"
       sleep 1
     fi
+    ;;
+  esac
+}
+
+focus_tmuxkenp_best_effort() {
+  if [[ "$DRY_RUN" == "true" ]]; then
+    return 0
+  fi
+
+  case "$WM_TYPE" in
+  hyprland)
+    if command -v hyprctl >/dev/null 2>&1; then
+      # Önce class ile dene, olmazsa title ile yakala.
+      hyprctl dispatch focuswindow "class:^TmuxKenp$" >/dev/null 2>&1 || \
+        hyprctl dispatch focuswindow "title:^Tmux$" >/dev/null 2>&1 || true
+    fi
+    ;;
+  niri|gnome|*)
+    # Niri'de workspace 2'ye geçmek genelde yeterli (aktif pencere otomatik odaklanır).
+    true
     ;;
   esac
 }
@@ -992,6 +1022,7 @@ launch_daily_profiles() {
   # Switch to default workspace (2 - Terminal on primary monitor)
   log "INFO" "WORKSPACE" "Switching to default workspace 2"
   switch_workspace "2"
+  focus_tmuxkenp_best_effort
 
   log "SUCCESS" "LAUNCH" "Daily profiles launched successfully"
 }
