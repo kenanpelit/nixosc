@@ -299,8 +299,10 @@ let
     // --- Media & PIP ---
     // MPV: açık videoları küçük floating olarak sağ üste al (dosya/URL başlığı genelde "... - mpv")
     window-rule {
-        match app-id=r#"^mpv$"#;
-        match title=r#".* - mpv$"#;
+        // Not: niri'de tek bir `window-rule` içindeki birden fazla `match ...;` satırı OR gibi çalışır.
+        // AND için match'leri tek satırda yazıyoruz.
+        match app-id=r#"^mpv$"# title=r#".* - mpv$"#;
+        exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
         open-floating true;
         default-column-width { fixed 640; }
         default-window-height { fixed 360; }
@@ -315,8 +317,7 @@ let
     }
 
     window-rule {
-        match app-id=r#"^mpv$"#;
-        match title="^Picture-in-Picture$";
+        match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
         open-floating true;
         // Hyprland'daki mpv PiP (0.19w x 0.19h, sol alt) karşılığı
         default-column-width { proportion 0.19; }
