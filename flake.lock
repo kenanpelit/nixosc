@@ -1078,16 +1078,16 @@
       "locked": {
         "lastModified": 1765687800,
         "narHash": "sha256-Erk+ypR8N+rCvjMdUB1N/v4jtm4QRH9k7r/9zh2HyC8=",
-        "ref": "refs/heads/main",
+        "owner": "YaLTeR",
+        "repo": "niri",
         "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
-        "revCount": 2576,
-        "type": "git",
-        "url": "https://github.com/YaLTeR/niri"
+        "type": "github"
       },
       "original": {
+        "owner": "YaLTeR",
+        "repo": "niri",
         "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
-        "type": "git",
-        "url": "https://github.com/YaLTeR/niri"
+        "type": "github"
       }
     },
     "nix": {

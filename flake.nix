@@ -101,8 +101,7 @@
 
     niri = {
       # pinned upstream commit
-      # Use git fetcher (more deterministic than GitHub archive hashes).
-      url = "git+https://github.com/YaLTeR/niri?rev=7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
+      url = "github:YaLTeR/niri/7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
       inputs.nixpkgs.follows = "nixpkgs";
       # niri flake only needs rust-overlay for devShells; omit for end users.
       inputs.rust-overlay.follows = "";
