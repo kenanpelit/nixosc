@@ -165,17 +165,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1765780080,
-        "narHash": "sha256-9HH9N5sEI/zejFByl0M7zyGw7uthHrozGD+UfScg1z4=",
+        "lastModified": 1765740207,
+        "narHash": "sha256-jMp2sccxO9rx/PdMsU+j7RprHrB5pn2iLl8hUEAbknw=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "c2c90c680e4ce7c2ec9caae52ab3c069ac7bbebe",
+        "rev": "b0a6652cc6c3f847c0e4defcaaef27a655cb0995",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "c2c90c680e4ce7c2ec9caae52ab3c069ac7bbebe",
+        "rev": "b0a6652cc6c3f847c0e4defcaaef27a655cb0995",
         "type": "github"
       }
     },
@@ -1067,6 +1067,28 @@
         "type": "github"
       }
     },
+    "niri": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": []
+      },
+      "locked": {
+        "lastModified": 1765687800,
+        "narHash": "sha256-lDIe2WsN1Q8+RUPP250oULX1ERQGNWIAybYFqtHbDVM=",
+        "ref": "refs/heads/main",
+        "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
+        "revCount": 2576,
+        "type": "git",
+        "url": "file:///home/kenan/.kod/niri"
+      },
+      "original": {
+        "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
+        "type": "git",
+        "url": "file:///home/kenan/.kod/niri"
+      }
+    },
     "nix": {
       "inputs": {
         "flake-compat": [
@@ -1439,6 +1461,7 @@
         "home-manager": "home-manager",
         "hypr-contrib": "hypr-contrib",
         "hyprland": "hyprland",
+        "niri": "niri",
         "nix-flatpak": "nix-flatpak",
         "nix-search-tv": "nix-search-tv",
         "nixos-hardware": "nixos-hardware",

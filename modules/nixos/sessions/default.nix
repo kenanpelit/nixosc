@@ -17,6 +17,11 @@ let
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
+  niriPkg =
+    if inputs ? niri && inputs.niri ? packages
+    then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
+    else pkgs.niri;
+
   hyprlandOptimizedSession = pkgs.writeTextFile {
     name = "hyprland-optimized-session";
     destination = "/share/wayland-sessions/hyprland-optimized.desktop";
@@ -89,7 +94,7 @@ in
       
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
       
-      (lib.optional cfg.enableNiri pkgs.niri)
+      (lib.optional cfg.enableNiri niriPkg)
       (lib.optional cfg.enableNiri niriSession)
     ];
   };
