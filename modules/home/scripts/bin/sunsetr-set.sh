@@ -63,22 +63,22 @@ apply_preset() {
       ;;
     warm)
       sunsetr --config "$cfg_dir" set \
-        day_temp=4000 night_temp=3000 day_gamma=100 night_gamma=90 \
+        day_temp=4200 night_temp=3200 day_gamma=100 night_gamma=90 \
         latitude="$IST_LAT" longitude="$IST_LON"
       ;;
     dim)
       sunsetr --config "$cfg_dir" set \
-        day_temp=3500 night_temp=3000 day_gamma=85 night_gamma=75 \
+        day_temp=3500 night_temp=3000 day_gamma=90 night_gamma=80 \
         latitude="$IST_LAT" longitude="$IST_LON"
       ;;
     focus)
       sunsetr --config "$cfg_dir" set \
-        day_temp=5200 night_temp=4800 day_gamma=110 night_gamma=100 \
+        day_temp=5000 night_temp=4500 day_gamma=100 night_gamma=95 \
         latitude="$IST_LAT" longitude="$IST_LON"
       ;;
     cinema)
       sunsetr --config "$cfg_dir" set \
-        day_temp=4000 night_temp=2800 day_gamma=90 night_gamma=80 \
+        day_temp=3800 night_temp=2700 day_gamma=95 night_gamma=85 \
         latitude="$IST_LAT" longitude="$IST_LON"
       ;;
     list|-l|--list)
@@ -86,10 +86,10 @@ apply_preset() {
 Presetler:
   day     (4500/4000K, 100/95)
   night   (3500/3300K, 90/85)
-  warm    (4000/3000K, 100/90)
-  dim     (3500/3000K, 85/75)
-  focus   (5200/4800K, 110/100)
-  cinema  (4000/2800K, 90/80)
+  warm    (4200/3200K, 100/90)
+  dim     (3500/3000K, 90/80)
+  focus   (5000/4500K, 100/95)
+  cinema  (3800/2700K, 95/85)
 EOF
       ;;
     *)
