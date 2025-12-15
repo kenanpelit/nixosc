@@ -73,7 +73,7 @@ apply_preset() {
       ;;
     focus)
       sunsetr --config "$cfg_dir" set \
-        day_temp=3500 night_temp=3300 day_gamma=90 night_gamma=85 \
+        day_temp=5000 night_temp=4500 day_gamma=100 night_gamma=95 \
         latitude="$IST_LAT" longitude="$IST_LON"
       ;;
     best)
@@ -93,7 +93,7 @@ Presetler:
   night   (3500/3300K, 90/85)
   warm    (4200/3200K, 100/90)
   dim     (3500/3000K, 90/80)
-  focus   (3500/3300K, 90/85)
+  focus   (5000/4500K, 100/95)
   best    (3500/3300K, 90/85)
   cinema  (3800/2700K, 95/85)
 EOF
