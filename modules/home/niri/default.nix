@@ -399,6 +399,16 @@ let
         open-focused true;
     }
 
+    // --- Notes (Anote) ---
+    window-rule {
+        match app-id=r#"^anote$"#;
+        open-floating true;
+        default-column-width { fixed 900; }
+        default-window-height { fixed 650; }
+        default-floating-position x=0 y=0 relative-to="center";
+        open-focused true;
+    }
+
     // --- Workspace Assignments (semsumo profiles) ---
     window-rule { match app-id=r#"^discord$"#; open-on-workspace "5"; }
     window-rule { match app-id=r#"^WebCord$"#; open-on-workspace "5"; open-maximized true; }
