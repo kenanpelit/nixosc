@@ -1,18 +1,14 @@
 # modules/home/fastfetch/default.nix
 # ==============================================================================
-# Fastfetch System Information Tool Configuration
+# Home module for Fastfetch system summary.
+# Installs fastfetch and manages its user config via Home Manager.
+# Tweak output/theme here instead of ad-hoc config files.
 # ==============================================================================
-# This configuration manages fastfetch settings including:
-# - System information display layout
-# - Logo and theming configuration
-# - Custom module arrangements
-# - Color scheme and formatting
-#
-# Author: Kenan Pelit
-# ==============================================================================
-{ pkgs, username, lib, config, ... }:
+
+{ pkgs, lib, config, ... }:
 let
   cfg = config.my.user.fastfetch;
+  username = config.home.username;
 in
 {
   options.my.user.fastfetch = {

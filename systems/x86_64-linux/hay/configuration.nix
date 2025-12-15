@@ -1,15 +1,7 @@
-# hosts/hay/configuration.nix
+# systems/x86_64-linux/hay/configuration.nix
 # ==============================================================================
-# HAY Workstation: Legacy Configuration Wrapper
-# ==============================================================================
-# This file serves as a compatibility wrapper for the 'hay' workstation.
-#
-# IMPORTANT: The primary host configuration is now managed in:
-#   hosts/hay/default.nix
-#
-# This wrapper exists solely for backward compatibility with any older references
-# that might directly import './hosts/hay/configuration.nix'.
-#
+# Compatibility wrapper: forwards old imports to systems/x86_64-linux/hay/default.nix
+# for the HAY workstation. Keep for legacy references; main config lives in default.nix.
 # ==============================================================================
 { ... } @ args:
 import ./default.nix args

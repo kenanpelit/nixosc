@@ -1,17 +1,16 @@
-# modules/core/audit/default.nix
+# modules/nixos/audit/default.nix
 # ==============================================================================
-# System Audit Logging
-# ==============================================================================
-# Enables the Linux Audit framework for security monitoring.
-# - Enables security.audit
-# - Installs audit tools package
-# - Provides shell aliases for report generation
-#
+# NixOS auditd configuration: kernel audit, logging, and retention policy.
+# Central place to enable auditing and tune rules per host.
+# Avoid scattered audit settings by keeping them defined here.
 # ==============================================================================
 
 { pkgs, ... }:
 {
   security.audit.enable = true;
+  # Prevent kauditd backlog overflow by enlarging the queue
+  security.audit.rules = [ "-b 8192" ];
+  boot.kernelParams = [ "audit_backlog_limit=8192" ];
 
   environment.systemPackages = [ pkgs.audit ];
 

@@ -1,7 +1,10 @@
 # modules/home/mpd/default.nix
 # ==============================================================================
-# Music Player Daemon Configuration
+# Home module for MPD client helpers (ncmpcpp/mpc etc.).
+# Installs tools and manages user-side MPD client config.
+# Keep player settings here instead of scattered dotfiles.
 # ==============================================================================
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.mpd;

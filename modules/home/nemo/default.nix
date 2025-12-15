@@ -1,7 +1,10 @@
 # modules/home/nemo/default.nix
 # ==============================================================================
-# Nemo File Manager Configuration
+# Home module for Nemo file manager.
+# Installs nemo and applies user-level defaults via Home Manager.
+# Keep file manager tweaks here instead of editing dconf manually.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.nemo;

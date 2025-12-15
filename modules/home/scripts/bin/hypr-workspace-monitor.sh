@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# hypr-workspace-monitor.sh - Hyprland workspace/monitor eşleştirici
+# Çalışma alanlarını belirli monitörlere sabitleyip odak/taşıma işlemlerini yönetir.
 
 #######################################
 # HYPRFLOW - UNIFIED HYPRLAND CONTROL

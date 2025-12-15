@@ -1,7 +1,10 @@
 # modules/home/anydesk/default.nix
 # ==============================================================================
-# AnyDesk Remote Desktop Configuration
+# Home module for AnyDesk remote desktop client.
+# Installs the client and keeps user-level settings in one place.
+# Adjust launch/desktop integration here instead of manual installs.
 # ==============================================================================
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.anydesk;

@@ -1,22 +1,8 @@
-# modules/core/kernel/default.nix
+# modules/nixos/kernel/default.nix
 # ==============================================================================
-# Kernel Configuration
-# ==============================================================================
-# Configures the Linux kernel, modules, and parameters.
-#
-# Responsibilities:
-#   - Select kernel package (latest)
-#   - Load core modules (msr, coretemp, i915, iwlwifi)
-#   - Load host-specific modules (thinkpad_acpi, i2c-dev, i2c-i801 on physical)
-#   - Define kernel boot parameters (Intel p-state, power saving, graphics)
-#   - Blacklist conflicting modules (intel_rapl_mmio)
-#
-# Notes:
-#   - i2c-dev + i2c-i801 are required for:
-#       • DDC/CI control via `ddcutil` (external monitors brightness, etc.)
-#       • Generic I²C userspace access on physical machines
-#   - Kept optional for VMs via `isPhysicalMachine` flag.
-#
+# NixOS kernel selection and module options: packages, parameters, extra modules.
+# Centralize kernel policy and overrides for every host.
+# Tune kernel behaviour here instead of ad-hoc per-machine tweaks.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
@@ -119,4 +105,3 @@ in
     ];
   };
 }
-

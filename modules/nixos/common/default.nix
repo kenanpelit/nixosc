@@ -1,8 +1,8 @@
 # modules/nixos/common/default.nix
 # ==============================================================================
-# Common System Configuration
-# ==============================================================================
-# This module contains configuration applied to ALL hosts managed by this flake.
+# Shared NixOS defaults imported by every host (base packages, nix settings).
+# Keep cross-host tweaks here to reduce duplication in individual configs.
+# Extend this file for values that should apply everywhere.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

@@ -1,7 +1,10 @@
 # modules/home/cava/default.nix
 # ==============================================================================
-# Cava Audio Visualizer Configuration - Dynamic Catppuccin Theme
+# Home module for CAVA audio visualizer.
+# Installs the tool and lets you manage user-level config via Home Manager.
+# Centralize visualizer tweaks here instead of editing config manually.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.cava;

@@ -1,10 +1,14 @@
 # modules/home/audacious/default.nix
 # ==============================================================================
-# Audacious Music Player Configuration
+# Home module for Audacious audio player.
+# Installs player and keeps user config/hooks managed by Home Manager.
+# Tweak plugins/themes here instead of editing upstream dotfiles manually.
 # ==============================================================================
-{ pkgs, username, lib, config, ... }:
+
+{ pkgs, lib, config, ... }:
 let
   cfg = config.my.user.audacious;
+  username = config.home.username;
 in
 {
   options.my.user.audacious = {

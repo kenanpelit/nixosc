@@ -1,14 +1,8 @@
-# modules/core/desktop/default.nix
+# modules/nixos/desktop/default.nix
 # ==============================================================================
-# Desktop Integration Services
-# ==============================================================================
-# Configures essential desktop services independent of the specific DE.
-# - DBus and GCR/Keyring
-# - GVFS and Tumbler (thumbnails)
-# - Firmware updates (fwupd)
-# - Input gestures (touchegg disabled by default)
-# - Printing and Avahi (disabled by default)
-#
+# NixOS desktop glue: themes, portals, session defaults shared across WMs/DEs.
+# Keep cross-desktop settings here for consistent look-and-feel.
+# Modify global desktop policy here instead of per-session tweaks.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

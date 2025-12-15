@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# toggle_opacity.sh - Pencere opaklık toggler
+# Aktif pencerenin şeffaflık seviyesini önceden tanımlı değerler arasında değiştirir.
 
 if hyprctl getoption decoration:active_opacity | grep "float: 1" > /dev/null; then
     hyprctl keyword decoration:active_opacity 0.90 > /dev/null

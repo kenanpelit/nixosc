@@ -1,12 +1,8 @@
-# modules/core/virtualization/default.nix
+# modules/nixos/virtualization/default.nix
 # ==============================================================================
-# Virtualization Configuration
-# ==============================================================================
-# Configures Libvirt/QEMU virtualization stack for physical hosts.
-# - Enables libvirtd service
-# - Configures QEMU with swtpm support
-# - Enables Spice USB redirection
-#
+# NixOS virtualization stack: libvirt/qemu, docker/podman host settings.
+# Enable hypervisor support and defaults here for all machines.
+# Keep VM/container host config centralized instead of per-host tweaks.
 # ==============================================================================
 
 { lib, pkgs, config, ... }:

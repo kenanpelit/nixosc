@@ -1,11 +1,8 @@
-# modules/core/vpn/default.nix
+# modules/nixos/vpn/default.nix
 # ==============================================================================
-# VPN Services Configuration
-# ==============================================================================
-# Configures VPN services (Mullvad) for physical hosts.
-# - Enables Mullvad VPN service
-# - Sets up autoconnect service on boot
-#
+# NixOS VPN tooling: WireGuard/OpenVPN defaults and helpers.
+# Centralize tunnel configuration knobs shared across hosts.
+# Manage VPN policy here instead of per-host configs.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

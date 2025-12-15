@@ -1,12 +1,19 @@
 # modules/home/catppuccin/default.nix
 # ==============================================================================
-# Catppuccin Theme Module
+# Home module for Catppuccin theming across supported apps.
+# Enables flavor/accent and app-specific toggles from one place.
+# Keep theme wiring centralized instead of per-app manual configs.
 # ==============================================================================
-{ config, lib, pkgs, ... }:
+
+{ config, lib, pkgs, inputs, ... }:
 let
   cfg = config.my.user.catppuccin;
 in
 {
+  imports = [
+    inputs.catppuccin.homeModules.catppuccin
+  ];
+
   options.my.user.catppuccin = {
     enable = lib.mkEnableOption "Catppuccin global theme";
   };
@@ -25,9 +32,7 @@ in
       
       # === Terminal Applications ===
       kitty.enable = lib.mkDefault true;        # GPU-accelerated terminal
-      foot.enable = lib.mkDefault false;        # Lightweight Wayland terminal
-      # wezterm - uses built-in Catppuccin, no module needed
-      
+
       # === System Monitoring ===
       btop.enable = lib.mkDefault true;         # System resource monitor
       # cava - manual config, could be enabled if module exists
@@ -47,7 +52,6 @@ in
       waybar.enable = lib.mkDefault true;       # Status bar
       mako.enable = lib.mkDefault true;         # Notification daemon
       rofi.enable = lib.mkDefault true;         # Application launcher
-      swaylock.enable = lib.mkDefault true;     # Screen locker
       
       # === Media Applications ===
       mpv.enable = lib.mkDefault true;          # Media player
@@ -58,4 +62,3 @@ in
     };
   };
 }
-

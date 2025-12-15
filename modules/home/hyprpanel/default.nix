@@ -1,3 +1,10 @@
+# modules/home/hyprpanel/default.nix
+# ==============================================================================
+# Home module for Hyprpanel bar/dock configuration.
+# Installs Hyprpanel and applies user theme/layout settings.
+# Centralize bar tweaks here instead of manual config fragments.
+# ==============================================================================
+
 { inputs, config, lib, pkgs, ... }:
 
 with lib;

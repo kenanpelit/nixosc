@@ -1,12 +1,8 @@
-# modules/core/dns/default.nix
+# modules/nixos/dns/default.nix
 # ==============================================================================
-# DNS Configuration
-# ==============================================================================
-# Configures systemd-resolved with privacy features.
-# - Enables DNS-over-TLS (DoT)
-# - Configures DNSSEC (allow-downgrade)
-# - Sets fallback DNS servers (Cloudflare/Quad9)
-#
+# NixOS DNS policy: resolvers, caching, and fallback options.
+# Configure name services once here to stay consistent across hosts.
+# Adjust resolver choices centrally instead of per-interface tweaks.
 # ==============================================================================
 
 { ... }:

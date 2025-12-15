@@ -1,7 +1,9 @@
 # modules/home/xdg-mimes/default.nix
 # ==============================================================================
-# XDG MIME Type Configuration
+# Home module for XDG MIME associations and default applications.
+# Centralize opener defaults here instead of per-app config.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 with lib;
 let

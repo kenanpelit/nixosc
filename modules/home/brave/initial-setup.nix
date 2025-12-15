@@ -1,13 +1,7 @@
 # modules/home/brave/initial-setup.nix
 # ==============================================================================
-# Brave Browser Initial Setup (one-shot)
-# ==============================================================================
-# This module:
-# - Runs only on first install (per profile)
-# - Creates a sane initial Preferences file if it does not exist
-# - Never overwrites existing Preferences afterwards
-#
-# Author: Kenan Pelit
+# Brave initial setup (one-shot): seed a sane Preferences file if missing.
+# Runs only on first install per profile; never overwrites existing prefs.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

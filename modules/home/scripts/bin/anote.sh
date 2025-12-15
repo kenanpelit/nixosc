@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# anote.sh - Terminal not/snippet yöneticisi (fzf + bat + scratchpad)
+# Hızlı not alma, snippet arama, cheatsheet görüntüleme ve arşivleme için
+# tek duraklı CLI aracı; yapılandırılabilir dizin ve önbelleklerle çalışır.
 
 # =================================================================
 # anote.sh - Terminal Tabanlı Not Alma ve Snippet Yönetim Sistemi

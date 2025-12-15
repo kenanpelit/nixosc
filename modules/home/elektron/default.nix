@@ -1,14 +1,10 @@
 # modules/home/elektron/default.nix
 # ==============================================================================
-# Elektron (Electron Apps) Wrapper Configuration
+# Home module for Electron runtime and per-app wrappers.
+# Installs electron and optional electron-based apps with Wayland flags.
+# Manage app packages/env here instead of individual launcher tweaks.
 # ==============================================================================
-# Purpose:
-#   - Provide a small abstraction layer for Electron-based apps.
-#   - Allow choosing a specific Electron package via cfg.package.
-# Notes:
-#   - Concrete app configuration (e.g. WebCord, Discord) lives in other modules.
-#   - This module is intentionally minimal and focuses on package wiring.
-# ==============================================================================
+
 { config, lib, pkgs, ... }:
 
 with lib;

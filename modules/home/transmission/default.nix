@@ -1,16 +1,10 @@
 # modules/home/transmission/default.nix
 # ==============================================================================
-# Transmission BitTorrent Client Configuration (User-level)
+# Home module for Transmission BitTorrent client (GTK/CLI).
+# Installs client and sets user defaults via Home Manager.
+# Manage torrent settings here instead of per-profile config files.
 # ==============================================================================
-# Note: System-level firewall rules are configured in modules/core/transmission/
-# This module only handles user-level service and settings
-#
-# Boot Behavior:
-#   - Service starts 60 seconds after boot (delayed start)
-#   - Ensures network is fully ready before starting
-#   - Prevents boot-time failure messages
-#
-# ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.transmission;

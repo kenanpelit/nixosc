@@ -1,16 +1,20 @@
 # modules/home/command-not-found/default.nix
 # ==============================================================================
-# Command Not Found Handler Configuration
+# Home module enabling command-not-found suggestions in the shell.
+# Centralizes the hook so shells get helpful package hints uniformly.
 # ==============================================================================
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.command-not-found;
+  dag = (lib.hm or config.lib).dag or lib.dag;
+  system = pkgs.stdenv.hostPlatform.system;
+  dbUrl = "https://github.com/nix-community/nix-index-database/releases/latest/download/index-${system}";
 in
 {
+  imports = [];
   options.my.user.command-not-found = {
     enable = lib.mkEnableOption "command-not-found handler";
   };
-
   config = lib.mkIf cfg.enable {
     # =============================================================================
     # Nix-Index Configuration
@@ -20,34 +24,50 @@ in
       enableZshIntegration = true;
       enableBashIntegration = true;
     };
-
     # =============================================================================
-    # Automated Update Timer
+    # Prebuilt nix-index database (fast download)
     # =============================================================================
-    systemd.user.timers."nix-index-update" = {
-      Unit = {
-        Description = "Update nix-index database weekly";
-      };
+    # Download weekly via systemd timer; also refresh on activation to repair
+    # corrupt db in ~/.cache/nix-index/files.
+    # Note: The database file is not compressed, downloaded directly.
+    systemd.user.timers."nix-index-download" = {
+      Unit.Description = "Download prebuilt nix-index database weekly";
       Timer = {
         OnCalendar = "weekly";
         Persistent = true;
       };
-      Install = {
-        WantedBy = [ "timers.target" ];
-      };
+      Install.WantedBy = [ "timers.target" ];
     };
-
-    # =============================================================================
-    # Update Service Configuration
-    # =============================================================================
-    systemd.user.services."nix-index-update" = {
-      Unit = {
-        Description = "Update nix-index database";
-      };
+    systemd.user.services."nix-index-download" = {
+      Unit.Description = "Download prebuilt nix-index database";
       Service = {
         Type = "oneshot";
-        ExecStart = "${pkgs.nix-index}/bin/nix-index";
+        ExecStart = toString (pkgs.writeShellScript "nix-index-download" ''
+          set -euo pipefail
+          cache="$HOME/.cache/nix-index"
+          mkdir -p "$cache"
+          tmp="$cache/files.tmp"
+          dest="$cache/files"
+          ${pkgs.curl}/bin/curl -fL "${dbUrl}" -o "$tmp"
+          mv "$tmp" "$dest"
+        '');
       };
     };
+    # Refresh DB on HM activation to fix corrupt/missing files
+    home.activation.nixIndexDatabase = dag.entryAfter [ "writeBoundary" ] ''
+      cache="$HOME/.cache/nix-index"
+      dest="$cache/files"
+      # Only download if missing or corrupt
+      if [ ! -f "$dest" ] || ! ${pkgs.nix-index}/bin/nix-locate --db "$cache" --top-level coreutils >/dev/null 2>&1; then
+        mkdir -p "$cache"
+        tmp="$cache/files.tmp"
+        if ${pkgs.curl}/bin/curl -fL "${dbUrl}" -o "$tmp"; then
+          mv "$tmp" "$dest"
+        else
+          rm -f "$tmp"
+          echo "nix-index: download failed (skipping update)" >&2
+        fi
+      fi
+    '';
   };
 }

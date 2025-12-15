@@ -1,17 +1,8 @@
 # modules/home/fzf/default.nix
 # ==============================================================================
-# FZF (Fuzzy Finder) Configuration - Catppuccin Theme + Zsh Integration
-# ==============================================================================
-# This module:
-# - Configures FZF with a Catppuccin-based theme
-# - Sets sane defaults for FZF widgets (CTRL-T, ALT-C, CTRL-R)
-# - Exposes a clean FZF_DEFAULT_OPTS via programs.fzf.defaultOptions
-# - Keeps Zsh side free from touching FZF_DEFAULT_OPTS directly
-#
-# IMPORTANT:
-#   Do NOT modify FZF_DEFAULT_OPTS in Zsh again. Let programs.fzf own it.
-#
-# Author: Kenan Pelit
+# Home module for fzf fuzzy finder: install and shell integrations.
+# Centralize keybindings/completion setup under Home Manager.
+# Tweak fzf defaults here instead of shell rc fragments.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

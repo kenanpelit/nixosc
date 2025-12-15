@@ -1,7 +1,9 @@
 # modules/home/wezterm/default.nix
 # ==============================================================================
-# WezTerm Terminal Configuration - Catppuccin Integrated
+# Home module for WezTerm terminal: install package and write config.
+# Manage font/theme/keybind defaults here instead of manual wezterm.lua edits.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.wezterm;

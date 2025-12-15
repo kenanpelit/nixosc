@@ -1,7 +1,10 @@
 # modules/home/candy/default.nix
 # ==============================================================================
-# Candy Beauty Icon Theme Configuration (Updated to specific commit)
+# Home module for Candy shell theme/integration.
+# Installs theme assets and keeps user config in one place.
+# Adjust theme hooks here instead of scattering in shell rc files.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.candy;
@@ -136,4 +139,3 @@ in
     # };
   };
 }
-

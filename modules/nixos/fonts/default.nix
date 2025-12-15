@@ -1,10 +1,8 @@
-# modules/core/fonts/default.nix
+# modules/nixos/fonts/default.nix
 # ==============================================================================
-# Font Stack & Rendering Defaults
-# ==============================================================================
-# Centralizes font packages, fontconfig defaults, Maple Mono NF as the primary
-# system font (UI + mono), HiDPI tuning, and disables embedded bitmaps for
-# cleaner rendering.
+# NixOS fonts bundle: font packages, rendering tweaks, and fallbacks.
+# Configure typographic defaults once for every host here.
+# Keep font policy centralized to avoid per-host drift.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:

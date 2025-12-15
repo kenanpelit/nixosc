@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# svm_launcher.sh - Sanal makine başlatıcı (SVM)
+# Ön tanımlı VM profillerini seçip başlatır, parametreleri uygulayarak çalıştırır.
 
 # =============================================================================
 # Sway VM Launcher - Interactive VM Selection

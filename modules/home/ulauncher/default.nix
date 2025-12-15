@@ -1,7 +1,9 @@
 # modules/home/ulauncher/default.nix
 # ==============================================================================
-# Ulauncher Application Launcher Configuration
+# Home module for Ulauncher app launcher.
+# Installs ulauncher and manages user config/extensions via Home Manager.
 # ==============================================================================
+
 { pkgs, lib, config, ... }: 
 let
   cfg = config.my.user.ulauncher;

@@ -1,11 +1,13 @@
 # modules/home/ytdlp/default.nix
 # ==============================================================================
-# yt-dlp Configuration
-# YouTube ve diğer platformlardan video indirme aracı yapılandırması
+# Home module for yt-dlp video downloader.
+# Installs yt-dlp and manages user config/aliases via Home Manager.
 # ==============================================================================
-{ config, username, lib, ... }:
+
+{ config, lib, ... }:
 let
   cfg = config.my.user.ytdlp;
+  username = config.home.username;
 in
 {
   options.my.user.ytdlp = {

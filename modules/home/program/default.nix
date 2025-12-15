@@ -1,8 +1,9 @@
 # modules/home/program/default.nix
 # ==============================================================================
-# Core Programs Configuration
-# This module configures core system programs and utilities
+# Home module bundling core user programs (base CLI/GUI set).
+# Keeps common app enables in one place instead of per-module duplication.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.core-programs;
@@ -16,7 +17,7 @@ in
     # =============================================================================
     # Service Configuration
     # =============================================================================
-    my.user.blue.enable = true;  # Enable unified night light manager (Gammastep + HyprSunset)
+    my.user.blue.enable = lib.mkDefault true;  # Enable unified night light manager (Gammastep + HyprSunset)
     
     programs = {
       # ---------------------------------------------------------------------------

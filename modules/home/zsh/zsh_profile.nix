@@ -1,4 +1,8 @@
 # modules/home/zsh/zsh_profile.nix
+# ==============================================================================
+# Zsh login profile: environment for login shells, sources zshrc/starship.
+# Keeps login shell env consistent; complements zsh.nix rc settings.
+# ==============================================================================
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.zsh;
@@ -17,6 +21,7 @@ lib.mkIf cfg.enable {
         #   TTY1: Display Manager - Session Selection
         #   TTY2: Hyprland (via hyprland_tty script)
         #   TTY3: GNOME (via gnome_tty script)
+        #   TTY4: Niri (via niri_tty script)
         #   TTY5: Ubuntu VM (Sway)
         # =============================================================================
 
@@ -107,6 +112,27 @@ lib.mkIf cfg.enable {
 
                     # Start GNOME session directly (no dbus-run-session wrapper)
                     exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                fi
+
+            # ==========================================================================
+            # TTY4: Niri Wayland Compositor
+            # ==========================================================================
+            elif [ "''${XDG_VTNR}" = "4" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY4: Launching Niri via niri_tty                         ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+
+                export XDG_SESSION_TYPE=wayland
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+
+                if command -v niri_tty >/dev/null 2>&1; then
+                    echo "Starting Niri with optimized configuration..."
+                    exec niri_tty
+                else
+                    echo "ERROR: niri_tty script not found in PATH"
+                    echo "Falling back to direct Niri launch (not recommended)"
+                    sleep 3
+                    exec niri 2>&1 | tee /tmp/niri-tty4.log
                 fi
             
             # ==========================================================================

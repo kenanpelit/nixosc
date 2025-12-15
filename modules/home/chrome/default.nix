@@ -1,8 +1,7 @@
 # modules/home/chrome/default.nix
 # ==============================================================================
-# Google Chrome (preview channel) configuration with a launcher wrapper.
-# Parallels the Brave module: runtime flags, Wayland/Hyprland detection, cache
-# sizing, optional privacy flags, default browser wiring, and simple cleanup.
+# Home module for Google Chrome: install package and wire user desktop entry.
+# Manage browser enablement here instead of manual installs/config.
 # ==============================================================================
 
 { inputs, pkgs, config, lib, ... }:

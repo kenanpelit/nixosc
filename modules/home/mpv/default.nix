@@ -1,7 +1,10 @@
 # modules/home/mpv/default.nix
 # ==============================================================================
-# MPV Media Player Configuration (direct files, no tar extraction)
+# Home module for MPV media player.
+# Installs mpv and writes user config/keymaps via Home Manager.
+# Adjust playback defaults here instead of manual config edits.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.mpv;

@@ -1,12 +1,8 @@
-# modules/core/system/default.nix
+# modules/nixos/system/default.nix
 # ==============================================================================
-# Core System Metadata & Defaults
-# ==============================================================================
-# Defines custom host metadata options and applies global system defaults.
-# - Host Role (physical/vm)
-# - Global service enablement (upower, spice-vdagentd)
-# - Global shell enablement (zsh)
-#
+# NixOS core system defaults: state version, base services, global options.
+# Central home for settings shared by all host configs.
+# Extend this file for cross-host system behaviour instead of duplicating.
 # ==============================================================================
 
 { lib, config, ... }:

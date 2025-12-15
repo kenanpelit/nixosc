@@ -1,11 +1,8 @@
 # modules/home/starship/default.nix
 # ==============================================================================
-# Starship Prompt — Catppuccin Mocha + Pure/Pure-ish Layout (Ultra Lean)
-# Author: Kenan Pelit
-# Notes:
-#   • Dual profile via STARSHIP_MODE: "fast" (default) vs "full"
-#   • Left side: context + repo + langs | Right side: timing (+ time/battery on FULL)
-#   • Keep symbols minimal to reduce glyph/render cost; keep scans tiny on FAST
+# Home module for Starship prompt configuration.
+# Installs starship and writes prompt settings via Home Manager.
+# Keep prompt tweaks here instead of editing starship.toml manually.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

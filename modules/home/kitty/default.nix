@@ -1,7 +1,10 @@
 # modules/home/kitty/default.nix
 # ==============================================================================
-# Kitty Terminal Emulator Configuration - Pure Catppuccin Module
+# Home module for Kitty terminal: install package and write kitty.conf.
+# Manages font/theme/keybind defaults via Home Manager.
+# Edit terminal settings here instead of ~/.config/kitty by hand.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.kitty;

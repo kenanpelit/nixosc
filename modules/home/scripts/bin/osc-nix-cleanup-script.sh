@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-nix-cleanup-script.sh - Nix önbellek/derleme temizleyici
+# nix-collect-garbage ve store temizliği yapar; disk alanını geri kazanır.
 
 # Nix ve NixOS için gelişmiş kapsamlı temizlik öneri scripti
 # Bu script, Nix store'u temizlemek için yapmanız gerekenleri size önerir

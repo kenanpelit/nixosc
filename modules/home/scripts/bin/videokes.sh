@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# videokes.sh - Video kesme/trim aracı
+# ffmpeg ile başlangıç/bitiş sürelerine göre videoları hızlıca keser.
 
 # Video Kesme Script'i
 # Kullanım: ./videokes.sh input.mp4

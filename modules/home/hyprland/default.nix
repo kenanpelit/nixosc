@@ -1,7 +1,9 @@
 # modules/home/hyprland/default.nix
 # ==============================================================================
-# Hyprland Window Manager Configuration Root
+# Home module for Hyprland user config: binds, env, plugins, extras.
+# Manages compositor settings via Home Manager instead of loose dotfiles.
 # ==============================================================================
+
 { inputs, lib, config, ... }:
 let
   cfg = config.my.desktop.hyprland;

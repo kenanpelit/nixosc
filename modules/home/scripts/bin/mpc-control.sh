@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# mpc-control.sh - mpd/mpc kontrol kısayolu
+# Çalma, duraklatma, ileri/geri ve ses ayarlarını hızlı komutlarla yönetir.
 
 # İkon tanımlamaları (Nerd Font ikonları)
 PLAY_ICON="󰐊"

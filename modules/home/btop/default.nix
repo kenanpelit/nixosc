@@ -1,7 +1,10 @@
 # modules/home/btop/default.nix
 # ==============================================================================
-# Btop System Monitor Configuration
+# Home module for btop resource monitor with theme defaults.
+# Installs btop and sets user config via Home Manager.
+# Tweak colors/behaviour here instead of editing btop.conf manually.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.btop;

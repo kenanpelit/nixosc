@@ -1,13 +1,8 @@
-# modules/core/display/default.nix
+# modules/nixos/display/default.nix
 # ==============================================================================
-# Display Stack Options
-# ==============================================================================
-# Defines module options for the graphical display stack.
-# - Enablement toggles for DEs (Hyprland, GNOME, COSMIC)
-# - Display Manager settings (auto-login, default session)
-# - Keyboard layout options
-# - Font and audio stack toggles
-#
+# NixOS display stack wiring: Wayland/X defaults, GPU drivers, session bits.
+# Central place for compositor/display-manager related settings.
+# Avoid per-host drift by keeping display policy defined here.
 # ==============================================================================
 
 { lib, ... }:
@@ -18,6 +13,7 @@ in {
     enable = mkEnableOption "display stack (DM/DE/portals/fonts/audio)";
     enableHyprland = mkEnableOption "Hyprland Wayland compositor";
     enableGnome    = mkEnableOption "GNOME desktop environment";
+    enableNiri     = mkEnableOption "Niri compositor";
 
     defaultSession = mkOption {
       type = types.nullOr types.str;

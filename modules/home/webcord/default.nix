@@ -1,7 +1,9 @@
 # modules/home/webcord/default.nix
 # ==============================================================================
-# WebCord (Discord Client) Configuration - Catppuccin Theming
+# Home module for WebCord/Discord client.
+# Installs client and keeps desktop integration managed via Home Manager.
 # ==============================================================================
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.webcord;

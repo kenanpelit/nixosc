@@ -1,7 +1,9 @@
 # modules/home/xdg-portal/default.nix
 # ==============================================================================
-# XDG Portal Configuration
+# Home module for per-user XDG portal helpers (if needed on Wayland).
+# Keep portal preferences here instead of manual env tweaks.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.xdg-portal;

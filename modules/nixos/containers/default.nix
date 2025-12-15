@@ -1,12 +1,8 @@
-# modules/core/containers/default.nix
+# modules/nixos/containers/default.nix
 # ==============================================================================
-# Container Runtime Configuration
-# ==============================================================================
-# Configures Podman as the container engine for physical hosts.
-# - Enables Podman
-# - Enables Docker compatibility mode
-# - Configures DNS for container networking
-#
+# NixOS containers/Podman configuration: runtimes, registries, storage.
+# Centralize container host defaults to keep OCI setup consistent.
+# Adjust daemon toggles here instead of per-machine hacks.
 # ==============================================================================
 
 { lib, config, ... }:

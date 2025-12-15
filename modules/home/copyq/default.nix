@@ -1,7 +1,10 @@
 # modules/home/copyq/default.nix
 # ==============================================================================
-# CopyQ Clipboard Manager Configuration - Catppuccin Mocha
+# Home module for CopyQ clipboard manager.
+# Installs app and keeps user config managed via Home Manager.
+# Tune clipboard history/UI here instead of editing CopyQ settings manually.
 # ==============================================================================
+
 {
   config,
   pkgs,

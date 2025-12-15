@@ -1,7 +1,10 @@
 # modules/home/waybar/default.nix
 # ==============================================================================
-# Waybar Status Bar Configuration (Hyprland / Wayland)
+# Home module for Waybar status bar: install and load themed config.
+# Manages bar modules/colors via Home Manager (Catppuccin integration).
+# Keep bar layout here instead of manual config edits.
 # ==============================================================================
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.waybar;

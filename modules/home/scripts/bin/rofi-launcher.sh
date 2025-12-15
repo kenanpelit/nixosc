@@ -43,7 +43,7 @@ readonly HYPR_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.conf"
 #╰──────────────────────────────────────────────────────────────────────────────╯
 
 # Graceful shutdown configuration
-readonly GRACE_BROWSERS=("brave" "brave-browser" "firefox" "chromium" "google-chrome" "vivaldi" "opera")
+readonly GRACE_BROWSERS=("brave" "brave-browser" "firefox" "chromium" "google-chrome" "opera")
 readonly GRACE_APPS=("code" "codium" "discord" "slack" "telegram-desktop")
 readonly ALL_GRACE_APPS=("${GRACE_BROWSERS[@]}" "${GRACE_APPS[@]}")
 

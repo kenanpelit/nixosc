@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# vmarch.sh - Arch Linux VM başlatıcısı (virt-manager/qemu)
+# Hazır Arch imajını uygun kaynaklarla hızlıca çalıştırır.
 
 #===============================================================================
 #

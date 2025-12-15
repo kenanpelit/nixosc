@@ -1,9 +1,9 @@
 # modules/home/zsh/default.nix
 # ==============================================================================
-# ZSH Configuration Root
-# Author: Kenan Pelit
-# Description: Centralized ZSH configuration with modular structure
+# Home module for Zsh shell: plugins, prompts, and rc/profile setup.
+# Centralize Zsh configuration via Home Manager instead of loose dotfiles.
 # ==============================================================================
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.zsh;

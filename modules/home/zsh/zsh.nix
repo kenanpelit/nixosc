@@ -1,56 +1,8 @@
 # modules/home/zsh/zsh.nix
 # ==============================================================================
-# ZSH Configuration — Zinit + Maximum Performance + Optimized Loading
-# Author: Kenan Pelit
-# Last Updated: 2025-11-15
-#
-# Design Philosophy:
-#   ╭─────────────────────────────────────────────────────────────────────╮
-#   │ 1. PERFORMANCE: Zinit turbo mode, async loading, sub-150ms startup │
-#   │ 2. CORRECTNESS: Proper plugin load order prevents conflicts        │
-#   │ 3. RELIABILITY: Atomic operations, error handling, race prevention │
-#   │ 4. PORTABILITY: Multi-machine, XDG-compliant, robust fallbacks     │
-#   │ 5. MAINTAINABILITY: Modular, documented, testable                  │
-#   ╰─────────────────────────────────────────────────────────────────────╯
-#
-# Critical Plugin Load Order:
-#   The order in which plugins load is CRITICAL for correctness:
-#   
-#   1. zsh-completions     → Adds completion definitions to fpath
-#   2. fzf-tab             → Hooks into completion system (before compinit)
-#   3. compinit            → Initializes completion system
-#   4. history-substring   → Safe after compinit
-#   5. autosuggestions     → Safe after compinit
-#   6. autopair            → Safe after compinit
-#   7. OMZ snippets        → Safe after compinit
-#   8. syntax-highlighting → MUST BE LAST (wraps all ZLE widgets)
-#
-#   Loading in wrong order causes:
-#   • Missing completions
-#   • Widget conflicts
-#   • Keybinding failures
-#   • Performance degradation
-#
-# Syntax Highlighting Note:
-#   zsh-syntax-highlighting causes ~300-500ms freeze when loading
-#   This is inherent to how it wraps ZLE widgets - unavoidable
-#   Trade-off: Visual feedback vs instant responsiveness
-#   You can comment it out if freeze is unacceptable
-#
-# Features:
-#   • Zinit plugin manager with proper load sequencing
-#   • XDG Base Directory compliant
-#   • Smart completion caching with bytecode compilation
-#   • Robust error handling (shell works even if Zinit fails)
-#   • Lazy loading for heavy tools (nvm, pyenv, conda, rvm)
-#   • FZF/fzf-tab/eza/zoxide/direnv/atuin integration
-#
-# Performance Targets:
-#   • Interactive startup: <150ms (with syntax highlighting)
-#   • Interactive startup: <100ms (without syntax highlighting)
-#   • Compinit cold rebuild: <200ms
-#   • Compinit warm cache: <10ms
-#   • Memory footprint: <35MB RSS
+# Zsh configuration using zinit for fast, ordered plugin loading.
+# Documents critical load order to keep completions/widgets stable.
+# Centralize Zsh rc/profile logic here via Home Manager.
 # ==============================================================================
 
 { config, pkgs, lib, ... }:
@@ -343,6 +295,7 @@ lib.mkIf cfg.enable {
         path=(
           $HOME/.local/bin
           $HOME/bin
+          $HOME/.iptv/bin
           /usr/local/bin
           $path
         )

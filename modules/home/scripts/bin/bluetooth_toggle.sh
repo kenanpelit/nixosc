@@ -75,6 +75,20 @@ check_bluetooth_power() { if ! bluetoothctl show | grep -q "Powered: yes"; then
 	fi
 fi; }
 
+# Pil yüzdesi (BluetoothCTL üzerinden; bazı cihazlar desteklemez)
+get_battery_percentage() {
+	local addr="$1"
+	local raw pct
+	raw="$(bluetoothctl info "$addr" 2>/dev/null | awk -F': ' '/Battery Percentage/ {gsub(/[[:space:]]*/,"",$2); print $2; exit}')"
+	[ -z "$raw" ] && return 0
+	if echo "$raw" | grep -q '([0-9]\+)'; then
+		pct="$(echo "$raw" | sed -n 's/.*(\([0-9]\+\)).*/\1/p')"
+	else
+		pct="$(echo "$raw" | tr -cd '0-9')"
+	fi
+	[ -n "$pct" ] && echo "${pct}%"
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Backend seçimi
 # ──────────────────────────────────────────────────────────────────────────────
@@ -378,7 +392,14 @@ manage_bluetooth_connection() {
 		log "Bağlanılıyor..." "INFO"
 		if timeout "$BLUETOOTH_TIMEOUT" bluetoothctl connect "$device_address" >/dev/null 2>&1; then
 			log "Bağlantı başarıyla kuruldu." "SUCCESS"
-			send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+			local battery
+			battery="$(get_battery_percentage "$device_address")"
+			if [ -n "$battery" ]; then
+				send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu. Pil: $battery"
+				log "Pil durumu: $battery" "INFO"
+			else
+				send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+			fi
 			configure_audio "bluetooth"
 			log "Cihaz $device_name ($device_address) şimdi bağlandı" "INFO"
 		else
@@ -402,6 +423,7 @@ Seçenekler:
   -q, --quiet          Sadece hata mesajlarını göster
   --backend=wpctl      Backend'i wpctl olarak zorla
   --backend=pactl      Backend'i pactl olarak zorla
+  --battery            Sadece pil yüzdesini bildir ve çık
 
 Örnekler:
   $0
@@ -415,6 +437,10 @@ EOF
 parse_arguments() {
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
+		--battery)
+			MODE_BATTERY_ONLY=true
+			shift
+			;;
 		-h | --help)
 			show_help
 			exit 0
@@ -460,10 +486,23 @@ trap cleanup SIGINT SIGTERM
 
 main() {
 	parse_arguments "$@"
-	detect_backend
 	DEVICE_ADDRESS="${DEVICE_ADDRESS:-$DEFAULT_DEVICE_ADDRESS}"
 	DEVICE_NAME="${DEVICE_NAME:-$DEFAULT_DEVICE_NAME}"
 
+	if [ "${MODE_BATTERY_ONLY:-false}" = true ]; then
+		local battery
+		battery="$(get_battery_percentage "$DEVICE_ADDRESS")"
+		if [ -n "$battery" ]; then
+			send_notification "$DEVICE_NAME Pil" "$DEVICE_NAME ($DEVICE_ADDRESS) pil: $battery"
+			log "Pil durumu: $battery" "INFO"
+			exit 0
+		else
+			log "Pil bilgisi alınamadı." "WARNING"
+			exit 1
+		fi
+	fi
+
+	detect_backend
 	check_command bluetoothctl
 	check_command timeout
 	[ "$AUDIO_BACKEND" = "pactl" ] && check_command pactl
