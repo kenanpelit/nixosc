@@ -15,6 +15,101 @@ let
   niriswitcherCmd = "${pkgs.niriswitcher}/bin/niriswitcher";
 
   # ----------------------------------------------------------------------------
+  # Theme / Palette (Catppuccin-ish)
+  # ----------------------------------------------------------------------------
+  # Niri KDL'de değişken tanımı yok; bu yüzden renkleri Nix tarafında tek yerde
+  # tanımlayıp layout/rules/hardware snippet'lerine buradan enjekte ediyoruz.
+  palette = {
+    # Accents
+    cyan = "#74c7ec";
+    sky = "#89dceb";
+    mauve = "#cba6f7";
+    red = "#f38ba8";
+
+    # Surfaces
+    surface0 = "#313244";
+    surface1 = "#45475a";
+
+    # Alphas
+    skyA80 = "#89dceb80";
+    mauveA80 = "#cba6f780";
+    mauveFF = "#cba6f7ff";
+    redFF = "#f38ba8ff";
+  };
+
+  # ----------------------------------------------------------------------------
+  # Rule helpers (reduce duplication / make intent clearer)
+  # ----------------------------------------------------------------------------
+  mkFixedFloatingProps =
+    {
+      w,
+      h,
+      x ? null,
+      y ? null,
+      relativeTo ? "top-right",
+      opacity ? null,
+      focus ? true,
+    }:
+    ''
+      open-floating true;
+      default-column-width { fixed ${toString w}; }
+      default-window-height { fixed ${toString h}; }
+      ${lib.optionalString (x != null && y != null) ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
+      min-width ${toString w};
+      max-width ${toString w};
+      min-height ${toString h};
+      max-height ${toString h};
+      ${lib.optionalString (opacity != null) "opacity ${toString opacity};"}
+      ${lib.optionalString focus "open-focused true;"}
+    '';
+
+  mkProportionalFloatingProps =
+    {
+      w,
+      h,
+      x ? null,
+      y ? null,
+      relativeTo ? "top-right",
+      focus ? true,
+    }:
+    ''
+      open-floating true;
+      default-column-width { proportion ${toString w}; }
+      default-window-height { proportion ${toString h}; }
+      ${lib.optionalString (x != null && y != null) ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
+      ${lib.optionalString focus "open-focused true;"}
+    '';
+
+  # Semsumo "daily" sınıfları / app-id'leri.
+  # Bu listeyi değiştirirsen, semsumo tarafındaki `--class` değerleriyle de uyumlu tut.
+  semsumoWorkspaceRules = [
+    { appId = "^discord$"; workspace = "5"; }
+    { appId = "^WebCord$"; workspace = "5"; maximize = true; }
+    { appId = "^(spotify|Spotify|com\\.spotify\\.Client)$"; workspace = "8"; }
+    { appId = "^audacious$"; workspace = "5"; }
+    { appId = "^transmission$"; workspace = "7"; }
+    { appId = "^org\\.keepassxc\\.KeePassXC$"; workspace = "7"; }
+
+    # Brave profiles (semsumo `--class`)
+    { appId = "^Kenp$"; workspace = "1"; maximize = true; edges = true; }
+    { appId = "^Ai$"; workspace = "3"; maximize = true; edges = true; }
+    { appId = "^CompecTA$"; workspace = "4"; maximize = true; edges = true; }
+    { appId = "^brave-youtube\\.com__-Default$"; workspace = "7"; maximize = true; edges = true; }
+
+    { appId = "^ferdium$"; workspace = "9"; }
+  ];
+
+  renderSemsumoWorkspaceRules =
+    lib.concatStringsSep "\n" (
+      map
+        (r:
+          ''
+            window-rule { match app-id=r#"${r.appId}"#; open-on-workspace "${r.workspace}";${lib.optionalString (r ? maximize && r.maximize) " open-maximized true;"}${lib.optionalString (r ? edges && r.edges) " open-maximized-to-edges true;"} }
+          '')
+        semsumoWorkspaceRules
+    );
+
+  # ----------------------------------------------------------------------------
   # DMS Specific Configurations (Sub-files)
   # ----------------------------------------------------------------------------
 
@@ -24,18 +119,21 @@ let
       gaps 5;
       center-focused-column "never";
       background-color "#00000000";
-      // Catppuccin + cyan makyaj
+      // Catppuccin + cyan (daha sade):
+      // - focus-ring: gradient
+      // - border: düz renk (daha temiz)
+      // - tab-indicator: sadece active renk
       focus-ring {
         on;
         width 2;
-        active-gradient from="#74c7ec" to="#cba6f7" angle=45;
-        inactive-color "#45475a";
+        active-gradient from="${palette.cyan}" to="${palette.mauve}" angle=45;
+        inactive-color "${palette.surface1}";
       }
       border {
         on;
         width 1;
-        active-gradient from="#89dceb" to="#74c7ec" angle=45;
-        inactive-color "#313244";
+        active-color "${palette.sky}";
+        inactive-color "${palette.surface0}";
       }
       tab-indicator {
         hide-when-single-tab;
@@ -46,13 +144,13 @@ let
         position "top";
         gaps-between-tabs 4;
         corner-radius 8;
-        active-gradient from="#74c7ec" to="#cba6f7" angle=45;
-        inactive-color "#45475a";
-        urgent-color "#f38ba8";
+        active-color "${palette.cyan}";
+        inactive-color "${palette.surface1}";
+        urgent-color "${palette.red}";
       }
       insert-hint {
-        color "#89dceb80";
-        gradient from="#89dceb80" to="#cba6f780" angle=45 relative-to="workspace-view";
+        color "${palette.skyA80}";
+        gradient from="${palette.skyA80}" to="${palette.mauveA80}" angle=45 relative-to="workspace-view";
       }
       preset-column-widths {
         proportion 0.33333;
@@ -302,15 +400,7 @@ let
     // Bu yüzden title üzerinden yakalayıp mpv ile aynı floating davranışını veriyoruz.
     window-rule {
         match title=r#"(?i)^picture[- ]in[- ]picture$"#;
-        open-floating true;
-        default-column-width { fixed 640; }
-        default-window-height { fixed 360; }
-        default-floating-position x=32 y=96 relative-to="top-right";
-        min-width 640;
-        max-width 640;
-        min-height 360;
-        max-height 360;
-        opacity 1.0;
+        ${mkFixedFloatingProps { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; focus = true; }}
     }
 
     // MPV: açık videoları küçük floating olarak sağ üste al
@@ -318,31 +408,15 @@ let
     window-rule {
         match app-id=r#"^mpv$"#;
         exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
-        open-floating true;
-        default-column-width { fixed 640; }
-        default-window-height { fixed 360; }
-        default-floating-position x=32 y=96 relative-to="top-right";
         // Niri floating boyutu bazen "hatırlanmış" veya uygulama tarafından büyütülmüş olabiliyor,
         // bu yüzden min=max ile zorla sabitle.
-        min-width 640;
-        max-width 640;
-        min-height 360;
-        max-height 360;
-        opacity 1.0;
+        ${mkFixedFloatingProps { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; focus = true; }}
     }
 
     window-rule {
         match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
-        open-floating true;
         // PiP'i de normal mpv gibi tutarlı bir boyutta/floating konumunda aç.
-        default-column-width { fixed 640; }
-        default-window-height { fixed 360; }
-        default-floating-position x=32 y=96 relative-to="top-right";
-        min-width 640;
-        max-width 640;
-        min-height 360;
-        max-height 360;
-        opacity 1.0;
+        ${mkFixedFloatingProps { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; focus = true; }}
     }
     
     window-rule {
@@ -382,11 +456,7 @@ let
     // --- Audio Mixer (pavucontrol) ---
     window-rule {
         match app-id=r#"^org\.pulseaudio\.pavucontrol$"#;
-        open-floating true;
-        default-column-width { proportion 0.25; }
-        default-window-height { proportion 0.80; }
-        default-floating-position x=32 y=144 relative-to="top-right";
-        open-focused true;
+        ${mkProportionalFloatingProps { w = 0.25; h = 0.80; x = 32; y = 144; relativeTo = "top-right"; focus = true; }}
     }
 
     // --- Clipboard (Clipse) ---
@@ -394,49 +464,25 @@ let
     // `kitty --class clipse -e clipse` ile açılan pencere Wayland app-id olarak "clipse" gelir.
     window-rule {
         match app-id=r#"^clipse$"#;
-        open-floating true;
-        default-column-width { proportion 0.25; }
-        default-window-height { proportion 0.80; }
-        default-floating-position x=32 y=144 relative-to="top-right";
-        open-focused true;
+        ${mkProportionalFloatingProps { w = 0.25; h = 0.80; x = 32; y = 144; relativeTo = "top-right"; focus = true; }}
     }
 
     // --- Notes (Anote) ---
     window-rule {
         match app-id=r#"^anote$"#;
-        open-floating true;
-        default-column-width { fixed 1152; }
-        default-window-height { fixed 864; }
-        open-focused true;
+        // Position vermiyoruz: Niri default olarak ekran ortasına koyuyor.
+        ${mkFixedFloatingProps { w = 1152; h = 864; focus = true; }}
     }
 
     // --- Prompts (gcr-prompter) ---
     window-rule {
         match app-id=r#"^gcr-prompter$"#;
-        open-floating true;
-        default-column-width { fixed 600; }
-        default-window-height { fixed 230; }
-        default-floating-position x=0 y=96 relative-to="top";
-        open-focused true;
+        ${mkFixedFloatingProps { w = 600; h = 230; x = 0; y = 96; relativeTo = "top"; focus = true; }}
     }
 
     // --- Workspace Assignments (semsumo profiles) ---
-    window-rule { match app-id=r#"^discord$"#; open-on-workspace "5"; }
-    window-rule { match app-id=r#"^WebCord$"#; open-on-workspace "5"; open-maximized true; }
-    window-rule { match app-id=r#"^(spotify|Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
-    window-rule { match app-id=r#"^audacious$"#; open-on-workspace "5"; }
-    window-rule { match app-id=r#"^transmission$"#; open-on-workspace "7"; }
-    window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"#; open-on-workspace "7"; }
-
-    // Brave custom classes (semsumo daily)
-    // Not: match app-id regex'i "herhangi bir yerde" eşleşir; bu yüzden ^...$ ile sabitliyoruz.
-    // "maximize-to-edges" ile gaps/border kaynaklı 1px offset ve kenar boşluklarını kaldırıp
-    // CompecTA örneğindeki gibi tam oturan görünüm elde ediyoruz.
-    window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; open-maximized true; open-maximized-to-edges true; }
-    window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; open-maximized true; open-maximized-to-edges true; }
-    window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; open-maximized true; open-maximized-to-edges true; }
-    window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; open-maximized-to-edges true; }
-    window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }
+    // Tek kaynak: semsumo `--class` / app-id listesi (Nix'te `semsumoWorkspaceRules`).
+    ${renderSemsumoWorkspaceRules}
 
     // --- Better Dialog Placement (centered floating) ---
     window-rule {
@@ -563,8 +609,8 @@ let
         debounce-ms 0;
         open-delay-ms 0;
         highlight {
-            active-color "#cba6f7ff"; // Catppuccin Mauve
-            urgent-color "#f38ba8ff"; // Catppuccin Red
+            active-color "${palette.mauveFF}"; // Catppuccin Mauve
+            urgent-color "${palette.redFF}"; // Catppuccin Red
             padding 24;
             corner-radius 12;
         }
@@ -575,9 +621,21 @@ let
     }
   '';
 
-  # 3. Colors (Placeholder)
+  # 3. Colors (Palette reference)
   dmsColors = ''
-    // Colors placeholder
+    // ======================================================================
+    // Palette reference (single source of truth is Nix: `palette = { ... }`)
+    // ======================================================================
+    //
+    // Accents:
+    //   cyan   ${palette.cyan}
+    //   sky    ${palette.sky}
+    //   mauve  ${palette.mauve}
+    //   red    ${palette.red}
+    //
+    // Surfaces:
+    //   surface0 ${palette.surface0}
+    //   surface1 ${palette.surface1}
   '';
 
   # ----------------------------------------------------------------------------
@@ -604,8 +662,8 @@ let
             border {
                 on;
                 width 1;
-                active-gradient from="#89dceb" to="#cba6f7" angle=45;
-                inactive-color "#313244";
+                active-color "${palette.sky}";
+                inactive-color "${palette.surface0}";
             }
         }
     }
@@ -662,7 +720,8 @@ let
     spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
     spawn-at-startup "clipse" "-listen";
     // Niri açılışında odağı harici monitöre al (DP-3).
-    spawn-at-startup "niri" "msg" "action" "focus-monitor" "DP-3";
+    // DP-3 yoksa (dock/port değiştiyse) log'a hata basmasın diye guard'lı.
+    spawn-at-startup "sh" "-lc" "if niri msg outputs 2>/dev/null | grep -q '(DP-3)'; then niri msg action focus-monitor DP-3; fi";
     ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${niriusCmd}";''}
     ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${niriswitcherCmd}";''}
     
