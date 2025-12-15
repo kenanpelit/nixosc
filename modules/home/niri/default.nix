@@ -297,11 +297,10 @@ let
     }
 
     // --- Media & PIP ---
-    // MPV: açık videoları küçük floating olarak sağ üste al (dosya/URL başlığı genelde "... - mpv")
+    // MPV: açık videoları küçük floating olarak sağ üste al
+    // Not: mpv başlığı her zaman "... - mpv" gelmeyebiliyor; bu yüzden app-id üzerinden gidip PiP'i exclude ediyoruz.
     window-rule {
-        // Not: niri'de tek bir `window-rule` içindeki birden fazla `match ...;` satırı OR gibi çalışır.
-        // AND için match'leri tek satırda yazıyoruz.
-        match app-id=r#"^mpv$"# title=r#".* - mpv$"#;
+        match app-id=r#"^mpv$"#;
         exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
         open-floating true;
         default-column-width { fixed 640; }
