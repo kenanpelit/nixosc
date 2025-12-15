@@ -297,6 +297,21 @@ let
     }
 
     // --- Media & PIP ---
+    // Firefox/Chromium PiP genelde ayrı bir pencere açar ve bazı durumlarda app-id boş gelebilir (XWayland).
+    // Bu yüzden title üzerinden yakalayıp mpv ile aynı floating davranışını veriyoruz.
+    window-rule {
+        match title=r#"(?i)^picture[- ]in[- ]picture$"#;
+        open-floating true;
+        default-column-width { fixed 640; }
+        default-window-height { fixed 360; }
+        default-floating-position x=32 y=96 relative-to="top-right";
+        min-width 640;
+        max-width 640;
+        min-height 360;
+        max-height 360;
+        opacity 1.0;
+    }
+
     // MPV: açık videoları küçük floating olarak sağ üste al
     // Not: mpv başlığı her zaman "... - mpv" gelmeyebiliyor; bu yüzden app-id üzerinden gidip PiP'i exclude ediyoruz.
     window-rule {
