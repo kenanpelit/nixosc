@@ -231,13 +231,52 @@ niri_focused_window_xywh() {
 
   info="$(niri msg focused-window 2>/dev/null || true)"
 
-  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\)[, ][[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
-  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace-view position:[[:space:]]*\\([0-9]\\+\\)[, ][[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
+  # Not: Pencere ekrandan taşınca niri negatif koordinat basabiliyor; o yüzden -? kullanıyoruz.
+  # Ayrıca bazı sürümlerde "Workspace view position" yazımı görülebiliyor.
+  x="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace[- ]view position:[[:space:]]*\\(-\\{0,1\\}[0-9]\\+\\)[, ][[:space:]]*\\(-\\{0,1\\}[0-9]\\+\\).*$/\\1/p' | tail -n1)"
+  y="$(echo "$info" | sed -n 's/^[[:space:]]*Workspace[- ]view position:[[:space:]]*\\(-\\{0,1\\}[0-9]\\+\\)[, ][[:space:]]*\\(-\\{0,1\\}[0-9]\\+\\).*$/\\2/p' | tail -n1)"
   w="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\).*$/\\1/p' | tail -n1)"
   h="$(echo "$info" | sed -n 's/^[[:space:]]*Window size:[[:space:]]*\\([0-9]\\+\\)[[:space:]]*x[[:space:]]*\\([0-9]\\+\\).*$/\\2/p' | tail -n1)"
 
   [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]] || return 1
   echo "$x $y $w $h"
+}
+
+niri_wait_focused_window_xywh() {
+  local out
+  for _ in {1..30}; do
+    if out="$(niri_focused_window_xywh 2>/dev/null)"; then
+      echo "$out"
+      return 0
+    fi
+    sleep 0.05
+  done
+  return 1
+}
+
+niri_maybe_resize_mpv() {
+  # Large mpv windows can end up huge when coming from tiling -> floating.
+  # Hyprland tarafındaki davranışa benzetmek için "büyükse" 640x360'a çekiyoruz.
+  niri_require
+
+  local id="$1"
+  local x y w h
+  local target_w target_h
+  target_w="${MPV_NIRI_WIDTH:-640}"
+  target_h="${MPV_NIRI_HEIGHT:-360}"
+
+  read -r x y w h <<<"$(niri_wait_focused_window_xywh)" || return 1
+
+  # Küçük pencere (PiP gibi) ise elleme.
+  if [[ "$w" -le 700 && "$h" -le 500 ]]; then
+    return 0
+  fi
+
+  niri msg action set-window-width --id "$id" "$target_w" >/dev/null 2>&1 || true
+  niri msg action set-window-height --id "$id" "$target_h" >/dev/null 2>&1 || true
+
+  # Resize sonrası state'in oturması için kısa bekle.
+  niri_wait_focused_window_xywh >/dev/null 2>&1 || true
 }
 
 niri_focused_output_wh() {
@@ -312,6 +351,7 @@ niri_move_cycle_corners() {
   if mpv_id="$(niri_find_window_id_by_app_id "mpv" 2>/dev/null)"; then
     niri msg action focus-window --id "$mpv_id" >/dev/null 2>&1 || true
     niri msg action move-window-to-floating --id "$mpv_id" >/dev/null 2>&1 || true
+    niri_maybe_resize_mpv "$mpv_id" || true
   else
     mpv_id=""
     niri msg action move-window-to-floating >/dev/null 2>&1 || true
@@ -322,7 +362,7 @@ niri_move_cycle_corners() {
   margin_x="${MPV_NIRI_MARGIN_X:-33}"
   margin_y="${MPV_NIRI_MARGIN_Y:-105}"
 
-  read -r x y w h <<<"$(niri_focused_window_xywh)" || die "Niri: focused-window okunamadı"
+  read -r x y w h <<<"$(niri_wait_focused_window_xywh)" || die "Niri: focused-window okunamadı"
   read -r ow oh <<<"$(niri_focused_output_wh)" || die "Niri: output boyutu okunamadı"
 
   local max_x max_y
