@@ -80,8 +80,8 @@ let
       on_ac:
         kbd_backlight:
           timeout ${toString cfg.timeouts.kbdBacklightDeltaSeconds}
-          command "sh -c 'brightnessctl -sd platform::kbd_backlight set 0 || true'"
-          resume-command "sh -c 'brightnessctl -rd platform::kbd_backlight || true'"
+          command "${config.home.profileDirectory}/bin/stasis-kbd-backlight off"
+          resume-command "${config.home.profileDirectory}/bin/stasis-kbd-backlight restore"
         end
 
         brightness:
@@ -112,8 +112,8 @@ let
       on_battery:
         kbd_backlight:
           timeout ${toString cfg.timeouts.kbdBacklightDeltaSeconds}
-          command "sh -c 'brightnessctl -sd platform::kbd_backlight set 0 || true'"
-          resume-command "sh -c 'brightnessctl -rd platform::kbd_backlight || true'"
+          command "${config.home.profileDirectory}/bin/stasis-kbd-backlight off"
+          resume-command "${config.home.profileDirectory}/bin/stasis-kbd-backlight restore"
         end
 
         brightness:
@@ -206,6 +206,35 @@ let
     if command -v loginctl >/dev/null 2>&1; then
       exec loginctl lock-session
     fi
+  '';
+
+  stasisKbdBacklight = pkgs.writeShellScriptBin "stasis-kbd-backlight" ''
+    set -euo pipefail
+
+    mode="''${1:-}"
+    if [[ "$mode" != "off" && "$mode" != "restore" ]]; then
+      echo "Usage: stasis-kbd-backlight <off|restore>" >&2
+      exit 2
+    fi
+
+    # Some machines simply don't expose a keyboard backlight device.
+    # Avoid noisy logs by no-op'ing when it's missing.
+    if ! command -v brightnessctl >/dev/null 2>&1; then
+      exit 0
+    fi
+
+    if ! brightnessctl -l 2>/dev/null | grep -q "platform::kbd_backlight"; then
+      exit 0
+    fi
+
+    case "$mode" in
+      off)
+        brightnessctl -sd platform::kbd_backlight set 0 >/dev/null 2>&1 || true
+        ;;
+      restore)
+        brightnessctl -rd platform::kbd_backlight >/dev/null 2>&1 || true
+        ;;
+    esac
   '';
 in
 {
@@ -350,6 +379,8 @@ in
         cfg.package
         stasisctl
         stasisLock
+        stasisKbdBacklight
+        pkgs.brightnessctl
         pkgs.libnotify
       ];
     }
@@ -376,6 +407,7 @@ EOF
           # Keep it a minimal patch (do not rewrite the whole file) unless
           # `forceConfig = true`.
           lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
+          kbd_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-kbd-backlight"}
 
           # Older configs may use loginctl directly; on this setup DMS/hyprlock is
           # the actual locker, so migrate lock_screen commands to stasis-lock.
@@ -421,6 +453,17 @@ EOF
             mv -f "$tmp" "$CFG_FILE"
           else
             rm -f "$tmp"
+          fi
+
+          # Keep kbd_backlight actions quiet and safe across machines without a
+          # kbd backlight device (avoid "Device not found" spam).
+          if grep -q 'platform::kbd_backlight' "$CFG_FILE"; then
+            tmp="$(mktemp)"
+            sed -E \
+              -e "s|^([[:space:]]*)command[[:space:]]+\\\".*platform::kbd_backlight.*\\\"$|\\1command \\\"$kbd_cmd off\\\"|" \
+              -e "s|^([[:space:]]*)resume-command[[:space:]]+\\\".*platform::kbd_backlight.*\\\"$|\\1resume-command \\\"$kbd_cmd restore\\\"|" \
+              "$CFG_FILE" >"$tmp"
+            mv -f "$tmp" "$CFG_FILE"
           fi
 
           # If this machine is a laptop and the config doesn't define `on_ac` /
