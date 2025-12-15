@@ -72,33 +72,72 @@ let
       # - 31:00  DPMS off
       # - 60:00  suspend
 
-      kbd_backlight:
-        timeout ${toString cfg.timeouts.kbdBacklightDeltaSeconds}
-        command "sh -c 'brightnessctl -sd platform::kbd_backlight set 0 || true'"
-        resume-command "sh -c 'brightnessctl -rd platform::kbd_backlight || true'"
+      # NOTE (Laptop):
+      # Stasis treats laptops specially and reads idle actions from `on_ac` and
+      # `on_battery` blocks. If you only define actions directly under `stasis:`,
+      # it will error with "no valid idle actions found".
+
+      on_ac:
+        kbd_backlight:
+          timeout ${toString cfg.timeouts.kbdBacklightDeltaSeconds}
+          command "sh -c 'brightnessctl -sd platform::kbd_backlight set 0 || true'"
+          resume-command "sh -c 'brightnessctl -rd platform::kbd_backlight || true'"
+        end
+
+        brightness:
+          timeout ${toString cfg.timeouts.dimDeltaSeconds}
+          command "sh -c 'brightnessctl -s set 10 || true'"
+          resume-command "sh -c 'brightnessctl -r || true'"
+        end
+
+        lock_screen:
+          timeout ${toString cfg.timeouts.lockDeltaSeconds}
+          command "${config.home.profileDirectory}/bin/stasis-lock"
+          resume-command "notify-send 'Welcome back, $env.USER!'"
+        end
+
+        dpms:
+          timeout ${toString cfg.timeouts.dpmsDeltaSeconds}
+          command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
+          resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
+        end
+
+        suspend:
+          timeout ${toString cfg.timeouts.suspendDeltaSeconds}
+          command "systemctl suspend -i"
+        end
       end
 
-      brightness:
-        timeout ${toString cfg.timeouts.dimDeltaSeconds}
-        command "sh -c 'brightnessctl -s set 10 || true'"
-        resume-command "sh -c 'brightnessctl -r || true'"
-      end
+      # Battery: keep same schedule by default (tune later if you want).
+      on_battery:
+        kbd_backlight:
+          timeout ${toString cfg.timeouts.kbdBacklightDeltaSeconds}
+          command "sh -c 'brightnessctl -sd platform::kbd_backlight set 0 || true'"
+          resume-command "sh -c 'brightnessctl -rd platform::kbd_backlight || true'"
+        end
 
-      lock_screen:
-        timeout ${toString cfg.timeouts.lockDeltaSeconds}
-        command "${config.home.profileDirectory}/bin/stasis-lock"
-        resume-command "notify-send 'Welcome back, $env.USER!'"
-      end
+        brightness:
+          timeout ${toString cfg.timeouts.dimDeltaSeconds}
+          command "sh -c 'brightnessctl -s set 10 || true'"
+          resume-command "sh -c 'brightnessctl -r || true'"
+        end
 
-      dpms:
-        timeout ${toString cfg.timeouts.dpmsDeltaSeconds}
-        command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
-        resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
-      end
+        lock_screen:
+          timeout ${toString cfg.timeouts.lockDeltaSeconds}
+          command "${config.home.profileDirectory}/bin/stasis-lock"
+          resume-command "notify-send 'Welcome back, $env.USER!'"
+        end
 
-      suspend:
-        timeout ${toString cfg.timeouts.suspendDeltaSeconds}
-        command "systemctl suspend -i"
+        dpms:
+          timeout ${toString cfg.timeouts.dpmsDeltaSeconds}
+          command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
+          resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
+        end
+
+        suspend:
+          timeout ${toString cfg.timeouts.suspendDeltaSeconds}
+          command "systemctl suspend -i"
+        end
       end
     end
 
@@ -382,6 +421,26 @@ EOF
             mv -f "$tmp" "$CFG_FILE"
           else
             rm -f "$tmp"
+          fi
+
+          # If this machine is a laptop and the config doesn't define `on_ac` /
+          # `on_battery`, Stasis will not load any actions. In that case we
+          # migrate by backing up the old file and writing our laptop-safe base.
+          if ! grep -qE '^[[:space:]]*on_ac:[[:space:]]*$' "$CFG_FILE" && ! grep -qE '^[[:space:]]*on_battery:[[:space:]]*$' "$CFG_FILE"; then
+            if grep -qE '^[[:space:]]{2}lock[_-]screen:[[:space:]]*$' "$CFG_FILE"; then
+              chassis="/sys/class/dmi/id/chassis_type"
+              if [ -r "$chassis" ]; then
+                ct="$(cat "$chassis" 2>/dev/null || true)"
+                # DMI chassis types: 8/9/10/14 commonly indicate a laptop-like device.
+                if [[ "$ct" =~ ^(8|9|10|14)$ ]]; then
+                  ts="$(date +%Y%m%d-%H%M%S)"
+                  cp -f "$CFG_FILE" "$CFG_FILE.bak-$ts"
+                  cat >"$CFG_FILE" <<'EOF'
+${cfg.configText}
+EOF
+                fi
+              fi
+            fi
           fi
 
           # Ensure we use process-based lock detection when using stasis-lock.
