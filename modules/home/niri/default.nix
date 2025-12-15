@@ -410,6 +410,16 @@ let
         open-focused true;
     }
 
+    // --- Prompts (gcr-prompter) ---
+    window-rule {
+        match app-id=r#"^gcr-prompter$"#;
+        open-floating true;
+        default-column-width { fixed 600; }
+        default-window-height { fixed 230; }
+        default-floating-position x=0 y=96 relative-to="top";
+        open-focused true;
+    }
+
     // --- Workspace Assignments (semsumo profiles) ---
     window-rule { match app-id=r#"^discord$"#; open-on-workspace "5"; }
     window-rule { match app-id=r#"^WebCord$"#; open-on-workspace "5"; open-maximized true; }
