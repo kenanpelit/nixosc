@@ -43,10 +43,10 @@
 
   inputs = {
     # ==========================================================================
-    # Core Dependencies
+    # Core
     # ==========================================================================
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
-    
+
     snowfall-lib = {
       url = "github:snowfallorg/lib";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -58,7 +58,7 @@
     };
 
     # ==========================================================================
-    # System Components
+    # System
     # ==========================================================================
     sops-nix = {
       url = "github:Mic92/sops-nix";
@@ -73,22 +73,12 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
     # ==========================================================================
-    # Desktop Environment (Hyprland)
+    # Compositors / WMs
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
-    };
-
-    # ==========================================================================
-    # Desktop Environment (Niri)
-    # ==========================================================================
-    niri = {
-      # Upstream pinned commit.
-      url = "github:YaLTeR/niri/7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
-      inputs.nixpkgs.follows = "nixpkgs";
-      # niri flake only needs rust-overlay for devShells; omit for end users.
-      inputs.rust-overlay.follows = "";
+      # pinned (glaze override uyumlu)
+      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e";
     };
 
     hypr-contrib = {
@@ -101,6 +91,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    niri = {
+      # pinned upstream commit
+      url = "github:YaLTeR/niri/7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
+      inputs.nixpkgs.follows = "nixpkgs";
+      # niri flake only needs rust-overlay for devShells; omit for end users.
+      inputs.rust-overlay.follows = "";
+    };
+
     # ==========================================================================
     # Theming
     # ==========================================================================
@@ -108,7 +106,23 @@
     distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
 
     # ==========================================================================
-    # Development Tools
+    # Desktop Shell (DMS)
+    # ==========================================================================
+    dgop = {
+      url = "github:AvengeMedia/dgop";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    dankMaterialShell = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.dgop.follows = "dgop";
+      # NOTE: buildGoModule vendorHash sebebiyle bazen "hash mismatch" görülebiliyor.
+      # Bu repo için çalıştığı bilinen commit'e pin'li.
+      url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995";
+    };
+
+    # ==========================================================================
+    # Dev Tools / Lint / Format
     # ==========================================================================
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
@@ -118,20 +132,6 @@
     statix = {
       url = "github:nerdypepper/statix";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    dgop = {
-      url = "github:AvengeMedia/dgop";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    dankMaterialShell = {
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.dgop.follows = "dgop";
-      # NOTE: Bu input buildGoModule vendorHash sebebiyle bazen "hash mismatch" ile kırılabiliyor.
-      # Çalışan (vendorHash uyumlu) commit:
-      # Son commit (şu an vendorHash mismatch veriyorsa tekrar açma):
-      url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995"; # 1214 - Stable commit
     };
 
     deadnix = {
@@ -150,30 +150,30 @@
     };
 
     # ==========================================================================
-    # Applications
+    # Apps / Extras
     # ==========================================================================
     walker.url = "github:abenz1267/walker/v2.12.2";
-    
+
     elephant = {
       url = "github:abenz1267/elephant/v2.17.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    browser-previews = { 
-      url = "github:nix-community/browser-previews"; 
-      inputs.nixpkgs.follows = "nixpkgs"; 
+    browser-previews = {
+      url = "github:nix-community/browser-previews";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    cachix-pkgs = { 
-      url = "github:cachix/cachix"; 
-      inputs.nixpkgs.follows = "nixpkgs"; 
+
+    cachix-pkgs = {
+      url = "github:cachix/cachix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     spicetify-nix = {
       url = "github:gerg-l/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 
@@ -194,10 +194,6 @@
 
         snowfall = {
           namespace = "my"; # Custom namespace for internal modules
-          
-          # Default paths are used:
-          # modules/nixos -> System modules
-          # modules/home  -> (Not used, we use modules/user-modules manually)
         };
 
         # Global Nixpkgs configuration
@@ -227,49 +223,53 @@
           username = "kenan";
         };
 
-              outputs-builder = channels: let
-                system = channels.nixpkgs.stdenv.hostPlatform.system;
-                alejandra = inputs.alejandra.packages.${system}.default;
-                statix = inputs.statix.packages.${system}.default;
-                deadnix = inputs.deadnix.packages.${system}.default;
-                treefmt = channels.nixpkgs.treefmt;
-              in {
-                formatter = alejandra;
-                
-                checks = {
-                  statix = channels.nixpkgs.runCommand "statix-check" {
-                    nativeBuildInputs = [ statix ];
-                  } ''
-                    statix check ${./.}
-                    touch $out
-                  '';
+        outputs-builder =
+          channels:
+          let
+            system = channels.nixpkgs.stdenv.hostPlatform.system;
+            alejandra = inputs.alejandra.packages.${system}.default;
+            statix = inputs.statix.packages.${system}.default;
+            deadnix = inputs.deadnix.packages.${system}.default;
+            treefmt = channels.nixpkgs.treefmt;
+          in
+          {
+            formatter = alejandra;
 
-                  deadnix = channels.nixpkgs.runCommand "deadnix-check" {
-                    nativeBuildInputs = [ deadnix ];
-                  } ''
-                    deadnix --fail ${./.}
-                    touch $out
-                  '';
+            checks = {
+              statix = channels.nixpkgs.runCommand "statix-check" {
+                nativeBuildInputs = [ statix ];
+              } ''
+                statix check ${./.}
+                touch $out
+              '';
 
-                  treefmt = channels.nixpkgs.runCommand "treefmt-check" {
-                    nativeBuildInputs = [ treefmt ];
-                  } ''
-                    treefmt --fail-on-change --clear-cache --check ${./.}
-                    touch $out
-                  '';
+              deadnix = channels.nixpkgs.runCommand "deadnix-check" {
+                nativeBuildInputs = [ deadnix ];
+              } ''
+                deadnix --fail ${./.}
+                touch $out
+              '';
 
-                  nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
-                  nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
-                  home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
-                };
+              treefmt = channels.nixpkgs.runCommand "treefmt-check" {
+                nativeBuildInputs = [ treefmt ];
+              } ''
+                treefmt --fail-on-change --clear-cache --check ${./.}
+                touch $out
+              '';
 
-                devShells.default = channels.nixpkgs.mkShell {
-                  packages = [
-                    alejandra
-                    statix
-                    deadnix
-                  ];
-                };
-              };      })
+              nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
+              nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
+              home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
+            };
+
+            devShells.default = channels.nixpkgs.mkShell {
+              packages = [
+                alejandra
+                statix
+                deadnix
+              ];
+            };
+          };
+      })
       [ "snowfall" ];
 }
