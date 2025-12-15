@@ -80,6 +80,17 @@
       url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
     };
 
+    # ==========================================================================
+    # Desktop Environment (Niri)
+    # ==========================================================================
+    niri = {
+      # Local git checkout (pinned) to avoid network fetches.
+      url = "git+file:///home/kenan/.kod/niri?rev=7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
+      inputs.nixpkgs.follows = "nixpkgs";
+      # niri flake only needs rust-overlay for devShells; omit for end users.
+      inputs.rust-overlay.follows = "";
+    };
+
     hypr-contrib = {
       url = "github:hyprwm/contrib";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -2,7 +2,7 @@
 # ==============================================================================
 # Home module for Niri compositor optimized for DankMaterialShell (DMS).
 # ==============================================================================
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 let
   cfg = config.my.desktop.niri;
@@ -740,7 +740,10 @@ in
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.niri;
+      default =
+        if inputs ? niri && inputs.niri ? packages
+        then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
+        else pkgs.niri;
       description = "Niri compositor package.";
     };
     enableNirius = lib.mkOption {
