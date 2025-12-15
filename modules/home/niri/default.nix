@@ -403,8 +403,8 @@ let
     window-rule {
         match app-id=r#"^anote$"#;
         open-floating true;
-        default-column-width { fixed 900; }
-        default-window-height { fixed 650; }
+        default-column-width { fixed 1152; }
+        default-window-height { fixed 864; }
         open-focused true;
     }
 
