@@ -682,7 +682,8 @@ let
         click-method "clickfinger"
         // Hyprland: accel_profile=flat, sensitivity=0.0, force_no_accel=true
         accel-profile "flat"
-        accel-speed 0.0
+        // 0.0 bazı touchpad'lerde fazla yavaş hissettirebiliyor; biraz hızlandıralım.
+        accel-speed 0.6
         // natural-scroll
         scroll-method "two-finger"
         scroll-factor 1.0
