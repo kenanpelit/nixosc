@@ -750,7 +750,7 @@ let
         tap
         dwt
         drag-lock
-        tap-button-map "left-middle-right"
+        tap-button-map "left-right-middle"
         middle-emulation
         click-method "clickfinger"
         // Hyprland: accel_profile=flat, sensitivity=0.0, force_no_accel=true
