@@ -252,7 +252,101 @@ update_hyprland() {
 }
 
 update_niri() {
-  update_commit_input "niri" "YaLTeR/niri" "YaLTeR/niri" "master" "Niri"
+  log_info "Niri commit updater starting..."
+
+  local repo="YaLTeR/niri"
+  local branch="master"
+
+  local current_commit
+  current_commit=$(get_current_commit "$repo")
+  log_info "Current Niri commit: $current_commit"
+
+  local latest_commit
+  latest_commit=$(get_latest_commit "$repo" "$branch")
+  log_info "Latest Niri commit:  $latest_commit"
+
+  if [[ "$current_commit" == "$latest_commit" ]]; then
+    log_success "Niri is already at the latest commit."
+    exit 0
+  fi
+
+  log_info "Updating niri URL to git+https fetcher (more deterministic)..."
+  backup_flake
+
+  python3 - "$FLAKE_PATH" "$latest_commit" "$MAX_HISTORY" "$(date +%m%d)" <<'PY'
+import re
+import sys
+
+flake_path, new_commit, max_history, today = sys.argv[1:]
+max_history = int(max_history)
+
+with open(flake_path, "r") as f:
+    lines = f.read().splitlines()
+
+new_lines = []
+in_input = False
+url_lines = []
+found_input = False
+
+for line in lines:
+    if re.match(r"\s*niri\s*=\s*\{", line):
+        in_input = True
+        found_input = True
+        new_lines.append(line)
+        continue
+
+    if in_input:
+        if ("github:YaLTeR/niri" in line) or ("git+https://github.com/YaLTeR/niri" in line):
+            url_lines.append(line.strip())
+            continue
+
+        if line.strip() == "};":
+            new_lines.append(
+                f'      url = "git+https://github.com/YaLTeR/niri?rev={new_commit}"; # {today} - Updated commit'
+            )
+
+            count = 0
+            for url_line in url_lines:
+                if count >= max_history:
+                    break
+                if url_line.startswith("#"):
+                    new_lines.append("      " + url_line)
+                else:
+                    new_lines.append("#      " + url_line)
+                count += 1
+
+            new_lines.append(line)
+            in_input = False
+            url_lines = []
+            continue
+
+    new_lines.append(line)
+
+if not found_input:
+    print("ERROR: Input 'niri' not found in flake.nix")
+    sys.exit(1)
+
+with open(flake_path, "w") as f:
+    f.write("\n".join(new_lines) + "\n")
+PY
+
+  if command grep -q "git+https://github.com/YaLTeR/niri?rev=$latest_commit" "$FLAKE_PATH"; then
+    log_success "flake.nix updated successfully for Niri!"
+    log_info "Old commit: $current_commit"
+    log_info "New commit: $latest_commit"
+
+    git_commit_changes "niri: update to latest $(date +%m%d)"
+
+    echo
+    log_info "To rebuild:"
+    echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#\\$(hostname)${NC}"
+    echo
+    log_info "To push:"
+    echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
+  else
+    log_error "Niri update failed: new URL not found in flake.nix!"
+    exit 1
+  fi
 }
 
 update_dank() {
