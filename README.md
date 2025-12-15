@@ -192,6 +192,30 @@ DMS may log lines like:
 
 This repo intentionally manages `~/.config/niri/dms/*.kdl` via Home Manager (read-only symlinks), so DMS' auto-generator can't overwrite them.
 
+### Stasis (idle manager) config is writable by design
+
+This repo ships a Home-Manager module for [Stasis](https://github.com/saltnpepper97/stasis).
+
+Enable it in your HM profile:
+
+```nix
+my.user.stasis.enable = true;
+```
+
+Notes:
+- Config path: `~/.config/stasis/stasis.rune`
+- The file is created via `home.activation` (not `xdg.configFile`) so it stays writable.
+- Convenience wrapper: `stasisctl ...` (always uses the configured `stasis.rune` path)
+
+Useful commands:
+```bash
+systemctl --user status stasis
+stasisctl info --json
+stasisctl reload
+stasisctl profile work    # or: none / presentation
+stasisctl dump 80
+```
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
