@@ -223,16 +223,22 @@ let
       exit 0
     fi
 
-    if ! brightnessctl -l 2>/dev/null | grep -q "platform::kbd_backlight"; then
+    # Prefer an explicit *kbd_backlight* LEDs device (ThinkPads: tpacpi::kbd_backlight).
+    dev="$(
+      brightnessctl -l 2>/dev/null \
+        | awk -F"'" '/Device .*kbd_backlight.* of class .*leds/ {print $2; exit}'
+    )"
+
+    if [[ -z "$dev" ]]; then
       exit 0
     fi
 
     case "$mode" in
       off)
-        brightnessctl -sd platform::kbd_backlight set 0 >/dev/null 2>&1 || true
+        brightnessctl -sd "$dev" set 0 >/dev/null 2>&1 || true
         ;;
       restore)
-        brightnessctl -rd platform::kbd_backlight >/dev/null 2>&1 || true
+        brightnessctl -rd "$dev" >/dev/null 2>&1 || true
         ;;
     esac
   '';
@@ -457,11 +463,11 @@ EOF
 
           # Keep kbd_backlight actions quiet and safe across machines without a
           # kbd backlight device (avoid "Device not found" spam).
-          if grep -q 'platform::kbd_backlight' "$CFG_FILE"; then
+          if grep -qE 'kbd_backlight' "$CFG_FILE"; then
             tmp="$(mktemp)"
             sed -E \
-              -e "s|^([[:space:]]*)command[[:space:]]+\\\".*platform::kbd_backlight.*\\\"$|\\1command \\\"$kbd_cmd off\\\"|" \
-              -e "s|^([[:space:]]*)resume-command[[:space:]]+\\\".*platform::kbd_backlight.*\\\"$|\\1resume-command \\\"$kbd_cmd restore\\\"|" \
+              -e "s|^([[:space:]]*)command[[:space:]]+\\\".*kbd_backlight.*\\\"$|\\1command \\\"$kbd_cmd off\\\"|" \
+              -e "s|^([[:space:]]*)resume-command[[:space:]]+\\\".*kbd_backlight.*\\\"$|\\1resume-command \\\"$kbd_cmd restore\\\"|" \
               "$CFG_FILE" >"$tmp"
             mv -f "$tmp" "$CFG_FILE"
           fi
