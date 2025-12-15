@@ -14,9 +14,7 @@ let
 in
 lib.mkMerge [
   (lib.mkIf (cfg.enable && stasisEnabled) {
-    warnings = [
-      "my.user.stasis is enabled: disabling Hypridle to avoid double idle management."
-    ];
+    # Stasis replaces Hypridle when enabled, so avoid running both.
   })
 
   (lib.mkIf (cfg.enable && !stasisEnabled) {

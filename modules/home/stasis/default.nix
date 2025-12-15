@@ -31,9 +31,10 @@ let
   # A sane default, designed for Niri + Hyprland + DMS.
   #
   # Notes:
-  # - `lock_detection_type "logind"` pairs well with DMS/quickshell-style lockers.
-  # - `lock_screen.command` triggers logind lock, which lets the actual locker
-  #   react (DMS / other), and gives Stasis a reliable lock/unlock signal.
+  # - We use `lock_detection_type "process"` and a small wrapper (`stasis-lock`)
+  #   that blocks until the lock is actually released. This is important because
+  #   DMS locking (IPC call) may return immediately, and Stasis needs a long-lived
+  #   process to track "locked" state reliably.
   # - Stasis timeouts are sequential (each timeout is relative to the previous
   #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
   #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
@@ -53,8 +54,8 @@ let
       ignore_remote_media true
       respect_idle_inhibitors true
 
-      # Use systemd-logind LockedHint for reliable lock state.
-      lock_detection_type "logind"
+      # Track locks by process lifetime (see `stasis-lock` wrapper).
+      lock_detection_type "process"
 
       # Apps that should inhibit idle actions.
       inhibit_apps [
@@ -85,7 +86,7 @@ let
 
       lock_screen:
         timeout ${toString cfg.timeouts.lockDeltaSeconds}
-        command "loginctl lock-session"
+        command "${config.home.profileDirectory}/bin/stasis-lock"
         resume-command "notify-send 'Welcome back, $env.USER!'"
       end
 
@@ -137,6 +138,35 @@ let
   stasisctl = pkgs.writeShellScriptBin "stasisctl" ''
     set -euo pipefail
     exec "${cfg.package}/bin/stasis" --config ${lib.escapeShellArg cfg.configFile} "$@"
+  '';
+
+  stasisLock = pkgs.writeShellScriptBin "stasis-lock" ''
+    set -euo pipefail
+
+    # Prefer Hyprland lock when available.
+    if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
+      exec hyprlock
+    fi
+
+    # Niri (and others): use DMS lock if available and block until unlocked.
+    if command -v dms >/dev/null 2>&1; then
+      dms ipc call lock lock >/dev/null 2>&1 || true
+
+      # Block until DMS reports unlock (keeps this process alive for Stasis).
+      for _ in $(seq 1 2400); do # ~10 min @ 0.25s
+        out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
+        if [[ "$out" != "true" ]]; then
+          exit 0
+        fi
+        sleep 0.25
+      done
+      exit 0
+    fi
+
+    # Fallback: logind lock (may use compositor's default locker).
+    if command -v loginctl >/dev/null 2>&1; then
+      exec loginctl lock-session
+    fi
   '';
 in
 {
@@ -280,6 +310,8 @@ in
       home.packages = [
         cfg.package
         stasisctl
+        stasisLock
+        pkgs.libnotify
       ];
     }
 
@@ -310,6 +342,9 @@ EOF
 
         Service = {
           Type = "simple";
+          Environment = [
+            "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
+          ];
           ExecStart = "${lib.getExe cfg.package} --config ${lib.escapeShellArg cfg.configFile}";
           ExecReload = "${lib.getExe cfg.package} --config ${lib.escapeShellArg cfg.configFile} reload";
           Restart = "on-failure";
