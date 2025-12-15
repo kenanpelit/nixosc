@@ -11,6 +11,7 @@
   boot.kernel.sysctl = {
     "vm.swappiness"              = 60;
     "kernel.nmi_watchdog"        = 0;
-    "kernel.audit_backlog_limit" = 262144;
+    # NOTE: This sysctl does not exist on this kernel; backlog must be set via
+    # the kernel cmdline (`audit_backlog_limit=...`) instead.
   };
 }
