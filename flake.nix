@@ -43,8 +43,11 @@
 
   inputs = {
     # ==========================================================================
-    # Core
+    # Core (Foundation)
     # ==========================================================================
+    # - nixpkgs: pinned NixOS channel
+    # - snowfall-lib: repo structure + mkFlake glue
+    # - home-manager: user-level configuration
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     snowfall-lib = {
@@ -58,8 +61,11 @@
     };
 
     # ==========================================================================
-    # System
+    # System (NixOS modules / hardware / secrets)
     # ==========================================================================
+    # - sops-nix: secret management
+    # - NUR: extra packages/overlays
+    # - nixos-hardware: device profiles
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -73,8 +79,10 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
     # ==========================================================================
-    # Compositors / WMs
+    # Desktop: Compositors / WMs
     # ==========================================================================
+    # This repo uses multiple Wayland compositors.
+    # Keep them pinned for reproducibility (especially for greeter/session paths).
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # pinned (glaze override uyumlu)
@@ -100,14 +108,18 @@
     };
 
     # ==========================================================================
-    # Theming
+    # Desktop: Theming
     # ==========================================================================
+    # - catppuccin: theming modules + palettes
+    # - distro-grub-themes: GRUB theme assets
     catppuccin.url = "github:catppuccin/nix";
     distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
 
     # ==========================================================================
-    # Desktop Shell (DMS)
+    # Desktop: Shell (DankMaterialShell / DMS)
     # ==========================================================================
+    # NOTE:
+    # DMS upstream sometimes changes Go vendor hashes; pinning avoids rebuild breakage.
     dgop = {
       url = "github:AvengeMedia/dgop";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -124,6 +136,7 @@
     # ==========================================================================
     # Dev Tools / Lint / Format
     # ==========================================================================
+    # These are used in `outputs-builder` for checks and devShell tooling.
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -152,6 +165,7 @@
     # ==========================================================================
     # Apps / Extras
     # ==========================================================================
+    # Optional GUI tools and helper flakes.
     walker.url = "github:abenz1267/walker/v2.12.2";
 
     elephant = {
@@ -193,10 +207,11 @@
         src = ./.;
 
         snowfall = {
-          namespace = "my"; # Custom namespace for internal modules
+          # Custom namespace for internal modules (e.g. `my.*` options).
+          namespace = "my";
         };
 
-        # Global Nixpkgs configuration
+        # Global nixpkgs config (applies to all systems/homes in this flake).
         channels-config = {
           allowUnfree = true;
           permittedInsecurePackages = [
@@ -206,19 +221,19 @@
           ];
         };
 
-        # Overlays applied to all systems
+        # Overlays applied to all systems.
         overlays = with inputs; [
           nur.overlays.default
         ];
 
-        # Modules automatically added to all NixOS systems
+        # Modules automatically added to all NixOS systems.
         systems.modules.nixos = with inputs; [
           home-manager.nixosModules.home-manager
           dankMaterialShell.nixosModules.dankMaterialShell
           nix-flatpak.nixosModules.nix-flatpak
         ];
 
-        # Special arguments available to all modules
+        # Special arguments available to all modules.
         systems.specialArgs = {
           username = "kenan";
         };
@@ -233,8 +248,10 @@
             treefmt = channels.nixpkgs.treefmt;
           in
           {
+            # Default formatter for the repo.
             formatter = alejandra;
 
+            # CI-friendly checks (run locally via `nix flake check`).
             checks = {
               statix = channels.nixpkgs.runCommand "statix-check" {
                 nativeBuildInputs = [ statix ];
@@ -262,6 +279,7 @@
               home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
             };
 
+            # Developer shell: quick access to repo tooling.
             devShells.default = channels.nixpkgs.mkShell {
               packages = [
                 alejandra
