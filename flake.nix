@@ -128,8 +128,6 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      # NOTE: buildGoModule vendorHash sebebiyle bazen "hash mismatch" görülebiliyor.
-      # Bu repo için çalıştığı bilinen commit'e pin'li.
       url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995";
     };
 
