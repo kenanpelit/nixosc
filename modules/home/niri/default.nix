@@ -318,10 +318,14 @@ let
     window-rule {
         match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
         open-floating true;
-        // Hyprland'daki mpv PiP (0.19w x 0.19h, sol alt) karşılığı
-        default-column-width { proportion 0.19; }
-        default-window-height { proportion 0.19; }
-        default-floating-position x=32 y=32 relative-to="bottom-left";
+        // PiP'i de normal mpv gibi tutarlı bir boyutta/floating konumunda aç.
+        default-column-width { fixed 640; }
+        default-window-height { fixed 360; }
+        default-floating-position x=32 y=96 relative-to="top-right";
+        min-width 640;
+        max-width 640;
+        min-height 360;
+        max-height 360;
         opacity 1.0;
     }
     
