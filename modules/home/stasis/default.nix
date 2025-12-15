@@ -109,7 +109,7 @@ let
       work:
         lock_screen:
           timeout 900
-          command "loginctl lock-session"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -340,6 +340,14 @@ EOF
           if grep -q 'command[[:space:]]*"swaylock"' "$CFG_FILE"; then
             tmp="$(mktemp)"
             sed "s|command[[:space:]]*\\\"swaylock\\\"|command \\\"$lock_cmd\\\"|g" "$CFG_FILE" >"$tmp"
+            mv -f "$tmp" "$CFG_FILE"
+          fi
+
+          # Older configs may use loginctl directly; on this setup DMS/hyprlock is
+          # the actual locker, so migrate lock_screen commands to stasis-lock.
+          if grep -q 'command[[:space:]]*"loginctl lock-session"' "$CFG_FILE"; then
+            tmp="$(mktemp)"
+            sed "s|command[[:space:]]*\\\"loginctl lock-session\\\"|command \\\"$lock_cmd\\\"|g" "$CFG_FILE" >"$tmp"
             mv -f "$tmp" "$CFG_FILE"
           fi
 
