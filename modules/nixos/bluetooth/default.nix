@@ -18,7 +18,11 @@ in
       settings = {
         General = {
           Enable = "Source,Sink,Media,Socket";
-          Experimental = true;
+          # Disable experimental LE Audio plugins like BAP (which require ISO sockets).
+          # This avoids log spam like:
+          #   bluetoothd: ... BAP requires ISO Socket which is not enabled
+          Experimental = false;
+          Disable = "bap";
         };
       };
     };
