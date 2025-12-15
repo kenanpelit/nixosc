@@ -405,7 +405,6 @@ let
         open-floating true;
         default-column-width { fixed 900; }
         default-window-height { fixed 650; }
-        default-floating-position x=0 y=0 relative-to="center";
         open-focused true;
     }
 
