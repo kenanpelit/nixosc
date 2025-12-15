@@ -328,6 +328,32 @@ in
           cat >"$CFG_FILE" <<'EOF'
 ${cfg.configText}
 EOF
+        else
+          # If the user already started Stasis once, it may have auto-generated a
+          # config that uses `swaylock`. This repo uses DMS lock on Niri and
+          # `hyprlock` on Hyprland, so we auto-migrate the lock command in-place.
+          #
+          # Keep it a minimal patch (do not rewrite the whole file) unless
+          # `forceConfig = true`.
+          lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
+
+          if grep -q 'command[[:space:]]*"swaylock"' "$CFG_FILE"; then
+            tmp="$(mktemp)"
+            sed "s|command[[:space:]]*\\\"swaylock\\\"|command \\\"$lock_cmd\\\"|g" "$CFG_FILE" >"$tmp"
+            mv -f "$tmp" "$CFG_FILE"
+          fi
+
+          # Ensure we use process-based lock detection when using stasis-lock.
+          if grep -q "$lock_cmd" "$CFG_FILE" && ! grep -Eq 'lock_detection_type|lock-detection-type' "$CFG_FILE"; then
+            tmp="$(mktemp)"
+            awk '
+              { print }
+              $0 ~ /^[[:space:]]*respect_idle_inhibitors[[:space:]]+true/ {
+                print "  lock_detection_type \"process\""
+              }
+            ' "$CFG_FILE" >"$tmp"
+            mv -f "$tmp" "$CFG_FILE"
+          fi
         fi
       '';
     })
