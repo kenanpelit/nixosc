@@ -61,7 +61,6 @@ let
       inhibit_apps [
         "mpv"
         "vlc"
-        "Spotify"
         r"steam_app_.*"
       ]
 
