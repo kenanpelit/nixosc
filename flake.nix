@@ -119,8 +119,6 @@
     # ==========================================================================
     # Desktop: Shell (DankMaterialShell / DMS)
     # ==========================================================================
-    # NOTE:
-    # DMS upstream sometimes changes Go vendor hashes; pinning avoids rebuild breakage.
     dgop = {
       url = "github:AvengeMedia/dgop";
       inputs.nixpkgs.follows = "nixpkgs";
