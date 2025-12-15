@@ -1077,16 +1077,16 @@
       "locked": {
         "lastModified": 1765687800,
         "narHash": "sha256-lDIe2WsN1Q8+RUPP250oULX1ERQGNWIAybYFqtHbDVM=",
-        "ref": "refs/heads/main",
+        "owner": "YaLTeR",
+        "repo": "niri",
         "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
-        "revCount": 2576,
-        "type": "git",
-        "url": "file:///home/kenan/.kod/niri"
+        "type": "github"
       },
       "original": {
+        "owner": "YaLTeR",
+        "repo": "niri",
         "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
-        "type": "git",
-        "url": "file:///home/kenan/.kod/niri"
+        "type": "github"
       }
     },
     "nix": {
