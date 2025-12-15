@@ -424,7 +424,7 @@ let
     window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; open-maximized true; open-maximized-to-edges true; }
     window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; open-maximized true; open-maximized-to-edges true; }
     window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; open-maximized true; open-maximized-to-edges true; }
-    window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; }
+    window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; open-maximized-to-edges true; }
     window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }
 
     // --- Better Dialog Placement (centered floating) ---
