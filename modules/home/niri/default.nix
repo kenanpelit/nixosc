@@ -382,9 +382,9 @@ let
     window-rule {
         match app-id=r#"^org\.pulseaudio\.pavucontrol$"#;
         open-floating true;
-        default-column-width { fixed 560; }
-        default-window-height { fixed 520; }
-        default-floating-position x=32 y=96 relative-to="top-right";
+        default-column-width { proportion 0.25; }
+        default-window-height { proportion 0.80; }
+        default-floating-position x=32 y=144 relative-to="top-right";
         open-focused true;
     }
 
