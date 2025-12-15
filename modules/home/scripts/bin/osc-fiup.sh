@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hyprland / Walker / Elephant / DankMaterialShell Updater Script with Git Auto-Commit
+# Hyprland / Niri / Walker / Elephant / DankMaterialShell Updater Script with Git Auto-Commit
 set -euo pipefail
 
 # Colors
@@ -19,9 +19,10 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {hypr|hyprland|walker|dank}"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {hypr|hyprland|niri|walker|dank}"
   echo
   echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
+  echo "  niri            : Update Niri input to latest commit on master"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
 }
@@ -250,6 +251,10 @@ update_hyprland() {
   update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
 }
 
+update_niri() {
+  update_commit_input "niri" "YaLTeR/niri" "YaLTeR/niri" "master" "Niri"
+}
+
 update_dank() {
   update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "master" "DankMaterialShell"
 }
@@ -405,6 +410,9 @@ main() {
   case "$target" in
   hypr | hyprland)
     update_hyprland
+    ;;
+  niri)
+    update_niri
     ;;
   walker)
     update_walker_and_elephant
