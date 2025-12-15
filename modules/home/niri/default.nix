@@ -659,12 +659,19 @@ let
     // --- Input Configuration ---
     input {
       workspace-auto-back-and-forth;
+      // Hyprland'daki `follow_mouse=1` benzeri: imleç üstüne gelince focus al.
+      // Scrollable layout yüzünden "yanlışlıkla scroll" olmasın diye 0% limitliyoruz.
+      focus-follows-mouse max-scroll-amount="0%";
+
       keyboard {
         xkb {
           layout "tr"
           variant "f"
           options "ctrl:nocaps"
         }
+        // Hyprland: repeat_delay=250, repeat_rate=35
+        repeat-delay 250
+        repeat-rate 35
       }
       touchpad {
         tap
@@ -673,17 +680,22 @@ let
         tap-button-map "left-middle-right"
         middle-emulation
         click-method "clickfinger"
+        // Hyprland: accel_profile=flat, sensitivity=0.0, force_no_accel=true
         accel-profile "flat"
-        accel-speed 1.0
+        accel-speed 0.0
         // natural-scroll
-        // Dikey biraz hızlı, yatay biraz daha hızlı olsun; istersen sayıları değiştiririz.
-        scroll-factor vertical=1.0 horizontal=1.2
+        scroll-method "two-finger"
+        scroll-factor 1.0
+      }
+      mouse {
+        accel-profile "flat"
+        accel-speed 0.0
+        // natural-scroll
+        scroll-factor 1.0
       }
       trackpoint {
-        // Trackpoint genelde hassas olduğu için hafif yavaşlatıp (flat + düşük speed)
-        // daha stabil hale getiriyoruz.
         accel-profile "flat"
-        accel-speed 0.4
+        accel-speed 0.0
         middle-emulation
         // Trackpoint ile scroll için (butona basılı tutup yön vererek):
         scroll-method "on-button-down"
