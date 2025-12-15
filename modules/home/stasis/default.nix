@@ -34,6 +34,9 @@ let
   # - `lock_detection_type "logind"` pairs well with DMS/quickshell-style lockers.
   # - `lock_screen.command` triggers logind lock, which lets the actual locker
   #   react (DMS / other), and gives Stasis a reliable lock/unlock signal.
+  # - Stasis timeouts are sequential (each timeout is relative to the previous
+  #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
+  #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
   defaultConfigText = ''
     # This file is managed by nixosc (Home-Manager activation), but is kept
     # writable on disk so you can still tweak it manually.
@@ -61,22 +64,40 @@ let
         r"steam_app_.*"
       ]
 
-      # 1) Lock the session (lets DMS/quickshell react), 2) DPMS off, 3) suspend.
+      # Schedule (matches the Hypridle module defaults in this repo):
+      # - 05:00  keyboard backlight off
+      # - 15:00  screen dim
+      # - 30:00  lock-session
+      # - 31:00  DPMS off
+      # - 60:00  suspend
+
+      kbd_backlight:
+        timeout ${toString cfg.timeouts.kbdBacklightDeltaSeconds}
+        command "sh -c 'brightnessctl -sd platform::kbd_backlight set 0 || true'"
+        resume-command "sh -c 'brightnessctl -rd platform::kbd_backlight || true'"
+      end
+
+      brightness:
+        timeout ${toString cfg.timeouts.dimDeltaSeconds}
+        command "sh -c 'brightnessctl -s set 10 || true'"
+        resume-command "sh -c 'brightnessctl -r || true'"
+      end
+
       lock_screen:
-        timeout ${toString cfg.timeouts.lockSeconds}  # ${toString (cfg.timeouts.lockSeconds / 60)} minute(s)
+        timeout ${toString cfg.timeouts.lockDeltaSeconds}
         command "loginctl lock-session"
         resume-command "notify-send 'Welcome back, $env.USER!'"
       end
 
       dpms:
-        timeout ${toString cfg.timeouts.dpmsSeconds}  # ${toString (cfg.timeouts.dpmsSeconds / 60)} minute(s)
+        timeout ${toString cfg.timeouts.dpmsDeltaSeconds}
         command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
         resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
       end
 
       suspend:
-        timeout ${toString cfg.timeouts.suspendSeconds}  # ${toString (cfg.timeouts.suspendSeconds / 60)} minute(s)
-        command "systemctl suspend"
+        timeout ${toString cfg.timeouts.suspendDeltaSeconds}
+        command "systemctl suspend -i"
       end
     end
 
@@ -164,22 +185,67 @@ in
     };
 
     timeouts = {
-      lockSeconds = lib.mkOption {
+      # Absolute targets from "idle start" (Hypridle-style).
+      # We convert these to sequential deltas internally (Stasis-style).
+      kbdBacklightAtSeconds = lib.mkOption {
         type = lib.types.int;
         default = 300;
-        description = "Idle seconds before lock-session.";
+        description = "After how many idle seconds to turn keyboard backlight off.";
       };
 
-      dpmsSeconds = lib.mkOption {
+      dimAtSeconds = lib.mkOption {
         type = lib.types.int;
-        default = 600;
-        description = "Idle seconds before DPMS off.";
+        default = 900;
+        description = "After how many idle seconds to dim the screen (brightnessctl).";
       };
 
-      suspendSeconds = lib.mkOption {
+      lockAtSeconds = lib.mkOption {
         type = lib.types.int;
         default = 1800;
-        description = "Idle seconds before suspend.";
+        description = "After how many idle seconds to `loginctl lock-session`.";
+      };
+
+      dpmsAtSeconds = lib.mkOption {
+        type = lib.types.int;
+        default = 1860;
+        description = "After how many idle seconds to turn displays off (DPMS).";
+      };
+
+      suspendAtSeconds = lib.mkOption {
+        type = lib.types.int;
+        default = 3600;
+        description = "After how many idle seconds to suspend.";
+      };
+
+      # Derived deltas (Stasis executes actions sequentially).
+      kbdBacklightDeltaSeconds = lib.mkOption {
+        type = lib.types.int;
+        internal = true;
+        default = cfg.timeouts.kbdBacklightAtSeconds;
+      };
+
+      dimDeltaSeconds = lib.mkOption {
+        type = lib.types.int;
+        internal = true;
+        default = cfg.timeouts.dimAtSeconds - cfg.timeouts.kbdBacklightAtSeconds;
+      };
+
+      lockDeltaSeconds = lib.mkOption {
+        type = lib.types.int;
+        internal = true;
+        default = cfg.timeouts.lockAtSeconds - cfg.timeouts.dimAtSeconds;
+      };
+
+      dpmsDeltaSeconds = lib.mkOption {
+        type = lib.types.int;
+        internal = true;
+        default = cfg.timeouts.dpmsAtSeconds - cfg.timeouts.lockAtSeconds;
+      };
+
+      suspendDeltaSeconds = lib.mkOption {
+        type = lib.types.int;
+        internal = true;
+        default = cfg.timeouts.suspendAtSeconds - cfg.timeouts.dpmsAtSeconds;
       };
     };
   };
@@ -195,6 +261,18 @@ in
             Either:
             - Use a nixpkgs that provides `pkgs.stasis`, or
             - Set `my.user.stasis.package` explicitly (e.g. from a Stasis flake input).
+          '';
+        }
+        {
+          assertion =
+            cfg.timeouts.kbdBacklightAtSeconds >= 0
+            && cfg.timeouts.dimAtSeconds >= cfg.timeouts.kbdBacklightAtSeconds
+            && cfg.timeouts.lockAtSeconds >= cfg.timeouts.dimAtSeconds
+            && cfg.timeouts.dpmsAtSeconds >= cfg.timeouts.lockAtSeconds
+            && cfg.timeouts.suspendAtSeconds >= cfg.timeouts.dpmsAtSeconds;
+          message = ''
+            my.user.stasis.timeouts.*AtSeconds must be monotonic (non-decreasing).
+            Expected: kbdBacklightAt <= dimAt <= lockAt <= dpmsAt <= suspendAt
           '';
         }
       ];
