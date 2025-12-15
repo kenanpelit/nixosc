@@ -106,6 +106,7 @@ let
       XF86AudioMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "mute"; }
       XF86AudioMicMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "micmute"; }
       Mod+Alt+A hotkey-overlay-title="Cycle Audio Output" { spawn "${dmsCmd}" "ipc" "call" "audio" "cycleoutput"; }
+      Mod+Alt+P hotkey-overlay-title="Audio Mixer (pavucontrol)" { spawn "pavucontrol"; }
 
       // --- Media Controls (MPRIS) ---
       XF86AudioPlay allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "playPause"; }
