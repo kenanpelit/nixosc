@@ -41,7 +41,6 @@ let
     # Reference:
     # - `stasis info`
     # - `stasis dump`
-    # - `~/.kod/stasis/examples/stasis.rune`
 
     @author "kenanpelit/nixosc"
     @description "Stasis idle config (DMS + Niri/Hyprland friendly)"
