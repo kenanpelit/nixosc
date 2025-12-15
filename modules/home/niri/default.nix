@@ -418,9 +418,11 @@ let
 
     // Brave custom classes (semsumo daily)
     // Not: match app-id regex'i "herhangi bir yerde" eşleşir; bu yüzden ^...$ ile sabitliyoruz.
-    window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; }
-    window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; open-maximized true; }
-    window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; }
+    // "maximize-to-edges" ile gaps/border kaynaklı 1px offset ve kenar boşluklarını kaldırıp
+    // CompecTA örneğindeki gibi tam oturan görünüm elde ediyoruz.
+    window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; open-maximized true; open-maximized-to-edges true; }
+    window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; open-maximized true; open-maximized-to-edges true; }
+    window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; open-maximized true; open-maximized-to-edges true; }
     window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; }
     window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }
 
