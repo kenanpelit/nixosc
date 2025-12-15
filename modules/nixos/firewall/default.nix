@@ -1,13 +1,8 @@
-# modules/core/firewall/default.nix
+# modules/nixos/firewall/default.nix
 # ==============================================================================
-# Firewall Configuration
-# ==============================================================================
-# Configures the system firewall and related tools.
-# - Enables firewall
-# - Configures allowed TCP/UDP ports
-# - Installs conntrack-tools
-# - Provides shell aliases for firewall management
-#
+# NixOS firewall policy: nftables/iptables defaults, open ports, and helpers.
+# Central place to manage network exposure across all hosts.
+# Keep rules consistent by editing this module instead of per-host hacks.
 # ==============================================================================
 
 { lib, pkgs, config, ... }:
@@ -47,7 +42,8 @@ in
         optional cfg.allowTransmissionPorts transmissionPeerPort;
     };
 
-    environment.systemPackages = with pkgs; [ conntrack-tools ];
+    # Use native nftables routing instead of iptables
+    networking.nftables.enable = true;
 
     environment.shellAliases = {
       fw-list         = "sudo nft list ruleset";
@@ -56,7 +52,7 @@ in
       fw-list-input   = "sudo nft list chain inet filter input";
       fw-list-forward = "sudo nft list chain inet filter forward";
 
-      fw-stats         = "sudo nft list ruleset -a -s";
+      fw-stats         = "sudo nft -a -s list ruleset";
       fw-counters      = "sudo nft list ruleset | grep -E 'counter|packets'";
       fw-reset-counters = "sudo nft reset counters table inet filter";
 

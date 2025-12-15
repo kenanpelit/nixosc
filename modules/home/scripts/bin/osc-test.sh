@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-test.sh - Hızlı test/deneme kancası
+# Küçük komut/prototip denemeleri için şablon; log ve çıktıları gözlemlemek için.
 
 #===============================================================================
 #

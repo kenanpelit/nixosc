@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# osc-gpg_unlock.sh - GPG anahtar/agent açıcı
+# Smartcard/USB anahtarları için pinentry sürecini hızlandırır, cache tazeler.
 
 # Renk tanımlamaları
 RED='\033[0;31m'

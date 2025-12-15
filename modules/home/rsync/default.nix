@@ -1,10 +1,7 @@
 # modules/home/rsync/default.nix
 # ==============================================================================
-# Rsync Configuration
-# ==============================================================================
-# Configures Rsync for home directory backups.
-# - Defines exclusion patterns for common temporary files, caches, and development artifacts.
-#
+# Home module for rsync CLI and helper scripts.
+# Installs rsync and keeps any user defaults managed here.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

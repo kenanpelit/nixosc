@@ -1,14 +1,9 @@
 # modules/home/xserver/default.nix
 # ==============================================================================
-# X11 / Xwayland Session Environment (User-level)
+# Home module for X11 user utilities (xset, xrandr helpers, etc.).
+# Installs X11-related tools and config via Home Manager.
 # ==============================================================================
-# Purpose:
-#   - Provide user-session environment tweaks for X11 / Xwayland clients.
-#   - Mainly used to set XDG variables and compatibility flags from home-manager.
-# Notes:
-#   - System-level X server and Xwayland config live in core/display.
-#   - This module focuses on per-user session variables.
-# ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.xserver;

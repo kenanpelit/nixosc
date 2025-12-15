@@ -1,14 +1,8 @@
 # modules/home/ai/gemini-cli.nix
 # ==============================================================================
-# Google Gemini CLI Wrapper
-# ==============================================================================
-# Provides a Nix wrapper for the official Google Gemini CLI tool.
-# - Installs the CLI tool using npx within a sandboxed environment.
-# - Ensures Node.js and npm are correctly configured.
-# - Creates `ai-gemini` and `gemini` executables in the user's PATH.
-# - Includes scripts for managing nightly builds (`ai-gemini-nightly`, `ai-gemini-update`).
-#
-# Requires Google API access.
+# Google Gemini CLI wrapper: builds a sandboxed npx-based launcher, exposes
+# ai-gemini/gemini binaries, and ships nightly/update helpers. Assumes
+# Google API access is configured.
 # ==============================================================================
 
 { lib, stdenv, makeWrapper, nodejs }:

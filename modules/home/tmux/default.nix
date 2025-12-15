@@ -1,7 +1,9 @@
 # modules/home/tmux/default.nix
 # ==============================================================================
-# Tmux Terminal Multiplexer Configuration (direct files + encrypted fzf payload)
+# Home module for tmux: installs tmux and writes tmux.conf defaults.
+# Centralize keybinds/plugins here instead of manual config management.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.tmux;

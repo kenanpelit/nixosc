@@ -1,7 +1,9 @@
 # modules/home/xdg-dirs/default.nix
 # ==============================================================================
-# XDG User Directories Configuration
+# Home module for XDG user directories.
+# Defines standard dirs via Home Manager instead of manual xdg-user-dirs updates.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.xdg-dirs;

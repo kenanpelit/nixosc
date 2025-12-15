@@ -1,7 +1,9 @@
 # modules/home/gtk/default.nix
 # ==============================================================================
-# GTK Theme and Configuration - Catppuccin Mocha
+# Home module for GTK theming and settings (icons, cursors, fonts).
+# Centralize user GTK defaults here instead of manual gsettings tweaks.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.gtk;

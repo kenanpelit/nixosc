@@ -1,7 +1,10 @@
 # modules/home/mako/default.nix
 # ==============================================================================
-# Mako Notification Daemon Configuration - Catppuccin Mocha Themed
+# Home module for Mako Wayland notification daemon.
+# Installs mako and applies user notification theme/options.
+# Keep notification styling here instead of editing mako.conf manually.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let
   cfg = config.my.user.mako;

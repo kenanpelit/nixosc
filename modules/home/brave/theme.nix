@@ -1,18 +1,8 @@
 # modules/home/brave/theme.nix
 # ==============================================================================
-# Brave Browser Catppuccin Theme Configuration
-# ==============================================================================
-# This module:
-# - Optionally integrates Catppuccin color scheme with Brave
-# - Writes a Stylus-compatible CSS file into the profile
-# - Provides a helper script to re-apply the theme
-#
-# NOTE:
-# - Actual theme extensions (Catppuccin Chrome theme, Dark Reader, Stylus)
-#   are expected to be installed either manually or via the extensions.nix
-#   module (e.g. brave-install-extensions).
-#
-# Author: Kenan Pelit
+# Brave Catppuccin theme helper: writes Stylus-compatible CSS and a helper
+# to re-apply Catppuccin colors. Relies on theme/extension installs from
+# extensions.nix (Catppuccin theme, Dark Reader, Stylus).
 # ==============================================================================
 
 { config, pkgs, lib, ... }:

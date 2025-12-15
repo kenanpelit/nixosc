@@ -1,11 +1,7 @@
 # modules/home/sway/default.nix
 # ==============================================================================
-# Sway Window Manager Configuration
-# ==============================================================================
-# Configures Sway specifically for VM management use cases.
-# - Defines VM launching scripts/configs
-# - Sets window rules for QEMU (fullscreen)
-#
+# Home module for Sway session helpers (VM/testing usage).
+# Installs sway-related utilities and user config via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
@@ -63,4 +59,3 @@ in
     }; # End of xdg.configFile
   };
 } # End of module
-

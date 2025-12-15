@@ -1,16 +1,10 @@
 # modules/home/firefox/default.nix
 # ==============================================================================
-# Firefox Core Configuration - Fixed for Home Manager Compatibility
+# Home module for Firefox: install browser and wire profiles (kenp/compecta/proxy).
+# Leaves profile.ini untouched so manual profiles work; manages policies/settings here.
+# Adjust extensions/search/etc. via this module instead of manual profile edits.
 # ==============================================================================
-# This configuration manages Firefox browser setup including:
-# - Extension management and installation
-# - Search engines and custom shortcuts
-# - Privacy and security settings
-# - Browser behavior customization
-# - Profile management
-#
-# Author: Kenan Pelit
-# ==============================================================================
+
 { config, lib, pkgs, username ? "kenan", ... }:
 let
   cfg = config.my.browser.firefox;
@@ -136,82 +130,7 @@ in {
       
       # Native messaging hosts for extensions
       nativeMessagingHosts = with pkgs; [ fx-cast-bridge ];
-      
-      # Profile configuration
-      profiles.${username} = {
-        id = 0;
-        name = username;
-        isDefault = true;
-        
-        # Extensions configuration - Use new API format with force flag
-        extensions = {
-          packages = extensionsList;
-          force = true;
-        };
-        
-        # Search configuration
-        search = {
-          force = true;
-          default = cfg.defaultSearchEngine;
-          engines = searchConfig;
-        };
-        
-        # Firefox settings
-        settings = {
-          # Fonts
-          "font.name.monospace.x-western" = "Maple Mono NF";
-
-          # File Picker Settings
-          "widget.use-xdg-desktop-portal.file-picker" = 1;
-          
-          # Browser Behavior
-          "browser.disableResetPrompt" = true;
-          "browser.download.panel.shown" = true;
-          "browser.download.useDownloadDir" = true;
-          "browser.shell.checkDefaultBrowser" = false;
-          "browser.shell.defaultBrowserCheckCount" = 0;
-          "browser.startup.homepage" = cfg.homepage;
-          "browser.bookmarks.showMobileBookmarks" = true;
-          
-          # Privacy & Security
-          "dom.security.https_only_mode" = true;
-          "privacy.trackingprotection.enabled" = true;
-          "signon.rememberSignons" = false;
-          
-          # Sponsored Content
-          "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
-          
-          # Account Integration
-          "identity.fxaccounts.enabled" = true;
-          
-          # Pinned Sites
-          "browser.newtabpage.pinned" = lib.singleton {
-            title = "NixOS";
-            url = "https://nixos.org";
-          };
-        };
-        
-        # User Chrome CSS for additional theming
-        userChrome = ''
-          /* Custom Firefox UI theming - compatible with Catppuccin */
-          :root {
-            --toolbar-bgcolor: #1e1e2e !important;
-            --toolbar-color: #cdd6f4 !important;
-            --tabs-border-color: #313244 !important;
-          }
-        '';
-        
-        # User Content CSS for web pages
-        userContent = ''
-          /* Custom web page theming if needed */
-          @-moz-document url-prefix(about:) {
-            body {
-              background-color: #1e1e2e !important;
-              color: #cdd6f4 !important;
-            }
-          }
-        '';
-      };
+      # Profiles managed manually (Kenp/Compecta/Proxy); Home Manager does not write profiles.ini here.
     };
 
     # Configure default application associations if requested

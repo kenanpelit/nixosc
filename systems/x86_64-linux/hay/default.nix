@@ -1,12 +1,15 @@
 # systems/x86_64-linux/hay/default.nix
 # ==============================================================================
-# HAY Workstation: Main Host Configuration
+# HAY physical workstation: main NixOS host config.
+# Imports hardware config; module imports handled via flake/Snowfall.
+# Set host metadata and enable services/desktops below.
 # ==============================================================================
 { pkgs, lib, inputs, config, ... }:
 
 {
   imports = [
     ./hardware-configuration.nix
+    inputs.nixos-hardware.nixosModules.common-cpu-intel
     # Modules are now automatically imported by flake.nix via Snowfall Lib
   ];
 
@@ -34,6 +37,7 @@
     enable = true;
     enableHyprland = true;
     enableGnome    = true;
+    enableNiri     = true;
     enableAudio    = true;
 
     fonts.enable         = true;
@@ -49,6 +53,16 @@
       enable = false;
       # user = config.my.user.name; # Can use config variable here if enabled
     };
+  };
+
+  # ============================================================================
+  # Greeter (DMS Greeter via greetd)
+  # ============================================================================
+  my.greeter.dms = {
+    enable     = true;
+    compositor = "hyprland";
+    layout     = "tr";
+    variant    = "f";
   };
 
   # ============================================================================

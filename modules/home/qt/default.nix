@@ -1,7 +1,9 @@
 # modules/home/qt/default.nix
 # ==============================================================================
-# Qt Theming and Configuration - Catppuccin Mocha
+# Home module for Qt theming and platform options (QT_QPA_PLATFORM etc.).
+# Centralize Qt look-and-feel settings under Home Manager.
 # ==============================================================================
+
 { lib, pkgs, config, ... }:
 let
   cfg = config.my.user.qt;

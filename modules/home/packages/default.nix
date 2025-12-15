@@ -1,9 +1,7 @@
-# modules/user-modules/packages/default.nix
+# modules/home/packages/default.nix
 # ==============================================================================
-# User Package Installation
-# ==============================================================================
-# Comprehensive set of user-level applications and tools.
-# Organized by function for clarity.
+# Home module aggregating user package set (pkgs for home.packages).
+# Central place to list per-user tools instead of sprinkling in modules.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:
@@ -59,6 +57,7 @@ in
       nixd nil nixfmt-rfc-style
       shellcheck shfmt
       treefmt inputs.alejandra.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+      inputs.dgop.packages.${pkgs.stdenv.hostPlatform.system}.default
       
       # Debugging & Analysis
       gdb strace lsof
@@ -69,13 +68,13 @@ in
       nvd cachix nix-output-monitor nix-search-tv
   
       # -- Terminal Utilities ----------------------------------------------------
-      tmux wezterm foot     # Terminal multiplexer & emulators
+      tmux wezterm          # Terminal multiplexer & emulators
       starship              # Cross-shell prompt
       fastfetch neofetch    # System info
       htop btop procs       # Process viewers
       tldr                  # Simplified man pages
       killall               # Process killer
-      wl-clipboard clipse   # Clipboard tools
+      wl-clipboard clipse      # Clipboard tools
       wtype                 # Wayland key typer for scripts/gestures
       libnotify             # Notification tools
       translate-shell       # Translator
@@ -136,10 +135,11 @@ in
   
       # -- Hyprland & Wayland ----------------------------------------------------
       hyprlock hypridle     # Lock & Idle
-      hyprpaper wpaperd     # Wallpaper
+      hyprpaper             # Wallpaper
       #mako                  # Notifications
       brightnessctl         # Brightness control
       wl-gammactl           # Gamma control
+      sunsetr               # Gamma/temperature scheduler
       gnome-monitor-config  # Display layout manager
       hyprpicker            # Color picker
       
@@ -154,6 +154,7 @@ in
       localsend             # File sharing
       ventoy                # Bootable USB tool
       gparted               # Partition manager
-    ];
+    ]
+    ++ lib.optionals config.my.user.copyq.enable [ copyq ];
   };
 }

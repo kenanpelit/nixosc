@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# svmarch.sh - Arch Linux VM başlatıcısı
+# QEMU/virt-install parametreleriyle Arch sanal makineleri açar.
 
 #===============================================================================
 #

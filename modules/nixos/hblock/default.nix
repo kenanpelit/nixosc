@@ -1,12 +1,8 @@
-# modules/core/hblock/default.nix
+# modules/nixos/hblock/default.nix
 # ==============================================================================
-# hBlock DNS Ad-Blocking
-# ==============================================================================
-# Configures system-wide ad-blocking updates for user HOSTALIASES.
-# - Updates hBlock list periodically
-# - Configures per-user HOSTALIASES file
-# - Provides shell aliases for manual updates
-#
+# NixOS hBlock integration: host file-based ad/malware blocking service.
+# Manage blocklists and timer settings centrally for all hosts.
+# Keep DNS-level blocking consistent by editing this module.
 # ==============================================================================
 
 { pkgs, lib, ... }:

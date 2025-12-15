@@ -1,10 +1,14 @@
 # modules/home/sesh/default.nix
 # ==============================================================================
-# Sesh Terminal Session Manager Configuration 
+# Home module for Sesh session manager integration (term multiplexing).
+# Installs sesh and writes its config via Home Manager.
+# Keep session definitions here instead of manual config files.
 # ==============================================================================
-{ config, lib, pkgs, username, ... }:
+
+{ config, lib, pkgs, ... }:
 let
   cfg = config.my.user.sesh;
+  username = config.home.username;
 in
 {
   options.my.user.sesh = {
@@ -252,4 +256,3 @@ in
     '';
   };
 }
-

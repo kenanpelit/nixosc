@@ -1,11 +1,8 @@
-# modules/core/logind/default.nix
+# modules/nixos/logind/default.nix
 # ==============================================================================
-# Logind Power Policy
-# ==============================================================================
-# Configures systemd-logind settings for power button and lid switch behavior.
-# - Lid switch action (suspend)
-# - Power key action (ignore/poweroff)
-#
+# NixOS logind policy: lid-close actions, power key behavior, session limits.
+# Centralize user session and power button defaults here.
+# Avoid per-host drift by editing logind settings in this module.
 # ==============================================================================
 
 { lib, ... }:

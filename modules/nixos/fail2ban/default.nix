@@ -1,11 +1,8 @@
-# modules/core/fail2ban/default.nix
+# modules/nixos/fail2ban/default.nix
 # ==============================================================================
-# Fail2ban Intrusion Prevention
-# ==============================================================================
-# Configures fail2ban service and shell aliases for monitoring.
-# - Enable fail2ban service
-# - Shell aliases for status and ban management
-#
+# NixOS fail2ban service: jail defaults, log backends, ban settings.
+# Configure intrusion bans centrally to reuse across hosts.
+# Tweak jail policies here rather than per-machine copies.
 # ==============================================================================
 
 { ... }:

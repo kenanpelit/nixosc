@@ -1,25 +1,21 @@
-# modules/core/dm/default.nix
+# modules/nixos/dm/default.nix
 # ==============================================================================
-# Display Manager Configuration
-# ==============================================================================
-# Configures GDM (GNOME Display Manager) and session handling.
-# - Enables GDM (Wayland mode)
-# - Manages desktop environment enablement (GNOME, etc.)
-# - Configures auto-login settings
-# - Sets the default session based on enabled DEs
-# - Applies keyboard layout settings to XServer
-#
+# NixOS display-manager/greeter wiring (e.g., greetd/lightdm settings).
+# Centralize login UI toggles and session registration here.
+# Keep DM choices consistent across hosts from this module.
 # ==============================================================================
 
 { lib, config, ... }:
 
 let
   cfg = config.my.display;
+  dmsGreeterEnabled = config.my.greeter.dms.enable or false;
 in
 {
   config = lib.mkIf cfg.enable {
     services.xserver.enable = true;
-    services.displayManager.gdm = {
+
+    services.displayManager.gdm = lib.mkIf (!dmsGreeterEnabled) {
       enable = true;
       wayland = true;
     };

@@ -1,4 +1,10 @@
 { lib, pkgs, config, osConfig, ... }:
+# ==============================================================================
+# Home Manager profile for kenan@hay (x86_64-linux).
+# Role: daily-driver Hyprland/GNOME setup with curated apps, terminals,
+# theming (Catppuccin), and dev tools. Adjust module toggles below to
+# enable/disable components per host while keeping user defaults consistent.
+# ==============================================================================
 {
   # Set the state version for Home Manager
   # Configure user-specific settings here if needed
@@ -29,22 +35,20 @@
   my.desktop.hyprland.enable = true;
   my.desktop.gnome.enable = true;
   my.desktop.sway.enable = true; # VM management
+  my.desktop.niri.enable = true;
   
   # Components
   my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
-  my.user.walker.enable = false;
+  my.user.walker.enable = true;
   my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
-  my.user.swaylock.enable = false;
-  my.user.swayosd.enable = false;
-  my.user.wpaperd.enable = false;
-  my.user.waypaper.enable = false;
-  my.user.touchegg.enable = false;
   my.user.dms.enable = true;
   my.user.fusuma.enable = true;
-  my.user.blue.enable = true;
+  my.user.blue.enable = false;
+  my.user.sunsetr.enable = true;
+  my.user.ghostty.enable = true;
 
   # ============================================================================
   # Browsers
@@ -55,8 +59,6 @@
   };
   my.browser.firefox.enable = true;
   my.browser.chrome-preview.enable = true;
-  my.browser.zen.enable = true;
-  my.browser.vivaldi.enable = false;
 
   # ============================================================================
   # Communication
@@ -82,17 +84,15 @@
   # File Management
   my.user.nemo.enable = true;
   my.user.yazi.enable = true;
-  my.user.zotfiles.enable = true;
   my.user.rsync.enable = true;
-  
+
   # Productivity
   my.user.obsidian.enable = true;
   my.user.anydesk.enable = true;
   my.user.transmission.enable = true;
   
   # Clipboard
-  my.user.cliphist.enable = true;
-  my.user.copyq.enable = true;
+  my.user.copyq.enable = false;
   my.user.clipse.enable = true;
   
   # Security
@@ -107,6 +107,8 @@
   my.user.flatpak.enable = true;
   my.user.electron.enable = true;
 
+  # Night light manager (Gammastep/HyprSunset only)
+
   # ============================================================================
   # Development
   # ============================================================================
@@ -116,7 +118,6 @@
   # Terminals
   my.user.kitty.enable = true;
   my.user.wezterm.enable = true;
-  my.user.foot.enable = true;
   my.user.tmux.enable = true;
   my.user.sesh.enable = true;
   

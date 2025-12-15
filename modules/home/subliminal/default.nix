@@ -1,10 +1,7 @@
 # modules/home/subliminal/default.nix
 # ==============================================================================
-# Subliminal Subtitle Downloader Configuration
-# ==============================================================================
-# This module provides a placeholder for Subliminal configuration.
-# The actual configuration is managed via a SOPS-encrypted TOML file.
-#
+# Home module for Subliminal subtitle fetcher.
+# Installs tool and centralizes subtitle provider config via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, ... }:

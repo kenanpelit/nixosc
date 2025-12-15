@@ -1,12 +1,8 @@
-# modules/core/bluetooth/default.nix
+# modules/nixos/bluetooth/default.nix
 # ==============================================================================
-# Bluetooth Configuration
-# ==============================================================================
-# Configures Bluetooth stack and services for physical hosts.
-# - Enables hardware support
-# - Configures settings (Experimental features)
-# - Enables Blueman service
-#
+# NixOS Bluetooth stack: BlueZ services, power tweaks, controller defaults.
+# One place to enable/disable adapters and audio integration per machine.
+# Keep BT policy here to avoid scattered per-host overrides.
 # ==============================================================================
 
 { pkgs, lib, config, ... }:

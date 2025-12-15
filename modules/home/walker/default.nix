@@ -1,7 +1,9 @@
 # modules/home/walker/default.nix
 # ==============================================================================
-# Walker Launcher & Elephant Backend - Home Manager Module
+# Home module for Walker launcher integration.
+# Installs walker and applies user configuration/themes via Home Manager.
 # ==============================================================================
+
 { config, lib, pkgs, inputs, ... }:
 
 let

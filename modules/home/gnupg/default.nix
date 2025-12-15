@@ -1,7 +1,9 @@
 # modules/home/gnupg/default.nix
 # ==============================================================================
-# GnuPG Configuration
+# Home module for GnuPG: agent, keyring, and gpg.conf defaults.
+# Keep GPG setup consistent by managing it here via Home Manager.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.gnupg;

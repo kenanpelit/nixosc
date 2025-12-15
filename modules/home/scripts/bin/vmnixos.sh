@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# vmnixos.sh - NixOS VM başlatıcısı (virt-manager/qemu)
+# NixOS imajını qemu/virt-manager ile açıp workspace yönlendirmesi yapar.
 
 #===============================================================================
 #

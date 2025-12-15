@@ -1,42 +1,7 @@
 # modules/home/flatpak/default.nix
 # ==============================================================================
-# Flatpak Application Management (User-level)
-# ==============================================================================
-#
-# Module:      modules/home/flatpak
-# Purpose:     User-level Flatpak package management via nix-flatpak
-# Created:     2025-10-30
-#
-# Features:
-#   - Declarative Flatpak application management
-#   - Automatic repository configuration (Flathub)
-#   - Per-user application isolation and sandboxing
-#   - Integration with NixOS declarative configuration
-#
-# Boot Behavior:
-#   - Installation service delayed 90 seconds after boot
-#   - Prevents boot-time network errors
-#   - Auto-update disabled (manual updates only)
-#
-# Architecture:
-#   nix-flatpak (Home Manager module) → Flatpak → User applications
-#
-# Usage:
-#   Add Flatpak applications to the packages list below
-#   Applications are automatically installed on home-manager switch
-#
-# Manual Flatpak Commands:
-#   flatpak list                    # List installed applications
-#   flatpak search <app>            # Search for applications
-#   flatpak install flathub <app>   # Install application manually
-#   flatpak update                  # Update all applications
-#   flatpak uninstall <app>         # Remove application
-#
-# References:
-#   - nix-flatpak: https://github.com/gmodena/nix-flatpak
-#   - Flathub: https://flathub.org
-#   - Flatpak documentation: https://docs.flatpak.org
-#
+# Home module for user-level Flatpak tweaks (remotes/overrides).
+# Keep per-user Flatpak config here instead of editing ~/.local manually.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:

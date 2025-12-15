@@ -1,6 +1,7 @@
 # modules/home/hyprland/hyprland.nix
 # ==============================================================================
-# Hyprland Main Configuration
+# Hyprland main module: enables compositor, sets env vars, integrates plugins,
+# and imports detailed configs (binds/layout/services).
 # ==============================================================================
 { inputs, pkgs, config, lib, ... }:
 let
@@ -18,25 +19,7 @@ lib.mkIf cfg.enable {
     "xdg-desktop-autostart.target"
   ];
   
-  # Dedicated clipboard history watcher service
-  systemd.user.services.cliphist-watcher = {
-    Unit = {
-      Description = "Cliphist clipboard watcher";
-      After = [ "graphical-session.target" "hyprland-session.target" ];
-      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
-    };
-
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
-      Restart = "always";
-      RestartSec = 2;
-    };
-
-    Install = {
-      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
-    };
-  };
+  # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 
   # Auto-run bluetooth_toggle shortly after session start
   systemd.user.services.bluetooth-auto-toggle = {
@@ -51,6 +34,22 @@ lib.mkIf cfg.enable {
       ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && /etc/profiles/per-user/${config.home.username}/bin/bluetooth_toggle'";
     };
 
+    Install = {
+      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
+    };
+  };
+
+  # Run hypr-init at session start to normalize monitors and audio
+  systemd.user.services.hypr-init = {
+    Unit = {
+      Description = "Hyprland session bootstrap (monitors + audio)";
+      After = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-init'";
+    };
     Install = {
       WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
     };

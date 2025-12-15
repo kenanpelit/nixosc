@@ -1,12 +1,8 @@
-# modules/core/audio/default.nix
+# modules/nixos/audio/default.nix
 # ==============================================================================
-# Audio Configuration
-# ==============================================================================
-# Configures the PipeWire audio stack.
-# - Enables PipeWire service
-# - Enables ALSA, PulseAudio, and JACK compatibility
-# - Enables 32-bit ALSA support
-#
+# NixOS audio stack: PipeWire core with ALSA/Pulse/JACK shims and 32-bit support.
+# Central place to toggle sound services and compatibility layers per host.
+# Keep sound policy here instead of scattering overrides across modules.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:

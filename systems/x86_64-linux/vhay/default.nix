@@ -1,6 +1,8 @@
 # systems/x86_64-linux/vhay/default.nix
 # ==============================================================================
-# VHAY Virtual Machine: Main Host Configuration
+# vHAY virtual machine host config.
+# Imports hardware config; module imports handled via flake/Snowfall.
+# Set VM metadata and services/desktops toggles below.
 # ==============================================================================
 { pkgs, lib, inputs, ... }:
 

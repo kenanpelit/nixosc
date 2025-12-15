@@ -1,7 +1,9 @@
 # modules/home/git/default.nix
 # ==============================================================================
-# Git Configuration - Complete with All Oh-My-Zsh Git Plugin Aliases
+# Home module for Git: global config, aliases, and helpers.
+# Manage user git settings here instead of scattered .gitconfig edits.
 # ==============================================================================
+
 { pkgs, lib, config, ... }:
 let 
   cfg = config.my.user.git;

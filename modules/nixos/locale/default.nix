@@ -1,12 +1,8 @@
-# modules/core/locale/default.nix
+# modules/nixos/locale/default.nix
 # ==============================================================================
-# Locale & Localization
-# ==============================================================================
-# Configures system localization, time zone, and console settings.
-# - Time zone (Europe/Istanbul)
-# - Locale settings (en_US with tr_TR formats)
-# - Console keyboard layout (Turkish F) and font
-#
+# NixOS locale/timezone defaults: language, keymap, and time settings.
+# Define internationalization once for all hosts here.
+# Keep locale policy consistent by adjusting this module.
 # ==============================================================================
 
 { pkgs, ... }:

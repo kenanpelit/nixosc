@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# rsync_backup.sh - Etkileşimli rsync yedekleyici
+# Kaynak/hedef seçimi, exclude listesi ve loglama ile güvenli senkronizasyon yapar.
 
 ###############################################################################
 # Betik Adı     : backup.sh

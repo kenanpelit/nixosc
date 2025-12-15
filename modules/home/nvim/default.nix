@@ -1,7 +1,9 @@
-# modules/home/nvim/defaults.nix
+# modules/home/nvim/default.nix
 # ==============================================================================
-# Neovim Configuration - LazyVim Edition with Tokyo Night Theme + Gemini
+# Home module for Neovim: installs nvim and manages user config/plugins.
+# Centralize editor settings here instead of ad-hoc init.lua in $HOME.
 # ==============================================================================
+
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.nvim;

@@ -70,17 +70,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
     # ==========================================================================
     # Desktop Environment (Hyprland)
     # ==========================================================================
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/efe665b4558370af6e89921c487cd92890183961"; # 1209 - Updated commit
-#      url = "github:hyprwm/hyprland/a5b7c91329313503e8864761f24ef43fb630f35c"; # 1208 - Updated commit
-      #      url = "github:hyprwm/hyprland/c26e91f074a1ffa5a7ef7fc0da247bcecada50ea"; # 1207 - Updated commit
-      #      url = "github:hyprwm/hyprland/f8d5aad1a1f61e1b6443c27394a38c8c54d39e9e"; # 1207 - Updated commit
-      #      url = "github:hyprwm/hyprland/222dbe99d0d2d8a61f3b3202f8ef1794b0b081b7"; # 1206 - Updated commit
-      #      url = "github:hyprwm/hyprland/6a1daff5f30ea71e6d678554aa59fc5670864d24"; # 1205 - Updated commit
+      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
     };
 
     hypr-contrib = {
@@ -120,12 +117,13 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/bc27253cbf6add52fbb8561aafb8169ac2e0b6ca"; # 1209 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/deaac3fdf0e17ee88ed9e6393975193413e9625f"; # 1208 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/52fcd3ad98b3441de222bf465645f1c560fcb7c6"; # 1208 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/cd580090dc62b6138797e1aa923fa3235732c857"; # 1208 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/c570e20308ef4714a6c591a2da2f7989455da021"; # 1208 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/308c8c3ea77300c463ba4ece1a41ec9a3f2e5701"; # 1207 - Updated commit
+      # NOTE: Bu input buildGoModule vendorHash sebebiyle bazen "hash mismatch" ile kırılabiliyor.
+      # Çalışan (vendorHash uyumlu) commit:
+      # Son commit (şu an vendorHash mismatch veriyorsa tekrar açma):
+      url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995"; # 1214 - Stable commit
+      #      url = "github:AvengeMedia/DankMaterialShell/e4e20fb43a4627ab6d1581b14d6f7b5dab7d0820"; # 1213 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/ca39196f132a86eef58c3f5365c7c1058f081a8a"; # 1213 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/b2ac9c6c1ac6625b266a242720e02960ffad13d2"; # 1213 - Updated commit
     };
 
     deadnix = {
@@ -146,10 +144,10 @@
     # ==========================================================================
     # Applications
     # ==========================================================================
-    walker.url = "github:abenz1267/walker/v2.11.3";
+    walker.url = "github:abenz1267/walker/v2.12.2";
     
     elephant = {
-      url = "github:abenz1267/elephant/v2.16.1";
+      url = "github:abenz1267/elephant/v2.17.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -163,8 +161,6 @@
       inputs.nixpkgs.follows = "nixpkgs"; 
     };
 
-    zen-browser.url = "github:0xc000022070/zen-browser-flake";
-    
     spicetify-nix = {
       url = "github:gerg-l/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -215,8 +211,6 @@
         systems.modules.nixos = with inputs; [
           home-manager.nixosModules.home-manager
           dankMaterialShell.nixosModules.dankMaterialShell
-          catppuccin.nixosModules.catppuccin
-          sops-nix.nixosModules.sops
           nix-flatpak.nixosModules.nix-flatpak
         ];
 

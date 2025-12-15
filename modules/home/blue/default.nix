@@ -1,27 +1,19 @@
 # modules/home/blue/default.nix
 # ==============================================================================
-# Hypr Blue Manager Service Configuration
+# Home module for Hypr Blue Manager: unified night-light control
+# (Gammastep / Hyprsunset). Provides per-user service and presets.
 # ==============================================================================
-# Unified Gammastep + HyprSunset + wl-gammarelay service for automatic
-# color temperature adjustment in Hyprland.
-#
-# Features:
-#   - Single service manages all three tools
-#   - Each tool can be enabled/disabled independently
-#   - Configurable temperature profiles (4000K, 3500K, 3000K)
-#   - Time-based automatic adjustments
-#
-# Author: Kenan Pelit
-# Version: 3.0.0
-# ==============================================================================
-{ config, lib, pkgs, username, ... }:
+
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.my.user.blue;
+  username = config.home.username;
+  sunsetrEnabled = lib.attrByPath [ "my" "user" "sunsetr" "enable" ] false config;
 in
 {
   options.my.user.blue = {
-    enable = lib.mkEnableOption "Hypr Blue Manager servisi (Gammastep + HyprSunset + wl-gammarelay)";
+    enable = lib.mkEnableOption "Hypr Blue Manager servisi (Gammastep + HyprSunset)";
 
     package = lib.mkOption {
       type = lib.types.package;
@@ -40,12 +32,6 @@ in
       type = lib.types.bool;
       default = true;
       description = "HyprSunset'i aktif et";
-    };
-
-    enableWlGammarelay = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "wl-gammarelay'i aktif et";
     };
 
     # Temperature settings
@@ -102,33 +88,6 @@ in
       };
     };
 
-    # wl-gammarelay specific settings
-    wlGammarelay = {
-      tempDay = lib.mkOption {
-        type = lib.types.int;
-        default = cfg.temperature.day;
-        description = "wl-gammarelay gündüz sıcaklığı";
-      };
-
-      tempNight = lib.mkOption {
-        type = lib.types.int;
-        default = cfg.temperature.night;
-        description = "wl-gammarelay gece sıcaklığı";
-      };
-
-      brightness = lib.mkOption {
-        type = lib.types.float;
-        default = 1.0;
-        description = "wl-gammarelay parlaklık (0.1-1.0)";
-      };
-
-      gamma = lib.mkOption {
-        type = lib.types.float;
-        default = 1.0;
-        description = "wl-gammarelay gamma (0.1-2.0)";
-      };
-    };
-
     # Other settings
     checkInterval = lib.mkOption {
       type = lib.types.int;
@@ -137,21 +96,26 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkMerge [
+    (lib.mkIf (cfg.enable && sunsetrEnabled) {
+      warnings = [
+        "my.user.blue ve my.user.sunsetr aynı anda aktif: çakışmayı önlemek için blue.service tanımlanmayacak (sunsetr kullanılacak)."
+      ];
+    })
+
+    (lib.mkIf (cfg.enable && !sunsetrEnabled) {
     # Install required packages based on enabled tools
     home.packages = [
       cfg.package
     ] ++ lib.optionals cfg.enableGammastep [ pkgs.gammastep ]
-      ++ lib.optionals cfg.enableHyprsunset [ pkgs.hyprsunset ]
-      ++ lib.optionals cfg.enableWlGammarelay [ pkgs.wl-gammarelay-rs ];
+      ++ lib.optionals cfg.enableHyprsunset [ pkgs.hyprsunset ];
 
     # Single unified service that manages everything
     systemd.user.services.blue = {
       Unit = {
         Description = "Hypr Blue Manager - Unified Color Temperature Manager";
-        After = [ "hyprland-session.target" ] ++ lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
-        PartOf = [ "hyprland-session.target" ];
-        Wants = lib.optional cfg.enableWlGammarelay "wl-gammarelay.service";
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
       };
 
  
@@ -168,7 +132,6 @@ in
           "daemon"
           "--enable-gammastep ${lib.boolToString cfg.enableGammastep}"
           "--enable-hyprsunset ${lib.boolToString cfg.enableHyprsunset}"
-          "--enable-wlgamma ${lib.boolToString cfg.enableWlGammarelay}"
           "--temp-day ${toString cfg.temperature.day}"
           "--temp-night ${toString cfg.temperature.night}"
           "--gs-temp-day ${toString cfg.gammastep.tempDay}"
@@ -177,10 +140,6 @@ in
           "--bright-night ${toString cfg.gammastep.brightnessNight}"
           "--location ${cfg.gammastep.location}"
           "--gamma ${cfg.gammastep.gamma}"
-          "--wl-temp-day ${toString cfg.wlGammarelay.tempDay}"
-          "--wl-temp-night ${toString cfg.wlGammarelay.tempNight}"
-          "--wl-brightness ${toString cfg.wlGammarelay.brightness}"
-          "--wl-gamma ${toString cfg.wlGammarelay.gamma}"
           "--interval ${toString cfg.checkInterval}"
         ]);
 
@@ -191,39 +150,9 @@ in
         KillSignal = "SIGTERM";
       };
 
-      Install.WantedBy = [ "hyprland-session.target" ];
+      Install.WantedBy = [ "graphical-session.target" ];
     };
 
-    # Separate wl-gammarelay daemon service
-    # This ensures wl-gammarelay is always running and initialized with correct temperature
-    systemd.user.services.wl-gammarelay = lib.mkIf cfg.enableWlGammarelay {
-      Unit = {
-        Description = "wl-gammarelay - Wayland Color Temperature Daemon";
-        After = [ "hyprland-session.target" ];
-        PartOf = [ "hyprland-session.target" ];
-        Before = [ "blue.service" ];
-      };
-
-      Service = {
-        Type = "dbus";
-        BusName = "rs.wl-gammarelay";
-        ExecStart = "${pkgs.wl-gammarelay-rs}/bin/wl-gammarelay-rs";
-        
-        # Initialize with configured day temperature
-        ExecStartPost = [
-          "${pkgs.coreutils}/bin/sleep 1"
-          "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q ${toString cfg.wlGammarelay.tempDay}"
-          "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Brightness d ${toString cfg.wlGammarelay.brightness}"
-          "${pkgs.systemd}/bin/busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Gamma d ${toString cfg.wlGammarelay.gamma}"
-        ];
-
-        SuccessExitStatus = [ 0 2 ];
-        Restart = "on-failure";
-        RestartSec = 3;
-      };
-
-      Install.WantedBy = [ "hyprland-session.target" ];
-    };
-  };
+  })
+  ];
 }
-

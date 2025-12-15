@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# screenshot.sh - Wayland ekran görüntüsü aracı
+# grim/slurp ile bölge/ekran yakalar, dosya/clipboard’a kaydeder, notify gönderir.
 
 #######################################
 #

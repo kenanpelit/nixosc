@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# vpn-waybar.sh - Waybar VPN durumu/gösterge scripti
+# VPN bağlantısını kontrol eder, Waybar modülüne uygun JSON çıktısı üretir.
 
 # vpn-waybar - unified VPN status display
 # Tek çıktıda tüm VPN durumlarını gösterir

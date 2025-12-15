@@ -1,7 +1,10 @@
 # modules/home/yazi/default.nix
 # ==============================================================================
-# Yazi File Manager Configuration - Catppuccin Mocha Theme
+# Home module for Yazi TUI file manager.
+# Installs yazi and writes user config/theme via Home Manager.
+# Keep yazi tweaks here instead of editing config manually.
 # ==============================================================================
+
 { inputs, pkgs, lib, config, ... }:
 let
   cfg = config.my.user.yazi;
@@ -51,4 +54,3 @@ in
     '';
   };
 }
-

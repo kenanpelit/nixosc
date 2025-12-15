@@ -13,6 +13,8 @@ readonly WAIT_TIME=1
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
     WM_TYPE="hyprland"
+elif command -v niri &>/dev/null && [[ "$XDG_CURRENT_DESKTOP" == "niri" ]]; then
+    WM_TYPE="niri"
 elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
     WM_TYPE="gnome"
 else
@@ -44,6 +46,13 @@ if [[ "$WORKSPACE" != "0" ]]; then
             fi
         fi
         ;;
+    niri)
+        if command -v niri >/dev/null 2>&1; then
+            echo "Switching to workspace $WORKSPACE..."
+            niri msg action focus-workspace "$WORKSPACE"
+            sleep 1
+        fi
+        ;;
     gnome|*)
         if command -v wmctrl >/dev/null 2>&1; then
             TARGET=$((WORKSPACE - 1))
@@ -56,7 +65,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: profile_brave --discord --class discord --title discord"
+echo "COMMAND: profile_brave --discord --separate --class discord --title discord"
 echo "VPN MODE: $VPN_MODE"
 
 # Start application with VPN mode
@@ -65,14 +74,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude profile_brave --discord --class discord --title discord &
+                mullvad-exclude profile_brave --discord --separate --class discord --title discord &
             else
                 echo "WARNING: mullvad-exclude not found"
-                profile_brave --discord --class discord --title discord &
+                profile_brave --discord --separate --class discord --title discord &
             fi
         else
             echo "VPN not connected"
-            profile_brave --discord --class discord --title discord &
+            profile_brave --discord --separate --class discord --title discord &
         fi
         ;;
     secure|*)
@@ -81,7 +90,7 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        profile_brave --discord --class discord --title discord &
+        profile_brave --discord --separate --class discord --title discord &
         ;;
 esac
 
@@ -119,6 +128,9 @@ if [[ "$FULLSCREEN" == "true" ]]; then
     case "$WM_TYPE" in
     hyprland)
         command -v hyprctl >/dev/null 2>&1 && hyprctl dispatch fullscreen 1
+        ;;
+    niri)
+        command -v niri >/dev/null 2>&1 && niri msg action fullscreen-window
         ;;
     gnome)
         if command -v gdbus >/dev/null 2>&1; then

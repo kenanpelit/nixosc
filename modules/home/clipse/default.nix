@@ -1,7 +1,10 @@
 # modules/home/clipse/default.nix
 # ==============================================================================
-# Clipse Clipboard Manager Configuration - Catppuccin Mocha
+# Home module for Clipse clipboard helper.
+# Installs the CLI and manages user config through Home Manager.
+# Adjust behaviour here instead of manual config files.
 # ==============================================================================
+
 { config, pkgs, lib, ... }: 
 let
   cfg = config.my.user.clipse;

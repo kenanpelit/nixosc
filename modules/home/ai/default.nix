@@ -1,14 +1,10 @@
 # modules/home/ai/default.nix
 # ==============================================================================
-# AI Tools & CLI Integration
+# Home module for AI tooling: CLI wrappers and helper binaries for LLM flows.
+# Installs selected AI tools and exposes per-user settings in one place.
+# Tweak model/runtime choices here instead of scattering shell snippets.
 # ==============================================================================
-# Purpose:
-#   - Provide a unified way to enable / disable AI CLIs (Gemini, Codex).
-#   - Optionally run a local Ollama service with model presets.
-# Notes:
-#   - Core GUI / editor integration lives in other modules (e.g. nvim, browsers).
-#   - This module focuses on terminal workflows and background services.
-# ==============================================================================
+
 { config, lib, pkgs, ... }:
 with lib;
 let

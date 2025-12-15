@@ -1,7 +1,9 @@
 # modules/home/password-store/default.nix
 # ==============================================================================
-# Password Store (pass) - GPG-Based Password Management
+# Home module for pass/Password Store utilities.
+# Installs pass and related helpers; manages user config centrally.
 # ==============================================================================
+
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.user.pass;

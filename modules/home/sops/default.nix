@@ -1,6 +1,7 @@
-# modules/user-modules/sops/default.nix
+# modules/home/sops/default.nix
 # ==============================================================================
-# SOPS Home Manager Configuration
+# Home module for sops/age user-side secret management.
+# Installs sops/age tools and configures key locations via Home Manager.
 # ==============================================================================
 
 { config, lib, pkgs, inputs, ... }:

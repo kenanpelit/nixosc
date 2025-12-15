@@ -1,13 +1,8 @@
-# modules/core/nix/default.nix
+# modules/nixos/nix/default.nix
 # ==============================================================================
-# Nix System Configuration
-# ==============================================================================
-# This module configures the Nix package manager, including:
-# - Binary cache settings (substituters and public keys)
-# - Garbage collection and store optimization
-# - Experimental features (flakes)
-# - Nix Helper (nh) integration
-#
+# Nix daemon and CLI policy: gc schedules, experimental features, substituters.
+# Centralize Nix settings so builds behave consistently across hosts.
+# Tweak evaluation/build knobs here instead of host-local edits.
 # ==============================================================================
 
 { config , lib , pkgs , inputs , cacheSubstituters ? [

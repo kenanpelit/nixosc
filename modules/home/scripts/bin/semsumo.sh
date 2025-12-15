@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# semsumo.sh - Uygulama başlatıcı toplu script
+# Sık kullanılan tarayıcı/profil ve yardımcı uygulamaları doğru env ile başlatır.
 
 #===============================================================================
 #
@@ -12,7 +14,7 @@
 #   - Automatic window manager detection (Hyprland, GNOME, generic Wayland/X11)
 #   - Application startup verification with timeout (Hyprland)
 #   - Startup script generation for all profiles
-#   - Multi-browser support (Brave, Zen, Chrome)
+#   - Multi-browser support (Brave, Chrome)
 #   - VPN bypass/secure mode support
 #   - Terminal session management
 #   - Config-free operation (no external config files needed)
@@ -26,7 +28,7 @@
 readonly SCRIPT_NAME=$(basename "$0")
 readonly VERSION="8.0.0"
 # Snowfall düzenine göre start scriptleri burada tutuluyor
-readonly SCRIPTS_DIR="$HOME/.nixosc/modules/user-modules/scripts/start"
+readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
 readonly DEFAULT_FINAL_WORKSPACE="2"
@@ -78,7 +80,7 @@ declare -A DAILY_PROFILES=(
   ["brave-kenp"]="BRAVE_BROWSERS"     # Workspace 1
   ["brave-ai"]="BRAVE_BROWSERS"       # Workspace 3
   ["brave-compecta"]="BRAVE_BROWSERS" # Workspace 4
-  ["discord"]="APPS"                  # Workspace 5
+  ["webcord"]="APPS"                  # Workspace 5
   ["brave-youtube"]="BRAVE_BROWSERS"  # Workspace 7
   ["spotify"]="APPS"                  # Workspace 8
   ["ferdium"]="APPS"                  # Workspace 9
@@ -96,22 +98,37 @@ declare -A TERMINALS=(
 
 # Browser Applications - Brave - UPDATED
 declare -A BRAVE_BROWSERS=(
-  ["brave-kenp"]="profile_brave|Kenp --restore-last-session|1|secure|2|false"
-  ["brave-ai"]="profile_brave|Ai --restore-last-session|3|secure|2|false"
-  ["brave-compecta"]="profile_brave|CompecTA --restore-last-session|4|secure|2|false"
-  ["brave-whats"]="profile_brave|Whats --restore-last-session|9|secure|1|false"
-  ["brave-exclude"]="profile_brave|Exclude --restore-last-session|6|bypass|1|false"
-  ["brave-youtube"]="profile_brave|--youtube --class brave-youtube.com__-Default|7|secure|1|false"
-  ["brave-tiktok"]="profile_brave|--tiktok --class tiktok --title tiktok|6|secure|1|true"
-  ["brave-spotify"]="profile_brave|--spotify --class spotify --title spotify|8|secure|1|true"
-  ["brave-discord"]="profile_brave|--discord --class discord --title discord|5|secure|1|true"
-  ["brave-whatsapp"]="profile_brave|--whatsapp --class whatsapp --title whatsapp|9|secure|1|true"
+  ["brave-kenp"]="profile_brave|Kenp --separate --restore-last-session|1|secure|2|false"
+  ["brave-ai"]="profile_brave|Ai --separate --restore-last-session|3|secure|2|false"
+  ["brave-compecta"]="profile_brave|CompecTA --separate --restore-last-session|4|secure|2|false"
+  ["brave-whats"]="profile_brave|Whats --separate --restore-last-session|9|secure|1|false"
+  ["brave-exclude"]="profile_brave|Exclude --separate --restore-last-session|6|bypass|1|false"
+  ["brave-youtube"]="profile_brave|--youtube --separate --class brave-youtube.com__-Default|7|secure|1|false"
+  ["brave-tiktok"]="profile_brave|--tiktok --separate --class tiktok --title tiktok|6|secure|1|true"
+  ["brave-spotify"]="profile_brave|--spotify --separate --class spotify --title spotify|8|secure|1|true"
+  ["brave-discord"]="profile_brave|--discord --separate --class discord --title discord|5|secure|1|true"
+  ["brave-whatsapp"]="profile_brave|--whatsapp --separate --class whatsapp --title whatsapp|9|secure|1|true"
+)
+
+# Browser Applications - Chrome
+declare -A CHROME_BROWSERS=(
+  ["chrome-kenp"]="profile_chrome|Kenp --class Kenp|1|secure|1|false"
+  ["chrome-ai"]="profile_chrome|AI --class AI|3|secure|1|false"
+  ["chrome-compecta"]="profile_chrome|CompecTA --class CompecTA|4|secure|1|false"
+  ["chrome-whats"]="profile_chrome|Whats --class Whats|9|secure|1|false"
+)
+
+# Browser Applications - Firefox
+declare -A FIREFOX_BROWSERS=(
+  ["firefox-kenp"]="firefox|-P kenp --class Kenp --name Kenp --new-window --new-instance|1|secure|1|false"
+  ["firefox-compecta"]="firefox|-P compecta --class Compecta --name Compecta --new-window --new-instance|4|secure|1|false"
+  ["firefox-proxy"]="firefox|-P proxy --class Proxy --name Proxy --new-window --new-instance|6|bypass|1|false"
 )
 
 # Applications - UPDATED
 declare -A APPS=(
   ["discord"]="discord|-m --class=discord --title=discord|5|secure|1|true"
-  ["webcord"]="webcord|-m --class=WebCord --title=Webcord|5|secure|1|true"
+  ["webcord"]="webcord|--class=WebCord --title=Webcord|5|secure|1|false"
   ["spotify"]="spotify|--class Spotify -T Spotify|8|bypass|1|false"
   ["mpv"]="mpv|--player-operation-mode=pseudo-gui --input-ipc-server=/tmp/mpvsocket|6|bypass|1|true"
   ["ferdium"]="ferdium||9|secure|1|false"
@@ -125,6 +142,9 @@ detect_window_manager() {
   if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
     WM_TYPE="hyprland"
     log "INFO" "DETECT" "Detected Hyprland window manager"
+  elif command -v niri &>/dev/null && [[ "$XDG_CURRENT_DESKTOP" == "niri" ]]; then
+    WM_TYPE="niri"
+    log "INFO" "DETECT" "Detected Niri window manager"
   elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
     WM_TYPE="gnome"
     log "INFO" "DETECT" "Detected GNOME desktop environment"
@@ -200,14 +220,31 @@ switch_workspace() {
       fi
     fi
     ;;
+  niri)
+    if command -v niri >/dev/null 2>&1; then
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri)"
+      niri msg action focus-workspace "$workspace"
+      sleep 1
+    fi
+    ;;
   gnome)
-    if command -v wmctrl >/dev/null 2>&1; then
-      local target_workspace=$((workspace - 1))
-      log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME)"
+    local target_workspace=$((workspace - 1))
+    # Wayland'da wmctrl çalışmadığı için önce gdbus (org.gnome.Shell.Eval) deneriz.
+    if command -v gdbus >/dev/null 2>&1; then
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME via gdbus)"
+      gdbus call --session \
+        --dest org.gnome.Shell \
+        --object-path /org/gnome/Shell \
+        --method org.gnome.Shell.Eval \
+        "global.workspace_manager.get_workspace_by_index($target_workspace).activate(global.get_current_time());" \
+        >/dev/null 2>&1 || true
+      sleep 1
+    elif command -v wmctrl >/dev/null 2>&1; then
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (GNOME via wmctrl)"
       wmctrl -s "$target_workspace"
       sleep 1
     else
-      log "WARN" "WORKSPACE" "wmctrl not found - install for workspace switching"
+      log "WARN" "WORKSPACE" "GNOME workspace switching needs gdbus (preferred) or wmctrl"
     fi
     ;;
   *)
@@ -217,6 +254,26 @@ switch_workspace() {
       wmctrl -s "$target_workspace"
       sleep 1
     fi
+    ;;
+  esac
+}
+
+focus_tmuxkenp_best_effort() {
+  if [[ "$DRY_RUN" == "true" ]]; then
+    return 0
+  fi
+
+  case "$WM_TYPE" in
+  hyprland)
+    if command -v hyprctl >/dev/null 2>&1; then
+      # Önce class ile dene, olmazsa title ile yakala.
+      hyprctl dispatch focuswindow "class:^TmuxKenp$" >/dev/null 2>&1 || \
+        hyprctl dispatch focuswindow "title:^Tmux$" >/dev/null 2>&1 || true
+    fi
+    ;;
+  niri|gnome|*)
+    # Niri'de workspace 2'ye geçmek genelde yeterli (aktif pencere otomatik odaklanır).
+    true
     ;;
   esac
 }
@@ -320,10 +377,21 @@ is_app_running() {
       fi
       return 1
       ;;
-    # Zen browser profiles
-    zen-*)
-      local profile_class="${profile#zen-}"
-      if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
+    # Firefox profiles
+    firefox-kenp)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("kenp"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    firefox-compecta)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("compecta"; "i"))' >/dev/null 2>&1; then
+        return 0
+      fi
+      return 1
+      ;;
+    firefox-proxy)
+      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("proxy"; "i"))' >/dev/null 2>&1; then
         return 0
       fi
       return 1
@@ -405,9 +473,20 @@ get_class_pattern() {
   fi
 
   case "$profile" in
-  brave-*) echo "brave" ;;
-  zen-*) echo "zen" ;;
+  brave-*)
+    # If a profile name (first arg) is provided and not a flag, use it as class
+    local first_arg="${args%% *}"
+    if [[ -n "$first_arg" && "$first_arg" != -* ]]; then
+      echo "$first_arg"
+    else
+      echo "brave|brave-browser"
+    fi
+    ;;
   chrome-*) echo "chrome|Google-chrome" ;;
+  firefox-*)
+    local profile_class="${profile#firefox-}"
+    echo "${profile_class^}"
+    ;;
   discord) echo "discord|Discord" ;;
   spotify) echo "spotify|Spotify" ;;
   ferdium) echo "ferdium|Ferdium" ;;
@@ -428,6 +507,14 @@ make_fullscreen() {
       log "INFO" "FULLSCREEN" "Making window fullscreen (Hyprland)"
       sleep 1
       hyprctl dispatch fullscreen 1
+      sleep 1
+    fi
+    ;;
+  niri)
+    if command -v niri >/dev/null 2>&1; then
+      log "INFO" "FULLSCREEN" "Making window fullscreen (Niri)"
+      sleep 1
+      niri msg action fullscreen-window
       sleep 1
     fi
     ;;
@@ -462,8 +549,8 @@ parse_config() {
 get_browser_profiles() {
   case "$BROWSER_TYPE" in
   "brave") echo "BRAVE_BROWSERS" ;;
-  "zen") echo "ZEN_BROWSERS" ;;
   "chrome") echo "CHROME_BROWSERS" ;;
+  "firefox") echo "FIREFOX_BROWSERS" ;;
   *)
     log "ERROR" "BROWSER" "Invalid browser type: $BROWSER_TYPE"
     return 1
@@ -512,6 +599,8 @@ readonly WAIT_TIME=WAIT_VALUE
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
     WM_TYPE="hyprland"
+elif command -v niri &>/dev/null && [[ "$XDG_CURRENT_DESKTOP" == "niri" ]]; then
+    WM_TYPE="niri"
 elif [[ "$XDG_CURRENT_DESKTOP" == *"GNOME"* ]] || command -v gnome-shell &>/dev/null; then
     WM_TYPE="gnome"
 else
@@ -541,6 +630,13 @@ if [[ "$WORKSPACE" != "0" ]]; then
                 hyprctl dispatch workspace "$WORKSPACE"
                 sleep 1
             fi
+        fi
+        ;;
+    niri)
+        if command -v niri >/dev/null 2>&1; then
+            echo "Switching to workspace $WORKSPACE..."
+            niri msg action focus-workspace "$WORKSPACE"
+            sleep 1
         fi
         ;;
     gnome|*)
@@ -619,6 +715,9 @@ if [[ "$FULLSCREEN" == "true" ]]; then
     hyprland)
         command -v hyprctl >/dev/null 2>&1 && hyprctl dispatch fullscreen 1
         ;;
+    niri)
+        command -v niri >/dev/null 2>&1 && niri msg action fullscreen-window
+        ;;
     gnome)
         if command -v gdbus >/dev/null 2>&1; then
             gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.display.get_focus_window().make_fullscreen()" >/dev/null 2>&1
@@ -664,8 +763,8 @@ generate_all_scripts() {
     ((count++))
   done
 
-  for profile in "${!ZEN_BROWSERS[@]}"; do
-    generate_script "$profile" "${ZEN_BROWSERS[$profile]}"
+  for profile in "${!FIREFOX_BROWSERS[@]}"; do
+    generate_script "$profile" "${FIREFOX_BROWSERS[$profile]}"
     ((count++))
   done
 
@@ -738,7 +837,7 @@ ensure_windows_on_correct_workspace() {
   declare -A WINDOW_WORKSPACE_MAP=(
     ["TmuxKenp"]="2"                    # Terminal
     ["Kenp"]="1"                        # Main browser (multiple windows possible)
-    ["discord|Discord"]="5"             # Discord
+    ["discord|Discord|WebCord"]="5"     # Discord/WebCord
     ["brave-youtube.com__-Default"]="7" # YouTube
     ["spotify|Spotify"]="8"             # Spotify
     ["ferdium|Ferdium"]="9"             # Ferdium
@@ -850,8 +949,8 @@ launch_profile() {
     launch_application "$profile" "${TERMINALS[$profile]}" "terminal"
   elif [[ -v BRAVE_BROWSERS["$profile"] && "$BROWSER_TYPE" == "brave" ]]; then
     launch_application "$profile" "${BRAVE_BROWSERS[$profile]}" "brave"
-  elif [[ -v ZEN_BROWSERS["$profile"] && "$BROWSER_TYPE" == "zen" ]]; then
-    launch_application "$profile" "${ZEN_BROWSERS[$profile]}" "zen"
+  elif [[ -v FIREFOX_BROWSERS["$profile"] && "$BROWSER_TYPE" == "firefox" ]]; then
+    launch_application "$profile" "${FIREFOX_BROWSERS[$profile]}" "firefox"
   elif [[ -v CHROME_BROWSERS["$profile"] && "$BROWSER_TYPE" == "chrome" ]]; then
     launch_application "$profile" "${CHROME_BROWSERS[$profile]}" "chrome"
   elif [[ -v APPS["$profile"] ]]; then
@@ -872,7 +971,7 @@ launch_daily_profiles() {
   # 2. Main browser (workspace 1)
   # 3. AI browser (workspace 3)
   # 4. Work browser (workspace 4)
-  # 5. Discord (workspace 5)
+  # 5. WebCord (workspace 5)
   # 6. YouTube (workspace 7 - default on secondary monitor)
   # 7. Spotify (workspace 8)
   # 8. Ferdium/WhatsApp (workspace 9)
@@ -882,7 +981,7 @@ launch_daily_profiles() {
     "brave-kenp"     # WS 1: Main browser
     "brave-ai"       # WS 3: AI workspace
     "brave-compecta" # WS 4: Work
-    "discord"        # WS 5: Discord
+    "webcord"        # WS 5: WebCord
     "brave-youtube"  # WS 7: YouTube
     "spotify"        # WS 8: Spotify
     "ferdium"        # WS 9: WhatsApp/Ferdium
@@ -923,6 +1022,7 @@ launch_daily_profiles() {
   # Switch to default workspace (2 - Terminal on primary monitor)
   log "INFO" "WORKSPACE" "Switching to default workspace 2"
   switch_workspace "2"
+  focus_tmuxkenp_best_effort
 
   log "SUCCESS" "LAUNCH" "Daily profiles launched successfully"
 }
@@ -1121,7 +1221,7 @@ show_help() {
   echo
   echo -e "${BOLD}Browser Types:${NC}"
   echo "    brave                 Use Brave Browser profiles (default)"
-  echo "    zen                   Use Zen Browser profiles"
+  echo "    firefox               Use Firefox profiles"
   echo "    chrome                Use Chrome Browser profiles"
   echo
   echo -e "${BOLD}Commands:${NC}"
@@ -1172,7 +1272,7 @@ show_help() {
 #-------------------------------------------------------------------------------
 
 parse_args() {
-  if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "zen" || "$1" == "chrome") ]]; then
+  if [[ $# -gt 0 && ("$1" == "brave" || "$1" == "chrome" || "$1" == "firefox") ]]; then
     BROWSER_TYPE="$1"
     shift
   fi
@@ -1330,8 +1430,8 @@ check_dependencies() {
 
   case "$BROWSER_TYPE" in
   brave) command -v profile_brave >/dev/null 2>&1 || missing_deps+=("profile_brave") ;;
-  zen) command -v zen >/dev/null 2>&1 || missing_deps+=("zen") ;;
   chrome) command -v profile_chrome >/dev/null 2>&1 || missing_deps+=("profile_chrome") ;;
+  firefox) command -v firefox >/dev/null 2>&1 || missing_deps+=("firefox") ;;
   esac
 
   if [[ "$WM_TYPE" == "hyprland" ]] && ! command -v jq >/dev/null 2>&1; then

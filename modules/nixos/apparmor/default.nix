@@ -1,11 +1,8 @@
-# modules/core/apparmor/default.nix
+# modules/nixos/apparmor/default.nix
 # ==============================================================================
-# AppArmor Configuration
-# ==============================================================================
-# Enables AppArmor Mandatory Access Control (MAC) and provides shell aliases.
-# - Enable AppArmor
-# - Shell aliases for status and enforcement management
-#
+# NixOS AppArmor policy toggle and profile plumbing.
+# Enable/disable LSM support and manage profile loading in one place.
+# Keep confinement policy centralized instead of host-specific tweaks.
 # ==============================================================================
 
 { ... }:

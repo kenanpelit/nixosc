@@ -1,7 +1,9 @@
 # modules/home/connect/default.nix
-# =============================================================================
-# Home-Manager module: KDE Connect (Auto-enabled)
-# =============================================================================
+# ==============================================================================
+# Home module for KDE Connect/GSConnect client utilities.
+# Installs/connects per-user components for device sync.
+# Manage pairing tools here instead of manual installs.
+# ==============================================================================
 
 { config, lib, pkgs, ... }:
 let

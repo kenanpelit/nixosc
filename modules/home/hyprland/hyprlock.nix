@@ -1,6 +1,7 @@
 # modules/home/hyprland/hyprlock.nix
 # ==============================================================================
-# Hyprlock Screen Locker - Dynamic Catppuccin Theme Support
+# Hyprlock user config with Catppuccin theming and static wallpaper setup.
+# Centralize lock screen styling/options here for Hyprland sessions.
 # ==============================================================================
 # 
 # FEATURES:
@@ -24,9 +25,10 @@
 # Date:   2025-10-04
 # ==============================================================================
 
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, ... }:
 
 let
+  username = config.home.username;
   # Import Catppuccin palette for dynamic theming
   inherit (config.catppuccin) sources;
   colors = (lib.importJSON "${sources.palette}/palette.json").${config.catppuccin.flavor}.colors;

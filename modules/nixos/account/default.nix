@@ -1,9 +1,8 @@
 # modules/nixos/account/default.nix
 # ==============================================================================
-# User Account & Home Manager Integration
-# ==============================================================================
-# Manages the primary user account, groups, sudo privileges, and integrates
-# Home Manager into the NixOS configuration.
+# NixOS accounts and sudo/polkit defaults: users, groups, shells.
+# Centralizes base identities and privileges shared across hosts.
+# Tweak user/group policy here instead of duplicating in host configs.
 # ==============================================================================
 
 { pkgs, lib, config, inputs, ... }:
@@ -99,10 +98,8 @@ in
       };
 
       users.${userName} = {
-        # Import user modules and external HM modules
-        imports = [ 
-          inputs.catppuccin.homeModules.catppuccin
-        ]; 
+        # Import user modules (Catppuccin HM module is pulled via my.user.catppuccin)
+        imports = [];
 
         home = {
           username      = userName;

@@ -1,12 +1,8 @@
-# modules/core/sessions/default.nix
+# modules/nixos/sessions/default.nix
 # ==============================================================================
-# Desktop Session Definitions
-# ==============================================================================
-# Configures custom Wayland sessions for GDM.
-# - Hyprland (Optimized): Runs via hyprland_tty script
-# - GNOME (NixOS): Runs via gnome_tty script
-# - Installs necessary packages for enabled sessions (Hyprland, portals)
-#
+# NixOS session definitions for DE/WM entries and login sessions.
+# Register available sessions centrally for all display managers.
+# Keep session metadata consistent by editing this file.
 # ==============================================================================
 
 { pkgs, lib, inputs, config, ... }:
@@ -60,6 +56,21 @@ let
     '';
     passthru.providedSessions = [ "gnome-nixos" ];
   };
+
+  niriSession = pkgs.writeTextFile {
+    name = "niri-session";
+    destination = "/share/wayland-sessions/niri.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=Niri (Optimized)
+      Comment=Scrollable-tiling Wayland compositor (via niri_tty)
+      Exec=/etc/profiles/per-user/${username}/bin/niri_tty
+      Type=Application
+      DesktopNames=niri
+    '';
+    passthru.providedSessions = [ "niri" ];
+  };
+
 in
 {
   config = lib.mkIf cfg.enable {
@@ -67,12 +78,19 @@ in
     services.displayManager.sessionPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
+      (lib.optional cfg.enableNiri niriSession)
     ];
 
     # Packages needed for sessions/portals
     environment.systemPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandPkg)
       (lib.optional cfg.enableHyprland hyprPortalPkg)
+      (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
+      
+      (lib.optional cfg.enableGnome gnomeSessionWrapper)
+      
+      (lib.optional cfg.enableNiri pkgs.niri)
+      (lib.optional cfg.enableNiri niriSession)
     ];
   };
 }

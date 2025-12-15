@@ -1,11 +1,9 @@
 # modules/home/obsidian/default.nix
 # ==============================================================================
-# Obsidian Note-Taking App Configuration
+# Home module for Obsidian notes client.
+# Installs the app and desktop entry; manage user settings centrally here.
 # ==============================================================================
-# Not: Paket kurulumu artık modules/home/packages/default.nix tarafında
-# yönetiliyor. Bu modül ileride Obsidian ayarlarını (theme, plugin vs.)
-# taşımak için boş bir iskelet olarak bırakıldı.
-# ==============================================================================
+
 { lib, config, ... }:
 let
   cfg = config.my.user.obsidian;

@@ -1,9 +1,8 @@
 # modules/nixos/packages/default.nix
 # ==============================================================================
-# System Core Packages
-# ==============================================================================
-# Essential infrastructure tools, services, and drivers available system-wide.
-# User applications should generally go to home-manager.
+# NixOS system package sets and overlays shared across hosts.
+# Keep baseline packages and pinned sources defined centrally here.
+# Add/remove system packages in this module for consistency.
 # ==============================================================================
 
 { pkgs, ... }:
@@ -49,6 +48,8 @@
     gnome-keyring                # Password and secret manager
     pinentry-gnome3              # Graphical PIN entry for GPG
     iptables                     # Firewall administration
+    nftables                     # Modern packet filtering framework
+    conntrack-tools              # Connection tracking userspace tools
     hblock                       # Ad-blocking via hosts file
 
     # -- Network ---------------------------------------------------------------
