@@ -66,6 +66,61 @@ let
   dmsShellPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.dms-shell;
   dmsGreeterAsset = "${inputs.dankMaterialShell}/quickshell/Modules/Greetd/assets/dms-greeter";
 
+  greeterCompositorCustomConfig =
+    if cfg.compositor == "hyprland" then
+      ''
+        env = DMS_RUN_GREETER,1
+
+        misc {
+          disable_hyprland_logo = true
+        }
+
+        input {
+          kb_layout = ${cfg.layout}
+          ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
+        }
+      ''
+    else if cfg.compositor == "niri" then
+      ''
+        hotkey-overlay {
+          skip-at-startup
+        }
+
+        environment {
+          DMS_RUN_GREETER "1"
+        }
+
+        input {
+          keyboard {
+            xkb {
+              layout "${cfg.layout}"
+              ${lib.optionalString (cfg.variant != "") "variant \"${cfg.variant}\""}
+            }
+          }
+        }
+
+        debug {
+          keep-max-bpc-unchanged
+        }
+
+        gestures {
+          hot-corners {
+            off
+          }
+        }
+
+        layout {
+          background-color "#000000"
+        }
+      ''
+    else
+      ''
+        input * {
+          xkb_layout "${cfg.layout}"
+          ${lib.optionalString (cfg.variant != "") "xkb_variant \"${cfg.variant}\""}
+        }
+      '';
+
   # NOTE: greetd 0.10.3 crashes on multiline TOML arrays (like `environment = [ ... ]`).
   # NixOS generates multiline arrays for `services.greetd.settings.*.environment`, so we must
   # avoid it and set env vars inside the command wrapper instead.
@@ -132,6 +187,7 @@ in {
     programs.dankMaterialShell.greeter = {
       enable = true;
       compositor.name = cfg.compositor;
+      compositor.customConfig = lib.mkDefault greeterCompositorCustomConfig;
       configHome = "/home/${user}";
       logs = {
         save = true;
