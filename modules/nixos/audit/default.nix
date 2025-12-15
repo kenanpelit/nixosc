@@ -16,19 +16,20 @@
   # That failure aborts `nixos-rebuild switch`.
   #
   # Workaround:
-  # - Keep kernel auditing enabled via cmdline (audit=1).
   # - Do NOT attempt to load kernel audit rules via auditctl.
+  # - Also disable kernel auditing entirely to avoid noisy kernel spam like:
+  #     `audit: error in audit_log_subj_ctx`
   #
-  # If/when the kernel supports AUDIT_SET again, you can switch back to:
+  # If/when the kernel supports AUDIT_SET again and you actually need audit logs,
+  # you can switch back to:
   #   security.audit.enable = true;
-
+  #   boot.kernelParams = [ "audit=1" "audit_backlog_limit=8192" ];
+  #
   security.audit.enable = false;
 
-  # Enable auditing early in boot (without loading rules).
+  # Disable auditing in early boot.
   boot.kernelParams = [
-    "audit=1"
-    # Backlog limit must be set at boot on this kernel.
-    "audit_backlog_limit=8192"
+    "audit=0"
   ];
 
   environment.systemPackages = [ pkgs.audit ];

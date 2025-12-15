@@ -43,11 +43,15 @@ in
       };
       Service = {
         Type = "oneshot";
+        # If the archive is missing/corrupt, do not fail the whole login with a red unit.
         ExecStart = pkgs.writeShellScript "install-tmux-fzf" ''
-          set -e
+          set -euo pipefail
           dest="$HOME/.config/tmux"
           mkdir -p "$dest"
-          ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/fzf.tar.gz" -C "$dest"
+          if ! ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/fzf.tar.gz" -C "$dest"; then
+            echo "tmux-fzf-install: failed to extract $HOME/.backup/fzf.tar.gz (continuing)" >&2
+            exit 0
+          fi
         '';
       };
       Install.WantedBy = [ "default.target" ];
