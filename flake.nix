@@ -86,8 +86,7 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # pinned (glaze override uyumlu)
-      url = "github:hyprwm/hyprland/7ccc57eb7cacded5e7a8835b705bba48963d3cb3"; # 1215 - Updated commit
-#      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e";
+      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e";
     };
 
     hypr-contrib = {
