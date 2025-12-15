@@ -330,18 +330,13 @@ ${cfg.configText}
 EOF
         else
           # If the user already started Stasis once, it may have auto-generated a
-          # config that uses `swaylock`. This repo uses DMS lock on Niri and
-          # `hyprlock` on Hyprland, so we auto-migrate the lock command in-place.
+          # config with a lock command that doesn't exist on this system.
+          # This setup locks via DMS (Niri) or hyprlock (Hyprland), so we
+          # auto-migrate `lock_screen.command` in-place when needed.
           #
           # Keep it a minimal patch (do not rewrite the whole file) unless
           # `forceConfig = true`.
           lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
-
-          if grep -q 'command[[:space:]]*"swaylock"' "$CFG_FILE"; then
-            tmp="$(mktemp)"
-            sed "s|command[[:space:]]*\\\"swaylock\\\"|command \\\"$lock_cmd\\\"|g" "$CFG_FILE" >"$tmp"
-            mv -f "$tmp" "$CFG_FILE"
-          fi
 
           # Older configs may use loginctl directly; on this setup DMS/hyprlock is
           # the actual locker, so migrate lock_screen commands to stasis-lock.
@@ -349,6 +344,44 @@ EOF
             tmp="$(mktemp)"
             sed "s|command[[:space:]]*\\\"loginctl lock-session\\\"|command \\\"$lock_cmd\\\"|g" "$CFG_FILE" >"$tmp"
             mv -f "$tmp" "$CFG_FILE"
+          fi
+
+          # For `lock_screen` blocks: if the configured command binary is missing,
+          # replace it with stasis-lock.
+          tmp="$(mktemp)"
+          changed="0"
+          in_lock="0"
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^[[:space:]]*lock[_-]screen:[[:space:]]*$ ]]; then
+              in_lock="1"
+              echo "$line" >>"$tmp"
+              continue
+            fi
+
+            if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
+              indent="''${BASH_REMATCH[1]}"
+              cmd="''${BASH_REMATCH[2]}"
+              bin="''${cmd%% *}"
+
+              # If it's not an absolute path and the binary doesn't exist, migrate.
+              if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+                continue
+              fi
+            fi
+
+            if [[ "$in_lock" == "1" && "$line" =~ ^[[:space:]]*end[[:space:]]*$ ]]; then
+              in_lock="0"
+            fi
+
+            echo "$line" >>"$tmp"
+          done <"$CFG_FILE"
+
+          if [[ "$changed" == "1" ]]; then
+            mv -f "$tmp" "$CFG_FILE"
+          else
+            rm -f "$tmp"
           fi
 
           # Ensure we use process-based lock detection when using stasis-lock.
