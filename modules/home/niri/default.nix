@@ -400,7 +400,8 @@ let
     }
 
     // --- Workspace Assignments (semsumo profiles) ---
-    window-rule { match app-id=r#"^(discord|WebCord)$"#; open-on-workspace "5"; }
+    window-rule { match app-id=r#"^discord$"#; open-on-workspace "5"; }
+    window-rule { match app-id=r#"^WebCord$"#; open-on-workspace "5"; open-maximized true; }
     window-rule { match app-id=r#"^(spotify|Spotify|com\.spotify\.Client)$"#; open-on-workspace "8"; }
     window-rule { match app-id=r#"^audacious$"#; open-on-workspace "5"; }
     window-rule { match app-id=r#"^transmission$"#; open-on-workspace "7"; }
@@ -409,7 +410,7 @@ let
     // Brave custom classes (semsumo daily)
     // Not: match app-id regex'i "herhangi bir yerde" eşleşir; bu yüzden ^...$ ile sabitliyoruz.
     window-rule { match app-id=r#"^Kenp$"#; open-on-workspace "1"; }
-    window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; }
+    window-rule { match app-id=r#"^Ai$"#; open-on-workspace "3"; open-maximized true; }
     window-rule { match app-id=r#"^CompecTA$"#; open-on-workspace "4"; }
     window-rule { match app-id=r#"^brave-youtube\.com__-Default$"#; open-on-workspace "7"; open-maximized true; }
     window-rule { match app-id=r#"^ferdium$"#; open-on-workspace "9"; }

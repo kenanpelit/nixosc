@@ -7,7 +7,7 @@ readonly APP_TIMEOUT=4
 readonly CHECK_INTERVAL=1
 readonly WORKSPACE=5
 readonly VPN_MODE="secure"
-readonly FULLSCREEN=true
+readonly FULLSCREEN=false
 readonly WAIT_TIME=1
 
 # Detect window manager
