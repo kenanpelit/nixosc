@@ -40,6 +40,47 @@ let
   # ----------------------------------------------------------------------------
   # Rule helpers (reduce duplication / make intent clearer)
   # ----------------------------------------------------------------------------
+  # Niri, tek bir `binds {}` bloğu içinde aynı key'i iki kez görürse hata veriyor.
+  # (Includes arası çakışmaları ise niri otomatik "son tanım kazanır" şeklinde çözüyor.)
+  #
+  # Bu helper, aynı dosyada yanlışlıkla duplike edilen tek satırlık keybind'leri
+  # (örn. `Mod+Alt+Left { ... }`) dedupe eder ve *son* tanımı bırakır.
+  dedupeSingleLineBinds =
+    bindsText:
+    let
+      lines = lib.splitString "\n" bindsText;
+      isBindLine =
+        line:
+        let
+          trimmed = lib.strings.trimLeft line;
+        in
+        lib.hasInfix "{" line
+        && !(lib.hasPrefix "//" trimmed)
+        && !(lib.hasPrefix "binds" trimmed);
+      bindKey =
+        line:
+        let
+          m = builtins.match "^[[:space:]]*([^[:space:]]+)[[:space:]].*$" line;
+        in
+        if m == null then null else builtins.elemAt m 0;
+      folded =
+        lib.foldr
+          (line: acc:
+            if !isBindLine line then
+              { inherit (acc) seen; out = [ line ] ++ acc.out; }
+            else
+              let
+                key = bindKey line;
+              in
+              if key == null || builtins.elem key acc.seen then
+                acc
+              else
+                { seen = [ key ] ++ acc.seen; out = [ line ] ++ acc.out; })
+          { seen = [ ]; out = [ ]; }
+          lines;
+    in
+    lib.concatStringsSep "\n" folded.out;
+
   mkFixedFloatingProps =
     {
       w,
@@ -163,7 +204,7 @@ let
 
   # 2. Keybindings: Full DMS IPC integration + Niri Core
   # WRAPPED IN "binds {}" BLOCK AND ADDED SEMICOLONS
-  dmsBinds = ''
+  dmsBindsRaw = ''
     binds {
       // ========================================================================
       // DANK MATERIAL SHELL (DMS) - IPC BINDINGS
@@ -368,6 +409,8 @@ let
       Mod+Shift+9 { move-column-to-workspace "9"; }
     }
   '';
+
+  dmsBinds = dedupeSingleLineBinds dmsBindsRaw;
 
   # 3. Rules (Window & Layer)
   dmsRules = ''
