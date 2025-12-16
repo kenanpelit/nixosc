@@ -83,8 +83,8 @@ let
   # Semsumo "daily" sınıfları / app-id'leri.
   # Bu listeyi değiştirirsen, semsumo tarafındaki `--class` değerleriyle de uyumlu tut.
   semsumoWorkspaceRules = [
-    { appId = "^discord$"; workspace = "5"; }
-    { appId = "^WebCord$"; workspace = "5"; maximize = true; }
+    { appId = "^discord$"; workspace = "5"; maximize = true; edges = true; }
+    { appId = "^WebCord$"; workspace = "5"; maximize = true; edges = true; }
     { appId = "^(spotify|Spotify|com\\.spotify\\.Client)$"; workspace = "8"; }
     { appId = "^audacious$"; workspace = "5"; }
     { appId = "^transmission$"; workspace = "7"; }
