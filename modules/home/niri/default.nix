@@ -1,34 +1,60 @@
 # modules/home/niri/default.nix
 # ==============================================================================
 # Niri Compositor Configuration - Optimized for DankMaterialShell (DMS)
+#
+# Design goals:
+# - Keep Niri config modular (KDL snippets under ~/.config/niri/dms/)
+# - Keep comments English (per user preference)
+# - Avoid duplicate keybinds: Niri rejects any duplicate binding across includes
+# - Provide optional nirius integration (daemon + CLI) without breaking validate
+#
+# Important notes:
+# - nirius provides:
+#   - niriusd (daemon)  -> must be started
+#   - nirius  (CLI)     -> used in keybinds (scratchpad/focus/move/etc.)
+# - Do NOT call scratchpad-* via niriusd; that is a daemon, not the CLI.
 # ==============================================================================
 { config, lib, pkgs, inputs, ... }:
 
 let
   cfg = config.my.desktop.niri;
-  
+
+  # ---------------------------------------------------------------------------
+  # Optional feature toggles (module-local policy)
+  #
+  # - enableNiriusBinds:
+  #   Disabled by default to prevent config validation failures due to duplicate
+  #   keybinds. Enable only after choosing non-conflicting key combos.
+  # ---------------------------------------------------------------------------
+  enableNiriusBinds = false;
+
+  # ---------------------------------------------------------------------------
   # Binary paths
+  # ---------------------------------------------------------------------------
   bins = {
     kitty = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
     niriLock = "${config.home.profileDirectory}/bin/niri-lock";
-    nirius = "${pkgs.nirius}/bin/niriusd";
-    niriswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
+
+    # nirius: daemon + CLI (keep names explicit and correct)
+    niriusd = "${pkgs.nirius}/bin/niriusd";
+    nirius  = "${pkgs.nirius}/bin/nirius";
+
+    niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
   };
 
+  # ---------------------------------------------------------------------------
   # Catppuccin color palette
+  # ---------------------------------------------------------------------------
   palette = {
-    # Accent colors
     cyan = "#74c7ec";
     sky = "#89dceb";
     mauve = "#cba6f7";
     red = "#f38ba8";
-    
-    # Surface colors
+
     surface0 = "#313244";
     surface1 = "#45475a";
-    
-    # Alpha variants
+
     skyA80 = "#89dceb80";
     mauveA80 = "#cba6f780";
     mauveFF = "#cba6f7ff";
@@ -38,13 +64,13 @@ let
   # ----------------------------------------------------------------------------
   # Window Rule Helpers
   # ----------------------------------------------------------------------------
-  
-  mkFixedFloating = { w, h, x ? null, y ? null, relativeTo ? "top-right", opacity ? null, focus ? true }:
+  mkFixedFloating =
+    { w, h, x ? null, y ? null, relativeTo ? "top-right", opacity ? null, focus ? true }:
     ''
       open-floating true;
       default-column-width { fixed ${toString w}; }
       default-window-height { fixed ${toString h}; }
-      ${lib.optionalString (x != null && y != null) 
+      ${lib.optionalString (x != null && y != null)
         ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
       min-width ${toString w};
       max-width ${toString w};
@@ -54,17 +80,20 @@ let
       ${lib.optionalString focus "open-focused true;"}
     '';
 
-  mkProportionalFloating = { w, h, x ? null, y ? null, relativeTo ? "top-right", focus ? true }:
+  mkProportionalFloating =
+    { w, h, x ? null, y ? null, relativeTo ? "top-right", focus ? true }:
     ''
       open-floating true;
       default-column-width { proportion ${toString w}; }
       default-window-height { proportion ${toString h}; }
-      ${lib.optionalString (x != null && y != null) 
+      ${lib.optionalString (x != null && y != null)
         ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
       ${lib.optionalString focus "open-focused true;"}
     '';
 
+  # ----------------------------------------------------------------------------
   # Workspace assignment rules for daily apps
+  # ----------------------------------------------------------------------------
   workspaceRules = [
     { appId = "^discord$"; workspace = "5"; maximize = true; }
     { appId = "^WebCord$"; workspace = "5"; maximize = true; }
@@ -91,29 +120,28 @@ let
   );
 
   # ----------------------------------------------------------------------------
-  # Configuration Sections
+  # Layout
   # ----------------------------------------------------------------------------
-
   layoutConfig = ''
     layout {
       gaps 5;
       center-focused-column "never";
       background-color "#00000000";
-      
+
       focus-ring {
         on;
         width 2;
         active-gradient from="${palette.cyan}" to="${palette.mauve}" angle=45;
         inactive-color "${palette.surface1}";
       }
-      
+
       border {
         on;
         width 1;
         active-color "${palette.sky}";
         inactive-color "${palette.surface0}";
       }
-      
+
       tab-indicator {
         hide-when-single-tab;
         place-within-column;
@@ -127,22 +155,25 @@ let
         inactive-color "${palette.surface1}";
         urgent-color "${palette.red}";
       }
-      
+
       insert-hint {
         color "${palette.skyA80}";
         gradient from="${palette.skyA80}" to="${palette.mauveA80}" angle=45 relative-to="workspace-view";
       }
-      
+
       preset-column-widths {
         proportion 0.33333;
         proportion 0.5;
         proportion 0.66667;
       }
-      
+
       default-column-width { proportion 0.5; }
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Keybinds - DMS Integration
+  # ----------------------------------------------------------------------------
   bindsDms = ''
     binds {
       // ========================================================================
@@ -204,6 +235,9 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Keybinds - Core (window mgmt)
+  # ----------------------------------------------------------------------------
   bindsCore = ''
     binds {
       // ========================================================================
@@ -261,7 +295,7 @@ let
       Mod+Ctrl+Right { move-column-to-monitor-right; }
       Mod+Ctrl+Up    { move-column-to-monitor-up; }
       Mod+Ctrl+Down  { move-column-to-monitor-down; }
-      
+
       // Alternative Navigation
       Mod+Page_Up       { focus-workspace-up; }
       Mod+Page_Down     { focus-workspace-down; }
@@ -272,7 +306,7 @@ let
       Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshot"; }
       Ctrl+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotScreen"; }
       Alt+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotWindow"; }
-      
+
       // Mouse Wheel
       Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
       Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
@@ -280,32 +314,42 @@ let
       Mod+WheelScrollLeft  { focus-column-left; }
 
       // ========================================================================
-      // nirius (window focusing / scratchpad-like helpers)
+      // nirius Integration (optional)
+      //
+      // WARNING:
+      // - Niri rejects duplicate keybinds across all included files.
+      // - Your previous validate error was caused by binding Mod+Grave and
+      //   Mod+Shift+Grave twice, AND by calling scratchpad via niriusd.
+      // - Enable these binds only after picking keys that do not conflict with
+      //   existing ones (Mod+Grave is already used above).
+      //
+      // Recommended "safe" defaults (unlikely to collide):
+      // - Mod+Alt+Grave / Mod+Alt+Shift+Grave
       // ========================================================================
-      // NOTE: Requires niriusd running (enabled via cfg.enableNirius).
-
-      // Focus-or-spawn: terminal
-      Mod+Shift+Return { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
-
-      // Bring Spotify to current workspace (and focus)
+      ${lib.optionalString enableNiriusBinds ''
+      Mod+Alt+Shift+Return { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
       Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
-
-      // Scratchpad toggle for the focused window (quick hide/show workflow)
-      Mod+Shift+Grave { spawn "${bins.nirius}" "scratchpad-toggle"; }
-      Mod+Grave { spawn "${bins.nirius}" "scratchpad-show"; }
-
-      // Follow-mode toggle (floating media players follow workspace switches)
-      Mod+Shift+F10 { spawn "${bins.nirius}" "toggle-follow-mode"; }
+      Mod+Alt+Shift+Grave { spawn "${bins.nirius}" "scratchpad-toggle"; }
+      Mod+Alt+Grave { spawn "${bins.nirius}" "scratchpad-show"; }
+      Mod+Alt+Shift+F10 { spawn "${bins.nirius}" "toggle-follow-mode"; }
+      ''}
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Keybinds - Custom apps
+  # ----------------------------------------------------------------------------
   bindsApps = ''
-        binds {
-          // --- Custom Applications ---
-          Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
-          Mod+Shift+A { spawn "niri-arrange-windows"; }
-          Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
-          Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+    binds {
+      // ========================================================================
+      // Custom Applications
+      // ========================================================================
+
+      Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
+      Mod+Shift+A { spawn "niri-arrange-windows"; }
+      Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+      Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+
       // Launchers
       Alt+Space { spawn "rofi-launcher"; }
       Mod+Ctrl+Space { spawn "walk"; }
@@ -337,12 +381,14 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Keybinds - MPV manager
+  # ----------------------------------------------------------------------------
   bindsMpv = ''
     binds {
       // ========================================================================
       // MPV Manager
       // ========================================================================
-
       Ctrl+Alt+1 { spawn "mpv-manager" "start"; }
       Alt+1 { spawn "mpv-manager" "playback"; }
       Alt+2 { spawn "mpv-manager" "play-yt"; }
@@ -353,6 +399,9 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Keybinds - Workspaces
+  # ----------------------------------------------------------------------------
   bindsWorkspaces = ''
     binds {
       // ========================================================================
@@ -383,18 +432,23 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Keybinds - Monitor management
+  # ----------------------------------------------------------------------------
   bindsMonitors = ''
     binds {
       // ========================================================================
       // Monitor Management
       // ========================================================================
-
       Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
       Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
       Mod+Escape { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Window rules
+  # ----------------------------------------------------------------------------
   rulesConfig = ''
     // ========================================================================
     // Window Rules
@@ -417,7 +471,7 @@ let
       match app-id=r#"^org\.quickshell$"#;
       open-floating true;
     }
-    
+
     // Variable Refresh Rate
     window-rule {
       match app-id=r#"^mpv$"#;
@@ -430,19 +484,20 @@ let
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // MPV
+    // MPV (non-PiP)
     window-rule {
       match app-id=r#"^mpv$"#;
       exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
+    // MPV (PiP)
     window-rule {
       match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // Dialogs
+    // Common dialogs / utilities
     window-rule {
       match title="^Open File$";
       match title="^File Upload$";
@@ -485,7 +540,7 @@ let
       ${mkFixedFloating { w = 1152; h = 864; }}
     }
 
-    // Password Prompt
+    // Keyring / password prompt
     window-rule {
       match app-id=r#"^gcr-prompter$"#;
       ${mkFixedFloating { w = 600; h = 230; x = 0; y = 96; relativeTo = "top"; }}
@@ -494,7 +549,7 @@ let
     // Workspace Assignments
     ${renderWorkspaceRules}
 
-    // Better Dialog Placement
+    // Better dialog placement
     window-rule {
       match app-id=r#"^(blueman-manager|nm-connection-editor)$"#;
       open-floating true;
@@ -519,21 +574,21 @@ let
       open-focused true;
     }
 
-    // Privacy - Block from Screencast
+    // Privacy - block from screencast
     window-rule {
       match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
       match app-id=r#"^org\.gnome\.World\.Secrets$"#;
       block-out-from "screencast";
     }
 
-    // Borderless Apps
+    // Borderless apps
     window-rule {
       match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
       match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube\.com__-Default|ferdium)$"#;
       draw-border-with-background false;
     }
 
-    // Inactive Dimming
+    // Inactive dimming
     window-rule {
       match is-active=false;
       opacity 0.95;
@@ -542,7 +597,6 @@ let
     // ========================================================================
     // Layer Rules
     // ========================================================================
-
     layer-rule {
       match namespace=r#"^dms:blurwallpaper$"#;
       place-within-backdrop true;
@@ -554,54 +608,56 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Animations
+  # ----------------------------------------------------------------------------
   animationsConfig = ''
     animations {
-      // Workspace Switching
-      workspace-switch { 
-        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; 
+      workspace-switch {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001;
       }
 
-      // Window Open/Close
-      window-open { 
-        duration-ms 150; 
-        curve "ease-out-expo"; 
+      window-open {
+        duration-ms 150;
+        curve "ease-out-expo";
       }
-      window-close { 
-        duration-ms 150; 
-        curve "ease-out-quad"; 
-      }
-
-      // Movement
-      horizontal-view-movement { 
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
-      }
-      window-movement { 
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
-      }
-      window-resize { 
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+      window-close {
+        duration-ms 150;
+        curve "ease-out-quad";
       }
 
-      // UI Animations
-      config-notification-open-close { 
-        spring damping-ratio=0.6 stiffness=1000 epsilon=0.001; 
+      horizontal-view-movement {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
       }
-      exit-confirmation-open-close { 
-        spring damping-ratio=0.6 stiffness=500 epsilon=0.01; 
+      window-movement {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
       }
-      screenshot-ui-open { 
-        duration-ms 200; 
-        curve "ease-out-quad"; 
+      window-resize {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
       }
-      overview-open-close { 
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+
+      config-notification-open-close {
+        spring damping-ratio=0.6 stiffness=1000 epsilon=0.001;
       }
-      recent-windows-close { 
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.001; 
+      exit-confirmation-open-close {
+        spring damping-ratio=0.6 stiffness=500 epsilon=0.01;
+      }
+      screenshot-ui-open {
+        duration-ms 200;
+        curve "ease-out-quad";
+      }
+      overview-open-close {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
+      }
+      recent-windows-close {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.001;
       }
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Gestures
+  # ----------------------------------------------------------------------------
   gesturesConfig = ''
     gestures {
       dnd-edge-view-scroll {
@@ -615,6 +671,9 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Recent windows
+  # ----------------------------------------------------------------------------
   recentWindowsConfig = ''
     recent-windows {
       debounce-ms 0;
@@ -632,6 +691,9 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Colors reference (documentation-only)
+  # ----------------------------------------------------------------------------
   colorsReference = ''
     // ========================================================================
     // Catppuccin Color Palette Reference
@@ -640,6 +702,9 @@ let
     // Surfaces: surface0=${palette.surface0} surface1=${palette.surface1}
   '';
 
+  # ----------------------------------------------------------------------------
+  # Hardware configuration (example)
+  # ----------------------------------------------------------------------------
   hardwareConfigDefault = ''
     // ========================================================================
     // Hardware Configuration
@@ -653,7 +718,7 @@ let
     workspace "5" { open-on-output "DP-3"; }
     workspace "6" { open-on-output "DP-3"; }
     workspace "7" { open-on-output "eDP-1"; }
-    workspace "8" { 
+    workspace "8" {
       open-on-output "eDP-1";
       layout {
         gaps 20;
@@ -682,6 +747,9 @@ let
     }
   '';
 
+  # ----------------------------------------------------------------------------
+  # Main config
+  # ----------------------------------------------------------------------------
   mainConfig = ''
     // ========================================================================
     // Niri Configuration - DankMaterialShell Edition
@@ -695,8 +763,7 @@ let
       QT_QPA_PLATFORMTHEME_QT6 "gtk3";
 
       // Use a stable SSH agent socket provided by gnome-keyring on Wayland.
-      // This prevents late-session gcr-prompter / passphrase popups caused by
-      // differing agents or changing SSH_AUTH_SOCK values across processes.
+      // This helps prevent late-session passphrase prompts and gcr-prompter popups.
       SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/keyring/ssh";
     }
 
@@ -713,13 +780,21 @@ let
     }
 
     // Startup Applications
-    // Import session variables into systemd --user so user services can see them.
+    // Export session variables into systemd --user and D-Bus activation env.
     spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET" "SSH_AUTH_SOCK";
     spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET" "SSH_AUTH_SOCK";
+
+    // Clipboard manager
     spawn-at-startup "clipse" "-listen";
+
+    // Focus preferred monitor if present (best-effort)
     spawn-at-startup "sh" "-lc" "if niri msg outputs 2>/dev/null | grep -q '(DP-3)'; then niri msg action focus-monitor DP-3; fi";
-    ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${bins.nirius}";''}
-    ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${bins.niriswitcher}";''}
+
+    // nirius daemon (required for nirius CLI commands)
+    ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${bins.niriusd}";''}
+
+    // niriswitcher (optional)
+    ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${bins.niriuswitcher}";''}
 
     // Input Configuration
     input {
@@ -790,12 +865,13 @@ in
 {
   options.my.desktop.niri = {
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
-    
+
     package = lib.mkOption {
       type = lib.types.package;
-      default = if inputs ? niri && inputs.niri ? packages
-                then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
-                else pkgs.niri;
+      default =
+        if inputs ? niri && inputs.niri ? packages
+        then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
+        else pkgs.niri;
       description = "Niri compositor package";
     };
 
@@ -825,7 +901,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ cfg.package ]
+    home.packages =
+      [ cfg.package ]
       ++ lib.optional cfg.enableNirius pkgs.nirius
       ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher;
 
@@ -833,7 +910,7 @@ in
     xdg.configFile."niri/config.kdl".text = mainConfig;
 
     # Modular DMS Configurations
-    xdg.configFile."niri/dms/hardware.kdl".text = 
+    xdg.configFile."niri/dms/hardware.kdl".text =
       if cfg.enableHardwareConfig then cfg.hardwareConfig else "";
     xdg.configFile."niri/dms/layout.kdl".text = layoutConfig;
     xdg.configFile."niri/dms/binds-core.kdl".text = bindsCore;
@@ -847,6 +924,9 @@ in
     xdg.configFile."niri/dms/gestures.kdl".text = gesturesConfig;
     xdg.configFile."niri/dms/recent-windows.kdl".text = recentWindowsConfig;
     xdg.configFile."niri/dms/colors.kdl".text = colorsReference;
-    xdg.configFile."niri/dms/alttab.kdl".text = ""; # Deprecated placeholder
+
+    # Deprecated placeholder (kept to avoid stale references)
+    xdg.configFile."niri/dms/alttab.kdl".text = "";
   };
 }
+
