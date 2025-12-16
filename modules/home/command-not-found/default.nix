@@ -63,7 +63,9 @@ in
       cache="$HOME/.cache/nix-index"
       dest="$cache/files"
       # Only download if missing or corrupt
-      if [ ! -f "$dest" ] || ! ${pkgs.nix-index}/bin/nix-locate --db "$cache" --top-level coreutils >/dev/null 2>&1; then
+      # NOTE: `nix-locate` stores the DB under the directory passed to `--db`.
+      # Use a lightweight query to detect a valid DB without doing a full refresh.
+      if [ ! -f "$dest" ] || ! ${pkgs.nix-index}/bin/nix-locate --db "$cache" --minimal --package '^coreutils$' 'bin/ls' >/dev/null 2>&1; then
         mkdir -p "$cache"
         tmp="$cache/files.tmp"
         # Never block HM activation on a slow network; fail fast and continue.
