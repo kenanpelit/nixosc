@@ -274,7 +274,7 @@ update_niri() {
 }
 
 update_dank() {
-  update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "main" "DankMaterialShell"
+  update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "master" "DankMaterialShell"
 }
 
 # ---------------------------------------------------------------------------
