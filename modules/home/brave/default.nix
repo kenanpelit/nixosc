@@ -117,6 +117,17 @@ in
       description = "Brave profile directory name (e.g. \"Default\", \"Profile 1\").";
     };
 
+    defaultProfileName = lib.mkOption {
+      type = lib.types.str;
+      default = "Kenp";
+      description = ''
+        Human-friendly Brave profile name as shown in Brave UI (Local State).
+
+        This is used by profile-based launchers (e.g. `profile_brave Kenp ...`)
+        when we need a deterministic default target for external links.
+      '';
+    };
+
     defaultDesktopFile = lib.mkOption {
       type = lib.types.str;
       default = "brave-browser.desktop";
@@ -201,18 +212,18 @@ in
     };
 
     # -------------------------------------------------------------------------
-    # Optional profile desktop entry: Brave (Kenp)
+    # Optional profile desktop entry: Brave (profile_brave default)
     # -------------------------------------------------------------------------
     # This is used when `defaultDesktopFile = "brave-kenp.desktop"`.
     #
-    # It routes xdg-open/http/https into your Kenp profile, preventing the
+    # It routes xdg-open/http/https into your chosen default profile, preventing the
     # generic `brave-browser` instance from spawning on external link clicks.
     xdg.desktopEntries.brave-kenp = {
-      name = "Brave (Kenp)";
+      name = "Brave (${config.my.browser.brave.defaultProfileName})";
       genericName = "Web Browser";
       categories = [ "Network" "WebBrowser" ];
       terminal = false;
-      exec = "profile_brave Kenp --separate %U";
+      exec = "profile_brave ${config.my.browser.brave.defaultProfileName} --separate %U";
       mimeType = [
         "x-scheme-handler/http"
         "x-scheme-handler/https"
@@ -222,7 +233,7 @@ in
         "x-scheme-handler/unknown"
       ];
       settings = {
-        StartupWMClass = "Kenp";
+        StartupWMClass = config.my.browser.brave.defaultProfileName;
       };
     };
 
@@ -328,9 +339,15 @@ EOF
     # Use optionalAttrs to keep types correct.
 
     home.sessionVariables =
-      # Only set BROWSER if we want Brave as default
+      # Only set these if we want Brave as default
       (lib.optionalAttrs config.my.browser.brave.setAsDefault {
-        BROWSER = lib.mkDefault "brave-launcher";
+        # Prefer mime/desktop routing instead of hard-calling Brave. This avoids
+        # extra instances when some apps respect $BROWSER.
+        BROWSER = lib.mkDefault "xdg-open";
+
+        # Helps Chromium-family pick the correct desktop entry for relaunch and
+        # external link handling (especially from app-mode windows).
+        CHROME_DESKTOP = lib.mkDefault config.my.browser.brave.defaultDesktopFile;
       })
       # Always-on environment variables
       // {
@@ -360,9 +377,12 @@ EOF
       name        = "Brave Browser";
       comment     = "Browse the Web with Brave";
       genericName = "Web Browser";
-      exec        = "brave-launcher %U";
+      exec        = "profile_brave ${config.my.browser.brave.defaultProfileName} --separate %U";
       icon        = "brave-browser";
       categories  = [ "Network" "WebBrowser" ];
+      settings = {
+        StartupWMClass = config.my.browser.brave.defaultProfileName;
+      };
 
       mimeType = [
         "text/html"
@@ -384,11 +404,11 @@ EOF
       actions = {
         "new-window" = {
           name = "New Window";
-          exec = "brave-launcher --new-window";
+          exec = "profile_brave ${config.my.browser.brave.defaultProfileName} --separate --new-window";
         };
         "new-private-window" = {
           name = "New Private Window";
-          exec = "brave-launcher --incognito";
+          exec = "profile_brave ${config.my.browser.brave.defaultProfileName} --separate --incognito";
         };
       };
     };
