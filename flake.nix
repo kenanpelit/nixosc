@@ -101,10 +101,11 @@
 
     niri = {
       # pinned upstream commit
-      url = "github:YaLTeR/niri/7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
       inputs.nixpkgs.follows = "nixpkgs";
       # niri flake only needs rust-overlay for devShells; omit for end users.
       inputs.rust-overlay.follows = "";
+      url = "github:YaLTeR/niri/2641356d41199a40ccc9a2e9f61bd34d7e7c8220"; # 1216 - Updated commit
+#      url = "github:YaLTeR/niri/7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
     };
 
     # ==========================================================================
