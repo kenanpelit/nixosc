@@ -117,6 +117,19 @@ in
       description = "Brave profile directory name (e.g. \"Default\", \"Profile 1\").";
     };
 
+    defaultDesktopFile = lib.mkOption {
+      type = lib.types.str;
+      default = "brave-browser.desktop";
+      description = ''
+        Desktop entry used for XDG default browser associations (http/https/html).
+
+        If you use profile-based launchers (e.g. `profile_brave Kenp ...`) and you
+        want all external links to open into that profile instead of spawning a
+        separate `brave-browser` instance, point this to a custom desktop entry
+        like `brave-kenp.desktop`.
+      '';
+    };
+
     enableHardwareAcceleration = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -173,17 +186,43 @@ in
     xdg.mimeApps = lib.mkIf config.my.browser.brave.setAsDefault {
       enable = true;
       defaultApplications = {
-        "x-scheme-handler/http"    = [ "brave-browser.desktop" ];
-        "x-scheme-handler/https"   = [ "brave-browser.desktop" ];
-        "text/html"                = [ "brave-browser.desktop" ];
-        "application/xhtml+xml"    = [ "brave-browser.desktop" ];
-        "x-scheme-handler/about"   = [ "brave-browser.desktop" ];
-        "x-scheme-handler/unknown" = [ "brave-browser.desktop" ];
-        "application/x-extension-htm"   = [ "brave-browser.desktop" ];
-        "application/x-extension-html"  = [ "brave-browser.desktop" ];
-        "application/x-extension-shtml" = [ "brave-browser.desktop" ];
-        "application/x-extension-xht"   = [ "brave-browser.desktop" ];
-        "application/x-extension-xhtml" = [ "brave-browser.desktop" ];
+        "x-scheme-handler/http"    = [ config.my.browser.brave.defaultDesktopFile ];
+        "x-scheme-handler/https"   = [ config.my.browser.brave.defaultDesktopFile ];
+        "text/html"                = [ config.my.browser.brave.defaultDesktopFile ];
+        "application/xhtml+xml"    = [ config.my.browser.brave.defaultDesktopFile ];
+        "x-scheme-handler/about"   = [ config.my.browser.brave.defaultDesktopFile ];
+        "x-scheme-handler/unknown" = [ config.my.browser.brave.defaultDesktopFile ];
+        "application/x-extension-htm"   = [ config.my.browser.brave.defaultDesktopFile ];
+        "application/x-extension-html"  = [ config.my.browser.brave.defaultDesktopFile ];
+        "application/x-extension-shtml" = [ config.my.browser.brave.defaultDesktopFile ];
+        "application/x-extension-xht"   = [ config.my.browser.brave.defaultDesktopFile ];
+        "application/x-extension-xhtml" = [ config.my.browser.brave.defaultDesktopFile ];
+      };
+    };
+
+    # -------------------------------------------------------------------------
+    # Optional profile desktop entry: Brave (Kenp)
+    # -------------------------------------------------------------------------
+    # This is used when `defaultDesktopFile = "brave-kenp.desktop"`.
+    #
+    # It routes xdg-open/http/https into your Kenp profile, preventing the
+    # generic `brave-browser` instance from spawning on external link clicks.
+    xdg.desktopEntries.brave-kenp = {
+      name = "Brave (Kenp)";
+      genericName = "Web Browser";
+      categories = [ "Network" "WebBrowser" ];
+      terminal = false;
+      exec = "profile_brave Kenp --separate %U";
+      mimeType = [
+        "x-scheme-handler/http"
+        "x-scheme-handler/https"
+        "text/html"
+        "application/xhtml+xml"
+        "x-scheme-handler/about"
+        "x-scheme-handler/unknown"
+      ];
+      settings = {
+        StartupWMClass = "Kenp";
       };
     };
 
