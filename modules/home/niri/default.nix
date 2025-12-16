@@ -675,6 +675,11 @@ let
       ELECTRON_OZONE_PLATFORM_HINT "auto";
       QT_QPA_PLATFORMTHEME "gtk3";
       QT_QPA_PLATFORMTHEME_QT6 "gtk3";
+
+      // Use a stable SSH agent socket provided by gnome-keyring on Wayland.
+      // This prevents late-session gcr-prompter / passphrase popups caused by
+      // differing agents or changing SSH_AUTH_SOCK values across processes.
+      SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/keyring/ssh";
     }
 
     cursor {
@@ -690,8 +695,9 @@ let
     }
 
     // Startup Applications
-    spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
-    spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
+    // Import session variables into systemd --user so user services can see them.
+    spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET" "SSH_AUTH_SOCK";
+    spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET" "SSH_AUTH_SOCK";
     spawn-at-startup "clipse" "-listen";
     spawn-at-startup "sh" "-lc" "if niri msg outputs 2>/dev/null | grep -q '(DP-3)'; then niri msg action focus-monitor DP-3; fi";
     ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${bins.nirius}";''}
