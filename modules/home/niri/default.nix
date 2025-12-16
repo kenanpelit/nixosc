@@ -282,18 +282,12 @@ let
   '';
 
   bindsApps = ''
-    binds {
-      // ========================================================================
-      // Custom Applications
-      // ========================================================================
-
-      // Daily Apps
-      Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
-
-      // Column Width
-      Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
-      Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
-
+        binds {
+          // --- Custom Applications ---
+          Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
+          Mod+Shift+A { spawn "niri-arrange-windows"; }
+          Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+          Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
       // Launchers
       Alt+Space { spawn "rofi-launcher"; }
       Mod+Ctrl+Space { spawn "walk"; }

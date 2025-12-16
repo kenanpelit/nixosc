@@ -74,3 +74,4 @@ declare -A RULES=(
           fi
       done  
   echo "Done."
+notify-send "Niri Arranger" "Windows rearranged successfully!"
