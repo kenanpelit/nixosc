@@ -53,7 +53,7 @@ let
         line:
         (builtins.match ".*\\{.*" line != null)
         && (builtins.match "^[[:space:]]*//" line == null)
-        && (builtins.match "^[[:space:]]*binds\\b" line == null);
+        && (builtins.match "^[[:space:]]*binds([[:space:]]|\\{|$)" line == null);
       bindKey =
         line:
         let
