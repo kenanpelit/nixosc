@@ -57,6 +57,7 @@
   my.browser.brave = {
     enable = true;
     setAsDefault = true;
+    defaultProfileName = "Kenp";
     defaultDesktopFile = "brave-kenp.desktop";
   };
   my.browser.firefox.enable = true;
