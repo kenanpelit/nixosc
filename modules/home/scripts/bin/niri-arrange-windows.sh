@@ -55,23 +55,22 @@ declare -A RULES=(
           if [[ "$APP_ID" == *"brave-youtube"* ]]; then TARGET_WS="7"; fi
       fi
   
-      # Move if target found
-      if [[ -n "$TARGET_WS" ]]; then
-          echo " -> Moving '$APP_ID' (ID: $ID) to Workspace '$TARGET_WS'"
-          
-          # Try move by Name (quoted)
-          if ! $NIRI action move-window-to-workspace --id "$ID" "$TARGET_WS" 2>/dev/null; then
-              echo "    Move by name failed. Trying index..."
-              # Try move by Index (unquoted, if numeric)
-              if [[ "$TARGET_WS" =~ ^[0-9]+$ ]]; then
-                   $NIRI action move-window-to-workspace --id "$ID" $TARGET_WS || echo "    Failed."
+          # Move if target found
+          if [[ -n "$TARGET_WS" ]]; then
+              echo " -> Moving '$APP_ID' (ID: $ID) to Workspace '$TARGET_WS'"
+              
+              # Try move by Name (quoted)
+              if ! $NIRI action move-window-to-workspace --window-id "$ID" "$TARGET_WS" 2>/dev/null; then
+                  echo "    Move by name failed. Trying index..."
+                  # Try move by Index (unquoted, if numeric)
+                  if [[ "$TARGET_WS" =~ ^[0-9]+$ ]]; then
+                       $NIRI action move-window-to-workspace --window-id "$ID" $TARGET_WS || echo "    Failed."
+                  else
+                       echo "    Failed."
+                  fi
               else
-                   echo "    Failed."
+                  echo "    Success."
               fi
-          else
-              echo "    Success."
           fi
-      fi
-  done
-  
+      done  
   echo "Done."
