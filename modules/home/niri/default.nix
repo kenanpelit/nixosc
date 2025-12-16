@@ -41,6 +41,7 @@ let
     nirius  = "${pkgs.nirius}/bin/nirius";
 
     niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
+    nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
   };
 
   # ---------------------------------------------------------------------------
@@ -255,7 +256,7 @@ let
       Mod+Shift+F { fullscreen-window; }
       Mod+O { toggle-window-rule-opacity; }
       Mod+R { switch-preset-column-width; }
-      Mod+Shift+Space { toggle-window-floating; }
+      // Mod+Shift+Space { toggle-window-floating; }
       Mod+Grave { switch-focus-between-floating-and-tiling; }
 
       // Column Operations
@@ -352,7 +353,9 @@ let
 
       // Launchers
       Alt+Space { spawn "rofi-launcher"; }
-      Mod+Ctrl+Space { spawn "walk"; }
+      // Mod+Ctrl+Space { spawn "walk"; }
+      Mod+Ctrl+Space { spawn "${bins.nsticky}" "sticky" "toggle-active"; }
+      Mod+Shift+Space { spawn "${bins.nsticky}" "stage" "toggle-active"; }
 
       // File Managers
       Alt+F { spawn "kitty" "-e" "yazi"; }
@@ -796,6 +799,8 @@ let
     // niriswitcher (optional)
     ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${bins.niriuswitcher}";''}
 
+    spawn-at-startup "${bins.nsticky}";
+
     // Input Configuration
     input {
       workspace-auto-back-and-forth;
@@ -904,7 +909,8 @@ in
     home.packages =
       [ cfg.package ]
       ++ lib.optional cfg.enableNirius pkgs.nirius
-      ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher;
+      ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher
+      ++ [ inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky ];
 
     # Main Configuration
     xdg.configFile."niri/config.kdl".text = mainConfig;
