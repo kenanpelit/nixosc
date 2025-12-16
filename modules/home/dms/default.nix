@@ -46,6 +46,7 @@
         "pulsarX3"
         "webSearch"
         "worldClock"
+        "NiriWindows"
       ];
       description = ''
         Plugins to ensure are installed via the DMS plugin registry. Missing ones
