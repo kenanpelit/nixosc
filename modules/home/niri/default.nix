@@ -152,15 +152,14 @@ let
       // Launchers
       Mod+Space { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
       Mod+D { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
-      Mod+Shift+D { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" "overview"; }
-      Mod+M { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
-      Mod+Shift+P { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
-      Mod+Comma { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
       Mod+N { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
       Mod+C { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle"; }
       Mod+V { spawn "${bins.dms}" "ipc" "call" "clipboard" "toggle"; }
-      Mod+Backspace { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
+      Mod+Shift+D { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" "overview"; }
+      Mod+Shift+P { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
       Mod+Ctrl+N { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
+      Mod+Comma { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
+      Mod+Backspace { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
 
       // Wallpaper & Theming
       Mod+Y { spawn "${bins.dms}" "ipc" "call" "dankdash" "wallpaper"; }
@@ -195,7 +194,6 @@ let
       // Brightness
       XF86MonBrightnessUp allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "brightness" "increment" "5" ""; }
       XF86MonBrightnessDown allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "brightness" "decrement" "5" ""; }
-      Mod+Alt+B { spawn "${bins.dms}" "ipc" "call" "brightness" "toggleExponential"; }
 
       // Help
       Mod+Slash { spawn "${bins.dms}" "ipc" "call" "keybinds" "toggle" "niri"; }
@@ -300,7 +298,7 @@ let
 
       // Special Apps
       Alt+T { spawn "start-kkenp"; }
-      Mod+Shift+M { spawn "anotes"; }
+      Mod+M { spawn "anotes"; }
 
       // Tools
       Mod+Shift+C { spawn "hyprpicker" "-a"; }
