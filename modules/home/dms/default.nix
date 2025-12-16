@@ -5,10 +5,11 @@
 # Central place to manage DMS runtime config for the user session.
 # ==============================================================================
 
-{ inputs, lib, config, pkgs, ... }:
+{ inputs, lib, ... }:
 {
   # Upstream DMS module + local splits (settings, themes)
   imports = [
+    inputs.dankMaterialShell.homeModules.dankMaterialShell.default
     ./settings.nix
     ./themes.nix
   ];
@@ -48,16 +49,8 @@
       ];
       description = ''
         Plugins to ensure are installed via the DMS plugin registry. Missing ones
-        are installed during Home Manager activation using `dms plugins install`.
+        are installed by a non-blocking user service (not during HM activation).
       '';
     };
-  };
-
-  # Stub option so settings.nix can enable the program even when upstream HM
-  # module is not imported.
-  options.programs.dankMaterialShell.enable = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = "Enable DankMaterialShell (stub option for local DMS setup).";
   };
 }
