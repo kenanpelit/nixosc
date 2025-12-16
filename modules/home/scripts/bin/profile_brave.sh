@@ -450,8 +450,9 @@ create_profile() {
 
 	log "SUCCESS" "$app_name başlatılıyor..."
 
-	# exec yerine normal çağrı
-		"$0" "$profile" --new-window --app="$app_url" \
+	# App-mode: `--app=...` zaten ayrı bir uygulama penceresi açar; `--new-window`
+	# eklemek bazı durumlarda "normal browser window" davranışını tetikleyebiliyor.
+		"$0" "$profile" --app="$app_url" \
 			--class="$app_name" --title="$app_name" "$@"
 	}
 
