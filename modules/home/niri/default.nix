@@ -26,7 +26,7 @@ let
   #   Disabled by default to prevent config validation failures due to duplicate
   #   keybinds. Enable only after choosing non-conflicting key combos.
   # ---------------------------------------------------------------------------
-  enableNiriusBinds = false;
+  enableNiriusBinds = true;
 
   # ---------------------------------------------------------------------------
   # Binary paths
