@@ -1,36 +1,34 @@
 # modules/home/niri/default.nix
 # ==============================================================================
-# Home module for Niri compositor optimized for DankMaterialShell (DMS).
+# Niri Compositor Configuration - Optimized for DankMaterialShell (DMS)
 # ==============================================================================
 { config, lib, pkgs, inputs, ... }:
 
 let
   cfg = config.my.desktop.niri;
   
-  # Binaries
-  kittyCmd = "${pkgs.kitty}/bin/kitty";
-  dmsCmd = "${config.home.profileDirectory}/bin/dms";
-  niriLockCmd = "${config.home.profileDirectory}/bin/niri-lock";
-  niriusCmd = "${pkgs.nirius}/bin/niriusd";
-  niriswitcherCmd = "${pkgs.niriswitcher}/bin/niriswitcher";
+  # Binary paths
+  bins = {
+    kitty = "${pkgs.kitty}/bin/kitty";
+    dms = "${config.home.profileDirectory}/bin/dms";
+    niriLock = "${config.home.profileDirectory}/bin/niri-lock";
+    nirius = "${pkgs.nirius}/bin/niriusd";
+    niriswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
+  };
 
-  # ----------------------------------------------------------------------------
-  # Theme / Palette (Catppuccin-ish)
-  # ----------------------------------------------------------------------------
-  # Niri KDL'de değişken tanımı yok; bu yüzden renkleri Nix tarafında tek yerde
-  # tanımlayıp layout/rules/hardware snippet'lerine buradan enjekte ediyoruz.
+  # Catppuccin color palette
   palette = {
-    # Accents
+    # Accent colors
     cyan = "#74c7ec";
     sky = "#89dceb";
     mauve = "#cba6f7";
     red = "#f38ba8";
-
-    # Surfaces
+    
+    # Surface colors
     surface0 = "#313244";
     surface1 = "#45475a";
-
-    # Alphas
+    
+    # Alpha variants
     skyA80 = "#89dceb80";
     mauveA80 = "#cba6f780";
     mauveFF = "#cba6f7ff";
@@ -38,23 +36,16 @@ let
   };
 
   # ----------------------------------------------------------------------------
-  # Rule helpers (reduce duplication / make intent clearer)
+  # Window Rule Helpers
   # ----------------------------------------------------------------------------
-  mkFixedFloatingProps =
-    {
-      w,
-      h,
-      x ? null,
-      y ? null,
-      relativeTo ? "top-right",
-      opacity ? null,
-      focus ? true,
-    }:
+  
+  mkFixedFloating = { w, h, x ? null, y ? null, relativeTo ? "top-right", opacity ? null, focus ? true }:
     ''
       open-floating true;
       default-column-width { fixed ${toString w}; }
       default-window-height { fixed ${toString h}; }
-      ${lib.optionalString (x != null && y != null) ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
+      ${lib.optionalString (x != null && y != null) 
+        ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
       min-width ${toString w};
       max-width ${toString w};
       min-height ${toString h};
@@ -63,78 +54,66 @@ let
       ${lib.optionalString focus "open-focused true;"}
     '';
 
-  mkProportionalFloatingProps =
-    {
-      w,
-      h,
-      x ? null,
-      y ? null,
-      relativeTo ? "top-right",
-      focus ? true,
-    }:
+  mkProportionalFloating = { w, h, x ? null, y ? null, relativeTo ? "top-right", focus ? true }:
     ''
       open-floating true;
       default-column-width { proportion ${toString w}; }
       default-window-height { proportion ${toString h}; }
-      ${lib.optionalString (x != null && y != null) ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
+      ${lib.optionalString (x != null && y != null) 
+        ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
       ${lib.optionalString focus "open-focused true;"}
     '';
 
-  # Semsumo "daily" sınıfları / app-id'leri.
-  # Bu listeyi değiştirirsen, semsumo tarafındaki `--class` değerleriyle de uyumlu tut.
-  semsumoWorkspaceRules = [
-    { appId = "^discord$"; workspace = "5"; maximize = true; edges = true; }
-    { appId = "^WebCord$"; workspace = "5"; maximize = true; edges = true; }
+  # Workspace assignment rules for daily apps
+  workspaceRules = [
+    { appId = "^discord$"; workspace = "5"; maximize = true; }
+    { appId = "^WebCord$"; workspace = "5"; maximize = true; }
     { appId = "^(spotify|Spotify|com\\.spotify\\.Client)$"; workspace = "8"; }
     { appId = "^audacious$"; workspace = "5"; }
     { appId = "^transmission$"; workspace = "7"; }
     { appId = "^org\\.keepassxc\\.KeePassXC$"; workspace = "7"; }
-
-    # Brave profiles (semsumo `--class`)
-    { appId = "^Kenp$"; workspace = "1"; maximize = true; edges = true; }
-    { appId = "^Ai$"; workspace = "3"; maximize = true; edges = true; }
-    { appId = "^CompecTA$"; workspace = "4"; maximize = true; edges = true; }
-    { appId = "^brave-youtube\\.com__-Default$"; workspace = "7"; maximize = true; edges = true; }
-
+    { appId = "^Kenp$"; workspace = "1"; maximize = true; }
+    { appId = "^Ai$"; workspace = "3"; maximize = true; }
+    { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
+    { appId = "^brave-youtube\\.com__-Default$"; workspace = "7"; maximize = true; }
     { appId = "^ferdium$"; workspace = "9"; }
+    { appId = "^vlc$"; workspace = "6"; }
   ];
 
-  renderSemsumoWorkspaceRules =
-    lib.concatStringsSep "\n" (
-      map
-        (r:
-          ''
-            window-rule { match app-id=r#"${r.appId}"#; open-on-workspace "${r.workspace}";${lib.optionalString (r ? maximize && r.maximize) " open-maximized true;"}${lib.optionalString (r ? edges && r.edges) " open-maximized-to-edges true;"} }
-          '')
-        semsumoWorkspaceRules
-    );
+  renderWorkspaceRules = lib.concatStringsSep "\n" (
+    map (r: ''
+      window-rule {
+        match app-id=r#"${r.appId}"#;
+        open-on-workspace "${r.workspace}";
+        ${lib.optionalString (r.maximize or false) "open-maximized true; open-maximized-to-edges true;"}
+      }
+    '') workspaceRules
+  );
 
   # ----------------------------------------------------------------------------
-  # DMS Specific Configurations (Sub-files)
+  # Configuration Sections
   # ----------------------------------------------------------------------------
 
-  # 1. Layout: Transparent background for wallpaper integration
-  dmsLayout = ''
+  layoutConfig = ''
     layout {
       gaps 5;
       center-focused-column "never";
       background-color "#00000000";
-      // Catppuccin + cyan (daha sade):
-      // - focus-ring: gradient
-      // - border: düz renk (daha temiz)
-      // - tab-indicator: sadece active renk
+      
       focus-ring {
         on;
         width 2;
         active-gradient from="${palette.cyan}" to="${palette.mauve}" angle=45;
         inactive-color "${palette.surface1}";
       }
+      
       border {
         on;
         width 1;
         active-color "${palette.sky}";
         inactive-color "${palette.surface0}";
       }
+      
       tab-indicator {
         hide-when-single-tab;
         place-within-column;
@@ -148,101 +127,94 @@ let
         inactive-color "${palette.surface1}";
         urgent-color "${palette.red}";
       }
+      
       insert-hint {
         color "${palette.skyA80}";
         gradient from="${palette.skyA80}" to="${palette.mauveA80}" angle=45 relative-to="workspace-view";
       }
+      
       preset-column-widths {
         proportion 0.33333;
         proportion 0.5;
         proportion 0.66667;
       }
+      
       default-column-width { proportion 0.5; }
     }
   '';
 
-  # 2. Keybindings
-  #
-  # niri'nin config parser'ı, farklı dosyalardaki `binds {}` bloklarını merge ederken
-  # aynı key'e sahip bind'lerde "son tanım kazanır" yapıyor. Ancak *aynı dosyada*
-  # duplicate keybind olursa hard error veriyor.
-  #
-  # Bu yüzden bind'leri tek bir dev string yerine birkaç dosyaya bölüyoruz:
-  # - bakım kolaylaşıyor
-  # - override yapmak güvenli oluyor
-  # - "duplicate keybind" hataları ciddi azalıyor
-  dmsBindsDms = ''
+  bindsDms = ''
     binds {
       // ========================================================================
-      // DANK MATERIAL SHELL (DMS) - IPC BINDINGS
+      // DMS Integration
       // ========================================================================
 
-      // --- Launchers & Modals ---
-      Mod+Space hotkey-overlay-title="Application Launcher" { spawn "${dmsCmd}" "ipc" "call" "spotlight" "toggle"; }
-      Mod+D hotkey-overlay-title="Dashboard" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" ""; }
-      Mod+Shift+D hotkey-overlay-title="Dash Overview" { spawn "${dmsCmd}" "ipc" "call" "dash" "toggle" "overview"; }
-      Mod+M hotkey-overlay-title="Task Manager" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
-      Mod+Shift+P hotkey-overlay-title="Task Manager (Alt)" { spawn "${dmsCmd}" "ipc" "call" "processlist" "focusOrToggle"; }
-      Mod+Comma hotkey-overlay-title="Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "focusOrToggle"; }
-      Mod+N hotkey-overlay-title="Notification Center" { spawn "${dmsCmd}" "ipc" "call" "notifications" "toggle"; }
-      Mod+C hotkey-overlay-title="Control Center" { spawn "${dmsCmd}" "ipc" "call" "control-center" "toggle"; }
-      Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "${dmsCmd}" "ipc" "call" "clipboard" "toggle"; }
-      Mod+Backspace hotkey-overlay-title="Power Menu" { spawn "${dmsCmd}" "ipc" "call" "powermenu" "toggle"; }
-      Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "${dmsCmd}" "ipc" "call" "notepad" "open"; }
+      // Launchers
+      Mod+Space { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
+      Mod+D { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
+      Mod+Shift+D { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" "overview"; }
+      Mod+M { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
+      Mod+Shift+P { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
+      Mod+Comma { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
+      Mod+N { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
+      Mod+C { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle"; }
+      Mod+V { spawn "${bins.dms}" "ipc" "call" "clipboard" "toggle"; }
+      Mod+Backspace { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
+      Mod+Ctrl+N { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
 
-      // --- Wallpaper & Theming ---
-      Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "${dmsCmd}" "ipc" "call" "dankdash" "wallpaper"; }
-      Mod+W hotkey-overlay-title="Next Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "next"; }
-      Mod+Shift+W hotkey-overlay-title="Prev Wallpaper" { spawn "${dmsCmd}" "ipc" "call" "wallpaper" "prev"; }
-      Mod+Shift+T hotkey-overlay-title="Toggle Theme (Light/Dark)" { spawn "${dmsCmd}" "ipc" "call" "theme" "toggle"; }
-      Mod+Shift+N hotkey-overlay-title="Toggle Night Mode" { spawn "${dmsCmd}" "ipc" "call" "night" "toggle"; }
+      // Wallpaper & Theming
+      Mod+Y { spawn "${bins.dms}" "ipc" "call" "dankdash" "wallpaper"; }
+      Mod+W { spawn "${bins.dms}" "ipc" "call" "wallpaper" "next"; }
+      Mod+Shift+W { spawn "${bins.dms}" "ipc" "call" "wallpaper" "prev"; }
+      Mod+Shift+T { spawn "${bins.dms}" "ipc" "call" "theme" "toggle"; }
+      Mod+Shift+N { spawn "${bins.dms}" "ipc" "call" "night" "toggle"; }
 
-      // --- Bar & Dock ---
-      Mod+B hotkey-overlay-title="Toggle Bar" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggle" "index" "0"; }
-      Mod+Ctrl+B hotkey-overlay-title="Toggle Bar AutoHide" { spawn "${dmsCmd}" "ipc" "call" "bar" "toggleAutoHide" "index" "0"; }
-      Mod+Shift+B hotkey-overlay-title="Toggle Dock" { spawn "${dmsCmd}" "ipc" "call" "dock" "toggle"; }
+      // Bar & Dock
+      Mod+B { spawn "${bins.dms}" "ipc" "call" "bar" "toggle" "index" "0"; }
+      Mod+Ctrl+B { spawn "${bins.dms}" "ipc" "call" "bar" "toggleAutoHide" "index" "0"; }
+      Mod+Shift+B { spawn "${bins.dms}" "ipc" "call" "dock" "toggle"; }
 
-      // --- Security & Inhibit ---
-      Alt+L hotkey-overlay-title="Lock Screen" { spawn "${niriLockCmd}"; }
-      Mod+Shift+Delete hotkey-overlay-title="Toggle Idle Inhibit" { spawn "${dmsCmd}" "ipc" "call" "inhibit" "toggle"; }
+      // Security
+      Alt+L { spawn "${bins.niriLock}"; }
+      Mod+Shift+Delete { spawn "${bins.dms}" "ipc" "call" "inhibit" "toggle"; }
 
-      // --- Audio Controls ---
-      XF86AudioRaiseVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "increment" "5"; }
-      XF86AudioLowerVolume allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "decrement" "5"; }
-      XF86AudioMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "mute"; }
-      XF86AudioMicMute allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "audio" "micmute"; }
-      Mod+Alt+A hotkey-overlay-title="Cycle Audio Output" { spawn "${dmsCmd}" "ipc" "call" "audio" "cycleoutput"; }
-      Mod+Alt+P hotkey-overlay-title="Audio Mixer (pavucontrol)" { spawn "pavucontrol"; }
+      // Audio
+      XF86AudioRaiseVolume allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "increment" "5"; }
+      XF86AudioLowerVolume allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "decrement" "5"; }
+      XF86AudioMute allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "mute"; }
+      XF86AudioMicMute allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "micmute"; }
+      Mod+Alt+A { spawn "${bins.dms}" "ipc" "call" "audio" "cycleoutput"; }
+      Mod+Alt+P { spawn "pavucontrol"; }
 
-      // --- Media Controls (MPRIS) ---
-      XF86AudioPlay allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "playPause"; }
-      XF86AudioNext allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "next"; }
-      XF86AudioPrev allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "previous"; }
-      XF86AudioStop allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "mpris" "stop"; }
+      // Media (MPRIS)
+      XF86AudioPlay allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "mpris" "playPause"; }
+      XF86AudioNext allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "mpris" "next"; }
+      XF86AudioPrev allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "mpris" "previous"; }
+      XF86AudioStop allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "mpris" "stop"; }
 
-      // --- Brightness Controls ---
-      XF86MonBrightnessUp allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "increment" "5" ""; }
-      XF86MonBrightnessDown allow-when-locked=true { spawn "${dmsCmd}" "ipc" "call" "brightness" "decrement" "5" ""; }
-      Mod+Alt+B hotkey-overlay-title="Toggle Exponential Brightness" { spawn "${dmsCmd}" "ipc" "call" "brightness" "toggleExponential"; }
+      // Brightness
+      XF86MonBrightnessUp allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "brightness" "increment" "5" ""; }
+      XF86MonBrightnessDown allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "brightness" "decrement" "5" ""; }
+      Mod+Alt+B { spawn "${bins.dms}" "ipc" "call" "brightness" "toggleExponential"; }
 
-      // --- Help / Cheatsheet ---
-      Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
-      Mod+Alt+Slash hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
+      // Help
+      Mod+Slash { spawn "${bins.dms}" "ipc" "call" "keybinds" "toggle" "niri"; }
+      Mod+Alt+Slash { spawn "${bins.dms}" "ipc" "call" "settings" "openWith" "keybinds"; }
       Mod+Shift+Slash { show-hotkey-overlay; }
     }
   '';
 
-  dmsBindsCore = ''
+  bindsCore = ''
     binds {
       // ========================================================================
-      // NIRI CORE BINDINGS
+      // Core Window Management
       // ========================================================================
 
-      // --- Applications ---
-      Mod+Return { spawn "${kittyCmd}"; }
-      Mod+T { spawn "${kittyCmd}"; }
+      // Applications
+      Mod+Return { spawn "${bins.kitty}"; }
+      Mod+T { spawn "${bins.kitty}"; }
 
-      // --- Window Management ---
+      // Window Controls
       Mod+Q { close-window; }
       Mod+Shift+E { quit skip-confirmation=true; }
       Mod+F { maximize-column; }
@@ -252,11 +224,11 @@ let
       Mod+Shift+Space { toggle-window-floating; }
       Mod+Grave { switch-focus-between-floating-and-tiling; }
 
-      // --- Column/Window Manipulation ---
+      // Column Operations
       Mod+BracketLeft { consume-or-expel-window-left; }
       Mod+BracketRight { consume-or-expel-window-right; }
 
-      // --- Navigation ---
+      // Navigation
       Mod+Left  { focus-column-left; }
       Mod+Right { focus-column-right; }
       Mod+Up    { focus-workspace-up; }
@@ -266,7 +238,7 @@ let
       Mod+K     { focus-workspace-up; }
       Mod+J     { focus-workspace-down; }
 
-      // --- Focus Monitor ---
+      // Monitor Focus
       Mod+Alt+Up    { focus-monitor-up; }
       Mod+Alt+Down  { focus-monitor-down; }
       Mod+Alt+H     { focus-monitor-left; }
@@ -274,7 +246,7 @@ let
       Mod+Alt+K     { focus-monitor-up; }
       Mod+Alt+J     { focus-monitor-down; }
 
-      // --- Moving Windows ---
+      // Move Windows
       Mod+Shift+Left  { move-column-left; }
       Mod+Shift+Right { move-column-right; }
       Mod+Shift+Up    { move-window-up; }
@@ -284,42 +256,45 @@ let
       Mod+Shift+K     { move-window-up; }
       Mod+Shift+J     { move-window-down; }
 
-      // --- Moving Workspaces (Monitors/Workspaces) ---
+      // Move to Monitor
       Mod+Ctrl+Left  { move-column-to-monitor-left; }
       Mod+Ctrl+Right { move-column-to-monitor-right; }
       Mod+Ctrl+Up    { move-column-to-monitor-up; }
       Mod+Ctrl+Down  { move-column-to-monitor-down; }
       
-      // --- Alternative Workspace Control (PageUp/Down) ---
+      // Alternative Navigation
       Mod+Page_Up       { focus-workspace-up; }
       Mod+Page_Down     { focus-workspace-down; }
       Mod+Shift+Page_Up { move-column-to-workspace-up; }
       Mod+Shift+Page_Down { move-column-to-workspace-down; }
 
-      // --- Screenshots (DMS Niri integration) ---
-      Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshot"; }
-      Ctrl+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotScreen"; }
-      Alt+Print { spawn "${dmsCmd}" "ipc" "call" "niri" "screenshotWindow"; }
+      // Screenshots
+      Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshot"; }
+      Ctrl+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotScreen"; }
+      Alt+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotWindow"; }
       
-      // --- Mouse Wheel Integration ---
+      // Mouse Wheel
       Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
       Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
-      Mod+WheelScrollRight                { focus-column-right; }
-      Mod+WheelScrollLeft                 { focus-column-left; }
+      Mod+WheelScrollRight { focus-column-right; }
+      Mod+WheelScrollLeft  { focus-column-left; }
     }
   '';
 
-  dmsBindsApps = ''
+  bindsApps = ''
     binds {
-      // --- Custom Applications (Imported from Hyprland) ---
+      // ========================================================================
+      // Custom Applications
+      // ========================================================================
+
+      // Daily Apps
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
 
-      // --- Splitting / Column width ---
+      // Column Width
       Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
       Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
 
       // Launchers
-      F1 { spawn "rofi-launcher" "keys"; }
       Alt+Space { spawn "rofi-launcher"; }
       Mod+Ctrl+Space { spawn "walk"; }
 
@@ -329,7 +304,7 @@ let
 
       // Special Apps
       Alt+T { spawn "start-kkenp"; }
-      Mod+Shift+M { spawn "anotes"; } // Mod+M is DMS Task Manager
+      Mod+Shift+M { spawn "anotes"; }
 
       // Tools
       Mod+Shift+C { spawn "hyprpicker" "-a"; }
@@ -337,15 +312,11 @@ let
       F10 { spawn "bluetooth_toggle"; }
       Alt+F12 { spawn "osc-mullvad" "toggle"; }
 
-      // --- Audio & Media Scripts ---
+      // Audio Scripts
       Alt+A { spawn "osc-soundctl" "switch"; }
       Alt+Ctrl+A { spawn "osc-soundctl" "switch-mic"; }
 
-      // --- Monitor Focus ---
-      Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
-      Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
-      Mod+Escape { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
-      
+      // Media Scripts
       Alt+E { spawn "osc-spotify"; }
       Alt+Ctrl+N { spawn "osc-spotify" "next"; }
       Alt+Ctrl+B { spawn "osc-spotify" "prev"; }
@@ -354,9 +325,12 @@ let
     }
   '';
 
-  dmsBindsMpv = ''
+  bindsMpv = ''
     binds {
-      // --- MPV Manager ---
+      // ========================================================================
+      // MPV Manager
+      // ========================================================================
+
       Ctrl+Alt+1 { spawn "mpv-manager" "start"; }
       Alt+1 { spawn "mpv-manager" "playback"; }
       Alt+2 { spawn "mpv-manager" "play-yt"; }
@@ -367,9 +341,13 @@ let
     }
   '';
 
-  dmsBindsWorkspaces = ''
+  bindsWorkspaces = ''
     binds {
-      // --- Workspace Switching (1-9) ---
+      // ========================================================================
+      // Workspace Management
+      // ========================================================================
+
+      // Focus Workspace
       Mod+1 { focus-workspace "1"; }
       Mod+2 { focus-workspace "2"; }
       Mod+3 { focus-workspace "3"; }
@@ -380,7 +358,7 @@ let
       Mod+8 { focus-workspace "8"; }
       Mod+9 { focus-workspace "9"; }
 
-      // --- Move Column to Workspace (1-9) ---
+      // Move to Workspace
       Mod+Shift+1 { move-column-to-workspace "1"; }
       Mod+Shift+2 { move-column-to-workspace "2"; }
       Mod+Shift+3 { move-column-to-workspace "3"; }
@@ -393,338 +371,308 @@ let
     }
   '';
 
-  dmsBindsMonitors = ''
+  bindsMonitors = ''
     binds {
-      // --- Monitor Focus / Workspace-to-monitor ---
+      // ========================================================================
+      // Monitor Management
+      // ========================================================================
+
       Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
       Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
       Mod+Escape { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
     }
   '';
 
-  # 3. Rules (Window & Layer)
-  dmsRules = ''
-    // --- General Styling ---
+  rulesConfig = ''
+    // ========================================================================
+    // Window Rules
+    // ========================================================================
+
+    // Global Styling
     window-rule {
-        geometry-corner-radius 12;
-        clip-to-geometry true;
+      geometry-corner-radius 12;
+      clip-to-geometry true;
     }
 
-    // --- Floating Windows & Shadows ---
+    // Floating Windows
     window-rule {
-        match is-floating=true;
-        shadow { on; }
+      match is-floating=true;
+      shadow { on; }
     }
 
+    // QuickShell
     window-rule {
-        match app-id=r#"^org\.quickshell$"#;
-        open-floating true;
+      match app-id=r#"^org\.quickshell$"#;
+      open-floating true;
     }
     
-    // --- VRR (on-demand) ---
-    // Sadece variable-refresh-rate on-demand=true olan output'larda etkili olur.
+    // Variable Refresh Rate
     window-rule {
-        match app-id=r#"^mpv$"#;
-        variable-refresh-rate true;
+      match app-id=r#"^mpv$"#;
+      variable-refresh-rate true;
     }
 
-    // --- Media & PIP ---
-    // Firefox/Chromium PiP genelde ayrı bir pencere açar ve bazı durumlarda app-id boş gelebilir (XWayland).
-    // Bu yüzden title üzerinden yakalayıp mpv ile aynı floating davranışını veriyoruz.
+    // Picture-in-Picture
     window-rule {
-        match title=r#"(?i)^picture[- ]in[- ]picture$"#;
-        ${mkFixedFloatingProps { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; focus = true; }}
+      match title=r#"(?i)^picture[- ]in[- ]picture$"#;
+      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // MPV: açık videoları küçük floating olarak sağ üste al
-    // Not: mpv başlığı her zaman "... - mpv" gelmeyebiliyor; bu yüzden app-id üzerinden gidip PiP'i exclude ediyoruz.
+    // MPV
     window-rule {
-        match app-id=r#"^mpv$"#;
-        exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
-        // Niri floating boyutu bazen "hatırlanmış" veya uygulama tarafından büyütülmüş olabiliyor,
-        // bu yüzden min=max ile zorla sabitle.
-        ${mkFixedFloatingProps { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; focus = true; }}
+      match app-id=r#"^mpv$"#;
+      exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
+      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
     window-rule {
-        match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
-        // PiP'i de normal mpv gibi tutarlı bir boyutta/floating konumunda aç.
-        ${mkFixedFloatingProps { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; focus = true; }}
-    }
-    
-    window-rule {
-        match app-id=r#"^vlc$"#;
-        open-on-workspace "6";
+      match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
+      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // --- Dialogs & Tools (Floating) ---
+    // Dialogs
     window-rule {
-        match title="^Open File$";
-        match title="^File Upload$";
-        match title="^Save As$";
-        match title="^Confirm to replace files$";
-        match title="^File Operation Progress$";
-        match app-id=r#"^pavucontrol$"#;
-        match app-id=r#"^nm-connection-editor$"#;
-        match app-id=r#"^blueman-manager$"#;
-        match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-        match app-id=r#"^hyprland-share-picker$"#;
-        open-floating true;
-        // default-floating-position x=0 y=0 relative-to="center";
+      match title="^Open File$";
+      match title="^File Upload$";
+      match title="^Save As$";
+      match title="^Confirm to replace files$";
+      match title="^File Operation Progress$";
+      match app-id=r#"^pavucontrol$"#;
+      match app-id=r#"^nm-connection-editor$"#;
+      match app-id=r#"^blueman-manager$"#;
+      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+      match app-id=r#"^hyprland-share-picker$"#;
+      open-floating true;
     }
 
-    // --- Tmux (Kenp) ---
-    // Tmux penceresini her zaman 2. workspace'e aç.
+    // Tmux
     window-rule {
-        match app-id=r#"^(TmuxKenp|Tmux)$"#;
-        // Bazı terminallerde (özellikle kitty/wezterm) app-id "kitty" kalabiliyor,
-        // ama başlık "Tmux" olduğu için bunu da yakalayalım.
-        match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
-        open-on-workspace "2";
-        open-maximized true;
-        open-maximized-to-edges true;
-        open-focused true;
+      match app-id=r#"^(TmuxKenp|Tmux)$"#;
+      match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
+      open-on-workspace "2";
+      open-maximized true;
+      open-maximized-to-edges true;
+      open-focused true;
     }
 
-    // --- Audio Mixer (pavucontrol) ---
+    // Audio Mixer
     window-rule {
-        match app-id=r#"^org\.pulseaudio\.pavucontrol$"#;
-        ${mkProportionalFloatingProps { w = 0.25; h = 0.80; x = 32; y = 144; relativeTo = "top-right"; focus = true; }}
+      match app-id=r#"^org\.pulseaudio\.pavucontrol$"#;
+      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
     }
 
-    // --- Clipboard (Clipse) ---
-    // Hyprland'daki "clipse-float" kuralının Niri karşılığı.
-    // `kitty --class clipse -e clipse` ile açılan pencere Wayland app-id olarak "clipse" gelir.
+    // Clipboard Manager
     window-rule {
-        match app-id=r#"^clipse$"#;
-        ${mkProportionalFloatingProps { w = 0.25; h = 0.80; x = 32; y = 144; relativeTo = "top-right"; focus = true; }}
+      match app-id=r#"^clipse$"#;
+      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
     }
 
-    // --- Notes (Anote) ---
+    // Notes
     window-rule {
-        match app-id=r#"^anote$"#;
-        // Position vermiyoruz: Niri default olarak ekran ortasına koyuyor.
-        ${mkFixedFloatingProps { w = 1152; h = 864; focus = true; }}
+      match app-id=r#"^anote$"#;
+      ${mkFixedFloating { w = 1152; h = 864; }}
     }
 
-    // --- Prompts (gcr-prompter) ---
+    // Password Prompt
     window-rule {
-        match app-id=r#"^gcr-prompter$"#;
-        ${mkFixedFloatingProps { w = 600; h = 230; x = 0; y = 96; relativeTo = "top"; focus = true; }}
+      match app-id=r#"^gcr-prompter$"#;
+      ${mkFixedFloating { w = 600; h = 230; x = 0; y = 96; relativeTo = "top"; }}
     }
 
-    // --- Workspace Assignments (semsumo profiles) ---
-    // Tek kaynak: semsumo `--class` / app-id listesi (Nix'te `semsumoWorkspaceRules`).
-    ${renderSemsumoWorkspaceRules}
+    // Workspace Assignments
+    ${renderWorkspaceRules}
 
-    // --- Better Dialog Placement (centered floating) ---
+    // Better Dialog Placement
     window-rule {
-        match app-id=r#"^(blueman-manager|nm-connection-editor)$"#;
-        open-floating true;
-        default-column-width { fixed 900; }
-        default-window-height { fixed 650; }
-        open-focused true;
+      match app-id=r#"^(blueman-manager|nm-connection-editor)$"#;
+      open-floating true;
+      default-column-width { fixed 900; }
+      default-window-height { fixed 650; }
+      open-focused true;
     }
 
     window-rule {
-        match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-        open-floating true;
-        default-column-width { fixed 520; }
-        default-window-height { fixed 240; }
-        open-focused true;
+      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+      open-floating true;
+      default-column-width { fixed 520; }
+      default-window-height { fixed 240; }
+      open-focused true;
     }
 
     window-rule {
-        match title=r#"^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress)$"#;
-        open-floating true;
-        default-column-width { proportion 0.60; }
-        default-window-height { proportion 0.75; }
-        open-focused true;
+      match title=r#"^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress)$"#;
+      open-floating true;
+      default-column-width { proportion 0.60; }
+      default-window-height { proportion 0.75; }
+      open-focused true;
     }
 
-    // --- Privacy (Block from Screencast) ---
+    // Privacy - Block from Screencast
     window-rule {
-        match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
-        match app-id=r#"^org\.gnome\.World\.Secrets$"#;
-        block-out-from "screencast";
+      match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
+      match app-id=r#"^org\.gnome\.World\.Secrets$"#;
+      block-out-from "screencast";
     }
 
-    // --- No Border Apps ---
+    // Borderless Apps
     window-rule {
-        match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
-        match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube\.com__-Default|ferdium)$"#;
-        draw-border-with-background false;
+      match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
+      match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube\.com__-Default|ferdium)$"#;
+      draw-border-with-background false;
     }
 
-    // --- Inactive Dimming ---
+    // Inactive Dimming
     window-rule {
-        match is-active=false;
-        opacity 0.95;
+      match is-active=false;
+      opacity 0.95;
     }
 
-    // --- Layer Rules ---
+    // ========================================================================
+    // Layer Rules
+    // ========================================================================
+
     layer-rule {
-        match namespace=r#"^dms:blurwallpaper$"#;
-        place-within-backdrop true;
+      match namespace=r#"^dms:blurwallpaper$"#;
+      place-within-backdrop true;
     }
+
     layer-rule {
-        match namespace="^notifications$";
-        block-out-from "screencast";
+      match namespace="^notifications$";
+      block-out-from "screencast";
     }
   '';
 
-  # 4. Animations
-  dmsAnimations = ''
+  animationsConfig = ''
     animations {
-        // Workspace Switching (Spring for snappy feel)
-        workspace-switch { 
-            spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; 
-        }
+      // Workspace Switching
+      workspace-switch { 
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; 
+      }
 
-        // Window Open/Close (Easing)
-        window-open { 
-            duration-ms 150; 
-            curve "ease-out-expo"; 
-        }
-        window-close { 
-            duration-ms 150; 
-            curve "ease-out-quad"; 
-        }
+      // Window Open/Close
+      window-open { 
+        duration-ms 150; 
+        curve "ease-out-expo"; 
+      }
+      window-close { 
+        duration-ms 150; 
+        curve "ease-out-quad"; 
+      }
 
-        // View Movement (Springs)
-        horizontal-view-movement { 
-            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
-        }
-        window-movement { 
-            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
-        }
-        window-resize { 
-            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
-        }
+      // Movement
+      horizontal-view-movement { 
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+      }
+      window-movement { 
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+      }
+      window-resize { 
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+      }
 
-        // UI Animations
-        config-notification-open-close { 
-            spring damping-ratio=0.6 stiffness=1000 epsilon=0.001; 
-        }
-        exit-confirmation-open-close { 
-            spring damping-ratio=0.6 stiffness=500 epsilon=0.01; 
-        }
-        screenshot-ui-open { 
-            duration-ms 200; 
-            curve "ease-out-quad"; 
-        }
-        overview-open-close { 
-            spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
-        }
-        recent-windows-close { 
-            spring damping-ratio=1.0 stiffness=800 epsilon=0.001; 
-        }
+      // UI Animations
+      config-notification-open-close { 
+        spring damping-ratio=0.6 stiffness=1000 epsilon=0.001; 
+      }
+      exit-confirmation-open-close { 
+        spring damping-ratio=0.6 stiffness=500 epsilon=0.01; 
+      }
+      screenshot-ui-open { 
+        duration-ms 200; 
+        curve "ease-out-quad"; 
+      }
+      overview-open-close { 
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001; 
+      }
+      recent-windows-close { 
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.001; 
+      }
     }
   '';
 
-  # 5. Gestures
-  dmsGestures = ''
+  gesturesConfig = ''
     gestures {
-        dnd-edge-view-scroll {
-            trigger-width 30;
-            delay-ms 100;
-            max-speed 1500;
-        }
-        hot-corners {
-            off;
-        }
+      dnd-edge-view-scroll {
+        trigger-width 30;
+        delay-ms 100;
+        max-speed 1500;
+      }
+      hot-corners {
+        off;
+      }
     }
   '';
 
-  # 6. Recent Windows (Alt-Tab)
-  dmsRecentWindows = ''
+  recentWindowsConfig = ''
     recent-windows {
-        debounce-ms 0;
-        open-delay-ms 0;
-        highlight {
-            active-color "${palette.mauveFF}"; // Catppuccin Mauve
-            urgent-color "${palette.redFF}"; // Catppuccin Red
-            padding 24;
-            corner-radius 12;
-        }
-        previews {
-            max-height 720;
-            max-scale 0.6;
-        }
+      debounce-ms 0;
+      open-delay-ms 0;
+      highlight {
+        active-color "${palette.mauveFF}";
+        urgent-color "${palette.redFF}";
+        padding 24;
+        corner-radius 12;
+      }
+      previews {
+        max-height 720;
+        max-scale 0.6;
+      }
     }
   '';
 
-  # 3. Colors (Palette reference)
-  dmsColors = ''
-    // ======================================================================
-    // Palette reference (single source of truth is Nix: `palette = { ... }`)
-    // ======================================================================
-    //
-    // Accents:
-    //   cyan   ${palette.cyan}
-    //   sky    ${palette.sky}
-    //   mauve  ${palette.mauve}
-    //   red    ${palette.red}
-    //
-    // Surfaces:
-    //   surface0 ${palette.surface0}
-    //   surface1 ${palette.surface1}
+  colorsReference = ''
+    // ========================================================================
+    // Catppuccin Color Palette Reference
+    // ========================================================================
+    // Accents:  cyan=${palette.cyan} sky=${palette.sky} mauve=${palette.mauve} red=${palette.red}
+    // Surfaces: surface0=${palette.surface0} surface1=${palette.surface1}
   '';
 
-  # ----------------------------------------------------------------------------
-  # Main Niri Config
-  # ----------------------------------------------------------------------------
   hardwareConfigDefault = ''
-    // --- Named Workspaces (Static 1-9) ---
-    // Primary Monitor (DP-3)
+    // ========================================================================
+    // Hardware Configuration
+    // ========================================================================
+
+    // Named Workspaces (1-9)
     workspace "1" { open-on-output "DP-3"; }
     workspace "2" { open-on-output "DP-3"; }
     workspace "3" { open-on-output "DP-3"; }
     workspace "4" { open-on-output "DP-3"; }
     workspace "5" { open-on-output "DP-3"; }
     workspace "6" { open-on-output "DP-3"; }
-    
-    // Secondary Monitor (eDP-1)
     workspace "7" { open-on-output "eDP-1"; }
-    
-    // Spotify Workspace (Custom Layout)
     workspace "8" { 
-        open-on-output "eDP-1";
-        layout {
-            gaps 20;
-            border {
-                on;
-                width 1;
-                active-color "${palette.sky}";
-                inactive-color "${palette.surface0}";
-            }
+      open-on-output "eDP-1";
+      layout {
+        gaps 20;
+        border {
+          on;
+          width 1;
+          active-color "${palette.sky}";
+          inactive-color "${palette.surface0}";
         }
+      }
     }
-    
     workspace "9" { open-on-output "eDP-1"; }
 
-    // --- Monitor Configuration ---
-    // Note: Use 'niri msg outputs' to find exact port names (e.g., DP-1, eDP-1).
-
-    // Primary: DELL UP2716D
+    // Monitor Configuration
     output "DP-3" {
-        mode "2560x1440@59.951"; // or @60
-        position x=0 y=0;
-        scale 1.0;
+      mode "2560x1440@59.951";
+      position x=0 y=0;
+      scale 1.0;
     }
 
-    // Secondary: Chimei Innolux (Laptop?)
     output "eDP-1" {
-        mode "1920x1200@60.003";
-        position x=320 y=1440;
-        scale 1.0;
-        variable-refresh-rate on-demand=true;
+      mode "1920x1200@60.003";
+      position x=320 y=1440;
+      scale 1.0;
+      variable-refresh-rate on-demand=true;
     }
   '';
 
-  niriConfig = ''
+  mainConfig = ''
     // ========================================================================
-    // Niri Configuration - Optimized for DankMaterialShell
+    // Niri Configuration - DankMaterialShell Edition
     // ========================================================================
 
     environment {
@@ -742,31 +690,22 @@ let
 
     prefer-no-csd;
 
-    // Açılışta "important hotkeys" ekranını gösterme.
     hotkey-overlay {
       skip-at-startup;
       hide-not-bound;
     }
 
-    // --- Startup Applications ---
+    // Startup Applications
     spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
     spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET";
     spawn-at-startup "clipse" "-listen";
-    // Niri açılışında odağı harici monitöre al (DP-3).
-    // DP-3 yoksa (dock/port değiştiyse) log'a hata basmasın diye guard'lı.
     spawn-at-startup "sh" "-lc" "if niri msg outputs 2>/dev/null | grep -q '(DP-3)'; then niri msg action focus-monitor DP-3; fi";
-    ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${niriusCmd}";''}
-    ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${niriswitcherCmd}";''}
-    
-    // Start DMS manually (Disabled: DMS is managed by systemd service)
-    // spawn-at-startup "${dmsCmd}" "run";
-    // spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
+    ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${bins.nirius}";''}
+    ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${bins.niriswitcher}";''}
 
-    // --- Input Configuration ---
+    // Input Configuration
     input {
       workspace-auto-back-and-forth;
-      // Hyprland'daki `follow_mouse=1` benzeri: imleç üstüne gelince focus al.
-      // Scrollable layout yüzünden "yanlışlıkla scroll" olmasın diye 0% limitliyoruz.
       focus-follows-mouse max-scroll-amount="0%";
 
       keyboard {
@@ -775,10 +714,10 @@ let
           variant "f"
           options "ctrl:nocaps"
         }
-        // Hyprland: repeat_delay=250, repeat_rate=35
         repeat-delay 250
         repeat-rate 35
       }
+
       touchpad {
         tap
         dwt
@@ -786,36 +725,34 @@ let
         tap-button-map "left-right-middle"
         middle-emulation
         click-method "clickfinger"
-        // Hyprland: accel_profile=flat, sensitivity=0.0, force_no_accel=true
         accel-profile "flat"
         accel-speed 1.0
-        // natural-scroll
         scroll-method "two-finger"
         scroll-factor 1.0
       }
+
       mouse {
         accel-profile "flat"
         accel-speed 0.0
-        // natural-scroll
         scroll-factor 1.0
       }
+
       trackpoint {
         accel-profile "flat"
         accel-speed 0.0
         middle-emulation
-        // Trackpoint ile scroll için (butona basılı tutup yön vererek):
         scroll-method "on-button-down"
         scroll-button 273
         scroll-button-lock
       }
     }
-    // --- Switch Events ---
+
+    // Switch Events
     switch-events {
-        // Kapak kapanınca da aynı (DMS) kilidi kullan.
-        lid-close { spawn "${niriLockCmd}"; }
+      lid-close { spawn "${bins.niriLock}"; }
     }
 
-    // --- Includes (Modular Config) ---
+    // Modular Configuration Includes
     include "dms/hardware.kdl";
     include "dms/layout.kdl";
     include "dms/binds-core.kdl";
@@ -835,60 +772,63 @@ in
 {
   options.my.desktop.niri = {
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
+    
     package = lib.mkOption {
       type = lib.types.package;
-      default =
-        if inputs ? niri && inputs.niri ? packages
-        then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
-        else pkgs.niri;
-      description = "Niri compositor package.";
+      default = if inputs ? niri && inputs.niri ? packages
+                then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
+                else pkgs.niri;
+      description = "Niri compositor package";
     };
+
     enableNirius = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Install nirius daemon + cli helpers.";
+      description = "Install nirius daemon and CLI helpers";
     };
+
     enableNiriswitcher = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Install niriswitcher application switcher.";
+      description = "Install niriswitcher application switcher";
     };
+
     enableHardwareConfig = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable static output/workspace pinning for Niri (host-specific).";
+      description = "Enable static output/workspace pinning (host-specific)";
     };
+
     hardwareConfig = lib.mkOption {
       type = lib.types.lines;
       default = hardwareConfigDefault;
-      description = "Niri KDL snippet for outputs/workspaces (written to niri/dms/hardware.kdl).";
+      description = "Niri KDL snippet for outputs/workspaces";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages =
-      [ cfg.package ]
+    home.packages = [ cfg.package ]
       ++ lib.optional cfg.enableNirius pkgs.nirius
       ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher;
 
-    # Main Config
-    xdg.configFile."niri/config.kdl".text = niriConfig;
+    # Main Configuration
+    xdg.configFile."niri/config.kdl".text = mainConfig;
 
-    # DMS Sub-configs
-    xdg.configFile."niri/dms/hardware.kdl".text =
+    # Modular DMS Configurations
+    xdg.configFile."niri/dms/hardware.kdl".text = 
       if cfg.enableHardwareConfig then cfg.hardwareConfig else "";
-    xdg.configFile."niri/dms/layout.kdl".text = dmsLayout;
-    xdg.configFile."niri/dms/binds-core.kdl".text = dmsBindsCore;
-    xdg.configFile."niri/dms/binds-dms.kdl".text = dmsBindsDms;
-    xdg.configFile."niri/dms/binds-apps.kdl".text = dmsBindsApps;
-    xdg.configFile."niri/dms/binds-mpv.kdl".text = dmsBindsMpv;
-    xdg.configFile."niri/dms/binds-workspaces.kdl".text = dmsBindsWorkspaces;
-    xdg.configFile."niri/dms/binds-monitors.kdl".text = dmsBindsMonitors;
-    xdg.configFile."niri/dms/rules.kdl".text = dmsRules;
-    xdg.configFile."niri/dms/animations.kdl".text = dmsAnimations;
-    xdg.configFile."niri/dms/gestures.kdl".text = dmsGestures;
-    xdg.configFile."niri/dms/recent-windows.kdl".text = dmsRecentWindows;
-    xdg.configFile."niri/dms/colors.kdl".text = dmsColors;
-    xdg.configFile."niri/dms/alttab.kdl".text = ""; # Placeholder (deprecated by recent-windows)
+    xdg.configFile."niri/dms/layout.kdl".text = layoutConfig;
+    xdg.configFile."niri/dms/binds-core.kdl".text = bindsCore;
+    xdg.configFile."niri/dms/binds-dms.kdl".text = bindsDms;
+    xdg.configFile."niri/dms/binds-apps.kdl".text = bindsApps;
+    xdg.configFile."niri/dms/binds-mpv.kdl".text = bindsMpv;
+    xdg.configFile."niri/dms/binds-workspaces.kdl".text = bindsWorkspaces;
+    xdg.configFile."niri/dms/binds-monitors.kdl".text = bindsMonitors;
+    xdg.configFile."niri/dms/rules.kdl".text = rulesConfig;
+    xdg.configFile."niri/dms/animations.kdl".text = animationsConfig;
+    xdg.configFile."niri/dms/gestures.kdl".text = gesturesConfig;
+    xdg.configFile."niri/dms/recent-windows.kdl".text = recentWindowsConfig;
+    xdg.configFile."niri/dms/colors.kdl".text = colorsReference;
+    xdg.configFile."niri/dms/alttab.kdl".text = ""; # Deprecated placeholder
   };
 }
