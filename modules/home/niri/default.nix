@@ -40,44 +40,6 @@ let
   # ----------------------------------------------------------------------------
   # Rule helpers (reduce duplication / make intent clearer)
   # ----------------------------------------------------------------------------
-  # Niri, tek bir `binds {}` bloğu içinde aynı key'i iki kez görürse hata veriyor.
-  # (Includes arası çakışmaları ise niri otomatik "son tanım kazanır" şeklinde çözüyor.)
-  #
-  # Bu helper, aynı dosyada yanlışlıkla duplike edilen tek satırlık keybind'leri
-  # (örn. `Mod+Alt+Left { ... }`) dedupe eder ve *son* tanımı bırakır.
-  dedupeSingleLineBinds =
-    bindsText:
-    let
-      lines = lib.splitString "\n" bindsText;
-      isBindLine =
-        line:
-        (builtins.match ".*\\{.*" line != null)
-        && (builtins.match "^[[:space:]]*//" line == null)
-        && (builtins.match "^[[:space:]]*binds([[:space:]]|\\{|$)" line == null);
-      bindKey =
-        line:
-        let
-          m = builtins.match "^[[:space:]]*([^[:space:]]+)[[:space:]].*$" line;
-        in
-        if m == null then null else builtins.elemAt m 0;
-      folded =
-        lib.foldr
-          (line: acc:
-            if !isBindLine line then
-              { inherit (acc) seen; out = [ line ] ++ acc.out; }
-            else
-              let
-                key = bindKey line;
-              in
-              if key == null || builtins.elem key acc.seen then
-                acc
-              else
-                { seen = [ key ] ++ acc.seen; out = [ line ] ++ acc.out; })
-          { seen = [ ]; out = [ ]; }
-          lines;
-    in
-    lib.concatStringsSep "\n" folded.out;
-
   mkFixedFloatingProps =
     {
       w,
@@ -199,9 +161,17 @@ let
     }
   '';
 
-  # 2. Keybindings: Full DMS IPC integration + Niri Core
-  # WRAPPED IN "binds {}" BLOCK AND ADDED SEMICOLONS
-  dmsBindsRaw = ''
+  # 2. Keybindings
+  #
+  # niri'nin config parser'ı, farklı dosyalardaki `binds {}` bloklarını merge ederken
+  # aynı key'e sahip bind'lerde "son tanım kazanır" yapıyor. Ancak *aynı dosyada*
+  # duplicate keybind olursa hard error veriyor.
+  #
+  # Bu yüzden bind'leri tek bir dev string yerine birkaç dosyaya bölüyoruz:
+  # - bakım kolaylaşıyor
+  # - override yapmak güvenli oluyor
+  # - "duplicate keybind" hataları ciddi azalıyor
+  dmsBindsDms = ''
     binds {
       // ========================================================================
       // DANK MATERIAL SHELL (DMS) - IPC BINDINGS
@@ -259,7 +229,11 @@ let
       Mod+Slash hotkey-overlay-title="Show Keybinds" { spawn "${dmsCmd}" "ipc" "call" "keybinds" "toggle" "niri"; }
       Mod+Alt+Slash hotkey-overlay-title="Open Keybind Settings" { spawn "${dmsCmd}" "ipc" "call" "settings" "openWith" "keybinds"; }
       Mod+Shift+Slash { show-hotkey-overlay; }
+    }
+  '';
 
+  dmsBindsCore = ''
+    binds {
       // ========================================================================
       // NIRI CORE BINDINGS
       // ========================================================================
@@ -332,7 +306,11 @@ let
       Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
       Mod+WheelScrollRight                { focus-column-right; }
       Mod+WheelScrollLeft                 { focus-column-left; }
+    }
+  '';
 
+  dmsBindsApps = ''
+    binds {
       // --- Custom Applications (Imported from Hyprland) ---
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
 
@@ -373,7 +351,11 @@ let
       Alt+Ctrl+B { spawn "osc-spotify" "prev"; }
       Alt+Ctrl+E { spawn "mpc-control" "toggle"; }
       Alt+I { spawn "hypr-vlc_toggle"; }
+    }
+  '';
 
+  dmsBindsMpv = ''
+    binds {
       // --- MPV Manager ---
       Ctrl+Alt+1 { spawn "mpv-manager" "start"; }
       Alt+1 { spawn "mpv-manager" "playback"; }
@@ -382,7 +364,11 @@ let
       Alt+4 { spawn "mpv-manager" "move"; }
       Alt+5 { spawn "mpv-manager" "save-yt"; }
       Alt+6 { spawn "mpv-manager" "wallpaper"; }
+    }
+  '';
 
+  dmsBindsWorkspaces = ''
+    binds {
       // --- Workspace Switching (1-9) ---
       Mod+1 { focus-workspace "1"; }
       Mod+2 { focus-workspace "2"; }
@@ -407,7 +393,14 @@ let
     }
   '';
 
-  dmsBinds = dedupeSingleLineBinds dmsBindsRaw;
+  dmsBindsMonitors = ''
+    binds {
+      // --- Monitor Focus / Workspace-to-monitor ---
+      Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
+      Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
+      Mod+Escape { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
+    }
+  '';
 
   # 3. Rules (Window & Layer)
   dmsRules = ''
@@ -825,7 +818,12 @@ let
     // --- Includes (Modular Config) ---
     include "dms/hardware.kdl";
     include "dms/layout.kdl";
-    include "dms/binds.kdl";
+    include "dms/binds-core.kdl";
+    include "dms/binds-dms.kdl";
+    include "dms/binds-apps.kdl";
+    include "dms/binds-mpv.kdl";
+    include "dms/binds-workspaces.kdl";
+    include "dms/binds-monitors.kdl";
     include "dms/rules.kdl";
     include "dms/animations.kdl";
     include "dms/gestures.kdl";
@@ -880,7 +878,12 @@ in
     xdg.configFile."niri/dms/hardware.kdl".text =
       if cfg.enableHardwareConfig then cfg.hardwareConfig else "";
     xdg.configFile."niri/dms/layout.kdl".text = dmsLayout;
-    xdg.configFile."niri/dms/binds.kdl".text = dmsBinds;
+    xdg.configFile."niri/dms/binds-core.kdl".text = dmsBindsCore;
+    xdg.configFile."niri/dms/binds-dms.kdl".text = dmsBindsDms;
+    xdg.configFile."niri/dms/binds-apps.kdl".text = dmsBindsApps;
+    xdg.configFile."niri/dms/binds-mpv.kdl".text = dmsBindsMpv;
+    xdg.configFile."niri/dms/binds-workspaces.kdl".text = dmsBindsWorkspaces;
+    xdg.configFile."niri/dms/binds-monitors.kdl".text = dmsBindsMonitors;
     xdg.configFile."niri/dms/rules.kdl".text = dmsRules;
     xdg.configFile."niri/dms/animations.kdl".text = dmsAnimations;
     xdg.configFile."niri/dms/gestures.kdl".text = dmsGestures;

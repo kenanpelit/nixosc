@@ -12,13 +12,17 @@ let
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
+  hasWaylandTarget = lib.hasAttrByPath [ "wayland" "systemd" "target" ] config;
+  sessionTarget =
+    if hasWaylandTarget then config.wayland.systemd.target else "graphical-session.target";
 in
 lib.mkIf cfg.enable {
   programs.dankMaterialShell = {
     enable = true;
-    # DMS upstream HM module starts dms.service via `config.wayland.systemd.target`.
-    # Bu repo'da DMS'i `graphical-session.target` üzerinden yönetiyoruz.
-    systemd.enable = false;
+    # Upstream HM module prefers `config.wayland.systemd.target` for session startup.
+    # Bu repo'da (ve bazı HM kurulumlarında) bu target olmayabiliyor; o durumda
+    # `graphical-session.target` ile kendi servisimiz üzerinden devam ediyoruz.
+    systemd.enable = hasWaylandTarget;
     quickshell.package = pkgs.quickshell;
   };
 
@@ -50,11 +54,11 @@ lib.mkIf cfg.enable {
     XDG_ICON_THEME = "a-candy-beauty-icon-theme";
   };
 
-  systemd.user.services.dms = {
+  systemd.user.services.dms = lib.mkIf (!hasWaylandTarget) {
     Unit = {
       Description = "DankMaterialShell";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
+      After = [ sessionTarget ];
+      PartOf = [ sessionTarget ];
     };
     Service = {
       Type = "simple";
@@ -85,7 +89,7 @@ lib.mkIf cfg.enable {
       StandardOutput = "journal";
       StandardError = "journal";
     };
-    Install.WantedBy = [ "graphical-session.target" ];
+    Install.WantedBy = [ sessionTarget ];
   };
 
   # Ensure DMS plugins are present; install from registry when missing.
@@ -97,8 +101,8 @@ lib.mkIf cfg.enable {
   systemd.user.services.dms-plugin-sync = {
     Unit = {
       Description = "DMS plugin sync (best-effort)";
-      After = [ "graphical-session.target" "dms.service" ];
-      PartOf = [ "graphical-session.target" ];
+      After = [ sessionTarget "dms.service" ];
+      PartOf = [ sessionTarget ];
     };
     Service = {
       Type = "oneshot";
@@ -140,7 +144,7 @@ lib.mkIf cfg.enable {
         exit 0
       '';
     };
-    Install.WantedBy = [ "graphical-session.target" ];
+    Install.WantedBy = [ sessionTarget ];
   };
 
   # Lock davranışı:
