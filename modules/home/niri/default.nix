@@ -278,6 +278,24 @@ let
       Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
       Mod+WheelScrollRight { focus-column-right; }
       Mod+WheelScrollLeft  { focus-column-left; }
+
+      // ========================================================================
+      // nirius (window focusing / scratchpad-like helpers)
+      // ========================================================================
+      // NOTE: Requires niriusd running (enabled via cfg.enableNirius).
+
+      // Focus-or-spawn: terminal
+      Mod+Shift+Return { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
+
+      // Bring Spotify to current workspace (and focus)
+      Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
+
+      // Scratchpad toggle for the focused window (quick hide/show workflow)
+      Mod+Shift+Grave { spawn "${bins.nirius}" "scratchpad-toggle"; }
+      Mod+Grave { spawn "${bins.nirius}" "scratchpad-show"; }
+
+      // Follow-mode toggle (floating media players follow workspace switches)
+      Mod+Shift+F10 { spawn "${bins.nirius}" "toggle-follow-mode"; }
     }
   '';
 
