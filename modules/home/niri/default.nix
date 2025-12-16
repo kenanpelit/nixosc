@@ -51,12 +51,9 @@ let
       lines = lib.splitString "\n" bindsText;
       isBindLine =
         line:
-        let
-          trimmed = lib.strings.trimLeft line;
-        in
-        lib.hasInfix "{" line
-        && !(lib.hasPrefix "//" trimmed)
-        && !(lib.hasPrefix "binds" trimmed);
+        (builtins.match ".*\\{.*" line != null)
+        && (builtins.match "^[[:space:]]*//" line == null)
+        && (builtins.match "^[[:space:]]*binds\\b" line == null);
       bindKey =
         line:
         let
