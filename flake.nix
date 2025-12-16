@@ -105,7 +105,6 @@
       # niri flake only needs rust-overlay for devShells; omit for end users.
       inputs.rust-overlay.follows = "";
       url = "github:YaLTeR/niri/2641356d41199a40ccc9a2e9f61bd34d7e7c8220"; # 1216 - Updated commit
-#      url = "github:YaLTeR/niri/7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b";
     };
 
     # ==========================================================================
@@ -127,12 +126,8 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/b8fca108965c5577bf144c28337f09ff3a6f37f6"; # 1216 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/e7facf740d811a6c7da10873ad088925c14494d0"; # 1216 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/2745116ac5bc7c9c0c15871dc2aadb5229bf57db"; # 1216 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/bafe1c5feeb9a97c2c7c65551289c51df8b887e8"; # 1215 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/e9f6583c60f31195ef73f7639fdc4941833e1e17"; # 1215 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/42a2835929e346e65226876ce3032eef23953eaf"; # 1215 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/3d863979c42b2b8897fa687e6cbea222bdcd5851"; # 1216 - Updated commit
+      #url = "github:AvengeMedia/DankMaterialShell/b8fca108965c5577bf144c28337f09ff3a6f37f6"; # 1216 - Updated commit
     };
 
     # ==========================================================================
