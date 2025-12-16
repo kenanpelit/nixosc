@@ -57,6 +57,7 @@
   my.browser.brave = {
     enable = true;
     setAsDefault = true;
+    defaultDesktopFile = "brave-kenp.desktop";
   };
   my.browser.firefox.enable = true;
   my.browser.chrome-preview.enable = true;
