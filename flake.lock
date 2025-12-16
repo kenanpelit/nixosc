@@ -166,17 +166,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1765837139,
-        "narHash": "sha256-VGhqURtSO5583MM4Uy1GqU2eM7AdjuFtRChZoQ5QjgA=",
+        "lastModified": 1765862233,
+        "narHash": "sha256-mXNIcEtW34wVSABL3kQ+E3aBSJfRtQP7ehfGraX9dAM=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "e7facf740d811a6c7da10873ad088925c14494d0",
+        "rev": "b8fca108965c5577bf144c28337f09ff3a6f37f6",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "e7facf740d811a6c7da10873ad088925c14494d0",
+        "rev": "b8fca108965c5577bf144c28337f09ff3a6f37f6",
         "type": "github"
       }
     },
@@ -1076,17 +1076,17 @@
         "rust-overlay": []
       },
       "locked": {
-        "lastModified": 1765687800,
-        "narHash": "sha256-Erk+ypR8N+rCvjMdUB1N/v4jtm4QRH9k7r/9zh2HyC8=",
+        "lastModified": 1765861551,
+        "narHash": "sha256-1Bo86J/7nm8sndZz9gGW0agydYzLYimdz9aQEhnf1zY=",
         "owner": "YaLTeR",
         "repo": "niri",
-        "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
+        "rev": "2641356d41199a40ccc9a2e9f61bd34d7e7c8220",
         "type": "github"
       },
       "original": {
         "owner": "YaLTeR",
         "repo": "niri",
-        "rev": "7c0898570ca5bd3f10fbf4cf2f8a00edc48d787b",
+        "rev": "2641356d41199a40ccc9a2e9f61bd34d7e7c8220",
         "type": "github"
       }
     },
