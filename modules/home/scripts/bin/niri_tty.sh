@@ -12,7 +12,7 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="1.0.1-niri"
+readonly SCRIPT_VERSION="1.1.0-niri"
 readonly LOG_DIR="$HOME/.logs"
 readonly NIRI_LOG="$LOG_DIR/niri.log"
 readonly DEBUG_LOG="$LOG_DIR/niri_debug.log"
@@ -264,6 +264,61 @@ setup_systemd_integration() {
 }
 
 # =============================================================================
+# Kick session targets (async)
+# =============================================================================
+kick_user_session_targets() {
+	# This must never block compositor startup. Best-effort retries in background.
+	(
+		set -euo pipefail
+
+		mkdir -p "$LOG_DIR" 2>/dev/null || true
+		local hooklog="$LOG_DIR/niri-startup-hook.log"
+		echo "[$(date '+%F %T')] kick: start" >>"$hooklog"
+
+		: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+
+		# Wait briefly for Wayland socket (used by services like sunsetr). Don't hang forever.
+		if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+			for _ in $(seq 1 40); do
+				local wd
+				wd="$(ls -1t "$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)"
+				wd="${wd##*/}"
+				if [[ -n "$wd" ]]; then
+					export WAYLAND_DISPLAY="$wd"
+					break
+				fi
+				sleep 0.25
+			done
+		fi
+
+		# Wait for systemd user bus to come up (common on early TTY logins).
+		for _ in $(seq 1 60); do
+			if timeout 1s systemctl --user is-system-running >/dev/null 2>&1; then
+				break
+			fi
+			sleep 1
+		done
+
+		echo "[$(date '+%F %T')] kick: WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >>"$hooklog"
+
+		timeout 2s systemctl --user import-environment \
+			WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET \
+			>>"$hooklog" 2>&1 || true
+		timeout 2s dbus-update-activation-environment --systemd \
+			WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET \
+			>>"$hooklog" 2>&1 || true
+
+		# Start the targets that most user services in this repo are wired to.
+		timeout 2s systemctl --user start --no-block \
+			graphical-session-pre.target xdg-desktop-autostart.target graphical-session.target \
+			>>"$hooklog" 2>&1 || true
+
+		echo "[$(date '+%F %T')] kick: done" >>"$hooklog"
+		exit 0
+	) &
+}
+
+# =============================================================================
 # Cleanup old Niri processes (TTY mode)
 # =============================================================================
 cleanup_old_processes() {
@@ -292,19 +347,16 @@ start_niri() {
 		exit 0
 	fi
 
-	# Niri başladıktan sonra user session target'larını başlat (servisler buraya bağlı).
-	# Not: `niri --session` bazı ortamlarda systemd/dbus bekleyip login'i çok yavaşlatabiliyor.
-	# Bu yüzden compositor'u hızlıca başlatıp target/env sync'i startup hook ile yapıyoruz.
-	local startup_cmd=(
-		"sh"
-		"-lc"
-		"set -eu; mkdir -p \"$HOME/.logs\" 2>/dev/null || true; hooklog=\"$HOME/.logs/niri-startup-hook.log\"; : \"${XDG_RUNTIME_DIR:=/run/user/$(id -u)}\"; if [ -z \"${WAYLAND_DISPLAY:-}\" ]; then wd=$(ls -1t \"$XDG_RUNTIME_DIR\"/wayland-* 2>/dev/null | head -n1); wd=${wd##*/}; [ -n \"$wd\" ] && export WAYLAND_DISPLAY=\"$wd\"; fi; echo \"[$(date +%F\\ %T)] hook: WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} NIRI_SOCKET=${NIRI_SOCKET:-unset}\" >>\"$hooklog\"; if command -v timeout >/dev/null 2>&1; then timeout 2s systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; timeout 2s dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; timeout 2s systemctl --user start --no-block graphical-session-pre.target xdg-desktop-autostart.target graphical-session.target >>\"$hooklog\" 2>&1 || true; else systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; systemctl --user start --no-block graphical-session-pre.target xdg-desktop-autostart.target graphical-session.target >>\"$hooklog\" 2>&1 || true; fi; exit 0"
-	)
+	kick_user_session_targets
 
 	if [[ "$GDM_MODE" == "true" ]]; then
-		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY" -- "${startup_cmd[@]}"
+		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY"
 	else
-		exec "$NIRI_BINARY" -- "${startup_cmd[@]}" >>"$NIRI_LOG" 2>&1
+		"$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
+		local rc=$?
+		error "Niri exited (code=$rc). Log: $NIRI_LOG"
+		sleep 2
+		exec "${SHELL:-bash}" -l
 	fi
 }
 
