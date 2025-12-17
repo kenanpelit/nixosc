@@ -72,6 +72,7 @@ in
       starship              # Cross-shell prompt
       fastfetch neofetch    # System info
       htop btop procs       # Process viewers
+      inxi                  # Hardware/system summary (useful for debugging)
       tldr                  # Simplified man pages
       killall               # Process killer
       wl-clipboard clipse      # Clipboard tools
