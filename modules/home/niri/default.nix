@@ -957,5 +957,28 @@ in
 
     # Deprecated placeholder (kept to avoid stale references)
     xdg.configFile."niri/dms/alttab.kdl".text = "";
+
+    # -------------------------------------------------------------------------
+    # Session bootstrap service (similar to hypr-init)
+    #
+    # Why:
+    # - Keep "do these things on session start" logic out of the compositor config
+    # - Make it easy to re-run / debug (`systemctl --user restart niri-init`)
+    # - Ensure audio defaults are applied even if PipeWire comes up late
+    # -------------------------------------------------------------------------
+    systemd.user.services.niri-init = {
+      Unit = {
+        Description = "Niri session bootstrap (monitors + audio + layout)";
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 3 && niri-init'";
+      };
+      Install = {
+        WantedBy = [ "graphical-session.target" ];
+      };
+    };
   };
 }
