@@ -325,7 +325,9 @@ let
       Alt+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotWindow"; }
 
       // Reload config (fast iteration)
-      Mod+Ctrl+R hotkey-overlay-title="Reload Niri Config" { load-config-file; }
+      // Not all niri versions expose `load-config-file` as a direct config action,
+      // but it is always available via the IPC CLI.
+      Mod+Ctrl+R hotkey-overlay-title="Reload Niri Config" { spawn "niri" "msg" "action" "load-config-file"; }
 
       // Re-apply daily workspace layout (move running apps to their workspaces)
       Mod+Ctrl+Shift+R hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
