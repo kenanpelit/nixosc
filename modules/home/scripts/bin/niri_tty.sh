@@ -12,7 +12,7 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="1.0.0-niri"
+readonly SCRIPT_VERSION="1.0.1-niri"
 readonly LOG_DIR="$HOME/.logs"
 readonly NIRI_LOG="$LOG_DIR/niri.log"
 readonly DEBUG_LOG="$LOG_DIR/niri_debug.log"
@@ -181,7 +181,6 @@ setup_environment() {
 	export SDL_VIDEODRIVER=wayland
 	export CLUTTER_BACKEND=wayland
 	export NIXOS_OZONE_WL=1
-	export _JAVA_AWT_WM_NONREPARENTING=1
 
 	# Theme
 	local gtk_theme="catppuccin-${CATPPUCCIN_FLAVOR}-${CATPPUCCIN_ACCENT}-standard+normal"
@@ -294,17 +293,18 @@ start_niri() {
 	fi
 
 	# Niri başladıktan sonra user session target'larını başlat (servisler buraya bağlı).
-	# `--no-block` ile login'i / compositor startup'ı yavaşlatmasın.
+	# Not: `niri --session` bazı ortamlarda systemd/dbus bekleyip login'i çok yavaşlatabiliyor.
+	# Bu yüzden compositor'u hızlıca başlatıp target/env sync'i startup hook ile yapıyoruz.
 	local startup_cmd=(
 		"sh"
 		"-lc"
-		"if command -v timeout >/dev/null 2>&1; then timeout 2s systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; else systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; fi >/dev/null 2>&1 || true; if command -v timeout >/dev/null 2>&1; then timeout 2s dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; else dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; fi >/dev/null 2>&1 || true; if command -v timeout >/dev/null 2>&1; then timeout 2s systemctl --user start --no-block graphical-session.target; else systemctl --user start --no-block graphical-session.target; fi >/dev/null 2>&1 || true"
+		"set -euo pipefail; mkdir -p \"$HOME/.logs\" 2>/dev/null || true; hooklog=\"$HOME/.logs/niri-startup-hook.log\"; : \"${XDG_RUNTIME_DIR:=/run/user/$(id -u)}\"; if [ -z \"${WAYLAND_DISPLAY:-}\" ]; then wd=$(ls -1t \"$XDG_RUNTIME_DIR\"/wayland-* 2>/dev/null | head -n1); wd=${wd##*/}; [ -n \"$wd\" ] && export WAYLAND_DISPLAY=\"$wd\"; fi; echo \"[$(date +%F\\ %T)] hook: WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} NIRI_SOCKET=${NIRI_SOCKET:-unset}\" >>\"$hooklog\"; if command -v timeout >/dev/null 2>&1; then timeout 2s systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; timeout 2s dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; timeout 2s systemctl --user start --no-block graphical-session.target >>\"$hooklog\" 2>&1 || true; else systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >>\"$hooklog\" 2>&1 || true; systemctl --user start --no-block graphical-session.target >>\"$hooklog\" 2>&1 || true; fi; exit 0"
 	)
 
 	if [[ "$GDM_MODE" == "true" ]]; then
-		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY" --session -- "${startup_cmd[@]}"
+		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY" -- "${startup_cmd[@]}"
 	else
-		exec "$NIRI_BINARY" --session -- "${startup_cmd[@]}" >>"$NIRI_LOG" 2>&1
+		exec "$NIRI_BINARY" -- "${startup_cmd[@]}" >>"$NIRI_LOG" 2>&1
 	fi
 }
 
@@ -322,6 +322,7 @@ main() {
 	done
 
 	detect_gdm_session
+	info "niri_tty v${SCRIPT_VERSION} (GDM_MODE=$GDM_MODE)"
 
 	setup_directories
 	rotate_logs
