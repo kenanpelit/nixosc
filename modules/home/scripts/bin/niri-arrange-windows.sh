@@ -106,10 +106,12 @@ get_window_loc() {
   [[ -n "$win_json" ]] || return 1
 
   local ws_name ws_id ws_out ws_idx
-  ws_name="$(jq -r '.workspace.name // empty' <<<"$win_json")"
+  # NOTE: Different niri versions expose slightly different JSON shapes.
+  # We keep this best-effort and prefer `workspace_id` which exists widely.
+  ws_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$win_json")"
   ws_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$win_json")"
-  ws_out="$(jq -r '.workspace.output // .output // empty' <<<"$win_json")"
-  ws_idx="$(jq -r '.workspace.index // empty' <<<"$win_json")"
+  ws_out="$(jq -r '.output // .output_name // .workspace.output // .workspace_output // empty' <<<"$win_json")"
+  ws_idx="$(jq -r '.workspace.index // .workspace_idx // empty' <<<"$win_json")"
 
   printf 'name=%s id=%s out=%s idx=%s\n' "${ws_name:-?}" "${ws_id:-?}" "${ws_out:-?}" "${ws_idx:-?}"
 }
@@ -176,7 +178,8 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
   id="$(jq -r '.id' <<<"$win")"
   app_id="$(jq -r '.app_id // ""' <<<"$win")"
   title="$(jq -r '.title // ""' <<<"$win")"
-  current_ws_name="$(jq -r '.workspace.name // empty' <<<"$win")"
+  current_ws_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$win")"
+  current_ws_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$win")"
 
   # Skip some noisy / transient surfaces.
   if [[ "$app_id" == "hyprland-share-picker" ]]; then
@@ -200,9 +203,15 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     continue
   fi
 
-  # Skip if already on the target named workspace.
+  # Skip if already there.
+  # Prefer matching by *name* when available; otherwise fall back to workspace_id
+  # which, on many niri builds, is the workspace index on that output.
   if [[ -n "$current_ws_name" && "$current_ws_name" == "$target_ws" ]]; then
-    [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws"
+    [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (by name)"
+    continue
+  fi
+  if [[ -n "$current_ws_id" && "$current_ws_id" == "$target_idx" ]]; then
+    [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (by idx=$target_idx)"
     continue
   fi
 
@@ -227,9 +236,13 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
   # Verify (best-effort)
   after="$(get_window_json_by_id "$id" || true)"
   if [[ -n "$after" ]]; then
-    after_name="$(jq -r '.workspace.name // empty' <<<"$after")"
+    after_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$after")"
+    after_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$after")"
+
     if [[ -n "$after_name" && "$after_name" == "$target_ws" ]]; then
       [[ "$VERBOSE" -eq 1 ]] && echo "    ok: $(get_window_loc "$after")"
+    elif [[ -n "$after_id" && "$after_id" == "$target_idx" ]]; then
+      [[ "$VERBOSE" -eq 1 ]] && echo "    ok (by idx): $(get_window_loc "$after")"
     else
       echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
     fi
