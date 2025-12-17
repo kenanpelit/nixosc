@@ -329,9 +329,6 @@ let
       // but it is always available via the IPC CLI.
       Mod+Ctrl+R hotkey-overlay-title="Reload Niri Config" { spawn "niri" "msg" "action" "load-config-file"; }
 
-      // Re-apply daily workspace layout (move running apps to their workspaces)
-      Mod+Ctrl+Shift+R hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
-
       // Mouse Wheel
       Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
       Mod+WheelScrollUp   cooldown-ms=150 { focus-workspace-up; }
@@ -373,7 +370,7 @@ let
       // ========================================================================
 
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
-      Mod+Shift+A { spawn "niri-arrange-windows"; }
+      Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
       Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
       Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
 
