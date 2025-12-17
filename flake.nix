@@ -231,7 +231,9 @@
         # Modules automatically added to all NixOS systems.
         systems.modules.nixos = with inputs; [
           home-manager.nixosModules.home-manager
-          dankMaterialShell.nixosModules.dankMaterialShell
+          # DMS upstream renamed `nixosModules.dankMaterialShell` -> `nixosModules.dank-material-shell`.
+          # Using `default` keeps us compatible and avoids the deprecation warning.
+          dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
         ];
 
