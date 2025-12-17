@@ -218,36 +218,51 @@ check_requirements() {
 		#   TM_CLIPBOARD_BACKEND=clipse   tm.sh clip
 		backend="${TM_CLIPBOARD_BACKEND:-auto}"
 
-		if [[ "$backend" == "cliphist" || "$backend" == "auto" ]]; then
+		# Auto-detect best available backend.
+		if [[ "$backend" == "auto" ]]; then
 			if command -v cliphist &>/dev/null && command -v wl-copy &>/dev/null; then
-				req_failed=0
-				break
+				backend="cliphist"
+			elif command -v clipse &>/dev/null; then
+				backend="clipse"
+			else
+				backend="cliphist"
 			fi
-			if [[ "$backend" == "cliphist" ]]; then
-				error "cliphist backend seçildi ama eksik bağımlılık var."
+		fi
+
+		case "$backend" in
+		cliphist)
+			if ! command -v cliphist &>/dev/null; then
+				error "cliphist kurulu değil!"
 				info "Gerekli: cliphist + wl-clipboard (wl-copy/wl-paste)"
 				req_failed=1
-				break
 			fi
-		fi
-
-		if [[ "$backend" == "clipse" || "$backend" == "auto" ]]; then
-			if command -v clipse &>/dev/null; then
-				req_failed=0
-				break
-			fi
-			if [[ "$backend" == "clipse" ]]; then
-				error "clipse backend seçildi ama clipse kurulu değil!"
+			if ! command -v wl-copy &>/dev/null; then
+				error "wl-clipboard kurulu değil!"
+				info "Gerekli: wl-clipboard (wl-copy/wl-paste)"
 				req_failed=1
-				break
 			fi
-		fi
+			;;
+		clipse)
+			if ! command -v clipse &>/dev/null; then
+				error "clipse kurulu değil!"
+				info "Alternatif olarak cliphist + wl-clipboard kullanabilirsin."
+				req_failed=1
+			fi
+			;;
+		*)
+			error "Bilinmeyen clipboard backend: $backend"
+			req_failed=1
+			;;
+		esac
 
-		error "Clipboard modu için uygun backend bulunamadı."
-		info "Çözümler:"
-		info "  - (Önerilen) cliphist + wl-clipboard: `my.user.cliphist.enable = true;`"
-		info "  - Alternatif: clipse: `my.user.clipse.enable = true;`"
-		req_failed=1
+		if [[ "$req_failed" -ne 0 ]]; then
+			info "Çözümler:"
+			info "  - (Önerilen) cliphist + wl-clipboard (wl-copy/wl-paste)"
+			info "  - Alternatif: clipse"
+			info "Backend seçimi:"
+			info "  TM_CLIPBOARD_BACKEND=cliphist tm.sh clip"
+			info "  TM_CLIPBOARD_BACKEND=clipse   tm.sh clip"
+		fi
 		;;
 	"plugin")
 		check_tmux
