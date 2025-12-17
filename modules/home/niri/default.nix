@@ -108,6 +108,7 @@ let
     { appId = "^brave-youtube\\.com__-Default$"; workspace = "7"; maximize = true; }
     { appId = "^ferdium$"; workspace = "9"; }
     { appId = "^vlc$"; workspace = "6"; }
+    { appId = "^remote-viewer$"; workspace = "6"; }
   ];
 
   # Rules for the "arrange windows" helper script.
