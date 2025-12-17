@@ -209,16 +209,45 @@ check_requirements() {
 		fi
 		;;
 	"clipboard")
-		if ! command -v cliphist &>/dev/null; then
-			error "cliphist kurulu değil!"
-			info "Kurulum: yay -S cliphist (Arch) veya https://github.com/sentriz/cliphist"
-			req_failed=1
+		# Clipboard backends:
+		# - cliphist + wl-clipboard: fzf üzerinden geçmiş seçimi + silme
+		# - clipse: kendi TUI/clipboard history ekranını açar (cliphist olmadan da çalışır)
+		#
+		# Manuel seçim:
+		#   TM_CLIPBOARD_BACKEND=cliphist tm.sh clip
+		#   TM_CLIPBOARD_BACKEND=clipse   tm.sh clip
+		backend="${TM_CLIPBOARD_BACKEND:-auto}"
+
+		if [[ "$backend" == "cliphist" || "$backend" == "auto" ]]; then
+			if command -v cliphist &>/dev/null && command -v wl-copy &>/dev/null; then
+				req_failed=0
+				break
+			fi
+			if [[ "$backend" == "cliphist" ]]; then
+				error "cliphist backend seçildi ama eksik bağımlılık var."
+				info "Gerekli: cliphist + wl-clipboard (wl-copy/wl-paste)"
+				req_failed=1
+				break
+			fi
 		fi
-		if ! command -v wl-copy &>/dev/null; then
-			error "wl-clipboard kurulu değil!"
-			info "Kurulum: sudo pacman -S wl-clipboard"
-			req_failed=1
+
+		if [[ "$backend" == "clipse" || "$backend" == "auto" ]]; then
+			if command -v clipse &>/dev/null; then
+				req_failed=0
+				break
+			fi
+			if [[ "$backend" == "clipse" ]]; then
+				error "clipse backend seçildi ama clipse kurulu değil!"
+				req_failed=1
+				break
+			fi
 		fi
+
+		error "Clipboard modu için uygun backend bulunamadı."
+		info "Çözümler:"
+		info "  - (Önerilen) cliphist + wl-clipboard: `my.user.cliphist.enable = true;`"
+		info "  - Alternatif: clipse: `my.user.clipse.enable = true;`"
+		req_failed=1
 		;;
 	"plugin")
 		check_tmux
@@ -563,22 +592,47 @@ handle_clipboard_mode() {
 		return 1
 	fi
 
-	setup_fzf_theme "Clipboard" "ENTER: Yapıştır | CTRL-D: Sil | ESC: Çık"
-
-	local selected
-	selected=$(cliphist list |
-		fzf --preview 'echo {} | cliphist decode' \
-			--preview-window=up:70%:wrap \
-			--bind 'ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)')
-
-	if [[ -n "$selected" ]]; then
-		if echo "$selected" | cliphist decode | wl-copy 2>/dev/null; then
-			success "Panoya kopyalandı"
+	backend="${TM_CLIPBOARD_BACKEND:-auto}"
+	if [[ "$backend" == "auto" ]]; then
+		if command -v cliphist &>/dev/null && command -v wl-copy &>/dev/null; then
+			backend="cliphist"
+		elif command -v clipse &>/dev/null; then
+			backend="clipse"
 		else
-			error "Panoya kopyalanamadı"
-			return 1
+			backend="cliphist"
 		fi
 	fi
+
+	if [[ "$backend" == "cliphist" ]]; then
+		setup_fzf_theme "Clipboard" "ENTER: Yapıştır | CTRL-D: Sil | ESC: Çık"
+
+		local selected
+		selected=$(cliphist list |
+			fzf --preview 'echo {} | cliphist decode' \
+				--preview-window=up:70%:wrap \
+				--bind 'ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)')
+
+		if [[ -n "$selected" ]]; then
+			if echo "$selected" | cliphist decode | wl-copy 2>/dev/null; then
+				success "Panoya kopyalandı"
+			else
+				error "Panoya kopyalanamadı"
+				return 1
+			fi
+		fi
+		return 0
+	fi
+
+	if [[ "$backend" == "clipse" ]]; then
+		# Clipse kendi içinde geçmişi listeler, seçer, pin/sil işlemlerini yapar.
+		# tm.sh sadece bu arayüzü açar.
+		info "Clipse açılıyor (clipboard history)..."
+		clipse
+		return $?
+	fi
+
+	error "Bilinmeyen clipboard backend: $backend"
+	return 1
 }
 
 #--------------------------------------
@@ -1194,9 +1248,13 @@ Kısayollar:
     CTRL-J/K: Preview yukarı/aşağı
     ESC:     Çık
 
-Gereksinimler:
-    • cliphist
-    • wl-clipboard
+Backend'ler:
+    • cliphist + wl-clipboard  (varsayılan, fzf arayüzü)
+    • clipse                  (alternatif, kendi TUI arayüzü)
+
+Backend seçimi:
+    TM_CLIPBOARD_BACKEND=cliphist $(basename "$0") clip
+    TM_CLIPBOARD_BACKEND=clipse   $(basename "$0") clip
 
 Kurulum (Arch):
     yay -S cliphist wl-clipboard
