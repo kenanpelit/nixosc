@@ -561,6 +561,13 @@ let
       ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
     }
 
+    // Ente Auth (2FA)
+    // Keep it floating like Clipse, but do not force a workspace.
+    window-rule {
+      match app-id=r#"^io\.ente\.auth$"#;
+      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
+    }
+
     // Notes
     window-rule {
       match app-id=r#"^anote$"#;
