@@ -179,7 +179,6 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
   app_id="$(jq -r '.app_id // ""' <<<"$win")"
   title="$(jq -r '.title // ""' <<<"$win")"
   current_ws_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$win")"
-  current_ws_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$win")"
 
   # Skip some noisy / transient surfaces.
   if [[ "$app_id" == "hyprland-share-picker" ]]; then
@@ -204,14 +203,14 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
   fi
 
   # Skip if already there.
-  # Prefer matching by *name* when available; otherwise fall back to workspace_id
-  # which, on many niri builds, is the workspace index on that output.
+  # Prefer matching by *name* when available.
+  #
+  # IMPORTANT: Some niri builds only expose `workspace_id` in JSON and it is an
+  # index scoped to the window's *current output*. Since we cannot reliably
+  # infer the output from JSON on those builds, we avoid using `workspace_id`
+  # as a "already correct" signal (it would create false positives).
   if [[ -n "$current_ws_name" && "$current_ws_name" == "$target_ws" ]]; then
     [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (by name)"
-    continue
-  fi
-  if [[ -n "$current_ws_id" && "$current_ws_id" == "$target_idx" ]]; then
-    [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (by idx=$target_idx)"
     continue
   fi
 
@@ -220,12 +219,14 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     continue
   fi
 
-  # We avoid `focus-window` here because some setups deny focusing by id.
-  # Instead:
-  # 1) focus the target monitor (best-effort)
-  # 2) move the window by id to the workspace *index* on that monitor
-  if ! "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1; then
-    [[ "$VERBOSE" -eq 1 ]] && echo " !! focus-monitor failed: $target_out" >&2
+  # Move in two steps to avoid numeric-workspace ambiguity across monitors:
+  # 1) Move the window to the correct output (does not require focusing).
+  # 2) Move the window to the workspace index on that output.
+  #
+  # NOTE: `move-window-to-monitor` supports `--id` (unlike many other actions).
+  if ! "${NIRI[@]}" action move-window-to-monitor --id "$id" "$target_out" >/dev/null 2>&1; then
+    echo " !! move-window-to-monitor failed for id=$id -> out:$target_out" >&2
+    continue
   fi
 
   if ! "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1; then
@@ -241,10 +242,15 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
 
     if [[ -n "$after_name" && "$after_name" == "$target_ws" ]]; then
       [[ "$VERBOSE" -eq 1 ]] && echo "    ok: $(get_window_loc "$after")"
-    elif [[ -n "$after_id" && "$after_id" == "$target_idx" ]]; then
-      [[ "$VERBOSE" -eq 1 ]] && echo "    ok (by idx): $(get_window_loc "$after")"
     else
-      echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
+      # Older JSON schemas won't include workspace name/output. We can only
+      # show the raw workspace_id here, which is not sufficient to validate
+      # cross-output placement.
+      if [[ -n "$after_id" && "$after_id" == "$target_idx" ]]; then
+        [[ "$VERBOSE" -eq 1 ]] && echo "    ok (by idx, output unknown): $(get_window_loc "$after")"
+      else
+        echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
+      fi
     fi
   fi
 done
