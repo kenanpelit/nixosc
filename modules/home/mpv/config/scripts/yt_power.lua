@@ -29,12 +29,12 @@ local OPTS = {
 	quality_down_key = "DOWN",
 	quality_select_key = "ENTER",
 	fetch_formats_with_ytdlp = true, -- true => yt-dlp ile gerçek formatlar
-	avoid_av1 = true, -- AV1 dışla (av1/av01)
-	prefer_vp9 = true, -- VP9'u avc1 öncesi dene
-	fps_limit = 60, -- üst FPS sınırı
-	quality_limit = 1080, -- üst çözünürlük sınırı (1080/1440/2160 vs.)
-	quality_presets_json = [[
-  [
+		avoid_av1 = true, -- AV1 dışla (av1/av01)
+		prefer_vp9 = true, -- VP9'u avc1 öncesi dene
+		fps_limit = 60, -- üst FPS sınırı
+		quality_limit = 1440, -- üst çözünürlük sınırı (1080/1440/2160 vs.)
+		quality_presets_json = [[
+	  [
     {"4320p" : "bestvideo[height<=?4320]+bestaudio/best"},
     {"2160p" : "bestvideo[height<=?2160]+bestaudio/best"},
     {"1440p" : "bestvideo[height<=?1440]+bestaudio/best"},
