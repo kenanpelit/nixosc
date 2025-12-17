@@ -110,6 +110,22 @@ let
     { appId = "^vlc$"; workspace = "6"; }
   ];
 
+  # Rules for the "arrange windows" helper script.
+  # Keep this in sync with your window-rule workspace layout so you can
+  # re-apply the layout at any time (after a messy session, after launching
+  # apps manually, etc.).
+  #
+  # File is written to: ~/.config/niri/dms/workspace-rules.tsv
+  # and consumed by: `niri-arrange-windows`
+  arrangeRules =
+    [
+      # Terminal / session anchor
+      { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; }
+    ]
+    ++ workspaceRules;
+
+  arrangeRulesTsv = lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}") arrangeRules) + "\n";
+
   renderWorkspaceRules = lib.concatStringsSep "\n" (
     map (r: ''
       window-rule {
@@ -307,6 +323,12 @@ let
       Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshot"; }
       Ctrl+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotScreen"; }
       Alt+Print { spawn "${bins.dms}" "ipc" "call" "niri" "screenshotWindow"; }
+
+      // Reload config (fast iteration)
+      Mod+Ctrl+R hotkey-overlay-title="Reload Niri Config" { load-config-file; }
+
+      // Re-apply daily workspace layout (move running apps to their workspaces)
+      Mod+Ctrl+Shift+R hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
 
       // Mouse Wheel
       Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
@@ -925,6 +947,7 @@ in
     xdg.configFile."niri/dms/binds-mpv.kdl".text = bindsMpv;
     xdg.configFile."niri/dms/binds-workspaces.kdl".text = bindsWorkspaces;
     xdg.configFile."niri/dms/binds-monitors.kdl".text = bindsMonitors;
+    xdg.configFile."niri/dms/workspace-rules.tsv".text = arrangeRulesTsv;
     xdg.configFile."niri/dms/rules.kdl".text = rulesConfig;
     xdg.configFile."niri/dms/animations.kdl".text = animationsConfig;
     xdg.configFile."niri/dms/gestures.kdl".text = gesturesConfig;
@@ -935,4 +958,3 @@ in
     xdg.configFile."niri/dms/alttab.kdl".text = "";
   };
 }
-
