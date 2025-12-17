@@ -124,6 +124,7 @@ lib.mkIf cfg.enable {
 
                 export XDG_SESSION_TYPE=wayland
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                export PATH="/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
 
                 if command -v niri_tty >/dev/null 2>&1; then
                     echo "Starting Niri with optimized configuration..."
