@@ -52,28 +52,62 @@ fi
 
 NIRI=(niri msg)
 
+rules_file="${XDG_CONFIG_HOME:-$HOME/.config}/niri/dms/workspace-rules.tsv"
+declare -a RULE_PATTERNS=()
+declare -a RULE_WORKSPACES=()
+
+load_rules() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+
+  while IFS=$'\t' read -r pattern ws; do
+    [[ -z "${pattern//[[:space:]]/}" ]] && continue
+    [[ "${pattern:0:1}" == "#" ]] && continue
+    [[ -z "${ws//[[:space:]]/}" ]] && continue
+    RULE_PATTERNS+=("$pattern")
+    RULE_WORKSPACES+=("$ws")
+  done <"$file"
+}
+
+if load_rules "$rules_file"; then
+  :
+else
+  # Built-in fallback (kept minimal). Prefer the generated TSV from `modules/home/niri`.
+  RULE_PATTERNS+=("^(TmuxKenp|Tmux)$")
+  RULE_WORKSPACES+=("2")
+  RULE_PATTERNS+=("^Kenp$")
+  RULE_WORKSPACES+=("1")
+  RULE_PATTERNS+=("^Ai$")
+  RULE_WORKSPACES+=("3")
+  RULE_PATTERNS+=("^CompecTA$")
+  RULE_WORKSPACES+=("4")
+  RULE_PATTERNS+=("^WebCord$")
+  RULE_WORKSPACES+=("5")
+  RULE_PATTERNS+=("^discord$")
+  RULE_WORKSPACES+=("5")
+  RULE_PATTERNS+=("^(spotify|Spotify|com\\.spotify\\.Client)$")
+  RULE_WORKSPACES+=("8")
+  RULE_PATTERNS+=("^ferdium$")
+  RULE_WORKSPACES+=("9")
+  RULE_PATTERNS+=("^org\\.keepassxc\\.KeePassXC$")
+  RULE_WORKSPACES+=("7")
+  RULE_PATTERNS+=("^brave-youtube\\.com__-Default$")
+  RULE_WORKSPACES+=("7")
+fi
+
 focused_id="$("${NIRI[@]}" -j focused-window 2>/dev/null | jq -r '.id // empty' || true)"
 
 target_for_app_id() {
   local app_id="${1:-}"
   [[ -z "$app_id" ]] && return 1
 
-  # Semsumo / daily layout mapping (App ID -> workspace)
-  # (Bu listeyi `modules/home/niri/default.nix` içindeki semsumoWorkspaceRules ile uyumlu tut.)
-  if [[ "$app_id" =~ ^(TmuxKenp|Tmux)$ ]]; then echo "2"; return 0; fi
-
-  if [[ "$app_id" =~ ^Kenp$ ]]; then echo "1"; return 0; fi
-  if [[ "$app_id" =~ ^Ai$ ]]; then echo "3"; return 0; fi
-  if [[ "$app_id" =~ ^CompecTA$ ]]; then echo "4"; return 0; fi
-  if [[ "$app_id" =~ ^brave-youtube\.com__-Default$ ]]; then echo "7"; return 0; fi
-
-  if [[ "$app_id" =~ ^WebCord$ ]]; then echo "5"; return 0; fi
-  if [[ "$app_id" =~ ^discord$ ]]; then echo "5"; return 0; fi
-
-  if [[ "$app_id" =~ ^(spotify|Spotify|com\.spotify\.Client)$ ]]; then echo "8"; return 0; fi
-  if [[ "$app_id" =~ ^ferdium$ ]]; then echo "9"; return 0; fi
-
-  if [[ "$app_id" =~ ^org\.keepassxc\.KeePassXC$ ]]; then echo "7"; return 0; fi
+  local i
+  for i in "${!RULE_PATTERNS[@]}"; do
+    if [[ "$app_id" =~ ${RULE_PATTERNS[$i]} ]]; then
+      echo "${RULE_WORKSPACES[$i]}"
+      return 0
+    fi
+  done
   return 1
 }
 
