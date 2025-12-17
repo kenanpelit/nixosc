@@ -56,6 +56,40 @@ rules_file="${XDG_CONFIG_HOME:-$HOME/.config}/niri/dms/workspace-rules.tsv"
 declare -a RULE_PATTERNS=()
 declare -a RULE_WORKSPACES=()
 
+resolve_workspace_ref() {
+  # Given a workspace *name* (often numeric like "8"), resolve it to:
+  #   <output-name> <workspace-index-on-that-output>
+  #
+  # Why: niri CLI "workspace reference" is (index OR name). Numeric names are
+  # ambiguous and get parsed as index, so we must convert name->index ourselves.
+  local want_name="${1:-}"
+  [[ -n "$want_name" ]] || return 1
+
+  local current_output=""
+  local line idx name
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^Output[[:space:]]+\"([^\"]+)\": ]]; then
+      current_output="${BASH_REMATCH[1]}"
+      continue
+    fi
+
+    # Examples:
+    #   1 "1"
+    # * 2 "2"
+    if [[ "$line" =~ ^[[:space:]]*\*?[[:space:]]*([0-9]+)[[:space:]]+\"([^\"]*)\" ]]; then
+      idx="${BASH_REMATCH[1]}"
+      name="${BASH_REMATCH[2]}"
+      if [[ -n "$current_output" && "$name" == "$want_name" ]]; then
+        printf '%s\t%s\n' "$current_output" "$idx"
+        return 0
+      fi
+    fi
+  done < <("${NIRI[@]}" workspaces 2>/dev/null)
+
+  return 1
+}
+
 load_rules() {
   local file="$1"
   [[ -f "$file" ]] || return 1
@@ -118,7 +152,6 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
   id="$(jq -r '.id' <<<"$win")"
   app_id="$(jq -r '.app_id // ""' <<<"$win")"
   title="$(jq -r '.title // ""' <<<"$win")"
-  current_ws="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$win")"
 
   # Skip some noisy / transient surfaces.
   if [[ "$app_id" == "hyprland-share-picker" ]]; then
@@ -135,21 +168,31 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     continue
   fi
 
-  if [[ -n "$current_ws" && "$current_ws" == "$target_ws" ]]; then
+  target_out=""
+  target_idx=""
+  if ! read -r target_out target_idx < <(resolve_workspace_ref "$target_ws"); then
+    echo " !! cannot resolve workspace name '$target_ws' to output/index (niri msg workspaces)" >&2
     continue
   fi
 
-  echo " -> $id: '$app_id' (ws:${current_ws:-?}) -> ws:$target_ws"
+  echo " -> $id: '$app_id' -> ws:$target_ws (output:$target_out idx:$target_idx)"
   if [[ "$DRY_RUN" -eq 1 ]]; then
     continue
   fi
 
   # Actions operate on the focused window, so we focus by id first.
   "${NIRI[@]}" action focus-window "$id" >/dev/null 2>&1 || true
+
+  # Move the column to the correct output first (best-effort).
+  # This avoids workspace-index ambiguity across monitors.
+  "${NIRI[@]}" action move-column-to-monitor "$target_out" >/dev/null 2>&1 || true
+
   # Prefer moving the whole column (keeps tabbed columns together).
-  # Fall back to moving only the window if column move isn't supported.
-  if ! "${NIRI[@]}" action move-column-to-workspace "$target_ws" >/dev/null 2>&1; then
-    "${NIRI[@]}" action move-window-to-workspace "$target_ws" >/dev/null 2>&1 || true
+  # Use index (NOT name) to avoid numeric-name ambiguity.
+  if ! "${NIRI[@]}" action move-column-to-workspace --focus false "$target_idx" >/dev/null 2>&1; then
+    # Fallback: move only the window by id.
+    "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1 || true
+    "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1 || true
   fi
 done
 
