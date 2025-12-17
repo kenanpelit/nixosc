@@ -128,8 +128,9 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/b7911475b63639a59ce61b4828027d59d50d95e5"; # 1217 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/672754b0b5efd9e61ea8080c40614ad3b4fd5dbf"; # 1217 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/d082d41ab91d5d61b69b3843920d023b31d4558c"; # 1217 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/b7911475b63639a59ce61b4828027d59d50d95e5"; # 1217 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/672754b0b5efd9e61ea8080c40614ad3b4fd5dbf"; # 1217 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/3d863979c42b2b8897fa687e6cbea222bdcd5851"; # 1216 - Updated commit
       #url = "github:AvengeMedia/DankMaterialShell/b8fca108965c5577bf144c28337f09ff3a6f37f6"; # 1216 - Updated commit
     };
