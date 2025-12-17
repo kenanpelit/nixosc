@@ -146,7 +146,11 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
 
   # Actions operate on the focused window, so we focus by id first.
   "${NIRI[@]}" action focus-window "$id" >/dev/null 2>&1 || true
-  "${NIRI[@]}" action move-window-to-workspace "$target_ws" >/dev/null 2>&1 || true
+  # Prefer moving the whole column (keeps tabbed columns together).
+  # Fall back to moving only the window if column move isn't supported.
+  if ! "${NIRI[@]}" action move-column-to-workspace "$target_ws" >/dev/null 2>&1; then
+    "${NIRI[@]}" action move-window-to-workspace "$target_ws" >/dev/null 2>&1 || true
+  fi
 done
 
 # Restore focus (best-effort)
