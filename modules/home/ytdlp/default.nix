@@ -23,21 +23,24 @@ in
       # Video Quality and Format Settings
       # ---------------------------------------------------------------------------
       # Video kalitesi seçim sırası:
-      # 1. 1080p+ yüksek FPS (>30fps) videoları tercih eder (AV1 > VP9.2 > VP9 > H.264)
+      # 1. Yüksek kaliteyi tercih eder (VP9/H.264); AV1'i mümkünse seçmez
       # 2. Bulamazsa 1080p normal FPS videoları dener
       # 3. En son olarak mevcut en iyi video kalitesini seçer
       # Her durumda en iyi ses formatını (Opus tercih eder) video ile birleştirir
-      --format "(bestvideo[vcodec^=av01][height>=1080][fps>30]/bestvideo[vcodec^=vp9.2][height>=1080][fps>30]/bestvideo[vcodec^=vp9][height>=1080][fps>30]/bestvideo[vcodec^=avc1][height>=1080][fps>30]/bestvideo[height>=1080][fps>30]/bestvideo[vcodec^=av01][height>=1080]/bestvideo[vcodec^=vp9.2][height>=1080]/bestvideo[vcodec^=vp9][height>=1080]/bestvideo[vcodec^=avc1][height>=1080]/bestvideo[height>=1080]/bestvideo)+(bestaudio[acodec^=opus]/bestaudio)/best"
+      --format "(bestvideo[vcodec^=vp9.2][height>=1080][fps>30]/bestvideo[vcodec^=vp9][height>=1080][fps>30]/bestvideo[vcodec^=avc1][height>=1080][fps>30]/bestvideo[height>=1080][fps>30]/bestvideo[vcodec^=vp9.2][height>=1080]/bestvideo[vcodec^=vp9][height>=1080]/bestvideo[vcodec^=avc1][height>=1080]/bestvideo[height>=1080]/bestvideo)+(bestaudio[acodec^=opus]/bestaudio)/best"
   
       # ---------------------------------------------------------------------------
       # YouTube Client Settings
       # ---------------------------------------------------------------------------
       # YouTube player client seçimi (öncelik sırasına göre):
-      # - android: Cookies desteklemez ama en güvenilir, çoğu video için çalışır
-      # - web_creator: YouTube Creator Studio client, ek özellikler sağlar
-      # - web: Standart web client, cookies destekler (yaş kısıtlamalı videolar için)
-      # NOT: Cookies aktifse android client atlanır ve direkt web_creator/web kullanılır
-      --extractor-args "youtube:player_client=android,web_creator,web"
+      # - ios: Genelde daha stabil format URL'leri (SABR/PO token problemlerinde işe yarar)
+      # - web: Standart web client
+      #
+      # Not:
+      # Son dönem YouTube değişiklikleri bazı client'larda (özellikle android) "PO Token"
+      # gerektiriyor ve yüksek çözünürlük formatları 403/missing url olarak atlanabiliyor.
+      # Bu yüzden android client'ı burada KULLANMIYORUZ.
+      --extractor-args "youtube:player_client=ios,web"
   
       # ---------------------------------------------------------------------------
       # Output Settings
@@ -99,9 +102,11 @@ in
       # Browser Integration
       # ---------------------------------------------------------------------------
       # Tarayıcı çerezlerini kullan (giriş gerektiren veya yaş kısıtlamalı videolar için):
-      # NOT: Android client cookies desteklemediği için bu aktifken android client atlanır
+      # Not: Çerezler sık sık "rotated" olup geçersizleşebiliyor; bu durumda yt-dlp
+      # her çalıştırmada uyarı basar ve bazı client/format seçimlerini de etkileyebilir.
+      # Bu yüzden varsayılan olarak kapalı tutuyoruz; gerektiğinde elle aç.
       #--cookies-from-browser firefox:/home/${username}/.zen/Kenp
-      --cookies-from-browser brave:/home/${username}/.config/BraveSoftware/Brave-Browser/Default
+      #--cookies-from-browser brave:/home/${username}/.config/BraveSoftware/Brave-Browser/Default
     '';
   };
 }
