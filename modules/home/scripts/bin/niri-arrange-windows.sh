@@ -99,6 +99,25 @@ get_window_json_by_id() {
   "${NIRI[@]}" -j windows 2>/dev/null | jq -c ".[] | select(.id == ${id})" 2>/dev/null
 }
 
+get_window_workspace_id_text() {
+  # Fallback for older niri JSON schemas: parse `niri msg windows` text output.
+  # Returns the "Workspace ID" number for a window id.
+  local want_id="${1:-}"
+  [[ -n "$want_id" ]] || return 1
+
+  "${NIRI[@]}" windows 2>/dev/null | awk -v id="$want_id" '
+    $1=="Window" && $2=="ID" {
+      # "Window ID 8:"
+      sub(":", "", $3)
+      in_block = ($3 == id)
+    }
+    in_block && $1=="Workspace" && $2=="ID:" {
+      print $3
+      exit
+    }
+  '
+}
+
 get_window_loc() {
   # Print a compact, human-readable location string for a window JSON object.
   # Output example: name=8 id=123 out=eDP-1 idx=2
@@ -229,6 +248,10 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     continue
   fi
 
+  # Workspace reference is ambiguous without focusing the target output first.
+  # (Some niri versions interpret workspace indices relative to the focused output.)
+  "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1 || true
+
   if ! "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1; then
     echo " !! move-window-to-workspace failed for id=$id -> ws:$target_ws (out:$target_out idx:$target_idx)" >&2
     continue
@@ -251,6 +274,14 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
       else
         echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
       fi
+    fi
+  else
+    # Text fallback verification (works even when JSON schema is minimal).
+    after_ws_id="$(get_window_workspace_id_text "$id" || true)"
+    if [[ -n "$after_ws_id" && "$after_ws_id" == "$target_idx" ]]; then
+      [[ "$VERBOSE" -eq 1 ]] && echo "    ok (text ws_id=$after_ws_id)"
+    elif [[ -n "$after_ws_id" ]]; then
+      echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: text ws_id=$after_ws_id" >&2
     fi
   fi
 done
