@@ -5,7 +5,8 @@
 # Design goals:
 # - Keep Niri config modular (KDL snippets under ~/.config/niri/dms/)
 # - Keep comments English (per user preference)
-# - Avoid duplicate keybinds: Niri rejects any duplicate binding across includes
+# - Avoid duplicate keybinds inside a single `binds {}` block (hard error).
+#   Multiple `binds {}` blocks across includes are fine; later ones override earlier ones.
 # - Provide optional nirius integration (daemon + CLI) without breaking validate
 #
 # Important notes:
@@ -23,8 +24,7 @@ let
   # Optional feature toggles (module-local policy)
   #
   # - enableNiriusBinds:
-  #   Disabled by default to prevent config validation failures due to duplicate
-  #   keybinds. Enable only after choosing non-conflicting key combos.
+  #   Enabled with "safe" key combos that should not collide with defaults.
   # ---------------------------------------------------------------------------
   enableNiriusBinds = true;
 
@@ -340,9 +340,11 @@ let
       // nirius Integration (optional)
       //
       // WARNING:
-      // - Niri rejects duplicate keybinds across all included files.
+      // - Niri rejects duplicate keys inside the same `binds {}` block.
+      // - Multiple `binds {}` blocks across includes are merged; conflicting keys
+      //   are replaced (last definition wins).
       // - Your previous validate error was caused by binding Mod+Grave and
-      //   Mod+Shift+Grave twice, AND by calling scratchpad via niriusd.
+      //   Mod+Shift+Grave twice in the same file, AND by calling scratchpad via niriusd.
       // - Enable these binds only after picking keys that do not conflict with
       //   existing ones (Mod+Grave is already used above).
       //
