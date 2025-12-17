@@ -12,7 +12,7 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="1.1.0-niri"
+readonly SCRIPT_VERSION="1.2.0-niri"
 readonly LOG_DIR="$HOME/.logs"
 readonly NIRI_LOG="$LOG_DIR/niri.log"
 readonly DEBUG_LOG="$LOG_DIR/niri_debug.log"
@@ -147,14 +147,15 @@ check_system() {
 		export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 	fi
 
-	# Not:
-	# `niri-session` wrapper'ı login shell'i tekrar başlatır. Bu repo'da TTY login sonrası
-	# `.zprofile/.bash_profile` otomatik `niri_tty` çağırdığı için recursion/hang yaratabiliyor.
-	# Bu yüzden doğrudan `niri --session` kullanıyoruz.
-	if command -v niri &>/dev/null; then
+	# Prefer starting via `niri-session` (systemd user session integration).
+	# We prevent recursion in `.zprofile` using `NIRI_TTY_GUARD`.
+	if command -v niri-session &>/dev/null; then
+		NIRI_BINARY="niri-session"
+	elif command -v niri &>/dev/null; then
 		NIRI_BINARY="niri"
+		warn "niri-session bulunamadı, fallback: niri --session (user services/targets çalışmayabilir)"
 	else
-		error "niri bulunamadı!"
+		error "niri veya niri-session bulunamadı!"
 	fi
 }
 
@@ -264,61 +265,6 @@ setup_systemd_integration() {
 }
 
 # =============================================================================
-# Kick session targets (async)
-# =============================================================================
-kick_user_session_targets() {
-	# This must never block compositor startup. Best-effort retries in background.
-	(
-		set -euo pipefail
-
-		mkdir -p "$LOG_DIR" 2>/dev/null || true
-		local hooklog="$LOG_DIR/niri-startup-hook.log"
-		echo "[$(date '+%F %T')] kick: start" >>"$hooklog"
-
-		: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
-
-		# Wait briefly for Wayland socket (used by services like sunsetr). Don't hang forever.
-		if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
-			for _ in $(seq 1 40); do
-				local wd
-				wd="$(ls -1t "$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)"
-				wd="${wd##*/}"
-				if [[ -n "$wd" ]]; then
-					export WAYLAND_DISPLAY="$wd"
-					break
-				fi
-				sleep 0.25
-			done
-		fi
-
-		# Wait for systemd user bus to come up (common on early TTY logins).
-		for _ in $(seq 1 60); do
-			if timeout 1s systemctl --user is-system-running >/dev/null 2>&1; then
-				break
-			fi
-			sleep 1
-		done
-
-		echo "[$(date '+%F %T')] kick: WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >>"$hooklog"
-
-		timeout 2s systemctl --user import-environment \
-			WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET \
-			>>"$hooklog" 2>&1 || true
-		timeout 2s dbus-update-activation-environment --systemd \
-			WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET \
-			>>"$hooklog" 2>&1 || true
-
-		# Start the targets that most user services in this repo are wired to.
-		timeout 2s systemctl --user start --no-block \
-			graphical-session-pre.target xdg-desktop-autostart.target graphical-session.target \
-			>>"$hooklog" 2>&1 || true
-
-		echo "[$(date '+%F %T')] kick: done" >>"$hooklog"
-		exit 0
-	) &
-}
-
-# =============================================================================
 # Cleanup old Niri processes (TTY mode)
 # =============================================================================
 cleanup_old_processes() {
@@ -347,12 +293,23 @@ start_niri() {
 		exit 0
 	fi
 
-	kick_user_session_targets
-
 	if [[ "$GDM_MODE" == "true" ]]; then
-		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY"
+		# Greeter/DM path: log to journal.
+		if [[ "$NIRI_BINARY" == "niri" ]]; then
+			exec systemd-cat -t niri-gdm -- "$NIRI_BINARY" --session
+		else
+			exec systemd-cat -t niri-gdm -- "$NIRI_BINARY"
+		fi
 	else
-		"$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
+		# TTY path: keep foreground process to hold the session on the VT.
+		export NIRI_TTY_GUARD=1
+
+		if [[ "$NIRI_BINARY" == "niri" ]]; then
+			exec "$NIRI_BINARY" --session >>"$NIRI_LOG" 2>&1
+		else
+			exec "$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
+		fi
+
 		local rc=$?
 		error "Niri exited (code=$rc). Log: $NIRI_LOG"
 		sleep 2

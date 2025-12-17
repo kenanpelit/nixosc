@@ -28,7 +28,7 @@ lib.mkIf cfg.enable {
         # Only run in login shell when no desktop is active
         # CRITICAL: Also check if we're being called from a desktop session startup
         # (gnome-session etc. may re-exec shell during startup)
-        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
+        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]] && [ -z "''${NIRI_TTY_GUARD:-}" ]; then
 
             # TTY1 special check: Don't interfere if session already active
             if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
@@ -125,6 +125,7 @@ lib.mkIf cfg.enable {
                 export XDG_SESSION_TYPE=wayland
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
                 export PATH="/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
+                export NIRI_TTY_GUARD=1
 
                 if command -v niri_tty >/dev/null 2>&1; then
                     echo "Starting Niri with optimized configuration..."
