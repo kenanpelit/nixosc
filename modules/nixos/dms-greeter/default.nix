@@ -12,7 +12,7 @@ let
   greeterHome = "/var/lib/dms-greeter";
 
   # Upstream module options (we import `inputs.dankMaterialShell.nixosModules.greeter`).
-  dmsGreeterCfg = config.programs.dankMaterialShell.greeter;
+  dmsGreeterCfg = config.programs."dank-material-shell".greeter;
 
   hyprPkg =
     if config.programs ? hyprland && config.programs.hyprland ? package
@@ -186,7 +186,7 @@ in {
   config = lib.mkIf cfg.enable {
     services.greetd.enable = true;
 
-    programs.dankMaterialShell.greeter = {
+    programs."dank-material-shell".greeter = {
       enable = true;
       compositor.name = cfg.compositor;
       compositor.customConfig = lib.mkDefault greeterCompositorCustomConfig;

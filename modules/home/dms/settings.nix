@@ -17,7 +17,7 @@ let
     if hasWaylandTarget then config.wayland.systemd.target else "graphical-session.target";
 in
 lib.mkIf cfg.enable {
-  programs.dankMaterialShell = {
+  programs."dank-material-shell" = {
     enable = true;
     # Upstream HM module prefers `config.wayland.systemd.target` for session startup.
     # Bu repo'da (ve bazı HM kurulumlarında) bu target olmayabiliyor; o durumda
