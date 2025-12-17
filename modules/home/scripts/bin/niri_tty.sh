@@ -298,7 +298,7 @@ start_niri() {
 	local startup_cmd=(
 		"sh"
 		"-lc"
-		"systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >/dev/null 2>&1 || true; dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET >/dev/null 2>&1 || true; systemctl --user start --no-block graphical-session.target >/dev/null 2>&1 || true"
+		"if command -v timeout >/dev/null 2>&1; then timeout 2s systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; else systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; fi >/dev/null 2>&1 || true; if command -v timeout >/dev/null 2>&1; then timeout 2s dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; else dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP DESKTOP_SESSION NIRI_SOCKET; fi >/dev/null 2>&1 || true; if command -v timeout >/dev/null 2>&1; then timeout 2s systemctl --user start --no-block graphical-session.target; else systemctl --user start --no-block graphical-session.target; fi >/dev/null 2>&1 || true"
 	)
 
 	if [[ "$GDM_MODE" == "true" ]]; then
