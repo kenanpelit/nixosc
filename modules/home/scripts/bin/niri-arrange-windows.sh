@@ -211,27 +211,17 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     continue
   fi
 
-  # Actions operate on the focused window, so we focus by id first.
-  if ! "${NIRI[@]}" action focus-window "$id" >/dev/null 2>&1; then
-    echo " !! focus-window failed for id=$id ($app_id)" >&2
+  # We avoid `focus-window` here because some setups deny focusing by id.
+  # Instead:
+  # 1) focus the target monitor (best-effort)
+  # 2) move the window by id to the workspace *index* on that monitor
+  if ! "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1; then
+    [[ "$VERBOSE" -eq 1 ]] && echo " !! focus-monitor failed: $target_out" >&2
+  fi
+
+  if ! "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1; then
+    echo " !! move-window-to-workspace failed for id=$id -> ws:$target_ws (out:$target_out idx:$target_idx)" >&2
     continue
-  fi
-
-  if [[ "$VERBOSE" -eq 1 ]]; then
-    after_focus="$(get_window_json_by_id "$id" || true)"
-    [[ -n "$after_focus" ]] && echo "    current: $(get_window_loc "$after_focus")"
-  fi
-
-  # Move the column to the correct output first (best-effort).
-  # This avoids workspace-index ambiguity across monitors.
-  "${NIRI[@]}" action move-column-to-monitor "$target_out" >/dev/null 2>&1 || true
-
-  # Prefer moving the whole column (keeps tabbed columns together).
-  # Use index (NOT name) to avoid numeric-name ambiguity.
-  if ! "${NIRI[@]}" action move-column-to-workspace --focus false "$target_idx" >/dev/null 2>&1; then
-    # Fallback: move only the window by id.
-    "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1 || true
-    "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1 || true
   fi
 
   # Verify (best-effort)
