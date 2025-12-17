@@ -9,6 +9,7 @@ usage() {
   cat <<'EOF'
 Kullanım:
   niri-arrange-windows.sh [--dry-run] [--focus <window-id|workspace>]
+  niri-arrange-windows.sh [--verbose]
 
 Amaç:
   Niri'de açık pencereleri, semsumo (--daily) düzenindeki "ait oldukları"
@@ -31,11 +32,13 @@ EOF
 
 DRY_RUN=0
 FOCUS_OVERRIDE=""
+VERBOSE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
     --focus) FOCUS_OVERRIDE="${2:-}"; shift 2 ;;
+    --verbose) VERBOSE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Bilinmeyen arg: $1" >&2; usage; exit 2 ;;
   esac
@@ -88,6 +91,27 @@ resolve_workspace_ref() {
   done < <("${NIRI[@]}" workspaces 2>/dev/null)
 
   return 1
+}
+
+get_window_json_by_id() {
+  local id="${1:-}"
+  [[ -n "$id" ]] || return 1
+  "${NIRI[@]}" -j windows 2>/dev/null | jq -c ".[] | select(.id == ${id})" 2>/dev/null
+}
+
+get_window_loc() {
+  # Print a compact, human-readable location string for a window JSON object.
+  # Output example: name=8 id=123 out=eDP-1 idx=2
+  local win_json="${1:-}"
+  [[ -n "$win_json" ]] || return 1
+
+  local ws_name ws_id ws_out ws_idx
+  ws_name="$(jq -r '.workspace.name // empty' <<<"$win_json")"
+  ws_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$win_json")"
+  ws_out="$(jq -r '.workspace.output // .output // empty' <<<"$win_json")"
+  ws_idx="$(jq -r '.workspace.index // empty' <<<"$win_json")"
+
+  printf 'name=%s id=%s out=%s idx=%s\n' "${ws_name:-?}" "${ws_id:-?}" "${ws_out:-?}" "${ws_idx:-?}"
 }
 
 load_rules() {
@@ -152,6 +176,7 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
   id="$(jq -r '.id' <<<"$win")"
   app_id="$(jq -r '.app_id // ""' <<<"$win")"
   title="$(jq -r '.title // ""' <<<"$win")"
+  current_ws_name="$(jq -r '.workspace.name // empty' <<<"$win")"
 
   # Skip some noisy / transient surfaces.
   if [[ "$app_id" == "hyprland-share-picker" ]]; then
@@ -175,13 +200,27 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     continue
   fi
 
+  # Skip if already on the target named workspace.
+  if [[ -n "$current_ws_name" && "$current_ws_name" == "$target_ws" ]]; then
+    [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws"
+    continue
+  fi
+
   echo " -> $id: '$app_id' -> ws:$target_ws (output:$target_out idx:$target_idx)"
   if [[ "$DRY_RUN" -eq 1 ]]; then
     continue
   fi
 
   # Actions operate on the focused window, so we focus by id first.
-  "${NIRI[@]}" action focus-window "$id" >/dev/null 2>&1 || true
+  if ! "${NIRI[@]}" action focus-window "$id" >/dev/null 2>&1; then
+    echo " !! focus-window failed for id=$id ($app_id)" >&2
+    continue
+  fi
+
+  if [[ "$VERBOSE" -eq 1 ]]; then
+    after_focus="$(get_window_json_by_id "$id" || true)"
+    [[ -n "$after_focus" ]] && echo "    current: $(get_window_loc "$after_focus")"
+  fi
 
   # Move the column to the correct output first (best-effort).
   # This avoids workspace-index ambiguity across monitors.
@@ -193,6 +232,17 @@ echo "$windows_json" | jq -c '.[]' | while read -r win; do
     # Fallback: move only the window by id.
     "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1 || true
     "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1 || true
+  fi
+
+  # Verify (best-effort)
+  after="$(get_window_json_by_id "$id" || true)"
+  if [[ -n "$after" ]]; then
+    after_name="$(jq -r '.workspace.name // empty' <<<"$after")"
+    if [[ -n "$after_name" && "$after_name" == "$target_ws" ]]; then
+      [[ "$VERBOSE" -eq 1 ]] && echo "    ok: $(get_window_loc "$after")"
+    else
+      echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
+    fi
   fi
 done
 
