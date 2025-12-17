@@ -97,6 +97,7 @@
   # Clipboard
   my.user.copyq.enable = false;
   my.user.clipse.enable = true;
+  my.user.cliphist.enable = true;
   
   # Security
   my.user.sops.enable = true;
