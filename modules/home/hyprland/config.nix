@@ -838,7 +838,10 @@ lib.mkIf cfg.enable {
         "HYPRCURSOR_THEME,${cursorName}"
         "HYPRCURSOR_SIZE,32"
         "QT_QPA_PLATFORM,wayland;xcb"
-        "QT_QPA_PLATFORMTHEME,kvantum"
+        # Keep platform theme consistent with Niri (GTK3), but allow Kvantum style.
+        # This prevents `echo $QT_QPA_PLATFORMTHEME` from being `kvantum` on Hyprland.
+        "QT_QPA_PLATFORMTHEME,gtk3"
+        "QT_QPA_PLATFORMTHEME_QT6,gtk3"
         "QT_STYLE_OVERRIDE,kvantum"
         "QT_AUTO_SCREEN_SCALE_FACTOR,1"
         "QT_WAYLAND_DISABLE_WINDOWDECORATION,1"
