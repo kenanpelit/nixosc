@@ -4,7 +4,7 @@
 # Installs yt-dlp and manages user config/aliases via Home Manager.
 # ==============================================================================
 
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.my.user.ytdlp;
   username = config.home.username;
@@ -15,6 +15,14 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home.packages = [
+      pkgs.yt-dlp
+
+      # YouTube extraction increasingly needs a JS runtime ("EJS").
+      # `deno` is the default supported runtime in yt-dlp and fixes "formats may be missing".
+      pkgs.deno
+    ];
+
     # =============================================================================
     # Configuration File
     # =============================================================================
@@ -33,14 +41,17 @@ in
       # YouTube Client Settings
       # ---------------------------------------------------------------------------
       # YouTube player client seçimi (öncelik sırasına göre):
-      # - ios: Genelde daha stabil format URL'leri (SABR/PO token problemlerinde işe yarar)
-      # - web: Standart web client
+      # - android_sdkless: Daha az "PO Token" problemi (yüksek formatlar daha sık gelir)
+      # - web_safari: SABR/missing-url durumlarında daha iyi fallback olabiliyor
       #
       # Not:
-      # Son dönem YouTube değişiklikleri bazı client'larda (özellikle android) "PO Token"
-      # gerektiriyor ve yüksek çözünürlük formatları 403/missing url olarak atlanabiliyor.
-      # Bu yüzden android client'ı burada KULLANMIYORUZ.
-      --extractor-args "youtube:player_client=ios,web"
+      # Son dönem YouTube değişiklikleri bazı client'larda "PO Token" gerektirebiliyor.
+      # Bu sırayı (android_sdkless -> web_safari) seçmemizin sebebi, pratikte en az
+      # sorun çıkaran kombinasyonlardan biri olması.
+      --extractor-args "youtube:player_client=android_sdkless,web_safari"
+
+      # YouTube extraction without a JS runtime has been deprecated; this avoids missing formats.
+      --js-runtimes "deno"
   
       # ---------------------------------------------------------------------------
       # Output Settings
