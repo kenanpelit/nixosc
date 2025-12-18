@@ -42,6 +42,24 @@ detect_wayland_display() {
   done
 }
 
+detect_niri_socket() {
+  if [[ -n "${NIRI_SOCKET:-}" ]]; then
+    return 0
+  fi
+
+  [[ -n "${XDG_RUNTIME_DIR:-}" ]] || return 0
+  [[ -n "${WAYLAND_DISPLAY:-}" ]] || return 0
+
+  shopt -s nullglob
+  local sock
+  for sock in "${XDG_RUNTIME_DIR}/niri.${WAYLAND_DISPLAY}."*.sock; do
+    [[ -S "$sock" ]] || continue
+    export NIRI_SOCKET="$sock"
+    break
+  done
+  shopt -u nullglob
+}
+
 import_env_to_systemd() {
   if ! command -v systemctl >/dev/null 2>&1; then
     log "systemctl not found; skipping env import"
@@ -50,6 +68,7 @@ import_env_to_systemd() {
 
   local vars=(
     WAYLAND_DISPLAY
+    NIRI_SOCKET
     XDG_CURRENT_DESKTOP
     XDG_SESSION_TYPE
     XDG_SESSION_DESKTOP
@@ -80,6 +99,6 @@ start_target() {
 
 ensure_runtime_dir
 detect_wayland_display
+detect_niri_socket
 import_env_to_systemd
 start_target
-
