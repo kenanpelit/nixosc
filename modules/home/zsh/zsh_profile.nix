@@ -130,7 +130,10 @@ lib.mkIf cfg.enable {
 
                 export XDG_SESSION_TYPE=wayland
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                export PATH="/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
+                # NixOS'ta setuid sudo sadece /run/wrappers/bin içindedir.
+                # /run/current-system/sw/bin/sudo setuid değildir ve şu hataya yol açar:
+                #   sudo must be owned by uid 0 and have the setuid bit set
+                export PATH="/run/wrappers/bin:/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
                 export NIRI_TTY_GUARD=1
 
                 if command -v niri_tty >/dev/null 2>&1; then
