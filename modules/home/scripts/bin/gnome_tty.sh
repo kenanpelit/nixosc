@@ -597,6 +597,12 @@ setup_systemd_integration() {
     "XDG_CURRENT_DESKTOP"
     "XDG_SESSION_TYPE"
     "XDG_SESSION_DESKTOP"
+    # Logind/session discovery for gnome-shell when started via systemd --user
+    "XDG_SESSION_ID"
+    "XDG_SEAT"
+    "XDG_VTNR"
+    "XDG_SESSION_CLASS"
+    "XDG_RUNTIME_DIR"
     "DBUS_SESSION_BUS_ADDRESS"
     "GNOME_KEYRING_CONTROL"
     "SSH_AUTH_SOCK"
