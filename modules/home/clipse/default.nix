@@ -121,9 +121,10 @@ in
       PreviewBorder = "#89b4fa";    # blue
     };
 
-    # Ensure log file exists and is writable so the daemon stays up
-    # Remove any stale log in the old location
-    home.file.".config/clipse/clipse.log".enable = false;
+    # Clipse tries to open `~/.config/clipse/clipse.log` very early (even before
+    # reading config in some code paths). Keep this path writable by symlinking
+    # it to a real file under XDG state.
+    home.file.".config/clipse/clipse.log".source = "${config.xdg.stateHome}/clipse/clipse.log";
 
     # Start the daemon via systemd so it works across sessions (niri + hyprland).
     # It is tied to compositor session targets and won't run under plain TTY.
