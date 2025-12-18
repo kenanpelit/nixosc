@@ -46,6 +46,7 @@ USE_SYSTEMD=false
 GDM_MODE=false
 FORCE_TTY_MODE=false
 GNOME_TTY_GUARD_PATH=""
+GNOME_HANDOFF=false
 
 # =============================================================================
 # Logging Fonksiyonları
@@ -696,6 +697,13 @@ cleanup_guard() {
 
 cleanup_all() {
   cleanup_guard
+
+  # If GNOME handed off to systemd and our login session is being torn down
+  # (common on TTY), do NOT kill gnome-session/gnome-shell processes here.
+  if [[ "${GNOME_HANDOFF}" == "true" ]]; then
+    return 0
+  fi
+
   cleanup
 }
 
@@ -847,6 +855,7 @@ start_gnome_direct() {
   # In a TTY login, if our process exits the PAM session ends and GNOME dies.
   # So keep this process alive by waiting on the shell unit/target.
   if [[ "$rc" -eq 0 ]] && [[ "$elapsed" -lt 5 ]]; then
+    GNOME_HANDOFF=true
     info "gnome-session systemd handoff tespit edildi (rc=0, ${elapsed}s). GNOME ayakta kaldığı sürece bekleniyor..."
 
     local session_name="gnome"
@@ -857,11 +866,18 @@ start_gnome_direct() {
 
     local wait_count=0
     local wait_max=20
-    while ! systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; do
+    while :; do
+      if systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; then
+        break
+      fi
+      if pgrep -u "$(id -u)" -x gnome-shell >/dev/null 2>&1; then
+        break
+      fi
       if [[ "$wait_count" -ge "$wait_max" ]]; then
         warn "GNOME Shell unit aktif olmadı: ${shell_unit}"
         systemctl --user status "${session_target}" --no-pager 2>/dev/null || true
         systemctl --user status "${shell_unit}" --no-pager 2>/dev/null || true
+        pgrep -a -u "$(id -u)" gnome-session gnome-shell 2>/dev/null || true
         error "GNOME başlayamadı (shell unit aktif değil). Detaylar için $GNOME_LOG"
       fi
       sleep 1
@@ -870,11 +886,25 @@ start_gnome_direct() {
 
     info "✓ GNOME Shell aktif: ${shell_unit}"
 
-    while systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; do
-      sleep 2
+    while :; do
+      if systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; then
+        sleep 2
+        continue
+      fi
+      if pgrep -u "$(id -u)" -x gnome-shell >/dev/null 2>&1; then
+        sleep 2
+        continue
+      fi
+      break
     done
 
-    error "GNOME oturumu bitti (shell unit durdu)."
+    # When GNOME exits, drop out and let cleanup run (non-handoff paths will kill leftovers).
+    GNOME_HANDOFF=false
+
+    # Give systemd a moment to settle before cleanup.
+    sleep 1
+
+    error "GNOME oturumu bitti (shell process/unit durdu)."
   fi
 
   error "gnome-session beklenmedik şekilde çıktı (rc=$rc, ${elapsed}s). Detaylar için $GNOME_LOG"
