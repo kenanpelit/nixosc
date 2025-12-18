@@ -989,13 +989,20 @@ in
     # Niri-specific services don't run under GNOME/Hyprland sessions.
     systemd.user.targets.niri-session.Unit = {
       Description = "Niri session (user services)";
-      Wants = [ "xdg-desktop-autostart.target" ];
+      Wants = [
+        # Ensure autostart is active.
+        "xdg-desktop-autostart.target"
+        # Ensure a notifications daemon is present early (DMS owns org.freedesktop.Notifications).
+        # Without this, `notify-send` calls in early bootstrap scripts can fail.
+        "dms.service"
+      ];
+      After = [ "dbus.service" "dms.service" ];
     };
 
     systemd.user.services.niri-init = {
       Unit = {
         Description = "Niri session bootstrap (monitors + audio + layout)";
-        After = [ "niri-session.target" ];
+        After = [ "niri-session.target" "dms.service" ];
         PartOf = [ "niri-session.target" ];
       };
       Service = {
