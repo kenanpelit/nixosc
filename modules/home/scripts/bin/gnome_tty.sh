@@ -274,11 +274,11 @@ detect_gdm_session() {
     return 0
   fi
 
-  # More aggressive GDM detection
-  if [[ -n "${GDMSESSION:-}" ]] ||
-    [[ "${XDG_SESSION_CLASS:-}" == "user" ]] ||
-    [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" && -n "${XDG_SESSION_ID:-}" ]] ||
-    [[ "$(loginctl show-session "$XDG_SESSION_ID" -p Type 2>/dev/null)" == *"wayland"* ]]; then
+  # IMPORTANT:
+  # On TTY logins, `pam_systemd` commonly sets `XDG_SESSION_CLASS=user` and a
+  # user bus in `DBUS_SESSION_BUS_ADDRESS`. These are NOT reliable GDM signals.
+  # Keep detection strict to avoid misclassifying TTY sessions as GDM.
+  if [[ -n "${GDMSESSION:-}" ]] || pstree -s $$ 2>/dev/null | grep -q "gdm-wayland-session\\|gdm-x-session"; then
     GDM_MODE=true
   else
     GDM_MODE=false
@@ -819,12 +819,51 @@ start_gnome_direct() {
   exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
 
   # GNOME başlat (don't exec; keep traps so guard file is removed on exit)
+  local start_ts
+  start_ts="$(date +%s)"
+
   set +e
   "${cmd[@]}"
   local rc=$?
   set -e
 
-  error "gnome-session beklenmedik şekilde çıktı (rc=$rc). Detaylar için $GNOME_LOG"
+  local elapsed=$(( $(date +%s) - start_ts ))
+
+  # GNOME 45+ may hand off to systemd user targets and exit 0 quickly.
+  # In a TTY login, if our process exits the PAM session ends and GNOME dies.
+  # So keep this process alive by waiting on the shell unit/target.
+  if [[ "$rc" -eq 0 ]] && [[ "$elapsed" -lt 5 ]]; then
+    info "gnome-session systemd handoff tespit edildi (rc=0, ${elapsed}s). GNOME ayakta kaldığı sürece bekleniyor..."
+
+    local session_name="gnome"
+    local session_target="gnome-session-wayland@${session_name}.target"
+    local shell_unit="org.gnome.Shell@wayland.service"
+
+    systemctl --user start "${session_target}" 2>/dev/null || true
+
+    local wait_count=0
+    local wait_max=20
+    while ! systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; do
+      if [[ "$wait_count" -ge "$wait_max" ]]; then
+        warn "GNOME Shell unit aktif olmadı: ${shell_unit}"
+        systemctl --user status "${session_target}" --no-pager 2>/dev/null || true
+        systemctl --user status "${shell_unit}" --no-pager 2>/dev/null || true
+        error "GNOME başlayamadı (shell unit aktif değil). Detaylar için $GNOME_LOG"
+      fi
+      sleep 1
+      ((wait_count++))
+    done
+
+    info "✓ GNOME Shell aktif: ${shell_unit}"
+
+    while systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; do
+      sleep 2
+    done
+
+    error "GNOME oturumu bitti (shell unit durdu)."
+  fi
+
+  error "gnome-session beklenmedik şekilde çıktı (rc=$rc, ${elapsed}s). Detaylar için $GNOME_LOG"
 }
 
 # =============================================================================
