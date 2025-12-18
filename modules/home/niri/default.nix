@@ -834,9 +834,9 @@ let
     }
 
     // Start session-scoped user services (niri-init, clipse, nsticky, nirius, …).
-    // Keeping this as a single systemd hook avoids races and keeps startup logic
-    // out of the compositor config.
-    spawn-at-startup "systemctl" "--user" "start" "niri-session.target";
+    // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
+    // need a Wayland client env (e.g. clipse) do not start with an empty session.
+    spawn-at-startup "${config.home.profileDirectory}/bin/niri-session-start";
 
     // Input Configuration
     input {
@@ -1022,9 +1022,19 @@ in
         PartOf = [ "niri-session.target" ];
       };
       Service = {
-        ExecStart = "${bins.clipse} -listen";
+        ExecStart =
+          "${pkgs.bash}/bin/bash -lc '"
+          + "for ((i=0;i<120;i++)); do niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; "
+          + "if [[ -z \"${"$"}{WAYLAND_DISPLAY:-}\" && -n \"${"$"}{XDG_RUNTIME_DIR:-}\" ]]; then "
+          + "  for s in \"${"$"}{XDG_RUNTIME_DIR}\"/wayland-*; do [[ -S \"$s\" ]] || continue; export WAYLAND_DISPLAY=\"$(basename \"$s\")\"; break; done; "
+          + "fi; "
+          + "${bins.clipse} -listen; "
+          + "rc=$?; [[ $rc -eq 0 ]] && rc=1; exit $rc"
+          + "'";
         Restart = "on-failure";
         RestartSec = 1;
+        StandardOutput = "journal";
+        StandardError = "journal";
       };
       Install = {
         WantedBy = [ "niri-session.target" ];
