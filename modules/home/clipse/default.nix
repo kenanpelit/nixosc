@@ -15,6 +15,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home.packages = [ pkgs.clipse ];
+
     # =============================================================================
     # Configuration Files
     # =============================================================================
@@ -26,6 +28,7 @@ in
       allowDuplicates = false;
       themeFile = "custom_theme.json";
       tempDir = "tmp_files";
+      logFile = "${config.xdg.stateHome}/clipse/clipse.log";
       
       keyBindings = {
         # Navigation - Vim style
@@ -121,5 +124,41 @@ in
     # Ensure log file exists and is writable so the daemon stays up
     # Remove any stale log in the old location
     home.file.".config/clipse/clipse.log".enable = false;
+
+    # Start the daemon via systemd so it works across sessions (niri + hyprland).
+    # It is tied to compositor session targets and won't run under plain TTY.
+    systemd.user.services.clipse = {
+      Unit = {
+        Description = "Clipse clipboard daemon";
+        After = [ "dbus.service" "hyprland-session.target" "niri-session.target" ];
+        PartOf = [ "hyprland-session.target" "niri-session.target" ];
+      };
+      Service = {
+        ExecStartPre =
+          "${pkgs.bash}/bin/bash -lc '"
+          + "install -d -m 700 \"${config.xdg.stateHome}/clipse\" && "
+          + "touch \"${config.xdg.stateHome}/clipse/clipse.log\""
+          + "'";
+        ExecStart =
+          "${pkgs.bash}/bin/bash -lc '"
+          + "for ((i=0;i<300;i++)); do "
+          + "  if [[ -n \"${"$"}{WAYLAND_DISPLAY:-}\" && -n \"${"$"}{XDG_RUNTIME_DIR:-}\" && -S \"${"$"}{XDG_RUNTIME_DIR}/${"$"}{WAYLAND_DISPLAY}\" ]]; then break; fi; "
+          + "  if [[ -n \"${"$"}{XDG_RUNTIME_DIR:-}\" ]]; then "
+          + "    for s in \"${"$"}{XDG_RUNTIME_DIR}\"/wayland-*; do [[ -S \"$s\" ]] || continue; export WAYLAND_DISPLAY=\"$(basename \"$s\")\"; break 2; done; "
+          + "  fi; "
+          + "  sleep 0.1; "
+          + "done; "
+          + "${pkgs.clipse}/bin/clipse -listen; "
+          + "rc=$?; [[ $rc -eq 0 ]] && rc=1; exit $rc"
+          + "'";
+        Restart = "on-failure";
+        RestartSec = 1;
+        StandardOutput = "journal";
+        StandardError = "journal";
+      };
+      Install = {
+        WantedBy = [ "hyprland-session.target" "niri-session.target" ];
+      };
+    };
   };
 }

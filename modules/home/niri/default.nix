@@ -1015,32 +1015,6 @@ in
       };
     };
 
-    systemd.user.services.clipse = {
-      Unit = {
-        Description = "Clipse clipboard daemon (niri)";
-        After = [ "niri-session.target" ];
-        PartOf = [ "niri-session.target" ];
-      };
-      Service = {
-        ExecStart =
-          "${pkgs.bash}/bin/bash -lc '"
-          + "for ((i=0;i<120;i++)); do niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; "
-          + "if [[ -z \"${"$"}{WAYLAND_DISPLAY:-}\" && -n \"${"$"}{XDG_RUNTIME_DIR:-}\" ]]; then "
-          + "  for s in \"${"$"}{XDG_RUNTIME_DIR}\"/wayland-*; do [[ -S \"$s\" ]] || continue; export WAYLAND_DISPLAY=\"$(basename \"$s\")\"; break; done; "
-          + "fi; "
-          + "${bins.clipse} -listen; "
-          + "rc=$?; [[ $rc -eq 0 ]] && rc=1; exit $rc"
-          + "'";
-        Restart = "on-failure";
-        RestartSec = 1;
-        StandardOutput = "journal";
-        StandardError = "journal";
-      };
-      Install = {
-        WantedBy = [ "niri-session.target" ];
-      };
-    };
-
     systemd.user.services.nsticky = {
       Unit = {
         Description = "nsticky daemon (niri)";
