@@ -44,7 +44,7 @@ let
 
   gnomeSessionWrapper = pkgs.writeTextFile {
     name = "gnome-session-wrapper";
-    destination = "/share/wayland-sessions/gnome-nixos.desktop";
+    destination = "/share/wayland-sessions/gnome-optimized.desktop";
     text = ''
       [Desktop Entry]
       Name=GNOME (Optimized)
@@ -59,7 +59,7 @@ let
 
       Exec=/etc/profiles/per-user/${username}/bin/gnome_tty
     '';
-    passthru.providedSessions = [ "gnome-nixos" ];
+    passthru.providedSessions = [ "gnome-optimized" ];
   };
 
   niriSession = pkgs.writeTextFile {
