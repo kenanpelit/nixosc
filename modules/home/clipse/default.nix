@@ -8,6 +8,10 @@
 { config, pkgs, lib, ... }: 
 let
   cfg = config.my.user.clipse;
+  dag =
+    if lib ? hm && lib.hm ? dag
+    then lib.hm.dag
+    else config.lib.dag;
 in
 {
   options.my.user.clipse = {
@@ -127,7 +131,7 @@ in
     #
     # Instead, create a writable state log and symlink the legacy config-path log
     # to it during activation.
-    home.activation.clipseLog = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.clipseLog = dag.entryAfter [ "writeBoundary" ] ''
       state_home="''${XDG_STATE_HOME:-$HOME/.local/state}"
       mkdir -p "$HOME/.config/clipse" "$state_home/clipse"
       touch "$state_home/clipse/clipse.log"
