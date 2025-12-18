@@ -145,15 +145,27 @@ in
         Description = "Clipse clipboard daemon";
         After = [ "dbus.service" "hyprland-session.target" "niri-session.target" ];
         PartOf = [ "hyprland-session.target" "niri-session.target" ];
+        StartLimitIntervalSec = 60;
+        StartLimitBurst = 20;
       };
       Service = {
+        Environment = {
+          HOME = "%h";
+          XDG_CONFIG_HOME = "%h/.config";
+          XDG_STATE_HOME = "%h/.local/state";
+        };
         ExecStartPre =
           "${pkgs.bash}/bin/bash -lc '"
-          + "install -d -m 700 \"${config.xdg.stateHome}/clipse\" && "
-          + "touch \"${config.xdg.stateHome}/clipse/clipse.log\""
+          + "set -euo pipefail; "
+          + "state_home=\"${"$"}{XDG_STATE_HOME:-${"$"}HOME/.local/state}\"; "
+          + "install -d -m 700 \"${"$"}HOME/.config/clipse\" \"${"$"}state_home/clipse\"; "
+          + "touch \"${"$"}state_home/clipse/clipse.log\"; "
+          + "chmod 600 \"${"$"}state_home/clipse/clipse.log\" || true; "
+          + "ln -sf \"${"$"}state_home/clipse/clipse.log\" \"${"$"}HOME/.config/clipse/clipse.log\""
           + "'";
         ExecStart =
           "${pkgs.bash}/bin/bash -lc '"
+          + "set -euo pipefail; "
           + "for ((i=0;i<300;i++)); do "
           + "  if [[ -n \"${"$"}{WAYLAND_DISPLAY:-}\" && -n \"${"$"}{XDG_RUNTIME_DIR:-}\" && -S \"${"$"}{XDG_RUNTIME_DIR}/${"$"}{WAYLAND_DISPLAY}\" ]]; then break; fi; "
           + "  if [[ -n \"${"$"}{XDG_RUNTIME_DIR:-}\" ]]; then "
@@ -165,7 +177,7 @@ in
           + "rc=$?; [[ $rc -eq 0 ]] && rc=1; exit $rc"
           + "'";
         Restart = "on-failure";
-        RestartSec = 1;
+        RestartSec = 3;
         StandardOutput = "journal";
         StandardError = "journal";
       };
