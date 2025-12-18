@@ -93,6 +93,11 @@ lib.mkIf cfg.enable {
                     export XDG_SESSION_TYPE=wayland
                     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
                     export GNOME_TTY_GUARD=1
+                    if [ -e "''${XDG_RUNTIME_DIR}/gnome-tty3.guard" ]; then
+                        echo "GNOME zaten başlatılıyor (guard aktif), tekrar tetiklenmiyor."
+                        return
+                    fi
+                    export GNOME_TTY_GUARD_FILE="''${XDG_RUNTIME_DIR}/gnome-tty3.guard"
                 
                     # gnome_tty script'i kontrol et
                     if command -v gnome_tty >/dev/null 2>&1; then

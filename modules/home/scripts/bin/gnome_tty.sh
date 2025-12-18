@@ -20,9 +20,9 @@ set -euo pipefail
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_VERSION="2.1.0-gdm-aware"
-readonly LOG_DIR="$HOME/.logs"
-readonly GNOME_LOG="$LOG_DIR/gnome.log"
-readonly DEBUG_LOG="$LOG_DIR/gnome_debug.log"
+LOG_DIR="$HOME/.logs"
+GNOME_LOG="$LOG_DIR/gnome.log"
+DEBUG_LOG="$LOG_DIR/gnome_debug.log"
 readonly MAX_LOG_SIZE=10485760 # 10MB
 readonly MAX_LOG_BACKUPS=3
 
@@ -56,12 +56,12 @@ debug_log() {
   local full_msg="[${timestamp}] [DEBUG] ${message}"
 
   if [[ "$DEBUG_MODE" != "true" ]]; then
-    echo "$full_msg" >>"$DEBUG_LOG" 2>/dev/null || true
+    { printf '%s\n' "$full_msg" >>"$DEBUG_LOG"; } 2>/dev/null || true
     return
   fi
 
   echo -e "${C_CYAN}[DEBUG]${C_RESET} $message" >&2
-  echo "$full_msg" >>"$DEBUG_LOG" 2>/dev/null || true
+  { printf '%s\n' "$full_msg" >>"$DEBUG_LOG"; } 2>/dev/null || true
 
   if [[ "$(tty 2>/dev/null)" =~ ^/dev/tty[0-9]+$ ]]; then
     logger -t "$SCRIPT_NAME" "DEBUG: $message" 2>/dev/null || true
@@ -75,7 +75,7 @@ log() {
   local log_entry="[${timestamp}] [${level}] ${message}"
 
   if [[ -d "$(dirname "$GNOME_LOG")" ]]; then
-    echo "$log_entry" >>"$GNOME_LOG" 2>/dev/null || {
+    { printf '%s\n' "$log_entry" >>"$GNOME_LOG"; } 2>/dev/null || {
       debug_log "Ana log dosyasına yazılamadı: $GNOME_LOG"
     }
   fi
@@ -133,16 +133,21 @@ setup_directories() {
     LOG_DIR="/tmp/gnome-logs-$USER"
     GNOME_LOG="$LOG_DIR/gnome.log"
     DEBUG_LOG="$LOG_DIR/gnome_debug.log"
-    mkdir -p "$LOG_DIR" || error "Hiçbir log dizini oluşturulamadı"
+    mkdir -p "$LOG_DIR" 2>/dev/null || error "Hiçbir log dizini oluşturulamadı"
   fi
 
   if [[ ! -w "$LOG_DIR" ]]; then
     error "Log dizinine yazma izni yok: $LOG_DIR"
   fi
 
-  touch "$GNOME_LOG" "$DEBUG_LOG" 2>/dev/null || {
-    error "Log dosyaları oluşturulamadı"
-  }
+  if ! touch "$GNOME_LOG" "$DEBUG_LOG" 2>/dev/null; then
+    warn "Log dosyaları oluşturulamadı: $LOG_DIR, /tmp fallback deneniyor"
+    LOG_DIR="/tmp/gnome-logs-$USER"
+    GNOME_LOG="$LOG_DIR/gnome.log"
+    DEBUG_LOG="$LOG_DIR/gnome_debug.log"
+    mkdir -p "$LOG_DIR" 2>/dev/null || error "Hiçbir log dizini oluşturulamadı"
+    touch "$GNOME_LOG" "$DEBUG_LOG" 2>/dev/null || error "Log dosyaları oluşturulamadı"
+  fi
 
   debug_log "Log dizini hazır: $LOG_DIR"
 }
@@ -742,7 +747,16 @@ start_gnome_direct() {
   fi
 
   trap cleanup EXIT TERM INT HUP
-  : >"$GNOME_LOG"
+
+  # Guard file: prevents recursive re-entry if gnome-session re-execs into a login shell.
+  local guard_file="${GNOME_TTY_GUARD_FILE:-}"
+  if [[ -z "${guard_file}" ]]; then
+    local vtnr="${XDG_VTNR:-3}"
+    guard_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnome-tty${vtnr}.guard"
+  fi
+
+  { printf '%s\n' "$$" >"${guard_file}"; } 2>/dev/null || true
+  trap 'rm -f -- "${guard_file}" 2>/dev/null || true' EXIT TERM INT HUP
 
   info "═══════════════════════════════════════════════════════════"
   info "GNOME başlatılıyor (direct mode)..."
@@ -785,27 +799,32 @@ start_gnome_direct() {
   # When GNOME is launched from TTY via `.zprofile`, that re-exec can re-trigger
   # the TTY auto-start logic and cause an immediate bounce back to the login prompt.
   # `--no-reexec` disables that behavior and avoids recursion.
-  local cmd="gnome-session --session=gnome --no-reexec"
+  local cmd=(gnome-session --session=gnome --no-reexec)
+  info "GNOME command: ${cmd[*]}"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
     # Shell tracing'i kapat (temiz çıktı için)
     set +x
 
-    cmd="$cmd --debug"
+    cmd+=("--debug")
 
     info "DEBUG MODE: Çıktılar hem ekrana hem log dosyasına yazılıyor..."
-    info "Komut: $cmd"
-
-    # Output redirect (unbuffered tee ile)
-    # stdbuf -o0 -e0 ile anlık yazmayı garantiye alıyoruz
-    exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
+    info "Komut: ${cmd[*]}"
   else
-    info "GNOME session exec ediliyor..."
-    exec >>"$GNOME_LOG" 2>&1
+    info "GNOME session başlatılıyor..."
   fi
 
-  # GNOME başlat
-  exec $cmd
+  # Always tee to the TTY + log so failures are visible (otherwise it drops back to login silently).
+  # stdbuf makes output line-buffered so we don't miss early errors.
+  exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
+
+  # GNOME başlat (don't exec; keep traps so guard file is removed on exit)
+  set +e
+  "${cmd[@]}"
+  local rc=$?
+  set -e
+
+  error "gnome-session beklenmedik şekilde çıktı (rc=$rc). Detaylar için $GNOME_LOG"
 }
 
 # =============================================================================
