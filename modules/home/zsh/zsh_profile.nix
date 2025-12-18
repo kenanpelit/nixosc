@@ -28,7 +28,7 @@ lib.mkIf cfg.enable {
         # Only run in login shell when no desktop is active
         # CRITICAL: Also check if we're being called from a desktop session startup
         # (gnome-session etc. may re-exec shell during startup)
-        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]] && [ -z "''${NIRI_TTY_GUARD:-}" ]; then
+        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]] && [ -z "''${NIRI_TTY_GUARD:-}" ] && [ -z "''${GNOME_TTY_GUARD:-}" ]; then
 
             # TTY1 special check: Don't interfere if session already active
             if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
@@ -96,6 +96,7 @@ lib.mkIf cfg.enable {
                 # CRITICAL: Only set XDG_RUNTIME_DIR - let gnome_tty handle everything else
                 # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                export GNOME_TTY_GUARD=1
 
                 # Check for gnome_tty script
                 if command -v gnome_tty >/dev/null 2>&1; then

@@ -189,6 +189,11 @@ rotate_logs() {
 check_system() {
   debug_log "Sistem kontrolleri başlıyor"
 
+  # CRITICAL: Ensure systemd isn't forced into offline mode.
+  # If SYSTEMD_OFFLINE=1, `systemctl --user` calls can fail and TTY auto-start
+  # (this script is exec'd from .zprofile) will bounce back to the login prompt.
+  export SYSTEMD_OFFLINE=0
+
   # XDG_RUNTIME_DIR kontrolü
   if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
@@ -236,11 +241,14 @@ check_system() {
   info "GNOME Shell: $gnome_version"
 
   # Systemd user instance kontrolü
-  if ! systemctl --user is-active --quiet basic.target 2>/dev/null; then
-    warn "Systemd user instance çalışmıyor, başlatılıyor..."
-    systemctl --user start basic.target 2>/dev/null || {
-      error "Systemd user instance başlatılamadı"
-    }
+  if ! systemctl --user is-system-running &>/dev/null; then
+    warn "Systemd user session çalışmıyor, başlatılıyor..."
+    if systemctl --user start default.target 2>/dev/null; then
+      info "✓ Systemd user session başlatıldı"
+      sleep 2
+    else
+      error "Systemd user session başlatılamadı"
+    fi
   fi
 
   info "Sistem kontrolleri tamamlandı"
@@ -890,6 +898,9 @@ parse_arguments() {
 
 main() {
   parse_arguments "$@"
+
+  # Ensure we can talk to systemd user manager in all cases.
+  export SYSTEMD_OFFLINE=0
 
   # GDM detection (en başta!)
   detect_gdm_session
