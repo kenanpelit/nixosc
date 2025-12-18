@@ -122,9 +122,17 @@ in
     };
 
     # Clipse tries to open `~/.config/clipse/clipse.log` very early (even before
-    # reading config in some code paths). Keep this path writable by symlinking
-    # it to a real file under XDG state.
-    home.file.".config/clipse/clipse.log".source = "${config.xdg.stateHome}/clipse/clipse.log";
+    # reading config in some code paths). We cannot manage this as a `home.file`
+    # because the target must be writable and lives outside the Nix store.
+    #
+    # Instead, create a writable state log and symlink the legacy config-path log
+    # to it during activation.
+    home.activation.clipseLog = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      state_home="''${XDG_STATE_HOME:-$HOME/.local/state}"
+      mkdir -p "$HOME/.config/clipse" "$state_home/clipse"
+      touch "$state_home/clipse/clipse.log"
+      ln -sf "$state_home/clipse/clipse.log" "$HOME/.config/clipse/clipse.log"
+    '';
 
     # Start the daemon via systemd so it works across sessions (niri + hyprland).
     # It is tied to compositor session targets and won't run under plain TTY.
