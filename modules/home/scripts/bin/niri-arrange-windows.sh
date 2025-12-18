@@ -299,5 +299,5 @@ fi
 
 echo "Done."
 if command -v notify-send >/dev/null 2>&1; then
-  notify-send "Niri Arranger" "Pencereler workspace'lere taşındı"
+  notify-send "Niri Arranger" "Pencereler workspace'lere taşındı" 2>/dev/null || true
 fi
