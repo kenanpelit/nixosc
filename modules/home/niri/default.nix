@@ -35,6 +35,7 @@ let
     kitty = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
     niriLock = "${config.home.profileDirectory}/bin/niri-lock";
+    clipse = "${pkgs.clipse}/bin/clipse";
 
     # nirius: daemon + CLI (keep names explicit and correct)
     niriusd = "${pkgs.nirius}/bin/niriusd";
@@ -505,6 +506,14 @@ let
       variable-refresh-rate true;
     }
 
+    ${lib.optionalString cfg.enableGamingVrrRules ''
+    // Variable Refresh Rate - Gaming (optional)
+    window-rule {
+      match app-id=r#"^(gamescope|steam|steamwebhelper)$"#;
+      variable-refresh-rate true;
+    }
+    ''}
+
     // Picture-in-Picture
     window-rule {
       match title=r#"(?i)^picture[- ]in[- ]picture$"#;
@@ -618,6 +627,10 @@ let
     // Borderless apps
     window-rule {
       match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
+      draw-border-with-background false;
+    }
+
+    window-rule {
       match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube\.com__-Default|ferdium)$"#;
       draw-border-with-background false;
     }
@@ -791,10 +804,17 @@ let
 
     environment {
       XDG_CURRENT_DESKTOP "niri";
-      QT_QPA_PLATFORM "wayland";
+      XDG_SESSION_TYPE "wayland";
+      XDG_SESSION_DESKTOP "niri";
+      DESKTOP_SESSION "niri";
+
+      QT_QPA_PLATFORM "wayland;xcb";
       ELECTRON_OZONE_PLATFORM_HINT "auto";
       QT_QPA_PLATFORMTHEME "gtk3";
       QT_QPA_PLATFORMTHEME_QT6 "gtk3";
+      QT_WAYLAND_DISABLE_WINDOWDECORATION "1";
+      MOZ_ENABLE_WAYLAND "1";
+      NIXOS_OZONE_WL "1";
 
       // Use a stable SSH agent socket provided by gnome-keyring on Wayland.
       // This helps prevent late-session passphrase prompts and gcr-prompter popups.
@@ -813,24 +833,10 @@ let
       hide-not-bound;
     }
 
-    // Startup Applications
-    // Export session variables into systemd --user and D-Bus activation env.
-    spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET" "SSH_AUTH_SOCK";
-    spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP" "NIRI_SOCKET" "SSH_AUTH_SOCK";
-
-    // Clipboard manager
-    spawn-at-startup "clipse" "-listen";
-
-    // Focus preferred monitor if present (best-effort)
-    spawn-at-startup "sh" "-lc" "if niri msg outputs 2>/dev/null | grep -q '(DP-3)'; then niri msg action focus-monitor DP-3; fi";
-
-    // nirius daemon (required for nirius CLI commands)
-    ${lib.optionalString cfg.enableNirius ''spawn-at-startup "${bins.niriusd}";''}
-
-    // niriswitcher (optional)
-    ${lib.optionalString cfg.enableNiriswitcher ''spawn-at-startup "${bins.niriuswitcher}";''}
-
-    spawn-at-startup "${bins.nsticky}";
+    // Start session-scoped user services (niri-init, clipse, nsticky, nirius, …).
+    // Keeping this as a single systemd hook avoids races and keeps startup logic
+    // out of the compositor config.
+    spawn-at-startup "systemctl" "--user" "start" "niri-session.target";
 
     // Input Configuration
     input {
@@ -929,6 +935,12 @@ in
       description = "Enable static output/workspace pinning (host-specific)";
     };
 
+    enableGamingVrrRules = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable VRR window rules for common game launchers (gamescope/steam)";
+    };
+
     hardwareConfig = lib.mkOption {
       type = lib.types.lines;
       default = hardwareConfigDefault;
@@ -941,7 +953,10 @@ in
       [ cfg.package ]
       ++ lib.optional cfg.enableNirius pkgs.nirius
       ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher
-      ++ [ inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky ];
+      ++ [
+        pkgs.clipse
+        inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
+      ];
 
     # Main Configuration
     xdg.configFile."niri/config.kdl".text = mainConfig;
@@ -967,25 +982,93 @@ in
     xdg.configFile."niri/dms/alttab.kdl".text = "";
 
     # -------------------------------------------------------------------------
-    # Session bootstrap service (similar to hypr-init)
-    #
-    # Why:
-    # - Keep "do these things on session start" logic out of the compositor config
-    # - Make it easy to re-run / debug (`systemctl --user restart niri-init`)
-    # - Ensure audio defaults are applied even if PipeWire comes up late
+    # Systemd --user integration for Niri sessions
     # -------------------------------------------------------------------------
+
+    # A dedicated target, started by niri itself via `spawn-at-startup`, so
+    # Niri-specific services don't run under GNOME/Hyprland sessions.
+    systemd.user.targets.niri-session.Unit = {
+      Description = "Niri session (user services)";
+      Wants = [ "xdg-desktop-autostart.target" ];
+    };
+
     systemd.user.services.niri-init = {
       Unit = {
         Description = "Niri session bootstrap (monitors + audio + layout)";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
       };
       Service = {
         Type = "oneshot";
-        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 3 && niri-init'";
+        TimeoutStartSec = 15;
+        ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<120;i++)); do niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; niri-init'";
       };
       Install = {
-        WantedBy = [ "graphical-session.target" ];
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
+    systemd.user.services.clipse = {
+      Unit = {
+        Description = "Clipse clipboard daemon (niri)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        ExecStart = "${bins.clipse} -listen";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
+    systemd.user.services.nsticky = {
+      Unit = {
+        Description = "nsticky daemon (niri)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        ExecStart = "${bins.nsticky}";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
+    systemd.user.services.niriusd = lib.mkIf cfg.enableNirius {
+      Unit = {
+        Description = "nirius daemon (niri)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        ExecStart = "${bins.niriusd}";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
+    systemd.user.services.niriswitcher = lib.mkIf cfg.enableNiriswitcher {
+      Unit = {
+        Description = "niriswitcher (niri)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        ExecStart = "${bins.niriuswitcher}";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
       };
     };
   };
