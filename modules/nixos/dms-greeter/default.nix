@@ -62,6 +62,12 @@ let
     ++ [
       dmsGreeterCfg.quickshell.package
       compositorPkg
+      # Greeter scans sessions via `find | sort` and parses via `bash + grep`.
+      # Don't rely on host PATH contents; make it explicit.
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.gnugrep
     ]
   );
 
@@ -138,6 +144,16 @@ let
     export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
     export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
     export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
+    # DMS greeter discovers sessions from:
+    # - /usr/share/{wayland-sessions,xsessions}
+    # - $HOME/.local/share/{wayland-sessions,xsessions}
+    # - $XDG_DATA_DIRS/{wayland-sessions,xsessions}
+    #
+    # On NixOS, system session .desktop files live under:
+    #   /run/current-system/sw/share/{wayland-sessions,xsessions}
+    # but greetd does not source /etc/profile so XDG_DATA_DIRS is usually empty.
+    # Without this, the session list in the greeter becomes empty.
+    export XDG_DATA_DIRS=/run/current-system/sw/share:/usr/local/share:/usr/share
 
     exec ${
       lib.escapeShellArgs (
