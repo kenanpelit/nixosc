@@ -726,7 +726,7 @@ start_gnome_with_systemd() {
 
   # Start GNOME session directly (let it manage systemd targets)
   info "Starting gnome-session..."
-  exec gnome-session --session=gnome 2>&1 | tee -a "$GNOME_LOG"
+  exec gnome-session --session=gnome --no-reexec 2>&1 | tee -a "$GNOME_LOG"
 }
 
 # =============================================================================
@@ -780,7 +780,12 @@ start_gnome_direct() {
   # GNOME komutunu hazırla
   # NOTE: Use systemd user bus instead of dbus-run-session
   # dbus-run-session creates an isolated D-Bus session, preventing systemd integration
-  local cmd="gnome-session --session=gnome"
+  # IMPORTANT:
+  # By default gnome-session may "re-exec into a login shell" during startup.
+  # When GNOME is launched from TTY via `.zprofile`, that re-exec can re-trigger
+  # the TTY auto-start logic and cause an immediate bounce back to the login prompt.
+  # `--no-reexec` disables that behavior and avoids recursion.
+  local cmd="gnome-session --session=gnome --no-reexec"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
     # Shell tracing'i kapat (temiz çıktı için)

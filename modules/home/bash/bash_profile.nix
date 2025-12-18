@@ -105,11 +105,11 @@ lib.mkIf cfg.enable {
                     
                         # D-Bus session ile GNOME başlat
                         if command -v dbus-run-session >/dev/null; then
-                            exec dbus-run-session -- gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                            exec dbus-run-session -- gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
                         else
                             eval $(dbus-launch --sh-syntax --exit-with-session)
                             export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-                            exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                            exec gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
                         fi
                     fi
             

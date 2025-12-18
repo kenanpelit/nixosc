@@ -112,7 +112,7 @@ lib.mkIf cfg.enable {
                     export SYSTEMD_OFFLINE=0
 
                     # Start GNOME session directly (no dbus-run-session wrapper)
-                    exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                    exec gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
                 fi
 
             # ==========================================================================
