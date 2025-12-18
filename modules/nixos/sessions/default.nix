@@ -47,8 +47,8 @@ let
     destination = "/share/wayland-sessions/gnome-nixos.desktop";
     text = ''
       [Desktop Entry]
-      Name=GNOME (NixOS)
-      Comment=GNOME with systemd user session support and custom launcher
+      Name=GNOME (Optimized)
+      Comment=GNOME with systemd user session support and custom launcher (gnome_tty)
 
       Type=Application
       DesktopNames=GNOME
