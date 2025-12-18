@@ -31,7 +31,7 @@ lib.mkIf cfg.enable {
             # =============================================================================
 
             # Sadece login shell ve henüz aktif desktop yoksa çalıştır
-            if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
+            if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]] && [ -z "''${GNOME_TTY_GUARD:-}" ]; then
             
                 # TTY1 özel kontrol: Display manager için session type kontrolü
                 if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
@@ -92,6 +92,7 @@ lib.mkIf cfg.enable {
                     # Minimum gerekli değişkenler - geri kalanı gnome_tty'de
                     export XDG_SESSION_TYPE=wayland
                     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                    export GNOME_TTY_GUARD=1
                 
                     # gnome_tty script'i kontrol et
                     if command -v gnome_tty >/dev/null 2>&1; then
