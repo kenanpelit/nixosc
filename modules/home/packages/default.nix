@@ -118,6 +118,7 @@ in
       libreoffice           # Office suite
       obsidian              # Note taking
       zathura evince        # PDF viewers
+      pdftk                 # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
       
       # Communication
