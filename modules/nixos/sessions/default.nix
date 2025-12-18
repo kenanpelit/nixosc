@@ -79,6 +79,18 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    # GNOME Shell (mutter) started via `org.gnome.Shell@wayland.service` expects
+    # the current logind session to be a *graphical* session (Type=wayland/x11).
+    # TTY logins default to Type=tty, which makes GNOME fail with:
+    #   "Failed to setup: Failed to find any matching session"
+    #
+    # Force pam_systemd to register `login` sessions as wayland so GNOME can be
+    # started directly from a TTY (tty3) without GDM.
+    #
+    # NOTE: This uses the (experimental) `security.pam.services.<name>.rules`
+    # interface, but it is the least invasive way to pass pam_systemd arguments.
+    security.pam.services.login.rules.session.systemd.settings.type = lib.mkDefault "wayland";
+
     # Session definitions for DM
     services.displayManager.sessionPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
