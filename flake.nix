@@ -104,8 +104,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
       # niri flake only needs rust-overlay for devShells; omit for end users.
       inputs.rust-overlay.follows = "";
-      url = "github:YaLTeR/niri/f85cb5c5f97a6bd21cc6b3ac9671d32cca362bb2"; # 1218 - Updated commit
-#      url = "github:YaLTeR/niri/890935d2ba78f5c70f2e9eacc4d6268161c2553c"; # 1218 - Updated commit
+      url = "github:YaLTeR/niri/c4462d0c7fddfc11c9e98d43e3ef68a5b3c844ca"; # 1218 - Updated commit
+#      url = "github:YaLTeR/niri/f85cb5c5f97a6bd21cc6b3ac9671d32cca362bb2"; # 1218 - Updated commit
+      #      url = "github:YaLTeR/niri/890935d2ba78f5c70f2e9eacc4d6268161c2553c"; # 1218 - Updated commit
       #      url = "github:YaLTeR/niri/2641356d41199a40ccc9a2e9f61bd34d7e7c8220"; # 1216 - Updated commit
     };
 
