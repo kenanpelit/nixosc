@@ -138,52 +138,7 @@ in
       ln -sf "$state_home/clipse/clipse.log" "$HOME/.config/clipse/clipse.log"
     '';
 
-    # Start the daemon via systemd so it works across sessions (niri + hyprland).
-    # It is tied to compositor session targets and won't run under plain TTY.
-    systemd.user.services.clipse = {
-      Unit = {
-        Description = "Clipse clipboard daemon";
-        After = [ "dbus.service" "hyprland-session.target" "niri-session.target" ];
-        PartOf = [ "hyprland-session.target" "niri-session.target" ];
-        StartLimitIntervalSec = 60;
-        StartLimitBurst = 20;
-      };
-      Service = {
-        Environment = [
-          "HOME=%h"
-          "XDG_CONFIG_HOME=%h/.config"
-          "XDG_STATE_HOME=%h/.local/state"
-        ];
-        ExecStartPre =
-          "${pkgs.bash}/bin/bash -lc '"
-          + "set -euo pipefail; "
-          + "state_home=\"${"$"}{XDG_STATE_HOME:-${"$"}HOME/.local/state}\"; "
-          + "install -d -m 700 \"${"$"}HOME/.config/clipse\" \"${"$"}state_home/clipse\"; "
-          + "touch \"${"$"}state_home/clipse/clipse.log\"; "
-          + "chmod 600 \"${"$"}state_home/clipse/clipse.log\" || true; "
-          + "ln -sf \"${"$"}state_home/clipse/clipse.log\" \"${"$"}HOME/.config/clipse/clipse.log\""
-          + "'";
-        ExecStart =
-          "${pkgs.bash}/bin/bash -lc '"
-          + "set -euo pipefail; "
-          + "for ((i=0;i<300;i++)); do "
-          + "  if [[ -n \"${"$"}{WAYLAND_DISPLAY:-}\" && -n \"${"$"}{XDG_RUNTIME_DIR:-}\" && -S \"${"$"}{XDG_RUNTIME_DIR}/${"$"}{WAYLAND_DISPLAY}\" ]]; then break; fi; "
-          + "  if [[ -n \"${"$"}{XDG_RUNTIME_DIR:-}\" ]]; then "
-          + "    for s in \"${"$"}{XDG_RUNTIME_DIR}\"/wayland-*; do [[ -S \"$s\" ]] || continue; export WAYLAND_DISPLAY=\"$(basename \"$s\")\"; break 2; done; "
-          + "  fi; "
-          + "  sleep 0.1; "
-          + "done; "
-          + "${pkgs.clipse}/bin/clipse -listen; "
-          + "rc=$?; [[ $rc -eq 0 ]] && rc=1; exit $rc"
-          + "'";
-        Restart = "on-failure";
-        RestartSec = 3;
-        StandardOutput = "journal";
-        StandardError = "journal";
-      };
-      Install = {
-        WantedBy = [ "hyprland-session.target" "niri-session.target" ];
-      };
-    };
+    # NOTE: No systemd user service for clipse. It is started by the compositor
+    # startup hooks (Hyprland exec-once / Niri spawn-at-startup).
   };
 }
