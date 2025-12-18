@@ -838,6 +838,9 @@ let
     // need a Wayland client env (e.g. clipse) do not start with an empty session.
     spawn-at-startup "${config.home.profileDirectory}/bin/niri-session-start";
 
+    // Start Clipse clipboard daemon in Niri session.
+    spawn-at-startup "clipse" "-listen";
+
     // Input Configuration
     input {
       workspace-auto-back-and-forth;
