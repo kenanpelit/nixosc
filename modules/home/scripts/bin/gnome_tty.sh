@@ -739,7 +739,7 @@ start_gnome_with_systemd() {
     fi
     debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
     sleep 1
-    ((wait_count++))
+    ((++wait_count))
   done
 
   info "✓ Systemd user session is active"
@@ -802,7 +802,7 @@ start_gnome_direct() {
     fi
     debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
     sleep 1
-    ((wait_count++))
+    ((++wait_count))
   done
 
   info "✓ Systemd user session is active"
@@ -881,7 +881,7 @@ start_gnome_direct() {
         error "GNOME başlayamadı (shell unit aktif değil). Detaylar için $GNOME_LOG"
       fi
       sleep 1
-      ((wait_count++))
+      ((++wait_count))
     done
 
     info "✓ GNOME Shell aktif: ${shell_unit}"
