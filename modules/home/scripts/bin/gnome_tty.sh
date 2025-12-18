@@ -397,7 +397,7 @@ setup_environment() {
   export XDG_CURRENT_DESKTOP="GNOME"
   export DESKTOP_SESSION="gnome"
   export XDG_SESSION_CLASS="user"
-  export XDG_SEAT="seat0"
+  export XDG_SEAT="${XDG_SEAT:-seat0}"
   debug_log "Temel GNOME değişkenleri: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP"
 
   # -------------------------------------------------------------------------
@@ -866,22 +866,13 @@ start_gnome_direct() {
   # On some systems, starting GNOME from a TTY with systemd user integration can
   # lead to `org.gnome.Shell@wayland.service` failing with:
   #   "Failed to setup: Failed to find any matching session"
-  # This happens when gnome-shell is started as a systemd --user unit that isn't
-  # associated with the current logind session scope.
+  # This happens when the current logind session is Type=tty (not graphical).
+  # Fix: ensure pam_systemd registers the login session as `type=wayland`.
   #
-  # In TTY mode we prefer `dbus-run-session` to keep gnome-shell in the same
-  # logind session process tree (more reliable on console start).
-  local cmd=()
-  if [[ "${GDM_MODE}" == "true" ]]; then
-    cmd=(gnome-session --session=gnome --no-reexec)
-  else
-    if command -v dbus-run-session >/dev/null 2>&1; then
-      cmd=(dbus-run-session -- gnome-session --session=gnome --no-reexec)
-    else
-      cmd=(gnome-session --session=gnome --no-reexec)
-      warn "dbus-run-session bulunamadı; fallback: ${cmd[*]} (systemd/logind sorunları yaşanabilir)"
-    fi
-  fi
+  # GNOME 49+ requires access to `org.freedesktop.systemd1` on the session bus;
+  # `dbus-run-session` would create an isolated bus without systemd1 and GNOME
+  # would fail immediately. Always use the systemd user bus instead.
+  local cmd=(gnome-session --session=gnome --no-reexec)
   info "GNOME command: ${cmd[*]}"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -1002,7 +993,7 @@ CATPPUCCIN TEMA:
 
 SESSION DETECTION:
   - GDM'den başlatılırsa: Mevcut D-Bus kullanılır
-  - TTY'den başlatılırsa: Yeni D-Bus session oluşturulur
+  - TTY'den başlatılırsa: Systemd user bus kullanılır
 
 LOG DOSYALARI:
   Ana log:   $GNOME_LOG
