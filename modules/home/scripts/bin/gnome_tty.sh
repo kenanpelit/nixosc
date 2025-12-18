@@ -45,6 +45,7 @@ DRY_RUN=false
 USE_SYSTEMD=false
 GDM_MODE=false
 FORCE_TTY_MODE=false
+GNOME_TTY_GUARD_PATH=""
 
 # =============================================================================
 # Logging Fonksiyonları
@@ -686,6 +687,18 @@ cleanup() {
   debug_log "Cleanup tamamlandı"
 }
 
+cleanup_guard() {
+  local p="${GNOME_TTY_GUARD_PATH:-}"
+  if [[ -n "${p}" ]]; then
+    rm -f -- "${p}" 2>/dev/null || true
+  fi
+}
+
+cleanup_all() {
+  cleanup_guard
+  cleanup
+}
+
 # =============================================================================
 # GNOME Başlatma - Systemd ile
 # =============================================================================
@@ -746,8 +759,6 @@ start_gnome_direct() {
     exit 0
   fi
 
-  trap cleanup EXIT TERM INT HUP
-
   # Guard file: prevents recursive re-entry if gnome-session re-execs into a login shell.
   local guard_file="${GNOME_TTY_GUARD_FILE:-}"
   if [[ -z "${guard_file}" ]]; then
@@ -755,8 +766,11 @@ start_gnome_direct() {
     guard_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnome-tty${vtnr}.guard"
   fi
 
-  { printf '%s\n' "$$" >"${guard_file}"; } 2>/dev/null || true
-  trap 'rm -f -- "${guard_file}" 2>/dev/null || true' EXIT TERM INT HUP
+  GNOME_TTY_GUARD_PATH="${guard_file}"
+  { printf '%s\n' "$$" >"${GNOME_TTY_GUARD_PATH}"; } 2>/dev/null || true
+
+  # IMPORTANT: keep a single trap; the guard path must be global (local scope ends before EXIT trap runs).
+  trap cleanup_all EXIT TERM INT HUP
 
   info "═══════════════════════════════════════════════════════════"
   info "GNOME başlatılıyor (direct mode)..."
