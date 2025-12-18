@@ -201,6 +201,41 @@ check_system() {
   # (this script is exec'd from .zprofile) will bounce back to the login prompt.
   export SYSTEMD_OFFLINE=0
 
+  # Ensure logind session metadata is available (GNOME Shell needs it when started via systemd --user).
+  if [[ -z "${XDG_SESSION_ID:-}" ]]; then
+    local current_tty
+    current_tty="$(tty 2>/dev/null || true)"
+    local tty_name=""
+    if [[ "$current_tty" =~ /dev/(tty[0-9]+) ]]; then
+      tty_name="${BASH_REMATCH[1]}"
+    fi
+
+    if command -v loginctl >/dev/null 2>&1 && [[ -n "${tty_name}" ]]; then
+      local sid=""
+      sid="$(loginctl list-sessions --no-legend 2>/dev/null | awk -v u="$(id -u)" -v t="${tty_name}" '$2 == u && $5 == t { print $1; exit }')"
+      if [[ -n "${sid}" ]]; then
+        export XDG_SESSION_ID="${sid}"
+        debug_log "XDG_SESSION_ID tespit edildi: ${XDG_SESSION_ID} (tty=${tty_name})"
+      else
+        warn "XDG_SESSION_ID tespit edilemedi (tty=${tty_name})"
+      fi
+    fi
+  fi
+
+  if [[ -n "${XDG_SESSION_ID:-}" ]] && command -v loginctl >/dev/null 2>&1; then
+    if [[ -z "${XDG_SEAT:-}" ]]; then
+      local seat=""
+      seat="$(loginctl show-session "${XDG_SESSION_ID}" -p Seat --value 2>/dev/null || true)"
+      [[ -n "${seat}" ]] && export XDG_SEAT="${seat}"
+    fi
+    if [[ -z "${XDG_VTNR:-}" ]]; then
+      local vtnr=""
+      vtnr="$(loginctl show-session "${XDG_SESSION_ID}" -p VTNr --value 2>/dev/null || true)"
+      [[ -n "${vtnr}" ]] && export XDG_VTNR="${vtnr}"
+    fi
+    debug_log "logind session: id=${XDG_SESSION_ID:-unset} seat=${XDG_SEAT:-unset} vtnr=${XDG_VTNR:-unset} type=$(loginctl show-session \"${XDG_SESSION_ID}\" -p Type --value 2>/dev/null || echo '?')"
+  fi
+
   # XDG_RUNTIME_DIR kontrolü
   if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
