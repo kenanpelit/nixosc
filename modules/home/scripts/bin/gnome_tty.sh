@@ -862,7 +862,26 @@ start_gnome_direct() {
   # When GNOME is launched from TTY via `.zprofile`, that re-exec can re-trigger
   # the TTY auto-start logic and cause an immediate bounce back to the login prompt.
   # `--no-reexec` disables that behavior and avoids recursion.
-  local cmd=(gnome-session --session=gnome --no-reexec)
+  # NOTE:
+  # On some systems, starting GNOME from a TTY with systemd user integration can
+  # lead to `org.gnome.Shell@wayland.service` failing with:
+  #   "Failed to setup: Failed to find any matching session"
+  # This happens when gnome-shell is started as a systemd --user unit that isn't
+  # associated with the current logind session scope.
+  #
+  # In TTY mode we prefer `dbus-run-session` to keep gnome-shell in the same
+  # logind session process tree (more reliable on console start).
+  local cmd=()
+  if [[ "${GDM_MODE}" == "true" ]]; then
+    cmd=(gnome-session --session=gnome --no-reexec)
+  else
+    if command -v dbus-run-session >/dev/null 2>&1; then
+      cmd=(dbus-run-session -- gnome-session --session=gnome --no-reexec)
+    else
+      cmd=(gnome-session --session=gnome --no-reexec)
+      warn "dbus-run-session bulunamadı; fallback: ${cmd[*]} (systemd/logind sorunları yaşanabilir)"
+    fi
+  fi
   info "GNOME command: ${cmd[*]}"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
