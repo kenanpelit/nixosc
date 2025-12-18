@@ -169,6 +169,12 @@ setup_environment() {
 	export SYSTEMD_OFFLINE=0
 	debug_log "✓ SYSTEMD_OFFLINE=0 set"
 
+	# NixOS: setuid sudo wrapper lives here; ensure it wins over /run/current-system/sw/bin/sudo.
+	case ":${PATH:-}:" in
+	*":/run/wrappers/bin:"*) ;;
+	*) export PATH="/run/wrappers/bin:${PATH:-}" ;;
+	esac
+
 	# Wayland Settings
 	export XDG_SESSION_TYPE="wayland"
 	export XDG_SESSION_DESKTOP="niri"
