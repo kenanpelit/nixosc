@@ -64,7 +64,10 @@ let
 
   niriSession = pkgs.writeTextFile {
     name = "niri-session";
-    destination = "/share/wayland-sessions/niri.desktop";
+    # Avoid clobbering Niri's upstream `niri.desktop` (Exec=niri-session),
+    # otherwise greeters will only see the upstream entry and our optimized one
+    # disappears from the menu.
+    destination = "/share/wayland-sessions/niri-optimized.desktop";
     text = ''
       [Desktop Entry]
       Name=Niri (Optimized)
@@ -73,7 +76,7 @@ let
       Type=Application
       DesktopNames=niri
     '';
-    passthru.providedSessions = [ "niri" ];
+    passthru.providedSessions = [ "niri-optimized" ];
   };
 
 in
