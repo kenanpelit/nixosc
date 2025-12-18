@@ -149,11 +149,11 @@ in
         StartLimitBurst = 20;
       };
       Service = {
-        Environment = {
-          HOME = "%h";
-          XDG_CONFIG_HOME = "%h/.config";
-          XDG_STATE_HOME = "%h/.local/state";
-        };
+        Environment = [
+          "HOME=%h"
+          "XDG_CONFIG_HOME=%h/.config"
+          "XDG_STATE_HOME=%h/.local/state"
+        ];
         ExecStartPre =
           "${pkgs.bash}/bin/bash -lc '"
           + "set -euo pipefail; "
