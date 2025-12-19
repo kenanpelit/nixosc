@@ -64,6 +64,10 @@ let
   # ---------------------------------------------------------------------------
   # Imports
   # ---------------------------------------------------------------------------
+  imports = [
+    inputs.niri.homeModules.niri
+  ];
+
   bindsConfig = import ./binds.nix {
     inherit lib pkgs bins enableNiriusBinds;
   };
@@ -83,10 +87,7 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default =
-        if inputs ? niri && inputs.niri ? packages
-        then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
-        else pkgs.niri;
+      default = pkgs.niri-unstable;
       description = "Niri compositor package";
     };
 
@@ -122,18 +123,23 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Niri module from flake handles package installation via `programs.niri.package`
+    programs.niri.enable = true;
+    programs.niri.package = cfg.package;
+    
+    # Use programs.niri.config for build-time validation!
+    # We pass the main config string here. It includes other files via `include "dms/..."`.
+    # Those included files are generated below via xdg.configFile.
+    programs.niri.config = settingsConfig.main;
+
     home.packages =
-      [ cfg.package ]
-      ++ lib.optional cfg.enableNirius pkgs.nirius
+      lib.optional cfg.enableNirius pkgs.nirius
       ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher
       ++ [
         pkgs.clipse
         inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
       ]
       ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
-
-    # Main Configuration
-    xdg.configFile."niri/config.kdl".text = settingsConfig.main;
 
     # Modular DMS Configurations
     xdg.configFile."niri/dms/hardware.kdl".text =
