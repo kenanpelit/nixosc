@@ -166,7 +166,7 @@
       // ========================================================================
       ${lib.optionalString enableNiriusBinds ''
       Mod+Alt+Shift+Return { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
-      Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\.spotify\.Client)$" "--focus"; }
+      Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
       Mod+Alt+Shift+Grave { spawn "${bins.nirius}" "scratchpad-toggle"; }
       Mod+Alt+Grave { spawn "${bins.nirius}" "scratchpad-show"; }
       Mod+Alt+Shift+F10 { spawn "${bins.nirius}" "toggle-follow-mode"; }
