@@ -235,6 +235,11 @@
           dankMaterialShell.nixosModules.default
           niri.nixosModules.niri
           nix-flatpak.nixosModules.nix-flatpak
+          {
+            home-manager.sharedModules = [
+              niri.homeModules.niri
+            ];
+          }
         ];
 
         # Special arguments available to all modules.
