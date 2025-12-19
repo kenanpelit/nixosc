@@ -119,6 +119,7 @@ in
   config = lib.mkIf cfg.enable {
     # Niri module from flake handles package installation via `programs.niri.package`
     programs.niri.enable = true;
+    programs.niri.package = pkgs.niri-unstable;
     
     # Use programs.niri.config for build-time validation!
     # We concatenate all parts into one big KDL string to avoid 'include' issues during validation.
@@ -140,7 +141,7 @@ in
       rulesConfig.rules
       settingsConfig.animations
       settingsConfig.gestures
-      settingsConfig.recentWindows
+      # settingsConfig.recentWindows # Temporarily disabled due to validation error
       settingsConfig.colors
     ];
 
