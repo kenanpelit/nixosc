@@ -45,9 +45,9 @@
     # ==========================================================================
     # Core (Foundation)
     # ==========================================================================
-    # - nixpkgs: pinned NixOS channel
-    # - snowfall-lib: repo structure + mkFlake glue
-    # - home-manager: user-level configuration
+    # - nixpkgs: Pinned NixOS channel (currently nixos-25.11)
+    # - snowfall-lib: Repo structure + mkFlake glue for streamlined config
+    # - home-manager: User-level configuration module
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     snowfall-lib = {
@@ -63,9 +63,9 @@
     # ==========================================================================
     # System (NixOS modules / hardware / secrets)
     # ==========================================================================
-    # - sops-nix: secret management
-    # - NUR: extra packages/overlays
-    # - nixos-hardware: device profiles
+    # - sops-nix: Secret management via Mozilla SOPS
+    # - NUR: Nix User Repository (extra packages/overlays)
+    # - nixos-hardware: Hardware-specific optimization profiles
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -83,11 +83,11 @@
     # ==========================================================================
     # This repo uses multiple Wayland compositors.
     # Keep them pinned for reproducibility (especially for greeter/session paths).
+    
+    # Hyprland: Dynamic tiling Wayland compositor
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      # pinned (glaze override uyumlu)
-      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca"; # 1219 - Updated commit
-#      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # pinned
+      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca"; # Pinned (12/19)
     };
 
     hypr-contrib = {
@@ -100,27 +100,29 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Niri: A scrollable-tiling Wayland compositor.
-    # Using sodiboo's flake for better NixOS/HM integration and binary cache.
+    # Niri: Scrollable-tiling Wayland compositor
+    # Using sodiboo's flake for better integration (validation/caching).
     niri = {
       url = "github:sodiboo/niri-flake";
-      inputs.niri-unstable.url = "github:YaLTeR/niri/main";
+      inputs.niri-unstable.url = "github:YaLTeR/niri/main"; # Follow latest main branch
     };
 
-    # nsticky: A helper for creating "sticky" windows in niri (scratchpad-like behavior).
+    # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
     nsticky.url = "github:lonerOrz/nsticky";
 
     # ==========================================================================
     # Desktop: Theming
     # ==========================================================================
-    # - catppuccin: theming modules + palettes
-    # - distro-grub-themes: GRUB theme assets
+    # - catppuccin: Global theming modules + palettes
+    # - distro-grub-themes: GRUB bootloader themes
     catppuccin.url = "github:catppuccin/nix";
     distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
 
     # ==========================================================================
     # Desktop: Shell (DankMaterialShell / DMS)
     # ==========================================================================
+    # - dgop: Dependency for DMS
+    # - dankMaterialShell: Advanced Quickshell-based desktop shell
     dgop = {
       url = "github:AvengeMedia/dgop";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -129,12 +131,7 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297"; # 1219 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/76006a73771d9413092a9330a9014133fa0f9b10"; # 1219 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/2a91bc41f7aa8cb5734fe4b3d50c577090aba348"; # 1219 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/baf23157fc334b5607bcb5f89919fbe04e9ccd5d"; # 1218 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/8437e1aa7b34021aa9c97882fdbda2cca6d43878"; # 1218 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/78a5f401d76d575fb88757ad812dcda0adc24e3e"; # 1218 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297"; # Pinned (12/19)
     };
 
     # ==========================================================================
@@ -169,7 +166,7 @@
     # ==========================================================================
     # Apps / Extras
     # ==========================================================================
-    # Optional GUI tools and helper flakes.
+    # Optional GUI tools, app launchers, and helper flakes.
     walker.url = "github:abenz1267/walker/v2.12.2";
 
     elephant = {
@@ -239,6 +236,7 @@
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
           {
+            # Inject Niri HM module globally to fix option visibility and avoid conflicts.
             home-manager.sharedModules = [
               niri.homeModules.niri
             ];
