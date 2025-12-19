@@ -62,6 +62,7 @@ in
       # Debugging & Analysis
       gdb strace lsof
       hexdump xxd binsider bitwise
+      bc                    # CLI calculator (used by osc-* scripts)
       programmer-calculator
   
       # Nix Utilities
