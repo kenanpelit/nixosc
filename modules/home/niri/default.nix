@@ -85,12 +85,6 @@ in
   options.my.desktop.niri = {
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
 
-    package = lib.mkOption {
-      type = lib.types.package;
-      default = pkgs.niri-unstable;
-      description = "Niri compositor package";
-    };
-
     enableNirius = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -125,7 +119,6 @@ in
   config = lib.mkIf cfg.enable {
     # Niri module from flake handles package installation via `programs.niri.package`
     programs.niri.enable = true;
-    programs.niri.package = cfg.package;
     
     # Use programs.niri.config for build-time validation!
     # We concatenate all parts into one big KDL string to avoid 'include' issues during validation.
