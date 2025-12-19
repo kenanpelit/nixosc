@@ -100,8 +100,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Niri: A scrollable-tiling Wayland compositor.
+    # Using sodiboo's flake for better NixOS/HM integration and binary cache.
     niri.url = "github:sodiboo/niri-flake";
 
+    # nsticky: A helper for creating "sticky" windows in niri (scratchpad-like behavior).
     nsticky.url = "github:lonerOrz/nsticky";
 
     # ==========================================================================
