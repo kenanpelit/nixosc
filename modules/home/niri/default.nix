@@ -141,7 +141,7 @@ in
       rulesConfig.rules
       settingsConfig.animations
       settingsConfig.gestures
-      # settingsConfig.recentWindows # Temporarily disabled due to validation error
+      settingsConfig.recentWindows
       settingsConfig.colors
     ];
 
