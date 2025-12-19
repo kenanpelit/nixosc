@@ -12,9 +12,11 @@ let
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
-  hasWaylandTarget = lib.hasAttrByPath [ "wayland" "systemd" "target" ] config;
-  sessionTarget =
-    if hasWaylandTarget then config.wayland.systemd.target else "graphical-session.target";
+  dmsTargets = [
+    # Only start DMS inside compositor sessions that are known to support it.
+    "hyprland-session.target"
+    "niri-session.target"
+  ];
 in
 lib.mkIf cfg.enable {
   programs."dank-material-shell" = {
@@ -22,7 +24,10 @@ lib.mkIf cfg.enable {
     # Upstream HM module prefers `config.wayland.systemd.target` for session startup.
     # Bu repo'da (ve bazı HM kurulumlarında) bu target olmayabiliyor; o durumda
     # `graphical-session.target` ile kendi servisimiz üzerinden devam ediyoruz.
-    systemd.enable = hasWaylandTarget;
+    # Important: GNOME also reaches graphical-session targets, but DMS should NOT
+    # auto-start there. We manage our own service and bind it to compositor-only
+    # targets (Hyprland/Niri).
+    systemd.enable = false;
     quickshell.package = pkgs.quickshell;
   };
 
@@ -54,11 +59,11 @@ lib.mkIf cfg.enable {
     XDG_ICON_THEME = "a-candy-beauty-icon-theme";
   };
 
-  systemd.user.services.dms = lib.mkIf (!hasWaylandTarget) {
+  systemd.user.services.dms = {
     Unit = {
       Description = "DankMaterialShell";
-      After = [ sessionTarget ];
-      PartOf = [ sessionTarget ];
+      After = dmsTargets;
+      PartOf = dmsTargets;
     };
     Service = {
       Type = "simple";
@@ -89,7 +94,7 @@ lib.mkIf cfg.enable {
       StandardOutput = "journal";
       StandardError = "journal";
     };
-    Install.WantedBy = [ sessionTarget ];
+    Install.WantedBy = dmsTargets;
   };
 
   # Ensure DMS plugins are present; install from registry when missing.
@@ -101,8 +106,8 @@ lib.mkIf cfg.enable {
   systemd.user.services.dms-plugin-sync = {
     Unit = {
       Description = "DMS plugin sync (best-effort)";
-      After = [ sessionTarget "dms.service" ];
-      PartOf = [ sessionTarget ];
+      After = dmsTargets ++ [ "dms.service" ];
+      PartOf = dmsTargets;
     };
     Service = {
       Type = "oneshot";
@@ -144,7 +149,7 @@ lib.mkIf cfg.enable {
         exit 0
       '';
     };
-    Install.WantedBy = [ sessionTarget ];
+    Install.WantedBy = dmsTargets;
   };
 
   # Lock davranışı:
