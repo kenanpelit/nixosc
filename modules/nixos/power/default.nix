@@ -159,10 +159,9 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            # Keep idle power/temps under control; min_perf_pct is not needed for build performance.
-            TARGET_MIN=20
+            TARGET_MIN=50
           else
-            TARGET_MIN=10
+            TARGET_MIN=30
           fi
 
           echo "''${TARGET_MIN}" > "''${MIN_PERF_PATH}"
