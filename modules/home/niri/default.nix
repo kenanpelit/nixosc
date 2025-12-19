@@ -27,6 +27,10 @@ let
   accent = catppuccin.accent or "mauve";
   gtkTheme = "catppuccin-${flavor}-${accent}-standard+normal";
   cursorTheme = "catppuccin-${flavor}-dark-cursors";
+  iconTheme =
+    if config ? gtk && config.gtk ? iconTheme && config.gtk.iconTheme ? name
+    then config.gtk.iconTheme.name
+    else "a-candy-beauty-icon-theme";
 
   # ---------------------------------------------------------------------------
   # Optional feature toggles (module-local policy)
@@ -820,6 +824,8 @@ let
       GTK_USE_PORTAL "1";
       XCURSOR_THEME "${cursorTheme}";
       XCURSOR_SIZE "24";
+      XDG_ICON_THEME "${iconTheme}";
+      QT_ICON_THEME "${iconTheme}";
 
       QT_QPA_PLATFORM "wayland;xcb";
       ELECTRON_OZONE_PLATFORM_HINT "auto";

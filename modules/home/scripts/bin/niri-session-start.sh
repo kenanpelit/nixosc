@@ -69,6 +69,8 @@ import_env_to_systemd() {
   local vars=(
     WAYLAND_DISPLAY
     NIRI_SOCKET
+    XDG_DATA_DIRS
+    XDG_CONFIG_DIRS
     XDG_CURRENT_DESKTOP
     XDG_SESSION_TYPE
     XDG_SESSION_DESKTOP
@@ -76,11 +78,15 @@ import_env_to_systemd() {
     SSH_AUTH_SOCK
     GTK_THEME
     GTK_USE_PORTAL
+    XDG_ICON_THEME
+    QT_ICON_THEME
     XCURSOR_THEME
     XCURSOR_SIZE
     NIXOS_OZONE_WL
     MOZ_ENABLE_WAYLAND
     QT_QPA_PLATFORM
+    QT_QPA_PLATFORMTHEME
+    QT_QPA_PLATFORMTHEME_QT6
     QT_WAYLAND_DISABLE_WINDOWDECORATION
     ELECTRON_OZONE_PLATFORM_HINT
   )
@@ -101,8 +107,17 @@ start_target() {
   systemctl --user start niri-session.target 2>/dev/null || true
 }
 
+restart_dms_if_running() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  systemctl --user try-restart dms.service >/dev/null 2>&1 || true
+}
+
 ensure_runtime_dir
 detect_wayland_display
 detect_niri_socket
 import_env_to_systemd
+restart_dms_if_running
 start_target
