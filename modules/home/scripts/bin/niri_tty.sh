@@ -13,9 +13,9 @@ set -euo pipefail
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_VERSION="1.2.0-niri"
-readonly LOG_DIR="$HOME/.logs"
-readonly NIRI_LOG="$LOG_DIR/niri.log"
-readonly DEBUG_LOG="$LOG_DIR/niri_debug.log"
+LOG_DIR="$HOME/.logs"
+NIRI_LOG="$LOG_DIR/niri.log"
+DEBUG_LOG="$LOG_DIR/niri_debug.log"
 readonly MAX_LOG_SIZE=10485760 # 10MB
 readonly MAX_LOG_BACKUPS=3
 
@@ -165,7 +165,7 @@ check_system() {
 setup_environment() {
 	print_header "ENVIRONMENT SETUP - NIRI"
 
-	# CRITICAL FIX: Set SYSTEMD_OFFLINE=0
+	# Ensure systemd user services are not blocked in Nix environments.
 	export SYSTEMD_OFFLINE=0
 	debug_log "✓ SYSTEMD_OFFLINE=0 set"
 
@@ -175,44 +175,12 @@ setup_environment() {
 	*) export PATH="/run/wrappers/bin:${PATH:-}" ;;
 	esac
 
-	# Wayland Settings
+	# Minimal session identity. Detailed env (theme, cursor, toolkit hints) is set
+	# in Niri config and exported to systemd via `niri-session-start`.
 	export XDG_SESSION_TYPE="wayland"
 	export XDG_SESSION_DESKTOP="niri"
 	export XDG_CURRENT_DESKTOP="niri"
 	export DESKTOP_SESSION="niri"
-	
-	export MOZ_ENABLE_WAYLAND=1
-	export QT_QPA_PLATFORM="wayland;xcb"
-	export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-	export GDK_BACKEND=wayland
-	export SDL_VIDEODRIVER=wayland
-	export CLUTTER_BACKEND=wayland
-	export NIXOS_OZONE_WL=1
-
-	# Theme
-	local gtk_theme="catppuccin-${CATPPUCCIN_FLAVOR}-${CATPPUCCIN_ACCENT}-standard+normal"
-	export GTK_THEME="$gtk_theme"
-	export GTK_USE_PORTAL=1
-    export QT_QPA_PLATFORMTHEME=gtk3
-
-	if [[ "$CATPPUCCIN_FLAVOR" == "latte" ]]; then
-		export GTK_APPLICATION_PREFER_DARK_THEME=0
-	else
-		export GTK_APPLICATION_PREFER_DARK_THEME=1
-	fi
-
-	local cursor_theme="catppuccin-${CATPPUCCIN_FLAVOR}-dark-cursors"
-	export XCURSOR_THEME="$cursor_theme"
-	export XCURSOR_SIZE=24
-
-	# Niri Specific
-	export NIRI_CONFIG_HOME="$HOME/.config/niri"
-    
-    # Apps
-    export EDITOR=nvim
-    export VISUAL=nvim
-    export TERMINAL=kitty
-    export BROWSER=brave
 
 	info "Environment setup tamamlandı"
 }
@@ -343,7 +311,10 @@ main() {
 	rotate_logs
 	check_system
 	setup_environment
-	setup_systemd_integration
+	# Avoid early systemctl/dbus calls on TTY; Niri will export env after startup.
+	if [[ "$GDM_MODE" == "true" ]]; then
+		setup_systemd_integration
+	fi
 	cleanup_old_processes
 	start_niri
 }

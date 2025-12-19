@@ -19,6 +19,14 @@
 
 let
   cfg = config.my.desktop.niri;
+  catppuccin =
+    if config ? catppuccin
+    then config.catppuccin
+    else { flavor = "mocha"; accent = "mauve"; };
+  flavor = catppuccin.flavor or "mocha";
+  accent = catppuccin.accent or "mauve";
+  gtkTheme = "catppuccin-${flavor}-${accent}-standard+normal";
+  cursorTheme = "catppuccin-${flavor}-dark-cursors";
 
   # ---------------------------------------------------------------------------
   # Optional feature toggles (module-local policy)
@@ -808,6 +816,11 @@ let
       XDG_SESSION_DESKTOP "niri";
       DESKTOP_SESSION "niri";
 
+      GTK_THEME "${gtkTheme}";
+      GTK_USE_PORTAL "1";
+      XCURSOR_THEME "${cursorTheme}";
+      XCURSOR_SIZE "24";
+
       QT_QPA_PLATFORM "wayland;xcb";
       ELECTRON_OZONE_PLATFORM_HINT "auto";
       QT_QPA_PLATFORMTHEME "gtk3";
@@ -833,9 +846,9 @@ let
       hide-not-bound;
     }
 
-    // Start session-scoped user services (niri-init, clipse, nsticky, nirius, …).
+    // Start session-scoped user services (niri-init, nsticky, nirius, niriswitcher, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
-    // need a Wayland client env (e.g. clipse) do not start with an empty session.
+    // need a Wayland client env do not start with an empty session.
     spawn-at-startup "${config.home.profileDirectory}/bin/niri-session-start";
 
     // Start Clipse clipboard daemon in Niri session.
@@ -959,7 +972,8 @@ in
       ++ [
         pkgs.clipse
         inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
-      ];
+      ]
+      ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
 
     # Main Configuration
     xdg.configFile."niri/config.kdl".text = mainConfig;
