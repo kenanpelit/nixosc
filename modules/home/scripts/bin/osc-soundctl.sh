@@ -74,17 +74,17 @@ check_command() {
 	fi
 }
 
-notify() {
-	local title="$1" msg="$2" icon="${3:-}"
-	info "${title}: ${msg}"
-	if command -v notify-send >/dev/null 2>&1; then
-		if [ "${ENABLE_ICONS}" = true ] && [ -n "${icon}" ]; then
-			notify-send -t "${NOTIFICATION_TIMEOUT}" -i "${icon}" "${title}" "${msg}" || true
-		else
-			notify-send -t "${NOTIFICATION_TIMEOUT}" "${title}" "${msg}" || true
+	notify() {
+		local title="$1" msg="$2" icon="${3:-}"
+		info "${title}: ${msg}"
+		if command -v notify-send >/dev/null 2>&1; then
+			if [ "${ENABLE_ICONS}" = true ] && [ -n "${icon}" ]; then
+				notify-send -t "${NOTIFICATION_TIMEOUT}" -i "${icon}" "${title}" "${msg}" 2>/dev/null || true
+			else
+				notify-send -t "${NOTIFICATION_TIMEOUT}" "${title}" "${msg}" 2>/dev/null || true
+			fi
 		fi
-	fi
-}
+	}
 
 # --- Argümanlardan debug & genel opsiyonlar ------------------------------------
 SHOW_HELP=false
