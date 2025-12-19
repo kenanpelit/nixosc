@@ -133,12 +133,17 @@ in
       settingsConfig.main
       (if cfg.enableHardwareConfig then cfg.hardwareConfig else "")
       settingsConfig.layout
+      
+      # Bindings must be inside a SINGLE `binds {}` block.
+      "binds {"
       bindsConfig.core
       bindsConfig.dms
       bindsConfig.apps
       bindsConfig.mpv
       bindsConfig.workspaces
       bindsConfig.monitors
+      "}"
+
       rulesConfig.rules
       settingsConfig.animations
       settingsConfig.gestures

@@ -5,11 +5,13 @@
 # Contains key mapping categories:
 # - DMS Integration, Core Window Management, Apps, MPV, Workspaces, Monitors
 # Imported by default.nix
+#
+# Note: "binds {}" wrapper is REMOVED here. It is added in default.nix to ensure
+# a single binds block in the final config.
 # ==============================================================================
 { lib, pkgs, bins, enableNiriusBinds, ... }:
 {
   dms = ''
-    binds {
       // ========================================================================
       // DMS Integration
       // ========================================================================
@@ -66,11 +68,9 @@
       Mod+Shift+Slash { show-hotkey-overlay; }
 
       Alt+Tab hotkey-overlay-title="Switch Windows" { spawn "${bins.dms}" "ipc" "call" "spotlight" "openQuery" "!"; }
-    }
   '';
 
   core = ''
-    binds {
       // ========================================================================
       // Core Window Management
       // ========================================================================
@@ -166,16 +166,14 @@
       // ========================================================================
       ${lib.optionalString enableNiriusBinds ''
       Mod+Alt+Shift+Return { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
-      Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
+      Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\.spotify\.Client)$" "--focus"; }
       Mod+Alt+Shift+Grave { spawn "${bins.nirius}" "scratchpad-toggle"; }
       Mod+Alt+Grave { spawn "${bins.nirius}" "scratchpad-show"; }
       Mod+Alt+Shift+F10 { spawn "${bins.nirius}" "toggle-follow-mode"; }
       ''}
-    }
   '';
 
   apps = ''
-    binds {
       // ========================================================================
       // Custom Applications
       // ========================================================================
@@ -215,11 +213,9 @@
       Alt+Ctrl+B { spawn "osc-spotify" "prev"; }
       Alt+Ctrl+E { spawn "mpc-control" "toggle"; }
       Alt+I { spawn "hypr-vlc_toggle"; }
-    }
   '';
 
   mpv = ''
-    binds {
       // ========================================================================
       // MPV Manager
       // ========================================================================
@@ -230,11 +226,9 @@
       Alt+4 { spawn "mpv-manager" "move"; }
       Alt+5 { spawn "mpv-manager" "save-yt"; }
       Alt+6 { spawn "mpv-manager" "wallpaper"; }
-    }
   '';
 
   workspaces = ''
-    binds {
       // ========================================================================
       // Workspace Management
       // ========================================================================
@@ -260,17 +254,14 @@
       Mod+Shift+7 { move-column-to-workspace "7"; }
       Mod+Shift+8 { move-column-to-workspace "8"; }
       Mod+Shift+9 { move-column-to-workspace "9"; }
-    }
   '';
 
   monitors = ''
-    binds {
       // ========================================================================
       // Monitor Management
       // ========================================================================
       Mod+A { spawn "niri" "msg" "action" "focus-monitor-next"; }
       Mod+E { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
       Mod+Escape { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
-    }
   '';
 }
