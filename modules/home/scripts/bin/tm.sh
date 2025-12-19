@@ -209,15 +209,59 @@ check_requirements() {
 		fi
 		;;
 	"clipboard")
-		if ! command -v cliphist &>/dev/null; then
-			error "cliphist kurulu değil!"
-			info "Kurulum: yay -S cliphist (Arch) veya https://github.com/sentriz/cliphist"
-			req_failed=1
+		# Clipboard backends:
+		# - cliphist + wl-clipboard: fzf üzerinden geçmiş seçimi + silme
+		# - clipse: kendi TUI/clipboard history ekranını açar (cliphist olmadan da çalışır)
+		#
+		# Manuel seçim:
+		#   TM_CLIPBOARD_BACKEND=cliphist tm.sh clip
+		#   TM_CLIPBOARD_BACKEND=clipse   tm.sh clip
+		backend="${TM_CLIPBOARD_BACKEND:-auto}"
+
+		# Auto-detect best available backend.
+		if [[ "$backend" == "auto" ]]; then
+			if command -v cliphist &>/dev/null && command -v wl-copy &>/dev/null; then
+				backend="cliphist"
+			elif command -v clipse &>/dev/null; then
+				backend="clipse"
+			else
+				backend="cliphist"
+			fi
 		fi
-		if ! command -v wl-copy &>/dev/null; then
-			error "wl-clipboard kurulu değil!"
-			info "Kurulum: sudo pacman -S wl-clipboard"
+
+		case "$backend" in
+		cliphist)
+			if ! command -v cliphist &>/dev/null; then
+				error "cliphist kurulu değil!"
+				info "Gerekli: cliphist + wl-clipboard (wl-copy/wl-paste)"
+				req_failed=1
+			fi
+			if ! command -v wl-copy &>/dev/null; then
+				error "wl-clipboard kurulu değil!"
+				info "Gerekli: wl-clipboard (wl-copy/wl-paste)"
+				req_failed=1
+			fi
+			;;
+		clipse)
+			if ! command -v clipse &>/dev/null; then
+				error "clipse kurulu değil!"
+				info "Alternatif olarak cliphist + wl-clipboard kullanabilirsin."
+				req_failed=1
+			fi
+			;;
+		*)
+			error "Bilinmeyen clipboard backend: $backend"
 			req_failed=1
+			;;
+		esac
+
+		if [[ "$req_failed" -ne 0 ]]; then
+			info "Çözümler:"
+			info "  - (Önerilen) cliphist + wl-clipboard (wl-copy/wl-paste)"
+			info "  - Alternatif: clipse"
+			info "Backend seçimi:"
+			info "  TM_CLIPBOARD_BACKEND=cliphist tm.sh clip"
+			info "  TM_CLIPBOARD_BACKEND=clipse   tm.sh clip"
 		fi
 		;;
 	"plugin")
@@ -563,22 +607,47 @@ handle_clipboard_mode() {
 		return 1
 	fi
 
-	setup_fzf_theme "Clipboard" "ENTER: Yapıştır | CTRL-D: Sil | ESC: Çık"
-
-	local selected
-	selected=$(cliphist list |
-		fzf --preview 'echo {} | cliphist decode' \
-			--preview-window=up:70%:wrap \
-			--bind 'ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)')
-
-	if [[ -n "$selected" ]]; then
-		if echo "$selected" | cliphist decode | wl-copy 2>/dev/null; then
-			success "Panoya kopyalandı"
+	backend="${TM_CLIPBOARD_BACKEND:-auto}"
+	if [[ "$backend" == "auto" ]]; then
+		if command -v cliphist &>/dev/null && command -v wl-copy &>/dev/null; then
+			backend="cliphist"
+		elif command -v clipse &>/dev/null; then
+			backend="clipse"
 		else
-			error "Panoya kopyalanamadı"
-			return 1
+			backend="cliphist"
 		fi
 	fi
+
+	if [[ "$backend" == "cliphist" ]]; then
+		setup_fzf_theme "Clipboard" "ENTER: Yapıştır | CTRL-D: Sil | ESC: Çık"
+
+		local selected
+		selected=$(cliphist list |
+			fzf --preview 'echo {} | cliphist decode' \
+				--preview-window=up:70%:wrap \
+				--bind 'ctrl-d:execute(echo {} | cliphist delete)+reload(cliphist list)')
+
+		if [[ -n "$selected" ]]; then
+			if echo "$selected" | cliphist decode | wl-copy 2>/dev/null; then
+				success "Panoya kopyalandı"
+			else
+				error "Panoya kopyalanamadı"
+				return 1
+			fi
+		fi
+		return 0
+	fi
+
+	if [[ "$backend" == "clipse" ]]; then
+		# Clipse kendi içinde geçmişi listeler, seçer, pin/sil işlemlerini yapar.
+		# tm.sh sadece bu arayüzü açar.
+		info "Clipse açılıyor (clipboard history)..."
+		clipse
+		return $?
+	fi
+
+	error "Bilinmeyen clipboard backend: $backend"
+	return 1
 }
 
 #--------------------------------------
@@ -1194,9 +1263,13 @@ Kısayollar:
     CTRL-J/K: Preview yukarı/aşağı
     ESC:     Çık
 
-Gereksinimler:
-    • cliphist
-    • wl-clipboard
+Backend'ler:
+    • cliphist + wl-clipboard  (varsayılan, fzf arayüzü)
+    • clipse                  (alternatif, kendi TUI arayüzü)
+
+Backend seçimi:
+    TM_CLIPBOARD_BACKEND=cliphist $(basename "$0") clip
+    TM_CLIPBOARD_BACKEND=clipse   $(basename "$0") clip
 
 Kurulum (Arch):
     yay -S cliphist wl-clipboard

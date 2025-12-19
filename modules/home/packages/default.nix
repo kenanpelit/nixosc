@@ -62,6 +62,7 @@ in
       # Debugging & Analysis
       gdb strace lsof
       hexdump xxd binsider bitwise
+      bc                    # CLI calculator (used by osc-* scripts)
       programmer-calculator
   
       # Nix Utilities
@@ -72,6 +73,7 @@ in
       starship              # Cross-shell prompt
       fastfetch neofetch    # System info
       htop btop procs       # Process viewers
+      inxi                  # Hardware/system summary (useful for debugging)
       tldr                  # Simplified man pages
       killall               # Process killer
       wl-clipboard clipse      # Clipboard tools
@@ -117,6 +119,7 @@ in
       libreoffice           # Office suite
       obsidian              # Note taking
       zathura evince        # PDF viewers
+      pdftk                 # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
       
       # Communication

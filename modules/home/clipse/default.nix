@@ -8,6 +8,10 @@
 { config, pkgs, lib, ... }: 
 let
   cfg = config.my.user.clipse;
+  dag =
+    if lib ? hm && lib.hm ? dag
+    then lib.hm.dag
+    else config.lib.dag;
 in
 {
   options.my.user.clipse = {
@@ -15,6 +19,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    home.packages = [ pkgs.clipse ];
+
     # =============================================================================
     # Configuration Files
     # =============================================================================
@@ -26,6 +32,7 @@ in
       allowDuplicates = false;
       themeFile = "custom_theme.json";
       tempDir = "tmp_files";
+      logFile = "${config.xdg.stateHome}/clipse/clipse.log";
       
       keyBindings = {
         # Navigation - Vim style
@@ -118,8 +125,20 @@ in
       PreviewBorder = "#89b4fa";    # blue
     };
 
-    # Ensure log file exists and is writable so the daemon stays up
-    # Remove any stale log in the old location
-    home.file.".config/clipse/clipse.log".enable = false;
+    # Clipse tries to open `~/.config/clipse/clipse.log` very early (even before
+    # reading config in some code paths). We cannot manage this as a `home.file`
+    # because the target must be writable and lives outside the Nix store.
+    #
+    # Instead, create a writable state log and symlink the legacy config-path log
+    # to it during activation.
+    home.activation.clipseLog = dag.entryAfter [ "writeBoundary" ] ''
+      state_home="''${XDG_STATE_HOME:-$HOME/.local/state}"
+      mkdir -p "$HOME/.config/clipse" "$state_home/clipse"
+      touch "$state_home/clipse/clipse.log"
+      ln -sf "$state_home/clipse/clipse.log" "$HOME/.config/clipse/clipse.log"
+    '';
+
+    # NOTE: No systemd user service for clipse. It is started by the compositor
+    # startup hooks (Hyprland exec-once / Niri spawn-at-startup).
   };
 }

@@ -88,6 +88,8 @@ dconf write /org/gnome/desktop/interface/font-name "'$MAIN_FONT $FONT_SIZE_SM'"
 dconf write /org/gnome/desktop/interface/document-font-name "'$MAIN_FONT $FONT_SIZE_SM'"
 dconf write /org/gnome/desktop/interface/monospace-font-name "'$TERMINAL_FONT $FONT_SIZE_SM'"
 dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
+# Also set via gsettings (some setups read this more reliably than raw dconf writes)
+command -v gsettings >/dev/null 2>&1 && gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
 dconf write /org/gnome/desktop/interface/font-antialiasing "'grayscale'"
 dconf write /org/gnome/desktop/interface/font-hinting "'slight'"
 dconf write /org/gnome/desktop/interface/show-battery-percentage "true"
@@ -991,19 +993,29 @@ dconf write /org/gnome/shell/extensions/tilingshell/last-version-name-installed 
 # =============================================================================
 echo "🌍 Catppuccin ortam değişkenleri..."
 
-# ~/.profile dosyasına ekle
-PROFILE_FILE="$HOME/.profile"
-if ! grep -q "CATPPUCCIN_THEME" "$PROFILE_FILE" 2>/dev/null; then
-  cat >>"$PROFILE_FILE" <<EOF
-
-# Catppuccin Mocha Theme Environment
-export CATPPUCCIN_THEME="mocha"
-export CATPPUCCIN_ACCENT="mauve"
-export GTK_THEME="catppuccin-mocha-mauve-standard+normal"
-export XCURSOR_THEME="catppuccin-mocha-dark-cursors"
-export XCURSOR_SIZE="16"
+# Prefer `environment.d` (systemd --user) for Nix/Home-Manager setups where
+# ~/.profile may be a read-only symlink.
+ENV_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
+ENV_FILE="${ENV_DIR}/99-catppuccin.conf"
+if mkdir -p "$ENV_DIR" 2>/dev/null; then
+  cat >"$ENV_FILE" <<'EOF'
+CATPPUCCIN_THEME=mocha
+CATPPUCCIN_ACCENT=mauve
+GTK_THEME=catppuccin-mocha-mauve-standard+normal
+XCURSOR_THEME=catppuccin-mocha-dark-cursors
+XCURSOR_SIZE=24
 EOF
-  echo "✅ Catppuccin ortam değişkenleri ~/.profile'a eklendi"
+  echo "✅ Catppuccin ortam değişkenleri $ENV_FILE içine yazıldı"
+else
+  echo "⚠️  $ENV_DIR oluşturulamadı; env yazımı atlandı"
+fi
+
+# Best-effort: also update current systemd/dbus activation environment.
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user import-environment CATPPUCCIN_THEME CATPPUCCIN_ACCENT GTK_THEME XCURSOR_THEME XCURSOR_SIZE 2>/dev/null || true
+fi
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+  dbus-update-activation-environment --systemd CATPPUCCIN_THEME CATPPUCCIN_ACCENT GTK_THEME XCURSOR_THEME XCURSOR_SIZE 2>/dev/null || true
 fi
 
 # =============================================================================

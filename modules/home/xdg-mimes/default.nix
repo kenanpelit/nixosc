@@ -8,11 +8,13 @@
 with lib;
 let
  cfg = config.my.user.xdg-mimes;
+ defaultBrowserDesktop =
+   lib.attrByPath [ "my" "browser" "brave" "defaultDesktopFile" ] "brave-browser.desktop" config;
  # =============================================================================
  # Default Applications Map
  # =============================================================================
  defaultApps = {
-   browser = [ "brave-browser.desktop" ];
+   browser = [ defaultBrowserDesktop ];
    text = [ "kitty-nvim.desktop" ];
    image = [ "imv-dir.desktop" ];
    audio = [ "mpv.desktop" ];

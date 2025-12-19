@@ -48,9 +48,14 @@ in
           mkdir -p "$cache"
           tmp="$cache/files.tmp"
           dest="$cache/files"
-          ${pkgs.curl}/bin/curl -fL "${dbUrl}" -o "$tmp"
+          # Don't let slow/captive networks block the user session.
+          # If this fails, the existing DB (if any) stays in place.
+          ${pkgs.coreutils}/bin/timeout 20s \
+            ${pkgs.curl}/bin/curl -fL --connect-timeout 3 --max-time 15 \
+            "${dbUrl}" -o "$tmp"
           mv "$tmp" "$dest"
         '');
+        TimeoutStartSec = 25;
       };
     };
     # Refresh DB on HM activation to fix corrupt/missing files
@@ -58,10 +63,15 @@ in
       cache="$HOME/.cache/nix-index"
       dest="$cache/files"
       # Only download if missing or corrupt
-      if [ ! -f "$dest" ] || ! ${pkgs.nix-index}/bin/nix-locate --db "$cache" --top-level coreutils >/dev/null 2>&1; then
+      # NOTE: `nix-locate` stores the DB under the directory passed to `--db`.
+      # Use a lightweight query to detect a valid DB without doing a full refresh.
+      if [ ! -f "$dest" ] || ! ${pkgs.nix-index}/bin/nix-locate --db "$cache" --minimal --package '^coreutils$' 'bin/ls' >/dev/null 2>&1; then
         mkdir -p "$cache"
         tmp="$cache/files.tmp"
-        if ${pkgs.curl}/bin/curl -fL "${dbUrl}" -o "$tmp"; then
+        # Never block HM activation on a slow network; fail fast and continue.
+        if ${pkgs.coreutils}/bin/timeout 20s \
+          ${pkgs.curl}/bin/curl -fL --connect-timeout 3 --max-time 15 \
+          "${dbUrl}" -o "$tmp"; then
           mv "$tmp" "$dest"
         else
           rm -f "$tmp"

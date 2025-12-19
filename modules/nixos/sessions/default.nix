@@ -17,6 +17,11 @@ let
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
+  niriPkg =
+    if inputs ? niri && inputs.niri ? packages
+    then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
+    else pkgs.niri;
+
   hyprlandOptimizedSession = pkgs.writeTextFile {
     name = "hyprland-optimized-session";
     destination = "/share/wayland-sessions/hyprland-optimized.desktop";
@@ -39,11 +44,11 @@ let
 
   gnomeSessionWrapper = pkgs.writeTextFile {
     name = "gnome-session-wrapper";
-    destination = "/share/wayland-sessions/gnome-nixos.desktop";
+    destination = "/share/wayland-sessions/gnome-optimized.desktop";
     text = ''
       [Desktop Entry]
-      Name=GNOME (NixOS)
-      Comment=GNOME with systemd user session support and custom launcher
+      Name=GNOME (Optimized)
+      Comment=GNOME with systemd user session support and custom launcher (gnome_tty)
 
       Type=Application
       DesktopNames=GNOME
@@ -54,12 +59,15 @@ let
 
       Exec=/etc/profiles/per-user/${username}/bin/gnome_tty
     '';
-    passthru.providedSessions = [ "gnome-nixos" ];
+    passthru.providedSessions = [ "gnome-optimized" ];
   };
 
   niriSession = pkgs.writeTextFile {
     name = "niri-session";
-    destination = "/share/wayland-sessions/niri.desktop";
+    # Avoid clobbering Niri's upstream `niri.desktop` (Exec=niri-session),
+    # otherwise greeters will only see the upstream entry and our optimized one
+    # disappears from the menu.
+    destination = "/share/wayland-sessions/niri-optimized.desktop";
     text = ''
       [Desktop Entry]
       Name=Niri (Optimized)
@@ -68,12 +76,24 @@ let
       Type=Application
       DesktopNames=niri
     '';
-    passthru.providedSessions = [ "niri" ];
+    passthru.providedSessions = [ "niri-optimized" ];
   };
 
 in
 {
   config = lib.mkIf cfg.enable {
+    # GNOME Shell (mutter) started via `org.gnome.Shell@wayland.service` expects
+    # the current logind session to be a *graphical* session (Type=wayland/x11).
+    # TTY logins default to Type=tty, which makes GNOME fail with:
+    #   "Failed to setup: Failed to find any matching session"
+    #
+    # Force pam_systemd to register `login` sessions as wayland so GNOME can be
+    # started directly from a TTY (tty3) without GDM.
+    #
+    # NOTE: This uses the (experimental) `security.pam.services.<name>.rules`
+    # interface, but it is the least invasive way to pass pam_systemd arguments.
+    security.pam.services.login.rules.session.systemd.settings.type = lib.mkDefault "wayland";
+
     # Session definitions for DM
     services.displayManager.sessionPackages = lib.mkMerge [
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
@@ -89,7 +109,7 @@ in
       
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
       
-      (lib.optional cfg.enableNiri pkgs.niri)
+      (lib.optional cfg.enableNiri niriPkg)
       (lib.optional cfg.enableNiri niriSession)
     ];
   };

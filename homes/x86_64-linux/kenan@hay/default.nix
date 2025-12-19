@@ -45,6 +45,7 @@
   my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
   my.user.dms.enable = true;
+  my.user.stasis.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = false;
   my.user.sunsetr.enable = true;
@@ -56,6 +57,8 @@
   my.browser.brave = {
     enable = true;
     setAsDefault = true;
+    defaultProfileName = "Kenp";
+    defaultDesktopFile = "brave-kenp.desktop";
   };
   my.browser.firefox.enable = true;
   my.browser.chrome-preview.enable = true;
@@ -94,6 +97,7 @@
   # Clipboard
   my.user.copyq.enable = false;
   my.user.clipse.enable = true;
+  my.user.cliphist.enable = true;
   
   # Security
   my.user.sops.enable = true;

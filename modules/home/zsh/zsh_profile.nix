@@ -28,7 +28,7 @@ lib.mkIf cfg.enable {
         # Only run in login shell when no desktop is active
         # CRITICAL: Also check if we're being called from a desktop session startup
         # (gnome-session etc. may re-exec shell during startup)
-        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
+        if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]] && [ -z "''${NIRI_TTY_GUARD:-}" ] && [ -z "''${GNOME_TTY_GUARD:-}" ]; then
 
             # TTY1 special check: Don't interfere if session already active
             if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
@@ -96,6 +96,12 @@ lib.mkIf cfg.enable {
                 # CRITICAL: Only set XDG_RUNTIME_DIR - let gnome_tty handle everything else
                 # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                export GNOME_TTY_GUARD=1
+                if [ -e "''${XDG_RUNTIME_DIR}/gnome-tty3.guard" ]; then
+                    echo "GNOME zaten başlatılıyor (guard aktif), tekrar tetiklenmiyor."
+                    return
+                fi
+                export GNOME_TTY_GUARD_FILE="''${XDG_RUNTIME_DIR}/gnome-tty3.guard"
 
                 # Check for gnome_tty script
                 if command -v gnome_tty >/dev/null 2>&1; then
@@ -111,7 +117,7 @@ lib.mkIf cfg.enable {
                     export SYSTEMD_OFFLINE=0
 
                     # Start GNOME session directly (no dbus-run-session wrapper)
-                    exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                    exec gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
                 fi
 
             # ==========================================================================
@@ -124,6 +130,11 @@ lib.mkIf cfg.enable {
 
                 export XDG_SESSION_TYPE=wayland
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                # NixOS'ta setuid sudo sadece /run/wrappers/bin içindedir.
+                # /run/current-system/sw/bin/sudo setuid değildir ve şu hataya yol açar:
+                #   sudo must be owned by uid 0 and have the setuid bit set
+                export PATH="/run/wrappers/bin:/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
+                export NIRI_TTY_GUARD=1
 
                 if command -v niri_tty >/dev/null 2>&1; then
                     echo "Starting Niri with optimized configuration..."

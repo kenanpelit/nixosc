@@ -450,8 +450,9 @@ create_profile() {
 
 	log "SUCCESS" "$app_name başlatılıyor..."
 
-	# exec yerine normal çağrı
-		"$0" "$profile" --new-window --app="$app_url" \
+	# App-mode: `--app=...` zaten ayrı bir uygulama penceresi açar; `--new-window`
+	# eklemek bazı durumlarda "normal browser window" davranışını tetikleyebiliyor.
+		"$0" "$profile" --app="$app_url" \
 			--class="$app_name" --title="$app_name" "$@"
 	}
 
@@ -643,7 +644,23 @@ validate_profile() {
 		while [[ $# -gt 0 ]]; do
 			case "${1:-}" in
 			--class=*) window_class="${1#*=}" ;;
+			--class)
+				shift
+				if [[ -z "${1:-}" ]]; then
+					log "ERROR" "--class parametresi bir değer bekliyor"
+					exit 1
+				fi
+				window_class="$1"
+				;;
 			--title=*) window_title="${1#*=}" ;;
+			--title)
+				shift
+				if [[ -z "${1:-}" ]]; then
+					log "ERROR" "--title parametresi bir değer bekliyor"
+					exit 1
+				fi
+				window_title="$1"
+				;;
 			--separate) separate_mode="true" ;;
 			--no-separate) separate_mode="false" ;;
 			--proxy=*)

@@ -12,10 +12,10 @@ set -euo pipefail
 # Sabit Değişkenler
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="1.0.0-niri"
-readonly LOG_DIR="$HOME/.logs"
-readonly NIRI_LOG="$LOG_DIR/niri.log"
-readonly DEBUG_LOG="$LOG_DIR/niri_debug.log"
+readonly SCRIPT_VERSION="1.2.0-niri"
+LOG_DIR="$HOME/.logs"
+NIRI_LOG="$LOG_DIR/niri.log"
+DEBUG_LOG="$LOG_DIR/niri_debug.log"
 readonly MAX_LOG_SIZE=10485760 # 10MB
 readonly MAX_LOG_BACKUPS=3
 
@@ -147,12 +147,13 @@ check_system() {
 		export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 	fi
 
-	# Niri session binary kontrolü
+	# Prefer starting via `niri-session` (systemd user session integration).
+	# We prevent recursion in `.zprofile` using `NIRI_TTY_GUARD`.
 	if command -v niri-session &>/dev/null; then
 		NIRI_BINARY="niri-session"
 	elif command -v niri &>/dev/null; then
 		NIRI_BINARY="niri"
-		warn "niri-session bulunamadı, direkt niri kullanılacak (systemd entegrasyonu eksik olabilir)"
+		warn "niri-session bulunamadı, fallback: niri --session (user services/targets çalışmayabilir)"
 	else
 		error "niri veya niri-session bulunamadı!"
 	fi
@@ -164,49 +165,22 @@ check_system() {
 setup_environment() {
 	print_header "ENVIRONMENT SETUP - NIRI"
 
-	# CRITICAL FIX: Set SYSTEMD_OFFLINE=0
+	# Ensure systemd user services are not blocked in Nix environments.
 	export SYSTEMD_OFFLINE=0
 	debug_log "✓ SYSTEMD_OFFLINE=0 set"
 
-	# Wayland Settings
+	# NixOS: setuid sudo wrapper lives here; ensure it wins over /run/current-system/sw/bin/sudo.
+	case ":${PATH:-}:" in
+	*":/run/wrappers/bin:"*) ;;
+	*) export PATH="/run/wrappers/bin:${PATH:-}" ;;
+	esac
+
+	# Minimal session identity. Detailed env (theme, cursor, toolkit hints) is set
+	# in Niri config and exported to systemd via `niri-session-start`.
 	export XDG_SESSION_TYPE="wayland"
 	export XDG_SESSION_DESKTOP="niri"
 	export XDG_CURRENT_DESKTOP="niri"
 	export DESKTOP_SESSION="niri"
-	
-	export MOZ_ENABLE_WAYLAND=1
-	export QT_QPA_PLATFORM="wayland;xcb"
-	export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-	export GDK_BACKEND=wayland
-	export SDL_VIDEODRIVER=wayland
-	export CLUTTER_BACKEND=wayland
-	export NIXOS_OZONE_WL=1
-    export EGL_PLATFORM=wayland
-
-	# Theme
-	local gtk_theme="catppuccin-${CATPPUCCIN_FLAVOR}-${CATPPUCCIN_ACCENT}-standard+normal"
-	export GTK_THEME="$gtk_theme"
-	export GTK_USE_PORTAL=1
-    export QT_QPA_PLATFORMTHEME=gtk3
-
-	if [[ "$CATPPUCCIN_FLAVOR" == "latte" ]]; then
-		export GTK_APPLICATION_PREFER_DARK_THEME=0
-	else
-		export GTK_APPLICATION_PREFER_DARK_THEME=1
-	fi
-
-	local cursor_theme="catppuccin-${CATPPUCCIN_FLAVOR}-dark-cursors"
-	export XCURSOR_THEME="$cursor_theme"
-	export XCURSOR_SIZE=24
-
-	# Niri Specific
-	export NIRI_CONFIG_HOME="$HOME/.config/niri"
-    
-    # Apps
-    export EDITOR=nvim
-    export VISUAL=nvim
-    export TERMINAL=kitty
-    export BROWSER=brave
 
 	info "Environment setup tamamlandı"
 }
@@ -215,16 +189,40 @@ setup_environment() {
 # Systemd Integration
 # =============================================================================
 setup_systemd_integration() {
+	# NOTE:
+	# systemctl/dbus çağrıları bazı TTY login senaryolarında bloklayıcı olabiliyor.
+	# Bu yüzden hepsi best-effort + kısa timeout ile.
+	local timeout_bin=""
+	if command -v timeout >/dev/null 2>&1; then
+		timeout_bin="timeout"
+	fi
+
 	# Import environment to systemd user session
 	local vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP GTK_THEME XCURSOR_THEME SYSTEMD_OFFLINE NIXOS_OZONE_WL"
 
-	if systemctl --user import-environment $vars 2>/dev/null; then
+	local rc=0
+	if [[ -n "$timeout_bin" ]]; then
+		$timeout_bin 2s systemctl --user import-environment $vars 2>/dev/null
+		rc=$?
+	else
+		systemctl --user import-environment $vars 2>/dev/null
+		rc=$?
+	fi
+	if [[ "$rc" -eq 0 ]]; then
 		debug_log "Systemd environment import başarılı"
 	else
 		warn "Systemd import başarısız (systemd user session yok olabilir)"
 	fi
 
-	if dbus-update-activation-environment --systemd --all 2>/dev/null; then
+	rc=0
+	if [[ -n "$timeout_bin" ]]; then
+		$timeout_bin 2s dbus-update-activation-environment --systemd --all 2>/dev/null
+		rc=$?
+	else
+		dbus-update-activation-environment --systemd --all 2>/dev/null
+		rc=$?
+	fi
+	if [[ "$rc" -eq 0 ]]; then
 		debug_log "DBus activation environment güncellendi"
 	else
 		warn "DBus update başarısız"
@@ -232,7 +230,11 @@ setup_systemd_integration() {
 
 	# Restart critical user services for correct environment
 	if [[ "$GDM_MODE" == "true" ]]; then
-		systemctl --user restart dms.service 2>/dev/null || true
+		if [[ -n "$timeout_bin" ]]; then
+			$timeout_bin 2s systemctl --user restart dms.service 2>/dev/null || true
+		else
+			systemctl --user restart dms.service 2>/dev/null || true
+		fi
 	fi
 }
 
@@ -266,11 +268,26 @@ start_niri() {
 	fi
 
 	if [[ "$GDM_MODE" == "true" ]]; then
-		# GDM modunda exec (systemd journal logging)
-		exec systemd-cat -t niri-gdm -- "$NIRI_BINARY"
+		# Greeter/DM path: log to journal.
+		if [[ "$NIRI_BINARY" == "niri" ]]; then
+			exec systemd-cat -t niri-gdm -- "$NIRI_BINARY" --session
+		else
+			exec systemd-cat -t niri-gdm -- "$NIRI_BINARY"
+		fi
 	else
-		# TTY modunda exec (file logging)
-		exec "$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
+		# TTY path: keep foreground process to hold the session on the VT.
+		export NIRI_TTY_GUARD=1
+
+		if [[ "$NIRI_BINARY" == "niri" ]]; then
+			exec "$NIRI_BINARY" --session >>"$NIRI_LOG" 2>&1
+		else
+			exec "$NIRI_BINARY" >>"$NIRI_LOG" 2>&1
+		fi
+
+		local rc=$?
+		error "Niri exited (code=$rc). Log: $NIRI_LOG"
+		sleep 2
+		exec "${SHELL:-bash}" -l
 	fi
 }
 
@@ -288,12 +305,16 @@ main() {
 	done
 
 	detect_gdm_session
+	info "niri_tty v${SCRIPT_VERSION} (GDM_MODE=$GDM_MODE)"
 
 	setup_directories
 	rotate_logs
 	check_system
 	setup_environment
-	setup_systemd_integration
+	# Avoid early systemctl/dbus calls on TTY; Niri will export env after startup.
+	if [[ "$GDM_MODE" == "true" ]]; then
+		setup_systemd_integration
+	fi
 	cleanup_old_processes
 	start_niri
 }

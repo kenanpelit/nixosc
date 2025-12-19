@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hyprland / Walker / Elephant / DankMaterialShell Updater Script with Git Auto-Commit
+# Hyprland / Niri / Walker / Elephant / DankMaterialShell Updater Script with Git Auto-Commit
 set -euo pipefail
 
 # Colors
@@ -19,9 +19,11 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {hypr|hyprland|walker|dank}"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank}"
   echo
+  echo "  all             : Apply dank + niri + hyprland + walker (in that order)"
   echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
+  echo "  niri            : Update Niri input to latest commit on main"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
 }
@@ -76,20 +78,38 @@ backup_flake() {
 get_latest_commit() {
   local repo="$1"
   local branch="${2:-main}"
-  local response
-  response=$(curl -s --max-time 30 "https://api.github.com/repos/$repo/commits/$branch")
-  if [[ -z "$response" ]]; then
-    log_error "Failed to reach GitHub API for $repo"
-    exit 1
-  fi
+  local response=""
+
+  # NOTE: We intentionally do `|| true` here; with `set -e`, a failing curl in a
+  # command-substitution would otherwise exit the whole script before we can
+  # print a helpful error.
+  response="$(
+    curl -fsSL --max-time 30 \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/$repo/commits/$branch" 2>/dev/null || true
+  )"
 
   local commit_hash
   commit_hash=$(echo "$response" | sed -n 's/.*"sha":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-  if [[ -z "$commit_hash" ]]; then
-    log_error "Could not extract commit hash for $repo"
-    exit 1
+  if [[ -n "$commit_hash" ]]; then
+    echo "${commit_hash:0:40}"
+    return 0
   fi
-  echo "${commit_hash:0:40}"
+
+  # Fallback: GitHub API can fail due to rate limits / captive portals / no net.
+  # Use `git ls-remote` which often works even when the API is blocked.
+  local remote_hash=""
+  remote_hash="$(
+    GIT_TERMINAL_PROMPT=0 git ls-remote "https://github.com/$repo.git" "refs/heads/$branch" 2>/dev/null |
+      awk 'NR==1{print $1}' || true
+  )"
+  if [[ -n "$remote_hash" ]]; then
+    echo "${remote_hash:0:40}"
+    return 0
+  fi
+
+  log_error "Could not resolve latest commit for $repo ($branch). Network blocked or GitHub rate-limited?"
+  exit 1
 }
 
 get_current_commit() {
@@ -222,7 +242,7 @@ update_commit_input() {
 
   if [[ "$current_commit" == "$latest_commit" ]]; then
     log_success "$display_name is already at the latest commit."
-    exit 0
+    return 0
   fi
 
   update_commit_flake "$input_name" "$repo_lower" "$latest_commit"
@@ -250,6 +270,10 @@ update_hyprland() {
   update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
 }
 
+update_niri() {
+  update_commit_input "niri" "YaLTeR/niri" "YaLTeR/niri" "main" "Niri"
+}
+
 update_dank() {
   update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "master" "DankMaterialShell"
 }
@@ -260,10 +284,14 @@ update_dank() {
 
 get_latest_release_tag() {
   local repo="$1"
-  local response
-  response=$(curl -s --max-time 30 "https://api.github.com/repos/$repo/releases/latest")
+  local response=""
+  response="$(
+    curl -fsSL --max-time 30 \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null || true
+  )"
   if [[ -z "$response" ]]; then
-    log_error "Failed to reach GitHub API for $repo"
+    log_error "Failed to reach GitHub API for $repo (no network / rate limit?)"
     exit 1
   fi
 
@@ -403,8 +431,17 @@ main() {
   check_git_repo
 
   case "$target" in
+  all)
+    update_dank
+    update_niri
+    update_hyprland
+    update_walker_and_elephant
+    ;;
   hypr | hyprland)
     update_hyprland
+    ;;
+  niri)
+    update_niri
     ;;
   walker)
     update_walker_and_elephant

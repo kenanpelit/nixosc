@@ -7,10 +7,30 @@
 
 { pkgs, ... }:
 {
-  security.audit.enable = true;
-  # Prevent kauditd backlog overflow by enlarging the queue
-  security.audit.rules = [ "-b 8192" ];
-  boot.kernelParams = [ "audit_backlog_limit=8192" ];
+  # NOTE:
+  # On this host/kernel, audit control operations (AUDIT_SET) are not supported:
+  # `auditctl -b/-e/-f/-r` fails with netlink error `EOPNOTSUPP`.
+  #
+  # The NixOS `security.audit.enable = true` module loads rules via `auditctl -R`,
+  # which includes `-b/-f/-r/-e` lines and causes `audit-rules-nixos.service` to fail.
+  # That failure aborts `nixos-rebuild switch`.
+  #
+  # Workaround:
+  # - Do NOT attempt to load kernel audit rules via auditctl.
+  # - Also disable kernel auditing entirely to avoid noisy kernel spam like:
+  #     `audit: error in audit_log_subj_ctx`
+  #
+  # If/when the kernel supports AUDIT_SET again and you actually need audit logs,
+  # you can switch back to:
+  #   security.audit.enable = true;
+  #   boot.kernelParams = [ "audit=1" "audit_backlog_limit=8192" ];
+  #
+  security.audit.enable = false;
+
+  # Disable auditing in early boot.
+  boot.kernelParams = [
+    "audit=0"
+  ];
 
   environment.systemPackages = [ pkgs.audit ];
 
