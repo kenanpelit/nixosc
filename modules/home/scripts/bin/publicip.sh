@@ -2,8 +2,8 @@
 #===============================================================================
 #
 #   Script: OSC Public IP Checker
-#   Version: 1.2.0
-#   Date: 2024-04-14
+#   Version: 1.3.0
+#   Date: 2025-12-19
 #   Author: Kenan Pelit
 #   Repository: https://github.com/kenanpelit/nixosc
 #   Description: Advanced public IP address checker with VPN detection and
@@ -16,7 +16,7 @@
 #   - Stylish terminal output with Unicode symbols
 #   - VPN vs regular IP comparison
 #   - Comprehensive status reporting
-#   - Shows both VPN and regular IP when VPN is connected
+#   - Tries to show "real" IP by bypassing VPN (if possible)
 #
 #   License: MIT
 #
@@ -72,38 +72,90 @@ print_status() {
 }
 
 notify() {
-	notify-send -i network-vpn "$1" "$2"
+	command -v notify-send >/dev/null 2>&1 || return 0
+	notify-send -i network-vpn "$1" "$2" 2>/dev/null || true
+}
+
+curl_ip() {
+	curl -fsS --connect-timeout 2 --max-time 5 "$@"
+}
+
+get_mullvad_status() {
+	command -v mullvad >/dev/null 2>&1 || return 0
+	mullvad status 2>/dev/null || true
 }
 
 get_country() {
 	local ip=$1
-	if country=$(curl -s "https://ipapi.co/$ip/country_name"); then
-		echo "$country"
+	[[ -n "${ip:-}" ]] || { echo "Unknown"; return 0; }
+	if country="$(curl_ip "https://ipapi.co/${ip}/country_name" 2>/dev/null | tr -d '\n' || true)"; then
+		[[ -n "$country" ]] && echo "$country" || echo "Unknown"
 	else
 		echo "Unknown"
 	fi
 }
 
 get_real_ip() {
-	curl -s https://ipinfo.io/ip
+	curl_ip https://ipinfo.io/ip | tr -d '\n'
+}
+
+get_physical_iface() {
+	# Try to pick a non-tunnel interface that's up.
+	# This is best-effort; if Mullvad (or another VPN) blocks direct traffic, it may still fail.
+	ip -o link show up 2>/dev/null \
+		| awk -F': ' '{print $2}' \
+		| awk '{print $1}' \
+		| grep -Ev '^(lo|mullvad|wg[0-9]*|tun[0-9]*|tap[0-9]*|docker[0-9]*|veth.*|br-.*|virbr.*)$' \
+		| head -n 1
+}
+
+get_real_ip_bypass_vpn() {
+	local ip=""
+
+	# Mullvad provides mullvad-exclude for split tunneling (best option if present).
+	if command -v mullvad-exclude >/dev/null 2>&1; then
+		ip="$(mullvad-exclude bash -lc 'curl -fsS --connect-timeout 2 --max-time 5 https://ipinfo.io/ip' 2>/dev/null | tr -d '\n' || true)"
+	fi
+
+	# Fallback: force a physical interface (may still fail under VPN lockdown).
+	if [[ -z "$ip" ]]; then
+		local iface
+		iface="$(get_physical_iface)"
+		if [[ -n "$iface" ]]; then
+			ip="$(curl_ip --interface "$iface" https://ipinfo.io/ip 2>/dev/null | tr -d '\n' || true)"
+		fi
+	fi
+
+	echo "$ip"
 }
 
 check_ip() {
-	real_ip=$(get_real_ip)
-	status_output=$(mullvad status)
+	status_output="$(get_mullvad_status)"
+	current_ip=$(get_real_ip)
 
 	print_header "IP ADDRESS STATUS"
 
-	if echo "$status_output" | grep -q "Connected"; then
+	if [[ -n "$status_output" ]] && echo "$status_output" | grep -q "Connected"; then
 		# VPN is connected
 		vpn_ip=$(echo "$status_output" | grep -oP "IPv4: \K[0-9.]+")
+
+		# Try to bypass VPN to get the "real" public IP
+		real_ip="$(get_real_ip_bypass_vpn)"
+		if [[ -z "$real_ip" ]]; then
+			real_ip="$current_ip"
+			real_ip_note="(VPN bypass unavailable)"
+		elif [[ -n "$vpn_ip" && "$real_ip" == "$vpn_ip" ]]; then
+			real_ip_note="(VPN bypass returned VPN IP)"
+		else
+			real_ip_note=""
+		fi
 
 		# Get country information for both IPs
 		vpn_country=$(get_country "$vpn_ip")
 		real_country=$(get_country "$real_ip")
 
 		# Display notification
-		message="VPN IP: $vpn_ip ($vpn_country)\nRegular IP: $real_ip ($real_country)"
+		message="VPN IP: $vpn_ip ($vpn_country)\nReal IP: $real_ip ($real_country) $real_ip_note"
 		notify "VPN Connected" "$message"
 
 		# Display VPN Status
@@ -118,15 +170,15 @@ check_ip() {
 
 		# Display Real IP Info
 		echo -e " ${BOLD}${CYAN}REAL CONNECTION:${RESET}"
-		print_status "$GLOBE" "IP Address" "$real_ip" "${YELLOW}"
+		print_status "$GLOBE" "IP Address" "$real_ip ${real_ip_note:-}" "${YELLOW}"
 		print_status "$GLOBE" "Location" "$real_country" "${YELLOW}"
 
 	else
 		# VPN is not connected
-		country=$(get_country "$real_ip")
+		country=$(get_country "$current_ip")
 
 		# Display notification
-		notify "VPN Disconnected" "Regular IP: $real_ip ($country)"
+		notify "VPN Disconnected" "Regular IP: $current_ip ($country)"
 
 		# Display VPN Status
 		print_status "$WARNING" "VPN Status" "Disconnected" "${RED}"
@@ -134,7 +186,7 @@ check_ip() {
 
 		# Display Real IP Info
 		echo -e " ${BOLD}${CYAN}CURRENT CONNECTION:${RESET}"
-		print_status "$GLOBE" "IP Address" "$real_ip" "${YELLOW}"
+		print_status "$GLOBE" "IP Address" "$current_ip" "${YELLOW}"
 		print_status "$GLOBE" "Location" "$country" "${YELLOW}"
 	fi
 
