@@ -5,15 +5,15 @@
 #  Author:  Kenan Pelit
 #  Repo:    https://github.com/kenanpelit/nixosc
 #  License: MIT
-#  Date:    2025-12-06
+#  Date:    2025-12-06 (initial Snowfall v4 migration)
 #
 # ------------------------------------------------------------------------------
 #  ARCHITECTURE
 # ------------------------------------------------------------------------------
 #
-#  Snowfall Lib v4 layout, with NixOS + Home Manager under one flake.
+#  Snowfall-lib v4 layout: NixOS + Home Manager in a single repo.
 #
-#  Structure (workspace-write sandbox friendly):
+#  Structure:
 #    ├── systems/              # Host configs per arch (hay, vhay, …)
 #    ├── homes/                # Home Manager profiles (e.g. kenan@hay)
 #    ├── modules/
@@ -29,12 +29,13 @@
 # ------------------------------------------------------------------------------
 #
 #  Build & Switch:
-#    $ ./install.sh install <host>        # system + home for host
-#    $ nixos-rebuild switch --flake .#hay # direct call
-#    $ home-manager switch --flake .#kenan@hay # home only
+#    $ ./install.sh install <host>                 # system + home for host
+#    $ nixos-rebuild switch --flake .#hay          # system only
+#    $ home-manager switch --flake .#kenan@hay     # home only
 #
-#  Update Inputs:
-#    $ ./install.sh update
+#  Update Inputs (pin bumps):
+#    $ ./install.sh update                          # flake update flow
+#    $ osc-fiup {dank|hypr|walker}                  # targeted bump helpers
 #
 # ==============================================================================
 
@@ -42,16 +43,16 @@
   description = "Kenan's NixOS Configuration - Modern, Modular, Snowfall-based";
 
   # NOTE: We intentionally do not set `nixConfig.extra-substituters` here.
-  # This repo configures substituters/trusted keys centrally via
-  # `modules/nixos/nix`, and duplicating them in `flake.nix` tends to drift.
+  # Substituters/trusted keys are managed centrally via `modules/nixos/nix`.
+  # Keeping only one source avoids drift between `flake.nix` and system policy.
 
   inputs = {
     # ==========================================================================
     # Core (Foundation)
     # ==========================================================================
-    # - nixpkgs: Pinned NixOS channel (currently nixos-25.11)
-    # - snowfall-lib: Repo structure + mkFlake glue for streamlined config
-    # - home-manager: User-level configuration module
+    # - nixpkgs: base package set and module tree (pinned to a release branch)
+    # - snowfall-lib: repo layout + mkFlake glue
+    # - home-manager: user-level configuration
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     snowfall-lib = {
@@ -67,9 +68,9 @@
     # ==========================================================================
     # System (NixOS modules / hardware / secrets)
     # ==========================================================================
-    # - sops-nix: Secret management via Mozilla SOPS
-    # - NUR: Nix User Repository (extra packages/overlays)
-    # - nixos-hardware: Hardware-specific optimization profiles
+    # - sops-nix: secret management via SOPS
+    # - NUR: extra packages/overlays
+    # - nixos-hardware: hardware profiles
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -85,9 +86,9 @@
     # ==========================================================================
     # Desktop: Compositors / WMs
     # ==========================================================================
-    # This repo uses multiple Wayland compositors.
-    # Keep them pinned for reproducibility (especially for greeter/session paths).
-    
+    # This repo uses multiple Wayland compositors; we keep them pinned for
+    # reproducibility and to prevent session/greeter breakage between updates.
+
     # Hyprland: Dynamic tiling Wayland compositor
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
@@ -106,10 +107,11 @@
     };
 
     # Niri: Scrollable-tiling Wayland compositor
-    # Using sodiboo's flake for better integration (validation/caching).
+    # Using sodiboo's flake for better integration (HM module + overlay wiring).
+    # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
     niri = {
       url = "github:sodiboo/niri-flake";
-      inputs.niri-unstable.url = "github:YaLTeR/niri/main"; # Follow latest main branch
+      inputs.niri-unstable.url = "github:YaLTeR/niri/main";
     };
 
     # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
@@ -211,10 +213,9 @@
     let
       lib = nixpkgs.lib;
     in
-    lib.removeAttrs
-      # snowfall-lib also exposes a `snowfall` attribute we don't use directly.
-      # Removing it keeps `nix flake show` output tidy.
-      (snowfall-lib.mkFlake {
+    # snowfall-lib produces an internal `snowfall` attribute; hide it to keep
+    # `nix flake show` focused on real outputs.
+    lib.removeAttrs (snowfall-lib.mkFlake {
         inherit inputs;
         src = ./.;
 
@@ -247,7 +248,7 @@
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
           {
-            # Inject Niri HM module globally to fix option visibility and avoid conflicts.
+            # Inject Niri HM module globally so its options are always visible.
             home-manager.sharedModules = [
               niri.homeModules.niri
             ];
@@ -310,6 +311,5 @@
               ];
             };
           };
-      })
-      [ "snowfall" ];
+      }) [ "snowfall" ];
 }
