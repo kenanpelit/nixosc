@@ -1,3 +1,11 @@
+# modules/home/hyprland/rules.nix
+# ==============================================================================
+# Hyprland Window & Layer Rules
+#
+# Organizes window behaviors by category: Core, Media, Communication,
+# System, Workspace Assignments, and UI/Dialogs.
+# Imported by default.nix
+# ==============================================================================
 { }:
 
 {

@@ -1,3 +1,11 @@
+# modules/home/hyprland/binds.nix
+# ==============================================================================
+# Hyprland Key Bindings & Submaps
+#
+# Contains all input mappings including application launchers, window controls,
+# navigation, workspace management, and DMS integration.
+# Imported by default.nix
+# ==============================================================================
 { lib, themeName, ... }:
 
 let

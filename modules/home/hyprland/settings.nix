@@ -1,3 +1,11 @@
+# modules/home/hyprland/settings.nix
+# ==============================================================================
+# Hyprland Core Settings & Startup
+#
+# Configures monitors, workspaces, input devices, gestures, and general
+# compositor aesthetics (decoration, animations, master/dwindle layouts).
+# Imported by default.nix
+# ==============================================================================
 { lib, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
 
 let
