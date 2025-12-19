@@ -225,6 +225,7 @@
         # Overlays applied to all systems.
         overlays = with inputs; [
           nur.overlays.default
+          niri.overlays.niri
         ];
 
         # Modules automatically added to all NixOS systems.
