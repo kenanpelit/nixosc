@@ -1,3 +1,11 @@
+# modules/home/hyprland/variables.nix
+# ==============================================================================
+# Hyprland Environment & Theming Variables
+#
+# Defines Catppuccin-based color schemes, cursor themes, and a comprehensive
+# set of environment variables for the Wayland session.
+# Imported by default.nix
+# ==============================================================================
 { config, lib, ... }:
 
 let
