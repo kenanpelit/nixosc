@@ -102,7 +102,10 @@
 
     # Niri: A scrollable-tiling Wayland compositor.
     # Using sodiboo's flake for better NixOS/HM integration and binary cache.
-    niri.url = "github:sodiboo/niri-flake";
+    niri = {
+      url = "github:sodiboo/niri-flake";
+      inputs.niri-src.url = "github:YaLTeR/niri/main";
+    };
 
     # nsticky: A helper for creating "sticky" windows in niri (scratchpad-like behavior).
     nsticky.url = "github:lonerOrz/nsticky";
