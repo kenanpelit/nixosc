@@ -88,6 +88,8 @@ dconf write /org/gnome/desktop/interface/font-name "'$MAIN_FONT $FONT_SIZE_SM'"
 dconf write /org/gnome/desktop/interface/document-font-name "'$MAIN_FONT $FONT_SIZE_SM'"
 dconf write /org/gnome/desktop/interface/monospace-font-name "'$TERMINAL_FONT $FONT_SIZE_SM'"
 dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
+# Also set via gsettings (some setups read this more reliably than raw dconf writes)
+command -v gsettings >/dev/null 2>&1 && gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
 dconf write /org/gnome/desktop/interface/font-antialiasing "'grayscale'"
 dconf write /org/gnome/desktop/interface/font-hinting "'slight'"
 dconf write /org/gnome/desktop/interface/show-battery-percentage "true"
