@@ -19,8 +19,9 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {hypr|hyprland|niri|walker|dank}"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank}"
   echo
+  echo "  all             : Apply dank + niri + hyprland + walker (in that order)"
   echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
   echo "  niri            : Update Niri input to latest commit on main"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
@@ -241,7 +242,7 @@ update_commit_input() {
 
   if [[ "$current_commit" == "$latest_commit" ]]; then
     log_success "$display_name is already at the latest commit."
-    exit 0
+    return 0
   fi
 
   update_commit_flake "$input_name" "$repo_lower" "$latest_commit"
@@ -430,6 +431,12 @@ main() {
   check_git_repo
 
   case "$target" in
+  all)
+    update_dank
+    update_niri
+    update_hyprland
+    update_walker_and_elephant
+    ;;
   hypr | hyprland)
     update_hyprland
     ;;
