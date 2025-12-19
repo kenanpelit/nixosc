@@ -280,20 +280,5 @@
     switch-events {
       lid-close { spawn "${config.home.profileDirectory}/bin/niri-lock"; }
     }
-
-    // Modular Configuration Includes
-    include "dms/hardware.kdl";
-    include "dms/layout.kdl";
-    include "dms/binds-core.kdl";
-    include "dms/binds-dms.kdl";
-    include "dms/binds-apps.kdl";
-    include "dms/binds-mpv.kdl";
-    include "dms/binds-workspaces.kdl";
-    include "dms/binds-monitors.kdl";
-    include "dms/rules.kdl";
-    include "dms/animations.kdl";
-    include "dms/gestures.kdl";
-    include "dms/recent-windows.kdl";
-    include "dms/colors.kdl";
   '';
 }

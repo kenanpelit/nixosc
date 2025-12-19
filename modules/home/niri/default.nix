@@ -128,9 +128,23 @@ in
     programs.niri.package = cfg.package;
     
     # Use programs.niri.config for build-time validation!
-    # We pass the main config string here. It includes other files via `include "dms/..."`.
-    # Those included files are generated below via xdg.configFile.
-    programs.niri.config = settingsConfig.main;
+    # We concatenate all parts into one big KDL string to avoid 'include' issues during validation.
+    programs.niri.config = lib.concatStringsSep "\n" [
+      settingsConfig.main
+      (if cfg.enableHardwareConfig then cfg.hardwareConfig else "")
+      settingsConfig.layout
+      bindsConfig.core
+      bindsConfig.dms
+      bindsConfig.apps
+      bindsConfig.mpv
+      bindsConfig.workspaces
+      bindsConfig.monitors
+      rulesConfig.rules
+      settingsConfig.animations
+      settingsConfig.gestures
+      settingsConfig.recentWindows
+      settingsConfig.colors
+    ];
 
     home.packages =
       lib.optional cfg.enableNirius pkgs.nirius
@@ -141,27 +155,9 @@ in
       ]
       ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
 
-    # Modular DMS Configurations
-    xdg.configFile."niri/dms/hardware.kdl".text =
-      if cfg.enableHardwareConfig then cfg.hardwareConfig else "";
-      
-    xdg.configFile."niri/dms/layout.kdl".text = settingsConfig.layout;
-    
-    xdg.configFile."niri/dms/binds-core.kdl".text = bindsConfig.core;
-    xdg.configFile."niri/dms/binds-dms.kdl".text = bindsConfig.dms;
-    xdg.configFile."niri/dms/binds-apps.kdl".text = bindsConfig.apps;
-    xdg.configFile."niri/dms/binds-mpv.kdl".text = bindsConfig.mpv;
-    xdg.configFile."niri/dms/binds-workspaces.kdl".text = bindsConfig.workspaces;
-    xdg.configFile."niri/dms/binds-monitors.kdl".text = bindsConfig.monitors;
-    
+    # Helper file for niri-arrange-windows script (still needs to be a file)
     xdg.configFile."niri/dms/workspace-rules.tsv".text = rulesConfig.arrangeRulesTsv;
-    xdg.configFile."niri/dms/rules.kdl".text = rulesConfig.rules;
     
-    xdg.configFile."niri/dms/animations.kdl".text = settingsConfig.animations;
-    xdg.configFile."niri/dms/gestures.kdl".text = settingsConfig.gestures;
-    xdg.configFile."niri/dms/recent-windows.kdl".text = settingsConfig.recentWindows;
-    xdg.configFile."niri/dms/colors.kdl".text = settingsConfig.colors;
-
     # Deprecated placeholder (kept to avoid stale references)
     xdg.configFile."niri/dms/alttab.kdl".text = "";
 
