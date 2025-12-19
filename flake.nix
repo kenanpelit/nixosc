@@ -41,6 +41,31 @@
 {
   description = "Kenan's NixOS Configuration - Modern, Modular, Snowfall-based";
 
+  # ----------------------------------------------------------------------------
+  # nixConfig
+  # ----------------------------------------------------------------------------
+  # These are *developer UX* defaults for `nix` commands run directly against
+  # this flake (e.g. `nix build`, `nix flake check`).
+  #
+  # System-wide Nix daemon policy still lives under `modules/nixos/nix`.
+  # ----------------------------------------------------------------------------
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+      "https://hyprland.cachix.org"
+      "https://nix-gaming.cachix.org"
+      "https://hyprland-community.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
+      "hyprland-community.cachix.org-1:5dTHY+TjAJjnQs23X+vwMQG4va7j+zmvkTKoYuSUnmE="
+    ];
+  };
+
   inputs = {
     # ==========================================================================
     # Core (Foundation)
@@ -87,7 +112,8 @@
     # Hyprland: Dynamic tiling Wayland compositor
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca"; # Pinned (12/19)
+      # Pinned commit (updated via `osc-fiup hypr`)
+      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca";
     };
 
     hypr-contrib = {
@@ -131,7 +157,8 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297"; # Pinned (12/19)
+      # Pinned commit (updated via `osc-fiup dank`)
+      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297";
     };
 
     # ==========================================================================
@@ -167,7 +194,10 @@
     # Apps / Extras
     # ==========================================================================
     # Optional GUI tools, app launchers, and helper flakes.
-    walker.url = "github:abenz1267/walker/v2.12.2";
+    walker = {
+      url = "github:abenz1267/walker/v2.12.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     elephant = {
       url = "github:abenz1267/elephant/v2.17.2";
@@ -198,12 +228,14 @@
     };
   };
 
-  outputs = inputs:
+  outputs = inputs @ { self, nixpkgs, snowfall-lib, ... }:
     let
-      lib = inputs.nixpkgs.lib;
+      lib = nixpkgs.lib;
     in
     lib.removeAttrs
-      (inputs.snowfall-lib.mkFlake {
+      # snowfall-lib also exposes a `snowfall` attribute we don't use directly.
+      # Removing it keeps `nix flake show` output tidy.
+      (snowfall-lib.mkFlake {
         inherit inputs;
         src = ./.;
 
@@ -284,9 +316,10 @@
                 touch $out
               '';
 
-              nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
-              nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
-              home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
+              # Keep these here so CI fails early if a host or home breaks.
+              nixos-hay = self.nixosConfigurations.hay.config.system.build.toplevel;
+              nixos-vhay = self.nixosConfigurations.vhay.config.system.build.toplevel;
+              home-kenan-hay = self.homeConfigurations."kenan@hay".activationPackage;
             };
 
             # Developer shell: quick access to repo tooling.
