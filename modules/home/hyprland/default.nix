@@ -2,11 +2,30 @@
 # ==============================================================================
 # Home module for Hyprland user config: binds, env, plugins, extras.
 # Manages compositor settings via Home Manager instead of loose dotfiles.
+#
+# Refactored for better modularity:
+# - binds.nix, rules.nix, settings.nix, variables.nix
 # ==============================================================================
 
-{ inputs, lib, config, ... }:
+{ inputs, lib, config, pkgs, ... }:
 let
   cfg = config.my.desktop.hyprland;
+  
+  # Import modular configurations
+  vars = import ./variables.nix { inherit config lib; };
+  
+  settings = import ./settings.nix { 
+    inherit lib;
+    inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName;
+  };
+  
+  binds = import ./binds.nix { 
+    inherit lib;
+    inherit (vars) themeName;
+  };
+  
+  rules = import ./rules.nix { };
+
 in
 {
   options.my.desktop.hyprland = {
@@ -24,8 +43,8 @@ in
     # ---------------------------------------------------------------------------
     # Basic Configuration
     # ---------------------------------------------------------------------------
-    ./hyprland.nix   # Main Hyprland configuration
-    ./config.nix     # General settings
+    ./hyprland.nix   # Main Hyprland configuration (systemd, package)
+    # ./config.nix   # REMOVED: Replaced by modular files below
     
     # ---------------------------------------------------------------------------
     # Extensions & Components 
@@ -35,4 +54,41 @@ in
     ./pyprland.nix   # Python plugins
     ./keyring.nix    # Keyring
   ];
+
+  config = lib.mkIf cfg.enable {
+    wayland.windowManager.hyprland = {
+      settings = {
+        # Environment Variables
+        env = vars.envVars;
+
+        # Core Settings
+        inherit (settings) 
+          exec-once monitor workspace input gestures general 
+          group decoration animations misc dwindle master;
+
+        # Binds (from settings.nix for general bind settings)
+        binds = settings.binds;
+
+        # Key Bindings
+        bind = binds.bind;
+        bindm = binds.bindm;
+
+        # Window & Layer Rules
+        windowrule = 
+          rules.coreRules ++ 
+          rules.mediaRules ++ 
+          rules.communicationRules ++ 
+          rules.systemRules ++ 
+          rules.workspaceRules ++ 
+          rules.uiRules ++ 
+          rules.dialogRules ++ 
+          rules.miscRules;
+        
+        # Explicit empty gesture list (from original config)
+        gesture = [ ];
+      };
+
+      extraConfig = binds.extraConfig;
+    };
+  };
 }
