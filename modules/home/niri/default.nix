@@ -119,7 +119,7 @@ let
     { appId = "^Ai$"; workspace = "3"; maximize = true; }
     { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
     { appId = "^brave-youtube\\.com__-Default$"; workspace = "7"; maximize = true; }
-    { appId = "^ferdium$"; workspace = "9"; }
+    { appId = "^ferdium$"; workspace = "9"; maximize = true; }
     { appId = "^vlc$"; workspace = "6"; }
     { appId = "^remote-viewer$"; workspace = "6"; maximize = true; }
   ];
