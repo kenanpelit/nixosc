@@ -29,11 +29,15 @@ in
     "hyprctl setcursor ${cursorName} 24"
   ];
 
+  exec-once = startupServices;
+
   monitorConfig = [
     "${primaryMonitorDesc},2560x1440@59,0x0,1"
     "${secondaryMonitorDesc},1920x1200@60,320x1440,1"
     ",preferred,auto,1"
   ];
+
+  monitor = monitorConfig;
 
   workspaceConfig =
     (map (n: mkWorkspaceEntry { monitor = primaryMonitor; index = n; isDefault = n == 1; }) (lib.range 1 6))
@@ -47,6 +51,8 @@ in
       "special:dropdown, gapsout:0, gapsin:0"
       "special:scratchpad, gapsout:0, gapsin:0"
     ];
+
+  workspace = workspaceConfig;
 
   general = {
     "$mainMod" = "SUPER";
