@@ -12,7 +12,7 @@ let
   greeterHome = "/var/lib/dms-greeter";
 
   # Upstream module options (we import `inputs.dankMaterialShell.nixosModules.greeter`).
-  dmsGreeterCfg = config.programs.dankMaterialShell.greeter;
+  dmsGreeterCfg = config.programs."dank-material-shell".greeter;
 
   hyprPkg =
     if config.programs ? hyprland && config.programs.hyprland ? package
@@ -22,6 +22,8 @@ let
   niriPkg =
     if config.programs ? niri && config.programs.niri ? package
     then config.programs.niri.package
+    else if inputs ? niri && inputs.niri ? packages
+    then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
     else pkgs.niri;
 
   swayPkg =
@@ -60,6 +62,12 @@ let
     ++ [
       dmsGreeterCfg.quickshell.package
       compositorPkg
+      # Greeter scans sessions via `find | sort` and parses via `bash + grep`.
+      # Don't rely on host PATH contents; make it explicit.
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.gnugrep
     ]
   );
 
@@ -136,6 +144,16 @@ let
     export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
     export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
     export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
+    # DMS greeter discovers sessions from:
+    # - /usr/share/{wayland-sessions,xsessions}
+    # - $HOME/.local/share/{wayland-sessions,xsessions}
+    # - $XDG_DATA_DIRS/{wayland-sessions,xsessions}
+    #
+    # On NixOS, system session .desktop files live under:
+    #   /run/current-system/sw/share/{wayland-sessions,xsessions}
+    # but greetd does not source /etc/profile so XDG_DATA_DIRS is usually empty.
+    # Without this, the session list in the greeter becomes empty.
+    export XDG_DATA_DIRS=/run/current-system/sw/share:/usr/local/share:/usr/share
 
     exec ${
       lib.escapeShellArgs (
@@ -184,7 +202,7 @@ in {
   config = lib.mkIf cfg.enable {
     services.greetd.enable = true;
 
-    programs.dankMaterialShell.greeter = {
+    programs."dank-material-shell".greeter = {
       enable = true;
       compositor.name = cfg.compositor;
       compositor.customConfig = lib.mkDefault greeterCompositorCustomConfig;

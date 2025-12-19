@@ -76,6 +76,55 @@ log_message() {
   esac
 }
 
+SUDO_BIN=""
+
+resolve_sudo() {
+  # NixOS: `sudo` in /nix/store is not setuid; the working wrapper is /run/wrappers/bin/sudo.
+  if [[ -x /run/wrappers/bin/sudo ]]; then
+    printf '%s\n' "/run/wrappers/bin/sudo"
+    return 0
+  fi
+
+  if command -v sudo >/dev/null 2>&1; then
+    command -v sudo
+    return 0
+  fi
+
+  return 1
+}
+
+ensure_sudo() {
+  if [[ -z "${SUDO_BIN}" ]]; then
+    SUDO_BIN="$(resolve_sudo 2>/dev/null || true)"
+  fi
+
+  if [[ -z "${SUDO_BIN}" ]]; then
+    log_message "ERROR" "sudo bulunamadı (root yetkisi gerekli)."
+    return 1
+  fi
+
+  if [[ ! -u "${SUDO_BIN}" ]]; then
+    log_message "ERROR" "sudo setuid değil: ${SUDO_BIN} (NixOS'ta genelde /run/wrappers/bin/sudo kullanılmalı)"
+    return 1
+  fi
+
+  # If we already have a cached credential, don't prompt.
+  if "${SUDO_BIN}" -n true >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log_message "INFO" "Root yetkisi gerekiyor; sudo parolanı gir."
+  "${SUDO_BIN}" -v || {
+    log_message "ERROR" "sudo doğrulaması başarısız oldu."
+    return 1
+  }
+}
+
+sudo_run() {
+  ensure_sudo || return 1
+  "${SUDO_BIN}" -n "$@"
+}
+
 load_config() {
   mkdir -p "${CONFIG_DIR}"
   if [[ -f "${CONFIG_FILE}" ]]; then
@@ -322,13 +371,15 @@ backup_profile() {
     return 1
   fi
 
+  ensure_sudo || return 1
+
   name="$(basename "${profile_link}")"
   ts="$(date '+%Y%m%d-%H%M%S')"
   mkdir -p "${BACKUP_DIR}"
   archive="${BACKUP_DIR}/${name}-${ts}.tar.gz"
 
   log_message "INFO" "Profil yedekleniyor: ${name} -> ${archive}"
-  if sudo tar -C "${target}" -czf "${archive}" . 2>/dev/null; then
+  if sudo_run tar -C "${target}" -czf "${archive}" .; then
     log_message "SUCCESS" "Yedek oluşturuldu: ${archive}"
     clean_old_backups
     return 0
@@ -370,11 +421,13 @@ delete_profile_by_index() {
 
   [[ "${AUTO_BACKUP}" == true ]] && backup_profile "${selected}" || true
 
-  if sudo rm -f -- "${selected}" 2>/dev/null; then
+  local err=""
+  ensure_sudo || return 1
+  if err="$("${SUDO_BIN}" -n rm -f -- "${selected}" 2>&1)"; then
     log_message "SUCCESS" "Profil silindi: ${name}"
     return 0
   else
-    log_message "ERROR" "Profil silinemedi: ${name}"
+    log_message "ERROR" "Profil silinemedi: ${name}${err:+ ($err)}"
     return 1
   fi
 }
@@ -391,6 +444,8 @@ bulk_delete_old_profiles() {
   read -r reply
   [[ "${reply}" =~ ^[Ee]$ ]] || { log_message "INFO" "Toplu silme iptal edildi."; return 0; }
 
+  ensure_sudo || return 1
+
   local p
   for p in "${_profiles[@]}"; do
     local t
@@ -399,8 +454,13 @@ bulk_delete_old_profiles() {
       continue
     fi
     [[ "${AUTO_BACKUP}" == true ]] && backup_profile "${p}" || true
-    sudo rm -f -- "${p}" 2>/dev/null || true
-    log_message "SUCCESS" "Profil silindi: $(basename "${p}")"
+    local err=""
+    if err="$("${SUDO_BIN}" -n rm -f -- "${p}" 2>&1)"; then
+      log_message "SUCCESS" "Profil silindi: $(basename "${p}")"
+    else
+      log_message "ERROR" "Profil silinemedi: $(basename "${p}")${err:+ ($err)}"
+      return 1
+    fi
   done
 }
 

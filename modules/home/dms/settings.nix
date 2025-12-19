@@ -8,17 +8,28 @@
 let
   cfg = config.my.user.dms;
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  qsPkg = pkgs.quickshell;
   dmsEditor = cfg.screenshotEditor;
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
+  dmsTargets = [
+    # Only start DMS inside compositor sessions that are known to support it.
+    "hyprland-session.target"
+    "niri-session.target"
+  ];
 in
 lib.mkIf cfg.enable {
-  programs.dankMaterialShell.enable = true;
-
-  # Autostart DMS for the user session
-  home.packages = [ dmsPkg qsPkg ];
+  programs."dank-material-shell" = {
+    enable = true;
+    # Upstream HM module prefers `config.wayland.systemd.target` for session startup.
+    # Bu repo'da (ve bazı HM kurulumlarında) bu target olmayabiliyor; o durumda
+    # `graphical-session.target` ile kendi servisimiz üzerinden devam ediyoruz.
+    # Important: GNOME also reaches graphical-session targets, but DMS should NOT
+    # auto-start there. We manage our own service and bind it to compositor-only
+    # targets (Hyprland/Niri).
+    systemd.enable = false;
+    quickshell.package = pkgs.quickshell;
+  };
 
   # Ensure DMS config/cache dirs exist
   home.file.".config/DankMaterialShell/.keep".text = "";
@@ -51,8 +62,8 @@ lib.mkIf cfg.enable {
   systemd.user.services.dms = {
     Unit = {
       Description = "DankMaterialShell";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
+      After = dmsTargets;
+      PartOf = dmsTargets;
     };
     Service = {
       Type = "simple";
@@ -65,7 +76,7 @@ lib.mkIf cfg.enable {
         "DMS_SCREENSHOT_EDITOR=${dmsEditor}"
         "XDG_RUNTIME_DIR=/run/user/%U"
         "XDG_SESSION_TYPE=wayland"
-        "PATH=${qsPkg}/bin:/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         "QT_ICON_THEME=a-candy-beauty-icon-theme"
         "XDG_ICON_THEME=a-candy-beauty-icon-theme"
         "QT_QPA_PLATFORMTHEME=gtk3"
@@ -83,23 +94,63 @@ lib.mkIf cfg.enable {
       StandardOutput = "journal";
       StandardError = "journal";
     };
-    Install.WantedBy = [ "graphical-session.target" ];
+    Install.WantedBy = dmsTargets;
   };
 
-  # Ensure DMS plugins are present; install from registry when missing
-  home.activation.dmsPlugins = dag.entryAfter [ "writeBoundary" ] ''
-    pluginsDir="$HOME/.config/DankMaterialShell/plugins"
-    mkdir -p "$pluginsDir"
+  # Ensure DMS plugins are present; install from registry when missing.
+  #
+  # Önemli: Bu adım network gerektirebiliyor. Home-Manager activation sırasında
+  # çalıştırmak `home-manager-kenan.service` timeout'larına sebep olabiliyor.
+  # Bu yüzden ayrı bir user service olarak, kısa timeout + network guard ile
+  # "best-effort" şekilde çalıştırıyoruz.
+  systemd.user.services.dms-plugin-sync = {
+    Unit = {
+      Description = "DMS plugin sync (best-effort)";
+      After = dmsTargets ++ [ "dms.service" ];
+      PartOf = dmsTargets;
+    };
+    Service = {
+      Type = "oneshot";
+      TimeoutStartSec = 60;
+      ExecStart = pkgs.writeShellScript "dms-plugin-sync" ''
+        set -euo pipefail
+        pluginsDir="$HOME/.config/DankMaterialShell/plugins"
+        mkdir -p "$pluginsDir"
 
-    for plugin in ${pluginList}; do
-      if [ ! -d "$pluginsDir/$plugin" ]; then
-        echo "[dms] installing plugin: $plugin"
-        if ! ${dmsPkg}/bin/dms plugins install "$plugin"; then
-          echo "[dms] warning: failed to install plugin $plugin" >&2
+        missing=0
+        for plugin in ${pluginList}; do
+          if [ ! -d "$pluginsDir/$plugin" ]; then
+            missing=1
+            break
+          fi
+        done
+
+        if [ "$missing" -eq 0 ]; then
+          exit 0
         fi
-      fi
-    done
-  '';
+
+        # Cheap network check: if DNS isn't ready, don't hang.
+        if ! ${pkgs.coreutils}/bin/timeout 2s ${pkgs.glibc}/bin/getent hosts github.com >/dev/null 2>&1; then
+          echo "[dms] plugin-sync: network/DNS not ready, skipping"
+          exit 0
+        fi
+
+        for plugin in ${pluginList}; do
+          if [ -d "$pluginsDir/$plugin" ]; then
+            continue
+          fi
+
+          echo "[dms] plugin-sync: installing $plugin"
+          if ! ${pkgs.coreutils}/bin/timeout 20s ${dmsPkg}/bin/dms plugins install "$plugin"; then
+            echo "[dms] plugin-sync: failed to install $plugin (skipping)" >&2
+          fi
+        done
+
+        exit 0
+      '';
+    };
+    Install.WantedBy = dmsTargets;
+  };
 
   # Lock davranışı:
   # `loginctlLockIntegration=true` iken DMS bazen loginctl üzerinden kilitleyip

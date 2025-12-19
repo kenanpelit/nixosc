@@ -37,17 +37,30 @@ in
     systemd.user.services.tmux-fzf-install = {
       Unit = {
         Description = "Install tmux fzf bundle from secret tar.gz";
-        ConditionPathExists = "/home/${config.home.username}/.backup/fzf.tar.gz";
+        ConditionPathExists = "%h/.backup/fzf.tar.gz";
         After = [ "sops-nix.service" ];
-        Requires = [ "sops-nix.service" ];
+        Wants = [ "sops-nix.service" ];
       };
       Service = {
         Type = "oneshot";
+        # If the archive is missing/corrupt, do not fail the whole login with a red unit.
         ExecStart = pkgs.writeShellScript "install-tmux-fzf" ''
-          set -e
+          set -euo pipefail
+
+          src="$HOME/.backup/fzf.tar.gz"
           dest="$HOME/.config/tmux"
-          mkdir -p "$dest"
-          ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$HOME/.backup/fzf.tar.gz" -C "$dest"
+
+          # Be resilient: this is optional user convenience, not critical boot.
+          if [ ! -f "$src" ]; then
+            exit 0
+          fi
+
+          ${pkgs.coreutils}/bin/mkdir -p "$dest"
+
+          if ! ${pkgs.gnutar}/bin/tar --no-same-owner -xzf "$src" -C "$dest"; then
+            ${pkgs.coreutils}/bin/echo "tmux-fzf-install: failed to extract $src (continuing)" >&2
+            exit 0
+          fi
         '';
       };
       Install.WantedBy = [ "default.target" ];

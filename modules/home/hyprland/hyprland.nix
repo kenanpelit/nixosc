@@ -6,7 +6,6 @@
 { inputs, pkgs, config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
-  clipseLogPath = "${config.home.homeDirectory}/.local/state/clipse/clipse.log";
 in
 lib.mkIf cfg.enable {
   # =============================================================================

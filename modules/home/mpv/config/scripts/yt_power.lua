@@ -29,12 +29,12 @@ local OPTS = {
 	quality_down_key = "DOWN",
 	quality_select_key = "ENTER",
 	fetch_formats_with_ytdlp = true, -- true => yt-dlp ile gerçek formatlar
-	avoid_av1 = true, -- AV1 dışla (av1/av01)
-	prefer_vp9 = true, -- VP9'u avc1 öncesi dene
-	fps_limit = 60, -- üst FPS sınırı
-	quality_limit = 1080, -- üst çözünürlük sınırı (1080/1440/2160 vs.)
-	quality_presets_json = [[
-  [
+		avoid_av1 = true, -- AV1 dışla (av1/av01)
+		prefer_vp9 = true, -- VP9'u avc1 öncesi dene
+		fps_limit = 60, -- üst FPS sınırı
+		quality_limit = 1440, -- üst çözünürlük sınırı (1080/1440/2160 vs.)
+		quality_presets_json = [[
+	  [
     {"4320p" : "bestvideo[height<=?4320]+bestaudio/best"},
     {"2160p" : "bestvideo[height<=?2160]+bestaudio/best"},
     {"1440p" : "bestvideo[height<=?1440]+bestaudio/best"},
@@ -82,6 +82,10 @@ local OPTS = {
 
 (require("mp.options")).read_options(OPTS, "yt_power")
 local QUALITY_PRESETS = utils.parse_json(OPTS.quality_presets_json) or {}
+
+-- Track the last auto-applied ytdl-format.
+-- If the user changes ytdl-format manually (keybind/menu), we stop overriding it.
+local last_auto_ytdl_format = nil
 
 ----------------------------------------------------------------
 -- YARDIMCI FONKSİYONLAR
@@ -293,17 +297,17 @@ local function quality_menu_show()
 	mp.add_forced_key_binding(OPTS.quality_select_key, "q_sel", function()
 		destroy()
 		mp.set_property("ytdl-format", options[sel].format)
-		-- yeniden yükle + konumu koru (VOD ise)
-		local playlist_pos = mp.get_property_number("playlist-pos")
-		local dur = mp.get_property_native("duration")
-		local tpos = mp.get_property("time-pos")
-		mp.set_property_number("playlist-pos", playlist_pos)
-		if dur and dur > 0 then
-			local function seeker()
-				mp.commandv("seek", tpos, "absolute")
-				mp.unregister_event(seeker)
+		-- Reload with the new ytdl-format (keeping position when possible).
+		-- This avoids fighting with start-file hooks and makes the selection immediate.
+		local cur_path = mp.get_property("path")
+		local dur = mp.get_property_number("duration") -- nil/0 => live
+		local tpos = mp.get_property_number("time-pos")
+		if cur_path and cur_path ~= "" then
+			if dur and dur > 0 and tpos then
+				mp.commandv("loadfile", cur_path, "replace", "start=+" .. tostring(tpos))
+			else
+				mp.commandv("loadfile", cur_path, "replace")
 			end
-			mp.register_event("file-loaded", seeker)
 		end
 	end)
 	mp.add_forced_key_binding(OPTS.quality_toggle_key, "q_esc", destroy)
@@ -642,14 +646,25 @@ local function set_formats_smart()
 		msg.info("[yt_power] Yerel dosya/stream değil; ytdl-format dokunulmadı.")
 		return
 	end
+
+	-- If the user manually set ytdl-format (different from what we last applied),
+	-- do not override it on reloads.
+	local current_fmt = mp.get_property("ytdl-format") or ""
+	if current_fmt ~= "" and last_auto_ytdl_format ~= nil and current_fmt ~= last_auto_ytdl_format then
+		msg.info("[yt_power] manual ytdl-format detected; skipping auto override: " .. current_fmt)
+		return
+	end
+
 	-- Güvenli baseline
 	local def_fmt = build_default_format()
 	mp.set_property("ytdl-format", def_fmt)
+	last_auto_ytdl_format = def_fmt
 	msg.info("[yt_power] baseline ytdl-format: " .. def_fmt)
 
 	if is_target_domain(path) then
 		local dom_fmt = build_domain_format()
 		mp.set_property("ytdl-format", dom_fmt)
+		last_auto_ytdl_format = dom_fmt
 		msg.info("[yt_power] hedef domain → ytdl-format: " .. dom_fmt)
 
 		if OPTS.set_sub_langs and #OPTS.set_sub_langs > 0 then

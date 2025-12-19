@@ -20,9 +20,9 @@ set -euo pipefail
 # =============================================================================
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_VERSION="2.1.0-gdm-aware"
-readonly LOG_DIR="$HOME/.logs"
-readonly GNOME_LOG="$LOG_DIR/gnome.log"
-readonly DEBUG_LOG="$LOG_DIR/gnome_debug.log"
+LOG_DIR="$HOME/.logs"
+GNOME_LOG="$LOG_DIR/gnome.log"
+DEBUG_LOG="$LOG_DIR/gnome_debug.log"
 readonly MAX_LOG_SIZE=10485760 # 10MB
 readonly MAX_LOG_BACKUPS=3
 
@@ -45,6 +45,8 @@ DRY_RUN=false
 USE_SYSTEMD=false
 GDM_MODE=false
 FORCE_TTY_MODE=false
+GNOME_TTY_GUARD_PATH=""
+GNOME_HANDOFF=false
 
 # =============================================================================
 # Logging Fonksiyonları
@@ -56,12 +58,12 @@ debug_log() {
   local full_msg="[${timestamp}] [DEBUG] ${message}"
 
   if [[ "$DEBUG_MODE" != "true" ]]; then
-    echo "$full_msg" >>"$DEBUG_LOG" 2>/dev/null || true
+    { printf '%s\n' "$full_msg" >>"$DEBUG_LOG"; } 2>/dev/null || true
     return
   fi
 
   echo -e "${C_CYAN}[DEBUG]${C_RESET} $message" >&2
-  echo "$full_msg" >>"$DEBUG_LOG" 2>/dev/null || true
+  { printf '%s\n' "$full_msg" >>"$DEBUG_LOG"; } 2>/dev/null || true
 
   if [[ "$(tty 2>/dev/null)" =~ ^/dev/tty[0-9]+$ ]]; then
     logger -t "$SCRIPT_NAME" "DEBUG: $message" 2>/dev/null || true
@@ -75,7 +77,7 @@ log() {
   local log_entry="[${timestamp}] [${level}] ${message}"
 
   if [[ -d "$(dirname "$GNOME_LOG")" ]]; then
-    echo "$log_entry" >>"$GNOME_LOG" 2>/dev/null || {
+    { printf '%s\n' "$log_entry" >>"$GNOME_LOG"; } 2>/dev/null || {
       debug_log "Ana log dosyasına yazılamadı: $GNOME_LOG"
     }
   fi
@@ -133,16 +135,21 @@ setup_directories() {
     LOG_DIR="/tmp/gnome-logs-$USER"
     GNOME_LOG="$LOG_DIR/gnome.log"
     DEBUG_LOG="$LOG_DIR/gnome_debug.log"
-    mkdir -p "$LOG_DIR" || error "Hiçbir log dizini oluşturulamadı"
+    mkdir -p "$LOG_DIR" 2>/dev/null || error "Hiçbir log dizini oluşturulamadı"
   fi
 
   if [[ ! -w "$LOG_DIR" ]]; then
     error "Log dizinine yazma izni yok: $LOG_DIR"
   fi
 
-  touch "$GNOME_LOG" "$DEBUG_LOG" 2>/dev/null || {
-    error "Log dosyaları oluşturulamadı"
-  }
+  if ! touch "$GNOME_LOG" "$DEBUG_LOG" 2>/dev/null; then
+    warn "Log dosyaları oluşturulamadı: $LOG_DIR, /tmp fallback deneniyor"
+    LOG_DIR="/tmp/gnome-logs-$USER"
+    GNOME_LOG="$LOG_DIR/gnome.log"
+    DEBUG_LOG="$LOG_DIR/gnome_debug.log"
+    mkdir -p "$LOG_DIR" 2>/dev/null || error "Hiçbir log dizini oluşturulamadı"
+    touch "$GNOME_LOG" "$DEBUG_LOG" 2>/dev/null || error "Log dosyaları oluşturulamadı"
+  fi
 
   debug_log "Log dizini hazır: $LOG_DIR"
 }
@@ -188,6 +195,46 @@ rotate_logs() {
 
 check_system() {
   debug_log "Sistem kontrolleri başlıyor"
+
+  # CRITICAL: Ensure systemd isn't forced into offline mode.
+  # If SYSTEMD_OFFLINE=1, `systemctl --user` calls can fail and TTY auto-start
+  # (this script is exec'd from .zprofile) will bounce back to the login prompt.
+  export SYSTEMD_OFFLINE=0
+
+  # Ensure logind session metadata is available (GNOME Shell needs it when started via systemd --user).
+  if [[ -z "${XDG_SESSION_ID:-}" ]]; then
+    local current_tty
+    current_tty="$(tty 2>/dev/null || true)"
+    local tty_name=""
+    if [[ "$current_tty" =~ /dev/(tty[0-9]+) ]]; then
+      tty_name="${BASH_REMATCH[1]}"
+    fi
+
+    if command -v loginctl >/dev/null 2>&1 && [[ -n "${tty_name}" ]]; then
+      local sid=""
+      sid="$(loginctl list-sessions --no-legend 2>/dev/null | awk -v u="$(id -u)" -v t="${tty_name}" '$2 == u && $5 == t { print $1; exit }')"
+      if [[ -n "${sid}" ]]; then
+        export XDG_SESSION_ID="${sid}"
+        debug_log "XDG_SESSION_ID tespit edildi: ${XDG_SESSION_ID} (tty=${tty_name})"
+      else
+        warn "XDG_SESSION_ID tespit edilemedi (tty=${tty_name})"
+      fi
+    fi
+  fi
+
+  if [[ -n "${XDG_SESSION_ID:-}" ]] && command -v loginctl >/dev/null 2>&1; then
+    if [[ -z "${XDG_SEAT:-}" ]]; then
+      local seat=""
+      seat="$(loginctl show-session "${XDG_SESSION_ID}" -p Seat --value 2>/dev/null || true)"
+      [[ -n "${seat}" ]] && export XDG_SEAT="${seat}"
+    fi
+    if [[ -z "${XDG_VTNR:-}" ]]; then
+      local vtnr=""
+      vtnr="$(loginctl show-session "${XDG_SESSION_ID}" -p VTNr --value 2>/dev/null || true)"
+      [[ -n "${vtnr}" ]] && export XDG_VTNR="${vtnr}"
+    fi
+    debug_log "logind session: id=${XDG_SESSION_ID:-unset} seat=${XDG_SEAT:-unset} vtnr=${XDG_VTNR:-unset} type=$(loginctl show-session \"${XDG_SESSION_ID}\" -p Type --value 2>/dev/null || echo '?')"
+  fi
 
   # XDG_RUNTIME_DIR kontrolü
   if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
@@ -236,11 +283,14 @@ check_system() {
   info "GNOME Shell: $gnome_version"
 
   # Systemd user instance kontrolü
-  if ! systemctl --user is-active --quiet basic.target 2>/dev/null; then
-    warn "Systemd user instance çalışmıyor, başlatılıyor..."
-    systemctl --user start basic.target 2>/dev/null || {
-      error "Systemd user instance başlatılamadı"
-    }
+  if ! systemctl --user is-system-running &>/dev/null; then
+    warn "Systemd user session çalışmıyor, başlatılıyor..."
+    if systemctl --user start default.target 2>/dev/null; then
+      info "✓ Systemd user session başlatıldı"
+      sleep 2
+    else
+      error "Systemd user session başlatılamadı"
+    fi
   fi
 
   info "Sistem kontrolleri tamamlandı"
@@ -261,11 +311,11 @@ detect_gdm_session() {
     return 0
   fi
 
-  # More aggressive GDM detection
-  if [[ -n "${GDMSESSION:-}" ]] ||
-    [[ "${XDG_SESSION_CLASS:-}" == "user" ]] ||
-    [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" && -n "${XDG_SESSION_ID:-}" ]] ||
-    [[ "$(loginctl show-session "$XDG_SESSION_ID" -p Type 2>/dev/null)" == *"wayland"* ]]; then
+  # IMPORTANT:
+  # On TTY logins, `pam_systemd` commonly sets `XDG_SESSION_CLASS=user` and a
+  # user bus in `DBUS_SESSION_BUS_ADDRESS`. These are NOT reliable GDM signals.
+  # Keep detection strict to avoid misclassifying TTY sessions as GDM.
+  if [[ -n "${GDMSESSION:-}" ]] || pstree -s $$ 2>/dev/null | grep -q "gdm-wayland-session\\|gdm-x-session"; then
     GDM_MODE=true
   else
     GDM_MODE=false
@@ -347,7 +397,7 @@ setup_environment() {
   export XDG_CURRENT_DESKTOP="GNOME"
   export DESKTOP_SESSION="gnome"
   export XDG_SESSION_CLASS="user"
-  export XDG_SEAT="seat0"
+  export XDG_SEAT="${XDG_SEAT:-seat0}"
   debug_log "Temel GNOME değişkenleri: $XDG_CURRENT_DESKTOP / $XDG_SESSION_DESKTOP"
 
   # -------------------------------------------------------------------------
@@ -582,6 +632,12 @@ setup_systemd_integration() {
     "XDG_CURRENT_DESKTOP"
     "XDG_SESSION_TYPE"
     "XDG_SESSION_DESKTOP"
+    # Logind/session discovery for gnome-shell when started via systemd --user
+    "XDG_SESSION_ID"
+    "XDG_SEAT"
+    "XDG_VTNR"
+    "XDG_SESSION_CLASS"
+    "XDG_RUNTIME_DIR"
     "DBUS_SESSION_BUS_ADDRESS"
     "GNOME_KEYRING_CONTROL"
     "SSH_AUTH_SOCK"
@@ -673,6 +729,25 @@ cleanup() {
   debug_log "Cleanup tamamlandı"
 }
 
+cleanup_guard() {
+  local p="${GNOME_TTY_GUARD_PATH:-}"
+  if [[ -n "${p}" ]]; then
+    rm -f -- "${p}" 2>/dev/null || true
+  fi
+}
+
+cleanup_all() {
+  cleanup_guard
+
+  # If GNOME handed off to systemd and our login session is being torn down
+  # (common on TTY), do NOT kill gnome-session/gnome-shell processes here.
+  if [[ "${GNOME_HANDOFF}" == "true" ]]; then
+    return 0
+  fi
+
+  cleanup
+}
+
 # =============================================================================
 # GNOME Başlatma - Systemd ile
 # =============================================================================
@@ -705,7 +780,7 @@ start_gnome_with_systemd() {
     fi
     debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
     sleep 1
-    ((wait_count++))
+    ((++wait_count))
   done
 
   info "✓ Systemd user session is active"
@@ -718,7 +793,7 @@ start_gnome_with_systemd() {
 
   # Start GNOME session directly (let it manage systemd targets)
   info "Starting gnome-session..."
-  exec gnome-session --session=gnome 2>&1 | tee -a "$GNOME_LOG"
+  exec gnome-session --session=gnome --no-reexec 2>&1 | tee -a "$GNOME_LOG"
 }
 
 # =============================================================================
@@ -733,8 +808,18 @@ start_gnome_direct() {
     exit 0
   fi
 
-  trap cleanup EXIT TERM INT HUP
-  : >"$GNOME_LOG"
+  # Guard file: prevents recursive re-entry if gnome-session re-execs into a login shell.
+  local guard_file="${GNOME_TTY_GUARD_FILE:-}"
+  if [[ -z "${guard_file}" ]]; then
+    local vtnr="${XDG_VTNR:-3}"
+    guard_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnome-tty${vtnr}.guard"
+  fi
+
+  GNOME_TTY_GUARD_PATH="${guard_file}"
+  { printf '%s\n' "$$" >"${GNOME_TTY_GUARD_PATH}"; } 2>/dev/null || true
+
+  # IMPORTANT: keep a single trap; the guard path must be global (local scope ends before EXIT trap runs).
+  trap cleanup_all EXIT TERM INT HUP
 
   info "═══════════════════════════════════════════════════════════"
   info "GNOME başlatılıyor (direct mode)..."
@@ -758,7 +843,7 @@ start_gnome_direct() {
     fi
     debug_log "Waiting for systemd user session... ($wait_count/$max_wait)"
     sleep 1
-    ((wait_count++))
+    ((++wait_count))
   done
 
   info "✓ Systemd user session is active"
@@ -772,27 +857,108 @@ start_gnome_direct() {
   # GNOME komutunu hazırla
   # NOTE: Use systemd user bus instead of dbus-run-session
   # dbus-run-session creates an isolated D-Bus session, preventing systemd integration
-  local cmd="gnome-session --session=gnome"
+  # IMPORTANT:
+  # By default gnome-session may "re-exec into a login shell" during startup.
+  # When GNOME is launched from TTY via `.zprofile`, that re-exec can re-trigger
+  # the TTY auto-start logic and cause an immediate bounce back to the login prompt.
+  # `--no-reexec` disables that behavior and avoids recursion.
+  # NOTE:
+  # On some systems, starting GNOME from a TTY with systemd user integration can
+  # lead to `org.gnome.Shell@wayland.service` failing with:
+  #   "Failed to setup: Failed to find any matching session"
+  # This happens when the current logind session is Type=tty (not graphical).
+  # Fix: ensure pam_systemd registers the login session as `type=wayland`.
+  #
+  # GNOME 49+ requires access to `org.freedesktop.systemd1` on the session bus;
+  # `dbus-run-session` would create an isolated bus without systemd1 and GNOME
+  # would fail immediately. Always use the systemd user bus instead.
+  local cmd=(gnome-session --session=gnome --no-reexec)
+  info "GNOME command: ${cmd[*]}"
 
   if [[ "$DEBUG_MODE" == "true" ]]; then
     # Shell tracing'i kapat (temiz çıktı için)
     set +x
 
-    cmd="$cmd --debug"
+    cmd+=("--debug")
 
     info "DEBUG MODE: Çıktılar hem ekrana hem log dosyasına yazılıyor..."
-    info "Komut: $cmd"
-
-    # Output redirect (unbuffered tee ile)
-    # stdbuf -o0 -e0 ile anlık yazmayı garantiye alıyoruz
-    exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
+    info "Komut: ${cmd[*]}"
   else
-    info "GNOME session exec ediliyor..."
-    exec >>"$GNOME_LOG" 2>&1
+    info "GNOME session başlatılıyor..."
   fi
 
-  # GNOME başlat
-  exec $cmd
+  # Always tee to the TTY + log so failures are visible (otherwise it drops back to login silently).
+  # stdbuf makes output line-buffered so we don't miss early errors.
+  exec > >(stdbuf -o0 -e0 tee -a "$GNOME_LOG") 2>&1
+
+  # GNOME başlat (don't exec; keep traps so guard file is removed on exit)
+  local start_ts
+  start_ts="$(date +%s)"
+
+  set +e
+  "${cmd[@]}"
+  local rc=$?
+  set -e
+
+  local elapsed=$(( $(date +%s) - start_ts ))
+
+  # GNOME 45+ may hand off to systemd user targets and exit 0 quickly.
+  # In a TTY login, if our process exits the PAM session ends and GNOME dies.
+  # So keep this process alive by waiting on the shell unit/target.
+  if [[ "$rc" -eq 0 ]] && [[ "$elapsed" -lt 5 ]]; then
+    GNOME_HANDOFF=true
+    info "gnome-session systemd handoff tespit edildi (rc=0, ${elapsed}s). GNOME ayakta kaldığı sürece bekleniyor..."
+
+    local session_name="gnome"
+    local session_target="gnome-session-wayland@${session_name}.target"
+    local shell_unit="org.gnome.Shell@wayland.service"
+
+    systemctl --user start "${session_target}" 2>/dev/null || true
+
+    local wait_count=0
+    local wait_max=20
+    while :; do
+      if systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; then
+        break
+      fi
+      if pgrep -u "$(id -u)" -x gnome-shell >/dev/null 2>&1; then
+        break
+      fi
+      if [[ "$wait_count" -ge "$wait_max" ]]; then
+        warn "GNOME Shell unit aktif olmadı: ${shell_unit}"
+        systemctl --user status "${session_target}" --no-pager 2>/dev/null || true
+        systemctl --user status "${shell_unit}" --no-pager 2>/dev/null || true
+        pgrep -a -u "$(id -u)" gnome-session gnome-shell 2>/dev/null || true
+        error "GNOME başlayamadı (shell unit aktif değil). Detaylar için $GNOME_LOG"
+      fi
+      sleep 1
+      ((++wait_count))
+    done
+
+    info "✓ GNOME Shell aktif: ${shell_unit}"
+
+    while :; do
+      if systemctl --user is-active --quiet "${shell_unit}" 2>/dev/null; then
+        sleep 2
+        continue
+      fi
+      if pgrep -u "$(id -u)" -x gnome-shell >/dev/null 2>&1; then
+        sleep 2
+        continue
+      fi
+      break
+    done
+
+    # When GNOME exits, drop out and let cleanup run (non-handoff paths will kill leftovers).
+    GNOME_HANDOFF=false
+
+    # Give systemd a moment to settle before cleanup.
+    sleep 1
+
+    error "GNOME oturumu bitti (shell process/unit durdu)."
+  fi
+
+  error "gnome-session beklenmedik şekilde çıktı (rc=$rc, ${elapsed}s). Detaylar için $GNOME_LOG"
 }
 
 # =============================================================================
@@ -827,7 +993,7 @@ CATPPUCCIN TEMA:
 
 SESSION DETECTION:
   - GDM'den başlatılırsa: Mevcut D-Bus kullanılır
-  - TTY'den başlatılırsa: Yeni D-Bus session oluşturulur
+  - TTY'den başlatılırsa: Systemd user bus kullanılır
 
 LOG DOSYALARI:
   Ana log:   $GNOME_LOG
@@ -890,6 +1056,9 @@ parse_arguments() {
 
 main() {
   parse_arguments "$@"
+
+  # Ensure we can talk to systemd user manager in all cases.
+  export SYSTEMD_OFFLINE=0
 
   # GDM detection (en başta!)
   detect_gdm_session

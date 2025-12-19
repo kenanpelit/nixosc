@@ -43,10 +43,13 @@
 
   inputs = {
     # ==========================================================================
-    # Core Dependencies
+    # Core (Foundation)
     # ==========================================================================
+    # - nixpkgs: pinned NixOS channel
+    # - snowfall-lib: repo structure + mkFlake glue
+    # - home-manager: user-level configuration
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
-    
+
     snowfall-lib = {
       url = "github:snowfallorg/lib";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -58,8 +61,11 @@
     };
 
     # ==========================================================================
-    # System Components
+    # System (NixOS modules / hardware / secrets)
     # ==========================================================================
+    # - sops-nix: secret management
+    # - NUR: extra packages/overlays
+    # - nixos-hardware: device profiles
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -73,11 +79,15 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
     # ==========================================================================
-    # Desktop Environment (Hyprland)
+    # Desktop: Compositors / WMs
     # ==========================================================================
+    # This repo uses multiple Wayland compositors.
+    # Keep them pinned for reproducibility (especially for greeter/session paths).
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # 1210 - Updated commit (glaze override uyumlu)
+      # pinned (glaze override uyumlu)
+      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca"; # 1219 - Updated commit
+#      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # pinned
     };
 
     hypr-contrib = {
@@ -90,25 +100,30 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    niri = {
+      # pinned upstream commit
+      inputs.nixpkgs.follows = "nixpkgs";
+      # niri flake only needs rust-overlay for devShells; omit for end users.
+      inputs.rust-overlay.follows = "";
+      url = "github:YaLTeR/niri/c4462d0c7fddfc11c9e98d43e3ef68a5b3c844ca"; # 1218 - Updated commit
+#      url = "github:YaLTeR/niri/f85cb5c5f97a6bd21cc6b3ac9671d32cca362bb2"; # 1218 - Updated commit
+      #      url = "github:YaLTeR/niri/890935d2ba78f5c70f2e9eacc4d6268161c2553c"; # 1218 - Updated commit
+      #      url = "github:YaLTeR/niri/2641356d41199a40ccc9a2e9f61bd34d7e7c8220"; # 1216 - Updated commit
+    };
+
+    nsticky.url = "github:lonerOrz/nsticky";
+
     # ==========================================================================
-    # Theming
+    # Desktop: Theming
     # ==========================================================================
+    # - catppuccin: theming modules + palettes
+    # - distro-grub-themes: GRUB theme assets
     catppuccin.url = "github:catppuccin/nix";
     distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
 
     # ==========================================================================
-    # Development Tools
+    # Desktop: Shell (DankMaterialShell / DMS)
     # ==========================================================================
-    poetry2nix = {
-      url = "github:nix-community/poetry2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    statix = {
-      url = "github:nerdypepper/statix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     dgop = {
       url = "github:AvengeMedia/dgop";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -117,13 +132,26 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      # NOTE: Bu input buildGoModule vendorHash sebebiyle bazen "hash mismatch" ile kırılabiliyor.
-      # Çalışan (vendorHash uyumlu) commit:
-      # Son commit (şu an vendorHash mismatch veriyorsa tekrar açma):
-      url = "github:AvengeMedia/DankMaterialShell/b0a6652cc6c3f847c0e4defcaaef27a655cb0995"; # 1214 - Stable commit
-      #      url = "github:AvengeMedia/DankMaterialShell/e4e20fb43a4627ab6d1581b14d6f7b5dab7d0820"; # 1213 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/ca39196f132a86eef58c3f5365c7c1058f081a8a"; # 1213 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/b2ac9c6c1ac6625b266a242720e02960ffad13d2"; # 1213 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297"; # 1219 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/76006a73771d9413092a9330a9014133fa0f9b10"; # 1219 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/2a91bc41f7aa8cb5734fe4b3d50c577090aba348"; # 1219 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/baf23157fc334b5607bcb5f89919fbe04e9ccd5d"; # 1218 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/8437e1aa7b34021aa9c97882fdbda2cca6d43878"; # 1218 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/78a5f401d76d575fb88757ad812dcda0adc24e3e"; # 1218 - Updated commit
+    };
+
+    # ==========================================================================
+    # Dev Tools / Lint / Format
+    # ==========================================================================
+    # These are used in `outputs-builder` for checks and devShell tooling.
+    poetry2nix = {
+      url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    statix = {
+      url = "github:nerdypepper/statix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     deadnix = {
@@ -142,30 +170,31 @@
     };
 
     # ==========================================================================
-    # Applications
+    # Apps / Extras
     # ==========================================================================
+    # Optional GUI tools and helper flakes.
     walker.url = "github:abenz1267/walker/v2.12.2";
-    
+
     elephant = {
       url = "github:abenz1267/elephant/v2.17.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    browser-previews = { 
-      url = "github:nix-community/browser-previews"; 
-      inputs.nixpkgs.follows = "nixpkgs"; 
+    browser-previews = {
+      url = "github:nix-community/browser-previews";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    cachix-pkgs = { 
-      url = "github:cachix/cachix"; 
-      inputs.nixpkgs.follows = "nixpkgs"; 
+
+    cachix-pkgs = {
+      url = "github:cachix/cachix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     spicetify-nix = {
       url = "github:gerg-l/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 
@@ -185,14 +214,11 @@
         src = ./.;
 
         snowfall = {
-          namespace = "my"; # Custom namespace for internal modules
-          
-          # Default paths are used:
-          # modules/nixos -> System modules
-          # modules/home  -> (Not used, we use modules/user-modules manually)
+          # Custom namespace for internal modules (e.g. `my.*` options).
+          namespace = "my";
         };
 
-        # Global Nixpkgs configuration
+        # Global nixpkgs config (applies to all systems/homes in this flake).
         channels-config = {
           allowUnfree = true;
           permittedInsecurePackages = [
@@ -202,66 +228,75 @@
           ];
         };
 
-        # Overlays applied to all systems
+        # Overlays applied to all systems.
         overlays = with inputs; [
           nur.overlays.default
         ];
 
-        # Modules automatically added to all NixOS systems
+        # Modules automatically added to all NixOS systems.
         systems.modules.nixos = with inputs; [
           home-manager.nixosModules.home-manager
-          dankMaterialShell.nixosModules.dankMaterialShell
+          # DMS upstream renamed `nixosModules.dankMaterialShell` -> `nixosModules.dank-material-shell`.
+          # Using `default` keeps us compatible and avoids the deprecation warning.
+          dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
         ];
 
-        # Special arguments available to all modules
+        # Special arguments available to all modules.
         systems.specialArgs = {
           username = "kenan";
         };
 
-              outputs-builder = channels: let
-                system = channels.nixpkgs.stdenv.hostPlatform.system;
-                alejandra = inputs.alejandra.packages.${system}.default;
-                statix = inputs.statix.packages.${system}.default;
-                deadnix = inputs.deadnix.packages.${system}.default;
-                treefmt = channels.nixpkgs.treefmt;
-              in {
-                formatter = alejandra;
-                
-                checks = {
-                  statix = channels.nixpkgs.runCommand "statix-check" {
-                    nativeBuildInputs = [ statix ];
-                  } ''
-                    statix check ${./.}
-                    touch $out
-                  '';
+        outputs-builder =
+          channels:
+          let
+            system = channels.nixpkgs.stdenv.hostPlatform.system;
+            alejandra = inputs.alejandra.packages.${system}.default;
+            statix = inputs.statix.packages.${system}.default;
+            deadnix = inputs.deadnix.packages.${system}.default;
+            treefmt = channels.nixpkgs.treefmt;
+          in
+          {
+            # Default formatter for the repo.
+            formatter = alejandra;
 
-                  deadnix = channels.nixpkgs.runCommand "deadnix-check" {
-                    nativeBuildInputs = [ deadnix ];
-                  } ''
-                    deadnix --fail ${./.}
-                    touch $out
-                  '';
+            # CI-friendly checks (run locally via `nix flake check`).
+            checks = {
+              statix = channels.nixpkgs.runCommand "statix-check" {
+                nativeBuildInputs = [ statix ];
+              } ''
+                statix check ${./.}
+                touch $out
+              '';
 
-                  treefmt = channels.nixpkgs.runCommand "treefmt-check" {
-                    nativeBuildInputs = [ treefmt ];
-                  } ''
-                    treefmt --fail-on-change --clear-cache --check ${./.}
-                    touch $out
-                  '';
+              deadnix = channels.nixpkgs.runCommand "deadnix-check" {
+                nativeBuildInputs = [ deadnix ];
+              } ''
+                deadnix --fail ${./.}
+                touch $out
+              '';
 
-                  nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
-                  nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
-                  home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
-                };
+              treefmt = channels.nixpkgs.runCommand "treefmt-check" {
+                nativeBuildInputs = [ treefmt ];
+              } ''
+                treefmt --fail-on-change --clear-cache --check ${./.}
+                touch $out
+              '';
 
-                devShells.default = channels.nixpkgs.mkShell {
-                  packages = [
-                    alejandra
-                    statix
-                    deadnix
-                  ];
-                };
-              };      })
+              nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
+              nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
+              home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
+            };
+
+            # Developer shell: quick access to repo tooling.
+            devShells.default = channels.nixpkgs.mkShell {
+              packages = [
+                alejandra
+                statix
+                deadnix
+              ];
+            };
+          };
+      })
       [ "snowfall" ];
 }

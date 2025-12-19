@@ -31,7 +31,7 @@ lib.mkIf cfg.enable {
             # =============================================================================
 
             # Sadece login shell ve henüz aktif desktop yoksa çalıştır
-            if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]]; then
+            if [[ $- == *l* ]] && [ -z "''${WAYLAND_DISPLAY}" ] && [ -z "''${DISPLAY}" ] && [[ "''${XDG_VTNR}" =~ ^[1-6]$ ]] && [ -z "''${GNOME_TTY_GUARD:-}" ]; then
             
                 # TTY1 özel kontrol: Display manager için session type kontrolü
                 if [ "''${XDG_VTNR}" = "1" ] && [ -n "''${XDG_SESSION_TYPE}" ]; then
@@ -92,6 +92,12 @@ lib.mkIf cfg.enable {
                     # Minimum gerekli değişkenler - geri kalanı gnome_tty'de
                     export XDG_SESSION_TYPE=wayland
                     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                    export GNOME_TTY_GUARD=1
+                    if [ -e "''${XDG_RUNTIME_DIR}/gnome-tty3.guard" ]; then
+                        echo "GNOME zaten başlatılıyor (guard aktif), tekrar tetiklenmiyor."
+                        return
+                    fi
+                    export GNOME_TTY_GUARD_FILE="''${XDG_RUNTIME_DIR}/gnome-tty3.guard"
                 
                     # gnome_tty script'i kontrol et
                     if command -v gnome_tty >/dev/null 2>&1; then
@@ -104,11 +110,11 @@ lib.mkIf cfg.enable {
                     
                         # D-Bus session ile GNOME başlat
                         if command -v dbus-run-session >/dev/null; then
-                            exec dbus-run-session -- gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                            exec dbus-run-session -- gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
                         else
                             eval $(dbus-launch --sh-syntax --exit-with-session)
                             export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
-                            exec gnome-session --session=gnome 2>&1 | tee /tmp/gnome-session-tty3.log
+                            exec gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
                         fi
                     fi
             
