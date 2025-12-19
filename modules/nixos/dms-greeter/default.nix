@@ -22,9 +22,7 @@ let
   niriPkg =
     if config.programs ? niri && config.programs.niri ? package
     then config.programs.niri.package
-    else if inputs ? niri && inputs.niri ? packages
-    then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
-    else pkgs.niri;
+    else pkgs.niri-unstable;
 
   swayPkg =
     if config.programs ? sway && config.programs.sway ? package
