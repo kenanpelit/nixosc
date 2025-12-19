@@ -128,6 +128,10 @@
         max-height 720;
         max-scale 0.6;
       }
+      binds {
+        Mod+Tab { next-window; }
+        Mod+Shift+Tab { previous-window; }
+      }
     }
   '';
 
