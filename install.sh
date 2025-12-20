@@ -30,8 +30,6 @@ readonly DEFAULT_HOST="hay"
 readonly EXCLUDE_FILES=(
   # Keep user Hyprland config pinned on target branch
   "modules/home/hyprland/config.nix"
-  # Legacy path (pre-home move) for safety
-  "modules/user-modules/hyprland/config.nix"
   "systems/${SYSTEM_ARCH}/hay/hardware-configuration.nix"
   "systems/${SYSTEM_ARCH}/vhay/hardware-configuration.nix"
   "flake.lock"

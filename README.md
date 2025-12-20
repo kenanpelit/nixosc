@@ -39,61 +39,56 @@
 
 **NixOS Configuration Suite (nixosc)** - Snowfall Edition
 
-A comprehensive NixOS configuration built on **Snowfall Lib**, managing both system (NixOS) and user (Home Manager) layers from a single flake.
+A comprehensive, declarative, and modular NixOS configuration built on **Snowfall Lib**. It manages both system (NixOS) and user (Home Manager) layers from a single flake, featuring a highly customized Wayland desktop environment.
 
 - **Architecture:** Snowfall Lib (auto module discovery)
-- **Desktop:** Hyprland + Niri + GNOME (optional) + **DankMaterialShell (DMS)**; Waybar/Hyprpanel disabled by default
-- **Greeter:** greetd + DMS Greeter (`dms-greeter`) on supported hosts
-- **Launchers:** DMS Spotlight + Walker (Elephant) + Rofi; Ulauncher is also configured
-- **Theme:** Catppuccin (Mocha by default) end-to-end
-- **Shell:** Zsh + Starship + Tmux + Kitty/Wezterm
-- **Secrets:** SOPS-Nix (Age)
+- **Desktop:** 
+  - **Niri** (Primary): Scrollable-tiling compositor, powered by [niri-flake](https://github.com/sodiboo/niri-flake) for build-time config validation and binary caching.
+  - **Hyprland** (Secondary): Dynamic tiling compositor with extensive customization.
+  - **GNOME**: Fallback session.
+- **Shell / Panel:** [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS) integration for panels, widgets, and lock screen.
+- **Greeter:** `greetd` + DMS Greeter (`dms-greeter`) support.
+- **Theme:** Catppuccin (Mocha) end-to-end integration.
+- **Secrets:** SOPS-Nix (Age) for secure credential management.
 
 ## 🗃️ Repository Structure
 
-Snowfall layout (all modules auto-imported via `default.nix`):
+The repository follows the Snowfall Lib layout, where modules are automatically discovered and imported.
 
-- [flake.nix](flake.nix) - Core configuration entry point
-- [install.sh](install.sh) - Unified installation & management tool
-- [systems](systems) - ❄️ Host configurations
-  - [hay](systems/x86_64-linux/hay/) - Laptop/Workstation
-  - [vhay](systems/x86_64-linux/vhay/) - VM profile
-- [modules](modules) - 🍱 Modular configs
-  - [nixos](modules/nixos/) - System-level (hardware, services, security, networking…)
-  - [home](modules/home/) - User-level (apps, theming, shells, Hyprland, DMS, scripts)
-- [homes](homes) - Home-Manager profiles per host/user
-- [overlays](overlays/) - 🔧 Nixpkgs overlays
-- [secrets](secrets/) - 🔐 SOPS-encrypted material
-- [wallpapers](wallpapers/) - Theme assets used by DMS/Hyprland
+```bash
+.
+├── flake.nix             # Core configuration & inputs
+├── install.sh            # Unified installation & management tool
+├── systems/              # ❄️ Host configurations (hardware-specific)
+│   ├── hay/              # Workstation (Laptop)
+│   └── vhay/             # Virtual Machine profile
+├── modules/              # 🍱 Modular configs
+│   ├── nixos/            # System-level modules (services, hardware, greeters)
+│   └── home/             # User-level modules (apps, WMs, shell config)
+│       ├── niri/         # Modular Niri config (binds, rules, settings)
+│       ├── hyprland/     # Modular Hyprland config
+│       └── dms/          # DankMaterialShell configuration
+├── homes/                # Home-Manager profiles per host/user
+├── overlays/             # 🔧 Nixpkgs overlays
+└── secrets/              # 🔐 SOPS-encrypted secrets
+```
 
-## 🧩 Components & Technologies
+## 🧩 Key Technologies
 
-### Core Systems
-
-| Component                | Technology                                                                                         |
+| Component                | Implementation Details                                                                             |
 | ------------------------ | -------------------------------------------------------------------------------------------------- |
-| **Base System**          | [NixOS 25.11](https://nixos.org/)                                                                  |
 | **Framework**            | [Snowfall Lib](https://github.com/snowfallorg/lib)                                                 |
-| **User Environment**     | [Home-Manager](https://github.com/nix-community/home-manager)                                      |
-| **Secrets Management**   | [SOPS-nix](https://github.com/Mic92/sops-nix) (Age)                                                |
-
-### Desktop Environment
-
-| Component                    | Implementation                                                                                                        |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Compositors / Sessions**   | Hyprland (optimized), Niri, GNOME                                                                                    |
-| **Shell / Panel**            | [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS)                                           |
-| **Greeter**                  | `greetd` + DMS Greeter (`dms-greeter`)                                                                                |
-| **Launcher**                 | DMS Spotlight + [Walker](https://github.com/abenz1267/walker) + [Rofi](https://github.com/lbonn/rofi) (+ Ulauncher)   |
-| **Notifications & Widgets**  | DMS built-ins                                                                                                         |
-| **Lock / Power**             | DMS lock/powermenu (DMS uses wl-session-lock; Niri uses `niri-lock` wrapper for consistent UI)                        |
-| **Wallpaper**                | DMS wallpaper engine (Hyprpaper present; Waypaper/Wpaperd removed)                                                    |
-| **Browsers**                 | Brave primary; Chrome profiles optional; Zen/Vivaldi removed                                                          |
+| **Niri Compositor**      | Uses `niri-flake` (unstable) for latest features, build-time validation, and caching.              |
+| **Hyprland**             | Pinned flake input for stability; configs split into `binds.nix`, `rules.nix`, etc.                |
+| **Shell/UI**             | **DankMaterialShell** (Quickshell-based). Provides top bar, dock, and OSDs.                        |
+| **Launchers**            | DMS Spotlight (primary), Rofi (fallback), Walker.                                                  |
+| **Authentication**       | Polkit-GNOME + GNOME Keyring (fully integrated via PAM & DBus).                                    |
+| **Browsers**             | Brave (default), Chrome.                                                                           |
 
 ## 🚀 Installation
 
 > [!CAUTION]
-> This configuration is tailored for specific hardware. Review `hardware-configuration.nix` before applying.
+> This configuration is tailored for specific hardware (Dell XPS / Intel). Review `systems/x86_64-linux/hay/hardware-configuration.nix` before applying to a new machine.
 
 ### 1. Clone & Setup
 
@@ -116,105 +111,58 @@ Use the helper script to build and switch configurations:
 
 ### 3. Update
 
-To update flake inputs:
+To update flake inputs (including Niri unstable):
 
 ```bash
 ./install.sh update
 ```
 
-## 🪪 Greeter (greetd + DMS Greeter)
+## ⌨️ Keybindings
 
-This repo can run the login screen using DMS Greeter (`dms-greeter`) under `greetd`.
+### Niri + DMS (Main Session)
 
-Host example: `systems/x86_64-linux/hay/default.nix`
+- **Modifier:** `Super` (Windows Key)
+- **General:**
+  - `Super + Enter` -> Terminal (Kitty)
+  - `Super + Q` -> Close Window
+  - `Super + F` -> Maximize Column / `Shift+F` Fullscreen
+  - `Super + Space` -> DMS Spotlight (Launcher)
+  - `Super + Tab` -> **Recent Windows** (Alt-Tab switcher)
+- **Navigation:**
+  - `Super + Arrows` or `h/j/k/l` -> Move focus
+  - `Super + Shift + Arrows` -> Move window
+  - `Super + Wheel` -> Scroll workspaces
+- **DMS Features:**
+  - `Super + C` -> Control Center
+  - `Super + N` -> Notifications
+  - `Alt + L` -> Lock Screen (DMS Lock)
 
-```nix
-my.greeter.dms = {
-  enable = true;
-  compositor = "hyprland"; # hyprland | niri | sway
-  layout = "tr";
-  variant = "f";
-};
-```
+### Hyprland (Secondary Session)
 
-Notes:
-- Logs: `/var/log/dms-greeter/dms-greeter.log`
-- The module sets a writable greeter `HOME` (`/var/lib/dms-greeter`) to avoid cache/shader warnings.
+- **Modifier:** `Super`
+- Same core navigation bindings (`h/j/k/l`).
+- `Super + F` -> Toggle Float
+- `Super + G` -> Toggle Group
+- `Super + Tab` -> DMS Hypr Overview
 
-## ⚙️ Customization Guide
+## 🛠 Advanced Features
 
-### Adding a Package
-*   **System-wide:** Edit `modules/nixos/packages/default.nix`.
-*   **User-specific:** Edit `modules/home/packages/default.nix`.
+### Modular WM Configuration
+Both Niri and Hyprland configurations are split into granular Nix files for better maintainability:
+- `binds.nix`: Keybindings
+- `rules.nix`: Window & Layer rules
+- `settings.nix`: Core compositor settings
+- `variables.nix`: Environment variables & theming constants
 
-### Creating a New Module
-Just create a directory! **Snowfall Lib** automatically imports `default.nix` files.
-*   System module: `modules/nixos/my-service/default.nix`
-*   User module: `modules/home/my-app/default.nix`
+### DMS Integration
+- **Themes:** Automatically managed by DMS/Matugen or manually pinned via `settings.nix`.
+- **Plugins:** Installed via imperative `dms-plugin-sync` service (best-effort).
+- **Greeter:** Fully supported via `modules/nixos/dms-greeter`.
 
-### Managing Secrets
-Secrets are encrypted with Age and managed by SOPS.
-To edit secrets:
-```bash
-sops secrets/wireless-secrets.enc.yaml
-```
-
-## ⌨️ Keybindings (Niri / Hyprland + DMS)
-
-### Niri + DMS
-
-- `Mod` is the main modifier (typically `SUPER` in a normal session).
-- `Alt + L` — DMS lock (via `niri-lock`)
-- `Mod + Space` — DMS Spotlight
-- Reload config (no restart): `niri msg action load-config-file`
-- Full config generator: `modules/home/niri/default.nix`
-
-### Hyprland + DMS
-
-- `$mainMod` = `SUPER` key
-- DMS ships Spotlight/panel shortcuts (`$mainMod+Space`, powermenu, control-center, etc.).
-- Hyprland core (summary):
-  - `$mainMod + Enter` — Kitty
-  - `$mainMod + Q` — Close window
-  - `$mainMod + F` — Toggle float; `$mainMod+Shift+F` — Fullscreen
-  - `$mainMod + h/j/k/l` or arrows — Move focus; `Shift` moves window; `Ctrl` resizes
-  - `$mainMod + 1-9` — Workspace; `Shift+1-9` — move window; `Ctrl+1-9` — monitor-aware move
-  - `$mainMod + Tab` — DMS Hypr overview
-- Full list: `modules/home/hyprland/config.nix`
-
-## 🛠 Troubleshooting
-
-### DMS warnings about Niri config writes
-
-DMS may log lines like:
-- `NiriService: Failed to write layout config`
-- `NiriService: Failed to write alttab config`
-
-This repo intentionally manages `~/.config/niri/dms/*.kdl` via Home Manager (read-only symlinks), so DMS' auto-generator can't overwrite them.
-
-### Stasis (idle manager) config is writable by design
-
-This repo ships a Home-Manager module for [Stasis](https://github.com/saltnpepper97/stasis).
-
-Enable it in your HM profile:
-
-```nix
-my.user.stasis.enable = true;
-```
-
-Notes:
-- Config path: `~/.config/stasis/stasis.rune`
-- The file is created via `home.activation` (not `xdg.configFile`) so it stays writable.
-- Convenience wrapper: `stasisctl ...` (always uses the configured `stasis.rune` path)
-
-Useful commands:
-```bash
-systemctl --user status stasis
-stasisctl info --json
-stasisctl reload
-stasisctl profile work    # or: none / presentation
-stasisctl dump 80
-```
+### Troubleshooting
+- **Niri Config Validation:** If the build fails with a KDL error, check `modules/home/niri/default.nix`. The config is validated at build time!
+- **Keyring/PAM:** If you see `gkr-pam` errors in logs, ensure `seahorse` shows the Login keyring as unlocked. It usually works despite the log noise.
+- **Discord:** Use `WebCord` for better Wayland support if standard Discord crashes.
 
 ## 📄 License
 
