@@ -59,9 +59,37 @@ in
   };
 
   config = lib.mkIf (cfg.enable && hasScripts) {
-    systemd.user.services.bluetooth-auto-toggle-hyprland = lib.mkIf enableHyprland (mkAutoToggleService {
-      description = "Auto toggle/connect Bluetooth on login (hyprland)";
-      wantedBy = [ "hyprland-session.target" ];
-    });
+    # Hyprland Bluetooth auto-connect: delayed via timer so it doesn't block session startup.
+    systemd.user.services.hyprland-bt-autoconnect = lib.mkIf enableHyprland {
+      Unit = {
+        Description = "Hyprland Bluetooth auto-connect";
+        Wants = [ "pipewire.service" "wireplumber.service" ];
+        After = [ "hyprland-session.target" "pipewire.service" "wireplumber.service" ];
+        PartOf = [ "hyprland-session.target" ];
+      };
+      Service = {
+        Type = "oneshot";
+        TimeoutStartSec = "${toString cfg.autoToggle.timeoutSeconds}s";
+        ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/bluetooth_toggle --connect'";
+        Restart = "on-failure";
+        RestartSec = 10;
+      };
+    };
+
+    systemd.user.timers.hyprland-bt-autoconnect = lib.mkIf enableHyprland {
+      Unit = {
+        Description = "Hyprland Bluetooth auto-connect (delayed)";
+        After = [ "hyprland-session.target" ];
+        PartOf = [ "hyprland-session.target" ];
+      };
+      Timer = {
+        OnActiveSec = "${toString cfg.autoToggle.delaySeconds}s";
+        AccuracySec = "5s";
+        Unit = "hyprland-bt-autoconnect.service";
+      };
+      Install = {
+        WantedBy = [ "hyprland-session.target" ];
+      };
+    };
   };
 }
