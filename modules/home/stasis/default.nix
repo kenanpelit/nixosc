@@ -185,7 +185,9 @@ let
 
     # Prefer Hyprland lock when available.
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
-      exec hyprlock
+      hyprlock
+      command -v loginctl >/dev/null 2>&1 && loginctl unlock-session >/dev/null 2>&1 || true
+      exit 0
     fi
 
     # Niri (and others): use DMS lock if available and block until unlocked.
@@ -196,6 +198,7 @@ let
       while true; do
         out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
         if [[ "$out" != "true" ]]; then
+          command -v loginctl >/dev/null 2>&1 && loginctl unlock-session >/dev/null 2>&1 || true
           exit 0
         fi
         sleep 0.25
