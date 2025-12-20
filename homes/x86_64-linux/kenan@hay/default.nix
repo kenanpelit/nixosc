@@ -22,6 +22,7 @@
   my.user.btop.enable = true;
   my.user.packages.enable = true;
   my.user.scripts.enable = true;
+  my.user.bt.enable = true;
   my.user.command-not-found.enable = true;
   my.user.xdg-dirs.enable = true;
   my.user.xdg-mimes.enable = true;
