@@ -1,29 +1,14 @@
 # NixOS Configuration Suite (`nixosc`)
 
-<div align="center">
-  <img src="./.github/assets/logo/nixos-logo.png" width="100px" />
-  <br />
-  <strong>Kenan's NixOS Configuration Suite</strong>
-  <br />
-  <img src="./.github/assets/pallet/pallet-0.png" width="600px" />
-  <br />
-  <br />
-  <a href="https://github.com/kenanpelit/nixosc/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/kenanpelit/nixosc/ci.yml?branch=main&style=for-the-badge&label=CI&logo=githubactions&logoColor=ffffff&color=458588&labelColor=282828" />
-  </a>
-  <a href="https://github.com/kenanpelit/nixosc/stargazers">
-    <img src="https://img.shields.io/github/stars/kenanpelit/nixosc?style=for-the-badge&logo=starship&logoColor=FABD2F&color=FABD2F&labelColor=282828" />
-  </a>
-  <a href="https://github.com/kenanpelit/nixosc/">
-    <img src="https://img.shields.io/github/repo-size/kenanpelit/nixosc?style=for-the-badge&logo=github&logoColor=B16286&color=B16286&labelColor=282828" />
-  </a>
-  <a href="https://nixos.org">
-    <img src="https://img.shields.io/badge/NixOS-25.11?style=for-the-badge&logo=NixOS&logoColor=458588&color=458588&labelColor=282828" />
-  </a>
-  <a href="https://github.com/kenanpelit/nixosc/blob/main/LICENSE">
-    <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&colorA=282828&colorB=98971A&logo=unlicense&logoColor=98971A" />
-  </a>
-</div>
+[![CI](https://img.shields.io/github/actions/workflow/status/kenanpelit/nixosc/ci.yml?branch=main&style=for-the-badge&label=CI&logo=githubactions&logoColor=ffffff&color=458588&labelColor=282828)](https://github.com/kenanpelit/nixosc/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/kenanpelit/nixosc?style=for-the-badge&logo=starship&logoColor=FABD2F&color=FABD2F&labelColor=282828)](https://github.com/kenanpelit/nixosc/stargazers)
+[![Repo Size](https://img.shields.io/github/repo-size/kenanpelit/nixosc?style=for-the-badge&logo=github&logoColor=B16286&color=B16286&labelColor=282828)](https://github.com/kenanpelit/nixosc/)
+[![NixOS 25.11](https://img.shields.io/badge/NixOS-25.11?style=for-the-badge&logo=NixOS&logoColor=458588&color=458588&labelColor=282828)](https://nixos.org)
+[![License: MIT](https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&colorA=282828&colorB=98971A&logo=unlicense&logoColor=98971A)](LICENSE)
+
+![NixOS Logo](./.github/assets/logo/nixos-logo.png)
+
+![Palette](./.github/assets/pallet/pallet-0.png)
 
 Opinionated, modular NixOS + Home Manager configuration built with **Snowfall Lib** and managed via a single flake. This repo is designed for my machines, but aims to be readable, reproducible, and easy to extend.
 
@@ -34,11 +19,9 @@ Opinionated, modular NixOS + Home Manager configuration built with **Snowfall Li
 
 ## Gallery
 
-<p align="center">
-   <img src="./.github/assets/screenshots/1.png" style="margin-bottom: 10px;"/> <br>
-   <img src="./.github/assets/screenshots/hyprlock.png" style="margin-bottom: 10px;" /> <br>
-   <img src="./.github/assets/screenshots/grub.png" style="margin-bottom: 10px;" /> <br>
-</p>
+![Desktop](./.github/assets/screenshots/1.png)
+![Hyprlock](./.github/assets/screenshots/hyprlock.png)
+![GRUB](./.github/assets/screenshots/grub.png)
 
 ## Overview
 
