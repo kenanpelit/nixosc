@@ -94,6 +94,13 @@ get_battery_percentage() {
 # ──────────────────────────────────────────────────────────────────────────────
 AUDIO_BACKEND=""
 BACKEND_FORCED=""
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Modlar
+# ──────────────────────────────────────────────────────────────────────────────
+# Varsayılan: toggle (bağlıysa kes, değilse bağlan)
+MODE="toggle" # toggle | connect | disconnect
+
 detect_backend() {
 	if [ -n "$BACKEND_FORCED" ]; then
 		case "$BACKEND_FORCED" in wpctl | pactl) AUDIO_BACKEND="$BACKEND_FORCED" ;; *)
@@ -377,37 +384,64 @@ manage_bluetooth_connection() {
 
 	if [ "$connection_status" = "yes" ]; then
 		log "Cihaz $device_name ($device_address) şu anda bağlı" "INFO"
-		log "Bağlantı kesiliyor..." "INFO"
-		if timeout "$BLUETOOTH_TIMEOUT" bluetoothctl disconnect "$device_address" >/dev/null 2>&1; then
-			log "Bağlantı başarıyla kesildi." "SUCCESS"
-			send_notification "$device_name Bağlantısı Kesildi" "$device_name ($device_address) bağlantısı kesildi."
-			configure_audio "default"
-			log "Cihaz $device_name ($device_address) şimdi bağlantı kesildi" "INFO"
-		else
-			log "Bağlantı kesilirken timeout veya bir sorun oluştu." "ERROR"
+		case "$MODE" in
+		connect)
+			log "Zaten bağlı; ses ayarları tazeleniyor." "INFO"
+			configure_audio "bluetooth"
+			return 0
+			;;
+		disconnect | toggle)
+			log "Bağlantı kesiliyor..." "INFO"
+			if timeout "$BLUETOOTH_TIMEOUT" bluetoothctl disconnect "$device_address" >/dev/null 2>&1; then
+				log "Bağlantı başarıyla kesildi." "SUCCESS"
+				send_notification "$device_name Bağlantısı Kesildi" "$device_name ($device_address) bağlantısı kesildi."
+				configure_audio "default"
+				log "Cihaz $device_name ($device_address) şimdi bağlantı kesildi" "INFO"
+				return 0
+			else
+				log "Bağlantı kesilirken timeout veya bir sorun oluştu." "ERROR"
+				return 1
+			fi
+			;;
+		*)
+			log "Geçersiz mod: $MODE" "ERROR"
 			return 1
-		fi
+			;;
+		esac
 	else
 		log "Cihaz $device_name ($device_address) şu anda bağlı değil" "INFO"
-		log "Bağlanılıyor..." "INFO"
-		if timeout "$BLUETOOTH_TIMEOUT" bluetoothctl connect "$device_address" >/dev/null 2>&1; then
-			log "Bağlantı başarıyla kuruldu." "SUCCESS"
-			local battery
-			battery="$(get_battery_percentage "$device_address")"
-			if [ -n "$battery" ]; then
-				send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu. Pil: $battery"
-				log "Pil durumu: $battery" "INFO"
+		case "$MODE" in
+		disconnect)
+			log "Zaten bağlantısız; varsayılan ses ayarları tazeleniyor." "INFO"
+			configure_audio "default"
+			return 0
+			;;
+		connect | toggle)
+			log "Bağlanılıyor..." "INFO"
+			if timeout "$BLUETOOTH_TIMEOUT" bluetoothctl connect "$device_address" >/dev/null 2>&1; then
+				log "Bağlantı başarıyla kuruldu." "SUCCESS"
+				local battery
+				battery="$(get_battery_percentage "$device_address")"
+				if [ -n "$battery" ]; then
+					send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu. Pil: $battery"
+					log "Pil durumu: $battery" "INFO"
+				else
+					send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+				fi
+				configure_audio "bluetooth"
+				log "Cihaz $device_name ($device_address) şimdi bağlandı" "INFO"
+				return 0
 			else
-				send_notification "$device_name Bağlandı" "$device_name ($device_address) bağlantısı kuruldu."
+				log "Bağlanırken timeout veya bir sorun oluştu." "ERROR"
+				return 1
 			fi
-			configure_audio "bluetooth"
-			log "Cihaz $device_name ($device_address) şimdi bağlandı" "INFO"
-		else
-			log "Bağlanırken timeout veya bir sorun oluştu." "ERROR"
+			;;
+		*)
+			log "Geçersiz mod: $MODE" "ERROR"
 			return 1
-		fi
+			;;
+		esac
 	fi
-	return 0
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -417,13 +451,16 @@ show_help() {
 	cat <<EOF
 Kullanım: $0 [SEÇENEKLER] [MAC_ADRESI] [CİHAZ_ADI]
 
-Seçenekler:
-  -h, --help           Bu yardım mesajını göster
-  -v, --verbose        Detaylı çıktı ver (set -x)
-  -q, --quiet          Sadece hata mesajlarını göster
-  --backend=wpctl      Backend'i wpctl olarak zorla
-  --backend=pactl      Backend'i pactl olarak zorla
-  --battery            Sadece pil yüzdesini bildir ve çık
+	Seçenekler:
+	  -h, --help           Bu yardım mesajını göster
+	  -v, --verbose        Detaylı çıktı ver (set -x)
+	  -q, --quiet          Sadece hata mesajlarını göster
+	  --connect            Sadece bağlan / bağlıysa ses ayarlarını tazele
+	  --disconnect         Sadece bağlantıyı kes / bağlı değilse varsayılan ses ayarlarını tazele
+	  --toggle             Toggle (varsayılan davranış)
+	  --backend=wpctl      Backend'i wpctl olarak zorla
+	  --backend=pactl      Backend'i pactl olarak zorla
+	  --battery            Sadece pil yüzdesini bildir ve çık
 
 Örnekler:
   $0
@@ -434,13 +471,25 @@ Varsayılan cihaz: $DEFAULT_DEVICE_NAME ($DEFAULT_DEVICE_ADDRESS)
 EOF
 }
 
-parse_arguments() {
-	while [[ $# -gt 0 ]]; do
-		case "$1" in
-		--battery)
-			MODE_BATTERY_ONLY=true
-			shift
-			;;
+	parse_arguments() {
+		while [[ $# -gt 0 ]]; do
+			case "$1" in
+			--connect)
+				MODE="connect"
+				shift
+				;;
+			--disconnect)
+				MODE="disconnect"
+				shift
+				;;
+			--toggle)
+				MODE="toggle"
+				shift
+				;;
+			--battery)
+				MODE_BATTERY_ONLY=true
+				shift
+				;;
 		-h | --help)
 			show_help
 			exit 0
