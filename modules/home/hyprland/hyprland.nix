@@ -25,7 +25,7 @@ lib.mkIf cfg.enable {
     Unit = {
       Description = "Auto toggle/connect Bluetooth on login";
       After = [ "graphical-session.target" "hyprland-session.target" ];
-      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
     };
 
     Service = {
@@ -34,7 +34,7 @@ lib.mkIf cfg.enable {
     };
 
     Install = {
-      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
+      WantedBy = [ "hyprland-session.target" ];
     };
   };
 
@@ -43,14 +43,14 @@ lib.mkIf cfg.enable {
     Unit = {
       Description = "Hyprland session bootstrap (monitors + audio)";
       After = [ "graphical-session.target" "hyprland-session.target" ];
-      PartOf = [ "graphical-session.target" "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
     };
     Service = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-init'";
     };
     Install = {
-      WantedBy = [ "graphical-session.target" "hyprland-session.target" ];
+      WantedBy = [ "hyprland-session.target" ];
     };
   };
 
