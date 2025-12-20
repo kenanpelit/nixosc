@@ -74,14 +74,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude discord -m --no-sandbox --class=discord --title=discord &
+                mullvad-exclude discord -m --class=discord --title=discord &
             else
                 echo "WARNING: mullvad-exclude not found"
-                discord -m --no-sandbox --class=discord --title=discord &
+                discord -m --class=discord --title=discord &
             fi
         else
             echo "VPN not connected"
-            discord -m --no-sandbox --class=discord --title=discord &
+            discord -m --class=discord --title=discord &
         fi
         ;;
     secure|*)
@@ -90,7 +90,7 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        discord -m --no-sandbox --class=discord --title=discord &
+        discord -m --class=discord --title=discord &
         ;;
 esac
 
