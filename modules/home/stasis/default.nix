@@ -31,10 +31,9 @@ let
   # A sane default, designed for Niri + Hyprland + DMS.
   #
   # Notes:
-  # - We use `lock_detection_type "process"` and a small wrapper (`stasis-lock`)
-  #   that blocks until the lock is actually released. This is important because
-  #   DMS locking (IPC call) may return immediately, and Stasis needs a long-lived
-  #   process to track "locked" state reliably.
+  # - Use Stasis' `lock-command` field for `lock_screen` so the lock action is
+  #   treated as a real lock stage (allowing later stages like DPMS/suspend).
+  #   `stasis-lock` is the actual compositor locker (DMS/hyprlock fallback).
   # - Stasis timeouts are sequential (each timeout is relative to the previous
   #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
   #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
@@ -91,8 +90,9 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "loginctl lock-session"
           resume-command "notify-send 'Welcome back, $env.USER!'"
+          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -123,8 +123,9 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "loginctl lock-session"
           resume-command "notify-send 'Welcome back, $env.USER!'"
+          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -147,7 +148,8 @@ let
       work:
         lock_screen:
           timeout 900
-          command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "loginctl lock-session"
+          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -191,14 +193,13 @@ let
       dms ipc call lock lock >/dev/null 2>&1 || true
 
       # Block until DMS reports unlock (keeps this process alive for Stasis).
-      for _ in $(seq 1 2400); do # ~10 min @ 0.25s
+      while true; do
         out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
         if [[ "$out" != "true" ]]; then
           exit 0
         fi
         sleep 0.25
       done
-      exit 0
     fi
 
     # Fallback: logind lock (may use compositor's default locker).
@@ -407,29 +408,27 @@ EOF
           # If the user already started Stasis once, it may have auto-generated a
           # config with a lock command that doesn't exist on this system.
           # This setup locks via DMS (Niri) or hyprlock (Hyprland), so we
-          # auto-migrate `lock_screen.command` in-place when needed.
+          # auto-migrate `lock_screen.lock-command` in-place when needed.
           #
           # Keep it a minimal patch (do not rewrite the whole file) unless
           # `forceConfig = true`.
           lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
           kbd_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-kbd-backlight"}
 
-          # Older configs may use loginctl directly; on this setup DMS/hyprlock is
-          # the actual locker, so migrate lock_screen commands to stasis-lock.
-          if grep -q 'command[[:space:]]*"loginctl lock-session"' "$CFG_FILE"; then
-            tmp="$(mktemp)"
-            sed "s|command[[:space:]]*\\\"loginctl lock-session\\\"|command \\\"$lock_cmd\\\"|g" "$CFG_FILE" >"$tmp"
-            mv -f "$tmp" "$CFG_FILE"
-          fi
-
-          # For `lock_screen` blocks: if the configured command binary is missing,
-          # replace it with stasis-lock.
+          # For `lock_screen` blocks:
+          # - Ensure `lock-command` is present and points to a real binary.
+          # - If `command` is set to stasis-lock (old style), migrate to:
+          #   `command "loginctl lock-session"` + `lock-command "stasis-lock"`.
           tmp="$(mktemp)"
           changed="0"
           in_lock="0"
+          saw_lock_cmd="0"
+          want_lock_cmd="0"
           while IFS= read -r line; do
             if [[ "$line" =~ ^[[:space:]]*lock[_-]screen:[[:space:]]*$ ]]; then
               in_lock="1"
+              saw_lock_cmd="0"
+              want_lock_cmd="0"
               echo "$line" >>"$tmp"
               continue
             fi
@@ -439,15 +438,52 @@ EOF
               cmd="''${BASH_REMATCH[2]}"
               bin="''${cmd%% *}"
 
+              # Old style: lock_screen.command points to stasis-lock directly.
+              if [[ "$cmd" == "$lock_cmd" ]]; then
+                echo "''${indent}command \"loginctl lock-session\"" >>"$tmp"
+                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
+                saw_lock_cmd="1"
+                want_lock_cmd="1"
+                changed="1"
+                continue
+              fi
+
+              # New style: use fast `loginctl` + dedicated lock-command.
+              if [[ "$cmd" == "loginctl lock-session" ]]; then
+                want_lock_cmd="1"
+              else
+                # If it's not an absolute path and the binary doesn't exist, migrate.
+                if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
+                  echo "''${indent}command \"loginctl lock-session\"" >>"$tmp"
+                  echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
+                  saw_lock_cmd="1"
+                  want_lock_cmd="1"
+                  changed="1"
+                  continue
+                fi
+              fi
+            fi
+
+            if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)lock-command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
+              indent="''${BASH_REMATCH[1]}"
+              cmd="''${BASH_REMATCH[2]}"
+              bin="''${cmd%% *}"
+              saw_lock_cmd="1"
+
               # If it's not an absolute path and the binary doesn't exist, migrate.
               if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
-                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
                 changed="1"
                 continue
               fi
             fi
 
-            if [[ "$in_lock" == "1" && "$line" =~ ^[[:space:]]*end[[:space:]]*$ ]]; then
+            if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)end[[:space:]]*$ ]]; then
+              if [[ "$want_lock_cmd" == "1" && "$saw_lock_cmd" != "1" ]]; then
+                indent="''${BASH_REMATCH[1]}"
+                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+              fi
               in_lock="0"
             fi
 
@@ -489,18 +525,6 @@ EOF
                 fi
               fi
             fi
-          fi
-
-          # Ensure we use process-based lock detection when using stasis-lock.
-          if grep -q "$lock_cmd" "$CFG_FILE" && ! grep -Eq 'lock_detection_type|lock-detection-type' "$CFG_FILE"; then
-            tmp="$(mktemp)"
-            awk '
-              { print }
-              $0 ~ /^[[:space:]]*respect_idle_inhibitors[[:space:]]+true/ {
-                print "  lock_detection_type \"process\""
-              }
-            ' "$CFG_FILE" >"$tmp"
-            mv -f "$tmp" "$CFG_FILE"
           fi
         fi
       '';
