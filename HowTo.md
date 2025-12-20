@@ -10,12 +10,12 @@ Hızlı rehber; Snowfall Lib düzenini ve yaygın işleri özetler.
 - Kontrol: `nix flake check` (hızlı sentaks/derleme testi).
 
 ## Snowfall Lib Ne Sağlıyor?
-- `modules/nixos` ve `modules/user-modules` içindeki modülleri otomatik import eder; host dosyasına tek tek eklemen gerekmez.
+- `modules/nixos` ve `modules/home` içindeki modülleri otomatik import eder; host dosyasına tek tek eklemen gerekmez.
 - `my.*` namespaceni sağlar; örn. `my.host`, `my.firewall`.
 - `packages/` ve `overlays/` da otomatik okunur (şu an boş).
 
 ## Uygulama Ekle/Kaldır
-- Kullanıcı (Home Manager): `modules/user-modules/<app>/default.nix` oluştur; `home.packages = [ pkgs.<pkg> ];` veya `programs.<app>.enable = true;`. Snowfall otomatik dahil eder.
+- Kullanıcı (Home Manager): `modules/home/<app>/default.nix` oluştur; `home.packages = [ pkgs.<pkg> ];` veya `programs.<app>.enable = true;`. Snowfall otomatik dahil eder.
 - Sistem: `modules/nixos/packages/` veya yeni bir `modules/nixos/<kategori>/default.nix` içinde `environment.systemPackages = [ ... ];`.
 - Kaldırma: İlgili listeden paketi sil; başka referans yoksa rebuild ile gider.
 
