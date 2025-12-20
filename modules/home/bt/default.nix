@@ -46,7 +46,7 @@ in
     autoToggle = {
       delaySeconds = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 20;
+        default = 10;
         description = "Delay (in seconds) before running bluetooth_toggle at session start.";
       };
 
