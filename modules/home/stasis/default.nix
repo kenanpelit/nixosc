@@ -31,9 +31,9 @@ let
   # A sane default, designed for Niri + Hyprland + DMS.
   #
   # Notes:
-  # - Use Stasis' `lock-command` field for `lock_screen` so the lock action is
-  #   treated as a real lock stage (allowing later stages like DPMS/suspend).
-  #   `stasis-lock` is the actual compositor locker (DMS/hyprlock fallback).
+  # - Keep `lock_screen.command` as `stasis-lock` (a blocking wrapper that keeps
+  #   the lock "active" until unlock). This avoids relying on logind lock state
+  #   and works consistently across compositors.
   # - Stasis timeouts are sequential (each timeout is relative to the previous
   #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
   #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
@@ -90,9 +90,8 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "loginctl lock-session"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
           resume-command "notify-send 'Welcome back, $env.USER!'"
-          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -123,9 +122,8 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "loginctl lock-session"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
           resume-command "notify-send 'Welcome back, $env.USER!'"
-          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -148,8 +146,7 @@ let
       work:
         lock_screen:
           timeout 900
-          command "loginctl lock-session"
-          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -185,9 +182,7 @@ let
 
     # Prefer Hyprland lock when available.
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
-      hyprlock
-      command -v loginctl >/dev/null 2>&1 && loginctl unlock-session >/dev/null 2>&1 || true
-      exit 0
+      exec hyprlock
     fi
 
     # Niri (and others): use DMS lock if available and block until unlocked.
@@ -196,11 +191,25 @@ let
 
       # Block until DMS reports unlock (keeps this process alive for Stasis).
       while true; do
-        out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
-        if [[ "$out" != "true" ]]; then
-          command -v loginctl >/dev/null 2>&1 && loginctl unlock-session >/dev/null 2>&1 || true
-          exit 0
-        fi
+        out="$(
+          dms ipc call lock isLocked 2>/dev/null \
+            | tr -d '\r' \
+            | tail -n 1 \
+            | tr -d '[:space:]' \
+            || true
+        )"
+
+        case "$out" in
+          true)
+            ;;
+          false)
+            exit 0
+            ;;
+          *)
+            # DMS IPC may transiently fail; treat unknown/empty output as still locked.
+            ;;
+        esac
+
         sleep 0.25
       done
     fi
@@ -411,7 +420,7 @@ EOF
           # If the user already started Stasis once, it may have auto-generated a
           # config with a lock command that doesn't exist on this system.
           # This setup locks via DMS (Niri) or hyprlock (Hyprland), so we
-          # auto-migrate `lock_screen.lock-command` in-place when needed.
+          # auto-migrate `lock_screen.command` in-place when needed.
           #
           # Keep it a minimal patch (do not rewrite the whole file) unless
           # `forceConfig = true`.
@@ -419,19 +428,16 @@ EOF
           kbd_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-kbd-backlight"}
 
           # For `lock_screen` blocks:
-          # - Ensure `lock-command` is present and points to a real binary.
-          # - If `command` is set to stasis-lock (old style), migrate to:
-          #   `command "loginctl lock-session"` + `lock-command "stasis-lock"`.
+          # - Ensure `command` points to a real lock command.
+          # - If `command` uses `loginctl lock-session` (new style from earlier),
+          #   migrate back to `stasis-lock`.
+          # - Drop any `lock-command` lines (we rely on process detection here).
           tmp="$(mktemp)"
           changed="0"
           in_lock="0"
-          saw_lock_cmd="0"
-          want_lock_cmd="0"
           while IFS= read -r line; do
             if [[ "$line" =~ ^[[:space:]]*lock[_-]screen:[[:space:]]*$ ]]; then
               in_lock="1"
-              saw_lock_cmd="0"
-              want_lock_cmd="0"
               echo "$line" >>"$tmp"
               continue
             fi
@@ -441,52 +447,29 @@ EOF
               cmd="''${BASH_REMATCH[2]}"
               bin="''${cmd%% *}"
 
-              # Old style: lock_screen.command points to stasis-lock directly.
-              if [[ "$cmd" == "$lock_cmd" ]]; then
-                echo "''${indent}command \"loginctl lock-session\"" >>"$tmp"
-                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
-                saw_lock_cmd="1"
-                want_lock_cmd="1"
+              # New style (earlier): loginctl lock-session + lock-command.
+              # Migrate back to a single blocking locker script.
+              if [[ "$cmd" == "loginctl lock-session" ]]; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
                 changed="1"
                 continue
               fi
 
-              # New style: use fast `loginctl` + dedicated lock-command.
-              if [[ "$cmd" == "loginctl lock-session" ]]; then
-                want_lock_cmd="1"
-              else
-                # If it's not an absolute path and the binary doesn't exist, migrate.
-                if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
-                  echo "''${indent}command \"loginctl lock-session\"" >>"$tmp"
-                  echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
-                  saw_lock_cmd="1"
-                  want_lock_cmd="1"
-                  changed="1"
-                  continue
-                fi
+              # If it's not an absolute path and the binary doesn't exist, migrate.
+              if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+                continue
               fi
             fi
 
             if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)lock-command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
-              indent="''${BASH_REMATCH[1]}"
-              cmd="''${BASH_REMATCH[2]}"
-              bin="''${cmd%% *}"
-              saw_lock_cmd="1"
-
-              # If it's not an absolute path and the binary doesn't exist, migrate.
-              if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
-                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
-                changed="1"
-                continue
-              fi
+              # Drop lock-command lines entirely to avoid mixing detection modes.
+              changed="1"
+              continue
             fi
 
             if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)end[[:space:]]*$ ]]; then
-              if [[ "$want_lock_cmd" == "1" && "$saw_lock_cmd" != "1" ]]; then
-                indent="''${BASH_REMATCH[1]}"
-                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
-                changed="1"
-              fi
               in_lock="0"
             fi
 
