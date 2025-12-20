@@ -9,6 +9,7 @@
 { lib, config, pkgs, ... }:
 
 let
+  cfg = config.my.user.bt;
   username = config.home.username;
   hasScripts = config.my.user.scripts.enable or false;
   enableHyprland = config.my.desktop.hyprland.enable or false;
@@ -33,7 +34,12 @@ let
     };
   };
 in
-lib.mkIf hasScripts {
+{
+  options.my.user.bt = {
+    enable = lib.mkEnableOption "Bluetooth helpers (auto toggle/connect on login)";
+  };
+
+  config = lib.mkIf (cfg.enable && hasScripts) {
   systemd.user.services.bluetooth-auto-toggle-hyprland = lib.mkIf enableHyprland (mkAutoToggleService {
     description = "Auto toggle/connect Bluetooth on login (hyprland)";
     wantedBy = [ "hyprland-session.target" ];
@@ -43,5 +49,5 @@ lib.mkIf hasScripts {
     description = "Auto toggle/connect Bluetooth on login (niri)";
     wantedBy = [ "niri-session.target" ];
   });
+  };
 }
-
