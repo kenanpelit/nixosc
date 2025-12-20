@@ -12,10 +12,14 @@
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 # Terminal settings - Modern terminal desteği için geliştirilmiş ayarlar
-set -g default-terminal "tmux-256color"                           # tmux'un 256 renk desteğini etkinleştir
+# NOT:
+# `tmux-256color` bazı uzak makinelerde (terminfo eksikse) SSH/Byobu içinde tmux'u
+# başlatırken "missing or unsuitable terminal" hatasına sebep olabilir.
+# Daha uyumlu bir TERM kullanıp TrueColor/RGB'yi override ile aktif ediyoruz.
+set -g default-terminal "screen-256color"
 # RGB destekleri + E3 override; E3=@ ile uzak terminalin scrollback silme kaçış kodunu yoksayar
 # Alt ekranı (alternate screen) devre dışı bırakan smcup/rmcup overrides'larını kaldırdık ki tam ekran uygulamalar çıktıktan sonra görüntü kalmasın
-set -ag terminal-overrides ",xterm-256color:RGB,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,*:E3=@"
+set -ag terminal-overrides ",xterm-256color:RGB,screen-256color:RGB,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,*:E3=@"
 set -as terminal-features ",*:RGB"                               # Tüm terminaller için RGB renk özelliği etkinleştir
 #set -g update-environment "DISPLAY WAYLAND_DISPLAY SSH_AUTH_SOCK XDG_CURRENT_DESKTOP SWAYSOCK I3SOCK"  # tmux attach edildiğinde güncellenecek ortam değişkenleri
 set -g update-environment "SSH_AUTH_SOCK"
