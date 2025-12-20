@@ -28,7 +28,7 @@ stdenv.mkDerivation rec {
 #!/usr/bin/env bash
 set -euo pipefail
 # Set HOME variable
-if [ -z "${HOME:-}" ]; then
+if [ -z "''${HOME:-}" ]; then
     export HOME=/tmp
 fi
 # NPM settings - user local dirs and suppress warnings
@@ -59,10 +59,16 @@ export PATH="${nodejs}/bin:$HOME/.local/bin:$PATH"
 NPM_PREFIX="$HOME/.local"
 
 if [ -f "$NPM_PREFIX/bin/gemini" ]; then
-    exec "$NPM_PREFIX/bin/gemini" "$@"
+    VERSION=$("$NPM_PREFIX/bin/gemini" --version 2>/dev/null || true)
+    if echo "$VERSION" | grep -qi "nightly"; then
+        exec "$NPM_PREFIX/bin/gemini" "$@"
+    fi
+    echo "❌ Installed Gemini CLI is not a nightly build: ''${VERSION:-unknown}"
+    echo "💡 To install nightly: ai-gemini-update nightly"
+    exit 1
 else
     echo "❌ Gemini nightly version is not installed!"
-    echo "💡 To install: ai-gemini-update"
+    echo "💡 To install: ai-gemini-update nightly"
     exit 1
 fi
 EOF
@@ -72,25 +78,87 @@ EOF
 # Gemini nightly update script
     cat > $out/bin/ai-gemini-update << 'EOF'
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 export PATH="${nodejs}/bin:$HOME/.local/bin:$PATH"
 export NPM_CONFIG_PREFIX="$HOME/.local"
 
-echo "🔍 Checking for latest Gemini CLI nightly version..."
+CHANNEL="''${1:-stable}"
 
-# Get all versions from npm registry and find latest nightly
-LATEST_NIGHTLY=$(npm view @google/gemini-cli versions --json 2>/dev/null |
-    grep -o '"[^"]*nightly[^"]*"' |
-    sed 's/"//g' |
-    sort -V |
-    tail -n1)
+echo "🔍 Checking for latest Gemini CLI version (channel: $CHANNEL)..."
 
-if [ -z "$LATEST_NIGHTLY" ]; then
-    echo "❌ Could not get nightly version info!"
-    exit 1
+get_dist_tag() {
+  local tag="''${1}"
+  npm view @google/gemini-cli dist-tags --json 2>/dev/null \
+    | grep -E "\"''${tag}\"" \
+    | sed -n "s/.*\"''${tag}\":[[:space:]]*\"\\([^\"]\\+\\)\".*/\\1/p" \
+    | head -n1
+}
+
+get_latest_for_channel() {
+  case "$CHANNEL" in
+    stable|latest)
+      get_dist_tag "latest"
+      ;;
+    preview|next|beta)
+      # Gemini CLI uses preview releases (e.g. 0.22.0-preview.3). On npm this is
+      # commonly published under the "next" dist-tag. Keep fallbacks.
+      get_dist_tag "next" || true
+      ;;
+    nightly)
+      get_dist_tag "nightly" || true
+      ;;
+    *)
+      echo "❌ Unknown channel: $CHANNEL"
+      echo "💡 Usage: ai-gemini-update [stable|preview|nightly]"
+      exit 2
+      ;;
+  esac
+}
+
+LATEST="$(get_latest_for_channel)"
+
+# Fallbacks when dist-tags are missing or the registry blocks dist-tags.
+if [[ -z "''${LATEST:-}" ]]; then
+  ALL_VERSIONS_JSON="$(npm view @google/gemini-cli versions --json 2>/dev/null || true)"
+  case "$CHANNEL" in
+    stable|latest)
+      # Pick the highest "plain" semver (no prerelease suffixes).
+      LATEST="$(
+        echo "$ALL_VERSIONS_JSON" \
+          | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' \
+          | tr -d '"' \
+          | sort -V \
+          | tail -n1
+      )"
+      ;;
+    preview|next|beta)
+      LATEST="$(
+        echo "$ALL_VERSIONS_JSON" \
+          | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+"' \
+          | tr -d '"' \
+          | sort -V \
+          | tail -n1
+      )"
+      ;;
+    nightly)
+      LATEST="$(
+        echo "$ALL_VERSIONS_JSON" \
+          | grep -o '"[^"]*nightly[^"]*"' \
+          | tr -d '"' \
+          | sort -V \
+          | tail -n1
+      )"
+      ;;
+  esac
 fi
 
-echo "📦 Latest nightly version: $LATEST_NIGHTLY"
+if [[ -z "''${LATEST:-}" ]]; then
+  echo "❌ Could not resolve latest version for channel: $CHANNEL"
+  echo "💡 Try: npm view @google/gemini-cli dist-tags"
+  exit 1
+fi
+
+echo "📦 Latest version: $LATEST"
 
 NPM_PREFIX="$HOME/.local"
 mkdir -p "$NPM_PREFIX/bin"
@@ -99,8 +167,8 @@ if [ -f "$NPM_PREFIX/bin/gemini" ]; then
     CURRENT_VERSION=$("$NPM_PREFIX/bin/gemini" --version 2>/dev/null || echo "unknown")
     echo "💾 Installed version: $CURRENT_VERSION"
     
-    if [ "$CURRENT_VERSION" = "$LATEST_NIGHTLY" ]; then
-        echo "✅ Latest nightly version is already installed!"
+    if [ "$CURRENT_VERSION" = "$LATEST" ]; then
+        echo "✅ Latest version is already installed!"
         exit 0
     fi
 else
@@ -108,9 +176,9 @@ else
 fi
 
 echo ""
-echo "⬇️  Installing latest nightly version..."
+echo "⬇️  Installing $CHANNEL version: $LATEST ..."
 
-npm install -g "@google/gemini-cli@''${LATEST_NIGHTLY}"
+npm install -g "@google/gemini-cli@''${LATEST}"
 
 echo ""
 echo "✨ Update complete!"
@@ -133,8 +201,8 @@ EOF
         
         Commands:
         - ai-gemini: Official stable version (via npx)
-        - ai-gemini-nightly: Latest nightly build (requires ai-gemini-update)
-        - ai-gemini-update: Install/update to latest nightly version
+        - ai-gemini-nightly: Latest nightly build (requires ai-gemini-update nightly)
+        - ai-gemini-update: Install/update Gemini CLI (stable/preview/nightly)
       '';
       homepage = "https://github.com/google-gemini/gemini-cli";
       license = licenses.asl20;

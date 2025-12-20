@@ -5,15 +5,15 @@
 #  Author:  Kenan Pelit
 #  Repo:    https://github.com/kenanpelit/nixosc
 #  License: MIT
-#  Date:    2025-12-06
+#  Date:    2025-12-06 (initial Snowfall v4 migration)
 #
 # ------------------------------------------------------------------------------
 #  ARCHITECTURE
 # ------------------------------------------------------------------------------
 #
-#  Snowfall Lib v4 layout, with NixOS + Home Manager under one flake.
+#  Snowfall-lib v4 layout: NixOS + Home Manager in a single repo.
 #
-#  Structure (workspace-write sandbox friendly):
+#  Structure:
 #    ├── systems/              # Host configs per arch (hay, vhay, …)
 #    ├── homes/                # Home Manager profiles (e.g. kenan@hay)
 #    ├── modules/
@@ -29,24 +29,29 @@
 # ------------------------------------------------------------------------------
 #
 #  Build & Switch:
-#    $ ./install.sh install <host>        # system + home for host
-#    $ nixos-rebuild switch --flake .#hay # direct call
-#    $ home-manager switch --flake .#kenan@hay # home only
+#    $ ./install.sh install <host>                 # system + home for host
+#    $ nixos-rebuild switch --flake .#hay          # system only
+#    $ home-manager switch --flake .#kenan@hay     # home only
 #
-#  Update Inputs:
-#    $ ./install.sh update
+#  Update Inputs (pin bumps):
+#    $ ./install.sh update                          # flake update flow
+#    $ osc-fiup {dank|hypr|walker}                  # targeted bump helpers
 #
 # ==============================================================================
 
 {
   description = "Kenan's NixOS Configuration - Modern, Modular, Snowfall-based";
 
+  # NOTE: We intentionally do not set `nixConfig.extra-substituters` here.
+  # Substituters/trusted keys are managed centrally via `modules/nixos/nix`.
+  # Keeping only one source avoids drift between `flake.nix` and system policy.
+
   inputs = {
     # ==========================================================================
     # Core (Foundation)
     # ==========================================================================
-    # - nixpkgs: pinned NixOS channel
-    # - snowfall-lib: repo structure + mkFlake glue
+    # - nixpkgs: base package set and module tree (pinned to a release branch)
+    # - snowfall-lib: repo layout + mkFlake glue
     # - home-manager: user-level configuration
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
@@ -63,9 +68,9 @@
     # ==========================================================================
     # System (NixOS modules / hardware / secrets)
     # ==========================================================================
-    # - sops-nix: secret management
+    # - sops-nix: secret management via SOPS
     # - NUR: extra packages/overlays
-    # - nixos-hardware: device profiles
+    # - nixos-hardware: hardware profiles
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -81,13 +86,14 @@
     # ==========================================================================
     # Desktop: Compositors / WMs
     # ==========================================================================
-    # This repo uses multiple Wayland compositors.
-    # Keep them pinned for reproducibility (especially for greeter/session paths).
+    # This repo uses multiple Wayland compositors; we keep them pinned for
+    # reproducibility and to prevent session/greeter breakage between updates.
+
+    # Hyprland: Dynamic tiling Wayland compositor
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
-      # pinned (glaze override uyumlu)
-      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca"; # 1219 - Updated commit
-#      url = "github:hyprwm/hyprland/f58c80fd3942034d58934ec4e4d93bfcfa3c786e"; # pinned
+      # Pinned commit (updated via `osc-fiup hypr`)
+      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca";
     };
 
     hypr-contrib = {
@@ -100,30 +106,30 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Niri: Scrollable-tiling Wayland compositor
+    # Using sodiboo's flake for better integration (HM module + overlay wiring).
+    # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
     niri = {
-      # pinned upstream commit
-      inputs.nixpkgs.follows = "nixpkgs";
-      # niri flake only needs rust-overlay for devShells; omit for end users.
-      inputs.rust-overlay.follows = "";
-      url = "github:YaLTeR/niri/c4462d0c7fddfc11c9e98d43e3ef68a5b3c844ca"; # 1218 - Updated commit
-#      url = "github:YaLTeR/niri/f85cb5c5f97a6bd21cc6b3ac9671d32cca362bb2"; # 1218 - Updated commit
-      #      url = "github:YaLTeR/niri/890935d2ba78f5c70f2e9eacc4d6268161c2553c"; # 1218 - Updated commit
-      #      url = "github:YaLTeR/niri/2641356d41199a40ccc9a2e9f61bd34d7e7c8220"; # 1216 - Updated commit
+      url = "github:sodiboo/niri-flake";
+      inputs.niri-unstable.url = "github:YaLTeR/niri/main";
     };
 
+    # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
     nsticky.url = "github:lonerOrz/nsticky";
 
     # ==========================================================================
     # Desktop: Theming
     # ==========================================================================
-    # - catppuccin: theming modules + palettes
-    # - distro-grub-themes: GRUB theme assets
+    # - catppuccin: Global theming modules + palettes
+    # - distro-grub-themes: GRUB bootloader themes
     catppuccin.url = "github:catppuccin/nix";
     distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
 
     # ==========================================================================
     # Desktop: Shell (DankMaterialShell / DMS)
     # ==========================================================================
+    # - dgop: Dependency for DMS
+    # - dankMaterialShell: Advanced Quickshell-based desktop shell
     dgop = {
       url = "github:AvengeMedia/dgop";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -132,12 +138,10 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
-      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297"; # 1219 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/76006a73771d9413092a9330a9014133fa0f9b10"; # 1219 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/2a91bc41f7aa8cb5734fe4b3d50c577090aba348"; # 1219 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/baf23157fc334b5607bcb5f89919fbe04e9ccd5d"; # 1218 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/8437e1aa7b34021aa9c97882fdbda2cca6d43878"; # 1218 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/78a5f401d76d575fb88757ad812dcda0adc24e3e"; # 1218 - Updated commit
+      # Pinned commit (updated via `osc-fiup dank`)
+      url = "github:AvengeMedia/DankMaterialShell/5ffe563b7d0fef1f1c12700e47c4d5b92aaa17fb"; # 1220 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/6ef08c3d5476a477dbfa7f67a4e10af47d3ae6cf"; # 1219 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297";
     };
 
     # ==========================================================================
@@ -172,8 +176,11 @@
     # ==========================================================================
     # Apps / Extras
     # ==========================================================================
-    # Optional GUI tools and helper flakes.
-    walker.url = "github:abenz1267/walker/v2.12.2";
+    # Optional GUI tools, app launchers, and helper flakes.
+    walker = {
+      url = "github:abenz1267/walker/v2.12.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     elephant = {
       url = "github:abenz1267/elephant/v2.17.2";
@@ -204,12 +211,13 @@
     };
   };
 
-  outputs = inputs:
+  outputs = inputs @ { self, nixpkgs, snowfall-lib, ... }:
     let
-      lib = inputs.nixpkgs.lib;
+      lib = nixpkgs.lib;
     in
-    lib.removeAttrs
-      (inputs.snowfall-lib.mkFlake {
+    # snowfall-lib produces an internal `snowfall` attribute; hide it to keep
+    # `nix flake show` focused on real outputs.
+    lib.removeAttrs (snowfall-lib.mkFlake {
         inherit inputs;
         src = ./.;
 
@@ -231,6 +239,7 @@
         # Overlays applied to all systems.
         overlays = with inputs; [
           nur.overlays.default
+          niri.overlays.niri
         ];
 
         # Modules automatically added to all NixOS systems.
@@ -240,6 +249,12 @@
           # Using `default` keeps us compatible and avoids the deprecation warning.
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
+          {
+            # Inject Niri HM module globally to fix option visibility and avoid conflicts.
+            home-manager.sharedModules = [
+              niri.homeModules.niri
+            ];
+          }
         ];
 
         # Special arguments available to all modules.
@@ -283,9 +298,10 @@
                 touch $out
               '';
 
-              nixos-hay = inputs.self.nixosConfigurations.hay.config.system.build.toplevel;
-              nixos-vhay = inputs.self.nixosConfigurations.vhay.config.system.build.toplevel;
-              home-kenan-hay = inputs.self.homeConfigurations."kenan@hay".activationPackage;
+              # Keep these here so CI fails early if a host or home breaks.
+              nixos-hay = self.nixosConfigurations.hay.config.system.build.toplevel;
+              nixos-vhay = self.nixosConfigurations.vhay.config.system.build.toplevel;
+              home-kenan-hay = self.homeConfigurations."kenan@hay".activationPackage;
             };
 
             # Developer shell: quick access to repo tooling.
@@ -297,6 +313,5 @@
               ];
             };
           };
-      })
-      [ "snowfall" ];
+      }) [ "snowfall" ];
 }

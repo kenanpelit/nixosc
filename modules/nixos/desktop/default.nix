@@ -68,6 +68,6 @@ in
 
     # Make SSH use the keyring-managed agent socket (stable for Wayland sessions).
     # This reduces repeated "enter passphrase" prompts caused by changing agents/sockets.
-    SSH_AUTH_SOCK = "$XDG_RUNTIME_DIR/keyring/ssh";
+    SSH_AUTH_SOCK = "\${XDG_RUNTIME_DIR}/keyring/ssh";
   };
 }

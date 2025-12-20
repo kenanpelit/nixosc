@@ -17,10 +17,7 @@ let
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
-  niriPkg =
-    if inputs ? niri && inputs.niri ? packages
-    then inputs.niri.packages.${pkgs.stdenv.hostPlatform.system}.niri
-    else pkgs.niri;
+  niriPkg = pkgs.niri-unstable;
 
   hyprlandOptimizedSession = pkgs.writeTextFile {
     name = "hyprland-optimized-session";
