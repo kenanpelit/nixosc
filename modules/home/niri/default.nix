@@ -88,6 +88,18 @@ in
   options.my.desktop.niri = {
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
 
+    initDelaySeconds = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 3;
+      description = "Delay (in seconds) before running niri-init after session start.";
+    };
+
+    btAutoConnectDelaySeconds = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 5;
+      description = "Delay (in seconds) before running Bluetooth auto-connect in Niri sessions.";
+    };
+
     enableNirius = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -193,7 +205,7 @@ in
         Environment = [
           "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         ];
-        ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<120;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; /etc/profiles/per-user/${username}/bin/niri-init'";
+        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep ${toString cfg.initDelaySeconds}; for ((i=0;i<120;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; /etc/profiles/per-user/${username}/bin/niri-init'";
         ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" || true'";
       };
       Install = {
@@ -228,7 +240,7 @@ in
         PartOf = [ "niri-session.target" ];
       };
       Timer = {
-        OnActiveSec = "${toString config.my.user.bt.autoToggle.delaySeconds}s";
+        OnActiveSec = "${toString cfg.btAutoConnectDelaySeconds}s";
         AccuracySec = "5s";
         Unit = "niri-bt-autoconnect.service";
       };
