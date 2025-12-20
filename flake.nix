@@ -248,13 +248,8 @@
           # DMS upstream renamed `nixosModules.dankMaterialShell` -> `nixosModules.dank-material-shell`.
           # Using `default` keeps us compatible and avoids the deprecation warning.
           dankMaterialShell.nixosModules.default
+          niri.nixosModules.niri
           nix-flatpak.nixosModules.nix-flatpak
-          {
-            # Inject Niri HM module globally so its options are always visible.
-            home-manager.sharedModules = [
-              niri.homeModules.niri
-            ];
-          }
         ];
 
         # Special arguments available to all modules.
