@@ -20,24 +20,6 @@ lib.mkIf cfg.enable {
   
   # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 
-  # Auto-run bluetooth_toggle shortly after session start
-  systemd.user.services.bluetooth-auto-toggle = {
-    Unit = {
-      Description = "Auto toggle/connect Bluetooth on login";
-      After = [ "graphical-session.target" "hyprland-session.target" ];
-      PartOf = [ "hyprland-session.target" ];
-    };
-
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 5 && /etc/profiles/per-user/${config.home.username}/bin/bluetooth_toggle'";
-    };
-
-    Install = {
-      WantedBy = [ "hyprland-session.target" ];
-    };
-  };
-
   # Run hypr-init at session start to normalize monitors and audio
   systemd.user.services.hypr-init = {
     Unit = {

@@ -13,6 +13,9 @@
 
 let
   cfg = config.my.desktop.niri;
+  username = config.home.username;
+  btEnabled = config.my.user.bt.enable or false;
+  scriptsEnabled = config.my.user.scripts.enable or false;
   
   # ---------------------------------------------------------------------------
   # Theme & Palette
@@ -84,6 +87,18 @@ in
 {
   options.my.desktop.niri = {
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
+
+    initDelaySeconds = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 3;
+      description = "Delay (in seconds) before running niri-init after session start.";
+    };
+
+    btAutoConnectDelaySeconds = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 5;
+      description = "Delay (in seconds) before running Bluetooth auto-connect in Niri sessions.";
+    };
 
     enableNirius = lib.mkOption {
       type = lib.types.bool;
@@ -173,23 +188,68 @@ in
       After = [ "dbus.service" "dms.service" ];
     };
 
+    # Bootstrap: fast and observable (oneshot).
+    # Keep this unit short-running; move slow/flaky tasks (like BT audio routing)
+    # into separate services/timers so startup doesn't appear "stuck".
     systemd.user.services.niri-init = {
       Unit = {
-        Description = "Niri session bootstrap (monitors + audio + layout)";
-        After = [ "niri-session.target" "dms.service" ];
+        Description = "Niri bootstrap (monitors + audio + layout)";
+        Wants = [ "pipewire.service" "wireplumber.service" ];
+        After = [ "niri-session.target" "pipewire.service" "wireplumber.service" ];
         PartOf = [ "niri-session.target" ];
       };
       Service = {
         Type = "oneshot";
-        TimeoutStartSec = 15;
-        ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<120;i++)); do niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; niri-init'";
+        TimeoutStartSec = 60;
+        RemainAfterExit = true;
+        Environment = [
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        ];
+        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep ${toString cfg.initDelaySeconds}; for ((i=0;i<120;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; /etc/profiles/per-user/${username}/bin/niri-init'";
+        ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" || true'";
       };
       Install = {
         WantedBy = [ "niri-session.target" ];
       };
     };
 
-    systemd.user.services.nsticky = {
+    # Bluetooth auto-connect: run later via timer; never block the init unit.
+    systemd.user.services.niri-bt-autoconnect = lib.mkIf (btEnabled && scriptsEnabled) {
+      Unit = {
+        Description = "Niri Bluetooth auto-connect";
+        Wants = [ "pipewire.service" "wireplumber.service" ];
+        After = [ "niri-session.target" "pipewire.service" "wireplumber.service" "niri-init.service" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        Type = "oneshot";
+        TimeoutStartSec = "${toString config.my.user.bt.autoToggle.timeoutSeconds}s";
+        Environment = [
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        ];
+        ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/bluetooth_toggle --connect'";
+        Restart = "on-failure";
+        RestartSec = 10;
+      };
+    };
+
+    systemd.user.timers.niri-bt-autoconnect = lib.mkIf (btEnabled && scriptsEnabled) {
+      Unit = {
+        Description = "Niri Bluetooth auto-connect (delayed)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Timer = {
+        OnActiveSec = "${toString cfg.btAutoConnectDelaySeconds}s";
+        AccuracySec = "5s";
+        Unit = "niri-bt-autoconnect.service";
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
+    systemd.user.services.niri-nsticky = {
       Unit = {
         Description = "nsticky daemon (niri)";
         After = [ "niri-session.target" ];
@@ -205,7 +265,7 @@ in
       };
     };
 
-    systemd.user.services.niriusd = lib.mkIf cfg.enableNirius {
+    systemd.user.services.niri-niriusd = lib.mkIf cfg.enableNirius {
       Unit = {
         Description = "nirius daemon (niri)";
         After = [ "niri-session.target" ];
@@ -221,7 +281,7 @@ in
       };
     };
 
-    systemd.user.services.niriswitcher = lib.mkIf cfg.enableNiriswitcher {
+    systemd.user.services.niri-niriswitcher = lib.mkIf cfg.enableNiriswitcher {
       Unit = {
         Description = "niriswitcher (niri)";
         After = [ "niri-session.target" ];
