@@ -173,17 +173,29 @@ in
       After = [ "dbus.service" "dms.service" ];
     };
 
-    systemd.user.services.niri-init = {
+    # Unified Niri session bootstrap.
+    # Keeps "startup chores" in one unit (instead of multiple oneshots).
+    systemd.user.services.niri-all = {
       Unit = {
-        Description = "Niri session bootstrap (monitors + audio + layout)";
-        After = [ "niri-session.target" "dms.service" ];
+        Description = "Niri session bootstrap (init + bluetooth)";
+        After = [
+          "niri-session.target"
+          "pipewire.service"
+          "wireplumber.service"
+        ];
         PartOf = [ "niri-session.target" ];
       };
-      Service = {
-        Type = "oneshot";
-        TimeoutStartSec = 15;
-        ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<120;i++)); do niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; niri-init'";
-      };
+      Service =
+        let
+          btDelay = config.my.user.bt.autoToggle.delaySeconds;
+          btTimeout = config.my.user.bt.autoToggle.timeoutSeconds;
+        in
+        {
+          Type = "oneshot";
+          TimeoutStartSec = "${toString btTimeout}s";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<120;i++)); do niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; niri-init; sleep ${toString btDelay}; bluetooth_toggle --connect'";
+        };
       Install = {
         WantedBy = [ "niri-session.target" ];
       };
