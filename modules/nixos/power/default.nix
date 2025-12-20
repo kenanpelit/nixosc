@@ -85,7 +85,14 @@ in
 
           POWER_SRC=$(detect_power_source)
           TARGET="performance"
-          [[ "''${POWER_SRC}" != "AC" ]] && TARGET="low-power"
+          if [[ "''${POWER_SRC}" != "AC" ]]; then
+            TARGET="low-power"
+          else
+            # Prefer a sane "balanced" mode on AC when available; fallback to performance.
+            if [[ -f "''${CHOICES_PATH}" ]] && grep -qw "balanced" "''${CHOICES_PATH}"; then
+              TARGET="balanced"
+            fi
+          fi
 
           # Respect low_power vs low-power spelling
           if [[ -f "''${CHOICES_PATH}" ]]; then
@@ -121,7 +128,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_EPP="performance"
+            TARGET_EPP="balance_performance"
           else
             TARGET_EPP="balance_power"
           fi
@@ -159,7 +166,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_MIN=50
+            TARGET_MIN=40
           else
             TARGET_MIN=30
           fi
