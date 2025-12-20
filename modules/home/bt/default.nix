@@ -63,10 +63,5 @@ in
       description = "Auto toggle/connect Bluetooth on login (hyprland)";
       wantedBy = [ "hyprland-session.target" ];
     });
-
-    systemd.user.services.bluetooth-auto-toggle-niri = lib.mkIf enableNiri (mkAutoToggleService {
-      description = "Auto toggle/connect Bluetooth on login (niri)";
-      wantedBy = [ "niri-session.target" ];
-    });
   };
 }
