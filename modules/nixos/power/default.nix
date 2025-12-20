@@ -159,7 +159,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_MIN=60
+            TARGET_MIN=50
           else
             TARGET_MIN=30
           fi
@@ -293,7 +293,19 @@ in
 
           BASE_PL2=$(cat "''${BASE_PL2_FILE}")
           BASE_PL2_UW=$((BASE_PL2 * 1000000))
-          echo "Starting thermal guard (base PL2: ''${BASE_PL2} W)"
+          # Clamp relative to base PL2 so we never *increase* PL2 when hot.
+          # (Fixed clamps like 60 W can accidentally raise PL2 on lower-TDP CPUs.)
+          CLAMP_WARM_W=$(( (BASE_PL2 * 85) / 100 )) # ~85% at warm temps
+          CLAMP_HOT_W=$(( (BASE_PL2 * 70) / 100 ))  # ~70% at hot temps
+
+          # Keep sane minimums (avoid clamping too low on already-low base PL2).
+          [[ ''${CLAMP_WARM_W} -lt 15 ]] && CLAMP_WARM_W=15
+          [[ ''${CLAMP_HOT_W} -lt 15 ]] && CLAMP_HOT_W=15
+
+          CLAMP_WARM_UW=$((CLAMP_WARM_W * 1000000))
+          CLAMP_HOT_UW=$((CLAMP_HOT_W * 1000000))
+
+          echo "Starting thermal guard (base PL2: ''${BASE_PL2} W, warm clamp: ''${CLAMP_WARM_W} W, hot clamp: ''${CLAMP_HOT_W} W)"
 
           read_pkgtemp() {
             for tz in /sys/class/thermal/thermal_zone*; do
@@ -321,16 +333,14 @@ in
                 echo "[ ''${TEMP_INT}°C ] PL2 restored to ''${BASE_PL2} W"
               fi
             elif [[ ''${TEMP_INT} -ge 82 ]]; then
-              TARGET_UW=$((45 * 1000000))
-              if [[ ''${CURRENT_PL2_UW} -ne ''${TARGET_UW} ]]; then
-                echo "''${TARGET_UW}" > "''${PL2_PATH}"
-                echo "[ ''${TEMP_INT}°C ] PL2 clamped to 45 W"
+              if [[ ''${CURRENT_PL2_UW} -ne ''${CLAMP_HOT_UW} ]]; then
+                echo "''${CLAMP_HOT_UW}" > "''${PL2_PATH}"
+                echo "[ ''${TEMP_INT}°C ] PL2 clamped to ''${CLAMP_HOT_W} W"
               fi
             elif [[ ''${TEMP_INT} -ge 77 ]]; then
-              TARGET_UW=$((60 * 1000000))
-              if [[ ''${CURRENT_PL2_UW} -ne ''${TARGET_UW} ]]; then
-                echo "''${TARGET_UW}" > "''${PL2_PATH}"
-                echo "[ ''${TEMP_INT}°C ] PL2 clamped to 60 W"
+              if [[ ''${CURRENT_PL2_UW} -ne ''${CLAMP_WARM_UW} ]]; then
+                echo "''${CLAMP_WARM_UW}" > "''${PL2_PATH}"
+                echo "[ ''${TEMP_INT}°C ] PL2 clamped to ''${CLAMP_WARM_W} W"
               fi
             fi
             sleep 3

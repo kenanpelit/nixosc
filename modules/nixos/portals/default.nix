@@ -25,9 +25,14 @@ in
       enable = true;
       extraPortals =
         (lib.optional cfg.enableHyprland hyprPortalPkg)
-        ++ [ pkgs.xdg-desktop-portal-gtk ];
+        ++ [ 
+          pkgs.xdg-desktop-portal-gtk 
+          pkgs.xdg-desktop-portal-gnome
+        ];
       config.common.default =
-        if cfg.enableHyprland then [ "hyprland" "gtk" ] else [ "gtk" ];
+        if cfg.enableHyprland then [ "hyprland" "gtk" ] 
+        else if cfg.enableNiri then [ "gnome" "gtk" ]
+        else [ "gtk" ];
     };
   };
 }
