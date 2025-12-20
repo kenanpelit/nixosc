@@ -189,24 +189,6 @@ in
       };
     };
 
-    # Auto-run bluetooth_toggle shortly after Niri session start.
-    # Useful when remote PipeWire/BT routing depends on the headset being connected.
-    systemd.user.services.bluetooth-auto-toggle = {
-      Unit = {
-        Description = "Auto toggle/connect Bluetooth on login (niri)";
-        After = [ "niri-session.target" ];
-        PartOf = [ "niri-session.target" ];
-      };
-      Service = {
-        Type = "oneshot";
-        TimeoutStartSec = 30;
-        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && bluetooth_toggle'";
-      };
-      Install = {
-        WantedBy = [ "niri-session.target" ];
-      };
-    };
-
     systemd.user.services.nsticky = {
       Unit = {
         Description = "nsticky daemon (niri)";
