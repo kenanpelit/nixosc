@@ -118,7 +118,7 @@ in
       # Bu yüzden varsayılan olarak kapalı tutuyoruz; gerektiğinde elle aç.
       # Niri gibi oturumlarda gnome-keyring olmayabileceği için `basictext` backend'iyle
       # doğrudan profil dizininden okumayı tercih ediyoruz.
-      --cookies-from-browser brave+basictext:/home/${username}/.brave/isolated/Kenp/Default
+      --cookies-from-browser brave+basictext:/home/${username}/.brave/isolated/Kenp
     '';
   };
 }
