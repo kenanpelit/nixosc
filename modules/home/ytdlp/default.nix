@@ -116,8 +116,7 @@ in
       # Not: Çerezler sık sık "rotated" olup geçersizleşebiliyor; bu durumda yt-dlp
       # her çalıştırmada uyarı basar ve bazı client/format seçimlerini de etkileyebilir.
       # Bu yüzden varsayılan olarak kapalı tutuyoruz; gerektiğinde elle aç.
-      #--cookies-from-browser firefox:/home/${username}/.zen/Kenp
-      #--cookies-from-browser brave:/home/${username}/.config/BraveSoftware/Brave-Browser/Default
+      --cookies-from-browser brave:/home/${username}/.brave/isolated/Kenp
     '';
   };
 }
