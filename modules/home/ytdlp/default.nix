@@ -48,7 +48,8 @@ in
       # Son dönem YouTube değişiklikleri bazı client'larda "PO Token" gerektirebiliyor.
       # Bu sırayı (android_sdkless -> web_safari) seçmemizin sebebi, pratikte en az
       # sorun çıkaran kombinasyonlardan biri olması.
-      --extractor-args "youtube:player_client=android_sdkless,web_safari"
+      # Daha az istek = daha az 429. Gerekirse web_safari'yi tekrar ekleyebilirsin.
+      --extractor-args "youtube:player_client=android_sdkless"
 
       # YouTube extraction without a JS runtime has been deprecated; this avoids missing formats.
       --js-runtimes "deno"
@@ -95,9 +96,13 @@ in
       # ---------------------------------------------------------------------------
       # İndirme davranışı ayarları:
       --continue                                       # Yarım kalan indirmelere devam et
-      --min-sleep-interval 1                           # İstekler arasında minimum 1 saniye bekle
-      --max-sleep-interval 2                           # İstekler arasında maksimum 2 saniye bekle
-      --concurrent-fragments 4                         # Aynı anda 4 video parçası indir (hızlandırır)
+      # YouTube 429 / bot-check dalgalanmasını azaltmak için istekleri yavaşlat:
+      --sleep-requests 0.75                            # HTTP istekleri arasına gecikme (tek video içinde etkili)
+      --sleep-subtitles 5                              # Altyazı isteklerinden önce bekle (429 özellikle timedtext'te)
+      --min-sleep-interval 5                           # İndirilen videolar arasında minimum bekleme
+      --max-sleep-interval 10                          # İndirilen videolar arasında maksimum bekleme
+      --concurrent-fragments 1                         # Aynı anda 1 parça (rate-limit'e daha az takılır)
+      --retry-sleep http:exp=1:20                      # HTTP hata tekrarlarında bekleme
       --socket-timeout 30                              # Bağlantı zaman aşımı (30 saniye)
       --extractor-retries 3                            # Video bilgisi çekerken 3 kez tekrar dene
       --fragment-retries 3                             # Video parçası indirirken 3 kez tekrar dene
@@ -112,13 +117,9 @@ in
       # ---------------------------------------------------------------------------
       # Browser Integration
       # ---------------------------------------------------------------------------
-      # Tarayıcı çerezlerini kullan (giriş gerektiren veya yaş kısıtlamalı videolar için):
-      # Not: Çerezler sık sık "rotated" olup geçersizleşebiliyor; bu durumda yt-dlp
-      # her çalıştırmada uyarı basar ve bazı client/format seçimlerini de etkileyebilir.
-      # Bu yüzden varsayılan olarak kapalı tutuyoruz; gerektiğinde elle aç.
-      # Niri gibi oturumlarda gnome-keyring olmayabileceği için `basictext` backend'iyle
-      # doğrudan profil dizininden okumayı tercih ediyoruz.
-      --cookies-from-browser brave+basictext:/home/${username}/.brave/isolated/Kenp
+      # YouTube için en stabil yöntem: incognito oturumundan export edilmiş cookies.txt kullan.
+      # (Brave/Chrome cookie DB decrypt uyarılarını da tamamen kaldırır.)
+      --cookies /home/${username}/.config/yt-dlp/cookies-youtube.txt
     '';
   };
 }
