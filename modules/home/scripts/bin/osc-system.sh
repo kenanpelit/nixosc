@@ -179,7 +179,11 @@ EOF
 	POWER_SRC=$([[ "${ON_AC}" = "1" ]] && echo "AC" || echo "Battery")
 
 	# P-State / governor / turbo / HWP boost
-	GOVERNOR="$(read_file /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
+	# NOTE:
+	# On Intel `intel_pstate=active` systems, `/sys/.../cpu0/.../scaling_governor`
+	# may misleadingly stay at "powersave" even when policies are configured for
+	# performance. Prefer policy-level knobs for reporting.
+	GOVERNOR_CPU0="$(read_file /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
 	PSTATE="$(read_file /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
 
 	NO_TURBO="$(read_file /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || echo "1")"
@@ -190,6 +194,20 @@ EOF
 
 	MIN_PERF="$(read_file /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo "0")"
 	MAX_PERF="$(read_file /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "0")"
+
+	# Governor (policy-level distribution)
+	GOVERNOR_ANY="unknown"
+	declare -A GOV_MAP || true
+	GOV_COUNT=0
+	for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+		[[ -r "$pol/scaling_governor" ]] || continue
+		gov="$(cat "$pol/scaling_governor")"
+		GOVERNOR_ANY="$gov"
+		GOV_MAP["$gov"]=$((${GOV_MAP["$gov"]:-0} + 1))
+		GOV_COUNT=$((GOV_COUNT + 1))
+	done
+	# Fallback for kernels without policy governors.
+	[[ "$GOVERNOR_ANY" == "unknown" ]] && GOVERNOR_ANY="$GOVERNOR_CPU0"
 
 	# EPP (Energy Performance Preference)
 	EPP_ANY="unknown"
@@ -240,7 +258,33 @@ EOF
 	fi
 
 	# Platform Profile
-	PLATFORM_PROFILE="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
+	PLATFORM_PROFILE_SYSFS="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
+	PLATFORM_PROFILE_DESIRED="unknown"
+	if have journalctl; then
+		last_pp="$(journalctl -b -t power-mgmt-platform-profile -o cat -n 50 2>/dev/null | tail -n 1 || true)"
+		if [[ "$last_pp" =~ Platform[[:space:]]profile[[:space:]](set[[:space:]]to|already:)[[:space:]]([A-Za-z0-9_-]+) ]]; then
+			PLATFORM_PROFILE_DESIRED="${BASH_REMATCH[2]}"
+		fi
+	fi
+
+	# Desired targets (best-effort, from power-mgmt logs)
+	GOVERNOR_DESIRED="unknown"
+	EPP_DESIRED="unknown"
+	if have journalctl; then
+		last_gov="$(journalctl -b -t power-mgmt-cpu-governor -o cat -n 200 2>/dev/null | tail -n 1 || true)"
+		if [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]([A-Za-z0-9_-]+) ]]; then
+			GOVERNOR_DESIRED="${BASH_REMATCH[1]}"
+		elif [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]performance ]]; then
+			GOVERNOR_DESIRED="performance"
+		elif [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]powersave ]]; then
+			GOVERNOR_DESIRED="powersave"
+		fi
+
+		last_epp="$(journalctl -b -t power-mgmt-cpu-epp -o cat -n 200 2>/dev/null | tail -n 1 || true)"
+		if [[ "$last_epp" =~ Setting[[:space:]]EPP[[:space:]]to:[[:space:]]([A-Za-z0-9_-]+) ]]; then
+			EPP_DESIRED="${BASH_REMATCH[1]}"
+		fi
+	fi
 
 	# Battery Status
 	BAT_JSON="[]"
@@ -278,6 +322,14 @@ EOF
 			exit 1
 		fi
 
+		GOV_JSON="{}"
+		if ((GOV_COUNT > 0)); then
+			for k in "${!GOV_MAP[@]}"; do
+				GOV_JSON="$(jq -cn --argjson cur "$GOV_JSON" --arg k "$k" \
+					--argjson v "${GOV_MAP[$k]}" '$cur + {($k):$v}')"
+			done
+		fi
+
 		EPP_JSON="{}"
 		if ((EPP_COUNT > 0)); then
 			for k in "${!EPP_MAP[@]}"; do
@@ -292,10 +344,14 @@ EOF
 			--arg version "$VERSION" \
 			--arg cpu_type "$CPU_TYPE" \
 			--arg power_source "$POWER_SRC" \
-			--arg governor "$GOVERNOR" \
+			--arg governor "$GOVERNOR_ANY" \
+			--arg governor_cpu0 "$GOVERNOR_CPU0" \
+			--arg governor_desired "$GOVERNOR_DESIRED" \
 			--arg pstate "$PSTATE" \
 			--arg epp_any "$EPP_ANY" \
-			--arg platform_profile "$PLATFORM_PROFILE" \
+			--arg epp_desired "$EPP_DESIRED" \
+			--arg platform_profile "$PLATFORM_PROFILE_SYSFS" \
+			--arg platform_profile_desired "$PLATFORM_PROFILE_DESIRED" \
 			--arg mmio_status "$MMIO_STATUS" \
 			--arg ts "$TS" \
 			--argjson turbo "$TURBO_ENABLED" \
@@ -311,14 +367,19 @@ EOF
 			--argjson base_pl2 "$BASE_PL2_W" \
 			--argjson pkg_w_now "${PKG_W_NOW:-0}" \
 			--argjson bat "$([[ "${BAT_JSON}" == "[]" ]] && echo "[]" || echo "${BAT_JSON}")" \
+			--argjson governor_map "$([[ $GOV_COUNT -gt 0 ]] && echo "${GOV_JSON}" || echo "{}")" \
 			--argjson epp_map "$([[ $EPP_COUNT -gt 0 ]] && echo "${EPP_JSON}" || echo "{}")" \
 			'{
         version: $version,
         cpu_type: $cpu_type,
         power_source: $power_source,
         governor: $governor,
+        governor_cpu0: $governor_cpu0,
+        governor_desired: $governor_desired,
+        governor_map: $governor_map,
         pstate_mode: $pstate,
         epp_any: $epp_any,
+        epp_desired: $epp_desired,
         epp_map: $epp_map,
         hwp_dynamic_boost: $hwp_boost,
         turbo_enabled: $turbo,
@@ -326,6 +387,7 @@ EOF
         mmio_driver_loaded: $mmio_loaded,
         performance: { min_pct: $min_perf, max_pct: $max_perf },
         platform_profile: $platform_profile,
+        platform_profile_desired: $platform_profile_desired,
         freq_avg_mhz: $freq_avg,
         temp_celsius: $temp,
         power_limits: {
@@ -355,10 +417,19 @@ EOF
 		echo "  Min/Max Performance: ${MIN_PERF}% / ${MAX_PERF}%"
 		echo "  Turbo Boost: $([[ "$TURBO_ENABLED" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
 		echo "  HWP Dynamic Boost: $([[ "$HWP_BOOST_BOOL" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
-		[[ "$GOVERNOR" != "unknown" ]] && echo "  Governor: ${GOVERNOR}"
+		if [[ "$GOVERNOR_ANY" != "unknown" ]]; then
+			echo "  Governor: ${GOVERNOR_ANY}"
+			[[ "$GOVERNOR_DESIRED" != "unknown" ]] && echo "  Governor (desired): ${GOVERNOR_DESIRED}"
+			if [[ "$GOVERNOR_CPU0" != "unknown" && "$GOVERNOR_CPU0" != "$GOVERNOR_ANY" ]]; then
+				echo "  ${DIM}Note: cpu0 reports '${GOVERNOR_CPU0}' (can be misleading on intel_pstate active)${RST}"
+			fi
+		fi
 	fi
 
-	[[ "$PLATFORM_PROFILE" != "unknown" ]] && echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE}${RST}"
+	if [[ "$PLATFORM_PROFILE_SYSFS" != "unknown" ]]; then
+		echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE_SYSFS}${RST}"
+		[[ "$PLATFORM_PROFILE_DESIRED" != "unknown" ]] && echo "Platform Profile (desired): ${BOLD}${PLATFORM_PROFILE_DESIRED}${RST}"
+	fi
 
 	echo ""
 	if ((EPP_COUNT > 0)); then
@@ -366,6 +437,7 @@ EOF
 		for k in "${!EPP_MAP[@]}"; do
 			echo "  ${CYN}→${RST} ${BOLD}${k}${RST} (${EPP_MAP[$k]} policies)"
 		done
+		[[ "$EPP_DESIRED" != "unknown" ]] && echo "  ${DIM}(desired: ${EPP_DESIRED})${RST}"
 	else
 		echo "EPP: ${DIM}(interface not found)${RST}"
 	fi
