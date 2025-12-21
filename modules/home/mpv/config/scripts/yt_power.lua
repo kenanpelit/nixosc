@@ -130,7 +130,8 @@ local function is_target_domain(url)
 end
 
 local function av1_exclusion_tag()
-	return OPTS.avoid_av1 and "[vcodec!=av01][vcodec!=av1]" or ""
+	-- yt-dlp'de AV1 genelde "av01.0.05M.08" gibi gelir; `!=av01` bunu dışlamaz.
+	return OPTS.avoid_av1 and "[vcodec!*=av01][vcodec!*=av1]" or ""
 end
 
 local function build_default_format()
