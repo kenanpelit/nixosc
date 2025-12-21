@@ -150,14 +150,14 @@ local function build_domain_format()
 			(base .. "[vcodec*=avc1]" .. excl .. "+bestaudio"),
 			(base .. excl .. "+bestaudio"),
 			-- Son çare: codec fark etmeksizin limitler içinde kal.
-			(base .. "+bestaudio/best"),
+			(base .. excl .. "+bestaudio/best"),
 		}, "/")
 	else
 		return table.concat({
 			(base .. "[vcodec*=avc1]" .. excl .. "+bestaudio"),
 			(base .. "[vcodec*=vp9]" .. excl .. "+bestaudio"),
 			(base .. excl .. "+bestaudio"),
-			(base .. "+bestaudio/best"),
+			(base .. excl .. "+bestaudio/best"),
 		}, "/")
 	end
 end
