@@ -87,6 +87,12 @@ in
           TARGET="performance"
           if [[ "''${POWER_SRC}" != "AC" ]]; then
             TARGET="low-power"
+          else
+            # Prefer balanced on AC for cooler + consistent behavior (firmware may
+            # override "performance" back to balanced on some laptops).
+            if [[ -f "''${CHOICES_PATH}" ]] && grep -qw "balanced" "''${CHOICES_PATH}"; then
+              TARGET="balanced"
+            fi
           fi
 
           # Respect low_power vs low-power spelling
@@ -131,7 +137,10 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_GOV="performance"
+            # NOTE: On intel_pstate=active systems, the effective governor may
+            # always read "powersave" even when the platform is in a high
+            # performance state. Keep governor conservative for consistency.
+            TARGET_GOV="powersave"
             TARGET_BOOST="1"
           else
             TARGET_GOV="powersave"
@@ -161,6 +170,8 @@ in
           for GOV in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
             [[ -f "''${GOV}" ]] || continue
             wrote_any="1"
+            cur="$(cat "''${GOV}" 2>/dev/null || echo "")"
+            [[ "''${cur}" == "''${TARGET_GOV}" ]] && continue
             if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
               echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
             else
@@ -171,6 +182,8 @@ in
           if [[ "''${wrote_any}" == "0" ]]; then
             for GOV in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
               [[ -f "''${GOV}" ]] || continue
+              cur="$(cat "''${GOV}" 2>/dev/null || echo "")"
+              [[ "''${cur}" == "''${TARGET_GOV}" ]] && continue
               if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
                 echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
               else
@@ -224,7 +237,8 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_EPP="performance"
+            # Keep AC at balance_performance for a stable "fast but cooler" default.
+            TARGET_EPP="balance_performance"
           else
             TARGET_EPP="balance_power"
           fi
@@ -237,6 +251,8 @@ in
           for POL in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
             [[ -f "''${POL}" ]] || continue
             wrote_any="1"
+            cur="$(cat "''${POL}" 2>/dev/null || echo "")"
+            [[ "''${cur}" == "''${TARGET_EPP}" ]] && continue
             if write_sysfs "''${POL}" "''${TARGET_EPP}"; then
               echo "  updated $(dirname "''${POL}")"
             else
@@ -248,6 +264,8 @@ in
           if [[ "''${wrote_any}" == "0" ]]; then
             for CPU in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
               [[ -f "''${CPU}" ]] || continue
+              cur="$(cat "''${CPU}" 2>/dev/null || echo "")"
+              [[ "''${cur}" == "''${TARGET_EPP}" ]] && continue
               if write_sysfs "''${CPU}" "''${TARGET_EPP}"; then
                 echo "  updated $(dirname "''${CPU}")"
               else
