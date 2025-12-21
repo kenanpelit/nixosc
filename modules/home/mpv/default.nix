@@ -21,36 +21,73 @@ let
     cookie_file="''${XDG_CONFIG_HOME:-$HOME/.config}/yt-dlp/cookies-youtube.txt"
     # brave cookies: tarayıcı kök dizini (içinde "Local State" ve "Default/" olmalı)
     brave_dir="$HOME/.brave/isolated/Kenp"
+    ytdlp="${pkgs.yt-dlp}/bin/yt-dlp"
 
     extra_args=(
       --extractor-args "youtube:player_client=android_sdkless,web_safari"
       --js-runtimes "deno"
     )
 
+    export_from_brave() {
+      [[ -d "$brave_dir" ]] || return 1
+
+      mkdir -p "$(dirname "$cookie_file")"
+      umask 077
+
+      # cookies.txt üret (veya güncelle). Bu komut stdout'u kirletmesin diye yutuyoruz;
+      # hemen ardından asıl çağrıyı tekrar yapacağız.
+      "$ytdlp" "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" --cookies "$cookie_file" "$@" >/dev/null 2>&1 || return 1
+      chmod 600 "$cookie_file" || true
+      return 0
+    }
+
+    try_with_cookie_file() {
+      local err
+      err="$(mktemp)"
+
+      if "$ytdlp" "''${extra_args[@]}" --cookies "$cookie_file" "$@" 2>"$err"; then
+        rm -f "$err"
+        return 0
+      fi
+
+      if grep -Fq "Sign in to confirm you’re not a bot" "$err"; then
+        echo "[yt-dlp-mpv] bot-check detected; refreshing cookies from Brave..." >&2
+        if export_from_brave "$@"; then
+          echo "[yt-dlp-mpv] cookies refreshed; retrying with cookies file..." >&2
+          "$ytdlp" "''${extra_args[@]}" --cookies "$cookie_file" "$@"
+          rm -f "$err"
+          return $?
+        fi
+        echo "[yt-dlp-mpv] cookie refresh failed; falling back to cookies-from-browser" >&2
+        "$ytdlp" "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" "$@"
+        rm -f "$err"
+        return $?
+      fi
+
+      cat "$err" >&2
+      rm -f "$err"
+      return 1
+    }
+
     if [[ -r "$cookie_file" ]]; then
       echo "[yt-dlp-mpv] using cookies file: $cookie_file" >&2
-      exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies "$cookie_file" "$@"
+      try_with_cookie_file "$@" || exit $?
+      exit 0
     fi
 
     if [[ -d "$brave_dir" ]]; then
-      echo "[yt-dlp-mpv] cookies file missing; trying brave profile dir: $brave_dir" >&2
-
-      mkdir -p "$(dirname "$cookie_file")"
-
-      # cookies.txt yoksa otomatik üretmeyi dene (kullanıcı isterse incognito export ile bu dosyayı override edebilir).
-      umask 077
-      if ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" --cookies "$cookie_file" "$@" >/dev/null 2>&1; then
-        chmod 600 "$cookie_file" || true
-        echo "[yt-dlp-mpv] exported cookies to: $cookie_file" >&2
-        exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies "$cookie_file" "$@"
+      echo "[yt-dlp-mpv] cookies file missing; exporting from Brave -> $cookie_file" >&2
+      if export_from_brave "$@"; then
+        echo "[yt-dlp-mpv] exported; using cookies file" >&2
+        exec "$ytdlp" "''${extra_args[@]}" --cookies "$cookie_file" "$@"
       fi
 
-      echo "[yt-dlp-mpv] cookie export failed; falling back to cookies-from-browser" >&2
-      exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" "$@"
+      echo "[yt-dlp-mpv] export failed; using cookies-from-browser directly" >&2
+      exec "$ytdlp" "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" "$@"
     fi
 
     echo "[yt-dlp-mpv] no cookies available; proceeding without auth" >&2
-    exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" "$@"
+    exec "$ytdlp" "''${extra_args[@]}" "$@"
   '';
 
   # Helper to copy whole script/script-opts folders
