@@ -19,7 +19,8 @@ let
     set -euo pipefail
 
     cookie_file="''${XDG_CONFIG_HOME:-$HOME/.config}/yt-dlp/cookies-youtube.txt"
-    brave_profile="$HOME/.brave/isolated/Kenp/Default"
+    # brave cookies: tarayıcı kök dizini (içinde "Local State" ve "Default/" olmalı)
+    brave_dir="$HOME/.brave/isolated/Kenp"
 
     extra_args=(
       --extractor-args "youtube:player_client=android_sdkless,web_safari"
@@ -27,13 +28,28 @@ let
     )
 
     if [[ -r "$cookie_file" ]]; then
+      echo "[yt-dlp-mpv] using cookies file: $cookie_file" >&2
       exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies "$cookie_file" "$@"
     fi
 
-    if [[ -d "$brave_profile" ]]; then
-      exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_profile" "$@"
+    if [[ -d "$brave_dir" ]]; then
+      echo "[yt-dlp-mpv] cookies file missing; trying brave profile dir: $brave_dir" >&2
+
+      mkdir -p "$(dirname "$cookie_file")"
+
+      # cookies.txt yoksa otomatik üretmeyi dene (kullanıcı isterse incognito export ile bu dosyayı override edebilir).
+      umask 077
+      if ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" --cookies "$cookie_file" "$@" >/dev/null 2>&1; then
+        chmod 600 "$cookie_file" || true
+        echo "[yt-dlp-mpv] exported cookies to: $cookie_file" >&2
+        exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies "$cookie_file" "$@"
+      fi
+
+      echo "[yt-dlp-mpv] cookie export failed; falling back to cookies-from-browser" >&2
+      exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" "$@"
     fi
 
+    echo "[yt-dlp-mpv] no cookies available; proceeding without auth" >&2
     exec ${pkgs.yt-dlp}/bin/yt-dlp "''${extra_args[@]}" "$@"
   '';
 
