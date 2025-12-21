@@ -116,7 +116,9 @@ in
       # Not: Çerezler sık sık "rotated" olup geçersizleşebiliyor; bu durumda yt-dlp
       # her çalıştırmada uyarı basar ve bazı client/format seçimlerini de etkileyebilir.
       # Bu yüzden varsayılan olarak kapalı tutuyoruz; gerektiğinde elle aç.
-      --cookies-from-browser brave:/home/${username}/.brave/isolated/Kenp
+      # Niri gibi oturumlarda gnome-keyring olmayabileceği için `basictext` backend'iyle
+      # doğrudan profil dizininden okumayı tercih ediyoruz.
+      --cookies-from-browser brave+basictext:/home/${username}/.brave/isolated/Kenp/Default
     '';
   };
 }
