@@ -141,18 +141,23 @@ local function build_domain_format()
 	local base = ("bestvideo*[height<=?%d][fps<=?%d]"):format(OPTS.quality_limit, OPTS.fps_limit)
 	local excl = av1_exclusion_tag()
 	if OPTS.prefer_vp9 then
+		-- Not:
+		-- Eskiden en sonda "best" fallback vardı. Bazı videolarda filtreler (özellikle AV1 dışlama)
+		-- eşleşmeyince "best" 4K AV1 seçip yazılımsal decode + A/V desync'e yol açabiliyordu.
+		-- Bu yüzden fallback'i çözünürlük/FPS limitleri içinde tutuyoruz.
 		return table.concat({
 			(base .. "[vcodec*=vp9]" .. excl .. "+bestaudio"),
 			(base .. "[vcodec*=avc1]" .. excl .. "+bestaudio"),
 			(base .. excl .. "+bestaudio"),
-			"best",
+			-- Son çare: codec fark etmeksizin limitler içinde kal.
+			(base .. "+bestaudio/best"),
 		}, "/")
 	else
 		return table.concat({
 			(base .. "[vcodec*=avc1]" .. excl .. "+bestaudio"),
 			(base .. "[vcodec*=vp9]" .. excl .. "+bestaudio"),
 			(base .. excl .. "+bestaudio"),
-			"best",
+			(base .. "+bestaudio/best"),
 		}, "/")
 	end
 end
