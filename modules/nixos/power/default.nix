@@ -87,16 +87,19 @@ in
           TARGET="performance"
           if [[ "''${POWER_SRC}" != "AC" ]]; then
             TARGET="low-power"
-          else
-            # Prefer a sane "balanced" mode on AC when available; fallback to performance.
-            if [[ -f "''${CHOICES_PATH}" ]] && grep -qw "balanced" "''${CHOICES_PATH}"; then
-              TARGET="balanced"
-            fi
           fi
 
           # Respect low_power vs low-power spelling
           if [[ -f "''${CHOICES_PATH}" ]]; then
             CHOICES="$(cat "''${CHOICES_PATH}")"
+            # If the desired target isn't available, fall back to something sane.
+            if [[ "''${TARGET}" != "low-power" && "''${TARGET}" != "low_power" ]] && ! grep -qw "''${TARGET}" "''${CHOICES_PATH}"; then
+              if grep -qw "balanced" "''${CHOICES_PATH}"; then
+                TARGET="balanced"
+              elif grep -qw "balanced-performance" "''${CHOICES_PATH}"; then
+                TARGET="balanced-performance"
+              fi
+            fi
             if [[ "''${TARGET}" == "low-power" && "''${CHOICES}" == *low_power* ]]; then
               TARGET="low_power"
             fi
@@ -108,6 +111,45 @@ in
             echo "Platform profile set to: ''${TARGET} (was: ''${CURRENT})"
           else
             echo "Platform profile already: ''${TARGET}"
+          fi
+        '';
+      };
+    };
+
+    # --------------------------------------------------------------------------
+    # 1b) CPU GOVERNOR + HWP DYNAMIC BOOST (intel_pstate)
+    # --------------------------------------------------------------------------
+    cpu-governor = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
+      description = "Configure CPU governor and Intel HWP dynamic boost (power-aware)";
+      wantedBy    = [ "multi-user.target" ];
+      after       = [ "systemd-udev-settle.service" ];
+      serviceConfig = {
+        Type            = "oneshot";
+        RemainAfterExit = true;
+        ExecStart       = mkRobustScript "cpu-governor" ''
+          ${detectPowerSourceFunc}
+
+          POWER_SRC=$(detect_power_source)
+          if [[ "''${POWER_SRC}" == "AC" ]]; then
+            TARGET_GOV="performance"
+            TARGET_BOOST="1"
+          else
+            TARGET_GOV="powersave"
+            TARGET_BOOST="0"
+          fi
+
+          for GOV in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            [[ -f "''${GOV}" ]] || continue
+            echo "''${TARGET_GOV}" > "''${GOV}" && \
+              echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
+          done
+
+          BOOST_PATH="/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost"
+          if [[ -f "''${BOOST_PATH}" ]]; then
+            echo "''${TARGET_BOOST}" > "''${BOOST_PATH}"
+            echo "HWP dynamic boost set to: ''${TARGET_BOOST} (power source: ''${POWER_SRC})"
+          else
+            echo "HWP dynamic boost interface not available"
           fi
         '';
       };
@@ -128,7 +170,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_EPP="balance_performance"
+            TARGET_EPP="performance"
           else
             TARGET_EPP="balance_power"
           fi
