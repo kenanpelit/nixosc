@@ -48,8 +48,9 @@ in
       # Son dönem YouTube değişiklikleri bazı client'larda "PO Token" gerektirebiliyor.
       # Bu sırayı (android_sdkless -> web_safari) seçmemizin sebebi, pratikte en az
       # sorun çıkaran kombinasyonlardan biri olması.
-      # Daha az istek = daha az 429. Gerekirse web_safari'yi tekrar ekleyebilirsin.
-      --extractor-args "youtube:player_client=android_sdkless"
+      # Not: `android_sdkless` cookies desteklemediği için (login/captcha durumlarında) atlanabilir.
+      # Cookie uyumlu ve pratikte stabil olan client'ları öne alıyoruz.
+      --extractor-args "youtube:player_client=web_safari,web,android_sdkless"
 
       # YouTube extraction without a JS runtime has been deprecated; this avoids missing formats.
       --js-runtimes "deno"
