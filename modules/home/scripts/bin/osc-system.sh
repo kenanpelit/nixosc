@@ -261,7 +261,10 @@ EOF
 	PLATFORM_PROFILE_SYSFS="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
 	PLATFORM_PROFILE_DESIRED="unknown"
 	if have journalctl; then
-		last_pp="$(journalctl -b -t power-mgmt-platform-profile -o cat -n 50 2>/dev/null | tail -n 1 || true)"
+		last_pp="$(journalctl -b -t power-mgmt-platform-profile -o cat -n 200 2>/dev/null \
+			| grep -E 'Platform profile (set to:|already:)' \
+			| tail -n 1 \
+			|| true)"
 		if [[ "$last_pp" =~ Platform[[:space:]]profile[[:space:]](set[[:space:]]to|already:)[[:space:]]([A-Za-z0-9_-]+) ]]; then
 			PLATFORM_PROFILE_DESIRED="${BASH_REMATCH[2]}"
 		fi
@@ -271,16 +274,18 @@ EOF
 	GOVERNOR_DESIRED="unknown"
 	EPP_DESIRED="unknown"
 	if have journalctl; then
-		last_gov="$(journalctl -b -t power-mgmt-cpu-governor -o cat -n 200 2>/dev/null | tail -n 1 || true)"
+		last_gov="$(journalctl -b -t power-mgmt-cpu-governor -o cat -n 400 2>/dev/null \
+			| grep -E 'Governor set to ' \
+			| tail -n 1 \
+			|| true)"
 		if [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]([A-Za-z0-9_-]+) ]]; then
 			GOVERNOR_DESIRED="${BASH_REMATCH[1]}"
-		elif [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]performance ]]; then
-			GOVERNOR_DESIRED="performance"
-		elif [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]powersave ]]; then
-			GOVERNOR_DESIRED="powersave"
 		fi
 
-		last_epp="$(journalctl -b -t power-mgmt-cpu-epp -o cat -n 200 2>/dev/null | tail -n 1 || true)"
+		last_epp="$(journalctl -b -t power-mgmt-cpu-epp -o cat -n 400 2>/dev/null \
+			| grep -E 'Setting EPP to:' \
+			| tail -n 1 \
+			|| true)"
 		if [[ "$last_epp" =~ Setting[[:space:]]EPP[[:space:]]to:[[:space:]]([A-Za-z0-9_-]+) ]]; then
 			EPP_DESIRED="${BASH_REMATCH[1]}"
 		fi
@@ -420,6 +425,12 @@ EOF
 		if [[ "$GOVERNOR_ANY" != "unknown" ]]; then
 			echo "  Governor: ${GOVERNOR_ANY}"
 			[[ "$GOVERNOR_DESIRED" != "unknown" ]] && echo "  Governor (desired): ${GOVERNOR_DESIRED}"
+			if ((GOV_COUNT > 0)); then
+				echo "  Governor policies:"
+				for k in "${!GOV_MAP[@]}"; do
+					echo "    ${CYN}→${RST} ${BOLD}${k}${RST} (${GOV_MAP[$k]} policies)"
+				done
+			fi
 			if [[ "$GOVERNOR_CPU0" != "unknown" && "$GOVERNOR_CPU0" != "$GOVERNOR_ANY" ]]; then
 				echo "  ${DIM}Note: cpu0 reports '${GOVERNOR_CPU0}' (can be misleading on intel_pstate active)${RST}"
 			fi
