@@ -206,6 +206,11 @@ let
       wait="1"
     fi
 
+    # Helpful breadcrumb in journal when called by stasis.service.
+    if command -v logger >/dev/null 2>&1; then
+      logger -t stasis-lock "lock requested (wait=$wait)"
+    fi
+
     # Prefer Hyprland lock when available.
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
       if [[ "$wait" == "1" ]]; then
@@ -517,6 +522,41 @@ EOF
             mv -f "$tmp" "$CFG_FILE"
           else
             rm -f "$tmp"
+          fi
+
+          # Stasis 0.6.x CLI triggers are step-based (`stasis trigger lock_screen`)
+          # but laptop configs often only define `on_ac`/`on_battery` actions.
+          # Ensure desktop placeholder actions exist so `list-actions`/`trigger`
+          # behave predictably without affecting the real idle schedule.
+          if ! grep -qE '^[[:space:]]{2}lock[_-]screen:[[:space:]]*$' "$CFG_FILE"; then
+            lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
+            tmp="$(mktemp)"
+            inserted="0"
+            while IFS= read -r line; do
+              echo "$line" >>"$tmp"
+              if [[ "$inserted" == "0" && "$line" =~ ^[[:space:]]*stasis:[[:space:]]*$ ]]; then
+                cat >>"$tmp" <<EOF
+  lock_screen:
+    timeout 31536000
+    command "$lock_cmd"
+  end
+
+  dpms:
+    timeout 31536000
+    command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
+    resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
+  end
+
+  suspend:
+    timeout 31536000
+    command "systemctl suspend -i"
+  end
+
+EOF
+                inserted="1"
+              fi
+            done <"$CFG_FILE"
+            mv -f "$tmp" "$CFG_FILE"
           fi
 
           # Keep kbd_backlight actions quiet and safe across machines without a
