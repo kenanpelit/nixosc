@@ -178,6 +178,12 @@ EOF
 	done
 	POWER_SRC=$([[ "${ON_AC}" = "1" ]] && echo "AC" || echo "Battery")
 
+	# Load average (helps interpret "400MHz" reports)
+	LOAD1="0.00"
+	if [[ -r /proc/loadavg ]]; then
+		LOAD1="$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo "0.00")"
+	fi
+
 	# P-State / governor / turbo / HWP boost
 	# NOTE:
 	# On Intel `intel_pstate=active` systems, `/sys/.../cpu0/.../scaling_governor`
@@ -236,7 +242,21 @@ EOF
 	# stale/placeholder values via scaling_cur_freq. As an additional "best-effort"
 	# signal, compute average MHz from /proc/cpuinfo (what users commonly expect).
 	CPUINFO_FREQ_AVG_MHZ="0"
+	declare -A CPUINFO_MHZ_BY_CPU || true
 	if [[ -r /proc/cpuinfo ]]; then
+		# Build a per-CPU MHz map from /proc/cpuinfo (more intuitive than sysfs on HWP).
+		cur_cpu=""
+		while IFS= read -r line; do
+			if [[ "$line" =~ ^processor[[:space:]]*:[[:space:]]*([0-9]+)$ ]]; then
+				cur_cpu="${BASH_REMATCH[1]}"
+				continue
+			fi
+			if [[ -n "$cur_cpu" && "$line" =~ ^cpu[[:space:]]MHz[[:space:]]*:[[:space:]]*([0-9]+(\.[0-9]+)?)$ ]]; then
+				CPUINFO_MHZ_BY_CPU["$cur_cpu"]="${BASH_REMATCH[1]}"
+				continue
+			fi
+		done </proc/cpuinfo
+
 		CPUINFO_FREQ_AVG_MHZ="$(
 			awk -F: '
 				/^cpu MHz/ {gsub(/^[[:space:]]+/, "", $2); sum+=$2; n++}
@@ -362,6 +382,7 @@ EOF
 			--arg version "$VERSION" \
 			--arg cpu_type "$CPU_TYPE" \
 			--arg power_source "$POWER_SRC" \
+			--arg load1 "$LOAD1" \
 			--arg governor "$GOVERNOR_ANY" \
 			--arg governor_cpu0 "$GOVERNOR_CPU0" \
 			--arg governor_desired "$GOVERNOR_DESIRED" \
@@ -392,6 +413,7 @@ EOF
         version: $version,
         cpu_type: $cpu_type,
         power_source: $power_source,
+        load_1m: ($load1|tonumber),
         governor: $governor,
         governor_cpu0: $governor_cpu0,
         governor_desired: $governor_desired,
@@ -430,6 +452,7 @@ EOF
 	echo "CPU Type: ${CYN}${CPU_TYPE}${RST}"
 	echo -n "Power Source: "
 	[[ "$POWER_SRC" = "AC" ]] && echo "${GRN}⚡ AC${RST}" || echo "${YLW}🔋 Battery${RST}"
+	echo "Load Avg (1m): ${BOLD}${LOAD1}${RST}"
 	echo ""
 
 	if [[ "$PSTATE" != "unknown" ]]; then
@@ -472,6 +495,12 @@ EOF
 		echo ""
 		echo "CPU FREQUENCIES:"
 		for i in 0 4 8 12 16 20; do
+			# Prefer cpuinfo for human display; fall back to sysfs.
+			if [[ -n "${CPUINFO_MHZ_BY_CPU[$i]:-}" ]]; then
+				printf "  CPU %2d: %4d MHz\n" "$i" "${CPUINFO_MHZ_BY_CPU[$i]%.*}"
+				continue
+			fi
+
 			p="/sys/devices/system/cpu/cpu${i}/cpufreq/scaling_cur_freq"
 			[[ -r "$p" ]] || continue
 			f="$(cat "$p" 2>/dev/null || echo 0)"
@@ -481,7 +510,22 @@ EOF
 		if [[ "$CPUINFO_FREQ_AVG_MHZ" != "0" && "$CPUINFO_FREQ_AVG_MHZ" != "$FREQ_AVG_MHZ" ]]; then
 			echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
 		fi
-		echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading; use turbostat${RST}"
+		if [[ "$CPU_TYPE" == "intel" && "$PSTATE" == "active" ]]; then
+			echo "  ${DIM}💡 Note: Intel HWP'de sysfs frekansları yanıltıcı olabilir; doğrulama için turbostat kullan${RST}"
+		else
+			echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading; use turbostat${RST}"
+		fi
+
+		# If sysfs reports ~400MHz but cpuinfo is clearly higher, call it out loudly.
+		if [[ "$FREQ_AVG_MHZ" -le 500 && "$CPUINFO_FREQ_AVG_MHZ" -ge 800 ]]; then
+			echo "  ${YLW}⚠ sysfs 400MHz raporlayabiliyor; cpuinfo bunu desteklemiyor (muhtemelen raporlama artefaktı).${RST}"
+		fi
+
+		# If both signals are low while the system is "under load", suggest a deeper check.
+		if awk -v l="$LOAD1" -v mhz="${CPUINFO_FREQ_AVG_MHZ:-0}" 'BEGIN{exit !(l>=1.0 && mhz>0 && mhz<=600)}'; then
+			echo "  ${RED}⚠ Yük var gibi (load>=1) ama CPU MHz düşük görünüyor; bu gerçek throttling olabilir.${RST}"
+			echo "  ${DIM}→ Doğrulama: sudo ${SCRIPT_NAME} turbostat-quick${RST}"
+		fi
 	fi
 
 	echo ""
