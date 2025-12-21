@@ -161,7 +161,8 @@ in
     cpu-epp = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
       description = "Configure Intel HWP Energy Performance Preference";
       wantedBy    = [ "multi-user.target" ];
-      after       = [ "systemd-udev-settle.service" ];
+      after       = [ "systemd-udev-settle.service" "cpu-governor.service" ];
+      wants       = [ "cpu-governor.service" ];
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
@@ -177,11 +178,30 @@ in
 
           echo "Setting EPP to: ''${TARGET_EPP} (power source: ''${POWER_SRC})"
 
-          for CPU in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
-            [[ -f "''${CPU}" ]] || continue
-            echo "''${TARGET_EPP}" > "''${CPU}" && \
-              echo "  updated $(dirname ''${CPU})"
+          # Prefer policy-level knobs (one per cpufreq policy); they behave more
+          # consistently on hybrid CPUs than per-cpu files.
+          wrote_any="0"
+          for POL in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+            [[ -f "''${POL}" ]] || continue
+            wrote_any="1"
+            if echo "''${TARGET_EPP}" > "''${POL}" 2>/dev/null; then
+              echo "  updated $(dirname "''${POL}")"
+            else
+              # Some kernels/drivers return EBUSY transiently; don't fail the unit.
+              echo "  WARN: failed to update $(dirname "''${POL}") (busy?)"
+            fi
           done
+
+          if [[ "''${wrote_any}" == "0" ]]; then
+            for CPU in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
+              [[ -f "''${CPU}" ]] || continue
+              if echo "''${TARGET_EPP}" > "''${CPU}" 2>/dev/null; then
+                echo "  updated $(dirname "''${CPU}")"
+              else
+                echo "  WARN: failed to update $(dirname "''${CPU}") (busy?)"
+              fi
+            done
+          fi
         '';
       };
     };
@@ -444,6 +464,7 @@ in
 
           SERVICES=(
             "platform-profile.service"
+            "cpu-governor.service"
             "cpu-epp.service"
             "cpu-min-freq-guard.service"
             "rapl-power-limits.service"
@@ -477,6 +498,7 @@ in
           SERVICES=(
             "disable-rapl-mmio.service"
             "platform-profile.service"
+            "cpu-governor.service"
             "cpu-epp.service"
             "cpu-min-freq-guard.service"
             "rapl-power-limits.service"
