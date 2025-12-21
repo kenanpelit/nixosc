@@ -73,6 +73,28 @@ let
       # Stasis treats laptops specially and reads idle actions from `on_ac` and
       # `on_battery` blocks. If you only define actions directly under `stasis:`,
       # it will error with "no valid idle actions found".
+      #
+      # However, the CLI (`stasis list-actions` / `stasis trigger`) currently
+      # only exposes desktop actions reliably. To avoid surprises (and to make
+      # `stasis trigger lock_screen` work consistently), we define desktop
+      # placeholders with a very large timeout. They will not auto-fire, but
+      # they remain manually triggerable.
+
+      lock_screen:
+        timeout 31536000
+        command "${config.home.profileDirectory}/bin/stasis-lock"
+      end
+
+      dpms:
+        timeout 31536000
+        command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
+        resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
+      end
+
+      suspend:
+        timeout 31536000
+        command "systemctl suspend -i"
+      end
 
       on_ac:
         kbd_backlight:
@@ -196,11 +218,12 @@ let
 
     # Niri (and others): use DMS lock if available and block until unlocked.
     if command -v dms >/dev/null 2>&1; then
-      dms ipc call lock lock >/dev/null 2>&1 || true
+      # IMPORTANT: DMS lock call may block; never let it block the Stasis action
+      # pipeline. Only block when explicitly requested via `--wait`.
+      (dms ipc call lock lock >/dev/null 2>&1 || true) &
+      disown || true
 
-      if [[ "$wait" != "1" ]]; then
-        exit 0
-      fi
+      if [[ "$wait" != "1" ]]; then exit 0; fi
 
       # Block until DMS reports unlock.
       while true; do
