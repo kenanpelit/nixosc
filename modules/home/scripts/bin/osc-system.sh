@@ -509,7 +509,7 @@ EOF
 	echo ""
 	echo "SERVICE STATUS (v${VERSION} / v17 stack):"
 	# Must match v17 system module exactly:
-	SERVICES=(platform-profile cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
+	SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
 	for svc in "${SERVICES[@]}"; do
 		STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
 		RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
