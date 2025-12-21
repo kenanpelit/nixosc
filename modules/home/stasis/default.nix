@@ -31,11 +31,10 @@ let
   # A sane default, designed for Niri + Hyprland + DMS.
   #
   # Notes:
-  # - Use Stasis' `lock-command` field for `lock_screen` so the lock action is
-  #   treated as a real lock stage (allowing later stages like DPMS/suspend).
-  #   `stasis-lock` is the actual compositor locker (DMS/hyprlock fallback).
-  #   We still keep the locker process alive until unlock so Stasis can detect
-  #   "locked" reliably with `lock_detection_type "process"`.
+  # - IMPORTANT: `stasis-lock` must NOT block when used in the idle pipeline.
+  #   If it blocks (e.g. waiting until unlock), Stasis will never reach later
+  #   stages like DPMS/suspend. For manual use you can still run
+  #   `stasis-lock --wait`.
   # - Stasis timeouts are sequential (each timeout is relative to the previous
   #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
   #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
@@ -54,9 +53,6 @@ let
       monitor_media true
       ignore_remote_media true
       respect_idle_inhibitors true
-
-      # Track locks by process lifetime (see `stasis-lock` wrapper).
-      lock_detection_type "process"
 
       # Apps that should inhibit idle actions.
       inhibit_apps [
@@ -92,9 +88,8 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "loginctl lock-session"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
           resume-command "notify-send 'Welcome back, $env.USER!'"
-          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -125,9 +120,8 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "loginctl lock-session"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
           resume-command "notify-send 'Welcome back, $env.USER!'"
-          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -150,8 +144,7 @@ let
       work:
         lock_screen:
           timeout 900
-          command "loginctl lock-session"
-          lock-command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "${config.home.profileDirectory}/bin/stasis-lock"
         end
 
         dpms:
@@ -185,34 +178,43 @@ let
   stasisLock = pkgs.writeShellScriptBin "stasis-lock" ''
     set -euo pipefail
 
+    wait="0"
+    if [[ "''${1:-}" == "--wait" ]]; then
+      wait="1"
+    fi
+
     # Prefer Hyprland lock when available.
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
-      exec hyprlock
+      if [[ "$wait" == "1" ]]; then
+        exec hyprlock
+      fi
+      hyprlock >/dev/null 2>&1 &
+      disown || true
+      exit 0
     fi
 
     # Niri (and others): use DMS lock if available and block until unlocked.
     if command -v dms >/dev/null 2>&1; then
       dms ipc call lock lock >/dev/null 2>&1 || true
 
-      # Block until DMS reports unlock (keeps this process alive for Stasis).
+      if [[ "$wait" != "1" ]]; then
+        exit 0
+      fi
+
+      # Block until DMS reports unlock.
       while true; do
         out="$(
           dms ipc call lock isLocked 2>/dev/null \
-            | tr -d '\r' \
-            | tail -n 1 \
-            | tr -d '[:space:]' \
-            || true
+          | tr -d '\r' \
+          | tail -n 1 \
+          | tr -d '[:space:]' \
+          || true
         )"
 
         case "$out" in
-          true)
-            ;;
-          false)
-            exit 0
-            ;;
-          *)
-            # DMS IPC may transiently fail; treat unknown/empty output as still locked.
-            ;;
+          true) ;;
+          false) exit 0 ;;
+          *) ;;
         esac
 
         sleep 0.25
@@ -433,20 +435,16 @@ EOF
           kbd_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-kbd-backlight"}
 
           # For `lock_screen` blocks:
-          # - Ensure `command` uses `loginctl lock-session`.
-          # - Ensure `lock-command` points to our real locker (`stasis-lock`).
-          # This avoids lock loops while still letting later stages (dpms/suspend)
-          # run in Stasis.
+          # For `lock_screen` blocks:
+          # - Ensure `command` points to our non-blocking locker (`stasis-lock`).
+          # - Drop any `lock-command` lines (we avoid logind-managed lockers here
+          #   because it previously caused lock loops on this setup).
           tmp="$(mktemp)"
           changed="0"
           in_lock="0"
-          saw_lock_command="0"
-          force_lock_command="0"
           while IFS= read -r line; do
             if [[ "$line" =~ ^[[:space:]]*lock[_-]screen:[[:space:]]*$ ]]; then
               in_lock="1"
-              saw_lock_command="0"
-              force_lock_command="0"
               echo "$line" >>"$tmp"
               continue
             fi
@@ -456,52 +454,35 @@ EOF
               cmd="''${BASH_REMATCH[2]}"
               bin="''${cmd%% *}"
 
-              # If we're using logind lock, we still want a real `lock-command`.
-              if [[ "$cmd" == "loginctl lock-session" ]]; then
-                force_lock_command="1"
+              # If it's not an absolute path and the binary doesn't exist, normalize.
+              if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+                continue
               fi
 
-              if [[ "$cmd" != "loginctl lock-session" ]]; then
-                # If command is our locker (or something unknown), move locker to
-                # `lock-command` and keep `command` as logind lock.
-                if [[ "$cmd" == "''${lock_cmd}" || "$bin" == "stasis-lock" || "$bin" == "hyprlock" || "$bin" == "dms" ]]; then
-                  echo "''${indent}command \"loginctl lock-session\"" >>"$tmp"
-                  changed="1"
-                  force_lock_command="1"
-                  continue
-                fi
+              # Normalize any logind-style command to our locker.
+              if [[ "$cmd" == "loginctl lock-session" ]]; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+                continue
+              fi
 
-                # If it's not an absolute path and the binary doesn't exist, normalize.
-                if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
-                  echo "''${indent}command \"loginctl lock-session\"" >>"$tmp"
-                  changed="1"
-                  force_lock_command="1"
-                  continue
-                fi
+              # If this is some locker-ish command, normalize to our wrapper.
+              if [[ "$cmd" == "''${lock_cmd}" || "$bin" == "stasis-lock" || "$bin" == "hyprlock" || "$bin" == "dms" ]]; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+                continue
               fi
             fi
 
             if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)lock-command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
-              indent="''${BASH_REMATCH[1]}"
-              saw_lock_command="1"
-
-              # Normalize lock-command to our wrapper.
-              if [[ "''${BASH_REMATCH[2]}" != "''${lock_cmd}" ]]; then
-                echo "''${indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
-                changed="1"
-                continue
-              fi
               changed="1"
+              # Drop lock-command lines entirely.
+              continue
             fi
 
             if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)end[[:space:]]*$ ]]; then
-              end_indent="''${BASH_REMATCH[1]}"
-              inner_indent="''${end_indent}  "
-              # If we normalized the command to logind lock, ensure lock-command exists.
-              if [[ "$saw_lock_command" == "0" && "$force_lock_command" == "1" ]]; then
-                echo "''${inner_indent}lock-command \"''${lock_cmd}\"" >>"$tmp"
-                changed="1"
-              fi
               in_lock="0"
             fi
 
@@ -561,8 +542,8 @@ EOF
           Environment = [
             "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
           ];
-          ExecStart = "${lib.getExe cfg.package} --config ${lib.escapeShellArg cfg.configFile}";
-          ExecReload = "${lib.getExe cfg.package} --config ${lib.escapeShellArg cfg.configFile} reload";
+          ExecStart = "${lib.getExe cfg.package} --verbose --config ${lib.escapeShellArg cfg.configFile}";
+          ExecReload = "${lib.getExe cfg.package} --verbose --config ${lib.escapeShellArg cfg.configFile} reload";
           Restart = "on-failure";
           RestartSec = 2;
         };
