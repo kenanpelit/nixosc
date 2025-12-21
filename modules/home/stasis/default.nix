@@ -31,9 +31,10 @@ let
   # A sane default, designed for Niri + Hyprland + DMS.
   #
   # Notes:
-  # - Keep `lock_screen.command` as `stasis-lock` (a blocking wrapper that keeps
-  #   the lock "active" until unlock). This avoids relying on logind lock state
-  #   and works consistently across compositors.
+  # - IMPORTANT: `stasis-lock` must NOT block when used in the idle pipeline.
+  #   If it blocks (e.g. waiting until unlock), Stasis will never reach later
+  #   stages like DPMS/suspend. For manual use you can still run
+  #   `stasis-lock --wait`.
   # - Stasis timeouts are sequential (each timeout is relative to the previous
   #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
   #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
@@ -41,9 +42,10 @@ let
     # This file is managed by nixosc (Home-Manager activation), but is kept
     # writable on disk so you can still tweak it manually.
     #
-    # Reference:
+    # Reference (Stasis 0.6.x):
     # - `stasis info`
-    # - `stasis dump`
+    # - `stasis list-actions`
+    # - `stasis trigger <name>`
 
     @author "kenanpelit/nixosc"
     @description "Stasis idle config (DMS + Niri/Hyprland friendly)"
@@ -52,9 +54,6 @@ let
       monitor_media true
       ignore_remote_media true
       respect_idle_inhibitors true
-
-      # Track locks by process lifetime (see `stasis-lock` wrapper).
-      lock_detection_type "process"
 
       # Apps that should inhibit idle actions.
       inhibit_apps [
@@ -74,6 +73,28 @@ let
       # Stasis treats laptops specially and reads idle actions from `on_ac` and
       # `on_battery` blocks. If you only define actions directly under `stasis:`,
       # it will error with "no valid idle actions found".
+      #
+      # However, the CLI (`stasis list-actions` / `stasis trigger`) currently
+      # only exposes desktop actions reliably. To avoid surprises (and to make
+      # `stasis trigger lock_screen` work consistently), we define desktop
+      # placeholders with a very large timeout. They will not auto-fire, but
+      # they remain manually triggerable.
+
+      lock_screen:
+        timeout 31536000
+        command "${config.home.profileDirectory}/bin/stasis-lock"
+      end
+
+      dpms:
+        timeout 31536000
+        command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
+        resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
+      end
+
+      suspend:
+        timeout 31536000
+        command "systemctl suspend -i"
+      end
 
       on_ac:
         kbd_backlight:
@@ -180,34 +201,49 @@ let
   stasisLock = pkgs.writeShellScriptBin "stasis-lock" ''
     set -euo pipefail
 
+    wait="0"
+    if [[ "''${1:-}" == "--wait" ]]; then
+      wait="1"
+    fi
+
+    # Helpful breadcrumb in journal when called by stasis.service.
+    if command -v logger >/dev/null 2>&1; then
+      logger -t stasis-lock "lock requested (wait=$wait)"
+    fi
+
     # Prefer Hyprland lock when available.
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
-      exec hyprlock
+      if [[ "$wait" == "1" ]]; then
+        exec hyprlock
+      fi
+      hyprlock >/dev/null 2>&1 &
+      disown || true
+      exit 0
     fi
 
     # Niri (and others): use DMS lock if available and block until unlocked.
     if command -v dms >/dev/null 2>&1; then
-      dms ipc call lock lock >/dev/null 2>&1 || true
+      # IMPORTANT: DMS lock call may block; never let it block the Stasis action
+      # pipeline. Only block when explicitly requested via `--wait`.
+      (dms ipc call lock lock >/dev/null 2>&1 || true) &
+      disown || true
 
-      # Block until DMS reports unlock (keeps this process alive for Stasis).
+      if [[ "$wait" != "1" ]]; then exit 0; fi
+
+      # Block until DMS reports unlock.
       while true; do
         out="$(
           dms ipc call lock isLocked 2>/dev/null \
-            | tr -d '\r' \
-            | tail -n 1 \
-            | tr -d '[:space:]' \
-            || true
+          | tr -d '\r' \
+          | tail -n 1 \
+          | tr -d '[:space:]' \
+          || true
         )"
 
         case "$out" in
-          true)
-            ;;
-          false)
-            exit 0
-            ;;
-          *)
-            # DMS IPC may transiently fail; treat unknown/empty output as still locked.
-            ;;
+          true) ;;
+          false) exit 0 ;;
+          *) ;;
         esac
 
         sleep 0.25
@@ -428,10 +464,10 @@ EOF
           kbd_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-kbd-backlight"}
 
           # For `lock_screen` blocks:
-          # - Ensure `command` points to a real lock command.
-          # - If `command` uses `loginctl lock-session` (new style from earlier),
-          #   migrate back to `stasis-lock`.
-          # - Drop any `lock-command` lines (we rely on process detection here).
+          # For `lock_screen` blocks:
+          # - Ensure `command` points to our non-blocking locker (`stasis-lock`).
+          # - Drop any `lock-command` lines (we avoid logind-managed lockers here
+          #   because it previously caused lock loops on this setup).
           tmp="$(mktemp)"
           changed="0"
           in_lock="0"
@@ -447,16 +483,22 @@ EOF
               cmd="''${BASH_REMATCH[2]}"
               bin="''${cmd%% *}"
 
-              # New style (earlier): loginctl lock-session + lock-command.
-              # Migrate back to a single blocking locker script.
+              # If it's not an absolute path and the binary doesn't exist, normalize.
+              if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
+                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+                changed="1"
+                continue
+              fi
+
+              # Normalize any logind-style command to our locker.
               if [[ "$cmd" == "loginctl lock-session" ]]; then
                 echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
                 changed="1"
                 continue
               fi
 
-              # If it's not an absolute path and the binary doesn't exist, migrate.
-              if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
+              # If this is some locker-ish command, normalize to our wrapper.
+              if [[ "$cmd" == "''${lock_cmd}" || "$bin" == "stasis-lock" || "$bin" == "hyprlock" || "$bin" == "dms" ]]; then
                 echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
                 changed="1"
                 continue
@@ -464,8 +506,8 @@ EOF
             fi
 
             if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)lock-command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
-              # Drop lock-command lines entirely to avoid mixing detection modes.
               changed="1"
+              # Drop lock-command lines entirely.
               continue
             fi
 
@@ -480,6 +522,41 @@ EOF
             mv -f "$tmp" "$CFG_FILE"
           else
             rm -f "$tmp"
+          fi
+
+          # Stasis 0.6.x CLI triggers are step-based (`stasis trigger lock_screen`)
+          # but laptop configs often only define `on_ac`/`on_battery` actions.
+          # Ensure desktop placeholder actions exist so `list-actions`/`trigger`
+          # behave predictably without affecting the real idle schedule.
+          if ! grep -qE '^[[:space:]]{2}lock[_-]screen:[[:space:]]*$' "$CFG_FILE"; then
+            lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
+            tmp="$(mktemp)"
+            inserted="0"
+            while IFS= read -r line; do
+              echo "$line" >>"$tmp"
+              if [[ "$inserted" == "0" && "$line" =~ ^[[:space:]]*stasis:[[:space:]]*$ ]]; then
+                cat >>"$tmp" <<EOF
+  lock_screen:
+    timeout 31536000
+    command "$lock_cmd"
+  end
+
+  dpms:
+    timeout 31536000
+    command "niri msg action power-off-monitors || hyprctl dispatch dpms off || true"
+    resume-command "niri msg action power-on-monitors || hyprctl dispatch dpms on || true"
+  end
+
+  suspend:
+    timeout 31536000
+    command "systemctl suspend -i"
+  end
+
+EOF
+                inserted="1"
+              fi
+            done <"$CFG_FILE"
+            mv -f "$tmp" "$CFG_FILE"
           fi
 
           # Keep kbd_backlight actions quiet and safe across machines without a
@@ -529,8 +606,8 @@ EOF
           Environment = [
             "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
           ];
-          ExecStart = "${lib.getExe cfg.package} --config ${lib.escapeShellArg cfg.configFile}";
-          ExecReload = "${lib.getExe cfg.package} --config ${lib.escapeShellArg cfg.configFile} reload";
+          ExecStart = "${lib.getExe cfg.package} --verbose --config ${lib.escapeShellArg cfg.configFile}";
+          ExecReload = "${lib.getExe cfg.package} --verbose --config ${lib.escapeShellArg cfg.configFile} reload";
           Restart = "on-failure";
           RestartSec = 2;
         };
