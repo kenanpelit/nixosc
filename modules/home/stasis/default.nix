@@ -42,9 +42,10 @@ let
     # This file is managed by nixosc (Home-Manager activation), but is kept
     # writable on disk so you can still tweak it manually.
     #
-    # Reference:
+    # Reference (Stasis 0.6.x):
     # - `stasis info`
-    # - `stasis dump`
+    # - `stasis list-actions`
+    # - `stasis trigger <name>`
 
     @author "kenanpelit/nixosc"
     @description "Stasis idle config (DMS + Niri/Hyprland friendly)"
