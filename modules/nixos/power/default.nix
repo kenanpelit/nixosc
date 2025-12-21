@@ -138,15 +138,50 @@ in
             TARGET_BOOST="0"
           fi
 
-          for GOV in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-            [[ -f "''${GOV}" ]] || continue
-            echo "''${TARGET_GOV}" > "''${GOV}" && \
-              echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
+          # Wait briefly for cpufreq policies to appear (early boot race).
+          for ((i=0;i<50;i++)); do
+            [[ -d /sys/devices/system/cpu/cpufreq/policy0 ]] && break
+            sleep 0.1
           done
+
+          write_sysfs() {
+            local path="$1"
+            local value="$2"
+            for ((i=0;i<40;i++)); do
+              if echo "$value" >"$path" 2>/dev/null; then
+                return 0
+              fi
+              sleep 0.05
+            done
+            return 1
+          }
+
+          # Prefer policy-level knobs; fall back to per-cpu.
+          wrote_any="0"
+          for GOV in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
+            [[ -f "''${GOV}" ]] || continue
+            wrote_any="1"
+            if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
+              echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
+            else
+              echo "WARN: failed to set governor for $(dirname "''${GOV}") (busy?)"
+            fi
+          done
+
+          if [[ "''${wrote_any}" == "0" ]]; then
+            for GOV in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+              [[ -f "''${GOV}" ]] || continue
+              if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
+                echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
+              else
+                echo "WARN: failed to set governor for $(dirname "''${GOV}") (busy?)"
+              fi
+            done
+          fi
 
           BOOST_PATH="/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost"
           if [[ -f "''${BOOST_PATH}" ]]; then
-            echo "''${TARGET_BOOST}" > "''${BOOST_PATH}"
+            write_sysfs "''${BOOST_PATH}" "''${TARGET_BOOST}" || true
             echo "HWP dynamic boost set to: ''${TARGET_BOOST} (power source: ''${POWER_SRC})"
           else
             echo "HWP dynamic boost interface not available"
@@ -169,6 +204,24 @@ in
         ExecStart       = mkRobustScript "cpu-epp" ''
           ${detectPowerSourceFunc}
 
+          # Wait briefly for cpufreq policies to appear (early boot race).
+          for ((i=0;i<50;i++)); do
+            [[ -d /sys/devices/system/cpu/cpufreq/policy0 ]] && break
+            sleep 0.1
+          done
+
+          write_sysfs() {
+            local path="$1"
+            local value="$2"
+            for ((i=0;i<40;i++)); do
+              if echo "$value" >"$path" 2>/dev/null; then
+                return 0
+              fi
+              sleep 0.05
+            done
+            return 1
+          }
+
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
             TARGET_EPP="performance"
@@ -184,7 +237,7 @@ in
           for POL in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
             [[ -f "''${POL}" ]] || continue
             wrote_any="1"
-            if echo "''${TARGET_EPP}" > "''${POL}" 2>/dev/null; then
+            if write_sysfs "''${POL}" "''${TARGET_EPP}"; then
               echo "  updated $(dirname "''${POL}")"
             else
               # Some kernels/drivers return EBUSY transiently; don't fail the unit.
@@ -195,7 +248,7 @@ in
           if [[ "''${wrote_any}" == "0" ]]; then
             for CPU in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
               [[ -f "''${CPU}" ]] || continue
-              if echo "''${TARGET_EPP}" > "''${CPU}" 2>/dev/null; then
+              if write_sysfs "''${CPU}" "''${TARGET_EPP}"; then
                 echo "  updated $(dirname "''${CPU}")"
               else
                 echo "  WARN: failed to update $(dirname "''${CPU}") (busy?)"
