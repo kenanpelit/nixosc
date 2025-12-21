@@ -28,20 +28,7 @@ let
       --js-runtimes "deno"
     )
 
-    export_from_brave() {
-      [[ -d "$brave_dir" ]] || return 1
-
-      mkdir -p "$(dirname "$cookie_file")"
-      umask 077
-
-      # cookies.txt üret (veya güncelle). Bu komut stdout'u kirletmesin diye yutuyoruz;
-      # hemen ardından asıl çağrıyı tekrar yapacağız.
-      "$ytdlp" "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" --cookies "$cookie_file" "$@" >/dev/null 2>&1 || return 1
-      chmod 600 "$cookie_file" || true
-      return 0
-    }
-
-    try_with_cookie_file() {
+    try_with_cookie_file_then_browser_fallback() {
       local err
       err="$(mktemp)"
 
@@ -51,14 +38,7 @@ let
       fi
 
       if grep -Fq "Sign in to confirm you’re not a bot" "$err"; then
-        echo "[yt-dlp-mpv] bot-check detected; refreshing cookies from Brave..." >&2
-        if export_from_brave "$@"; then
-          echo "[yt-dlp-mpv] cookies refreshed; retrying with cookies file..." >&2
-          "$ytdlp" "''${extra_args[@]}" --cookies "$cookie_file" "$@"
-          rm -f "$err"
-          return $?
-        fi
-        echo "[yt-dlp-mpv] cookie refresh failed; falling back to cookies-from-browser" >&2
+        echo "[yt-dlp-mpv] bot-check: cookies-youtube.txt yeterli olmadı; tarayıcıdan doğrudan okumayı deniyorum..." >&2
         "$ytdlp" "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" "$@"
         rm -f "$err"
         return $?
@@ -71,18 +51,12 @@ let
 
     if [[ -r "$cookie_file" ]]; then
       echo "[yt-dlp-mpv] using cookies file: $cookie_file" >&2
-      try_with_cookie_file "$@" || exit $?
+      try_with_cookie_file_then_browser_fallback "$@" || exit $?
       exit 0
     fi
 
     if [[ -d "$brave_dir" ]]; then
-      echo "[yt-dlp-mpv] cookies file missing; exporting from Brave -> $cookie_file" >&2
-      if export_from_brave "$@"; then
-        echo "[yt-dlp-mpv] exported; using cookies file" >&2
-        exec "$ytdlp" "''${extra_args[@]}" --cookies "$cookie_file" "$@"
-      fi
-
-      echo "[yt-dlp-mpv] export failed; using cookies-from-browser directly" >&2
+      echo "[yt-dlp-mpv] cookies file missing; using cookies-from-browser (Brave) directly" >&2
       exec "$ytdlp" "''${extra_args[@]}" --cookies-from-browser "brave+basictext:$brave_dir" "$@"
     fi
 
