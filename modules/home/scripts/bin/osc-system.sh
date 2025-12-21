@@ -232,6 +232,19 @@ EOF
 	FREQ_AVG_MHZ=0
 	[[ $FREQ_CNT -gt 0 ]] && FREQ_AVG_MHZ=$((FREQ_SUM / FREQ_CNT / 1000))
 
+	# Some kernels/drivers (notably Intel HWP/intel_pstate=active) may report
+	# stale/placeholder values via scaling_cur_freq. As an additional "best-effort"
+	# signal, compute average MHz from /proc/cpuinfo (what users commonly expect).
+	CPUINFO_FREQ_AVG_MHZ="0"
+	if [[ -r /proc/cpuinfo ]]; then
+		CPUINFO_FREQ_AVG_MHZ="$(
+			awk -F: '
+				/^cpu MHz/ {gsub(/^[[:space:]]+/, "", $2); sum+=$2; n++}
+				END {if(n>0) printf("%d\n", sum/n); else print 0}
+			' /proc/cpuinfo 2>/dev/null || echo 0
+		)"
+	fi
+
 	# Temperature
 	TEMP_C="0"
 	if have sensors; then
@@ -365,6 +378,7 @@ EOF
 			--argjson min_perf "${MIN_PERF//[^0-9]/}" \
 			--argjson max_perf "${MAX_PERF//[^0-9]/}" \
 			--argjson freq_avg "$FREQ_AVG_MHZ" \
+			--argjson freq_avg_cpuinfo "${CPUINFO_FREQ_AVG_MHZ//[^0-9]/}" \
 			--argjson temp "$TEMP_C" \
 			--argjson pl1 "$PL1_W" \
 			--argjson pl2 "$PL2_W" \
@@ -394,6 +408,7 @@ EOF
         platform_profile: $platform_profile,
         platform_profile_desired: $platform_profile_desired,
         freq_avg_mhz: $freq_avg,
+        freq_avg_mhz_cpuinfo: $freq_avg_cpuinfo,
         temp_celsius: $temp,
         power_limits: {
           pl1_watts: $pl1,
@@ -463,6 +478,9 @@ EOF
 			printf "  CPU %2d: %4d MHz\n" "$i" "$((f / 1000))"
 		done
 		echo "  ${DIM}Average: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
+		if [[ "$CPUINFO_FREQ_AVG_MHZ" != "0" && "$CPUINFO_FREQ_AVG_MHZ" != "$FREQ_AVG_MHZ" ]]; then
+			echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
+		fi
 		echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading; use turbostat${RST}"
 	fi
 
