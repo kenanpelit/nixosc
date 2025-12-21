@@ -56,6 +56,21 @@ let
       ${content}
     '';
   };
+
+  # Serialize "leaf" power knob writers (oneshot units) to reduce EBUSY races.
+  # IMPORTANT: Do NOT use this for orchestration units (which restart other
+  # units) or long-running daemons (like rapl-thermo-guard), otherwise we'd
+  # deadlock or block the whole stack.
+  mkRobustLockedScript = name: content: mkRobustScript name ''
+    LOCK_FILE="/run/osc-power-mgmt.lock"
+    exec 9> "''${LOCK_FILE}"
+    if ! ${pkgs.util-linux}/bin/flock -w 10 9; then
+      echo "WARN: power-mgmt lock busy; skipping (${name})"
+      exit 0
+    fi
+
+    ${content}
+  '';
 in
 {
   # ============================================================================ 
@@ -72,7 +87,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "platform-profile" ''
+        ExecStart       = mkRobustLockedScript "platform-profile" ''
           ${detectPowerSourceFunc}
 
           PROFILE_PATH="/sys/firmware/acpi/platform_profile"
@@ -84,15 +99,10 @@ in
           fi
 
           POWER_SRC=$(detect_power_source)
-          TARGET="performance"
-          if [[ "''${POWER_SRC}" != "AC" ]]; then
-            TARGET="low-power"
+          if [[ "''${POWER_SRC}" == "AC" ]]; then
+            TARGET="performance"
           else
-            # Prefer balanced on AC for cooler + consistent behavior (firmware may
-            # override "performance" back to balanced on some laptops).
-            if [[ -f "''${CHOICES_PATH}" ]] && grep -qw "balanced" "''${CHOICES_PATH}"; then
-              TARGET="balanced"
-            fi
+            TARGET="low-power"
           fi
 
           # Respect low_power vs low-power spelling
@@ -104,6 +114,8 @@ in
                 TARGET="balanced"
               elif grep -qw "balanced-performance" "''${CHOICES_PATH}"; then
                 TARGET="balanced-performance"
+              elif grep -qw "performance" "''${CHOICES_PATH}"; then
+                TARGET="performance"
               fi
             fi
             if [[ "''${TARGET}" == "low-power" && "''${CHOICES}" == *low_power* ]]; then
@@ -132,15 +144,12 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "cpu-governor" ''
+        ExecStart       = mkRobustLockedScript "cpu-governor" ''
           ${detectPowerSourceFunc}
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            # NOTE: On intel_pstate=active systems, the effective governor may
-            # always read "powersave" even when the platform is in a high
-            # performance state. Keep governor conservative for consistency.
-            TARGET_GOV="powersave"
+            TARGET_GOV="performance"
             TARGET_BOOST="1"
           else
             TARGET_GOV="powersave"
@@ -214,7 +223,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "cpu-epp" ''
+        ExecStart       = mkRobustLockedScript "cpu-epp" ''
           ${detectPowerSourceFunc}
 
           # Wait briefly for cpufreq policies to appear (early boot race).
@@ -237,8 +246,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            # Keep AC at balance_performance for a stable "fast but cooler" default.
-            TARGET_EPP="balance_performance"
+            TARGET_EPP="performance"
           else
             TARGET_EPP="balance_power"
           fi
@@ -287,7 +295,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "cpu-min-freq-guard" ''
+        ExecStart       = mkRobustLockedScript "cpu-min-freq-guard" ''
           ${detectPowerSourceFunc}
 
           MIN_PERF_PATH="/sys/devices/system/cpu/intel_pstate/min_perf_pct"
@@ -329,7 +337,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "rapl-power-limits" ''
+        ExecStart       = mkRobustLockedScript "rapl-power-limits" ''
           ${detectPowerSourceFunc}
 
           CPU_TYPE=$(${cpuDetectionScript})
@@ -377,8 +385,24 @@ in
             exit 1
           fi
 
+          # Some firmware exposes a hard maximum via `constraint_0_max_power_uw`.
+          # Writing above that can behave inconsistently across laptops.
+          C0_MAX_UW="$(cat "''${RAPL_BASE}/constraint_0_max_power_uw" 2>/dev/null || echo 0)"
+          if [[ "''${C0_MAX_UW}" =~ ^[0-9]+$ ]] && [[ "''${C0_MAX_UW}" -gt 0 ]] && [[ "''${PL1_UW}" -gt "''${C0_MAX_UW}" ]]; then
+            echo "WARN: requested PL1 ''${PL1_WATTS}W exceeds platform max $((C0_MAX_UW/1000000))W; clamping"
+            PL1_UW="''${C0_MAX_UW}"
+            PL1_WATTS=$((PL1_UW / 1000000))
+          fi
+
           echo "''${PL1_UW}" > "''${RAPL_BASE}/constraint_0_power_limit_uw"
           echo "PL1 set to ''${PL1_WATTS} W"
+
+          C1_MAX_UW="$(cat "''${RAPL_BASE}/constraint_1_max_power_uw" 2>/dev/null || echo 0)"
+          if [[ "''${C1_MAX_UW}" =~ ^[0-9]+$ ]] && [[ "''${C1_MAX_UW}" -gt 0 ]] && [[ "''${PL2_UW}" -gt "''${C1_MAX_UW}" ]]; then
+            echo "WARN: requested PL2 ''${PL2_WATTS}W exceeds platform max $((C1_MAX_UW/1000000))W; clamping"
+            PL2_UW="''${C1_MAX_UW}"
+            PL2_WATTS=$((PL2_UW / 1000000))
+          fi
 
           echo "''${PL2_UW}" > "''${RAPL_BASE}/constraint_1_power_limit_uw"
           echo "PL2 set to ''${PL2_WATTS} W"
@@ -398,7 +422,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "disable-rapl-mmio" ''
+        ExecStart       = mkRobustLockedScript "disable-rapl-mmio" ''
           if ${pkgs.kmod}/bin/lsmod | ${pkgs.gnugrep}/bin/grep -q "^intel_rapl_mmio"; then
             echo "Disabling intel_rapl_mmio (rmmod)..."
             ${pkgs.kmod}/bin/rmmod intel_rapl_mmio 2>/dev/null || true
@@ -499,7 +523,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "battery-thresholds" ''
+        ExecStart       = mkRobustLockedScript "battery-thresholds" ''
           BAT_BASE="/sys/class/power_supply/BAT0"
 
           if [[ ! -d "''${BAT_BASE}" ]]; then
@@ -596,6 +620,10 @@ in
     ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="1", \
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
     ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="0", \
+      TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
+    ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="ADP*", ENV{POWER_SUPPLY_ONLINE}=="1", \
+      TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
+    ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="ADP*", ENV{POWER_SUPPLY_ONLINE}=="0", \
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
   '';
 
