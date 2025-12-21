@@ -178,8 +178,18 @@ EOF
 	done
 	POWER_SRC=$([[ "${ON_AC}" = "1" ]] && echo "AC" || echo "Battery")
 
+	# Load average (helps interpret "400MHz" reports)
+	LOAD1="0.00"
+	if [[ -r /proc/loadavg ]]; then
+		LOAD1="$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo "0.00")"
+	fi
+
 	# P-State / governor / turbo / HWP boost
-	GOVERNOR="$(read_file /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
+	# NOTE:
+	# On Intel `intel_pstate=active` systems, `/sys/.../cpu0/.../scaling_governor`
+	# may misleadingly stay at "powersave" even when policies are configured for
+	# performance. Prefer policy-level knobs for reporting.
+	GOVERNOR_CPU0="$(read_file /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")"
 	PSTATE="$(read_file /sys/devices/system/cpu/intel_pstate/status 2>/dev/null || echo "unknown")"
 
 	NO_TURBO="$(read_file /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || echo "1")"
@@ -190,6 +200,20 @@ EOF
 
 	MIN_PERF="$(read_file /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || echo "0")"
 	MAX_PERF="$(read_file /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null || echo "0")"
+
+	# Governor (policy-level distribution)
+	GOVERNOR_ANY="unknown"
+	declare -A GOV_MAP || true
+	GOV_COUNT=0
+	for pol in /sys/devices/system/cpu/cpufreq/policy*; do
+		[[ -r "$pol/scaling_governor" ]] || continue
+		gov="$(cat "$pol/scaling_governor")"
+		GOVERNOR_ANY="$gov"
+		GOV_MAP["$gov"]=$((${GOV_MAP["$gov"]:-0} + 1))
+		GOV_COUNT=$((GOV_COUNT + 1))
+	done
+	# Fallback for kernels without policy governors.
+	[[ "$GOVERNOR_ANY" == "unknown" ]] && GOVERNOR_ANY="$GOVERNOR_CPU0"
 
 	# EPP (Energy Performance Preference)
 	EPP_ANY="unknown"
@@ -213,6 +237,33 @@ EOF
 	done
 	FREQ_AVG_MHZ=0
 	[[ $FREQ_CNT -gt 0 ]] && FREQ_AVG_MHZ=$((FREQ_SUM / FREQ_CNT / 1000))
+
+	# Some kernels/drivers (notably Intel HWP/intel_pstate=active) may report
+	# stale/placeholder values via scaling_cur_freq. As an additional "best-effort"
+	# signal, compute average MHz from /proc/cpuinfo (what users commonly expect).
+	CPUINFO_FREQ_AVG_MHZ="0"
+	declare -A CPUINFO_MHZ_BY_CPU || true
+	if [[ -r /proc/cpuinfo ]]; then
+		# Build a per-CPU MHz map from /proc/cpuinfo (more intuitive than sysfs on HWP).
+		cur_cpu=""
+		while IFS= read -r line; do
+			if [[ "$line" =~ ^processor[[:space:]]*:[[:space:]]*([0-9]+)$ ]]; then
+				cur_cpu="${BASH_REMATCH[1]}"
+				continue
+			fi
+			if [[ -n "$cur_cpu" && "$line" =~ ^cpu[[:space:]]MHz[[:space:]]*:[[:space:]]*([0-9]+(\.[0-9]+)?)$ ]]; then
+				CPUINFO_MHZ_BY_CPU["$cur_cpu"]="${BASH_REMATCH[1]}"
+				continue
+			fi
+		done </proc/cpuinfo
+
+		CPUINFO_FREQ_AVG_MHZ="$(
+			awk -F: '
+				/^cpu MHz/ {gsub(/^[[:space:]]+/, "", $2); sum+=$2; n++}
+				END {if(n>0) printf("%d\n", sum/n); else print 0}
+			' /proc/cpuinfo 2>/dev/null || echo 0
+		)"
+	fi
 
 	# Temperature
 	TEMP_C="0"
@@ -240,7 +291,38 @@ EOF
 	fi
 
 	# Platform Profile
-	PLATFORM_PROFILE="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
+	PLATFORM_PROFILE_SYSFS="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
+	PLATFORM_PROFILE_DESIRED="unknown"
+	if have journalctl; then
+		last_pp="$(journalctl -b -t power-mgmt-platform-profile -o cat -n 200 2>/dev/null \
+			| grep -E 'Platform profile (set to:|already:)' \
+			| tail -n 1 \
+			|| true)"
+		if [[ "$last_pp" =~ Platform[[:space:]]profile[[:space:]](set[[:space:]]to|already:)[[:space:]]([A-Za-z0-9_-]+) ]]; then
+			PLATFORM_PROFILE_DESIRED="${BASH_REMATCH[2]}"
+		fi
+	fi
+
+	# Desired targets (best-effort, from power-mgmt logs)
+	GOVERNOR_DESIRED="unknown"
+	EPP_DESIRED="unknown"
+	if have journalctl; then
+		last_gov="$(journalctl -b -t power-mgmt-cpu-governor -o cat -n 400 2>/dev/null \
+			| grep -E 'Governor set to ' \
+			| tail -n 1 \
+			|| true)"
+		if [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]([A-Za-z0-9_-]+) ]]; then
+			GOVERNOR_DESIRED="${BASH_REMATCH[1]}"
+		fi
+
+		last_epp="$(journalctl -b -t power-mgmt-cpu-epp -o cat -n 400 2>/dev/null \
+			| grep -E 'Setting EPP to:' \
+			| tail -n 1 \
+			|| true)"
+		if [[ "$last_epp" =~ Setting[[:space:]]EPP[[:space:]]to:[[:space:]]([A-Za-z0-9_-]+) ]]; then
+			EPP_DESIRED="${BASH_REMATCH[1]}"
+		fi
+	fi
 
 	# Battery Status
 	BAT_JSON="[]"
@@ -278,6 +360,14 @@ EOF
 			exit 1
 		fi
 
+		GOV_JSON="{}"
+		if ((GOV_COUNT > 0)); then
+			for k in "${!GOV_MAP[@]}"; do
+				GOV_JSON="$(jq -cn --argjson cur "$GOV_JSON" --arg k "$k" \
+					--argjson v "${GOV_MAP[$k]}" '$cur + {($k):$v}')"
+			done
+		fi
+
 		EPP_JSON="{}"
 		if ((EPP_COUNT > 0)); then
 			for k in "${!EPP_MAP[@]}"; do
@@ -292,10 +382,15 @@ EOF
 			--arg version "$VERSION" \
 			--arg cpu_type "$CPU_TYPE" \
 			--arg power_source "$POWER_SRC" \
-			--arg governor "$GOVERNOR" \
+			--arg load1 "$LOAD1" \
+			--arg governor "$GOVERNOR_ANY" \
+			--arg governor_cpu0 "$GOVERNOR_CPU0" \
+			--arg governor_desired "$GOVERNOR_DESIRED" \
 			--arg pstate "$PSTATE" \
 			--arg epp_any "$EPP_ANY" \
-			--arg platform_profile "$PLATFORM_PROFILE" \
+			--arg epp_desired "$EPP_DESIRED" \
+			--arg platform_profile "$PLATFORM_PROFILE_SYSFS" \
+			--arg platform_profile_desired "$PLATFORM_PROFILE_DESIRED" \
 			--arg mmio_status "$MMIO_STATUS" \
 			--arg ts "$TS" \
 			--argjson turbo "$TURBO_ENABLED" \
@@ -304,6 +399,7 @@ EOF
 			--argjson min_perf "${MIN_PERF//[^0-9]/}" \
 			--argjson max_perf "${MAX_PERF//[^0-9]/}" \
 			--argjson freq_avg "$FREQ_AVG_MHZ" \
+			--argjson freq_avg_cpuinfo "${CPUINFO_FREQ_AVG_MHZ//[^0-9]/}" \
 			--argjson temp "$TEMP_C" \
 			--argjson pl1 "$PL1_W" \
 			--argjson pl2 "$PL2_W" \
@@ -311,14 +407,20 @@ EOF
 			--argjson base_pl2 "$BASE_PL2_W" \
 			--argjson pkg_w_now "${PKG_W_NOW:-0}" \
 			--argjson bat "$([[ "${BAT_JSON}" == "[]" ]] && echo "[]" || echo "${BAT_JSON}")" \
+			--argjson governor_map "$([[ $GOV_COUNT -gt 0 ]] && echo "${GOV_JSON}" || echo "{}")" \
 			--argjson epp_map "$([[ $EPP_COUNT -gt 0 ]] && echo "${EPP_JSON}" || echo "{}")" \
 			'{
         version: $version,
         cpu_type: $cpu_type,
         power_source: $power_source,
+        load_1m: ($load1|tonumber),
         governor: $governor,
+        governor_cpu0: $governor_cpu0,
+        governor_desired: $governor_desired,
+        governor_map: $governor_map,
         pstate_mode: $pstate,
         epp_any: $epp_any,
+        epp_desired: $epp_desired,
         epp_map: $epp_map,
         hwp_dynamic_boost: $hwp_boost,
         turbo_enabled: $turbo,
@@ -326,7 +428,9 @@ EOF
         mmio_driver_loaded: $mmio_loaded,
         performance: { min_pct: $min_perf, max_pct: $max_perf },
         platform_profile: $platform_profile,
+        platform_profile_desired: $platform_profile_desired,
         freq_avg_mhz: $freq_avg,
+        freq_avg_mhz_cpuinfo: $freq_avg_cpuinfo,
         temp_celsius: $temp,
         power_limits: {
           pl1_watts: $pl1,
@@ -348,6 +452,7 @@ EOF
 	echo "CPU Type: ${CYN}${CPU_TYPE}${RST}"
 	echo -n "Power Source: "
 	[[ "$POWER_SRC" = "AC" ]] && echo "${GRN}⚡ AC${RST}" || echo "${YLW}🔋 Battery${RST}"
+	echo "Load Avg (1m): ${BOLD}${LOAD1}${RST}"
 	echo ""
 
 	if [[ "$PSTATE" != "unknown" ]]; then
@@ -355,10 +460,25 @@ EOF
 		echo "  Min/Max Performance: ${MIN_PERF}% / ${MAX_PERF}%"
 		echo "  Turbo Boost: $([[ "$TURBO_ENABLED" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
 		echo "  HWP Dynamic Boost: $([[ "$HWP_BOOST_BOOL" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
-		[[ "$GOVERNOR" != "unknown" ]] && echo "  Governor: ${GOVERNOR}"
+		if [[ "$GOVERNOR_ANY" != "unknown" ]]; then
+			echo "  Governor: ${GOVERNOR_ANY}"
+			[[ "$GOVERNOR_DESIRED" != "unknown" ]] && echo "  Governor (desired): ${GOVERNOR_DESIRED}"
+			if ((GOV_COUNT > 0)); then
+				echo "  Governor policies:"
+				for k in "${!GOV_MAP[@]}"; do
+					echo "    ${CYN}→${RST} ${BOLD}${k}${RST} (${GOV_MAP[$k]} policies)"
+				done
+			fi
+			if [[ "$GOVERNOR_CPU0" != "unknown" && "$GOVERNOR_CPU0" != "$GOVERNOR_ANY" ]]; then
+				echo "  ${DIM}Note: cpu0 reports '${GOVERNOR_CPU0}' (can be misleading on intel_pstate active)${RST}"
+			fi
+		fi
 	fi
 
-	[[ "$PLATFORM_PROFILE" != "unknown" ]] && echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE}${RST}"
+	if [[ "$PLATFORM_PROFILE_SYSFS" != "unknown" ]]; then
+		echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE_SYSFS}${RST}"
+		[[ "$PLATFORM_PROFILE_DESIRED" != "unknown" ]] && echo "Platform Profile (desired): ${BOLD}${PLATFORM_PROFILE_DESIRED}${RST}"
+	fi
 
 	echo ""
 	if ((EPP_COUNT > 0)); then
@@ -366,6 +486,7 @@ EOF
 		for k in "${!EPP_MAP[@]}"; do
 			echo "  ${CYN}→${RST} ${BOLD}${k}${RST} (${EPP_MAP[$k]} policies)"
 		done
+		[[ "$EPP_DESIRED" != "unknown" ]] && echo "  ${DIM}(desired: ${EPP_DESIRED})${RST}"
 	else
 		echo "EPP: ${DIM}(interface not found)${RST}"
 	fi
@@ -374,13 +495,37 @@ EOF
 		echo ""
 		echo "CPU FREQUENCIES:"
 		for i in 0 4 8 12 16 20; do
+			# Prefer cpuinfo for human display; fall back to sysfs.
+			if [[ -n "${CPUINFO_MHZ_BY_CPU[$i]:-}" ]]; then
+				printf "  CPU %2d: %4d MHz\n" "$i" "${CPUINFO_MHZ_BY_CPU[$i]%.*}"
+				continue
+			fi
+
 			p="/sys/devices/system/cpu/cpu${i}/cpufreq/scaling_cur_freq"
 			[[ -r "$p" ]] || continue
 			f="$(cat "$p" 2>/dev/null || echo 0)"
 			printf "  CPU %2d: %4d MHz\n" "$i" "$((f / 1000))"
 		done
 		echo "  ${DIM}Average: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
-		echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading; use turbostat${RST}"
+		if [[ "$CPUINFO_FREQ_AVG_MHZ" != "0" && "$CPUINFO_FREQ_AVG_MHZ" != "$FREQ_AVG_MHZ" ]]; then
+			echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
+		fi
+		if [[ "$CPU_TYPE" == "intel" && "$PSTATE" == "active" ]]; then
+			echo "  ${DIM}💡 Note: Intel HWP'de sysfs frekansları yanıltıcı olabilir; doğrulama için turbostat kullan${RST}"
+		else
+			echo "  ${DIM}💡 Note: scaling_cur_freq can be misleading; use turbostat${RST}"
+		fi
+
+		# If sysfs reports ~400MHz but cpuinfo is clearly higher, call it out loudly.
+		if [[ "$FREQ_AVG_MHZ" -le 500 && "$CPUINFO_FREQ_AVG_MHZ" -ge 800 ]]; then
+			echo "  ${YLW}⚠ sysfs 400MHz raporlayabiliyor; cpuinfo bunu desteklemiyor (muhtemelen raporlama artefaktı).${RST}"
+		fi
+
+		# If both signals are low while the system is "under load", suggest a deeper check.
+		if awk -v l="$LOAD1" -v mhz="${CPUINFO_FREQ_AVG_MHZ:-0}" 'BEGIN{exit !(l>=1.0 && mhz>0 && mhz<=600)}'; then
+			echo "  ${RED}⚠ Yük var gibi (load>=1) ama CPU MHz düşük görünüyor; bu gerçek throttling olabilir.${RST}"
+			echo "  ${DIM}→ Doğrulama: sudo ${SCRIPT_NAME} turbostat-quick${RST}"
+		fi
 	fi
 
 	echo ""
@@ -426,7 +571,7 @@ EOF
 	echo ""
 	echo "SERVICE STATUS (v${VERSION} / v17 stack):"
 	# Must match v17 system module exactly:
-	SERVICES=(platform-profile cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
+	SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
 	for svc in "${SERVICES[@]}"; do
 		STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
 		RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"

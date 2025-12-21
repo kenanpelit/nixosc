@@ -56,6 +56,21 @@ let
       ${content}
     '';
   };
+
+  # Serialize "leaf" power knob writers (oneshot units) to reduce EBUSY races.
+  # IMPORTANT: Do NOT use this for orchestration units (which restart other
+  # units) or long-running daemons (like rapl-thermo-guard), otherwise we'd
+  # deadlock or block the whole stack.
+  mkRobustLockedScript = name: content: mkRobustScript name ''
+    LOCK_FILE="/run/osc-power-mgmt.lock"
+    exec 9> "''${LOCK_FILE}"
+    if ! ${pkgs.util-linux}/bin/flock -w 10 9; then
+      echo "WARN: power-mgmt lock busy; skipping (${name})"
+      exit 0
+    fi
+
+    ${content}
+  '';
 in
 {
   # ============================================================================ 
@@ -72,7 +87,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "platform-profile" ''
+        ExecStart       = mkRobustLockedScript "platform-profile" ''
           ${detectPowerSourceFunc}
 
           PROFILE_PATH="/sys/firmware/acpi/platform_profile"
@@ -84,12 +99,25 @@ in
           fi
 
           POWER_SRC=$(detect_power_source)
-          TARGET="performance"
-          [[ "''${POWER_SRC}" != "AC" ]] && TARGET="low-power"
+          if [[ "''${POWER_SRC}" == "AC" ]]; then
+            TARGET="performance"
+          else
+            TARGET="low-power"
+          fi
 
           # Respect low_power vs low-power spelling
           if [[ -f "''${CHOICES_PATH}" ]]; then
             CHOICES="$(cat "''${CHOICES_PATH}")"
+            # If the desired target isn't available, fall back to something sane.
+            if [[ "''${TARGET}" != "low-power" && "''${TARGET}" != "low_power" ]] && ! grep -qw "''${TARGET}" "''${CHOICES_PATH}"; then
+              if grep -qw "balanced" "''${CHOICES_PATH}"; then
+                TARGET="balanced"
+              elif grep -qw "balanced-performance" "''${CHOICES_PATH}"; then
+                TARGET="balanced-performance"
+              elif grep -qw "performance" "''${CHOICES_PATH}"; then
+                TARGET="performance"
+              fi
+            fi
             if [[ "''${TARGET}" == "low-power" && "''${CHOICES}" == *low_power* ]]; then
               TARGET="low_power"
             fi
@@ -106,18 +134,115 @@ in
       };
     };
 
+    # --------------------------------------------------------------------------
+    # 1b) CPU GOVERNOR + HWP DYNAMIC BOOST (intel_pstate)
+    # --------------------------------------------------------------------------
+    cpu-governor = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
+      description = "Configure CPU governor and Intel HWP dynamic boost (power-aware)";
+      wantedBy    = [ "multi-user.target" ];
+      after       = [ "systemd-udev-settle.service" ];
+      serviceConfig = {
+        Type            = "oneshot";
+        RemainAfterExit = true;
+        ExecStart       = mkRobustLockedScript "cpu-governor" ''
+          ${detectPowerSourceFunc}
+
+          POWER_SRC=$(detect_power_source)
+          if [[ "''${POWER_SRC}" == "AC" ]]; then
+            TARGET_GOV="performance"
+            TARGET_BOOST="1"
+          else
+            TARGET_GOV="powersave"
+            TARGET_BOOST="0"
+          fi
+
+          # Wait briefly for cpufreq policies to appear (early boot race).
+          for ((i=0;i<50;i++)); do
+            [[ -d /sys/devices/system/cpu/cpufreq/policy0 ]] && break
+            sleep 0.1
+          done
+
+          write_sysfs() {
+            local path="$1"
+            local value="$2"
+            for ((i=0;i<40;i++)); do
+              if echo "$value" >"$path" 2>/dev/null; then
+                return 0
+              fi
+              sleep 0.05
+            done
+            return 1
+          }
+
+          # Prefer policy-level knobs; fall back to per-cpu.
+          wrote_any="0"
+          for GOV in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
+            [[ -f "''${GOV}" ]] || continue
+            wrote_any="1"
+            cur="$(cat "''${GOV}" 2>/dev/null || echo "")"
+            [[ "''${cur}" == "''${TARGET_GOV}" ]] && continue
+            if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
+              echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
+            else
+              echo "WARN: failed to set governor for $(dirname "''${GOV}") (busy?)"
+            fi
+          done
+
+          if [[ "''${wrote_any}" == "0" ]]; then
+            for GOV in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+              [[ -f "''${GOV}" ]] || continue
+              cur="$(cat "''${GOV}" 2>/dev/null || echo "")"
+              [[ "''${cur}" == "''${TARGET_GOV}" ]] && continue
+              if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
+                echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
+              else
+                echo "WARN: failed to set governor for $(dirname "''${GOV}") (busy?)"
+              fi
+            done
+          fi
+
+          BOOST_PATH="/sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost"
+          if [[ -f "''${BOOST_PATH}" ]]; then
+            write_sysfs "''${BOOST_PATH}" "''${TARGET_BOOST}" || true
+            echo "HWP dynamic boost set to: ''${TARGET_BOOST} (power source: ''${POWER_SRC})"
+          else
+            echo "HWP dynamic boost interface not available"
+          fi
+        '';
+      };
+    };
+
     # -------------------------------------------------------------------------- 
     # 2) CPU EPP (HWP ENERGY PERFORMANCE PREFERENCE)
     # -------------------------------------------------------------------------- 
     cpu-epp = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
       description = "Configure Intel HWP Energy Performance Preference";
       wantedBy    = [ "multi-user.target" ];
-      after       = [ "systemd-udev-settle.service" ];
+      after       = [ "systemd-udev-settle.service" "cpu-governor.service" ];
+      wants       = [ "cpu-governor.service" ];
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "cpu-epp" ''
+        ExecStart       = mkRobustLockedScript "cpu-epp" ''
           ${detectPowerSourceFunc}
+
+          # Wait briefly for cpufreq policies to appear (early boot race).
+          for ((i=0;i<50;i++)); do
+            [[ -d /sys/devices/system/cpu/cpufreq/policy0 ]] && break
+            sleep 0.1
+          done
+
+          write_sysfs() {
+            local path="$1"
+            local value="$2"
+            for ((i=0;i<40;i++)); do
+              if echo "$value" >"$path" 2>/dev/null; then
+                return 0
+              fi
+              sleep 0.05
+            done
+            return 1
+          }
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
@@ -128,11 +253,34 @@ in
 
           echo "Setting EPP to: ''${TARGET_EPP} (power source: ''${POWER_SRC})"
 
-          for CPU in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
-            [[ -f "''${CPU}" ]] || continue
-            echo "''${TARGET_EPP}" > "''${CPU}" && \
-              echo "  updated $(dirname ''${CPU})"
+          # Prefer policy-level knobs (one per cpufreq policy); they behave more
+          # consistently on hybrid CPUs than per-cpu files.
+          wrote_any="0"
+          for POL in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+            [[ -f "''${POL}" ]] || continue
+            wrote_any="1"
+            cur="$(cat "''${POL}" 2>/dev/null || echo "")"
+            [[ "''${cur}" == "''${TARGET_EPP}" ]] && continue
+            if write_sysfs "''${POL}" "''${TARGET_EPP}"; then
+              echo "  updated $(dirname "''${POL}")"
+            else
+              # Some kernels/drivers return EBUSY transiently; don't fail the unit.
+              echo "  WARN: failed to update $(dirname "''${POL}") (busy?)"
+            fi
           done
+
+          if [[ "''${wrote_any}" == "0" ]]; then
+            for CPU in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do
+              [[ -f "''${CPU}" ]] || continue
+              cur="$(cat "''${CPU}" 2>/dev/null || echo "")"
+              [[ "''${cur}" == "''${TARGET_EPP}" ]] && continue
+              if write_sysfs "''${CPU}" "''${TARGET_EPP}"; then
+                echo "  updated $(dirname "''${CPU}")"
+              else
+                echo "  WARN: failed to update $(dirname "''${CPU}") (busy?)"
+              fi
+            done
+          fi
         '';
       };
     };
@@ -147,7 +295,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "cpu-min-freq-guard" ''
+        ExecStart       = mkRobustLockedScript "cpu-min-freq-guard" ''
           ${detectPowerSourceFunc}
 
           MIN_PERF_PATH="/sys/devices/system/cpu/intel_pstate/min_perf_pct"
@@ -159,7 +307,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_MIN=50
+            TARGET_MIN=60
           else
             TARGET_MIN=30
           fi
@@ -189,7 +337,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "rapl-power-limits" ''
+        ExecStart       = mkRobustLockedScript "rapl-power-limits" ''
           ${detectPowerSourceFunc}
 
           CPU_TYPE=$(${cpuDetectionScript})
@@ -237,8 +385,24 @@ in
             exit 1
           fi
 
+          # Some firmware exposes a hard maximum via `constraint_0_max_power_uw`.
+          # Writing above that can behave inconsistently across laptops.
+          C0_MAX_UW="$(cat "''${RAPL_BASE}/constraint_0_max_power_uw" 2>/dev/null || echo 0)"
+          if [[ "''${C0_MAX_UW}" =~ ^[0-9]+$ ]] && [[ "''${C0_MAX_UW}" -gt 0 ]] && [[ "''${PL1_UW}" -gt "''${C0_MAX_UW}" ]]; then
+            echo "WARN: requested PL1 ''${PL1_WATTS}W exceeds platform max $((C0_MAX_UW/1000000))W; clamping"
+            PL1_UW="''${C0_MAX_UW}"
+            PL1_WATTS=$((PL1_UW / 1000000))
+          fi
+
           echo "''${PL1_UW}" > "''${RAPL_BASE}/constraint_0_power_limit_uw"
           echo "PL1 set to ''${PL1_WATTS} W"
+
+          C1_MAX_UW="$(cat "''${RAPL_BASE}/constraint_1_max_power_uw" 2>/dev/null || echo 0)"
+          if [[ "''${C1_MAX_UW}" =~ ^[0-9]+$ ]] && [[ "''${C1_MAX_UW}" -gt 0 ]] && [[ "''${PL2_UW}" -gt "''${C1_MAX_UW}" ]]; then
+            echo "WARN: requested PL2 ''${PL2_WATTS}W exceeds platform max $((C1_MAX_UW/1000000))W; clamping"
+            PL2_UW="''${C1_MAX_UW}"
+            PL2_WATTS=$((PL2_UW / 1000000))
+          fi
 
           echo "''${PL2_UW}" > "''${RAPL_BASE}/constraint_1_power_limit_uw"
           echo "PL2 set to ''${PL2_WATTS} W"
@@ -258,7 +422,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "disable-rapl-mmio" ''
+        ExecStart       = mkRobustLockedScript "disable-rapl-mmio" ''
           if ${pkgs.kmod}/bin/lsmod | ${pkgs.gnugrep}/bin/grep -q "^intel_rapl_mmio"; then
             echo "Disabling intel_rapl_mmio (rmmod)..."
             ${pkgs.kmod}/bin/rmmod intel_rapl_mmio 2>/dev/null || true
@@ -359,7 +523,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustScript "battery-thresholds" ''
+        ExecStart       = mkRobustLockedScript "battery-thresholds" ''
           BAT_BASE="/sys/class/power_supply/BAT0"
 
           if [[ ! -d "''${BAT_BASE}" ]]; then
@@ -395,6 +559,7 @@ in
 
           SERVICES=(
             "platform-profile.service"
+            "cpu-governor.service"
             "cpu-epp.service"
             "cpu-min-freq-guard.service"
             "rapl-power-limits.service"
@@ -428,6 +593,7 @@ in
           SERVICES=(
             "disable-rapl-mmio.service"
             "platform-profile.service"
+            "cpu-governor.service"
             "cpu-epp.service"
             "cpu-min-freq-guard.service"
             "rapl-power-limits.service"
@@ -454,6 +620,10 @@ in
     ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="1", \
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
     ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="0", \
+      TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
+    ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="ADP*", ENV{POWER_SUPPLY_ONLINE}=="1", \
+      TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
+    ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="ADP*", ENV{POWER_SUPPLY_ONLINE}=="0", \
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
   '';
 
