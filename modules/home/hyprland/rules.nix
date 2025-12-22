@@ -137,7 +137,7 @@
     }
     {
       name = "ferdium-whatsapp";
-      "match:class" = "^(Ferdium)$";
+      "match:class" = "^(Ferdium|ferdium)$";
       workspace = "9 silent";
     }
     {
@@ -284,7 +284,7 @@
     # Entertainment / VM
     {
       name = "spotify-app";
-      "match:class" = "^(Spotify)$";
+      "match:class" = "^(Spotify|spotify)$";
       workspace = "8 silent";
     }
     {
