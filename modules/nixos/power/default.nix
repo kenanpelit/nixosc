@@ -600,9 +600,20 @@ in
           BASE_PL2=$(cat "''${BASE_PL2_FILE}")
           BASE_PL2_UW=$((BASE_PL2 * 1000000))
 
-          # Read the actual current PL1 from sysfs as our restore target. On some
-          # systems the platform/firmware may cap PL1 below what we request.
+          # Read the current PL1 from sysfs as our restore target.
+          # On some systems the platform/firmware may cap PL1 below what we
+          # request; if a per-constraint max is exposed, treat that as the real
+          # base to avoid "base 40W" logs when the platform only allows ~28W.
+          PL1_MAX_UW_FILE="''${RAPL_BASE}/constraint_0_max_power_uw"
+          PL1_MAX_UW=""
+          if [[ -f "''${PL1_MAX_UW_FILE}" ]]; then
+            PL1_MAX_UW="$(cat "''${PL1_MAX_UW_FILE}")"
+          fi
+
           BASE_PL1_UW="$(cat "''${PL1_PATH}")"
+          if [[ -n "''${PL1_MAX_UW}" && "''${PL1_MAX_UW}" -gt 0 && "''${BASE_PL1_UW}" -gt "''${PL1_MAX_UW}" ]]; then
+            BASE_PL1_UW="''${PL1_MAX_UW}"
+          fi
           BASE_PL1_W=$((BASE_PL1_UW / 1000000))
 
           # Clamp relative to base PL2 so we never *increase* PL2 when hot.
@@ -613,17 +624,21 @@ in
           CLAMP_WARM_W=$(( (BASE_PL2 * 75) / 100 )) # ~75% at warm temps
           CLAMP_HOT_W=$(( (BASE_PL2 * 50) / 100 ))  # ~50% at hot temps
 
-          # Mild PL1 clamps (sustained). This has the biggest impact on long,
-          # all-core loads and is the most effective lever for sustained temps.
-          # Keep it gentle to preserve responsiveness.
-          CLAMP_PL1_WARM_W=$(( (BASE_PL1_W * 93) / 100 ))
-          CLAMP_PL1_HOT_W=$(( (BASE_PL1_W * 85) / 100 ))
+          # Mild PL1 clamps (sustained). This is the most effective lever for
+          # sustained temps. Use small absolute deltas so it still "works" when
+          # the platform caps PL1 (e.g. 28W): warm=26W, hot=24W.
+          CLAMP_PL1_WARM_W=$(( BASE_PL1_W - 2 ))
+          CLAMP_PL1_HOT_W=$(( BASE_PL1_W - 4 ))
 
           # Keep sane minimums (avoid clamping too low on already-low base PL2).
           [[ ''${CLAMP_WARM_W} -lt 15 ]] && CLAMP_WARM_W=15
           [[ ''${CLAMP_HOT_W} -lt 15 ]] && CLAMP_HOT_W=15
           [[ ''${CLAMP_PL1_WARM_W} -lt 10 ]] && CLAMP_PL1_WARM_W=10
           [[ ''${CLAMP_PL1_HOT_W} -lt 10 ]] && CLAMP_PL1_HOT_W=10
+
+          if [[ ''${CLAMP_PL1_WARM_W} -gt ''${BASE_PL1_W} ]]; then
+            CLAMP_PL1_WARM_W="''${BASE_PL1_W}"
+          fi
 
           if [[ ''${CLAMP_PL1_HOT_W} -gt ''${CLAMP_PL1_WARM_W} ]]; then
             CLAMP_PL1_HOT_W="''${CLAMP_PL1_WARM_W}"
@@ -639,7 +654,17 @@ in
           WARM_C=70
           HOT_C=74
 
-          echo "Starting thermal guard (PL1 base: ''${BASE_PL1_W} W, PL2 base: ''${BASE_PL2} W, warm: PL1 ''${CLAMP_PL1_WARM_W} W + PL2 ''${CLAMP_WARM_W} W @ ''${WARM_C}°C, hot: PL1 ''${CLAMP_PL1_HOT_W} W + PL2 ''${CLAMP_HOT_W} W @ ''${HOT_C}°C, restore @ <= ''${RESTORE_C}°C)"
+          PL1_MAX_W=""
+          if [[ -n "''${PL1_MAX_UW}" && "''${PL1_MAX_UW}" -gt 0 ]]; then
+            PL1_MAX_W=$((PL1_MAX_UW / 1000000))
+          fi
+
+          EXTRA_PL1_MAX=""
+          if [[ -n "''${PL1_MAX_W}" ]]; then
+            EXTRA_PL1_MAX=", PL1 max: ''${PL1_MAX_W} W"
+          fi
+
+          echo "Starting thermal guard (PL1 base: ''${BASE_PL1_W} W''${EXTRA_PL1_MAX}, PL2 base: ''${BASE_PL2} W, warm: PL1 ''${CLAMP_PL1_WARM_W} W + PL2 ''${CLAMP_WARM_W} W @ ''${WARM_C}°C, hot: PL1 ''${CLAMP_PL1_HOT_W} W + PL2 ''${CLAMP_HOT_W} W @ ''${HOT_C}°C, restore @ <= ''${RESTORE_C}°C)"
 
           read_pkgtemp() {
             for tz in /sys/class/thermal/thermal_zone*; do
