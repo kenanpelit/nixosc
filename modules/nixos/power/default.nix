@@ -600,10 +600,11 @@ in
           BASE_PL2_UW=$((BASE_PL2 * 1000000))
           # Clamp relative to base PL2 so we never *increase* PL2 when hot.
           # (Fixed clamps like 60 W can accidentally raise PL2 on lower-TDP CPUs.)
-          # Slightly stronger clamps to target cooler sustained temps while
-          # keeping interactive performance largely intact.
-          CLAMP_WARM_W=$(( (BASE_PL2 * 80) / 100 )) # ~80% at warm temps
-          CLAMP_HOT_W=$(( (BASE_PL2 * 60) / 100 ))  # ~60% at hot temps
+          # Stronger clamps to target cooler sustained temps. This will reduce
+          # all-core throughput under sustained load, but should keep interactive
+          # performance largely intact.
+          CLAMP_WARM_W=$(( (BASE_PL2 * 75) / 100 )) # ~75% at warm temps
+          CLAMP_HOT_W=$(( (BASE_PL2 * 50) / 100 ))  # ~50% at hot temps
 
           # Keep sane minimums (avoid clamping too low on already-low base PL2).
           [[ ''${CLAMP_WARM_W} -lt 15 ]] && CLAMP_WARM_W=15
@@ -613,9 +614,9 @@ in
           CLAMP_HOT_UW=$((CLAMP_HOT_W * 1000000))
 
           # Earlier clamp thresholds to keep package temps closer to ~70°C on AC.
-          RESTORE_C=68
-          WARM_C=72
-          HOT_C=76
+          RESTORE_C=66
+          WARM_C=70
+          HOT_C=74
 
           echo "Starting thermal guard (base PL2: ''${BASE_PL2} W, warm clamp: ''${CLAMP_WARM_W} W @ ''${WARM_C}°C, hot clamp: ''${CLAMP_HOT_W} W @ ''${HOT_C}°C, restore @ <= ''${RESTORE_C}°C)"
 
