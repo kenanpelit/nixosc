@@ -86,7 +86,7 @@
       Mod+Shift+F { fullscreen-window; }
       Mod+O { toggle-window-rule-opacity; }
       Mod+R { switch-preset-column-width; }
-      // Mod+Shift+Space { toggle-window-floating; }
+      Mod+Alt+Space { toggle-window-floating; }
       Mod+Grave { switch-focus-between-floating-and-tiling; }
 
       // Column Operations
