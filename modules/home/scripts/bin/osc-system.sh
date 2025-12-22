@@ -591,9 +591,9 @@ EOF
 	((${#BAT_LINES[@]} == 0)) && echo "  ${DIM}No battery detected${RST}" || printf "%s\n" "${BAT_LINES[@]}"
 
 	echo ""
-	echo "SERVICE STATUS (v${VERSION} / v17 stack):"
-	# Must match v17 system module exactly:
-	SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
+		echo "SERVICE STATUS (v${VERSION} / v17 stack):"
+		# Must match v17 system module exactly:
+		SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds power-policy-guard)
 		for svc in "${SERVICES[@]}"; do
 			STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
 			RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
