@@ -600,8 +600,10 @@ in
           BASE_PL2_UW=$((BASE_PL2 * 1000000))
           # Clamp relative to base PL2 so we never *increase* PL2 when hot.
           # (Fixed clamps like 60 W can accidentally raise PL2 on lower-TDP CPUs.)
-          CLAMP_WARM_W=$(( (BASE_PL2 * 85) / 100 )) # ~85% at warm temps
-          CLAMP_HOT_W=$(( (BASE_PL2 * 70) / 100 ))  # ~70% at hot temps
+          # Slightly stronger clamps to target cooler sustained temps while
+          # keeping interactive performance largely intact.
+          CLAMP_WARM_W=$(( (BASE_PL2 * 80) / 100 )) # ~80% at warm temps
+          CLAMP_HOT_W=$(( (BASE_PL2 * 60) / 100 ))  # ~60% at hot temps
 
           # Keep sane minimums (avoid clamping too low on already-low base PL2).
           [[ ''${CLAMP_WARM_W} -lt 15 ]] && CLAMP_WARM_W=15
