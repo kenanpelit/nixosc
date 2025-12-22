@@ -43,6 +43,37 @@ let
     }
   '';
 
+  writeSysfsFunc = ''
+    write_sysfs() {
+      local path="$1"
+      local value="$2"
+      for ((i=0;i<40;i++)); do
+        if echo "$value" >"$path" 2>/dev/null; then
+          return 0
+        fi
+        sleep 0.05
+      done
+      return 1
+    }
+  '';
+
+  persistPowerStateFunc = ''
+    state_dir="/run/osc-power"
+    ensure_state_dirs() {
+      install -d -m 0755 "$state_dir" "$state_dir/desired" "$state_dir/actual"
+    }
+    write_state() {
+      local rel="$1"
+      local value="$2"
+      ensure_state_dirs
+      echo "$value" >"$state_dir/$rel"
+    }
+    read_state() {
+      local rel="$1"
+      cat "$state_dir/$rel" 2>/dev/null || true
+    }
+  '';
+
   mkRobustScript = name: content: pkgs.writeTextFile {
     name = name;
     executable = true;
@@ -68,12 +99,20 @@ in
     platform-profile = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
       description = "Set ACPI Platform Profile (power-aware)";
       wantedBy    = [ "multi-user.target" ];
-      after       = [ "systemd-udev-settle.service" ];
+      after       = [
+        "systemd-udev-settle.service"
+        "power-profiles-daemon.service"
+        "auto-cpufreq.service"
+        "tlp.service"
+        "thermald.service"
+      ];
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
         ExecStart       = mkRobustScript "platform-profile" ''
           ${detectPowerSourceFunc}
+          ${writeSysfsFunc}
+          ${persistPowerStateFunc}
 
           PROFILE_PATH="/sys/firmware/acpi/platform_profile"
           CHOICES_PATH="/sys/firmware/acpi/platform_profile_choices"
@@ -93,6 +132,7 @@ in
           # Respect low_power vs low-power spelling
           if [[ -f "''${CHOICES_PATH}" ]]; then
             CHOICES="$(cat "''${CHOICES_PATH}")"
+            echo "Available platform profiles: ''${CHOICES}"
             # If the desired target isn't available, fall back to something sane.
             if [[ "''${TARGET}" != "low-power" && "''${TARGET}" != "low_power" ]] && ! grep -qw "''${TARGET}" "''${CHOICES_PATH}"; then
               if grep -qw "balanced" "''${CHOICES_PATH}"; then
@@ -108,12 +148,27 @@ in
             fi
           fi
 
-          CURRENT=$(cat "''${PROFILE_PATH}" 2>/dev/null || echo "unknown")
+          write_state "desired/platform_profile" "''${TARGET}"
+
+          CURRENT="$(cat "''${PROFILE_PATH}" 2>/dev/null || echo "unknown")"
           if [[ "''${CURRENT}" != "''${TARGET}" ]]; then
-            echo "''${TARGET}" > "''${PROFILE_PATH}"
-            echo "Platform profile set to: ''${TARGET} (was: ''${CURRENT})"
+            if write_sysfs "''${PROFILE_PATH}" "''${TARGET}"; then
+              echo "Platform profile set to: ''${TARGET} (was: ''${CURRENT})"
+            else
+              echo "WARN: failed to set platform profile to: ''${TARGET} (busy?)"
+            fi
           else
             echo "Platform profile already: ''${TARGET}"
+          fi
+
+          # Read back (some firmware/services can revert this after boot).
+          sleep 0.1
+          FINAL="$(cat "''${PROFILE_PATH}" 2>/dev/null || echo "unknown")"
+          write_state "actual/platform_profile" "''${FINAL}"
+          if [[ "''${FINAL}" != "''${TARGET}" ]]; then
+            echo "WARN: platform profile drift detected: wanted=''${TARGET}' actual=''${FINAL}'"
+          else
+            echo "Platform profile verified: ''${FINAL}"
           fi
         '';
       };
@@ -132,6 +187,7 @@ in
         RemainAfterExit = true;
         ExecStart       = mkRobustScript "cpu-governor" ''
           ${detectPowerSourceFunc}
+          ${persistPowerStateFunc}
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
@@ -148,17 +204,10 @@ in
             sleep 0.1
           done
 
-          write_sysfs() {
-            local path="$1"
-            local value="$2"
-            for ((i=0;i<40;i++)); do
-              if echo "$value" >"$path" 2>/dev/null; then
-                return 0
-              fi
-              sleep 0.05
-            done
-            return 1
-          }
+          ${writeSysfsFunc}
+
+          write_state "desired/governor" "''${TARGET_GOV}"
+          write_state "desired/hwp_dynamic_boost" "''${TARGET_BOOST}"
 
           # Prefer policy-level knobs; fall back to per-cpu.
           wrote_any="0"
@@ -167,6 +216,11 @@ in
             wrote_any="1"
             cur="$(cat "''${GOV}" 2>/dev/null || echo "")"
             [[ "''${cur}" == "''${TARGET_GOV}" ]] && continue
+            avail="$(cat "$(dirname "''${GOV}")/scaling_available_governors" 2>/dev/null || echo "")"
+            if [[ -n "''${avail}" ]] && ! echo "''${avail}" | ${pkgs.gnugrep}/bin/grep -qw "''${TARGET_GOV}"; then
+              echo "WARN: governor ''${TARGET_GOV}' not available for $(dirname "''${GOV}") (available: ''${avail})"
+              continue
+            fi
             if write_sysfs "''${GOV}" "''${TARGET_GOV}"; then
               echo "Governor set to ''${TARGET_GOV} for $(dirname "''${GOV}")"
             else
@@ -211,6 +265,7 @@ in
         RemainAfterExit = true;
         ExecStart       = mkRobustScript "cpu-epp" ''
           ${detectPowerSourceFunc}
+          ${persistPowerStateFunc}
 
           # Wait briefly for cpufreq policies to appear (early boot race).
           for ((i=0;i<50;i++)); do
@@ -218,17 +273,7 @@ in
             sleep 0.1
           done
 
-          write_sysfs() {
-            local path="$1"
-            local value="$2"
-            for ((i=0;i<40;i++)); do
-              if echo "$value" >"$path" 2>/dev/null; then
-                return 0
-              fi
-              sleep 0.05
-            done
-            return 1
-          }
+          ${writeSysfsFunc}
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
@@ -237,6 +282,7 @@ in
             TARGET_EPP="balance_power"
           fi
 
+          write_state "desired/epp" "''${TARGET_EPP}"
           echo "Setting EPP to: ''${TARGET_EPP} (power source: ''${POWER_SRC})"
 
           # Prefer policy-level knobs (one per cpufreq policy); they behave more
@@ -247,6 +293,11 @@ in
             wrote_any="1"
             cur="$(cat "''${POL}" 2>/dev/null || echo "")"
             [[ "''${cur}" == "''${TARGET_EPP}" ]] && continue
+            avail="$(cat "$(dirname "''${POL}")/energy_performance_available_preferences" 2>/dev/null || echo "")"
+            if [[ -n "''${avail}" ]] && ! echo "''${avail}" | ${pkgs.gnugrep}/bin/grep -qw "''${TARGET_EPP}"; then
+              echo "  WARN: EPP ''${TARGET_EPP}' not available for $(dirname "''${POL}") (available: ''${avail})"
+              continue
+            fi
             if write_sysfs "''${POL}" "''${TARGET_EPP}"; then
               echo "  updated $(dirname "''${POL}")"
             else
@@ -267,6 +318,9 @@ in
               fi
             done
           fi
+
+          # Snapshot one policy for status UIs
+          write_state "actual/epp_policy0" "$(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo unknown)"
         '';
       };
     };
@@ -284,6 +338,8 @@ in
         RemainAfterExit = true;
         ExecStart       = mkRobustScript "cpu-min-freq-guard" ''
           ${detectPowerSourceFunc}
+          ${writeSysfsFunc}
+          ${persistPowerStateFunc}
 
           MIN_PERF_PATH="/sys/devices/system/cpu/intel_pstate/min_perf_pct"
 
@@ -299,8 +355,13 @@ in
             TARGET_MIN=30
           fi
 
-          echo "''${TARGET_MIN}" > "''${MIN_PERF_PATH}"
-          echo "Min performance floor set to ''${TARGET_MIN}% (power source: ''${POWER_SRC})"
+          write_state "desired/min_perf_pct" "''${TARGET_MIN}"
+          if write_sysfs "''${MIN_PERF_PATH}" "''${TARGET_MIN}"; then
+            echo "Min performance floor set to ''${TARGET_MIN}% (power source: ''${POWER_SRC})"
+          else
+            echo "WARN: failed to set min_perf_pct to ''${TARGET_MIN}% (busy?)"
+          fi
+          write_state "actual/min_perf_pct" "$(cat "''${MIN_PERF_PATH}" 2>/dev/null || echo unknown)"
         '';
       };
     };
@@ -327,6 +388,8 @@ in
         RemainAfterExit = true;
         ExecStart       = mkRobustScript "rapl-power-limits" ''
           ${detectPowerSourceFunc}
+          ${writeSysfsFunc}
+          ${persistPowerStateFunc}
 
           CPU_TYPE=$(${cpuDetectionScript})
           POWER_SRC=$(detect_power_source)
@@ -373,14 +436,116 @@ in
             exit 1
           fi
 
-          echo "''${PL1_UW}" > "''${RAPL_BASE}/constraint_0_power_limit_uw"
-          echo "PL1 set to ''${PL1_WATTS} W"
+          write_state "desired/rapl_pl1_w" "''${PL1_WATTS}"
+          write_state "desired/rapl_pl2_w" "''${PL2_WATTS}"
 
-          echo "''${PL2_UW}" > "''${RAPL_BASE}/constraint_1_power_limit_uw"
-          echo "PL2 set to ''${PL2_WATTS} W"
+          if write_sysfs "''${RAPL_BASE}/constraint_0_power_limit_uw" "''${PL1_UW}"; then
+            echo "PL1 set to ''${PL1_WATTS} W"
+          else
+            echo "WARN: failed to set PL1 (busy?)"
+          fi
+
+          if write_sysfs "''${RAPL_BASE}/constraint_1_power_limit_uw" "''${PL2_UW}"; then
+            echo "PL2 set to ''${PL2_WATTS} W"
+          else
+            echo "WARN: failed to set PL2 (busy?)"
+          fi
+
+          write_state "actual/rapl_pl1_w" "$(( $(cat "''${RAPL_BASE}/constraint_0_power_limit_uw" 2>/dev/null || echo 0) / 1000000 ))"
+          write_state "actual/rapl_pl2_w" "$(( $(cat "''${RAPL_BASE}/constraint_1_power_limit_uw" 2>/dev/null || echo 0) / 1000000 ))"
 
           install -d -m 0755 /var/run
           echo "''${PL2_WATTS}" > /var/run/rapl-base-pl2
+        '';
+      };
+    };
+
+    # --------------------------------------------------------------------------
+    # 4b) SHORT-LIVED GUARD (detect + mitigate firmware/service drift)
+    # --------------------------------------------------------------------------
+    power-policy-guard = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
+      description = "Guard power settings against drift (short-lived)";
+      wantedBy    = [ "multi-user.target" ];
+      after       = [
+        "platform-profile.service"
+        "cpu-governor.service"
+        "cpu-epp.service"
+        "cpu-min-freq-guard.service"
+        "rapl-power-limits.service"
+      ];
+      serviceConfig = {
+        Type = "simple";
+        ExecStart = mkRobustScript "power-policy-guard" ''
+          ${writeSysfsFunc}
+          ${persistPowerStateFunc}
+
+          DURATION_SEC=60
+          INTERVAL_SEC=2
+
+          desired_platform="$(read_state desired/platform_profile)"
+          desired_gov="$(read_state desired/governor)"
+          desired_epp="$(read_state desired/epp)"
+          desired_min_perf="$(read_state desired/min_perf_pct)"
+
+          PROFILE_PATH="/sys/firmware/acpi/platform_profile"
+          MIN_PERF_PATH="/sys/devices/system/cpu/intel_pstate/min_perf_pct"
+
+          echo "Guard starting (duration=''${DURATION_SEC}s, interval=''${INTERVAL_SEC}s)"
+          echo "Desired: platform_profile=''${desired_platform:-unknown}', governor=''${desired_gov:-unknown}', epp=''${desired_epp:-unknown}', min_perf_pct=''${desired_min_perf:-unknown}'"
+
+          end=$((SECONDS + DURATION_SEC))
+          while (( SECONDS < end )); do
+            if [[ -n "''${desired_platform}" && -w "''${PROFILE_PATH}" ]]; then
+              cur="$(cat "''${PROFILE_PATH}" 2>/dev/null || echo unknown)"
+              if [[ "''${cur}" != "''${desired_platform}" ]]; then
+                echo "Drift: platform_profile actual=''${cur}' wanted=''${desired_platform}' → reapply"
+                write_sysfs "''${PROFILE_PATH}" "''${desired_platform}" || true
+              fi
+              write_state "actual/platform_profile" "$(cat "''${PROFILE_PATH}" 2>/dev/null || echo unknown)"
+            fi
+
+            if [[ -n "''${desired_min_perf}" && -w "''${MIN_PERF_PATH}" ]]; then
+              cur="$(cat "''${MIN_PERF_PATH}" 2>/dev/null || echo unknown)"
+              if [[ "''${cur}" != "''${desired_min_perf}" ]]; then
+                echo "Drift: min_perf_pct actual=''${cur}' wanted=''${desired_min_perf}' → reapply"
+                write_sysfs "''${MIN_PERF_PATH}" "''${desired_min_perf}" || true
+              fi
+              write_state "actual/min_perf_pct" "$(cat "''${MIN_PERF_PATH}" 2>/dev/null || echo unknown)"
+            fi
+
+            if [[ -n "''${desired_gov}" ]]; then
+              for govp in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
+                [[ -w "''${govp}" ]] || continue
+                cur="$(cat "''${govp}" 2>/dev/null || echo "")"
+                [[ "''${cur}" == "''${desired_gov}" ]] && continue
+                avail="$(cat "$(dirname "''${govp}")/scaling_available_governors" 2>/dev/null || echo "")"
+                if [[ -n "''${avail}" ]] && ! echo "''${avail}" | ${pkgs.gnugrep}/bin/grep -qw "''${desired_gov}"; then
+                  continue
+                fi
+                echo "Drift: $(dirname "''${govp}") governor ''${cur}' → ''${desired_gov}'"
+                write_sysfs "''${govp}" "''${desired_gov}" || true
+              done
+            fi
+
+            if [[ -n "''${desired_epp}" ]]; then
+              for eppp in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+                [[ -w "''${eppp}" ]] || continue
+                cur="$(cat "''${eppp}" 2>/dev/null || echo "")"
+                [[ "''${cur}" == "''${desired_epp}" ]] && continue
+                avail="$(cat "$(dirname "''${eppp}")/energy_performance_available_preferences" 2>/dev/null || echo "")"
+                if [[ -n "''${avail}" ]] && ! echo "''${avail}" | ${pkgs.gnugrep}/bin/grep -qw "''${desired_epp}"; then
+                  continue
+                fi
+                echo "Drift: $(dirname "''${eppp}") epp ''${cur}' → ''${desired_epp}'"
+                write_sysfs "''${eppp}" "''${desired_epp}" || true
+              done
+              write_state "actual/epp_policy0" "$(cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || echo unknown)"
+            fi
+
+            sleep "''${INTERVAL_SEC}"
+          done
+
+          echo "Guard finished"
         '';
       };
     };
@@ -538,6 +703,7 @@ in
             "rapl-power-limits.service"
             "rapl-thermo-guard.service"
             "battery-thresholds.service"
+            "power-policy-guard.service"
           )
 
           for SVC in "''${SERVICES[@]}"; do
@@ -572,6 +738,7 @@ in
             "rapl-power-limits.service"
             "rapl-thermo-guard.service"
             "battery-thresholds.service"
+            "power-policy-guard.service"
           )
 
           for SVC in "''${SERVICES[@]}"; do
