@@ -440,6 +440,46 @@ in
             exit 1
           fi
 
+          # Clamp requested limits to firmware/platform-reported ranges when available.
+          # This keeps logs + "desired" state consistent on systems where the
+          # platform enforces a lower cap than we request (common on laptops).
+          read_uw() {
+            local path="$1"
+            [[ -f "$path" ]] || return 1
+            cat "$path" 2>/dev/null || return 1
+          }
+
+          clamp_uw() {
+            local name="$1" req_w="$2" min_uw="$3" max_uw="$4"
+            local req_uw=$((req_w * 1000000))
+            if [[ -n "$max_uw" && "$max_uw" -gt 0 && "$req_uw" -gt "$max_uw" ]]; then
+              echo "INFO: $name clamped by platform max: $((req_uw/1000000))W → $((max_uw/1000000))W"
+              req_uw="$max_uw"
+            fi
+            if [[ -n "$min_uw" && "$min_uw" -gt 0 && "$req_uw" -lt "$min_uw" ]]; then
+              echo "INFO: $name raised by platform min: $((req_uw/1000000))W → $((min_uw/1000000))W"
+              req_uw="$min_uw"
+            fi
+            echo "$req_uw"
+          }
+
+          PL1_MIN_UW="$(read_uw "''${RAPL_BASE}/constraint_0_min_power_uw" || true)"
+          PL1_MAX_UW="$(read_uw "''${RAPL_BASE}/constraint_0_max_power_uw" || true)"
+          PL2_MIN_UW="$(read_uw "''${RAPL_BASE}/constraint_1_min_power_uw" || true)"
+          PL2_MAX_UW="$(read_uw "''${RAPL_BASE}/constraint_1_max_power_uw" || true)"
+
+          PL1_UW="$(clamp_uw PL1 "''${PL1_WATTS}" "''${PL1_MIN_UW}" "''${PL1_MAX_UW}")"
+          PL2_UW="$(clamp_uw PL2 "''${PL2_WATTS}" "''${PL2_MIN_UW}" "''${PL2_MAX_UW}")"
+
+          # Ensure PL2 >= PL1 (burst should not be below sustained).
+          if [[ "''${PL2_UW}" -lt "''${PL1_UW}" ]]; then
+            echo "INFO: PL1 > PL2 after clamp; lowering PL1 to match PL2: $((PL1_UW/1000000))W → $((PL2_UW/1000000))W"
+            PL1_UW="''${PL2_UW}"
+          fi
+
+          PL1_WATTS=$((PL1_UW / 1000000))
+          PL2_WATTS=$((PL2_UW / 1000000))
+
           write_state "desired/rapl_pl1_w" "''${PL1_WATTS}"
           write_state "desired/rapl_pl2_w" "''${PL2_WATTS}"
 
@@ -455,11 +495,14 @@ in
             echo "WARN: failed to set PL2 (busy?)"
           fi
 
-          write_state "actual/rapl_pl1_w" "$(( $(cat "''${RAPL_BASE}/constraint_0_power_limit_uw" 2>/dev/null || echo 0) / 1000000 ))"
-          write_state "actual/rapl_pl2_w" "$(( $(cat "''${RAPL_BASE}/constraint_1_power_limit_uw" 2>/dev/null || echo 0) / 1000000 ))"
+          ACTUAL_PL1_W="$(( $(cat "''${RAPL_BASE}/constraint_0_power_limit_uw" 2>/dev/null || echo 0) / 1000000 ))"
+          ACTUAL_PL2_W="$(( $(cat "''${RAPL_BASE}/constraint_1_power_limit_uw" 2>/dev/null || echo 0) / 1000000 ))"
+          write_state "actual/rapl_pl1_w" "''${ACTUAL_PL1_W}"
+          write_state "actual/rapl_pl2_w" "''${ACTUAL_PL2_W}"
 
           install -d -m 0755 /var/run
-          echo "''${PL2_WATTS}" > /var/run/rapl-base-pl2
+          # Store the effective PL2 we actually ended up with.
+          echo "''${ACTUAL_PL2_W:-0}" > /var/run/rapl-base-pl2
         '';
       };
     };
