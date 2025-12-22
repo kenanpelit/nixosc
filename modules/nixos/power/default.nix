@@ -610,7 +610,12 @@ in
           CLAMP_WARM_UW=$((CLAMP_WARM_W * 1000000))
           CLAMP_HOT_UW=$((CLAMP_HOT_W * 1000000))
 
-          echo "Starting thermal guard (base PL2: ''${BASE_PL2} W, warm clamp: ''${CLAMP_WARM_W} W, hot clamp: ''${CLAMP_HOT_W} W)"
+          # Earlier clamp thresholds to keep package temps closer to ~70°C on AC.
+          RESTORE_C=68
+          WARM_C=72
+          HOT_C=76
+
+          echo "Starting thermal guard (base PL2: ''${BASE_PL2} W, warm clamp: ''${CLAMP_WARM_W} W @ ''${WARM_C}°C, hot clamp: ''${CLAMP_HOT_W} W @ ''${HOT_C}°C, restore @ <= ''${RESTORE_C}°C)"
 
           read_pkgtemp() {
             for tz in /sys/class/thermal/thermal_zone*; do
@@ -632,17 +637,17 @@ in
             CURRENT_PL2_UW=$(cat "''${PL2_PATH}")
             CURRENT_PL2_W=$((CURRENT_PL2_UW / 1000000))
 
-            if   [[ ''${TEMP_INT} -le 72 ]]; then
+            if [[ ''${TEMP_INT} -le ''${RESTORE_C} ]]; then
               if [[ ''${CURRENT_PL2_W} -ne ''${BASE_PL2} ]]; then
                 echo "''${BASE_PL2_UW}" > "''${PL2_PATH}"
                 echo "[ ''${TEMP_INT}°C ] PL2 restored to ''${BASE_PL2} W"
               fi
-            elif [[ ''${TEMP_INT} -ge 82 ]]; then
+            elif [[ ''${TEMP_INT} -ge ''${HOT_C} ]]; then
               if [[ ''${CURRENT_PL2_UW} -ne ''${CLAMP_HOT_UW} ]]; then
                 echo "''${CLAMP_HOT_UW}" > "''${PL2_PATH}"
                 echo "[ ''${TEMP_INT}°C ] PL2 clamped to ''${CLAMP_HOT_W} W"
               fi
-            elif [[ ''${TEMP_INT} -ge 77 ]]; then
+            elif [[ ''${TEMP_INT} -ge ''${WARM_C} ]]; then
               if [[ ''${CURRENT_PL2_UW} -ne ''${CLAMP_WARM_UW} ]]; then
                 echo "''${CLAMP_WARM_UW}" > "''${PL2_PATH}"
                 echo "[ ''${TEMP_INT}°C ] PL2 clamped to ''${CLAMP_WARM_W} W"
