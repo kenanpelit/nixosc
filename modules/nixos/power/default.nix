@@ -588,16 +588,23 @@ in
         RestartSec = "5s";
         ExecStart  = mkRobustScript "rapl-thermo-guard" ''
           RAPL_BASE="/sys/class/powercap/intel-rapl:0"
+          PL1_PATH="''${RAPL_BASE}/constraint_0_power_limit_uw"
           PL2_PATH="''${RAPL_BASE}/constraint_1_power_limit_uw"
           BASE_PL2_FILE="/var/run/rapl-base-pl2"
 
-          if [[ ! -f "''${BASE_PL2_FILE}" || ! -f "''${PL2_PATH}" ]]; then
+          if [[ ! -f "''${BASE_PL2_FILE}" || ! -f "''${PL1_PATH}" || ! -f "''${PL2_PATH}" ]]; then
             echo "RAPL not ready; skipping thermal guard"
             exit 0
           fi
 
           BASE_PL2=$(cat "''${BASE_PL2_FILE}")
           BASE_PL2_UW=$((BASE_PL2 * 1000000))
+
+          # Read the actual current PL1 from sysfs as our restore target. On some
+          # systems the platform/firmware may cap PL1 below what we request.
+          BASE_PL1_UW="$(cat "''${PL1_PATH}")"
+          BASE_PL1_W=$((BASE_PL1_UW / 1000000))
+
           # Clamp relative to base PL2 so we never *increase* PL2 when hot.
           # (Fixed clamps like 60 W can accidentally raise PL2 on lower-TDP CPUs.)
           # Stronger clamps to target cooler sustained temps. This will reduce
@@ -606,19 +613,33 @@ in
           CLAMP_WARM_W=$(( (BASE_PL2 * 75) / 100 )) # ~75% at warm temps
           CLAMP_HOT_W=$(( (BASE_PL2 * 50) / 100 ))  # ~50% at hot temps
 
+          # Mild PL1 clamps (sustained). This has the biggest impact on long,
+          # all-core loads and is the most effective lever for sustained temps.
+          # Keep it gentle to preserve responsiveness.
+          CLAMP_PL1_WARM_W=$(( (BASE_PL1_W * 93) / 100 ))
+          CLAMP_PL1_HOT_W=$(( (BASE_PL1_W * 85) / 100 ))
+
           # Keep sane minimums (avoid clamping too low on already-low base PL2).
           [[ ''${CLAMP_WARM_W} -lt 15 ]] && CLAMP_WARM_W=15
           [[ ''${CLAMP_HOT_W} -lt 15 ]] && CLAMP_HOT_W=15
+          [[ ''${CLAMP_PL1_WARM_W} -lt 10 ]] && CLAMP_PL1_WARM_W=10
+          [[ ''${CLAMP_PL1_HOT_W} -lt 10 ]] && CLAMP_PL1_HOT_W=10
+
+          if [[ ''${CLAMP_PL1_HOT_W} -gt ''${CLAMP_PL1_WARM_W} ]]; then
+            CLAMP_PL1_HOT_W="''${CLAMP_PL1_WARM_W}"
+          fi
 
           CLAMP_WARM_UW=$((CLAMP_WARM_W * 1000000))
           CLAMP_HOT_UW=$((CLAMP_HOT_W * 1000000))
+          CLAMP_PL1_WARM_UW=$((CLAMP_PL1_WARM_W * 1000000))
+          CLAMP_PL1_HOT_UW=$((CLAMP_PL1_HOT_W * 1000000))
 
           # Earlier clamp thresholds to keep package temps closer to ~70°C on AC.
           RESTORE_C=66
           WARM_C=70
           HOT_C=74
 
-          echo "Starting thermal guard (base PL2: ''${BASE_PL2} W, warm clamp: ''${CLAMP_WARM_W} W @ ''${WARM_C}°C, hot clamp: ''${CLAMP_HOT_W} W @ ''${HOT_C}°C, restore @ <= ''${RESTORE_C}°C)"
+          echo "Starting thermal guard (PL1 base: ''${BASE_PL1_W} W, PL2 base: ''${BASE_PL2} W, warm: PL1 ''${CLAMP_PL1_WARM_W} W + PL2 ''${CLAMP_WARM_W} W @ ''${WARM_C}°C, hot: PL1 ''${CLAMP_PL1_HOT_W} W + PL2 ''${CLAMP_HOT_W} W @ ''${HOT_C}°C, restore @ <= ''${RESTORE_C}°C)"
 
           read_pkgtemp() {
             for tz in /sys/class/thermal/thermal_zone*; do
@@ -637,20 +658,34 @@ in
             TEMP_INT="$(read_pkgtemp)"
             [[ -z "''${TEMP_INT}" ]] && { sleep 3; continue; }
 
+            CURRENT_PL1_UW="$(cat "''${PL1_PATH}")"
+            CURRENT_PL1_W=$((CURRENT_PL1_UW / 1000000))
             CURRENT_PL2_UW=$(cat "''${PL2_PATH}")
             CURRENT_PL2_W=$((CURRENT_PL2_UW / 1000000))
 
             if [[ ''${TEMP_INT} -le ''${RESTORE_C} ]]; then
+              if [[ ''${CURRENT_PL1_UW} -ne ''${BASE_PL1_UW} ]]; then
+                echo "''${BASE_PL1_UW}" > "''${PL1_PATH}"
+                echo "[ ''${TEMP_INT}°C ] PL1 restored to ''${BASE_PL1_W} W"
+              fi
               if [[ ''${CURRENT_PL2_W} -ne ''${BASE_PL2} ]]; then
                 echo "''${BASE_PL2_UW}" > "''${PL2_PATH}"
                 echo "[ ''${TEMP_INT}°C ] PL2 restored to ''${BASE_PL2} W"
               fi
             elif [[ ''${TEMP_INT} -ge ''${HOT_C} ]]; then
+              if [[ ''${CURRENT_PL1_UW} -ne ''${CLAMP_PL1_HOT_UW} ]]; then
+                echo "''${CLAMP_PL1_HOT_UW}" > "''${PL1_PATH}"
+                echo "[ ''${TEMP_INT}°C ] PL1 clamped to ''${CLAMP_PL1_HOT_W} W"
+              fi
               if [[ ''${CURRENT_PL2_UW} -ne ''${CLAMP_HOT_UW} ]]; then
                 echo "''${CLAMP_HOT_UW}" > "''${PL2_PATH}"
                 echo "[ ''${TEMP_INT}°C ] PL2 clamped to ''${CLAMP_HOT_W} W"
               fi
             elif [[ ''${TEMP_INT} -ge ''${WARM_C} ]]; then
+              if [[ ''${CURRENT_PL1_UW} -ne ''${CLAMP_PL1_WARM_UW} ]]; then
+                echo "''${CLAMP_PL1_WARM_UW}" > "''${PL1_PATH}"
+                echo "[ ''${TEMP_INT}°C ] PL1 clamped to ''${CLAMP_PL1_WARM_W} W"
+              fi
               if [[ ''${CURRENT_PL2_UW} -ne ''${CLAMP_WARM_UW} ]]; then
                 echo "''${CLAMP_WARM_UW}" > "''${PL2_PATH}"
                 echo "[ ''${TEMP_INT}°C ] PL2 clamped to ''${CLAMP_WARM_W} W"
