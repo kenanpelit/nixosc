@@ -354,7 +354,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_MIN=60
+            TARGET_MIN=50
           else
             TARGET_MIN=30
           fi
