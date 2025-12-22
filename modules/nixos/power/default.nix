@@ -56,21 +56,6 @@ let
       ${content}
     '';
   };
-
-  # Serialize "leaf" power knob writers (oneshot units) to reduce EBUSY races.
-  # IMPORTANT: Do NOT use this for orchestration units (which restart other
-  # units) or long-running daemons (like rapl-thermo-guard), otherwise we'd
-  # deadlock or block the whole stack.
-  mkRobustLockedScript = name: content: mkRobustScript name ''
-    LOCK_FILE="/run/osc-power-mgmt.lock"
-    exec 9> "''${LOCK_FILE}"
-    if ! ${pkgs.util-linux}/bin/flock -w 10 9; then
-      echo "WARN: power-mgmt lock busy; skipping (${name})"
-      exit 0
-    fi
-
-    ${content}
-  '';
 in
 {
   # ============================================================================ 
@@ -87,7 +72,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "platform-profile" ''
+        ExecStart       = mkRobustScript "platform-profile" ''
           ${detectPowerSourceFunc}
 
           PROFILE_PATH="/sys/firmware/acpi/platform_profile"
@@ -140,11 +125,12 @@ in
     cpu-governor = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
       description = "Configure CPU governor and Intel HWP dynamic boost (power-aware)";
       wantedBy    = [ "multi-user.target" ];
-      after       = [ "systemd-udev-settle.service" ];
+      after       = [ "systemd-udev-settle.service" "platform-profile.service" ];
+      wants       = [ "platform-profile.service" ];
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "cpu-governor" ''
+        ExecStart       = mkRobustScript "cpu-governor" ''
           ${detectPowerSourceFunc}
 
           POWER_SRC=$(detect_power_source)
@@ -223,7 +209,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "cpu-epp" ''
+        ExecStart       = mkRobustScript "cpu-epp" ''
           ${detectPowerSourceFunc}
 
           # Wait briefly for cpufreq policies to appear (early boot race).
@@ -291,11 +277,12 @@ in
     cpu-min-freq-guard = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
       description = "Set minimum CPU performance floor (intel_pstate)";
       wantedBy    = [ "multi-user.target" ];
-      after       = [ "systemd-udev-settle.service" ];
+      after       = [ "systemd-udev-settle.service" "cpu-epp.service" ];
+      wants       = [ "cpu-epp.service" ];
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "cpu-min-freq-guard" ''
+        ExecStart       = mkRobustScript "cpu-min-freq-guard" ''
           ${detectPowerSourceFunc}
 
           MIN_PERF_PATH="/sys/devices/system/cpu/intel_pstate/min_perf_pct"
@@ -328,6 +315,7 @@ in
         "systemd-udev-settle.service"
         "platform-profile.service"
         "cpu-epp.service"
+        "cpu-min-freq-guard.service"
       ];
       wants    = [ "disable-rapl-mmio.service" "rapl-thermo-guard.service" ];
       requires = [ "disable-rapl-mmio.service" ];
@@ -337,7 +325,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "rapl-power-limits" ''
+        ExecStart       = mkRobustScript "rapl-power-limits" ''
           ${detectPowerSourceFunc}
 
           CPU_TYPE=$(${cpuDetectionScript})
@@ -385,24 +373,8 @@ in
             exit 1
           fi
 
-          # Some firmware exposes a hard maximum via `constraint_0_max_power_uw`.
-          # Writing above that can behave inconsistently across laptops.
-          C0_MAX_UW="$(cat "''${RAPL_BASE}/constraint_0_max_power_uw" 2>/dev/null || echo 0)"
-          if [[ "''${C0_MAX_UW}" =~ ^[0-9]+$ ]] && [[ "''${C0_MAX_UW}" -gt 0 ]] && [[ "''${PL1_UW}" -gt "''${C0_MAX_UW}" ]]; then
-            echo "WARN: requested PL1 ''${PL1_WATTS}W exceeds platform max $((C0_MAX_UW/1000000))W; clamping"
-            PL1_UW="''${C0_MAX_UW}"
-            PL1_WATTS=$((PL1_UW / 1000000))
-          fi
-
           echo "''${PL1_UW}" > "''${RAPL_BASE}/constraint_0_power_limit_uw"
           echo "PL1 set to ''${PL1_WATTS} W"
-
-          C1_MAX_UW="$(cat "''${RAPL_BASE}/constraint_1_max_power_uw" 2>/dev/null || echo 0)"
-          if [[ "''${C1_MAX_UW}" =~ ^[0-9]+$ ]] && [[ "''${C1_MAX_UW}" -gt 0 ]] && [[ "''${PL2_UW}" -gt "''${C1_MAX_UW}" ]]; then
-            echo "WARN: requested PL2 ''${PL2_WATTS}W exceeds platform max $((C1_MAX_UW/1000000))W; clamping"
-            PL2_UW="''${C1_MAX_UW}"
-            PL2_WATTS=$((PL2_UW / 1000000))
-          fi
 
           echo "''${PL2_UW}" > "''${RAPL_BASE}/constraint_1_power_limit_uw"
           echo "PL2 set to ''${PL2_WATTS} W"
@@ -422,7 +394,7 @@ in
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "disable-rapl-mmio" ''
+        ExecStart       = mkRobustScript "disable-rapl-mmio" ''
           if ${pkgs.kmod}/bin/lsmod | ${pkgs.gnugrep}/bin/grep -q "^intel_rapl_mmio"; then
             echo "Disabling intel_rapl_mmio (rmmod)..."
             ${pkgs.kmod}/bin/rmmod intel_rapl_mmio 2>/dev/null || true
@@ -519,11 +491,12 @@ in
     battery-thresholds = lib.mkIf (enablePowerTuning && isPhysicalMachine) {
       description = "Set battery charge thresholds (75–80%)";
       wantedBy    = [ "multi-user.target" ];
-      after       = [ "systemd-udev-settle.service" ];
+      after       = [ "systemd-udev-settle.service" "rapl-power-limits.service" ];
+      wants       = [ "rapl-power-limits.service" ];
       serviceConfig = {
         Type            = "oneshot";
         RemainAfterExit = true;
-        ExecStart       = mkRobustLockedScript "battery-thresholds" ''
+        ExecStart       = mkRobustScript "battery-thresholds" ''
           BAT_BASE="/sys/class/power_supply/BAT0"
 
           if [[ ! -d "''${BAT_BASE}" ]]; then
