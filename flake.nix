@@ -140,8 +140,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/dca07a70f8269e3cb598095cf0b22e65e1c72082"; # 1220 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/5ffe563b7d0fef1f1c12700e47c4d5b92aaa17fb"; # 1220 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/a7494971fd7c4fb823d4b77a7543d77225442ce4"; # 1222 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/dca07a70f8269e3cb598095cf0b22e65e1c72082"; # 1220 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/5ffe563b7d0fef1f1c12700e47c4d5b92aaa17fb"; # 1220 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/6ef08c3d5476a477dbfa7f67a4e10af47d3ae6cf"; # 1219 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297";
     };
