@@ -275,10 +275,13 @@ EOF
 
 	# RAPL Power Limits
 	PL1_W=0 PL2_W=0 PL4_W=0 BASE_PL2_W=0
+	PL1_MAX_W=0 PL2_MAX_W=0
 	if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
 		PL1_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 		PL2_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 		PL4_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_2_power_limit_uw 2>/dev/null || echo 0) / 1000000))
+		PL1_MAX_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_0_max_power_uw 2>/dev/null || echo 0) / 1000000))
+		PL2_MAX_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_1_max_power_uw 2>/dev/null || echo 0) / 1000000))
 		[[ -r /var/run/rapl-base-pl2 ]] && BASE_PL2_W=$(cat /var/run/rapl-base-pl2)
 	fi
 
@@ -535,10 +538,12 @@ EOF
 	echo "TEMPERATURE: ${TEMP_COLOR}${BOLD}${TEMP_C}°C${RST}"
 
 	echo ""
-	echo "RAPL POWER LIMITS (MSR):"
+		echo "RAPL POWER LIMITS (MSR):"
 	if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
 		printf "  PL1 (sustained): ${BOLD}%2d W${RST}\n" "$PL1_W"
+		[[ $PL1_MAX_W -gt 0 ]] && printf "  ${DIM}PL1 max (platform): %2d W${RST}\n" "$PL1_MAX_W"
 		printf "  PL2 (burst):     ${BOLD}%2d W${RST}\n" "$PL2_W"
+		[[ $PL2_MAX_W -gt 0 ]] && printf "  ${DIM}PL2 max (platform): %2d W${RST}\n" "$PL2_MAX_W"
 		[[ $PL4_W -gt 0 ]] && printf "  PL4 (peak):      ${BOLD}%2d W${RST}\n" "$PL4_W"
 		[[ $BASE_PL2_W -gt 0 ]] && echo "  ${DIM}Base PL2 (thermal guard ref): ${BASE_PL2_W} W${RST}"
 
