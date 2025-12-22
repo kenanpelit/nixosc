@@ -154,6 +154,48 @@ Both Niri and Hyprland configurations are split into granular Nix files for bett
 - `settings.nix`: Core compositor settings
 - `variables.nix`: Environment variables & theming constants
 
+## 🔋 Power Management (v17 stack)
+
+This repo includes a custom **power management stack** for laptops (especially Intel HWP / `intel_pstate=active`) that aims to stay **consistent** across boot/suspend/AC changes and avoid “mystery overrides”.
+
+- **Module:** `modules/nixos/power/default.nix`
+- **Status CLI:** `osc-system status` (use `sudo osc-system turbostat-quick` to validate real CPU MHz under HWP)
+- **Note:** Under Intel HWP, `scaling_cur_freq` can report ~400MHz even when the CPU is busy; prefer `turbostat` for truth.
+
+### What it controls
+
+On physical hosts, the module manages:
+- **ACPI Platform Profile** (`/sys/firmware/acpi/platform_profile`)
+- **CPU governor** (policy-level `scaling_governor`)
+- **Intel EPP** (HWP energy preference; policy-level `energy_performance_preference`)
+- **Minimum performance floor** (`/sys/devices/system/cpu/intel_pstate/min_perf_pct`)
+- **RAPL power limits** (MSR interface via `/sys/class/powercap/intel-rapl:0`)
+- **Thermal guard** that clamps PL1/PL2 when package temp crosses thresholds
+- **Drift guard** (`power-policy-guard`) to re-apply settings if firmware/other services revert them shortly after boot/resume
+
+### Services
+
+The main units you’ll see on a running system:
+- `platform-profile.service`
+- `cpu-governor.service`
+- `cpu-epp.service`
+- `cpu-min-freq-guard.service`
+- `rapl-power-limits.service`
+- `rapl-thermo-guard.service`
+- `battery-thresholds.service`
+- `power-policy-guard.service`
+
+To re-apply everything after changes or debugging:
+
+```bash
+sudo osc-system profile-refresh
+```
+
+### Avoiding conflicts
+
+This module disables `power-profiles-daemon` to prevent it from overriding platform profile / EPP / governor after boot.
+If you use other power tools (e.g. `tlp`, `auto-cpufreq`, `thermald`), double-check that they are not fighting your policy.
+
 ### DMS Integration
 - **Themes:** Automatically managed by DMS/Matugen or manually pinned via `settings.nix`.
 - **Plugins:** Installed via imperative `dms-plugin-sync` service (best-effort).
