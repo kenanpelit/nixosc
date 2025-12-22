@@ -63,6 +63,9 @@
     socat                        # Multipurpose relay (SOcket CAT)
     rsync                        # File synchronization tool
 
+    # -- Remote Desktop --------------------------------------------------------
+    rustdesk-flutter             # RustDesk remote desktop (client)
+
     # -- Virtualization --------------------------------------------------------
     virt-manager                 # VM management GUI
     virt-viewer                  # VM console viewer
