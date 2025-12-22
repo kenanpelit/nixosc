@@ -453,11 +453,11 @@ in
             local name="$1" req_w="$2" min_uw="$3" max_uw="$4"
             local req_uw=$((req_w * 1000000))
             if [[ -n "$max_uw" && "$max_uw" -gt 0 && "$req_uw" -gt "$max_uw" ]]; then
-              echo "INFO: $name clamped by platform max: $((req_uw/1000000))W → $((max_uw/1000000))W"
+              echo "INFO: $name clamped by platform max: $((req_uw/1000000))W → $((max_uw/1000000))W" >&3
               req_uw="$max_uw"
             fi
             if [[ -n "$min_uw" && "$min_uw" -gt 0 && "$req_uw" -lt "$min_uw" ]]; then
-              echo "INFO: $name raised by platform min: $((req_uw/1000000))W → $((min_uw/1000000))W"
+              echo "INFO: $name raised by platform min: $((req_uw/1000000))W → $((min_uw/1000000))W" >&3
               req_uw="$min_uw"
             fi
             echo "$req_uw"
@@ -467,6 +467,10 @@ in
           PL1_MAX_UW="$(read_uw "''${RAPL_BASE}/constraint_0_max_power_uw" || true)"
           PL2_MIN_UW="$(read_uw "''${RAPL_BASE}/constraint_1_min_power_uw" || true)"
           PL2_MAX_UW="$(read_uw "''${RAPL_BASE}/constraint_1_max_power_uw" || true)"
+
+          # In command substitutions below we capture stdout; keep log output on a
+          # separate fd so INFO lines don't contaminate numeric values.
+          exec 3>&1
 
           PL1_UW="$(clamp_uw PL1 "''${PL1_WATTS}" "''${PL1_MIN_UW}" "''${PL1_MAX_UW}")"
           PL2_UW="$(clamp_uw PL2 "''${PL2_WATTS}" "''${PL2_MIN_UW}" "''${PL2_MAX_UW}")"
