@@ -128,7 +128,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET="performance"
+            TARGET="balanced"
           else
             TARGET="low-power"
           fi
@@ -195,7 +195,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_GOV="performance"
+            TARGET_GOV="powersave"
             TARGET_BOOST="1"
           else
             TARGET_GOV="powersave"
@@ -281,7 +281,7 @@ in
 
           POWER_SRC=$(detect_power_source)
           if [[ "''${POWER_SRC}" == "AC" ]]; then
-            TARGET_EPP="performance"
+            TARGET_EPP="balance_performance"
           else
             TARGET_EPP="balance_power"
           fi
