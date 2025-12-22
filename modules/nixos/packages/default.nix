@@ -7,6 +7,11 @@
 
 { pkgs, ... }:
 
+let
+  # Nixpkgs currently ships the RustDesk GUI client as `rustdesk-flutter`.
+  # Some channels/overlays also provide `rustdesk`. Prefer it when available.
+  rustdeskClient = if pkgs ? rustdesk then pkgs.rustdesk else pkgs.rustdesk-flutter;
+in
 {
   environment.systemPackages = with pkgs; [
     # -- Core Utilities --------------------------------------------------------
@@ -64,7 +69,7 @@
     rsync                        # File synchronization tool
 
     # -- Remote Desktop --------------------------------------------------------
-    rustdesk-flutter             # RustDesk remote desktop (client)
+    rustdeskClient               # RustDesk remote desktop (client)
 
     # -- Virtualization --------------------------------------------------------
     virt-manager                 # VM management GUI
