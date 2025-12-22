@@ -89,6 +89,10 @@ let
   };
 in
 {
+  # Avoid conflicts with our custom power stack. power-profiles-daemon can
+  # override platform_profile / EPP / governor settings after boot.
+  services.power-profiles-daemon.enable = lib.mkForce false;
+
   # ============================================================================ 
   # CUSTOM POWER MANAGEMENT SERVICES
   # ============================================================================ 
