@@ -63,6 +63,7 @@ ensure_log_dir() {
 	local dir="$1"
 	[[ ! -d "$dir" ]] && mkdir -p "$dir" && echo -e "${GRN}Created log directory: ${dir}${RST}"
 }
+run_state_get() { read_file "/run/osc-power/$1" 2>/dev/null || return 1; }
 
 # ==============================================================================
 # Main Help
@@ -296,7 +297,9 @@ EOF
 	# Platform Profile
 	PLATFORM_PROFILE_SYSFS="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
 	PLATFORM_PROFILE_DESIRED="unknown"
-	if have journalctl; then
+	if run_state_get "desired/platform_profile" >/dev/null 2>&1; then
+		PLATFORM_PROFILE_DESIRED="$(run_state_get "desired/platform_profile" 2>/dev/null || echo "unknown")"
+	elif have journalctl; then
 		last_pp="$(journalctl -b -t power-mgmt-platform-profile -o cat -n 200 2>/dev/null \
 			| grep -E 'Platform profile (set to:|already:)' \
 			| tail -n 1 \
@@ -309,7 +312,9 @@ EOF
 	# Desired targets (best-effort, from power-mgmt logs)
 	GOVERNOR_DESIRED="unknown"
 	EPP_DESIRED="unknown"
-	if have journalctl; then
+	if run_state_get "desired/governor" >/dev/null 2>&1; then
+		GOVERNOR_DESIRED="$(run_state_get "desired/governor" 2>/dev/null || echo "unknown")"
+	elif have journalctl; then
 		last_gov="$(journalctl -b -t power-mgmt-cpu-governor -o cat -n 400 2>/dev/null \
 			| grep -E 'Governor set to ' \
 			| tail -n 1 \
@@ -317,7 +322,11 @@ EOF
 		if [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]([A-Za-z0-9_-]+) ]]; then
 			GOVERNOR_DESIRED="${BASH_REMATCH[1]}"
 		fi
+	fi
 
+	if run_state_get "desired/epp" >/dev/null 2>&1; then
+		EPP_DESIRED="$(run_state_get "desired/epp" 2>/dev/null || echo "unknown")"
+	elif have journalctl; then
 		last_epp="$(journalctl -b -t power-mgmt-cpu-epp -o cat -n 400 2>/dev/null \
 			| grep -E 'Setting EPP to:' \
 			| tail -n 1 \
@@ -472,16 +481,23 @@ EOF
 					echo "    ${CYN}→${RST} ${BOLD}${k}${RST} (${GOV_MAP[$k]} policies)"
 				done
 			fi
-			if [[ "$GOVERNOR_CPU0" != "unknown" && "$GOVERNOR_CPU0" != "$GOVERNOR_ANY" ]]; then
-				echo "  ${DIM}Note: cpu0 reports '${GOVERNOR_CPU0}' (can be misleading on intel_pstate active)${RST}"
+				if [[ "$GOVERNOR_CPU0" != "unknown" && "$GOVERNOR_CPU0" != "$GOVERNOR_ANY" ]]; then
+					echo "  ${DIM}Note: cpu0 reports '${GOVERNOR_CPU0}' (can be misleading on intel_pstate active)${RST}"
+				fi
+				if [[ "$CPU_TYPE" == "intel" && "$PSTATE" == "active" && "$GOVERNOR_ANY" == "powersave" ]]; then
+					echo "  ${DIM}Note: intel_pstate=active'da 'powersave' governor normaldir; gerçek performansı çoğunlukla EPP + min/max perf belirler.${RST}"
+				fi
 			fi
 		fi
-	fi
 
-	if [[ "$PLATFORM_PROFILE_SYSFS" != "unknown" ]]; then
-		echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE_SYSFS}${RST}"
-		[[ "$PLATFORM_PROFILE_DESIRED" != "unknown" ]] && echo "Platform Profile (desired): ${BOLD}${PLATFORM_PROFILE_DESIRED}${RST}"
-	fi
+		if [[ "$PLATFORM_PROFILE_SYSFS" != "unknown" ]]; then
+			echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE_SYSFS}${RST}"
+			[[ "$PLATFORM_PROFILE_DESIRED" != "unknown" ]] && echo "Platform Profile (desired): ${BOLD}${PLATFORM_PROFILE_DESIRED}${RST}"
+			if [[ -r /sys/firmware/acpi/platform_profile_choices ]]; then
+				choices="$(cat /sys/firmware/acpi/platform_profile_choices 2>/dev/null || true)"
+				[[ -n "$choices" ]] && echo "  ${DIM}Choices: ${choices}${RST}"
+			fi
+		fi
 
 	echo ""
 	if ((EPP_COUNT > 0)); then
@@ -524,12 +540,13 @@ EOF
 			echo "  ${YLW}⚠ sysfs 400MHz raporlayabiliyor; cpuinfo bunu desteklemiyor (muhtemelen raporlama artefaktı).${RST}"
 		fi
 
-		# If both signals are low while the system is "under load", suggest a deeper check.
-		if awk -v l="$LOAD1" -v mhz="${CPUINFO_FREQ_AVG_MHZ:-0}" 'BEGIN{exit !(l>=1.0 && mhz>0 && mhz<=600)}'; then
-			echo "  ${RED}⚠ Yük var gibi (load>=1) ama CPU MHz düşük görünüyor; bu gerçek throttling olabilir.${RST}"
-			echo "  ${DIM}→ Doğrulama: sudo ${SCRIPT_NAME} turbostat-quick${RST}"
+			# If both signals are low while the system is "under load", suggest a deeper check.
+			if awk -v l="$LOAD1" -v mhz="${CPUINFO_FREQ_AVG_MHZ:-0}" 'BEGIN{exit !(l>=1.0 && mhz>0 && mhz<=600)}'; then
+				echo "  ${YLW}⚠ load yüksek ama CPU MHz düşük görünüyor.${RST}"
+				echo "  ${DIM}Bu HWP raporlama artefaktı da olabilir, gerçek throttling de olabilir.${RST}"
+				echo "  ${DIM}→ Doğrulama: sudo ${SCRIPT_NAME} turbostat-quick${RST}"
+			fi
 		fi
-	fi
 
 	echo ""
 	TEMP_COLOR="${GRN}"
@@ -577,10 +594,10 @@ EOF
 	echo "SERVICE STATUS (v${VERSION} / v17 stack):"
 	# Must match v17 system module exactly:
 	SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds)
-	for svc in "${SERVICES[@]}"; do
-		STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
-		RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
-		SUBSTATE="$(systemctl show -p SubState --value "$svc.service" 2>/dev/null || echo "")"
+		for svc in "${SERVICES[@]}"; do
+			STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
+			RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
+			SUBSTATE="$(systemctl show -p SubState --value "$svc.service" 2>/dev/null || echo "")"
 
 		if [[ "$STATE" == "active" ]]; then
 			printf "  %-30s ${GRN}✓ ACTIVE${RST}" "$svc"
@@ -591,13 +608,29 @@ EOF
 			printf "  %-30s ${DIM}– not found (masked/disabled)${RST}\n" "$svc"
 		else
 			printf "  %-30s ${RED}✗ %s${RST} ${DIM}(%s)${RST}\n" "$svc" "$STATE" "$RESULT"
-		fi
-	done
+			fi
+		done
 
-	echo ""
-	echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
-	echo "${BOLD}💡 Tips:${RST}"
-	echo "  • Real CPU frequencies: ${CYN}${SCRIPT_NAME} turbostat-quick${RST}"
+		echo ""
+		echo "POTENTIAL CONFLICTS:"
+		CONFLICTS=(power-profiles-daemon auto-cpufreq tlp thermald tuned)
+		found_any=0
+		for svc in "${CONFLICTS[@]}"; do
+			if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
+				found_any=1
+				if systemctl is-active --quiet "${svc}.service" 2>/dev/null; then
+					echo "  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)"
+				else
+					echo "  ${DIM}${svc}${RST}: inactive"
+				fi
+			fi
+		done
+		[[ "$found_any" = "0" ]] && echo "  ${DIM}(none detected)${RST}"
+
+		echo ""
+		echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
+		echo "${BOLD}💡 Tips:${RST}"
+		echo "  • Real CPU frequencies: ${CYN}${SCRIPT_NAME} turbostat-quick${RST}"
 	echo "  • Power consumption:    ${CYN}${SCRIPT_NAME} power-check${RST} / ${CYN}${SCRIPT_NAME} power-monitor${RST}"
 	echo "  • Thermal monitoring:   ${CYN}${SCRIPT_NAME} thermal -d 300 -p${RST}"
 	echo "  • JSON output:          ${CYN}${SCRIPT_NAME} status --json${RST}"
