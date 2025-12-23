@@ -138,16 +138,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # ==========================================================================
-    # VPN: GlobalProtect (OpenConnect-based)
-    # ==========================================================================
-    # Nixpkgs' `globalprotect-openconnect` currently pulls in insecure Qt5
-    # WebEngine. Use upstream flake (GTK/WebKit) and overlay it into pkgs.
-    globalprotect-openconnect = {
-      url = "github:yuezk/GlobalProtect-openconnect";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.dgop.follows = "dgop";
@@ -256,24 +246,6 @@
         overlays = with inputs; [
           nur.overlays.default
           niri.overlays.niri
-
-          # Prefer upstream flake package to avoid nixpkgs' Qt5 WebEngine-based
-          # build (which is marked insecure).
-          (final: prev:
-            let
-              system = final.stdenv.hostPlatform.system;
-              gp = inputs."globalprotect-openconnect".packages;
-              upstream =
-                if builtins.hasAttr system gp
-                then gp.${system}.default
-                else null;
-            in
-            {
-              # Intentionally do not fall back to nixpkgs' package: it's blocked
-              # by nixpkgs as insecure (Qt5 WebEngine). If upstream isn't
-              # available for this system, keep it unset.
-              globalprotect-openconnect = upstream;
-            })
         ];
 
         # Modules automatically added to all NixOS systems.
