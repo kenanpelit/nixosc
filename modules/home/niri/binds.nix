@@ -107,8 +107,6 @@
       // Monitor Focus
       Mod+Alt+Up    { focus-monitor-up; }
       Mod+Alt+Down  { focus-monitor-down; }
-      Mod+Alt+Left  { focus-monitor-left; }
-      Mod+Alt+Right { focus-monitor-right; }
       Mod+Alt+H     { focus-monitor-left; }
       Mod+Alt+L     { focus-monitor-right; }
       Mod+Alt+K     { focus-monitor-up; }
@@ -183,8 +181,8 @@
 
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
       Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
-      Mod+Alt+Minus { spawn "niri" "msg" "action" "set-column-width" "-100"; }
-      Mod+Alt+Equal { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+      Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+      Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
 
       // Launchers
       Alt+Space { spawn "rofi-launcher"; }
