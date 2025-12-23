@@ -158,7 +158,8 @@ focus_monitor() {
         "right") niri_action focus-monitor-right ;;
         "up")    niri_action focus-monitor-up ;;
         "down")  niri_action focus-monitor-down ;;
-        "next")  niri_action focus-monitor-right ;; # Fallback
+        "next")  niri_action focus-monitor-next ;;
+        "prev")  niri_action focus-monitor-previous ;;
     esac
 }
 
@@ -241,6 +242,8 @@ main() {
             -mr) focus_monitor "right"; shift ;;
             -mu) focus_monitor "up"; shift ;;
             -md) focus_monitor "down"; shift ;;
+            -mn) focus_monitor "next"; shift ;; # monitor next
+            -mp) focus_monitor "prev"; shift ;; # monitor previous
 
             # HyprFlow-compatible monitor aliases (used by Fusuma configs)
             -ms)  focus_monitor "right"; shift ;; # monitor shift (best-effort)
@@ -260,6 +263,7 @@ main() {
                 echo "  -wn N    Focus workspace N"
                 echo "  -mw N    Move window to workspace N"
                 echo "  -ml/mr   Focus monitor left/right"
+                echo "  -mn/-mp  Focus next/previous monitor"
                 echo "  -ms/-msf Focus monitor right (alias)"
                 echo "  -mt      Toggle monitor focus (left/right)"
                 echo "  -tn/-tp  Next/previous browser tab (wtype)"

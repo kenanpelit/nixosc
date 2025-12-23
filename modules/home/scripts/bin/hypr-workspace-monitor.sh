@@ -645,6 +645,8 @@ show_help() {
   -mt              Toggle monitor focus (up/down)
   -ml              Switch to left monitor
   -mr              Switch to right monitor
+  -mn              Switch to next monitor
+  -mp              Switch to previous monitor
 
 🏠 WORKSPACE OPERATIONS:
   -wt              Switch to previous workspace ⭐
@@ -831,6 +833,16 @@ main() {
 		-mr)
 			log_debug "Focusing right monitor"
 			hyprctl dispatch focusmonitor r
+			shift
+			;;
+		-mn)
+			log_debug "Focusing next monitor"
+			hyprctl dispatch focusmonitor "+1"
+			shift
+			;;
+		-mp)
+			log_debug "Focusing previous monitor"
+			hyprctl dispatch focusmonitor "-1"
 			shift
 			;;
 		# Workspace operations

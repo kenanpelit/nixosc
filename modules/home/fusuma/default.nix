@@ -15,11 +15,25 @@ let
     hypr="${config.home.profileDirectory}/bin/hypr-workspace-monitor"
     niri="${config.home.profileDirectory}/bin/niri-workspace-monitor"
 
+    fusuma_mode=0
+    if [[ "''${1:-}" == "--fusuma" ]]; then
+      fusuma_mode=1
+      shift
+    fi
+
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
       exec "$hypr" "$@"
     fi
 
     if [[ -n "''${NIRI_SOCKET:-}" ]]; then
+      # Avoid conflicting with Niri's built-in 3/4-finger gestures when invoked from Fusuma.
+      if [[ "$fusuma_mode" == "1" ]]; then
+        case "''${1:-}" in
+          -wl|-wr|-wt|-mt|-ms|-msf|-tn|-tp)
+            exit 0
+            ;;
+        esac
+      fi
       exec "$niri" "$@"
     fi
 
@@ -28,6 +42,13 @@ let
         exec "$hypr" "$@"
         ;;
       *niri*|*Niri*)
+        if [[ "$fusuma_mode" == "1" ]]; then
+          case "''${1:-}" in
+            -wl|-wr|-wt|-mt|-ms|-msf|-tn|-tp)
+              exit 0
+              ;;
+          esac
+        fi
         exec "$niri" "$@"
         ;;
     esac
@@ -118,27 +139,27 @@ in
         swipe = {
           "3" = {
             right = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -tn";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -tn";
               threshold = 0.6;
             };
             left = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -tp";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -tp";
               threshold = 0.6;
             };
             up = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -wt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wt";
               threshold = 0.6;
             };
             down = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -mt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mt";
               threshold = 0.6;
             };
           };
           "4" = {
-            up.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -msf";
-            down.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -ms";
-            right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -wr";
-            left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -wl";
+            up.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -msf";
+            down.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -ms";
+            right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn";
+            left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp";
           };
         };
         pinch = {
