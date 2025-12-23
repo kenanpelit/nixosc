@@ -64,9 +64,9 @@
       XF86MonBrightnessDown allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "brightness" "decrement" "5" ""; }
 
       // Help
-      Mod+Slash { spawn "${bins.dms}" "ipc" "call" "keybinds" "toggle" "niri"; }
       Mod+Alt+Slash { spawn "${bins.dms}" "ipc" "call" "settings" "openWith" "keybinds"; }
-      Mod+Shift+Slash { show-hotkey-overlay; }
+      Mod+F1 { spawn "${bins.dms}" "ipc" "call" "keybinds" "toggle" "niri"; }
+      Mod+Shift+F1 { show-hotkey-overlay; }
 
       Alt+Tab hotkey-overlay-title="Switch Windows" { spawn "${bins.dms}" "ipc" "call" "spotlight" "openQuery" "!"; }
   '';
@@ -107,6 +107,8 @@
       // Monitor Focus
       Mod+Alt+Up    { focus-monitor-up; }
       Mod+Alt+Down  { focus-monitor-down; }
+      Mod+Alt+Left  { focus-monitor-left; }
+      Mod+Alt+Right { focus-monitor-right; }
       Mod+Alt+H     { focus-monitor-left; }
       Mod+Alt+L     { focus-monitor-right; }
       Mod+Alt+K     { focus-monitor-up; }
@@ -181,8 +183,8 @@
 
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
       Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
-      Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
-      Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+      Mod+Alt+Minus { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+      Mod+Alt+Equal { spawn "niri" "msg" "action" "set-column-width" "+100"; }
 
       // Launchers
       Alt+Space { spawn "rofi-launcher"; }
@@ -191,7 +193,7 @@
       Mod+Shift+S { spawn "${bins.nsticky}" "stage" "toggle-active"; }
 
       // File Managers
-      Alt+F { spawn "kitty" "-e" "yazi"; }
+      Alt+F { spawn "${bins.kitty}" "-e" "yazi"; }
       Alt+Ctrl+F { spawn "nemo"; }
 
       // Special Apps
@@ -200,7 +202,7 @@
 
       // Tools
       Mod+Shift+C { spawn "hyprpicker" "-a"; }
-      Mod+Ctrl+V { spawn "kitty" "--class" "clipse" "-e" "clipse"; }
+      Mod+Ctrl+V { spawn "${bins.kitty}" "--class" "clipse" "-e" "${bins.clipse}"; }
       F10 { spawn "bluetooth_toggle"; }
       Alt+F12 { spawn "osc-mullvad" "toggle"; }
 
