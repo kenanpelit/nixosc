@@ -27,6 +27,7 @@
       Mod+Ctrl+N { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
       Mod+Comma { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
       Mod+Delete { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
+      Ctrl+Alt+Delete { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
 
       // Wallpaper & Theming
       Mod+Y { spawn "${bins.dms}" "ipc" "call" "dankdash" "wallpaper"; }
@@ -81,12 +82,11 @@
 
       // Window Controls
       Mod+Q { close-window; }
-      Mod+Shift+E { quit skip-confirmation=true; }
       Mod+F { maximize-column; }
       Mod+Shift+F { fullscreen-window; }
       Mod+O { toggle-window-rule-opacity; }
       Mod+R { switch-preset-column-width; }
-      Mod+Alt+Space hotkey-overlay-title="Float (preset)" { spawn "${pkgs.bash}/bin/bash" "-lc" "niri msg action move-window-to-floating; niri msg action set-window-width 900; niri msg action set-window-height 650"; }
+      Mod+Shift+Space hotkey-overlay-title="Float (preset)" { spawn "${pkgs.bash}/bin/bash" "-lc" "niri msg action move-window-to-floating; niri msg action set-window-width 900; niri msg action set-window-height 650"; }
       Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
       Mod+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
 
@@ -188,7 +188,7 @@
       Alt+Space { spawn "rofi-launcher"; }
       // Mod+Ctrl+Space { spawn "walk"; }
       Mod+Ctrl+Space { spawn "${bins.nsticky}" "sticky" "toggle-active"; }
-      Mod+Shift+Space { spawn "${bins.nsticky}" "stage" "toggle-active"; }
+      Mod+Shift+S { spawn "${bins.nsticky}" "stage" "toggle-active"; }
 
       // File Managers
       Alt+F { spawn "kitty" "-e" "yazi"; }
