@@ -37,6 +37,7 @@
   my.desktop.gnome.enable = true;
   my.desktop.sway.enable = true; # VM management
   my.desktop.niri.enable = true;
+  my.desktop.cosmic.enable = true;
   
   # Components
   my.user.waybar.enable = false;
