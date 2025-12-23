@@ -26,7 +26,7 @@
       Mod+Shift+P { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
       Mod+Ctrl+N { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
       Mod+Comma { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
-      Mod+Backspace { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
+      Mod+Delete { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
 
       // Wallpaper & Theming
       Mod+Y { spawn "${bins.dms}" "ipc" "call" "dankdash" "wallpaper"; }
