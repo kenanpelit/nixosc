@@ -4,6 +4,12 @@
 
 set -euo pipefail
 
+# Ensure runtime metadata for non-login invocations (e.g., from systemd --user services like Fusuma)
+: "${XDG_RUNTIME_DIR:="/run/user/$(id -u)"}"
+
+# Ensure common Nix profiles are in PATH so `niri` resolves from services with minimal env.
+PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER}/bin:${PATH}"
+
 # =============================================================================
 # CONSTANTS
 # =============================================================================
@@ -39,12 +45,54 @@ log() {
     echo "[$SCRIPT_NAME] $1" >&2
 }
 
+# Niri IPC requires NIRI_SOCKET. systemd --user services started before niri-session-start may miss it.
+detect_wayland_display() {
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+        return 0
+    fi
+
+    local sock
+    for sock in "${XDG_RUNTIME_DIR}"/wayland-*; do
+        [[ -S "$sock" ]] || continue
+        export WAYLAND_DISPLAY
+        WAYLAND_DISPLAY="$(basename "$sock")"
+        return 0
+    done
+}
+
+ensure_niri_socket() {
+    if [[ -n "${NIRI_SOCKET:-}" ]] && [[ -S "${NIRI_SOCKET}" ]]; then
+        return 0
+    fi
+
+    detect_wayland_display || true
+
+    shopt -s nullglob
+    local candidates=()
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+        candidates+=("${XDG_RUNTIME_DIR}/niri.${WAYLAND_DISPLAY}."*.sock)
+    fi
+    candidates+=("${XDG_RUNTIME_DIR}/niri."*.sock)
+
+    local sock
+    for sock in "${candidates[@]}"; do
+        [[ -S "$sock" ]] || continue
+        export NIRI_SOCKET="$sock"
+        shopt -u nullglob
+        return 0
+    done
+    shopt -u nullglob
+    return 1
+}
+
 # Niri Actions
 niri_msg() {
+    ensure_niri_socket >/dev/null 2>&1 || true
     niri msg "$@"
 }
 
 niri_action() {
+    ensure_niri_socket >/dev/null 2>&1 || true
     niri msg action "$@"
 }
 
@@ -52,7 +100,8 @@ niri_action() {
 get_current_workspace() {
     # Fetch workspaces JSON
     local output
-    output=$($NIRI_MSG workspaces 2>/dev/null)
+    ensure_niri_socket >/dev/null 2>&1 || true
+    output=$(niri msg workspaces 2>/dev/null || true)
 
     # Check if output is valid JSON (basic check)
     if [[ -z "$output" ]] || [[ "${output:0:1}" != "[" ]]; then
