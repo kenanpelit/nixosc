@@ -18,6 +18,9 @@ let
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
   niriPkg = pkgs.niri-unstable;
+  cosmicSessionPkg = pkgs."cosmic-session" or null;
+  cosmicEnabled = cfg.enableCosmic or false;
+  cosmicAvailable = cosmicSessionPkg != null;
 
   hyprlandOptimizedSession = pkgs.writeTextFile {
     name = "hyprland-optimized-session";
@@ -76,9 +79,33 @@ let
     passthru.providedSessions = [ "niri-optimized" ];
   };
 
+  cosmicSession = pkgs.writeTextFile {
+    name = "cosmic-session";
+    # Avoid clobbering COSMIC's upstream `cosmic.desktop` if/when it exists.
+    destination = "/share/wayland-sessions/cosmic-optimized.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=COSMIC (Optimized)
+      Comment=COSMIC desktop environment (Epoch)
+      Exec=${lib.getExe' cosmicSessionPkg "cosmic-session"}
+      Type=Application
+      DesktopNames=COSMIC
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+    '';
+    passthru.providedSessions = [ "cosmic-optimized" ];
+  };
+
 in
 {
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = (!cosmicEnabled) || cosmicAvailable;
+        message = "my.display.enableCosmic is enabled, but `pkgs.cosmic-session` is missing from nixpkgs.";
+      }
+    ];
+
     # GNOME Shell (mutter) started via `org.gnome.Shell@wayland.service` expects
     # the current logind session to be a *graphical* session (Type=wayland/x11).
     # TTY logins default to Type=tty, which makes GNOME fail with:
@@ -96,6 +123,7 @@ in
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
       (lib.optional cfg.enableNiri niriSession)
+      (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSession)
     ];
 
     # Packages needed for sessions/portals
@@ -108,6 +136,9 @@ in
       
       (lib.optional cfg.enableNiri niriPkg)
       (lib.optional cfg.enableNiri niriSession)
+
+      (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSessionPkg)
+      (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSession)
     ];
   };
 }
