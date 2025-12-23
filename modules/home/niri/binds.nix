@@ -86,7 +86,7 @@
       Mod+Shift+F { fullscreen-window; }
       Mod+O { toggle-window-rule-opacity; }
       Mod+R { switch-preset-column-width; }
-      Mod+Alt+Space hotkey-overlay-title="Float (preset)" { move-window-to-floating; set-window-width 900; set-window-height 650; }
+      Mod+Alt+Space hotkey-overlay-title="Float (preset)" { spawn "${pkgs.bash}/bin/bash" "-lc" "niri msg action move-window-to-floating; niri msg action set-window-width 900; niri msg action set-window-height 650"; }
       Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
       Mod+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
 
