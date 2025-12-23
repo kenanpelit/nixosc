@@ -766,7 +766,6 @@
         "url": "https://github.com/yuezk/GlobalProtect-openconnect"
       },
       "original": {
-        "submodules": true,
         "type": "git",
         "url": "https://github.com/yuezk/GlobalProtect-openconnect"
       }

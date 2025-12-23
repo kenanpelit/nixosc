@@ -146,10 +146,7 @@
     globalprotect-openconnect = {
       # Upstream sets `inputs.self.submodules = true`; the `github:` fetcher
       # doesn't support submodules, so use a `git+https:` URL.
-      # Also explicitly enable git submodules (notably
-      # `crates/openconnect/deps/openconnect`), otherwise the build.rs patch step
-      # fails because the checkout contains empty submodule directories.
-      url = "git+https://github.com/yuezk/GlobalProtect-openconnect?submodules=1";
+      url = "git+https://github.com/yuezk/GlobalProtect-openconnect";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -272,46 +269,12 @@
                 if builtins.hasAttr system gp
                 then gp.${system}.default
                 else null;
-
-              # Upstream repo vendors OpenConnect as a git submodule under
-              # `crates/openconnect/deps/openconnect`. In practice we sometimes
-              # end up with an empty submodule checkout (e.g. submodules not
-              # fetched/available), which causes the Rust build script to fail
-              # while applying patches (missing `openconnect.h`, `gpst.c`, etc).
-              #
-              # Make the build robust by injecting a source tree from nixpkgs'
-              # `openconnect` when the submodule directory is empty.
-              openconnectSrcTree = final.runCommand "openconnect-src-tree" {
-                nativeBuildInputs = [ final.gnutar final.gzip final.xz ];
-              } ''
-                set -euo pipefail
-                mkdir -p "$out"
-
-                src="${final.openconnect.src}"
-                if [ -d "$src" ]; then
-                  cp -a "$src/." "$out/"
-                else
-                  # Best-effort unpack for tarballs (should be rare here).
-                  tar xf "$src" -C "$out" --strip-components=1
-                fi
-              '';
             in
             {
               # Intentionally do not fall back to nixpkgs' package: it's blocked
               # by nixpkgs as insecure (Qt5 WebEngine). If upstream isn't
               # available for this system, keep it unset.
-              globalprotect-openconnect =
-                if upstream == null
-                then null
-                else upstream.overrideAttrs (old: {
-                  postPatch = (old.postPatch or "") + ''
-                    if [ ! -e crates/openconnect/deps/openconnect/openconnect.h ]; then
-                      echo "Injecting OpenConnect sources into crates/openconnect/deps/openconnect (missing submodule checkout)"
-                      mkdir -p crates/openconnect/deps/openconnect
-                      cp -a ${openconnectSrcTree}/. crates/openconnect/deps/openconnect/
-                    fi
-                  '';
-                });
+              globalprotect-openconnect = upstream;
             })
         ];
 
