@@ -144,7 +144,9 @@
     # Nixpkgs' `globalprotect-openconnect` currently pulls in insecure Qt5
     # WebEngine. Use upstream flake (GTK/WebKit) and overlay it into pkgs.
     globalprotect-openconnect = {
-      url = "github:yuezk/GlobalProtect-openconnect";
+      # Upstream sets `inputs.self.submodules = true`; the `github:` fetcher
+      # doesn't support submodules, so use a `git+https:` URL.
+      url = "git+https://github.com/yuezk/GlobalProtect-openconnect";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

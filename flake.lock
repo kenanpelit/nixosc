@@ -758,16 +758,16 @@
       "locked": {
         "lastModified": 1766465167,
         "narHash": "sha256-xCOV/EV57hyF5BZ81iP6ySYhXLHJzBC74mrbQC4vkes=",
-        "owner": "yuezk",
-        "repo": "GlobalProtect-openconnect",
+        "ref": "refs/heads/main",
         "rev": "ae50155fbdd1e2da0476470a74414b9800497bb6",
+        "revCount": 442,
         "submodules": true,
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/yuezk/GlobalProtect-openconnect"
       },
       "original": {
-        "owner": "yuezk",
-        "repo": "GlobalProtect-openconnect",
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/yuezk/GlobalProtect-openconnect"
       }
     },
     "home-manager": {
