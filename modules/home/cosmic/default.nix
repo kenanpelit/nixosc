@@ -6,8 +6,11 @@
 # - Installs COSMIC userland packages (apps/daemon/session bits).
 # - Keeps config minimal; COSMIC session/greeter enabling is handled on the NixOS
 #   side via:
-#     services.desktopManager.cosmic.enable = true;
-#     services.displayManager.cosmic-greeter.enable = true;
+#     my.display.enableCosmic = true;
+#
+# Greeter:
+# - This repo uses `dms-greeter` (greetd) and explicitly disables COSMIC's greeter
+#   if it exists in the option tree.
 #
 # Notes:
 # - Package availability depends on the pinned nixpkgs. Missing packages are
@@ -77,4 +80,3 @@ in
         pkgsMissing;
   };
 }
-
