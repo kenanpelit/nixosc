@@ -86,8 +86,9 @@
       Mod+Shift+F { fullscreen-window; }
       Mod+O { toggle-window-rule-opacity; }
       Mod+R { switch-preset-column-width; }
-      Mod+Alt+Space { toggle-window-floating; }
-      Mod+Grave { switch-focus-between-floating-and-tiling; }
+      Mod+Alt+Space hotkey-overlay-title="Float (preset)" { move-window-to-floating; set-window-width 900; set-window-height 650; }
+      Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
+      Mod+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
 
       // Column Operations
       Mod+BracketLeft { consume-or-expel-window-left; }
@@ -156,19 +157,19 @@
       // - Niri rejects duplicate keys inside the same `binds {}` block.
       // - Multiple `binds {}` blocks across includes are merged; conflicting keys
       //   are replaced (last definition wins).
-      // - Your previous validate error was caused by binding Mod+Grave and
-      //   Mod+Shift+Grave twice in the same file, AND by calling scratchpad via niriusd.
+      // - Your previous validate error was caused by binding the same key twice
+      //   in the same file, AND by calling scratchpad via niriusd.
       // - Enable these binds only after picking keys that do not conflict with
-      //   existing ones (Mod+Grave is already used above).
+      //   existing ones (avoid overlaps with the core binds above).
       //
       // Recommended "safe" defaults (unlikely to collide):
-      // - Mod+Alt+Grave / Mod+Alt+Shift+Grave
+      // - Mod+Alt+BackSpace / Mod+Alt+Shift+BackSpace
       // ========================================================================
       ${lib.optionalString enableNiriusBinds ''
       Mod+Alt+Shift+Return { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
       Mod+Alt+S { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
-      Mod+Alt+Shift+Grave { spawn "${bins.nirius}" "scratchpad-toggle"; }
-      Mod+Alt+Grave { spawn "${bins.nirius}" "scratchpad-show"; }
+      Mod+Alt+Shift+BackSpace { spawn "${bins.nirius}" "scratchpad-toggle"; }
+      Mod+Alt+BackSpace { spawn "${bins.nirius}" "scratchpad-show"; }
       Mod+Alt+Shift+F10 { spawn "${bins.nirius}" "toggle-follow-mode"; }
       ''}
   '';
