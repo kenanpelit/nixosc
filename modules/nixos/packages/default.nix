@@ -5,12 +5,13 @@
 # Add/remove system packages in this module for consistency.
 # ==============================================================================
 
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   # Nixpkgs currently ships the RustDesk GUI client as `rustdesk-flutter`.
   # Some channels/overlays also provide `rustdesk`. Prefer it when available.
   rustdeskClient = if pkgs ? rustdesk then pkgs.rustdesk else pkgs.rustdesk-flutter;
+  globalprotectOpenconnect = pkgs."globalprotect-openconnect" or null;
 in
 {
   environment.systemPackages = with pkgs; [
@@ -67,7 +68,11 @@ in
     impala                       # Network utility (if available/needed)
     socat                        # Multipurpose relay (SOcket CAT)
     rsync                        # File synchronization tool
-
+  ]
+  # GlobalProtect VPN (OpenConnect-based). Optional: may be missing depending on
+  # the pinned nixpkgs.
+  ++ (lib.optional (globalprotectOpenconnect != null) globalprotectOpenconnect)
+  ++ (with pkgs; [
     # -- Remote Desktop --------------------------------------------------------
     rustdeskClient               # RustDesk remote desktop (client)
 
@@ -106,5 +111,5 @@ in
     # -- Services --------------------------------------------------------------
     at                           # Job scheduling
     logger                       # Syslog shell interface
-  ];
+  ]);
 }
