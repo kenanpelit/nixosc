@@ -13,6 +13,8 @@
 #   init               Session bootstrap (was: hypr-init)
 #   workspace-monitor  Workspace/monitor helper (was: hypr-workspace-monitor)
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
+#   toggle-float        Toggle floating for active window (was: toggle_float)
+#   toggle-opacity      Toggle active/inactive opacity (was: toggle_opacity)
 #   layout-toggle      Toggle layout preset (was: hypr-layout_toggle)
 #   vlc-toggle         VLC helper (was: hypr-vlc_toggle)
 #   wifi-power-save    WiFi power save helper (was: hypr-wifi-power-save)
@@ -33,6 +35,8 @@ Commands:
   init               Session bootstrap
   workspace-monitor  Workspace/monitor helper
   switch             Smart monitor/workspace switcher
+  toggle-float        Toggle floating for active window
+  toggle-opacity      Toggle active/inactive opacity
   layout-toggle      Toggle layout preset
   vlc-toggle         VLC helper
   wifi-power-save    WiFi power save helper
@@ -79,7 +83,7 @@ set -euo pipefail
 #   GDM Mode:
 #     - Minimal setup (GDM zaten yaptı)
 #     - SADECE user service environment sync
-#     - Aggressive import (Waybar fix)
+#     - Aggressive import (GDM env sync)
 # =============================================================================
 
 set -euo pipefail
@@ -362,7 +366,7 @@ setup_environment() {
 	# =========================================================================
 	# Setting SYSTEMD_OFFLINE=0 (not unsetting!) ensures systemd user services
 	# start immediately without delays. This is critical for:
-	# - Waybar and other user services to start properly
+	# - user services to start properly
 	# - Session to launch without slowdown
 	# - GDM compatibility when launched via display manager
 	export SYSTEMD_OFFLINE=0
@@ -531,16 +535,16 @@ setup_systemd_integration() {
 	fi
 
 	# -------------------------------------------------------------------------
-	# GDM MODE: Aggressive Environment Sync (Waybar Fix!)
+	# GDM MODE: Aggressive Environment Sync
 	# -------------------------------------------------------------------------
-	# GDM session'ında user services (Waybar, Mako, vs.) zaten başlamış durumda
+	# GDM session'ında user services zaten başlamış durumda
 	# ANCAK yanlış environment ile başlamış olabilirler!
 	# Bu yüzden AGGRESSIVE sync + service restart gerekli
 
 	if [[ "$GDM_MODE" == "true" ]]; then
 		info "GDM Mode: Aggressive environment sync başlatılıyor..."
 
-		# FULL environment import - Waybar için CRITICAL
+		# FULL environment import
 		local full_vars=(
 			"WAYLAND_DISPLAY"
 			"XDG_CURRENT_DESKTOP"
@@ -572,11 +576,9 @@ setup_systemd_integration() {
 		fi
 
 		# CRITICAL: User services'i restart et (yeni environment ile başlasın)
-		# Waybar en önemli, ama diğerleri de restart edilebilir
 		info "User services restart ediliyor (yeni environment için)..."
 
 		local services_to_restart=(
-			"waybar.service"
 			"mako.service"
 			"hypridle.service"
 		)
@@ -728,7 +730,7 @@ SEÇENEKLER:
 GDM vs TTY MODU:
   GDM Mode (Auto-detected):
     • Minimal setup (GDM zaten hazırladı)
-    • Aggressive environment sync (Waybar fix)
+    • Aggressive environment sync
     • User service restart
     • systemd journal logging
 
@@ -753,7 +755,7 @@ LOG DOSYALARI (TTY Mode):
 NOTLAR:
   - Intel Arc Graphics auto-detected ve optimize edilir
   - GDM session otomatik tespit edilir
-  - User services (Waybar) aggressive sync ile düzeltilir
+  - User services aggressive sync ile düzeltilir
 
 EOF
 }
@@ -2148,6 +2150,26 @@ main() {
 }
 
 main "$@"
+    )
+    ;;
+  toggle-float|toggle_float)
+    (
+      set -euo pipefail
+      hyprctl dispatch togglefloating
+      hyprctl dispatch resizeactive exact 950 600
+      hyprctl dispatch centerwindow
+    )
+    ;;
+  toggle-opacity|toggle_opacity)
+    (
+      set -euo pipefail
+      if hyprctl getoption decoration:active_opacity | grep "float: 1" >/dev/null; then
+        hyprctl keyword decoration:active_opacity 0.90 >/dev/null
+        hyprctl keyword decoration:inactive_opacity 0.90 >/dev/null
+      else
+        hyprctl keyword decoration:active_opacity 1 >/dev/null
+        hyprctl keyword decoration:inactive_opacity 1 >/dev/null
+      fi
     )
     ;;
   layout-toggle)

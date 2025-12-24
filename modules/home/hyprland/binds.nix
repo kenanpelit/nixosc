@@ -76,11 +76,11 @@ let
     "$mainMod, Q, killactive"
     "$mainMod SHIFT, F, fullscreen, 1"
     "$mainMod CTRL, F, fullscreen, 0"
-    "$mainMod, F, exec, toggle_float"
+    "$mainMod, F, exec, hypr-set toggle-float"
     "$mainMod, P, pseudo,"
     "$mainMod, X, togglesplit,"
     "$mainMod, G, togglegroup"
-    "$mainMod, T, exec, toggle_opacity"
+    "$mainMod, T, exec, hypr-set toggle-opacity"
     "$mainMod, S, pin"
   
     # Layout
