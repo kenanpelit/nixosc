@@ -593,6 +593,13 @@ case "${cmd}" in
     (
       set -euo pipefail
 
+      notify() {
+        command -v notify-send >/dev/null 2>&1 || return 0
+        local body="${1:-}"
+        local timeout="${2:-2500}"
+        notify-send -t "$timeout" "Niri Arranger" "$body" 2>/dev/null || true
+      }
+
       usage() {
         cat <<'EOF'
 Kullanım:
@@ -753,9 +760,14 @@ EOF
       }
 
       echo "Scanning windows..."
+      notify "Pencereler düzenleniyor…" 1200
       windows_json="$("${NIRI[@]}" -j windows)"
 
-      echo "$windows_json" | jq -c '.[]' | while read -r win; do
+      moved=0
+      planned=0
+      failed=0
+
+      while read -r win; do
         id="$(jq -r '.id' <<<"$win")"
         app_id="$(jq -r '.app_id // ""' <<<"$win")"
         title="$(jq -r '.title // ""' <<<"$win")"
@@ -788,12 +800,14 @@ EOF
         fi
 
         echo " -> $id: '$app_id' -> ws:$target_ws (output:$target_out idx:$target_idx)"
+        planned=$((planned + 1))
         if [[ "$DRY_RUN" -eq 1 ]]; then
           continue
         fi
 
         if ! "${NIRI[@]}" action move-window-to-monitor --id "$id" "$target_out" >/dev/null 2>&1; then
           echo " !! move-window-to-monitor failed for id=$id -> out:$target_out" >&2
+          failed=$((failed + 1))
           continue
         fi
 
@@ -801,8 +815,10 @@ EOF
 
         if ! "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1; then
           echo " !! move-window-to-workspace failed for id=$id -> ws:$target_ws (out:$target_out idx:$target_idx)" >&2
+          failed=$((failed + 1))
           continue
         fi
+        moved=$((moved + 1))
 
         after="$(get_window_json_by_id "$id" || true)"
         if [[ -n "$after" ]]; then
@@ -816,6 +832,7 @@ EOF
               [[ "$VERBOSE" -eq 1 ]] && echo "    ok (by idx, output unknown): $(get_window_loc "$after")"
             else
               echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
+              failed=$((failed + 1))
             fi
           fi
         else
@@ -824,9 +841,10 @@ EOF
             [[ "$VERBOSE" -eq 1 ]] && echo "    ok (text ws_id=$after_ws_id)"
           elif [[ -n "$after_ws_id" ]]; then
             echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: text ws_id=$after_ws_id" >&2
+            failed=$((failed + 1))
           fi
         fi
-      done
+      done < <(jq -c '.[]' <<<"$windows_json")
 
       if [[ -n "$FOCUS_OVERRIDE" ]]; then
         if [[ "$FOCUS_OVERRIDE" =~ ^ws:(.+)$ ]]; then
@@ -839,8 +857,14 @@ EOF
       fi
 
       echo "Done."
-      if command -v notify-send >/dev/null 2>&1; then
-        notify-send "Niri Arranger" "Pencereler workspace'lere taşındı" 2>/dev/null || true
+      if [[ "$DRY_RUN" -eq 1 ]]; then
+        notify "Dry-run: ${planned} pencere hedefe gidecek." 3000
+      else
+        if [[ "$planned" -eq 0 ]]; then
+          notify "Değişiklik yok (zaten düzenli)." 2500
+        else
+          notify "Taşınan: ${moved}/${planned}  Hata: ${failed}" 3500
+        fi
       fi
     )
     ;;
