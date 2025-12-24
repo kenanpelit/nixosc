@@ -19,9 +19,9 @@ PATH="/run/wrappers/bin:/run/current-system/sw/bin:/etc/profiles/per-user/${USER
 resolve_helpers_dir() {
   local candidates=(
     "${HYPR_SET_HELPERS_DIR:-}"
-    "/etc/profiles/per-user/${USER}/libexec/osc/hypr"
-    "${HOME}/.nix-profile/libexec/osc/hypr"
-    "${HOME}/.local/state/nix/profiles/profile/libexec/osc/hypr"
+    "/etc/profiles/per-user/${USER}/share/osc/hypr"
+    "${HOME}/.nix-profile/share/osc/hypr"
+    "${HOME}/.local/state/nix/profiles/profile/share/osc/hypr"
   )
 
   local d
@@ -65,7 +65,7 @@ if [[ -z "${cmd:-}" || "$cmd" == "-h" || "$cmd" == "--help" || "$cmd" == "help" 
 fi
 
 if [[ -z "${helpers_dir:-}" ]]; then
-  echo "hypr-set: helper scripts not found (expected e.g. /etc/profiles/per-user/${USER}/libexec/osc/hypr)" >&2
+  echo "hypr-set: helper scripts not found (expected e.g. /etc/profiles/per-user/${USER}/share/osc/hypr)" >&2
   echo "hypr-set: rebuild Home Manager so osc-hypr helpers get installed" >&2
   exit 1
 fi

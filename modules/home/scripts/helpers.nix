@@ -1,6 +1,6 @@
-# modules/home/scripts/libexec.nix
+# modules/home/scripts/helpers.nix
 # ==============================================================================
-# Private helper scripts (installed under $profile/libexec, not on $PATH)
+# Helper scripts installed in profile but not on $PATH
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
@@ -8,24 +8,30 @@
 let
   cfg = config.my.user.scripts;
 
-  hyprDir = ./libexec/hypr;
-  hyprScripts = lib.filterAttrs (name: type:
-    type == "regular" && lib.hasSuffix ".sh" name
-  ) (builtins.readDir hyprDir);
-
-  hyprNames = lib.sort (a: b: a < b) (builtins.attrNames hyprScripts);
+  helperNames = [
+    "hypr-airplane_mode.sh"
+    "hypr-colorpicker.sh"
+    "hypr-init.sh"
+    "hypr-layout_toggle.sh"
+    "hypr-start-batteryd.sh"
+    "hypr-switch.sh"
+    "hypr-vlc_toggle.sh"
+    "hypr-wifi-power-save.sh"
+    "hypr-workspace-monitor.sh"
+    "hyprland_tty.sh"
+  ];
 
   installLines = lib.concatStringsSep "\n" (map (name:
     let
-      src = "${hyprDir}/${name}";
-      dst = "$out/libexec/osc/hypr/${name}";
+      src = "${./bin}/${name}";
+      dst = "$out/share/osc/hypr/${name}";
     in
     "${pkgs.coreutils}/bin/install -m 0755 ${lib.escapeShellArg src} ${lib.escapeShellArg dst}"
-  ) hyprNames);
+  ) helperNames);
 
   hyprHelpers = pkgs.runCommand "osc-hypr-helpers" { } ''
     set -euo pipefail
-    mkdir -p "$out/libexec/osc/hypr"
+    mkdir -p "$out/share/osc/hypr"
     ${installLines}
   '';
 in

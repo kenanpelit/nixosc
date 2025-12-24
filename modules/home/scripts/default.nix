@@ -17,7 +17,7 @@ in
   # Submodules are internally gated; import unconditionally
   imports = [
     ./bin.nix
-    ./libexec.nix
     ./start.nix
+    ./helpers.nix
   ];
 }
