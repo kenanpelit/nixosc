@@ -213,7 +213,7 @@
       Alt+Ctrl+N { spawn "osc-spotify" "next"; }
       Alt+Ctrl+B { spawn "osc-spotify" "prev"; }
       Alt+Ctrl+E { spawn "mpc-control" "toggle"; }
-      Alt+I { spawn "hypr-vlc_toggle"; }
+      Alt+I { spawn "hypr-set" "vlc-toggle"; }
   '';
 
   mpv = ''
