@@ -22,6 +22,14 @@ let
     fi
 
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+      # In Hyprland we want 4-finger left/right to change workspace (not monitor).
+      # Keep the Fusuma config shared with Niri by translating monitor-next/prev to workspace-left/right.
+      if [[ "$fusuma_mode" == "1" ]]; then
+        case "''${1:-}" in
+          -mn) shift; set -- -wr "''${@}" ;;
+          -mp) shift; set -- -wl "''${@}" ;;
+        esac
+      fi
       exec "$hypr" workspace-monitor "$@"
     fi
 
@@ -39,6 +47,12 @@ let
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
+        if [[ "$fusuma_mode" == "1" ]]; then
+          case "''${1:-}" in
+            -mn) shift; set -- -wr "''${@}" ;;
+            -mp) shift; set -- -wl "''${@}" ;;
+          esac
+        fi
         exec "$hypr" workspace-monitor "$@"
         ;;
       *niri*|*Niri*)
