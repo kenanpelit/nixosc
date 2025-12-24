@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# universal-workspace-monitor.sh
-# Unified wrapper for workspace management across compositors (Hyprland & Niri).
-# Used by Fusuma gestures to route commands to the correct backend script.
+# wm-workspace.sh
+# Workspace router across compositors (Hyprland & Niri).
+# Used by Fusuma (and other callers) to route workspace/monitor actions to the
+# correct backend (`hypr-set workspace-monitor` or `niri-set workspace-monitor`).
 
 # Resolve monitor binaries explicitly to avoid PATH issues (e.g., when launched by DM)
 BASE_DIR=$(dirname "$(readlink -f "$0")")
@@ -12,7 +13,7 @@ HYPR_MONITOR=$(command -v hypr-set 2>/dev/null || true)
 [[ -z "$NIRI_MONITOR" && -x "$BASE_DIR/niri-set" ]] && NIRI_MONITOR="$BASE_DIR/niri-set"
 [[ -z "$HYPR_MONITOR" && -x "$BASE_DIR/hypr-set" ]] && HYPR_MONITOR="$BASE_DIR/hypr-set"
 
-if [[ "$XDG_CURRENT_DESKTOP" == "niri" ]] || [[ "$XDG_SESSION_DESKTOP" == "niri" ]]; then
+if [[ -n "${NIRI_SOCKET:-}" ]] || [[ "$XDG_CURRENT_DESKTOP" == "niri" ]] || [[ "$XDG_SESSION_DESKTOP" == "niri" ]]; then
   if [[ -n "$NIRI_MONITOR" ]]; then
     exec "$NIRI_MONITOR" workspace-monitor "$@"
   else
