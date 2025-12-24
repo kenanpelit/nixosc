@@ -15,6 +15,7 @@
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
 #   toggle-float        Toggle floating for active window (was: toggle_float)
 #   toggle-opacity      Toggle active/inactive opacity (was: toggle_opacity)
+#   toggle-blur         Toggle Hyprland blur (was: toggle_blur)
 #   layout-toggle      Toggle layout preset (was: hypr-layout_toggle)
 #   vlc-toggle         VLC helper (was: hypr-vlc_toggle)
 #   wifi-power-save    WiFi power save helper (was: hypr-wifi-power-save)
@@ -37,6 +38,7 @@ Commands:
   switch             Smart monitor/workspace switcher
   toggle-float        Toggle floating for active window
   toggle-opacity      Toggle active/inactive opacity
+  toggle-blur         Toggle Hyprland blur
   layout-toggle      Toggle layout preset
   vlc-toggle         VLC helper
   wifi-power-save    WiFi power save helper
@@ -2169,6 +2171,16 @@ main "$@"
       else
         hyprctl keyword decoration:active_opacity 1 >/dev/null
         hyprctl keyword decoration:inactive_opacity 1 >/dev/null
+      fi
+    )
+    ;;
+  toggle-blur|toggle_blur)
+    (
+      set -euo pipefail
+      if hyprctl getoption decoration:blur:enabled | grep "int: 1" >/dev/null; then
+        hyprctl keyword decoration:blur:enabled false >/dev/null
+      else
+        hyprctl keyword decoration:blur:enabled true >/dev/null
       fi
     )
     ;;
