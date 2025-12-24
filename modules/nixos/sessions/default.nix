@@ -71,8 +71,8 @@ let
     text = ''
       [Desktop Entry]
       Name=Niri (Optimized)
-      Comment=Scrollable-tiling Wayland compositor (via niri_tty)
-      Exec=/etc/profiles/per-user/${username}/bin/niri_tty
+      Comment=Scrollable-tiling Wayland compositor (via niri-set tty)
+      Exec=/etc/profiles/per-user/${username}/bin/niri-set tty
       Type=Application
       DesktopNames=niri
     '';

@@ -56,7 +56,7 @@ let
   bins = {
     kitty = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
-    niriLock = "${config.home.profileDirectory}/bin/niri-lock";
+    niriSet = "${config.home.profileDirectory}/bin/niri-set";
     clipse = "${pkgs.clipse}/bin/clipse";
     niriusd = "${pkgs.nirius}/bin/niriusd";
     nirius  = "${pkgs.nirius}/bin/nirius";
@@ -205,7 +205,7 @@ in
         Environment = [
           "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         ];
-        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep ${toString cfg.initDelaySeconds}; for ((i=0;i<120;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; /etc/profiles/per-user/${username}/bin/niri-init'";
+        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep ${toString cfg.initDelaySeconds}; for ((i=0;i<120;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; /etc/profiles/per-user/${username}/bin/niri-set init'";
         ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" || true'";
       };
       Install = {
