@@ -12,8 +12,7 @@ let
     #!/usr/bin/env bash
     set -euo pipefail
 
-    hypr="${config.home.profileDirectory}/bin/hypr-set"
-    niri="${config.home.profileDirectory}/bin/niri-set"
+    router="${config.home.profileDirectory}/bin/wm-workspace"
 
     fusuma_mode=0
     if [[ "''${1:-}" == "--fusuma" ]]; then
@@ -30,7 +29,7 @@ let
           -mp) shift; set -- -wl "''${@}" ;;
         esac
       fi
-      exec "$hypr" workspace-monitor "$@"
+      exec "$router" "$@"
     fi
 
     if [[ -n "''${NIRI_SOCKET:-}" ]]; then
@@ -42,7 +41,7 @@ let
             ;;
         esac
       fi
-      exec "$niri" workspace-monitor "$@"
+      exec "$router" "$@"
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
@@ -53,7 +52,7 @@ let
             -mp) shift; set -- -wl "''${@}" ;;
           esac
         fi
-        exec "$hypr" workspace-monitor "$@"
+        exec "$router" "$@"
         ;;
       *niri*|*Niri*)
         if [[ "$fusuma_mode" == "1" ]]; then
@@ -63,7 +62,7 @@ let
               ;;
           esac
         fi
-        exec "$niri" workspace-monitor "$@"
+        exec "$router" "$@"
         ;;
     esac
 
