@@ -51,6 +51,7 @@ let
     # Audio Control
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
+    ", F4, exec, toggle-mic"
    
     # Playback Control (DMS MPRIS)
   
