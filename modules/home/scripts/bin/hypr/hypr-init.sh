@@ -29,7 +29,7 @@ if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
 fi
 
 # Step 1: monitor/workspace normalization
-run_if_present hypr-switch
+run_if_present hypr-set switch
 
 # Step 2: audio defaults (volume + last sink/source)
 run_if_present osc-soundctl init
