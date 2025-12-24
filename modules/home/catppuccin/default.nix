@@ -49,7 +49,6 @@ in
       
       # === Wayland/Hyprland Ecosystem ===
       hyprland.enable = lib.mkDefault true;     # Wayland compositor
-      waybar.enable = lib.mkDefault true;       # Status bar
       mako.enable = lib.mkDefault true;         # Notification daemon
       rofi.enable = lib.mkDefault true;         # Application launcher
       
