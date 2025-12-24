@@ -10,24 +10,9 @@
 { pkgs, lib, config, ... }:
 
 let
-  excludedFromPath = [
-    # Hyprland helpers are reachable via `hypr-set` only.
-    "hypr-airplane_mode.sh"
-    "hypr-colorpicker.sh"
-    "hypr-init.sh"
-    "hypr-layout_toggle.sh"
-    "hypr-start-batteryd.sh"
-    "hypr-switch.sh"
-    "hypr-vlc_toggle.sh"
-    "hypr-wifi-power-save.sh"
-    "hypr-workspace-monitor.sh"
-    "hyprland_tty.sh"
-  ];
-
   scripts = lib.filterAttrs (name: type:
     type == "regular"
     && lib.hasSuffix ".sh" name
-    && !(lib.elem name excludedFromPath)
   ) (builtins.readDir ./bin);
 
   mkScript = name: _: pkgs.writeShellScriptBin
