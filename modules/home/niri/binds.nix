@@ -50,6 +50,7 @@
       XF86AudioLowerVolume allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "decrement" "5"; }
       XF86AudioMute allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "mute"; }
       XF86AudioMicMute allow-when-locked=true { spawn "${bins.dms}" "ipc" "call" "audio" "micmute"; }
+      F4 allow-when-locked=true { spawn "toggle-mic"; }
       Mod+Alt+A { spawn "${bins.dms}" "ipc" "call" "audio" "cycleoutput"; }
       Mod+Alt+P { spawn "pavucontrol"; }
 

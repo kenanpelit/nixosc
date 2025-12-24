@@ -13,6 +13,16 @@ LED_PATH="/sys/class/leds/platform::micmute/brightness"
 NOTIFICATION_TIMEOUT=2500
 APP_NAME="Microphone Control"
 
+# Best-effort LED control without blocking (no sudo prompt from keybinds)
+set_led() {
+	local val="$1"
+	if [[ -w "$LED_PATH" ]]; then
+		echo "$val" >"$LED_PATH" 2>/dev/null || true
+	elif command -v sudo >/dev/null 2>&1; then
+		echo "$val" | sudo -n tee "$LED_PATH" >/dev/null 2>&1 || true
+	fi
+}
+
 # Check if wpctl is available
 if ! command -v wpctl >/dev/null 2>&1; then
 	echo "Error: wpctl not found. Install pipewire-tools."
@@ -47,7 +57,7 @@ volume_bar=$(generate_volume_bar "$volume_pct")
 # Control LED and send notification
 if [ "$is_muted" = "yes" ]; then
 	# Muted state
-	[ -w "$LED_PATH" ] && echo 1 | sudo tee "$LED_PATH" >/dev/null 2>&1
+	set_led 1
 
 	echo "🔇 Microphone MUTED - LED ON"
 
@@ -62,7 +72,7 @@ if [ "$is_muted" = "yes" ]; then
 	fi
 else
 	# Unmuted state
-	[ -w "$LED_PATH" ] && echo 0 | sudo tee "$LED_PATH" >/dev/null 2>&1
+	set_led 0
 
 	echo "🎤 Microphone ACTIVE - LED OFF (${volume_pct}%)"
 
