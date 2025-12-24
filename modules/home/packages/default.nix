@@ -128,7 +128,7 @@ in
       ferdium               # Multi-messenger
       
       # Launchers
-      rofi ulauncher        # App launchers
+      rofi                 # App launcher
   
       # Security
       keepassxc gopass      # Password managers
