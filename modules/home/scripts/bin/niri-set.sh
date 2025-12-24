@@ -757,8 +757,8 @@ EOF
 
       echo "$windows_json" | jq -c '.[]' | while read -r win; do
         id="$(jq -r '.id' <<<"$win")"
-        app_id="$(jq -r '.app_id // \"\"' <<<"$win")"
-        title="$(jq -r '.title // \"\"' <<<"$win")"
+        app_id="$(jq -r '.app_id // ""' <<<"$win")"
+        title="$(jq -r '.title // ""' <<<"$win")"
         current_ws_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$win")"
 
         if [[ "$app_id" == "hyprland-share-picker" ]]; then
@@ -1083,4 +1083,3 @@ EOF
     exit 2
     ;;
 esac
-
