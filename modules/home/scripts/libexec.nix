@@ -8,7 +8,7 @@
 let
   cfg = config.my.user.scripts;
 
-  hyprDir = ./bin/hypr;
+  hyprDir = ./libexec/hypr;
   hyprScripts = lib.filterAttrs (name: type:
     type == "regular" && lib.hasSuffix ".sh" name
   ) (builtins.readDir hyprDir);
