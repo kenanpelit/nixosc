@@ -12,7 +12,7 @@ let
   # Binding generators
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
   mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
-  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-workspace-monitor -am ${toString n}") nums;
+  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-set workspace-monitor -am ${toString n}") nums;
   
   moveStep = 80;
   resizeStep = 80;
@@ -59,7 +59,7 @@ let
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"
     "ALT CTRL, E, exec, mpc-control toggle"
-    "ALT, i, exec, hypr-vlc_toggle"
+    "ALT, i, exec, hypr-set vlc-toggle"
   
     # MPV Manager
     "CTRL ALT, 1, exec, mpv-manager start"
@@ -84,7 +84,7 @@ let
     "$mainMod, S, pin"
   
     # Layout
-    "$mainMod CTRL, J, exec, hypr-layout_toggle"
+    "$mainMod CTRL, J, exec, hypr-set layout-toggle"
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
     "$mainMod, R, submap, resize"
   
@@ -130,8 +130,8 @@ let
     "ALT, N, workspace, previous"
     "ALT, Tab, workspace, e+1"
     "ALT CTRL, tab, workspace, e-1"
-    "$mainMod, page_up, exec, hypr-workspace-monitor -wl"
-    "$mainMod, page_down, exec, hypr-workspace-monitor -wr"
+    "$mainMod, page_up, exec, hypr-set workspace-monitor -wl"
+    "$mainMod, page_down, exec, hypr-set workspace-monitor -wr"
     "$mainMod, bracketleft, workspace, e-1"
     "$mainMod, bracketright, workspace, e+1"
     "$mainMod CTRL, c, movetoworkspace, empty"
