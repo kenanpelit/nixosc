@@ -12,7 +12,7 @@ let
     #!/usr/bin/env bash
     set -euo pipefail
 
-    hypr="${config.home.profileDirectory}/bin/hypr-workspace-monitor"
+    hypr="${config.home.profileDirectory}/bin/hypr-set"
     niri="${config.home.profileDirectory}/bin/niri-set"
 
     fusuma_mode=0
@@ -22,7 +22,7 @@ let
     fi
 
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-      exec "$hypr" "$@"
+      exec "$hypr" workspace-monitor "$@"
     fi
 
     if [[ -n "''${NIRI_SOCKET:-}" ]]; then
@@ -39,7 +39,7 @@ let
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
-        exec "$hypr" "$@"
+        exec "$hypr" workspace-monitor "$@"
         ;;
       *niri*|*Niri*)
         if [[ "$fusuma_mode" == "1" ]]; then

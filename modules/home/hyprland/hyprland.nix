@@ -20,7 +20,7 @@ lib.mkIf cfg.enable {
   
   # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 
-  # Run hypr-init at session start to normalize monitors and audio
+  # Run hypr-set init at session start to normalize monitors and audio
   systemd.user.services.hypr-init = {
     Unit = {
       Description = "Hyprland session bootstrap (monitors + audio)";
@@ -29,7 +29,7 @@ lib.mkIf cfg.enable {
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-init'";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-set init'";
     };
     Install = {
       WantedBy = [ "hyprland-session.target" ];

@@ -35,7 +35,7 @@ let
       X-GDM-SessionType=wayland
       X-Session-Type=wayland
 
-      Exec=/etc/profiles/per-user/${username}/bin/hyprland_tty
+      Exec=/etc/profiles/per-user/${username}/bin/hypr-set tty
 
       Keywords=wayland;wm;tiling;hyprland;compositor;
     '';
