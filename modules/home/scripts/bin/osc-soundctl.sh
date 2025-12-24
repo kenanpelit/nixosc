@@ -328,7 +328,41 @@ notify_mic() {
 	notify "Mikrofon Seviyesi" "Mikrofon: ${vol}%" "audio-input-microphone"
 }
 notify_mute() { notify "Ses" "Ses durumu değiştirildi" "audio-volume-muted"; }
-notify_mic_mute() { notify "Mikrofon" "Mikrofon durumu değiştirildi" "microphone-disabled"; }
+__mic_is_muted() {
+	wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q "MUTED"
+}
+__volume_bar() {
+	local vol="$1"
+	local bar_length=10
+	local filled=$((vol * bar_length / 100))
+	local empty=$((bar_length - filled))
+	printf "["
+	printf "█%.0s" $(seq 1 $filled)
+	printf "░%.0s" $(seq 1 $empty)
+	printf "]"
+}
+__set_micmute_led() {
+	local val="$1"
+	local led_path="${MICMUTE_LED_PATH:-/sys/class/leds/platform::micmute/brightness}"
+	if [[ -w "$led_path" ]]; then
+		echo "$val" >"$led_path" 2>/dev/null || true
+	elif command -v sudo >/dev/null 2>&1; then
+		echo "$val" | sudo -n tee "$led_path" >/dev/null 2>&1 || true
+	fi
+}
+notify_mic_mute() {
+	local vol
+	vol="$(__percent_from_wpctl @DEFAULT_AUDIO_SOURCE@)"
+	[ -z "$vol" ] && vol="${DEFAULT_MIC_VOLUME}"
+
+	if __mic_is_muted; then
+		__set_micmute_led 1
+		notify "Mikrofon" "Kapalı" "microphone-sensitivity-muted"
+	else
+		__set_micmute_led 0
+		notify "Mikrofon" "Açık: ${vol}% $(__volume_bar "$vol")" "audio-input-microphone"
+	fi
+}
 
 # --- Streams’leri yeni varsayılan sink’e taşı ----------------------------------
 migrate_streams_to_default() {
