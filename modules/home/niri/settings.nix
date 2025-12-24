@@ -231,7 +231,7 @@
     // Start session-scoped user services (niri-init, nsticky, nirius, niriswitcher, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
-    spawn-at-startup "${config.home.profileDirectory}/bin/niri-session-start";
+    spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "session-start";
 
     // Start Clipse clipboard daemon in Niri session.
     spawn-at-startup "clipse" "-listen";
@@ -282,7 +282,7 @@
 
     // Switch Events
     switch-events {
-      lid-close { spawn "${config.home.profileDirectory}/bin/niri-lock"; }
+      lid-close { spawn "${config.home.profileDirectory}/bin/niri-set" "lock" "--logind"; }
     }
   '';
 }

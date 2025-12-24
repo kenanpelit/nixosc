@@ -21,7 +21,7 @@ lib.mkIf cfg.enable {
         #   TTY1: Display Manager - Session Selection
         #   TTY2: Hyprland (via hyprland_tty script)
         #   TTY3: GNOME (via gnome_tty script)
-        #   TTY4: Niri (via niri_tty script)
+        #   TTY4: Niri (via niri-set tty)
         #   TTY5: Ubuntu VM (Sway)
         # =============================================================================
 
@@ -125,7 +125,7 @@ lib.mkIf cfg.enable {
             # ==========================================================================
             elif [ "''${XDG_VTNR}" = "4" ]; then
                 echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY4: Launching Niri via niri_tty                         ║"
+                echo "║  TTY4: Launching Niri via niri-set tty                     ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
 
                 export XDG_SESSION_TYPE=wayland
@@ -136,11 +136,11 @@ lib.mkIf cfg.enable {
                 export PATH="/run/wrappers/bin:/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
                 export NIRI_TTY_GUARD=1
 
-                if command -v niri_tty >/dev/null 2>&1; then
+                if command -v niri-set >/dev/null 2>&1; then
                     echo "Starting Niri with optimized configuration..."
-                    exec niri_tty
+                    exec niri-set tty
                 else
-                    echo "ERROR: niri_tty script not found in PATH"
+                    echo "ERROR: niri-set script not found in PATH"
                     echo "Falling back to direct Niri launch (not recommended)"
                     sleep 3
                     exec niri 2>&1 | tee /tmp/niri-tty4.log

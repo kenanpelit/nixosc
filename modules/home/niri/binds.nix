@@ -42,7 +42,7 @@
       Mod+Shift+B { spawn "${bins.dms}" "ipc" "call" "dock" "toggle"; }
 
       // Security
-      Alt+L { spawn "${bins.niriLock}"; }
+      Alt+L { spawn "${bins.niriSet}" "lock"; }
       Mod+Shift+Delete { spawn "${bins.dms}" "ipc" "call" "inhibit" "toggle"; }
 
       // Audio
@@ -180,7 +180,7 @@
       // ========================================================================
 
       Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
-      Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "niri-arrange-windows"; }
+      Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
       Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
 

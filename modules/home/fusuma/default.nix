@@ -13,7 +13,7 @@ let
     set -euo pipefail
 
     hypr="${config.home.profileDirectory}/bin/hypr-workspace-monitor"
-    niri="${config.home.profileDirectory}/bin/niri-workspace-monitor"
+    niri="${config.home.profileDirectory}/bin/niri-set"
 
     fusuma_mode=0
     if [[ "''${1:-}" == "--fusuma" ]]; then
@@ -34,7 +34,7 @@ let
             ;;
         esac
       fi
-      exec "$niri" "$@"
+      exec "$niri" workspace-monitor "$@"
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
@@ -49,7 +49,7 @@ let
               ;;
           esac
         fi
-        exec "$niri" "$@"
+        exec "$niri" workspace-monitor "$@"
         ;;
     esac
 
