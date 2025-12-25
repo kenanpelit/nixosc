@@ -88,17 +88,8 @@
       Mod+O { toggle-window-rule-opacity; }
       Mod+R { switch-preset-column-width; }
       Mod+Shift+Space hotkey-overlay-title="Float ↔ Tile (preset)" {
-        spawn "${pkgs.bash}/bin/bash" "-lc" ''
-          set -euo pipefail
-          w="$(niri msg focused-window 2>/dev/null || true)"
-          if echo "$w" | ${pkgs.jq}/bin/jq -e '.is_floating == true' >/dev/null 2>&1; then
-            niri msg action toggle-window-floating >/dev/null 2>&1 || true
-          else
-            niri msg action toggle-window-floating >/dev/null 2>&1 || true
-            niri msg action set-window-width 900 >/dev/null 2>&1 || true
-            niri msg action set-window-height 650 >/dev/null 2>&1 || true
-          fi
-        '';
+        spawn "${pkgs.bash}/bin/bash" "-lc"
+          "w=\"$(niri msg focused-window 2>/dev/null || true)\"; if echo \"$w\" | ${pkgs.jq}/bin/jq -e '.is_floating == true' >/dev/null 2>&1; then niri msg action toggle-window-floating >/dev/null 2>&1 || true; else niri msg action toggle-window-floating >/dev/null 2>&1 || true; niri msg action set-window-width 900 >/dev/null 2>&1 || true; niri msg action set-window-height 650 >/dev/null 2>&1 || true; fi";
       }
       Mod+Alt+Shift+Space hotkey-overlay-title="Tile (force)" { move-window-to-tiling; }
       Mod+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
