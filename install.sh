@@ -602,8 +602,16 @@ show_help() {
 }
 
 parse_args() {
-  if [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]] && [[ "$1" != "--pre-install" ]]; then
+  # Convenience:
+  # - If the user starts with flags, assume `install` (e.g. `./install.sh -u -H hay`).
+  # - If the user starts with a hostname, also assume `install` (e.g. `./install.sh hay -p kenp`).
+  if [[ $# -gt 0 ]] && [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]] && [[ "$1" != "--pre-install" ]]; then
     set -- "install" "$@"
+  elif [[ $# -gt 0 ]] && [[ "${1:-}" != -* ]]; then
+    case "${1:-}" in
+    auto | install | hosts | update | build | merge | pre-install | --pre-install) ;;
+    *) set -- "install" "$@" ;;
+    esac
   fi
 
   local action=""
