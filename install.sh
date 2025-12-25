@@ -586,7 +586,7 @@ show_help() {
   echo ""
   echo -e "${C_BOLD}Commands:${C_RESET}"
   echo "  install          Build & Switch configuration"
-  echo "  auto             Update + install with next free YYMMDD profile"
+  echo "  auto             Non-interactive install with next free YYMMDD profile"
   echo "  update           Update flake inputs"
   echo "  build            Build only"
   echo "  merge            Merge branches (interactively)"
@@ -729,11 +729,10 @@ parse_args() {
   if [[ "$action" == "auto" ]]; then
     local host="${auto_host:-$(config::get HOSTNAME)}"
     [[ -z "$host" ]] && host="$DEFAULT_HOST"
-    # Auto command should match help text: update inputs + install.
-    # Non-interactive behaviour is controlled separately via -a/--auto.
-    config::set UPDATE_FLAKE true
+    # Match inst.sh behaviour: auto implies non-interactive and date-based profiles.
+    config::set AUTO_MODE true
     config::set HOSTNAME "$host"
-    [[ -z "$(config::get PROFILE)" ]] && config::set PROFILE "$(profile::next_available)"
+    config::set PROFILE "$(profile::next_available)"
     cmd_install "$host"
     return
   fi
