@@ -304,26 +304,20 @@ flake::build() {
     fi
   fi
 
-  # Construct command (array, no eval) so quoting is safe and output is direct.
-  local -a cmd=(sudo nixos-rebuild switch --flake ".#${hostname}")
-  [[ -n "$profile" ]] && cmd+=(--profile-name "$profile")
+  # Construct Command (keep nixos-rebuild default output/UX).
+  local cmd="sudo nixos-rebuild switch --flake .#${hostname}"
+  [[ -n "$profile" ]] && cmd+=" --profile-name ${profile}"
 
-  cmd+=(--option accept-flake-config true)
-  cmd+=(--option warn-dirty false)
-  # Keep nixos-rebuild default UX (it prints "building the system configuration...",
-  # "activating the configuration...", etc.). Only crank verbosity when debugging.
-  [[ "${DEBUG:-false}" == "true" ]] && cmd+=(--show-trace --verbose --print-build-logs --debug)
+  cmd+=" --option accept-flake-config true"
+  cmd+=" --option warn-dirty false"
 
   log STEP "Building System Configuration"
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
   [[ -n "$profile" ]] && log INFO "Profile: ${C_CYAN}$profile${C_RESET}"
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
-  local cmd_pretty=""
-  printf -v cmd_pretty '%q ' "${cmd[@]}"
-  log INFO "Command: ${C_DIM}${cmd_pretty}${C_RESET}"
 
   echo -e "${C_DIM}Running build command...${C_RESET}"
-  if "${cmd[@]}"; then
+  if eval "$cmd"; then
     echo ""
     log SUCCESS "Build completed successfully!"
     return 0
