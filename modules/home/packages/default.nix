@@ -97,7 +97,8 @@ in
       
       # VPN
       openvpn openconnect openfortivpn
-      mullvad mullvad-closest wireguard-tools
+      #mullvad mullvad-closest wireguard-tools
+      mullvad-vpn mullvad-closest wireguard-tools
   
       # -- Media & Audio ---------------------------------------------------------
       mpv vlc               # Video players
