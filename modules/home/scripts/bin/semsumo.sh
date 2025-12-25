@@ -68,6 +68,7 @@ LAUNCH_ALL=false
 LAUNCH_TYPE=""
 BROWSER_ONLY=false
 LAUNCH_DAILY=false
+LAUNCH_DAILY_ALL=false
 APP_TIMEOUT=$DEFAULT_APP_TIMEOUT
 CHECK_INTERVAL=$DEFAULT_CHECK_INTERVAL
 
@@ -942,6 +943,55 @@ launch_application() {
   log "SUCCESS" "LAUNCH" "$profile started (PID: $app_pid)"
 }
 
+launch_application_background() {
+  local profile="$1"
+  local config="$2"
+  local type="${3:-app}"
+
+  local cmd=$(parse_config "$config" 1)
+  local args=$(parse_config "$config" 2)
+  local workspace=$(parse_config "$config" 3)
+  local vpn=$(parse_config "$config" 4)
+
+  [[ -z "$workspace" ]] && workspace="0"
+  [[ -z "$vpn" ]] && vpn="secure"
+
+  if is_app_running "$profile"; then
+    log "WARN" "LAUNCH" "$profile is already running"
+    return 0
+  fi
+
+  log "INFO" "LAUNCH" "Starting $profile ($type, $WM_TYPE, workspace: $workspace, mode: concurrent)"
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    log "DEBUG" "LAUNCH" "Dry run: would start $profile"
+    return 0
+  fi
+
+  case "$vpn" in
+  bypass)
+    if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
+      if command -v mullvad-exclude >/dev/null 2>&1; then
+        mullvad-exclude $cmd $args &
+      else
+        $cmd $args &
+      fi
+    else
+      $cmd $args &
+    fi
+    ;;
+  secure | *)
+    $cmd $args &
+    ;;
+  esac
+
+  local app_pid=$!
+  mkdir -p "/tmp/semsumo"
+  echo "$app_pid" >"/tmp/semsumo/$profile.pid"
+
+  log "SUCCESS" "LAUNCH" "$profile started (PID: $app_pid)"
+}
+
 launch_profile() {
   local profile="$1"
 
@@ -986,6 +1036,45 @@ launch_daily_profiles() {
     "spotify"        # WS 8: Spotify
     "ferdium"        # WS 9: WhatsApp/Ferdium
   )
+
+  if [[ "$LAUNCH_DAILY_ALL" == "true" ]]; then
+    log "INFO" "LAUNCH" "Launching daily profiles concurrently (-all)"
+    setup_external_monitor
+
+    for profile in "${daily_order[@]}"; do
+      if [[ -v DAILY_PROFILES["$profile"] ]]; then
+        local profile_type="${DAILY_PROFILES[$profile]}"
+        local config=""
+
+        case "$profile_type" in
+        "TERMINALS") config="${TERMINALS[$profile]}" ;;
+        "BRAVE_BROWSERS") config="${BRAVE_BROWSERS[$profile]}" ;;
+        "APPS") config="${APPS[$profile]}" ;;
+        esac
+
+        if [[ -n "$config" ]]; then
+          case "$profile_type" in
+          "TERMINALS") launch_application_background "$profile" "$config" "terminal" ;;
+          "BRAVE_BROWSERS") launch_application_background "$profile" "$config" "brave" ;;
+          "APPS") launch_application_background "$profile" "$config" "app" ;;
+          esac
+        fi
+      fi
+    done
+
+    if [[ "$WM_TYPE" == "hyprland" ]]; then
+      log "INFO" "WINDOW" "Verifying window positions..."
+      sleep 2
+      ensure_windows_on_correct_workspace
+    fi
+
+    log "INFO" "WORKSPACE" "Switching to default workspace 2"
+    switch_workspace "2"
+    focus_tmuxkenp_best_effort
+
+    log "SUCCESS" "LAUNCH" "Daily profiles launched successfully"
+    return 0
+  fi
 
   for profile in "${daily_order[@]}"; do
     if [[ -v DAILY_PROFILES["$profile"] ]]; then
@@ -1239,6 +1328,7 @@ show_help() {
   echo
   echo -e "${BOLD}Launch Options:${NC}"
   echo "    --daily               Launch only daily/essential profiles"
+  echo "    -all                  With --daily: launch daily profiles concurrently"
   echo "    --workspace NUM       Final workspace (default: $DEFAULT_FINAL_WORKSPACE)"
   echo "    --timeout NUM         App verification timeout (default: $DEFAULT_APP_TIMEOUT)"
   echo
@@ -1329,14 +1419,18 @@ parse_args() {
       fi
       shift
       ;;
-    --daily)
-      LAUNCH_DAILY=true
-      shift
-      ;;
-    --workspace)
-      FINAL_WORKSPACE="$2"
-      shift 2
-      ;;
+	    --daily)
+	      LAUNCH_DAILY=true
+	      shift
+	      ;;
+	    -all)
+	      LAUNCH_DAILY_ALL=true
+	      shift
+	      ;;
+	    --workspace)
+	      FINAL_WORKSPACE="$2"
+	      shift 2
+	      ;;
     --timeout)
       APP_TIMEOUT="$2"
       shift 2
