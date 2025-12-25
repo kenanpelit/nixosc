@@ -426,7 +426,8 @@ cmd_pre-install() {
   if [[ "$target_root" == "/mnt" ]]; then
     echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --root /mnt --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
   else
-    echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
+    echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-rebuild switch --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
+    echo -e "${C_DIM}  (If you intended a fresh install, mount target partitions at /mnt first, then re-run --pre-install.)${C_RESET}"
   fi
 }
 
