@@ -312,6 +312,7 @@ flake::build() {
   cmd+=(--option warn-dirty false)
   # Keep nixos-rebuild default UX (it prints "building the system configuration...",
   # "activating the configuration...", etc.). Only crank verbosity when debugging.
+  [[ -t 1 ]] && cmd+=(--verbose)
   [[ "${DEBUG:-false}" == "true" ]] && cmd+=(--show-trace --verbose --print-build-logs --debug)
 
   log STEP "Building System Configuration"
@@ -578,7 +579,7 @@ show_help() {
   echo ""
   echo -e "${C_BOLD}Commands:${C_RESET}"
   echo "  install          Build & Switch configuration"
-  echo "  auto             Auto mode: update + install with next free YYMMDD profile"
+  echo "  auto             Update + install with next free YYMMDD profile"
   echo "  update           Update flake inputs"
   echo "  build            Build only"
   echo "  merge            Merge branches (interactively)"
@@ -589,7 +590,7 @@ show_help() {
   echo "  -H, --host NAME  Hostname (hay, vhay)"
   echo "  -p, --profile X  Profile name"
   echo "  -u, --update     Update inputs before install"
-  echo "  -a, --auto       Non-interactive mode"
+  echo "  -a, --auto       Non-interactive mode (auto-yes prompts)"
   echo "  -m, --merge      Run merge after install"
 }
 
@@ -721,10 +722,11 @@ parse_args() {
   if [[ "$action" == "auto" ]]; then
     local host="${auto_host:-$(config::get HOSTNAME)}"
     [[ -z "$host" ]] && host="$DEFAULT_HOST"
-    config::set AUTO_MODE true
-    # config::set UPDATE_FLAKE true (Disabled: prevents auto-upgrade on every build)
+    # Auto command should match help text: update inputs + install.
+    # Non-interactive behaviour is controlled separately via -a/--auto.
+    config::set UPDATE_FLAKE true
     config::set HOSTNAME "$host"
-    config::set PROFILE "$(profile::next_available)"
+    [[ -z "$(config::get PROFILE)" ]] && config::set PROFILE "$(profile::next_available)"
     cmd_install "$host"
     return
   fi
