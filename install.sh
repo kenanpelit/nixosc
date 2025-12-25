@@ -384,30 +384,50 @@ cmd_pre-install() {
     return 1
   fi
 
+  # Prefer installing into the mounted target root on installer media.
+  # If /mnt is a mountpoint, assume the user mounted the target filesystem there.
+  local target_root="/"
+  if awk '$2 == "/mnt" { found=1 } END { exit !found }' /proc/mounts 2>/dev/null; then
+    target_root="/mnt"
+  fi
+
+  local nixos_dir="${target_root}/etc/nixos"
+  if [[ "$target_root" == "/mnt" ]]; then
+    log INFO "Using target root: /mnt"
+  else
+    log WARN "/mnt is not mounted; using current system root '/'"
+  fi
+
+  sudo mkdir -p "$nixos_dir"
+
   local template_path="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/systems/${SYSTEM_ARCH}/${hostname}/templates/initial-configuration.nix"
   if [[ ! -f "$template_path" ]]; then
     log ERROR "Template not found: $template_path"
     return 1
   fi
 
-  if [[ -f /etc/nixos/configuration.nix ]]; then
-    local backup="/etc/nixos/configuration.nix.bak-$(date +%s)"
+  if [[ -f "${nixos_dir}/configuration.nix" ]]; then
+    local backup="${nixos_dir}/configuration.nix.bak-$(date +%s)"
     log WARN "Backing up existing config to: $(basename "$backup")"
-    sudo cp /etc/nixos/configuration.nix "$backup"
+    sudo cp "${nixos_dir}/configuration.nix" "$backup"
   fi
 
   log INFO "Installing configuration..."
-  sudo cp "$template_path" /etc/nixos/configuration.nix
-  sudo chown root:root /etc/nixos/configuration.nix
-  sudo chmod 644 /etc/nixos/configuration.nix
+  sudo cp "$template_path" "${nixos_dir}/configuration.nix"
+  sudo chown root:root "${nixos_dir}/configuration.nix"
+  sudo chmod 644 "${nixos_dir}/configuration.nix"
 
-  if [[ ! -f /etc/nixos/hardware-configuration.nix ]]; then
+  if [[ ! -f "${nixos_dir}/hardware-configuration.nix" ]]; then
     log INFO "Generating hardware config..."
-    sudo nixos-generate-config --root /
+    sudo nixos-generate-config --root "$target_root"
   fi
 
   log SUCCESS "Bootstrap ready!"
-  echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --flake .#${hostname}"
+  if [[ "$target_root" == "/mnt" ]]; then
+    echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --root /mnt --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
+  else
+    echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
+  fi
 }
 
 cmd_merge() {
@@ -557,7 +577,7 @@ show_help() {
 }
 
 parse_args() {
-  if [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]]; then
+  if [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]] && [[ "$1" != "--pre-install" ]]; then
     set -- "install" "$@"
   fi
 
@@ -613,7 +633,13 @@ parse_args() {
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
-    --pre-install) cmd_pre-install ;;
+    pre-install|--pre-install)
+      action="pre-install"
+      if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
+        config::set HOSTNAME "$2"
+        shift
+      fi
+      ;;
     -u | --update) config::set UPDATE_FLAKE true ;;
     -au | -ua)
       config::set AUTO_MODE true
@@ -669,6 +695,11 @@ parse_args() {
     esac
     shift
   done
+
+  if [[ "$action" == "pre-install" ]]; then
+    cmd_pre-install
+    return
+  fi
 
   if [[ "$action" == "auto" ]]; then
     local host="${auto_host:-$(config::get HOSTNAME)}"
