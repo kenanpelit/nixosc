@@ -312,7 +312,6 @@ flake::build() {
   cmd+=(--option warn-dirty false)
   # Keep nixos-rebuild default UX (it prints "building the system configuration...",
   # "activating the configuration...", etc.). Only crank verbosity when debugging.
-  [[ -t 1 ]] && cmd+=(--verbose)
   [[ "${DEBUG:-false}" == "true" ]] && cmd+=(--show-trace --verbose --print-build-logs --debug)
 
   log STEP "Building System Configuration"
