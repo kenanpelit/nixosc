@@ -12,6 +12,8 @@
 # PART 1: CORE LIBRARY & VISUALS
 # ==============================================================================
 
+set -x
+
 # Timer
 readonly START_TIME=$(date +%s)
 
@@ -70,7 +72,7 @@ log::init() {
 
   # If log path is not writable (e.g., restricted environments), fall back to a
   # workspace-local log file.
-  if ! ( : >>"$log_file" ) 2>/dev/null; then
+  if ! (: >>"$log_file") 2>/dev/null; then
     log_file="${WORK_DIR}/.nixosb/nixos-install.log"
     mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
   fi
@@ -302,22 +304,29 @@ flake::build() {
     fi
   fi
 
-  # Construct Command
-  local cmd="sudo nixos-rebuild switch --flake .#${hostname}"
-  [[ -n "$profile" ]] && cmd+=" --profile-name ${profile}"
+  # Construct command (array, no eval) so quoting is safe and output is direct.
+  local -a cmd=(sudo nixos-rebuild switch --flake ".#${hostname}")
+  [[ -n "$profile" ]] && cmd+=(--profile-name "$profile")
 
-  cmd+=" --option accept-flake-config true"
-  cmd+=" --option warn-dirty false"
-  [[ "${DEBUG:-false}" == "true" ]] && cmd+=" --show-trace --verbose"
+  # Ensure we always see progress output on TTYs (nix can be very quiet otherwise).
+  if [[ -t 1 ]]; then
+    cmd+=(--log-format bar-with-logs)
+  fi
+
+  cmd+=(--option accept-flake-config true)
+  cmd+=(--option warn-dirty false)
+  [[ "${DEBUG:-false}" == "true" ]] && cmd+=(--show-trace --verbose --print-build-logs)
 
   log STEP "Building System Configuration"
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
   [[ -n "$profile" ]] && log INFO "Profile: ${C_CYAN}$profile${C_RESET}"
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
-  log DEBUG "Command: ${cmd}"
+  local cmd_pretty=""
+  printf -v cmd_pretty '%q ' "${cmd[@]}"
+  log INFO "Command: ${C_DIM}${cmd_pretty}${C_RESET}"
 
   echo -e "${C_DIM}Running build command...${C_RESET}"
-  if eval "$cmd"; then
+  if "${cmd[@]}"; then
     echo ""
     log SUCCESS "Build completed successfully!"
     return 0
@@ -644,7 +653,7 @@ parse_args() {
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
-    pre-install|--pre-install)
+    pre-install | --pre-install)
       action="pre-install"
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
         config::set HOSTNAME "$2"
