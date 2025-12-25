@@ -308,15 +308,15 @@ flake::build() {
   local -a cmd=(sudo nixos-rebuild switch --flake ".#${hostname}")
   [[ -n "$profile" ]] && cmd+=(--profile-name "$profile")
 
-  # Prefer readable, line-based output on TTYs (progress bars can be invisible in
-  # some terminals/tmux setups).
+  # Force line-based output (matches nixos-rebuild default "raw" style with
+  # "[n/m built] ..." lines) so the user can see steady progress.
   if [[ -t 1 ]]; then
-    cmd+=(--verbose --print-build-logs)
+    cmd+=(--log-format raw)
   fi
 
   cmd+=(--option accept-flake-config true)
   cmd+=(--option warn-dirty false)
-  [[ "${DEBUG:-false}" == "true" ]] && cmd+=(--show-trace --debug)
+  [[ "${DEBUG:-false}" == "true" ]] && cmd+=(--show-trace --verbose --print-build-logs --debug)
 
   log STEP "Building System Configuration"
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
