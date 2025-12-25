@@ -183,7 +183,7 @@
       // Custom Applications
       // ========================================================================
 
-      Mod+Alt+Return { spawn "semsumo" "launch" "--daily"; }
+      Mod+Alt+Return { spawn "semsumo" "launch" "--daily" "-all"; }
       Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       Mod+Alt+Left { spawn "niri" "msg" "action" "set-column-width" "-100"; }
       Mod+Alt+Right { spawn "niri" "msg" "action" "set-column-width" "+100"; }
