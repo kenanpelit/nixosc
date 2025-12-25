@@ -12,8 +12,6 @@
 # PART 1: CORE LIBRARY & VISUALS
 # ==============================================================================
 
-set -x
-
 # Timer
 readonly START_TIME=$(date +%s)
 
@@ -315,8 +313,24 @@ flake::build() {
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
   [[ -n "$profile" ]] && log INFO "Profile: ${C_CYAN}$profile${C_RESET}"
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
+  log INFO "Command: ${C_DIM}${cmd}${C_RESET}"
 
   echo -e "${C_DIM}Running build command...${C_RESET}"
+  # Force a TTY so nixos-rebuild prints steady progress even when it would
+  # otherwise buffer or hide output.
+  if [[ -t 1 ]] && command -v script >/dev/null 2>&1; then
+    script -qefc "$cmd" /dev/null
+    local rc=$?
+    if [[ $rc -eq 0 ]]; then
+      echo ""
+      log SUCCESS "Build completed successfully!"
+      return 0
+    fi
+    echo ""
+    log ERROR "Build failed! (exit code: $rc)"
+    return 1
+  fi
+
   if eval "$cmd"; then
     echo ""
     log SUCCESS "Build completed successfully!"
