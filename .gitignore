@@ -40,3 +40,6 @@ assets/dotfiles.enc.tar.gz
 *.tmp
 *.bak
 *.log
+
+# Local scratch copies
+install_1.sh
