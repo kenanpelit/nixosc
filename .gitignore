@@ -42,4 +42,4 @@ assets/dotfiles.enc.tar.gz
 *.log
 
 # Local scratch copies
-install_1.sh
+inst.sh
