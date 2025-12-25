@@ -66,8 +66,16 @@ fi
 # Logging System
 log::init() {
   local log_file="${1:-"$LOG_FILE"}"
-  mkdir -p "$(dirname "$log_file")"
-  exec 3>>"$log_file"
+  mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+
+  # If log path is not writable (e.g., restricted environments), fall back to a
+  # workspace-local log file.
+  if ! ( : >>"$log_file" ) 2>/dev/null; then
+    log_file="${WORK_DIR}/.nixosb/nixos-install.log"
+    mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+  fi
+
+  exec 3>>"$log_file" 2>/dev/null || true
   find "$(dirname "$log_file")" -name "nixos-install*.log" -mtime +7 -delete 2>/dev/null || true
 }
 
@@ -384,21 +392,11 @@ cmd_pre-install() {
     return 1
   fi
 
-  # Prefer installing into the mounted target root on installer media.
-  # If /mnt is a mountpoint, assume the user mounted the target filesystem there.
+  # This command is meant to run on an already installed (minimal) NixOS system
+  # to bootstrap prerequisites (flakes, base packages, etc.). It operates on the
+  # current root filesystem, not on /mnt.
   local target_root="/"
-  if awk '$2 == "/mnt" { found=1 } END { exit !found }' /proc/mounts 2>/dev/null; then
-    target_root="/mnt"
-  fi
-
-  local nixos_dir="${target_root}/etc/nixos"
-  if [[ "$target_root" == "/mnt" ]]; then
-    log INFO "Using target root: /mnt"
-  else
-    log WARN "/mnt is not mounted; using current system root '/'"
-  fi
-
-  sudo mkdir -p "$nixos_dir"
+  local nixos_dir="/etc/nixos"
 
   local template_path="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/systems/${SYSTEM_ARCH}/${hostname}/templates/initial-configuration.nix"
   if [[ ! -f "$template_path" ]]; then
@@ -419,16 +417,18 @@ cmd_pre-install() {
 
   if [[ ! -f "${nixos_dir}/hardware-configuration.nix" ]]; then
     log INFO "Generating hardware config..."
-    sudo nixos-generate-config --root "$target_root"
+    sudo nixos-generate-config --root /
+  fi
+
+  if confirm "Apply bootstrap now? (runs nixos-rebuild switch)"; then
+    log STEP "Applying Bootstrap (nixos-rebuild switch)"
+    sudo nixos-rebuild switch
+  else
+    log WARN "Bootstrap config installed, but not applied."
   fi
 
   log SUCCESS "Bootstrap ready!"
-  if [[ "$target_root" == "/mnt" ]]; then
-    echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --root /mnt --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
-  else
-    echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-rebuild switch --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
-    echo -e "${C_DIM}  (If you intended a fresh install, mount target partitions at /mnt first, then re-run --pre-install.)${C_RESET}"
-  fi
+  echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-rebuild switch --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
 }
 
 cmd_merge() {
