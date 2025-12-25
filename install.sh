@@ -294,17 +294,27 @@ flake::build() {
   cd "${CONFIG[FLAKE_DIR]}" || return 1
   git::ensure_clean "${CONFIG[FLAKE_DIR]}"
 
+  # In auto mode we must not block on a sudo password prompt.
+  if [[ "${CONFIG[AUTO_MODE]:-false}" == "true" ]]; then
+    if ! sudo -n true 2>/dev/null; then
+      log ERROR "Auto mode requires passwordless sudo (sudo -n). Run without -a/--auto or cache sudo first (sudo -v)."
+      return 1
+    fi
+  fi
+
   # Construct Command
   local cmd="sudo nixos-rebuild switch --flake .#${hostname}"
   [[ -n "$profile" ]] && cmd+=" --profile-name ${profile}"
 
   cmd+=" --option accept-flake-config true"
   cmd+=" --option warn-dirty false"
+  [[ "${DEBUG:-false}" == "true" ]] && cmd+=" --show-trace --verbose"
 
   log STEP "Building System Configuration"
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
   [[ -n "$profile" ]] && log INFO "Profile: ${C_CYAN}$profile${C_RESET}"
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
+  log DEBUG "Command: ${cmd}"
 
   echo -e "${C_DIM}Running build command...${C_RESET}"
   if eval "$cmd"; then
