@@ -46,6 +46,16 @@ in
     numlockon=0
     xkb_rules_layout=${keyboard.layout}
     ${kbVariantLine}${kbOptionsLine}
+
+    # Environment (make session identifiable to tools like DMS/Fusuma)
+    env=XDG_SESSION_TYPE,wayland
+    env=XDG_CURRENT_DESKTOP,mango
+    env=XDG_SESSION_DESKTOP,mango
+    env=NIXOS_OZONE_WL,1
+
+    # Autostart (runs after Mango is up; has WAYLAND_DISPLAY)
+    exec-once=dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
+    exec-once=systemctl --user reset-failed
+    exec-once=systemctl --user start mango-session.target
   '';
 }
-
