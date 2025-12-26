@@ -42,8 +42,7 @@
     binds=SUPER+ALT,Return,spawn_shell,${bins.semsumo} launch --daily -all
 
     # exit / kill
-    binds=CTRL,d,killclient,
-    binds=SUPER,q,spawn_shell,true
+    binds=SUPER,q,killclient,
     binds=SUPER+SHIFT,q,quit
     binds=SUPER,m,quit
 
