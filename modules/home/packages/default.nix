@@ -47,7 +47,6 @@ in
   
       # -- Development Tools -----------------------------------------------------
       git lazygit gh tig    # Version control stack
-      direnv                # Environment switcher
       gnumake gcc           # Basic build tools
       jq yq                 # JSON/YAML processors
       
