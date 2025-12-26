@@ -60,15 +60,25 @@ case "${cmd}" in
     #   -mp   (fusuma) previous => workspace left
     #   -mn   (fusuma) next     => workspace right
     # ----------------------------------------------------------------------------
+    # systemd --user services may run with a minimal PATH.
+    export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER}/bin:${PATH:-}"
+
     direction="${1:-}"
     shift || true
 
     case "${direction}" in
       -wl|-mp) direction="left" ;;
       -wr|-mn) direction="right" ;;
+
+      # Fusuma may still emit these on 4-finger up/down (monitor/overview on other WMs).
+      # Mango workspace monitor currently only handles left/right; ignore the rest.
+      -ms|-msf|-mt|-wt|-tn|-tp)
+        exit 0
+        ;;
+
       *)
-        echo "mango-set workspace-monitor: unsupported args: ${direction:-} $*" >&2
-        exit 2
+        # Don't hard-fail a gesture pipeline; just no-op.
+        exit 0
         ;;
     esac
 
