@@ -127,6 +127,7 @@ in
       discord webcord-vencord
       catppuccin-discord
       ferdium               # Multi-messenger
+      zapzap                # WhatsApp desktop (PyQt6)
       
       # Launchers
       rofi                 # App launcher
