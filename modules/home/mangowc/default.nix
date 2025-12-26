@@ -42,6 +42,7 @@ let
     terminal = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
     wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
+    semsumo = "${config.home.profileDirectory}/bin/semsumo";
   };
 
   settingsConfig = import ./settings.nix {

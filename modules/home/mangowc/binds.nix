@@ -39,9 +39,10 @@
 
     # terminal
     binds=SUPER,Return,spawn_shell,${bins.terminal}
+    binds=SUPER+ALT,Return,spawn_shell,${bins.semsumo} launch --daily -all
 
     # exit / kill
-    binds=SUPER,d,killclient,
+    binds=CTRL,d,killclient,
     binds=SUPER,q,spawn_shell,true
     binds=SUPER+SHIFT,q,quit
     binds=SUPER,m,quit
@@ -108,11 +109,12 @@
     bind=ALT,9,tag,9,0
 
     # monitor switch
-    bind=ALT+SHIFT,Left,focusmon,left
-    bind=ALT+SHIFT,Right,focusmon,right
+    # Vertical monitor layout (external top, laptop bottom)
+    bind=ALT+SHIFT,Up,focusmon,up
+    bind=ALT+SHIFT,Down,focusmon,down
 
     # move tag to monitor
-    bind=SUPER+ALT,Left,tagmon,left,0
-    bind=SUPER+ALT,Right,tagmon,right,0
+    bind=SUPER+ALT,Up,tagmon,up,0
+    bind=SUPER+ALT,Down,tagmon,down,0
   '';
 }

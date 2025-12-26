@@ -57,5 +57,17 @@ in
     exec-once=dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
     exec-once=systemctl --user reset-failed
     exec-once=systemctl --user start mango-session.target
+
+    # Tags (workspaces)
+    # Keep tags visible even when empty (static 1..9).
+    tagrule=id:1,no_hide:1
+    tagrule=id:2,no_hide:1
+    tagrule=id:3,no_hide:1
+    tagrule=id:4,no_hide:1
+    tagrule=id:5,no_hide:1
+    tagrule=id:6,no_hide:1
+    tagrule=id:7,no_hide:1
+    tagrule=id:8,no_hide:1
+    tagrule=id:9,no_hide:1
   '';
 }
