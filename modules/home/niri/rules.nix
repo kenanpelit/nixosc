@@ -55,6 +55,8 @@ let
     { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
     { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; maximize = true; }
     { appId = "^ferdium$"; workspace = "9"; maximize = true; }
+    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; maximize = true; }
+    { appId = "^org\.telegram\.desktop$"; workspace = "6"; maximize = true; }
     { appId = "^vlc$"; workspace = "6"; }
     { appId = "^remote-viewer$"; workspace = "6"; maximize = true; }
   ];
