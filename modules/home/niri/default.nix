@@ -67,10 +67,6 @@ let
   # ---------------------------------------------------------------------------
   # Imports
   # ---------------------------------------------------------------------------
-  imports = [
-    inputs.niri.homeModules.niri
-  ];
-
   bindsConfig = import ./binds.nix {
     inherit lib pkgs bins enableNiriusBinds;
   };
@@ -85,6 +81,10 @@ let
 
 in
 {
+  imports = [
+    inputs.niri.homeModules.niri
+  ];
+
   options.my.desktop.niri = {
     enable = lib.mkEnableOption "Niri compositor (Wayland) configuration";
 
