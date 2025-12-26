@@ -128,6 +128,7 @@ in
       catppuccin-discord
       ferdium               # Multi-messenger
       zapzap                # WhatsApp desktop (PyQt6)
+      telegram-desktop      # Telegram desktop client
       
       # Launchers
       rofi                 # App launcher
