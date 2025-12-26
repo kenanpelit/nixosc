@@ -47,11 +47,11 @@ let
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *mango*|*Mango*)
         # Mango has its own gesturebind support; Fusuma may still run for other gestures.
-        # In this setup, Fusuma handles 4-finger left/right workspace navigation
-        # for Mango (wrap-around, consistent with Hypr/Niri router).
+        # In this setup, Mango handles 4-finger left/right via `gesturebind=...`
+        # (calling wm-workspace). Avoid double-trigger by no-op'ing here.
         if [[ "$fusuma_mode" == "1" ]]; then
           case "''${1:-}" in
-            -wl|-wr|-mn|-mp) exec "$router" "$@" ;;
+            -wl|-wr|-mn|-mp) exit 0 ;;
             *) exit 0 ;;
           esac
         fi
