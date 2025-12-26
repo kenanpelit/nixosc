@@ -1086,7 +1086,7 @@
         "type": "github"
       }
     },
-    "mangowc": {
+    "mango": {
       "inputs": {
         "flake-parts": "flake-parts_2",
         "nixpkgs": [
@@ -1095,14 +1095,17 @@
         "scenefx": "scenefx"
       },
       "locked": {
-        "lastModified": 1766763682,
-        "narHash": "sha256-3rs2cJprzzY2dcEVkFQ+TTTTD1TZ0k0DZXExtPcHTb4=",
-        "path": "/home/kenan/.kod/mangowc",
-        "type": "path"
+        "lastModified": 1766709332,
+        "narHash": "sha256-8tjnfEK2NGEMGbs3FaTb7ii7qLSaB50qf6r+vqCSzsE=",
+        "owner": "DreamMaoMao",
+        "repo": "mango",
+        "rev": "14f15ec997694a19326c0d132148d35c934bf665",
+        "type": "github"
       },
       "original": {
-        "path": "/home/kenan/.kod/mangowc",
-        "type": "path"
+        "owner": "DreamMaoMao",
+        "repo": "mango",
+        "type": "github"
       }
     },
     "niri": {
@@ -1590,7 +1593,7 @@
         "home-manager": "home-manager",
         "hypr-contrib": "hypr-contrib",
         "hyprland": "hyprland",
-        "mangowc": "mangowc",
+        "mango": "mango",
         "niri": "niri",
         "nix-flatpak": "nix-flatpak",
         "nix-search-tv": "nix-search-tv",
@@ -1628,7 +1631,7 @@
     "scenefx": {
       "inputs": {
         "nixpkgs": [
-          "mangowc",
+          "mango",
           "nixpkgs"
         ]
       },
