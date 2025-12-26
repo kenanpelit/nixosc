@@ -34,19 +34,6 @@ case "${cmd}" in
     export XDG_SESSION_DESKTOP=mango
     export NIXOS_OZONE_WL=1
 
-    if command -v dbus-update-activation-environment >/dev/null 2>&1; then
-      dbus-update-activation-environment --systemd \
-        DISPLAY WAYLAND_DISPLAY \
-        XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE \
-        NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE \
-        >/dev/null 2>&1 || true
-    fi
-
-    if command -v systemctl >/dev/null 2>&1; then
-      systemctl --user reset-failed >/dev/null 2>&1 || true
-      systemctl --user start mango-session.target >/dev/null 2>&1 || true
-    fi
-
     exec mango
     ;;
 

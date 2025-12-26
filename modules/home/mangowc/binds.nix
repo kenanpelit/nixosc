@@ -35,6 +35,7 @@
 
     # exit / kill
     bind=CTRL,d,killclient,
+    bind=SUPER,q,spawn_shell,true
     bind=SUPER+SHIFT,q,quit
     bind=SUPER,m,quit
     bind=ALT,q,killclient,
