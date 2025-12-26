@@ -45,6 +45,12 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
+      *mango*|*Mango*)
+        exec "$router" "$@"
+        ;;
+    esac
+
+    case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
         if [[ "$fusuma_mode" == "1" ]]; then
           case "''${1:-}" in
@@ -66,7 +72,7 @@ let
         ;;
     esac
 
-    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
+    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
     exit 127
   '';
 
