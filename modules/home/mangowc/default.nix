@@ -43,10 +43,11 @@ let
     dms = "${config.home.profileDirectory}/bin/dms";
     wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
     semsumo = "${config.home.profileDirectory}/bin/semsumo";
+    mangoSet = "${config.home.profileDirectory}/bin/mango-set";
   };
 
   settingsConfig = import ./settings.nix {
-    inherit lib keyboard;
+    inherit lib keyboard bins;
   };
 
   bindsConfig = import ./binds.nix {
