@@ -18,6 +18,7 @@ let
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
   niriPkg = pkgs.niri-unstable;
+  mangoPkg = inputs.mangowc.packages.${pkgs.stdenv.hostPlatform.system}.mango;
   cosmicSessionPkg = pkgs."cosmic-session" or null;
   cosmicEnabled = cfg.enableCosmic or false;
   cosmicAvailable = cosmicSessionPkg != null;
@@ -79,6 +80,23 @@ let
     passthru.providedSessions = [ "niri-optimized" ];
   };
 
+  mangoSession = pkgs.writeTextFile {
+    name = "mango-session";
+    # Avoid clobbering MangoWC's upstream `mango.desktop`.
+    destination = "/share/wayland-sessions/mango-optimized.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=Mango (Optimized)
+      Comment=dwl-based Wayland compositor (via /etc/profiles/per-user/${username}/bin/mango)
+      Exec=/etc/profiles/per-user/${username}/bin/mango
+      Type=Application
+      DesktopNames=mango
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+    '';
+    passthru.providedSessions = [ "mango-optimized" ];
+  };
+
   cosmicSession = pkgs.writeTextFile {
     name = "cosmic-session";
     # Avoid clobbering COSMIC's upstream `cosmic.desktop` if/when it exists.
@@ -99,6 +117,11 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    programs.mango = lib.mkIf (cfg.enableMangowc or false) {
+      enable = true;
+      package = mangoPkg;
+    };
+
     assertions = [
       {
         assertion = (!cosmicEnabled) || cosmicAvailable;
@@ -123,6 +146,7 @@ in
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
       (lib.optional cfg.enableNiri niriSession)
+      (lib.optional (cfg.enableMangowc or false) mangoSession)
       (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSession)
     ];
 
@@ -136,6 +160,9 @@ in
       
       (lib.optional cfg.enableNiri niriPkg)
       (lib.optional cfg.enableNiri niriSession)
+
+      (lib.optional (cfg.enableMangowc or false) mangoPkg)
+      (lib.optional (cfg.enableMangowc or false) mangoSession)
 
       (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSessionPkg)
       (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSession)

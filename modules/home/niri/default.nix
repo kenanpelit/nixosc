@@ -67,8 +67,8 @@ let
   # ---------------------------------------------------------------------------
   # Imports
   # ---------------------------------------------------------------------------
-  # inputs.niri.homeModules.niri is now imported globally via flake.nix sharedModules
   imports = [
+    inputs.niri.homeModules.niri
   ];
 
   bindsConfig = import ./binds.nix {

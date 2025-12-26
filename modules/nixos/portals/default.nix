@@ -28,12 +28,14 @@ in
       extraPortals =
         (lib.optional cfg.enableHyprland hyprPortalPkg)
         ++ (lib.optional cosmicPortalEnabled cosmicPortalPkg)
+        ++ (lib.optional (cfg.enableMangowc or false) pkgs.xdg-desktop-portal-wlr)
         ++ [ 
           pkgs.xdg-desktop-portal-gtk 
           pkgs.xdg-desktop-portal-gnome
         ];
       config.common.default =
         if cfg.enableHyprland then [ "hyprland" "gtk" ] 
+        else if (cfg.enableMangowc or false) then [ "wlr" "gtk" ]
         else if cfg.enableNiri then [ "gnome" "gtk" ]
         else if cosmicPortalEnabled then [ "cosmic" "gtk" ]
         else [ "gtk" ];

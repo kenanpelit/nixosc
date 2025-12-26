@@ -29,6 +29,7 @@ assets/dotfiles.enc.tar.gz
 # Environment and local settings
 .direnv
 .devenv
+.cache
 .pre-commit-config.yaml
 .envrc
 
