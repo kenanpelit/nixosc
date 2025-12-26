@@ -2,7 +2,7 @@
 # ==============================================================================
 # MangoWC base settings (config.conf snippet)
 # ==============================================================================
-{ lib, keyboard, ... }:
+{ lib, keyboard, bins, ... }:
 
 let
   kbOptions = lib.concatStringsSep "," (keyboard.options or [ ]);
@@ -54,9 +54,7 @@ in
     env=NIXOS_OZONE_WL,1
 
     # Autostart (runs after Mango is up; has WAYLAND_DISPLAY)
-    exec-once=dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
-    exec-once=systemctl --user reset-failed
-    exec-once=systemctl --user start mango-session.target
+    exec-once=${bins.mangoSet} session-start
 
     # Tags (workspaces)
     # Keep tags visible even when empty (static 1..9).

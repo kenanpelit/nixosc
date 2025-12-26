@@ -8,6 +8,8 @@
 #
 # Usage:
 #   mango-set tty
+#   mango-set start
+#   mango-set session-start
 #   mango-set workspace-monitor <flags>
 # ==============================================================================
 
@@ -19,7 +21,9 @@ Usage:
   mango-set <command>
 
 Commands:
-  tty   Start Mango session (DM/TTY)
+  start          Start Mango session (DM/TTY)
+  tty            Alias for start
+  session-start  Export env to systemd --user; start mango-session.target
   workspace-monitor  Workspace/monitor helper (Fusuma)
 EOF
 }
@@ -28,13 +32,63 @@ cmd="${1:-}"
 shift || true
 
 case "${cmd}" in
-  tty)
+  start)
     export XDG_SESSION_TYPE=wayland
     export XDG_CURRENT_DESKTOP=mango
     export XDG_SESSION_DESKTOP=mango
     export NIXOS_OZONE_WL=1
 
     exec mango
+    ;;
+
+  tty)
+    exec "$0" start
+    ;;
+
+  session-start)
+    # ----------------------------------------------------------------------------
+    # Export environment to systemd --user and start mango-session.target.
+    #
+    # Must run *inside* the Mango session so WAYLAND_DISPLAY exists.
+    # Mirrors niri-set/hypr-set patterns.
+    # ----------------------------------------------------------------------------
+    export SYSTEMD_OFFLINE=0
+
+    # Ensure NixOS sudo wrapper wins when called from user services.
+    case ":${PATH:-}:" in
+      *":/run/wrappers/bin:"*) ;;
+      *) export PATH="/run/wrappers/bin:${PATH:-}" ;;
+    esac
+
+    if ! command -v systemctl >/dev/null 2>&1; then
+      exit 0
+    fi
+
+    timeout_bin=""
+    if command -v timeout >/dev/null 2>&1; then
+      timeout_bin="timeout"
+    fi
+
+    vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP GTK_THEME XCURSOR_THEME SYSTEMD_OFFLINE NIXOS_OZONE_WL"
+
+    if [[ -n "$timeout_bin" ]]; then
+      $timeout_bin 2s systemctl --user import-environment $vars >/dev/null 2>&1 || true
+    else
+      systemctl --user import-environment $vars >/dev/null 2>&1 || true
+    fi
+
+    if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+      if [[ -n "$timeout_bin" ]]; then
+        $timeout_bin 2s dbus-update-activation-environment --systemd --all >/dev/null 2>&1 || true
+      else
+        dbus-update-activation-environment --systemd --all >/dev/null 2>&1 || true
+      fi
+    fi
+
+    systemctl --user reset-failed >/dev/null 2>&1 || true
+    systemctl --user start mango-session.target >/dev/null 2>&1 || true
+    systemctl --user try-restart dms.service >/dev/null 2>&1 || true
+    exit 0
     ;;
 
   workspace-monitor)
