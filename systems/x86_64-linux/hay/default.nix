@@ -38,6 +38,7 @@
     enableHyprland = true;
     enableGnome    = true;
     enableNiri     = true;
+    enableMangowc  = true;
     enableCosmic   = true;
     enableAudio    = true;
 
