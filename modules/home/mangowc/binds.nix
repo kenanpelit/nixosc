@@ -15,36 +15,34 @@
     # ==============================================================================
 
     # DMS (launcher / shell)
-    # NOTE: On non-QWERTY layouts, some key combos may not work reliably; use keycodes.
-    # QWERTY keycode reference: q=24 w=25 e=26 r=27 t=28 y=29 u=30 i=31 o=32 p=33
-    #                  a=38 s=39 d=40 f=41 g=42 h=43 j=44 k=45 l=46
-    #                  z=52 x=53 c=54 v=55 b=56 n=57 m=58 comma=59
     #
-    # Use `spawn_shell` for reliable argv parsing (avoids ambiguity around spaces/quotes).
-    bind=SUPER,code:65,spawn_shell,${bins.dms} ipc call spotlight toggle
-    bind=SUPER,code:40,spawn_shell,${bins.dms} ipc call dash toggle ""
-    bind=SUPER,code:57,spawn_shell,${bins.dms} ipc call notifications toggle
-    bind=SUPER,code:54,spawn_shell,${bins.dms} ipc call control-center toggle
-    bind=SUPER,code:55,spawn_shell,${bins.dms} ipc call clipboard toggle
-    bind=SUPER+SHIFT,code:40,spawn_shell,${bins.dms} ipc call dash toggle overview
-    bind=SUPER+SHIFT,code:33,spawn_shell,${bins.dms} ipc call processlist focusOrToggle
-    bind=SUPER+CTRL,code:57,spawn_shell,${bins.dms} ipc call notepad open
-    bind=SUPER,code:59,spawn_shell,${bins.dms} ipc call settings focusOrToggle
+    # Mango `bind=` converts keysyms to keycodes using the configured XKB layout
+    # (`xkb_rules_layout=tr` / `xkb_rules_variant=f`), so Mod+V really means "V"
+    # on your TR-F layout (instead of "QWERTY V physical key").
+    bind=SUPER,space,spawn_shell,${bins.dms} ipc call spotlight toggle
+    bind=SUPER,d,spawn_shell,${bins.dms} ipc call dash toggle ""
+    bind=SUPER,n,spawn_shell,${bins.dms} ipc call notifications toggle
+    bind=SUPER,c,spawn_shell,${bins.dms} ipc call control-center toggle
+    bind=SUPER,v,spawn_shell,${bins.dms} ipc call clipboard toggle
+    bind=SUPER+SHIFT,d,spawn_shell,${bins.dms} ipc call dash toggle overview
+    bind=SUPER+SHIFT,p,spawn_shell,${bins.dms} ipc call processlist focusOrToggle
+    bind=SUPER+CTRL,n,spawn_shell,${bins.dms} ipc call notepad open
+    bind=SUPER,comma,spawn_shell,${bins.dms} ipc call settings focusOrToggle
     bind=SUPER,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
     bind=CTRL+ALT,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
 
     # reload config
-    bind=SUPER,code:27,reload_config
+    bind=SUPER,r,reload_config
 
     # terminal
-    bind=SUPER,code:36,spawn_shell,${bins.terminal}
+    bind=SUPER,Return,spawn_shell,${bins.terminal}
 
     # exit / kill
-    bind=CTRL,code:40,killclient,
-    bind=SUPER,code:24,spawn_shell,true
-    bind=SUPER+SHIFT,code:24,quit
-    bind=SUPER,code:58,quit
-    bind=ALT,code:24,killclient,
+    bind=CTRL,d,killclient,
+    bind=SUPER,q,spawn_shell,true
+    bind=SUPER+SHIFT,q,quit
+    bind=SUPER,m,quit
+    bind=ALT,q,killclient,
 
     # focus (vim + arrows)
     bind=ALT,h,focusdir,left
@@ -91,12 +89,6 @@
     bind=SUPER+SHIFT,7,tag,7,0
     bind=SUPER+SHIFT,8,tag,8,0
     bind=SUPER+SHIFT,9,tag,9,0
-
-    # touchpad gestures (libinput)
-    # Keep these native gestures enabled in Mango; Fusuma is configured to no-op
-    # for Mango's 4-finger left/right to avoid double-trigger.
-    gesturebind=NONE,left,4,viewtoleft_have_client,0
-    gesturebind=NONE,right,4,viewtoright_have_client,0
 
     # tags: view (Ctrl+<n>) and move (Alt+<n>)
     bind=CTRL,1,view,1,0
