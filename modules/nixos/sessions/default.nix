@@ -18,7 +18,7 @@ let
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
   niriPkg = pkgs.niri-unstable;
-  mangoPkg = inputs.mangowc.packages.${pkgs.stdenv.hostPlatform.system}.mango;
+  mangoPkg = inputs.mango.packages.${pkgs.stdenv.hostPlatform.system}.mango;
   cosmicSessionPkg = pkgs."cosmic-session" or null;
   cosmicEnabled = cfg.enableCosmic or false;
   cosmicAvailable = cosmicSessionPkg != null;

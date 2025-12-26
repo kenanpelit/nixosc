@@ -122,9 +122,9 @@
     # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
     nsticky.url = "github:lonerOrz/nsticky";
 
-    # MangoWC: dwl-based Wayland compositor (local dev checkout)
-    mangowc = {
-      url = "path:/home/kenan/.kod/mangowc";
+    # MangoWC (mango): dwl-based Wayland compositor
+    mango = {
+      url = "github:DreamMaoMao/mango";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -263,7 +263,7 @@
           # Using `default` keeps us compatible and avoids the deprecation warning.
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
-          mangowc.nixosModules.mango
+          mango.nixosModules.mango
         ];
 
         # Special arguments available to all modules.

@@ -2,7 +2,7 @@
 # ==============================================================================
 # MangoWC (mango) Home Manager configuration
 #
-# This wraps upstream `wayland.windowManager.mango` module (from the mangowc
+# This wraps upstream `wayland.windowManager.mango` module (from the mango
 # flake) and generates a single `~/.config/mango/config.conf` from modular
 # snippets (settings/binds/rules/monitors), similar to modules/home/niri.
 # ==============================================================================
@@ -61,7 +61,7 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = inputs.mangowc.packages.${system}.mango;
+      default = inputs.mango.packages.${system}.mango;
       description = "Which mango package to use.";
     };
 
@@ -103,7 +103,7 @@ in
   };
 
   imports = [
-    inputs.mangowc.hmModules.mango
+    inputs.mango.hmModules.mango
   ];
 
   config = lib.mkIf cfg.enable {
