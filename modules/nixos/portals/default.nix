@@ -55,7 +55,9 @@ in
           GNOME.default = [ "gnome" "gtk" ];
         }
         (lib.mkIf (cfg.enableMangowc or false) {
-          mango.default = [ "wlr" "gtk" ];
+          # Mango's upstream module sets this to "gtk". Force wlr first so
+          # screencast/screenshot portals work reliably under dwl-based sessions.
+          mango.default = lib.mkForce "wlr;gtk";
         })
         (lib.mkIf cosmicPortalEnabled {
           COSMIC.default = [ "cosmic" "gtk" ];
