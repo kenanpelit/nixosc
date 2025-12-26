@@ -92,6 +92,12 @@
     bind=SUPER+SHIFT,8,tag,8,0
     bind=SUPER+SHIFT,9,tag,9,0
 
+    # touchpad gestures (libinput)
+    # Keep these native gestures enabled in Mango; Fusuma is configured to no-op
+    # for Mango's 4-finger left/right to avoid double-trigger.
+    gesturebind=NONE,left,4,viewtoleft_have_client,0
+    gesturebind=NONE,right,4,viewtoright_have_client,0
+
     # tags: view (Ctrl+<n>) and move (Alt+<n>)
     bind=CTRL,1,view,1,0
     bind=CTRL,2,view,2,0
