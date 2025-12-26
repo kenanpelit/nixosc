@@ -34,7 +34,7 @@
     bind=SUPER,Return,spawn,${bins.terminal}
 
     # exit / kill
-    bind=SUPER,q,killclient,
+    bind=CTRL,d,killclient,
     bind=SUPER+SHIFT,q,quit
     bind=SUPER,m,quit
     bind=ALT,q,killclient,
@@ -64,6 +64,10 @@
     # tag switch (left/right)
     bind=SUPER,Left,viewtoleft,0
     bind=SUPER,Right,viewtoright,0
+
+    # touchpad gestures (libinput)
+    gesturebind=NONE,left,4,viewtoleft,0
+    gesturebind=NONE,right,4,viewtoright,0
 
     # tags: view (Ctrl+<n>) and move (Alt+<n>)
     bind=CTRL,1,view,1,0
