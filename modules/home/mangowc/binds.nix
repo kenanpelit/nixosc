@@ -19,30 +19,33 @@
     # Mango `bind=` converts keysyms to keycodes using the configured XKB layout
     # (`xkb_rules_layout=tr` / `xkb_rules_variant=f`), so Mod+V really means "V"
     # on your TR-F layout (instead of "QWERTY V physical key").
-    bind=SUPER,space,spawn_shell,${bins.dms} ipc call spotlight toggle
-    bind=SUPER,d,spawn_shell,${bins.dms} ipc call dash toggle ""
-    bind=SUPER,n,spawn_shell,${bins.dms} ipc call notifications toggle
-    bind=SUPER,c,spawn_shell,${bins.dms} ipc call control-center toggle
-    bind=SUPER,v,spawn_shell,${bins.dms} ipc call clipboard toggle
-    bind=SUPER+SHIFT,d,spawn_shell,${bins.dms} ipc call dash toggle overview
-    bind=SUPER+SHIFT,p,spawn_shell,${bins.dms} ipc call processlist focusOrToggle
-    bind=SUPER+CTRL,n,spawn_shell,${bins.dms} ipc call notepad open
-    bind=SUPER,comma,spawn_shell,${bins.dms} ipc call settings focusOrToggle
-    bind=SUPER,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
-    bind=CTRL+ALT,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
+    #
+    # IMPORTANT: We use `binds=` (keysym-based) so letter shortcuts follow the
+    # active keyboard layout (TR-F) instead of QWERTY physical positions.
+    binds=SUPER,space,spawn_shell,${bins.dms} ipc call spotlight toggle
+    binds=SUPER,d,spawn_shell,${bins.dms} ipc call dash toggle ""
+    binds=SUPER,n,spawn_shell,${bins.dms} ipc call notifications toggle
+    binds=SUPER,c,spawn_shell,${bins.dms} ipc call control-center toggle
+    binds=SUPER,v,spawn_shell,${bins.dms} ipc call clipboard toggle
+    binds=SUPER+SHIFT,d,spawn_shell,${bins.dms} ipc call dash toggle overview
+    binds=SUPER+SHIFT,p,spawn_shell,${bins.dms} ipc call processlist focusOrToggle
+    binds=SUPER+CTRL,n,spawn_shell,${bins.dms} ipc call notepad open
+    binds=SUPER,comma,spawn_shell,${bins.dms} ipc call settings focusOrToggle
+    binds=SUPER,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
+    binds=CTRL+ALT,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
 
     # reload config
-    bind=SUPER,r,reload_config
+    binds=SUPER,r,reload_config
 
     # terminal
-    bind=SUPER,Return,spawn_shell,${bins.terminal}
+    binds=SUPER,Return,spawn_shell,${bins.terminal}
 
     # exit / kill
-    bind=CTRL,d,killclient,
-    bind=SUPER,q,spawn_shell,true
-    bind=SUPER+SHIFT,q,quit
-    bind=SUPER,m,quit
-    bind=ALT,q,killclient,
+    binds=CTRL,d,killclient,
+    binds=SUPER,q,spawn_shell,true
+    binds=SUPER+SHIFT,q,quit
+    binds=SUPER,m,quit
+    binds=ALT,q,killclient,
 
     # focus (vim + arrows)
     bind=ALT,h,focusdir,left
@@ -89,6 +92,11 @@
     bind=SUPER+SHIFT,7,tag,7,0
     bind=SUPER+SHIFT,8,tag,8,0
     bind=SUPER+SHIFT,9,tag,9,0
+
+    # touchpad gestures (libinput)
+    # Route through our workspace router for consistent behavior (wrap-around).
+    gesturebind=NONE,left,4,spawn_shell,${bins.wmWorkspace} -wl
+    gesturebind=NONE,right,4,spawn_shell,${bins.wmWorkspace} -wr
 
     # tags: view (Ctrl+<n>) and move (Alt+<n>)
     bind=CTRL,1,view,1,0

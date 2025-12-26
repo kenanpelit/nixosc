@@ -41,6 +41,7 @@ let
   bins = {
     terminal = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
+    wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
   };
 
   settingsConfig = import ./settings.nix {
