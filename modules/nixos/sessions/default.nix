@@ -87,8 +87,8 @@ let
     text = ''
       [Desktop Entry]
       Name=Mango (Optimized)
-      Comment=dwl-based Wayland compositor (via /etc/profiles/per-user/${username}/bin/mango)
-      Exec=/etc/profiles/per-user/${username}/bin/mango
+      Comment=dwl-based Wayland compositor (via mango-set tty)
+      Exec=/etc/profiles/per-user/${username}/bin/mango-set tty
       Type=Application
       DesktopNames=mango
       X-GDM-SessionType=wayland

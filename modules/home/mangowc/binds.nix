@@ -34,7 +34,9 @@
     bind=SUPER,Return,spawn,${bins.terminal}
 
     # exit / kill
+    bind=SUPER,q,killclient,
     bind=SUPER+SHIFT,q,quit
+    bind=SUPER,m,quit
     bind=ALT,q,killclient,
 
     # focus (vim + arrows)

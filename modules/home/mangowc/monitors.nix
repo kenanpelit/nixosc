@@ -21,6 +21,6 @@
     #       List outputs in a Mango session: `mmsg -O`
 
     monitorrule=DP-3,0.55,1,tile,0,1.0,0,0,2560,1440,165
-    monitorrule=eDP-1,0.55,1,tile,0,1.0,2560,0,1920,1080,60
+    monitorrule=eDP-1,0.55,1,tile,0,1.0,0,1440,1920,1080,60
   '';
 }
