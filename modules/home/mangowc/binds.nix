@@ -41,11 +41,10 @@
     binds=SUPER,Return,spawn_shell,${bins.terminal}
 
     # exit / kill
-    binds=CTRL,d,killclient,
+    binds=SUPER,d,killclient,
     binds=SUPER,q,spawn_shell,true
     binds=SUPER+SHIFT,q,quit
     binds=SUPER,m,quit
-    binds=ALT,q,killclient,
 
     # focus (vim + arrows)
     bind=ALT,h,focusdir,left
@@ -97,17 +96,6 @@
     # Route through our workspace router for consistent behavior (wrap-around).
     gesturebind=NONE,left,4,spawn_shell,${bins.wmWorkspace} -wl
     gesturebind=NONE,right,4,spawn_shell,${bins.wmWorkspace} -wr
-
-    # tags: view (Ctrl+<n>) and move (Alt+<n>)
-    bind=CTRL,1,view,1,0
-    bind=CTRL,2,view,2,0
-    bind=CTRL,3,view,3,0
-    bind=CTRL,4,view,4,0
-    bind=CTRL,5,view,5,0
-    bind=CTRL,6,view,6,0
-    bind=CTRL,7,view,7,0
-    bind=CTRL,8,view,8,0
-    bind=CTRL,9,view,9,0
 
     bind=ALT,1,tag,1,0
     bind=ALT,2,tag,2,0
