@@ -18,6 +18,7 @@
   my.user.git.enable = true;
   my.user.starship.enable = true;
   my.user.fzf.enable = true;
+  my.user.direnv.enable = true;
   my.user.fastfetch.enable = true;
   my.user.btop.enable = true;
   my.user.packages.enable = true;

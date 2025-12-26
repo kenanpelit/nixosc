@@ -28,17 +28,40 @@ in
       extraPortals =
         (lib.optional cfg.enableHyprland hyprPortalPkg)
         ++ (lib.optional cosmicPortalEnabled cosmicPortalPkg)
-        ++ (lib.optional (cfg.enableMangowc or false) pkgs.xdg-desktop-portal-wlr)
+        ++ (lib.optional ((cfg.enableMangowc or false) || cfg.enableNiri) pkgs.xdg-desktop-portal-wlr)
         ++ [ 
           pkgs.xdg-desktop-portal-gtk 
           pkgs.xdg-desktop-portal-gnome
         ];
-      config.common.default =
-        if cfg.enableHyprland then [ "hyprland" "gtk" ] 
-        else if (cfg.enableMangowc or false) then [ "wlr" "gtk" ]
-        else if cfg.enableNiri then [ "gnome" "gtk" ]
-        else if cosmicPortalEnabled then [ "cosmic" "gtk" ]
-        else [ "gtk" ];
+      # Pick portal backends per-session to avoid "wrong compositor portal"
+      # when multiple WMs are installed on the same host.
+      #
+      # Keys here match `DesktopNames` / XDG_CURRENT_DESKTOP values from the
+      # session .desktop files (see `modules/nixos/sessions`).
+      config = lib.mkMerge [
+        {
+          common.default = [ "gtk" ];
+
+          # Hyprland sessions (upstream often sets "Hyprland", but keep a
+          # lowercase alias to be resilient across greeters/wrappers).
+          Hyprland.default = [ "hyprland" "gtk" ];
+          hyprland.default = [ "hyprland" "gtk" ];
+
+          # Niri: rely on wlr portal for screencast/screenshot protocols, and gtk
+          # for file picker.
+          niri.default = [ "wlr" "gtk" ];
+
+          # GNOME session.
+          GNOME.default = [ "gnome" "gtk" ];
+        }
+        (lib.mkIf (cfg.enableMangowc or false) {
+          mango.default = [ "wlr" "gtk" ];
+        })
+        (lib.mkIf cosmicPortalEnabled {
+          COSMIC.default = [ "cosmic" "gtk" ];
+          cosmic.default = [ "cosmic" "gtk" ];
+        })
+      ];
     };
   };
 }
