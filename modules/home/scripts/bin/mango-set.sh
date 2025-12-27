@@ -107,15 +107,109 @@ case "${cmd}" in
     direction="${1:-}"
     shift || true
 
+    cache_root="${XDG_CACHE_HOME:-$HOME/.cache}"
+    cache_dir_candidate="$cache_root/mango-flow"
+    if ! mkdir -p "$cache_dir_candidate" 2>/dev/null || [[ ! -w "$cache_dir_candidate" ]]; then
+      cache_root="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+      cache_dir_candidate="$cache_root/mango-flow"
+      mkdir -p "$cache_dir_candidate" 2>/dev/null || true
+    fi
+    readonly CACHE_DIR="$cache_dir_candidate"
+    readonly PREVIOUS_TAG_FILE="$CACHE_DIR/previous_tag"
+    readonly MONITOR_STATE_FILE="$CACHE_DIR/monitor_state"
+
+    ensure_state_files() {
+      mkdir -p "$CACHE_DIR" 2>/dev/null || true
+      if [[ ! -f "$PREVIOUS_TAG_FILE" ]]; then echo "1" >"$PREVIOUS_TAG_FILE" 2>/dev/null || true; fi
+      if [[ ! -f "$MONITOR_STATE_FILE" ]]; then echo "down" >"$MONITOR_STATE_FILE" 2>/dev/null || true; fi
+    }
+
+    current_tag() {
+      # Find current selected tag on the active output.
+      active_output="$(
+        mmsg -g -o 2>/dev/null \
+          | awk '$2=="selmon" && $3=="1" {print $1; exit}'
+      )"
+
+      seltags="$(
+        if [[ -n "${active_output:-}" ]]; then
+          mmsg -g -t -o "${active_output}" 2>/dev/null \
+            | awk '$2=="tags" {print $4; exit}'
+        fi
+      )"
+
+      if [[ -z "${seltags:-}" ]]; then
+        echo "1"
+        return 0
+      fi
+
+      for i in 1 2 3 4 5 6 7 8 9; do
+        if (( (seltags & (1 << (i - 1))) != 0 )); then
+          echo "${i}"
+          return 0
+        fi
+      done
+
+      echo "1"
+    }
+
+    save_current_as_previous() {
+      local current
+      current="$(current_tag)"
+      echo "$current" >"$PREVIOUS_TAG_FILE" 2>/dev/null || true
+    }
+
+    toggle_previous_tag() {
+      local prev cur
+      prev="$(cat "$PREVIOUS_TAG_FILE" 2>/dev/null || echo "1")"
+      cur="$(current_tag)"
+      if [[ -n "$prev" && "$prev" != "$cur" ]]; then
+        save_current_as_previous
+        exec mmsg -s -t "$prev"
+      fi
+      exit 0
+    }
+
+    focus_monitor_toggle() {
+      local state
+      state="$(cat "$MONITOR_STATE_FILE" 2>/dev/null || echo "down")"
+      if [[ "$state" == "down" ]]; then
+        echo "up" >"$MONITOR_STATE_FILE" 2>/dev/null || true
+        exec mmsg -s -d focusmon,down
+      else
+        echo "down" >"$MONITOR_STATE_FILE" 2>/dev/null || true
+        exec mmsg -s -d focusmon,up
+      fi
+    }
+
+    ensure_state_files
+
     case "${direction}" in
+      # Workspace left/right (tags)
       -wl|-mp) direction="left" ;;
       -wr|-mn) direction="right" ;;
 
-      # Fusuma may still emit these on 4-finger up/down (monitor/overview on other WMs).
-      # Mango workspace monitor currently only handles left/right; ignore the rest.
-      -ms|-msf|-mt|-wt|-tn|-tp)
+      # Toggle previous workspace
+      -wt) toggle_previous_tag ;;
+
+      # Browser tab navigation (WM-agnostic; uses wtype).
+      -tn)
+        if command -v wtype >/dev/null 2>&1; then
+          wtype -M ctrl -k tab 2>/dev/null || true
+        fi
         exit 0
         ;;
+      -tp)
+        if command -v wtype >/dev/null 2>&1; then
+          wtype -M ctrl -M shift -k tab 2>/dev/null || true
+        fi
+        exit 0
+        ;;
+
+      # Monitor focus / shifting: map to focusmon up/down for Mango.
+      -mt) focus_monitor_toggle ;;
+      -msf) exec mmsg -s -d focusmon,up ;;
+      -ms) exec mmsg -s -d focusmon,down ;;
 
       *)
         # Don't hard-fail a gesture pipeline; just no-op.
@@ -128,30 +222,9 @@ case "${cmd}" in
       exit 127
     fi
 
-    # Find current selected tag on the active output.
-    active_output="$(
-      mmsg -g -o 2>/dev/null \
-        | awk '$2=="selmon" && $3=="1" {print $1; exit}'
-    )"
+    save_current_as_previous
 
-    seltags="$(
-      if [[ -n "${active_output:-}" ]]; then
-        mmsg -g -t -o "${active_output}" 2>/dev/null \
-          | awk '$2=="tags" {print $4; exit}'
-      fi
-    )"
-
-    if [[ -z "${seltags:-}" ]]; then
-      seltags=1
-    fi
-
-    current=1
-    for i in 1 2 3 4 5 6 7 8 9; do
-      if (( (seltags & (1 << (i - 1))) != 0 )); then
-        current="${i}"
-        break
-      fi
-    done
+    current="$(current_tag)"
 
     if [[ "${direction}" == "right" ]]; then
       next=$(( (current % 9) + 1 ))
