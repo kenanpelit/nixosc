@@ -91,7 +91,10 @@
     bind=SUPER+SHIFT,8,tag,8,0
     bind=SUPER+SHIFT,9,tag,9,0
 
+    ${lib.optionalString (!(fusumaEnabled or false)) ''
     # touchpad gestures (libinput)
+    # If Fusuma is enabled, let it own gesture handling to avoid double-trigger.
+
     # 3-finger: directional focus (matches the mental model from niri/hyprland).
     gesturebind=NONE,left,3,focusdir,left
     gesturebind=NONE,right,3,focusdir,right
@@ -104,6 +107,7 @@
     gesturebind=NONE,right,4,spawn_shell,${bins.wmWorkspace} -wr
     gesturebind=NONE,up,4,toggleoverview
     gesturebind=NONE,down,4,toggleoverview
+    ''}
 
     bind=ALT,1,tag,1,0
     bind=ALT,2,tag,2,0

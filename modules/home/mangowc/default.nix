@@ -52,6 +52,7 @@ let
 
   bindsConfig = import ./binds.nix {
     inherit lib bins;
+    fusumaEnabled = config.my.user.fusuma.enable or false;
   };
 
   rulesConfig = import ./rules.nix { inherit lib; };

@@ -46,13 +46,13 @@ let
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *mango*|*Mango*)
-        # Mango has its own gesturebind support; Fusuma may still run for other gestures.
-        # In this setup, Mango handles 4-finger left/right via `gesturebind=...`
-        # (calling wm-workspace). Avoid double-trigger by no-op'ing here.
+        # Mango sessions: route to the unified workspace router.
+        # Fusuma's config uses -mn/-mp for 4-finger right/left; in Mango we want
+        # that gesture to change workspace, not monitor.
         if [[ "$fusuma_mode" == "1" ]]; then
           case "''${1:-}" in
-            -wl|-wr|-mn|-mp) exit 0 ;;
-            *) exit 0 ;;
+            -mn) shift; set -- -wr "''${@}" ;;
+            -mp) shift; set -- -wl "''${@}" ;;
           esac
         fi
         exec "$router" "$@"
@@ -110,6 +110,15 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
+      *mango*|*Mango*)
+        if command -v mmsg >/dev/null 2>&1; then
+          # Mango doesn't expose a stable "set fullscreen on/off" IPC in this repo;
+          # keep it simple and toggle.
+          exec mmsg -s -d togglefullscreen
+        fi
+        echo "fusuma-fullscreen: mmsg not found in PATH" >&2
+        exit 127
+        ;;
       *Hyprland*|*hyprland*)
         exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1
         ;;
@@ -122,7 +131,7 @@ let
         ;;
     esac
 
-    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
+    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
     exit 127
   '';
 in
