@@ -146,7 +146,7 @@
       // Reload config (fast iteration)
       // Not all niri versions expose `load-config-file` as a direct config action,
       // but it is always available via the IPC CLI.
-      Mod+Ctrl+R hotkey-overlay-title="Reload Niri Config" { spawn "niri" "msg" "action" "load-config-file"; }
+      Mod+Ctrl+Alt+R hotkey-overlay-title="Reload Niri Config" { spawn "niri" "msg" "action" "load-config-file"; }
 
       // Mouse Wheel
       Mod+WheelScrollDown cooldown-ms=150 hotkey-overlay-title="Workspace: Down" { focus-workspace-down; }
