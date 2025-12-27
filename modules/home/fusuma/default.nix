@@ -8,6 +8,13 @@
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.fusuma;
+  sessionTargets = [
+    # Only start Fusuma inside compositor sessions that are known to support it.
+    # Niri/Mango sessions start their own targets via niri-set/mango-set.
+    "hyprland-session.target"
+    "niri-session.target"
+    "mango-session.target"
+  ];
   workspaceMonitor = pkgs.writeShellScriptBin "fusuma-workspace-monitor" ''
     #!/usr/bin/env bash
     set -euo pipefail
@@ -145,6 +152,35 @@ in
       workspaceMonitor
       fullscreen
     ];
+
+    # Bind Fusuma lifecycle to compositor session targets (instead of
+    # graphical-session.target), so it reliably starts on Niri/Mango too.
+    systemd.user.services.fusuma = {
+      Unit = {
+        After = sessionTargets;
+        PartOf = sessionTargets;
+      };
+      Service = {
+        # Ensure common tools are available when started from systemd --user.
+        Environment = [
+          "XDG_RUNTIME_DIR=/run/user/%U"
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        ];
+        PassEnvironment = [
+          "WAYLAND_DISPLAY"
+          "NIRI_SOCKET"
+          "HYPRLAND_INSTANCE_SIGNATURE"
+          "HYPRLAND_SOCKET"
+          "SWAYSOCK"
+          "XDG_CURRENT_DESKTOP"
+          "XDG_SESSION_TYPE"
+          "XDG_SESSION_DESKTOP"
+        ];
+      };
+      Install = {
+        WantedBy = lib.mkForce sessionTargets;
+      };
+    };
 
     # =============================================================================
     # Service Configuration
