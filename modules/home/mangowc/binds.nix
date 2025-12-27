@@ -44,13 +44,12 @@
     # exit / kill
     binds=SUPER,q,killclient,
     binds=SUPER+SHIFT,q,quit
-    binds=SUPER,m,quit
 
     # focus (vim + arrows)
-    bind=ALT,h,focusdir,left
-    bind=ALT,l,focusdir,right
-    bind=ALT,k,focusdir,up
-    bind=ALT,j,focusdir,down
+    bind=SUPER,h,focusdir,left
+    bind=SUPER,l,focusdir,right
+    bind=SUPER,k,focusdir,up
+    bind=SUPER,j,focusdir,down
     bind=ALT,Left,focusdir,left
     bind=ALT,Right,focusdir,right
     bind=ALT,Up,focusdir,up
@@ -121,7 +120,14 @@
     bind=ALT+SHIFT,Up,focusmon,up
     bind=ALT+SHIFT,Down,focusmon,down
 
-    # move tag to monitor
+    # move focused window to monitor
+    # (Mango/dwl semantics: tagmon moves the focused client to the target output)
+    bind=SUPER+CTRL,Left,tagmon,left,0
+    bind=SUPER+CTRL,Right,tagmon,right,0
+    bind=SUPER+CTRL,Up,tagmon,up,0
+    bind=SUPER+CTRL,Down,tagmon,down,0
+
+    # legacy (keep): move via SUPER+ALT
     bind=SUPER+ALT,Up,tagmon,up,0
     bind=SUPER+ALT,Down,tagmon,down,0
   '';
