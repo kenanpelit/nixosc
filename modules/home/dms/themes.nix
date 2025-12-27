@@ -15,6 +15,7 @@ let
     teal      = "#94e2d5";
     sky       = "#89dceb";
     sapphire  = "#74c7ec";
+    cyan      = "#00BCD4";
     blue      = "#89b4fa";
     lavender  = "#b4befe";
     text      = "#cdd6f4";
@@ -103,7 +104,7 @@ let
     id = "catppuccinMochaCyan";
     name = "Catppuccin Mocha Cyan";
     desc = "Soothing pastel theme with Sky/Cyan accents";
-    accent = "#00b4d8";
+    accent = mocha.cyan;
     accentText = mocha.base;
   };
 
