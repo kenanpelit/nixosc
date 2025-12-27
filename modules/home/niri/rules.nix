@@ -256,6 +256,10 @@ in
     // Inactive dimming
     window-rule {
       match is-active=false;
+      exclude app-id=r#"^mpv$"#;
+      exclude app-id=r#"^vlc$"#;
+      exclude title=r#"^Picture-in-Picture$"#;
+      exclude app-id=r#"^steam_app_\d+$"#;
       opacity 0.95;
     }
 

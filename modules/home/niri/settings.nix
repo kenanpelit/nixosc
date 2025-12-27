@@ -310,6 +310,7 @@
     input {
       workspace-auto-back-and-forth;
       focus-follows-mouse max-scroll-amount="0%";
+      warp-mouse-to-focus;
 
       keyboard {
         xkb {
