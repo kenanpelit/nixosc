@@ -26,6 +26,11 @@ in
     sloppyfocus=1
     warpcursor=1
 
+    # Overview
+    # Enable "Alt-Tab style" overview cycling: enter overview, cycle focus,
+    # then leave overview when you release the modifier.
+    ov_tab_mode=1
+
     # Scroller / tiling ergonomics (safe defaults)
     scroller_focus_center=0
     smartgaps=0
