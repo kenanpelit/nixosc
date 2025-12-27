@@ -175,10 +175,6 @@
     binds=ALT,space,spawn_shell,rofi-launcher || pkill rofi
     binds=SUPER+CTRL,space,spawn_shell,walk
 
-    # nsticky
-    binds=SUPER,s,spawn_shell,${bins.nsticky} sticky toggle-active
-    binds=SUPER+SHIFT,s,spawn_shell,${bins.nsticky} stage toggle-active
-
     # File Managers
     binds=ALT,f,spawn_shell,${bins.terminal} -e yazi
     binds=ALT+CTRL,f,spawn_shell,nemo
