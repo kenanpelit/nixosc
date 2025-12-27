@@ -58,6 +58,9 @@
     # Alt-Tab style app switcher (DMS)
     binds=ALT,Tab,spawn_shell,${bins.dms} ipc call spotlight openQuery "!"
 
+    # Mango overview (restore legacy Super+Tab muscle memory)
+    bind=SUPER,Tab,toggleoverview,
+
     # --------------------------------------------------------------------------
     # Core Window Management
     # --------------------------------------------------------------------------
