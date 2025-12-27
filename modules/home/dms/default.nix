@@ -13,6 +13,7 @@
     # Using `default` keeps us compatible and avoids the deprecation warning.
     inputs.dankMaterialShell.homeModules.default
     ./settings.nix
+    ./themes.nix
   ];
 
   options.my.user.dms = {
