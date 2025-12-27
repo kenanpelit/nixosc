@@ -158,7 +158,7 @@ in
         Environment = [
           "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         ];
-        ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/%u/bin/mango-set init'";
+        ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5; /etc/profiles/per-user/%u/bin/mango-set init; /etc/profiles/per-user/%u/bin/bluetooth_toggle --connect || true'";
       };
       Install = {
         WantedBy = [ "mango-session.target" ];
