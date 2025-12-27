@@ -126,5 +126,20 @@ in
         ++ lib.optional (cfg.extraConfig != "") cfg.extraConfig
       );
     };
+
+    # -------------------------------------------------------------------------
+    # Systemd --user integration for Mango sessions
+    #
+    # This target is started by `mango-set session-start` from Mango's `exec-once`.
+    # Services like DMS/Fusuma are bound to this target for compositor-only startup.
+    # -------------------------------------------------------------------------
+    systemd.user.targets.mango-session.Unit = {
+      Description = "Mango session (user services)";
+      Wants = [
+        "xdg-desktop-autostart.target"
+        "dms.service"
+      ];
+      After = [ "dbus.service" "dms.service" ];
+    };
   };
 }
