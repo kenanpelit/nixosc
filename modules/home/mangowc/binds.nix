@@ -195,6 +195,9 @@
     binds=NONE,F10,spawn_shell,${bins.bluetoothToggle}
     binds=ALT,F12,spawn_shell,osc-mullvad toggle
 
+    # KKENP
+    binds=ALT,t,spawn_shell,${bins.startKkenp}
+
     # Audio scripts
     binds=ALT,a,spawn_shell,osc-soundctl switch
     binds=ALT+CTRL,a,spawn_shell,osc-soundctl switch-mic

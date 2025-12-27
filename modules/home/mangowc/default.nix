@@ -42,6 +42,7 @@ let
     terminal = "${pkgs.kitty}/bin/kitty";
     clipse = "${pkgs.clipse}/bin/clipse";
     bluetoothToggle = "${config.home.profileDirectory}/bin/bluetooth_toggle";
+    startKkenp = "${config.home.profileDirectory}/bin/start-kkenp";
     dms = "${config.home.profileDirectory}/bin/dms";
     wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
     semsumo = "${config.home.profileDirectory}/bin/semsumo";
@@ -139,6 +140,28 @@ in
         "dms.service"
       ];
       After = [ "dbus.service" ];
+    };
+
+    # Bootstrap: keep it short-running; don't block Mango startup.
+    systemd.user.services.mango-init = {
+      Unit = {
+        Description = "Mango bootstrap (audio + layout)";
+        Wants = [ "pipewire.service" "wireplumber.service" ];
+        After = [ "mango-session.target" "pipewire.service" "wireplumber.service" ];
+        PartOf = [ "mango-session.target" ];
+      };
+      Service = {
+        Type = "oneshot";
+        TimeoutStartSec = 60;
+        RemainAfterExit = true;
+        Environment = [
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        ];
+        ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/%u/bin/mango-set init'";
+      };
+      Install = {
+        WantedBy = [ "mango-session.target" ];
+      };
     };
   };
 }
