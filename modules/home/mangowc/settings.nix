@@ -41,6 +41,7 @@ in
     gappoh=10
     gappov=10
     borderpx=3
+    bordercolor=0x00BCD4ff
     border_radius=6
     no_border_when_single=0
     no_radius_when_single=0
