@@ -14,21 +14,23 @@
     # Key bindings
     # ==============================================================================
 
-    # DMS (launcher / shell)
+    # --------------------------------------------------------------------------
+    # Notes on syntax
     #
-    # Mango `bind=` converts keysyms to keycodes using the configured XKB layout
-    # (`xkb_rules_layout=tr` / `xkb_rules_variant=f`), so Mod+V really means "V"
-    # on your TR-F layout (instead of "QWERTY V physical key").
+    # Mango `bind=` resolves letters by keycode (depends on XKB layout).
+    # Use `binds=` for letter shortcuts so they follow the active layout (TR-F).
     #
-    # IMPORTANT: We use `binds=` (keysym-based) so letter shortcuts follow the
-    # active keyboard layout (TR-F) instead of QWERTY physical positions.
+    # Use `bindsl=` for keys that should work while locked (volume/media/brightness).
+    # --------------------------------------------------------------------------
+
+    # --------------------------------------------------------------------------
+    # DMS Integration (match Niri muscle memory)
+    # --------------------------------------------------------------------------
     binds=SUPER,space,spawn_shell,${bins.dms} ipc call spotlight toggle
     binds=SUPER,d,spawn_shell,${bins.dms} ipc call dash toggle ""
     binds=SUPER,n,spawn_shell,${bins.dms} ipc call notifications toggle
     binds=SUPER,c,spawn_shell,${bins.dms} ipc call control-center toggle
     binds=SUPER,v,spawn_shell,${bins.dms} ipc call clipboard toggle
-    # Fallback launcher (Rofi) like Niri/Hyprland
-    binds=ALT,space,spawn_shell,rofi-launcher || pkill rofi
     binds=SUPER+SHIFT,d,spawn_shell,${bins.dms} ipc call dash toggle overview
     binds=SUPER+SHIFT,p,spawn_shell,${bins.dms} ipc call processlist focusOrToggle
     binds=SUPER+CTRL,n,spawn_shell,${bins.dms} ipc call notepad open
@@ -36,44 +38,85 @@
     binds=SUPER,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
     binds=CTRL+ALT,Delete,spawn_shell,${bins.dms} ipc call powermenu toggle
 
-    # reload config
-    binds=SUPER,r,reload_config
+    # Bar & Dock
+    binds=SUPER,b,spawn_shell,${bins.dms} ipc call bar toggle index 0
+    binds=SUPER+CTRL,b,spawn_shell,${bins.dms} ipc call bar toggleAutoHide index 0
+    binds=SUPER+SHIFT,b,spawn_shell,${bins.dms} ipc call dock toggle
 
-    # terminal
+    # Wallpaper & Theming
+    binds=SUPER,y,spawn_shell,${bins.dms} ipc call dankdash wallpaper
+    binds=SUPER,w,spawn_shell,${bins.dms} ipc call wallpaper next
+    binds=SUPER+SHIFT,w,spawn_shell,${bins.dms} ipc call wallpaper prev
+    binds=SUPER+SHIFT,t,spawn_shell,${bins.dms} ipc call theme toggle
+    binds=SUPER+SHIFT,n,spawn_shell,${bins.dms} ipc call night toggle
+
+    # Help / Keybinds (DMS settings page)
+    binds=SUPER+ALT,slash,spawn_shell,${bins.dms} ipc call settings openWith keybinds
+    binds=SUPER,F1,spawn_shell,${bins.dms} ipc call settings openWith keybinds
+    binds=ALT,F1,spawn_shell,${bins.dms} ipc call settings openWith keybinds
+
+    # Alt-Tab style app switcher (DMS)
+    binds=ALT,Tab,spawn_shell,${bins.dms} ipc call spotlight openQuery "!"
+
+    # --------------------------------------------------------------------------
+    # Core Window Management
+    # --------------------------------------------------------------------------
+
+    # Applications
     binds=SUPER,Return,spawn_shell,${bins.terminal}
+    binds=SUPER,t,spawn_shell,${bins.terminal}
     binds=SUPER+ALT,Return,spawn_shell,${bins.semsumo} launch --daily -all
 
-    # exit / kill
-    binds=SUPER,q,killclient,
+    # Window controls
+    binds=SUPER,q,killclient
     binds=SUPER+SHIFT,q,quit
+    binds=SUPER,f,togglemaximizescreen
+    binds=SUPER+CTRL,f,togglemaximizescreen
+    binds=SUPER+SHIFT,f,togglefullscreen
+    binds=SUPER,o,toggleoverlay
+    binds=SUPER,r,switch_proportion_preset
+    binds=SUPER+SHIFT,space,togglefloating
+    bind=SUPER,BackSpace,focuslast
 
-    # focus (vim + arrows)
-    bind=SUPER,h,focusdir,left
-    bind=SUPER,l,focusdir,right
-    bind=SUPER,k,focusdir,up
-    bind=SUPER,j,focusdir,down
+    # Stack / "consume/expel"-like (cycle stack)
+    bind=SUPER,bracketleft,exchange_stack_client,prev
+    bind=SUPER,bracketright,exchange_stack_client,next
+
+    # Focus (match Niri: Mod+H/L focus, Mod+K/J workspace)
+    bind=SUPER,Left,focusdir,left
+    bind=SUPER,Right,focusdir,right
+    binds=SUPER,h,focusdir,left
+    binds=SUPER,l,focusdir,right
     bind=ALT,Left,focusdir,left
     bind=ALT,Right,focusdir,right
     bind=ALT,Up,focusdir,up
     bind=ALT,Down,focusdir,down
 
-    # swap windows
-    bind=SUPER+SHIFT,h,exchange_client,left
-    bind=SUPER+SHIFT,l,exchange_client,right
-    bind=SUPER+SHIFT,k,exchange_client,up
-    bind=SUPER+SHIFT,j,exchange_client,down
+    # Workspace (tags): Niri-style vertical navigation
+    bind=SUPER,Up,viewtoleft,0
+    bind=SUPER,Down,viewtoright,0
+    binds=SUPER,k,viewtoleft,0
+    binds=SUPER,j,viewtoright,0
+    bind=SUPER,Page_Up,viewtoleft,0
+    bind=SUPER,Page_Down,viewtoright,0
 
-    # toggles
-    bind=ALT,backslash,togglefloating,
-    bind=ALT,f,togglefullscreen,
-    bind=ALT,x,togglemaximizescreen,
-    binds=ALT,Tab,toggleoverview,
+    # Swap / move windows (Niri Mod+Shift+Arrows/HJKL)
+    bind=SUPER+SHIFT,Left,exchange_client,left
+    bind=SUPER+SHIFT,Right,exchange_client,right
+    bind=SUPER+SHIFT,Up,exchange_client,up
+    bind=SUPER+SHIFT,Down,exchange_client,down
+    binds=SUPER+SHIFT,h,exchange_client,left
+    binds=SUPER+SHIFT,l,exchange_client,right
+    binds=SUPER+SHIFT,k,exchange_client,up
+    binds=SUPER+SHIFT,j,exchange_client,down
 
-    # tag switch (left/right)
-    bind=SUPER,Left,viewtoleft,0
-    bind=SUPER,Right,viewtoright,0
+    # Reload config (keep both)
+    binds=SUPER+CTRL,r,reload_config
+    binds=SUPER+CTRL+ALT,r,reload_config
 
-    # workspaces (tags) on SUPER
+    # --------------------------------------------------------------------------
+    # Workspace numbers (Niri-style)
+    # --------------------------------------------------------------------------
     bind=SUPER,1,view,1,0
     bind=SUPER,2,view,2,0
     bind=SUPER,3,view,3,0
@@ -83,6 +126,8 @@
     bind=SUPER,7,view,7,0
     bind=SUPER,8,view,8,0
     bind=SUPER,9,view,9,0
+
+    # Move focused window to workspace
     bind=ALT,1,tag,1,0
     bind=ALT,2,tag,2,0
     bind=ALT,3,tag,3,0
@@ -92,6 +137,115 @@
     bind=ALT,7,tag,7,0
     bind=ALT,8,tag,8,0
     bind=ALT,9,tag,9,0
+
+    # Move focused window to previous/next workspace (Niri Mod+Shift+Page_Up/Down)
+    bind=SUPER+SHIFT,Page_Up,tagtoleft,0
+    bind=SUPER+SHIFT,Page_Down,tagtoright,0
+
+    # --------------------------------------------------------------------------
+    # Monitors (directional, similar intent to Niri)
+    # --------------------------------------------------------------------------
+    binds=SUPER+ALT,h,focusmon,left
+    binds=SUPER+ALT,l,focusmon,right
+    binds=SUPER+ALT,k,focusmon,up
+    binds=SUPER+ALT,j,focusmon,down
+
+    # Move focused window to monitor (Niri Mod+Ctrl+Arrows)
+    bind=SUPER+CTRL,Left,tagmon,left,0
+    bind=SUPER+CTRL,Right,tagmon,right,0
+    bind=SUPER+CTRL,Up,tagmon,up,0
+    bind=SUPER+CTRL,Down,tagmon,down,0
+
+    # --------------------------------------------------------------------------
+    # Window sizing (Niri-like)
+    # --------------------------------------------------------------------------
+    # "Column width" analog: master area factor
+    bind=SUPER+ALT,Left,setmfact,-0.05
+    bind=SUPER+ALT,Right,setmfact,+0.05
+
+    # Window height adjust (matches your Niri binds)
+    bind=SUPER+ALT,Up,resizewin,+0,-100
+    bind=SUPER+ALT,Down,resizewin,+0,+100
+
+    # --------------------------------------------------------------------------
+    # Utilities / Apps
+    # --------------------------------------------------------------------------
+
+    # Launchers
+    binds=ALT,space,spawn_shell,rofi-launcher || pkill rofi
+    binds=SUPER+CTRL,space,spawn_shell,walk
+
+    # nsticky
+    binds=SUPER,s,spawn_shell,${bins.nsticky} sticky toggle-active
+    binds=SUPER+SHIFT,s,spawn_shell,${bins.nsticky} stage toggle-active
+
+    # File Managers
+    binds=ALT,f,spawn_shell,${bins.terminal} -e yazi
+    binds=ALT+CTRL,f,spawn_shell,nemo
+
+    # Notes
+    binds=SUPER,m,spawn_shell,anotes
+
+    # Color picker
+    binds=SUPER+SHIFT,c,spawn_shell,hyprpicker -a
+
+    # Clipboard TUI
+    binds=SUPER+CTRL,v,spawn_shell,${bins.terminal} --class clipse -e ${bins.clipse}
+
+    # Toggles
+    binds=F10,spawn_shell,bluetooth_toggle
+    binds=ALT,F12,spawn_shell,osc-mullvad toggle
+
+    # Audio scripts
+    binds=ALT,a,spawn_shell,osc-soundctl switch
+    binds=ALT+CTRL,a,spawn_shell,osc-soundctl switch-mic
+
+    # Media scripts
+    binds=ALT,e,spawn_shell,osc-spotify
+    binds=ALT+CTRL,n,spawn_shell,osc-spotify next
+    binds=ALT+CTRL,b,spawn_shell,osc-spotify prev
+    binds=ALT+CTRL,e,spawn_shell,mpc-control toggle
+    binds=ALT,i,spawn_shell,vlc-toggle
+
+    # Lock / inhibit
+    binds=ALT,l,spawn_shell,${bins.dms} ipc call lock lock || loginctl lock-session
+    binds=SUPER+SHIFT,Delete,spawn_shell,${bins.dms} ipc call inhibit toggle
+
+    # --------------------------------------------------------------------------
+    # Media / Brightness keys (allow while locked)
+    # --------------------------------------------------------------------------
+    bindsl=NONE,XF86AudioRaiseVolume,spawn_shell,${bins.dms} ipc call audio increment 5
+    bindsl=NONE,XF86AudioLowerVolume,spawn_shell,${bins.dms} ipc call audio decrement 5
+    bindsl=NONE,XF86AudioMute,spawn_shell,${bins.dms} ipc call audio mute
+    bindsl=NONE,XF86AudioMicMute,spawn_shell,${bins.dms} ipc call audio micmute
+
+    bindsl=NONE,XF86AudioPlay,spawn_shell,${bins.dms} ipc call mpris playPause
+    bindsl=NONE,XF86AudioNext,spawn_shell,${bins.dms} ipc call mpris next
+    bindsl=NONE,XF86AudioPrev,spawn_shell,${bins.dms} ipc call mpris previous
+    bindsl=NONE,XF86AudioStop,spawn_shell,${bins.dms} ipc call mpris stop
+
+    bindsl=NONE,XF86MonBrightnessUp,spawn_shell,${bins.dms} ipc call brightness increment 5 ""
+    bindsl=NONE,XF86MonBrightnessDown,spawn_shell,${bins.dms} ipc call brightness decrement 5 ""
+
+    binds=SUPER+ALT,a,spawn_shell,${bins.dms} ipc call audio cycleoutput
+    binds=SUPER+ALT,p,spawn_shell,pavucontrol
+
+    # --------------------------------------------------------------------------
+    # Screenshots
+    # --------------------------------------------------------------------------
+    binds=Print,spawn_shell,screenshot ri
+    binds=CTRL,Print,spawn_shell,screenshot sc
+    binds=ALT,Print,spawn_shell,screenshot wi
+
+    # --------------------------------------------------------------------------
+    # MPV manager (match Niri)
+    # --------------------------------------------------------------------------
+    binds=SUPER+SHIFT,1,spawn_shell,mpv-manager playback
+    binds=SUPER+SHIFT,2,spawn_shell,mpv-manager play-yt
+    binds=SUPER+SHIFT,3,spawn_shell,mpv-manager stick
+    binds=SUPER+SHIFT,4,spawn_shell,mpv-manager move
+    binds=SUPER+SHIFT,5,spawn_shell,mpv-manager save-yt
+    binds=SUPER+SHIFT,6,spawn_shell,mpv-manager wallpaper
 
     ${lib.optionalString (!fusumaEnabled) ''
     # touchpad gestures (libinput)
@@ -110,44 +264,5 @@
     gesturebind=NONE,up,4,toggleoverview
     gesturebind=NONE,down,4,toggleoverview
     ''}
-
-    # monitor switch
-    # Vertical monitor layout (external top, laptop bottom)
-    bind=ALT+SHIFT,Up,focusmon,up
-    bind=ALT+SHIFT,Down,focusmon,down
-
-    # move focused window to monitor
-    # (Mango/dwl semantics: tagmon moves the focused client to the target output)
-    bind=SUPER+CTRL,Left,tagmon,left,0
-    bind=SUPER+CTRL,Right,tagmon,right,0
-    bind=SUPER+CTRL,Up,tagmon,up,0
-    bind=SUPER+CTRL,Down,tagmon,down,0
-
-    # ==============================================================================
-    # App / Utility binds (aligned with Niri)
-    # ==============================================================================
-    binds=ALT,t,spawn_shell,start-kkenp
-    binds=SUPER,m,spawn_shell,anotes
-
-    binds=F10,spawn_shell,bluetooth_toggle
-    binds=ALT,F12,spawn_shell,osc-mullvad toggle
-
-    binds=ALT,a,spawn_shell,osc-soundctl switch
-    binds=ALT+CTRL,a,spawn_shell,osc-soundctl switch-mic
-
-    binds=ALT,e,spawn_shell,osc-spotify
-
-    # Screenshots (script)
-    binds=Print,spawn_shell,screenshot ri
-    binds=CTRL,Print,spawn_shell,screenshot sc
-    binds=ALT,Print,spawn_shell,screenshot wi
-
-    binds=SUPER+SHIFT,1,spawn_shell,mpv-manager start
-    binds=SUPER+SHIFT,2,spawn_shell,mpv-manager playback
-    binds=SUPER+SHIFT,3,spawn_shell,mpv-manager play-yt
-    binds=SUPER+SHIFT,4,spawn_shell,mpv-manager stick
-    binds=SUPER+SHIFT,5,spawn_shell,mpv-manager move
-    binds=SUPER+SHIFT,6,spawn_shell,mpv-manager save-yt
-    binds=SUPER+SHIFT,7,spawn_shell,mpv-manager wallpaper
   '';
 }

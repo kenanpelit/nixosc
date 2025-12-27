@@ -60,6 +60,8 @@ in
 
     # Autostart (runs after Mango is up; has WAYLAND_DISPLAY)
     exec-once=${bins.mangoSet} session-start
+    exec-once=${bins.clipse} -listen
+    exec-once=${bins.nsticky}
 
     # Tags (workspaces)
     # Keep tags visible even when empty (static 1..9).
