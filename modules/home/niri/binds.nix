@@ -224,8 +224,12 @@
       // ========================================================================
       // MPV Manager
       // ========================================================================
-      Alt+0 { spawn "mpv-manager" "start"; }
-      Alt+Ctrl+0 { spawn "mpv-manager" "play-yt"; }
+      Mod+Shift+1 { spawn "mpv-manager" "playback"; }
+      Mod+Shift+2 { spawn "mpv-manager" "play-yt"; }
+      Mod+Shift+3 { spawn "mpv-manager" "stick"; }
+      Mod+Shift+4 { spawn "mpv-manager" "move"; }
+      Mod+Shift+5 { spawn "mpv-manager" "save-yt"; }
+      Mod+Shift+6 { spawn "mpv-manager" "wallpaper"; }
   '';
 
   workspaces = ''
