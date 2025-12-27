@@ -45,7 +45,6 @@ let
     wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
     semsumo = "${config.home.profileDirectory}/bin/semsumo";
     mangoSet = "${config.home.profileDirectory}/bin/mango-set";
-    nsticky = "${inputs.nsticky.packages.${system}.nsticky}/bin/nsticky";
   };
 
   settingsConfig = import ./settings.nix {
