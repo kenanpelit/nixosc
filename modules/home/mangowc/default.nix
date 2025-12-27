@@ -40,10 +40,12 @@ let
 
   bins = {
     terminal = "${pkgs.kitty}/bin/kitty";
+    clipse = "${pkgs.clipse}/bin/clipse";
     dms = "${config.home.profileDirectory}/bin/dms";
     wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
     semsumo = "${config.home.profileDirectory}/bin/semsumo";
     mangoSet = "${config.home.profileDirectory}/bin/mango-set";
+    nsticky = "${inputs.nsticky.packages.${system}.nsticky}/bin/nsticky";
   };
 
   settingsConfig = import ./settings.nix {
