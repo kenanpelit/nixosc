@@ -67,7 +67,7 @@
       // Help
       Mod+Alt+Slash hotkey-overlay-title="DMS: Keybinds Settings" { spawn "${bins.dms}" "ipc" "call" "settings" "openWith" "keybinds"; }
       Mod+F1 hotkey-overlay-title="DMS: Keybinds (Niri)" { spawn "${bins.dms}" "ipc" "call" "keybinds" "toggle" "niri"; }
-      Mod+Shift+F1 hotkey-overlay-title="Show Hotkeys" { show-hotkey-overlay; }
+      Alt+F1 hotkey-overlay-title="Show Hotkeys" { show-hotkey-overlay; }
 
       Alt+Tab hotkey-overlay-title="Switch Windows" { spawn "${bins.dms}" "ipc" "call" "spotlight" "openQuery" "!"; }
   '';
