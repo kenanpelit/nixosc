@@ -235,9 +235,9 @@
     # --------------------------------------------------------------------------
     # Screenshots
     # --------------------------------------------------------------------------
-	    binds=NONE,Print,spawn_shell,${bins.screenshot} ri
-	    binds=CTRL,Print,spawn_shell,${bins.screenshot} sc
-	    binds=ALT,Print,spawn_shell,${bins.screenshot} wi
+    binds=NONE,Print,spawn_shell,${bins.screenshot} ri
+    binds=CTRL,Print,spawn_shell,${bins.screenshot} sc
+    binds=ALT,Print,spawn_shell,${bins.screenshot} wi
 
     # --------------------------------------------------------------------------
     # MPV manager (match Niri)
