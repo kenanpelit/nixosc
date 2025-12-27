@@ -264,6 +264,6 @@
       // ========================================================================
       Mod+A hotkey-overlay-title="Monitor: Focus Next" { spawn "niri" "msg" "action" "focus-monitor-next"; }
       Mod+E hotkey-overlay-title="Monitor: Move WS Next" { spawn "niri" "msg" "action" "move-workspace-to-monitor-next"; }
-      Mod+Escape hotkey-overlay-title="Monitor: Focus Next" { spawn "${bins.niriSet}" "workspace-monitor" "-mn"; }
+      Mod+Escape hotkey-overlay-title="Monitor: Move WS / Focus Next" { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
   '';
 }
