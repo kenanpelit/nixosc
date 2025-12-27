@@ -10,6 +10,8 @@
 #   mango-set tty
 #   mango-set start
 #   mango-set session-start
+#   mango-set init
+#   mango-set lock
 #   mango-set workspace-monitor <flags>
 # ==============================================================================
 
@@ -24,12 +26,100 @@ Commands:
   start          Start Mango session (DM/TTY)
   tty            Alias for start
   session-start  Export env to systemd --user; start mango-session.target
+  init           Bootstrap Mango session (audio, optional tag layout)
+  lock           Lock session via DMS/logind
   workspace-monitor  Workspace/monitor helper (Fusuma)
 EOF
 }
 
 cmd="${1:-}"
 shift || true
+
+ensure_runtime_dir() {
+  if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
+    return 0
+  fi
+
+  local uid
+  uid="$(id -u 2>/dev/null || true)"
+  if [[ -n "$uid" ]]; then
+    export XDG_RUNTIME_DIR="/run/user/$uid"
+  fi
+}
+
+detect_wayland_display() {
+  if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+    return 0
+  fi
+
+  [[ -n "${XDG_RUNTIME_DIR:-}" ]] || return 0
+
+  local sock
+  for sock in "${XDG_RUNTIME_DIR}"/wayland-*; do
+    [[ -S "$sock" ]] || continue
+    export WAYLAND_DISPLAY
+    WAYLAND_DISPLAY="$(basename "$sock")"
+    return 0
+  done
+}
+
+import_env_to_systemd() {
+  command -v systemctl >/dev/null 2>&1 || return 0
+
+  local timeout_bin=""
+  if command -v timeout >/dev/null 2>&1; then
+    timeout_bin="timeout"
+  fi
+
+  local vars=(
+    WAYLAND_DISPLAY
+    XDG_DATA_DIRS
+    XDG_CONFIG_DIRS
+    XDG_CURRENT_DESKTOP
+    XDG_SESSION_TYPE
+    XDG_SESSION_DESKTOP
+    DESKTOP_SESSION
+    SSH_AUTH_SOCK
+    GTK_THEME
+    GTK_USE_PORTAL
+    XDG_ICON_THEME
+    QT_ICON_THEME
+    XCURSOR_THEME
+    XCURSOR_SIZE
+    NIXOS_OZONE_WL
+    MOZ_ENABLE_WAYLAND
+    QT_QPA_PLATFORM
+    QT_QPA_PLATFORMTHEME
+    QT_QPA_PLATFORMTHEME_QT6
+    QT_WAYLAND_DISABLE_WINDOWDECORATION
+    ELECTRON_OZONE_PLATFORM_HINT
+  )
+
+  if [[ -n "$timeout_bin" ]]; then
+    $timeout_bin 2s systemctl --user import-environment "${vars[@]}" >/dev/null 2>&1 || true
+  else
+    systemctl --user import-environment "${vars[@]}" >/dev/null 2>&1 || true
+  fi
+
+  if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    if [[ -n "$timeout_bin" ]]; then
+      $timeout_bin 2s dbus-update-activation-environment --systemd "${vars[@]}" >/dev/null 2>&1 || true
+    else
+      dbus-update-activation-environment --systemd "${vars[@]}" >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
+start_target() {
+  command -v systemctl >/dev/null 2>&1 || return 0
+  systemctl --user reset-failed >/dev/null 2>&1 || true
+  systemctl --user start mango-session.target >/dev/null 2>&1 || true
+}
+
+restart_dms_if_running() {
+  command -v systemctl >/dev/null 2>&1 || return 0
+  systemctl --user try-restart dms.service >/dev/null 2>&1 || true
+}
 
 case "${cmd}" in
   start)
@@ -60,34 +150,50 @@ case "${cmd}" in
       *) export PATH="/run/wrappers/bin:${PATH:-}" ;;
     esac
 
-    if ! command -v systemctl >/dev/null 2>&1; then
-      exit 0
+    ensure_runtime_dir
+    detect_wayland_display
+    import_env_to_systemd
+    restart_dms_if_running
+    start_target
+    exit 0
+    ;;
+
+  init)
+    # ----------------------------------------------------------------------------
+    # Bootstrap for Mango sessions (mirrors the spirit of niri-set init).
+    #
+    # Optional tag layout (disabled by default):
+    #   MANGO_INIT_SET_OUTPUT_TAGS=1
+    #   MANGO_INIT_PRIMARY_OUTPUT=DP-3    MANGO_INIT_PRIMARY_TAG=1
+    #   MANGO_INIT_SECONDARY_OUTPUT=eDP-1 MANGO_INIT_SECONDARY_TAG=7
+    # ----------------------------------------------------------------------------
+    ensure_runtime_dir
+    detect_wayland_display
+
+    if command -v osc-soundctl >/dev/null 2>&1; then
+      osc-soundctl init >/dev/null 2>&1 || true
     fi
 
-    timeout_bin=""
-    if command -v timeout >/dev/null 2>&1; then
-      timeout_bin="timeout"
+    if [[ "${MANGO_INIT_SET_OUTPUT_TAGS:-0}" == "1" ]] && command -v mmsg >/dev/null 2>&1; then
+      primary_output="${MANGO_INIT_PRIMARY_OUTPUT:-DP-3}"
+      primary_tag="${MANGO_INIT_PRIMARY_TAG:-1}"
+      secondary_output="${MANGO_INIT_SECONDARY_OUTPUT:-eDP-1}"
+      secondary_tag="${MANGO_INIT_SECONDARY_TAG:-7}"
+
+      mmsg -s -o "${primary_output}" -t "${primary_tag}" >/dev/null 2>&1 || true
+      mmsg -s -o "${secondary_output}" -t "${secondary_tag}" >/dev/null 2>&1 || true
     fi
 
-    vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP GTK_THEME XCURSOR_THEME SYSTEMD_OFFLINE NIXOS_OZONE_WL"
+    exit 0
+    ;;
 
-    if [[ -n "$timeout_bin" ]]; then
-      $timeout_bin 2s systemctl --user import-environment $vars >/dev/null 2>&1 || true
-    else
-      systemctl --user import-environment $vars >/dev/null 2>&1 || true
+  lock)
+    if command -v dms >/dev/null 2>&1; then
+      dms ipc call lock lock >/dev/null 2>&1 && exit 0
     fi
-
-    if command -v dbus-update-activation-environment >/dev/null 2>&1; then
-      if [[ -n "$timeout_bin" ]]; then
-        $timeout_bin 2s dbus-update-activation-environment --systemd --all >/dev/null 2>&1 || true
-      else
-        dbus-update-activation-environment --systemd --all >/dev/null 2>&1 || true
-      fi
+    if command -v loginctl >/dev/null 2>&1; then
+      exec loginctl lock-session
     fi
-
-    systemctl --user reset-failed >/dev/null 2>&1 || true
-    systemctl --user start mango-session.target >/dev/null 2>&1 || true
-    systemctl --user try-restart dms.service >/dev/null 2>&1 || true
     exit 0
     ;;
 
