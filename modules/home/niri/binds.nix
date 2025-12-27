@@ -87,8 +87,6 @@
       Mod+Shift+F hotkey-overlay-title="Window: Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
-      Mod+Shift+R hotkey-overlay-title="Column: Width 100%" { spawn "niri" "msg" "action" "set-column-width" "100%"; }
-      Mod+Ctrl+R hotkey-overlay-title="Column: Width 50%" { spawn "niri" "msg" "action" "set-column-width" "50%"; }
       Mod+Shift+Space hotkey-overlay-title="Float ↔ Tile (preset)" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       // Mod+Alt+Shift+Space hotkey-overlay-title="Tile (force)" { move-window-to-tiling; }
       Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
