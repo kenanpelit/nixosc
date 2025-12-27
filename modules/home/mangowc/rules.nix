@@ -13,20 +13,41 @@
     # Window rules
     # ==============================================================================
 
-    # Semsumo daily layout (workspace/tag assignment)
-    windowrule=appid:TmuxKenp,tags:2,force_maximize:1
-    windowrule=appid:Kenp,tags:1,force_maximize:1
-    windowrule=appid:Ai,tags:3,force_maximize:1
-    windowrule=appid:CompecTA,tags:4,force_maximize:1
-    windowrule=appid:WebCord,tags:5,force_maximize:1
-    windowrule=appid:brave-youtube\\.com__-Default,tags:7,force_maximize:1
-    windowrule=appid:Spotify,tags:8,force_maximize:1
-    windowrule=appid:ferdium,tags:9,force_maximize:1
+    # Daily layout (tags/workspaces)
+    #
+    # NOTE: Mango window rules support regex. In Nix multiline strings we do NOT
+    # need to double-escape backslashes, so use `\.` (not `\\.`).
 
-    # ZapZap (WhatsApp)
-    windowrule=appid:com\\.rtosta\\.zapzap,tags:9,force_maximize:1
+    # Terminal / session anchor
+    windowrule=appid:^(TmuxKenp|Tmux)$,tags:2,force_maximize:1
 
-    # Telegram Desktop
-    windowrule=appid:org\\.telegram\\.desktop,tags:6,force_maximize:1
+    # Chat / comms
+    windowrule=appid:^(discord|WebCord)$,tags:5,force_maximize:1
+    windowrule=appid:^ferdium$,tags:9,force_maximize:1
+    windowrule=appid:^com\.rtosta\.zapzap$,tags:9,force_maximize:1
+    windowrule=appid:^org\.telegram\.desktop$,tags:6,force_maximize:1
+
+    # Music / media
+    windowrule=appid:^(spotify|Spotify|com\.spotify\.Client)$,tags:8
+    windowrule=appid:^audacious$,tags:5
+    windowrule=appid:^vlc$,tags:6
+
+    # Downloads / secrets
+    windowrule=appid:^transmission$,tags:7
+    windowrule=appid:^org\.keepassxc\.KeePassXC$,tags:7
+
+    # Work / daily apps
+    windowrule=appid:^Kenp$,tags:1,force_maximize:1
+    windowrule=appid:^Ai$,tags:3,force_maximize:1
+    windowrule=appid:^CompecTA$,tags:4,force_maximize:1
+    windowrule=appid:^brave-youtube\.com__-Default$,tags:7,force_maximize:1
+    windowrule=appid:^remote-viewer$,tags:6,force_maximize:1
+
+    # Utility: make these float by default (Niri parity-ish)
+    windowrule=appid:^(org\.pulseaudio\.pavucontrol|pavucontrol)$,isfloating:1
+    windowrule=appid:^nm-connection-editor$,isfloating:1
+    windowrule=appid:^blueman-manager$,isfloating:1
+    windowrule=appid:^polkit-gnome-authentication-agent-1$,isfloating:1
+    windowrule=appid:^clipse$,isfloating:1
   '';
 }
