@@ -95,9 +95,9 @@
     bind=ALT,Up,focusdir,up
     bind=ALT,Down,focusdir,down
 
-    # Workspace (tags): Niri-style vertical navigation
-    bind=SUPER,Up,viewtoleft,0
-    bind=SUPER,Down,viewtoright,0
+    # Workspace (tags): your preferred Mod+Ctrl navigation
+    bind=SUPER+CTRL,Right,viewtoleft,0
+    bind=SUPER+CTRL,Left,viewtoright,0
     binds=SUPER,k,viewtoleft,0
     binds=SUPER,j,viewtoright,0
     bind=SUPER,Page_Up,viewtoleft,0
@@ -235,9 +235,9 @@
     # --------------------------------------------------------------------------
     # Screenshots
     # --------------------------------------------------------------------------
-    binds=Print,spawn_shell,screenshot ri
-    binds=CTRL,Print,spawn_shell,screenshot sc
-    binds=ALT,Print,spawn_shell,screenshot wi
+	    binds=NONE,Print,spawn_shell,${bins.screenshot} ri
+	    binds=CTRL,Print,spawn_shell,${bins.screenshot} sc
+	    binds=ALT,Print,spawn_shell,${bins.screenshot} wi
 
     # --------------------------------------------------------------------------
     # MPV manager (match Niri)
