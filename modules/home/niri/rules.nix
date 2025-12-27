@@ -108,7 +108,7 @@ in
         color "#00000040";
         offset x=4 y=4;
         spread 4;
-        radius 12;
+        softness 12;
       }
     }
 
