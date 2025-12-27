@@ -11,7 +11,7 @@
 let
   # Binding generators
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
-  mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
+  mkMoveWorkspaces = nums: map (n: "ALT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
   mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-set workspace-monitor -am ${toString n}") nums;
   
   moveStep = 80;
@@ -64,12 +64,12 @@ let
   
     # MPV Manager
     "CTRL ALT, 1, exec, mpv-manager start"
-    "ALT, 1, exec, mpv-manager playback"
-    "ALT, 2, exec, mpv-manager play-yt"
-    "ALT, 3, exec, mpv-manager stick"
-    "ALT, 4, exec, mpv-manager move"
-    "ALT, 5, exec, mpv-manager save-yt"
-    "ALT, 6, exec, mpv-manager wallpaper"
+    "$mainMod SHIFT, 1, exec, mpv-manager playback"
+    "$mainMod SHIFT, 2, exec, mpv-manager play-yt"
+    "$mainMod SHIFT, 3, exec, mpv-manager stick"
+    "$mainMod SHIFT, 4, exec, mpv-manager move"
+    "$mainMod SHIFT, 5, exec, mpv-manager save-yt"
+    "$mainMod SHIFT, 6, exec, mpv-manager wallpaper"
   ];
 
   windowControlBinds = [
