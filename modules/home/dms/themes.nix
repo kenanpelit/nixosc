@@ -103,7 +103,7 @@ let
     id = "catppuccinMochaCyan";
     name = "Catppuccin Mocha Cyan";
     desc = "Soothing pastel theme with Sky/Cyan accents";
-    accent = mocha.sky;
+    accent = "#00b4d8";
     accentText = mocha.base;
   };
 
