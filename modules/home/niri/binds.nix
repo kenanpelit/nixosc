@@ -108,8 +108,6 @@
       Mod+J hotkey-overlay-title="Workspace: Down" { focus-workspace-down; }
 
       // Monitor Focus
-      Mod+Alt+Up hotkey-overlay-title="Monitor: Focus Up" { focus-monitor-up; }
-      Mod+Alt+Down hotkey-overlay-title="Monitor: Focus Down" { focus-monitor-down; }
       Mod+Alt+H hotkey-overlay-title="Monitor: Focus Left" { focus-monitor-left; }
       Mod+Alt+L hotkey-overlay-title="Monitor: Focus Right" { focus-monitor-right; }
       Mod+Alt+K hotkey-overlay-title="Monitor: Focus Up" { focus-monitor-up; }
@@ -186,6 +184,8 @@
       Mod+Shift+A hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       Mod+Alt+Left hotkey-overlay-title="Column Width: -100" { spawn "niri" "msg" "action" "set-column-width" "-100"; }
       Mod+Alt+Right hotkey-overlay-title="Column Width: +100" { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+      Mod+Alt+Up hotkey-overlay-title="Window Height: -100" { spawn "niri" "msg" "action" "set-window-height" "-100"; }
+      Mod+Alt+Down hotkey-overlay-title="Window Height: +100" { spawn "niri" "msg" "action" "set-window-height" "+100"; }
 
       // Launchers
       Alt+Space hotkey-overlay-title="Rofi: Launcher" { spawn "rofi-launcher"; }
