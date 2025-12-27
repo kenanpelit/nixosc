@@ -189,7 +189,7 @@
     binds=SUPER+CTRL,v,spawn_shell,${bins.terminal} --class clipse -e ${bins.clipse}
 
     # Toggles
-    binds=F10,spawn_shell,bluetooth_toggle
+    binds=NONE,F10,spawn_shell,${bins.bluetoothToggle}
     binds=ALT,F12,spawn_shell,osc-mullvad toggle
 
     # Audio scripts

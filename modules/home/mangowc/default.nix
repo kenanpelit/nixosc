@@ -41,6 +41,7 @@ let
   bins = {
     terminal = "${pkgs.kitty}/bin/kitty";
     clipse = "${pkgs.clipse}/bin/clipse";
+    bluetoothToggle = "${config.home.profileDirectory}/bin/bluetooth_toggle";
     dms = "${config.home.profileDirectory}/bin/dms";
     wmWorkspace = "${config.home.profileDirectory}/bin/wm-workspace";
     semsumo = "${config.home.profileDirectory}/bin/semsumo";
