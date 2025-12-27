@@ -66,7 +66,7 @@
     # toggles
     bind=ALT,backslash,togglefloating,
     bind=ALT,f,togglefullscreen,
-    bind=ALT,a,togglemaximizescreen,
+    bind=ALT,x,togglemaximizescreen,
     binds=ALT,Tab,toggleoverview,
 
     # tag switch (left/right)
@@ -111,16 +111,6 @@
     gesturebind=NONE,down,4,toggleoverview
     ''}
 
-    bind=ALT,1,tag,1,0
-    bind=ALT,2,tag,2,0
-    bind=ALT,3,tag,3,0
-    bind=ALT,4,tag,4,0
-    bind=ALT,5,tag,5,0
-    bind=ALT,6,tag,6,0
-    bind=ALT,7,tag,7,0
-    bind=ALT,8,tag,8,0
-    bind=ALT,9,tag,9,0
-
     # monitor switch
     # Vertical monitor layout (external top, laptop bottom)
     bind=ALT+SHIFT,Up,focusmon,up
@@ -132,5 +122,27 @@
     bind=SUPER+CTRL,Right,tagmon,right,0
     bind=SUPER+CTRL,Up,tagmon,up,0
     bind=SUPER+CTRL,Down,tagmon,down,0
+
+    # ==============================================================================
+    # App / Utility binds (aligned with Niri)
+    # ==============================================================================
+    binds=ALT,t,spawn_shell,start-kkenp
+    binds=SUPER,m,spawn_shell,anotes
+
+    binds=F10,spawn_shell,bluetooth_toggle
+    binds=ALT,F12,spawn_shell,osc-mullvad toggle
+
+    binds=ALT,a,spawn_shell,osc-soundctl switch
+    binds=ALT+CTRL,a,spawn_shell,osc-soundctl switch-mic
+
+    binds=ALT,e,spawn_shell,osc-spotify
+
+    binds=CTRL+ALT,1,spawn_shell,mpv-manager start
+    binds=ALT,1,spawn_shell,mpv-manager playback
+    binds=ALT,2,spawn_shell,mpv-manager play-yt
+    binds=ALT,3,spawn_shell,mpv-manager stick
+    binds=ALT,4,spawn_shell,mpv-manager move
+    binds=ALT,5,spawn_shell,mpv-manager save-yt
+    binds=ALT,6,spawn_shell,mpv-manager wallpaper
   '';
 }
