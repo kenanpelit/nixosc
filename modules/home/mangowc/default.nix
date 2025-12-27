@@ -137,7 +137,7 @@ in
         "xdg-desktop-autostart.target"
         "dms.service"
       ];
-      After = [ "dbus.service" "dms.service" ];
+      After = [ "dbus.service" ];
     };
   };
 }
