@@ -27,6 +27,8 @@
     binds=SUPER,n,spawn_shell,${bins.dms} ipc call notifications toggle
     binds=SUPER,c,spawn_shell,${bins.dms} ipc call control-center toggle
     binds=SUPER,v,spawn_shell,${bins.dms} ipc call clipboard toggle
+    # Fallback launcher (Rofi) like Niri/Hyprland
+    binds=ALT,space,spawn_shell,rofi-launcher || pkill rofi
     binds=SUPER+SHIFT,d,spawn_shell,${bins.dms} ipc call dash toggle overview
     binds=SUPER+SHIFT,p,spawn_shell,${bins.dms} ipc call processlist focusOrToggle
     binds=SUPER+CTRL,n,spawn_shell,${bins.dms} ipc call notepad open
