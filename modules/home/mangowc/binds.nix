@@ -6,7 +6,7 @@
 #   bind=<MOD>,<KEY>,<FUNC>[,<ARG1>[,<ARG2>...]]
 # MOD examples: SUPER,ALT,CTRL,SHIFT, SUPER+SHIFT, ...
 # ==============================================================================
-{ lib, bins, ... }:
+{ lib, bins, fusumaEnabled ? false, ... }:
 
 {
   core = ''
