@@ -137,6 +137,11 @@
 
     binds=ALT,e,spawn_shell,osc-spotify
 
+    # Screenshots (DMS)
+    binds=Print,spawn_shell,${bins.dms} screenshot
+    binds=CTRL,Print,spawn_shell,${bins.dms} screenshot full
+    binds=ALT,Print,spawn_shell,${bins.dms} screenshot window
+
     binds=SUPER+SHIFT,1,spawn_shell,mpv-manager start
     binds=SUPER+SHIFT,2,spawn_shell,mpv-manager playback
     binds=SUPER+SHIFT,3,spawn_shell,mpv-manager play-yt
