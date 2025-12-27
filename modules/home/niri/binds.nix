@@ -217,20 +217,15 @@
       Alt+Ctrl+N { spawn "osc-spotify" "next"; }
       Alt+Ctrl+B { spawn "osc-spotify" "prev"; }
       Alt+Ctrl+E { spawn "mpc-control" "toggle"; }
-      Alt+I { spawn "hypr-set" "vlc-toggle"; }
+      Alt+I { spawn "vlc-toggle"; }
   '';
 
   mpv = ''
       // ========================================================================
       // MPV Manager
       // ========================================================================
-      Ctrl+Alt+1 { spawn "mpv-manager" "start"; }
-      Alt+1 { spawn "mpv-manager" "playback"; }
-      Alt+2 { spawn "mpv-manager" "play-yt"; }
-      Alt+3 { spawn "mpv-manager" "stick"; }
-      Alt+4 { spawn "mpv-manager" "move"; }
-      Alt+5 { spawn "mpv-manager" "save-yt"; }
-      Alt+6 { spawn "mpv-manager" "wallpaper"; }
+      Alt+0 { spawn "mpv-manager" "start"; }
+      Alt+Ctrl+0 { spawn "mpv-manager" "play-yt"; }
   '';
 
   workspaces = ''
@@ -250,15 +245,15 @@
       Mod+9 { focus-workspace "9"; }
 
       // Move to Workspace
-      Mod+Shift+1 { move-column-to-workspace "1"; }
-      Mod+Shift+2 { move-column-to-workspace "2"; }
-      Mod+Shift+3 { move-column-to-workspace "3"; }
-      Mod+Shift+4 { move-column-to-workspace "4"; }
-      Mod+Shift+5 { move-column-to-workspace "5"; }
-      Mod+Shift+6 { move-column-to-workspace "6"; }
-      Mod+Shift+7 { move-column-to-workspace "7"; }
-      Mod+Shift+8 { move-column-to-workspace "8"; }
-      Mod+Shift+9 { move-column-to-workspace "9"; }
+      Alt+1 { move-column-to-workspace "1"; }
+      Alt+2 { move-column-to-workspace "2"; }
+      Alt+3 { move-column-to-workspace "3"; }
+      Alt+4 { move-column-to-workspace "4"; }
+      Alt+5 { move-column-to-workspace "5"; }
+      Alt+6 { move-column-to-workspace "6"; }
+      Alt+7 { move-column-to-workspace "7"; }
+      Alt+8 { move-column-to-workspace "8"; }
+      Alt+9 { move-column-to-workspace "9"; }
   '';
 
   monitors = ''

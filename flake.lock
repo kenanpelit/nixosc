@@ -166,17 +166,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1766685026,
-        "narHash": "sha256-7WSIuBJeXk8k0OoURUrTnKFGo+X3d4yTkH1RSh43qIQ=",
+        "lastModified": 1766815127,
+        "narHash": "sha256-7lCU/G89Jfs/Q1uWvR2qUMP59kWYfT5ooax45hptB90=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "fd839059c09632c26d69a03e88641ff4d4a26cf4",
+        "rev": "3ebdd5631c5cda785737714584c4b2f02efe672d",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "fd839059c09632c26d69a03e88641ff4d4a26cf4",
+        "rev": "3ebdd5631c5cda785737714584c4b2f02efe672d",
         "type": "github"
       }
     },
@@ -841,17 +841,17 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1766687792,
-        "narHash": "sha256-umJ3QlCSeakDgo+oK8uUH6v1oMT6aM7rNy2XphBIf/c=",
+        "lastModified": 1766787391,
+        "narHash": "sha256-YDEf0chnHpMl+symW6UJDM/nvffUO4l7/Orpm4MQBe0=",
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "1f1a39d46c6b1e4e1757b3618decab4f83c5789a",
+        "rev": "d7f26038ee2b44f3d02fe2a7556bafb91a02f46e",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "1f1a39d46c6b1e4e1757b3618decab4f83c5789a",
+        "rev": "d7f26038ee2b44f3d02fe2a7556bafb91a02f46e",
         "type": "github"
       }
     },
@@ -1564,16 +1564,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1764663772,
-        "narHash": "sha256-sHqLmm0wAt3PC4vczJeBozI1/f4rv9yp3IjkClHDXDs=",
+        "lastModified": 1766386896,
+        "narHash": "sha256-1uql4y229Rh+/2da99OVNe6DfsjObukXkf60TYRCvhI=",
         "ref": "refs/heads/master",
-        "rev": "26531fc46ef17e9365b03770edd3fb9206fcb460",
-        "revCount": 713,
+        "rev": "3918290c1bcd93ed81291844d9f1ed146672dbfc",
+        "revCount": 714,
         "type": "git",
         "url": "https://git.outfoxxed.me/quickshell/quickshell"
       },
       "original": {
-        "rev": "26531fc46ef17e9365b03770edd3fb9206fcb460",
+        "rev": "3918290c1bcd93ed81291844d9f1ed146672dbfc",
         "type": "git",
         "url": "https://git.outfoxxed.me/quickshell/quickshell"
       }
