@@ -87,9 +87,7 @@
       Mod+Shift+F hotkey-overlay-title="Window: Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
-      Mod+Shift+Space hotkey-overlay-title="Float ↔ Tile (preset)" {
-        spawn "${pkgs.bash}/bin/bash" "-lc" "w=\"$(niri msg focused-window 2>/dev/null || true)\"; if echo \"$w\" | ${pkgs.jq}/bin/jq -e '.is_floating == true' >/dev/null 2>&1; then niri msg action toggle-window-floating >/dev/null 2>&1 || true; else niri msg action toggle-window-floating >/dev/null 2>&1 || true; niri msg action set-window-width 900 >/dev/null 2>&1 || true; niri msg action set-window-height 650 >/dev/null 2>&1 || true; fi";
-      }
+      Mod+Shift+Space hotkey-overlay-title="Float ↔ Tile (preset)" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       // Mod+Alt+Shift+Space hotkey-overlay-title="Tile (force)" { move-window-to-tiling; }
       Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
       Mod+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }

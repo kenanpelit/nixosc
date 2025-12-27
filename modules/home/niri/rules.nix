@@ -100,6 +100,18 @@ in
       shadow { on; }
     }
 
+    // Tiling Windows
+    window-rule {
+      match is-floating=false;
+      shadow {
+        on;
+        color "#00000040";
+        offset x=4 y=4;
+        spread 4;
+        radius 12;
+      }
+    }
+
     // QuickShell
     window-rule {
       match app-id=r#"^org\.quickshell$"#;
