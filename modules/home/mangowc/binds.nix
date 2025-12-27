@@ -83,15 +83,15 @@
     bind=SUPER,7,view,7,0
     bind=SUPER,8,view,8,0
     bind=SUPER,9,view,9,0
-    bind=SUPER+SHIFT,1,tag,1,0
-    bind=SUPER+SHIFT,2,tag,2,0
-    bind=SUPER+SHIFT,3,tag,3,0
-    bind=SUPER+SHIFT,4,tag,4,0
-    bind=SUPER+SHIFT,5,tag,5,0
-    bind=SUPER+SHIFT,6,tag,6,0
-    bind=SUPER+SHIFT,7,tag,7,0
-    bind=SUPER+SHIFT,8,tag,8,0
-    bind=SUPER+SHIFT,9,tag,9,0
+    bind=ALT,1,tag,1,0
+    bind=ALT,2,tag,2,0
+    bind=ALT,3,tag,3,0
+    bind=ALT,4,tag,4,0
+    bind=ALT,5,tag,5,0
+    bind=ALT,6,tag,6,0
+    bind=ALT,7,tag,7,0
+    bind=ALT,8,tag,8,0
+    bind=ALT,9,tag,9,0
 
     ${lib.optionalString (!(fusumaEnabled or false)) ''
     # touchpad gestures (libinput)
@@ -137,12 +137,12 @@
 
     binds=ALT,e,spawn_shell,osc-spotify
 
-    binds=CTRL+ALT,1,spawn_shell,mpv-manager start
-    binds=ALT,1,spawn_shell,mpv-manager playback
-    binds=ALT,2,spawn_shell,mpv-manager play-yt
-    binds=ALT,3,spawn_shell,mpv-manager stick
-    binds=ALT,4,spawn_shell,mpv-manager move
-    binds=ALT,5,spawn_shell,mpv-manager save-yt
-    binds=ALT,6,spawn_shell,mpv-manager wallpaper
+    binds=SUPER+SHIFT,1,spawn_shell,mpv-manager start
+    binds=SUPER+SHIFT,2,spawn_shell,mpv-manager playback
+    binds=SUPER+SHIFT,3,spawn_shell,mpv-manager play-yt
+    binds=SUPER+SHIFT,4,spawn_shell,mpv-manager stick
+    binds=SUPER+SHIFT,5,spawn_shell,mpv-manager move
+    binds=SUPER+SHIFT,6,spawn_shell,mpv-manager save-yt
+    binds=SUPER+SHIFT,7,spawn_shell,mpv-manager wallpaper
   '';
 }
