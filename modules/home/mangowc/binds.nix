@@ -65,7 +65,7 @@
     bind=ALT,backslash,togglefloating,
     bind=ALT,f,togglefullscreen,
     bind=ALT,a,togglemaximizescreen,
-    bind=ALT,Tab,toggleoverview,
+    binds=ALT,Tab,toggleoverview,
 
     # tag switch (left/right)
     bind=SUPER,Left,viewtoleft,0
@@ -126,9 +126,5 @@
     bind=SUPER+CTRL,Right,tagmon,right,0
     bind=SUPER+CTRL,Up,tagmon,up,0
     bind=SUPER+CTRL,Down,tagmon,down,0
-
-    # legacy (keep): move via SUPER+ALT
-    bind=SUPER+ALT,Up,tagmon,up,0
-    bind=SUPER+ALT,Down,tagmon,down,0
   '';
 }
