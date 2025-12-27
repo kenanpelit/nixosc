@@ -93,7 +93,7 @@
     bind=ALT,8,tag,8,0
     bind=ALT,9,tag,9,0
 
-    ${lib.optionalString (!(fusumaEnabled or false)) ''
+    ${lib.optionalString (!fusumaEnabled) ''
     # touchpad gestures (libinput)
     # If Fusuma is enabled, let it own gesture handling to avoid double-trigger.
 
