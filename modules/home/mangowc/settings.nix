@@ -61,18 +61,20 @@ in
     # Autostart (runs after Mango is up; has WAYLAND_DISPLAY)
     exec-once=${bins.mangoSet} session-start
     exec-once=${bins.clipse} -listen
-    exec-once=${bins.nsticky}
 
     # Tags (workspaces)
-    # Keep tags visible even when empty (static 1..9).
-    tagrule=id:1,no_hide:1
-    tagrule=id:2,no_hide:1
-    tagrule=id:3,no_hide:1
-    tagrule=id:4,no_hide:1
-    tagrule=id:5,no_hide:1
-    tagrule=id:6,no_hide:1
-    tagrule=id:7,no_hide:1
-    tagrule=id:8,no_hide:1
-    tagrule=id:9,no_hide:1
+    # Keep tags visible even when empty, but split them across monitors like Niri:
+    # - DP-3: 1..6
+    # - eDP-1: 7..9
+    tagrule=id:1,monitor_name:^DP-3$,no_hide:1
+    tagrule=id:2,monitor_name:^DP-3$,no_hide:1
+    tagrule=id:3,monitor_name:^DP-3$,no_hide:1
+    tagrule=id:4,monitor_name:^DP-3$,no_hide:1
+    tagrule=id:5,monitor_name:^DP-3$,no_hide:1
+    tagrule=id:6,monitor_name:^DP-3$,no_hide:1
+
+    tagrule=id:7,monitor_name:^eDP-1$,no_hide:1
+    tagrule=id:8,monitor_name:^eDP-1$,no_hide:1
+    tagrule=id:9,monitor_name:^eDP-1$,no_hide:1
   '';
 }
