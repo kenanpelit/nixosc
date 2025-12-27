@@ -53,7 +53,7 @@
   my.user.stasis.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = false;
-  my.user.sunsetr.enable = true;
+  my.user.sunsetr.enable = false;
   my.user.ghostty.enable = true;
 
   # ============================================================================
