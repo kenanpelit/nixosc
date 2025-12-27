@@ -34,7 +34,8 @@ let
     else "a-candy-beauty-icon-theme";
 
   palette = {
-    cyan = "#74c7ec";
+    #cyan = "#74c7ec";
+    cyan = "#00BCD4";
     sky = "#89dceb";
     mauve = "#cba6f7";
     red = "#f38ba8";
