@@ -31,6 +31,7 @@ Commands:
   lock               Lock session via DMS/logind (was: niri-lock)
   arrange-windows     Move windows to target workspaces (was: niri-arrange-windows)
   workspace-monitor  Workspace/monitor helper (was: niri-workspace-monitor)
+  toggle-window-mode Toggle between floating and tiling modes with preset size
 
 Examples:
   niri-set session-start
@@ -38,6 +39,7 @@ Examples:
   niri-set lock --logind
   niri-set arrange-windows --dry-run
   niri-set workspace-monitor -mn
+  niri-set toggle-window-mode
 EOF
 }
 
@@ -865,6 +867,48 @@ EOF
         else
           notify "Taşınan: ${moved}/${planned}  Hata: ${failed}" 3500
         fi
+      fi
+    )
+    ;;
+
+  toggle-window-mode)
+    # ----------------------------------------------------------------------------
+    # Embedded: niri-toggle-window-mode
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      ensure_niri_socket() {
+        if [[ -n "${NIRI_SOCKET:-}" ]] && [[ -S "${NIRI_SOCKET}" ]]; then return 0; fi
+        [[ -n "${XDG_RUNTIME_DIR:-}" ]] || export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        local d="${WAYLAND_DISPLAY:-}"
+        if [[ -z "$d" ]]; then
+          for s in "$XDG_RUNTIME_DIR"/wayland-*; do [[ -S "$s" ]] && d="$(basename "$s")" && break; done
+        fi
+        if [[ -n "$d" ]]; then
+          for s in "$XDG_RUNTIME_DIR"/niri."$d".*.sock; do [[ -S "$s" ]] && export NIRI_SOCKET="$s" && return 0; done
+        fi
+        for s in "$XDG_RUNTIME_DIR"/niri.*.sock; do [[ -S "$s" ]] && export NIRI_SOCKET="$s" && return 0; done
+        return 1
+      }
+
+      ensure_niri_socket || { echo "Niri socket not found" >&2; exit 1; }
+
+      win="$(niri msg -j focused-window 2>/dev/null || true)"
+      if [[ -z "$win" ]]; then exit 0; fi
+
+      is_floating="$(echo "$win" | jq -r '.is_floating // false')"
+
+      if [[ "$is_floating" == "true" ]]; then
+        # Switch to tiling
+        niri msg action toggle-window-floating >/dev/null 2>&1 || true
+      else
+        # Switch to floating and resize
+        niri msg action toggle-window-floating >/dev/null 2>&1 || true
+        # Small delay might be needed or just fire commands; usually niri handles queue well
+        niri msg action set-window-width 900 >/dev/null 2>&1 || true
+        niri msg action set-window-height 650 >/dev/null 2>&1 || true
+        niri msg action center-window >/dev/null 2>&1 || true
       fi
     )
     ;;
