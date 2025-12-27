@@ -93,9 +93,18 @@
     bind=SUPER+SHIFT,9,tag,9,0
 
     # touchpad gestures (libinput)
-    # Route through our workspace router for consistent behavior (wrap-around).
+    # 3-finger: directional focus (matches the mental model from niri/hyprland).
+    gesturebind=NONE,left,3,focusdir,left
+    gesturebind=NONE,right,3,focusdir,right
+    gesturebind=NONE,up,3,focusdir,up
+    gesturebind=NONE,down,3,focusdir,down
+
+    # 4-finger: workspace + overview.
+    # Route workspace through our router for consistent behavior (wrap-around).
     gesturebind=NONE,left,4,spawn_shell,${bins.wmWorkspace} -wl
     gesturebind=NONE,right,4,spawn_shell,${bins.wmWorkspace} -wr
+    gesturebind=NONE,up,4,toggleoverview
+    gesturebind=NONE,down,4,toggleoverview
 
     bind=ALT,1,tag,1,0
     bind=ALT,2,tag,2,0
