@@ -65,7 +65,7 @@
       // to compile for any reason, niri falls back to the default shader.
 
       workspace-switch {
-        spring damping-ratio=0.85 stiffness=850 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=900 epsilon=0.0001;
       }
 
       window-open {
@@ -110,13 +110,13 @@
 
       // Keep these identical for best synchronized animations.
       horizontal-view-movement {
-        spring damping-ratio=0.85 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.85 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.85 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -163,10 +163,10 @@
         curve "ease-out-quad";
       }
       overview-open-close {
-        spring damping-ratio=0.85 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
       }
       recent-windows-close {
-        spring damping-ratio=0.85 stiffness=800 epsilon=0.001;
+        spring damping-ratio=0.9 stiffness=750 epsilon=0.001;
       }
     }
   '';
