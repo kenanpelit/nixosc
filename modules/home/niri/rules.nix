@@ -298,6 +298,11 @@ in
     }
 
     layer-rule {
+      match namespace=r#"^dms:(bar|dock|panel).*$"#;
+      geometry-corner-radius 0;
+    }
+
+    layer-rule {
       match namespace="^notifications$";
       block-out-from "screencast";
     }
