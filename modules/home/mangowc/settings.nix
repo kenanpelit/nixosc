@@ -61,7 +61,6 @@ in
 
     # Autostart (runs after Mango is up; has WAYLAND_DISPLAY)
     exec-once=${bins.mangoSet} session-start
-    exec-once=${bins.clipse} -listen
 
     # Tags (workspaces)
     # Keep tags visible even when empty, but split them across monitors like Niri:

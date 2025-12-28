@@ -21,7 +21,7 @@ let
   };
   
   settings = import ./settings.nix { 
-    inherit lib;
+    inherit lib bins;
     inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName;
   };
   

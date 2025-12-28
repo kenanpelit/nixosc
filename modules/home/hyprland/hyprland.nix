@@ -39,23 +39,6 @@ lib.mkIf cfg.enable {
     };
   };
 
-  systemd.user.services.hypr-clipse = {
-    Unit = {
-      Description = "clipse daemon (hyprland)";
-      After = [ "hyprland-session.target" ];
-      PartOf = [ "hyprland-session.target" ];
-    };
-    Service = {
-      # `-listen` backgrounds itself and exits; systemd would mark the unit dead.
-      ExecStart = "${pkgs.clipse}/bin/clipse -listen-shell";
-      Restart = "always";
-      RestartSec = 2;
-    };
-    Install = {
-      WantedBy = [ "hyprland-session.target" ];
-    };
-  };
-
   systemd.user.services.hypr-clip-persist = lib.mkIf (clipPersistPkg != null) {
     Unit = {
       Description = "wl-clip-persist (hyprland)";

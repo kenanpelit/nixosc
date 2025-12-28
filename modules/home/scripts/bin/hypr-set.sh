@@ -26,6 +26,18 @@
 
 set -euo pipefail
 
+start_clipse_listener() {
+  command -v clipse >/dev/null 2>&1 || return 0
+
+  if command -v pgrep >/dev/null 2>&1; then
+    if pgrep -af 'clipse.*-listen' >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+
+  clipse -listen >/dev/null 2>&1 || true
+}
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -33,6 +45,7 @@ Usage:
 
 Commands:
   tty                Start Hyprland from TTY/DM
+  clipse             Start clipse clipboard listener (background)
   init               Session bootstrap
   workspace-monitor  Workspace/monitor helper
   switch             Smart monitor/workspace switcher
@@ -54,6 +67,10 @@ shift || true
 case "${cmd}" in
   ""|-h|--help|help)
     usage
+    exit 0
+    ;;
+  clipse)
+    start_clipse_listener
     exit 0
     ;;
   tty)
