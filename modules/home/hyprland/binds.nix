@@ -6,13 +6,13 @@
 # navigation, workspace management, and DMS integration.
 # Imported by default.nix
 # ==============================================================================
-{ lib, themeName, ... }:
+{ lib, themeName, bins, ... }:
 
 let
   # Binding generators
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
-  mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
-  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-workspace-monitor -am ${toString n}") nums;
+  mkMoveWorkspaces = nums: map (n: "ALT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
+  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, ${bins.hyprSet} workspace-monitor -am ${toString n}") nums;
   
   moveStep = 80;
   resizeStep = 80;
@@ -51,6 +51,7 @@ let
     # Audio Control
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
+    #", F4, exec, osc-soundctl mic mute"
    
     # Playback Control (DMS MPRIS)
   
@@ -59,16 +60,16 @@ let
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"
     "ALT CTRL, E, exec, mpc-control toggle"
-    "ALT, i, exec, hypr-vlc_toggle"
+    "ALT, i, exec, ${bins.hyprSet} vlc-toggle"
   
     # MPV Manager
     "CTRL ALT, 1, exec, mpv-manager start"
-    "ALT, 1, exec, mpv-manager playback"
-    "ALT, 2, exec, mpv-manager play-yt"
-    "ALT, 3, exec, mpv-manager stick"
-    "ALT, 4, exec, mpv-manager move"
-    "ALT, 5, exec, mpv-manager save-yt"
-    "ALT, 6, exec, mpv-manager wallpaper"
+    "$mainMod SHIFT, 1, exec, mpv-manager playback"
+    "$mainMod SHIFT, 2, exec, mpv-manager play-yt"
+    "$mainMod SHIFT, 3, exec, mpv-manager stick"
+    "$mainMod SHIFT, 4, exec, mpv-manager move"
+    "$mainMod SHIFT, 5, exec, mpv-manager save-yt"
+    "$mainMod SHIFT, 6, exec, mpv-manager wallpaper"
   ];
 
   windowControlBinds = [
@@ -76,15 +77,15 @@ let
     "$mainMod, Q, killactive"
     "$mainMod SHIFT, F, fullscreen, 1"
     "$mainMod CTRL, F, fullscreen, 0"
-    "$mainMod, F, exec, toggle_float"
+    "$mainMod, F, exec, ${bins.hyprSet} toggle-float"
     "$mainMod, P, pseudo,"
     "$mainMod, X, togglesplit,"
     "$mainMod, G, togglegroup"
-    "$mainMod, T, exec, toggle_opacity"
+    "$mainMod, T, exec, ${bins.hyprSet} toggle-opacity"
     "$mainMod, S, pin"
   
     # Layout
-    "$mainMod CTRL, J, exec, hypr-layout_toggle"
+    "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
     "$mainMod, R, submap, resize"
   
@@ -103,7 +104,7 @@ let
     "$mainMod, E, exec, pypr shift_monitors +1"
   
     # Connectivity
-    ", F10, exec, bluetooth_toggle"
+    ", F10, exec, ${bins.bluetoothToggle}"
     "ALT, F12, exec, osc-mullvad toggle"
   
     # Clipboard (local)
@@ -111,12 +112,12 @@ let
   ];
 
   screenshotBinds = [
-    ", Print, exec, screenshot ri"
-    "$mainMod CTRL, Print, exec, screenshot rec"
-    "$mainMod, Print, exec, screenshot si"
-    "ALT, Print, exec, screenshot wi"
-    "$mainMod ALT, Print, exec, screenshot p"
-    "$mainMod SHIFT CTRL, Print, exec, screenshot sec"
+    ", Print, exec, ${bins.screenshot} ri"
+    "$mainMod CTRL, Print, exec, ${bins.screenshot} rec"
+    "$mainMod, Print, exec, ${bins.screenshot} si"
+    "ALT, Print, exec, ${bins.screenshot} wi"
+    "$mainMod ALT, Print, exec, ${bins.screenshot} p"
+    "$mainMod SHIFT CTRL, Print, exec, ${bins.screenshot} sec"
   ];
 
   specialAppsBinds = [
@@ -130,8 +131,8 @@ let
     "ALT, N, workspace, previous"
     "ALT, Tab, workspace, e+1"
     "ALT CTRL, tab, workspace, e-1"
-    "$mainMod, page_up, exec, hypr-workspace-monitor -wl"
-    "$mainMod, page_down, exec, hypr-workspace-monitor -wr"
+    "$mainMod, page_up, exec, ${bins.hyprSet} workspace-monitor -wl"
+    "$mainMod, page_down, exec, ${bins.hyprSet} workspace-monitor -wr"
     "$mainMod, bracketleft, workspace, e-1"
     "$mainMod, bracketright, workspace, e+1"
     "$mainMod CTRL, c, movetoworkspace, empty"
@@ -151,8 +152,7 @@ let
   dmsBinds = [
     # Launchers & power
     "$mainMod, Space, exec, dms ipc call spotlight toggle"
-    "$mainMod, backspace, exec, dms ipc call powermenu toggle"
-    "$mainMod, delete, exec, dms ipc call lock lock"
+    "$mainMod, delete, exec, dms ipc call powermenu toggle"
     "ALT, L, exec, dms ipc call lock lock"
     "$mainMod SHIFT, delete, exec, dms ipc call inhibit toggle"
 

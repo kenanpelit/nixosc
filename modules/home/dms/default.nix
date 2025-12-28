@@ -9,10 +9,9 @@
 {
   # Upstream DMS module + local splits (settings, themes)
   imports = [
-    # DMS upstream renamed `homeModules.dankMaterialShell.default` -> `homeModules.dank-material-shell`.
-    # Using `default` keeps us compatible and avoids the deprecation warning.
     inputs.dankMaterialShell.homeModules.default
     ./settings.nix
+    ./themes.nix
   ];
 
   options.my.user.dms = {

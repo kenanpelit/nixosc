@@ -18,6 +18,7 @@
   my.user.git.enable = true;
   my.user.starship.enable = true;
   my.user.fzf.enable = true;
+  my.user.direnv.enable = true;
   my.user.fastfetch.enable = true;
   my.user.btop.enable = true;
   my.user.packages.enable = true;
@@ -37,19 +38,22 @@
   my.desktop.gnome.enable = true;
   my.desktop.sway.enable = true; # VM management
   my.desktop.niri.enable = true;
+  my.desktop.mangowc = {
+    enable = true;
+    enableHardwareConfig = true;
+  };
+  my.desktop.cosmic.enable = true;
   
   # Components
-  my.user.waybar.enable = false;
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
   my.user.walker.enable = true;
-  my.user.ulauncher.enable = true;
   my.user.mako.enable = false;
   my.user.dms.enable = true;
   my.user.stasis.enable = true;
   my.user.fusuma.enable = true;
   my.user.blue.enable = false;
-  my.user.sunsetr.enable = true;
+  my.user.sunsetr.enable = false;
   my.user.ghostty.enable = true;
 
   # ============================================================================

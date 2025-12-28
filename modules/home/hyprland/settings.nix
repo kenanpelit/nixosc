@@ -6,7 +6,7 @@
 # compositor aesthetics (decoration, animations, master/dwindle layouts).
 # Imported by default.nix
 # ==============================================================================
-{ lib, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
+{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
 
 let
   primaryMonitor = "DELL UP2716D KRXTR88N909L";
@@ -18,13 +18,11 @@ let
     "${toString index}, monitor:${monitor}${lib.optionalString isDefault ", default:true"}";
 
   startupServices = [
-    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
-    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
+    "systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK QT_QPA_PLATFORM"
+    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK QT_QPA_PLATFORM"
     "systemctl --user start hyprland-session.target"
-    "nm-applet --indicator"
-    "clipse -listen"
-    "wl-clip-persist --clipboard both"
     "hyprctl setcursor ${cursorName} 24"
+    "${bins.hyprSet} clipse"
   ];
 
   monitorConfig = [

@@ -66,8 +66,16 @@ fi
 # Logging System
 log::init() {
   local log_file="${1:-"$LOG_FILE"}"
-  mkdir -p "$(dirname "$log_file")"
-  exec 3>>"$log_file"
+  mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+
+  # If log path is not writable (e.g., restricted environments), fall back to a
+  # workspace-local log file.
+  if ! (: >>"$log_file") 2>/dev/null; then
+    log_file="${WORK_DIR}/.nixosb/nixos-install.log"
+    mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+  fi
+
+  exec 3>>"$log_file" 2>/dev/null || true
   find "$(dirname "$log_file")" -name "nixos-install*.log" -mtime +7 -delete 2>/dev/null || true
 }
 
@@ -286,7 +294,15 @@ flake::build() {
   cd "${CONFIG[FLAKE_DIR]}" || return 1
   git::ensure_clean "${CONFIG[FLAKE_DIR]}"
 
-  # Construct Command
+  # In auto mode we must not block on a sudo password prompt.
+  if [[ "${CONFIG[AUTO_MODE]:-false}" == "true" ]]; then
+    if ! sudo -n true 2>/dev/null; then
+      log ERROR "Auto mode requires passwordless sudo (sudo -n). Run without -a/--auto or cache sudo first (sudo -v)."
+      return 1
+    fi
+  fi
+
+  # Construct Command (keep nixos-rebuild default output/UX).
   local cmd="sudo nixos-rebuild switch --flake .#${hostname}"
   [[ -n "$profile" ]] && cmd+=" --profile-name ${profile}"
 
@@ -297,8 +313,24 @@ flake::build() {
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
   [[ -n "$profile" ]] && log INFO "Profile: ${C_CYAN}$profile${C_RESET}"
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
+  log INFO "Command: ${C_DIM}${cmd}${C_RESET}"
 
   echo -e "${C_DIM}Running build command...${C_RESET}"
+  # Force a TTY so nixos-rebuild prints steady progress even when it would
+  # otherwise buffer or hide output.
+  if [[ -t 1 ]] && command -v script >/dev/null 2>&1; then
+    script -qefc "$cmd" /dev/null
+    local rc=$?
+    if [[ $rc -eq 0 ]]; then
+      echo ""
+      log SUCCESS "Build completed successfully!"
+      return 0
+    fi
+    echo ""
+    log ERROR "Build failed! (exit code: $rc)"
+    return 1
+  fi
+
   if eval "$cmd"; then
     echo ""
     log SUCCESS "Build completed successfully!"
@@ -384,30 +416,43 @@ cmd_pre-install() {
     return 1
   fi
 
+  # This command is meant to run on an already installed (minimal) NixOS system
+  # to bootstrap prerequisites (flakes, base packages, etc.). It operates on the
+  # current root filesystem, not on /mnt.
+  local target_root="/"
+  local nixos_dir="/etc/nixos"
+
   local template_path="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/systems/${SYSTEM_ARCH}/${hostname}/templates/initial-configuration.nix"
   if [[ ! -f "$template_path" ]]; then
     log ERROR "Template not found: $template_path"
     return 1
   fi
 
-  if [[ -f /etc/nixos/configuration.nix ]]; then
-    local backup="/etc/nixos/configuration.nix.bak-$(date +%s)"
+  if [[ -f "${nixos_dir}/configuration.nix" ]]; then
+    local backup="${nixos_dir}/configuration.nix.bak-$(date +%s)"
     log WARN "Backing up existing config to: $(basename "$backup")"
-    sudo cp /etc/nixos/configuration.nix "$backup"
+    sudo cp "${nixos_dir}/configuration.nix" "$backup"
   fi
 
   log INFO "Installing configuration..."
-  sudo cp "$template_path" /etc/nixos/configuration.nix
-  sudo chown root:root /etc/nixos/configuration.nix
-  sudo chmod 644 /etc/nixos/configuration.nix
+  sudo cp "$template_path" "${nixos_dir}/configuration.nix"
+  sudo chown root:root "${nixos_dir}/configuration.nix"
+  sudo chmod 644 "${nixos_dir}/configuration.nix"
 
-  if [[ ! -f /etc/nixos/hardware-configuration.nix ]]; then
+  if [[ ! -f "${nixos_dir}/hardware-configuration.nix" ]]; then
     log INFO "Generating hardware config..."
     sudo nixos-generate-config --root /
   fi
 
+  if confirm "Apply bootstrap now? (runs nixos-rebuild switch)"; then
+    log STEP "Applying Bootstrap (nixos-rebuild switch)"
+    sudo nixos-rebuild switch
+  else
+    log WARN "Bootstrap config installed, but not applied."
+  fi
+
   log SUCCESS "Bootstrap ready!"
-  echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-install --flake .#${hostname}"
+  echo -e "\n${C_YELLOW}Next:${C_RESET} sudo nixos-rebuild switch --flake \"${CONFIG[FLAKE_DIR]:-$WORK_DIR}#${hostname}\""
 }
 
 cmd_merge() {
@@ -541,7 +586,7 @@ show_help() {
   echo ""
   echo -e "${C_BOLD}Commands:${C_RESET}"
   echo "  install          Build & Switch configuration"
-  echo "  auto             Auto mode: update + install with next free YYMMDD profile"
+  echo "  auto             Non-interactive install with next free YYMMDD profile"
   echo "  update           Update flake inputs"
   echo "  build            Build only"
   echo "  merge            Merge branches (interactively)"
@@ -552,13 +597,21 @@ show_help() {
   echo "  -H, --host NAME  Hostname (hay, vhay)"
   echo "  -p, --profile X  Profile name"
   echo "  -u, --update     Update inputs before install"
-  echo "  -a, --auto       Non-interactive mode"
+  echo "  -a, --auto       Non-interactive mode (auto-yes prompts)"
   echo "  -m, --merge      Run merge after install"
 }
 
 parse_args() {
-  if [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]]; then
+  # Convenience:
+  # - If the user starts with flags, assume `install` (e.g. `./install.sh -u -H hay`).
+  # - If the user starts with a hostname, also assume `install` (e.g. `./install.sh hay -p kenp`).
+  if [[ $# -gt 0 ]] && [[ "${1:-}" =~ ^- ]] && [[ "$1" != "-h" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-m" ]] && [[ "$1" != "--merge" ]] && [[ "$1" != "--pre-install" ]]; then
     set -- "install" "$@"
+  elif [[ $# -gt 0 ]] && [[ "${1:-}" != -* ]]; then
+    case "${1:-}" in
+    auto | install | hosts | update | build | merge | pre-install | --pre-install) ;;
+    *) set -- "install" "$@" ;;
+    esac
   fi
 
   local action=""
@@ -613,7 +666,13 @@ parse_args() {
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
-    --pre-install) cmd_pre-install ;;
+    pre-install | --pre-install)
+      action="pre-install"
+      if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
+        config::set HOSTNAME "$2"
+        shift
+      fi
+      ;;
     -u | --update) config::set UPDATE_FLAKE true ;;
     -au | -ua)
       config::set AUTO_MODE true
@@ -670,11 +729,16 @@ parse_args() {
     shift
   done
 
+  if [[ "$action" == "pre-install" ]]; then
+    cmd_pre-install
+    return
+  fi
+
   if [[ "$action" == "auto" ]]; then
     local host="${auto_host:-$(config::get HOSTNAME)}"
     [[ -z "$host" ]] && host="$DEFAULT_HOST"
+    # Match inst.sh behaviour: auto implies non-interactive and date-based profiles.
     config::set AUTO_MODE true
-    # config::set UPDATE_FLAKE true (Disabled: prevents auto-upgrade on every build)
     config::set HOSTNAME "$host"
     config::set PROFILE "$(profile::next_available)"
     cmd_install "$host"

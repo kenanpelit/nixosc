@@ -93,9 +93,12 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/60efbf3f63bec3100477ea9ba6cd634e35d5aeaa"; # 1222 - Updated commit
-#      url = "github:hyprwm/hyprland/315806f59816aacdbf7c66aaeaa0e49d3a33a66d"; # 1220 - Updated commit
-      #      url = "github:hyprwm/hyprland/6175ecd4c4ba817c4620f66a75e1e11da7c7a8ca";
+      url = "github:hyprwm/hyprland/6a055fc747a5a899b97f9b4c1d1a52229a805b1e"; # 1228 - Updated commit
+#      url = "github:hyprwm/hyprland/a8452705d6512da36f66e4a7d6e7799afbc7ffdd"; # 1228 - Updated commit
+      #      url = "github:hyprwm/hyprland/e5d20b56bcad78df42c9060a5d330274b0a6e510"; # 1227 - Updated commit
+      #      url = "github:hyprwm/hyprland/5faa66d297752ab0d919bb5719fa0949292fe720"; # 1227 - Updated commit
+      #      url = "github:hyprwm/hyprland/42447a50d6840c5e28bd58db1225bae2fd7d5ed0"; # 1227 - Updated commit
+      #      url = "github:hyprwm/hyprland/d7f26038ee2b44f3d02fe2a7556bafb91a02f46e"; # 1227 - Updated commit
     };
 
     hypr-contrib = {
@@ -119,6 +122,12 @@
     # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
     nsticky.url = "github:lonerOrz/nsticky";
 
+    # MangoWC (mango): dwl-based Wayland compositor
+    mango = {
+      url = "github:DreamMaoMao/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # ==========================================================================
     # Desktop: Theming
     # ==========================================================================
@@ -139,13 +148,13 @@
 
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.dgop.follows = "dgop";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/a7494971fd7c4fb823d4b77a7543d77225442ce4"; # 1222 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/dca07a70f8269e3cb598095cf0b22e65e1c72082"; # 1220 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/5ffe563b7d0fef1f1c12700e47c4d5b92aaa17fb"; # 1220 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/6ef08c3d5476a477dbfa7f67a4e10af47d3ae6cf"; # 1219 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/f2611e0de093d3b300165a67b695ed561e181297";
+      url = "github:AvengeMedia/DankMaterialShell/c281bf3b533af502de379caa0037b171b74eb508"; # 1228 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/7b9ba840fbf17925c00ff80e3f5f1402f056921b"; # 1228 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/84fb567ff50b0373ff43f6d66adb1c1e20884119"; # 1228 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/7aff1182c83386213b8abc3a018f1e8cf2031b03"; # 1227 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/4493b7c231863cfeeb59164516626d43637dbca7"; # 1227 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/23a93082c654695c22b2e7a296fff016f99c1915"; # 1227 - Updated commit
     };
 
     # ==========================================================================
@@ -253,12 +262,7 @@
           # Using `default` keeps us compatible and avoids the deprecation warning.
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
-          {
-            # Inject Niri HM module globally to fix option visibility and avoid conflicts.
-            home-manager.sharedModules = [
-              niri.homeModules.niri
-            ];
-          }
+          mango.nixosModules.mango
         ];
 
         # Special arguments available to all modules.

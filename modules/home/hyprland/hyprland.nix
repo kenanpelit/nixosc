@@ -6,6 +6,10 @@
 { inputs, pkgs, config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
+  clipPersistPkg =
+    if builtins.hasAttr "wl-clip-persist" pkgs
+    then pkgs."wl-clip-persist"
+    else null;
 in
 lib.mkIf cfg.enable {
   # =============================================================================
@@ -17,10 +21,43 @@ lib.mkIf cfg.enable {
   systemd.user.targets.hyprland-session.Unit.Wants = [
     "xdg-desktop-autostart.target"
   ];
+
+  # Keep session daemons observable/restartable (instead of exec-once).
+  systemd.user.services.hypr-nm-applet = {
+    Unit = {
+      Description = "NetworkManager applet (Hyprland)";
+      After = [ "hyprland-session.target" "dbus.service" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.networkmanagerapplet}/bin/nm-applet --indicator";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
+
+  systemd.user.services.hypr-clip-persist = lib.mkIf (clipPersistPkg != null) {
+    Unit = {
+      Description = "wl-clip-persist (hyprland)";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      ExecStart = "${clipPersistPkg}/bin/wl-clip-persist --clipboard both";
+      Restart = "on-failure";
+      RestartSec = 1;
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
   
   # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 
-  # Run hypr-init at session start to normalize monitors and audio
+  # Run hypr-set init at session start to normalize monitors and audio
   systemd.user.services.hypr-init = {
     Unit = {
       Description = "Hyprland session bootstrap (monitors + audio)";
@@ -29,7 +66,7 @@ lib.mkIf cfg.enable {
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-init'";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-set init'";
     };
     Install = {
       WantedBy = [ "hyprland-session.target" ];

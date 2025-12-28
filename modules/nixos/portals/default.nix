@@ -12,6 +12,8 @@ let
   flatpakEnabled = config.services.flatpak.enable or false;
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  cosmicPortalPkg = pkgs."xdg-desktop-portal-cosmic" or null;
+  cosmicPortalEnabled = (cfg.enableCosmic or false) && cosmicPortalPkg != null;
 in
 {
   config = lib.mkIf (cfg.enable || flatpakEnabled) {
@@ -25,14 +27,43 @@ in
       enable = true;
       extraPortals =
         (lib.optional cfg.enableHyprland hyprPortalPkg)
+        ++ (lib.optional cosmicPortalEnabled cosmicPortalPkg)
+        ++ (lib.optional ((cfg.enableMangowc or false) || cfg.enableNiri) pkgs.xdg-desktop-portal-wlr)
         ++ [ 
           pkgs.xdg-desktop-portal-gtk 
           pkgs.xdg-desktop-portal-gnome
         ];
-      config.common.default =
-        if cfg.enableHyprland then [ "hyprland" "gtk" ] 
-        else if cfg.enableNiri then [ "gnome" "gtk" ]
-        else [ "gtk" ];
+      # Pick portal backends per-session to avoid "wrong compositor portal"
+      # when multiple WMs are installed on the same host.
+      #
+      # Keys here match `DesktopNames` / XDG_CURRENT_DESKTOP values from the
+      # session .desktop files (see `modules/nixos/sessions`).
+      config = lib.mkMerge [
+        {
+          common.default = [ "gtk" ];
+
+          # Hyprland sessions (upstream often sets "Hyprland", but keep a
+          # lowercase alias to be resilient across greeters/wrappers).
+          Hyprland.default = [ "hyprland" "gtk" ];
+          hyprland.default = [ "hyprland" "gtk" ];
+
+          # Niri: rely on wlr portal for screencast/screenshot protocols, and gtk
+          # for file picker.
+          niri.default = [ "wlr" "gtk" ];
+
+          # GNOME session.
+          GNOME.default = [ "gnome" "gtk" ];
+        }
+        (lib.mkIf (cfg.enableMangowc or false) {
+          # Mango's upstream module sets this to "gtk". Force wlr first so
+          # screencast/screenshot portals work reliably under dwl-based sessions.
+          mango.default = lib.mkForce "wlr;gtk";
+        })
+        (lib.mkIf cosmicPortalEnabled {
+          COSMIC.default = [ "cosmic" "gtk" ];
+          cosmic.default = [ "cosmic" "gtk" ];
+        })
+      ];
     };
   };
 }

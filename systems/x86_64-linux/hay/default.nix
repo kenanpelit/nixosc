@@ -38,6 +38,8 @@
     enableHyprland = true;
     enableGnome    = true;
     enableNiri     = true;
+    enableMangowc  = true;
+    enableCosmic   = true;
     enableAudio    = true;
 
     fonts.enable         = true;
@@ -110,6 +112,7 @@
   # System Services
   # ============================================================================
   services.flatpak.enable = true;
+  my.oomd.enable = true;
 
   # ============================================================================
   # System Packages

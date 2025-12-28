@@ -52,7 +52,7 @@ lib.mkIf cfg.enable {
                     echo "  • GNOME    - Traditional GNOME desktop"
                     echo ""
                     echo "Manual Start Commands:"
-                    echo "  exec hyprland_tty    - Start Hyprland with optimizations"
+                    echo "  exec hypr-set tty    - Start Hyprland with optimizations"
                     echo "  exec gnome_tty       - Start GNOME with optimizations"
                     echo ""
             
@@ -62,19 +62,19 @@ lib.mkIf cfg.enable {
                 # Tüm environment ayarları hyprland_tty script'inde yapılır
                 elif [ "''${XDG_VTNR}" = "2" ]; then
                     echo "╔════════════════════════════════════════════════════════════╗"
-                    echo "║  TTY2: Launching Hyprland via hyprland_tty                 ║"
+                    echo "║  TTY2: Launching Hyprland via hypr-set tty                 ║"
                     echo "╚════════════════════════════════════════════════════════════╝"
                 
                     # Minimum gerekli değişkenler - geri kalanı hyprland_tty'de
                     export XDG_SESSION_TYPE=wayland
                     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
                 
-                    # hyprland_tty script'i kontrol et
-                    if command -v hyprland_tty >/dev/null 2>&1; then
+                    # hypr-set script'i kontrol et
+                    if command -v hypr-set >/dev/null 2>&1; then
                         echo "Starting Hyprland with optimized configuration..."
-                        exec hyprland_tty
+                        exec hypr-set tty
                     else
-                        echo "ERROR: hyprland_tty script not found in PATH"
+                        echo "ERROR: hypr-set script not found in PATH"
                         echo "Falling back to direct Hyprland launch (not recommended)"
                         sleep 3
                         exec Hyprland
@@ -158,13 +158,13 @@ lib.mkIf cfg.enable {
                     echo ""
                     echo "Available TTY Assignments:"
                     echo "  TTY1: Display Manager (gdm)"
-                    echo "  TTY2: Hyprland (hyprland_tty)"
+                    echo "  TTY2: Hyprland (hypr-set tty)"
                     echo "  TTY3: GNOME (gnome_tty)"
                     echo "  TTY5: Ubuntu VM (Sway)"
                     echo "  TTY6: TTY6"
                     echo ""
                     echo "Manual Start Commands:"
-                    echo "  exec hyprland_tty    - Hyprland with optimizations"
+                    echo "  exec hypr-set tty    - Hyprland with optimizations"
                     echo "  exec gnome_tty       - GNOME with optimizations"
                     echo ""
                 fi
