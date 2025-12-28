@@ -593,9 +593,9 @@ case "${cmd}" in
       set -euo pipefail
 
       is_dms_locked() {
-        command -v dms >/dev/null 2>&1 || return 1
+        command -v dms-ipc >/dev/null 2>&1 || return 1
         local out
-        out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
+        out="$(dms-ipc lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
         [[ "$out" == "true" ]]
       }
 
@@ -614,10 +614,10 @@ case "${cmd}" in
           if command -v loginctl >/dev/null 2>&1; then
             exec loginctl lock-session
           fi
-          exec dms ipc call lock lock
+          exec dms-ipc lock lock
           ;;
         *)
-          exec dms ipc call lock lock
+          exec dms-ipc lock lock
           ;;
       esac
     )
