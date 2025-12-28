@@ -222,10 +222,10 @@ let
     fi
 
     # Niri (and others): use DMS lock if available and block until unlocked.
-    if command -v dms-ipc >/dev/null 2>&1; then
+    if command -v dms >/dev/null 2>&1; then
       # IMPORTANT: DMS lock call may block; never let it block the Stasis action
       # pipeline. Only block when explicitly requested via `--wait`.
-      (dms-ipc lock lock >/dev/null 2>&1 || true) &
+      (dms ipc call lock lock >/dev/null 2>&1 || true) &
       disown || true
 
       if [[ "$wait" != "1" ]]; then exit 0; fi
@@ -233,7 +233,7 @@ let
       # Block until DMS reports unlock.
       while true; do
         out="$(
-          dms-ipc lock isLocked 2>/dev/null \
+          dms ipc call lock isLocked 2>/dev/null \
           | tr -d '\r' \
           | tail -n 1 \
           | tr -d '[:space:]' \
