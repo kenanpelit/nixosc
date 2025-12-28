@@ -12,7 +12,6 @@
 # - XDG standartlarına uygun depolama
 # - Doğrudan komut satırından todo ekleme
 # - Varsayılan editör ile todo düzenleme
-# - Waybar entegrasyonu
 #
 # Kullanım:
 # todo "yapılacak iş"  # Yeni todo ekler
@@ -27,4 +26,3 @@ if [ -n "$1" ]; then
 else
   "${EDITOR:-nvim}" "$TODO_FILE"
 fi
-pkill -RTMIN+7 waybar # update status bar

@@ -16,19 +16,18 @@ let
     # Only start DMS inside compositor sessions that are known to support it.
     "hyprland-session.target"
     "niri-session.target"
+    "mango-session.target"
   ];
 in
 lib.mkIf cfg.enable {
-  programs."dank-material-shell" = {
+  programs.dank-material-shell = {
     enable = true;
-    # Upstream HM module prefers `config.wayland.systemd.target` for session startup.
-    # Bu repo'da (ve bazı HM kurulumlarında) bu target olmayabiliyor; o durumda
-    # `graphical-session.target` ile kendi servisimiz üzerinden devam ediyoruz.
-    # Important: GNOME also reaches graphical-session targets, but DMS should NOT
-    # auto-start there. We manage our own service and bind it to compositor-only
-    # targets (Hyprland/Niri).
+    # Do not autostart via `config.wayland.systemd.target`; we manage our own
+    # compositor-scoped systemd service below.
     systemd.enable = false;
-    quickshell.package = pkgs.quickshell;
+
+    # Upstream DMS no longer bundles dgop; provide it from our flake input.
+    dgop.package = inputs.dgop.packages.${pkgs.stdenv.hostPlatform.system}.default;
   };
 
   # Ensure DMS config/cache dirs exist
@@ -68,7 +67,7 @@ lib.mkIf cfg.enable {
     Service = {
       Type = "simple";
       ExecStart = "${dmsPkg}/bin/dms run --session";
-      Restart = "on-failure";
+      Restart = "always";
       RestartSec = 3;
       TimeoutStopSec = 10;
       KillSignal = "SIGINT";
@@ -117,36 +116,36 @@ lib.mkIf cfg.enable {
         pluginsDir="$HOME/.config/DankMaterialShell/plugins"
         mkdir -p "$pluginsDir"
 
-        missing=0
+        # Check for missing plugins first
+        missing_plugins=()
         for plugin in ${pluginList}; do
           if [ ! -d "$pluginsDir/$plugin" ]; then
-            missing=1
-            break
+            missing_plugins+=("$plugin")
           fi
         done
 
-        if [ "$missing" -eq 0 ]; then
+        if [ ${"$"}{#missing_plugins[@]} -eq 0 ]; then
           exit 0
         fi
 
-        # Cheap network check: if DNS isn't ready, don't hang.
+        # Ensure dms binary is reachable
+        if ! command -v dms >/dev/null 2>&1 && [ ! -x "${dmsPkg}/bin/dms" ]; then
+          echo "[dms] plugin-sync: dms binary not found, skipping" >&2
+          exit 0
+        fi
+
+        # Network check: only if we actually need to download something
         if ! ${pkgs.coreutils}/bin/timeout 2s ${pkgs.glibc}/bin/getent hosts github.com >/dev/null 2>&1; then
-          echo "[dms] plugin-sync: network/DNS not ready, skipping"
+          echo "[dms] plugin-sync: github.com unreachable, skipping installation of ${"$"}{#missing_plugins[@]} plugins"
           exit 0
         fi
 
-        for plugin in ${pluginList}; do
-          if [ -d "$pluginsDir/$plugin" ]; then
-            continue
-          fi
-
-          echo "[dms] plugin-sync: installing $plugin"
-          if ! ${pkgs.coreutils}/bin/timeout 20s ${dmsPkg}/bin/dms plugins install "$plugin"; then
-            echo "[dms] plugin-sync: failed to install $plugin (skipping)" >&2
+        for plugin in "${"$"}{missing_plugins[@]}"; do
+          echo "[dms] plugin-sync: installing $plugin..."
+          if ! ${pkgs.coreutils}/bin/timeout 30s ${dmsPkg}/bin/dms plugins install "$plugin" >/dev/null 2>&1; then
+            echo "[dms] plugin-sync: failed to install $plugin" >&2
           fi
         done
-
-        exit 0
       '';
     };
     Install.WantedBy = dmsTargets;

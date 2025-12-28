@@ -30,7 +30,6 @@
 # Features:
 #   - Simultaneous start/stop of Gammastep and HyprSunset
 #   - Time-based automatic color temperature adjustment
-#   - Waybar integration
 #   - System notifications
 #   - Daemon and fork modes
 #   - Each tool can run independently
@@ -39,7 +38,6 @@
 #   - gammastep (optional)
 #   - hyprsunset (optional)
 #   - libnotify (for notify-send)
-#   - waybar (optional)
 #
 #########################################################################
 
@@ -193,13 +191,6 @@ send_notification() {
     notify-send -t 2000 "$1" "$2" 2>/dev/null
   fi
   log "Notification: $1 - $2"
-}
-
-# Update Waybar
-update_waybar() {
-  if command -v waybar &>/dev/null; then
-    pkill -RTMIN+8 waybar
-  fi
 }
 
 # Get current hour
@@ -518,7 +509,6 @@ start_service() {
     send_notification "Hypr Blue Manager" "Started successfully ($tools)"
     echo "Hypr Blue Manager started (PID: $daemon_pid)"
     echo "Active tools: $tools"
-    update_waybar
     return 0
   else
     log "ERROR: Failed to start fork daemon"
@@ -571,7 +561,6 @@ stop_service() {
 
   send_notification "Hypr Blue Manager" "Stopped"
   echo "Hypr Blue Manager stopped"
-  update_waybar
 
   CLEANUP_ON_EXIT=false
   return 0

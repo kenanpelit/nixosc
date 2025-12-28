@@ -18,6 +18,10 @@ let
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 
   niriPkg = pkgs.niri-unstable;
+  mangoPkg = inputs.mango.packages.${pkgs.stdenv.hostPlatform.system}.mango;
+  cosmicSessionPkg = pkgs."cosmic-session" or null;
+  cosmicEnabled = cfg.enableCosmic or false;
+  cosmicAvailable = cosmicSessionPkg != null;
 
   hyprlandOptimizedSession = pkgs.writeTextFile {
     name = "hyprland-optimized-session";
@@ -32,7 +36,7 @@ let
       X-GDM-SessionType=wayland
       X-Session-Type=wayland
 
-      Exec=/etc/profiles/per-user/${username}/bin/hyprland_tty
+      Exec=/etc/profiles/per-user/${username}/bin/hypr-set tty
 
       Keywords=wayland;wm;tiling;hyprland;compositor;
     '';
@@ -68,17 +72,63 @@ let
     text = ''
       [Desktop Entry]
       Name=Niri (Optimized)
-      Comment=Scrollable-tiling Wayland compositor (via niri_tty)
-      Exec=/etc/profiles/per-user/${username}/bin/niri_tty
+      Comment=Scrollable-tiling Wayland compositor (via niri-set tty)
+      Exec=/etc/profiles/per-user/${username}/bin/niri-set tty
       Type=Application
       DesktopNames=niri
     '';
     passthru.providedSessions = [ "niri-optimized" ];
   };
 
+  mangoSession = pkgs.writeTextFile {
+    name = "mango-session";
+    # Avoid clobbering MangoWC's upstream `mango.desktop`.
+    destination = "/share/wayland-sessions/mango-optimized.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=Mango (Optimized)
+      Comment=dwl-based Wayland compositor (via mango-set start)
+      Exec=/etc/profiles/per-user/${username}/bin/mango-set start
+      Type=Application
+      DesktopNames=mango
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+    '';
+    passthru.providedSessions = [ "mango-optimized" ];
+  };
+
+  cosmicSession = pkgs.writeTextFile {
+    name = "cosmic-session";
+    # Avoid clobbering COSMIC's upstream `cosmic.desktop` if/when it exists.
+    destination = "/share/wayland-sessions/cosmic-optimized.desktop";
+    text = ''
+      [Desktop Entry]
+      Name=COSMIC (Optimized)
+      Comment=COSMIC desktop environment (Epoch)
+      Exec=${lib.getExe' cosmicSessionPkg "cosmic-session"}
+      Type=Application
+      DesktopNames=COSMIC
+      X-GDM-SessionType=wayland
+      X-Session-Type=wayland
+    '';
+    passthru.providedSessions = [ "cosmic-optimized" ];
+  };
+
 in
 {
   config = lib.mkIf cfg.enable {
+    programs.mango = lib.mkIf (cfg.enableMangowc or false) {
+      enable = true;
+      package = mangoPkg;
+    };
+
+    assertions = [
+      {
+        assertion = (!cosmicEnabled) || cosmicAvailable;
+        message = "my.display.enableCosmic is enabled, but `pkgs.cosmic-session` is missing from nixpkgs.";
+      }
+    ];
+
     # GNOME Shell (mutter) started via `org.gnome.Shell@wayland.service` expects
     # the current logind session to be a *graphical* session (Type=wayland/x11).
     # TTY logins default to Type=tty, which makes GNOME fail with:
@@ -96,6 +146,8 @@ in
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
       (lib.optional cfg.enableNiri niriSession)
+      (lib.optional (cfg.enableMangowc or false) mangoSession)
+      (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSession)
     ];
 
     # Packages needed for sessions/portals
@@ -108,6 +160,12 @@ in
       
       (lib.optional cfg.enableNiri niriPkg)
       (lib.optional cfg.enableNiri niriSession)
+
+      (lib.optional (cfg.enableMangowc or false) mangoPkg)
+      (lib.optional (cfg.enableMangowc or false) mangoSession)
+
+      (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSessionPkg)
+      (lib.optional (cosmicEnabled && cosmicAvailable) cosmicSession)
     ];
   };
 }

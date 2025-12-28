@@ -47,7 +47,6 @@ in
   
       # -- Development Tools -----------------------------------------------------
       git lazygit gh tig    # Version control stack
-      direnv                # Environment switcher
       gnumake gcc           # Basic build tools
       jq yq                 # JSON/YAML processors
       
@@ -69,7 +68,7 @@ in
       nvd cachix nix-output-monitor nix-search-tv
   
       # -- Terminal Utilities ----------------------------------------------------
-      tmux wezterm          # Terminal multiplexer & emulators
+      tmux sesh wezterm     # Terminal multiplexer & session manager & emulator
       starship              # Cross-shell prompt
       fastfetch neofetch    # System info
       htop btop procs       # Process viewers
@@ -97,7 +96,8 @@ in
       
       # VPN
       openvpn openconnect openfortivpn
-      mullvad mullvad-closest wireguard-tools
+      #mullvad mullvad-closest wireguard-tools
+      mullvad-vpn mullvad-closest wireguard-tools
   
       # -- Media & Audio ---------------------------------------------------------
       mpv vlc               # Video players
@@ -126,9 +126,11 @@ in
       discord webcord-vencord
       catppuccin-discord
       ferdium               # Multi-messenger
+      zapzap                # WhatsApp desktop (PyQt6)
+      telegram-desktop      # Telegram desktop client
       
       # Launchers
-      rofi ulauncher        # App launchers
+      rofi                 # App launcher
   
       # Security
       keepassxc gopass      # Password managers

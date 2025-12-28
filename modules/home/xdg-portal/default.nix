@@ -4,16 +4,18 @@
 # Keep portal preferences here instead of manual env tweaks.
 # ==============================================================================
 
-{ pkgs, lib, config, ... }:
+{ pkgs, lib, config, osConfig ? null, ... }:
 let
   cfg = config.my.user.xdg-portal;
+  nixosManagesPortals =
+    osConfig != null && (lib.attrByPath [ "xdg" "portal" "enable" ] false osConfig);
 in
 {
   options.my.user.xdg-portal = {
     enable = lib.mkEnableOption "XDG desktop portal";
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf (cfg.enable && !nixosManagesPortals) {
    xdg = {
      portal = {
        # =============================================================================

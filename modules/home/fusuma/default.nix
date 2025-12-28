@@ -8,31 +8,87 @@
 { config, pkgs, lib, ... }:
 let
   cfg = config.my.user.fusuma;
+  sessionTargets = [
+    # Only start Fusuma inside compositor sessions that are known to support it.
+    # Niri/Mango sessions start their own targets via niri-set/mango-set.
+    "hyprland-session.target"
+    "niri-session.target"
+    "mango-session.target"
+  ];
   workspaceMonitor = pkgs.writeShellScriptBin "fusuma-workspace-monitor" ''
     #!/usr/bin/env bash
     set -euo pipefail
 
-    hypr="${config.home.profileDirectory}/bin/hypr-workspace-monitor"
-    niri="${config.home.profileDirectory}/bin/niri-workspace-monitor"
+    router="${config.home.profileDirectory}/bin/wm-workspace"
+
+    fusuma_mode=0
+    if [[ "''${1:-}" == "--fusuma" ]]; then
+      fusuma_mode=1
+      shift
+    fi
 
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-      exec "$hypr" "$@"
+      # In Hyprland we want 4-finger left/right to change workspace (not monitor).
+      # Keep the Fusuma config shared with Niri by translating monitor-next/prev to workspace-left/right.
+      if [[ "$fusuma_mode" == "1" ]]; then
+        case "''${1:-}" in
+          -mn) shift; set -- -wr "''${@}" ;;
+          -mp) shift; set -- -wl "''${@}" ;;
+        esac
+      fi
+      exec "$router" "$@"
     fi
 
     if [[ -n "''${NIRI_SOCKET:-}" ]]; then
-      exec "$niri" "$@"
+      # Avoid conflicting with Niri's built-in 3/4-finger gestures when invoked from Fusuma.
+      if [[ "$fusuma_mode" == "1" ]]; then
+        case "''${1:-}" in
+          -wl|-wr|-wt|-mt|-ms|-msf|-tn|-tp)
+            exit 0
+            ;;
+        esac
+      fi
+      exec "$router" "$@"
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
-      *Hyprland*|*hyprland*)
-        exec "$hypr" "$@"
-        ;;
-      *niri*|*Niri*)
-        exec "$niri" "$@"
+      *mango*|*Mango*)
+        # Mango sessions: route to the unified workspace router.
+        # Fusuma's config uses -mn/-mp for 4-finger right/left; in Mango we want
+        # that gesture to change workspace, not monitor.
+        if [[ "$fusuma_mode" == "1" ]]; then
+          case "''${1:-}" in
+            -mn) shift; set -- -wr "''${@}" ;;
+            -mp) shift; set -- -wl "''${@}" ;;
+          esac
+        fi
+        exec "$router" "$@"
         ;;
     esac
 
-    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
+    case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
+      *Hyprland*|*hyprland*)
+        if [[ "$fusuma_mode" == "1" ]]; then
+          case "''${1:-}" in
+            -mn) shift; set -- -wr "''${@}" ;;
+            -mp) shift; set -- -wl "''${@}" ;;
+          esac
+        fi
+        exec "$router" "$@"
+        ;;
+      *niri*|*Niri*)
+        if [[ "$fusuma_mode" == "1" ]]; then
+          case "''${1:-}" in
+            -wl|-wr|-wt|-mt|-ms|-msf|-tn|-tp)
+              exit 0
+              ;;
+          esac
+        fi
+        exec "$router" "$@"
+        ;;
+    esac
+
+    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
     exit 127
   '';
 
@@ -61,6 +117,15 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
+      *mango*|*Mango*)
+        if command -v mmsg >/dev/null 2>&1; then
+          # Mango doesn't expose a stable "set fullscreen on/off" IPC in this repo;
+          # keep it simple and toggle.
+          exec mmsg -s -d togglefullscreen
+        fi
+        echo "fusuma-fullscreen: mmsg not found in PATH" >&2
+        exit 127
+        ;;
       *Hyprland*|*hyprland*)
         exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1
         ;;
@@ -73,7 +138,7 @@ let
         ;;
     esac
 
-    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
+    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
     exit 127
   '';
 in
@@ -87,6 +152,35 @@ in
       workspaceMonitor
       fullscreen
     ];
+
+    # Bind Fusuma lifecycle to compositor session targets (instead of
+    # graphical-session.target), so it reliably starts on Niri/Mango too.
+    systemd.user.services.fusuma = {
+      Unit = {
+        After = sessionTargets;
+        PartOf = sessionTargets;
+      };
+      Service = {
+        # Ensure common tools are available when started from systemd --user.
+        Environment = [
+          "XDG_RUNTIME_DIR=/run/user/%U"
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        ];
+        PassEnvironment = [
+          "WAYLAND_DISPLAY"
+          "NIRI_SOCKET"
+          "HYPRLAND_INSTANCE_SIGNATURE"
+          "HYPRLAND_SOCKET"
+          "SWAYSOCK"
+          "XDG_CURRENT_DESKTOP"
+          "XDG_SESSION_TYPE"
+          "XDG_SESSION_DESKTOP"
+        ];
+      };
+      Install = {
+        WantedBy = lib.mkForce sessionTargets;
+      };
+    };
 
     # =============================================================================
     # Service Configuration
@@ -118,27 +212,27 @@ in
         swipe = {
           "3" = {
             right = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -tn";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -tn";
               threshold = 0.6;
             };
             left = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -tp";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -tp";
               threshold = 0.6;
             };
             up = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -wt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wt";
               threshold = 0.6;
             };
             down = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -mt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mt";
               threshold = 0.6;
             };
           };
           "4" = {
-            up.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -msf";
-            down.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -ms";
-            right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -wr";
-            left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor -wl";
+            up.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -msf";
+            down.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -ms";
+            right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn";
+            left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp";
           };
         };
         pinch = {

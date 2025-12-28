@@ -11,7 +11,8 @@
 
 let
   scripts = lib.filterAttrs (name: type:
-    type == "regular" && lib.hasSuffix ".sh" name
+    type == "regular"
+    && lib.hasSuffix ".sh" name
   ) (builtins.readDir ./bin);
 
   mkScript = name: _: pkgs.writeShellScriptBin

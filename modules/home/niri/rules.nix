@@ -55,6 +55,8 @@ let
     { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
     { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; maximize = true; }
     { appId = "^ferdium$"; workspace = "9"; maximize = true; }
+    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; maximize = true; }
+    { appId = "^org\.telegram\.desktop$"; workspace = "6"; maximize = true; }
     { appId = "^vlc$"; workspace = "6"; }
     { appId = "^remote-viewer$"; workspace = "6"; maximize = true; }
   ];
@@ -64,6 +66,7 @@ let
     [
       # Terminal / session anchor
       { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; }
+      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "2"; }
     ]
     ++ workspaceRules;
 
@@ -79,7 +82,9 @@ let
 
 in
 {
-  arrangeRulesTsv = lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}") arrangeRules) + "\n";
+  arrangeRulesTsv =
+    lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}\t${r.title or ""}") arrangeRules)
+    + "\n";
 
   rules = ''
     // ========================================================================
@@ -96,6 +101,18 @@ in
     window-rule {
       match is-floating=true;
       shadow { on; }
+    }
+
+    // Tiling Windows
+    window-rule {
+      match is-floating=false;
+      shadow {
+        on;
+        color "#00000040";
+        offset x=4 y=4;
+        spread 4;
+        softness 12;
+      }
     }
 
     // QuickShell
@@ -228,6 +245,29 @@ in
       block-out-from "screencast";
     }
 
+    // Screencast indicator (dynamic cast / window cast target)
+    window-rule {
+      match is-window-cast-target=true;
+
+      focus-ring {
+        active-color "#f38ba8";
+        inactive-color "#7d0d2d";
+      }
+
+      border {
+        inactive-color "#7d0d2d";
+      }
+
+      shadow {
+        color "#7d0d2d70";
+      }
+
+      tab-indicator {
+        active-color "#f38ba8";
+        inactive-color "#7d0d2d";
+      }
+    }
+
     // Borderless apps
     window-rule {
       match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
@@ -242,6 +282,10 @@ in
     // Inactive dimming
     window-rule {
       match is-active=false;
+      exclude app-id=r#"^mpv$"#;
+      exclude app-id=r#"^vlc$"#;
+      exclude title=r#"^Picture-in-Picture$"#;
+      exclude app-id=r#"^steam_app_\d+$"#;
       opacity 0.95;
     }
 

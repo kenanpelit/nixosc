@@ -40,6 +40,8 @@ detect_env() {
     echo "gnome"
   elif [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
     echo "hyprland"
+  elif [ "$XDG_CURRENT_DESKTOP" = "mango" ] || [ "${XDG_SESSION_DESKTOP:-}" = "mango" ]; then
+    echo "mango"
   elif [ "$XDG_CURRENT_DESKTOP" = "sway" ]; then
     echo "sway"
   else
@@ -48,6 +50,8 @@ detect_env() {
       echo "gnome"
     elif pgrep -x "Hyprland" >/dev/null; then
       echo "hyprland"
+    elif pgrep -x "mango" >/dev/null; then
+      echo "mango"
     elif pgrep -x "sway" >/dev/null; then
       echo "sway"
     else
@@ -101,7 +105,7 @@ check_dependencies() {
 
   # Ortama özel bağımlılıklar
   # GNOME kontrolü handle_gnome içinde yapılıyor.
-  if [ "$CURRENT_ENV" = "hyprland" ] || [ "$CURRENT_ENV" = "sway" ]; then
+  if [ "$CURRENT_ENV" = "hyprland" ] || [ "$CURRENT_ENV" = "sway" ] || [ "$CURRENT_ENV" = "mango" ]; then
     for cmd in grim slurp; do
       if ! command -v "$cmd" &>/dev/null; then missing_deps+=("$cmd"); fi
     done
@@ -131,7 +135,7 @@ show_help() {
 
 Kullanım: $(basename "$0") [SEÇENEK]
 
-KOMUTLAR (Hyprland/Sway):
+KOMUTLAR (Hyprland/Sway/Mango):
   rc, rf, ri, rec - Bölge işlemleri
   sc, sf, si, sec - Tam ekran işlemleri
   wc, wf, wi      - Pencere işlemleri
@@ -176,6 +180,9 @@ take_active_window_screenshot() {
     if [ -n "$active_window" ] && [ "$active_window" != "null" ]; then
       grim -g "$active_window" "$filename" && success=true
     fi
+  elif [ "$CURRENT_ENV" = "mango" ]; then
+    show_notification "Hata" "Mango: pencere screenshot henüz desteklenmiyor" "critical"
+    return 1
   fi
 
   if [ "$success" = true ]; then
