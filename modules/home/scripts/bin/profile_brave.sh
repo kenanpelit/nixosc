@@ -240,30 +240,33 @@ check_dependencies() {
 
 	ensure_isolated_userdata() {
 		local isolated_dir="$1"
+		local src_userdata_dir="${2:-$BRAVE_PROFILES_DIR}"
 		mkdir -p "$isolated_dir"
 
 		# Local State olmadan Brave bazı profilleri "sıfırdan" açıp uyarı/hata verebiliyor.
 		# Symlink yerine kopyalıyoruz: her instance kendi Local State'ini yazabilsin.
-		if [[ -f "${BRAVE_PROFILES_DIR}/Local State" && ! -f "${isolated_dir}/Local State" ]]; then
-			cp -f "${BRAVE_PROFILES_DIR}/Local State" "${isolated_dir}/Local State" 2>/dev/null || true
+		if [[ -f "${src_userdata_dir}/Local State" && ! -f "${isolated_dir}/Local State" ]]; then
+			cp -f "${src_userdata_dir}/Local State" "${isolated_dir}/Local State" 2>/dev/null || true
 		fi
 
 		# First Run yoksa ilk kurulum ekranları/uyarıları çıkabiliyor.
-		if [[ -f "${BRAVE_PROFILES_DIR}/First Run" && ! -f "${isolated_dir}/First Run" ]]; then
-			cp -f "${BRAVE_PROFILES_DIR}/First Run" "${isolated_dir}/First Run" 2>/dev/null || true
+		if [[ -f "${src_userdata_dir}/First Run" && ! -f "${isolated_dir}/First Run" ]]; then
+			cp -f "${src_userdata_dir}/First Run" "${isolated_dir}/First Run" 2>/dev/null || true
 		fi
 
 		# Bazı sürümler "Last Version" dosyasına bakıyor.
-		if [[ -f "${BRAVE_PROFILES_DIR}/Last Version" && ! -f "${isolated_dir}/Last Version" ]]; then
-			cp -f "${BRAVE_PROFILES_DIR}/Last Version" "${isolated_dir}/Last Version" 2>/dev/null || true
+		if [[ -f "${src_userdata_dir}/Last Version" && ! -f "${isolated_dir}/Last Version" ]]; then
+			cp -f "${src_userdata_dir}/Last Version" "${isolated_dir}/Last Version" 2>/dev/null || true
 		fi
 	}
 
 	ensure_isolated_profile_dir() {
 		local isolated_dir="$1"
 		local profile_key="$2"
-		local src="${BRAVE_PROFILES_DIR}/${profile_key}"
+		local src_userdata_dir="${3:-$BRAVE_PROFILES_DIR}"
+		local src="${src_userdata_dir}/${profile_key}"
 		local dst="${isolated_dir}/${profile_key}"
+		local seed_marker="${isolated_dir}/.profile_brave_seed_${profile_key}"
 
 		if [[ ! -d "$src" ]]; then
 			log "ERROR" "Kaynak profil dizini bulunamadı: $src"
@@ -287,6 +290,17 @@ check_dependencies() {
 			need_copy="true"
 		fi
 
+		local desired_seed="$src_userdata_dir"
+		local current_seed=""
+		if [[ -f "$seed_marker" ]]; then
+			current_seed="$(cat "$seed_marker" 2>/dev/null || true)"
+		fi
+		# Var olan isolated profiller, geçmişte farklı bir kaynaktan seed edilmiş olabilir.
+		# Bu durumda (ve sadece src != dst iken) 1 kere re-seed yapıp marker yazıyoruz.
+		if [[ "$src_userdata_dir" != "$isolated_dir" && "$current_seed" != "$desired_seed" ]]; then
+			need_copy="true"
+		fi
+
 		if [[ "$need_copy" == "true" ]]; then
 			local backup=""
 			if [[ -e "$dst" ]]; then
@@ -302,6 +316,9 @@ check_dependencies() {
 				[[ -n "$backup" ]] && log "INFO" "Yedek duruyor: $backup"
 				exit 1
 			}
+			echo "$desired_seed" >"$seed_marker" 2>/dev/null || true
+		elif [[ "$src_userdata_dir" == "$isolated_dir" && ! -f "$seed_marker" ]]; then
+			echo "$desired_seed" >"$seed_marker" 2>/dev/null || true
 		fi
 	}
 
@@ -518,16 +535,17 @@ edit_config() {
 # Profil doğrulama
 validate_profile() {
 	local profile_name="$1"
+	local local_state_path="${2:-$LOCAL_STATE_PATH}"
 
-	if [[ ! -f "$LOCAL_STATE_PATH" ]]; then
-		log "ERROR" "Brave profil dosyası bulunamadı: $LOCAL_STATE_PATH"
+	if [[ ! -f "$local_state_path" ]]; then
+		log "ERROR" "Brave profil dosyası bulunamadı: $local_state_path"
 		return 1
 	fi
 
 	local profile_key
 	if ! profile_key=$(jq -r --arg name "$profile_name" \
 		'.profile.info_cache | to_entries | .[] | 
-		select(.value.name == $name) | .key' "$LOCAL_STATE_PATH" 2>/dev/null); then
+		select(.value.name == $name) | .key' "$local_state_path" 2>/dev/null); then
 		log "ERROR" "Profil bilgisi okunamadı"
 		return 1
 	fi
@@ -707,7 +725,17 @@ validate_profile() {
 
 	# Profili doğrula
 	local profile_key
-	if ! profile_key=$(validate_profile "$profile_name"); then
+	# Profil kaynağı: önce profile'ın kendi isolated user-data-dir'ini dene (varsa),
+	# yoksa Brave'in varsayılan user-data-dir'ine düş.
+	local profile_source_dir="$BRAVE_PROFILES_DIR"
+	local profile_local_state="$LOCAL_STATE_PATH"
+	local isolated_profile_dir="${ISOLATED_ROOT}/${profile_name}"
+	if [[ -f "${isolated_profile_dir}/Local State" ]]; then
+		profile_source_dir="$isolated_profile_dir"
+		profile_local_state="${isolated_profile_dir}/Local State"
+	fi
+
+	if ! profile_key=$(validate_profile "$profile_name" "$profile_local_state"); then
 		exit 1
 	fi
 
@@ -740,8 +768,8 @@ validate_profile() {
 			local cmd=("$BRAVE_CMD")
 			if [[ "$separate_mode" == "true" ]]; then
 				local isolated_dir="${ISOLATED_ROOT}/${window_class}"
-				ensure_isolated_userdata "$isolated_dir"
-				ensure_isolated_profile_dir "$isolated_dir" "$profile_key"
+				ensure_isolated_userdata "$isolated_dir" "$profile_source_dir"
+				ensure_isolated_profile_dir "$isolated_dir" "$profile_key" "$profile_source_dir"
 
 				cmd+=("--user-data-dir=$isolated_dir")
 			fi
