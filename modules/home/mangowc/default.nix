@@ -138,7 +138,6 @@ in
     systemd.user.targets.mango-session.Unit = {
       Wants = [
         "xdg-desktop-autostart.target"
-        "dms.service"
       ];
       After = [ "dbus.service" ];
     };

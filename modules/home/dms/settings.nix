@@ -20,10 +20,15 @@ let
   ];
 in
 lib.mkIf cfg.enable {
-  home.packages = [
-    dmsPkg
-    pkgs.quickshell
-  ];
+  programs.dank-material-shell = {
+    enable = true;
+    # Do not autostart via `config.wayland.systemd.target`; we manage our own
+    # compositor-scoped systemd service below.
+    systemd.enable = false;
+
+    # Upstream DMS no longer bundles dgop; provide it from our flake input.
+    dgop.package = inputs.dgop.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  };
 
   # Ensure DMS config/cache dirs exist
   home.file.".config/DankMaterialShell/.keep".text = "";
