@@ -273,7 +273,9 @@ in
         PartOf = [ "niri-session.target" ];
       };
       Service = {
-        ExecStart = "${bins.clipse} -listen";
+        # `-listen` backgrounds itself and exits (systemd would mark the unit dead).
+        # `-listen-shell` keeps the process in the foreground, suitable for systemd.
+        ExecStart = "${bins.clipse} -listen-shell";
         Restart = "on-failure";
         RestartSec = 1;
       };
