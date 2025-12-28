@@ -593,30 +593,37 @@ validate_profile() {
 	--whatsapp)
 		shift
 		launch_whatsapp "$@"
+		exit $?
 		;;
 	--youtube)
 		shift
 		launch_youtube "$@"
+		exit $?
 		;;
 	--tiktok)
 		shift
 		launch_tiktok "$@"
+		exit $?
 		;;
 	--spotify)
 		shift
 		launch_spotify "$@"
+		exit $?
 		;;
 	--discord)
 		shift
 		launch_discord "$@"
+		exit $?
 		;;
 	--proxy)
 		shift
 		launch_proxy "$@"
+		exit $?
 		;;
 	--Proxy)
 		shift
 		launch_proxy "$@"
+		exit $?
 		;;
 	--kill-all)
 		kill_all_brave
