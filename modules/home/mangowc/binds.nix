@@ -60,6 +60,8 @@
 
     # Mango overview (restore legacy Super+Tab muscle memory)
     bind=SUPER,Tab,toggleoverview,
+    # Niri muscle memory: Mod+S = Overview
+    binds=SUPER,s,toggleoverview,
 
     # --------------------------------------------------------------------------
     # Core Window Management
@@ -85,7 +87,7 @@
     bind=SUPER,bracketleft,exchange_stack_client,prev
     bind=SUPER,bracketright,exchange_stack_client,next
 
-    # Focus (match Niri: Mod+H/L focus, Mod+K/J workspace)
+    # Focus (match Niri: Mod+H/L focus)
     bind=SUPER,Left,focusdir,left
     bind=SUPER,Right,focusdir,right
     binds=SUPER,h,focusdir,left
@@ -95,9 +97,9 @@
     bind=ALT,Up,focusdir,up
     bind=ALT,Down,focusdir,down
 
-    # Workspace (tags): your preferred Mod+Ctrl navigation
-    bind=SUPER+CTRL,Right,viewtoleft,0
-    bind=SUPER+CTRL,Left,viewtoright,0
+    # Workspace navigation (match Niri: Mod+Up/Down or Mod+K/J)
+    bind=SUPER,Up,viewtoleft,0
+    bind=SUPER,Down,viewtoright,0
     binds=SUPER,k,viewtoleft,0
     binds=SUPER,j,viewtoright,0
     bind=SUPER,Page_Up,viewtoleft,0
@@ -210,7 +212,7 @@
     binds=ALT,i,spawn_shell,vlc-toggle
 
     # Lock / inhibit
-    binds=ALT,l,spawn_shell,${bins.dms} ipc call lock lock || loginctl lock-session
+    binds=ALT,l,spawn_shell,${bins.mangoSet} lock
     binds=SUPER+SHIFT,Delete,spawn_shell,${bins.dms} ipc call inhibit toggle
 
     # --------------------------------------------------------------------------
