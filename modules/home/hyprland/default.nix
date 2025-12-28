@@ -13,6 +13,12 @@ let
   
   # Import modular configurations
   vars = import ./variables.nix { inherit config lib; };
+
+  bins = {
+    hyprSet = "${config.home.profileDirectory}/bin/hypr-set";
+    screenshot = "${config.home.profileDirectory}/bin/screenshot";
+    bluetoothToggle = "${config.home.profileDirectory}/bin/bluetooth_toggle";
+  };
   
   settings = import ./settings.nix { 
     inherit lib;
@@ -22,6 +28,7 @@ let
   binds = import ./binds.nix { 
     inherit lib;
     inherit (vars) themeName;
+    inherit bins;
   };
   
   rules = import ./rules.nix { };
