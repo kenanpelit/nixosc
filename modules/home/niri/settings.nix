@@ -17,7 +17,7 @@
       focus-ring {
         on;
         width 3;
-        active-gradient from="${palette.cyan}" to="${palette.mauve}" angle=45;
+        active-gradient from="${palette.cyan}" to="${palette.mauve}" angle=45 relative-to="workspace-view";
         inactive-color "${palette.surface1}";
       }
 
