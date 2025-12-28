@@ -20,17 +20,10 @@ let
   ];
 in
 lib.mkIf cfg.enable {
-  programs."dank-material-shell" = {
-    enable = true;
-    # Upstream HM module prefers `config.wayland.systemd.target` for session startup.
-    # Bu repo'da (ve bazı HM kurulumlarında) bu target olmayabiliyor; o durumda
-    # `graphical-session.target` ile kendi servisimiz üzerinden devam ediyoruz.
-    # Important: GNOME also reaches graphical-session targets, but DMS should NOT
-    # auto-start there. We manage our own service and bind it to compositor-only
-    # targets (Hyprland/Niri).
-    systemd.enable = false;
-    quickshell.package = pkgs.quickshell;
-  };
+  home.packages = [
+    dmsPkg
+    pkgs.quickshell
+  ];
 
   # Ensure DMS config/cache dirs exist
   home.file.".config/DankMaterialShell/.keep".text = "";
