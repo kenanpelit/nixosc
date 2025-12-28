@@ -186,7 +186,7 @@ in
         "xdg-desktop-autostart.target"
         "dms.service"
       ];
-      After = [ "dbus.service" "dms.service" ];
+      After = [ "dbus.service" ];
     };
 
     # Bootstrap: fast and observable (oneshot).
@@ -258,6 +258,22 @@ in
       };
       Service = {
         ExecStart = "${bins.nsticky}";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
+    systemd.user.services.niri-clipse = {
+      Unit = {
+        Description = "clipse daemon (niri)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        ExecStart = "${bins.clipse} -listen";
         Restart = "on-failure";
         RestartSec = 1;
       };
