@@ -7,8 +7,9 @@
 
 { inputs, lib, ... }:
 {
-  # Local splits (settings, themes)
+  # Upstream DMS module + local splits (settings, themes)
   imports = [
+    inputs.dankMaterialShell.homeModules.default
     ./settings.nix
     ./themes.nix
   ];
