@@ -8,7 +8,9 @@
 #   - init
 #   - lock
 #   - arrange-windows
+#   - cast
 #   - workspace-monitor
+#   - doctor
 #
 # Usage:
 #   niri-set <subcommand> [args...]
@@ -30,7 +32,9 @@ Commands:
   init               Bootstrap session (was: niri-init)
   lock               Lock session via DMS/logind (was: niri-lock)
   arrange-windows     Move windows to target workspaces (was: niri-arrange-windows)
+  cast               Dynamic screencast helpers (window/monitor/clear/pick)
   workspace-monitor  Workspace/monitor helper (was: niri-workspace-monitor)
+  doctor             Print session diagnostics
   toggle-window-mode Toggle between floating and tiling modes with preset size
 
 Examples:
@@ -38,7 +42,9 @@ Examples:
   niri-set lock
   niri-set lock --logind
   niri-set arrange-windows --dry-run
+  niri-set cast pick
   niri-set workspace-monitor -mn
+  niri-set doctor
   niri-set toggle-window-mode
 EOF
 }
@@ -443,6 +449,7 @@ case "${cmd}" in
 
         local vars=(
           WAYLAND_DISPLAY
+          DISPLAY
           NIRI_SOCKET
           XDG_DATA_DIRS
           XDG_CONFIG_DIRS
@@ -543,7 +550,16 @@ case "${cmd}" in
 
       if [[ "${NIRI_INIT_SKIP_ARRANGE:-0}" != "1" ]]; then
         # We call the subcommand directly to avoid depending on extra binaries.
-        "$0" arrange-windows
+        if [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
+          focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
+          "$0" arrange-windows --focus "ws:${focus_ws}"
+        else
+          "$0" arrange-windows
+        fi
+      elif [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
+        # Best-effort fallback: this may refer to workspace index in niri.
+        focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
+        niri msg action focus-workspace "$focus_ws" >/dev/null 2>&1 || true
       fi
 
       log "niri-init completed."
@@ -655,6 +671,7 @@ EOF
       rules_file="${XDG_CONFIG_HOME:-$HOME/.config}/niri/dms/workspace-rules.tsv"
       declare -a RULE_PATTERNS=()
       declare -a RULE_WORKSPACES=()
+      declare -a RULE_TITLE_PATTERNS=()
 
       resolve_workspace_ref() {
         local want_name="${1:-}"
@@ -721,39 +738,46 @@ EOF
         local file="$1"
         [[ -f "$file" ]] || return 1
 
-        while IFS=$'\t' read -r pattern ws; do
+        while IFS=$'\t' read -r pattern ws title; do
           [[ -z "${pattern//[[:space:]]/}" ]] && continue
           [[ "${pattern:0:1}" == "#" ]] && continue
           [[ -z "${ws//[[:space:]]/}" ]] && continue
           RULE_PATTERNS+=("$pattern")
           RULE_WORKSPACES+=("$ws")
+          RULE_TITLE_PATTERNS+=("${title:-}")
         done <"$file"
       }
 
       if load_rules "$rules_file"; then
         :
       else
-        RULE_PATTERNS+=("^(TmuxKenp|Tmux)$"); RULE_WORKSPACES+=("2")
-        RULE_PATTERNS+=("^Kenp$"); RULE_WORKSPACES+=("1")
-        RULE_PATTERNS+=("^Ai$"); RULE_WORKSPACES+=("3")
-        RULE_PATTERNS+=("^CompecTA$"); RULE_WORKSPACES+=("4")
-        RULE_PATTERNS+=("^WebCord$"); RULE_WORKSPACES+=("5")
-        RULE_PATTERNS+=("^discord$"); RULE_WORKSPACES+=("5")
-        RULE_PATTERNS+=("^(spotify|Spotify|com\\.spotify\\.Client)$"); RULE_WORKSPACES+=("8")
-        RULE_PATTERNS+=("^ferdium$"); RULE_WORKSPACES+=("9")
-        RULE_PATTERNS+=("^org\\.keepassxc\\.KeePassXC$"); RULE_WORKSPACES+=("7")
-        RULE_PATTERNS+=("^brave-youtube\\.com__-Default$"); RULE_WORKSPACES+=("7")
+        RULE_PATTERNS+=("^(TmuxKenp|Tmux)$"); RULE_WORKSPACES+=("2"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(kitty|org\\.wezfurlong\\.wezterm)$"); RULE_WORKSPACES+=("2"); RULE_TITLE_PATTERNS+=("^Tmux$")
+        RULE_PATTERNS+=("^Kenp$"); RULE_WORKSPACES+=("1"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^Ai$"); RULE_WORKSPACES+=("3"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^CompecTA$"); RULE_WORKSPACES+=("4"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^WebCord$"); RULE_WORKSPACES+=("5"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^discord$"); RULE_WORKSPACES+=("5"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(spotify|Spotify|com\\.spotify\\.Client)$"); RULE_WORKSPACES+=("8"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^ferdium$"); RULE_WORKSPACES+=("9"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^org\\.keepassxc\\.KeePassXC$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^brave-youtube\\.com__-Default$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
       fi
 
       focused_id="$("${NIRI[@]}" -j focused-window 2>/dev/null | jq -r '.id // empty' || true)"
 
       target_for_app_id() {
         local app_id="${1:-}"
+        local title="${2:-}"
         [[ -z "$app_id" ]] && return 1
 
         local i
         for i in "${!RULE_PATTERNS[@]}"; do
           if [[ "$app_id" =~ ${RULE_PATTERNS[$i]} ]]; then
+            title_pattern="${RULE_TITLE_PATTERNS[$i]:-}"
+            if [[ -n "${title_pattern//[[:space:]]/}" ]] && [[ ! "$title" =~ $title_pattern ]]; then
+              continue
+            fi
             echo "${RULE_WORKSPACES[$i]}"
             return 0
           fi
@@ -783,7 +807,7 @@ EOF
         fi
 
         target_ws=""
-        if target_ws="$(target_for_app_id "$app_id" 2>/dev/null)"; then
+        if target_ws="$(target_for_app_id "$app_id" "$title" 2>/dev/null)"; then
           :
         else
           continue
@@ -850,7 +874,13 @@ EOF
 
       if [[ -n "$FOCUS_OVERRIDE" ]]; then
         if [[ "$FOCUS_OVERRIDE" =~ ^ws:(.+)$ ]]; then
-          "${NIRI[@]}" action focus-workspace "${BASH_REMATCH[1]}" >/dev/null 2>&1 || true
+          focus_ws_name="${BASH_REMATCH[1]}"
+          if read -r focus_out focus_idx < <(resolve_workspace_ref "$focus_ws_name"); then
+            "${NIRI[@]}" action focus-monitor "$focus_out" >/dev/null 2>&1 || true
+            "${NIRI[@]}" action focus-workspace "$focus_idx" >/dev/null 2>&1 || true
+          else
+            "${NIRI[@]}" action focus-workspace "$focus_ws_name" >/dev/null 2>&1 || true
+          fi
         else
           "${NIRI[@]}" action focus-window "$FOCUS_OVERRIDE" >/dev/null 2>&1 || true
         fi
@@ -868,6 +898,60 @@ EOF
           notify "Taşınan: ${moved}/${planned}  Hata: ${failed}" 3500
         fi
       fi
+    )
+    ;;
+
+  cast)
+    # ----------------------------------------------------------------------------
+    # Dynamic screencast helper (niri "Dynamic Cast Target").
+    #
+    # Requires: niri >= 25.05
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      usage_cast() {
+        cat <<'EOF'
+Usage:
+  niri-set cast window     # cast focused window
+  niri-set cast monitor    # cast focused monitor
+  niri-set cast clear      # clear dynamic cast target
+  niri-set cast pick       # interactively pick a window and cast it
+EOF
+      }
+
+      action="${1:-}"
+      shift || true
+
+      command -v niri >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+      niri msg version >/dev/null 2>&1 || exit 0
+
+      case "$action" in
+        window)
+          exec niri msg action set-dynamic-cast-window
+          ;;
+        monitor)
+          exec niri msg action set-dynamic-cast-monitor
+          ;;
+        clear)
+          exec niri msg action clear-dynamic-cast-target
+          ;;
+        pick)
+          win_id="$(niri msg --json pick-window 2>/dev/null | jq -r '.id // empty' || true)"
+          [[ -n "$win_id" ]] || exit 0
+          exec niri msg action set-dynamic-cast-window --id "$win_id"
+          ;;
+        ""|-h|--help|help)
+          usage_cast
+          exit 0
+          ;;
+        *)
+          echo "niri-set cast: unknown action: $action" >&2
+          usage_cast >&2
+          exit 2
+          ;;
+      esac
     )
     ;;
 
@@ -1139,6 +1223,54 @@ EOF
       }
 
       main "$@"
+    )
+    ;;
+
+  doctor)
+    # ----------------------------------------------------------------------------
+    # Quick diagnostics for "why doesn't X start/work" issues.
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      maybe() { command -v "$1" >/dev/null 2>&1; }
+      kv() { printf '%-28s %s\n' "$1" "${2:-}"; }
+
+      echo "niri-set doctor"
+      echo
+      kv "XDG_SESSION_TYPE" "${XDG_SESSION_TYPE:-}"
+      kv "XDG_CURRENT_DESKTOP" "${XDG_CURRENT_DESKTOP:-}"
+      kv "XDG_SESSION_DESKTOP" "${XDG_SESSION_DESKTOP:-}"
+      kv "DESKTOP_SESSION" "${DESKTOP_SESSION:-}"
+      kv "WAYLAND_DISPLAY" "${WAYLAND_DISPLAY:-}"
+      kv "NIRI_SOCKET" "${NIRI_SOCKET:-}"
+      kv "DISPLAY" "${DISPLAY:-}"
+      echo
+
+      for cmd in niri jq systemctl dbus-update-activation-environment xwayland-satellite; do
+        if maybe "$cmd"; then
+          kv "bin:$cmd" "$(command -v "$cmd")"
+        else
+          kv "bin:$cmd" "(missing)"
+        fi
+      done
+      echo
+
+      if maybe niri; then
+        if niri msg version >/dev/null 2>&1; then
+          kv "niri msg version" "ok"
+        else
+          kv "niri msg version" "failed (session/env?)"
+        fi
+      fi
+
+      if maybe systemctl; then
+        echo
+        kv "systemd --user bus" "$(systemctl --user is-system-running 2>/dev/null || true)"
+        for unit in niri-session.target dms.service niri-init.service niri-clipse.service niri-nsticky.service; do
+          kv "is-active:$unit" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
+        done
+      fi
     )
     ;;
 

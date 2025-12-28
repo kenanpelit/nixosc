@@ -298,13 +298,29 @@
       hide-not-bound;
     }
 
+    overview {
+      zoom 0.25;
+      backdrop-color "${palette.surface0}";
+      workspace-shadow {
+        softness 40;
+        spread 12;
+        offset x=0 y=12;
+        color "#00000050";
+      }
+    }
+
+    // Put wallpaper surfaces into the overview backdrop when available.
+    layer-rule {
+      match namespace="^wallpaper$";
+      place-within-backdrop true;
+    }
+
     // Start session-scoped user services (niri-init, nsticky, nirius, niriswitcher, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
     spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "session-start";
 
-    // Start Clipse clipboard daemon in Niri session.
-    spawn-at-startup "clipse" "-listen";
+    // Long-running daemons (Clipse, etc.) are started via systemd --user (niri-session.target).
 
     // Input Configuration
     input {

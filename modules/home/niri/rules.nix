@@ -66,6 +66,7 @@ let
     [
       # Terminal / session anchor
       { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; }
+      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "2"; }
     ]
     ++ workspaceRules;
 
@@ -81,7 +82,9 @@ let
 
 in
 {
-  arrangeRulesTsv = lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}") arrangeRules) + "\n";
+  arrangeRulesTsv =
+    lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}\t${r.title or ""}") arrangeRules)
+    + "\n";
 
   rules = ''
     // ========================================================================
@@ -240,6 +243,29 @@ in
       match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
       match app-id=r#"^org\.gnome\.World\.Secrets$"#;
       block-out-from "screencast";
+    }
+
+    // Screencast indicator (dynamic cast / window cast target)
+    window-rule {
+      match is-window-cast-target=true;
+
+      focus-ring {
+        active-color "#f38ba8";
+        inactive-color "#7d0d2d";
+      }
+
+      border {
+        inactive-color "#7d0d2d";
+      }
+
+      shadow {
+        color "#7d0d2d70";
+      }
+
+      tab-indicator {
+        active-color "#f38ba8";
+        inactive-color "#7d0d2d";
+      }
     }
 
     // Borderless apps
