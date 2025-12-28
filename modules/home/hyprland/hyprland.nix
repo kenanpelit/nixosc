@@ -48,8 +48,8 @@ lib.mkIf cfg.enable {
     Service = {
       # `-listen` backgrounds itself and exits; systemd would mark the unit dead.
       ExecStart = "${pkgs.clipse}/bin/clipse -listen-shell";
-      Restart = "on-failure";
-      RestartSec = 1;
+      Restart = "always";
+      RestartSec = 2;
     };
     Install = {
       WantedBy = [ "hyprland-session.target" ];
