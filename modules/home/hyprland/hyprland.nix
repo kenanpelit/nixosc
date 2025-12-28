@@ -6,6 +6,10 @@
 { inputs, pkgs, config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
+  clipPersistPkg =
+    if builtins.hasAttr "wl-clip-persist" pkgs
+    then pkgs."wl-clip-persist"
+    else null;
 in
 lib.mkIf cfg.enable {
   # =============================================================================
@@ -17,6 +21,55 @@ lib.mkIf cfg.enable {
   systemd.user.targets.hyprland-session.Unit.Wants = [
     "xdg-desktop-autostart.target"
   ];
+
+  # Keep session daemons observable/restartable (instead of exec-once).
+  systemd.user.services.hypr-nm-applet = {
+    Unit = {
+      Description = "NetworkManager applet (Hyprland)";
+      After = [ "hyprland-session.target" "dbus.service" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.networkmanagerapplet}/bin/nm-applet --indicator";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
+
+  systemd.user.services.hypr-clipse = {
+    Unit = {
+      Description = "clipse daemon (hyprland)";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.clipse}/bin/clipse -listen";
+      Restart = "on-failure";
+      RestartSec = 1;
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
+
+  systemd.user.services.hypr-clip-persist = lib.mkIf (clipPersistPkg != null) {
+    Unit = {
+      Description = "wl-clip-persist (hyprland)";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      ExecStart = "${clipPersistPkg}/bin/wl-clip-persist --clipboard both";
+      Restart = "on-failure";
+      RestartSec = 1;
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
   
   # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 

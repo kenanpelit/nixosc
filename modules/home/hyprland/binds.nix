@@ -6,13 +6,13 @@
 # navigation, workspace management, and DMS integration.
 # Imported by default.nix
 # ==============================================================================
-{ lib, themeName, ... }:
+{ lib, themeName, bins, ... }:
 
 let
   # Binding generators
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
   mkMoveWorkspaces = nums: map (n: "ALT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
-  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, hypr-set workspace-monitor -am ${toString n}") nums;
+  mkMoveMonitor = nums: map (n: "$mainMod CTRL, ${toString n}, exec, ${bins.hyprSet} workspace-monitor -am ${toString n}") nums;
   
   moveStep = 80;
   resizeStep = 80;
@@ -60,7 +60,7 @@ let
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"
     "ALT CTRL, E, exec, mpc-control toggle"
-    "ALT, i, exec, hypr-set vlc-toggle"
+    "ALT, i, exec, ${bins.hyprSet} vlc-toggle"
   
     # MPV Manager
     "CTRL ALT, 1, exec, mpv-manager start"
@@ -77,15 +77,15 @@ let
     "$mainMod, Q, killactive"
     "$mainMod SHIFT, F, fullscreen, 1"
     "$mainMod CTRL, F, fullscreen, 0"
-    "$mainMod, F, exec, hypr-set toggle-float"
+    "$mainMod, F, exec, ${bins.hyprSet} toggle-float"
     "$mainMod, P, pseudo,"
     "$mainMod, X, togglesplit,"
     "$mainMod, G, togglegroup"
-    "$mainMod, T, exec, hypr-set toggle-opacity"
+    "$mainMod, T, exec, ${bins.hyprSet} toggle-opacity"
     "$mainMod, S, pin"
   
     # Layout
-    "$mainMod CTRL, J, exec, hypr-set layout-toggle"
+    "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
     "$mainMod, R, submap, resize"
   
@@ -104,7 +104,7 @@ let
     "$mainMod, E, exec, pypr shift_monitors +1"
   
     # Connectivity
-    ", F10, exec, bluetooth_toggle"
+    ", F10, exec, ${bins.bluetoothToggle}"
     "ALT, F12, exec, osc-mullvad toggle"
   
     # Clipboard (local)
@@ -112,12 +112,12 @@ let
   ];
 
   screenshotBinds = [
-    ", Print, exec, screenshot ri"
-    "$mainMod CTRL, Print, exec, screenshot rec"
-    "$mainMod, Print, exec, screenshot si"
-    "ALT, Print, exec, screenshot wi"
-    "$mainMod ALT, Print, exec, screenshot p"
-    "$mainMod SHIFT CTRL, Print, exec, screenshot sec"
+    ", Print, exec, ${bins.screenshot} ri"
+    "$mainMod CTRL, Print, exec, ${bins.screenshot} rec"
+    "$mainMod, Print, exec, ${bins.screenshot} si"
+    "ALT, Print, exec, ${bins.screenshot} wi"
+    "$mainMod ALT, Print, exec, ${bins.screenshot} p"
+    "$mainMod SHIFT CTRL, Print, exec, ${bins.screenshot} sec"
   ];
 
   specialAppsBinds = [
@@ -131,8 +131,8 @@ let
     "ALT, N, workspace, previous"
     "ALT, Tab, workspace, e+1"
     "ALT CTRL, tab, workspace, e-1"
-    "$mainMod, page_up, exec, hypr-set workspace-monitor -wl"
-    "$mainMod, page_down, exec, hypr-set workspace-monitor -wr"
+    "$mainMod, page_up, exec, ${bins.hyprSet} workspace-monitor -wl"
+    "$mainMod, page_down, exec, ${bins.hyprSet} workspace-monitor -wr"
     "$mainMod, bracketleft, workspace, e-1"
     "$mainMod, bracketright, workspace, e+1"
     "$mainMod CTRL, c, movetoworkspace, empty"

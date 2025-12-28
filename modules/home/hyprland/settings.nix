@@ -18,12 +18,9 @@ let
     "${toString index}, monitor:${monitor}${lib.optionalString isDefault ", default:true"}";
 
   startupServices = [
-    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
-    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
+    "systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK"
+    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK"
     "systemctl --user start hyprland-session.target"
-    "nm-applet --indicator"
-    "clipse -listen"
-    "wl-clip-persist --clipboard both"
     "hyprctl setcursor ${cursorName} 24"
   ];
 
