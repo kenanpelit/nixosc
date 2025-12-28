@@ -619,7 +619,7 @@ setup_systemd_integration() {
 	else
 		info "TTY Mode: Standard environment sync..."
 
-		local std_vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP"
+		local std_vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM"
 
 		if systemctl --user import-environment $std_vars 2>/dev/null; then
 			debug_log "Systemd environment import başarılı"
@@ -627,7 +627,7 @@ setup_systemd_integration() {
 			warn "Systemd import başarısız (systemd user session yok olabilir)"
 		fi
 
-		local dbus_vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE"
+		local dbus_vars="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE QT_QPA_PLATFORM"
 
 		if dbus-update-activation-environment --systemd $dbus_vars 2>/dev/null; then
 			debug_log "DBus activation environment güncellendi"

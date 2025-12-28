@@ -243,8 +243,8 @@ case "${cmd}" in
     ;;
 
   lock)
-    if command -v dms-ipc >/dev/null 2>&1; then
-      dms-ipc lock lock >/dev/null 2>&1 && exit 0
+    if command -v dms >/dev/null 2>&1; then
+      dms ipc call lock lock >/dev/null 2>&1 && exit 0
     fi
     if command -v loginctl >/dev/null 2>&1; then
       exec loginctl lock-session

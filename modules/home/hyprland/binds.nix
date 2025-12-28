@@ -151,53 +151,53 @@ let
 
   dmsBinds = [
     # Launchers & power
-    "$mainMod, Space, exec, dms-ipc spotlight toggle"
-    "$mainMod, delete, exec, dms-ipc powermenu toggle"
-    "ALT, L, exec, dms-ipc lock lock"
-    "$mainMod SHIFT, delete, exec, dms-ipc inhibit toggle"
+    "$mainMod, Space, exec, dms ipc call spotlight toggle"
+    "$mainMod, delete, exec, dms ipc call powermenu toggle"
+    "ALT, L, exec, dms ipc call lock lock"
+    "$mainMod SHIFT, delete, exec, dms ipc call inhibit toggle"
 
     # Dash & panels
-    "$mainMod, D, exec, dms-ipc dash toggle ''"
-    "$mainMod, C, exec, dms-ipc control-center toggle"
-    "$mainMod, N, exec, dms-ipc notifications toggle"
-    "$mainMod, comma, exec, dms-ipc settings focusOrToggle"
-    "$mainMod SHIFT, P, exec, dms-ipc processlist focusOrToggle"
-    "$mainMod SHIFT, K, exec, dms-ipc settings openWith keybinds"
+    "$mainMod, D, exec, dms ipc call dash toggle ''"
+    "$mainMod, C, exec, dms ipc call control-center toggle"
+    "$mainMod, N, exec, dms ipc call notifications toggle"
+    "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
+    "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod SHIFT, K, exec, dms ipc call settings openWith keybinds"
 
     # Theme & night mode
-    "$mainMod SHIFT, T, exec, dms-ipc theme toggle"
-    "$mainMod SHIFT, N, exec, dms-ipc night toggle"
+    "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
+    "$mainMod SHIFT, N, exec, dms ipc call night toggle"
 
     # Bar & Dock
-    "$mainMod, B, exec, dms-ipc bar toggle index 0"
-    "$mainMod SHIFT, B, exec, dms-ipc dock toggle"
-    "$mainMod CTRL, B, exec, dms-ipc bar toggleAutoHide index 0"
+    "$mainMod, B, exec, dms ipc call bar toggle index 0"
+    "$mainMod SHIFT, B, exec, dms ipc call dock toggle"
+    "$mainMod CTRL, B, exec, dms ipc call bar toggleAutoHide index 0"
 
     # Wallpaper & overview
-    "$mainMod, Y, exec, dms-ipc dankdash wallpaper"
-    "$mainMod, W, exec, dms-ipc wallpaper next"
-    "$mainMod SHIFT, W, exec, dms-ipc wallpaper prev"
-    "$mainMod CTRL, W, exec, dms-ipc file browse wallpaper"
-    "$mainMod, Tab, exec, dms-ipc hypr toggleOverview"
-    "$mainMod CTRL, N, exec, dms-ipc notepad open"
+    "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
+    "$mainMod, W, exec, dms ipc call wallpaper next"
+    "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
+    "$mainMod CTRL, W, exec, dms ipc call file browse wallpaper"
+    "$mainMod, Tab, exec, dms ipc call hypr toggleOverview"
+    "$mainMod CTRL, N, exec, dms ipc call notepad open"
 
     # Clipboard & keybinds cheat sheet
-    "$mainMod, V, exec, dms-ipc clipboard toggle"
-    "$mainMod, slash, exec, dms-ipc keybinds toggle hyprland"
+    "$mainMod, V, exec, dms ipc call clipboard toggle"
+    "$mainMod, slash, exec, dms ipc call keybinds toggle hyprland"
 
     # Audio & brightness (DMS-managed)
-    ", XF86AudioRaiseVolume, exec, dms-ipc audio increment 3"
-    ", XF86AudioLowerVolume, exec, dms-ipc audio decrement 3"
-    ", XF86AudioMute, exec, dms-ipc audio mute"
-    ", XF86AudioMicMute, exec, dms-ipc audio micmute"
-    ", XF86AudioPlay, exec, dms-ipc mpris playPause"
-    ", XF86AudioNext, exec, dms-ipc mpris next"
-    ", XF86AudioPrev, exec, dms-ipc mpris previous"
-    ", XF86AudioStop, exec, dms-ipc mpris stop"
-    ", XF86MonBrightnessUp, exec, dms-ipc brightness increment 5 backlight:intel_backlight"
-    ", XF86MonBrightnessDown, exec, dms-ipc brightness decrement 5 backlight:intel_backlight"
-    "$mainMod ALT, A, exec, dms-ipc audio cycleoutput"
-    "$mainMod ALT, B, exec, dms-ipc brightness toggleExponential backlight:intel_backlight"
+    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
+    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
+    ", XF86AudioMute, exec, dms ipc call audio mute"
+    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
+    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
+    ", XF86AudioNext, exec, dms ipc call mpris next"
+    ", XF86AudioPrev, exec, dms ipc call mpris previous"
+    ", XF86AudioStop, exec, dms ipc call mpris stop"
+    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
+    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
+    "$mainMod ALT, A, exec, dms ipc call audio cycleoutput"
+    "$mainMod ALT, B, exec, dms ipc call brightness toggleExponential backlight:intel_backlight"
   ];
 
 in
