@@ -72,7 +72,7 @@ POWER_ICON[lockscreen]="󰍁"
 POWER_COLOR[lockscreen]="#7aa2f7"
 # Prefer DMS lock when available (works on Niri too), otherwise fall back to Hyprlock,
 # then finally logind lock-session.
-POWER_CMD[lockscreen]="dms ipc call lock lock || hyprlock || loginctl lock-session"
+POWER_CMD[lockscreen]="dms-ipc lock lock || hyprlock || loginctl lock-session"
 
 POWER_TEXT[logout]="Sign Out"
 POWER_ICON[logout]="󰗼"
