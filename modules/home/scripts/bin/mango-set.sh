@@ -176,13 +176,34 @@ case "${cmd}" in
 
     if [[ "${MANGO_INIT_SKIP_FOCUS_TAG:-0}" != "1" ]] && command -v mmsg >/dev/null 2>&1; then
       focus_tag="${MANGO_INIT_FOCUS_TAG:-2}"
-      focus_output="${MANGO_INIT_FOCUS_OUTPUT:-}"
+      # Pin to external monitor by default.
+      focus_output="${MANGO_INIT_FOCUS_OUTPUT:-DP-3}"
 
-      if [[ -n "$focus_output" ]]; then
-        mmsg -s -o "$focus_output" -t "$focus_tag" >/dev/null 2>&1 || mmsg -s -t "$focus_tag" >/dev/null 2>&1 || true
-      else
-        mmsg -s -t "$focus_tag" >/dev/null 2>&1 || true
-      fi
+      current_output() {
+        mmsg -g -o 2>/dev/null | awk '$2=="selmon" && $3=="1" {print $1; exit}'
+      }
+
+      focus_output_by_name() {
+        local desired="$1"
+        local cur
+        cur="$(current_output)"
+        [[ -z "$desired" || "$cur" == "$desired" ]] && return 0
+
+        # `focusmon` dispatch is directional; try both ways and verify by reading selmon.
+        for dir in down up; do
+          for _ in 1 2 3 4 5; do
+            mmsg -s -d "focusmon,${dir}" >/dev/null 2>&1 || true
+            cur="$(current_output)"
+            [[ "$cur" == "$desired" ]] && return 0
+          done
+        done
+
+        return 1
+      }
+
+      # Best effort: focus desired output, then select tag on the focused output.
+      focus_output_by_name "$focus_output" || true
+      mmsg -s -t "$focus_tag" >/dev/null 2>&1 || true
     fi
 
     if command -v osc-soundctl >/dev/null 2>&1; then
