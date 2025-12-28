@@ -162,6 +162,10 @@ case "${cmd}" in
     # ----------------------------------------------------------------------------
     # Bootstrap for Mango sessions (mirrors the spirit of niri-set init).
     #
+    # Workspace focus (enabled by default):
+    #   MANGO_INIT_FOCUS_TAG=2
+    #   MANGO_INIT_FOCUS_OUTPUT=DP-3
+    #
     # Optional tag layout (disabled by default):
     #   MANGO_INIT_SET_OUTPUT_TAGS=1
     #   MANGO_INIT_PRIMARY_OUTPUT=DP-3    MANGO_INIT_PRIMARY_TAG=1
@@ -169,6 +173,17 @@ case "${cmd}" in
     # ----------------------------------------------------------------------------
     ensure_runtime_dir
     detect_wayland_display
+
+    if [[ "${MANGO_INIT_SKIP_FOCUS_TAG:-0}" != "1" ]] && command -v mmsg >/dev/null 2>&1; then
+      focus_tag="${MANGO_INIT_FOCUS_TAG:-2}"
+      focus_output="${MANGO_INIT_FOCUS_OUTPUT:-}"
+
+      if [[ -n "$focus_output" ]]; then
+        mmsg -s -o "$focus_output" -t "$focus_tag" >/dev/null 2>&1 || mmsg -s -t "$focus_tag" >/dev/null 2>&1 || true
+      else
+        mmsg -s -t "$focus_tag" >/dev/null 2>&1 || true
+      fi
+    fi
 
     if command -v osc-soundctl >/dev/null 2>&1; then
       osc-soundctl init >/dev/null 2>&1 || true
