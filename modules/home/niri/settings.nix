@@ -10,13 +10,13 @@
 {
   layout = ''
     layout {
-      gaps 5;
+      gaps 12;
       center-focused-column "never";
       background-color "#00000000";
 
       focus-ring {
         on;
-        width 2;
+        width 3;
         active-gradient from="${palette.cyan}" to="${palette.mauve}" angle=45;
         inactive-color "${palette.surface1}";
       }
@@ -51,6 +51,7 @@
         proportion 0.33333;
         proportion 0.5;
         proportion 0.66667;
+        proportion 1.0;
       }
 
       default-column-width { proportion 0.5; }
