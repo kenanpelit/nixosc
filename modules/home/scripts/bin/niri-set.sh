@@ -21,6 +21,19 @@
 
 set -euo pipefail
 
+start_clipse_listener() {
+  command -v clipse >/dev/null 2>&1 || return 0
+
+  if command -v pgrep >/dev/null 2>&1; then
+    if pgrep -af 'clipse.*-listen' >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+
+  # `-listen` starts the monitor in the background and exits quickly.
+  clipse -listen >/dev/null 2>&1 || true
+}
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -28,6 +41,7 @@ Usage:
 
 Commands:
   tty                Start Niri from TTY/DM (was: niri_tty)
+  clipse             Start clipse clipboard listener (background)
   session-start      Export env to systemd --user (was: niri-session-start)
   init               Bootstrap session (was: niri-init)
   lock               Lock session via DMS/logind (was: niri-lock)
@@ -53,6 +67,10 @@ cmd="${1:-}"
 shift || true
 
 case "${cmd}" in
+  clipse)
+    start_clipse_listener
+    ;;
+
   tty)
     # ----------------------------------------------------------------------------
     # Embedded: niri_tty.sh
@@ -500,6 +518,7 @@ case "${cmd}" in
       ensure_runtime_dir
       detect_wayland_display
       detect_niri_socket
+      start_clipse_listener
       import_env_to_systemd
       restart_dms_if_running
       start_target
@@ -1267,9 +1286,13 @@ EOF
       if maybe systemctl; then
         echo
         kv "systemd --user bus" "$(systemctl --user is-system-running 2>/dev/null || true)"
-        for unit in niri-session.target dms.service niri-init.service niri-clipse.service niri-nsticky.service; do
+        for unit in niri-session.target dms.service niri-init.service niri-nsticky.service; do
           kv "is-active:$unit" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
         done
+      fi
+
+      if maybe pgrep; then
+        kv "is-running:clipse -listen" "$(pgrep -af 'clipse.*-listen' 2>/dev/null | head -n 1 || echo inactive)"
       fi
     )
     ;;

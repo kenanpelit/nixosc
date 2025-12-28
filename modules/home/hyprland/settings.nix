@@ -6,7 +6,7 @@
 # compositor aesthetics (decoration, animations, master/dwindle layouts).
 # Imported by default.nix
 # ==============================================================================
-{ lib, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
+{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
 
 let
   primaryMonitor = "DELL UP2716D KRXTR88N909L";
@@ -22,6 +22,7 @@ let
     "dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK"
     "systemctl --user start hyprland-session.target"
     "hyprctl setcursor ${cursorName} 24"
+    "${bins.hyprSet} clipse"
   ];
 
   monitorConfig = [

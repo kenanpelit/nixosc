@@ -17,6 +17,18 @@
 
 set -euo pipefail
 
+start_clipse_listener() {
+  command -v clipse >/dev/null 2>&1 || return 0
+
+  if command -v pgrep >/dev/null 2>&1; then
+    if pgrep -af 'clipse.*-listen' >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+
+  clipse -listen >/dev/null 2>&1 || true
+}
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -25,6 +37,7 @@ Usage:
 Commands:
   start          Start Mango session (DM/TTY)
   tty            Alias for start
+  clipse         Start clipse clipboard listener (background)
   session-start  Export env to systemd --user; start mango-session.target
   init           Bootstrap Mango session (audio, optional tag layout)
   lock           Lock session via DMS/logind
@@ -122,6 +135,11 @@ restart_dms_if_running() {
 }
 
 case "${cmd}" in
+  clipse)
+    start_clipse_listener
+    exit 0
+    ;;
+
   start)
     export XDG_SESSION_TYPE=wayland
     export XDG_CURRENT_DESKTOP=mango
@@ -152,6 +170,7 @@ case "${cmd}" in
 
     ensure_runtime_dir
     detect_wayland_display
+    start_clipse_listener
     import_env_to_systemd
     restart_dms_if_running
     start_target

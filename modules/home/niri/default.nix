@@ -265,26 +265,6 @@ in
       };
     };
 
-    systemd.user.services.niri-clipse = {
-      Unit = {
-        Description = "clipse daemon (niri)";
-        After = [ "niri-session.target" ];
-        PartOf = [ "niri-session.target" ];
-      };
-      Service = {
-        # `-listen` backgrounds itself and exits (systemd would mark the unit dead).
-        # `-listen-shell` keeps the process in the foreground, suitable for systemd.
-        ExecStart = "${bins.clipse} -listen-shell";
-        # clipse can exit cleanly (status=0) when the clipboard backend glitches;
-        # restart anyway to keep the listener up for the whole session.
-        Restart = "always";
-        RestartSec = 2;
-      };
-      Install = {
-        WantedBy = [ "niri-session.target" ];
-      };
-    };
-
     systemd.user.services.niri-niriusd = lib.mkIf cfg.enableNirius {
       Unit = {
         Description = "nirius daemon (niri)";
