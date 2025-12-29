@@ -254,6 +254,7 @@
           nur.overlays.default
           niri.overlays.niri
           (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
+          (import ./overlays/xdg-desktop-portal-gnome-niri.nix)
           (import ./overlays/niri-portals-conf-wlr.nix)
         ];
 
