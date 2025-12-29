@@ -185,27 +185,19 @@
         // ----------------------------------------------------------------------
 
         Mod+Alt+T repeat=false hotkey-overlay-title="Nirius: Terminal (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn"
-            "--app-id" "^kitty$"
-            "${bins.kitty}";
+          spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}";
         }
 
         Mod+Alt+B repeat=false hotkey-overlay-title="Nirius: Browser (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn"
-            "--app-id" "(brave|brave-browser|firefox|zen|chromium)"
-            "brave";
+          spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "brave";
         }
 
         Mod+Alt+M repeat=false hotkey-overlay-title="Nirius: Music (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn"
-            "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$"
-            "spotify";
+          spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "spotify";
         }
 
         Mod+Alt+N repeat=false hotkey-overlay-title="Nirius: Notes (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn"
-            "--title" "(Anotes|Notes)"
-            "anotes";
+          spawn "${bins.nirius}" "focus-or-spawn" "--title" "(Anotes|Notes)" "anotes";
         }
 
         // ----------------------------------------------------------------------
@@ -213,27 +205,19 @@
         // ----------------------------------------------------------------------
 
         Mod+Alt+Shift+T repeat=false hotkey-overlay-title="Nirius: Pull Terminal here" {
-          spawn "${bins.nirius}" "move-to-current-workspace"
-            "--app-id" "^kitty$"
-            "--focus";
+          spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^kitty$" "--focus";
         }
 
         Mod+Alt+Shift+B repeat=false hotkey-overlay-title="Nirius: Pull Browser here" {
-          spawn "${bins.nirius}" "move-to-current-workspace"
-            "--app-id" "(brave|brave-browser|firefox|zen|chromium)"
-            "--focus";
+          spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "--focus";
         }
 
         Mod+Alt+Shift+M repeat=false hotkey-overlay-title="Nirius: Pull Music here" {
-          spawn "${bins.nirius}" "move-to-current-workspace"
-            "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$"
-            "--focus";
+          spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus";
         }
 
         Mod+Alt+Shift+N repeat=false hotkey-overlay-title="Nirius: Pull Notes here" {
-          spawn "${bins.nirius}" "move-to-current-workspace"
-            "--title" "(Anotes|Notes)"
-            "--focus";
+          spawn "${bins.nirius}" "move-to-current-workspace" "--title" "(Anotes|Notes)" "--focus";
         }
 
         // ----------------------------------------------------------------------
@@ -384,4 +368,3 @@
       Mod+Escape repeat=false hotkey-overlay-title="Monitor Move WS / Focus Next" { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
   '';
 }
-
