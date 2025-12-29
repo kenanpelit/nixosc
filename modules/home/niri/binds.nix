@@ -259,8 +259,7 @@
       // Launchers
       Alt+Space repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
-      Mod+Ctrl+S repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "${bins.nsticky}" "sticky" "toggle-active"; }
-      Mod+Shift+S repeat=false hotkey-overlay-title="Sticky Stage Toggle" { spawn "${bins.nsticky}" "stage" "toggle-active"; }
+      Mod+Ctrl+S repeat=false hotkey-overlay-title="Sticky ↔ Stage Toggle" { spawn "nsticky-toggle"; }
 
       // File Managers
       Alt+F repeat=false hotkey-overlay-title="Files Yazi" { spawn "${bins.kitty}" "-e" "yazi"; }
@@ -337,4 +336,3 @@
       Mod+Escape repeat=false hotkey-overlay-title="Monitor Move WS / Focus Next" { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
   '';
 }
-
