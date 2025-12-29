@@ -120,7 +120,10 @@
     };
 
     # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
-    nsticky.url = "github:lonerOrz/nsticky";
+    nsticky = {
+      url = "github:kenanpelit/nsticky";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # MangoWC (mango): dwl-based Wayland compositor
     mango = {
