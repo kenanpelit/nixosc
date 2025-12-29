@@ -147,4 +147,33 @@
   my.user.gtk.enable = true;
   my.user.qt.enable = true;
   my.user.candy.enable = true;
+
+  # ============================================================================
+  # On-demand services
+  # ============================================================================
+  # Keep CompecTA remote support available, but do not auto-start it on login.
+  systemd.user.services.compecta-support = {
+    Unit = {
+      Description = "CompecTA Remote Support Service";
+      Wants = [ "network-online.target" ];
+      After = [ "network.target" "network-online.target" ];
+      ConditionPathExists = "%h/.compecta/compecta_support_key_rsa";
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.autossh}/bin/autossh -M 0 -o \"ServerAliveInterval 30\" -o \"ServerAliveCountMax 4\" -o \"StrictHostKeyChecking=no\" -o \"ControlMaster=no\" -o \"ControlPath=none\" -i %h/.compecta/compecta_support_key_rsa -N -p36499 -R22217:127.0.0.1:22 autossh@terminal.compecta.com";
+      Restart = "always";
+      RestartSec = "1m";
+      StandardOutput = "journal";
+      StandardError = "journal";
+    };
+  };
+
+  home.activation.disableCompectaSupportAutostart = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if command -v systemctl >/dev/null 2>&1; then
+      if systemctl --user is-enabled --quiet compecta-support.service 2>/dev/null; then
+        systemctl --user disable --now compecta-support.service >/dev/null 2>&1 || true
+      fi
+    fi
+  '';
 }

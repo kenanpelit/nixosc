@@ -61,6 +61,18 @@ in
     unitConfig.ConditionPathExists = "!/dev/null";
   };
 
+  # Avoid multiple competing SSH agents on Wayland sessions.
+  # We already pin `SSH_AUTH_SOCK` to GNOME Keyring's socket; disable GCR's
+  # ssh-agent wrapper completely to prevent it from starting in the background.
+  systemd.user.services.gcr-ssh-agent = {
+    enable = false;
+    unitConfig.ConditionPathExists = "!/dev/null";
+  };
+  systemd.user.sockets.gcr-ssh-agent = {
+    enable = false;
+    unitConfig.ConditionPathExists = "!/dev/null";
+  };
+
   environment.sessionVariables = {
     # Avoid GTK a11y bridge overhead/noise (common desktop hardening/perf tweak).
     GTK_A11Y = "none";
