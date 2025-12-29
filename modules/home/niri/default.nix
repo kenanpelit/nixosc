@@ -147,6 +147,7 @@ in
       # Bindings must be inside a SINGLE `binds {}` block.
       "binds {"
       bindsConfig.core
+      bindsConfig.nirius
       bindsConfig.dms
       bindsConfig.apps
       bindsConfig.mpv
