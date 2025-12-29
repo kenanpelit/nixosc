@@ -50,12 +50,15 @@ in
           # Niri: rely on wlr portal for screencast/screenshot protocols, and gtk
           # for file picker.
           niri = {
-            default = [ "wlr" "gtk" ];
-            # The upstream `wlr.portal` doesn't list `UseIn=niri`, so we must
-            # explicitly bind these interfaces or ScreenCast/Screenshot won't be
-            # exposed at all (browser will only offer "tab share").
-            "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
-            "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
+            # Niri implements Mutter ScreenCast on D-Bus; use the GNOME portal
+            # backend for screencast/screenshot, and keep GTK for pickers.
+            default = [ "gnome" "gtk" ];
+            "org.freedesktop.impl.portal.Access" = [ "gtk" ];
+            "org.freedesktop.impl.portal.Notification" = [ "gtk" ];
+            "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+            "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+            "org.freedesktop.impl.portal.ScreenCast" = [ "gnome" ];
+            "org.freedesktop.impl.portal.Screenshot" = [ "gnome" ];
           };
 
           # GNOME session.
