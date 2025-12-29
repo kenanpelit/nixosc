@@ -590,39 +590,14 @@ case "${cmd}" in
           timeout_bin="timeout"
         fi
 
-        local orig_desktop="${XDG_CURRENT_DESKTOP:-}"
-        local portal_desktop="$orig_desktop"
-        if [[ "$orig_desktop" == "niri" ]] && [[ "$orig_desktop" != *"wlroots"* ]]; then
-          # `wlr.portal` doesn't list `UseIn=niri`, but it does list `wlroots`.
-          # Keep niri first so niri-portals.conf is selected, while still making
-          # wlr eligible via UseIn matching.
-          portal_desktop="niri:wlroots"
-        fi
-
         # xdg-desktop-portal is often started before the compositor exports
         # XDG_CURRENT_DESKTOP / WAYLAND_DISPLAY into systemd --user. Restarting
         # it here makes it pick the correct *-portals.conf (and exposes
         # ScreenCast/Screenshot).
-        if [[ "$portal_desktop" != "$orig_desktop" ]]; then
-          if [[ -n "$timeout_bin" ]]; then
-            $timeout_bin 2s systemctl --user set-environment "XDG_CURRENT_DESKTOP=${portal_desktop}" >/dev/null 2>&1 || true
-          else
-            systemctl --user set-environment "XDG_CURRENT_DESKTOP=${portal_desktop}" >/dev/null 2>&1 || true
-          fi
-        fi
-
         if [[ -n "$timeout_bin" ]]; then
           $timeout_bin 2s systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
         else
           systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
-        fi
-
-        if [[ "$portal_desktop" != "$orig_desktop" ]]; then
-          if [[ -n "$timeout_bin" ]]; then
-            $timeout_bin 2s systemctl --user set-environment "XDG_CURRENT_DESKTOP=${orig_desktop}" >/dev/null 2>&1 || true
-          else
-            systemctl --user set-environment "XDG_CURRENT_DESKTOP=${orig_desktop}" >/dev/null 2>&1 || true
-          fi
         fi
       }
 
