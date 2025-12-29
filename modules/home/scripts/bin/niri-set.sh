@@ -459,6 +459,43 @@ case "${cmd}" in
         shopt -u nullglob
       }
 
+      ensure_session_identity() {
+        export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
+        export XDG_SESSION_DESKTOP="${XDG_SESSION_DESKTOP:-niri}"
+        export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-niri}"
+        export DESKTOP_SESSION="${DESKTOP_SESSION:-niri}"
+      }
+
+      set_env_in_systemd() {
+        if ! command -v systemctl >/dev/null 2>&1; then
+          return 0
+        fi
+
+        [[ -n "${WAYLAND_DISPLAY:-}" ]] || return 0
+
+        local timeout_bin=""
+        if command -v timeout >/dev/null 2>&1; then
+          timeout_bin="timeout"
+        fi
+
+        local args=(
+          "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}"
+          "XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-}"
+          "XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}"
+          "XDG_SESSION_DESKTOP=${XDG_SESSION_DESKTOP:-}"
+          "DESKTOP_SESSION=${DESKTOP_SESSION:-}"
+        )
+
+        [[ -n "${DISPLAY:-}" ]] && args+=("DISPLAY=${DISPLAY}")
+        [[ -n "${NIRI_SOCKET:-}" ]] && args+=("NIRI_SOCKET=${NIRI_SOCKET}")
+
+        if [[ -n "$timeout_bin" ]]; then
+          $timeout_bin 2s systemctl --user set-environment "${args[@]}" >/dev/null 2>&1 || true
+        else
+          systemctl --user set-environment "${args[@]}" >/dev/null 2>&1 || true
+        fi
+      }
+
       import_env_to_systemd() {
         if ! command -v systemctl >/dev/null 2>&1; then
           log "systemctl not found; skipping env import"
@@ -507,6 +544,25 @@ case "${cmd}" in
         systemctl --user start niri-session.target 2>/dev/null || true
       }
 
+      start_wlr_portal() {
+        if ! command -v systemctl >/dev/null 2>&1; then
+          return 0
+        fi
+
+        local timeout_bin=""
+        if command -v timeout >/dev/null 2>&1; then
+          timeout_bin="timeout"
+        fi
+
+        # Needed for ScreenCast/Screenshot in non-wlroots compositor sessions
+        # when the user manager didn't have WAYLAND_DISPLAY at login time.
+        if [[ -n "$timeout_bin" ]]; then
+          $timeout_bin 2s systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
+        else
+          systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
+        fi
+      }
+
       restart_portals() {
         if ! command -v systemctl >/dev/null 2>&1; then
           return 0
@@ -539,8 +595,11 @@ case "${cmd}" in
       ensure_runtime_dir
       detect_wayland_display
       detect_niri_socket
+      ensure_session_identity
       start_clipse_listener
       import_env_to_systemd
+      set_env_in_systemd
+      start_wlr_portal
       restart_portals
       restart_dms_if_running
       start_target
