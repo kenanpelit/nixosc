@@ -59,8 +59,9 @@ in
             # Avoid GNOME's GlobalShortcuts provider UI popping up under Niri.
             "org.freedesktop.impl.portal.GlobalShortcuts" = [ "gtk" ];
             "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
-            "org.freedesktop.impl.portal.ScreenCast" = [ "gnome" ];
-            "org.freedesktop.impl.portal.Screenshot" = [ "gnome" ];
+            "org.freedesktop.impl.portal.RemoteDesktop" = [ "gnome-niri" ];
+            "org.freedesktop.impl.portal.ScreenCast" = [ "gnome-niri" ];
+            "org.freedesktop.impl.portal.Screenshot" = [ "gnome-niri" ];
           };
 
           # GNOME session.
