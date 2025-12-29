@@ -93,7 +93,11 @@
       Mod+Shift+Space repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       // Mod+Alt+Shift+Space hotkey-overlay-title="Tile (force)" { move-window-to-tiling; }
       Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
-      Mod+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
+
+      // NOTE:
+      // Mod+BackSpace is reserved for Nirius scratchpad toggle (see nirius section).
+      // This binding is moved to Mod+Ctrl+BackSpace to avoid a hard duplicate-key error.
+      Mod+Ctrl+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
 
       // Dynamic screencast target (OBS: "niri Dynamic Cast Target")
       Mod+Ctrl+Shift+W repeat=false hotkey-overlay-title="Cast Focused Window" { set-dynamic-cast-window; }
@@ -169,14 +173,12 @@
       // - niriusd must be running (recommended: spawn-at-startup "niriusd")
       //
       // Design:
-      // - Mod+Alt            => "bring/manage" (focus-or-spawn)
-      // - Mod+Alt+Shift      => "pull-to-me" (move-to-current-workspace + focus)
-      // - Mod+Alt+BackSpace  => scratchpad show/cycle
-      // - Mod+Alt+Shift+BackSpace => scratchpad toggle (send/unsend)
+      // - Mod+Alt       => "bring/manage" (focus-or-spawn)
+      // - Mod+Alt+Shift => "pull-to-me" (move-to-current-workspace + focus)
       //
       // Notes:
       // - No Grave key usage (layout-safe)
-      // - Avoids collisions with your existing Mod+Alt arrows and Mod+Alt+A/P
+      // - Avoids collisions with existing Mod+Alt arrows and Mod+Alt+A/P
       // ========================================================================
 
       ${lib.optionalString enableNiriusBinds ''
@@ -184,94 +186,61 @@
         // Smart Focus-or-Spawn (daily drivers)
         // ----------------------------------------------------------------------
 
-        Mod+Alt+T repeat=false hotkey-overlay-title="Nirius: Terminal (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}";
-        }
-
-        Mod+Alt+B repeat=false hotkey-overlay-title="Nirius: Browser (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "brave";
-        }
-
-        Mod+Alt+M repeat=false hotkey-overlay-title="Nirius: Music (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "spotify";
-        }
-
-        Mod+Alt+N repeat=false hotkey-overlay-title="Nirius: Notes (focus or spawn)" {
-          spawn "${bins.nirius}" "focus-or-spawn" "--title" "(Anotes|Notes)" "anotes";
-        }
+        Mod+Alt+T repeat=false hotkey-overlay-title="Nirius: Terminal (focus or spawn)" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^kitty$" "${bins.kitty}"; }
+        Mod+Alt+B repeat=false hotkey-overlay-title="Nirius: Browser (focus or spawn)" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "brave"; }
+        Mod+Alt+M repeat=false hotkey-overlay-title="Nirius: Music (focus or spawn)" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "spotify"; }
+        Mod+Alt+N repeat=false hotkey-overlay-title="Nirius: Notes (focus or spawn)" { spawn "${bins.nirius}" "focus-or-spawn" "--title" "(Anotes|Notes)" "anotes"; }
 
         // ----------------------------------------------------------------------
         // Pull-to-Me (move matching windows here + focus)
         // ----------------------------------------------------------------------
 
-        Mod+Alt+Shift+T repeat=false hotkey-overlay-title="Nirius: Pull Terminal here" {
-          spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^kitty$" "--focus";
-        }
-
-        Mod+Alt+Shift+B repeat=false hotkey-overlay-title="Nirius: Pull Browser here" {
-          spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "--focus";
-        }
-
-        Mod+Alt+Shift+M repeat=false hotkey-overlay-title="Nirius: Pull Music here" {
-          spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus";
-        }
-
-        Mod+Alt+Shift+N repeat=false hotkey-overlay-title="Nirius: Pull Notes here" {
-          spawn "${bins.nirius}" "move-to-current-workspace" "--title" "(Anotes|Notes)" "--focus";
-        }
+        Mod+Alt+Shift+T repeat=false hotkey-overlay-title="Nirius: Pull Terminal here" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^kitty$" "--focus"; }
+        Mod+Alt+Shift+B repeat=false hotkey-overlay-title="Nirius: Pull Browser here" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "--focus"; }
+        Mod+Alt+Shift+M repeat=false hotkey-overlay-title="Nirius: Pull Music here" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
+        Mod+Alt+Shift+N repeat=false hotkey-overlay-title="Nirius: Pull Notes here" { spawn "${bins.nirius}" "move-to-current-workspace" "--title" "(Anotes|Notes)" "--focus"; }
 
         // ----------------------------------------------------------------------
-        // Scratchpad (layout-safe)
+        // Scratchpad (layout-safe; BackSpace-based)
         // ----------------------------------------------------------------------
 
-        Mod+Alt+Shift+BackSpace repeat=false hotkey-overlay-title="Nirius: Scratchpad Toggle" {
-          spawn "${bins.nirius}" "scratchpad-toggle";
-        }
+        // Toggle scratchpad state for the focused window (send/unsend) 
+        Mod+BackSpace repeat=false hotkey-overlay-title="Nirius: Scratchpad Toggle" { spawn "${bins.nirius}" "scratchpad-toggle"; }
 
-        Mod+Alt+BackSpace repeat=false hotkey-overlay-title="Nirius: Scratchpad Show/Cycle" {
-          spawn "${bins.nirius}" "scratchpad-show";
-        }
+        // Show one scratchpad window (cycles if multiple)
+        Alt+BackSpace repeat=false hotkey-overlay-title="Nirius: Scratchpad Show/Cycle" { spawn "${bins.nirius}" "scratchpad-show"; }
 
-        Mod+Alt+Ctrl+BackSpace repeat=false hotkey-overlay-title="Nirius: Scratchpad Show All" {
-          spawn "${bins.nirius}" "scratchpad-show-all";
-        }
+        // Show all scratchpad windows (toggle)
+        Mod+Alt+BackSpace repeat=false hotkey-overlay-title="Nirius: Scratchpad Show All" { spawn "${bins.nirius}" "scratchpad-show-all"; }
 
         // ----------------------------------------------------------------------
         // Marks (role-based windows; cycles if multiple)
         // Recommended marks: term, web, media, notes
         // ----------------------------------------------------------------------
 
-        Mod+Alt+0 repeat=false hotkey-overlay-title="Nirius: Toggle Default Mark" {
-          spawn "${bins.nirius}" "toggle-mark";
-        }
+        // Default mark (__default__) toggle for quick tagging
+        Mod+Alt+0 repeat=false hotkey-overlay-title="Nirius: Toggle Default Mark" { spawn "${bins.nirius}" "toggle-mark"; }
 
-        Mod+Alt+1 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'term'" {
-          spawn "${bins.nirius}" "focus-marked" "term";
-        }
+        // Assign/toggle role marks for the currently focused window
+        Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Nirius: Toggle Mark 'term'" { spawn "${bins.nirius}" "toggle-mark" "term"; }
+        Mod+Alt+Shift+2 repeat=false hotkey-overlay-title="Nirius: Toggle Mark 'web'" { spawn "${bins.nirius}" "toggle-mark" "web"; }
+        Mod+Alt+Shift+3 repeat=false hotkey-overlay-title="Nirius: Toggle Mark 'media'" { spawn "${bins.nirius}" "toggle-mark" "media"; }
+        Mod+Alt+Shift+4 repeat=false hotkey-overlay-title="Nirius: Toggle Mark 'notes'" { spawn "${bins.nirius}" "toggle-mark" "notes"; }
 
-        Mod+Alt+2 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'web'" {
-          spawn "${bins.nirius}" "focus-marked" "web";
-        }
+        // Jump to role marks (cycles if multiple)
+        Mod+Alt+1 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'term'" { spawn "${bins.nirius}" "focus-marked" "term"; }
+        Mod+Alt+2 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'web'" { spawn "${bins.nirius}" "focus-marked" "web"; }
+        Mod+Alt+3 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'media'" { spawn "${bins.nirius}" "focus-marked" "media"; }
+        Mod+Alt+4 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'notes'" { spawn "${bins.nirius}" "focus-marked" "notes"; }
 
-        Mod+Alt+3 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'media'" {
-          spawn "${bins.nirius}" "focus-marked" "media";
-        }
-
-        Mod+Alt+4 repeat=false hotkey-overlay-title="Nirius: Focus Mark 'notes'" {
-          spawn "${bins.nirius}" "focus-marked" "notes";
-        }
-
-        Mod+Alt+Shift+I repeat=false hotkey-overlay-title="Nirius: List Marked (all)" {
-          spawn "${bins.nirius}" "list-marked" "--all";
-        }
+        // Debug: list all marked windows
+        Mod+Alt+Shift+I repeat=false hotkey-overlay-title="Nirius: List Marked (all)" { spawn "${bins.nirius}" "list-marked" "--all"; }
 
         // ----------------------------------------------------------------------
         // Follow Mode (floating windows follow workspace changes)
         // ----------------------------------------------------------------------
 
-        Mod+Alt+F repeat=false hotkey-overlay-title="Nirius: Toggle Follow Mode" {
-          spawn "${bins.nirius}" "toggle-follow-mode";
-        }
+        Mod+Alt+F repeat=false hotkey-overlay-title="Nirius: Toggle Follow Mode" { spawn "${bins.nirius}" "toggle-follow-mode"; }
       ''}
   '';
 
@@ -368,3 +337,4 @@
       Mod+Escape repeat=false hotkey-overlay-title="Monitor Move WS / Focus Next" { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
   '';
 }
+
