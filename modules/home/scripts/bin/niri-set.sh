@@ -478,8 +478,25 @@ case "${cmd}" in
           timeout_bin="timeout"
         fi
 
+        local xdg_data_dirs="${XDG_DATA_DIRS:-}"
+        if [[ -z "$xdg_data_dirs" ]]; then
+          # Required for GLib (and xdg-desktop-portal) to find portal definitions
+          # in NixOS' /run/current-system/sw.
+          xdg_data_dirs="/run/current-system/sw/share"
+          if [[ -d "/etc/profiles/per-user/${USER:-}/share" ]]; then
+            xdg_data_dirs="${xdg_data_dirs}:/etc/profiles/per-user/${USER}/share"
+          elif [[ -d "${HOME:-}/.nix-profile/share" ]]; then
+            xdg_data_dirs="${xdg_data_dirs}:${HOME}/.nix-profile/share"
+          fi
+          xdg_data_dirs="${xdg_data_dirs}:/usr/local/share:/usr/share"
+        fi
+
+        local xdg_config_dirs="${XDG_CONFIG_DIRS:-/etc/xdg}"
+
         local args=(
           "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}"
+          "XDG_DATA_DIRS=${xdg_data_dirs}"
+          "XDG_CONFIG_DIRS=${xdg_config_dirs}"
           "XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-}"
           "XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}"
           "XDG_SESSION_DESKTOP=${XDG_SESSION_DESKTOP:-}"
@@ -573,14 +590,39 @@ case "${cmd}" in
           timeout_bin="timeout"
         fi
 
+        local orig_desktop="${XDG_CURRENT_DESKTOP:-}"
+        local portal_desktop="$orig_desktop"
+        if [[ "$orig_desktop" == "niri" ]] && [[ "$orig_desktop" != *"wlroots"* ]]; then
+          # `wlr.portal` doesn't list `UseIn=niri`, but it does list `wlroots`.
+          # Keep niri first so niri-portals.conf is selected, while still making
+          # wlr eligible via UseIn matching.
+          portal_desktop="niri:wlroots"
+        fi
+
         # xdg-desktop-portal is often started before the compositor exports
         # XDG_CURRENT_DESKTOP / WAYLAND_DISPLAY into systemd --user. Restarting
         # it here makes it pick the correct *-portals.conf (and exposes
         # ScreenCast/Screenshot).
+        if [[ "$portal_desktop" != "$orig_desktop" ]]; then
+          if [[ -n "$timeout_bin" ]]; then
+            $timeout_bin 2s systemctl --user set-environment "XDG_CURRENT_DESKTOP=${portal_desktop}" >/dev/null 2>&1 || true
+          else
+            systemctl --user set-environment "XDG_CURRENT_DESKTOP=${portal_desktop}" >/dev/null 2>&1 || true
+          fi
+        fi
+
         if [[ -n "$timeout_bin" ]]; then
           $timeout_bin 2s systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
         else
           systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
+        fi
+
+        if [[ "$portal_desktop" != "$orig_desktop" ]]; then
+          if [[ -n "$timeout_bin" ]]; then
+            $timeout_bin 2s systemctl --user set-environment "XDG_CURRENT_DESKTOP=${orig_desktop}" >/dev/null 2>&1 || true
+          else
+            systemctl --user set-environment "XDG_CURRENT_DESKTOP=${orig_desktop}" >/dev/null 2>&1 || true
+          fi
         fi
       }
 
