@@ -459,6 +459,60 @@ case "${cmd}" in
         shopt -u nullglob
       }
 
+      ensure_session_identity() {
+        export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
+        export XDG_SESSION_DESKTOP="${XDG_SESSION_DESKTOP:-niri}"
+        export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-niri}"
+        export DESKTOP_SESSION="${DESKTOP_SESSION:-niri}"
+      }
+
+      set_env_in_systemd() {
+        if ! command -v systemctl >/dev/null 2>&1; then
+          return 0
+        fi
+
+        [[ -n "${WAYLAND_DISPLAY:-}" ]] || return 0
+
+        local timeout_bin=""
+        if command -v timeout >/dev/null 2>&1; then
+          timeout_bin="timeout"
+        fi
+
+        local xdg_data_dirs="${XDG_DATA_DIRS:-}"
+        if [[ -z "$xdg_data_dirs" ]]; then
+          # Required for GLib (and xdg-desktop-portal) to find portal definitions
+          # in NixOS' /run/current-system/sw.
+          xdg_data_dirs="/run/current-system/sw/share"
+          if [[ -d "/etc/profiles/per-user/${USER:-}/share" ]]; then
+            xdg_data_dirs="${xdg_data_dirs}:/etc/profiles/per-user/${USER}/share"
+          elif [[ -d "${HOME:-}/.nix-profile/share" ]]; then
+            xdg_data_dirs="${xdg_data_dirs}:${HOME}/.nix-profile/share"
+          fi
+          xdg_data_dirs="${xdg_data_dirs}:/usr/local/share:/usr/share"
+        fi
+
+        local xdg_config_dirs="${XDG_CONFIG_DIRS:-/etc/xdg}"
+
+        local args=(
+          "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}"
+          "XDG_DATA_DIRS=${xdg_data_dirs}"
+          "XDG_CONFIG_DIRS=${xdg_config_dirs}"
+          "XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-}"
+          "XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}"
+          "XDG_SESSION_DESKTOP=${XDG_SESSION_DESKTOP:-}"
+          "DESKTOP_SESSION=${DESKTOP_SESSION:-}"
+        )
+
+        [[ -n "${DISPLAY:-}" ]] && args+=("DISPLAY=${DISPLAY}")
+        [[ -n "${NIRI_SOCKET:-}" ]] && args+=("NIRI_SOCKET=${NIRI_SOCKET}")
+
+        if [[ -n "$timeout_bin" ]]; then
+          $timeout_bin 2s systemctl --user set-environment "${args[@]}" >/dev/null 2>&1 || true
+        else
+          systemctl --user set-environment "${args[@]}" >/dev/null 2>&1 || true
+        fi
+      }
+
       import_env_to_systemd() {
         if ! command -v systemctl >/dev/null 2>&1; then
           log "systemctl not found; skipping env import"
@@ -507,6 +561,46 @@ case "${cmd}" in
         systemctl --user start niri-session.target 2>/dev/null || true
       }
 
+      start_wlr_portal() {
+        if ! command -v systemctl >/dev/null 2>&1; then
+          return 0
+        fi
+
+        local timeout_bin=""
+        if command -v timeout >/dev/null 2>&1; then
+          timeout_bin="timeout"
+        fi
+
+        # Needed for ScreenCast/Screenshot in non-wlroots compositor sessions
+        # when the user manager didn't have WAYLAND_DISPLAY at login time.
+        if [[ -n "$timeout_bin" ]]; then
+          $timeout_bin 2s systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
+        else
+          systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
+        fi
+      }
+
+      restart_portals() {
+        if ! command -v systemctl >/dev/null 2>&1; then
+          return 0
+        fi
+
+        local timeout_bin=""
+        if command -v timeout >/dev/null 2>&1; then
+          timeout_bin="timeout"
+        fi
+
+        # xdg-desktop-portal is often started before the compositor exports
+        # XDG_CURRENT_DESKTOP / WAYLAND_DISPLAY into systemd --user. Restarting
+        # it here makes it pick the correct *-portals.conf (and exposes
+        # ScreenCast/Screenshot).
+        if [[ -n "$timeout_bin" ]]; then
+          $timeout_bin 2s systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
+        else
+          systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
+        fi
+      }
+
       restart_dms_if_running() {
         if ! command -v systemctl >/dev/null 2>&1; then
           return 0
@@ -518,8 +612,12 @@ case "${cmd}" in
       ensure_runtime_dir
       detect_wayland_display
       detect_niri_socket
+      ensure_session_identity
       start_clipse_listener
       import_env_to_systemd
+      set_env_in_systemd
+      start_wlr_portal
+      restart_portals
       restart_dms_if_running
       start_target
     )

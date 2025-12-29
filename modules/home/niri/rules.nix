@@ -97,6 +97,24 @@ in
       clip-to-geometry true;
     }
 
+    // Auto-Sizing: Browsers (Wider)
+    window-rule {
+      match app-id=r#"^(firefox|brave-browser|chrome|chromium)$"#;
+      default-column-width { proportion 0.6; }
+    }
+
+    // Auto-Sizing: Chat & Social (Narrow)
+    window-rule {
+      match app-id=r#"^(discord|WebCord|org\.telegram\.desktop|Slack|Signal|whatsapp-for-linux)$"#;
+      default-column-width { proportion 0.33333; }
+    }
+
+    // Auto-Sizing: Terminals & Code (Half Split)
+    window-rule {
+      match app-id=r#"^(kitty|Alacritty|code|vscode|org\.wezfurlong\.wezterm)$"#;
+      default-column-width { proportion 0.5; }
+    }
+
     // Floating Windows
     window-rule {
       match is-floating=true;
@@ -295,6 +313,11 @@ in
     layer-rule {
       match namespace=r#"^dms:blurwallpaper$"#;
       place-within-backdrop true;
+    }
+
+    layer-rule {
+      match namespace=r#"^dms:(bar|dock|panel).*$"#;
+      geometry-corner-radius 0;
     }
 
     layer-rule {

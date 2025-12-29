@@ -93,12 +93,12 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/6a055fc747a5a899b97f9b4c1d1a52229a805b1e"; # 1228 - Updated commit
-#      url = "github:hyprwm/hyprland/a8452705d6512da36f66e4a7d6e7799afbc7ffdd"; # 1228 - Updated commit
+      url = "github:hyprwm/hyprland/ea444c35bb23b6e34505ab6753e069de7801cc25"; # 1229 - Updated commit
+#      url = "github:hyprwm/hyprland/6a055fc747a5a899b97f9b4c1d1a52229a805b1e"; # 1228 - Updated commit
+      #      url = "github:hyprwm/hyprland/a8452705d6512da36f66e4a7d6e7799afbc7ffdd"; # 1228 - Updated commit
       #      url = "github:hyprwm/hyprland/e5d20b56bcad78df42c9060a5d330274b0a6e510"; # 1227 - Updated commit
       #      url = "github:hyprwm/hyprland/5faa66d297752ab0d919bb5719fa0949292fe720"; # 1227 - Updated commit
       #      url = "github:hyprwm/hyprland/42447a50d6840c5e28bd58db1225bae2fd7d5ed0"; # 1227 - Updated commit
-      #      url = "github:hyprwm/hyprland/d7f26038ee2b44f3d02fe2a7556bafb91a02f46e"; # 1227 - Updated commit
     };
 
     hypr-contrib = {
@@ -149,12 +149,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/c281bf3b533af502de379caa0037b171b74eb508"; # 1228 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/7b9ba840fbf17925c00ff80e3f5f1402f056921b"; # 1228 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/2127fc339a69ed3d3c61c0b0fafc5bbe6a0b5507"; # 1230 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/d5c7b5c0cce3faaf56ffb331c7c7bb1c370bf7a6"; # 1229 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/f08e2ef5b8c92c63e6fb92e7b474006836fe4ca1"; # 1229 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/c281bf3b533af502de379caa0037b171b74eb508"; # 1228 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/7b9ba840fbf17925c00ff80e3f5f1402f056921b"; # 1228 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/84fb567ff50b0373ff43f6d66adb1c1e20884119"; # 1228 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/7aff1182c83386213b8abc3a018f1e8cf2031b03"; # 1227 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/4493b7c231863cfeeb59164516626d43637dbca7"; # 1227 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/23a93082c654695c22b2e7a296fff016f99c1915"; # 1227 - Updated commit
     };
 
     # ==========================================================================
@@ -253,6 +253,8 @@
         overlays = with inputs; [
           nur.overlays.default
           niri.overlays.niri
+          (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
+          (import ./overlays/xdg-desktop-portal-gnome-niri.nix)
         ];
 
         # Modules automatically added to all NixOS systems.
