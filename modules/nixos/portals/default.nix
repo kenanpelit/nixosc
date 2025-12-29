@@ -47,15 +47,17 @@ in
           Hyprland.default = [ "hyprland" "gtk" ];
           hyprland.default = [ "hyprland" "gtk" ];
 
-          # Niri: rely on wlr portal for screencast/screenshot protocols, and gtk
-          # for file picker.
+          # Niri: keep GTK as the general-purpose portal backend, and use GNOME
+          # portal only for ScreenCast/Screenshot (Niri implements Mutter D-Bus).
           niri = {
             # Niri implements Mutter ScreenCast on D-Bus; use the GNOME portal
             # backend for screencast/screenshot, and keep GTK for pickers.
-            default = [ "gnome" "gtk" ];
+            default = [ "gtk" ];
             "org.freedesktop.impl.portal.Access" = [ "gtk" ];
             "org.freedesktop.impl.portal.Notification" = [ "gtk" ];
             "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+            # Avoid GNOME's GlobalShortcuts provider UI popping up under Niri.
+            "org.freedesktop.impl.portal.GlobalShortcuts" = [ "gtk" ];
             "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
             "org.freedesktop.impl.portal.ScreenCast" = [ "gnome" ];
             "org.freedesktop.impl.portal.Screenshot" = [ "gnome" ];
