@@ -49,7 +49,14 @@ in
 
           # Niri: rely on wlr portal for screencast/screenshot protocols, and gtk
           # for file picker.
-          niri.default = [ "wlr" "gtk" ];
+          niri = {
+            default = [ "wlr" "gtk" ];
+            # The upstream `wlr.portal` doesn't list `UseIn=niri`, so we must
+            # explicitly bind these interfaces or ScreenCast/Screenshot won't be
+            # exposed at all (browser will only offer "tab share").
+            "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
+            "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
+          };
 
           # GNOME session.
           GNOME.default = [ "gnome" "gtk" ];
@@ -58,6 +65,8 @@ in
           # Mango's upstream module sets this to "gtk". Force wlr first so
           # screencast/screenshot portals work reliably under dwl-based sessions.
           mango.default = lib.mkForce "wlr;gtk";
+          mango."org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
+          mango."org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
         })
         (lib.mkIf cosmicPortalEnabled {
           COSMIC.default = [ "cosmic" "gtk" ];

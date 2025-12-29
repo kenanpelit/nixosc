@@ -507,6 +507,27 @@ case "${cmd}" in
         systemctl --user start niri-session.target 2>/dev/null || true
       }
 
+      restart_portals() {
+        if ! command -v systemctl >/dev/null 2>&1; then
+          return 0
+        fi
+
+        local timeout_bin=""
+        if command -v timeout >/dev/null 2>&1; then
+          timeout_bin="timeout"
+        fi
+
+        # xdg-desktop-portal is often started before the compositor exports
+        # XDG_CURRENT_DESKTOP / WAYLAND_DISPLAY into systemd --user. Restarting
+        # it here makes it pick the correct *-portals.conf (and exposes
+        # ScreenCast/Screenshot).
+        if [[ -n "$timeout_bin" ]]; then
+          $timeout_bin 2s systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
+        else
+          systemctl --user restart xdg-desktop-portal.service >/dev/null 2>&1 || true
+        fi
+      }
+
       restart_dms_if_running() {
         if ! command -v systemctl >/dev/null 2>&1; then
           return 0
@@ -520,6 +541,7 @@ case "${cmd}" in
       detect_niri_socket
       start_clipse_listener
       import_env_to_systemd
+      restart_portals
       restart_dms_if_running
       start_target
     )
