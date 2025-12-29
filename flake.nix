@@ -253,6 +253,7 @@
         overlays = with inputs; [
           nur.overlays.default
           niri.overlays.niri
+          (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
         ];
 
         # Modules automatically added to all NixOS systems.
