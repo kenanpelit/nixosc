@@ -170,10 +170,14 @@
   };
 
   home.activation.disableCompectaSupportAutostart = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    # If the unit was previously enabled, systemd keeps a symlink in
+    # `default.target.wants/` even if we remove the [Install] section later.
+    # Remove that symlink so the service becomes truly on-demand.
+    rm -f "$HOME/.config/systemd/user/default.target.wants/compecta-support.service"
+
+    # Best-effort: if we're in a live user session, also stop+disable it.
     if command -v systemctl >/dev/null 2>&1; then
-      if systemctl --user is-enabled --quiet compecta-support.service 2>/dev/null; then
-        systemctl --user disable --now compecta-support.service >/dev/null 2>&1 || true
-      fi
+      systemctl --user disable --now compecta-support.service >/dev/null 2>&1 || true
     fi
   '';
 }
