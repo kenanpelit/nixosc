@@ -174,10 +174,14 @@
     # `default.target.wants/` even if we remove the [Install] section later.
     # Remove that symlink so the service becomes truly on-demand.
     rm -f "$HOME/.config/systemd/user/default.target.wants/compecta-support.service"
+    rm -f "$HOME/.config/systemd/user/timers.target.wants/compecta-support.timer"
+    rm -f "$HOME/.config/systemd/user/compecta-support.timer"
 
     # Best-effort: if we're in a live user session, also stop+disable it.
     if command -v systemctl >/dev/null 2>&1; then
       systemctl --user disable --now compecta-support.service >/dev/null 2>&1 || true
+      systemctl --user disable --now compecta-support.timer >/dev/null 2>&1 || true
+      systemctl --user daemon-reload >/dev/null 2>&1 || true
     fi
   '';
 }
