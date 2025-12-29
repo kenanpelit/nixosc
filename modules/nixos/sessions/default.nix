@@ -157,6 +157,7 @@ in
       (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
       
       (lib.optional cfg.enableGnome gnomeSessionWrapper)
+      (lib.optional cfg.enableGnome pkgs."gnome-session")
       
       (lib.optional cfg.enableNiri niriPkg)
       (lib.optional cfg.enableNiri niriSession)
