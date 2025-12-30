@@ -28,12 +28,12 @@ let
     fi
 
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-      # In Hyprland we want 4-finger left/right to change workspace (not monitor).
-      # Keep the Fusuma config shared with Niri by translating monitor-next/prev to workspace-left/right.
+      # In Hyprland we want 4-finger up/down to change workspace (vertical).
+      # Keep the Fusuma config shared by translating monitor-shift to workspace up/down.
       if [[ "$fusuma_mode" == "1" ]]; then
         case "''${1:-}" in
-          -mn) shift; set -- -wr "''${@}" ;;
-          -mp) shift; set -- -wl "''${@}" ;;
+          -msf) shift; set -- -wu "''${@}" ;;
+          -ms) shift; set -- -wd "''${@}" ;;
         esac
       fi
       exec "$router" "$@"
@@ -70,8 +70,8 @@ let
       *Hyprland*|*hyprland*)
         if [[ "$fusuma_mode" == "1" ]]; then
           case "''${1:-}" in
-            -mn) shift; set -- -wr "''${@}" ;;
-            -mp) shift; set -- -wl "''${@}" ;;
+            -msf) shift; set -- -wu "''${@}" ;;
+            -ms) shift; set -- -wd "''${@}" ;;
           esac
         fi
         exec "$router" "$@"
