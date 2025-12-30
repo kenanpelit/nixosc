@@ -43,7 +43,7 @@ let
       # Avoid conflicting with Niri's built-in 3/4-finger gestures when invoked from Fusuma.
       if [[ "$fusuma_mode" == "1" ]]; then
         case "''${1:-}" in
-          -wl|-wr|-wt|-mt|-ms|-msf|-tn|-tp)
+          -wl|-wr|-wu|-wd|-wt|-mt|-ms|-msf|-tn|-tp)
             exit 0
             ;;
         esac
@@ -141,6 +141,22 @@ let
     echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
     exit 127
   '';
+
+  overview = pkgs.writeShellScriptBin "fusuma-overview" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || [[ "''${XDG_CURRENT_DESKTOP:-}" == *Hyprland* ]] || [[ "''${XDG_SESSION_DESKTOP:-}" == *Hyprland* ]]; then
+      if command -v dms >/dev/null 2>&1; then
+        exec dms ipc call hypr toggleOverview
+      fi
+      echo "fusuma-overview: dms not found in PATH" >&2
+      exit 127
+    fi
+
+    # Niri has built-in gestures for overview; avoid double-triggering.
+    exit 0
+  '';
 in
 {
   options.my.user.fusuma = {
@@ -151,6 +167,7 @@ in
     home.packages = [
       workspaceMonitor
       fullscreen
+      overview
     ];
 
     # Bind Fusuma lifecycle to compositor session targets (instead of
@@ -220,17 +237,17 @@ in
               threshold = 0.6;
             };
             up = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wu";
               threshold = 0.6;
             };
             down = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wd";
               threshold = 0.6;
             };
           };
           "4" = {
-            up.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -msf";
-            down.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -ms";
+            up.command = "${overview}/bin/fusuma-overview";
+            down.command = "${overview}/bin/fusuma-overview";
             right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn";
             left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp";
           };
