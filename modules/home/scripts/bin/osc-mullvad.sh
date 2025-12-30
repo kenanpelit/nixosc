@@ -414,7 +414,10 @@ get_city_name() {
 
 # Get current relay
 get_current_relay() {
-	mullvad relay get | grep 'Location:' | awk -F'hostname ' '{print $2}'
+	# mullvad relay get shows *constraints*, not the currently connected relay.
+	# The connected relay is exposed in `mullvad status -v` as:
+	#   Relay: us-nyc-wg-803 (23.234.101.13:443/UDP)
+	mullvad status -v 2>/dev/null | awk '/Relay:/ {print $2; exit}'
 }
 
 # Get random relay
@@ -689,7 +692,13 @@ migrate_favorites_format() {
 		return 0 # Dosya boş veya yok, bir şey yapmaya gerek yok
 	fi
 
+	# Only migrate if we have legacy (no "|") entries (ignore empty lines).
+	if ! awk 'NF && $0 !~ /\|/ { found=1 } END { exit !found }' "$FAVORITES_FILE"; then
+		return 0
+	fi
+
 	local temp_file="${FAVORITES_FILE}.tmp"
+	: >"$temp_file"
 
 	while read -r line; do
 		# Eğer satır zaten | içeriyorsa, yeni formatta demektir
