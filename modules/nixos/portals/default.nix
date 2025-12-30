@@ -28,7 +28,7 @@ in
       extraPortals =
         (lib.optional cfg.enableHyprland hyprPortalPkg)
         ++ (lib.optional cosmicPortalEnabled cosmicPortalPkg)
-        ++ (lib.optional ((cfg.enableMangowc or false) || cfg.enableNiri) pkgs.xdg-desktop-portal-wlr)
+        ++ (lib.optional cfg.enableNiri pkgs.xdg-desktop-portal-wlr)
         ++ [ 
           pkgs.xdg-desktop-portal-gtk 
           pkgs.xdg-desktop-portal-gnome
@@ -67,13 +67,6 @@ in
           # GNOME session.
           GNOME.default = [ "gnome" "gtk" ];
         }
-        (lib.mkIf (cfg.enableMangowc or false) {
-          # Mango's upstream module sets this to "gtk". Force wlr first so
-          # screencast/screenshot portals work reliably under dwl-based sessions.
-          mango.default = lib.mkForce "wlr;gtk";
-          mango."org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
-          mango."org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
-        })
         (lib.mkIf cosmicPortalEnabled {
           COSMIC.default = [ "cosmic" "gtk" ];
           cosmic.default = [ "cosmic" "gtk" ];

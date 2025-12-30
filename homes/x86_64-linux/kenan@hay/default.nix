@@ -38,10 +38,6 @@
   my.desktop.gnome.enable = true;
   my.desktop.sway.enable = true; # VM management
   my.desktop.niri.enable = true;
-  my.desktop.mangowc = {
-    enable = true;
-    enableHardwareConfig = true;
-  };
   my.desktop.cosmic.enable = true;
   
   # Components

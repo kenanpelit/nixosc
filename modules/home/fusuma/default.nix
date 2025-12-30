@@ -10,10 +10,8 @@ let
   cfg = config.my.user.fusuma;
   sessionTargets = [
     # Only start Fusuma inside compositor sessions that are known to support it.
-    # Niri/Mango sessions start their own targets via niri-set/mango-set.
     "hyprland-session.target"
     "niri-session.target"
-    "mango-session.target"
   ];
   workspaceMonitor = pkgs.writeShellScriptBin "fusuma-workspace-monitor" ''
     #!/usr/bin/env bash
@@ -28,12 +26,12 @@ let
     fi
 
     if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-      # In Hyprland we want 4-finger left/right to change workspace (not monitor).
-      # Keep the Fusuma config shared with Niri by translating monitor-next/prev to workspace-left/right.
+      # In Hyprland we want 4-finger up/down to change workspace (vertical).
+      # Keep the Fusuma config shared by translating monitor-shift to workspace up/down.
       if [[ "$fusuma_mode" == "1" ]]; then
         case "''${1:-}" in
-          -mn) shift; set -- -wr "''${@}" ;;
-          -mp) shift; set -- -wl "''${@}" ;;
+          -msf) shift; set -- -wu "''${@}" ;;
+          -ms) shift; set -- -wd "''${@}" ;;
         esac
       fi
       exec "$router" "$@"
@@ -43,7 +41,7 @@ let
       # Avoid conflicting with Niri's built-in 3/4-finger gestures when invoked from Fusuma.
       if [[ "$fusuma_mode" == "1" ]]; then
         case "''${1:-}" in
-          -wl|-wr|-wt|-mt|-ms|-msf|-tn|-tp)
+          -wl|-wr|-wu|-wd|-wt|-mt|-ms|-msf|-tn|-tp)
             exit 0
             ;;
         esac
@@ -52,26 +50,11 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
-      *mango*|*Mango*)
-        # Mango sessions: route to the unified workspace router.
-        # Fusuma's config uses -mn/-mp for 4-finger right/left; in Mango we want
-        # that gesture to change workspace, not monitor.
-        if [[ "$fusuma_mode" == "1" ]]; then
-          case "''${1:-}" in
-            -mn) shift; set -- -wr "''${@}" ;;
-            -mp) shift; set -- -wl "''${@}" ;;
-          esac
-        fi
-        exec "$router" "$@"
-        ;;
-    esac
-
-    case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
         if [[ "$fusuma_mode" == "1" ]]; then
           case "''${1:-}" in
-            -mn) shift; set -- -wr "''${@}" ;;
-            -mp) shift; set -- -wl "''${@}" ;;
+            -msf) shift; set -- -wu "''${@}" ;;
+            -ms) shift; set -- -wd "''${@}" ;;
           esac
         fi
         exec "$router" "$@"
@@ -88,7 +71,7 @@ let
         ;;
     esac
 
-    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
+    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
     exit 127
   '';
 
@@ -117,15 +100,6 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
-      *mango*|*Mango*)
-        if command -v mmsg >/dev/null 2>&1; then
-          # Mango doesn't expose a stable "set fullscreen on/off" IPC in this repo;
-          # keep it simple and toggle.
-          exec mmsg -s -d togglefullscreen
-        fi
-        echo "fusuma-fullscreen: mmsg not found in PATH" >&2
-        exit 127
-        ;;
       *Hyprland*|*hyprland*)
         exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1
         ;;
@@ -138,8 +112,24 @@ let
         ;;
     esac
 
-    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
+    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
     exit 127
+  '';
+
+  overview = pkgs.writeShellScriptBin "fusuma-overview" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || [[ "''${XDG_CURRENT_DESKTOP:-}" == *Hyprland* ]] || [[ "''${XDG_SESSION_DESKTOP:-}" == *Hyprland* ]]; then
+      if command -v dms >/dev/null 2>&1; then
+        exec dms ipc call hypr toggleOverview
+      fi
+      echo "fusuma-overview: dms not found in PATH" >&2
+      exit 127
+    fi
+
+    # Niri has built-in gestures for overview; avoid double-triggering.
+    exit 0
   '';
 in
 {
@@ -151,10 +141,11 @@ in
     home.packages = [
       workspaceMonitor
       fullscreen
+      overview
     ];
 
     # Bind Fusuma lifecycle to compositor session targets (instead of
-    # graphical-session.target), so it reliably starts on Niri/Mango too.
+    # graphical-session.target), so it reliably starts on Niri/Hyprland.
     systemd.user.services.fusuma = {
       Unit = {
         After = sessionTargets;
@@ -220,17 +211,17 @@ in
               threshold = 0.6;
             };
             up = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wu";
               threshold = 0.6;
             };
             down = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mt";
+              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wd";
               threshold = 0.6;
             };
           };
           "4" = {
-            up.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -msf";
-            down.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -ms";
+            up.command = "${overview}/bin/fusuma-overview";
+            down.command = "${overview}/bin/fusuma-overview";
             right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn";
             left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp";
           };
