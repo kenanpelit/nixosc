@@ -10,10 +10,8 @@ let
   cfg = config.my.user.fusuma;
   sessionTargets = [
     # Only start Fusuma inside compositor sessions that are known to support it.
-    # Niri/Mango sessions start their own targets via niri-set/mango-set.
     "hyprland-session.target"
     "niri-session.target"
-    "mango-session.target"
   ];
   workspaceMonitor = pkgs.writeShellScriptBin "fusuma-workspace-monitor" ''
     #!/usr/bin/env bash
@@ -52,21 +50,6 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
-      *mango*|*Mango*)
-        # Mango sessions: route to the unified workspace router.
-        # Fusuma's config uses -mn/-mp for 4-finger right/left; in Mango we want
-        # that gesture to change workspace, not monitor.
-        if [[ "$fusuma_mode" == "1" ]]; then
-          case "''${1:-}" in
-            -mn) shift; set -- -wr "''${@}" ;;
-            -mp) shift; set -- -wl "''${@}" ;;
-          esac
-        fi
-        exec "$router" "$@"
-        ;;
-    esac
-
-    case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
       *Hyprland*|*hyprland*)
         if [[ "$fusuma_mode" == "1" ]]; then
           case "''${1:-}" in
@@ -88,7 +71,7 @@ let
         ;;
     esac
 
-    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
+    echo "fusuma-workspace-monitor: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
     exit 127
   '';
 
@@ -117,15 +100,6 @@ let
     fi
 
     case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
-      *mango*|*Mango*)
-        if command -v mmsg >/dev/null 2>&1; then
-          # Mango doesn't expose a stable "set fullscreen on/off" IPC in this repo;
-          # keep it simple and toggle.
-          exec mmsg -s -d togglefullscreen
-        fi
-        echo "fusuma-fullscreen: mmsg not found in PATH" >&2
-        exit 127
-        ;;
       *Hyprland*|*hyprland*)
         exec ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1
         ;;
@@ -138,7 +112,7 @@ let
         ;;
     esac
 
-    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET or XDG_CURRENT_DESKTOP=mango)" >&2
+    echo "fusuma-fullscreen: compositor not detected (need HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)" >&2
     exit 127
   '';
 
@@ -171,7 +145,7 @@ in
     ];
 
     # Bind Fusuma lifecycle to compositor session targets (instead of
-    # graphical-session.target), so it reliably starts on Niri/Mango too.
+    # graphical-session.target), so it reliably starts on Niri/Hyprland.
     systemd.user.services.fusuma = {
       Unit = {
         After = sessionTargets;

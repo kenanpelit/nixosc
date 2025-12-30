@@ -125,12 +125,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # MangoWC (mango): dwl-based Wayland compositor
-    mango = {
-      url = "github:DreamMaoMao/mango";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # ==========================================================================
     # Desktop: Theming
     # ==========================================================================
@@ -267,7 +261,6 @@
           # Using `default` keeps us compatible and avoids the deprecation warning.
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
-          mango.nixosModules.mango
         ];
 
         # Special arguments available to all modules.
