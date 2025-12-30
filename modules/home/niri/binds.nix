@@ -248,10 +248,10 @@
 
       Mod+Alt+Return repeat=false hotkey-overlay-title="SemsuMo Daily" { spawn "semsumo" "launch" "--daily" "-all"; }
       Mod+Shift+A repeat=false hotkey-overlay-title="Niri Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
-      Mod+Alt+Left hotkey-overlay-title="Column Width: -100" { spawn "niri" "msg" "action" "set-column-width" "-100"; }
-      Mod+Alt+Right hotkey-overlay-title="Column Width: +100" { spawn "niri" "msg" "action" "set-column-width" "+100"; }
-      Mod+Alt+Up hotkey-overlay-title="Window Height: -100" { spawn "niri" "msg" "action" "set-window-height" "-100"; }
-      Mod+Alt+Down hotkey-overlay-title="Window Height: +100" { spawn "niri" "msg" "action" "set-window-height" "+100"; }
+      Mod+Ctrl+Alt+Left hotkey-overlay-title="Column Width: -100" { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+      Mod+Ctrl+Alt+Right hotkey-overlay-title="Column Width: +100" { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+      Mod+Ctrl+Alt+Up hotkey-overlay-title="Window Height: -100" { spawn "niri" "msg" "action" "set-window-height" "-100"; }
+      Mod+Ctrl+Alt+Down hotkey-overlay-title="Window Height: +100" { spawn "niri" "msg" "action" "set-window-height" "+100"; }
 
       // Launchers
       Alt+Space repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
