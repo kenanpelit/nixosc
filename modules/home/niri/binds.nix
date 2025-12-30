@@ -84,9 +84,8 @@
       // Window Controls
       Mod+Q hotkey-overlay-title="Window: Close" { close-window; }
       Mod+M hotkey-overlay-title="Column: Maximize" { maximize-column; }
-      Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Maximize To Edges" { spawn "niri" "msg" "action" "maximize-window-to-edges"; }
-      Mod+F11 hotkey-overlay-title="Window: Fullscreen" { fullscreen-window; }
-      Mod+Ctrl+Shift+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { toggle-windowed-fullscreen; }
+      Mod+Ctrl+G repeat=false hotkey-overlay-title="Window Maximize To Edges" { spawn "niri" "msg" "action" "maximize-window-to-edges"; }
+      Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
       Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
@@ -122,6 +121,10 @@
       Mod+Alt+L hotkey-overlay-title="Monitor: Focus Right" { focus-monitor-right; }
       Mod+Alt+K hotkey-overlay-title="Monitor: Focus Up" { focus-monitor-up; }
       Mod+Alt+J hotkey-overlay-title="Monitor: Focus Down" { focus-monitor-down; }
+      Mod+Alt+Left hotkey-overlay-title="Monitor: Focus Left" { focus-monitor-left; }
+      Mod+Alt+Right hotkey-overlay-title="Monitor: Focus Right" { focus-monitor-right; }
+      Mod+Alt+Up hotkey-overlay-title="Monitor: Focus Up" { focus-monitor-up; }
+      Mod+Alt+Down hotkey-overlay-title="Monitor: Focus Down" { focus-monitor-down; }
 
       // Move Windows
       Mod+Shift+Left hotkey-overlay-title="Move: Column Left" { move-column-left; }
