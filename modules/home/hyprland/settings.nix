@@ -180,6 +180,9 @@ in
   };
 
   gestures = {
+    # Hyprland's built-in workspace swipe conflicts with Fusuma (we use 3-finger
+    # vertical workspace switching + 4-finger overview via Fusuma, Niri-style).
+    workspace_swipe = false;
     workspace_swipe_distance = 300;
     workspace_swipe_touch = false;
     workspace_swipe_touch_invert = false;
