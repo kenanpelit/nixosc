@@ -121,13 +121,13 @@ in
       "linear, 0.00, 0.00, 1.00, 1.00"
     ];
     animation = [
-      "windows, 1, 3, overshoot, slide"
-      "windowsOut, 1, 2, easeOutCirc, popin 80%"
-      "fade, 1, 4, easeOutCirc"
-      "workspaces, 1, 4, catppuccinSmooth, slide"
-      "border, 1, 1, linear"
-    ];
-  };
+	      "windows, 1, 3, overshoot, slide"
+	      "windowsOut, 1, 2, easeOutCirc, popin 80%"
+	      "fade, 1, 4, easeOutCirc"
+	      "workspaces, 1, 4, catppuccinSmooth, slidevert"
+	      "border, 1, 1, linear"
+	    ];
+	  };
 
   input = {
     kb_layout = "tr";

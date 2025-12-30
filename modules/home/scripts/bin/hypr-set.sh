@@ -1285,10 +1285,10 @@ switch_workspace_direction() {
 	safe_write_file "$PREVIOUS_WS_FILE" "$current_ws"
 
 	case $direction in
-	"left" | "Left" | "-1")
+	"left" | "Left" | "-1" | "up" | "Up")
 		hyprctl dispatch workspace m-1
 		;;
-	"right" | "Right" | "+1")
+	"right" | "Right" | "+1" | "down" | "Down")
 		hyprctl dispatch workspace m+1
 		;;
 	esac
@@ -1783,21 +1783,31 @@ main() {
 			switch_to_workspace "$prev_ws"
 			shift
 			;;
-		-wr)
-			log_debug "Switching to workspace on right"
-			switch_workspace_direction "right"
-			shift
-			;;
-		-wl)
-			log_debug "Switching to workspace on left"
-			switch_workspace_direction "left"
-			shift
-			;;
-		-wn)
-			if [[ -z "${2:-}" ]]; then
-				log_error "Workspace number is required for -wn"
-				log_info "Usage: $0 -wn <workspace_number> (1-10)"
-				exit 1
+			-wr)
+				log_debug "Switching to workspace on right"
+				switch_workspace_direction "right"
+				shift
+				;;
+			-wl)
+				log_debug "Switching to workspace on left"
+				switch_workspace_direction "left"
+				shift
+				;;
+			-wu)
+				log_debug "Switching to workspace up"
+				switch_workspace_direction "up"
+				shift
+				;;
+			-wd)
+				log_debug "Switching to workspace down"
+				switch_workspace_direction "down"
+				shift
+				;;
+			-wn)
+				if [[ -z "${2:-}" ]]; then
+					log_error "Workspace number is required for -wn"
+					log_info "Usage: $0 -wn <workspace_number> (1-10)"
+					exit 1
 			fi
 
 			if ! validate_workspace "$2"; then
