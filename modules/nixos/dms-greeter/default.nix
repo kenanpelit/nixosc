@@ -17,7 +17,7 @@ let
   hyprPkg =
     if config.programs ? hyprland && config.programs.hyprland ? package
     then config.programs.hyprland.package
-    else pkgs.hyprland;
+    else inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   niriPkg =
     if config.programs ? niri && config.programs.niri ? package
@@ -39,6 +39,14 @@ let
     path="''${path//:''${wrapper_dir}:/:}"
     path="''${path%:}"
     export PATH="${hyprPkg}/bin''${path}"
+
+    # If start-hyprland calls `Hyprland` with its internal args (like
+    # `--watchdog-fd`), don't re-wrap it into another start-hyprland process.
+    for arg in "$@"; do
+      if [ "$arg" = "--watchdog-fd" ] && [ -x "${hyprPkg}/bin/Hyprland" ]; then
+        exec "${hyprPkg}/bin/Hyprland" "$@"
+      fi
+    done
 
     if [ -x "${hyprPkg}/bin/start-hyprland" ]; then
       exec "${hyprPkg}/bin/start-hyprland" "$@"
