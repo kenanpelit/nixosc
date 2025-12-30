@@ -343,6 +343,10 @@ in
     layer-rule {
       match namespace="^notifications$";
       block-out-from "screencast";
+    }
+
+    layer-rule {
+      match namespace="^notifications$";
       block-out-from "screen-capture";
     }
   '';
