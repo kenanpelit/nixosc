@@ -420,6 +420,59 @@ get_current_relay() {
 	mullvad status -v 2>/dev/null | awk '/Relay:/ {print $2; exit}'
 }
 
+get_relay_ipv4() {
+	local relay="$1"
+	[[ -n "$relay" ]] || return 0
+
+	# Example relay list line:
+	#   us-nyc-wg-803 (23.234.101.3, 2607:9000:a000:33::f001) - WireGuard, hosted by ...
+	mullvad relay list 2>/dev/null | awk -v r="$relay" '
+		$1 == r {
+			ip = $2
+			gsub(/[(),]/, "", ip)
+			if (ip ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/) { print ip }
+			exit
+		}
+	'
+}
+
+ping_avg_ms() {
+	local ip="$1"
+	local count="${2:-3}"
+	local timeout="${3:-2}"
+
+	command -v ping >/dev/null 2>&1 || {
+		echo "N/A"
+		return 0
+	}
+
+	local avg=""
+	avg=$(
+		ping -c "$count" -W "$timeout" "$ip" 2>/dev/null |
+			awk -F'/' '/^(rtt|round-trip)/ {print $5; exit}'
+	)
+
+	if [[ -n "$avg" ]]; then
+		echo "$avg"
+	else
+		echo "N/A"
+	fi
+}
+
+favorites_upsert() {
+	local relay="$1"
+	local ping_avg="${2:-N/A}"
+	local tmp_file="${FAVORITES_FILE}.tmp"
+
+	awk -F'|' -v r="$relay" -v p="$ping_avg" '
+		BEGIN { updated = 0 }
+		$1 == r { print r "|" p; updated = 1; next }
+		NF { print }
+		END { if (!updated) print r "|" p }
+	' "$FAVORITES_FILE" >"$tmp_file"
+	mv "$tmp_file" "$FAVORITES_FILE"
+}
+
 # Get random relay
 get_random_relay() {
 	local country=$1
@@ -552,25 +605,27 @@ manage_favorites() {
 			return 1
 		fi
 
-		# Check if relay is already in favorites
+		local existed="false"
 		if grep -q "^$current_relay|" "$FAVORITES_FILE" || grep -q "^$current_relay$" "$FAVORITES_FILE"; then
-			log "Relay $current_relay is already in favorites"
-			notify "ℹ️ MULLVAD VPN" "Relay already in favorites" "security-medium"
+			existed="true"
+		fi
+
+		local ip=""
+		ip="$(get_relay_ipv4 "$current_relay")"
+
+		local ping_avg="N/A"
+		if [[ -n "$ip" ]]; then
+			ping_avg="$(ping_avg_ms "$ip" 3 2)"
+		fi
+
+		favorites_upsert "$current_relay" "$ping_avg"
+
+		if [[ "$existed" == "true" ]]; then
+			log "Updated $current_relay in favorites (ping: $ping_avg ms)"
+			notify "ℹ️ MULLVAD VPN" "Relay ping updated (${ping_avg} ms)" "security-medium"
 		else
-			# Ping ile kaydetmek için ping testi yap
-			local ip=$(mullvad relay list | grep -E "^[[:space:]]*$current_relay" | awk '{print $2}' | tr -d '(),')
-			local ping_avg="N/A"
-
-			if [[ -n "$ip" && "$ip" != *":"* ]]; then
-				ping_result=$(ping -c 3 -W 2 $ip 2>/dev/null | grep 'avg' | awk -F '/' '{print $5}')
-				if [[ -n "$ping_result" ]]; then
-					ping_avg=$ping_result
-				fi
-			fi
-
-			echo "$current_relay|$ping_avg" >>"$FAVORITES_FILE"
 			log "Added $current_relay to favorites (ping: $ping_avg ms)"
-			notify "⭐ MULLVAD VPN" "Added relay to favorites (ping: $ping_avg ms)" "security-high"
+			notify "⭐ MULLVAD VPN" "Added relay to favorites (${ping_avg} ms)" "security-high"
 		fi
 		;;
 
@@ -1136,19 +1191,18 @@ find_fastest_relay() {
 		connect_to_relay "$best_relay"
 
 		if [[ "$add_to_favorites" == "true" ]]; then
-			# Relay ping süresiyle birlikte kaydet
-			local relay_with_ping="${best_relay}|${best_avg}"
-
-			# Favorilerde olup olmadığını kontrol et
+			local existed="false"
 			if grep -q "^${best_relay}|" "$FAVORITES_FILE"; then
-				log "Relay $best_relay is already in favorites, updating ping time"
-				# Mevcut satırı güncelle
-				sed -i "s|^${best_relay}|.*|${relay_with_ping}|" "$FAVORITES_FILE"
-				notify "ℹ️ MULLVAD VPN" "Relay ping time updated in favorites (${best_avg} ms)" "security-medium"
+				existed="true"
+			fi
+
+			favorites_upsert "$best_relay" "$best_avg"
+			if [[ "$existed" == "true" ]]; then
+				log "Relay ping time updated in favorites (${best_avg} ms): ${best_relay}"
+				notify "ℹ️ MULLVAD VPN" "Relay ping updated (${best_avg} ms)" "security-medium"
 			else
-				echo "$relay_with_ping" >>"$FAVORITES_FILE"
 				log "Added $best_relay to favorites (ping: ${best_avg} ms)"
-				notify "⭐ MULLVAD VPN" "Added fastest relay to favorites (${best_avg} ms)" "security-high"
+				notify "⭐ MULLVAD VPN" "Added fastest relay (${best_avg} ms)" "security-high"
 			fi
 		fi
 	else
