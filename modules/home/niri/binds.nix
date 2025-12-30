@@ -84,7 +84,7 @@
       // Window Controls
       Mod+Q hotkey-overlay-title="Window: Close" { close-window; }
       Mod+M hotkey-overlay-title="Column: Maximize" { maximize-column; }
-      Mod+Ctrl+G repeat=false hotkey-overlay-title="Window Maximize To Edges" { spawn "niri" "msg" "action" "maximize-window-to-edges"; }
+      Mod+Ctrl+G repeat=false hotkey-overlay-title="Window Maximize To Edges" { maximize-window-to-edges; }
       Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
