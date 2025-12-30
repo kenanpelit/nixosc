@@ -14,7 +14,6 @@ in {
     enableHyprland = mkEnableOption "Hyprland Wayland compositor";
     enableGnome    = mkEnableOption "GNOME desktop environment";
     enableNiri     = mkEnableOption "Niri compositor";
-    enableMangowc  = mkEnableOption "MangoWC (mango) compositor";
     enableCosmic   = mkEnableOption "COSMIC (Epoch) desktop environment";
 
     defaultSession = mkOption {
