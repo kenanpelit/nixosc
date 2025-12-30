@@ -32,7 +32,6 @@ in
       services.displayManager.defaultSession =
         if cfg.defaultSession != null then cfg.defaultSession
         else if cfg.enableHyprland then "hyprland-optimized"
-        else if cfg.enableMangowc then "mango-optimized"
         else if cfg.enableGnome then "gnome"
         else if cfg.enableCosmic then "cosmic-optimized"
         else null;

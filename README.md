@@ -44,7 +44,6 @@ A comprehensive, declarative, and modular NixOS configuration built on **Snowfal
 - **Architecture:** Snowfall Lib (auto module discovery)
 - **Desktop Sessions:**
   - **Niri:** Scrollable-tiling compositor, powered by [niri-flake](https://github.com/sodiboo/niri-flake) for build-time config validation and binary caching.
-  - **MangoWC (mango):** dwl-based compositor with a Niri-like keybind layout.
   - **Hyprland:** Dynamic tiling compositor with extensive customization.
   - **GNOME / COSMIC / Sway:** Available as additional sessions.
 - **Shell / Panel:** [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS) integration for panels, widgets, and lock screen.
@@ -68,9 +67,8 @@ The repository follows the Snowfall Lib layout, where modules are automatically 
 │   └── home/             # User-level modules (apps, WMs, shell config)
 │       ├── niri/         # Modular Niri config (binds, rules, settings)
 │       ├── hyprland/     # Modular Hyprland config
-│       ├── mangowc/      # Modular MangoWC config (settings/binds/rules)
 │       └── dms/          # DankMaterialShell configuration
-│       └── scripts/      # Helper scripts (niri-set/hypr-set/mango-set, etc.)
+│       └── scripts/      # Helper scripts (niri-set/hypr-set, etc.)
 ├── homes/                # Home-Manager profiles per host/user
 ├── overlays/             # 🔧 Nixpkgs overlays
 └── secrets/              # 🔐 SOPS-encrypted secrets
@@ -82,7 +80,6 @@ The repository follows the Snowfall Lib layout, where modules are automatically 
 | ------------------------ | -------------------------------------------------------------------------------------------------- |
 | **Framework**            | [Snowfall Lib](https://github.com/snowfallorg/lib)                                                 |
 | **Niri Compositor**      | Uses `niri-flake` (unstable) for latest features, build-time validation, and caching.              |
-| **MangoWC (mango)**      | dwl-based compositor; keybinds aligned with Niri for consistent muscle memory.                     |
 | **Hyprland**             | Pinned flake input for stability; configs split into `binds.nix`, `rules.nix`, etc.                |
 | **Shell/UI**             | **DankMaterialShell** (Quickshell-based). Provides top bar, dock, and OSDs.                        |
 | **Launchers**            | DMS Spotlight (primary), Rofi (fallback), Walker.                                                  |
@@ -133,16 +130,16 @@ To update flake inputs (including Niri unstable):
 
 ## ⌨️ Keybindings
 
-This repo aims for **shared muscle memory** across Niri, MangoWC and Hyprland.
+This repo aims for **shared muscle memory** across Niri and Hyprland.
 
-### Shared (Niri / MangoWC / Hyprland)
+### Shared (Niri / Hyprland)
 
 - **Modifier:** `Super` (Windows Key)
 - **General:**
   - `Super + Enter` -> Terminal (Kitty)
   - `Super + Space` -> DMS Spotlight (Launcher)
   - `Alt + Space` -> Rofi (fallback launcher)
-  - `Alt + L` -> Lock (via `niri-set` / `mango-set` / `hyprlock`)
+  - `Alt + L` -> Lock
 - **Navigation:**
   - `Super + Arrows` or `h/j/k/l` -> Move focus
   - `Super + Shift + Arrows` -> Move window
@@ -157,13 +154,6 @@ This repo aims for **shared muscle memory** across Niri, MangoWC and Hyprland.
 - `Super + Up/Down` or `Super + K/J` -> Workspace up/down
 - `Alt + 1..9` -> Move column to workspace
 
-### MangoWC (mango)
-
-- `Super + S` -> Overview
-- `Super + Up/Down` or `Super + K/J` -> Previous/next tag
-- `Super + 1..9` -> View tag
-- `Alt + 1..9` -> Move window to tag
-
 ### Hyprland
 
 - `Super + Tab` -> Overview (DMS Hypr module)
@@ -172,7 +162,7 @@ This repo aims for **shared muscle memory** across Niri, MangoWC and Hyprland.
 ## 🛠 Advanced Features
 
 ### Modular WM Configuration
-Niri, Hyprland, and MangoWC configurations are split into granular Nix files for better maintainability:
+Niri and Hyprland configurations are split into granular Nix files for better maintainability:
 - `binds.nix`: Keybindings
 - `rules.nix`: Window & Layer rules
 - `settings.nix`: Core compositor settings
@@ -182,7 +172,6 @@ Niri, Hyprland, and MangoWC configurations are split into granular Nix files for
 To keep compositor sessions consistent and avoid “one-off” tweaks, common tasks are centralized in scripts under `modules/home/scripts/bin/`:
 
 - `niri-set`: session start/init, window arranging, lock, diagnostics (`niri-set doctor`)
-- `mango-set`: session start/init, workspace routing, lock
 - `hypr-set`: session init + env sync helpers
 - `wm-workspace`: routes workspace actions across compositors (used by Fusuma)
 

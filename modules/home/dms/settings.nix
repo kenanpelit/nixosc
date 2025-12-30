@@ -16,7 +16,6 @@ let
     # Only start DMS inside compositor sessions that are known to support it.
     "hyprland-session.target"
     "niri-session.target"
-    "mango-session.target"
   ];
 in
 lib.mkIf cfg.enable {

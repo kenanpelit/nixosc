@@ -256,11 +256,31 @@ in
       open-focused true;
     }
 
-    // Privacy - block from screencast
+    // Privacy - block from screencast (xdg-desktop-portal / screen sharing)
     window-rule {
       match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
       match app-id=r#"^org\.gnome\.World\.Secrets$"#;
+      match app-id=r#"^com\.bitwarden\.desktop$"#;
+      match app-id=r#"^io\.ente\.auth$"#;
+      match app-id=r#"^clipse$"#;
+      match app-id=r#"^gcr-prompter$"#;
+      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+      match app-id=r#"^(nm-connection-editor|blueman-manager)$"#;
+      match app-id=r#"^(discord|WebCord|ferdium|com\.rtosta\.zapzap|org\.telegram\.desktop|Signal|Slack|whatsapp-for-linux)$"#;
       block-out-from "screencast";
+    }
+
+    // Privacy - block from *all* screen captures (screenshots + screencasts)
+    // Note: interactive built-in screenshot UI still works; only "automatic" capture is blocked.
+    window-rule {
+      match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
+      match app-id=r#"^org\.gnome\.World\.Secrets$"#;
+      match app-id=r#"^com\.bitwarden\.desktop$"#;
+      match app-id=r#"^io\.ente\.auth$"#;
+      match app-id=r#"^clipse$"#;
+      match app-id=r#"^gcr-prompter$"#;
+      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+      block-out-from "screen-capture";
     }
 
     // Screencast indicator (dynamic cast / window cast target)
@@ -323,6 +343,11 @@ in
     layer-rule {
       match namespace="^notifications$";
       block-out-from "screencast";
+    }
+
+    layer-rule {
+      match namespace="^notifications$";
+      block-out-from "screen-capture";
     }
   '';
 }

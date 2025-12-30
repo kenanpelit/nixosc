@@ -79,20 +79,16 @@
       // ========================================================================
 
       // Applications
-      Mod+Return repeat=false hotkey-overlay-title="App Terminal" { spawn "${bins.kitty}"; }
-      Mod+T repeat=false hotkey-overlay-title=null { spawn "${bins.kitty}"; }
+      Mod+T repeat=false hotkey-overlay-title="App Terminal" { spawn "${bins.kitty}"; }
 
       // Window Controls
       Mod+Q hotkey-overlay-title="Window: Close" { close-window; }
-      Mod+F hotkey-overlay-title="Column: Maximize" { maximize-column; }
-      Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Maximize To Edges" { spawn "niri" "msg" "action" "maximize-window-to-edges"; }
-      Mod+Shift+F hotkey-overlay-title="Window: Fullscreen" { fullscreen-window; }
-      Mod+Ctrl+Shift+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { toggle-windowed-fullscreen; }
+      Mod+M hotkey-overlay-title="Column: Maximize" { maximize-column; }
+      Mod+Ctrl+G repeat=false hotkey-overlay-title="Window Maximize To Edges" { spawn "niri" "msg" "action" "maximize-window-to-edges"; }
+      Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
-      Mod+Shift+Space repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
-      // Mod+Alt+Shift+Space hotkey-overlay-title="Tile (force)" { move-window-to-tiling; }
-      Mod+Alt+Shift+Space hotkey-overlay-title="Tile (from float)" { move-window-to-tiling; }
+      Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
 
       // NOTE:
       // Mod+BackSpace is reserved for Nirius scratchpad toggle (see nirius section).
@@ -100,10 +96,10 @@
       Mod+Ctrl+BackSpace hotkey-overlay-title="Focus: Float ↔ Tile" { switch-focus-between-floating-and-tiling; }
 
       // Dynamic screencast target (OBS: "niri Dynamic Cast Target")
-      Mod+Ctrl+Shift+W repeat=false hotkey-overlay-title="Cast Focused Window" { set-dynamic-cast-window; }
-      Mod+Ctrl+Shift+M repeat=false hotkey-overlay-title="Cast Focused Monitor" { set-dynamic-cast-monitor; }
-      Mod+Ctrl+Shift+C repeat=false hotkey-overlay-title="Cast Clear Target" { clear-dynamic-cast-target; }
-      Mod+Ctrl+Shift+P repeat=false hotkey-overlay-title="Cast Pick Window" { spawn "${bins.niriSet}" "cast" "pick"; }
+      Mod+F9 repeat=false hotkey-overlay-title="Cast: Window" { set-dynamic-cast-window; }
+      Mod+Shift+F9 repeat=false hotkey-overlay-title="Cast: Monitor" { set-dynamic-cast-monitor; }
+      Mod+Ctrl+F9 repeat=false hotkey-overlay-title="Cast: Clear" { clear-dynamic-cast-target; }
+      Mod+Alt+F9 repeat=false hotkey-overlay-title="Cast: Pick Window" { spawn "${bins.niriSet}" "cast" "pick"; }
 
       // Column Operations
       Mod+BracketLeft hotkey-overlay-title="Column: Consume/Expel Left" { consume-or-expel-window-left; }
@@ -125,6 +121,10 @@
       Mod+Alt+L hotkey-overlay-title="Monitor: Focus Right" { focus-monitor-right; }
       Mod+Alt+K hotkey-overlay-title="Monitor: Focus Up" { focus-monitor-up; }
       Mod+Alt+J hotkey-overlay-title="Monitor: Focus Down" { focus-monitor-down; }
+      Mod+Alt+Left hotkey-overlay-title="Monitor: Focus Left" { focus-monitor-left; }
+      Mod+Alt+Right hotkey-overlay-title="Monitor: Focus Right" { focus-monitor-right; }
+      Mod+Alt+Up hotkey-overlay-title="Monitor: Focus Up" { focus-monitor-up; }
+      Mod+Alt+Down hotkey-overlay-title="Monitor: Focus Down" { focus-monitor-down; }
 
       // Move Windows
       Mod+Shift+Left hotkey-overlay-title="Move: Column Left" { move-column-left; }
@@ -143,10 +143,7 @@
       Mod+Ctrl+Down hotkey-overlay-title="Move: To Monitor Down" { move-column-to-monitor-down; }
 
       // Alternative Navigation
-      Mod+Page_Up hotkey-overlay-title="Workspace: Up" { focus-workspace-up; }
-      Mod+Page_Down hotkey-overlay-title="Workspace: Down" { focus-workspace-down; }
-      Mod+Shift+Page_Up hotkey-overlay-title="Move: To Workspace Up" { move-column-to-workspace-up; }
-      Mod+Shift+Page_Down hotkey-overlay-title="Move: To Workspace Down" { move-column-to-workspace-down; }
+      // (PageUp/PageDown bindings removed; keep arrows + vim keys for navigation)
 
       // Screenshots
       Print repeat=false hotkey-overlay-title="Screenshot Selection" { spawn "${bins.dms}" "ipc" "call" "niri" "screenshot"; }
@@ -251,24 +248,23 @@
 
       Mod+Alt+Return repeat=false hotkey-overlay-title="SemsuMo Daily" { spawn "semsumo" "launch" "--daily" "-all"; }
       Mod+Shift+A repeat=false hotkey-overlay-title="Niri Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
-      Mod+Alt+Left hotkey-overlay-title="Column Width: -100" { spawn "niri" "msg" "action" "set-column-width" "-100"; }
-      Mod+Alt+Right hotkey-overlay-title="Column Width: +100" { spawn "niri" "msg" "action" "set-column-width" "+100"; }
-      Mod+Alt+Up hotkey-overlay-title="Window Height: -100" { spawn "niri" "msg" "action" "set-window-height" "-100"; }
-      Mod+Alt+Down hotkey-overlay-title="Window Height: +100" { spawn "niri" "msg" "action" "set-window-height" "+100"; }
+      Mod+Ctrl+Alt+Left hotkey-overlay-title="Column Width: -100" { spawn "niri" "msg" "action" "set-column-width" "-100"; }
+      Mod+Ctrl+Alt+Right hotkey-overlay-title="Column Width: +100" { spawn "niri" "msg" "action" "set-column-width" "+100"; }
+      Mod+Ctrl+Alt+Up hotkey-overlay-title="Window Height: -100" { spawn "niri" "msg" "action" "set-window-height" "-100"; }
+      Mod+Ctrl+Alt+Down hotkey-overlay-title="Window Height: +100" { spawn "niri" "msg" "action" "set-window-height" "+100"; }
 
       // Launchers
       Alt+Space repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
-      Mod+Ctrl+S repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "${bins.nsticky}" "sticky" "toggle-active"; }
-      Mod+Shift+S repeat=false hotkey-overlay-title="Sticky Stage Toggle" { spawn "${bins.nsticky}" "stage" "toggle-active"; }
+      Mod+Ctrl+S repeat=false hotkey-overlay-title="Sticky ↔ Stage Toggle" { spawn "nsticky-toggle"; }
 
       // File Managers
+      Mod+F repeat=false hotkey-overlay-title="Files Nemo" { spawn "nemo"; }
       Alt+F repeat=false hotkey-overlay-title="Files Yazi" { spawn "${bins.kitty}" "-e" "yazi"; }
-      Alt+Ctrl+F repeat=false hotkey-overlay-title="Files Nemo" { spawn "nemo"; }
 
       // Special Apps
       Alt+T repeat=false hotkey-overlay-title="KKENP Start" { spawn "start-kkenp"; }
-      Mod+M repeat=false hotkey-overlay-title="Notes Anotes" { spawn "anotes"; }
+      Alt+N repeat=false hotkey-overlay-title="Notes Anotes" { spawn "anotes"; }
 
       // Tools
       Mod+Shift+C repeat=false hotkey-overlay-title="Tool Color Picker" { spawn "hyprpicker" "-a"; }
@@ -292,12 +288,12 @@
       // ========================================================================
       // MPV Manager
       // ========================================================================
-      Mod+Shift+1 repeat=false hotkey-overlay-title="MPV Playback" { spawn "mpv-manager" "playback"; }
-      Mod+Shift+2 repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "mpv-manager" "play-yt"; }
-      Mod+Shift+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "mpv-manager" "stick"; }
-      Mod+Shift+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "mpv-manager" "move"; }
-      Mod+Shift+5 repeat=false hotkey-overlay-title="MPV Save YouTube" { spawn "mpv-manager" "save-yt"; }
-      Mod+Shift+6 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "mpv-manager" "wallpaper"; }
+      Mod+Ctrl+1 repeat=false hotkey-overlay-title="MPV Playback" { spawn "mpv-manager" "playback"; }
+      Mod+Ctrl+2 repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "mpv-manager" "play-yt"; }
+      Mod+Ctrl+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "mpv-manager" "stick"; }
+      Mod+Ctrl+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "mpv-manager" "move"; }
+      Mod+Ctrl+5 repeat=false hotkey-overlay-title="MPV Save YouTube" { spawn "mpv-manager" "save-yt"; }
+      Mod+Ctrl+6 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "mpv-manager" "wallpaper"; }
   '';
 
   workspaces = ''
@@ -317,15 +313,15 @@
       Mod+9 hotkey-overlay-title="Workspace 9" { focus-workspace "9"; }
 
       // Move to Workspace
-      Alt+1 hotkey-overlay-title="Move To WS 1" { move-column-to-workspace "1"; }
-      Alt+2 hotkey-overlay-title="Move To WS 2" { move-column-to-workspace "2"; }
-      Alt+3 hotkey-overlay-title="Move To WS 3" { move-column-to-workspace "3"; }
-      Alt+4 hotkey-overlay-title="Move To WS 4" { move-column-to-workspace "4"; }
-      Alt+5 hotkey-overlay-title="Move To WS 5" { move-column-to-workspace "5"; }
-      Alt+6 hotkey-overlay-title="Move To WS 6" { move-column-to-workspace "6"; }
-      Alt+7 hotkey-overlay-title="Move To WS 7" { move-column-to-workspace "7"; }
-      Alt+8 hotkey-overlay-title="Move To WS 8" { move-column-to-workspace "8"; }
-      Alt+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
+      Mod+Shift+1 hotkey-overlay-title="Move To WS 1" { move-column-to-workspace "1"; }
+      Mod+Shift+2 hotkey-overlay-title="Move To WS 2" { move-column-to-workspace "2"; }
+      Mod+Shift+3 hotkey-overlay-title="Move To WS 3" { move-column-to-workspace "3"; }
+      Mod+Shift+4 hotkey-overlay-title="Move To WS 4" { move-column-to-workspace "4"; }
+      Mod+Shift+5 hotkey-overlay-title="Move To WS 5" { move-column-to-workspace "5"; }
+      Mod+Shift+6 hotkey-overlay-title="Move To WS 6" { move-column-to-workspace "6"; }
+      Mod+Shift+7 hotkey-overlay-title="Move To WS 7" { move-column-to-workspace "7"; }
+      Mod+Shift+8 hotkey-overlay-title="Move To WS 8" { move-column-to-workspace "8"; }
+      Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
   '';
 
   monitors = ''
@@ -337,4 +333,3 @@
       Mod+Escape repeat=false hotkey-overlay-title="Monitor Move WS / Focus Next" { spawn "sh" "-lc" "niri msg action move-workspace-to-monitor-next || niri msg action focus-monitor-next"; }
   '';
 }
-

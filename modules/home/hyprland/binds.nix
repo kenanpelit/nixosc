@@ -89,10 +89,10 @@ let
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
     "$mainMod, R, submap, resize"
   
-    # Splitting
-    "$mainMod ALT, left, exec, hyprctl dispatch splitratio -0.2"
-    "$mainMod ALT, right, exec, hyprctl dispatch splitratio +0.2"
-  ];
+	    # Splitting
+	    "$mainMod CTRL ALT, left, exec, hyprctl dispatch splitratio -0.2"
+	    "$mainMod CTRL ALT, right, exec, hyprctl dispatch splitratio +0.2"
+	  ];
 
   systemBinds = [
     # Tools
@@ -129,13 +129,13 @@ let
   navBinds = [
     # Workspace Nav
     "ALT, N, workspace, previous"
-    "ALT, Tab, workspace, e+1"
-    "ALT CTRL, tab, workspace, e-1"
-    "$mainMod, page_up, exec, ${bins.hyprSet} workspace-monitor -wl"
-    "$mainMod, page_down, exec, ${bins.hyprSet} workspace-monitor -wr"
-    "$mainMod, bracketleft, workspace, e-1"
-    "$mainMod, bracketright, workspace, e+1"
-    "$mainMod CTRL, c, movetoworkspace, empty"
+	    "ALT, Tab, workspace, e+1"
+	    "ALT CTRL, tab, workspace, e-1"
+	    "$mainMod, page_up, exec, ${bins.hyprSet} workspace-monitor -wu"
+	    "$mainMod, page_down, exec, ${bins.hyprSet} workspace-monitor -wd"
+	    "$mainMod, bracketleft, workspace, e-1"
+	    "$mainMod, bracketright, workspace, e+1"
+	    "$mainMod CTRL, c, movetoworkspace, empty"
     "$mainMod, mouse_down, workspace, e-1"
     "$mainMod, mouse_up, workspace, e+1"
   ]

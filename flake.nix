@@ -120,11 +120,8 @@
     };
 
     # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
-    nsticky.url = "github:lonerOrz/nsticky";
-
-    # MangoWC (mango): dwl-based Wayland compositor
-    mango = {
-      url = "github:DreamMaoMao/mango";
+    nsticky = {
+      url = "github:kenanpelit/nsticky";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -149,12 +146,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/2127fc339a69ed3d3c61c0b0fafc5bbe6a0b5507"; # 1230 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/d5c7b5c0cce3faaf56ffb331c7c7bb1c370bf7a6"; # 1229 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/45ba64ab0292fdf797d886ca8ba762bd7edd2aad"; # 1230 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/2127fc339a69ed3d3c61c0b0fafc5bbe6a0b5507"; # 1230 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/d5c7b5c0cce3faaf56ffb331c7c7bb1c370bf7a6"; # 1229 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/f08e2ef5b8c92c63e6fb92e7b474006836fe4ca1"; # 1229 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/c281bf3b533af502de379caa0037b171b74eb508"; # 1228 - Updated commit
       #      url = "github:AvengeMedia/DankMaterialShell/7b9ba840fbf17925c00ff80e3f5f1402f056921b"; # 1228 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/84fb567ff50b0373ff43f6d66adb1c1e20884119"; # 1228 - Updated commit
     };
 
     # ==========================================================================
@@ -264,7 +261,6 @@
           # Using `default` keeps us compatible and avoids the deprecation warning.
           dankMaterialShell.nixosModules.default
           nix-flatpak.nixosModules.nix-flatpak
-          mango.nixosModules.mango
         ];
 
         # Special arguments available to all modules.
