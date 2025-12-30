@@ -80,6 +80,10 @@ let
     inherit lib config pkgs palette gtkTheme cursorTheme iconTheme;
   };
 
+  monitorsConfig = import ./monitors.nix {
+    inherit lib palette;
+  };
+
 in
 {
   imports = [
@@ -112,23 +116,11 @@ in
       default = true;
       description = "Install niriswitcher application switcher";
     };
-
-    enableHardwareConfig = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Enable static output/workspace pinning (host-specific)";
-    };
-
+    
     enableGamingVrrRules = lib.mkOption {
       type = lib.types.bool;
       default = false;
       description = "Enable VRR window rules for common game launchers (gamescope/steam)";
-    };
-
-    hardwareConfig = lib.mkOption {
-      type = lib.types.lines;
-      default = settingsConfig.hardwareDefault;
-      description = "Niri KDL snippet for outputs/workspaces";
     };
   };
 
@@ -141,7 +133,7 @@ in
     # We concatenate all parts into one big KDL string to avoid 'include' issues during validation.
     programs.niri.config = lib.concatStringsSep "\n" [
       settingsConfig.main
-      (if cfg.enableHardwareConfig then cfg.hardwareConfig else "")
+      monitorsConfig.config
       settingsConfig.layout
       
       # Bindings must be inside a SINGLE `binds {}` block.
