@@ -255,8 +255,6 @@
       SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/keyring/ssh";
     }
 
-    spawn-at-startup "xwayland-satellite";
-
     cursor {
       hide-when-typing;
       hide-after-inactive-ms 1000;
