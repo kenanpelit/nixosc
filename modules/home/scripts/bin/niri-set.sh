@@ -113,35 +113,11 @@ case "${cmd}" in
 
   pin)
     # ----------------------------------------------------------------------------
-    # Pin Mode: Toggle PIP-style floating window (Smart Positioning)
+    # Pin Mode: Toggle PIP-style floating window (Robust Center-Relative Positioning)
     # ----------------------------------------------------------------------------
     (
       set -euo pipefail
       
-      # Helper: Get focused window geometry (x y w h)
-      get_window_geo() {
-        # Retry loop because geometry might not be updated instantly after a mode switch
-        for _ in {1..5}; do
-          local out
-          out="$(niri msg -j focused-window 2>/dev/null)"
-          if [[ -n "$out" ]]; then
-            # Niri JSON schema check
-            local x y w h
-            x="$(echo "$out" | jq -r '.workspace_view_position.x // empty')"
-            y="$(echo "$out" | jq -r '.workspace_view_position.y // empty')"
-            w="$(echo "$out" | jq -r '.window_size.width // empty')"
-            h="$(echo "$out" | jq -r '.window_size.height // empty')"
-            
-            if [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]]; then
-              echo "$x $y $w $h"
-              return 0
-            fi
-          fi
-          sleep 0.05
-        done
-        return 1
-      }
-
       # Helper: Get focused output dimensions (w h)
       get_output_dim() {
         local out
@@ -149,8 +125,8 @@ case "${cmd}" in
         if [[ -n "$out" ]]; then
            echo "$out" | jq -r '(.current_mode.width // .mode.width) as $w | (.current_mode.height // .mode.height) as $h | "\($w) \($h)"'
         else
-           # Fallback
-           echo "1920 1080"
+           # Fallback to primary monitor resolution
+           echo "2560 1440"
         fi
       }
 
@@ -163,45 +139,41 @@ case "${cmd}" in
       # Heuristic: If floating and small width (< 500), assume pinned -> Restore.
       if [[ "$is_floating" == "true" ]] && [[ "$current_w" -lt 500 ]]; then
         niri msg action move-window-to-tiling >/dev/null 2>&1 || true
+        niri msg action reset-window-height >/dev/null 2>&1 || true
       else
         # Pin it
         if [[ "$is_floating" == "false" ]]; then
             niri msg action move-window-to-floating >/dev/null 2>&1 || true
         fi
         
-        # Set target size (PIP standard)
+        # 1. Resize
         target_w=480
         target_h=270
         niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
         niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
         
-        # Get geometry AFTER resize commands have been issued
-        # (get_window_geo has a small retry loop to catch updates)
-        read -r x y w h <<< "$(get_window_geo)"
+        # 2. Center (Reset position to a known state)
+        niri msg action center-window >/dev/null 2>&1 || true
+        
+        # 3. Calculate delta from center to bottom-right
         read -r ow oh <<< "$(get_output_dim)"
+        margin=32
         
-        # Target position: Bottom-Right with margin
-        margin_x=32
-        margin_y=32
+        # Formula: Delta = (Screen / 2) - (Window / 2) - Margin
+        # Logic: Center is at Screen/2. Target edge is at Screen - Margin. 
+        # Window edge needs to move from (Screen/2 + Window/2) to (Screen - Margin).
+        # Actually simplest math:
+        # Center X = (OW - W) / 2
+        # Target X = OW - W - Margin
+        # Delta X = Target X - Center X
+        #         = (OW - W - Margin) - (OW - W)/2
+        #         = (OW/2) - (W/2) - Margin
         
-        tx=$((ow - target_w - margin_x))
-        ty=$((oh - target_h - margin_y))
+        dx=$(( (ow / 2) - (target_w / 2) - margin ))
+        dy=$(( (oh / 2) - (target_h / 2) - margin ))
         
-        # Niri 'move-floating-window' takes delta (dx, dy), not absolute coordinates.
-        dx=$((tx - x))
-        dy=$((ty - y))
-        
-        # Move
+        # 4. Move
         niri msg action move-floating-window -x "$dx" -y "$dy" >/dev/null 2>&1 || true
-        
-        # Double-check (sometimes first move is slightly off due to async geometry updates)
-        sleep 0.1
-        read -r x2 y2 w2 h2 <<< "$(get_window_geo)"
-        dx2=$((tx - x2))
-        dy2=$((ty - y2))
-        if [[ "$dx2" -ne 0 || "$dy2" -ne 0 ]]; then
-           niri msg action move-floating-window -x "$dx2" -y "$dy2" >/dev/null 2>&1 || true
-        fi
       fi
     )
     ;;
