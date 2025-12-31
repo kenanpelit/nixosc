@@ -135,6 +135,10 @@ let
     "$mainMod, down, exec, ${bins.hyprSet} workspace-monitor -wd"
     "$mainMod, j, exec, ${bins.hyprSet} workspace-monitor -wd"
 
+    # Old behavior
+    "ALT, Tab, workspace, e+1"
+    "ALT CTRL, tab, workspace, e-1"
+
     "$mainMod SHIFT, left, movewindow, l"
     "$mainMod SHIFT, h, movewindow, l"
     "$mainMod SHIFT, right, movewindow, r"
@@ -198,12 +202,12 @@ let
     "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
     "$mainMod CTRL, W, exec, dms ipc call file browse wallpaper"
     "$mainMod, S, exec, dms ipc call hypr toggleOverview"
+    "$mainMod, Tab, exec, dms ipc call hypr toggleOverview"
     "$mainMod CTRL, N, exec, dms ipc call notepad open"
 
     # Clipboard & keybinds cheat sheet
     "$mainMod, V, exec, dms ipc call clipboard toggle"
     "$mainMod, F1, exec, dms ipc call keybinds toggle hyprland"
-    "ALT, Tab, exec, dms ipc call spotlight openQuery '!'"
 
     # Audio & brightness (DMS-managed)
     ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
