@@ -146,33 +146,35 @@ case "${cmd}" in
             niri msg action move-window-to-floating >/dev/null 2>&1 || true
         fi
         
-        # 1. Resize
+        # 1. Resize to target PIP size
         target_w=480
         target_h=270
         niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
         niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
         
-        # 2. Center (Reset position to a known state)
+        # 2. Center (Reset position to a known fixed state)
         niri msg action center-window >/dev/null 2>&1 || true
         
-        # 3. Calculate delta from center to bottom-right
+        # 3. Calculate delta from center to TOP-RIGHT (MPV Style)
         read -r ow oh <<< "$(get_output_dim)"
-        margin=32
         
-        # Formula: Delta = (Screen / 2) - (Window / 2) - Margin
-        # Logic: Center is at Screen/2. Target edge is at Screen - Margin. 
-        # Window edge needs to move from (Screen/2 + Window/2) to (Screen - Margin).
-        # Actually simplest math:
-        # Center X = (OW - W) / 2
-        # Target X = OW - W - Margin
-        # Delta X = Target X - Center X
-        #         = (OW - W - Margin) - (OW - W)/2
-        #         = (OW/2) - (W/2) - Margin
+        # User's preferred margins from mpv-manager.sh
+        margin_x=33
+        margin_y=105
         
-        dx=$(( (ow / 2) - (target_w / 2) - margin ))
-        dy=$(( (oh / 2) - (target_h / 2) - margin ))
+        # Target: Top-Right
+        # tx = ow - target_w - margin_x
+        # ty = margin_y
+        #
+        # Center:
+        # cx = (ow - target_w) / 2
+        # cy = (oh - target_h) / 2
+        #
+        # Delta:
+        dx=$(( (ow / 2) - (target_w / 2) - margin_x ))
+        dy=$(( margin_y - (oh / 2) + (target_h / 2) ))
         
-        # 4. Move
+        # 4. Move to exact position
         niri msg action move-floating-window -x "$dx" -y "$dy" >/dev/null 2>&1 || true
       fi
     )
