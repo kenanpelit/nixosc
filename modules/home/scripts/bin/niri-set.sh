@@ -668,14 +668,14 @@ case "${cmd}" in
       if [[ "${NIRI_INIT_SKIP_ARRANGE:-0}" != "1" ]]; then
         # We call the subcommand directly to avoid depending on extra binaries.
         if [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
-          focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-term}"
+          focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
           "$0" arrange-windows --focus "ws:${focus_ws}"
         else
           "$0" arrange-windows
         fi
       elif [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
         # Best-effort fallback: this may refer to workspace index in niri.
-        focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-term}"
+        focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
         niri msg action focus-workspace "$focus_ws" >/dev/null 2>&1 || true
       fi
 
@@ -756,7 +756,7 @@ Notlar:
   niri-set arrange-windows
   niri-set arrange-windows --dry-run
   niri-set arrange-windows --focus 2        # Window ID 2'ye geri odaklan
-  niri-set arrange-windows --focus ws:term  # Workspace "term"'e geç
+  niri-set arrange-windows --focus ws:2     # Workspace 2'ye geç
 EOF
       }
 
@@ -868,17 +868,17 @@ EOF
       if load_rules "$rules_file"; then
         :
       else
-        RULE_PATTERNS+=("^(TmuxKenp|Tmux)$"); RULE_WORKSPACES+=("term"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^(kitty|org\\.wezfurlong\\.wezterm)$"); RULE_WORKSPACES+=("term"); RULE_TITLE_PATTERNS+=("^Tmux$")
-        RULE_PATTERNS+=("^Kenp$"); RULE_WORKSPACES+=("kenp"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^Ai$"); RULE_WORKSPACES+=("ai"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^CompecTA$"); RULE_WORKSPACES+=("cta"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^WebCord$"); RULE_WORKSPACES+=("chat"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^discord$"); RULE_WORKSPACES+=("chat"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^(spotify|Spotify|com\\.spotify\\.Client)$"); RULE_WORKSPACES+=("mus"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^ferdium$"); RULE_WORKSPACES+=("msg"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^org\\.keepassxc\\.KeePassXC$"); RULE_WORKSPACES+=("tools"); RULE_TITLE_PATTERNS+=("")
-        RULE_PATTERNS+=("^brave-youtube\\.com__-Default$"); RULE_WORKSPACES+=("tools"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(TmuxKenp|Tmux)$"); RULE_WORKSPACES+=("2"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(kitty|org\\.wezfurlong\\.wezterm)$"); RULE_WORKSPACES+=("2"); RULE_TITLE_PATTERNS+=("^Tmux$")
+        RULE_PATTERNS+=("^Kenp$"); RULE_WORKSPACES+=("1"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^Ai$"); RULE_WORKSPACES+=("3"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^CompecTA$"); RULE_WORKSPACES+=("4"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^WebCord$"); RULE_WORKSPACES+=("5"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^discord$"); RULE_WORKSPACES+=("5"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(spotify|Spotify|com\\.spotify\\.Client)$"); RULE_WORKSPACES+=("8"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^ferdium$"); RULE_WORKSPACES+=("9"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^org\\.keepassxc\\.KeePassXC$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^brave-youtube\\.com__-Default$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
       fi
 
       focused_id="$("${NIRI[@]}" -j focused-window 2>/dev/null | jq -r '.id // empty' || true)"

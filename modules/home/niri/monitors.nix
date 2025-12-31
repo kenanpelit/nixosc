@@ -13,15 +13,15 @@
     // Hardware Configuration (Monitors & Workspaces)
     // ========================================================================
 
-    // Named Workspaces
-    workspace "kenp" { open-on-output "DP-3"; }
-    workspace "term" { open-on-output "DP-3"; }
-    workspace "ai" { open-on-output "DP-3"; }
-    workspace "cta" { open-on-output "DP-3"; }
-    workspace "chat" { open-on-output "DP-3"; }
-    workspace "media" { open-on-output "DP-3"; }
-    workspace "tools" { open-on-output "eDP-1"; }
-    workspace "mus" {
+    // Named Workspaces (1-9)
+    workspace "1" { open-on-output "DP-3"; }
+    workspace "2" { open-on-output "DP-3"; }
+    workspace "3" { open-on-output "DP-3"; }
+    workspace "4" { open-on-output "DP-3"; }
+    workspace "5" { open-on-output "DP-3"; }
+    workspace "6" { open-on-output "DP-3"; }
+    workspace "7" { open-on-output "eDP-1"; }
+    workspace "8" {
       open-on-output "eDP-1";
       layout {
         gaps 20;
@@ -33,7 +33,7 @@
         }
       }
     }
-    workspace "msg" { open-on-output "eDP-1"; }
+    workspace "9" { open-on-output "eDP-1"; }
 
     // Monitor Configuration
     output "DP-3" {
