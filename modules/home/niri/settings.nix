@@ -295,7 +295,7 @@
     input {
       workspace-auto-back-and-forth;
       focus-follows-mouse max-scroll-amount="0%";
-      warp-mouse-to-focus;
+      warp-mouse-to-focus mode="center-xy";
 
       keyboard {
         xkb {
@@ -334,6 +334,11 @@
         scroll-button 273
         scroll-button-lock
       }
+    }
+
+    // Work around Electron/Chromium apps that treat "activated" as focus.
+    debug {
+      deactivate-unfocused-windows;
     }
 
     // Switch Events

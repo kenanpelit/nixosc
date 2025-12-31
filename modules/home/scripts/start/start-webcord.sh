@@ -48,8 +48,26 @@ if [[ "$WORKSPACE" != "0" ]]; then
         ;;
     niri)
         if command -v niri >/dev/null 2>&1; then
-            echo "Switching to workspace $WORKSPACE..."
-            niri msg action focus-workspace "$WORKSPACE"
+            workspace_to_niri() {
+                local ws="${1:-}"
+                case "$ws" in
+                    0|"") echo "$ws" ;;
+                    1) echo "kenp" ;;
+                    2) echo "term" ;;
+                    3) echo "ai" ;;
+                    4) echo "cta" ;;
+                    5) echo "chat" ;;
+                    6) echo "media" ;;
+                    7) echo "tools" ;;
+                    8) echo "mus" ;;
+                    9) echo "msg" ;;
+                    *) echo "$ws" ;;
+                esac
+            }
+
+            NIRI_WS="$(workspace_to_niri "$WORKSPACE")"
+            echo "Switching to workspace $WORKSPACE (niri: $NIRI_WS)..."
+            niri msg action focus-workspace "$NIRI_WS"
             sleep 1
         fi
         ;;
