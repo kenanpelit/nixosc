@@ -429,11 +429,13 @@
     {
       name = "floating-border";
       "match:float" = true;
+      "match:workspace" = "w[v2-99]s[false]";
       border_size = 2;
     }
     {
       name = "floating-rounding";
       "match:float" = true;
+      "match:workspace" = "w[v2-99]s[false]";
       rounding = 10;
     }
   ];
