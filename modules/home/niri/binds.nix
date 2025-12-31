@@ -88,6 +88,8 @@
       Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
+      Mod+Shift+R hotkey-overlay-title="Column: Width 75%" { set-column-width "75%"; }
+      Mod+0 hotkey-overlay-title="Column: Center" { center-column; }
       Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
 
       // NOTE:
