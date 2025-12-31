@@ -40,33 +40,58 @@ let
       ${lib.optionalString focus "open-focused true;"}
     '';
 
+  renderMatchAppIds = appIdRegexes:
+    lib.concatStringsSep "\n" (map (r: ''      match app-id=r#"${r}"#;'' ) appIdRegexes);
+
+  privacyScreencastAppIds = [
+    "^org\\.keepassxc\\.KeePassXC$"
+    "^org\\.gnome\\.World\\.Secrets$"
+    "^com\\.bitwarden\\.desktop$"
+    "^io\\.ente\\.auth$"
+    "^clipse$"
+    "^gcr-prompter$"
+    "^polkit-gnome-authentication-agent-1$"
+    "^(nm-connection-editor|blueman-manager)$"
+    "^(discord|WebCord|ferdium|com\\.rtosta\\.zapzap|org\\.telegram\\.desktop|Signal|Slack|whatsapp-for-linux)$"
+  ];
+
+  privacyScreenCaptureAppIds = [
+    "^org\\.keepassxc\\.KeePassXC$"
+    "^org\\.gnome\\.World\\.Secrets$"
+    "^com\\.bitwarden\\.desktop$"
+    "^io\\.ente\\.auth$"
+    "^clipse$"
+    "^gcr-prompter$"
+    "^polkit-gnome-authentication-agent-1$"
+  ];
+
   # ----------------------------------------------------------------------------
   # Workspace assignment rules for daily apps
   # ----------------------------------------------------------------------------
   workspaceRules = [
-    { appId = "^discord$"; workspace = "5"; maximize = true; }
-    { appId = "^WebCord$"; workspace = "5"; maximize = true; }
-    { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "8"; }
-    { appId = "^audacious$"; workspace = "5"; }
-    { appId = "^transmission$"; workspace = "7"; }
-    { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "7"; }
-    { appId = "^Kenp$"; workspace = "1"; maximize = true; }
-    { appId = "^Ai$"; workspace = "3"; maximize = true; }
-    { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
-    { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; maximize = true; }
-    { appId = "^ferdium$"; workspace = "9"; maximize = true; }
-    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; maximize = true; }
-    { appId = "^org\.telegram\.desktop$"; workspace = "6"; maximize = true; }
-    { appId = "^vlc$"; workspace = "6"; }
-    { appId = "^remote-viewer$"; workspace = "6"; maximize = true; }
+    { appId = "^discord$"; workspace = "chat"; maximize = true; }
+    { appId = "^WebCord$"; workspace = "chat"; maximize = true; }
+    { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "mus"; }
+    { appId = "^audacious$"; workspace = "chat"; }
+    { appId = "^transmission$"; workspace = "tools"; }
+    { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "tools"; }
+    { appId = "^Kenp$"; workspace = "kenp"; maximize = true; }
+    { appId = "^Ai$"; workspace = "ai"; maximize = true; }
+    { appId = "^CompecTA$"; workspace = "cta"; maximize = true; }
+    { appId = "^brave-youtube\.com__-Default$"; workspace = "tools"; maximize = true; }
+    { appId = "^ferdium$"; workspace = "msg"; maximize = true; }
+    { appId = "^com\.rtosta\.zapzap$"; workspace = "msg"; maximize = true; }
+    { appId = "^org\.telegram\.desktop$"; workspace = "media"; maximize = true; }
+    { appId = "^vlc$"; workspace = "media"; }
+    { appId = "^remote-viewer$"; workspace = "media"; maximize = true; }
   ];
 
   # Rules for the "arrange windows" helper script.
   arrangeRules =
     [
       # Terminal / session anchor
-      { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; }
-      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "2"; }
+      { appId = "^(TmuxKenp|Tmux)$"; workspace = "term"; }
+      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "term"; }
     ]
     ++ workspaceRules;
 
@@ -191,7 +216,7 @@ in
     window-rule {
       match app-id=r#"^(TmuxKenp|Tmux)$"#;
       match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
-      open-on-workspace "2";
+      open-on-workspace "term";
       open-maximized true;
       open-maximized-to-edges true;
       open-focused true;
@@ -258,28 +283,14 @@ in
 
     // Privacy - block from screencast (xdg-desktop-portal / screen sharing)
     window-rule {
-      match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
-      match app-id=r#"^org\.gnome\.World\.Secrets$"#;
-      match app-id=r#"^com\.bitwarden\.desktop$"#;
-      match app-id=r#"^io\.ente\.auth$"#;
-      match app-id=r#"^clipse$"#;
-      match app-id=r#"^gcr-prompter$"#;
-      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-      match app-id=r#"^(nm-connection-editor|blueman-manager)$"#;
-      match app-id=r#"^(discord|WebCord|ferdium|com\.rtosta\.zapzap|org\.telegram\.desktop|Signal|Slack|whatsapp-for-linux)$"#;
+${renderMatchAppIds privacyScreencastAppIds}
       block-out-from "screencast";
     }
 
     // Privacy - block from *all* screen captures (screenshots + screencasts)
     // Note: interactive built-in screenshot UI still works; only "automatic" capture is blocked.
     window-rule {
-      match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
-      match app-id=r#"^org\.gnome\.World\.Secrets$"#;
-      match app-id=r#"^com\.bitwarden\.desktop$"#;
-      match app-id=r#"^io\.ente\.auth$"#;
-      match app-id=r#"^clipse$"#;
-      match app-id=r#"^gcr-prompter$"#;
-      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+${renderMatchAppIds privacyScreenCaptureAppIds}
       block-out-from "screen-capture";
     }
 
