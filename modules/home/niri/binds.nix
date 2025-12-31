@@ -91,6 +91,8 @@
       Mod+Shift+R hotkey-overlay-title="Column: Width 75%" { set-column-width "75%"; }
       Mod+0 hotkey-overlay-title="Column: Center" { center-column; }
       Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
+      Mod+Z repeat=false hotkey-overlay-title="Zen Mode Toggle" { spawn "${bins.niriSet}" "zen"; }
+      Mod+P repeat=false hotkey-overlay-title="Pin Window (PIP)" { spawn "${bins.niriSet}" "pin"; }
 
       // NOTE:
       // Mod+BackSpace is reserved for Nirius scratchpad toggle (see nirius section).
@@ -158,6 +160,8 @@
       Mod+Ctrl+Alt+R repeat=false hotkey-overlay-title="Niri Reload Config" { spawn "niri" "msg" "action" "load-config-file"; }
 
       // Mouse Wheel
+      Mod+Shift+WheelScrollDown hotkey-overlay-title="Opacity: -10%" { spawn "niri" "msg" "action" "set-window-opacity" "-0.1"; }
+      Mod+Shift+WheelScrollUp   hotkey-overlay-title="Opacity: +10%" { spawn "niri" "msg" "action" "set-window-opacity" "+0.1"; }
       Mod+WheelScrollDown cooldown-ms=150 hotkey-overlay-title="Workspace: Down" { focus-workspace-down; }
       Mod+WheelScrollUp   cooldown-ms=150 hotkey-overlay-title="Workspace: Up" { focus-workspace-up; }
       Mod+WheelScrollRight hotkey-overlay-title="Focus: Right" { focus-column-right; }

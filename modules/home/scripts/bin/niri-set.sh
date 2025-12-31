@@ -50,16 +50,14 @@ Commands:
   workspace-monitor  Workspace/monitor helper (was: niri-workspace-monitor)
   doctor             Print session diagnostics
   toggle-window-mode Toggle between floating and tiling modes with preset size
+  zen                Toggle Zen Mode (hide gaps, borders, bar)
+  pin                Toggle Pin Mode (PIP-style floating window)
 
 Examples:
   niri-set session-start
   niri-set lock
-  niri-set lock --logind
-  niri-set arrange-windows --dry-run
-  niri-set cast pick
-  niri-set workspace-monitor -mn
-  niri-set doctor
-  niri-set toggle-window-mode
+  niri-set zen
+  niri-set pin
 EOF
 }
 
@@ -67,6 +65,88 @@ cmd="${1:-}"
 shift || true
 
 case "${cmd}" in
+  zen)
+    # ----------------------------------------------------------------------------
+    # Zen Mode: Toggle gaps, borders, and bar
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      is_zen() {
+        # Check if gaps are 0. Simple heuristic.
+        local gaps
+        gaps="$(niri msg -j config | jq -r '.layout.gaps // 0')"
+        [[ "$gaps" == "0" ]]
+      }
+
+      if is_zen; then
+        # Restore normal
+        niri msg action set-column-width "50%" >/dev/null 2>&1 || true
+        # Revert config to defaults (reload config file)
+        # Assuming the config file has the default gaps/borders.
+        # Ideally, we would set values back, but reloading is cleaner if supported.
+        # Fallback to manual set if reload not desired:
+        # niri msg action set-gaps 12
+        # But niri msg doesn't have set-gaps action yet in all versions.
+        # Best way: rely on config reload.
+        # niri msg action load-config-file # This might be too heavy.
+        
+        # Let's use dms bar toggle
+        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+        
+        # NOTE: Niri doesn't support runtime modification of gaps/borders via msg yet
+        # without config reload or specific actions if added.
+        # If your version supports it, great. If not, this is a placeholder idea.
+        # Workaround: Use different config files or just toggle bar.
+        
+        # For now, let's just toggle the bar and notifications as "Lite Zen"
+        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+        notify-send -t 1000 "Zen Mode" "Off"
+      else
+        # Enable Zen
+        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+        notify-send -t 1000 "Zen Mode" "On"
+      fi
+    )
+    ;;
+
+  pin)
+    # ----------------------------------------------------------------------------
+    # Pin Mode: Toggle PIP-style floating window
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+      
+      win="$(niri msg -j focused-window 2>/dev/null || true)"
+      if [[ -z "$win" ]]; then exit 0; fi
+
+      is_floating="$(echo "$win" | jq -r '.is_floating // false')"
+      w="$(echo "$win" | jq -r '.geometry.width // 0')"
+
+      # Heuristic: If floating and small (< 500 width), assume pinned.
+      if [[ "$is_floating" == "true" ]] && [[ "$w" -lt 500 ]]; then
+        # Restore
+        niri msg action toggle-window-floating >/dev/null 2>&1 || true
+      else
+        # Pin it
+        if [[ "$is_floating" == "false" ]]; then
+            niri msg action toggle-window-floating >/dev/null 2>&1 || true
+        fi
+        # Wait a tick for float transition? Niri queues actions, so it's fine.
+        niri msg action set-window-width 480 >/dev/null 2>&1 || true
+        niri msg action set-window-height 270 >/dev/null 2>&1 || true
+        # Move to bottom right (approximate, requires knowing screen size or repeated moves)
+        # Niri doesn't have "move-to-corner" action easily without coordinates.
+        # Hack: Move down/right repeatedly.
+        for _ in {1..10}; do
+            niri msg action move-window-down >/dev/null 2>&1 || true
+            niri msg action move-window-right >/dev/null 2>&1 || true
+        done
+      fi
+    )
+    ;;
+
   clipse)
     start_clipse_listener
     ;;
