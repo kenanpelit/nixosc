@@ -302,26 +302,26 @@
       // ========================================================================
 
       // Focus Workspace
-      Mod+1 hotkey-overlay-title="WS: kenp" { focus-workspace "kenp"; }
-      Mod+2 hotkey-overlay-title="WS: term" { focus-workspace "term"; }
-      Mod+3 hotkey-overlay-title="WS: ai" { focus-workspace "ai"; }
-      Mod+4 hotkey-overlay-title="WS: cta" { focus-workspace "cta"; }
-      Mod+5 hotkey-overlay-title="WS: chat" { focus-workspace "chat"; }
-      Mod+6 hotkey-overlay-title="WS: media" { focus-workspace "media"; }
-      Mod+7 hotkey-overlay-title="WS: tools" { focus-workspace "tools"; }
-      Mod+8 hotkey-overlay-title="WS: mus" { focus-workspace "mus"; }
-      Mod+9 hotkey-overlay-title="WS: msg" { focus-workspace "msg"; }
+      Mod+1 hotkey-overlay-title="Workspace 1" { focus-workspace "1"; }
+      Mod+2 hotkey-overlay-title="Workspace 2" { focus-workspace "2"; }
+      Mod+3 hotkey-overlay-title="Workspace 3" { focus-workspace "3"; }
+      Mod+4 hotkey-overlay-title="Workspace 4" { focus-workspace "4"; }
+      Mod+5 hotkey-overlay-title="Workspace 5" { focus-workspace "5"; }
+      Mod+6 hotkey-overlay-title="Workspace 6" { focus-workspace "6"; }
+      Mod+7 hotkey-overlay-title="Workspace 7" { focus-workspace "7"; }
+      Mod+8 hotkey-overlay-title="Workspace 8" { focus-workspace "8"; }
+      Mod+9 hotkey-overlay-title="Workspace 9" { focus-workspace "9"; }
 
       // Move to Workspace
-      Mod+Shift+1 hotkey-overlay-title="Move: kenp" { move-column-to-workspace "kenp"; }
-      Mod+Shift+2 hotkey-overlay-title="Move: term" { move-column-to-workspace "term"; }
-      Mod+Shift+3 hotkey-overlay-title="Move: ai" { move-column-to-workspace "ai"; }
-      Mod+Shift+4 hotkey-overlay-title="Move: cta" { move-column-to-workspace "cta"; }
-      Mod+Shift+5 hotkey-overlay-title="Move: chat" { move-column-to-workspace "chat"; }
-      Mod+Shift+6 hotkey-overlay-title="Move: media" { move-column-to-workspace "media"; }
-      Mod+Shift+7 hotkey-overlay-title="Move: tools" { move-column-to-workspace "tools"; }
-      Mod+Shift+8 hotkey-overlay-title="Move: mus" { move-column-to-workspace "mus"; }
-      Mod+Shift+9 hotkey-overlay-title="Move: msg" { move-column-to-workspace "msg"; }
+      Mod+Shift+1 hotkey-overlay-title="Move To WS 1" { move-column-to-workspace "1"; }
+      Mod+Shift+2 hotkey-overlay-title="Move To WS 2" { move-column-to-workspace "2"; }
+      Mod+Shift+3 hotkey-overlay-title="Move To WS 3" { move-column-to-workspace "3"; }
+      Mod+Shift+4 hotkey-overlay-title="Move To WS 4" { move-column-to-workspace "4"; }
+      Mod+Shift+5 hotkey-overlay-title="Move To WS 5" { move-column-to-workspace "5"; }
+      Mod+Shift+6 hotkey-overlay-title="Move To WS 6" { move-column-to-workspace "6"; }
+      Mod+Shift+7 hotkey-overlay-title="Move To WS 7" { move-column-to-workspace "7"; }
+      Mod+Shift+8 hotkey-overlay-title="Move To WS 8" { move-column-to-workspace "8"; }
+      Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
   '';
 
   monitors = ''

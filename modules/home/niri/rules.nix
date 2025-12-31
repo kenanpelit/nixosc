@@ -69,29 +69,29 @@ let
   # Workspace assignment rules for daily apps
   # ----------------------------------------------------------------------------
   workspaceRules = [
-    { appId = "^discord$"; workspace = "chat"; maximize = true; }
-    { appId = "^WebCord$"; workspace = "chat"; maximize = true; }
-    { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "mus"; }
-    { appId = "^audacious$"; workspace = "chat"; }
-    { appId = "^transmission$"; workspace = "tools"; }
-    { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "tools"; }
-    { appId = "^Kenp$"; workspace = "kenp"; maximize = true; }
-    { appId = "^Ai$"; workspace = "ai"; maximize = true; }
-    { appId = "^CompecTA$"; workspace = "cta"; maximize = true; }
-    { appId = "^brave-youtube\.com__-Default$"; workspace = "tools"; maximize = true; }
-    { appId = "^ferdium$"; workspace = "msg"; maximize = true; }
-    { appId = "^com\.rtosta\.zapzap$"; workspace = "msg"; maximize = true; }
-    { appId = "^org\.telegram\.desktop$"; workspace = "media"; maximize = true; }
-    { appId = "^vlc$"; workspace = "media"; }
-    { appId = "^remote-viewer$"; workspace = "media"; maximize = true; }
+    { appId = "^discord$"; workspace = "5"; maximize = true; }
+    { appId = "^WebCord$"; workspace = "5"; maximize = true; }
+    { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "8"; }
+    { appId = "^audacious$"; workspace = "5"; }
+    { appId = "^transmission$"; workspace = "7"; }
+    { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "7"; }
+    { appId = "^Kenp$"; workspace = "1"; maximize = true; }
+    { appId = "^Ai$"; workspace = "3"; maximize = true; }
+    { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
+    { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; maximize = true; }
+    { appId = "^ferdium$"; workspace = "9"; maximize = true; }
+    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; maximize = true; }
+    { appId = "^org\.telegram\.desktop$"; workspace = "6"; maximize = true; }
+    { appId = "^vlc$"; workspace = "6"; }
+    { appId = "^remote-viewer$"; workspace = "6"; maximize = true; }
   ];
 
   # Rules for the "arrange windows" helper script.
   arrangeRules =
     [
       # Terminal / session anchor
-      { appId = "^(TmuxKenp|Tmux)$"; workspace = "term"; }
-      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "term"; }
+      { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; }
+      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "2"; }
     ]
     ++ workspaceRules;
 
@@ -216,7 +216,7 @@ in
     window-rule {
       match app-id=r#"^(TmuxKenp|Tmux)$"#;
       match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
-      open-on-workspace "term";
+      open-on-workspace "2";
       open-maximized true;
       open-maximized-to-edges true;
       open-focused true;

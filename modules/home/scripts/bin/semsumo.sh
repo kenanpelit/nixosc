@@ -205,23 +205,6 @@ setup_external_monitor() {
   fi
 }
 
-workspace_to_niri() {
-  local ws="${1:-}"
-  case "$ws" in
-    0|"") echo "$ws" ;;
-    1) echo "kenp" ;;
-    2) echo "term" ;;
-    3) echo "ai" ;;
-    4) echo "cta" ;;
-    5) echo "chat" ;;
-    6) echo "media" ;;
-    7) echo "tools" ;;
-    8) echo "mus" ;;
-    9) echo "msg" ;;
-    *) echo "$ws" ;;
-  esac
-}
-
 switch_workspace() {
   local workspace="$1"
 
@@ -242,10 +225,8 @@ switch_workspace() {
     ;;
   niri)
     if command -v niri >/dev/null 2>&1; then
-      local niri_ws
-      niri_ws="$(workspace_to_niri "$workspace")"
-      log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri: ${niri_ws:-?})"
-      niri msg action focus-workspace "$niri_ws"
+      log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri)"
+      niri msg action focus-workspace "$workspace"
       sleep 1
     fi
     ;;
@@ -656,26 +637,8 @@ if [[ "$WORKSPACE" != "0" ]]; then
         ;;
     niri)
         if command -v niri >/dev/null 2>&1; then
-            workspace_to_niri() {
-                local ws="${1:-}"
-                case "$ws" in
-                    0|"") echo "$ws" ;;
-                    1) echo "kenp" ;;
-                    2) echo "term" ;;
-                    3) echo "ai" ;;
-                    4) echo "cta" ;;
-                    5) echo "chat" ;;
-                    6) echo "media" ;;
-                    7) echo "tools" ;;
-                    8) echo "mus" ;;
-                    9) echo "msg" ;;
-                    *) echo "$ws" ;;
-                esac
-            }
-
-            NIRI_WS="$(workspace_to_niri "$WORKSPACE")"
-            echo "Switching to workspace $WORKSPACE (niri: $NIRI_WS)..."
-            niri msg action focus-workspace "$NIRI_WS"
+            echo "Switching to workspace $WORKSPACE..."
+            niri msg action focus-workspace "$WORKSPACE"
             sleep 1
         fi
         ;;
