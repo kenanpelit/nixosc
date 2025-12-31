@@ -35,9 +35,9 @@ let
     (map (n: mkWorkspaceEntry { monitor = primaryMonitor; index = n; isDefault = n == 1; }) (lib.range 1 6))
     ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitor; index = n; isDefault = n == 7; }) (lib.range 7 9))
     ++ [
-      # Smart borders
-      "w[v1]s[false], bordersize:0, rounding:false"
-      "f[1]s[false], bordersize:0, rounding:false"
+      # Smart borders - Disabled to show borders always
+      # "w[v1]s[false], bordersize:0, rounding:false"
+      # "f[1]s[false], bordersize:0, rounding:false"
       "w[v2-99]s[false], bordersize:3, rounding:true"
       # Special workspaces
       "special:dropdown, gapsout:0, gapsin:0"
@@ -52,10 +52,10 @@ in
 
   general = {
     "$mainMod" = "SUPER";
-    gaps_in = 0;
-    gaps_out = 0;
+    gaps_in = 5;
+    gaps_out = 10;
     border_size = 2;
-    "col.active_border" = activeBorder;
+    "col.active_border" = "${mkColor colors.cyan.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
     "col.inactive_border" = inactiveBorder;
     layout = "master";
     allow_tearing = false;
