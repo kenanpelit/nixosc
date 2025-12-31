@@ -36,9 +36,9 @@ let
     ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitor; index = n; isDefault = n == 7; }) (lib.range 7 9))
     ++ [
       # Smart borders
-      "w[tv1]s[false], bordersize:0, rounding:false"
+      "w[v1]s[false], bordersize:0, rounding:false"
       "f[1]s[false], bordersize:0, rounding:false"
-      "w[t2-99]s[false], bordersize:3, rounding:true"
+      "w[v2-99]s[false], bordersize:3, rounding:true"
       # Special workspaces
       "special:dropdown, gapsout:0, gapsin:0"
       "special:scratchpad, gapsout:0, gapsin:0"
