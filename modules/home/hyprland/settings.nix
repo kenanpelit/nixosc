@@ -55,7 +55,7 @@ in
     gaps_in = 5;
     gaps_out = 10;
     border_size = 2;
-    "col.active_border" = "${mkColor colors.cyan.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
+    "col.active_border" = "${mkColor colors.teal.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
     "col.inactive_border" = inactiveBorder;
     layout = "master";
     allow_tearing = false;
