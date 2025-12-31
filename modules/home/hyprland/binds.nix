@@ -77,11 +77,14 @@ let
     "$mainMod SHIFT, F, fullscreen, 1"
     "$mainMod CTRL, F, fullscreen, 0"
     "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
-    "$mainMod, P, pseudo,"
+    "$mainMod, P, exec, ${bins.hyprSet} pin"
+    "$mainMod, Z, exec, ${bins.hyprSet} zen"
     "$mainMod, X, togglesplit,"
     "$mainMod SHIFT, G, togglegroup"
     "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
     "$mainMod SHIFT, S, pin"
+    "$mainMod SHIFT, mouse_down, exec, ${bins.hyprSet} opacity"
+    "$mainMod SHIFT, mouse_up, exec, ${bins.hyprSet} opacity"
   
     # Layout
     "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"

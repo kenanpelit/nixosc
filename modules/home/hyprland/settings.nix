@@ -83,7 +83,7 @@ in
   decoration = {
     rounding = 10;
     active_opacity = 1.0;
-    inactive_opacity = 0.95;
+    inactive_opacity = 0.85;
     fullscreen_opacity = 1.0;
     dim_inactive = true;
     dim_strength = 0.15;
@@ -104,9 +104,9 @@ in
       enabled = true;
       ignore_window = true;
       offset = "0 4";
-      range = 25;
-      render_power = 2;
-      color = mkColor colors.crust.hex 0.26;
+      range = 30;
+      render_power = 4;
+      color = "0x66000000";
       scale = 0.97;
     };
   };
@@ -116,15 +116,15 @@ in
     bezier = [
       "fluent, 0.05, 0.20, 0.00, 1.00"
       "easeOutCirc, 0.00, 0.55, 0.45, 1.00"
-      "overshoot, 0.20, 0.80, 0.20, 1.20"
+      "overshoot, 0.05, 0.9, 0.1, 1.1"
       "catppuccinSmooth, 0.25, 0.1, 0.25, 1"
       "linear, 0.00, 0.00, 1.00, 1.00"
     ];
     animation = [
-	      "windows, 1, 3, overshoot, slide"
-	      "windowsOut, 1, 2, easeOutCirc, popin 80%"
+	      "windows, 1, 4, overshoot, slide"
+	      "windowsOut, 1, 3, easeOutCirc, popin 80%"
 	      "fade, 1, 4, easeOutCirc"
-	      "workspaces, 1, 4, catppuccinSmooth, slidevert"
+	      "workspaces, 1, 5, overshoot, slidevert"
 	      "border, 1, 1, linear"
 	    ];
 	  };
