@@ -66,7 +66,7 @@
       // to compile for any reason, niri falls back to the default shader.
 
       workspace-switch {
-        spring damping-ratio=0.9 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.8 stiffness=800 epsilon=0.0001;
       }
 
       window-open {
@@ -111,13 +111,13 @@
 
       // Keep these identical for best synchronized animations.
       horizontal-view-movement {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.8 stiffness=700 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.8 stiffness=700 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.8 stiffness=700 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -294,7 +294,7 @@
     // Input Configuration
     input {
       workspace-auto-back-and-forth;
-      focus-follows-mouse max-scroll-amount="0%";
+      focus-follows-mouse;
       warp-mouse-to-focus mode="center-xy";
 
       keyboard {

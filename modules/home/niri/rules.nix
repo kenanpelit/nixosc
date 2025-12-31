@@ -151,10 +151,10 @@ in
       match is-floating=false;
       shadow {
         on;
-        color "#00000040";
-        offset x=4 y=4;
-        spread 4;
-        softness 12;
+        color "#00000060";
+        offset x=0 y=4;
+        spread 0;
+        softness 16;
       }
     }
 
@@ -335,7 +335,7 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       exclude app-id=r#"^vlc$"#;
       exclude title=r#"^Picture-in-Picture$"#;
       exclude app-id=r#"^steam_app_\d+$"#;
-      opacity 0.95;
+      opacity 0.85;
     }
 
     // ========================================================================
