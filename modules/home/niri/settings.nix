@@ -314,7 +314,7 @@
         tap-button-map "left-right-middle"
         middle-emulation
         click-method "clickfinger"
-        accel-profile "flat"
+        accel-profile "adaptive"
         accel-speed 1.0
         scroll-method "two-finger"
         scroll-factor 1.0
