@@ -60,61 +60,79 @@
 
   animations = ''
     animations {
-      // Professional Workflow: Fluid, fast, and stable (no overshoot).
+      // Premium Feel: Controlled micro-bounce and elegant entry.
 
       workspace-switch {
-        spring damping-ratio=0.9 stiffness=1000 epsilon=0.0001;
+        spring damping-ratio=0.96 stiffness=1200 epsilon=0.0001;
       }
 
       window-open {
-        duration-ms 200;
-        curve "cubic-bezier" 0.05 0.9 0.1 1.0;
+        duration-ms 240;
+        curve "ease-out-expo";
 
         custom-shader r"
           vec4 open_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Subtle scale-up (0.98 → 1.0).
-            float scale = mix(0.98, 1.0, p);
-            coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
+            // Scale: 0.96 -> 1.0 (Subtle pop)
+            float scale = mix(0.96, 1.0, p);
+            
+            // Slide Up: Translate Y slightly as it opens
+            // (Simulates lifting the window onto the screen)
+            float y_off = mix(0.05, 0.0, p); 
+            
+            vec3 coords = vec3(
+                (coords_geo.x - 0.5) / scale + 0.5,
+                (coords_geo.y - 0.5 - y_off) / scale + 0.5,
+                1.0
+            );
 
-            vec3 coords_tex = niri_geo_to_tex * coords_geo;
+            vec3 coords_tex = niri_geo_to_tex * coords;
             vec4 color = texture2D(niri_tex, coords_tex.st);
 
-            // Gentle fade-in.
-            color *= smoothstep(0.0, 0.15, p);
+            // Opacity ramp
+            color *= smoothstep(0.0, 0.2, p);
+            
             return color;
           }
         ";
       }
       window-close {
-        duration-ms 150;
-        curve "cubic-bezier" 0.3 0.0 0.8 0.15;
+        duration-ms 180;
+        curve "ease-out-quad";
 
         custom-shader r"
           vec4 close_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Subtle scale-down.
-            float scale = mix(1.0, 0.99, p);
-            coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
+            // Scale down slightly
+            float scale = mix(1.0, 0.96, p);
+            
+            vec3 coords = vec3(
+                (coords_geo.x - 0.5) / scale + 0.5,
+                (coords_geo.y - 0.5) / scale + 0.5,
+                1.0
+            );
 
-            vec3 coords_tex = niri_geo_to_tex * coords_geo;
+            vec3 coords_tex = niri_geo_to_tex * coords;
             vec4 color = texture2D(niri_tex, coords_tex.st);
+            
+            // Fade out
             return color * (1.0 - p);
           }
         ";
       }
 
-      // High-damping (1.0) means NO BOUNCE. Pwindows feel like they have weight and snap precisely.
+      // Micro-bounce: 0.965 damping gives a "high-end" feel.
+      // Not bouncy, just... "alive".
       horizontal-view-movement {
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.965 stiffness=900 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.965 stiffness=900 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.965 stiffness=900 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
