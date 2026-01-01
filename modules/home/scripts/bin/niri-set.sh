@@ -131,10 +131,10 @@ case "${cmd}" in
           out="$(niri msg -j focused-window 2>/dev/null)"
           if [[ -n "$out" ]]; then
             local x y w h
-            x="$(echo "$out" | jq -r '.workspace_view_position.x // empty')"
-            y="$(echo "$out" | jq -r '.workspace_view_position.y // empty')"
-            w="$(echo "$out" | jq -r '.window_size.width // empty')"
-            h="$(echo "$out" | jq -r '.window_size.height // empty')"
+            x="$(echo "$out" | jq -r '.workspace_view_position.x? // empty')"
+            y="$(echo "$out" | jq -r '.workspace_view_position.y? // empty')"
+            w="$(echo "$out" | jq -r '.window_size.width? // empty')"
+            h="$(echo "$out" | jq -r '.window_size.height? // empty')"
             
             if [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]]; then
               echo "$x $y $w $h"
@@ -151,8 +151,8 @@ case "${cmd}" in
         local out
         out="$(niri msg -j focused-output 2>/dev/null)"
         if [[ -n "$out" ]]; then
-           # Try multiple fields for dimensions
-           echo "$out" | jq -r '(.current_mode.width // .mode.width // .geometry.width // 0) as $w | (.current_mode.height // .mode.height // .geometry.height // 0) as $h | "\($w) \($h)"'
+           # Try multiple fields for dimensions with safety checks (?)
+           echo "$out" | jq -r '(.current_mode.width? // .mode.width? // .geometry.width? // 0) as $w | (.current_mode.height? // .mode.height? // .geometry.height? // 0) as $h | "\($w) \($h)"' 2>/dev/null
         else
            echo "0 0"
         fi
