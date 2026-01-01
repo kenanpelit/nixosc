@@ -68,7 +68,7 @@
 
       window-open {
         duration-ms 300;
-        curve "ease-out-quint";
+        curve "ease-out-expo";
 
         custom-shader r"
           vec4 open_color(vec3 coords_geo, vec3 size_geo) {
