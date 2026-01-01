@@ -145,9 +145,10 @@ case "${cmd}" in
         local out
         out="$(niri msg -j focused-output 2>/dev/null)"
         if [[ -n "$out" ]]; then
-           echo "$out" | jq -r '(.current_mode.width // .mode.width) as $w | (.current_mode.height // .mode.height) as $h | "\($w) \($h)"'
+           # Try multiple fields for dimensions
+           echo "$out" | jq -r '(.current_mode.width // .mode.width // .geometry.width // 0) as $w | (.current_mode.height // .mode.height // .geometry.height // 0) as $h | "\($w) \($h)"'
         else
-           echo "2560 1440"
+           echo "0 0"
         fi
       }
 
@@ -174,14 +175,25 @@ case "${cmd}" in
         niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
         
         # 2. Loop to move to exact target
-        # Sometimes one move isn't enough due to async resizing or clamping
         read -r ow oh <<< "$(get_output_dim)"
+        
+        # Sanity Check: If output detection failed or returned garbage, use primary monitor defaults
+        # Dell UP2716D: 2560x1440
+        if [[ "$ow" -lt 100 || "$oh" -lt 100 ]]; then
+           ow=2560
+           oh=1440
+        fi
+        
         margin_x=32
         margin_y=96
         
         # Target: Top-Right
         tx=$((ow - target_w - margin_x))
         ty=$((margin_y))
+        
+        # Safety clamp: Ensure we don't target off-screen negative coordinates
+        if [[ "$tx" -lt 0 ]]; then tx=0; fi
+        if [[ "$ty" -lt 0 ]]; then ty=0; fi
         
         for _ in {1..2}; do
             # Read current pos
