@@ -146,31 +146,23 @@ case "${cmd}" in
             niri msg action move-window-to-floating >/dev/null 2>&1 || true
         fi
         
-        # 1. Resize to target PIP size
-        target_w=480
-        target_h=270
+        # 1. Resize to EXACT MPV size from rules.nix
+        target_w=640
+        target_h=360
         niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
         niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
         
         # 2. Center (Reset position to a known fixed state)
         niri msg action center-window >/dev/null 2>&1 || true
         
-        # 3. Calculate delta from center to TOP-RIGHT (MPV Style)
+        # 3. Calculate delta from center to TOP-RIGHT (Matching rules.nix)
         read -r ow oh <<< "$(get_output_dim)"
         
-        # User's preferred margins from mpv-manager.sh
-        margin_x=33
-        margin_y=105
+        # Exact margins from rules.nix: x=32, y=96 (relative-to top-right)
+        margin_x=32
+        margin_y=96
         
-        # Target: Top-Right
-        # tx = ow - target_w - margin_x
-        # ty = margin_y
-        #
-        # Center:
-        # cx = (ow - target_w) / 2
-        # cy = (oh - target_h) / 2
-        #
-        # Delta:
+        # Formula to reach target top-right (32, 96) from screen center:
         dx=$(( (ow / 2) - (target_w / 2) - margin_x ))
         dy=$(( margin_y - (oh / 2) + (target_h / 2) ))
         
