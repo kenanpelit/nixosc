@@ -60,26 +60,23 @@
 
   animations = ''
     animations {
-      // Premium Feel: Controlled micro-bounce and elegant entry.
+      // macOS + Hyprland Fusion: Quintic smoothness with dynamic slide motion.
 
       workspace-switch {
-        spring damping-ratio=0.96 stiffness=1200 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=1400 epsilon=0.0001;
       }
 
       window-open {
-        duration-ms 240;
-        curve "ease-out-expo";
+        duration-ms 300;
+        curve "ease-out-quint";
 
         custom-shader r"
           vec4 open_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Scale: 0.96 -> 1.0 (Subtle pop)
-            float scale = mix(0.96, 1.0, p);
-            
-            // Slide Up: Translate Y slightly as it opens
-            // (Simulates lifting the window onto the screen)
-            float y_off = mix(0.05, 0.0, p); 
+            // macOS style: smooth scale + pronounced slide-up
+            float scale = mix(0.95, 1.0, p);
+            float y_off = mix(0.1, 0.0, p); 
             
             vec3 coords = vec3(
                 (coords_geo.x - 0.5) / scale + 0.5,
@@ -90,49 +87,48 @@
             vec3 coords_tex = niri_geo_to_tex * coords;
             vec4 color = texture2D(niri_tex, coords_tex.st);
 
-            // Opacity ramp
-            color *= smoothstep(0.0, 0.2, p);
+            // Clean linear fade
+            color *= p;
             
             return color;
           }
         ";
       }
       window-close {
-        duration-ms 180;
+        duration-ms 200;
         curve "ease-out-quad";
 
         custom-shader r"
           vec4 close_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Scale down slightly
-            float scale = mix(1.0, 0.96, p);
+            // Slide-down + scale-down on exit
+            float scale = mix(1.0, 0.98, p);
+            float y_off = mix(0.0, 0.05, p);
             
             vec3 coords = vec3(
                 (coords_geo.x - 0.5) / scale + 0.5,
-                (coords_geo.y - 0.5) / scale + 0.5,
+                (coords_geo.y - 0.5 - y_off) / scale + 0.5,
                 1.0
             );
 
             vec3 coords_tex = niri_geo_to_tex * coords;
             vec4 color = texture2D(niri_tex, coords_tex.st);
             
-            // Fade out
             return color * (1.0 - p);
           }
         ";
       }
 
-      // Micro-bounce: 0.965 damping gives a "high-end" feel.
-      // Not bouncy, just... "alive".
+      // Snappy but smooth movement (Hyprland style responsiveness)
       horizontal-view-movement {
-        spring damping-ratio=0.965 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.965 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.965 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -176,7 +172,7 @@
         curve "ease-out-quad";
       }
       overview-open-close {
-        spring damping-ratio=0.9 stiffness=1000 epsilon=0.0001;
+        spring damping-ratio=0.92 stiffness=1200 epsilon=0.0001;
       }
       recent-windows-close {
         spring damping-ratio=0.9 stiffness=800 epsilon=0.001;
