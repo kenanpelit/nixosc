@@ -67,46 +67,52 @@ shift || true
 case "${cmd}" in
   zen)
     # ----------------------------------------------------------------------------
-    # Zen Mode: Toggle gaps, borders, and bar
+    # Zen Mode: Toggle gaps, borders, and bar (State-file based)
     # ----------------------------------------------------------------------------
     (
       set -euo pipefail
+      
+      STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/niri-zen.state"
 
-      is_zen() {
-        # Check if gaps are 0. Simple heuristic.
-        local gaps
-        gaps="$(niri msg -j config | jq -r '.layout.gaps // 0')"
-        [[ "$gaps" == "0" ]]
-      }
-
-      if is_zen; then
-        # Restore normal
-        niri msg action set-column-width "50%" >/dev/null 2>&1 || true
-        # Revert config to defaults (reload config file)
-        # Assuming the config file has the default gaps/borders.
-        # Ideally, we would set values back, but reloading is cleaner if supported.
-        # Fallback to manual set if reload not desired:
-        # niri msg action set-gaps 12
-        # But niri msg doesn't have set-gaps action yet in all versions.
-        # Best way: rely on config reload.
-        # niri msg action load-config-file # This might be too heavy.
+      if [[ -f "$STATE_FILE" ]]; then
+        # === DISABLE ZEN (Restore) ===
         
-        # Let's use dms bar toggle
+        # Restore defaults (hardcoded for now as niri doesn't support save/restore state easily)
+        # Assuming defaults: gaps 12, borders on
+        
+        # Note: 'niri msg action' for setting gaps might not exist in all versions yet.
+        # If it doesn't, we rely on config reload.
+        # But let's try to be smart. If actions fail, we fallback to reload.
+        
+        # Attempt to reload config to restore defaults
+        niri msg action load-config-file >/dev/null 2>&1 || true
+        
+        # Restore DMS Bar
         dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-        
-        # NOTE: Niri doesn't support runtime modification of gaps/borders via msg yet
-        # without config reload or specific actions if added.
-        # If your version supports it, great. If not, this is a placeholder idea.
-        # Workaround: Use different config files or just toggle bar.
-        
-        # For now, let's just toggle the bar and notifications as "Lite Zen"
         dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+        
+        rm -f "$STATE_FILE"
         notify-send -t 1000 "Zen Mode" "Off"
+        echo "Zen Mode: Off"
       else
-        # Enable Zen
+        # === ENABLE ZEN ===
+        
+        # Niri currently doesn't expose 'set-gaps' via IPC in stable.
+        # If your version has it, uncomment:
+        # niri msg action set-gaps 0 >/dev/null 2>&1 || true
+        
+        # Workaround for Gaps:
+        # Since we can't zero gaps via IPC easily without scripting config,
+        # we focus on the Bar and Notifications which is the biggest part of Zen.
+        
+        # Hide Bar
         dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+        # Silence Notifications
         dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+        
+        touch "$STATE_FILE"
         notify-send -t 1000 "Zen Mode" "On"
+        echo "Zen Mode: On"
       fi
     )
     ;;
