@@ -60,46 +60,43 @@
 
   animations = ''
     animations {
-      // Subtle, modern defaults (keeps sync between movement/resize).
-      //
-      // Note: Custom shaders are based on upstream niri examples. If they fail
-      // to compile for any reason, niri falls back to the default shader.
+      // Professional Workflow: Fluid, fast, and stable (no overshoot).
 
       workspace-switch {
-        spring damping-ratio=0.8 stiffness=800 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=1000 epsilon=0.0001;
       }
 
       window-open {
-        duration-ms 180;
-        curve "cubic-bezier" 0.16 1.0 0.3 1.0;
+        duration-ms 200;
+        curve "cubic-bezier" 0.05 0.9 0.1 1.0;
 
         custom-shader r"
           vec4 open_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Subtle scale-up (less aggressive than the default 0.5 → 1.0).
-            float scale = mix(0.96, 1.0, p);
+            // Subtle scale-up (0.98 → 1.0).
+            float scale = mix(0.98, 1.0, p);
             coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
 
             vec3 coords_tex = niri_geo_to_tex * coords_geo;
             vec4 color = texture2D(niri_tex, coords_tex.st);
 
-            // Gentle fade-in ramp at the start.
-            color *= smoothstep(0.0, 0.2, p);
+            // Gentle fade-in.
+            color *= smoothstep(0.0, 0.15, p);
             return color;
           }
         ";
       }
       window-close {
         duration-ms 150;
-        curve "cubic-bezier" 0.4 0.0 1.0 1.0;
+        curve "cubic-bezier" 0.3 0.0 0.8 0.15;
 
         custom-shader r"
           vec4 close_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Subtle scale-down while fading out.
-            float scale = mix(1.0, 0.98, p);
+            // Subtle scale-down.
+            float scale = mix(1.0, 0.99, p);
             coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
 
             vec3 coords_tex = niri_geo_to_tex * coords_geo;
@@ -109,15 +106,15 @@
         ";
       }
 
-      // Keep these identical for best synchronized animations.
+      // High-damping (1.0) means NO BOUNCE. Pwindows feel like they have weight and snap precisely.
       horizontal-view-movement {
-        spring damping-ratio=0.8 stiffness=700 epsilon=0.0001;
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.8 stiffness=700 epsilon=0.0001;
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.8 stiffness=700 epsilon=0.0001;
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -133,8 +130,6 @@
 
             vec4 color;
             if (crop) {
-              // When cropping, fill outside geometry with transparency to avoid
-              // texture leaking into the unspecified shader area.
               if (coords_curr_geo.x < 0.0 || 1.0 < coords_curr_geo.x ||
                   coords_curr_geo.y < 0.0 || 1.0 < coords_curr_geo.y) {
                 color = vec4(0.0);
@@ -142,7 +137,6 @@
                 color = texture2D(niri_tex_next, coords_crop_next.st);
               }
             } else {
-              // Otherwise, crossfade to reduce stretching artifacts.
               vec4 prev = texture2D(niri_tex_prev, coords_stretch_prev.st);
               vec4 next = texture2D(niri_tex_next, coords_stretch_next.st);
               color = mix(prev, next, niri_clamped_progress);
@@ -164,10 +158,10 @@
         curve "ease-out-quad";
       }
       overview-open-close {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=1000 epsilon=0.0001;
       }
       recent-windows-close {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.001;
+        spring damping-ratio=0.9 stiffness=800 epsilon=0.001;
       }
     }
   '';
