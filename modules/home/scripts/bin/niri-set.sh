@@ -113,11 +113,33 @@ case "${cmd}" in
 
   pin)
     # ----------------------------------------------------------------------------
-    # Pin Mode: Toggle PIP-style floating window (Robust Center-Relative Positioning)
+    # Pin Mode: Toggle PIP-style floating window (Robust Read-Move-Verify)
     # ----------------------------------------------------------------------------
     (
       set -euo pipefail
       
+      # Helper: Get focused window geometry (x y w h) with retry
+      get_window_geo() {
+        for _ in {1..10}; do
+          local out
+          out="$(niri msg -j focused-window 2>/dev/null)"
+          if [[ -n "$out" ]]; then
+            local x y w h
+            x="$(echo "$out" | jq -r '.workspace_view_position.x // empty')"
+            y="$(echo "$out" | jq -r '.workspace_view_position.y // empty')"
+            w="$(echo "$out" | jq -r '.window_size.width // empty')"
+            h="$(echo "$out" | jq -r '.window_size.height // empty')"
+            
+            if [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]]; then
+              echo "$x $y $w $h"
+              return 0
+            fi
+          fi
+          sleep 0.05
+        done
+        return 1
+      }
+
       # Helper: Get focused output dimensions (w h)
       get_output_dim() {
         local out
@@ -125,7 +147,6 @@ case "${cmd}" in
         if [[ -n "$out" ]]; then
            echo "$out" | jq -r '(.current_mode.width // .mode.width) as $w | (.current_mode.height // .mode.height) as $h | "\($w) \($h)"'
         else
-           # Fallback to primary monitor resolution
            echo "2560 1440"
         fi
       }
@@ -136,38 +157,47 @@ case "${cmd}" in
       is_floating="$(echo "$win_json" | jq -r '.is_floating // false')"
       current_w="$(echo "$win_json" | jq -r '.window_size.width // 0')"
 
-      # Heuristic: If floating and small width (< 500), assume pinned -> Restore.
       if [[ "$is_floating" == "true" ]] && [[ "$current_w" -lt 500 ]]; then
+        # Restore
         niri msg action move-window-to-tiling >/dev/null 2>&1 || true
         niri msg action reset-window-height >/dev/null 2>&1 || true
       else
-        # Pin it
+        # Pin
         if [[ "$is_floating" == "false" ]]; then
             niri msg action move-window-to-floating >/dev/null 2>&1 || true
         fi
         
-        # 1. Resize to EXACT MPV size from rules.nix
+        # 1. Resize
         target_w=640
         target_h=360
         niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
         niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
         
-        # 2. Center (Reset position to a known fixed state)
-        niri msg action center-window >/dev/null 2>&1 || true
-        
-        # 3. Calculate delta from center to TOP-RIGHT (Matching rules.nix)
+        # 2. Loop to move to exact target
+        # Sometimes one move isn't enough due to async resizing or clamping
         read -r ow oh <<< "$(get_output_dim)"
-        
-        # Exact margins from rules.nix: x=32, y=96 (relative-to top-right)
         margin_x=32
         margin_y=96
         
-        # Formula to reach target top-right (32, 96) from screen center:
-        dx=$(( (ow / 2) - (target_w / 2) - margin_x ))
-        dy=$(( margin_y - (oh / 2) + (target_h / 2) ))
+        # Target: Top-Right
+        tx=$((ow - target_w - margin_x))
+        ty=$((margin_y))
         
-        # 4. Move to exact position
-        niri msg action move-floating-window -x "$dx" -y "$dy" >/dev/null 2>&1 || true
+        for _ in {1..2}; do
+            # Read current pos
+            read -r cx cy cw ch <<< "$(get_window_geo)"
+            
+            # Calculate delta
+            dx=$((tx - cx))
+            dy=$((ty - cy))
+            
+            if [[ "$dx" -eq 0 && "$dy" -eq 0 ]]; then
+                break
+            fi
+            
+            niri msg action move-floating-window -x "$dx" -y "$dy" >/dev/null 2>&1 || true
+            sleep 0.1
+        done
       fi
     )
     ;;
