@@ -85,7 +85,7 @@
       Mod+Q hotkey-overlay-title="Window: Close" { close-window; }
       Mod+M hotkey-overlay-title="Column: Maximize" { maximize-column; }
       Alt+G repeat=false hotkey-overlay-title="Window Maximize To Edges" { maximize-window-to-edges; }
-      Mod+Ctrl+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { fullscreen-window; }
+      Mod+F repeat=false hotkey-overlay-title="Window Windowed Fullscreen" { fullscreen-window; }
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
       Mod+Shift+R hotkey-overlay-title="Column: Width 75%" { set-column-width "75%"; }
@@ -270,8 +270,8 @@
       Mod+Ctrl+S repeat=false hotkey-overlay-title="Sticky ↔ Stage Toggle" { spawn "nsticky-toggle"; }
 
       // File Managers
-      Mod+F repeat=false hotkey-overlay-title="Files Nemo" { spawn "nemo"; }
-      Alt+F repeat=false hotkey-overlay-title="Files Yazi" { spawn "${bins.kitty}" "-e" "yazi"; }
+      Mod+Ctrl+F repeat=false hotkey-overlay-title="Files Nemo" { spawn "nemo"; }
+      Alt+Ctrl+F repeat=false hotkey-overlay-title="Files Yazi" { spawn "${bins.kitty}" "-e" "yazi"; }
 
       // Special Apps
       Alt+T repeat=false hotkey-overlay-title="KKENP Start" { spawn "start-kkenp"; }
