@@ -92,7 +92,7 @@
       
       // Window Size Presets (Combined Width & Height)
       Mod+0       hotkey-overlay-title="Size: 960x540 (Half)"   { spawn "sh" "-c" "niri msg action set-column-width 960 && niri msg action set-window-height 540"; }
-      Mod+Alt+0   hotkey-overlay-title="Size: 1280x720 (HD)"    { spawn "sh" "-c" "niri msg action set-column-width 1280 && niri msg action set-window-height 720"; }
+      Mod+Shift+0   hotkey-overlay-title="Size: 1280x720 (HD)"    { spawn "sh" "-c" "niri msg action set-column-width 1280 && niri msg action set-window-height 720"; }
       Mod+Ctrl+0  hotkey-overlay-title="Size: 1920x1080 (FHD)"  { spawn "sh" "-c" "niri msg action set-column-width 1920 && niri msg action set-window-height 1080"; }
       
       // Moved from Mod+0 due to size presets
