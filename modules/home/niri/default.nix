@@ -181,6 +181,23 @@ in
       After = [ "dbus.service" ];
     };
 
+    # Polkit agent (required for auth prompts in non-GNOME sessions).
+    systemd.user.services.niri-polkit-agent = {
+      Unit = {
+        Description = "Polkit authentication agent (polkit-gnome)";
+        After = [ "niri-session.target" ];
+        PartOf = [ "niri-session.target" ];
+      };
+      Service = {
+        ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+      Install = {
+        WantedBy = [ "niri-session.target" ];
+      };
+    };
+
     # Bootstrap: fast and observable (oneshot).
     # Keep this unit short-running; move slow/flaky tasks (like BT audio routing)
     # into separate services/timers so startup doesn't appear "stuck".
