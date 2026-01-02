@@ -56,11 +56,11 @@ Intelligent window pinning that matches MPV rules.
 - **Behavior:** Resizes the active window to **640x360**, floats it, and snaps it perfectly to the **Top-Right** corner (`32, 96` margins).
 - **Logic:** Uses screen-relative calculation to ensure perfect positioning regardless of display scaling or initial state.
 
-### 🎬 macOS + Hyprland Fusion Animations
-A custom animation profile for Niri that blends the fluidity of macOS with the snappiness of Hyprland.
-- **Open:** Windows slide up (`10%`) and scale in with a `quintic` ease curve (ease-out-expo).
-- **Close:** Windows slide down and fade out elegantly.
-- **Move:** Zero-overshoot, magnetic snapping (`damping-ratio: 0.98`) for a professional feel.
+### 🎬 Premium Motion Profile
+A finely-tuned animation set for Niri that prioritizes fluid transitions without sacrificing responsiveness.
+- **Open:** Windows slide up (`10%`) and scale in with a precise `ease-out-expo` curve.
+- **Close:** Windows slide down and fade out with elegant deceleration.
+- **Move:** Zero-overshoot, magnetic snapping (`damping-ratio: 0.98`) for a stable, high-end feel.
 
 ### 👁️ Dynamic Opacity
 On-the-fly transparency control for the active window.
