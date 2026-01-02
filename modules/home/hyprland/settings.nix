@@ -123,7 +123,7 @@ in
       "windowsOut, 1, 4, quart, popin 95%" # Elegant exit (Scale down)
       "windowsMove, 1, 4, fluid"           # Snappy movement with tiny bounce
       "fade, 1, 3, quart"                  # Smooth fading
-      "workspaces, 1, 5, quart, slide"     # Consistent workspace flow
+      "workspaces, 1, 5, quart, slidevert" # Vertical workspace flow
       "specialWorkspace, 1, 4, quart, slidevert"
       "border, 1, 3, linear"
     ];
