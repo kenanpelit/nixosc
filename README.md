@@ -78,7 +78,7 @@ On-the-fly transparency control for the active window.
 | **Power Stack**          | Custom v17 stack for Intel HWP/RAPL management (`modules/nixos/power`).                            |
 | **Authentication**       | Polkit-GNOME + GNOME Keyring fully integrated via PAM.                                             |
 
-## 🔋 Power Management (v17 stack)
+## 🔋 Power Management Stack
 
 Custom power management for laptops (Intel HWP / `intel_pstate=active`) that stays consistent across boot/suspend/AC changes.
 - **Module:** `modules/nixos/power/default.nix`
