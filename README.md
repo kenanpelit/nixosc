@@ -27,6 +27,14 @@
    </div>
 </div>
 
+## 🖼️ Gallery
+
+<p align="center">
+   <img src="./.github/assets/screenshots/1.png" style="margin-bottom: 10px;"/> <br>
+   <img src="./.github/assets/screenshots/hyprlock.png" style="margin-bottom: 10px;" /> <br>
+   <img src="./.github/assets/screenshots/grub.png" style="margin-bottom: 10px;" /> <br>
+</p>
+
 ## 📋 Project Overview
 
 **NixOS Configuration Suite (nixosc)** - Snowfall Edition
