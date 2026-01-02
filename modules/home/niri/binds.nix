@@ -89,7 +89,18 @@
       Mod+O hotkey-overlay-title="Window: Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
       Mod+Shift+R hotkey-overlay-title="Column: Width 75%" { set-column-width "75%"; }
-      Mod+0 hotkey-overlay-title="Column: Center" { center-column; }
+      
+      // Window Size Presets
+      Mod+0            hotkey-overlay-title="Width: 960 (Half)"      { set-column-width 960; }
+      Mod+Shift+0      hotkey-overlay-title="Height: 540 (Half)"     { set-window-height 540; }
+      Mod+Alt+0        hotkey-overlay-title="Width: 1280 (HD)"       { set-column-width 1280; }
+      Mod+Shift+Alt+0  hotkey-overlay-title="Height: 720 (HD)"       { set-window-height 720; }
+      Mod+Ctrl+0       hotkey-overlay-title="Width: 1920 (FHD)"      { set-column-width 1920; }
+      Mod+Shift+Ctrl+0 hotkey-overlay-title="Height: 1080 (FHD)"     { set-window-height 1080; }
+      
+      // Moved from Mod+0 due to size presets
+      Mod+Ctrl+C hotkey-overlay-title="Column: Center" { center-column; }
+
       Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       Mod+Z repeat=false hotkey-overlay-title="Zen Mode Toggle" { spawn "${bins.niriSet}" "zen"; }
       Mod+P repeat=false hotkey-overlay-title="Pin Window (PIP)" { spawn "${bins.niriSet}" "pin"; }
@@ -227,7 +238,7 @@
         // ----------------------------------------------------------------------
 
         // Default mark (__default__) toggle for quick tagging
-        Mod+Alt+0 repeat=false hotkey-overlay-title="Nirius: Toggle Default Mark" { spawn "${bins.nirius}" "toggle-mark"; }
+        Mod+Alt+G repeat=false hotkey-overlay-title="Nirius: Toggle Default Mark" { spawn "${bins.nirius}" "toggle-mark"; }
 
         // Assign/toggle role marks for the currently focused window
         Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Nirius: Toggle Mark 'term'" { spawn "${bins.nirius}" "toggle-mark" "term"; }
