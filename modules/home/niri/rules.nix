@@ -333,24 +333,47 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       match is-active=false;
       exclude app-id=r#"^mpv$"#;
       exclude app-id=r#"^vlc$"#;
+      exclude app-id=r#"^brave-youtube\.com__-Default$"#;
       exclude title=r#"^Picture-in-Picture$"#;
       exclude app-id=r#"^steam_app_\d+$"#;
+      exclude app-id=r#"^com\.obsproject\.Studio$"#;
       opacity 0.85;
     }
 
     // ========================================================================
     // Layer Rules
     // ========================================================================
+    
+    // DMS: Wallpaper Blur
     layer-rule {
       match namespace=r#"^dms:blurwallpaper$"#;
       place-within-backdrop true;
     }
 
+    // DMS: UI Elements (Bar, Dock, Panel)
     layer-rule {
       match namespace=r#"^dms:(bar|dock|panel).*$"#;
       geometry-corner-radius 0;
     }
 
+    // DMS: Overlays (Launcher, OSD, Popups) - Add shadows for depth
+    layer-rule {
+      match namespace=r#"^dms:(launcher|osd|popup).*$"#;
+      shadow {
+        on;
+        color "#00000060";
+        spread 2;
+        softness 12;
+      }
+    }
+
+    // Notifications: Layout
+    layer-rule {
+      match namespace="^notifications$";
+      geometry-corner-radius 12;
+    }
+
+    // Notifications: Privacy
     layer-rule {
       match namespace="^notifications$";
       block-out-from "screencast";
