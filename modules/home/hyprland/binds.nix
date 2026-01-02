@@ -43,8 +43,8 @@ let
     "ALT, Return, exec, [float; center; size 950 650] kitty"
   
     # File Managers
-    "$mainMod, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
-    "ALT, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
+    "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
+    "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
   ];
 
   mediaBinds = [
@@ -75,7 +75,7 @@ let
     # Basic Actions
     "$mainMod, Q, killactive"
     "$mainMod SHIFT, F, fullscreen, 1"
-    "$mainMod CTRL, F, fullscreen, 0"
+    "$mainMod, F, fullscreen, 0"
     "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
     "$mainMod, P, exec, ${bins.hyprSet} pin"
     "$mainMod, Z, exec, ${bins.hyprSet} zen"
