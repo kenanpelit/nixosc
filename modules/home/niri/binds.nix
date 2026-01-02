@@ -90,13 +90,10 @@
       Mod+R hotkey-overlay-title="Column: Next Preset Width" { switch-preset-column-width; }
       Mod+Shift+R hotkey-overlay-title="Column: Width 75%" { set-column-width "75%"; }
       
-      // Window Size Presets
-      Mod+0            hotkey-overlay-title="Width: 960 (Half)"      { set-column-width "960"; }
-      Mod+Shift+0      hotkey-overlay-title="Height: 540 (Half)"     { set-window-height "540"; }
-      Mod+Alt+0        hotkey-overlay-title="Width: 1280 (HD)"       { set-column-width "1280"; }
-      Mod+Shift+Alt+0  hotkey-overlay-title="Height: 720 (HD)"       { set-window-height "720"; }
-      Mod+Ctrl+0       hotkey-overlay-title="Width: 1920 (FHD)"      { set-column-width "1920"; }
-      Mod+Shift+Ctrl+0 hotkey-overlay-title="Height: 1080 (FHD)"     { set-window-height "1080"; }
+      // Window Size Presets (Combined Width & Height)
+      Mod+0       hotkey-overlay-title="Size: 960x540 (Half)"   { set-column-width "960"; set-window-height "540"; }
+      Mod+Alt+0   hotkey-overlay-title="Size: 1280x720 (HD)"    { set-column-width "1280"; set-window-height "720"; }
+      Mod+Ctrl+0  hotkey-overlay-title="Size: 1920x1080 (FHD)"  { set-column-width "1920"; set-window-height "1080"; }
       
       // Moved from Mod+0 due to size presets
       Mod+Ctrl+C hotkey-overlay-title="Column: Center" { center-column; }
