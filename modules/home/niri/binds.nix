@@ -299,12 +299,12 @@
       // ========================================================================
       // MPV Manager
       // ========================================================================
-      Mod+Ctrl+1 repeat=false hotkey-overlay-title="MPV Playback" { spawn "mpv-manager" "playback"; }
-      Mod+Ctrl+2 repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "bash" "-c" "mpv-manager play-yt"; }
-      Mod+Ctrl+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "mpv-manager" "stick"; }
-      Mod+Ctrl+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "mpv-manager" "move"; }
-      Mod+Ctrl+5 repeat=false hotkey-overlay-title="MPV Save YouTube" { spawn "mpv-manager" "save-yt"; }
-      Mod+Ctrl+6 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "mpv-manager" "wallpaper"; }
+      Mod+Ctrl+1 repeat=false hotkey-overlay-title="MPV Playback" { spawn "${bins.mpvManager}" "playback"; }
+      Mod+Ctrl+2 repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "bash" "-c" "${bins.mpvManager} play-yt"; }
+      Mod+Ctrl+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "${bins.mpvManager}" "stick"; }
+      Mod+Ctrl+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "${bins.mpvManager}" "move"; }
+      Mod+Ctrl+5 repeat=false hotkey-overlay-title="MPV Save YouTube" { spawn "${bins.mpvManager}" "save-yt"; }
+      Mod+Ctrl+6 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "${bins.mpvManager}" "wallpaper"; }
   '';
 
   workspaces = ''
