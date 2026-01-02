@@ -114,20 +114,20 @@ in
   animations = {
     enabled = true;
     bezier = [
-      "fluent, 0.05, 0.20, 0.00, 1.00"
-      "easeOutCirc, 0.00, 0.55, 0.45, 1.00"
-      "overshoot, 0.05, 0.9, 0.1, 1.1"
-      "catppuccinSmooth, 0.25, 0.1, 0.25, 1"
-      "linear, 0.00, 0.00, 1.00, 1.00"
+      "linear, 0.0, 0.0, 1.0, 1.0"
+      "quart, 0.25, 1, 0.5, 1"        # Smooth deceleration (Professional)
+      "fluid, 0.05, 0.9, 0.1, 1.02"   # Micro-bounce (Magnetic, Premium feel)
     ];
     animation = [
-	      "windows, 1, 4, overshoot, slide"
-	      "windowsOut, 1, 3, easeOutCirc, popin 80%"
-	      "fade, 1, 4, easeOutCirc"
-	      "workspaces, 1, 5, overshoot, slidevert"
-	      "border, 1, 1, linear"
-	    ];
-	  };
+      "windowsIn, 1, 4, quart, popin 95%"  # Elegant entry (Scale up)
+      "windowsOut, 1, 4, quart, popin 95%" # Elegant exit (Scale down)
+      "windowsMove, 1, 4, fluid"           # Snappy movement with tiny bounce
+      "fade, 1, 3, quart"                  # Smooth fading
+      "workspaces, 1, 5, quart, slide"     # Consistent workspace flow
+      "specialWorkspace, 1, 4, quart, slidevert"
+      "border, 1, 3, linear"
+    ];
+  };
 
   input = {
     kb_layout = "tr";
