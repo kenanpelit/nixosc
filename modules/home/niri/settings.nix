@@ -60,7 +60,7 @@
 
   animations = ''
     animations {
-      // macOS + Hyprland Fusion: Quintic smoothness with dynamic slide motion.
+      // Premium Motion Profile: Fluid curves with responsive slide dynamics.
 
       workspace-switch {
         spring damping-ratio=0.9 stiffness=1400 epsilon=0.0001;
