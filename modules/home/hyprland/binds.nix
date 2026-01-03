@@ -40,7 +40,7 @@ let
    
     # Terminals
     "$mainMod, T, exec, kitty"
-    "ALT, Return, exec, [float; center; size 950 650] kitty"
+    #"ALT, Return, exec, [float; center; size 950 650] kitty"
   
     # File Managers
     "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
