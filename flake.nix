@@ -107,11 +107,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Hyprland plugins (local checkout)
+    # Hyprland plugins (upstream)
     hyprland-plugins = {
-      url = "path:/home/kenan/.kod/hyprland-plugins";
+      url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "hyprland/nixpkgs";
+      inputs.systems.follows = "hyprland/systems";
     };
 
     # Niri: Scrollable-tiling Wayland compositor
