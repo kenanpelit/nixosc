@@ -37,8 +37,6 @@ lib.mkIf cfg.enable {
         gap_size = 5;
         bg_col = "rgb(${colors.base.hex})";
         workspace_method = "center current"; # [center/first] [workspace] e.g. first 1 or center m+1
-        gesture_distance = 300;
-        gesture_positive = true; # positive = swipe down. Negative = swipe up.
       };
     };
   };
