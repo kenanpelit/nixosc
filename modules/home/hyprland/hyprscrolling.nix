@@ -33,15 +33,15 @@ lib.mkIf cfg.enable {
       general.layout = lib.mkForce "scrolling";
 
       plugin.hyprscrolling = {
-        # Default width: onehalf
-        column_width = 0.5;
+        # Default width (fraction of monitor width)
+        column_width = 0.7;
         # Presets cycled by `layoutmsg colresize +/-conf`
-        explicit_column_widths = "0.5, 1.0";
-        fullscreen_on_one_column = false;
+        explicit_column_widths = "0.5, 0.7, 1.0";
+        fullscreen_on_one_column = true;
         # 0=center, 1=fit
         focus_fit_method = 1;
+        follow_focus = true;
       };
     };
   };
 }
-
