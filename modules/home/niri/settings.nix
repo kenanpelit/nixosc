@@ -329,13 +329,13 @@
       }
 
       mouse {
-        accel-profile "flat"
+        accel-profile "adaptive"
         accel-speed 0.0
         scroll-factor 1.0
       }
 
       trackpoint {
-        accel-profile "flat"
+        accel-profile "adaptive"
         accel-speed 0.0
         middle-emulation
         scroll-method "on-button-down"
