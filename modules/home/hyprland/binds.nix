@@ -89,6 +89,7 @@ let
     # Hyprscrolling: cycle the preconfigured column widths (conf list)
     "$mainMod CTRL, R, layoutmsg, colresize +conf"
     "$mainMod CTRL SHIFT, R, layoutmsg, colresize -conf"
+    "$mainMod, RETURN, layoutmsg, promote"
   
     # Layout
     "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
@@ -132,10 +133,10 @@ let
 
   navBinds = [
     # Navigation (Niri-like)
-    "$mainMod, left, movefocus, l"
-    "$mainMod, h, movefocus, l"
-    "$mainMod, right, movefocus, r"
-    "$mainMod, l, movefocus, r"
+    "$mainMod, left, layoutmsg, focus l"
+    "$mainMod, h, layoutmsg, focus l"
+    "$mainMod, right, layoutmsg, focus r"
+    "$mainMod, l, layoutmsg, focus r"
 
     "$mainMod, up, exec, ${bins.hyprSet} workspace-monitor -wu"
     "$mainMod, k, exec, ${bins.hyprSet} workspace-monitor -wu"
@@ -146,14 +147,14 @@ let
     "ALT, Tab, workspace, e+1"
     "ALT CTRL, tab, workspace, e-1"
 
-    "$mainMod SHIFT, left, movewindow, l"
-    "$mainMod SHIFT, h, movewindow, l"
-    "$mainMod SHIFT, right, movewindow, r"
-    "$mainMod SHIFT, l, movewindow, r"
-    "$mainMod SHIFT, up, movewindow, u"
-    "$mainMod SHIFT, k, movewindow, u"
-    "$mainMod SHIFT, down, movewindow, d"
-    "$mainMod SHIFT, j, movewindow, d"
+    "$mainMod SHIFT, left, layoutmsg, movewindowto l"
+    "$mainMod SHIFT, h, layoutmsg, movewindowto l"
+    "$mainMod SHIFT, right, layoutmsg, movewindowto r"
+    "$mainMod SHIFT, l, layoutmsg, movewindowto r"
+    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, k, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
+    "$mainMod SHIFT, j, layoutmsg, movewindowto d"
 
     # Monitor focus (Niri-like)
     "$mainMod ALT, left, exec, hyprctl dispatch focusmonitor l"
