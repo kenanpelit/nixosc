@@ -140,7 +140,7 @@ in
     repeat_delay = 250;
     numlock_by_default = false;
     sensitivity = 0.0;
-    accel-profile = "adaptive";
+    accel_profile = "adaptive";
     force_no_accel = true;
     follow_mouse = 1;
     float_switch_override_focus = 2;
