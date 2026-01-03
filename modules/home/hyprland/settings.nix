@@ -222,6 +222,22 @@ in
     new_on_active = "after";
   };
 
+  plugin = {
+    hyprexpo = {
+      columns = 3;
+      gap_size = 5;
+      bg_col = "rgb(${colors.base.hex})";
+      workspace_method = "center current";
+      gesture_distance = 300;
+    };
+  };
+
+  render = {
+    explicit_sync = 1;
+    explicit_sync_kms = 1;
+    direct_scanout = true;
+  };
+
   binds = {
     pass_mouse_when_bound = true;
     workspace_back_and_forth = true;

@@ -65,6 +65,10 @@ in
 
   config = lib.mkIf cfg.enable {
     wayland.windowManager.hyprland = {
+      plugins = [
+        inputs.hyprland-plugins.packages.${pkgs.stdenv.hostPlatform.system}.hyprexpo
+      ];
+
       settings = {
         # Environment Variables
         env = vars.envVars;

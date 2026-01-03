@@ -224,7 +224,7 @@ let
     "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
     "$mainMod CTRL, W, exec, dms ipc call file browse wallpaper"
     "$mainMod, S, exec, dms ipc call hypr toggleOverview"
-    "$mainMod, Tab, exec, dms ipc call hypr toggleOverview"
+    "$mainMod, Tab, hyprexpo:expo, toggle"
     "$mainMod CTRL, N, exec, dms ipc call notepad open"
 
     # Clipboard & keybinds cheat sheet
