@@ -30,12 +30,12 @@ let
     in "0x${toHex alphaInt}${hex}";
 
 in
-{
+rec {
   inherit mkColor colors flavor accent;
   
   themeName = "catppuccin-${flavor}-${accent}";
   cursorName = "catppuccin-${flavor}-${accent}-cursors";
-  cursorSize = 32;
+  cursorSize = 24;
 
   activeBorder = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
   inactiveBorder = mkColor colors.overlay0.hex 0.66;
