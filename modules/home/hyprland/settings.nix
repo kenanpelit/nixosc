@@ -6,7 +6,7 @@
 # compositor aesthetics (decoration, animations, master/dwindle layouts).
 # Imported by default.nix
 # ==============================================================================
-{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
+{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, cursorSize, ... }:
 
 let
   primaryMonitor = "DELL UP2716D KRXTR88N909L";
@@ -20,7 +20,7 @@ let
   startupServices = [
     "${bins.hyprSet} env-sync"
     "systemctl --user start hyprland-session.target"
-    "hyprctl setcursor ${cursorName} 24"
+    "hyprctl setcursor ${cursorName} ${toString cursorSize}"
     "${bins.hyprSet} clipse"
   ];
 

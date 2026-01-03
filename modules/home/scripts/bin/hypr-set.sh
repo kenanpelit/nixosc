@@ -408,6 +408,10 @@ case "${cmd}" in
         XDG_SESSION_DESKTOP
         QT_QPA_PLATFORMTHEME
         QT_QPA_PLATFORM
+        XCURSOR_THEME
+        XCURSOR_SIZE
+        HYPRCURSOR_THEME
+        HYPRCURSOR_SIZE
         PATH
         XDG_DATA_DIRS
         SSH_AUTH_SOCK
@@ -446,6 +450,10 @@ case "${cmd}" in
         HYPRLAND_INSTANCE_SIGNATURE
         QT_QPA_PLATFORM
         QT_QPA_PLATFORMTHEME
+        XCURSOR_THEME
+        XCURSOR_SIZE
+        HYPRCURSOR_THEME
+        HYPRCURSOR_SIZE
         XDG_DATA_DIRS
         PATH
         SSH_AUTH_SOCK
