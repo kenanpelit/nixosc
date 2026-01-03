@@ -67,6 +67,10 @@ in
     hover_icon_on_border = true;
   };
 
+  cursor = {
+    enable_hyprcursor = false;
+  };
+
   group = {
     "col.border_active" = activeBorder;
     "col.border_inactive" = inactiveGroupBorder;

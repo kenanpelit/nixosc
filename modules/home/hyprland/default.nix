@@ -72,7 +72,7 @@ in
         # Core Settings
         inherit (settings) 
           exec-once monitor workspace input gestures general 
-          group decoration animations misc dwindle master;
+          cursor group decoration animations misc dwindle master;
 
         # Binds (from settings.nix for general bind settings)
         binds = settings.binds;
