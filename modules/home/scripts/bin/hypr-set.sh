@@ -117,6 +117,10 @@ case "${cmd}" in
       addr=$(echo "$win" | jq -r '.address')
       floating=$(echo "$win" | jq -r '.floating')
       w=$(echo "$win" | jq -r '.size[0]')
+      pin_w=480
+      pin_h=270
+      pad_x=32
+      pad_y=100
       
       # Heuristic: if floating and small (< 500 width), it's pinned.
       if [ "$floating" == "true" ] && [ "$w" -lt 500 ]; then
@@ -128,8 +132,8 @@ case "${cmd}" in
         if [ "$floating" == "false" ]; then
              hyprctl dispatch togglefloating address:$addr
         fi
-        hyprctl dispatch resizeactive exact 480 270
-        # Move to bottom right. Hyprland coordinates 0,0 is top-left.
+        hyprctl dispatch resizeactive exact "$pin_w" "$pin_h"
+        # Move to top right (match mpv PIP spot). Hyprland coordinates 0,0 is top-left.
         # We need screen resolution.
         mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)')
         mw=$(echo "$mon" | jq -r '.width')
@@ -138,13 +142,13 @@ case "${cmd}" in
         my=$(echo "$mon" | jq -r '.y')
         scale=$(echo "$mon" | jq -r '.scale')
         
-        # Calculate target x,y (bottom right with padding)
+        # Calculate target x,y (top right with padding)
         # Effective resolution
         eff_w=$(echo "$mw / $scale" | bc)
         eff_h=$(echo "$mh / $scale" | bc)
         
-        target_x=$(echo "$mx + $eff_w - 480 - 20" | bc)
-        target_y=$(echo "$my + $eff_h - 270 - 20" | bc)
+        target_x=$(echo "$mx + $eff_w - $pin_w - $pad_x" | bc)
+        target_y=$(echo "$my + $pad_y" | bc)
         
         hyprctl dispatch moveactive exact $target_x $target_y
         hyprctl dispatch pin address:$addr
