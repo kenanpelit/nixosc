@@ -12,6 +12,7 @@
 #   tty                Start Hyprland from TTY/DM (was: hyprland_tty)
 #   init               Session bootstrap (was: hypr-init)
 #   workspace-monitor  Workspace/monitor helper (was: hypr-workspace-monitor)
+#   window-move        Move focused window (workspace/monitor)
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
 #   toggle-float        Toggle floating for active window (was: toggle_float)
 #   toggle-opacity      Toggle active/inactive opacity (was: toggle_opacity)
@@ -38,6 +39,20 @@ start_clipse_listener() {
   clipse -listen >/dev/null 2>&1 || true
 }
 
+ensure_hypr_env() {
+  : "${XDG_RUNTIME_DIR:="/run/user/$(id -u)"}"
+
+  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    return 0
+  fi
+
+  local sig
+  sig="$(ls "$XDG_RUNTIME_DIR"/hypr 2>/dev/null | head -n1 || true)"
+  if [[ -n "${sig:-}" ]]; then
+    export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+  fi
+}
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -48,6 +63,7 @@ Commands:
   clipse             Start clipse clipboard listener (background)
   init               Session bootstrap
   workspace-monitor  Workspace/monitor helper
+  window-move        Move focused window (workspace/monitor)
   switch             Smart monitor/workspace switcher
   toggle-float        Toggle floating for active window
   toggle-opacity      Toggle active/inactive opacity
@@ -65,6 +81,8 @@ Commands:
 Examples:
   hypr-set zen
   hypr-set pin
+  hypr-set window-move workspace prev
+  hypr-set window-move monitor other
   hypr-set opacity 0.1
   hypr-set opacity -0.1
 EOF
@@ -74,17 +92,24 @@ cmd="${1:-}"
 shift || true
 
 case "${cmd}" in
-  zen)
-    (
-      set -euo pipefail
-      
-      # Check if gaps_in is 0 to determine state
-      gaps_in=$(hyprctl getoption general:gaps_in -j | jq '.int')
-      
-      if [ "$gaps_in" -eq 0 ]; then
-        # Restore (Disable Zen)
-        # Restore default values (assuming gaps_in=5, gaps_out=10, rounding=10 or from config)
-        # Ideally we read from a saved state or use reasonable defaults.
+	  zen)
+	    (
+	      set -euo pipefail
+	      
+	      # Check if gaps_in is 0 to determine state
+	      ensure_hypr_env
+	      command -v hyprctl >/dev/null 2>&1 || exit 0
+	      command -v jq >/dev/null 2>&1 || exit 0
+
+	      gaps_in="$(hyprctl getoption general:gaps_in -j 2>/dev/null | jq -r '(.int // (.float // 5) | floor)')"
+	      if [[ -z "${gaps_in:-}" || ! "${gaps_in}" =~ ^[0-9]+$ ]]; then
+	        gaps_in=5
+	      fi
+	      
+	      if [ "$gaps_in" -eq 0 ]; then
+	        # Restore (Disable Zen)
+	        # Restore default values (assuming gaps_in=5, gaps_out=10, rounding=10 or from config)
+	        # Ideally we read from a saved state or use reasonable defaults.
         # Based on typical configs:
         hyprctl keyword general:gaps_in 5 >/dev/null
         hyprctl keyword general:gaps_out 10 >/dev/null
@@ -102,17 +127,134 @@ case "${cmd}" in
         dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
         dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
         notify-send -t 1000 "Zen Mode" "On"
-      fi
-    )
-    ;;
+	      fi
+	    )
+	    ;;
 
-  pin)
-    (
-      set -euo pipefail
-      
-      # Get active window info
-      win=$(hyprctl activewindow -j)
-      if [ "$win" == "{}" ]; then exit 0; fi
+	  window-move)
+	    (
+	      set -euo pipefail
+	      ensure_hypr_env
+
+	      command -v hyprctl >/dev/null 2>&1 || exit 0
+	      command -v jq >/dev/null 2>&1 || exit 0
+
+	      sub="${1:-}"
+	      shift || true
+
+	      case "$sub" in
+	        workspace)
+	          direction="${1:-}"
+	          case "$direction" in
+	            prev|next) ;;
+	            *) echo "Usage: hypr-set window-move workspace prev|next" >&2; exit 1 ;;
+	          esac
+
+	          active="$(hyprctl activewindow -j 2>/dev/null || echo '{}')"
+	          addr="$(jq -r '.address // empty' <<<"$active")"
+	          ws_id="$(jq -r '.workspace.id // empty' <<<"$active")"
+
+	          [[ -z "${addr}" || -z "${ws_id}" ]] && exit 0
+	          [[ "${ws_id}" =~ ^-?[0-9]+$ ]] || exit 0
+
+	          ws_id="$((ws_id))"
+	          (( ws_id > 0 )) || exit 0
+
+	          # Keep Niri-like "monitor workspace sets":
+	          # - external monitor: 1-6
+	          # - laptop monitor:   7-9
+	          # (If the active ws doesn't match these sets, fall back to +/-1.)
+	          start=""
+	          end=""
+	          wrap=false
+
+	          if (( ws_id >= 1 && ws_id <= 6 )); then
+	            start=1
+	            end=6
+	            wrap=true
+	          elif (( ws_id >= 7 && ws_id <= 9 )); then
+	            start=7
+	            end=9
+	            wrap=true
+	          fi
+
+	          target="$ws_id"
+	          if [[ "$direction" == "prev" ]]; then
+	            if $wrap; then
+	              if (( ws_id <= start )); then
+	                target="$end"
+	              else
+	                target="$((ws_id - 1))"
+	              fi
+	            else
+	              (( ws_id > 1 )) || exit 0
+	              target="$((ws_id - 1))"
+	            fi
+	          else
+	            if $wrap; then
+	              if (( ws_id >= end )); then
+	                target="$start"
+	              else
+	                target="$((ws_id + 1))"
+	              fi
+	            else
+	              target="$((ws_id + 1))"
+	            fi
+	          fi
+
+	          [[ "$target" == "$ws_id" ]] && exit 0
+
+	          hyprctl dispatch movetoworkspacesilent "$target,address:$addr" >/dev/null 2>&1 || true
+	          hyprctl dispatch workspace "$target" >/dev/null 2>&1 || hyprctl dispatch workspace "name:$target" >/dev/null 2>&1 || true
+	          hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1 || true
+	          ;;
+
+	        monitor)
+	          action="${1:-}"
+	          case "$action" in
+	            other) ;;
+	            *) echo "Usage: hypr-set window-move monitor other" >&2; exit 1 ;;
+	          esac
+
+	          active="$(hyprctl activewindow -j 2>/dev/null || echo '{}')"
+	          addr="$(jq -r '.address // empty' <<<"$active")"
+	          cur_mon="$(jq -r '.monitor // empty' <<<"$active")"
+
+	          [[ -z "${addr}" || -z "${cur_mon}" ]] && exit 0
+	          [[ "${cur_mon}" =~ ^-?[0-9]+$ ]] || exit 0
+
+	          monitors="$(hyprctl monitors -j 2>/dev/null || echo '[]')"
+	          target_ws="$(
+	            jq -r --argjson cur "$cur_mon" '
+	              [ .[]
+	                | select((.id // -1) != $cur)
+	                | .activeWorkspace.id // empty
+	              ][0] // empty
+	            ' <<<"$monitors"
+	          )"
+
+	          [[ -z "${target_ws}" || "${target_ws}" == "null" ]] && exit 0
+	          hyprctl dispatch movetoworkspacesilent "$target_ws,address:$addr" >/dev/null 2>&1 || true
+	          ;;
+
+	        *)
+	          echo "Usage: hypr-set window-move workspace prev|next | monitor other" >&2
+	          exit 1
+	          ;;
+	      esac
+	    )
+	    ;;
+
+	  pin)
+	    (
+	      set -euo pipefail
+	      ensure_hypr_env
+	      command -v hyprctl >/dev/null 2>&1 || exit 0
+	      command -v jq >/dev/null 2>&1 || exit 0
+	      
+	      # Get active window info
+	      win=$(hyprctl activewindow -j)
+	      if [ "$win" == "{}" ]; then exit 0; fi
       
       addr=$(echo "$win" | jq -r '.address')
       floating=$(echo "$win" | jq -r '.floating')
