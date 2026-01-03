@@ -887,10 +887,13 @@ setup_environment() {
 
 	info "GTK Theme: $gtk_theme"
 
-	local cursor_theme="catppuccin-${CATPPUCCIN_FLAVOR}-dark-cursors"
+	local cursor_theme="catppuccin-${CATPPUCCIN_FLAVOR}-${CATPPUCCIN_ACCENT}-cursors"
+	local cursor_size="${XCURSOR_SIZE:-24}"
 	export XCURSOR_THEME="$cursor_theme"
-	export XCURSOR_SIZE=24
-	info "Cursor Theme: $cursor_theme"
+	export HYPRCURSOR_THEME="$cursor_theme"
+	export XCURSOR_SIZE="$cursor_size"
+	export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-$cursor_size}"
+	info "Cursor Theme: $cursor_theme (size=$cursor_size)"
 
 	# -------------------------------------------------------------------------
 	# Qt Tema
