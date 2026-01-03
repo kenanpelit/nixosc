@@ -132,23 +132,52 @@ case "${cmd}" in
         if [ "$floating" == "false" ]; then
              hyprctl dispatch togglefloating address:$addr
         fi
-        hyprctl dispatch resizeactive exact "$pin_w" "$pin_h"
-        # Move to top right (match mpv PIP spot). Hyprland coordinates 0,0 is top-left.
-        # We need screen resolution.
+        # Screen/monitor geometry (needed for positioning).
         mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)')
         mw=$(echo "$mon" | jq -r '.width')
         mh=$(echo "$mon" | jq -r '.height')
         mx=$(echo "$mon" | jq -r '.x')
         my=$(echo "$mon" | jq -r '.y')
+        mon_id=$(echo "$mon" | jq -r '.id // empty')
         scale=$(echo "$mon" | jq -r '.scale')
-        
-        # Calculate target x,y (top right with padding)
-        # Effective resolution
-        eff_w=$(echo "$mw / $scale" | bc)
-        eff_h=$(echo "$mh / $scale" | bc)
-        
-        target_x=$(echo "$mx + $eff_w - $pin_w - $pad_x" | bc)
-        target_y=$(echo "$my + $pad_y" | bc)
+
+        # If an mpv PIP window already exists on this monitor, snap to its exact
+        # position/size so all pinned windows stack in the same spot.
+        if [[ -n "${mon_id:-}" ]]; then
+          mpv_pip="$(
+            hyprctl clients -j \
+              | jq -c --argjson mid "$mon_id" '
+                  [ .[]
+                    | select(
+                        (.class // "") == "mpv"
+                        and (.pinned // false)
+                        and (.floating // false)
+                        and ((.monitor // -1) == $mid)
+                      )
+                  ][0] // empty
+                '
+          )"
+        else
+          mpv_pip=""
+        fi
+
+        if [[ -n "${mpv_pip:-}" ]]; then
+          pin_w=$(echo "$mpv_pip" | jq -r '.size[0]')
+          pin_h=$(echo "$mpv_pip" | jq -r '.size[1]')
+          target_x=$(echo "$mpv_pip" | jq -r '.at[0]')
+          target_y=$(echo "$mpv_pip" | jq -r '.at[1]')
+        else
+          # Move to top right. Hyprland coordinates 0,0 is top-left.
+          # Calculate target x,y (top right with padding)
+          # Effective resolution
+          eff_w=$(echo "$mw / $scale" | bc)
+          eff_h=$(echo "$mh / $scale" | bc)
+
+          target_x=$(echo "$mx + $eff_w - $pin_w - $pad_x" | bc)
+          target_y=$(echo "$my + $pad_y" | bc)
+        fi
+
+        hyprctl dispatch resizeactive exact "$pin_w" "$pin_h"
         
         hyprctl dispatch moveactive exact $target_x $target_y
         hyprctl dispatch pin address:$addr
