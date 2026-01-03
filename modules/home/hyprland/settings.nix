@@ -32,8 +32,8 @@ let
   ];
 
   workspaceConfig =
-    (map (n: mkWorkspaceEntry { monitor = primaryMonitor; index = n; isDefault = n == 1; }) (lib.range 1 6))
-    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitor; index = n; isDefault = n == 7; }) (lib.range 7 9))
+    (map (n: mkWorkspaceEntry { monitor = primaryMonitorDesc; index = n; isDefault = n == 1; }) (lib.range 1 6))
+    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitorDesc; index = n; isDefault = n == 7; }) (lib.range 7 9))
     ++ [
       # Smart Gaps & Borders - No gaps/borders/rounding when only one window is present
       "w[tv1], gapsout:0, gapsin:0, bordersize:0, rounding:0"
