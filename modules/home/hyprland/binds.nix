@@ -86,15 +86,19 @@ let
     "$mainMod SHIFT, mouse_down, exec, ${bins.hyprSet} opacity"
     "$mainMod SHIFT, mouse_up, exec, ${bins.hyprSet} opacity"
   
+    # Hyprscrolling: cycle the preconfigured column widths (conf list)
+    "$mainMod CTRL, R, layoutmsg, colresize +conf"
+    "$mainMod CTRL SHIFT, R, layoutmsg, colresize -conf"
+  
     # Layout
     "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
     "$mainMod, R, submap, resize"
   
-	    # Splitting
-	    "$mainMod CTRL ALT, left, exec, hyprctl dispatch splitratio -0.2"
-	    "$mainMod CTRL ALT, right, exec, hyprctl dispatch splitratio +0.2"
-	  ];
+    # Splitting
+    "$mainMod CTRL ALT, left, exec, hyprctl dispatch splitratio -0.2"
+    "$mainMod CTRL ALT, right, exec, hyprctl dispatch splitratio +0.2"
+  ];
 
   systemBinds = [
     # Tools
