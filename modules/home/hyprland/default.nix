@@ -52,6 +52,7 @@ in
     # ---------------------------------------------------------------------------
     ./hyprland.nix   # Main Hyprland configuration (systemd, package)
     ./hyprscrolling.nix # Hyprland plugin: scrolling layout
+    ./hyprexpo.nix   # Hyprland plugin: workspace overview
     # ./config.nix   # REMOVED: Replaced by modular files below
     
     # ---------------------------------------------------------------------------
@@ -65,10 +66,6 @@ in
 
   config = lib.mkIf cfg.enable {
     wayland.windowManager.hyprland = {
-      plugins = [
-        inputs.hyprland-plugins.packages.${pkgs.stdenv.hostPlatform.system}.hyprexpo
-      ];
-
       settings = {
         # Environment Variables
         env = vars.envVars;
