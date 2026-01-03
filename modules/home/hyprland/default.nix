@@ -51,6 +51,7 @@ in
     # Basic Configuration
     # ---------------------------------------------------------------------------
     ./hyprland.nix   # Main Hyprland configuration (systemd, package)
+    ./hyprscrolling.nix # Hyprland plugin: scrolling layout
     # ./config.nix   # REMOVED: Replaced by modular files below
     
     # ---------------------------------------------------------------------------

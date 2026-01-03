@@ -107,6 +107,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Hyprland plugins (local checkout)
+    hyprland-plugins = {
+      url = "path:/home/kenan/.kod/hyprland-plugins";
+      inputs.hyprland.follows = "hyprland";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Niri: Scrollable-tiling Wayland compositor
     # Using sodiboo's flake for better integration (HM module + overlay wiring).
     # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
