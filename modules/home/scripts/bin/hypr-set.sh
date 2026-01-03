@@ -96,37 +96,49 @@ case "${cmd}" in
 	    (
 	      set -euo pipefail
 	      
-	      # Check if gaps_in is 0 to determine state
+	      # Toggle Zen Mode (persist state so notification matches)
 	      ensure_hypr_env
 	      command -v hyprctl >/dev/null 2>&1 || exit 0
 	      command -v jq >/dev/null 2>&1 || exit 0
 
-	      gaps_in="$(hyprctl getoption general:gaps_in -j 2>/dev/null | jq -r '(.int // (.float // 5) | floor)')"
-	      if [[ -z "${gaps_in:-}" || ! "${gaps_in}" =~ ^[0-9]+$ ]]; then
-	        gaps_in=5
-	      fi
-	      
-	      if [ "$gaps_in" -eq 0 ]; then
+	      cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/hypr"
+	      state_file="${cache_dir}/zen.state"
+	      mkdir -p "$cache_dir"
+
+	      zen_state="$(cat "$state_file" 2>/dev/null || true)"
+	      zen_on=false
+
+	      case "$zen_state" in
+	        on) zen_on=true ;;
+	        off) zen_on=false ;;
+	        *)
+	          gaps_in="$(hyprctl getoption general:gaps_in -j 2>/dev/null | jq -r '(.int // (.float // 5) | floor)')"
+	          if [[ -n "${gaps_in:-}" && "${gaps_in}" =~ ^[0-9]+$ && "${gaps_in}" -eq 0 ]]; then
+	            zen_on=true
+	          fi
+	          ;;
+	      esac
+
+	      if $zen_on; then
 	        # Restore (Disable Zen)
-	        # Restore default values (assuming gaps_in=5, gaps_out=10, rounding=10 or from config)
-	        # Ideally we read from a saved state or use reasonable defaults.
-        # Based on typical configs:
-        hyprctl keyword general:gaps_in 5 >/dev/null
-        hyprctl keyword general:gaps_out 10 >/dev/null
-        hyprctl keyword decoration:rounding 10 >/dev/null
-        hyprctl keyword general:border_size 2 >/dev/null
-        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
-        notify-send -t 1000 "Zen Mode" "Off"
-      else
-        # Enable Zen
-        hyprctl keyword general:gaps_in 0 >/dev/null
-        hyprctl keyword general:gaps_out 0 >/dev/null
-        hyprctl keyword decoration:rounding 0 >/dev/null
-        hyprctl keyword general:border_size 0 >/dev/null
-        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
-        notify-send -t 1000 "Zen Mode" "On"
+	        hyprctl keyword general:gaps_in 5 >/dev/null
+	        hyprctl keyword general:gaps_out 10 >/dev/null
+	        hyprctl keyword decoration:rounding 10 >/dev/null
+	        hyprctl keyword general:border_size 2 >/dev/null
+	        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+	        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+	        printf '%s\n' "off" >"$state_file" 2>/dev/null || true
+	        notify-send -t 1000 "Zen Mode" "Off"
+	      else
+	        # Enable Zen
+	        hyprctl keyword general:gaps_in 0 >/dev/null
+	        hyprctl keyword general:gaps_out 0 >/dev/null
+	        hyprctl keyword decoration:rounding 0 >/dev/null
+	        hyprctl keyword general:border_size 0 >/dev/null
+	        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+	        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+	        printf '%s\n' "on" >"$state_file" 2>/dev/null || true
+	        notify-send -t 1000 "Zen Mode" "On"
 	      fi
 	    )
 	    ;;
