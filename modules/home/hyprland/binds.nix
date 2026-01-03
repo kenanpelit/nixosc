@@ -139,7 +139,7 @@ let
 
   specialAppsBinds = [
     "ALT, T, exec, start-kkenp"
-    "$mainMod ALT, RETURN, exec, semsumo launch --daily"
+    "$mainMod ALT, RETURN, exec, semsumo launch --daily -all"
     "ALT, N, exec, anotes"
   ];
 
