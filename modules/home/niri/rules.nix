@@ -331,6 +331,7 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
     // Inactive dimming
     window-rule {
       match is-active=false;
+      exclude app-id=r#"^(TmuxKenp|Tmux)$"#;
       exclude app-id=r#"^mpv$"#;
       exclude app-id=r#"^vlc$"#;
       exclude app-id=r#"^brave-youtube\.com__-Default$"#;
