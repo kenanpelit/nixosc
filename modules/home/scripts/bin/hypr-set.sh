@@ -410,8 +410,6 @@ case "${cmd}" in
         QT_QPA_PLATFORM
         XCURSOR_THEME
         XCURSOR_SIZE
-        HYPRCURSOR_THEME
-        HYPRCURSOR_SIZE
         PATH
         XDG_DATA_DIRS
         SSH_AUTH_SOCK
@@ -452,8 +450,6 @@ case "${cmd}" in
         QT_QPA_PLATFORMTHEME
         XCURSOR_THEME
         XCURSOR_SIZE
-        HYPRCURSOR_THEME
-        HYPRCURSOR_SIZE
         XDG_DATA_DIRS
         PATH
         SSH_AUTH_SOCK
@@ -890,9 +886,7 @@ setup_environment() {
 	local cursor_theme="catppuccin-${CATPPUCCIN_FLAVOR}-${CATPPUCCIN_ACCENT}-cursors"
 	local cursor_size="${XCURSOR_SIZE:-24}"
 	export XCURSOR_THEME="$cursor_theme"
-	export HYPRCURSOR_THEME="$cursor_theme"
 	export XCURSOR_SIZE="$cursor_size"
-	export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-$cursor_size}"
 	info "Cursor Theme: $cursor_theme (size=$cursor_size)"
 
 	# -------------------------------------------------------------------------
