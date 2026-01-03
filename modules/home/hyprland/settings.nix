@@ -69,6 +69,7 @@ in
 
   cursor = {
     enable_hyprcursor = false;
+    no_hardware_cursors = 1;
   };
 
   group = {
