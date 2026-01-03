@@ -90,6 +90,17 @@ let
     "$mainMod CTRL, R, layoutmsg, colresize +conf"
     "$mainMod CTRL SHIFT, R, layoutmsg, colresize -conf"
     "$mainMod, RETURN, layoutmsg, promote"
+    "$mainMod, bracketleft, layoutmsg, move -col"
+    "$mainMod, bracketright, layoutmsg, move +col"
+    "$mainMod CTRL, bracketleft, layoutmsg, colresize -0.05"
+    "$mainMod CTRL, bracketright, layoutmsg, colresize +0.05"
+    "$mainMod CTRL SHIFT, h, layoutmsg, swapcol l"
+    "$mainMod CTRL SHIFT, l, layoutmsg, swapcol r"
+    "$mainMod CTRL SHIFT, left, layoutmsg, swapcol l"
+    "$mainMod CTRL SHIFT, right, layoutmsg, swapcol r"
+    "$mainMod, U, layoutmsg, togglefit"
+    "$mainMod, home, layoutmsg, fit tobeg"
+    "$mainMod, end, layoutmsg, fit toend"
   
     # Layout
     "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
