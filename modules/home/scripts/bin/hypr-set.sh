@@ -12,8 +12,10 @@
 #   tty                Start Hyprland from TTY/DM (was: hyprland_tty)
 #   init               Session bootstrap (was: hypr-init)
 #   workspace-monitor  Workspace/monitor helper (was: hypr-workspace-monitor)
+#   env-sync           Sync session env into systemd/dbus
 #   window-move        Move focused window (workspace/monitor)
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
+#   doctor             Print Hyprland session diagnostics
 #   toggle-float        Toggle floating for active window (was: toggle_float)
 #   toggle-opacity      Toggle active/inactive opacity (was: toggle_opacity)
 #   toggle-blur         Toggle Hyprland blur (was: toggle_blur)
@@ -63,8 +65,10 @@ Commands:
   clipse             Start clipse clipboard listener (background)
   init               Session bootstrap
   workspace-monitor  Workspace/monitor helper
+  env-sync           Sync session env into systemd/dbus
   window-move        Move focused window (workspace/monitor)
   switch             Smart monitor/workspace switcher
+  doctor             Print Hyprland session diagnostics
   toggle-float        Toggle floating for active window
   toggle-opacity      Toggle active/inactive opacity
   toggle-blur         Toggle Hyprland blur
@@ -81,6 +85,8 @@ Commands:
 Examples:
   hypr-set zen
   hypr-set pin
+  hypr-set env-sync
+  hypr-set doctor
   hypr-set window-move workspace prev
   hypr-set window-move monitor other
   hypr-set opacity 0.1
@@ -385,6 +391,128 @@ case "${cmd}" in
       
       hyprctl dispatch toggleopaque
       notify-send -t 1000 "Opacity" "Toggled"
+    )
+    ;;
+
+  env-sync)
+    (
+      set -euo pipefail
+      ensure_hypr_env || true
+
+      env_vars=(
+        DISPLAY
+        WAYLAND_DISPLAY
+        HYPRLAND_INSTANCE_SIGNATURE
+        XDG_CURRENT_DESKTOP
+        XDG_SESSION_TYPE
+        XDG_SESSION_DESKTOP
+        QT_QPA_PLATFORMTHEME
+        QT_QPA_PLATFORM
+        PATH
+        XDG_DATA_DIRS
+        SSH_AUTH_SOCK
+      )
+
+      if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user import-environment "${env_vars[@]}" >/dev/null 2>&1 || true
+      fi
+
+      if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+        dbus-update-activation-environment --systemd "${env_vars[@]}" >/dev/null 2>&1 || true
+      fi
+    )
+    ;;
+
+  doctor|diag)
+    (
+      set -euo pipefail
+      ensure_hypr_env || true
+
+      uid="$(id -u)"
+      runtime="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+
+      printf '%s\n' "hypr-set doctor"
+      printf '%s\n' "time: $(date -Is 2>/dev/null || date)"
+      printf '%s\n' "runtime: ${runtime}"
+      printf '\n'
+
+      printf '%s\n' "[env]"
+      env_dump_vars=(
+        XDG_SESSION_TYPE
+        XDG_SESSION_DESKTOP
+        XDG_CURRENT_DESKTOP
+        WAYLAND_DISPLAY
+        DISPLAY
+        HYPRLAND_INSTANCE_SIGNATURE
+        QT_QPA_PLATFORM
+        QT_QPA_PLATFORMTHEME
+        XDG_DATA_DIRS
+        PATH
+        SSH_AUTH_SOCK
+      )
+      for v in "${env_dump_vars[@]}"; do
+        printf '%-28s %s\n' "${v}:" "${!v-}"
+      done
+
+      printf '\n%s\n' "[systemd --user]"
+      if command -v systemctl >/dev/null 2>&1; then
+        units=(
+          hyprland-session.target
+          hyprland-polkit-agent.service
+          hypr-nm-applet.service
+          hypr-clip-persist.service
+          xdg-desktop-portal.service
+          xdg-desktop-portal-hyprland.service
+          dms.service
+        )
+        for u in "${units[@]}"; do
+          state="$(systemctl --user is-active "$u" 2>/dev/null || echo "unknown")"
+          printf '%-34s %s\n' "${u}:" "$state"
+        done
+      else
+        printf '%s\n' "systemctl not found"
+      fi
+
+      printf '\n%s\n' "[hyprctl]"
+      if command -v hyprctl >/dev/null 2>&1; then
+        if hyprctl version >/dev/null 2>&1; then
+          hyprctl version 2>/dev/null | sed -n '1,5p' || true
+
+          layout="$(hyprctl getoption general:layout 2>/dev/null || true)"
+          if [[ -n "${layout:-}" ]]; then
+            printf '\n%s\n' "[hyprctl layout]"
+            printf '%s\n' "$layout"
+          fi
+
+          printf '\n%s\n' "[hyprctl plugins]"
+          hyprctl plugin list 2>/dev/null || true
+
+          if command -v jq >/dev/null 2>&1; then
+            printf '\n%s\n' "[hyprctl monitors]"
+            hyprctl monitors -j 2>/dev/null \
+              | jq -r '.[] | "id=\(.id) name=\(.name) focused=\(.focused) ws=\(.activeWorkspace.id) scale=\(.scale) pos=\(.x)x\(.y) res=\(.width)x\(.height)@\(.refreshRate)"' \
+              || true
+
+            printf '\n%s\n' "[hyprctl activewindow]"
+            hyprctl activewindow -j 2>/dev/null \
+              | jq -r '"class=\(.class // "") title=\(.title // "") ws=\(.workspace.id // "") floating=\(.floating // "") pinned=\(.pinned // "")"' \
+              || true
+          fi
+        else
+          printf '%s\n' "hyprctl is installed but no running Hyprland instance was detected."
+        fi
+      else
+        printf '%s\n' "hyprctl not found"
+      fi
+
+      printf '\n%s\n' "[hints]"
+      if command -v hyprctl >/dev/null 2>&1 && hyprctl getoption general:layout >/dev/null 2>&1; then
+        if hyprctl plugin list 2>/dev/null | grep -qi "hyprscrolling"; then
+          printf '%s\n' "- hyprscrolling: loaded"
+        else
+          printf '%s\n' "- hyprscrolling: not loaded (check plugin build / HM reload)"
+        fi
+      fi
     )
     ;;
 
