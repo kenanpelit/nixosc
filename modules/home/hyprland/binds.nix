@@ -109,6 +109,7 @@ let
     "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"
     "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"
     "$mainMod, E, exec, pypr shift_monitors +1"
+    "$mainMod SHIFT, M, exec, hypr-window-move monitor other"
   
     # Connectivity
     ", F10, exec, ${bins.bluetoothToggle}"
@@ -170,6 +171,8 @@ let
     "$mainMod CTRL, c, movetoworkspace, empty"
     "$mainMod, mouse_down, workspace, e-1"
     "$mainMod, mouse_up, workspace, e+1"
+    "$mainMod, Prior, exec, hypr-window-move workspace prev"
+    "$mainMod, Next, exec, hypr-window-move workspace next"
   ]
   ++ [
     # Scratchpad
