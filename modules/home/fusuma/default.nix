@@ -99,13 +99,10 @@ let
       exit 127
     fi
 
-    layout="$(
-      hyprctl getoption general:layout -j 2>/dev/null \
-        | sed -n 's/.*\"str\":\"\\([^\"]*\\)\".*/\\1/p'
-    )"
-
-    if [[ "$layout" == "scrolling" ]]; then
-      exec hyprctl dispatch layoutmsg "focus $dir"
+    # Prefer hyprscrolling focus (also scrolls layout), but gracefully fall back
+    # to standard directional focus if the current layout doesn't support it.
+    if hyprctl dispatch layoutmsg "focus $dir" >/dev/null 2>&1; then
+      exit 0
     fi
 
     exec hyprctl dispatch movefocus "$dir"
