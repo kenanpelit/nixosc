@@ -35,6 +35,7 @@ in
   
   themeName = "catppuccin-${flavor}-${accent}";
   cursorName = "catppuccin-${flavor}-${accent}-cursors";
+  cursorSize = 32;
 
   activeBorder = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
   inactiveBorder = mkColor colors.overlay0.hex 0.66;
@@ -58,9 +59,9 @@ in
     "GTK_APPLICATION_PREFER_DARK_THEME,${if (flavor == "latte") then "0" else "1"}"
     "GDK_SCALE,1"
     "XCURSOR_THEME,catppuccin-${flavor}-${accent}-cursors"
-    "XCURSOR_SIZE,24"
+    "XCURSOR_SIZE,${toString cursorSize}"
     "HYPRCURSOR_THEME,catppuccin-${flavor}-${accent}-cursors"
-    "HYPRCURSOR_SIZE,32"
+    "HYPRCURSOR_SIZE,${toString cursorSize}"
     "QT_QPA_PLATFORM,wayland;xcb"
     "QT_QPA_PLATFORMTHEME,gtk3"
     "QT_QPA_PLATFORMTHEME_QT6,gtk3"

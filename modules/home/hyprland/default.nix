@@ -22,7 +22,7 @@ let
   
   settings = import ./settings.nix { 
     inherit lib bins;
-    inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName;
+    inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName cursorSize;
   };
   
   binds = import ./binds.nix { 
