@@ -351,6 +351,12 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       opacity 1.0;
     }
 
+    // Always keep TmuxKenp fully opaque (never apply compositor opacity rules).
+    window-rule {
+      match app-id=r#"^TmuxKenp$"#;
+      opacity 1.0;
+    }
+
     // ========================================================================
     // Layer Rules
     // ========================================================================
