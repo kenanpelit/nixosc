@@ -238,7 +238,6 @@ in
     window-rule {
       match app-id=r#"^clip-preview$"#;
       ${mkFixedFloating { w = 800; h = 600; opacity = "0.95"; }}
-      open-focused true;
     }
 
     // Ente Auth (2FA)
