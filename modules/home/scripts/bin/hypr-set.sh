@@ -11,6 +11,7 @@
 # Commands:
 #   tty                Start Hyprland from TTY/DM (was: hyprland_tty)
 #   init               Session bootstrap (was: hypr-init)
+#   lock               Lock session via DMS/logind
 #   workspace-monitor  Workspace/monitor helper (was: hypr-workspace-monitor)
 #   env-sync           Sync session env into systemd/dbus
 #   window-move        Move focused window (workspace/monitor)
@@ -64,6 +65,7 @@ Commands:
   tty                Start Hyprland from TTY/DM
   clipse             Start clipse clipboard listener (background)
   init               Session bootstrap
+  lock               Lock session via DMS/logind
   workspace-monitor  Workspace/monitor helper
   env-sync           Sync session env into systemd/dbus
   window-move        Move focused window (workspace/monitor)
@@ -146,13 +148,48 @@ case "${cmd}" in
 	        printf '%s\n' "on" >"$state_file" 2>/dev/null || true
 	        notify-send -t 1000 "Zen Mode" "On"
 	      fi
+		    )
+		    ;;
+
+	  lock)
+	    (
+	      set -euo pipefail
+
+	      is_dms_locked() {
+	        command -v dms >/dev/null 2>&1 || return 1
+	        local out
+	        out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
+	        [[ "$out" == "true" ]]
+	      }
+
+	      if is_dms_locked; then
+	        exit 0
+	      fi
+
+	      mode="dms"
+	      if [[ "${1:-}" == "--logind" ]]; then
+	        mode="logind"
+	        shift || true
+	      fi
+
+	      case "$mode" in
+	        logind)
+	          if command -v loginctl >/dev/null 2>&1; then
+	            exec loginctl lock-session
+	          fi
+	          exec dms ipc call lock lock
+	          ;;
+	        *)
+	          exec dms ipc call lock lock
+	          ;;
+	      esac
 	    )
 	    ;;
 
-	  window-move)
-	    (
-	      set -euo pipefail
-	      ensure_hypr_env
+		  window-move)
+		    (
+		      set -euo pipefail
+		      ensure_hypr_env
 
 	      command -v hyprctl >/dev/null 2>&1 || exit 0
 	      command -v jq >/dev/null 2>&1 || exit 0
