@@ -83,8 +83,6 @@ let
     "$mainMod SHIFT, G, togglegroup"
     "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
     "$mainMod SHIFT, S, pin"
-    "$mainMod SHIFT, mouse_down, exec, ${bins.hyprSet} opacity"
-    "$mainMod SHIFT, mouse_up, exec, ${bins.hyprSet} opacity"
   
     # Hyprscrolling: cycle the preconfigured column widths (conf list)
     "$mainMod, R, layoutmsg, colresize +conf"
@@ -188,8 +186,6 @@ let
 
     # Workspace helpers
     "$mainMod CTRL, c, movetoworkspace, empty"
-    "$mainMod, mouse_down, workspace, e-1"
-    "$mainMod, mouse_up, workspace, e+1"
     "$mainMod, Prior, exec, ${bins.hyprSet} window-move workspace prev"
     "$mainMod, Next, exec, ${bins.hyprSet} window-move workspace next"
   ]
