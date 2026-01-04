@@ -714,7 +714,7 @@ case "${cmd}" in
         systemctl --user start niri-session.target 2>/dev/null || true
       }
 
-      start_wlr_portal() {
+      start_niri_portals() {
         if ! command -v systemctl >/dev/null 2>&1; then
           return 0
         fi
@@ -724,13 +724,22 @@ case "${cmd}" in
           timeout_bin="timeout"
         fi
 
-        # Needed for ScreenCast/Screenshot in non-wlroots compositor sessions
-        # when the user manager didn't have WAYLAND_DISPLAY at login time.
-        if [[ -n "$timeout_bin" ]]; then
-          $timeout_bin 2s systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
-        else
-          systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
-        fi
+        # Niri's primary screencasting path is via xdg-desktop-portal-gnome.
+        # Start portal backends explicitly in case portals were activated before
+        # WAYLAND_DISPLAY existed at login time.
+        local services=(
+          xdg-desktop-portal-gnome.service
+          xdg-desktop-portal-gtk.service
+        )
+
+        local svc
+        for svc in "${services[@]}"; do
+          if [[ -n "$timeout_bin" ]]; then
+            $timeout_bin 2s systemctl --user start "$svc" >/dev/null 2>&1 || true
+          else
+            systemctl --user start "$svc" >/dev/null 2>&1 || true
+          fi
+        done
       }
 
       restart_portals() {
@@ -769,7 +778,7 @@ case "${cmd}" in
       start_clipse_listener
       import_env_to_systemd
       set_env_in_systemd
-      start_wlr_portal
+      start_niri_portals
       restart_portals
       restart_dms_if_running
       start_target
