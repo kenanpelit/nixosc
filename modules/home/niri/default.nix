@@ -218,6 +218,17 @@ in
       ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher
       ++ [
         inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
+        (pkgs.writeShellScriptBin "osc-clipview" ''
+          set -euo pipefail
+          mime=$(wl-paste --list-types | head -n 1)
+          if [[ $mime == image/* ]]; then
+            wl-paste > /tmp/clip_preview.png
+            niri msg action spawn --floating imv /tmp/clip_preview.png
+          else
+            # Show text in a floating kitty window
+            niri msg action spawn --floating kitty --class "clip-preview" bash -c "wl-paste | less"
+          fi
+        '')
       ]
       ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
 

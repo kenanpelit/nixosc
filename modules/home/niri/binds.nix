@@ -23,6 +23,7 @@
       Mod+N repeat=false hotkey-overlay-title="DMS Notifications" { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
       Mod+C repeat=false hotkey-overlay-title="DMS Control Center" { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle"; }
       Mod+V repeat=false hotkey-overlay-title="DMS Clipboard" { spawn "${bins.dms}" "ipc" "call" "clipboard" "toggle"; }
+      Mod+Shift+V repeat=false hotkey-overlay-title="Clipboard Preview" { spawn "osc-clipview"; }
       Mod+Shift+D repeat=false hotkey-overlay-title="DMS Dash Overview" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" "overview"; }
       Mod+Shift+P repeat=false hotkey-overlay-title="DMS Process List" { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
       Mod+Ctrl+N repeat=false hotkey-overlay-title="DMS Notepad" { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
@@ -113,9 +114,13 @@
       Mod+Ctrl+F9 repeat=false hotkey-overlay-title="Cast: Clear" { clear-dynamic-cast-target; }
       Mod+Alt+F9 repeat=false hotkey-overlay-title="Cast: Pick Window" { spawn "${bins.niriSet}" "cast" "pick"; }
 
-      // Column Operations
+      // Column Operations (Tab Management)
       Mod+BracketLeft hotkey-overlay-title="Column: Consume/Expel Left" { consume-or-expel-window-left; }
       Mod+BracketRight hotkey-overlay-title="Column: Consume/Expel Right" { consume-or-expel-window-right; }
+      Mod+Ctrl+Left hotkey-overlay-title="Column: Consume/Expel Left" { consume-or-expel-window-left; }
+      Mod+Ctrl+Right hotkey-overlay-title="Column: Consume/Expel Right" { consume-or-expel-window-right; }
+      Mod+Ctrl+H hotkey-overlay-title="Column: Consume/Expel Left" { consume-or-expel-window-left; }
+      Mod+Ctrl+L hotkey-overlay-title="Column: Consume/Expel Right" { consume-or-expel-window-right; }
 
       // Navigation
       Mod+S repeat=false hotkey-overlay-title="Overview Toggle" { toggle-overview; }
@@ -148,9 +153,9 @@
       Mod+Shift+K hotkey-overlay-title="Move: Window Up" { move-window-up; }
       Mod+Shift+J hotkey-overlay-title="Move: Window Down" { move-window-down; }
 
-      // Move to Monitor
-      Mod+Ctrl+Left hotkey-overlay-title="Move: To Monitor Left" { move-column-to-monitor-left; }
-      Mod+Ctrl+Right hotkey-overlay-title="Move: To Monitor Right" { move-column-to-monitor-right; }
+      // Move to Monitor (REASSIGNED: Original Mod+Ctrl+Left/Right moved to Column Operations)
+      Mod+Alt+Shift+Left hotkey-overlay-title="Move: To Monitor Left" { move-column-to-monitor-left; }
+      Mod+Alt+Shift+Right hotkey-overlay-title="Move: To Monitor Right" { move-column-to-monitor-right; }
       Mod+Ctrl+Up hotkey-overlay-title="Move: To Monitor Up" { move-column-to-monitor-up; }
       Mod+Ctrl+Down hotkey-overlay-title="Move: To Monitor Down" { move-column-to-monitor-down; }
 
