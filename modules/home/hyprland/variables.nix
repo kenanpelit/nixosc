@@ -58,6 +58,7 @@ rec {
     "GTK_USE_PORTAL,1"
     "GTK_APPLICATION_PREFER_DARK_THEME,${if (flavor == "latte") then "0" else "1"}"
     "GDK_SCALE,1"
+    "HYPRCURSOR_SIZE,${toString cursorSize}"
     "XCURSOR_THEME,catppuccin-${flavor}-${accent}-cursors"
     "XCURSOR_SIZE,${toString cursorSize}"
     "QT_QPA_PLATFORM,wayland;xcb"
