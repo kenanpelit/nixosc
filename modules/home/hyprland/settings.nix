@@ -43,8 +43,8 @@ let
       # "f[1]s[false], bordersize:0, rounding:false"
       "w[v2-99]s[false], bordersize:3, rounding:true"
       # Special workspaces
-      "special:dropdown, gapsout:0, gapsin:0"
-      "special:scratchpad, gapsout:0, gapsin:0"
+      "special:dropdown, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+      "special:scratchpad, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
     ];
 
 in
