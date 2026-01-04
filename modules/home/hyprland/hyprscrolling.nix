@@ -37,11 +37,13 @@ lib.mkIf cfg.enable {
         column_width = 0.5;
         # Niri preset widths: 1/3, 1/2, 2/3, Full
         explicit_column_widths = "0.33333, 0.5, 0.66667, 1.0";
-        fullscreen_on_one_column = true;
-        # 0=center (Niri style), 1=fit
-        focus_fit_method = 0;
+        # Niri doesn't "fullscreen" single-column; keep normal sizing + centering.
+        fullscreen_on_one_column = false;
+        # Niri's "center-focused-column on-overflow" doesn't exist upstream here;
+        # `fit` is the closest approximation for focus navigation.
+        # 0=center, 1=fit
+        focus_fit_method = 1;
         follow_focus = true;
-        follow_debounce_ms = 0;
       };
     };
   };
