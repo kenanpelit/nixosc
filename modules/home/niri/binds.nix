@@ -343,7 +343,9 @@
       Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
 
       // Workspace Helpers (Hyprland parity)
-      Mod+Ctrl+C repeat=false hotkey-overlay-title="Move Window: Empty Workspace" { move-window-to-workspace 999; }
+      // NOTE: Workspace index is an unsigned byte (0-255). Using a high index
+      // targets the bottommost workspace, which is always the empty workspace.
+      Mod+Ctrl+C repeat=false hotkey-overlay-title="Move Window: Empty Workspace" { move-window-to-workspace 255; }
       Mod+Page_Up hotkey-overlay-title="Move Window: Workspace Up" { move-window-to-workspace-up; }
       Mod+Page_Down hotkey-overlay-title="Move Window: Workspace Down" { move-window-to-workspace-down; }
   '';
