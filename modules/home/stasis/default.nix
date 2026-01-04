@@ -621,8 +621,8 @@ EOF
           Environment = [
             "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
           ];
-          ExecStart = "${lib.getExe cfg.package} --verbose --config ${lib.escapeShellArg cfg.configFile}";
-          ExecReload = "${lib.getExe cfg.package} --verbose --config ${lib.escapeShellArg cfg.configFile} reload";
+          ExecStart = "${lib.getExe' cfg.package "stasis"} --verbose --config ${lib.escapeShellArg cfg.configFile}";
+          ExecReload = "${lib.getExe' cfg.package "stasis"} --verbose --config ${lib.escapeShellArg cfg.configFile} reload";
           Restart = "on-failure";
           RestartSec = 2;
         };
