@@ -96,7 +96,7 @@
       Mod+Ctrl+0  hotkey-overlay-title="Size: 1920x1080 (FHD)"  { spawn "sh" "-c" "niri msg action set-column-width 1920 && niri msg action set-window-height 1080"; }
       
       // Moved from Mod+0 due to size presets
-      Mod+Ctrl+C hotkey-overlay-title="Column: Center" { center-column; }
+      Mod+Ctrl+Shift+C hotkey-overlay-title="Column: Center" { center-column; }
 
       Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       Mod+Z repeat=false hotkey-overlay-title="Zen Mode Toggle" { spawn "${bins.niriSet}" "zen"; }
@@ -341,6 +341,11 @@
       Mod+Shift+7 hotkey-overlay-title="Move To WS 7" { move-column-to-workspace "7"; }
       Mod+Shift+8 hotkey-overlay-title="Move To WS 8" { move-column-to-workspace "8"; }
       Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
+
+      // Workspace Helpers (Hyprland parity)
+      Mod+Ctrl+C repeat=false hotkey-overlay-title="Move Window: Empty Workspace" { move-window-to-workspace 999; }
+      Mod+Page_Up hotkey-overlay-title="Move Window: Workspace Up" { move-window-to-workspace-up; }
+      Mod+Page_Down hotkey-overlay-title="Move Window: Workspace Down" { move-window-to-workspace-down; }
   '';
 
   monitors = ''
