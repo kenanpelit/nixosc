@@ -222,11 +222,11 @@ in
           set -euo pipefail
           mime=$(wl-paste --list-types | head -n 1)
           if [[ $mime == image/* ]]; then
-            wl-paste > /tmp/clip_preview.png
-            niri msg action spawn --floating imv /tmp/clip_preview.png
+            # Use kitty's icat to show image, holding open with read
+            niri msg action spawn -- kitty --class "clip-preview" bash -c "wl-paste > /tmp/clip_preview.png && kitten icat --hold /tmp/clip_preview.png"
           else
-            # Show text in a floating kitty window
-            niri msg action spawn --floating kitty --class "clip-preview" bash -c "wl-paste | less"
+            # Show text in kitty
+            niri msg action spawn -- kitty --class "clip-preview" bash -c "wl-paste | less"
           fi
         '')
       ]

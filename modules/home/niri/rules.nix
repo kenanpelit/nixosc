@@ -233,6 +233,13 @@ in
       match app-id=r#"^clipse$"#;
       ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
     }
+    
+    // Clipboard Preview (osc-clipview)
+    window-rule {
+      match app-id=r#"^clip-preview$"#;
+      ${mkFixedFloating { w = 800; h = 600; opacity = "0.95"; }}
+      open-focused true;
+    }
 
     // Ente Auth (2FA)
     // Keep it floating like Clipse, but do not force a workspace.
