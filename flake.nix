@@ -219,7 +219,7 @@
     };
 
     stasis = {
-      url = "github:saltnpepper97/stasis";
+      url = "github:saltnpepper97/stasis/b6efb72a13ac91b0f48204b99cbf98e0d033a131";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
