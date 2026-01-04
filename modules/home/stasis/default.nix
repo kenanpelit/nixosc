@@ -45,10 +45,9 @@ let
   # A sane default, designed for Niri + Hyprland + DMS.
   #
   # Notes:
-  # - IMPORTANT: `stasis-lock` must NOT block when used in the idle pipeline.
-  #   If it blocks (e.g. waiting until unlock), Stasis will never reach later
-  #   stages like DPMS/suspend. For manual use you can still run
-  #   `stasis-lock --wait`.
+  # - IMPORTANT: Stasis runs lock commands detached, so it's OK (and preferred)
+  #   for `stasis-lock --wait` to block until unlock; this lets Stasis reliably
+  #   track lock state and reset the action pipeline on unlock.
   # - Stasis timeouts are sequential (each timeout is relative to the previous
   #   action firing). To match Hypridle's "absolute" schedule, we convert absolute
   #   targets (t=300/900/1800/1860/3600) into deltas (300/600/900/60/1740).
@@ -96,7 +95,7 @@ let
 
       lock_screen:
         timeout 31536000
-        command "${config.home.profileDirectory}/bin/stasis-lock"
+        command "${config.home.profileDirectory}/bin/stasis-lock --wait"
       end
 
       dpms:
@@ -125,7 +124,7 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "${config.home.profileDirectory}/bin/stasis-lock --wait"
           resume-command "notify-send 'Welcome back, $env.USER!'"
         end
 
@@ -157,7 +156,7 @@ let
 
         lock_screen:
           timeout ${toString cfg.timeouts.lockDeltaSeconds}
-          command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "${config.home.profileDirectory}/bin/stasis-lock --wait"
           resume-command "notify-send 'Welcome back, $env.USER!'"
         end
 
@@ -181,7 +180,7 @@ let
       work:
         lock_screen:
           timeout 900
-          command "${config.home.profileDirectory}/bin/stasis-lock"
+          command "${config.home.profileDirectory}/bin/stasis-lock --wait"
         end
 
         dpms:
@@ -225,8 +224,28 @@ let
       logger -t stasis-lock "lock requested (wait=$wait)"
     fi
 
+    ensure_hypr_signature() {
+      if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        return 0
+      fi
+
+      local uid runtime hypr_dir sig
+      uid="$(id -u)"
+      runtime="''${XDG_RUNTIME_DIR:-/run/user/''${uid}}"
+      hypr_dir="''${runtime}/hypr"
+
+      [[ -d "''${hypr_dir}" ]] || return 1
+
+      sig="$(ls -1t "''${hypr_dir}" 2>/dev/null | head -n 1 || true)"
+      [[ -n "''${sig}" ]] || return 1
+      [[ -S "''${hypr_dir}/''${sig}/.socket.sock" ]] || return 1
+
+      export HYPRLAND_INSTANCE_SIGNATURE="''${sig}"
+      return 0
+    }
+
     # Prefer Hyprland lock when available.
-    if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprlock >/dev/null 2>&1; then
+    if command -v hyprlock >/dev/null 2>&1 && ensure_hypr_signature; then
       if [[ "$wait" == "1" ]]; then
         exec hyprlock
       fi
@@ -245,6 +264,7 @@ let
       if [[ "$wait" != "1" ]]; then exit 0; fi
 
       # Block until DMS reports unlock.
+      failures="0"
       while true; do
         out="$(
           dms ipc call lock isLocked 2>/dev/null \
@@ -257,7 +277,12 @@ let
         case "$out" in
           true) ;;
           false) exit 0 ;;
-          *) ;;
+          *)
+            failures="$((failures + 1))"
+            if [[ "$failures" -ge 20 ]]; then
+              exit 0
+            fi
+            ;;
         esac
 
         sleep 0.25
@@ -475,12 +500,12 @@ EOF
           #
           # Keep it a minimal patch (do not rewrite the whole file) unless
           # `forceConfig = true`.
-          lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
+          lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock --wait"}
           kbd_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-kbd-backlight"}
 
           # For `lock_screen` blocks:
           # For `lock_screen` blocks:
-          # - Ensure `command` points to our non-blocking locker (`stasis-lock`).
+          # - Ensure `command` points to our lock wrapper (`stasis-lock --wait`).
           # - Drop any `lock-command` lines (we avoid logind-managed lockers here
           #   because it previously caused lock loops on this setup).
           tmp="$(mktemp)"
@@ -493,10 +518,11 @@ EOF
               continue
             fi
 
-            if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
-              indent="''${BASH_REMATCH[1]}"
-              cmd="''${BASH_REMATCH[2]}"
-              bin="''${cmd%% *}"
+	            if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
+	              indent="''${BASH_REMATCH[1]}"
+	              cmd="''${BASH_REMATCH[2]}"
+	              bin="''${cmd%% *}"
+	              bin_name="''${bin##*/}"
 
               # If it's not an absolute path and the binary doesn't exist, normalize.
               if [[ "$bin" != /* ]] && ! command -v "$bin" >/dev/null 2>&1; then
@@ -512,13 +538,13 @@ EOF
                 continue
               fi
 
-              # If this is some locker-ish command, normalize to our wrapper.
-              if [[ "$cmd" == "''${lock_cmd}" || "$bin" == "stasis-lock" || "$bin" == "hyprlock" || "$bin" == "dms" ]]; then
-                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
-                changed="1"
-                continue
-              fi
-            fi
+	              # If this is some locker-ish command, normalize to our wrapper.
+	              if [[ "$cmd" == "''${lock_cmd}" || "$bin_name" == "stasis-lock" || "$bin_name" == "hyprlock" || "$bin_name" == "dms" ]]; then
+	                echo "''${indent}command \"''${lock_cmd}\"" >>"$tmp"
+	                changed="1"
+	                continue
+	              fi
+	            fi
 
             if [[ "$in_lock" == "1" && "$line" =~ ^([[:space:]]*)lock-command[[:space:]]+\"([^\"]+)\"[[:space:]]*$ ]]; then
               changed="1"
@@ -544,17 +570,17 @@ EOF
           # Ensure desktop placeholder actions exist so `list-actions`/`trigger`
           # behave predictably without affecting the real idle schedule.
           if ! grep -qE '^[[:space:]]{2}lock[_-]screen:[[:space:]]*$' "$CFG_FILE"; then
-            lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock"}
+            lock_cmd=${lib.escapeShellArg "${config.home.profileDirectory}/bin/stasis-lock --wait"}
             tmp="$(mktemp)"
             inserted="0"
             while IFS= read -r line; do
               echo "$line" >>"$tmp"
               if [[ "$inserted" == "0" && "$line" =~ ^[[:space:]]*stasis:[[:space:]]*$ ]]; then
                 cat >>"$tmp" <<EOF
-  lock_screen:
-    timeout 31536000
-    command "$lock_cmd"
-  end
+	  lock_screen:
+	    timeout 31536000
+	    command "$lock_cmd"
+	  end
 
   dpms:
     timeout 31536000
