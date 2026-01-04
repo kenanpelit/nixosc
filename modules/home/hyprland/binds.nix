@@ -64,7 +64,7 @@ let
   
     # MPV Manager
     "$mainMod CTRL, 1, exec, mpv-manager playback"
-    "$mainMod CTRL, 2, exec, mpv-manager play-yt"
+    "$mainMod CTRL, Y, exec, mpv-manager play-yt"
     "$mainMod CTRL, 3, exec, mpv-manager stick"
     "$mainMod CTRL, 4, exec, mpv-manager move"
     "$mainMod CTRL, 5, exec, mpv-manager save-yt"
