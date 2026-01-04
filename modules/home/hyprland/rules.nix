@@ -38,6 +38,22 @@
       "match:title" = "^()$";
       no_blur = true;
     }
+    {
+      name = "single-window-no-decos";
+      "match:float" = false;
+      "match:workspace" = "w[tv1]";
+      border_size = 0;
+      rounding = 0;
+      no_shadow = true;
+    }
+    {
+      name = "maximized-window-no-decos";
+      "match:float" = false;
+      "match:workspace" = "f[1]";
+      border_size = 0;
+      rounding = 0;
+      no_shadow = true;
+    }
   ];
 
   # --- Media & Graphics Rules ---
