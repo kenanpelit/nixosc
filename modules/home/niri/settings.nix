@@ -7,6 +7,9 @@
 # ==============================================================================
 { lib, config, pkgs, palette, gtkTheme, cursorTheme, iconTheme, ... }:
 
+let
+  cfg = config.my.desktop.niri;
+in
 {
   layout = ''
     layout {
@@ -222,16 +225,6 @@
     // Surfaces: surface0=${palette.surface0} surface1=${palette.surface1}
   '';
 
-  hardwareDefault = ''
-    // ========================================================================
-    // Hardware Configuration
-    // ========================================================================
-
-    // Default configuration is empty.
-    // Host-specific output/workspace settings should be injected via:
-    // my.desktop.niri.hardwareConfig = "...";
-  '';
-
   main = ''
     // ========================================================================
     // Niri Configuration - DankMaterialShell Edition
@@ -268,7 +261,7 @@
       hide-after-inactive-ms 1000;
     }
 
-    prefer-no-csd;
+    ${lib.optionalString cfg.preferNoCsd "prefer-no-csd;"}
 
     hotkey-overlay {
       skip-at-startup;
@@ -344,10 +337,12 @@
       }
     }
 
+    ${lib.optionalString cfg.deactivateUnfocusedWindows ''
     // Work around Electron/Chromium apps that treat "activated" as focus.
     debug {
       deactivate-unfocused-windows;
     }
+    ''}
 
     // Switch Events
     switch-events {

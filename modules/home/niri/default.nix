@@ -52,13 +52,13 @@ let
   # ---------------------------------------------------------------------------
   # Binary Paths & Features
   # ---------------------------------------------------------------------------
-  enableNiriusBinds = true;
+  enableNiriusBinds = cfg.enableNirius;
 
   bins = {
     kitty = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
     niriSet = "${config.home.profileDirectory}/bin/niri-set";
-    clipse = "${pkgs.clipse}/bin/clipse";
+    clipse = "clipse";
     niriusd = "${pkgs.nirius}/bin/niriusd";
     nirius  = "${pkgs.nirius}/bin/nirius";
     niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
@@ -84,6 +84,44 @@ let
   monitorsConfig = import ./monitors.nix {
     inherit lib palette;
   };
+
+  # ---------------------------------------------------------------------------
+  # Niri keybind duplicate guard (eval-time)
+  #
+  # Niri treats duplicate keybinds inside a single `binds {}` block as a hard
+  # error. We also assert at eval time to provide a clearer message.
+  # ---------------------------------------------------------------------------
+  trimLine =
+    s:
+    let
+      m = builtins.match "^[[:space:]]*(.*[^[:space:]])[[:space:]]*$" s;
+    in
+    if m == null then "" else builtins.elemAt m 0;
+
+  bindKeyFromLine =
+    line:
+    let
+      trimmed = trimLine line;
+      m = builtins.match "^([^[:space:]]+)[[:space:]].*\\{.*$" trimmed;
+    in
+    if trimmed == "" || lib.hasPrefix "//" trimmed || m == null then null else builtins.elemAt m 0;
+
+  bindConfigText = lib.concatStringsSep "\n" [
+    bindsConfig.core
+    bindsConfig.nirius
+    bindsConfig.dms
+    bindsConfig.apps
+    bindsConfig.mpv
+    bindsConfig.workspaces
+    bindsConfig.monitors
+  ];
+
+  bindKeys =
+    lib.filter (k: k != null) (map bindKeyFromLine (lib.splitString "\n" bindConfigText));
+
+  bindKeyCount = k: builtins.length (lib.filter (x: x == k) bindKeys);
+  duplicateBindKeys = lib.filter (k: bindKeyCount k > 1) (lib.unique bindKeys);
+  duplicateBindKeysPretty = map (k: "${k} (x${toString (bindKeyCount k)})") duplicateBindKeys;
 
 in
 {
@@ -123,9 +161,29 @@ in
       default = false;
       description = "Enable VRR window rules for common game launchers (gamescope/steam)";
     };
+
+    preferNoCsd = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Set `prefer-no-csd` in niri config (hint apps to avoid CSD).";
+    };
+
+    deactivateUnfocusedWindows = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable `debug.deactivate-unfocused-windows` workaround for some Electron/Chromium apps.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = duplicateBindKeys == [ ];
+        message =
+          "Niri duplicate keybinds detected (binds must be unique): ${lib.concatStringsSep ", " duplicateBindKeysPretty}";
+      }
+    ];
+
     # Niri module from flake handles package installation via `programs.niri.package`
     programs.niri.enable = true;
     programs.niri.package = pkgs.niri-unstable;
@@ -159,7 +217,6 @@ in
       lib.optional cfg.enableNirius pkgs.nirius
       ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher
       ++ [
-        pkgs.clipse
         inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
       ]
       ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
