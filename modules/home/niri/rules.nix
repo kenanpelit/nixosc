@@ -331,6 +331,9 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
     // Inactive dimming
     window-rule {
       match is-active=false;
+      // Never dim/transparent a window while it's being shared/cast via portals.
+      // This prevents background content bleeding through in window screencasts.
+      exclude is-window-cast-target=true;
       exclude app-id=r#"^(TmuxKenp|Tmux)$"#;
       exclude app-id=r#"^mpv$"#;
       exclude app-id=r#"^vlc$"#;
@@ -339,6 +342,13 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       exclude app-id=r#"^steam_app_\d+$"#;
       exclude app-id=r#"^com\.obsproject\.Studio$"#;
       opacity 0.85;
+    }
+
+    // Ensure portal-casted windows stay fully opaque even if other rules
+    // (inactive dimming, manual opacity tweaks, etc.) would make them translucent.
+    window-rule {
+      match is-window-cast-target=true;
+      opacity 1.0;
     }
 
     // ========================================================================
