@@ -87,25 +87,37 @@ let
     "$mainMod SHIFT, mouse_up, exec, ${bins.hyprSet} opacity"
   
     # Hyprscrolling: cycle the preconfigured column widths (conf list)
-    "$mainMod CTRL, R, layoutmsg, colresize +conf"
-    "$mainMod CTRL SHIFT, R, layoutmsg, colresize -conf"
+    "$mainMod, R, layoutmsg, colresize +conf"
+    "$mainMod SHIFT, R, layoutmsg, colresize -conf"
     "$mainMod, RETURN, layoutmsg, promote"
-    "$mainMod SHIFT, comma, layoutmsg, move -col"
-    "$mainMod SHIFT, period, layoutmsg, move +col"
-    "$mainMod CTRL SHIFT, comma, layoutmsg, colresize -0.05"
-    "$mainMod CTRL SHIFT, period, layoutmsg, colresize +0.05"
-    "$mainMod CTRL SHIFT, h, layoutmsg, swapcol l"
-    "$mainMod CTRL SHIFT, l, layoutmsg, swapcol r"
-    "$mainMod CTRL SHIFT, left, layoutmsg, swapcol l"
-    "$mainMod CTRL SHIFT, right, layoutmsg, swapcol r"
-    "$mainMod, U, layoutmsg, togglefit"
-    "$mainMod, home, layoutmsg, fit tobeg"
-    "$mainMod, end, layoutmsg, fit toend"
+    
+    # Niri-like Window Movement
+    "$mainMod SHIFT, left, layoutmsg, movewindowto l"
+    "$mainMod SHIFT, h, layoutmsg, movewindowto l"
+    "$mainMod SHIFT, right, layoutmsg, movewindowto r"
+    "$mainMod SHIFT, l, layoutmsg, movewindowto r"
+    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, k, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
+    "$mainMod SHIFT, j, layoutmsg, movewindowto d"
+
+    # Niri-like Column Resizing (Fine-tune)
+    "$mainMod, minus, layoutmsg, colresize -0.05"
+    "$mainMod, equal, layoutmsg, colresize +0.05"
+
+    # Niri-like Column Swapping
+    "$mainMod CTRL, left, layoutmsg, swapcol l"
+    "$mainMod CTRL, h, layoutmsg, swapcol l"
+    "$mainMod CTRL, right, layoutmsg, swapcol r"
+    "$mainMod CTRL, l, layoutmsg, swapcol r"
+
+    # Fit/Center Toggle
+    "$mainMod, C, layoutmsg, togglefit"
   
     # Layout
     "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
     "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
-    "$mainMod, R, submap, resize"
+    # "$mainMod, R, submap, resize" # Disabled in favor of hyprscrolling colresize
   
     # Splitting
     "$mainMod CTRL ALT, left, exec, hyprctl dispatch splitratio -0.2"
@@ -144,29 +156,25 @@ let
   ];
 
   navBinds = [
-    # Navigation (Niri-like)
+    # Navigation (Niri-like: Focus moves the scroll view)
     "$mainMod, left, layoutmsg, focus l"
     "$mainMod, h, layoutmsg, focus l"
     "$mainMod, right, layoutmsg, focus r"
     "$mainMod, l, layoutmsg, focus r"
+    "$mainMod, up, layoutmsg, focus u"
+    "$mainMod, k, layoutmsg, focus u"
+    "$mainMod, down, layoutmsg, focus d"
+    "$mainMod, j, layoutmsg, focus d"
 
-    "$mainMod, up, exec, ${bins.hyprSet} workspace-monitor -wu"
-    "$mainMod, k, exec, ${bins.hyprSet} workspace-monitor -wu"
-    "$mainMod, down, exec, ${bins.hyprSet} workspace-monitor -wd"
-    "$mainMod, j, exec, ${bins.hyprSet} workspace-monitor -wd"
+    # Workspace monitors
+    "$mainMod CTRL, up, exec, ${bins.hyprSet} workspace-monitor -wu"
+    "$mainMod CTRL, k, exec, ${bins.hyprSet} workspace-monitor -wu"
+    "$mainMod CTRL, down, exec, ${bins.hyprSet} workspace-monitor -wd"
+    "$mainMod CTRL, j, exec, ${bins.hyprSet} workspace-monitor -wd"
 
     # Old behavior
     "ALT, Tab, workspace, e+1"
     "ALT CTRL, tab, workspace, e-1"
-
-    "$mainMod SHIFT, left, layoutmsg, movewindowto l"
-    "$mainMod SHIFT, h, layoutmsg, movewindowto l"
-    "$mainMod SHIFT, right, layoutmsg, movewindowto r"
-    "$mainMod SHIFT, l, layoutmsg, movewindowto r"
-    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
-    "$mainMod SHIFT, k, layoutmsg, movewindowto u"
-    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
-    "$mainMod SHIFT, j, layoutmsg, movewindowto d"
 
     # Monitor focus (Niri-like)
     "$mainMod ALT, left, exec, hyprctl dispatch focusmonitor l"
@@ -190,8 +198,6 @@ let
     "$mainMod, minus, movetoworkspace, special:scratchpad"
     "$mainMod SHIFT, minus, togglespecialworkspace, scratchpad"
   ]
-  ++ mkDirectionalBinds "$mainMod CTRL" "resizeactive" "resizeDelta"
-  ;
 
   dmsBinds = [
     # Launchers & power
