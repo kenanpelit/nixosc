@@ -123,16 +123,17 @@ in
     enabled = true;
     bezier = [
       "linear, 0.0, 0.0, 1.0, 1.0"
-      "quart, 0.25, 1, 0.5, 1"        # Smooth deceleration (Professional)
-      "fluid, 0.05, 0.9, 0.1, 1.02"   # Micro-bounce (Magnetic, Premium feel)
+      "quart, 0.25, 1, 0.5, 1"
+      "niri_motion, 0.05, 0.9, 0.1, 1.0" # Snappy, almost no overshoot (Matches Niri stiffness=1000)
+      "easeOutExpo, 0.16, 1, 0.3, 1"     # Fast initial burst (Matches Niri window open)
     ];
     animation = [
-      "windowsIn, 1, 4, quart, popin 95%"  # Elegant entry (Scale up)
-      "windowsOut, 1, 4, quart, popin 95%" # Elegant exit (Scale down)
-      "windowsMove, 1, 4, fluid"           # Snappy movement with tiny bounce
-      "fade, 1, 3, quart"                  # Smooth fading
-      "workspaces, 1, 5, quart, slidevert" # Vertical workspace flow
-      "specialWorkspace, 1, 4, quart, slidevert"
+      "windowsIn, 1, 3, easeOutExpo, popin 95%" # Niri: ease-out-expo 300ms, scale 0.95
+      "windowsOut, 1, 2, easeOutExpo, popin 98%" # Niri: ease-out-quad 200ms, scale 0.98
+      "windowsMove, 1, 3, niri_motion"           # Snappy movement
+      "fade, 1, 2, quart"
+      "workspaces, 1, 4, niri_motion, slidevert" # Vertical workspace flow (User preference)
+      "specialWorkspace, 1, 4, niri_motion, slidevert"
       "border, 1, 3, linear"
     ];
   };
