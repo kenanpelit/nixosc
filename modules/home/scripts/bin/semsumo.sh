@@ -89,8 +89,8 @@ declare -A DAILY_PROFILES=(
 
 # Terminal Applications - UPDATED
 declare -A TERMINALS=(
-  ["kkenp"]="kitty|--class TmuxKenp -T Tmux -e tm|2|secure|1|false"
-  ["mkenp"]="kitty|--class TmuxKenp -T Tmux -e tm|2|secure|1|false"
+  ["kkenp"]="kitty|--class TmuxKenp -T Tmux --override background_opacity=1.0 -e tm|2|secure|1|false"
+  ["mkenp"]="kitty|--class TmuxKenp -T Tmux --override background_opacity=1.0 -e tm|2|secure|1|false"
   ["wkenp"]="wezterm|start --class TmuxKenp -e tm|2|bypass|1|false"
   ["wezterm"]="wezterm|start --class wezterm|2|secure|1|false"
   ["kitty-single"]="kitty|--class kitty -T kitty --single-instance|2|secure|1|false"
