@@ -218,6 +218,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    stasis = {
+      url = "github:saltnpepper97/stasis";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 
