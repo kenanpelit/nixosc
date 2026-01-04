@@ -11,7 +11,7 @@
 # fallbacks.
 # ==============================================================================
 
-{ config, lib, pkgs, ... }:
+{ inputs, config, lib, pkgs, ... }:
 let
   cfg = config.my.user.stasis;
 
@@ -20,10 +20,24 @@ let
     then lib.hm.dag
     else config.lib.dag;
 
-  defaultPackage =
-    if pkgs ? stasis
-    then pkgs.stasis
+  system = pkgs.stdenv.hostPlatform.system;
+
+  stasisFromInput =
+    if inputs ? stasis
+    then
+      let
+        stasisPackages = inputs.stasis.packages or { };
+      in
+      lib.attrByPath
+        [ system "stasis" ]
+        (lib.attrByPath [ system "default" ] null stasisPackages)
+        stasisPackages
     else null;
+
+  defaultPackage =
+    if stasisFromInput != null
+    then stasisFromInput
+    else if pkgs ? stasis then pkgs.stasis else null;
 
   configDir = "${config.xdg.configHome}/stasis";
   configFile = "${configDir}/stasis.rune";
@@ -301,8 +315,9 @@ in
       description = ''
         Stasis package to run.
 
-        Defaults to `pkgs.stasis` if it exists in your pinned nixpkgs.
-        If it doesn't, set this explicitly (or add a flake input for Stasis).
+        Defaults to `inputs.stasis.packages.${system}.stasis` when `inputs.stasis`
+        is present, otherwise falls back to `pkgs.stasis` (if your pinned nixpkgs
+        provides it). If neither exists, set this explicitly.
       '';
     };
 
