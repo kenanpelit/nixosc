@@ -197,7 +197,7 @@ let
     # Scratchpad
     "$mainMod, minus, movetoworkspace, special:scratchpad"
     "$mainMod SHIFT, minus, togglespecialworkspace, scratchpad"
-  ]
+  ];
 
   dmsBinds = [
     # Launchers & power
