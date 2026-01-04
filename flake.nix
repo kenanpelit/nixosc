@@ -35,7 +35,7 @@
 #
 #  Update Inputs (pin bumps):
 #    $ ./install.sh update                          # flake update flow
-#    $ osc-fiup {dank|hypr|walker}                  # targeted bump helpers
+#    $ osc-fiup {dank|hypr|stasis|walker}           # targeted bump helpers
 #
 # ==============================================================================
 
@@ -219,8 +219,9 @@
     };
 
     stasis = {
-      url = "github:saltnpepper97/stasis/b6efb72a13ac91b0f48204b99cbf98e0d033a131";
       inputs.nixpkgs.follows = "nixpkgs";
+      # Pinned commit (updated via `osc-fiup stasis`)
+      url = "github:saltnpepper97/stasis/b6efb72a13ac91b0f48204b99cbf98e0d033a131"; # 0104 - Updated commit
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";
