@@ -197,19 +197,32 @@ in
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // Common dialogs / utilities
+    // Common dialogs / utilities / system tools
     window-rule {
       match title="^Open File$";
       match title="^File Upload$";
       match title="^Save As$";
       match title="^Confirm to replace files$";
       match title="^File Operation Progress$";
+      match title="^Extract archive$";
+      match title="^Compress\.\.\.$";
       match app-id=r#"^pavucontrol$"#;
       match app-id=r#"^nm-connection-editor$"#;
       match app-id=r#"^blueman-manager$"#;
       match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
       match app-id=r#"^hyprland-share-picker$"#;
+      match app-id=r#"^org\.gnome\.Calculator$"#;
+      match app-id=r#"^kcalc$"#;
+      match app-id=r#"^org\.gnome\.Settings$"#;
+      match app-id=r#"^gnome-disks$"#;
       open-floating true;
+      open-focused true;
+    }
+
+    // Specific Rule for Calculators
+    window-rule {
+      match app-id=r#"^(org\.gnome\.Calculator|kcalc)$"#;
+      ${mkFixedFloating { w = 400; h = 600; x = 0; y = 100; relativeTo = "top"; }}
     }
 
     // Tmux
@@ -237,7 +250,8 @@ in
     // Clipboard Preview (osc-clipview)
     window-rule {
       match app-id=r#"^clip-preview$"#;
-      ${mkFixedFloating { w = 800; h = 600; opacity = "0.95"; }}
+      ${mkFixedFloating { w = 900; h = 700; opacity = "0.98"; }}
+      shadow { on; spread 5; softness 30; }
     }
 
     // Ente Auth (2FA)
