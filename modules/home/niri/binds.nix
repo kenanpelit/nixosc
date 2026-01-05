@@ -99,6 +99,8 @@
       // Moved from Mod+0 due to size presets
       Mod+Ctrl+Shift+C hotkey-overlay-title="Column: Center" { center-column; }
 
+      Mod+Ctrl+W repeat=false hotkey-overlay-title="Column: Toggle Tabbed" { toggle-column-tabbed-display; }
+
       Mod+G repeat=false hotkey-overlay-title="Window Float ↔ Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       Mod+Z repeat=false hotkey-overlay-title="Zen Mode Toggle" { spawn "${bins.niriSet}" "zen"; }
       Mod+P repeat=false hotkey-overlay-title="Pin Window (PIP)" { spawn "${bins.niriSet}" "pin"; }
