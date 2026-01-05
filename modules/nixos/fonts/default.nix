@@ -106,8 +106,8 @@ in {
 
         hinting = {
           enable   = true;
-          autohint = true;
-          style    = "full";
+          autohint = false;
+          style    = if cfg.fonts.hiDpiOptimized then "slight" else "medium";
         };
 
         antialias = true;
