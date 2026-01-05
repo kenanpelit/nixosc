@@ -199,13 +199,13 @@ in
 
     // Common dialogs / utilities / system tools
     window-rule {
-      match title="^Open File$";
-      match title="^File Upload$";
-      match title="^Save As$";
-      match title="^Confirm to replace files$";
-      match title="^File Operation Progress$";
-      match title="^Extract archive$";
-      match title="^Compress\.\.\.$";
+      match title=r#"^Open File$"#;
+      match title=r#"^File Upload$"#;
+      match title=r#"^Save As$"#;
+      match title=r#"^Confirm to replace files$"#;
+      match title=r#"^File Operation Progress$"#;
+      match title=r#"^Extract archive$"#;
+      match title=r#"^Compress\.\.\.$"#;
       match app-id=r#"^pavucontrol$"#;
       match app-id=r#"^nm-connection-editor$"#;
       match app-id=r#"^blueman-manager$"#;
