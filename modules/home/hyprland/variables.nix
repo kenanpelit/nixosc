@@ -72,7 +72,6 @@ rec {
     "MOZ_WEBRENDER,1"
     "MOZ_USE_XINPUT2,1"
     "MOZ_CRASHREPORTER_DISABLE,1"
-    "FREETYPE_PROPERTIES,truetype:interpreter-version=40"
     "WLR_RENDERER,vulkan"
     "LIBVA_DRIVER_NAME,iHD"
     "EDITOR,nvim"

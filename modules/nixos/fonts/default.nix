@@ -10,7 +10,6 @@
 let
   inherit (lib) mkOption mkEnableOption mkIf types;
   cfg = config.my.display;
-  mapleFonts = import ../../home/maple { inherit lib pkgs; };
 in {
   options.my.display.fonts = {
     enable = mkEnableOption "system font stack (packages + fontconfig)";
@@ -20,7 +19,7 @@ in {
       default = true;
       description = ''
         If true, fontconfig is tuned for HiDPI/modern LCD panels:
-          - subpixel RGB
+          - grayscale antialiasing (no subpixel)
           - slight hinting
           - antialias enabled
       '';
@@ -100,8 +99,8 @@ in {
         };
 
         subpixel = mkIf cfg.fonts.hiDpiOptimized {
-          rgba      = "rgb";
-          lcdfilter = "default";
+          rgba      = "none";
+          lcdfilter = "none";
         };
 
         hinting = {
