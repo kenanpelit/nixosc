@@ -963,7 +963,6 @@ setup_environment() {
 	# -------------------------------------------------------------------------
 	# Font Rendering
 	# -------------------------------------------------------------------------
-	export FREETYPE_PROPERTIES="truetype:interpreter-version=40"
 	if [[ -f /etc/fonts/fonts.conf ]]; then
 		export FONTCONFIG_FILE=/etc/fonts/fonts.conf
 	fi
