@@ -60,8 +60,9 @@ lib.mkIf cfg.enable {
   systemd.user.services.dms = {
     Unit = {
       Description = "DankMaterialShell";
-      After = dmsTargets;
+      After = dmsTargets ++ [ "niri-ready.service" ];
       PartOf = dmsTargets;
+      ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
       Type = "simple";
