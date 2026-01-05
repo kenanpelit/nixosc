@@ -191,9 +191,7 @@ in
         max-speed 1500;
       }
       hot-corners {
-        top-right {
-          action toggle-overview;
-        }
+        off;
       }
     }
   '';
