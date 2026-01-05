@@ -106,17 +106,46 @@ in {
 
         hinting = {
           enable   = true;
-          autohint = false;
-          style    = if cfg.fonts.hiDpiOptimized then "slight" else "medium";
+          autohint = true;
+          style    = "full";
         };
 
         antialias = true;
         useEmbeddedBitmaps = false;
-        # Force emoji fallback into Inter/Fira
+        # Force emoji fallback into Inter/Fira, and map MS fonts
         localConf = ''
           <?xml version="1.0"?>
           <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
           <fontconfig>
+            <!-- LCD Filter: Ensure maximum sharpness -->
+            <match target="font">
+              <edit name="lcdfilter" mode="assign">
+                <const>lcddefault</const>
+              </edit>
+            </match>
+
+            <!-- Microsoft Font Replacements (Web Compatibility) -->
+            <match target="pattern">
+              <test qual="any" name="family"><string>Arial</string></test>
+              <edit name="family" mode="assign" binding="same"><string>Noto Sans</string></edit>
+            </match>
+            <match target="pattern">
+              <test qual="any" name="family"><string>Helvetica</string></test>
+              <edit name="family" mode="assign" binding="same"><string>Noto Sans</string></edit>
+            </match>
+            <match target="pattern">
+              <test qual="any" name="family"><string>Times New Roman</string></test>
+              <edit name="family" mode="assign" binding="same"><string>Noto Serif</string></edit>
+            </match>
+            <match target="pattern">
+              <test qual="any" name="family"><string>Courier New</string></test>
+              <edit name="family" mode="assign" binding="same"><string>Maple Mono NF</string></edit>
+            </match>
+            <match target="pattern">
+              <test qual="any" name="family"><string>Consolas</string></test>
+              <edit name="family" mode="assign" binding="same"><string>Maple Mono NF</string></edit>
+            </match>
+
             <!-- Prefer Noto, explicitly reject Twitter Color Emoji -->
             <rejectfont>
               <pattern>
