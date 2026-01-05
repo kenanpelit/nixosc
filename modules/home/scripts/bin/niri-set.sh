@@ -28,6 +28,11 @@ start_clipse_listener() {
     if pgrep -af 'clipse.*-listen' >/dev/null 2>&1; then
       return 0
     fi
+    # Newer clipse versions spawn wl-paste watchers and exit (no long-running
+    # `clipse -listen` process). Detect them to avoid starting duplicates.
+    if pgrep -af 'wl-paste.*--watch clipse' >/dev/null 2>&1; then
+      return 0
+    fi
   fi
 
   # `-listen` starts the monitor in the background and exits quickly.
@@ -1552,7 +1557,11 @@ EOF
       fi
 
       if maybe pgrep; then
-        kv "is-running:clipse -listen" "$(pgrep -af 'clipse.*-listen' 2>/dev/null | head -n 1 || echo inactive)"
+        clipse_proc="$(pgrep -af 'clipse.*-listen' 2>/dev/null | head -n 1 || true)"
+        if [[ -z "${clipse_proc:-}" ]]; then
+          clipse_proc="$(pgrep -af 'wl-paste.*--watch clipse' 2>/dev/null | head -n 1 || true)"
+        fi
+        kv "is-running:clipse" "${clipse_proc:-inactive}"
       fi
     )
     ;;
