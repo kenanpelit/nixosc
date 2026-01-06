@@ -93,8 +93,8 @@ let
           ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
         }
 
-        # Simplified startup: launch QuickShell directly, then exit Hyprland.
-        exec-once = sh -c "qs -p ${dmsShellPkg}/share/quickshell/dms >> /var/log/dms-greeter/qs.log 2>&1; hyprctl dispatch exit"
+        # Launch QuickShell directly, then exit Hyprland on success.
+        exec-once = sh -c "qs -p ${dmsShellPkg}/share/quickshell/dms; hyprctl dispatch exit"
       ''
     else if cfg.compositor == "niri" then
       ''
@@ -142,13 +142,6 @@ let
   # avoid it and set env vars inside the command wrapper instead.
   greeterCommand = pkgs.writeShellScriptBin "dms-greeter" ''
     set -euo pipefail
-
-    # Ensure log directory exists
-    mkdir -p /var/log/dms-greeter
-    chown $(id -u):$(id -g) /var/log/dms-greeter
-
-    exec > >(tee -a /var/log/dms-greeter/dms-greeter.log) 2>&1
-    echo "--- Starting DMS Greeter at $(date) ---"
 
     export XKB_DEFAULT_LAYOUT=${lib.escapeShellArg cfg.layout}
     ${lib.optionalString (cfg.variant != "") ''
