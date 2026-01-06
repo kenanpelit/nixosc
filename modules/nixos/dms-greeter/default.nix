@@ -93,9 +93,8 @@ let
           ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
         }
 
-        # Run QuickShell in a loop to prevent session exit on crash.
-        # Log output to investigate startup failures.
-        exec-once = sh -c "while true; do qs -p ${dmsShellPkg}/share/quickshell/dms >> /var/log/dms-greeter/qs.log 2>&1; sleep 1; done"
+        # Wait for Hyprland socket, launch QuickShell, then exit Hyprland on success.
+        exec-once = sh -c "for i in \$(seq 1 20); do if [ -S \$XDG_RUNTIME_DIR/hypr/\$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock ]; then break; fi; sleep 0.1; done; qs -p ${dmsShellPkg}/share/quickshell/dms >> /var/log/dms-greeter/qs.log 2>&1; hyprctl dispatch exit"
       ''
     else if cfg.compositor == "niri" then
       ''
