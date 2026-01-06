@@ -93,8 +93,8 @@ let
           ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
         }
 
-        # Wait for Hyprland socket, launch QuickShell, then exit Hyprland on success.
-        exec-once = sh -c "for i in \$(seq 1 20); do if [ -S \$XDG_RUNTIME_DIR/hypr/\$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock ]; then break; fi; sleep 0.1; done; qs -p ${dmsShellPkg}/share/quickshell/dms >> /var/log/dms-greeter/qs.log 2>&1; hyprctl dispatch exit"
+        # Simplified startup: launch QuickShell directly, then exit Hyprland.
+        exec-once = sh -c "qs -p ${dmsShellPkg}/share/quickshell/dms >> /var/log/dms-greeter/qs.log 2>&1; hyprctl dispatch exit"
       ''
     else if cfg.compositor == "niri" then
       ''
