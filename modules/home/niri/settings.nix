@@ -16,7 +16,6 @@ in
       gaps 12;
       center-focused-column "on-overflow";
       background-color "#00000000";
-      geometry-corner-radius 12;
 
       focus-ring {
         on;
