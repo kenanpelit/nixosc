@@ -54,6 +54,7 @@ in
 
       # YouTube extraction without a JS runtime has been deprecated; this avoids missing formats.
       --js-runtimes "deno"
+      --remote-components ejs:github
   
       # ---------------------------------------------------------------------------
       # Output Settings
