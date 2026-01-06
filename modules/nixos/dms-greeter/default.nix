@@ -93,9 +93,9 @@ let
           ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
         }
 
-        # Wait for Hyprland socket to be ready before starting QuickShell to avoid crash loop.
-        # If qs fails immediately, 'hyprctl dispatch exit' runs and kills the session.
-        exec-once = sh -c "sleep 1; qs -p ${dmsShellPkg}/share/quickshell/dms; hyprctl dispatch exit"
+        # Run QuickShell in a loop to prevent session exit on crash.
+        # Log output to investigate startup failures.
+        exec-once = sh -c "while true; do qs -p ${dmsShellPkg}/share/quickshell/dms >> /var/log/dms-greeter/qs.log 2>&1; sleep 1; done"
       ''
     else if cfg.compositor == "niri" then
       ''
