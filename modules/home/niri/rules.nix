@@ -373,7 +373,7 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       exclude title=r#"^Picture-in-Picture$"#;
       exclude app-id=r#"^steam_app_\d+$"#;
       exclude app-id=r#"^com\.obsproject\.Studio$"#;
-      opacity 0.85;
+      opacity 0.95;
     }
 
     // Ensure portal-casted windows stay fully opaque even if other rules
