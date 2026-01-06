@@ -150,6 +150,9 @@ let
 
     export HOME=${lib.escapeShellArg greeterHome}
     
+    # Force DMS to look for config/state in our writable home, not /etc/greetd
+    export DMS_GREET_CFG_DIR=${lib.escapeShellArg greeterHome}
+
     # Ensure we are in a writable directory
     cd "$HOME" || { echo "Failed to cd to $HOME"; exit 1; }
 
