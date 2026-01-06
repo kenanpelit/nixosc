@@ -189,24 +189,29 @@ let
     echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
     echo "Compositor: ${cfg.compositor}"
 
-    exec ${
-      lib.escapeShellArgs (
-        [
-          "sh"
-          dmsGreeterAsset
-          "--cache-dir"
-          greeterHome
-          "--command"
-          cfg.compositor
-          "-p"
-          "${dmsShellPkg}/share/quickshell/dms"
-        ]
-        ++ lib.optionals (dmsGreeterCfg.compositor.customConfig != "") [
-          "-C"
-          "${pkgs.writeText "dmsgreeter-compositor-config" dmsGreeterCfg.compositor.customConfig}"
-        ]
-      )
-    }
+    # Bypass the upstream 'dms-greeter' script because it forcibly appends
+    # an 'exec' command that causes a crash loop (qs ...; hyprctl dispatch exit).
+    # We manually handle the compositor startup here.
+
+    COMPOSITOR_CONFIG="${pkgs.writeText "dmsgreeter-compositor-config" dmsGreeterCfg.compositor.customConfig}"
+
+    if [ "${cfg.compositor}" = "hyprland" ]; then
+      # Hyprland specific launch
+      if command -v start-hyprland >/dev/null 2>&1; then
+        exec start-hyprland -- --config "$COMPOSITOR_CONFIG"
+      else
+        exec Hyprland -c "$COMPOSITOR_CONFIG"
+      fi
+    elif [ "${cfg.compositor}" = "niri" ]; then
+      # Niri specific launch
+      exec niri -c "$COMPOSITOR_CONFIG"
+    elif [ "${cfg.compositor}" = "sway" ]; then
+      # Sway specific launch
+      exec sway -c "$COMPOSITOR_CONFIG"
+    else
+      echo "Error: Unsupported compositor '${cfg.compositor}'"
+      exit 1
+    fi
   '';
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
