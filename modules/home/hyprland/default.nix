@@ -22,7 +22,7 @@ let
   
   settings = import ./settings.nix { 
     inherit lib bins;
-    inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName;
+    inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName cursorSize;
   };
   
   binds = import ./binds.nix { 
@@ -51,6 +51,8 @@ in
     # Basic Configuration
     # ---------------------------------------------------------------------------
     ./hyprland.nix   # Main Hyprland configuration (systemd, package)
+    ./hyprscrolling.nix # Hyprland plugin: scrolling layout
+    ./hyprexpo.nix   # Hyprland plugin: workspace overview
     # ./config.nix   # REMOVED: Replaced by modular files below
     
     # ---------------------------------------------------------------------------
@@ -71,7 +73,7 @@ in
         # Core Settings
         inherit (settings) 
           exec-once monitor workspace input gestures general 
-          group decoration animations misc dwindle master;
+          cursor group decoration animations misc dwindle master;
 
         # Binds (from settings.nix for general bind settings)
         binds = settings.binds;

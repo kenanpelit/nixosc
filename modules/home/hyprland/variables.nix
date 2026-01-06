@@ -30,11 +30,12 @@ let
     in "0x${toHex alphaInt}${hex}";
 
 in
-{
+rec {
   inherit mkColor colors flavor accent;
   
   themeName = "catppuccin-${flavor}-${accent}";
   cursorName = "catppuccin-${flavor}-${accent}-cursors";
+  cursorSize = 24;
 
   activeBorder = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
   inactiveBorder = mkColor colors.overlay0.hex 0.66;
@@ -57,10 +58,9 @@ in
     "GTK_USE_PORTAL,1"
     "GTK_APPLICATION_PREFER_DARK_THEME,${if (flavor == "latte") then "0" else "1"}"
     "GDK_SCALE,1"
+    "HYPRCURSOR_SIZE,${toString cursorSize}"
     "XCURSOR_THEME,catppuccin-${flavor}-${accent}-cursors"
-    "XCURSOR_SIZE,24"
-    "HYPRCURSOR_THEME,catppuccin-${flavor}-${accent}-cursors"
-    "HYPRCURSOR_SIZE,32"
+    "XCURSOR_SIZE,${toString cursorSize}"
     "QT_QPA_PLATFORM,wayland;xcb"
     "QT_QPA_PLATFORMTHEME,gtk3"
     "QT_QPA_PLATFORMTHEME_QT6,gtk3"
@@ -72,7 +72,6 @@ in
     "MOZ_WEBRENDER,1"
     "MOZ_USE_XINPUT2,1"
     "MOZ_CRASHREPORTER_DISABLE,1"
-    "FREETYPE_PROPERTIES,truetype:interpreter-version=40"
     "WLR_RENDERER,vulkan"
     "LIBVA_DRIVER_NAME,iHD"
     "EDITOR,nvim"

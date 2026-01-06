@@ -89,8 +89,8 @@ declare -A DAILY_PROFILES=(
 
 # Terminal Applications - UPDATED
 declare -A TERMINALS=(
-  ["kkenp"]="kitty|--class TmuxKenp -T Tmux -e tm|2|secure|1|false"
-  ["mkenp"]="kitty|--class TmuxKenp -T Tmux -e tm|2|secure|1|false"
+  ["kkenp"]="kitty|--class TmuxKenp -T Tmux --override background_opacity=1.0 -e tm|2|secure|1|false"
+  ["mkenp"]="kitty|--class TmuxKenp -T Tmux --override background_opacity=1.0 -e tm|2|secure|1|false"
   ["wkenp"]="wezterm|start --class TmuxKenp -e tm|2|bypass|1|false"
   ["wezterm"]="wezterm|start --class wezterm|2|secure|1|false"
   ["kitty-single"]="kitty|--class kitty -T kitty --single-instance|2|secure|1|false"
@@ -180,12 +180,14 @@ log() {
 
   echo -e "${color}${BOLD}[$level]${NC} ${PURPLE}[$module]${NC} $message"
 
-  mkdir -p "$LOG_DIR"
-  echo "[$timestamp] [$level] [$module] $message" >>"$LOG_FILE"
+  mkdir -p "$LOG_DIR" 2>/dev/null || true
+  echo "[$timestamp] [$level] [$module] $message" >>"$LOG_FILE" 2>/dev/null || true
 
   if [[ "$notify" == "true" && -x "$(command -v notify-send)" ]]; then
-    notify-send -a "$SCRIPT_NAME" "$module: $message"
+    notify-send -a "$SCRIPT_NAME" "$module: $message" >/dev/null 2>&1 || true
   fi
+
+  return 0
 }
 
 setup_external_monitor() {

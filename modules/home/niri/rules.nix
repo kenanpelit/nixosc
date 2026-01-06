@@ -40,6 +40,31 @@ let
       ${lib.optionalString focus "open-focused true;"}
     '';
 
+  renderMatchAppIds = appIdRegexes:
+    lib.concatStringsSep "\n" (map (r: ''      match app-id=r#"${r}"#;'' ) appIdRegexes);
+
+  privacyScreencastAppIds = [
+    "^org\\.keepassxc\\.KeePassXC$"
+    "^org\\.gnome\\.World\\.Secrets$"
+    "^com\\.bitwarden\\.desktop$"
+    "^io\\.ente\\.auth$"
+    "^clipse$"
+    "^gcr-prompter$"
+    "^polkit-gnome-authentication-agent-1$"
+    "^(nm-connection-editor|blueman-manager)$"
+    "^(discord|WebCord|ferdium|com\\.rtosta\\.zapzap|org\\.telegram\\.desktop|Signal|Slack|whatsapp-for-linux)$"
+  ];
+
+  privacyScreenCaptureAppIds = [
+    "^org\\.keepassxc\\.KeePassXC$"
+    "^org\\.gnome\\.World\\.Secrets$"
+    "^com\\.bitwarden\\.desktop$"
+    "^io\\.ente\\.auth$"
+    "^clipse$"
+    "^gcr-prompter$"
+    "^polkit-gnome-authentication-agent-1$"
+  ];
+
   # ----------------------------------------------------------------------------
   # Workspace assignment rules for daily apps
   # ----------------------------------------------------------------------------
@@ -126,10 +151,22 @@ in
       match is-floating=false;
       shadow {
         on;
-        color "#00000040";
-        offset x=4 y=4;
-        spread 4;
-        softness 12;
+        color "#00000060";
+        offset x=0 y=4;
+        spread 0;
+        softness 16;
+      }
+    }
+
+    // Tiling Windows
+    window-rule {
+      match is-floating=false;
+      shadow {
+        on;
+        color "#00000060";
+        offset x=0 y=4;
+        spread 0;
+        softness 16;
       }
     }
 
@@ -172,19 +209,32 @@ in
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // Common dialogs / utilities
+    // Common dialogs / utilities / system tools
     window-rule {
-      match title="^Open File$";
-      match title="^File Upload$";
-      match title="^Save As$";
-      match title="^Confirm to replace files$";
-      match title="^File Operation Progress$";
+      match title=r#"^Open File$"#;
+      match title=r#"^File Upload$"#;
+      match title=r#"^Save As$"#;
+      match title=r#"^Confirm to replace files$"#;
+      match title=r#"^File Operation Progress$"#;
+      match title=r#"^Extract archive$"#;
+      match title=r#"^Compress\.\.\.$"#;
       match app-id=r#"^pavucontrol$"#;
       match app-id=r#"^nm-connection-editor$"#;
       match app-id=r#"^blueman-manager$"#;
       match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
       match app-id=r#"^hyprland-share-picker$"#;
+      match app-id=r#"^org\.gnome\.Calculator$"#;
+      match app-id=r#"^kcalc$"#;
+      match app-id=r#"^org\.gnome\.Settings$"#;
+      match app-id=r#"^gnome-disks$"#;
       open-floating true;
+      open-focused true;
+    }
+
+    // Specific Rule for Calculators
+    window-rule {
+      match app-id=r#"^(org\.gnome\.Calculator|kcalc)$"#;
+      ${mkFixedFloating { w = 400; h = 600; x = 0; y = 100; relativeTo = "top"; }}
     }
 
     // Tmux
@@ -207,6 +257,13 @@ in
     window-rule {
       match app-id=r#"^clipse$"#;
       ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
+    }
+    
+    // Clipboard Preview (osc-clipview)
+    window-rule {
+      match app-id=r#"^clip-preview$"#;
+      ${mkFixedFloating { w = 900; h = 700; opacity = "0.98"; }}
+      shadow { on; spread 5; softness 30; }
     }
 
     // Ente Auth (2FA)
@@ -258,28 +315,14 @@ in
 
     // Privacy - block from screencast (xdg-desktop-portal / screen sharing)
     window-rule {
-      match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
-      match app-id=r#"^org\.gnome\.World\.Secrets$"#;
-      match app-id=r#"^com\.bitwarden\.desktop$"#;
-      match app-id=r#"^io\.ente\.auth$"#;
-      match app-id=r#"^clipse$"#;
-      match app-id=r#"^gcr-prompter$"#;
-      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-      match app-id=r#"^(nm-connection-editor|blueman-manager)$"#;
-      match app-id=r#"^(discord|WebCord|ferdium|com\.rtosta\.zapzap|org\.telegram\.desktop|Signal|Slack|whatsapp-for-linux)$"#;
+${renderMatchAppIds privacyScreencastAppIds}
       block-out-from "screencast";
     }
 
     // Privacy - block from *all* screen captures (screenshots + screencasts)
     // Note: interactive built-in screenshot UI still works; only "automatic" capture is blocked.
     window-rule {
-      match app-id=r#"^org\.keepassxc\.KeePassXC$"#;
-      match app-id=r#"^org\.gnome\.World\.Secrets$"#;
-      match app-id=r#"^com\.bitwarden\.desktop$"#;
-      match app-id=r#"^io\.ente\.auth$"#;
-      match app-id=r#"^clipse$"#;
-      match app-id=r#"^gcr-prompter$"#;
-      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+${renderMatchAppIds privacyScreenCaptureAppIds}
       block-out-from "screen-capture";
     }
 
@@ -320,26 +363,66 @@ in
     // Inactive dimming
     window-rule {
       match is-active=false;
+      // Never dim/transparent a window while it's being shared/cast via portals.
+      // This prevents background content bleeding through in window screencasts.
+      exclude is-window-cast-target=true;
+      exclude app-id=r#"^(TmuxKenp|Tmux)$"#;
       exclude app-id=r#"^mpv$"#;
       exclude app-id=r#"^vlc$"#;
+      exclude app-id=r#"^brave-youtube\.com__-Default$"#;
       exclude title=r#"^Picture-in-Picture$"#;
       exclude app-id=r#"^steam_app_\d+$"#;
-      opacity 0.95;
+      exclude app-id=r#"^com\.obsproject\.Studio$"#;
+      opacity 0.85;
+    }
+
+    // Ensure portal-casted windows stay fully opaque even if other rules
+    // (inactive dimming, manual opacity tweaks, etc.) would make them translucent.
+    window-rule {
+      match is-window-cast-target=true;
+      opacity 1.0;
+    }
+
+    // Always keep TmuxKenp fully opaque (never apply compositor opacity rules).
+    window-rule {
+      match app-id=r#"^TmuxKenp$"#;
+      opacity 1.0;
     }
 
     // ========================================================================
     // Layer Rules
     // ========================================================================
+    
+    // DMS: Wallpaper Blur
     layer-rule {
       match namespace=r#"^dms:blurwallpaper$"#;
       place-within-backdrop true;
     }
 
+    // DMS: UI Elements (Bar, Dock, Panel)
     layer-rule {
       match namespace=r#"^dms:(bar|dock|panel).*$"#;
       geometry-corner-radius 0;
     }
 
+    // DMS: Overlays (Launcher, OSD, Popups) - Add shadows for depth
+    layer-rule {
+      match namespace=r#"^dms:(launcher|osd|popup).*$"#;
+      shadow {
+        on;
+        color "#00000060";
+        spread 2;
+        softness 12;
+      }
+    }
+
+    // Notifications: Layout
+    layer-rule {
+      match namespace="^notifications$";
+      geometry-corner-radius 12;
+    }
+
+    // Notifications: Privacy
     layer-rule {
       match namespace="^notifications$";
       block-out-from "screencast";

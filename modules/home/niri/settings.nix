@@ -7,11 +7,14 @@
 # ==============================================================================
 { lib, config, pkgs, palette, gtkTheme, cursorTheme, iconTheme, ... }:
 
+let
+  cfg = config.my.desktop.niri;
+in
 {
   layout = ''
     layout {
       gaps 12;
-      center-focused-column "never";
+      center-focused-column "on-overflow";
       background-color "#00000000";
 
       focus-ring {
@@ -60,64 +63,75 @@
 
   animations = ''
     animations {
-      // Subtle, modern defaults (keeps sync between movement/resize).
-      //
-      // Note: Custom shaders are based on upstream niri examples. If they fail
-      // to compile for any reason, niri falls back to the default shader.
+      // Premium Motion Profile: Fluid curves with responsive slide dynamics.
 
       workspace-switch {
-        spring damping-ratio=0.9 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.9 stiffness=1400 epsilon=0.0001;
       }
 
       window-open {
-        duration-ms 180;
-        curve "cubic-bezier" 0.16 1.0 0.3 1.0;
+        duration-ms 300;
+        curve "ease-out-expo";
 
         custom-shader r"
           vec4 open_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Subtle scale-up (less aggressive than the default 0.5 → 1.0).
-            float scale = mix(0.96, 1.0, p);
-            coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
+            // macOS style: smooth scale + pronounced slide-up
+            float scale = mix(0.95, 1.0, p);
+            float y_off = mix(0.1, 0.0, p); 
+            
+            vec3 coords = vec3(
+                (coords_geo.x - 0.5) / scale + 0.5,
+                (coords_geo.y - 0.5 - y_off) / scale + 0.5,
+                1.0
+            );
 
-            vec3 coords_tex = niri_geo_to_tex * coords_geo;
+            vec3 coords_tex = niri_geo_to_tex * coords;
             vec4 color = texture2D(niri_tex, coords_tex.st);
 
-            // Gentle fade-in ramp at the start.
-            color *= smoothstep(0.0, 0.2, p);
+            // Clean linear fade
+            color *= p;
+            
             return color;
           }
         ";
       }
       window-close {
-        duration-ms 150;
-        curve "cubic-bezier" 0.4 0.0 1.0 1.0;
+        duration-ms 200;
+        curve "ease-out-quad";
 
         custom-shader r"
           vec4 close_color(vec3 coords_geo, vec3 size_geo) {
             float p = niri_clamped_progress;
 
-            // Subtle scale-down while fading out.
+            // Slide-down + scale-down on exit
             float scale = mix(1.0, 0.98, p);
-            coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
+            float y_off = mix(0.0, 0.05, p);
+            
+            vec3 coords = vec3(
+                (coords_geo.x - 0.5) / scale + 0.5,
+                (coords_geo.y - 0.5 - y_off) / scale + 0.5,
+                1.0
+            );
 
-            vec3 coords_tex = niri_geo_to_tex * coords_geo;
+            vec3 coords_tex = niri_geo_to_tex * coords;
             vec4 color = texture2D(niri_tex, coords_tex.st);
+            
             return color * (1.0 - p);
           }
         ";
       }
 
-      // Keep these identical for best synchronized animations.
+      // Snappy but smooth movement (Hyprland style responsiveness)
       horizontal-view-movement {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -133,8 +147,6 @@
 
             vec4 color;
             if (crop) {
-              // When cropping, fill outside geometry with transparency to avoid
-              // texture leaking into the unspecified shader area.
               if (coords_curr_geo.x < 0.0 || 1.0 < coords_curr_geo.x ||
                   coords_curr_geo.y < 0.0 || 1.0 < coords_curr_geo.y) {
                 color = vec4(0.0);
@@ -142,7 +154,6 @@
                 color = texture2D(niri_tex_next, coords_crop_next.st);
               }
             } else {
-              // Otherwise, crossfade to reduce stretching artifacts.
               vec4 prev = texture2D(niri_tex_prev, coords_stretch_prev.st);
               vec4 next = texture2D(niri_tex_next, coords_stretch_next.st);
               color = mix(prev, next, niri_clamped_progress);
@@ -164,10 +175,10 @@
         curve "ease-out-quad";
       }
       overview-open-close {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.0001;
+        spring damping-ratio=0.92 stiffness=1200 epsilon=0.0001;
       }
       recent-windows-close {
-        spring damping-ratio=0.9 stiffness=750 epsilon=0.001;
+        spring damping-ratio=0.9 stiffness=800 epsilon=0.001;
       }
     }
   '';
@@ -214,48 +225,6 @@
     // Surfaces: surface0=${palette.surface0} surface1=${palette.surface1}
   '';
 
-  hardwareDefault = ''
-    // ========================================================================
-    // Hardware Configuration
-    // ========================================================================
-
-    // Named Workspaces (1-9)
-    workspace "1" { open-on-output "DP-3"; }
-    workspace "2" { open-on-output "DP-3"; }
-    workspace "3" { open-on-output "DP-3"; }
-    workspace "4" { open-on-output "DP-3"; }
-    workspace "5" { open-on-output "DP-3"; }
-    workspace "6" { open-on-output "DP-3"; }
-    workspace "7" { open-on-output "eDP-1"; }
-    workspace "8" {
-      open-on-output "eDP-1";
-      layout {
-        gaps 20;
-        border {
-          on;
-          width 1;
-          active-color "${palette.sky}";
-          inactive-color "${palette.surface0}";
-        }
-      }
-    }
-    workspace "9" { open-on-output "eDP-1"; }
-
-    // Monitor Configuration
-    output "DP-3" {
-      mode "2560x1440@59.951";
-      position x=0 y=0;
-      scale 1.0;
-    }
-
-    output "eDP-1" {
-      mode "1920x1200@60.003";
-      position x=320 y=1440;
-      scale 1.0;
-      variable-refresh-rate on-demand=true;
-    }
-  '';
-
   main = ''
     // ========================================================================
     // Niri Configuration - DankMaterialShell Edition
@@ -292,7 +261,7 @@
       hide-after-inactive-ms 1000;
     }
 
-    prefer-no-csd;
+    ${lib.optionalString cfg.preferNoCsd "prefer-no-csd;"}
 
     hotkey-overlay {
       skip-at-startup;
@@ -316,18 +285,20 @@
       place-within-backdrop true;
     }
 
+    ${lib.optionalString cfg.systemd.enable ''
     // Start session-scoped user services (niri-init, nsticky, nirius, niriswitcher, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
     spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "session-start";
+    ''}
 
     // Long-running daemons (Clipse, etc.) are started via systemd --user (niri-session.target).
 
     // Input Configuration
     input {
       workspace-auto-back-and-forth;
-      focus-follows-mouse max-scroll-amount="0%";
-      warp-mouse-to-focus;
+      focus-follows-mouse;
+      warp-mouse-to-focus mode="center-xy";
 
       keyboard {
         xkb {
@@ -346,20 +317,20 @@
         tap-button-map "left-right-middle"
         middle-emulation
         click-method "clickfinger"
-        accel-profile "flat"
+        accel-profile "adaptive"
         accel-speed 1.0
         scroll-method "two-finger"
         scroll-factor 1.0
       }
 
       mouse {
-        accel-profile "flat"
+        accel-profile "adaptive"
         accel-speed 0.0
         scroll-factor 1.0
       }
 
       trackpoint {
-        accel-profile "flat"
+        accel-profile "adaptive"
         accel-speed 0.0
         middle-emulation
         scroll-method "on-button-down"
@@ -367,6 +338,13 @@
         scroll-button-lock
       }
     }
+
+    ${lib.optionalString cfg.deactivateUnfocusedWindows ''
+    // Work around Electron/Chromium apps that treat "activated" as focus.
+    debug {
+      deactivate-unfocused-windows;
+    }
+    ''}
 
     // Switch Events
     switch-events {

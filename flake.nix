@@ -35,7 +35,7 @@
 #
 #  Update Inputs (pin bumps):
 #    $ ./install.sh update                          # flake update flow
-#    $ osc-fiup {dank|hypr|walker}                  # targeted bump helpers
+#    $ osc-fiup {dank|hypr|stasis|walker}           # targeted bump helpers
 #
 # ==============================================================================
 
@@ -93,12 +93,12 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/ea444c35bb23b6e34505ab6753e069de7801cc25"; # 1229 - Updated commit
-#      url = "github:hyprwm/hyprland/6a055fc747a5a899b97f9b4c1d1a52229a805b1e"; # 1228 - Updated commit
-      #      url = "github:hyprwm/hyprland/a8452705d6512da36f66e4a7d6e7799afbc7ffdd"; # 1228 - Updated commit
-      #      url = "github:hyprwm/hyprland/e5d20b56bcad78df42c9060a5d330274b0a6e510"; # 1227 - Updated commit
-      #      url = "github:hyprwm/hyprland/5faa66d297752ab0d919bb5719fa0949292fe720"; # 1227 - Updated commit
-      #      url = "github:hyprwm/hyprland/42447a50d6840c5e28bd58db1225bae2fd7d5ed0"; # 1227 - Updated commit
+      url = "github:hyprwm/hyprland/9817553c664b0b7f6776671383a6368c74ee8dee"; # 0106 - Updated commit
+#      url = "github:hyprwm/hyprland/107275238c0dd5e3de8b9c36575a335ebd393c56"; # 0105 - Updated commit
+      #      url = "github:hyprwm/hyprland/7d8f57083e703267e18c78256b0f37108337ff81"; # 0105 - Updated commit
+      #      url = "github:hyprwm/hyprland/0b3b012817ca381e40754cb4408e5c0cd3a2c732"; # 0104 - Updated commit
+      #      url = "github:hyprwm/hyprland/583c4074a5d4229f841d9e470ab427339773b592"; # 0104 - Updated commit
+      #      url = "github:hyprwm/hyprland/ee67278038b5b6597172b2a3ee9d57f6ad0eafc7"; # 0103 - Updated commit
     };
 
     hypr-contrib = {
@@ -109,6 +109,14 @@
     pyprland = {
       url = "github:hyprland-community/pyprland";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Hyprland plugins (upstream)
+    hyprland-plugins = {
+      url = "github:hyprwm/hyprland-plugins";
+      inputs.hyprland.follows = "hyprland";
+      inputs.nixpkgs.follows = "hyprland/nixpkgs";
+      inputs.systems.follows = "hyprland/systems";
     };
 
     # Niri: Scrollable-tiling Wayland compositor
@@ -146,12 +154,8 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/45ba64ab0292fdf797d886ca8ba762bd7edd2aad"; # 1230 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/2127fc339a69ed3d3c61c0b0fafc5bbe6a0b5507"; # 1230 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/d5c7b5c0cce3faaf56ffb331c7c7bb1c370bf7a6"; # 1229 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/f08e2ef5b8c92c63e6fb92e7b474006836fe4ca1"; # 1229 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/c281bf3b533af502de379caa0037b171b74eb508"; # 1228 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/7b9ba840fbf17925c00ff80e3f5f1402f056921b"; # 1228 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/f762f9ae497749560dcb68f24110acc256661c06"; # 0106 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/4005a55bf2415ae88784312b0dbfab46b27e7ea1"; # 0105 - Updated commit - Pinned
     };
 
     # ==========================================================================
@@ -210,6 +214,13 @@
     spicetify-nix = {
       url = "github:gerg-l/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    stasis = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      # Pinned commit (updated via `osc-fiup stasis`)
+      url = "github:saltnpepper97/stasis/8f519faaa032a0170cd5ae516388d895b4d4dd83"; # 0106 - Updated commit
+#      url = "github:saltnpepper97/stasis/b6efb72a13ac91b0f48204b99cbf98e0d033a131"; # 0104 - Updated commit
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";

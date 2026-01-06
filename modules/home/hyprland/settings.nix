@@ -6,7 +6,7 @@
 # compositor aesthetics (decoration, animations, master/dwindle layouts).
 # Imported by default.nix
 # ==============================================================================
-{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, ... }:
+{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, cursorSize, ... }:
 
 let
   primaryMonitor = "DELL UP2716D KRXTR88N909L";
@@ -18,10 +18,9 @@ let
     "${toString index}, monitor:${monitor}${lib.optionalString isDefault ", default:true"}";
 
   startupServices = [
-    "systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK QT_QPA_PLATFORM"
-    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP HYPRLAND_INSTANCE_SIGNATURE SSH_AUTH_SOCK QT_QPA_PLATFORM"
+    "${bins.hyprSet} env-sync"
     "systemctl --user start hyprland-session.target"
-    "hyprctl setcursor ${cursorName} 24"
+    "hyprctl setcursor ${cursorName} ${toString cursorSize}"
     "${bins.hyprSet} clipse"
   ];
 
@@ -32,16 +31,20 @@ let
   ];
 
   workspaceConfig =
-    (map (n: mkWorkspaceEntry { monitor = primaryMonitor; index = n; isDefault = n == 1; }) (lib.range 1 6))
-    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitor; index = n; isDefault = n == 7; }) (lib.range 7 9))
+    (map (n: mkWorkspaceEntry { monitor = primaryMonitorDesc; index = n; isDefault = n == 1; }) (lib.range 1 6))
+    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitorDesc; index = n; isDefault = n == 7; }) (lib.range 7 9))
     ++ [
-      # Smart borders
-      "w[tv1]s[false], bordersize:0, rounding:false"
-      "f[1]s[false], bordersize:0, rounding:false"
-      "w[t2-99]s[false], bordersize:3, rounding:true"
+      # Smart Gaps & Borders - No gaps/borders/shadow/rounding when only one window is present
+      "w[tv1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+      "f[1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+
+      # Smart borders - Disabled to show borders always
+      # "w[v1]s[false], bordersize:0, rounding:false"
+      # "f[1]s[false], bordersize:0, rounding:false"
+      "w[v2-99]s[false], bordersize:3, rounding:true"
       # Special workspaces
-      "special:dropdown, gapsout:0, gapsin:0"
-      "special:scratchpad, gapsout:0, gapsin:0"
+      "special:dropdown, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+      "special:scratchpad, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
     ];
 
 in
@@ -52,16 +55,21 @@ in
 
   general = {
     "$mainMod" = "SUPER";
-    gaps_in = 0;
-    gaps_out = 0;
+    gaps_in = 5;
+    gaps_out = 10;
     border_size = 2;
-    "col.active_border" = activeBorder;
+    "col.active_border" = "${mkColor colors.teal.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
     "col.inactive_border" = inactiveBorder;
     layout = "master";
     allow_tearing = false;
     resize_on_border = true;
     extend_border_grab_area = 15;
     hover_icon_on_border = true;
+  };
+
+  cursor = {
+    enable_hyprcursor = true;
+    no_hardware_cursors = 1;
   };
 
   group = {
@@ -83,7 +91,7 @@ in
   decoration = {
     rounding = 10;
     active_opacity = 1.0;
-    inactive_opacity = 0.95;
+    inactive_opacity = 0.85;
     fullscreen_opacity = 1.0;
     dim_inactive = true;
     dim_strength = 0.15;
@@ -104,9 +112,9 @@ in
       enabled = true;
       ignore_window = true;
       offset = "0 4";
-      range = 25;
-      render_power = 2;
-      color = mkColor colors.crust.hex 0.26;
+      range = 30;
+      render_power = 4;
+      color = "0x66000000";
       scale = 0.97;
     };
   };
@@ -114,20 +122,21 @@ in
   animations = {
     enabled = true;
     bezier = [
-      "fluent, 0.05, 0.20, 0.00, 1.00"
-      "easeOutCirc, 0.00, 0.55, 0.45, 1.00"
-      "overshoot, 0.20, 0.80, 0.20, 1.20"
-      "catppuccinSmooth, 0.25, 0.1, 0.25, 1"
-      "linear, 0.00, 0.00, 1.00, 1.00"
+      "linear, 0.0, 0.0, 1.0, 1.0"
+      "quart, 0.25, 1, 0.5, 1"
+      "niri_motion, 0.05, 0.9, 0.1, 1.0" # Snappy, almost no overshoot (Matches Niri stiffness=1000)
+      "easeOutExpo, 0.16, 1, 0.3, 1"     # Fast initial burst (Matches Niri window open)
     ];
     animation = [
-	      "windows, 1, 3, overshoot, slide"
-	      "windowsOut, 1, 2, easeOutCirc, popin 80%"
-	      "fade, 1, 4, easeOutCirc"
-	      "workspaces, 1, 4, catppuccinSmooth, slidevert"
-	      "border, 1, 1, linear"
-	    ];
-	  };
+      "windowsIn, 1, 3, easeOutExpo, popin 95%" # Niri: ease-out-expo 300ms, scale 0.95
+      "windowsOut, 1, 2, easeOutExpo, popin 98%" # Niri: ease-out-quad 200ms, scale 0.98
+      "windowsMove, 1, 3, niri_motion"           # Snappy movement
+      "fade, 1, 2, quart"
+      "workspaces, 1, 4, niri_motion, slidevert" # Vertical workspace flow (User preference)
+      "specialWorkspace, 1, 4, niri_motion, slidevert"
+      "border, 1, 3, linear"
+    ];
+  };
 
   input = {
     kb_layout = "tr";
@@ -137,7 +146,7 @@ in
     repeat_delay = 250;
     numlock_by_default = false;
     sensitivity = 0.0;
-    accel_profile = "flat";
+    accel_profile = "adaptive";
     force_no_accel = true;
     follow_mouse = 1;
     float_switch_override_focus = 2;
@@ -212,6 +221,12 @@ in
     allow_small_split = false;
     special_scale_factor = 0.8;
     new_on_active = "after";
+  };
+
+  render = {
+    explicit_sync = 1;
+    explicit_sync_kms = 1;
+    direct_scanout = true;
   };
 
   binds = {

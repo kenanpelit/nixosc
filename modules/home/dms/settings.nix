@@ -60,8 +60,9 @@ lib.mkIf cfg.enable {
   systemd.user.services.dms = {
     Unit = {
       Description = "DankMaterialShell";
-      After = dmsTargets;
+      After = dmsTargets ++ [ "niri-ready.service" ];
       PartOf = dmsTargets;
+      ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
       Type = "simple";
@@ -74,7 +75,7 @@ lib.mkIf cfg.enable {
         "DMS_SCREENSHOT_EDITOR=${dmsEditor}"
         "XDG_RUNTIME_DIR=/run/user/%U"
         "XDG_SESSION_TYPE=wayland"
-        "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+        "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
         "QT_ICON_THEME=a-candy-beauty-icon-theme"
         "XDG_ICON_THEME=a-candy-beauty-icon-theme"
         "QT_QPA_PLATFORMTHEME=gtk3"

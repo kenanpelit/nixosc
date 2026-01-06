@@ -147,6 +147,7 @@ in
       sunsetr               # Gamma/temperature scheduler
       gnome-monitor-config  # Display layout manager
       hyprpicker            # Color picker
+      sway                  # Tiling Wayland compositor
       
       # -- Browsers --------------------------------------------------------------
       browsh lynx w3m       # Text browsers
