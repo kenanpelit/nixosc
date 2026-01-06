@@ -314,12 +314,12 @@
       // ========================================================================
       // MPV Manager
       // ========================================================================
-      Mod+Ctrl+U repeat=false hotkey-overlay-title="MPV Playback" { spawn "${bins.mpvManager}" "playback"; }
-      Mod+Ctrl+Y repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "${bins.mpvManager}" "play-yt"; }
-      Mod+Ctrl+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "${bins.mpvManager}" "stick"; }
-      Mod+Ctrl+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "${bins.mpvManager}" "move"; }
-      Mod+Ctrl+5 repeat=false hotkey-overlay-title="MPV Save YouTube" { spawn "${bins.mpvManager}" "save-yt"; }
-      Mod+Ctrl+6 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "${bins.mpvManager}" "wallpaper"; }
+      Mod+Alt+1 repeat=false hotkey-overlay-title="MPV Playback" { spawn "${bins.mpvManager}" "playback"; }
+      Mod+Alt+2 repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "${bins.mpvManager}" "play-yt"; }
+      Mod+Alt+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "${bins.mpvManager}" "stick"; }
+      Mod+Alt+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "${bins.mpvManager}" "move"; }
+      Mod+Alt+5 repeat=false hotkey-overlay-title="MPV Save YouTube" { spawn "${bins.mpvManager}" "save-yt"; }
+      Mod+Alt+6 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "${bins.mpvManager}" "wallpaper"; }
   '';
 
   workspaces = ''
