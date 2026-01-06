@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hyprland / Niri / Walker / Elephant / DankMaterialShell Updater Script with Git Auto-Commit
+# Hyprland / Niri / Walker / Elephant / DankMaterialShell / Stasis Updater Script with Git Auto-Commit
 set -euo pipefail
 
 # Colors
@@ -19,13 +19,14 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank}"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank|stasis}"
   echo
-  echo "  all             : Apply dank + niri + hyprland + walker (in that order)"
+  echo "  all             : Apply dank + niri + hyprland + stasis + walker (in that order)"
   echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
   echo "  niri            : Update Niri input to latest commit on main"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
+  echo "  stasis          : Update Stasis input to latest commit on main"
 }
 
 # ---------------------------------------------------------------------------
@@ -278,6 +279,10 @@ update_dank() {
   update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "master" "DankMaterialShell"
 }
 
+update_stasis() {
+  update_commit_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "main" "Stasis"
+}
+
 # ---------------------------------------------------------------------------
 # Walker / Elephant
 # ---------------------------------------------------------------------------
@@ -435,6 +440,7 @@ main() {
     update_dank
     update_niri
     update_hyprland
+    update_stasis
     update_walker_and_elephant
     ;;
   hypr | hyprland)
@@ -448,6 +454,9 @@ main() {
     ;;
   dank | dankmaterialshell)
     update_dank
+    ;;
+  stasis)
+    update_stasis
     ;;
   *)
     log_error "Unknown target: $target"

@@ -28,6 +28,11 @@ start_clipse_listener() {
     if pgrep -af 'clipse.*-listen' >/dev/null 2>&1; then
       return 0
     fi
+    # Newer clipse versions spawn wl-paste watchers and exit (no long-running
+    # `clipse -listen` process). Detect them to avoid starting duplicates.
+    if pgrep -af 'wl-paste.*--watch clipse' >/dev/null 2>&1; then
+      return 0
+    fi
   fi
 
   # `-listen` starts the monitor in the background and exits quickly.
@@ -50,16 +55,14 @@ Commands:
   workspace-monitor  Workspace/monitor helper (was: niri-workspace-monitor)
   doctor             Print session diagnostics
   toggle-window-mode Toggle between floating and tiling modes with preset size
+  zen                Toggle Zen Mode (hide gaps, borders, bar)
+  pin                Toggle Pin Mode (PIP-style floating window)
 
 Examples:
   niri-set session-start
   niri-set lock
-  niri-set lock --logind
-  niri-set arrange-windows --dry-run
-  niri-set cast pick
-  niri-set workspace-monitor -mn
-  niri-set doctor
-  niri-set toggle-window-mode
+  niri-set zen
+  niri-set pin
 EOF
 }
 
@@ -67,6 +70,161 @@ cmd="${1:-}"
 shift || true
 
 case "${cmd}" in
+  zen)
+    # ----------------------------------------------------------------------------
+    # Zen Mode: Toggle gaps, borders, and bar (State-file based)
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+      
+      STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/niri-zen.state"
+
+      if [[ -f "$STATE_FILE" ]]; then
+        # === DISABLE ZEN (Restore) ===
+        
+        # Restore defaults (hardcoded for now as niri doesn't support save/restore state easily)
+        # Assuming defaults: gaps 12, borders on
+        
+        # Note: 'niri msg action' for setting gaps might not exist in all versions yet.
+        # If it doesn't, we rely on config reload.
+        # But let's try to be smart. If actions fail, we fallback to reload.
+        
+        # Attempt to reload config to restore defaults
+        niri msg action load-config-file >/dev/null 2>&1 || true
+        
+        # Restore DMS Bar
+        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+        
+        rm -f "$STATE_FILE"
+        notify-send -t 1000 "Zen Mode" "Off"
+        echo "Zen Mode: Off"
+      else
+        # === ENABLE ZEN ===
+        
+        # Niri currently doesn't expose 'set-gaps' via IPC in stable.
+        # If your version has it, uncomment:
+        # niri msg action set-gaps 0 >/dev/null 2>&1 || true
+        
+        # Workaround for Gaps:
+        # Since we can't zero gaps via IPC easily without scripting config,
+        # we focus on the Bar and Notifications which is the biggest part of Zen.
+        
+        # Hide Bar
+        dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
+        # Silence Notifications
+        dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+        
+        touch "$STATE_FILE"
+        notify-send -t 1000 "Zen Mode" "On"
+        echo "Zen Mode: On"
+      fi
+    )
+    ;;
+
+  pin)
+    # ----------------------------------------------------------------------------
+    # Pin Mode: Toggle PIP-style floating window (Robust Read-Move-Verify)
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+      
+      # Helper: Get focused window geometry (x y w h) with retry
+      get_window_geo() {
+        for _ in {1..10}; do
+          local out
+          out="$(niri msg -j focused-window 2>/dev/null)"
+          if [[ -n "$out" ]]; then
+            local x y w h
+            x="$(echo "$out" | jq -r '.workspace_view_position.x? // empty')"
+            y="$(echo "$out" | jq -r '.workspace_view_position.y? // empty')"
+            w="$(echo "$out" | jq -r '.window_size.width? // empty')"
+            h="$(echo "$out" | jq -r '.window_size.height? // empty')"
+            
+            if [[ -n "$x" && -n "$y" && -n "$w" && -n "$h" ]]; then
+              echo "$x $y $w $h"
+              return 0
+            fi
+          fi
+          sleep 0.05
+        done
+        return 1
+      }
+
+      # Helper: Get focused output dimensions (w h)
+      get_output_dim() {
+        local out
+        out="$(niri msg -j focused-output 2>/dev/null)"
+        if [[ -n "$out" ]]; then
+           # Try multiple fields for dimensions with safety checks (?)
+           echo "$out" | jq -r '(.current_mode.width? // .mode.width? // .geometry.width? // 0) as $w | (.current_mode.height? // .mode.height? // .geometry.height? // 0) as $h | "\($w) \($h)"' 2>/dev/null
+        else
+           echo "0 0"
+        fi
+      }
+
+      win_json="$(niri msg -j focused-window 2>/dev/null)"
+      if [[ -z "$win_json" ]]; then exit 0; fi
+
+      is_floating="$(echo "$win_json" | jq -r '.is_floating // false')"
+      current_w="$(echo "$win_json" | jq -r '.window_size.width // 0')"
+
+      if [[ "$is_floating" == "true" ]] && [[ "$current_w" -lt 500 ]]; then
+        # Restore
+        niri msg action move-window-to-tiling >/dev/null 2>&1 || true
+        niri msg action reset-window-height >/dev/null 2>&1 || true
+      else
+        # Pin
+        if [[ "$is_floating" == "false" ]]; then
+            niri msg action move-window-to-floating >/dev/null 2>&1 || true
+        fi
+        
+        # 1. Resize
+        target_w=640
+        target_h=360
+        niri msg action set-window-width "$target_w" >/dev/null 2>&1 || true
+        niri msg action set-window-height "$target_h" >/dev/null 2>&1 || true
+        
+        # 2. Loop to move to exact target
+        read -r ow oh <<< "$(get_output_dim)"
+        
+        # Sanity Check: If output detection failed or returned garbage, use primary monitor defaults
+        # Dell UP2716D: 2560x1440
+        if [[ "$ow" -lt 100 || "$oh" -lt 100 ]]; then
+           ow=2560
+           oh=1440
+        fi
+        
+        margin_x=32
+        margin_y=96
+        
+        # Target: Top-Right
+        tx=$((ow - target_w - margin_x))
+        ty=$((margin_y))
+        
+        # Safety clamp: Ensure we don't target off-screen negative coordinates
+        if [[ "$tx" -lt 0 ]]; then tx=0; fi
+        if [[ "$ty" -lt 0 ]]; then ty=0; fi
+        
+        for _ in {1..2}; do
+            # Read current pos
+            read -r cx cy cw ch <<< "$(get_window_geo)"
+            
+            # Calculate delta
+            dx=$((tx - cx))
+            dy=$((ty - cy))
+            
+            if [[ "$dx" -eq 0 && "$dy" -eq 0 ]]; then
+                break
+            fi
+            
+            niri msg action move-floating-window -x "$dx" -y "$dy" >/dev/null 2>&1 || true
+            sleep 0.1
+        done
+      fi
+    )
+    ;;
+
   clipse)
     start_clipse_listener
     ;;
@@ -561,7 +719,7 @@ case "${cmd}" in
         systemctl --user start niri-session.target 2>/dev/null || true
       }
 
-      start_wlr_portal() {
+      start_niri_portals() {
         if ! command -v systemctl >/dev/null 2>&1; then
           return 0
         fi
@@ -571,13 +729,22 @@ case "${cmd}" in
           timeout_bin="timeout"
         fi
 
-        # Needed for ScreenCast/Screenshot in non-wlroots compositor sessions
-        # when the user manager didn't have WAYLAND_DISPLAY at login time.
-        if [[ -n "$timeout_bin" ]]; then
-          $timeout_bin 2s systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
-        else
-          systemctl --user start xdg-desktop-portal-wlr.service >/dev/null 2>&1 || true
-        fi
+        # Niri's primary screencasting path is via xdg-desktop-portal-gnome.
+        # Start portal backends explicitly in case portals were activated before
+        # WAYLAND_DISPLAY existed at login time.
+        local services=(
+          xdg-desktop-portal-gnome.service
+          xdg-desktop-portal-gtk.service
+        )
+
+        local svc
+        for svc in "${services[@]}"; do
+          if [[ -n "$timeout_bin" ]]; then
+            $timeout_bin 2s systemctl --user start "$svc" >/dev/null 2>&1 || true
+          else
+            systemctl --user start "$svc" >/dev/null 2>&1 || true
+          fi
+        done
       }
 
       restart_portals() {
@@ -616,7 +783,7 @@ case "${cmd}" in
       start_clipse_listener
       import_env_to_systemd
       set_env_in_systemd
-      start_wlr_portal
+      start_niri_portals
       restart_portals
       restart_dms_if_running
       start_target
@@ -1390,7 +1557,11 @@ EOF
       fi
 
       if maybe pgrep; then
-        kv "is-running:clipse -listen" "$(pgrep -af 'clipse.*-listen' 2>/dev/null | head -n 1 || echo inactive)"
+        clipse_proc="$(pgrep -af 'clipse.*-listen' 2>/dev/null | head -n 1 || true)"
+        if [[ -z "${clipse_proc:-}" ]]; then
+          clipse_proc="$(pgrep -af 'wl-paste.*--watch clipse' 2>/dev/null | head -n 1 || true)"
+        fi
+        kv "is-running:clipse" "${clipse_proc:-inactive}"
       fi
     )
     ;;

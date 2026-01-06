@@ -14,10 +14,9 @@ let
   # Upstream module options (we import `inputs.dankMaterialShell.nixosModules.greeter`).
   dmsGreeterCfg = config.programs."dank-material-shell".greeter;
 
-  hyprPkg =
-    if config.programs ? hyprland && config.programs.hyprland ? package
-    then config.programs.hyprland.package
-    else pkgs.hyprland;
+  # Greeter must use the same Hyprland build as `start-hyprland`, otherwise
+  # Hyprland may exit immediately on unknown internal args like `--watchdog-fd`.
+  hyprPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   niriPkg =
     if config.programs ? niri && config.programs.niri ? package
@@ -40,8 +39,16 @@ let
     path="''${path%:}"
     export PATH="${hyprPkg}/bin''${path}"
 
+    # If start-hyprland calls `Hyprland` with its internal args (like
+    # `--watchdog-fd`), don't re-wrap it into another start-hyprland process.
+    for arg in "$@"; do
+      if [ "$arg" = "--watchdog-fd" ] && [ -x "${hyprPkg}/bin/Hyprland" ]; then
+        exec "${hyprPkg}/bin/Hyprland" "$@"
+      fi
+    done
+
     if [ -x "${hyprPkg}/bin/start-hyprland" ]; then
-      exec "${hyprPkg}/bin/start-hyprland" "$@"
+      exec "${hyprPkg}/bin/start-hyprland" -- "$@"
     fi
 
     if [ -x "${hyprPkg}/bin/Hyprland" ]; then
@@ -85,6 +92,9 @@ let
           kb_layout = ${cfg.layout}
           ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
         }
+
+        # Launch QuickShell directly, then exit Hyprland on success.
+        exec-once = sh -c "qs -p ${dmsShellPkg}/share/quickshell/dms; hyprctl dispatch exit"
       ''
     else if cfg.compositor == "niri" then
       ''
@@ -139,9 +149,25 @@ let
     ''}
 
     export HOME=${lib.escapeShellArg greeterHome}
+    
+    # Force DMS to look for config/state in our writable home, not /etc/greetd
+    export DMS_GREET_CFG_DIR=${lib.escapeShellArg greeterHome}
+
+    # Ensure we are in a writable directory
+    cd "$HOME" || { echo "Failed to cd to $HOME"; exit 1; }
+
+    # Ensure XDG_RUNTIME_DIR is set (critical for Wayland socket)
+    if [ -z "''${XDG_RUNTIME_DIR:-}" ]; then
+      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+      mkdir -p "$XDG_RUNTIME_DIR"
+      chmod 0700 "$XDG_RUNTIME_DIR"
+    fi
+
+    export XDG_CONFIG_HOME=${lib.escapeShellArg "${greeterHome}/.config"}
     export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
     export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
     export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
+    
     # DMS greeter discovers sessions from:
     # - /usr/share/{wayland-sessions,xsessions}
     # - $HOME/.local/share/{wayland-sessions,xsessions}
@@ -153,24 +179,34 @@ let
     # Without this, the session list in the greeter becomes empty.
     export XDG_DATA_DIRS=/run/current-system/sw/share:/usr/local/share:/usr/share
 
-    exec ${
-      lib.escapeShellArgs (
-        [
-          "sh"
-          dmsGreeterAsset
-          "--cache-dir"
-          greeterHome
-          "--command"
-          cfg.compositor
-          "-p"
-          "${dmsShellPkg}/share/quickshell/dms"
-        ]
-        ++ lib.optionals (dmsGreeterCfg.compositor.customConfig != "") [
-          "-C"
-          "${pkgs.writeText "dmsgreeter-compositor-config" dmsGreeterCfg.compositor.customConfig}"
-        ]
-      )
-    } ${lib.optionalString dmsGreeterCfg.logs.save "> ${lib.escapeShellArg dmsGreeterCfg.logs.path} 2>&1"}
+    echo "Environment prepared. Launching dms-greeter..."
+    echo "HOME=$HOME"
+    echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+    echo "Compositor: ${cfg.compositor}"
+
+    # Bypass the upstream 'dms-greeter' script because it forcibly appends
+    # an 'exec' command that causes a crash loop (qs ...; hyprctl dispatch exit).
+    # We manually handle the compositor startup here.
+
+    COMPOSITOR_CONFIG="${pkgs.writeText "dmsgreeter-compositor-config" dmsGreeterCfg.compositor.customConfig}"
+
+    if [ "${cfg.compositor}" = "hyprland" ]; then
+      # Hyprland specific launch
+      if command -v start-hyprland >/dev/null 2>&1; then
+        exec start-hyprland -- --config "$COMPOSITOR_CONFIG"
+      else
+        exec Hyprland -c "$COMPOSITOR_CONFIG"
+      fi
+    elif [ "${cfg.compositor}" = "niri" ]; then
+      # Niri specific launch
+      exec niri -c "$COMPOSITOR_CONFIG"
+    elif [ "${cfg.compositor}" = "sway" ]; then
+      # Sway specific launch
+      exec sway -c "$COMPOSITOR_CONFIG"
+    else
+      echo "Error: Unsupported compositor '${cfg.compositor}'"
+      exit 1
+    fi
   '';
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
@@ -216,10 +252,22 @@ in {
     services.greetd.settings.default_session.user = lib.mkDefault "greeter";
     services.greetd.settings.default_session.command = lib.mkForce (lib.getExe greeterCommand);
 
+    # Fix: Set the system-level home directory for the 'greeter' user to a writable path.
+    # dconf and other libraries rely on /etc/passwd home dir, ignoring the exported env var in some cases.
+    users.users.greeter = {
+      home = greeterHome;
+      createHome = true;
+    };
+
     # Ensure log directory exists and is writable by greeter user
     systemd.tmpfiles.rules = [
       "d /var/log/dms-greeter 0755 greeter greeter -"
       "f /var/log/dms-greeter/dms-greeter.log 0664 greeter greeter -"
+      "d /var/lib/dms-greeter 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.config 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.cache 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.local 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.local/state 0755 greeter greeter -"
     ];
   };
 }

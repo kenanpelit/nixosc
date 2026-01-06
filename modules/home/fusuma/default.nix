@@ -75,6 +75,39 @@ let
     exit 127
   '';
 
+  hyprscrollingFocus = pkgs.writeShellScriptBin "fusuma-hyprscrolling-focus" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    direction="''${1:-}"
+    case "$direction" in
+      left|l) dir="l" ;;
+      right|r) dir="r" ;;
+      *)
+        echo "usage: fusuma-hyprscrolling-focus {left|right}" >&2
+        exit 2
+        ;;
+    esac
+
+    # Niri has built-in horizontal swipe navigation; avoid double-triggering.
+    if [[ -n "''${NIRI_SOCKET:-}" ]] || [[ "''${XDG_CURRENT_DESKTOP:-}" == "niri" ]] || [[ "''${XDG_SESSION_DESKTOP:-}" == "niri" ]]; then
+      exit 0
+    fi
+
+    if ! command -v hyprctl >/dev/null 2>&1; then
+      echo "fusuma-hyprscrolling-focus: hyprctl not found in PATH" >&2
+      exit 127
+    fi
+
+    # Prefer hyprscrolling focus (also scrolls layout), but gracefully fall back
+    # to standard directional focus if the current layout doesn't support it.
+    if hyprctl dispatch layoutmsg "focus $dir" >/dev/null 2>&1; then
+      exit 0
+    fi
+
+    exec hyprctl dispatch movefocus "$dir"
+  '';
+
   fullscreen = pkgs.writeShellScriptBin "fusuma-fullscreen" ''
     #!/usr/bin/env bash
     set -euo pipefail
@@ -140,6 +173,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [
       workspaceMonitor
+      hyprscrollingFocus
       fullscreen
       overview
     ];
@@ -203,11 +237,11 @@ in
         swipe = {
           "3" = {
             right = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -tn";
+              command = "${hyprscrollingFocus}/bin/fusuma-hyprscrolling-focus right";
               threshold = 0.6;
             };
             left = {
-              command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -tp";
+              command = "${hyprscrollingFocus}/bin/fusuma-hyprscrolling-focus left";
               threshold = 0.6;
             };
             up = {

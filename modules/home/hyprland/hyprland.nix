@@ -54,6 +54,23 @@ lib.mkIf cfg.enable {
       WantedBy = [ "hyprland-session.target" ];
     };
   };
+
+  # Polkit agent (required for auth prompts, e.g. poweroff/reboot from shells).
+  systemd.user.services.hyprland-polkit-agent = {
+    Unit = {
+      Description = "Polkit authentication agent (polkit-gnome)";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+      Restart = "on-failure";
+      RestartSec = 1;
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
   
   # Clipboard watcher is not needed if cliphist is disabled; keep service absent.
 

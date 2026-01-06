@@ -84,7 +84,7 @@ in
       };
       Timer = {
         OnActiveSec = "${toString cfg.autoToggle.delaySeconds}s";
-        AccuracySec = "5s";
+        AccuracySec = "3s";
         Unit = "hyprland-bt-autoconnect.service";
       };
       Install = {

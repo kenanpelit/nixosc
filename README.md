@@ -39,195 +39,103 @@
 
 **NixOS Configuration Suite (nixosc)** - Snowfall Edition
 
-A comprehensive, declarative, and modular NixOS configuration built on **Snowfall Lib**. It manages both system (NixOS) and user (Home Manager) layers from a single flake, featuring a highly customized Wayland desktop environment.
+A comprehensive, declarative, and modular NixOS configuration built on **Snowfall Lib**. It manages both system (NixOS) and user (Home Manager) layers from a single flake, featuring a highly customized Wayland desktop environment focusing on **Niri**, **Hyprland**, and **DankMaterialShell**.
 
 - **Architecture:** Snowfall Lib (auto module discovery)
 - **Desktop Sessions:**
-  - **Niri:** Scrollable-tiling compositor, powered by [niri-flake](https://github.com/sodiboo/niri-flake) for build-time config validation and binary caching.
-  - **Hyprland:** Dynamic tiling compositor with extensive customization.
-  - **GNOME / COSMIC / Sway:** Available as additional sessions.
+  - **Niri:** Scrollable-tiling compositor (Rust/Smithay) - *Primary Session*.
+  - **Hyprland:** Dynamic tiling compositor (C++/Aquamarine).
 - **Shell / Panel:** [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (DMS) integration for panels, widgets, and lock screen.
 - **Greeter:** `greetd` + DMS Greeter (`dms-greeter`) support.
 - **Theme:** Catppuccin (Mocha) end-to-end integration.
 - **Secrets:** SOPS-Nix (Age) for secure credential management.
 
-## 🗃️ Repository Structure
+## ✨ Recent Enhancements (v4.1)
 
-The repository follows the Snowfall Lib layout, where modules are automatically discovered and imported.
+### 🧘 Zen Mode
+Distraction-free mode for deep work. Toggles UI elements to maximize screen real estate.
+- **Toggle:** `Mod + Z`
+- **Behavior:** Hides the DMS bar, disables notifications (DnD), and simplifies layout.
+- **Supported:** Niri & Hyprland.
 
-```bash
-.
-├── flake.nix             # Core configuration & inputs
-├── install.sh            # Unified installation & management tool
-├── systems/              # ❄️ Host configurations (hardware-specific)
-│   ├── hay/              # Workstation (Laptop)
-│   └── vhay/             # Virtual Machine profile
-├── modules/              # 🍱 Modular configs
-│   ├── nixos/            # System-level modules (services, hardware, greeters)
-│   └── home/             # User-level modules (apps, WMs, shell config)
-│       ├── niri/         # Modular Niri config (binds, rules, settings)
-│       ├── hyprland/     # Modular Hyprland config
-│       └── dms/          # DankMaterialShell configuration
-│       └── scripts/      # Helper scripts (niri-set/hypr-set, etc.)
-├── homes/                # Home-Manager profiles per host/user
-├── overlays/             # 🔧 Nixpkgs overlays
-└── secrets/              # 🔐 SOPS-encrypted secrets
-```
+### 📌 Smart Pin (Picture-in-Picture)
+Intelligent window pinning that matches MPV rules.
+- **Toggle:** `Mod + P`
+- **Behavior:** Resizes the active window to **640x360**, floats it, and snaps it perfectly to the **Top-Right** corner (`32, 96` margins).
+- **Logic:** Uses screen-relative calculation to ensure perfect positioning regardless of display scaling or initial state.
+
+### 🎬 Premium Motion Profile
+A finely-tuned animation set for Niri that prioritizes fluid transitions without sacrificing responsiveness.
+- **Open:** Windows slide up (`10%`) and scale in with a precise `ease-out-expo` curve.
+- **Close:** Windows slide down and fade out with elegant deceleration.
+- **Move:** Zero-overshoot, magnetic snapping (`damping-ratio: 0.98`) for a stable, high-end feel.
+
+### 👁️ Dynamic Opacity
+On-the-fly transparency control for the active window.
+- **Control:** `Mod + Shift + Scroll` (Touchpad) or `Mod + Ctrl + Shift + J/K`.
+- **Use Case:** "X-Ray" vision to read content behind active windows.
 
 ## 🧩 Key Technologies
 
 | Component                | Implementation Details                                                                             |
 | ------------------------ | -------------------------------------------------------------------------------------------------- |
 | **Framework**            | [Snowfall Lib](https://github.com/snowfallorg/lib)                                                 |
-| **Niri Compositor**      | Uses `niri-flake` (unstable) for latest features, build-time validation, and caching.              |
-| **Hyprland**             | Pinned flake input for stability; configs split into `binds.nix`, `rules.nix`, etc.                |
-| **Shell/UI**             | **DankMaterialShell** (Quickshell-based). Provides top bar, dock, and OSDs.                        |
-| **Launchers**            | DMS Spotlight (primary), Rofi (fallback), Walker.                                                  |
-| **Authentication**       | Polkit-GNOME + GNOME Keyring (fully integrated via PAM & DBus).                                    |
-| **Browsers**             | Brave (default), Chrome.                                                                           |
+| **Niri Compositor**      | Uses `niri-flake` (unstable) with custom "Premium Feel" animations.                               |
+| **Hyprland**             | Pinned flake input; configs split into `binds.nix`, `rules.nix`, with Smart Borders enabled.       |
+| **Shell/UI**             | **DankMaterialShell** (Quickshell-based). Provides top bar, dock, and Matugen OSDs.                |
+| **Power Stack**          | Custom v17 stack for Intel HWP/RAPL management (`modules/nixos/power`).                            |
+| **Authentication**       | Polkit-GNOME + GNOME Keyring fully integrated via PAM.                                             |
 
-## 🚀 Installation
+## 🔋 Power Management Stack
 
-> [!CAUTION]
-> This configuration is tailored for specific hardware (Dell XPS / Intel). Review `systems/x86_64-linux/hay/hardware-configuration.nix` before applying to a new machine.
-
-### 1. Clone & Setup
-
-```bash
-git clone https://github.com/kenanpelit/nixosc ~/.nixosc
-cd ~/.nixosc
-```
-
-### 2. Install / Switch
-
-Use the helper script to build and switch configurations:
-
-```bash
-# For Physical Machine (hay)
-./install.sh install hay
-
-# For Virtual Machine (vhay)
-./install.sh install vhay
-```
-
-Or use the standard commands directly:
-
-```bash
-# System only
-sudo nixos-rebuild switch --flake .#hay
-
-# Home only
-home-manager switch --flake .#kenan@hay
-```
-
-### 3. Update
-
-To update flake inputs (including Niri unstable):
-
-```bash
-./install.sh update
-```
+Custom power management for laptops (Intel HWP / `intel_pstate=active`) that stays consistent across boot/suspend/AC changes.
+- **Module:** `modules/nixos/power/default.nix`
+- **Controls:** ACPI Platform Profile, CPU governor, Intel EPP, RAPL power limits, and Thermal Guard.
+- **CLI Tool:** `osc-system status` & `profile-refresh`.
+- **Drift Guard:** `power-policy-guard` prevents firmware from overriding settings.
 
 ## ⌨️ Keybindings
 
-This repo aims for **shared muscle memory** across Niri and Hyprland.
+Shared muscle memory across Niri and Hyprland.
 
-### Shared (Niri / Hyprland)
+- `Super + Enter` -> Terminal (Kitty)
+- `Super + Space` -> DMS Spotlight (Launcher)
+- `Super + Z` -> **Zen Mode** Toggle
+- `Super + P` -> **Pin Mode** (Smart PIP)
+- `Super + Shift + Scroll` -> Adjust Opacity
+- `Super + Arrows` or `h/j/k/l` -> Move focus
+- `Super + Shift + Arrows` -> Move window
+- `Super + 0` -> Center Column (Niri) / Focus Center (Hyprland)
+- `Super + C` -> DMS Control Center
+- `Super + N` -> DMS Notifications
 
-- **Modifier:** `Super` (Windows Key)
-- **General:**
-  - `Super + Enter` -> Terminal (Kitty)
-  - `Super + Space` -> DMS Spotlight (Launcher)
-  - `Alt + Space` -> Rofi (fallback launcher)
-  - `Alt + L` -> Lock
-- **Navigation:**
-  - `Super + Arrows` or `h/j/k/l` -> Move focus
-  - `Super + Shift + Arrows` -> Move window
-- **DMS Features:**
-  - `Super + C` -> Control Center
-  - `Super + N` -> Notifications
-
-### Niri
-
-- `Super + S` -> Overview
-- `Alt + Tab` -> Switch windows (DMS query)
-- `Super + Up/Down` or `Super + K/J` -> Workspace up/down
-- `Alt + 1..9` -> Move column to workspace
-
-### Hyprland
-
-- `Super + Tab` -> Overview (DMS Hypr module)
-- `Super + F` -> Toggle float (via `hypr-set`)
-
-## 🛠 Advanced Features
-
-### Modular WM Configuration
-Niri and Hyprland configurations are split into granular Nix files for better maintainability:
-- `binds.nix`: Keybindings
-- `rules.nix`: Window & Layer rules
-- `settings.nix`: Core compositor settings
-- `variables.nix`: Environment variables & theming constants
-
-### Session Bootstrap Scripts
-To keep compositor sessions consistent and avoid “one-off” tweaks, common tasks are centralized in scripts under `modules/home/scripts/bin/`:
-
-- `niri-set`: session start/init, window arranging, lock, diagnostics (`niri-set doctor`)
-- `hypr-set`: session init + env sync helpers
-- `wm-workspace`: routes workspace actions across compositors (used by Fusuma)
-
-## 🔋 Power Management (v17 stack)
-
-This repo includes a custom **power management stack** for laptops (especially Intel HWP / `intel_pstate=active`) that aims to stay **consistent** across boot/suspend/AC changes and avoid “mystery overrides”.
-
-- **Module:** `modules/nixos/power/default.nix`
-- **Status CLI:** `osc-system status` (use `sudo osc-system turbostat-quick` to validate real CPU MHz under HWP)
-- **Note:** Under Intel HWP, `scaling_cur_freq` can report ~400MHz even when the CPU is busy; prefer `turbostat` for truth.
-
-### What it controls
-
-On physical hosts, the module manages:
-- **ACPI Platform Profile** (`/sys/firmware/acpi/platform_profile`)
-- **CPU governor** (policy-level `scaling_governor`)
-- **Intel EPP** (HWP energy preference; policy-level `energy_performance_preference`)
-- **Minimum performance floor** (`/sys/devices/system/cpu/intel_pstate/min_perf_pct`)
-- **RAPL power limits** (MSR interface via `/sys/class/powercap/intel-rapl:0`)
-- **Thermal guard** that clamps PL1/PL2 when package temp crosses thresholds
-- **Drift guard** (`power-policy-guard`) to re-apply settings if firmware/other services revert them shortly after boot/resume
-
-### Services
-
-The main units you’ll see on a running system:
-- `platform-profile.service`
-- `cpu-governor.service`
-- `cpu-epp.service`
-- `cpu-min-freq-guard.service`
-- `rapl-power-limits.service`
-- `rapl-thermo-guard.service`
-- `battery-thresholds.service`
-- `power-policy-guard.service`
-
-To re-apply everything after changes or debugging:
+## 🗃️ Repository Structure
 
 ```bash
-sudo osc-system profile-refresh
+.
+├── flake.nix             # Core configuration & inputs
+├── install.sh            # Unified installation tool
+├── modules/              # Modular configs
+│   ├── nixos/            # System-level (Power, Services, Greeters)
+│   └── home/             # User-level (Niri, Hyprland, DMS, Apps)
+│       └── scripts/      # Helper scripts (niri-set, hypr-set, mpv-manager)
+├── homes/                # Home-Manager profiles
+└── secrets/              # SOPS-encrypted secrets
 ```
 
-### Avoiding conflicts
+## 🚀 Installation
 
-This module disables `power-profiles-daemon` to prevent it from overriding platform profile / EPP / governor after boot.
-If you use other power tools (e.g. `tlp`, `auto-cpufreq`, `thermald`), double-check that they are not fighting your policy.
+```bash
+# 1. Clone
+git clone https://github.com/kenanpelit/nixosc ~/.nixosc
+cd ~/.nixosc
 
-### DMS Integration
-- **Themes:** Automatically managed by DMS/Matugen or manually pinned via `settings.nix`.
-- **Plugins:** Installed via imperative `dms-plugin-sync` service (best-effort).
-- **Greeter:** Fully supported via `modules/nixos/dms-greeter`.
+# 2. Install
+./install.sh install hay
 
-### Troubleshooting
-- **Niri Config Validation:** If the build fails with a KDL error, check `modules/home/niri/default.nix`. The config is validated at build time!
-- **DMS IPC (Hyprland):** If `dms ipc …` can’t find a running Quickshell instance, ensure `QT_QPA_PLATFORM=wayland;xcb` is exported in the session environment (this repo syncs it via `hypr-set` and Hyprland `exec-once`).
-- **Keyring/PAM:** If you see `gkr-pam` errors in logs, ensure `seahorse` shows the Login keyring as unlocked. It usually works despite the log noise.
-- **Discord:** Use `WebCord` for better Wayland support if standard Discord crashes.
+# 3. Update
+./install.sh update
+```
 
 ## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License.
