@@ -314,7 +314,7 @@
       // ========================================================================
       // MPV Manager
       // ========================================================================
-      Mod+Ctrl+U repeat=false hotkey-overlay-title="MPV Playback" { spawn "${bins.mpvManager}" "playback"; }
+      Alt+U repeat=false hotkey-overlay-title="MPV Playback" { spawn "${bins.mpvManager}" "playback"; }
       Mod+Ctrl+Y repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "${bins.mpvManager}" "play-yt"; }
       Mod+Ctrl+3 repeat=false hotkey-overlay-title="MPV Stick" { spawn "${bins.mpvManager}" "stick"; }
       Mod+Ctrl+4 repeat=false hotkey-overlay-title="MPV Move" { spawn "${bins.mpvManager}" "move"; }
