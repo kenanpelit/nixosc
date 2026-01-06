@@ -448,8 +448,9 @@ in
         Unit = {
           Description = "nsticky daemon (niri)";
           After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
+          Wants = [ "niri-ready.service" ];
           PartOf = [ "niri-session.target" ];
-          ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
+          ConditionEnvironment = [ "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=niri" ];
         };
         Service = {
           ExecStart = "${bins.nsticky}";
@@ -467,6 +468,7 @@ in
         Unit = {
           Description = "nirius daemon (niri)";
           After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
+          Wants = [ "niri-ready.service" ];
           PartOf = [ "niri-session.target" ];
           ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
         };
@@ -486,6 +488,7 @@ in
         Unit = {
           Description = "niriswitcher (niri)";
           After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
+          Wants = [ "niri-ready.service" ];
           PartOf = [ "niri-session.target" ];
           ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
         };
