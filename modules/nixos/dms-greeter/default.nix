@@ -140,16 +140,35 @@ let
   greeterCommand = pkgs.writeShellScriptBin "dms-greeter" ''
     set -euo pipefail
 
+    # Ensure log directory exists
+    mkdir -p /var/log/dms-greeter
+    chown $(id -u):$(id -g) /var/log/dms-greeter
+
+    exec > >(tee -a /var/log/dms-greeter/dms-greeter.log) 2>&1
+    echo "--- Starting DMS Greeter at $(date) ---"
+
     export XKB_DEFAULT_LAYOUT=${lib.escapeShellArg cfg.layout}
     ${lib.optionalString (cfg.variant != "") ''
       export XKB_DEFAULT_VARIANT=${lib.escapeShellArg cfg.variant}
     ''}
 
     export HOME=${lib.escapeShellArg greeterHome}
+    
+    # Ensure we are in a writable directory
+    cd "$HOME" || { echo "Failed to cd to $HOME"; exit 1; }
+
+    # Ensure XDG_RUNTIME_DIR is set (critical for Wayland socket)
+    if [ -z "''${XDG_RUNTIME_DIR:-}" ]; then
+      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+      mkdir -p "$XDG_RUNTIME_DIR"
+      chmod 0700 "$XDG_RUNTIME_DIR"
+    fi
+
     export XDG_CONFIG_HOME=${lib.escapeShellArg "${greeterHome}/.config"}
     export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
     export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
     export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
+    
     # DMS greeter discovers sessions from:
     # - /usr/share/{wayland-sessions,xsessions}
     # - $HOME/.local/share/{wayland-sessions,xsessions}
@@ -160,6 +179,11 @@ let
     # but greetd does not source /etc/profile so XDG_DATA_DIRS is usually empty.
     # Without this, the session list in the greeter becomes empty.
     export XDG_DATA_DIRS=/run/current-system/sw/share:/usr/local/share:/usr/share
+
+    echo "Environment prepared. Launching dms-greeter..."
+    echo "HOME=$HOME"
+    echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+    echo "Compositor: ${cfg.compositor}"
 
     exec ${
       lib.escapeShellArgs (
@@ -178,7 +202,7 @@ let
           "${pkgs.writeText "dmsgreeter-compositor-config" dmsGreeterCfg.compositor.customConfig}"
         ]
       )
-    } ${lib.optionalString dmsGreeterCfg.logs.save "> ${lib.escapeShellArg dmsGreeterCfg.logs.path} 2>&1"}
+    }
   '';
 in {
   imports = [ inputs.dankMaterialShell.nixosModules.greeter ];
