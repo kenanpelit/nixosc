@@ -92,6 +92,10 @@ let
           kb_layout = ${cfg.layout}
           ${lib.optionalString (cfg.variant != "") "kb_variant = ${cfg.variant}"}
         }
+
+        # Wait for Hyprland socket to be ready before starting QuickShell to avoid crash loop.
+        # If qs fails immediately, 'hyprctl dispatch exit' runs and kills the session.
+        exec-once = sh -c "sleep 1; qs -p ${dmsShellPkg}/share/quickshell/dms; hyprctl dispatch exit"
       ''
     else if cfg.compositor == "niri" then
       ''
