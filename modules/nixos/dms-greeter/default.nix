@@ -146,6 +146,7 @@ let
     ''}
 
     export HOME=${lib.escapeShellArg greeterHome}
+    export XDG_CONFIG_HOME=${lib.escapeShellArg "${greeterHome}/.config"}
     export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
     export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
     export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
@@ -227,6 +228,11 @@ in {
     systemd.tmpfiles.rules = [
       "d /var/log/dms-greeter 0755 greeter greeter -"
       "f /var/log/dms-greeter/dms-greeter.log 0664 greeter greeter -"
+      "d /var/lib/dms-greeter 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.config 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.cache 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.local 0755 greeter greeter -"
+      "d /var/lib/dms-greeter/.local/state 0755 greeter greeter -"
     ];
   };
 }
