@@ -130,9 +130,9 @@ lib.mkIf cfg.enable {
       # Media & Download Tools
       # =============================================================================
       youtube-dl = "yt-dlp";
-      yt = "yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4";
+      yt = "yt-dlp";
       yta = "yt-dlp --extract-audio --audio-format mp3";
-      ytv = "yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4";
+      ytv = "yt-dlp";
       
       # Playlist downloads
       ytp-mp3 = "yt-dlp --yes-playlist --extract-audio --audio-format mp3 -o '%(playlist_index)s-%(title)s.%(ext)s'";
