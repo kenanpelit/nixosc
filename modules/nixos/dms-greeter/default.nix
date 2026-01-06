@@ -224,6 +224,13 @@ in {
     services.greetd.settings.default_session.user = lib.mkDefault "greeter";
     services.greetd.settings.default_session.command = lib.mkForce (lib.getExe greeterCommand);
 
+    # Fix: Set the system-level home directory for the 'greeter' user to a writable path.
+    # dconf and other libraries rely on /etc/passwd home dir, ignoring the exported env var in some cases.
+    users.users.greeter = {
+      home = greeterHome;
+      createHome = true;
+    };
+
     # Ensure log directory exists and is writable by greeter user
     systemd.tmpfiles.rules = [
       "d /var/log/dms-greeter 0755 greeter greeter -"
