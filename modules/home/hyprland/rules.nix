@@ -470,7 +470,7 @@
       "match:class" = "^(anote)$";
       float = true;
       center = true;
-      size = "1536 864";
+      size = "1152 864";
       animation = "slide";
       opacity = "0.95 0.95";
     }
