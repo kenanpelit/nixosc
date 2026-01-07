@@ -1,7 +1,6 @@
 # modules/home/dms/default.nix
 # ==============================================================================
 # Home module for DankMaterialShell: imports upstream HM module plus local
-# settings/themes splits. Exposes screenshot editor and plugin list options.
 # Central place to manage DMS runtime config for the user session.
 # ==============================================================================
 
@@ -11,7 +10,6 @@
   imports = [
     inputs.dankMaterialShell.homeModules.default
     ./settings.nix
-    ./themes.nix
   ];
 
   options.my.user.dms = {
