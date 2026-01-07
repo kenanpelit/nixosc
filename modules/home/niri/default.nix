@@ -261,6 +261,10 @@ in
       # Niri module from flake handles package installation via `programs.niri.package`
       programs.niri.enable = true;
       programs.niri.package = cfg.package;
+      
+      # Disable build-time config check because we include a runtime-generated file (dms/cursor.kdl)
+      # which doesn't exist in the sandbox during build.
+      programs.niri.checkConfig = false;
 
       # Ensure portals exist for file pickers, screencast, screenshot, etc.
       my.user.xdg-portal.enable = lib.mkDefault true;
@@ -324,6 +328,10 @@ in
 
       # Deprecated placeholder (kept to avoid stale references)
       xdg.configFile."niri/dms/alttab.kdl".text = "";
+      
+      # Placeholder for DMS cursor config (needed for build-time validation)
+      # DMS will overwrite this at runtime.
+      xdg.configFile."niri/dms/cursor.kdl".text = "";
     }
 
     (lib.mkIf cfg.systemd.enable {
