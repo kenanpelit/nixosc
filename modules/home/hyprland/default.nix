@@ -102,5 +102,8 @@ in
 
       extraConfig = binds.extraConfig;
     };
+    
+    # Placeholder for DMS cursor config
+    xdg.configFile."hypr/dms/cursor.conf".text = "";
   };
 }
