@@ -265,9 +265,6 @@ in
       # Ensure portals exist for file pickers, screencast, screenshot, etc.
       my.user.xdg-portal.enable = lib.mkDefault true;
 
-      # Ensure portals exist for file pickers, screencast, screenshot, etc.
-      my.user.xdg-portal.enable = lib.mkDefault true;
-
       # MANUAL CONFIG: Use xdg.configFile to bypass Home Manager's build-time validation
       # of programs.niri.config, which fails because the included dms/cursor.kdl 
       # (runtime generated) doesn't exist in the sandbox.
