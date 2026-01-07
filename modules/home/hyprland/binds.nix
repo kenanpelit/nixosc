@@ -76,7 +76,7 @@ in
     # Advanced Modes
     "ALT, G, fullscreen, 1"            # Maximize to Edges
     "$mainMod, Tab, togglegroup"       # Toggle Tabbed Mode (Group)
-    "$mainMod, V, togglefloating"      # Toggle Float
+    "$mainMod, G, togglefloating"      # Toggle Float
     "$mainMod CTRL, BackSpace, focuscurrentorlast" # Focus Float/Tile approx
     
     "$mainMod, Z, exec, ${bins.hyprSet} zen"
@@ -102,7 +102,6 @@ in
     "ALT, Space, exec, dms ipc call spotlight toggle"
     "$mainMod, D, exec, dms ipc call dash toggle ''"
     "$mainMod, N, exec, dms ipc call notifications toggle"
-    "$mainMod, A, exec, dms ipc call control-center toggle"
     
     # DMS Tools
     "$mainMod, V, exec, dms ipc call clipboard toggle"
