@@ -244,8 +244,10 @@ let
     "$mainMod CTRL, C, movetoworkspace, empty"
     "$mainMod, Page_Up, workspace, -1"
     "$mainMod, Page_Down, workspace, +1"
+    "$mainMod, mouse_down, workspace, e+1"
+    "$mainMod, mouse_up, workspace, e-1"
 
-    # Monitor Focus
+    # Monitor Focus (Niri Match)
     "$mainMod ALT, H, focusmonitor, l"
     "$mainMod ALT, L, focusmonitor, r"
     "$mainMod ALT, K, focusmonitor, u"
