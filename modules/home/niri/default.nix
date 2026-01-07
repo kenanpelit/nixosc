@@ -271,6 +271,9 @@ in
         settingsConfig.main
         monitorsConfig.config
         settingsConfig.layout
+        
+        # Include DMS generated cursor config
+        "include \"dms/cursor.kdl\""
 
         # Bindings must be inside a SINGLE `binds {}` block.
         "binds {"
