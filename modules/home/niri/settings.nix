@@ -64,9 +64,10 @@ in
   animations = ''
     animations {
       // Premium Motion Profile: Fluid curves with responsive slide dynamics.
+      // Updated for softer spring feel (stiffness reduced).
 
       workspace-switch {
-        spring damping-ratio=0.9 stiffness=1400 epsilon=0.0001;
+        spring damping-ratio=0.92 stiffness=1000 epsilon=0.0001;
       }
 
       window-open {
@@ -124,14 +125,15 @@ in
       }
 
       // Snappy but smooth movement (Hyprland style responsiveness)
+      // Stiffness reduced slightly for better fluidity
       horizontal-view-movement {
-        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.98 stiffness=1000 epsilon=0.0001;
+        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -175,7 +177,7 @@ in
         curve "ease-out-quad";
       }
       overview-open-close {
-        spring damping-ratio=0.92 stiffness=1200 epsilon=0.0001;
+        spring damping-ratio=0.92 stiffness=1000 epsilon=0.0001;
       }
       recent-windows-close {
         spring damping-ratio=0.9 stiffness=800 epsilon=0.001;

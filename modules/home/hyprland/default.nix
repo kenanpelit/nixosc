@@ -70,6 +70,9 @@ in
         # Environment Variables
         env = vars.envVars;
 
+        # Source external configs (DMS Cursor)
+        source = [ "./dms/cursor.conf" ];
+
         # Core Settings
         inherit (settings) 
           exec-once monitor workspace input gestures general 
@@ -99,5 +102,8 @@ in
 
       extraConfig = binds.extraConfig;
     };
+    
+    # Placeholder for DMS cursor config
+    xdg.configFile."hypr/dms/cursor.conf".text = "";
   };
 }

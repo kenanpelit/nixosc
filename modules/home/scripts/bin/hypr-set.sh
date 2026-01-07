@@ -80,19 +80,19 @@ Commands:
   airplane-mode      Airplane mode helper
   colorpicker        Color picker helper
   start-batteryd     Battery daemon helper
+  smart-focus        Focus existing window or spawn command
+  pull-window        Find window and move to current workspace
+  workspace-pull     Move windows from target workspace to current
   zen                Toggle Zen Mode (hide gaps, borders, bar)
   pin                Toggle Pin Mode (PIP-style floating window)
   opacity            Adjust active window opacity (inc/dec)
 
 Examples:
   hypr-set zen
-  hypr-set pin
+  hypr-set smart-focus kitty
+  hypr-set pull-window spotify
+  hypr-set workspace-pull 5
   hypr-set env-sync
-  hypr-set doctor
-  hypr-set window-move workspace prev
-  hypr-set window-move monitor other
-  hypr-set opacity 0.1
-  hypr-set opacity -0.1
 EOF
 }
 
@@ -100,8 +100,86 @@ cmd="${1:-}"
 shift || true
 
 case "${cmd}" in
-	  zen)
-	    (
+  smart-focus)
+    (
+      set -euo pipefail
+      app="${1:-}"
+      cmd="${2:-$app}" # If 2nd arg not provided, use app name as command
+
+      if [[ -z "$app" ]]; then
+        echo "Usage: hypr-set smart-focus <class_regex> [command]" >&2
+        exit 1
+      fi
+
+      # Try to find window address
+      addr=$(hyprctl clients -j | jq -r --arg a "$app" '.[] | select(.class | test($a; "i")) | .address' | head -n1)
+
+      if [[ -n "$addr" ]]; then
+        hyprctl dispatch focuswindow "address:$addr" >/dev/null
+      else
+        # Not found, spawn it
+        # If cmd is "anotes", handle specially or just exec
+        exec "$cmd" &
+      fi
+    )
+    ;;
+
+  pull-window)
+    (
+      set -euo pipefail
+      app="${1:-}"
+      
+      if [[ -z "$app" ]]; then
+        echo "Usage: hypr-set pull-window <class_regex>" >&2
+        exit 1
+      fi
+
+      addr=$(hyprctl clients -j | jq -r --arg a "$app" '.[] | select(.class | test($a; "i")) | .address' | head -n1)
+
+      if [[ -n "$addr" ]]; then
+        current_ws=$(hyprctl activewindow -j | jq -r '.workspace.id')
+        hyprctl dispatch movetoworkspace "$current_ws,address:$addr" >/dev/null
+        hyprctl dispatch focuswindow "address:$addr" >/dev/null
+      else
+        notify-send "Hyprland" "Window not found: $app"
+      fi
+    )
+    ;;
+
+  workspace-pull)
+    (
+      set -euo pipefail
+      target_ws="${1:-}"
+      
+      if [[ -z "$target_ws" ]]; then
+        echo "Usage: hypr-set workspace-pull <workspace_id>" >&2
+        exit 1
+      fi
+
+      # Re-use the embedded workspace monitor logic logic or simple dispatch
+      # Simple implementation: Move all clients from target_ws to current
+      
+      current_ws=$(hyprctl activewindow -j | jq -r '.workspace.id')
+      if [[ "$current_ws" == "$target_ws" ]]; then exit 0; fi
+      
+      # Move all windows from target workspace to current
+      # We use a loop to handle multiple windows
+      clients=$(hyprctl clients -j | jq -r --arg ws "$target_ws" '.[] | select(.workspace.id == ($ws|tonumber)) | .address')
+      
+      for addr in $clients; do
+        hyprctl dispatch movetoworkspacesilent "$current_ws,address:$addr" >/dev/null
+      done
+      
+      if [[ -n "$clients" ]]; then
+        notify-send "Hyprland" "Pulled windows from Workspace $target_ws"
+      else
+        notify-send "Hyprland" "No windows in Workspace $target_ws"
+      fi
+    )
+    ;;
+
+  zen)
+    (
 	      set -euo pipefail
 	      
 	      # Toggle Zen Mode (persist state so notification matches)

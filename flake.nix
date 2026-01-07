@@ -93,12 +93,12 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/9817553c664b0b7f6776671383a6368c74ee8dee"; # 0106 - Updated commit
-#      url = "github:hyprwm/hyprland/107275238c0dd5e3de8b9c36575a335ebd393c56"; # 0105 - Updated commit
+      url = "github:hyprwm/hyprland/f1652b295130fd241bd3a6505908d6db562fdcf1"; # 0106 - Updated commit
+#      url = "github:hyprwm/hyprland/9817553c664b0b7f6776671383a6368c74ee8dee"; # 0106 - Updated commit
+      #      url = "github:hyprwm/hyprland/107275238c0dd5e3de8b9c36575a335ebd393c56"; # 0105 - Updated commit
       #      url = "github:hyprwm/hyprland/7d8f57083e703267e18c78256b0f37108337ff81"; # 0105 - Updated commit
       #      url = "github:hyprwm/hyprland/0b3b012817ca381e40754cb4408e5c0cd3a2c732"; # 0104 - Updated commit
       #      url = "github:hyprwm/hyprland/583c4074a5d4229f841d9e470ab427339773b592"; # 0104 - Updated commit
-      #      url = "github:hyprwm/hyprland/ee67278038b5b6597172b2a3ee9d57f6ad0eafc7"; # 0103 - Updated commit
     };
 
     hypr-contrib = {
@@ -154,8 +154,11 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/f762f9ae497749560dcb68f24110acc256661c06"; # 0106 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/4005a55bf2415ae88784312b0dbfab46b27e7ea1"; # 0105 - Updated commit - Pinned
+      url = "github:AvengeMedia/DankMaterialShell/e6d289d48ccdaefe45a29ffc3581cb516ec227b7"; # 0107 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/8c9c936d0e0bfa739c538f6b4f092837e7789120"; # 0107 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/1b5abca83aeffc0909033091d56bd8880ca0dd8e"; # 0106 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/f762f9ae497749560dcb68f24110acc256661c06"; # 0106 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/4005a55bf2415ae88784312b0dbfab46b27e7ea1"; # 0105 - Updated commit - Pinned
     };
 
     # ==========================================================================
