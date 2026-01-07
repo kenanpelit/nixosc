@@ -1,69 +1,236 @@
 # modules/home/hyprland/binds.nix
 # ==============================================================================
-# Hyprland Key Bindings & Submaps
+# Hyprland Key Bindings - ULTIMATE Sync with Niri (Modular)
 #
-# Contains all input mappings including application launchers, window controls,
-# navigation, workspace management, and DMS integration.
-# Imported by default.nix
+# Mirrored from modules/home/niri/binds.nix to ensure seamless transitions.
+# Organized into separate lists for better maintainability.
 # ==============================================================================
 { lib, themeName, bins, ... }:
 
 let
-  # Binding generators
+  # --- Binding Generators ---
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
   mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
-  mkPullAppsFromWorkspace = nums: map (n: "$mainMod ALT, ${toString n}, exec, ${bins.hyprSet} workspace-monitor -am ${toString n}") nums;
-  
-  moveStep = 80;
-  resizeStep = 80;
-  
-  directions = [
-    { arrow = "left"; vim = "h"; dir = "l"; delta = "-${toString moveStep} 0"; resizeDelta = "-${toString resizeStep} 0"; }
-    { arrow = "right"; vim = "l"; dir = "r"; delta = "${toString moveStep} 0"; resizeDelta = "${toString resizeStep} 0"; }
-    { arrow = "up"; vim = "k"; dir = "u"; delta = "0 -${toString moveStep}"; resizeDelta = "0 -${toString resizeStep}"; }
-    { arrow = "down"; vim = "j"; dir = "d"; delta = "0 ${toString moveStep}"; resizeDelta = "0 ${toString resizeStep}"; }
-  ];
-  
-  mkDirectionalBinds = mod: command: field:
-    lib.concatMap
-      (d: [
-        "${mod}, ${d.arrow}, ${command}, ${builtins.getAttr field d}"
-        "${mod}, ${d.vim}, ${command}, ${builtins.getAttr field d}"
-      ])
-      directions;
+  mkPullAppsFromWorkspace = nums: map (n: "$mainMod ALT SHIFT, ${toString n}, exec, ${bins.hyprSet} workspace-pull ${toString n}") nums;
 
-  appBinds = [
+  # ---------------------------------------------------------------------------
+  # 1. CORE WINDOW MANAGEMENT
+  # ---------------------------------------------------------------------------
+  coreBinds = [
+    # Focus (Vim & Arrows)
+    "$mainMod, left, movefocus, l"
+    "$mainMod, right, movefocus, r"
+    "$mainMod, up, movefocus, u"
+    "$mainMod, down, movefocus, d"
+    "$mainMod, h, movefocus, l"
+    "$mainMod, l, movefocus, r"
+    "$mainMod, k, movefocus, u"
+    "$mainMod, j, movefocus, d"
+
+    # Move Window (Shift + Vim/Arrows)
+    "$mainMod SHIFT, left, movewindow, l"
+    "$mainMod SHIFT, right, movewindow, r"
+    "$mainMod SHIFT, up, movewindow, u"
+    "$mainMod SHIFT, down, movewindow, d"
+    "$mainMod SHIFT, h, movewindow, l"
+    "$mainMod SHIFT, l, movewindow, r"
+    "$mainMod SHIFT, k, movewindow, u"
+    "$mainMod SHIFT, j, movewindow, d"
+
+    # Actions
+    "$mainMod, Q, killactive"
+    "$mainMod, F, fullscreen, 0"
+    "$mainMod, M, fullscreen, 1"       # Maximize (Fake fullscreen)
+    "$mainMod, C, centerwindow"        # Center
+  ];
+
+  # ---------------------------------------------------------------------------
+  # 2. LAYOUT & VIEW
+  # ---------------------------------------------------------------------------
+  layoutBinds = [
+    # Sizing (Niri Mod+R match)
+    "$mainMod, R, layoutmsg, colresize +conf"
+    "$mainMod SHIFT, R, layoutmsg, colresize -conf"
+    
+    # Size Presets (Niri Match)
+    "$mainMod, 0, exec, hyprctl dispatch splitratio -0.5" 
+    "$mainMod SHIFT, 0, exec, hyprctl dispatch splitratio -0.3"
+    "$mainMod CTRL, 0, exec, hyprctl dispatch splitratio 0"
+
+    # Fine-grained Sizing (Niri Mod+Minus/Equal Match)
+    "$mainMod, minus, resizeactive, -50 0"
+    "$mainMod, equal, resizeactive, 50 0"
+    "$mainMod SHIFT, minus, resizeactive, 0 -50"
+    "$mainMod SHIFT, equal, resizeactive, 0 50"
+
+    # Advanced Modes
+    "ALT, G, fullscreen, 1"            # Maximize to Edges
+    "$mainMod, Tab, cyclenext"         # Focus next window (Niri Tab match)
+    "$mainMod SHIFT, Tab, cyclenext, prev" # Focus prev window
+    "$mainMod, W, togglegroup"         # Toggle Tabbed Mode (Niri Mod+W match)
+    "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
+    "$mainMod CTRL, BackSpace, focuscurrentorlast" # Focus Float/Tile approx
+    
+    "$mainMod, Z, exec, ${bins.hyprSet} zen"
+    "$mainMod, P, exec, ${bins.hyprSet} pin"
+
+    # Consume / Expel (Window Grouping -> Hyprland Grouping)
+    "$mainMod CTRL, left, moveintogroup, l"
+    "$mainMod CTRL, right, moveintogroup, r"
+    "$mainMod CTRL, up, moveintogroup, u"
+    "$mainMod CTRL, down, moveintogroup, d"
+    "$mainMod CTRL, h, moveintogroup, l"
+    "$mainMod CTRL, l, moveintogroup, r"
+    "$mainMod CTRL, k, moveintogroup, u"
+    "$mainMod CTRL, j, moveintogroup, d"
+    
+    # Opacity
+    "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
+  ];
+
+  # ---------------------------------------------------------------------------
+  # 3. DMS INTEGRATION
+  # ---------------------------------------------------------------------------
+  dmsBinds = [
     # Launchers
-    "ALT, F1, exec, rofi-launcher keys || pkill rofi"
-    "ALT, Space, exec, rofi-launcher || pkill rofi"
-    "$mainMod CTRL, Space, exec, walk"
-   
-    # Terminals
-    "$mainMod, T, exec, kitty"
-    #"ALT, Return, exec, [float; center; size 950 650] kitty"
-  
-    # File Managers
-    "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
-    "ALT CTRL, F, exec, hyprctl dispatch exec '[float; center; size 1111 700] kitty yazi'"
+    "ALT, Space, exec, dms ipc call spotlight toggle"
+    "$mainMod, D, exec, dms ipc call dash toggle ''"
+    "$mainMod, N, exec, dms ipc call notifications toggle"
+    
+    # DMS Tools
+    "$mainMod, V, exec, dms ipc call clipboard toggle"
+    "$mainMod SHIFT, V, exec, osc-clipview"
+    "$mainMod SHIFT, D, exec, dms ipc call dash toggle overview"
+    "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod CTRL, N, exec, dms ipc call notepad open"
+    "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
+    
+    # Window Switching
+    "ALT, Tab, exec, dms ipc call spotlight openQuery '! '"
+
+    # UI Toggles
+    "$mainMod, B, exec, dms ipc call bar toggle index 0"
+    "$mainMod SHIFT, B, exec, dms ipc call dock toggle"
+    "$mainMod CTRL, B, exec, dms ipc call bar toggleAutoHide index 0"
+
+    # Power & Session
+    "$mainMod, Delete, exec, dms ipc call powermenu toggle"
+    "CTRL ALT, Delete, exec, dms ipc call powermenu toggle"
+    "ALT, L, exec, ${bins.hyprSet} lock"
+    "$mainMod SHIFT, Delete, exec, dms ipc call inhibit toggle"
+
+    # Appearance
+    "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
+    "$mainMod, W, exec, dms ipc call wallpaper next"
+    "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
+    "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
+    "$mainMod SHIFT, N, exec, dms ipc call night toggle"
+    
+    # Help
+    "$mainMod ALT, Slash, exec, dms ipc call settings openWith keybinds"
+    "$mainMod, F1, exec, dms ipc call keybinds toggle hyprland"
+    "ALT, F1, exec, dms ipc call keybinds toggle hyprland"
   ];
 
-  mediaBinds = [
-    # Audio Control
+  # ---------------------------------------------------------------------------
+  # 4. SYSTEM & SCRIPTS
+  # ---------------------------------------------------------------------------
+  systemBinds = [
+    # Hardware
+    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 5"
+    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 5"
+    ", XF86AudioMute, exec, dms ipc call audio mute"
+    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
+    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 ''"
+    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 ''"
+
+    # Media (MPRIS)
+    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
+    ", XF86AudioNext, exec, dms ipc call mpris next"
+    ", XF86AudioPrev, exec, dms ipc call mpris previous"
+    ", XF86AudioStop, exec, dms ipc call mpris stop"
+
+    # Custom Scripts
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
-    #", F4, exec, osc-soundctl mic mute"
-   
-    # Playback Control (DMS MPRIS)
-  
-    # Spotify & MPV (özel scriptler)
     "ALT, E, exec, osc-spotify"
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"
     "ALT CTRL, E, exec, mpc-control toggle"
-    "ALT, i, exec, ${bins.hyprSet} vlc-toggle"
-  
-    # MPV Manager
-    "$mainMod CTRL, 1, exec, mpv-manager playback"
+    "ALT, I, exec, ${bins.hyprSet} vlc-toggle"
+
+    # Tools
+    "$mainMod SHIFT, C, exec, hyprpicker -a"
+    "$mainMod CTRL, V, exec, kitty --class clipse -e clipse"
+    ", F10, exec, ${bins.bluetoothToggle}"
+    "ALT, F12, exec, osc-mullvad toggle"
+    
+    # Screenshots
+    ", Print, exec, ${bins.screenshot} ri"
+    "CTRL, Print, exec, ${bins.screenshot} si"
+    "ALT, Print, exec, ${bins.screenshot} wi"
+    
+    # Reload Config
+    "$mainMod CTRL ALT, R, exec, hyprctl reload"
+    
+    # Custom Apps
+    "ALT, T, exec, start-kkenp"
+    "ALT, N, exec, anotes"
+    "$mainMod ALT, Return, exec, semsumo launch --daily -all"
+    "$mainMod SHIFT, A, exec, ${bins.hyprSet} arrange-windows" 
+    
+    # Direct App Launchers
+    "$mainMod, Space, exec, rofi-launcher"
+    "$mainMod CTRL, Space, exec, walk"
+    "$mainMod CTRL, S, exec, nsticky-toggle"
+    "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
+    "ALT CTRL, F, exec, kitty -e yazi"
+    "$mainMod, T, exec, kitty"
+  ];
+
+  # ---------------------------------------------------------------------------
+  # 5. SMART WORKFLOW (Replacing Nirius)
+  # ---------------------------------------------------------------------------
+  smartBinds = [
+    # Smart Focus-or-Spawn
+    "$mainMod ALT, T, exec, ${bins.hyprSet} smart-focus kitty"
+    "$mainMod ALT, B, exec, ${bins.hyprSet} smart-focus brave"
+    "$mainMod ALT, M, exec, ${bins.hyprSet} smart-focus spotify"
+    "$mainMod ALT, N, exec, ${bins.hyprSet} smart-focus anotes"
+
+    # Pull-to-Me (Using mkPullAppsFromWorkspace generator for general, manual here)
+    "$mainMod ALT SHIFT, T, exec, ${bins.hyprSet} pull-window kitty"
+    "$mainMod ALT SHIFT, B, exec, ${bins.hyprSet} pull-window brave"
+    
+    # Scratchpad (BackSpace -> Special Workspace)
+    "$mainMod, BackSpace, movetoworkspace, special:scratchpad"
+    "ALT, BackSpace, togglespecialworkspace, scratchpad"
+    "$mainMod ALT, BackSpace, togglespecialworkspace, scratchpad" # Show All equiv
+
+    # Marks (Simulated with Named Special Workspaces)
+    # Set Mark -> Move to Special
+    "$mainMod ALT SHIFT, 1, movetoworkspace, special:term"
+    "$mainMod ALT SHIFT, 2, movetoworkspace, special:web"
+    "$mainMod ALT SHIFT, 3, movetoworkspace, special:media"
+    "$mainMod ALT SHIFT, 4, movetoworkspace, special:notes"
+
+    # Focus Mark -> Toggle Special
+    "$mainMod ALT, 1, togglespecialworkspace, term"
+    "$mainMod ALT, 2, togglespecialworkspace, web"
+    "$mainMod ALT, 3, togglespecialworkspace, media"
+    "$mainMod ALT, 4, togglespecialworkspace, notes"
+
+    # Follow Mode (Not directly applicable)
+
+    # ---------------------------------------------------------------------------
+
+  ];
+
+  # ---------------------------------------------------------------------------
+  # 6. MPV MANAGER
+  # ---------------------------------------------------------------------------
+  mpvBinds = [
+    "ALT, U, exec, mpv-manager playback"
     "$mainMod CTRL, Y, exec, mpv-manager play-yt"
     "$mainMod CTRL, 3, exec, mpv-manager stick"
     "$mainMod CTRL, 4, exec, mpv-manager move"
@@ -71,194 +238,49 @@ let
     "$mainMod CTRL, 6, exec, mpv-manager wallpaper"
   ];
 
-  windowControlBinds = [
-    # Basic Actions
-    "$mainMod, Q, killactive"
-    "$mainMod SHIFT, F, fullscreen, 1"
-    "$mainMod, F, fullscreen, 0"
-    "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
-    "$mainMod, P, exec, ${bins.hyprSet} pin"
-    "$mainMod, Z, exec, ${bins.hyprSet} zen"
-    "$mainMod, X, togglesplit,"
-    "$mainMod SHIFT, G, togglegroup"
-    "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
-    "$mainMod SHIFT, S, pin"
-  
-    # Hyprscrolling: cycle the preconfigured column widths (conf list)
-    "$mainMod, R, layoutmsg, colresize +conf"
-    "$mainMod SHIFT, R, layoutmsg, colresize -conf"
-    "$mainMod, RETURN, layoutmsg, promote"
+  # ---------------------------------------------------------------------------
+  # 7. WORKSPACES & MONITORS
+  # ---------------------------------------------------------------------------
+  workspaceBinds = [
+    # Workspace Navigation (Helpers)
+    "$mainMod CTRL, C, movetoworkspace, empty"
+    "$mainMod, Page_Up, workspace, -1"
+    "$mainMod, Page_Down, workspace, +1"
+    "$mainMod, mouse_down, workspace, e+1"
+    "$mainMod, mouse_up, workspace, e-1"
+
+    # Monitor Focus (Niri Match)
+    "$mainMod ALT, H, focusmonitor, l"
+    "$mainMod ALT, L, focusmonitor, r"
+    "$mainMod ALT, K, focusmonitor, u"
+    "$mainMod ALT, J, focusmonitor, d"
+    "$mainMod ALT, left, focusmonitor, l"
+    "$mainMod ALT, right, focusmonitor, r"
+    "$mainMod ALT, up, focusmonitor, u"
+    "$mainMod ALT, down, focusmonitor, d"
     
-    # Niri-like Window Movement
-    "$mainMod SHIFT, left, layoutmsg, movewindowto l"
-    "$mainMod SHIFT, h, layoutmsg, movewindowto l"
-    "$mainMod SHIFT, right, layoutmsg, movewindowto r"
-    "$mainMod SHIFT, l, layoutmsg, movewindowto r"
-    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
-    "$mainMod SHIFT, k, layoutmsg, movewindowto u"
-    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
-    "$mainMod SHIFT, j, layoutmsg, movewindowto d"
+    # Monitor Move
+    "$mainMod ALT SHIFT, h, movewindow, mon:l"
+    "$mainMod ALT SHIFT, l, movewindow, mon:r"
+    "$mainMod CTRL, up, movewindow, mon:u"
+    "$mainMod CTRL, down, movewindow, mon:d"
 
-    # Niri-like Column Resizing (Fine-tune)
-    "$mainMod, minus, layoutmsg, colresize -0.05"
-    "$mainMod, equal, layoutmsg, colresize +0.05"
-
-    # Niri-like Column Swapping
-    "$mainMod CTRL, left, layoutmsg, swapcol l"
-    "$mainMod CTRL, h, layoutmsg, swapcol l"
-    "$mainMod CTRL, right, layoutmsg, swapcol r"
-    "$mainMod CTRL, l, layoutmsg, swapcol r"
-
-    # Fit/Center Toggle
-    "$mainMod, C, layoutmsg, togglefit"
-  
-    # Layout
-    "$mainMod CTRL, J, exec, ${bins.hyprSet} layout-toggle"
-    "$mainMod CTRL, RETURN, layoutmsg, swapwithmaster"
-    # "$mainMod, R, submap, resize" # Disabled in favor of hyprscrolling colresize
-  
-    # Splitting
-    "$mainMod CTRL ALT, left, exec, hyprctl dispatch splitratio -0.2"
-    "$mainMod CTRL ALT, right, exec, hyprctl dispatch splitratio +0.2"
-  ];
-
-  systemBinds = [
-    # Tools
-    "$mainMod SHIFT, C, exec, hyprpicker -a"
-  
-    # Monitor
-    "$mainMod, Escape, exec, pypr shift_monitors +1 || hyprctl dispatch focusmonitor -1"
-    "$mainMod, A, exec, hyprctl dispatch focusmonitor -1"
-    "$mainMod, E, exec, pypr shift_monitors +1"
-    "$mainMod SHIFT, M, exec, ${bins.hyprSet} window-move monitor other"
-  
-    # Connectivity
-    ", F10, exec, ${bins.bluetoothToggle}"
-    "ALT, F12, exec, osc-mullvad toggle"
-  
-    # Clipboard (local)
-    "$mainMod CTRL, V, exec, kitty --class clipse -e clipse"
-  ];
-
-  screenshotBinds = [
-    ", Print, exec, ${bins.screenshot} ri"
-    "CTRL, Print, exec, ${bins.screenshot} si"
-    "ALT, Print, exec, ${bins.screenshot} wi"
-    "$mainMod ALT, Print, exec, ${bins.screenshot} p"
-  ];
-
-  specialAppsBinds = [
-    "ALT, T, exec, start-kkenp"
-    "$mainMod ALT, RETURN, exec, semsumo launch --daily -all"
-    "ALT, N, exec, anotes"
-  ];
-
-  navBinds = [
-    # Navigation (Niri-like: Focus moves the scroll view)
-    "$mainMod, left, layoutmsg, focus l"
-    "$mainMod, h, layoutmsg, focus l"
-    "$mainMod, right, layoutmsg, focus r"
-    "$mainMod, l, layoutmsg, focus r"
-    "$mainMod, up, layoutmsg, focus u"
-    "$mainMod, k, layoutmsg, focus u"
-    "$mainMod, down, layoutmsg, focus d"
-    "$mainMod, j, layoutmsg, focus d"
-
-    # Workspace monitors
-    "$mainMod CTRL, up, exec, ${bins.hyprSet} workspace-monitor -wu"
-    "$mainMod CTRL, k, exec, ${bins.hyprSet} workspace-monitor -wu"
-    "$mainMod CTRL, down, exec, ${bins.hyprSet} workspace-monitor -wd"
-    "$mainMod CTRL, j, exec, ${bins.hyprSet} workspace-monitor -wd"
-
-    # Old behavior
-    "ALT, Tab, workspace, e+1"
-    "ALT CTRL, tab, workspace, e-1"
-
-    # Monitor focus (Niri-like)
-    "$mainMod ALT, left, exec, hyprctl dispatch focusmonitor l"
-    "$mainMod ALT, h, exec, hyprctl dispatch focusmonitor l"
-    "$mainMod ALT, right, exec, hyprctl dispatch focusmonitor r"
-    "$mainMod ALT, l, exec, hyprctl dispatch focusmonitor r"
-    "$mainMod ALT, up, exec, hyprctl dispatch focusmonitor u"
-    "$mainMod ALT, k, exec, hyprctl dispatch focusmonitor u"
-    "$mainMod ALT, down, exec, hyprctl dispatch focusmonitor d"
-    "$mainMod ALT, j, exec, hyprctl dispatch focusmonitor d"
-
-    # Workspace helpers
-    "$mainMod CTRL, c, movetoworkspace, empty"
-    "$mainMod, Prior, exec, ${bins.hyprSet} window-move workspace prev"
-    "$mainMod, Next, exec, ${bins.hyprSet} window-move workspace next"
-  ]
-  ++ [
-    # Scratchpad
-    "$mainMod, minus, movetoworkspace, special:scratchpad"
-    "$mainMod SHIFT, minus, togglespecialworkspace, scratchpad"
-  ];
-
-  dmsBinds = [
-    # Launchers & power
-    "$mainMod, Space, exec, dms ipc call spotlight toggle"
-    "$mainMod, delete, exec, dms ipc call powermenu toggle"
-    "ALT, L, exec, ${bins.hyprSet} lock"
-    "$mainMod SHIFT, delete, exec, dms ipc call inhibit toggle"
-
-    # Dash & panels
-    "$mainMod, D, exec, dms ipc call dash toggle ''"
-    "$mainMod, C, exec, dms ipc call control-center toggle"
-    "$mainMod, N, exec, dms ipc call notifications toggle"
-    "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
-    "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
-    "$mainMod SHIFT, K, exec, dms ipc call settings openWith keybinds"
-    "$mainMod ALT, slash, exec, dms ipc call settings openWith keybinds"
-
-    # Theme & night mode
-    "$mainMod SHIFT, T, exec, dms ipc call theme toggle"
-    "$mainMod SHIFT, N, exec, dms ipc call night toggle"
-
-    # Bar & Dock
-    "$mainMod, B, exec, dms ipc call bar toggle index 0"
-    "$mainMod SHIFT, B, exec, dms ipc call dock toggle"
-    "$mainMod CTRL, B, exec, dms ipc call bar toggleAutoHide index 0"
-
-    # Wallpaper & overview
-    "$mainMod, Y, exec, dms ipc call dankdash wallpaper"
-    "$mainMod, W, exec, dms ipc call wallpaper next"
-    "$mainMod SHIFT, W, exec, dms ipc call wallpaper prev"
-    "$mainMod CTRL, W, exec, dms ipc call file browse wallpaper"
-    "$mainMod, S, exec, dms ipc call hypr toggleOverview"
-    "$mainMod, Tab, exec, hyprctl dispatch hyprexpo:expo toggle"
-    "$mainMod CTRL, N, exec, dms ipc call notepad open"
-
-    # Clipboard & keybinds cheat sheet
-    "$mainMod, V, exec, dms ipc call clipboard toggle"
-    "$mainMod, F1, exec, dms ipc call keybinds toggle hyprland"
-
-    # Audio & brightness (DMS-managed)
-    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 3"
-    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 3"
-    ", XF86AudioMute, exec, dms ipc call audio mute"
-    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
-    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
-    ", XF86AudioNext, exec, dms ipc call mpris next"
-    ", XF86AudioPrev, exec, dms ipc call mpris previous"
-    ", XF86AudioStop, exec, dms ipc call mpris stop"
-    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 backlight:intel_backlight"
-    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 backlight:intel_backlight"
-    "$mainMod ALT, A, exec, dms ipc call audio cycleoutput"
-    "$mainMod ALT, B, exec, dms ipc call brightness toggleExponential backlight:intel_backlight"
+    # Smart Monitor Actions
+    "$mainMod, A, focusmonitor, +1"
+    "$mainMod, E, movecurrentworkspacetomonitor, +1"
+    "$mainMod, Escape, movecurrentworkspacetomonitor, +1"
   ];
 
 in
 {
   bind = 
-    appBinds ++
+    coreBinds ++
+    layoutBinds ++
     dmsBinds ++
-    mediaBinds ++
-    windowControlBinds ++
     systemBinds ++
-    screenshotBinds ++
-    specialAppsBinds ++
-    navBinds ++
+    smartBinds ++
+    mpvBinds ++
+    workspaceBinds ++
     mkPullAppsFromWorkspace (lib.range 1 9) ++
     mkWorkspaces (lib.range 1 9) ++
     mkMoveWorkspaces (lib.range 1 9);
@@ -269,13 +291,10 @@ in
   ];
   
   extraConfig = ''
+    bind = $mainMod, R, submap, resize
     submap = resize
-    binde = , h, resizeactive, -10 0
-    binde = , l, resizeactive, 10 0
-    binde = , k, resizeactive, 0 -10
-    binde = , j, resizeactive, 0 10
-    binde = , left, resizeactive, -10 0
     binde = , right, resizeactive, 10 0
+    binde = , left, resizeactive, -10 0
     binde = , up, resizeactive, 0 -10
     binde = , down, resizeactive, 0 10
     bind = , escape, submap, reset
