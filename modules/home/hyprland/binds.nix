@@ -66,11 +66,11 @@ let
     # Advanced Modes
     "ALT, G, fullscreen, 1"            # Maximize to Edges
     "$mainMod, Tab, togglegroup"       # Toggle Tabbed Mode (Group)
-    "$mainMod, G, togglefloating"      # Toggle Float
+    "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
     "$mainMod CTRL, BackSpace, focuscurrentorlast" # Focus Float/Tile approx
     
     "$mainMod, Z, exec, ${bins.hyprSet} zen"
-    "$mainMod, P, pin"
+    "$mainMod, P, exec, ${bins.hyprSet} pin"
 
     # Consume / Expel (Window Grouping -> Hyprland Grouping)
     "$mainMod CTRL, left, moveintogroup, l"
@@ -218,8 +218,10 @@ let
     "$mainMod ALT, 3, togglespecialworkspace, media"
     "$mainMod ALT, 4, togglespecialworkspace, notes"
 
-    # Follow Mode (Not directly applicable, maybe Pin?)
-    "$mainMod ALT, F, pin"
+    # Follow Mode (Not directly applicable)
+
+    # ---------------------------------------------------------------------------
+
   ];
 
   # ---------------------------------------------------------------------------
