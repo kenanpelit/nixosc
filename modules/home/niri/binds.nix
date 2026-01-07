@@ -44,7 +44,7 @@
       // --- Core Actions ---
       Mod+Q      hotkey-overlay-title="Close Window" { close-window; }
       Mod+F      hotkey-overlay-title="Fullscreen"   { fullscreen-window; }
-      Mod+Space  hotkey-overlay-title="Maximize Column" { maximize-column; }
+      Mod+M      hotkey-overlay-title="Maximize Column" { maximize-column; }
       Mod+C      hotkey-overlay-title="Center Column" { center-column; }
   '';
 
@@ -69,7 +69,7 @@
       // --- Advanced Modes ---
       Alt+G        repeat=false hotkey-overlay-title="Max to Edges" { maximize-window-to-edges; }
       Mod+Tab      hotkey-overlay-title="Toggle Tabbed Mode" { toggle-column-tabbed-display; }
-      Mod+V        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
+      Mod+G        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       Mod+Ctrl+BackSpace hotkey-overlay-title="Focus Float/Tile" { switch-focus-between-floating-and-tiling; }
       
       Mod+Z        repeat=false hotkey-overlay-title="Zen Mode" { spawn "${bins.niriSet}" "zen"; }
@@ -100,7 +100,6 @@
       // --- Launchers ---
       Alt+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
       Mod+D        repeat=false hotkey-overlay-title="Dash / Apps" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
-      Mod+A        repeat=false hotkey-overlay-title="Control Center" { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle"; }
       Mod+N        repeat=false hotkey-overlay-title="Notifications" { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
       
       // --- DMS Tools ---
@@ -186,7 +185,7 @@
       Mod+Shift+A         repeat=false hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       
       // --- Direct App Launchers ---
-      Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
+      Mod+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
       Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "nsticky-toggle"; }
       Mod+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Nemo)" { spawn "nemo"; }
