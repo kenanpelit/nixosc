@@ -65,7 +65,9 @@ let
 
     # Advanced Modes
     "ALT, G, fullscreen, 1"            # Maximize to Edges
-    "$mainMod, Tab, togglegroup"       # Toggle Tabbed Mode (Group)
+    "$mainMod, Tab, cyclenext"         # Focus next window (Niri Tab match)
+    "$mainMod SHIFT, Tab, cyclenext, prev" # Focus prev window
+    "$mainMod, W, togglegroup"         # Toggle Tabbed Mode (Niri Mod+W match)
     "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
     "$mainMod CTRL, BackSpace, focuscurrentorlast" # Focus Float/Tile approx
     
