@@ -279,6 +279,7 @@ in
         # Bindings must be inside a SINGLE `binds {}` block.
         "binds {"
         bindsConfig.core
+        bindsConfig.layout
         bindsConfig.nirius
         bindsConfig.dms
         bindsConfig.apps
