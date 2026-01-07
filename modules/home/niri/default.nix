@@ -262,16 +262,16 @@ in
       programs.niri.enable = true;
       programs.niri.package = cfg.package;
       
-      # Disable build-time config check because we include a runtime-generated file (dms/cursor.kdl)
-      # which doesn't exist in the sandbox during build.
-      programs.niri.checkConfig = false;
+      # Ensure portals exist for file pickers, screencast, screenshot, etc.
+      my.user.xdg-portal.enable = lib.mkDefault true;
 
       # Ensure portals exist for file pickers, screencast, screenshot, etc.
       my.user.xdg-portal.enable = lib.mkDefault true;
 
-      # Use programs.niri.config for build-time validation!
-      # We concatenate all parts into one big KDL string to avoid 'include' issues during validation.
-      programs.niri.config = lib.concatStringsSep "\n" [
+      # MANUAL CONFIG: Use xdg.configFile to bypass Home Manager's build-time validation
+      # of programs.niri.config, which fails because the included dms/cursor.kdl 
+      # (runtime generated) doesn't exist in the sandbox.
+      xdg.configFile."niri/config.kdl".text = lib.concatStringsSep "\n" [
         settingsConfig.main
         monitorsConfig.config
         settingsConfig.layout
