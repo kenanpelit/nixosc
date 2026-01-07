@@ -70,6 +70,9 @@ in
         # Environment Variables
         env = vars.envVars;
 
+        # Source external configs (DMS Cursor)
+        source = [ "./dms/cursor.conf" ];
+
         # Core Settings
         inherit (settings) 
           exec-once monitor workspace input gestures general 
