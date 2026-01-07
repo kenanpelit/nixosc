@@ -1,34 +1,22 @@
 # modules/home/hyprland/binds.nix
 # ==============================================================================
-# Hyprland Key Bindings - ULTIMATE Sync with Niri
+# Hyprland Key Bindings - ULTIMATE Sync with Niri (Modular)
 #
 # Mirrored from modules/home/niri/binds.nix to ensure seamless transitions.
-#
-# Categories:
-# 1. Core Window Management (Focus, Move, Actions)
-# 2. Layout & View (Sizing, Modes, Grouping)
-# 3. DMS Integration (Launchers, UI, Power)
-# 4. System & Scripts (Audio, Media, VPN, Tools)
-# 5. Smart Workflow (Replaces Nirius with Hyprland Special Workspaces)
-# 6. MPV Manager (Multimedia)
-# 7. Workspaces & Monitors
+# Organized into separate lists for better maintainability.
 # ==============================================================================
 { lib, themeName, bins, ... }:
 
 let
-  # Binding generators
+  # --- Binding Generators ---
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
   mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
-  
-  # Nirius-like "Pull to Me" (Using hypr-set helper)
   mkPullAppsFromWorkspace = nums: map (n: "$mainMod ALT SHIFT, ${toString n}, exec, ${bins.hyprSet} workspace-pull ${toString n}") nums;
 
-in
-{
-  bind = [
-    # ---------------------------------------------------------------------------
-    # 1. CORE WINDOW MANAGEMENT
-    # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 1. CORE WINDOW MANAGEMENT
+  # ---------------------------------------------------------------------------
+  coreBinds = [
     # Focus (Vim & Arrows)
     "$mainMod, left, movefocus, l"
     "$mainMod, right, movefocus, r"
@@ -54,10 +42,12 @@ in
     "$mainMod, F, fullscreen, 0"
     "$mainMod, M, fullscreen, 1"       # Maximize (Fake fullscreen)
     "$mainMod, C, centerwindow"        # Center
+  ];
 
-    # ---------------------------------------------------------------------------
-    # 2. LAYOUT & VIEW
-    # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 2. LAYOUT & VIEW
+  # ---------------------------------------------------------------------------
+  layoutBinds = [
     # Sizing (Niri Mod+R match)
     "$mainMod, R, layoutmsg, colresize +conf"
     "$mainMod SHIFT, R, layoutmsg, colresize -conf"
@@ -94,10 +84,12 @@ in
     
     # Opacity
     "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
+  ];
 
-    # ---------------------------------------------------------------------------
-    # 3. DMS INTEGRATION
-    # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 3. DMS INTEGRATION
+  # ---------------------------------------------------------------------------
+  dmsBinds = [
     # Launchers
     "ALT, Space, exec, dms ipc call spotlight toggle"
     "$mainMod, D, exec, dms ipc call dash toggle ''"
@@ -136,10 +128,12 @@ in
     "$mainMod ALT, Slash, exec, dms ipc call settings openWith keybinds"
     "$mainMod, F1, exec, dms ipc call keybinds toggle hyprland"
     "ALT, F1, exec, dms ipc call keybinds toggle hyprland"
+  ];
 
-    # ---------------------------------------------------------------------------
-    # 4. SYSTEM & SCRIPTS
-    # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 4. SYSTEM & SCRIPTS
+  # ---------------------------------------------------------------------------
+  systemBinds = [
     # Hardware
     ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 5"
     ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 5"
@@ -190,11 +184,13 @@ in
     "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
     "ALT CTRL, F, exec, kitty -e yazi"
     "$mainMod, T, exec, kitty"
+  ];
 
-    # ---------------------------------------------------------------------------
-    # 5. SMART WORKFLOW (Replacing Nirius with Special Workspaces)
-    # ---------------------------------------------------------------------------
-    # Smart Focus-or-Spawn (Use window rules or special workspaces)
+  # ---------------------------------------------------------------------------
+  # 5. SMART WORKFLOW (Replacing Nirius)
+  # ---------------------------------------------------------------------------
+  smartBinds = [
+    # Smart Focus-or-Spawn
     "$mainMod ALT, T, exec, ${bins.hyprSet} smart-focus kitty"
     "$mainMod ALT, B, exec, ${bins.hyprSet} smart-focus brave"
     "$mainMod ALT, M, exec, ${bins.hyprSet} smart-focus spotify"
@@ -224,20 +220,24 @@ in
 
     # Follow Mode (Not directly applicable, maybe Pin?)
     "$mainMod ALT, F, pin"
+  ];
 
-    # ---------------------------------------------------------------------------
-    # 6. MPV MANAGER
-    # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 6. MPV MANAGER
+  # ---------------------------------------------------------------------------
+  mpvBinds = [
     "ALT, U, exec, mpv-manager playback"
     "$mainMod CTRL, Y, exec, mpv-manager play-yt"
     "$mainMod CTRL, 3, exec, mpv-manager stick"
     "$mainMod CTRL, 4, exec, mpv-manager move"
     "$mainMod CTRL, 5, exec, mpv-manager save-yt"
     "$mainMod CTRL, 6, exec, mpv-manager wallpaper"
+  ];
 
-    # ---------------------------------------------------------------------------
-    # 7. WORKSPACES & MONITORS
-    # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 7. WORKSPACES & MONITORS
+  # ---------------------------------------------------------------------------
+  workspaceBinds = [
     # Workspace Navigation (Helpers)
     "$mainMod CTRL, C, movetoworkspace, empty"
     "$mainMod, Page_Up, workspace, -1"
@@ -263,10 +263,21 @@ in
     "$mainMod, A, focusmonitor, +1"
     "$mainMod, E, movecurrentworkspacetomonitor, +1"
     "$mainMod, Escape, movecurrentworkspacetomonitor, +1"
-  ] 
-  ++ mkPullAppsFromWorkspace (lib.range 1 9)
-  ++ mkWorkspaces (lib.range 1 9)
-  ++ mkMoveWorkspaces (lib.range 1 9);
+  ];
+
+in
+{
+  bind = 
+    coreBinds ++
+    layoutBinds ++
+    dmsBinds ++
+    systemBinds ++
+    smartBinds ++
+    mpvBinds ++
+    workspaceBinds ++
+    mkPullAppsFromWorkspace (lib.range 1 9) ++
+    mkWorkspaces (lib.range 1 9) ++
+    mkMoveWorkspaces (lib.range 1 9);
 
   bindm = [
     "$mainMod, mouse:272, movewindow"
