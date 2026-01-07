@@ -76,10 +76,10 @@
       Mod+P        repeat=false hotkey-overlay-title="Pin Window (PiP)" { spawn "${bins.niriSet}" "pin"; }
 
       // --- Consume / Expel (Window Grouping) ---
-      Mod+BracketLeft  hotkey-overlay-title="Consume/Expel Left" { consume-or-expel-window-left; }
-      Mod+BracketRight hotkey-overlay-title="Consume/Expel Right" { consume-or-expel-window-right; }
-      Mod+Comma        hotkey-overlay-title="Consume/Expel Left" { consume-or-expel-window-left; }
-      Mod+Period       hotkey-overlay-title="Consume/Expel Right" { consume-or-expel-window-right; }
+      Mod+Ctrl+Left    hotkey-overlay-title="Consume/Expel Left" { consume-or-expel-window-left; }
+      Mod+Ctrl+Right   hotkey-overlay-title="Consume/Expel Right" { consume-or-expel-window-right; }
+      Mod+Ctrl+H       hotkey-overlay-title="Consume/Expel Left" { consume-or-expel-window-left; }
+      Mod+Ctrl+L       hotkey-overlay-title="Consume/Expel Right" { consume-or-expel-window-right; }
       
       // --- Mouse Wheel Interaction ---
       Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { focus-workspace-down; }
