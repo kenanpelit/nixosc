@@ -223,10 +223,10 @@
         Mod+Alt+Shift+3 repeat=false hotkey-overlay-title="Mark: Set Media" { spawn "${bins.nirius}" "toggle-mark" "media"; }
         Mod+Alt+Shift+4 repeat=false hotkey-overlay-title="Mark: Set Notes" { spawn "${bins.nirius}" "toggle-mark" "notes"; }
 
-        Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.nirius}" "focus-marked" "term"; }
-        Mod+Alt+2    repeat=false hotkey-overlay-title="Mark: Go Web" { spawn "${bins.nirius}" "focus-marked" "web"; }
-        Mod+Alt+3    repeat=false hotkey-overlay-title="Mark: Go Media" { spawn "${bins.nirius}" "focus-marked" "media"; }
-        Mod+Alt+4    repeat=false hotkey-overlay-title="Mark: Go Notes" { spawn "${bins.nirius}" "focus-marked" "notes"; }
+        //Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.nirius}" "focus-marked" "term"; }
+        //Mod+Alt+2    repeat=false hotkey-overlay-title="Mark: Go Web" { spawn "${bins.nirius}" "focus-marked" "web"; }
+        //Mod+Alt+3    repeat=false hotkey-overlay-title="Mark: Go Media" { spawn "${bins.nirius}" "focus-marked" "media"; }
+        //Mod+Alt+4    repeat=false hotkey-overlay-title="Mark: Go Notes" { spawn "${bins.nirius}" "focus-marked" "notes"; }
 
         Mod+Alt+Shift+I repeat=false hotkey-overlay-title="Debug: List Marks" { spawn "${bins.nirius}" "list-marked" "--all"; }
 
@@ -279,6 +279,7 @@
       Mod+Alt+3  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "Ai"; }
       Mod+Alt+4  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "CompecTA"; }
       Mod+Alt+5  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "WebCord"; }
+      Mod+Alt+6  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "org.telegram.desktop"; }
       Mod+Alt+7  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "brave-youtube.com__-Default"; }
       Mod+Alt+8  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "spotify"; }
       Mod+Alt+9  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "ferdium"; }
