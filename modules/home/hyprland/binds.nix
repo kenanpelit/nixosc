@@ -91,15 +91,16 @@ let
   # ---------------------------------------------------------------------------
   dmsBinds = [
     # Launchers
-    "ALT, Space, exec, dms ipc call spotlight toggle"
-    "$mainMod, D, exec, dms ipc call dash toggle ''"
-    "$mainMod, N, exec, dms ipc call notifications toggle"
+    "$mainMod, Space, exec, dms ipc call spotlight toggle"
     
     # DMS Tools
     "$mainMod, V, exec, dms ipc call clipboard toggle"
     "$mainMod SHIFT, V, exec, osc-clipview"
-    "$mainMod SHIFT, D, exec, dms ipc call dash toggle overview"
+    "$mainMod, D, exec, dms ipc call dash toggle overview"
+    "$mainMod CTRL, D, exec, dms ipc call control-center toggle"
+    "$mainMod Shift, D, exec, dms ipc call welcome doctor"
     "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod, N, exec, dms ipc call notifications toggle"
     "$mainMod CTRL, N, exec, dms ipc call notepad open"
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
     
@@ -113,7 +114,6 @@ let
 
     # Power & Session
     "$mainMod, Delete, exec, dms ipc call powermenu toggle"
-    "CTRL ALT, Delete, exec, dms ipc call powermenu toggle"
     "ALT, L, exec, ${bins.hyprSet} lock"
     "$mainMod SHIFT, Delete, exec, dms ipc call inhibit toggle"
 
@@ -178,7 +178,7 @@ let
     "$mainMod SHIFT, A, exec, ${bins.hyprSet} arrange-windows" 
     
     # Direct App Launchers
-    "$mainMod, Space, exec, rofi-launcher"
+    "Alt, Space, exec, rofi-launcher"
     "$mainMod CTRL, Space, exec, walk"
     "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
     "ALT CTRL, F, exec, kitty -e yazi"
