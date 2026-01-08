@@ -17,31 +17,31 @@ let
   # 1. CORE WINDOW MANAGEMENT
   # ---------------------------------------------------------------------------
   coreBinds = [
-    # Focus (Vim & Arrows)
-    "$mainMod, left, movefocus, l"
-    "$mainMod, right, movefocus, r"
-    "$mainMod, up, movefocus, u"
-    "$mainMod, down, movefocus, d"
-    "$mainMod, h, movefocus, l"
-    "$mainMod, l, movefocus, r"
-    "$mainMod, k, movefocus, u"
-    "$mainMod, j, movefocus, d"
+    # Focus (Vim & Arrows) - Using hyprscrolling layoutmsg
+    "$mainMod, left, layoutmsg, focus l"
+    "$mainMod, right, layoutmsg, focus r"
+    "$mainMod, up, layoutmsg, focus u"
+    "$mainMod, down, layoutmsg, focus d"
+    "$mainMod, h, layoutmsg, focus l"
+    "$mainMod, l, layoutmsg, focus r"
+    "$mainMod, k, layoutmsg, focus u"
+    "$mainMod, j, layoutmsg, focus d"
 
     # Move Window (Shift + Vim/Arrows)
-    "$mainMod SHIFT, left, movewindow, l"
-    "$mainMod SHIFT, right, movewindow, r"
-    "$mainMod SHIFT, up, movewindow, u"
-    "$mainMod SHIFT, down, movewindow, d"
-    "$mainMod SHIFT, h, movewindow, l"
-    "$mainMod SHIFT, l, movewindow, r"
-    "$mainMod SHIFT, k, movewindow, u"
-    "$mainMod SHIFT, j, movewindow, d"
+    "$mainMod SHIFT, left, layoutmsg, movewindowto l"
+    "$mainMod SHIFT, right, layoutmsg, movewindowto r"
+    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
+    "$mainMod SHIFT, h, layoutmsg, movewindowto l"
+    "$mainMod SHIFT, l, layoutmsg, movewindowto r"
+    "$mainMod SHIFT, k, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, j, layoutmsg, movewindowto d"
 
     # Actions
     "$mainMod, Q, killactive"
     "$mainMod, F, fullscreen, 0"
     "$mainMod, M, fullscreen, 1"       # Maximize (Fake fullscreen)
-    "$mainMod, C, centerwindow"        # Center
+    "$mainMod, C, layoutmsg, togglefit" # Center/Fit Column (Niri Mod+C match)
   ];
 
   # ---------------------------------------------------------------------------
@@ -52,37 +52,35 @@ let
     "$mainMod, R, layoutmsg, colresize +conf"
     "$mainMod SHIFT, R, layoutmsg, colresize -conf"
     
-    # Size Presets (Niri Match)
-    "$mainMod, 0, exec, hyprctl dispatch splitratio -0.5" 
-    "$mainMod SHIFT, 0, exec, hyprctl dispatch splitratio -0.3"
-    "$mainMod CTRL, 0, exec, hyprctl dispatch splitratio 0"
+    # Size Presets (Niri Match) - Using relative resizes as hyprscrolling specific preset msg might vary
+    # Assuming colresize all <width> works or fallback to relative.
+    # Niri uses 960px etc. Here we use relative sizing.
+    "$mainMod, 0, layoutmsg, colresize all 0.5" 
+    "$mainMod SHIFT, 0, layoutmsg, colresize all 0.7"
+    "$mainMod CTRL, 0, layoutmsg, colresize all 1.0"
 
     # Fine-grained Sizing (Niri Mod+Minus/Equal Match)
-    "$mainMod, minus, resizeactive, -50 0"
-    "$mainMod, equal, resizeactive, 50 0"
-    "$mainMod SHIFT, minus, resizeactive, 0 -50"
+    "$mainMod, minus, layoutmsg, colresize -0.05"
+    "$mainMod, equal, layoutmsg, colresize +0.05"
+    "$mainMod SHIFT, minus, resizeactive, 0 -50" # Height still uses native resize
     "$mainMod SHIFT, equal, resizeactive, 0 50"
 
     # Advanced Modes
     "ALT, G, fullscreen, 1"            # Maximize to Edges
-    "$mainMod, Tab, cyclenext"         # Focus next window (Niri Tab match)
-    "$mainMod SHIFT, Tab, cyclenext, prev" # Focus prev window
-    "$mainMod, W, togglegroup"         # Toggle Tabbed Mode (Niri Mod+W match)
-    "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
+    "$mainMod, Tab, workspace, e+1"    # Next Workspace
+    "$mainMod SHIFT, Tab, workspace, e-1" # Previous Workspace
+    "$mainMod CTRL, W, togglegroup"    # Toggle Tabbed Mode (Group)
+    "$mainMod, G, exec, ${bins.hyprSet} toggle-float" # Toggle Float
     "$mainMod CTRL, BackSpace, focuscurrentorlast" # Focus Float/Tile approx
     
     "$mainMod, Z, exec, ${bins.hyprSet} zen"
     "$mainMod, P, exec, ${bins.hyprSet} pin"
 
-    # Consume / Expel (Window Grouping -> Hyprland Grouping)
-    "$mainMod CTRL, left, moveintogroup, l"
-    "$mainMod CTRL, right, moveintogroup, r"
-    "$mainMod CTRL, up, moveintogroup, u"
-    "$mainMod CTRL, down, moveintogroup, d"
-    "$mainMod CTRL, h, moveintogroup, l"
-    "$mainMod CTRL, l, moveintogroup, r"
-    "$mainMod CTRL, k, moveintogroup, u"
-    "$mainMod CTRL, j, moveintogroup, d"
+    # Consume / Expel (Window Grouping) -> Hyprscrolling Swap Column
+    "$mainMod CTRL, left, layoutmsg, swapcol l"
+    "$mainMod CTRL, right, layoutmsg, swapcol r"
+    "$mainMod CTRL, h, layoutmsg, swapcol l"
+    "$mainMod CTRL, l, layoutmsg, swapcol r"
     
     # Opacity
     "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
@@ -182,7 +180,6 @@ let
     # Direct App Launchers
     "$mainMod, Space, exec, rofi-launcher"
     "$mainMod CTRL, Space, exec, walk"
-    "$mainMod CTRL, S, exec, nsticky-toggle"
     "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
     "ALT CTRL, F, exec, kitty -e yazi"
     "$mainMod, T, exec, kitty"
