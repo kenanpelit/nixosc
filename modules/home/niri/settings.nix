@@ -14,7 +14,7 @@ in
   layout = ''
     layout {
       gaps 12;
-      center-focused-column "always";
+      center-focused-column "on-overflow";
       background-color "#00000000";
 
       focus-ring {
