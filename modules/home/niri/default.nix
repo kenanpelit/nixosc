@@ -64,6 +64,7 @@ let
     niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
     mpvManager = "${config.home.profileDirectory}/bin/mpv-manager";
+    oscHere = "${config.home.profileDirectory}/bin/osc-here";
   };
 
   # ---------------------------------------------------------------------------

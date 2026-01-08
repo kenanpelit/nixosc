@@ -273,6 +273,16 @@
       Mod+Shift+8 hotkey-overlay-title="Move To WS 8" { move-column-to-workspace "8"; }
       Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
 
+      // --- Here to Window ---
+      Mod+Alt+1  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "Kenp"; }
+      Mod+Alt+2  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "TmuxKenp"; }
+      Mod+Alt+3  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "Ai"; }
+      Mod+Alt+4  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "CompecTA"; }
+      Mod+Alt+5  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "WebCord"; }
+      Mod+Alt+7  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "brave-youtube.com__-Default"; }
+      Mod+Alt+8  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "spotify"; }
+      Mod+Alt+9  repeat=false hotkey-overlay-title="Here Ferdium" { spawn "${bins.oscHere}" "ferdium"; }
+
       // --- Workspace Navigation ---
       Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
       Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { move-window-to-workspace-up; }
