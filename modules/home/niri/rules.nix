@@ -237,6 +237,17 @@ in
       ${mkFixedFloating { w = 400; h = 600; x = 0; y = 100; relativeTo = "top"; }}
     }
 
+    // Dropdown Terminal
+    window-rule {
+      match app-id="dropdown-terminal";
+      open-floating true;
+      default-column-width { proportion 0.8; }
+      default-window-height { fixed 600; }
+      default-floating-position x=0 y=20 relative-to="top";
+      border { off; }
+      shadow { on; spread 10; softness 40; color "#00000080"; }
+    }
+
     // Tmux
     window-rule {
       match app-id=r#"^(TmuxKenp|Tmux)$"#;
