@@ -60,11 +60,22 @@ in
     border_size = 2;
     "col.active_border" = "${mkColor colors.teal.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
     "col.inactive_border" = inactiveBorder;
-    layout = "master";
+    layout = "scrolling";
     allow_tearing = false;
     resize_on_border = true;
     extend_border_grab_area = 15;
     hover_icon_on_border = true;
+  };
+  
+  plugin = {
+    hyprscrolling = {
+      column_width = 0.6;
+      fullscreen_on_one_column = false;
+      explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
+      focus_fit_method = 0; # center
+      follow_focus = true;
+      follow_debounce_ms = 0;
+    };
   };
 
   cursor = {
