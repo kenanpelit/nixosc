@@ -98,7 +98,7 @@
   # ---------------------------------------------------------------------------
   dms = ''
       // --- Launchers ---
-      Alt+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
+      Mod+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
       Mod+D        repeat=false hotkey-overlay-title="Dash / Apps" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
       Mod+N        repeat=false hotkey-overlay-title="Notifications" { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
       
@@ -185,7 +185,7 @@
       Mod+Shift+A         repeat=false hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       
       // --- Direct App Launchers ---
-      Mod+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
+      Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
       Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "nsticky-toggle"; }
       Mod+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Nemo)" { spawn "nemo"; }

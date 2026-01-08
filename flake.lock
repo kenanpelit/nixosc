@@ -163,17 +163,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1767813183,
-        "narHash": "sha256-4tLYqLiLZqI7xmhNBi5zyGkaAXZJNUtGuxWzA7NJf8A=",
+        "lastModified": 1767844768,
+        "narHash": "sha256-G8c2WlXCeZTMS7XL5yrLS29596JeRLVKHQx2blup40c=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "3dd21382bad5d43604850e257cfd1b8d35e16fb9",
+        "rev": "3c69e8b1cc4a06e0c0f46cd3759d4b662eb9fb62",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "3dd21382bad5d43604850e257cfd1b8d35e16fb9",
+        "rev": "3c69e8b1cc4a06e0c0f46cd3759d4b662eb9fb62",
         "type": "github"
       }
     },
