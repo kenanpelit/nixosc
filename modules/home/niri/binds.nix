@@ -100,6 +100,7 @@
       // --- Launchers ---
       Mod+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
       Mod+D        repeat=false hotkey-overlay-title="Dash / Apps" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
+      Mod+Ctrl+D   repeat=false hotkey-overlay-title="Control Center" { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle" ""; }
       Mod+N        repeat=false hotkey-overlay-title="Notifications" { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
       
       // --- DMS Tools ---
@@ -120,7 +121,6 @@
 
       // --- Power & Session ---
       Mod+Delete       repeat=false hotkey-overlay-title="Power Menu" { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
-      Ctrl+Alt+Delete  repeat=false hotkey-overlay-title="Power Menu" { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
       Alt+L            repeat=false hotkey-overlay-title="Lock Screen" { spawn "${bins.niriSet}" "lock"; }
       Mod+Shift+Delete repeat=false hotkey-overlay-title="Inhibit Idle" { spawn "${bins.dms}" "ipc" "call" "inhibit" "toggle"; }
       
