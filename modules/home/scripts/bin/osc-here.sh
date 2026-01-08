@@ -24,16 +24,18 @@ send_notify() {
 }
 
 # 1. Attempt to move the window (Nirius)
-# nirius moves and focuses the window with --focus flag.
-if nirius move-to-current-workspace --app-id "$APP_ID" --focus >/dev/null 2>&1; then
+# Use exact match regex anchor if possible, or assume Nirius handles regex.
+# Nirius uses regex by default, so we anchor it to be exact: "^APP_ID$"
+if nirius move-to-current-workspace --app-id "^${APP_ID}$" --focus >/dev/null 2>&1; then
     send_notify "<b>$APP_ID</b> moved here."
     exit 0
 fi
 
 # 2. Move failed (likely already on this workspace). Attempt to focus by ID.
 if command -v niri >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    # Find the window ID matching the App ID
-    window_id=$(niri msg -j windows | jq -r --arg app "$APP_ID" '.[] | select(.app_id | test($app; "i")) | .id' | head -n1)
+    # Find the window ID matching the App ID EXACTLY (case-insensitive)
+    # We check if app_id equals the input, ignoring case.
+    window_id=$(niri msg -j windows | jq -r --arg app "$APP_ID" '.[] | select(.app_id | ascii_downcase == ($app | ascii_downcase)) | .id' | head -n1)
     
     if [[ -n "$window_id" ]]; then
         # Focus by ID
