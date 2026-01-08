@@ -19,29 +19,28 @@ DROPDOWN_ID=$(niri msg -j windows | jq -r --arg app "$APP_ID" '.[] | select(.app
 FOCUSED_ID=$(niri msg -j windows | jq -r '.[] | select(.is_focused == true) | .id')
 
 if [[ "$DROPDOWN_ID" == "$FOCUSED_ID" ]]; then
-    # Zaten odakta -> GİZLE
+    # --- GİZLE ---
     if command -v nirius >/dev/null 2>&1; then
         nirius scratchpad-toggle
     else
         niri msg action move-window-to-workspace 255
     fi
 else
-    # Odakta değil veya başka yerde -> GÖSTER
-    
-    # Adım A: Mevcut workspace'i kaydet (Gitmek istediğimiz yer burası)
-    TARGET_WS_ID=$(niri msg -j workspaces | jq -r '.[] | select(.is_focused == true) | .id')
-    
-    # Adım B: Pencereye odaklan (Niri bizi o pencerenin olduğu yere götürebilir)
-    # Eğer scratchpad'deyse nirius ile çekmek daha mantıklı ama manuel yapıyoruz.
-    niri msg action focus-window --id "$DROPDOWN_ID"
-    
-    # Adım C: Pencereyi hedef workspace'e taşı
-    # Focus işlemi sonrası aktif workspace değişmiş olabilir ama pencere artık "odaklanmış" durumda.
-    # Odaklı pencereyi TARGET_WS_ID'ye taşıyoruz.
-    niri msg action move-window-to-workspace "$TARGET_WS_ID"
-    
-    # Adım D: Hedef workspace'e geri dön (Eğer Niri otomatik götürmediyse)
-    # move-window-to-workspace genellikle odaklanılan pencereyi taşıdığı için
-    # ve biz o pencereye odaklı olduğumuz için, pencereyle birlikte geri gelmiş olmalıyız.
-    # Ancak garanti olsun diye focus-workspace de yapılabilir ama genelde gerekmez.
+    # --- GÖSTER ---
+    # Nirius varsa, en temiz ve hatasız yöntem budur: "Buraya getir ve odaklan"
+    if command -v nirius >/dev/null 2>&1; then
+        # Nirius taşıma yaparken zaten odaklar. 
+        # Eğer zaten buradaysa hata verebilir, onu yutalım ve manuel odaklanalım.
+        if ! nirius move-to-current-workspace --app-id "$APP_ID" --focus 2>/dev/null; then
+             niri msg action focus-window --id "$DROPDOWN_ID"
+        fi
+    else
+        # Nirius yoksa manuel yöntem (Riskli, ama denemek lazım)
+        TARGET_WS_ID=$(niri msg -j workspaces | jq -r '.[] | select(.is_focused == true) | .id')
+        niri msg action focus-window --id "$DROPDOWN_ID"
+        # Eğer focus bizi başka yere attıysa, geri taşı
+        niri msg action move-window-to-workspace "$TARGET_WS_ID"
+        # Ve tekrar o workspace'e git (gerekirse)
+        niri msg action focus-workspace "$TARGET_WS_ID"
+    fi
 fi
