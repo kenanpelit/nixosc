@@ -68,7 +68,6 @@
 
       // --- Advanced Modes ---
       Alt+G        repeat=false hotkey-overlay-title="Max to Edges" { maximize-window-to-edges; }
-      Mod+Tab      hotkey-overlay-title="Toggle Tabbed Mode" { toggle-column-tabbed-display; }
       Mod+G        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
       Mod+Ctrl+BackSpace hotkey-overlay-title="Focus Float/Tile" { switch-focus-between-floating-and-tiling; }
       
