@@ -14,7 +14,7 @@ in
   layout = ''
     layout {
       gaps 12;
-      center-focused-column "on-overflow";
+      center-focused-column "always";
       background-color "#00000000";
 
       focus-ring {
@@ -57,7 +57,7 @@ in
         proportion 1.0;
       }
 
-      default-column-width { proportion 0.5; }
+      default-column-width { proportion 0.7; }
     }
   '';
 
