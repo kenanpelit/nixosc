@@ -105,8 +105,8 @@ let
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
     
     # Window Switching
-    "$mainMod, Tab, cyclenext"
-    "$mainMod SHIFT, Tab, cyclenext, prev"
+    "$mainMod, Tab, focuscurrentorlast"
+    "$mainMod SHIFT, Tab, focuscurrentorlast"
     "ALT, Tab, exec, dms ipc call spotlight openQuery '!'"
 
     # UI Toggles
@@ -179,7 +179,6 @@ let
     "$mainMod ALT, Return, exec, semsumo launch --daily -all"
     "$mainMod SHIFT, A, exec, ${bins.hyprSet} arrange-windows" 
     "$mainMod, Return, exec, osc-dropdown"
-    "$mainMod CTRL, S, exec, nsticky-toggle"
     
     # Direct App Launchers
     "Alt, Space, exec, rofi-launcher"
