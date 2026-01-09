@@ -18,6 +18,7 @@ let
     hyprSet = "${config.home.profileDirectory}/bin/hypr-set";
     screenshot = "${config.home.profileDirectory}/bin/screenshot";
     bluetoothToggle = "${config.home.profileDirectory}/bin/bluetooth_toggle";
+    oscHereHypr = "${config.home.profileDirectory}/bin/osc-here-hypr";
   };
   
   settings = import ./settings.nix { 

@@ -246,6 +246,17 @@ let
     "$mainMod, mouse_down, workspace, e+1"
     "$mainMod, mouse_up, workspace, e-1"
 
+    # Here to Window (Niri Alt+1..9 parity)
+    "ALT, 1, exec, ${bins.oscHereHypr} Kenp"
+    "ALT, 2, exec, ${bins.oscHereHypr} TmuxKenp"
+    "ALT, 3, exec, ${bins.oscHereHypr} Ai"
+    "ALT, 4, exec, ${bins.oscHereHypr} CompecTA"
+    "ALT, 5, exec, ${bins.oscHereHypr} WebCord"
+    "ALT, 6, exec, ${bins.oscHereHypr} org.telegram.desktop"
+    "ALT, 7, exec, ${bins.oscHereHypr} brave-youtube.com__-Default"
+    "ALT, 8, exec, ${bins.oscHereHypr} spotify"
+    "ALT, 9, exec, ${bins.oscHereHypr} ferdium"
+
     # Monitor Focus (Niri Match)
     "$mainMod ALT, H, focusmonitor, l"
     "$mainMod ALT, L, focusmonitor, r"
