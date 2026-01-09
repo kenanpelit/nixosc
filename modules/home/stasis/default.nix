@@ -244,42 +244,6 @@ let
       return 0
     }
 
-    dms_ipc() {
-      command -v dms >/dev/null 2>&1 || return 127
-
-      if command -v timeout >/dev/null 2>&1; then
-        timeout 2s dms ipc call "$@"
-      else
-        dms ipc call "$@"
-      fi
-    }
-
-    restart_dms_service() {
-      command -v systemctl >/dev/null 2>&1 || return 1
-      systemctl --user try-restart dms.service >/dev/null 2>&1 && return 0
-      systemctl --user start dms.service >/dev/null 2>&1 || return 1
-    }
-
-    dms_is_locked() {
-      local out
-      out="$(
-        dms_ipc lock isLocked 2>/dev/null \
-        | tr -d '\r' \
-        | tail -n 1 \
-        | tr -d '[:space:]' \
-        || true
-      )"
-      [[ "$out" == "true" ]]
-    }
-
-    dms_lock_state() {
-      dms_ipc lock isLocked 2>/dev/null \
-      | tr -d '\r' \
-      | tail -n 1 \
-      | tr -d '[:space:]' \
-      || true
-    }
-
     # Prefer Hyprland lock when available.
     if command -v hyprlock >/dev/null 2>&1 && ensure_hypr_signature; then
       if [[ "$wait" == "1" ]]; then
@@ -292,48 +256,27 @@ let
 
     # Niri (and others): use DMS lock if available and block until unlocked.
     if command -v dms >/dev/null 2>&1; then
-      if dms_is_locked; then
-        if [[ "$wait" != "1" ]]; then exit 0; fi
-        # Already locked: just wait for unlock.
-      else
-        # IMPORTANT: DMS lock may not work on every compositor/protocol combo.
-        # Confirm it actually locked; if not, try restarting DMS once.
-        if [[ "$wait" == "1" ]]; then
-          dms_ipc lock lock >/dev/null 2>&1 || true
-        else
-          (dms_ipc lock lock >/dev/null 2>&1 || true) &
-          disown || true
-        fi
+      # IMPORTANT: DMS lock call may block; never let it block the Stasis action
+      # pipeline. Only block when explicitly requested via `--wait`.
+      (dms ipc call lock lock >/dev/null 2>&1 || true) &
+      disown || true
 
-        locked_now="0"
-        for _ in {1..40}; do
-          if dms_is_locked; then
-            locked_now="1"
-            break
-          fi
-          sleep 0.05
-        done
-
-        if [[ "$locked_now" != "1" ]]; then
-          restart_dms_service || true
-          sleep 0.25
-          dms_ipc lock lock >/dev/null 2>&1 || true
-        fi
-
-        if [[ "$wait" != "1" ]]; then exit 0; fi
-      fi
+      if [[ "$wait" != "1" ]]; then exit 0; fi
 
       # Block until DMS reports unlock.
       failures="0"
       while true; do
-        out="$(dms_lock_state)"
+        out="$(
+          dms ipc call lock isLocked 2>/dev/null \
+          | tr -d '\r' \
+          | tail -n 1 \
+          | tr -d '[:space:]' \
+          || true
+        )"
+
         case "$out" in
-          true)
-            failures="0"
-            ;;
-          false)
-            exit 0
-            ;;
+          true) ;;
+          false) exit 0 ;;
           *)
             failures="$((failures + 1))"
             if [[ "$failures" -ge 20 ]]; then
