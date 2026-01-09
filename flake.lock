@@ -297,16 +297,16 @@
         "systems": "systems_4"
       },
       "locked": {
-        "lastModified": 1765715259,
-        "narHash": "sha256-fqj1c3RVPrwOdJgg5AiH69LBiFozHsCu3mOnxUevG6g=",
+        "lastModified": 1767893048,
+        "narHash": "sha256-HUC2JTRsA30ftTJ9c1ypeyEXilgLK+r6LvABtiiAD+o=",
         "owner": "abenz1267",
         "repo": "elephant",
-        "rev": "3cd81164d20b266288d3febcd0390b2e21f30c48",
+        "rev": "018f73e6054aea1e71c22aa47147307758d4b895",
         "type": "github"
       },
       "original": {
         "owner": "abenz1267",
-        "ref": "v2.17.2",
+        "ref": "v2.18.0",
         "repo": "elephant",
         "type": "github"
       }
@@ -838,17 +838,17 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1767871539,
-        "narHash": "sha256-BuOyjJ7KyJp99j2Hv2bmg2Qg76yDlrJM/uc/f8NNfpg=",
+        "lastModified": 1767891011,
+        "narHash": "sha256-QLcCz/vb/eyIrwOd1I1iLZkpbkLP0GlAAA8d+NzQv4g=",
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "f767782e3ffe29ed22c2bdf02f9b1cfee275db33",
+        "rev": "a649dbe4c4f77c75869d9a627961b426a4e16838",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "f767782e3ffe29ed22c2bdf02f9b1cfee275db33",
+        "rev": "a649dbe4c4f77c75869d9a627961b426a4e16838",
         "type": "github"
       }
     },
@@ -1990,16 +1990,16 @@
         "systems": "systems_14"
       },
       "locked": {
-        "lastModified": 1765305269,
-        "narHash": "sha256-2OQsyZaO2Uy6EnDLcDZGBbDEa0X1WuZ4NoZ5kW52OeA=",
+        "lastModified": 1767893373,
+        "narHash": "sha256-PYqT8GdCAsmCAgJXu88wvOU2n41iugVCph0RV+v2VAc=",
         "owner": "abenz1267",
         "repo": "walker",
-        "rev": "132004947c5c877f510177d8c68f754e37169ecc",
+        "rev": "3dfc75e90e7a7cbff109ffa6e1af099d4e1f3867",
         "type": "github"
       },
       "original": {
         "owner": "abenz1267",
-        "ref": "v2.12.2",
+        "ref": "v2.13.0",
         "repo": "walker",
         "type": "github"
       }
