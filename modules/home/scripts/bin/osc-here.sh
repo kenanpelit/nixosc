@@ -61,12 +61,7 @@ case "$APP_ID" in
         start-webcord &
         ;;
     "org.telegram.desktop")
-        # Check if there's a start script, else use binary
-        if command -v start-telegram >/dev/null 2>&1; then
-            start-telegram &
-        else
-            telegram-desktop &
-        fi
+        Telegram &
         ;;
     "brave-youtube.com__-Default")
         start-brave-youtube &
