@@ -226,8 +226,8 @@ dconf write /org/gnome/desktop/wm/keybindings/minimize "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
 
 # Niri-like alt-tab: switch windows (not apps)
-dconf write /org/gnome/desktop/wm/keybindings/switch-windows "['<Alt>Tab']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-windows-backward "['<Shift><Alt>Tab']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-windows "['<Alt>Tab', '<Super>Tab']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-windows-backward "['<Shift><Alt>Tab', '<Shift><Super>Tab']"
 dconf write /org/gnome/desktop/wm/keybindings/switch-applications "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/switch-applications-backward "@as []"
 
@@ -974,8 +974,8 @@ dconf write /org/gnome/shell/extensions/tilingshell/focus-follows-mouse "false"
 dconf write /org/gnome/shell/extensions/tilingshell/respect-focus-hints "true"
 
 # Layout switching
-dconf write /org/gnome/shell/extensions/tilingshell/next-layout "['<Super>Tab']"
-dconf write /org/gnome/shell/extensions/tilingshell/prev-layout "['<Super><Shift>Tab']"
+dconf write /org/gnome/shell/extensions/tilingshell/next-layout "['<Super><Ctrl>Tab']"
+dconf write /org/gnome/shell/extensions/tilingshell/prev-layout "['<Super><Shift><Ctrl>Tab']"
 
 # Visual settings
 dconf write /org/gnome/shell/extensions/tilingshell/show-border "true"
@@ -1077,6 +1077,7 @@ echo "   📁 Super+Ctrl+f    → Nemo File Manager"
 echo "   📋 Super+v         → Clipboard"
 echo "   🔎 Super+Space     → Spotlight (Walker)"
 echo "   🚀 Super+Ctrl+Space → Launcher (walk)"
+echo "   🪟 Super+Tab / Alt+Tab → Window Switcher"
 echo "   🏢 Super+1-9       → Workspaces"
 echo "   ❌ Super+q         → Close Window"
 echo "   📸 Super+Shift+s   → Screenshot"

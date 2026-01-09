@@ -142,8 +142,8 @@ in
         show-desktop = [];
 
         # Niri-like alt-tab: switch windows (not apps)
-        switch-windows = ["<Alt>Tab"];
-        switch-windows-backward = ["<Shift><Alt>Tab"];
+        switch-windows = ["<Alt>Tab" "<Super>Tab"];
+        switch-windows-backward = ["<Shift><Alt>Tab" "<Shift><Super>Tab"];
         switch-applications = [];
         switch-applications-backward = [];
 
@@ -291,6 +291,10 @@ in
         focus-right = ["<Super>Right" "<Super>l"];
         focus-up = ["<Super><Ctrl>Up" "<Super><Ctrl>k"];
         focus-down = ["<Super><Ctrl>Down" "<Super><Ctrl>j"];
+
+        # Layout switching (avoid conflict with window switcher)
+        next-layout = ["<Super><Ctrl>Tab"];
+        prev-layout = ["<Super><Shift><Ctrl>Tab"];
       };
   
       # --- Space Bar ---
