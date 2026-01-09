@@ -24,10 +24,7 @@
     workspace "8" {
       open-on-output "eDP-1";
       layout {
-        gaps 20;
         border {
-          on;
-          width 1;
           active-color "${palette.sky}";
           inactive-color "${palette.surface0}";
         }

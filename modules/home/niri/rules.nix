@@ -158,18 +158,6 @@ in
       }
     }
 
-    // Tiling Windows
-    window-rule {
-      match is-floating=false;
-      shadow {
-        on;
-        color "#00000060";
-        offset x=0 y=4;
-        spread 0;
-        softness 16;
-      }
-    }
-
     // QuickShell
     window-rule {
       match app-id=r#"^org\.quickshell$"#;
