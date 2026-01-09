@@ -911,34 +911,92 @@ EOF
     (
       set -euo pipefail
 
-      is_dms_locked() {
+      dms_is_locked() {
         command -v dms >/dev/null 2>&1 || return 1
+
+        dms_ipc() {
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 1s dms ipc call "$@"
+          else
+            dms ipc call "$@"
+          fi
+        }
+
         local out
-        out="$(dms ipc call lock isLocked 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
+        out="$(
+          dms_ipc lock isLocked 2>/dev/null \
+            | tr -d '\r' \
+            | tail -n 1 \
+            | tr -d '[:space:]' \
+            || true
+        )"
         [[ "$out" == "true" ]]
       }
 
-      if is_dms_locked; then
-        exit 0
-      fi
+      try_dms_lock() {
+        command -v dms >/dev/null 2>&1 || return 1
 
-      mode="dms"
+        # Request lock.
+        if command -v timeout >/dev/null 2>&1; then
+          timeout 2s dms ipc call lock lock >/dev/null 2>&1 || return 1
+        else
+          dms ipc call lock lock >/dev/null 2>&1 || return 1
+        fi
+
+        # Confirm it actually locked (some backends may silently fail).
+        for _ in {1..40}; do
+          dms_is_locked && return 0
+          sleep 0.05
+        done
+        return 1
+      }
+
+      also_logind="0"
       if [[ "${1:-}" == "--logind" ]]; then
-        mode="logind"
+        also_logind="1"
         shift || true
       fi
 
-      case "$mode" in
-        logind)
-          if command -v loginctl >/dev/null 2>&1; then
-            exec loginctl lock-session
-          fi
-          exec dms ipc call lock lock
-          ;;
-        *)
-          exec dms ipc call lock lock
-          ;;
-      esac
+      if [[ "$also_logind" == "1" ]] && command -v loginctl >/dev/null 2>&1; then
+        # Best-effort: propagate a lock hint to logind (doesn't lock the screen by itself
+        # on many wlroots/non-DE setups).
+        loginctl lock-session >/dev/null 2>&1 || true
+      fi
+
+      if dms_is_locked; then
+        exit 0
+      fi
+
+      if try_dms_lock; then
+        exit 0
+      fi
+
+      restart_dms_service() {
+        command -v systemctl >/dev/null 2>&1 || return 1
+        systemctl --user try-restart dms.service >/dev/null 2>&1 && return 0
+        systemctl --user start dms.service >/dev/null 2>&1 || return 1
+      }
+
+      warn() {
+        local msg="$*"
+        if [[ -t 2 ]]; then
+          echo "$msg" >&2
+          return 0
+        fi
+        if command -v logger >/dev/null 2>&1; then
+          logger -t niri-set "$msg"
+        fi
+      }
+
+      # If DMS is up but IPC is briefly unavailable, a restart usually fixes it.
+      restart_dms_service || true
+      sleep 0.25
+      if try_dms_lock; then
+        exit 0
+      fi
+
+      warn "niri-set lock: DMS lock failed (is DMS running / IPC reachable?)"
+      exit 1
     )
     ;;
 
