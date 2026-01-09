@@ -107,7 +107,8 @@ let
     # Window Switching
     "$mainMod, Tab, focuscurrentorlast"
     "$mainMod SHIFT, Tab, focuscurrentorlast"
-    "ALT, Tab, exec, dms ipc call spotlight openQuery '!'"
+    "ALT, Tab, workspace, e+1"
+    "ALT SHIFT, Tab, workspace, e-1"
 
     # UI Toggles
     "$mainMod, B, exec, dms ipc call bar toggle index 0"
