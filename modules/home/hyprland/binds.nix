@@ -105,6 +105,8 @@ let
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
     
     # Window Switching
+    "$mainMod, Tab, cyclenext"
+    "$mainMod SHIFT, Tab, cyclenext, prev"
     "ALT, Tab, exec, dms ipc call spotlight openQuery '!'"
 
     # UI Toggles
