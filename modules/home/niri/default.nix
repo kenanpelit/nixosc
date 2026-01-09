@@ -16,6 +16,8 @@ let
   username = config.home.username;
   btEnabled = config.my.user.bt.enable or false;
   scriptsEnabled = config.my.user.scripts.enable or false;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   
   # ---------------------------------------------------------------------------
   # Theme & Palette
@@ -206,12 +208,6 @@ in
       description = "Enable systemd --user session wiring (niri-session.target + session services).";
     };
 
-    initDelaySeconds = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 3;
-      description = "Delay (in seconds) before running niri-init after session start.";
-    };
-
     btAutoConnectDelaySeconds = lib.mkOption {
       type = lib.types.ints.positive;
       default = 5;
@@ -273,7 +269,10 @@ in
         settingsConfig.main
         monitorsConfig.config
         settingsConfig.layout
-        
+
+        # Writable runtime overrides (used by niri-set, e.g. Zen Mode).
+        "include \"dms/zen.kdl\""
+
         # Include DMS generated cursor config
         "include \"dms/cursor.kdl\""
 
@@ -331,6 +330,50 @@ in
       # Placeholder for DMS cursor config (needed for build-time validation)
       # DMS will overwrite this at runtime.
       xdg.configFile."niri/dms/cursor.kdl".text = "";
+
+      # Keep Zen override file writable (niri watches include files and live-reloads).
+      home.activation.niriZenConfig = dag.entryAfter [ "writeBoundary" ] ''
+        set -eu
+
+        ZEN_FILE=${lib.escapeShellArg "${config.xdg.configHome}/niri/dms/zen.kdl"}
+        ZEN_DIR="$(dirname "$ZEN_FILE")"
+
+        mkdir -p "$ZEN_DIR"
+
+        # Ensure it's a normal, writable file (not a Nix store symlink).
+        if [ -L "$ZEN_FILE" ]; then
+          rm -f "$ZEN_FILE"
+        fi
+
+        if [ ! -f "$ZEN_FILE" ]; then
+          : >"$ZEN_FILE"
+        fi
+
+        # Migration: older niri-set zen wrote invalid inline KDL like `border { off }`.
+        if grep -qE 'border[[:space:]]*\\{[[:space:]]*off[[:space:]]*\\}' "$ZEN_FILE" 2>/dev/null; then
+          cat >"$ZEN_FILE" <<'EOF'
+layout {
+  gaps 0;
+
+  border {
+    off;
+  }
+
+  focus-ring {
+    off;
+  }
+
+  tab-indicator {
+    off;
+  }
+
+  insert-hint {
+    off;
+  }
+}
+EOF
+        fi
+      '';
     }
 
     (lib.mkIf cfg.systemd.enable {
@@ -377,8 +420,9 @@ in
         };
         Service = {
           Type = "oneshot";
-          TimeoutStartSec = 15;
-          ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<150;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && exit 0; sleep 0.1; done; exit 0'";
+          TimeoutStartSec = 60;
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<600;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && exit 0; sleep 0.1; done; echo \"niri-ready: timeout waiting for IPC\" >&2; exit 1'";
           StandardOutput = "journal";
           StandardError = "journal";
         };
@@ -393,8 +437,8 @@ in
       systemd.user.services.niri-init = {
         Unit = {
           Description = "Niri bootstrap (monitors + audio + layout)";
-          Wants = [ "pipewire.service" "wireplumber.service" ];
-          After = [ "graphical-session.target" "niri-session.target" "pipewire.service" "wireplumber.service" ];
+          Wants = [ "pipewire.service" "wireplumber.service" "niri-ready.service" ];
+          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" "pipewire.service" "wireplumber.service" ];
           PartOf = [ "niri-session.target" ];
           ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
         };
@@ -405,7 +449,7 @@ in
           Environment = [
             "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
           ];
-          ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep ${toString cfg.initDelaySeconds}; for ((i=0;i<120;i++)); do /etc/profiles/per-user/${username}/bin/niri msg version >/dev/null 2>&1 && break; sleep 0.1; done; /etc/profiles/per-user/${username}/bin/niri-set init'";
+          ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/niri-set init'";
           ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" || true'";
           StandardOutput = "journal";
           StandardError = "journal";
