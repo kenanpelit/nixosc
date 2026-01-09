@@ -139,7 +139,6 @@ in
       pwgen                 # Password generator
   
       # -- Hyprland & Wayland ----------------------------------------------------
-      hyprlock hypridle     # Lock & Idle
       hyprpaper             # Wallpaper
       #mako                  # Notifications
       brightnessctl         # Brightness control

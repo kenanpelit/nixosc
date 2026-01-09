@@ -58,8 +58,7 @@ in
     # ---------------------------------------------------------------------------
     # Extensions & Components 
     # ---------------------------------------------------------------------------
-    #./hyprlock.nix   # Screen locker
-    ./hypridle.nix   # Idle management
+    # Idle/lock are handled by Stasis + DMS (see modules/home/stasis, modules/home/dms).
     ./pyprland.nix   # Python plugins
     ./keyring.nix    # Keyring
   ];
