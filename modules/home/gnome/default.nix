@@ -51,12 +51,12 @@ let
   # --- Custom Keybindings List ---
   # Add or remove bindings here. Nix will handle the numbering (custom0, custom1...) automatically.
   customKeybindings = [
-    { name = "Terminal"; command = "kitty"; binding = "<Super>Return"; }
+    { name = "Terminal"; command = "kitty"; binding = "<Super>t"; }
     { name = "Browser"; command = "brave"; binding = "<Super>b"; }
     { name = "Terminal File Manager (Floating)"; command = "kitty --class floating-terminal -e yazi"; binding = "<Super>e"; }
-    { name = "Open Nemo File Manager"; command = "nemo"; binding = "<Alt><Ctrl>f"; }
+    { name = "Open Nemo File Manager"; command = "nemo"; binding = "<Super><Ctrl>f"; }
     { name = "Terminal File Manager (Yazi)"; command = "kitty yazi"; binding = "<Alt>f"; }
-    { name = "Open Walker"; command = "walker"; binding = "<Super><Alt>space"; }
+    { name = "Open Walker"; command = "walker"; binding = "<Super>space"; }
     { name = "Switch Audio Output"; command = "osc-soundctl switch"; binding = "<Alt>a"; }
     { name = "Switch Microphone"; command = "osc-soundctl switch-mic"; binding = "<Alt><Ctrl>a"; }
     { name = "Spotify Toggle"; command = "osc-spotify"; binding = "<Alt>e"; }
@@ -68,8 +68,8 @@ let
     { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Right"; }
     { name = "Open Discord"; command = "webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"; binding = "<Super><Shift>d"; }
     { name = "Start KKENP"; command = "start-kkenp"; binding = "<Alt>t"; }
-    { name = "Notes Manager"; command = "anotes -M"; binding = "<Super>n"; }
-    { name = "Clipboard Manager"; command = "copyq toggle"; binding = "<Alt>v"; }
+    { name = "Notes Manager"; command = "anotes -M"; binding = "<Alt>n"; }
+    { name = "Clipboard Manager"; command = "copyq toggle"; binding = "<Super>v"; }
     { name = "Bluetooth Toggle"; command = "bluetooth_toggle"; binding = "F10"; }
     { name = "Mullvad Toggle"; command = "osc-mullvad toggle"; binding = "<Alt>F12"; }
     { name = "Gnome Start"; command = "semsumo launch --daily"; binding = "<Super><Alt>Return"; }
@@ -87,7 +87,7 @@ let
     { name = "Logout"; command = "gnome-session-quit --logout --no-prompt"; binding = "<Ctrl><Alt>q"; }
     { name = "Power Menu"; command = "gnome-session-quit --power-off"; binding = "<Ctrl><Alt>p"; }
     { name = "GNOME GKR"; command = "gnome-kr-fix"; binding = "<Super><Ctrl>F12"; }
-    { name = "WalkerS"; command = "walk"; binding = "<Super>space"; }
+    { name = "WalkerS"; command = "walk"; binding = "<Super><Ctrl>space"; }
     { name = "OSC Reboot"; command = "osc-safe-reboot"; binding = "<Super>BackSpace"; }
   ];
 
@@ -138,8 +138,15 @@ in
         close = ["<Super>q"];
         toggle-fullscreen = ["<Super>f"];
         toggle-maximized = ["<Super>m"];
-        minimize = ["<Super>h"];
-        
+        minimize = [];
+        show-desktop = [];
+
+        # Niri-like alt-tab: switch windows (not apps)
+        switch-windows = ["<Alt>Tab"];
+        switch-windows-backward = ["<Shift><Alt>Tab"];
+        switch-applications = [];
+        switch-applications-backward = [];
+
         # Standard Workspace Switching
         switch-to-workspace-1 = ["<Super>1"];
         switch-to-workspace-2 = ["<Super>2"];
@@ -161,6 +168,33 @@ in
         move-to-workspace-7 = ["<Super><Shift>7"];
         move-to-workspace-8 = ["<Super><Shift>8"];
         move-to-workspace-9 = ["<Super><Shift>9"];
+
+        # Niri-like workspace navigation (vertical)
+        switch-to-workspace-up = ["<Super>Up" "<Super>k"];
+        switch-to-workspace-down = ["<Super>Down" "<Super>j"];
+
+        # Niri-like "move window to workspace up/down"
+        move-to-workspace-up = ["<Super>Page_Up"];
+        move-to-workspace-down = ["<Super>Page_Down"];
+      };
+
+      # --- Shell Keybindings (Niri-like) ---
+      "org/gnome/shell/keybindings" = {
+        toggle-application-view = ["<Super>d"];
+        toggle-message-tray = ["<Super>n"];
+        toggle-overview = ["<Super><Alt>o"];
+        show-screenshot-ui = ["<Super>Print"];
+
+        # Disable default Super+[1-9] app shortcuts (use for workspaces instead)
+        switch-to-application-1 = [];
+        switch-to-application-2 = [];
+        switch-to-application-3 = [];
+        switch-to-application-4 = [];
+        switch-to-application-5 = [];
+        switch-to-application-6 = [];
+        switch-to-application-7 = [];
+        switch-to-application-8 = [];
+        switch-to-application-9 = [];
       };
   
       # --- Shell Extensions ---
@@ -245,18 +279,18 @@ in
         enable-animations = true;
         
         # Keybindings
-        tile-left = ["<Super><Shift>Left"];
-        tile-right = ["<Super><Shift>Right"];
-        tile-up = ["<Super><Shift>Up"];
-        tile-down = ["<Super><Shift>Down"];
-        toggle-tiling = ["<Super>t"];
-        toggle-floating = ["<Super>f"];
+        tile-left = ["<Super><Shift>Left" "<Super><Shift>h"];
+        tile-right = ["<Super><Shift>Right" "<Super><Shift>l"];
+        tile-up = ["<Super><Shift>Up" "<Super><Shift>k"];
+        tile-down = ["<Super><Shift>Down" "<Super><Shift>j"];
+        toggle-tiling = [];
+        toggle-floating = ["<Super>g"];
         
         # Focus
-        focus-left = ["<Super>Left"];
-        focus-right = ["<Super>Right"];
-        focus-up = ["<Super>Up"];
-        focus-down = ["<Super>Down"];
+        focus-left = ["<Super>Left" "<Super>h"];
+        focus-right = ["<Super>Right" "<Super>l"];
+        focus-up = ["<Super><Ctrl>Up" "<Super><Ctrl>k"];
+        focus-down = ["<Super><Ctrl>Down" "<Super><Ctrl>j"];
       };
   
       # --- Space Bar ---
