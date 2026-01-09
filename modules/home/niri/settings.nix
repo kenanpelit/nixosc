@@ -15,6 +15,7 @@ in
     layout {
       gaps 12;
       center-focused-column "on-overflow";
+      always-center-single-column;
       background-color "#00000000";
 
       focus-ring {
@@ -57,7 +58,8 @@ in
         proportion 1.0;
       }
 
-      default-column-width { proportion 0.6; }
+      // Match your preferred default (≈2/3 width on DP-3 -> ~1686px tile width with gaps/border)
+      default-column-width { proportion 0.66667; }
     }
   '';
 
