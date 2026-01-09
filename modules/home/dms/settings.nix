@@ -62,11 +62,36 @@ lib.mkIf cfg.enable {
       Description = "DankMaterialShell";
       After = dmsTargets ++ [ "niri-ready.service" ];
       PartOf = dmsTargets;
-      ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
       Type = "simple";
-      ExecStart = "${dmsPkg}/bin/dms run --session";
+      ExecStart = pkgs.writeShellScript "dms-run-session" ''
+        set -euo pipefail
+
+        if [[ -z "''${XDG_RUNTIME_DIR:-}" ]]; then
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        fi
+
+        if [[ -z "''${WAYLAND_DISPLAY:-}" && -n "''${XDG_RUNTIME_DIR:-}" ]]; then
+          for sock in "''${XDG_RUNTIME_DIR}"/wayland-*; do
+            [[ -S "$sock" ]] || continue
+            export WAYLAND_DISPLAY
+            WAYLAND_DISPLAY="$(basename "$sock")"
+            break
+          done
+        fi
+
+        # Help Niri detection if systemd didn't import env yet.
+        if [[ -z "''${NIRI_SOCKET:-}" && -n "''${XDG_RUNTIME_DIR:-}" && -n "''${WAYLAND_DISPLAY:-}" ]]; then
+          for sock in "''${XDG_RUNTIME_DIR}/niri.''${WAYLAND_DISPLAY}."*.sock; do
+            [[ -S "$sock" ]] || continue
+            export NIRI_SOCKET="$sock"
+            break
+          done
+        fi
+
+        exec "${dmsPkg}/bin/dms" run --session
+      '';
       Restart = "always";
       RestartSec = 3;
       TimeoutStopSec = 10;
