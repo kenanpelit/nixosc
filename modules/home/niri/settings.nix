@@ -58,8 +58,8 @@ in
         proportion 1.0;
       }
 
-      // Match your preferred default (≈2/3 width on DP-3 -> ~1686px tile width with gaps/border)
-      default-column-width { proportion 0.66667; }
+      // Match your preferred default (≈70% width)
+      default-column-width { proportion 0.7; }
     }
   '';
 
