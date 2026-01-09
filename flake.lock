@@ -163,17 +163,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1767935389,
-        "narHash": "sha256-1SKKuO11jwxJLJbENUhSpXcBzdKbkz0yIikAAY84Xio=",
+        "lastModified": 1767971763,
+        "narHash": "sha256-JjAG6Ir1TKuhVIR25Hwl1gZg99GyEghTfvmPJLW5Jxg=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "af0166a553f712e943b101ee2b5d38fbdc5a9b49",
+        "rev": "7f0181b3107cf0545f0f7c31132e3dbfb5b035c9",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "af0166a553f712e943b101ee2b5d38fbdc5a9b49",
+        "rev": "7f0181b3107cf0545f0f7c31132e3dbfb5b035c9",
         "type": "github"
       }
     },
@@ -297,16 +297,16 @@
         "systems": "systems_4"
       },
       "locked": {
-        "lastModified": 1767893048,
-        "narHash": "sha256-HUC2JTRsA30ftTJ9c1ypeyEXilgLK+r6LvABtiiAD+o=",
+        "lastModified": 1767940513,
+        "narHash": "sha256-5zldokar6W4bxK61dhZRnLwZHmstG/OIGKnrPT1uCas=",
         "owner": "abenz1267",
         "repo": "elephant",
-        "rev": "018f73e6054aea1e71c22aa47147307758d4b895",
+        "rev": "8908d4ebc00b2987efcced6911bcd9df797c9c59",
         "type": "github"
       },
       "original": {
         "owner": "abenz1267",
-        "ref": "v2.18.0",
+        "ref": "v2.18.1",
         "repo": "elephant",
         "type": "github"
       }
