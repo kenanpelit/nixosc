@@ -12,9 +12,14 @@
 #   tty                Start Hyprland from TTY/DM (was: hyprland_tty)
 #   init               Session bootstrap (was: hypr-init)
 #   lock               Lock session via DMS/logind
+#   arrange-windows     Move windows to target workspaces
 #   workspace-monitor  Workspace/monitor helper (was: hypr-workspace-monitor)
 #   env-sync           Sync session env into systemd/dbus
 #   window-move        Move focused window (workspace/monitor)
+#   column-move        Move current column (monitor)
+#   consume-or-expel   Niri-like window in/out of column
+#   focus-float-tile   Toggle focus float/tile
+#   workspace-move-or-focus  Move workspace or focus monitor
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
 #   doctor             Print Hyprland session diagnostics
 #   toggle-float        Toggle floating for active window (was: toggle_float)
@@ -66,9 +71,14 @@ Commands:
   clipse             Start clipse clipboard listener (background)
   init               Session bootstrap
   lock               Lock session via DMS/logind
+  arrange-windows     Move windows to target workspaces
   workspace-monitor  Workspace/monitor helper
   env-sync           Sync session env into systemd/dbus
   window-move        Move focused window (workspace/monitor)
+  column-move        Move current column (monitor)
+  consume-or-expel   Niri-like window in/out of column
+  focus-float-tile   Toggle focus float/tile
+  workspace-move-or-focus  Move workspace to next monitor or focus it
   switch             Smart monitor/workspace switcher
   doctor             Print Hyprland session diagnostics
   toggle-float        Toggle floating for active window
@@ -85,13 +95,18 @@ Commands:
   workspace-pull     Move windows from target workspace to current
   zen                Toggle Zen Mode (hide gaps, borders, bar)
   pin                Toggle Pin Mode (PIP-style floating window)
-  opacity            Adjust active window opacity (inc/dec)
+  opacity            Adjust active window opacity (+/-0.1|toggle)
 
 Examples:
   hypr-set zen
   hypr-set smart-focus kitty
   hypr-set pull-window spotify
   hypr-set workspace-pull 5
+  hypr-set arrange-windows
+  hypr-set consume-or-expel left
+  hypr-set focus-float-tile
+  hypr-set column-move monitor left
+  hypr-set workspace-move-or-focus
   hypr-set env-sync
 EOF
 }
@@ -175,6 +190,391 @@ case "${cmd}" in
       else
         notify-send "Hyprland" "No windows in Workspace $target_ws"
       fi
+    )
+    ;;
+
+  arrange-windows)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      notify() {
+        command -v notify-send >/dev/null 2>&1 || return 0
+        local body="${1:-}"
+        local timeout="${2:-2500}"
+        notify-send -t "$timeout" "Hypr Arranger" "$body" 2>/dev/null || true
+      }
+
+      usage_arrange() {
+        cat <<'EOF'
+Usage:
+  hypr-set arrange-windows [--dry-run] [--verbose]
+
+Notes:
+  - Uses workspace rules from (first found):
+      - ~/.config/hypr/dms/workspace-rules.tsv
+      - ~/.config/niri/dms/workspace-rules.tsv
+  - TSV format: <class_regex>\t<workspace_id>\t<title_regex?>
+EOF
+      }
+
+      DRY_RUN=0
+      VERBOSE=0
+
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --dry-run) DRY_RUN=1; shift ;;
+          --verbose) VERBOSE=1; shift ;;
+          -h|--help) usage_arrange; exit 0 ;;
+          *) echo "Unknown arg: $1" >&2; usage_arrange; exit 2 ;;
+        esac
+      done
+
+      rules_file=""
+      for candidate in \
+        "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/dms/workspace-rules.tsv" \
+        "${XDG_CONFIG_HOME:-$HOME/.config}/niri/dms/workspace-rules.tsv"
+      do
+        if [[ -f "$candidate" ]]; then
+          rules_file="$candidate"
+          break
+        fi
+      done
+
+      declare -a RULE_PATTERNS=()
+      declare -a RULE_WORKSPACES=()
+      declare -a RULE_TITLE_PATTERNS=()
+
+      load_rules() {
+        local file="$1"
+        [[ -f "$file" ]] || return 1
+
+        while IFS=$'\t' read -r pattern ws title; do
+          [[ -z "${pattern//[[:space:]]/}" ]] && continue
+          [[ "${pattern:0:1}" == "#" ]] && continue
+          [[ -z "${ws//[[:space:]]/}" ]] && continue
+          RULE_PATTERNS+=("$pattern")
+          RULE_WORKSPACES+=("$ws")
+          RULE_TITLE_PATTERNS+=("${title:-}")
+        done <"$file"
+      }
+
+      if [[ -n "$rules_file" ]]; then
+        load_rules "$rules_file" || true
+      fi
+
+      if [[ "${#RULE_PATTERNS[@]}" -eq 0 ]]; then
+        # Fallback: match the default "daily" workspace mapping.
+        RULE_PATTERNS+=("^(TmuxKenp|Tmux)$"); RULE_WORKSPACES+=("2"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(kitty|org\\.wezfurlong\\.wezterm)$"); RULE_WORKSPACES+=("2"); RULE_TITLE_PATTERNS+=("^Tmux$")
+        RULE_PATTERNS+=("^Kenp$"); RULE_WORKSPACES+=("1"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^Ai$"); RULE_WORKSPACES+=("3"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^CompecTA$"); RULE_WORKSPACES+=("4"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^WebCord$"); RULE_WORKSPACES+=("5"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(discord|Discord)$"); RULE_WORKSPACES+=("5"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^org\\.telegram\\.desktop$"); RULE_WORKSPACES+=("6"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^vlc$"); RULE_WORKSPACES+=("6"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^remote-viewer$"); RULE_WORKSPACES+=("6"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^brave-youtube\\.com__-Default$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^org\\.keepassxc\\.KeePassXC$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^transmission$"); RULE_WORKSPACES+=("7"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^(spotify|Spotify|com\\.spotify\\.Client)$"); RULE_WORKSPACES+=("8"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^ferdium$"); RULE_WORKSPACES+=("9"); RULE_TITLE_PATTERNS+=("")
+        RULE_PATTERNS+=("^com\\.rtosta\\.zapzap$"); RULE_WORKSPACES+=("9"); RULE_TITLE_PATTERNS+=("")
+      fi
+
+      if (( VERBOSE )); then
+        if [[ -n "$rules_file" ]]; then
+          echo "hypr-set arrange-windows: rules_file=$rules_file" >&2
+        else
+          echo "hypr-set arrange-windows: using built-in rules" >&2
+        fi
+      fi
+
+      focused="$(hyprctl activewindow -j 2>/dev/null || echo '{}')"
+      focus_addr="$(jq -r '.address // empty' <<<"$focused")"
+
+      clients_json="$(hyprctl clients -j 2>/dev/null || echo '[]')"
+
+      shopt -s nocasematch
+      moved=0
+
+      while IFS=$'\t' read -r addr class title ws_id; do
+        [[ -n "${addr:-}" && "${addr}" != "null" ]] || continue
+        [[ -n "${class:-}" && "${class}" != "null" ]] || class=""
+        [[ -n "${title:-}" && "${title}" != "null" ]] || title=""
+
+        target=""
+
+        for i in "${!RULE_PATTERNS[@]}"; do
+          pat="${RULE_PATTERNS[i]}"
+          ws_target="${RULE_WORKSPACES[i]}"
+          tpat="${RULE_TITLE_PATTERNS[i]}"
+
+          [[ -n "${pat:-}" && -n "${ws_target:-}" ]] || continue
+
+          if [[ "$class" =~ $pat ]]; then
+            if [[ -n "${tpat:-}" ]] && ! [[ "$title" =~ $tpat ]]; then
+              continue
+            fi
+            target="$ws_target"
+            break
+          fi
+        done
+
+        [[ -n "${target:-}" ]] || continue
+        [[ "${ws_id}" == "${target}" ]] && continue
+
+        if (( VERBOSE )); then
+          echo "move: class=${class@Q} title=${title@Q} addr=$addr ws=$ws_id -> $target" >&2
+        fi
+
+        if (( DRY_RUN )); then
+          moved=$((moved + 1))
+          continue
+        fi
+
+        hyprctl dispatch movetoworkspacesilent "$target,address:$addr" >/dev/null 2>&1 || true
+        moved=$((moved + 1))
+      done < <(jq -r '.[] | [.address, (.class // ""), (.title // ""), (.workspace.id|tostring)] | @tsv' <<<"$clients_json")
+
+      shopt -u nocasematch || true
+
+      if (( moved > 0 )); then
+        notify "Moved $moved window(s)" 1800
+      else
+        notify "Nothing to arrange" 1200
+      fi
+
+      if [[ -n "${focus_addr:-}" ]]; then
+        hyprctl dispatch focuswindow "address:$focus_addr" >/dev/null 2>&1 || true
+      fi
+    )
+    ;;
+
+  consume-or-expel)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      dir="${1:-}"
+      case "$dir" in
+        l|left) dir="l" ;;
+        r|right) dir="r" ;;
+        *) echo "Usage: hypr-set consume-or-expel left|right" >&2; exit 1 ;;
+      esac
+
+      active="$(hyprctl activewindow -j 2>/dev/null || echo '{}')"
+      addr="$(jq -r '.address // empty' <<<"$active")"
+      ws_id="$(jq -r '.workspace.id // empty' <<<"$active")"
+      floating="$(jq -r '.floating // false' <<<"$active")"
+      x="$(jq -r '.at[0] // empty' <<<"$active")"
+
+      [[ -n "${addr:-}" && "${addr}" != "null" ]] || exit 0
+      [[ -n "${ws_id:-}" && "${ws_id}" != "null" ]] || exit 0
+      [[ -n "${x:-}" && "${x}" != "null" ]] || exit 0
+
+      # Only meaningful for tiling/scrolling layout.
+      [[ "$floating" == "false" ]] || exit 0
+
+      clients_json="$(hyprctl clients -j 2>/dev/null || echo '[]')"
+
+      col_count="$(
+        jq -r --argjson ws "$ws_id" --argjson x "$x" '
+          [ .[]
+            | select(.mapped == true and .hidden == false)
+            | select(.workspace.id == $ws)
+            | select(.floating == false)
+            | select(.at[0] == $x)
+          ] | length
+        ' <<<"$clients_json" 2>/dev/null || echo 0
+      )"
+
+      # "Alone" means "only window in its column" (Niri semantics).
+      if [[ "${col_count:-0}" =~ ^[0-9]+$ ]] && (( col_count <= 1 )); then
+        # Consume into nearby column on that side (if it exists).
+        neighbor_x="$(
+          if [[ "$dir" == "l" ]]; then
+            jq -r --argjson ws "$ws_id" --argjson x "$x" '
+              [ .[]
+                | select(.mapped == true and .hidden == false)
+                | select(.workspace.id == $ws)
+                | select(.floating == false)
+                | .at[0]
+                | select(. < $x)
+              ] | max // empty
+            ' <<<"$clients_json" 2>/dev/null || true
+          else
+            jq -r --argjson ws "$ws_id" --argjson x "$x" '
+              [ .[]
+                | select(.mapped == true and .hidden == false)
+                | select(.workspace.id == $ws)
+                | select(.floating == false)
+                | .at[0]
+                | select(. > $x)
+              ] | min // empty
+            ' <<<"$clients_json" 2>/dev/null || true
+          fi
+        )"
+
+        [[ -n "${neighbor_x:-}" ]] || exit 0
+        hyprctl dispatch layoutmsg "movewindowto $dir" >/dev/null 2>&1 || true
+        exit 0
+      fi
+
+      # Window is inside a column -> expel it out into its own column.
+      # hyprscrolling's `promote` creates a new column to the right; swap if we want "left".
+      hyprctl dispatch layoutmsg "promote" >/dev/null 2>&1 || true
+      if [[ "$dir" == "l" ]]; then
+        hyprctl dispatch layoutmsg "swapcol l" >/dev/null 2>&1 || true
+      fi
+    )
+    ;;
+
+  focus-float-tile)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      active="$(hyprctl activewindow -j 2>/dev/null || echo '{}')"
+      addr="$(jq -r '.address // empty' <<<"$active")"
+      ws_id="$(jq -r '.workspace.id // empty' <<<"$active")"
+      floating="$(jq -r '.floating // false' <<<"$active")"
+
+      [[ -n "${addr:-}" && "${addr}" != "null" ]] || exit 0
+      [[ -n "${ws_id:-}" && "${ws_id}" != "null" ]] || exit 0
+
+      want_floating=true
+      if [[ "$floating" == "true" ]]; then
+        want_floating=false
+      fi
+
+      clients_json="$(hyprctl clients -j 2>/dev/null || echo '[]')"
+      target_addr="$(
+        jq -r --argjson ws "$ws_id" --arg addr "$addr" --argjson want "$want_floating" '
+          [ .[]
+            | select(.mapped == true and .hidden == false)
+            | select(.workspace.id == $ws)
+            | select(.address != $addr)
+            | select(.floating == $want)
+          ]
+          | sort_by(.focusHistoryID // 999999)
+          | .[0].address // empty
+        ' <<<"$clients_json" 2>/dev/null || true
+      )"
+
+      [[ -n "${target_addr:-}" && "${target_addr}" != "null" ]] || exit 0
+      hyprctl dispatch focuswindow "address:$target_addr" >/dev/null 2>&1 || true
+    )
+    ;;
+
+  column-move)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      sub="${1:-}"
+      shift || true
+
+      case "$sub" in
+        monitor) ;;
+        *) echo "Usage: hypr-set column-move monitor left|right|up|down" >&2; exit 1 ;;
+      esac
+
+      dir="${1:-}"
+      case "$dir" in
+        l|left) dir="l" ;;
+        r|right) dir="r" ;;
+        u|up) dir="u" ;;
+        d|down) dir="d" ;;
+        *) echo "Usage: hypr-set column-move monitor left|right|up|down" >&2; exit 1 ;;
+      esac
+
+      monitors_json="$(hyprctl monitors -j 2>/dev/null || echo '[]')"
+      cur="$(jq -c '.[] | select(.focused == true) | {x,y,width,height} | . + {x2:(.x+.width), y2:(.y+.height)}' <<<"$monitors_json" | head -n1 || true)"
+      [[ -n "${cur:-}" ]] || exit 0
+
+      cur_x="$(jq -r '.x' <<<"$cur")"
+      cur_y="$(jq -r '.y' <<<"$cur")"
+      cur_x2="$(jq -r '.x2' <<<"$cur")"
+      cur_y2="$(jq -r '.y2' <<<"$cur")"
+
+      target="$(
+        case "$dir" in
+          l)
+            jq -c --argjson cx "$cur_x" --argjson cy "$cur_y" --argjson cy2 "$cur_y2" '
+              [ .[]
+                | select(.focused != true)
+                | select(.x < $cx)
+                | select(.y < $cy2 and (.y + .height) > $cy)
+              ] | sort_by(.x) | .[-1] // empty
+            ' <<<"$monitors_json"
+            ;;
+          r)
+            jq -c --argjson cx "$cur_x" --argjson cy "$cur_y" --argjson cy2 "$cur_y2" '
+              [ .[]
+                | select(.focused != true)
+                | select(.x > $cx)
+                | select(.y < $cy2 and (.y + .height) > $cy)
+              ] | sort_by(.x) | .[0] // empty
+            ' <<<"$monitors_json"
+            ;;
+          u)
+            jq -c --argjson cy "$cur_y" --argjson cx "$cur_x" --argjson cx2 "$cur_x2" '
+              [ .[]
+                | select(.focused != true)
+                | select(.y < $cy)
+                | select(.x < $cx2 and (.x + .width) > $cx)
+              ] | sort_by(.y) | .[-1] // empty
+            ' <<<"$monitors_json"
+            ;;
+          d)
+            jq -c --argjson cy "$cur_y" --argjson cx "$cur_x" --argjson cx2 "$cur_x2" '
+              [ .[]
+                | select(.focused != true)
+                | select(.y > $cy)
+                | select(.x < $cx2 and (.x + .width) > $cx)
+              ] | sort_by(.y) | .[0] // empty
+            ' <<<"$monitors_json"
+            ;;
+        esac
+      )"
+
+      [[ -n "${target:-}" && "${target}" != "null" ]] || exit 0
+      target_ws="$(jq -r '.activeWorkspace.id // empty' <<<"$target")"
+      [[ -n "${target_ws:-}" && "${target_ws}" != "null" ]] || exit 0
+
+      hyprctl dispatch layoutmsg "movecoltoworkspace $target_ws" >/dev/null 2>&1 || true
+      # Niri-like: follow focus to the target monitor.
+      hyprctl dispatch focusmonitor "$dir" >/dev/null 2>&1 || true
+    )
+    ;;
+
+  workspace-move-or-focus)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      monitors_count="$(hyprctl monitors -j 2>/dev/null | jq -r 'length' 2>/dev/null || echo 0)"
+      [[ "${monitors_count:-0}" =~ ^[0-9]+$ ]] || monitors_count=0
+      (( monitors_count > 1 )) || exit 0
+
+      if hyprctl dispatch movecurrentworkspacetomonitor +1 >/dev/null 2>&1; then
+        exit 0
+      fi
+
+      hyprctl dispatch focusmonitor +1 >/dev/null 2>&1 || true
     )
     ;;
 
@@ -463,49 +863,114 @@ case "${cmd}" in
   opacity)
     (
       set -euo pipefail
-      step="${1:-0.1}"
-      
-      # Hyprland doesn't have a relative setalpha dispatcher easily.
-      # We rely on 'toggleopaque' for 1.0 vs inactive_opacity, 
-      # OR we manipulate alpha via setprop (Hyprland >= 0.37).
-      
-      # Getting current opacity is tricky via hyprctl activewindow, usually mostly 1.0 or custom rules.
-      # Let's use a simpler approach: define a few steps or just use setactivewindowalpha if available (plugins)
-      # or 'setprop active opaque toggle'
-      
-      # Actually, let's use a variable approach or just simple toggle for now if math is hard in sh without active value.
-      # BUT, user specifically asked for scroll wheel opacity.
-      # Let's try to read current alpha from 'hyprctl activewindow'
-      # Not exposed directly as a clean float usually.
-      
-      # Alternative: Use a temporary file to store override per window? Too complex.
-      # Let's assume starting at 1.0 and allow dropping.
-      
-      # Better approach for now: Just standard hyprctl dispatchers if they exist.
-      # They don't exist for relative.
-      # We will implement a dumb "toggle opacity" between 1.0, 0.9, 0.8... NO.
-      
-      # Let's map it to specific values for simplicity or skip if too complex for shell without state.
-      # Wait, user used 'set-window-opacity +0.1' in Niri.
-      # Hyprland equivalent is `hyprctl setprop address:$addr alpha <val>`
-      
-      win=$(hyprctl activewindow -j)
-      addr=$(echo "$win" | jq -r '.address')
-      
-      # Default to 1.0 if not set? Hard to know current prop.
-      # We'll skip read-modify-write complexity and just offer a few presets or a toggle.
-      # USER REQUEST: "Dinamik Opaklık".
-      # Let's implement a simplified version: Toggle between 1.0 and 0.5? No, wheel implies steps.
-      # Let's try to track it? No.
-      
-      # OK, Hyprland has `setactivewindowalpha`. Wait, no it doesn't.
-      # Use `setprop` with override.
-      
-      # Let's notify that incremental opacity on Hyprland needs external tools or complex scripting,
-      # so for now we map it to "Toggle Opaque/Transparent".
-      
-      hyprctl dispatch toggleopaque
-      notify-send -t 1000 "Opacity" "Toggled"
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      delta="${1:-}"
+      if [[ -z "${delta:-}" ]]; then
+        echo "Usage: hypr-set opacity +/-0.1 | toggle" >&2
+        exit 1
+      fi
+
+      notify() {
+        command -v notify-send >/dev/null 2>&1 || return 0
+        local body="${1:-}"
+        notify-send -t 1000 "Opacity" "$body" 2>/dev/null || true
+      }
+
+      active="$(hyprctl activewindow -j 2>/dev/null || echo '{}')"
+      addr="$(jq -r '.address // empty' <<<"$active")"
+      [[ -n "${addr:-}" && "${addr}" != "null" ]] || exit 0
+
+      cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/hypr"
+      mkdir -p "$cache_dir"
+      state_file="${cache_dir}/opacity-${addr}.state"
+
+      set_opacity() {
+        local val="$1"
+
+        # Per-window overrides (Hyprland >= 0.37). If unavailable, fall back.
+        if ! hyprctl dispatch setprop "address:$addr" opacity "$val" >/dev/null 2>&1; then
+          return 1
+        fi
+
+        hyprctl dispatch setprop "address:$addr" opacity_inactive "$val" >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_fullscreen "$val" >/dev/null 2>&1 || true
+
+        hyprctl dispatch setprop "address:$addr" opacity_override true >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_inactive_override true >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_fullscreen_override true >/dev/null 2>&1 || true
+        return 0
+      }
+
+      clear_opacity() {
+        hyprctl dispatch setprop "address:$addr" opacity_override false >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_inactive_override false >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_fullscreen_override false >/dev/null 2>&1 || true
+
+        hyprctl dispatch setprop "address:$addr" opacity 1.0 >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_inactive 1.0 >/dev/null 2>&1 || true
+        hyprctl dispatch setprop "address:$addr" opacity_fullscreen 1.0 >/dev/null 2>&1 || true
+      }
+
+      if [[ "$delta" == "toggle" ]]; then
+        if [[ -f "$state_file" ]]; then
+          rm -f "$state_file" || true
+          clear_opacity
+          notify "Reset"
+          exit 0
+        fi
+
+        default="0.90"
+        if set_opacity "$default"; then
+          printf '%s\n' "$default" >"$state_file" 2>/dev/null || true
+          notify "$default"
+          exit 0
+        fi
+
+        hyprctl dispatch toggleopaque >/dev/null 2>&1 || true
+        notify "Toggled"
+        exit 0
+      fi
+
+      if ! [[ "$delta" =~ ^[-+]?[0-9]*\\.?[0-9]+$ ]]; then
+        echo "Usage: hypr-set opacity +/-0.1 | toggle" >&2
+        exit 1
+      fi
+
+      cur="1.00"
+      if [[ -f "$state_file" ]]; then
+        cur="$(cat "$state_file" 2>/dev/null || echo "1.00")"
+      fi
+      if ! [[ "$cur" =~ ^[0-9]*\\.?[0-9]+$ ]]; then
+        cur="1.00"
+      fi
+
+      next="$(
+        awk -v c="$cur" -v d="$delta" 'BEGIN {
+          v = c + d;
+          if (v > 1.0) v = 1.0;
+          if (v < 0.1) v = 0.1;
+          printf "%.2f", v;
+        }'
+      )"
+
+      if awk -v v="$next" 'BEGIN { exit !(v >= 0.999) }'; then
+        rm -f "$state_file" || true
+        clear_opacity
+        notify "1.00"
+        exit 0
+      fi
+
+      if set_opacity "$next"; then
+        printf '%s\n' "$next" >"$state_file" 2>/dev/null || true
+        notify "$next"
+        exit 0
+      fi
+
+      hyprctl dispatch toggleopaque >/dev/null 2>&1 || true
+      notify "Toggled"
     )
     ;;
 
