@@ -450,7 +450,7 @@ EOF
             "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
           ];
           ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/niri-set init'";
-          ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" || true'";
+          ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" 2>/dev/null || true'";
           StandardOutput = "journal";
           StandardError = "journal";
         };
@@ -528,6 +528,11 @@ EOF
         };
         Service = {
           ExecStart = "${bins.niriusd}";
+          # niri can emit IPC events that older nirius builds don't know yet.
+          # This doesn't break functionality (we ignore the event), but it spams logs.
+          Environment = [
+            "RUST_LOG=warn,nirius::daemon=off"
+          ];
           Restart = "on-failure";
           RestartSec = 1;
           StandardOutput = "journal";
