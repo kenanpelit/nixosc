@@ -179,7 +179,7 @@ let
     "ALT, N, exec, anotes"
     "$mainMod ALT, Return, exec, semsumo launch --daily -all"
     "$mainMod SHIFT, A, exec, ${bins.hyprSet} arrange-windows" 
-    "$mainMod, Return, exec, osc-ndrop kitty --class dropdown-terminal"
+    "$mainMod, Return, exec, osc-ndrop --hypr-hide-special dropdown kitty --class dropdown"
     
     # Direct App Launchers
     "Alt, Space, exec, rofi-launcher"
