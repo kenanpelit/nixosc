@@ -449,6 +449,7 @@ EOF
           Environment = [
             "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
           ];
+          ExecStartPre = "${pkgs.coreutils}/bin/sleep 3";
           ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/niri-set init'";
           ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" 2>/dev/null || true'";
           StandardOutput = "journal";
