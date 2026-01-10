@@ -465,8 +465,8 @@ EOF
             # Optional Bluetooth auto-connect (delayed, non-blocking).
             if ${lib.boolToString (btEnabled && scriptsEnabled)}; then
               (
-                delay_s="${NIRI_BOOT_BT_DELAY:-0}"
-                timeout_s="${NIRI_BOOT_BT_TIMEOUT:-30}"
+                delay_s="''${NIRI_BOOT_BT_DELAY:-0}"
+                timeout_s="''${NIRI_BOOT_BT_TIMEOUT:-30}"
                 sleep "$delay_s"
                 if command -v bluetooth_toggle >/dev/null 2>&1; then
                 timeout "''${timeout_s}s" bluetooth_toggle --connect || true
