@@ -469,7 +469,7 @@ EOF
                 timeout_s="${NIRI_BOOT_BT_TIMEOUT:-30}"
                 sleep "$delay_s"
                 if command -v bluetooth_toggle >/dev/null 2>&1; then
-                  timeout "${timeout_s}s" bluetooth_toggle --connect || true
+                timeout "''${timeout_s}s" bluetooth_toggle --connect || true
                 else
                   warn "bluetooth_toggle not found; skipping"
                 fi
