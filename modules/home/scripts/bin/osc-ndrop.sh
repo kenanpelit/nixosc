@@ -447,9 +447,90 @@ hypr_toggle() {
   local insensitive_json=false
   $INSENSITIVE && insensitive_json=true
 
+  local special_target="special:${HYPR_HIDE_SPECIAL}"
+  local special_visible=false
+  if hypr_special_visible "$HYPR_HIDE_SPECIAL"; then
+    special_visible=true
+  fi
+
+  hypr_find_matching_window() {
+    local clients_json="$1"
+    local only_workspace_name="${2:-}"
+
+    if [[ -n "$only_workspace_name" ]]; then
+      echo "$clients_json" | jq -r --arg cls "$CLASS" --arg ws "$only_workspace_name" --argjson insensitive "$insensitive_json" '
+          first(
+            .[]
+            | select(if $insensitive
+                then (((.class // "") | test($cls; "i")) or ((.initialClass // "") | test($cls; "i")))
+                else (((.class // "") == $cls) or ((.initialClass // "") == $cls))
+              end)
+            | select((.workspace.name // "") == $ws)
+            | [.address, (.workspace.name // ""), (.workspace.id // "")]
+          ) // empty
+          | @tsv
+        '
+      return 0
+    fi
+
+    echo "$clients_json" | jq -r --arg cls "$CLASS" --argjson insensitive "$insensitive_json" '
+        first(
+          .[]
+          | select(if $insensitive
+              then (((.class // "") | test($cls; "i")) or ((.initialClass // "") | test($cls; "i")))
+              else (((.class // "") == $cls) or ((.initialClass // "") == $cls))
+            end)
+          | [.address, (.workspace.name // ""), (.workspace.id // "")]
+        ) // empty
+        | @tsv
+      '
+  }
+
+  hypr_wait_for_window() {
+    local tries="${1:-30}"
+    local delay_s="${2:-0.1}"
+    local i
+
+    for ((i = 0; i < tries; i++)); do
+      local snapshot
+      snapshot="$(hyprctl clients -j 2>/dev/null || echo '[]')"
+
+      local found
+      found="$(hypr_find_matching_window "$snapshot")"
+      if [[ -n "$found" ]]; then
+        printf '%s\n' "$found"
+        return 0
+      fi
+
+      sleep "$delay_s"
+    done
+
+    return 1
+  }
+
+  # If the window lives in a dedicated special workspace, toggle that like a scratchpad.
+  local addr_special
+  read -r addr_special _ < <(hypr_find_matching_window "$clients" "$special_target")
+
+  if [[ -n "${addr_special:-}" ]]; then
+    if ! $special_visible; then
+      hyprctl dispatch togglespecialworkspace "$HYPR_HIDE_SPECIAL" >/dev/null 2>&1 || true
+    fi
+
+    if ! $FOCUS && $special_visible && [[ "${active_addr:-}" == "${addr_special}" ]]; then
+      hyprctl dispatch togglespecialworkspace "$HYPR_HIDE_SPECIAL" >/dev/null 2>&1 || true
+      $VERBOSE && notify "Hyprland" "Hidden: ${CLASS}" "low"
+      return 0
+    fi
+
+    hyprctl dispatch focuswindow "address:${addr_special}" >/dev/null 2>&1 || true
+    $VERBOSE && notify "Hyprland" "Focused: ${CLASS}" "low"
+    return 0
+  fi
+
   # Prefer a match on the current workspace.
   local addr_here
-  read -r addr_here _ < <(
+  addr_here="$(
     echo "$clients" \
       | jq -r --arg cls "$CLASS" --arg ws "$current_ws_id" --argjson insensitive "$insensitive_json" '
           first(
@@ -459,11 +540,10 @@ hypr_toggle() {
                 else (((.class // "") == $cls) or ((.initialClass // "") == $cls))
               end)
             | select((.workspace.id|tostring) == ($ws|tostring))
-            | [.address, .workspace.id]
+            | .address
           ) // empty
-          | @tsv
         '
-  )
+  )"
 
   if [[ -n "${addr_here:-}" ]]; then
     if $FOCUS; then
@@ -492,29 +572,38 @@ hypr_toggle() {
 
   # Otherwise, pick any match.
   local addr_any ws_name_any ws_id_any
-  read -r addr_any ws_name_any ws_id_any < <(
-    echo "$clients" \
-      | jq -r --arg cls "$CLASS" --argjson insensitive "$insensitive_json" '
-          first(
-            .[]
-            | select(if $insensitive
-                then (((.class // "") | test($cls; "i")) or ((.initialClass // "") | test($cls; "i")))
-                else (((.class // "") == $cls) or ((.initialClass // "") == $cls))
-              end)
-            | [.address, (.workspace.name // ""), (.workspace.id // "")]
-          ) // empty
-          | @tsv
-        '
-  )
+  read -r addr_any ws_name_any ws_id_any < <(hypr_find_matching_window "$clients")
 
   if [[ -z "${addr_any:-}" ]]; then
     launch_command
+
+    # Best-effort: wait briefly and then focus/show the launched window.
+    local launched
+    if launched="$(hypr_wait_for_window 30 0.1)"; then
+      local addr_new ws_name_new
+      read -r addr_new ws_name_new _ <<<"$launched"
+
+      if [[ -n "${addr_new:-}" ]]; then
+        if [[ "${ws_name_new:-}" == "$special_target" ]]; then
+          if ! hypr_special_visible "$HYPR_HIDE_SPECIAL"; then
+            hyprctl dispatch togglespecialworkspace "$HYPR_HIDE_SPECIAL" >/dev/null 2>&1 || true
+          fi
+          hyprctl dispatch focuswindow "address:${addr_new}" >/dev/null 2>&1 || true
+        elif [[ -n "${current_ws_id}" && "${current_ws_id}" != "-1" ]]; then
+          hyprctl dispatch movetoworkspace "${current_ws_id},address:${addr_new}" >/dev/null 2>&1 || true
+          hyprctl dispatch focuswindow "address:${addr_new}" >/dev/null 2>&1 || true
+        else
+          hyprctl dispatch focuswindow "address:${addr_new}" >/dev/null 2>&1 || true
+        fi
+      fi
+    fi
+
     return 0
   fi
 
   if $FOCUS; then
     if [[ "${ws_name_any:-}" == special:* ]]; then
-      if ! hypr_special_visible "$HYPR_HIDE_SPECIAL"; then
+      if [[ "${ws_name_any}" == "$special_target" ]] && ! hypr_special_visible "$HYPR_HIDE_SPECIAL"; then
         hyprctl dispatch togglespecialworkspace "$HYPR_HIDE_SPECIAL" >/dev/null 2>&1 || true
       fi
       hyprctl dispatch focuswindow "address:${addr_any}" >/dev/null 2>&1 || true
