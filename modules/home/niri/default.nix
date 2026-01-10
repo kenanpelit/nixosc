@@ -480,7 +480,7 @@ EOF
             start_bg() {
               "$@" &
               pids+=("$!")
-              log "started: $* (pid=${!})"
+              log "started: $* (pid=''${!})"
             }
 
             start_bg ${bins.nsticky}
