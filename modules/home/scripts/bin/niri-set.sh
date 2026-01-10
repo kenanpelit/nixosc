@@ -1619,7 +1619,7 @@ EOF
       if maybe systemctl; then
         echo
         kv "systemd --user bus" "$(systemctl --user is-system-running 2>/dev/null || true)"
-        for unit in niri-session.target dms.service niri-init.service niri-nsticky.service; do
+        for unit in niri-session.target dms.service niri-bootstrap.service; do
           kv "is-active:$unit" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
         done
       fi

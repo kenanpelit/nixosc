@@ -31,10 +31,10 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve Niri
 - Genel hızlı durum: `niri-set doctor`
 - Oturum hedefi: `systemctl --user status niri-session.target`
 - Niri hazır kapısı: `systemctl --user status niri-ready.service`
-- Bootstrap: `systemctl --user status niri-init.service`
+- Bootstrap: `systemctl --user status niri-bootstrap.service`
 - Log takip:
   - `journalctl --user -u niri-ready.service -f`
-  - `journalctl --user -u niri-init.service -f`
+  - `journalctl --user -u niri-bootstrap.service -f`
   - `journalctl --user -u dms.service -f`
   - `journalctl --user -u xdg-desktop-portal.service -f`
 
