@@ -28,6 +28,11 @@
 
 set -euo pipefail
 
+# Debug: `OSC_NDROP_DEBUG=1 osc-ndrop ...`
+if [[ "${OSC_NDROP_DEBUG:-0}" == "1" ]]; then
+  set -x
+fi
+
 SCRIPT_NAME="${0##*/}"
 VERSION="0.1.0"
 
@@ -378,7 +383,7 @@ niri_toggle() {
           ) // empty
           | @tsv
         '
-  )
+  ) || true
 
   if [[ -z "${window_id_any:-}" ]]; then
     launch_command
@@ -510,7 +515,7 @@ hypr_toggle() {
 
   # If the window lives in a dedicated special workspace, toggle that like a scratchpad.
   local addr_special
-  read -r addr_special _ < <(hypr_find_matching_window "$clients" "$special_target")
+  read -r addr_special _ < <(hypr_find_matching_window "$clients" "$special_target") || true
 
   if [[ -n "${addr_special:-}" ]]; then
     if ! $special_visible; then
@@ -572,7 +577,7 @@ hypr_toggle() {
 
   # Otherwise, pick any match.
   local addr_any ws_name_any ws_id_any
-  read -r addr_any ws_name_any ws_id_any < <(hypr_find_matching_window "$clients")
+  read -r addr_any ws_name_any ws_id_any < <(hypr_find_matching_window "$clients") || true
 
   if [[ -z "${addr_any:-}" ]]; then
     launch_command
