@@ -454,7 +454,9 @@ EOF
             log() { printf "[niri-bootstrap] %s\n" "$*"; }
             warn() { printf "[niri-bootstrap] WARN: %s\n" "$*" >&2; }
 
-            sleep 3
+            if command -v notify-send >/dev/null 2>&1; then
+              notify-send -t 2500 "Niri" "Bootstrap başladı" >/dev/null 2>&1 || true
+            fi
 
             if command -v niri-set >/dev/null 2>&1; then
               niri-set init || warn "niri-set init failed"
@@ -487,12 +489,19 @@ EOF
             ${lib.optionalString cfg.enableNirius ''start_bg ${bins.niriusd}''}
             ${lib.optionalString cfg.enableNiriswitcher ''start_bg ${bins.niriuswitcher}''}
 
+            finish_notify() {
+              if command -v notify-send >/dev/null 2>&1; then
+                notify-send -t 2500 "Niri" "Bootstrap bitti" >/dev/null 2>&1 || true
+              fi
+            }
+
             if [[ "''${#pids[@]}" -eq 0 ]]; then
               log "no daemons to supervise; exiting"
+              finish_notify
               exit 0
             fi
 
-            trap 'warn "stopping"; kill "''${pids[@]}" 2>/dev/null || true; wait "''${pids[@]}" 2>/dev/null || true' INT TERM EXIT
+            trap 'warn "stopping"; kill "''${pids[@]}" 2>/dev/null || true; wait "''${pids[@]}" 2>/dev/null || true; finish_notify' INT TERM EXIT
 
             # If any daemon exits, restart the whole unit for consistency.
             if wait -n "''${pids[@]}"; then
