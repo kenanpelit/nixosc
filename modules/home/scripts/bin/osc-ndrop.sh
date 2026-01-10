@@ -326,8 +326,14 @@ niri_toggle() {
       return 0
     fi
 
-    # Hide without changing workspaces.
-    niri msg action move-window-to-workspace --window-id "$window_id_here" --focus false "$NIRI_HIDE_WORKSPACE" >/dev/null 2>&1 || true
+    if $has_nirius; then
+      # Hide using nirius scratchpad (stays on current workspace).
+      niri msg action focus-window --id "$window_id_here" >/dev/null 2>&1 || true
+      nirius scratchpad-toggle --app-id "$app_id_re" --workspace-id "$current_ws_id" >/dev/null 2>&1 || true
+    else
+      # Hide by moving to a dedicated workspace (does not follow focus).
+      niri msg action move-window-to-workspace --window-id "$window_id_here" --focus false "$NIRI_HIDE_WORKSPACE" >/dev/null 2>&1 || true
+    fi
 
     $VERBOSE && notify "Niri" "Hidden: ${CLASS}" "low"
   return 0
@@ -361,6 +367,12 @@ niri_toggle() {
   fi
 
   if $has_nirius; then
+    # Show from scratchpad first (if applicable).
+    if nirius scratchpad-show --app-id "$app_id_re" >/dev/null 2>&1; then
+      $VERBOSE && notify "Niri" "Shown: ${CLASS}" "low"
+      return 0
+    fi
+
     # Bring it from any unfocused workspace (including a hide workspace).
     if nirius move-to-current-workspace --app-id "$app_id_re" --focus >/dev/null 2>&1; then
       $VERBOSE && notify "Niri" "Moved here: ${CLASS}" "low"
