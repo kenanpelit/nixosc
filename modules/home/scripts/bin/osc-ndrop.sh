@@ -20,7 +20,7 @@
 # - Auto-detects Niri (niri msg) or Hyprland (hyprctl).
 #
 # Environment:
-# - OSC_NDROP_NIRI_HIDE_WORKSPACE  (default: oscndrop; fallback when nirius is missing)
+# - OSC_NDROP_NIRI_HIDE_WORKSPACE  (default: oscndrop; workspace used to hide windows on Niri)
 # - OSC_NDROP_HYPR_HIDE_SPECIAL    (default: oscndrop)
 # - OSC_NDROP_ONLINE_HOST          (default: github.com)
 # - OSC_NDROP_ONLINE_TIMEOUT       (default: 20 seconds)
@@ -54,7 +54,7 @@ Options:
 
 Backend options:
       --backend <auto|niri|hyprland>
-      --niri-hide-workspace <id|name>      (default: \$OSC_NDROP_NIRI_HIDE_WORKSPACE or "oscndrop")
+      --niri-hide-workspace <index|name>   (default: \$OSC_NDROP_NIRI_HIDE_WORKSPACE or "oscndrop")
       --hypr-hide-special <name>           (default: \$OSC_NDROP_HYPR_HIDE_SPECIAL or "oscndrop")
 
 Examples:
@@ -275,7 +275,7 @@ niri_toggle() {
     has_nirius=true
   fi
 
-  local windows workspaces current_ws_id active_window_id
+  local windows workspaces current_ws_id current_ws_ref
   windows="$(niri msg -j windows 2>/dev/null || echo '[]')"
   workspaces="$(niri msg -j workspaces 2>/dev/null || echo '[]')"
 
@@ -283,11 +283,11 @@ niri_toggle() {
     echo "$workspaces" | jq -r 'first(.[] | select(.is_focused==true) | .id) // empty'
   )"
 
-  active_window_id="$(
-    echo "$windows" | jq -r 'first(.[] | select(.is_focused==true) | .id) // empty'
+  current_ws_ref="$(
+    echo "$workspaces" | jq -r 'first(.[] | select(.is_focused==true) | .idx) // empty'
   )"
 
-  if [[ -z "$current_ws_id" ]]; then
+  if [[ -z "$current_ws_id" || -z "$current_ws_ref" ]]; then
     launch_command
     return 0
   fi
@@ -326,51 +326,16 @@ niri_toggle() {
       return 0
     fi
 
-    if $has_nirius; then
-      # Scratchpad-hide: prefer nirius when available (no extra workspace needed).
-      niri msg action focus-window --id "$window_id_here" >/dev/null 2>&1 || true
-
-      # If it's already a scratchpad window, this will hide it.
-      nirius scratchpad-show --app-id "$app_id_re" >/dev/null 2>&1 || true
-
-      # If it wasn't a scratchpad window, force-move it into scratchpad.
-      windows="$(niri msg -j windows 2>/dev/null || echo '[]')"
-      local still_here
-      still_here="$(
-        echo "$windows" \
-          | jq -r --arg cls "$CLASS" --arg ws "$current_ws_id" --argjson insensitive "$insensitive_json" '
-              first(
-                .[]
-                | select(if $insensitive
-                    then ((.app_id // "") | test($cls; "i"))
-                    else ((.app_id // "") == $cls)
-                  end)
-                | select((.workspace_id|tostring) == ($ws|tostring))
-                | .id
-              ) // empty
-            '
-      )"
-
-      if [[ -n "$still_here" ]]; then
-        nirius scratchpad-toggle --app-id "$app_id_re" >/dev/null 2>&1 || true
-      fi
-    else
-      niri msg action move-window-to-workspace --window-id "$window_id_here" "$NIRI_HIDE_WORKSPACE" >/dev/null 2>&1 || true
-    fi
+    # Hide without changing workspaces.
+    niri msg action move-window-to-workspace --window-id "$window_id_here" --focus false "$NIRI_HIDE_WORKSPACE" >/dev/null 2>&1 || true
 
     $VERBOSE && notify "Niri" "Hidden: ${CLASS}" "low"
-
-    # Ensure we stay on the original workspace.
-    niri msg action focus-workspace "$current_ws_id" >/dev/null 2>&1 || true
-    if [[ -n "$active_window_id" && "$active_window_id" != "$window_id_here" ]]; then
-      niri msg action focus-window --id "$active_window_id" >/dev/null 2>&1 || true
-    fi
-    return 0
+  return 0
   fi
 
   # Otherwise, pick any match and bring/focus it.
-  local window_id_any workspace_id_any
-  read -r window_id_any workspace_id_any < <(
+  local window_id_any
+  window_id_any="$(
     echo "$windows" \
       | jq -r --arg cls "$CLASS" --argjson insensitive "$insensitive_json" '
           first(
@@ -379,42 +344,31 @@ niri_toggle() {
                 then ((.app_id // "") | test($cls; "i"))
                 else ((.app_id // "") == $cls)
               end)
-            | [.id, .workspace_id]
+            | .id
           ) // empty
-          | @tsv
         '
-  ) || true
+  )"
 
-  if [[ -z "${window_id_any:-}" ]]; then
+  if [[ -z "$window_id_any" ]]; then
     launch_command
     return 0
   fi
 
   if $FOCUS; then
-    # Focus and let niri switch to its workspace if needed.
-    if [[ -n "${workspace_id_any:-}" ]]; then
-      niri msg action focus-workspace "$workspace_id_any" >/dev/null 2>&1 || true
-    fi
     niri msg action focus-window --id "$window_id_any" >/dev/null 2>&1 || true
     $VERBOSE && notify "Niri" "Focused: ${CLASS}" "low"
     return 0
   fi
 
   if $has_nirius; then
-    # Show from scratchpad first (if applicable).
-    if nirius scratchpad-show --app-id "$app_id_re" >/dev/null 2>&1; then
-      $VERBOSE && notify "Niri" "Shown: ${CLASS}" "low"
-      return 0
-    fi
-
-    # Otherwise bring it from another workspace.
+    # Bring it from any unfocused workspace (including a hide workspace).
     if nirius move-to-current-workspace --app-id "$app_id_re" --focus >/dev/null 2>&1; then
       $VERBOSE && notify "Niri" "Moved here: ${CLASS}" "low"
       return 0
     fi
   fi
 
-  niri msg action move-window-to-workspace --window-id "$window_id_any" "$current_ws_id" >/dev/null 2>&1 || true
+  niri msg action move-window-to-workspace --window-id "$window_id_any" --focus false "$current_ws_ref" >/dev/null 2>&1 || true
   niri msg action focus-window --id "$window_id_any" >/dev/null 2>&1 || true
   $VERBOSE && notify "Niri" "Moved here: ${CLASS}" "low"
 }
