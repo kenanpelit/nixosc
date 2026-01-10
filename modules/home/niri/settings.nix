@@ -290,7 +290,7 @@ in
     }
 
     ${lib.optionalString cfg.systemd.enable ''
-    // Start session-scoped user services (niri-init, nsticky, nirius, niriswitcher, DMS, …).
+    // Start session-scoped user services (niri-bootstrap, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
     spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "session-start";

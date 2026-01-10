@@ -431,131 +431,77 @@ EOF
         };
       };
 
-      # Bootstrap: fast and observable (oneshot).
-      # Keep this unit short-running; move slow/flaky tasks (like BT audio routing)
-      # into separate services/timers so startup doesn't appear "stuck".
-      systemd.user.services.niri-init = {
+      # Unified bootstrap: init + daemons + optional BT auto-connect in one unit.
+      systemd.user.services.niri-bootstrap = {
         Unit = {
-          Description = "Niri bootstrap (monitors + audio + layout)";
+          Description = "Niri bootstrap (init + daemons)";
           Wants = [ "pipewire.service" "wireplumber.service" "niri-ready.service" "dms.service" ];
           After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" "pipewire.service" "wireplumber.service" "dms.service" ];
           PartOf = [ "niri-session.target" ];
           ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
         };
         Service = {
-          Type = "oneshot";
+          Type = "simple";
           TimeoutStartSec = 60;
-          RemainAfterExit = true;
           Environment = [
             "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
+            "NIRI_BOOT_BT_DELAY=${toString cfg.btAutoConnectDelaySeconds}"
+            "NIRI_BOOT_BT_TIMEOUT=${toString config.my.user.bt.autoToggle.timeoutSeconds}"
           ];
-          ExecStartPre = "${pkgs.coreutils}/bin/sleep 3";
-          ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/niri-set init'";
-          ExecStartPost = "${pkgs.bash}/bin/bash -lc 'command -v notify-send >/dev/null 2>&1 && notify-send -t 2500 \"Niri\" \"Bootstrap tamamlandı\" 2>/dev/null || true'";
-          StandardOutput = "journal";
-          StandardError = "journal";
-        };
-        Install = {
-          WantedBy = [ "niri-session.target" ];
-        };
-      };
+          ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.writeShellScript "niri-bootstrap" ''
+            set -euo pipefail
 
-      # Bluetooth auto-connect: run later via timer; never block the init unit.
-      systemd.user.services.niri-bt-autoconnect = lib.mkIf (btEnabled && scriptsEnabled) {
-        Unit = {
-          Description = "Niri Bluetooth auto-connect";
-          Wants = [ "pipewire.service" "wireplumber.service" ];
-          After = [ "graphical-session.target" "niri-session.target" "pipewire.service" "wireplumber.service" "niri-init.service" ];
-          PartOf = [ "niri-session.target" ];
-          ConditionEnvironment = [ "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=niri" ];
-        };
-        Service = {
-          Type = "oneshot";
-          TimeoutStartSec = "${toString config.my.user.bt.autoToggle.timeoutSeconds}s";
-          Environment = [
-            "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
-          ];
-          ExecStart = "${pkgs.bash}/bin/bash -lc '/etc/profiles/per-user/${username}/bin/bluetooth_toggle --connect'";
+            log() { printf "[niri-bootstrap] %s\n" "$*"; }
+            warn() { printf "[niri-bootstrap] WARN: %s\n" "$*" >&2; }
+
+            sleep 3
+
+            if command -v niri-set >/dev/null 2>&1; then
+              niri-set init || warn "niri-set init failed"
+            else
+              warn "niri-set not found"
+            fi
+
+            # Optional Bluetooth auto-connect (delayed, non-blocking).
+            if ${lib.boolToString (btEnabled && scriptsEnabled)}; then
+              (
+                delay_s="${NIRI_BOOT_BT_DELAY:-0}"
+                timeout_s="${NIRI_BOOT_BT_TIMEOUT:-30}"
+                sleep "$delay_s"
+                if command -v bluetooth_toggle >/dev/null 2>&1; then
+                  timeout "${timeout_s}s" bluetooth_toggle --connect || true
+                else
+                  warn "bluetooth_toggle not found; skipping"
+                fi
+              ) &
+            fi
+
+            pids=()
+            start_bg() {
+              "$@" &
+              pids+=("$!")
+              log "started: $* (pid=${!})"
+            }
+
+            start_bg ${bins.nsticky}
+            ${lib.optionalString cfg.enableNirius ''start_bg ${bins.niriusd}''}
+            ${lib.optionalString cfg.enableNiriswitcher ''start_bg ${bins.niriuswitcher}''}
+
+            if [[ "''${#pids[@]}" -eq 0 ]]; then
+              log "no daemons to supervise; exiting"
+              exit 0
+            fi
+
+            trap 'warn "stopping"; kill "''${pids[@]}" 2>/dev/null || true; wait "''${pids[@]}" 2>/dev/null || true' INT TERM EXIT
+
+            # If any daemon exits, restart the whole unit for consistency.
+            if wait -n "''${pids[@]}"; then
+              warn "daemon exited; restarting unit"
+              exit 1
+            fi
+          ''}'";
           Restart = "on-failure";
-          RestartSec = 10;
-          StandardOutput = "journal";
-          StandardError = "journal";
-        };
-      };
-
-      systemd.user.timers.niri-bt-autoconnect = lib.mkIf (btEnabled && scriptsEnabled) {
-        Unit = {
-          Description = "Niri Bluetooth auto-connect (delayed)";
-          After = [ "niri-session.target" ];
-          PartOf = [ "niri-session.target" ];
-        };
-        Timer = {
-          OnActiveSec = "${toString cfg.btAutoConnectDelaySeconds}s";
-          AccuracySec = "5s";
-          Unit = "niri-bt-autoconnect.service";
-        };
-        Install = {
-          WantedBy = [ "niri-session.target" ];
-        };
-      };
-
-      systemd.user.services.niri-nsticky = {
-        Unit = {
-          Description = "nsticky daemon (niri)";
-          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
-          Wants = [ "niri-ready.service" ];
-          PartOf = [ "niri-session.target" ];
-          ConditionEnvironment = [ "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=niri" ];
-        };
-        Service = {
-          ExecStart = "${bins.nsticky}";
-          Restart = "on-failure";
-          RestartSec = 1;
-          StandardOutput = "journal";
-          StandardError = "journal";
-        };
-        Install = {
-          WantedBy = [ "niri-session.target" ];
-        };
-      };
-
-      systemd.user.services.niri-niriusd = lib.mkIf cfg.enableNirius {
-        Unit = {
-          Description = "nirius daemon (niri)";
-          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
-          Wants = [ "niri-ready.service" ];
-          PartOf = [ "niri-session.target" ];
-          ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
-        };
-        Service = {
-          ExecStart = "${bins.niriusd}";
-          # niri can emit IPC events that older nirius builds don't know yet.
-          # This doesn't break functionality (we ignore the event), but it spams logs.
-          Environment = [
-            "RUST_LOG=warn,nirius::daemon=off"
-          ];
-          Restart = "on-failure";
-          RestartSec = 1;
-          StandardOutput = "journal";
-          StandardError = "journal";
-        };
-        Install = {
-          WantedBy = [ "niri-session.target" ];
-        };
-      };
-
-      systemd.user.services.niri-niriswitcher = lib.mkIf cfg.enableNiriswitcher {
-        Unit = {
-          Description = "niriswitcher (niri)";
-          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
-          Wants = [ "niri-ready.service" ];
-          PartOf = [ "niri-session.target" ];
-          ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
-        };
-        Service = {
-          ExecStart = "${bins.niriuswitcher}";
-          Restart = "on-failure";
-          RestartSec = 1;
+          RestartSec = 2;
           StandardOutput = "journal";
           StandardError = "journal";
         };
