@@ -837,17 +837,26 @@ EOF
       LOG_TAG="niri-init"
       log() { printf '[%s] %s\n' "$LOG_TAG" "$*"; }
       warn() { printf '[%s] WARN: %s\n' "$LOG_TAG" "$*" >&2; }
+      notify() {
+        command -v notify-send >/dev/null 2>&1 || return 0
+        local body="${1:-}"
+        local timeout="${2:-2500}"
+        notify-send -t "$timeout" "Niri Init" "$body" 2>/dev/null || true
+      }
 
       run_if_present() {
         local cmd="$1"; shift
         if command -v "$cmd" >/dev/null 2>&1; then
           if "$cmd" "$@"; then
             log "$cmd $*"
+            notify "$cmd $*"
           else
             warn "$cmd failed (ignored): $*"
+            notify "WARN: $cmd failed: $*"
           fi
         else
           warn "$cmd not found; skipping"
+          notify "WARN: $cmd not found"
         fi
       }
 
@@ -882,6 +891,7 @@ EOF
 	      if [[ -n "$target" ]]; then
 	        niri msg action focus-monitor "$target" >/dev/null 2>&1 || true
 	        log "focused monitor: $target"
+            notify "focused monitor: $target"
 	      fi
 	
 	      run_if_present osc-soundctl init
@@ -891,16 +901,20 @@ EOF
         if [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
           focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
           "$0" arrange-windows --focus "ws:${focus_ws}"
+          notify "arrange-windows: ws:${focus_ws}"
         else
           "$0" arrange-windows
+          notify "arrange-windows"
         fi
       elif [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
         # Best-effort fallback: this may refer to workspace index in niri.
         focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
         niri msg action focus-workspace "$focus_ws" >/dev/null 2>&1 || true
+        notify "focus workspace: ${focus_ws}"
       fi
 
       log "niri-init completed."
+      notify "niri-init completed."
     )
     ;;
 
