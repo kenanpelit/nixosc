@@ -437,8 +437,8 @@ EOF
       systemd.user.services.niri-init = {
         Unit = {
           Description = "Niri bootstrap (monitors + audio + layout)";
-          Wants = [ "pipewire.service" "wireplumber.service" "niri-ready.service" ];
-          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" "pipewire.service" "wireplumber.service" ];
+          Wants = [ "pipewire.service" "wireplumber.service" "niri-ready.service" "dms.service" ];
+          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" "pipewire.service" "wireplumber.service" "dms.service" ];
           PartOf = [ "niri-session.target" ];
           ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
         };
