@@ -196,7 +196,7 @@
       Mod+Alt+Return      repeat=false hotkey-overlay-title="SemsuMo Daily" { spawn "semsumo" "launch" "--daily" "-all"; }
       Mod+Shift+A         repeat=false hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       
-      Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-dropdown"; }
+      Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-ndrop" "kitty" "--class" "dropdown-terminal"; }
       Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
       Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "nsticky-toggle"; }
