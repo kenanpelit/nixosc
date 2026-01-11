@@ -154,9 +154,10 @@ bind -n M-b if-shell 'command -v tm >/dev/null 2>&1' 'display-popup -w 60% -h 60
 bind -n M-k if-shell 'command -v tm >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "tm speed"' 'display-message "tm not found"'         # Alt-k: tm speed
 
 # New window creation with layout commands - Yeni pencere oluştururken otomatik layout komutları gönder
-bind 0 new-window -c "#{pane_current_path}" \; send-keys "tm tmx --layout 3" C-m  # 0: yeni pencere + layout 3
-bind n new-window -c "#{pane_current_path}" \; send-keys "tm tmx --layout 4" C-m  # n: yeni pencere + layout 4
-bind c new-window -c "#{pane_current_path}" \; send-keys "tm tmx --layout 1" C-m  # c: yeni pencere + layout 1
+bind 0 new-window -c  send-keys "tm tmx --layout 3" Enter       # c tuşu ile yeni pencere oluştur ve layout 3 komutunu gönder
+bind n new-window -c  send-keys "tm tmx --layout 4" Enter       # n tuşu ile yeni pencere oluştur ve layout 4 komutunu gönder
+#bind c new-window -c  send-keys "tm tmx --layout 2" Enter       # 0 tuşu ile yeni pencere oluştur ve layout 1 komutunu gönder
+bind c new-window -c  send-keys "tm tmx --layout 1" Enter       # 0 tuşu ile yeni pencere oluştur ve layout 1 komutunu gönder
 
 # Quick terminal popup - Hızlı terminal popup'ı
 bind T display-popup -w 80% -h 80%                              # T tuşu ile büyük terminal popup'ı aç(%80x%80 boyutunda)
