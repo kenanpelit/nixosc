@@ -39,7 +39,7 @@ let
     # Actions
     "$mainMod, Q, killactive"
     "$mainMod, F, fullscreen, 0"
-    "$mainMod, M, layoutmsg, colresize 1.0" # Maximize Column (Niri Mod+M match)
+    "$mainMod, M, fullscreen, 1"       # Maximize (Fake fullscreen)
     "$mainMod, C, layoutmsg, togglefit" # Center/Fit Column (Niri Mod+C match)
   ];
 
