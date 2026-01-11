@@ -885,9 +885,7 @@ handle_speed_mode() {
 			done
 		} |
 			fzf --delimiter='\t' \
-				--with-nth=2.. \
-				--preview "sed -n '1,120p' '$FZF_DIR'/{1}" \
-				--preview-window=up:70%:wrap
+				--with-nth=2..
 	)" || {
 		info "İptal edildi"
 		return 0
@@ -1475,7 +1473,6 @@ Speed Komut Formatı:
     • Kullanım geçmişi otomatik kaydedilir
     • Kategorilere göre gruplandırma
     • Hızlı arama ve filtreleme
-    • Preview desteği
 
 Kategoriler:
     _ssh.*      SSH bağlantıları
