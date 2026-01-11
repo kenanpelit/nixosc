@@ -299,6 +299,14 @@ check_requirements() {
 		fi
 		;;
 	"speed")
+		if ! command -v fzf >/dev/null 2>&1; then
+			error "fzf kurulu değil!"
+			req_failed=1
+		fi
+		if ! command -v find >/dev/null 2>&1; then
+			error "find komutu bulunamadı (coreutils/findutils)!"
+			req_failed=1
+		fi
 		if [[ ! -d "$FZF_DIR" ]]; then
 			warn "Komut dizini bulunamadı: $FZF_DIR"
 			info "Dizin oluşturuluyor..."
@@ -788,34 +796,15 @@ handle_speed_mode() {
 
 	info "Komut hızlandırma modu başlatılıyor..."
 
-	# Cache dosyası oluştur
-	local cache_file="${CACHE_DIR}/speed_cache"
-	mkdir -p "$(dirname "$cache_file")"
+	# fspeed ile uyumlu cache (tmux fzf bundle)
+	local cache_file="${FZF_DIR}/.fzf_cache"
 	touch "$cache_file"
 
 	# İstatistikler
-	local -a all_files ssh_files tmux_files
 	local total ssh_count tmux_count
-
-	shopt -s nullglob
-	all_files=("$FZF_DIR"/_*)
-	ssh_files=("$FZF_DIR"/_ssh*)
-	tmux_files=("$FZF_DIR"/_tmux*)
-	shopt -u nullglob
-
-	# Sadece normal dosyaları say
-	total=0
-	for f in "${all_files[@]}"; do
-		[[ -f "$f" ]] && ((total++))
-	done
-	ssh_count=0
-	for f in "${ssh_files[@]}"; do
-		[[ -f "$f" ]] && ((ssh_count++))
-	done
-	tmux_count=0
-	for f in "${tmux_files[@]}"; do
-		[[ -f "$f" ]] && ((tmux_count++))
-	done
+	total="$(find "$FZF_DIR" -maxdepth 1 -type f -name '_*' 2>/dev/null | wc -l | tr -d '[:space:]')"
+	ssh_count="$(find "$FZF_DIR" -maxdepth 1 -type f -name '_ssh*' 2>/dev/null | wc -l | tr -d '[:space:]')"
+	tmux_count="$(find "$FZF_DIR" -maxdepth 1 -type f -name '_tmux*' 2>/dev/null | wc -l | tr -d '[:space:]')"
 
 	if [[ "$total" -eq 0 ]]; then
 		warn "Hiç speed komutu bulunamadı"
@@ -829,13 +818,45 @@ handle_speed_mode() {
 	setup_fzf_theme "Speed" "Toplam: $total | SSH: $ssh_count | TMUX: $tmux_count | ENTER: Çalıştır | ESC: Çık"
 
 	speed_display_name() {
-		local key="$1"
-		local name="${key#_}"
-		printf '%s' "${name//./ }"
+		local filename="$1"
+		local base="${filename%%,*}"
+		local desc=""
+		if [[ "$filename" == *","* ]]; then
+			desc="${filename#*,}"
+		fi
+
+		local base_display="${base#_}"
+		base_display="${base_display//_/ }"
+		base_display="${base_display//./ }"
+
+		if [[ -n "$desc" ]]; then
+			local desc_display="${desc//./ }"
+			printf '%s  %s' "$base_display" "$desc_display"
+		else
+			printf '%s' "$base_display"
+		fi
 	}
 
-	# Sık kullanılan komutları getir (en çok kullanılan 10 komut).
-	get_frequent_commands() {
+	resolve_script_for_base() {
+		local base="$1"
+		local match=""
+
+		shopt -s nullglob
+		local -a matches=("$FZF_DIR/${base},"* "$FZF_DIR/${base}")
+		shopt -u nullglob
+
+		for m in "${matches[@]}"; do
+			if [[ -f "$m" ]]; then
+				match="${m##*/}"
+				break
+			fi
+		done
+
+		printf '%s' "$match"
+	}
+
+	# Sık kullanılan komutları getir (en çok kullanılan 10 base).
+	get_frequent_bases() {
 		[[ -s "$cache_file" ]] || return 0
 		sort "$cache_file" |
 			uniq -c |
@@ -844,23 +865,23 @@ handle_speed_mode() {
 			head -n 10
 	}
 
-	# Ana seçim (TSV: key<TAB>display). Key: _ssh.server1, Display: ssh server1
+	local -a all_files=()
+	mapfile -t all_files < <(find "$FZF_DIR" -maxdepth 1 -type f -name '_*' -printf '%f\n' 2>/dev/null | sort)
+
+	# Ana seçim (TSV: filename<TAB>display). Cache base'e yazılır (fspeed uyumlu).
 	local selection
 	selection="$(
 		{
-			declare -A seen=()
+			while IFS= read -r base; do
+				[[ -n "$base" ]] || continue
+				local filename
+				filename="$(resolve_script_for_base "$base")"
+				[[ -n "$filename" ]] || continue
+				printf '%s\t⭐ %s\n' "$filename" "$(speed_display_name "$filename")"
+			done < <(get_frequent_bases)
 
-			while IFS= read -r key; do
-				[[ -n "$key" && -f "$FZF_DIR/$key" ]] || continue
-				seen["$key"]=1
-				printf '%s\t⭐ %s\n' "$key" "$(speed_display_name "$key")"
-			done < <(get_frequent_commands)
-
-			for f in "${all_files[@]}"; do
-				[[ -f "$f" ]] || continue
-				local key="${f##*/}"
-				[[ -n "${seen[$key]:-}" ]] && continue
-				printf '%s\t%s\n' "$key" "$(speed_display_name "$key")"
+			for filename in "${all_files[@]}"; do
+				printf '%s\t%s\n' "$filename" "$(speed_display_name "$filename")"
 			done
 		} |
 			fzf --delimiter='\t' \
@@ -884,8 +905,9 @@ handle_speed_mode() {
 		return 0
 	fi
 
-	# Kullanımı kaydet
-	echo "${selected}" >>"$cache_file"
+	# Kullanımı kaydet (sadece base)
+	local selected_base="${selected%%,*}"
+	echo "${selected_base}" >>"$cache_file"
 
 	# Cache dosyası boyutunu sınırla
 	if [[ "$(wc -l <"$cache_file")" -gt "$HISTORY_LIMIT" ]]; then
@@ -906,7 +928,7 @@ handle_speed_mode() {
 		fi
 
 		# Script'i çalıştır
-		if bash "$script_path"; then
+		if "$script_path"; then
 			success "Komut başarıyla tamamlandı"
 		else
 			error "Komut çalıştırılırken hata oluştu"
@@ -1444,7 +1466,7 @@ Komutlar:
     dir               Speed dizinini aç
 
 Speed Komut Formatı:
-    Dosya adı: _kategori.isim (örn: _ssh.server1, _tmux.list)
+    Dosya adı: _komut veya _komut,açıklama (örn: _ssh_agu_hpc,--.create.new.window)
     Konum: ~/.config/tmux/fzf/
     İçerik: Çalıştırılabilir bash scripti
 
@@ -1505,7 +1527,7 @@ Kısayollar (speed modunda):
     • Kategorileri tutarlı kullanın
     • Tehlikeli komutlar için onay ekleyin
     • Sık kullanılan komutlar otomatik öne çıkar
-    • Cache dosyası: ~/.cache/tmux-manager/speed_cache
+    • Cache dosyası: ~/.config/tmux/fzf/.fzf_cache (fspeed ile uyumlu)
 
 Not: Speed modu ~/.config/tmux/fzf/ dizinindeki _* dosyalarını kullanır
 EOF
