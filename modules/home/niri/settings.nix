@@ -52,14 +52,15 @@ in
       }
 
       preset-column-widths {
-        proportion 0.33333;
-        proportion 0.5;
-        proportion 0.66667;
+        proportion 0.30;
+        proportion 0.45;
+        proportion 0.60;
+        proportion 0.75;
         proportion 1.0;
       }
 
-      // Match your preferred default (≈70% width)
-      default-column-width { proportion 0.7; }
+      // Match your preferred default (≈80% width)
+      default-column-width { proportion 0.8; }
     }
   '';
 
