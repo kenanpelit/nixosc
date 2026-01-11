@@ -19,7 +19,7 @@
 set -g default-terminal "screen-256color"
 # RGB destekleri + E3 override; E3=@ ile uzak terminalin scrollback silme kaçış kodunu yoksayar
 # Alt ekranı (alternate screen) devre dışı bırakan smcup/rmcup overrides'larını kaldırdık ki tam ekran uygulamalar çıktıktan sonra görüntü kalmasın
-set -ag terminal-overrides ",xterm-256color:RGB,screen-256color:RGB,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,*:E3=@"
+set -ag terminal-overrides ",xterm-256color:RGB,screen-256color:RGB,tmux-256color:RGB,tmux-256color:Tc,xterm-kitty:RGB,xterm-kitty:Tc,alacritty:RGB,*:E3=@"
 set -as terminal-features ",*:RGB"                               # Tüm terminaller için RGB renk özelliği etkinleştir
 #set -g update-environment "DISPLAY WAYLAND_DISPLAY SSH_AUTH_SOCK XDG_CURRENT_DESKTOP SWAYSOCK I3SOCK"  # tmux attach edildiğinde güncellenecek ortam değişkenleri
 set -g update-environment "SSH_AUTH_SOCK"
@@ -145,26 +145,26 @@ bind + choose-buffer 'delete-buffer -b %%'                      # + tuşu ile bu
 bind b choose-buffer                                             # b tuşu ile buffer listesini göster
 
 # Utility popups - Yardımcı popup pencereler (anote ve tm araçları için)
-bind 'e' display-popup -w 60% -h 60% -E "anote -t"              # e tuşu ile metin notu popup'ı (anote -t)
-bind 'E' display-popup -w 60% -h 60% -E "anote -Ms"             # E tuşu ile markdown notu popup'ı (anote -Ms)
-bind 'i' display-popup -w 60% -h 60% -E "anote -S"              # i tuşu ile snippet popup'ı (anote -S)
-bind -n M-m display-popup -w 60% -h 60% -E "anote"              # Alt-m ile genel not popup'ı (anote) - global tuş
-bind -n M-h display-popup -w 60% -h 60% -E "tm buffer"          # Alt-h ile buffer yönetimi popup'ı (tm buffer) - global tuş
-bind -n M-b display-popup -w 60% -h 60% -E "tm clip"            # Alt-b ile clipboard yönetimi popup'ı (tm clip) - global tuş
-bind -n M-k display-popup -w 60% -h 60% -E "tm speed"           # Alt-k ile hız testi popup'ı (tm speed) - global tuş
+bind 'e' if-shell 'command -v anote >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "anote -t"' 'display-message "anote not found"'     # e: metin notu popup'ı
+bind 'E' if-shell 'command -v anote >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "anote -Ms"' 'display-message "anote not found"'    # E: markdown notu popup'ı
+bind 'i' if-shell 'command -v anote >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "anote -S"' 'display-message "anote not found"'     # i: snippet popup'ı
+bind -n M-m if-shell 'command -v anote >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "anote"' 'display-message "anote not found"'     # Alt-m: anote
+bind -n M-h if-shell 'command -v tm >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "tm buffer"' 'display-message "tm not found"'        # Alt-h: tm buffer
+bind -n M-b if-shell 'command -v tm >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "tm clip"' 'display-message "tm not found"'          # Alt-b: tm clip
+bind -n M-k if-shell 'command -v tm >/dev/null 2>&1' 'display-popup -w 60% -h 60% -E "tm speed"' 'display-message "tm not found"'         # Alt-k: tm speed
 
 # New window creation with layout commands - Yeni pencere oluştururken otomatik layout komutları gönder
-bind 0 new-window -c  send-keys "tm tmx --layout 3" Enter       # c tuşu ile yeni pencere oluştur ve layout 3 komutunu gönder
-bind n new-window -c  send-keys "tm tmx --layout 4" Enter       # n tuşu ile yeni pencere oluştur ve layout 4 komutunu gönder
-#bind c new-window -c  send-keys "tm tmx --layout 2" Enter       # 0 tuşu ile yeni pencere oluştur ve layout 1 komutunu gönder
-bind c new-window -c  send-keys "tm tmx --layout 1" Enter       # 0 tuşu ile yeni pencere oluştur ve layout 1 komutunu gönder
+bind 0 new-window -c "#{pane_current_path}" \; send-keys "tm tmx --layout 3" C-m  # 0: yeni pencere + layout 3
+bind n new-window -c "#{pane_current_path}" \; send-keys "tm tmx --layout 4" C-m  # n: yeni pencere + layout 4
+bind c new-window -c "#{pane_current_path}" \; send-keys "tm tmx --layout 1" C-m  # c: yeni pencere + layout 1
 
 # Quick terminal popup - Hızlı terminal popup'ı
 bind T display-popup -w 80% -h 80%                              # T tuşu ile büyük terminal popup'ı aç(%80x%80 boyutunda)
 
 # Plugin management - Plugin yönetimi
-bind -n M-p display-message "Plugin Yükleniyor..." \; \         # Alt-p ile plugin güncelleme mesajı göster
-  display-popup -w 60% -h 60% -E "bash -c 'osc-tmux-plugins-install'"  # Plugin yükleme scriptini çalıştır
+bind -n M-p if-shell 'command -v osc-tmux-plugins-install >/dev/null 2>&1' \
+  'display-message "Plugin Yükleniyor..." \; display-popup -w 60% -h 60% -E "bash -c '\''osc-tmux-plugins-install'\''"' \
+  'display-message "osc-tmux-plugins-install not found"'
 
 # Layout shortcuts - Hızlı layout değiştirme kısayolları
 bind 1 select-layout even-horizontal                             # 1 tuşu ile yatay eşit bölünmüş layout
@@ -366,7 +366,6 @@ set -g @plugin 'tmux-plugins/tmux-resurrect'                   # Session kaydetm
 set -g @plugin 'tmux-plugins/tmux-continuum'                   # Otomatik session kaydetme
 set -g @plugin 'tmux-plugins/tmux-sessionist'                  # Session yönetimi araçları
 set -g @plugin 'fcsonline/tmux-thumbs'                         # Hızlı text kopyalama (hint based)
-set -g @plugin 'tmux-plugins/tmux-yank'                        # Gelişmiş kopyalama
 set -g @plugin 'tmux-plugins/tmux-copycat'                     # Gelişmiş arama (regex, dosya, git vs)
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -429,7 +428,6 @@ set -g @sessionx-window-height '75%'                           # SessionX pencer
 set -g @sessionx-window-width '75%'                            # SessionX pencere genişliği
 
 # tmux-thumbs settings - Hızlı kopyalama ayarları
-set -g @thumbs-key Space                                       # Space tuşu ile thumbs'ı aktifleştir
 set -g @thumbs-alphabet qwerty                                 # Qwerty klavye düzeni (dvorak'tan değiştirildi)
 set -g @thumbs-reverse enabled                                 # Tersten göster (en son öğeler üstte)
 set -g @thumbs-unique enabled                                  # Benzersiz harfler kullan
@@ -442,12 +440,6 @@ set -g @thumbs-regexp-1 '[a-zA-Z0-9_-]+\.[a-zA-Z]{2,4}'       # Dosya adları (u
 set -g @thumbs-regexp-2 '\b[0-9a-f]{7,40}\b'                  # Git hash'leri
 set -g @thumbs-regexp-3 '\b[A-Z][A-Z0-9_-]*\b'                # SABITLERI (CONSTANTS)
 set -g @thumbs-regexp-4 'https?://[^\s]+'                     # HTTP/HTTPS URL'leri
-
-# tmux-yank settings - Gelişmiş kopyalama ayarları
-set -g @yank_action 'copy-pipe-no-clear'                       # Kopyala ama seçimi temizleme
-set -g @yank_with_mouse on                                     # Fare ile kopyalamayı etkinleştir
-set -g @yank_selection 'clipboard'                             # Sistem clipboard'ına kopyala
-set -g @yank_selection_mouse 'clipboard'                       # Fare ile de sistem clipboard'ına kopyala
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃ Custom Key Bindings - Özel Tuş Bağlantıları                      ┃
@@ -469,9 +461,9 @@ bind-key Space run-shell tmux-thumbs                           # Space tuşu ile
 #   Ctrl-a K       - Session'ı yeniden adlandır
 #
 # Window Management - Pencere Yönetimi:
-#   Ctrl-a c       - Yeni pencere oluştur (tm tmx --layout 3 ile)
+#   Ctrl-a 0       - Yeni pencere oluştur (tm tmx --layout 3 ile)
 #   Ctrl-a n       - Yeni pencere oluştur (tm tmx --layout 4 ile)
-#   Ctrl-a 0       - Yeni pencere oluştur (tm tmx --layout 1 ile)
+#   Ctrl-a c       - Yeni pencere oluştur (tm tmx --layout 1 ile)
 #   Ctrl-a A       - Pencereyi yeniden adlandır
 #   Ctrl-a q       - Pencereyi kapat (onay iste)
 #   Ctrl-a C-n     - Sonraki pencereye geç
