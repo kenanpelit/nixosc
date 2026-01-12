@@ -222,12 +222,14 @@ echo "⌨️  Window Manager keybinding'leri uygulanıyor..."
 dconf write /org/gnome/desktop/wm/keybindings/close "['<Super>q']"
 dconf write /org/gnome/desktop/wm/keybindings/toggle-fullscreen "['<Super>f']"
 dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m']"
-dconf write /org/gnome/desktop/wm/keybindings/minimize "['<Super>h']"
-dconf write /org/gnome/desktop/wm/keybindings/show-desktop "['<Super>d']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-applications "['<Alt>Tab']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-applications-backward "['<Shift><Alt>Tab']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-windows "['<Super>Tab']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-windows-backward "['<Shift><Super>Tab']"
+dconf write /org/gnome/desktop/wm/keybindings/minimize "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
+
+# Niri-like alt-tab: switch windows (not apps)
+dconf write /org/gnome/desktop/wm/keybindings/switch-windows "['<Alt>Tab', '<Super>Tab']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-windows-backward "['<Shift><Alt>Tab', '<Shift><Super>Tab']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-applications "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/switch-applications-backward "@as []"
 
 # Workspace switching - DISABLED for custom history support
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-1 "@as []"
@@ -255,23 +257,24 @@ dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Super><Shi
 # Navigate workspaces with arrows - DISABLED
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-right "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "['<Super>Up', '<Super>k']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "['<Super>Down', '<Super>j']"
 
 # Move window between workspaces
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "['<Super><Shift>Left']"
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "['<Super><Shift>Right']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "['<Super><Shift>Up']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "['<Super><Shift>Down']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "['<Super>Page_Up']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "['<Super>Page_Down']"
 
 # =============================================================================
 # SHELL KEYBINDINGS
 # =============================================================================
 echo "🐚 Shell keybinding'leri uygulanıyor..."
 
-dconf write /org/gnome/shell/keybindings/show-applications "['<Super>a']"
+dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d']"
+dconf write /org/gnome/shell/keybindings/toggle-message-tray "['<Super>n']"
 dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['<Super>Print']"
-dconf write /org/gnome/shell/keybindings/toggle-overview "['<Super>s']"
+dconf write /org/gnome/shell/keybindings/toggle-overview "['<Super><Alt>o']"
 
 # Application switching keybinding'larını kapat (workspace çakışması için)
 dconf write /org/gnome/shell/keybindings/switch-to-application-1 "@as []"
@@ -706,7 +709,7 @@ done
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings "[ $CUSTOM_PATHS ]"
 
 # 0) Terminal
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/binding "'<Super>Return'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/binding "'<Super>t'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command "'$KITTY'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/name "'Terminal'"
 
@@ -721,7 +724,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/name "'Terminal File Manager (Floating)'"
 
 # 3) Nemo
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/binding "'<Alt><Ctrl>f'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/binding "'<Super><Ctrl>f'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/command "'$NEMO'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/name "'Open Nemo File Manager'"
 
@@ -731,7 +734,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/name "'Terminal File Manager (Yazi)'"
 
 # 5) Walker
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Super><Alt>space'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Super>space'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'$WALKER'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/name "'Open Walker'"
 
@@ -791,12 +794,12 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/name "'Start KKENP'"
 
 # 17) Notes Manager
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/binding "'<Super>n'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/binding "'<Alt>n'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/command "'anotes -M'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/name "'Notes Manager'"
 
 # 18) Clipboard (CopyQ)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/binding "'<Alt>v'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/binding "'<Super>v'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/command "'$COPYQ toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/name "'Clipboard Manager'"
 
@@ -874,7 +877,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/name "'GNOME GKR'"
 
 # 42) Walker
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/binding "'<Super>space'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/binding "'<Super><Ctrl>space'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/command "'$WALK'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom42/name "'WalkerS'"
 
@@ -952,18 +955,18 @@ dconf write /org/gnome/shell/extensions/tilingshell/max-suggestions-to-show "6"
 dconf write /org/gnome/shell/extensions/tilingshell/enable-suggestions-scroll "true"
 
 # Tiling Keybindings
-dconf write /org/gnome/shell/extensions/tilingshell/tile-left "['<Super><Shift>Left']"
-dconf write /org/gnome/shell/extensions/tilingshell/tile-right "['<Super><Shift>Right']"
-dconf write /org/gnome/shell/extensions/tilingshell/tile-up "['<Super><Shift>Up']"
-dconf write /org/gnome/shell/extensions/tilingshell/tile-down "['<Super><Shift>Down']"
-dconf write /org/gnome/shell/extensions/tilingshell/toggle-tiling "['<Super>t']"
-dconf write /org/gnome/shell/extensions/tilingshell/toggle-floating "['<Super>f']"
+dconf write /org/gnome/shell/extensions/tilingshell/tile-left "['<Super><Shift>Left', '<Super><Shift>h']"
+dconf write /org/gnome/shell/extensions/tilingshell/tile-right "['<Super><Shift>Right', '<Super><Shift>l']"
+dconf write /org/gnome/shell/extensions/tilingshell/tile-up "['<Super><Shift>Up', '<Super><Shift>k']"
+dconf write /org/gnome/shell/extensions/tilingshell/tile-down "['<Super><Shift>Down', '<Super><Shift>j']"
+dconf write /org/gnome/shell/extensions/tilingshell/toggle-tiling "@as []"
+dconf write /org/gnome/shell/extensions/tilingshell/toggle-floating "['<Super>g']"
 
 # Focus keybindings
-dconf write /org/gnome/shell/extensions/tilingshell/focus-left "['<Super>Left']"
-dconf write /org/gnome/shell/extensions/tilingshell/focus-right "['<Super>Right']"
-dconf write /org/gnome/shell/extensions/tilingshell/focus-up "['<Super>Up']"
-dconf write /org/gnome/shell/extensions/tilingshell/focus-down "['<Super>Down']"
+dconf write /org/gnome/shell/extensions/tilingshell/focus-left "['<Super>Left', '<Super>h']"
+dconf write /org/gnome/shell/extensions/tilingshell/focus-right "['<Super>Right', '<Super>l']"
+dconf write /org/gnome/shell/extensions/tilingshell/focus-up "['<Super><Ctrl>Up', '<Super><Ctrl>k']"
+dconf write /org/gnome/shell/extensions/tilingshell/focus-down "['<Super><Ctrl>Down', '<Super><Ctrl>j']"
 
 # Focus settings
 dconf write /org/gnome/shell/extensions/tilingshell/auto-focus-on-tile "true"
@@ -971,8 +974,8 @@ dconf write /org/gnome/shell/extensions/tilingshell/focus-follows-mouse "false"
 dconf write /org/gnome/shell/extensions/tilingshell/respect-focus-hints "true"
 
 # Layout switching
-dconf write /org/gnome/shell/extensions/tilingshell/next-layout "['<Super>Tab']"
-dconf write /org/gnome/shell/extensions/tilingshell/prev-layout "['<Super><Shift>Tab']"
+dconf write /org/gnome/shell/extensions/tilingshell/next-layout "['<Super><Ctrl>Tab']"
+dconf write /org/gnome/shell/extensions/tilingshell/prev-layout "['<Super><Shift><Ctrl>Tab']"
 
 # Visual settings
 dconf write /org/gnome/shell/extensions/tilingshell/show-border "true"
@@ -1067,11 +1070,14 @@ echo "   • Terminal Renkleri: Catppuccin Mocha paleti"
 echo "   • Extension Temaları: Mocha renkleri ile uyumlu"
 echo ""
 echo "📋 Test etmek için temel keybinding'ler:"
-echo "   🖥️  Super+Return    → Terminal"
+echo "   🖥️  Super+t         → Terminal"
 echo "   🌐 Super+b         → Browser"
 echo "   📁 Super+e         → File Manager (Yazi)"
-echo "   📁 Alt+Ctrl+f      → Nemo File Manager"
+echo "   📁 Super+Ctrl+f    → Nemo File Manager"
 echo "   📋 Super+v         → Clipboard"
+echo "   🔎 Super+Space     → Spotlight (Walker)"
+echo "   🚀 Super+Ctrl+Space → Launcher (walk)"
+echo "   🪟 Super+Tab / Alt+Tab → Window Switcher"
 echo "   🏢 Super+1-9       → Workspaces"
 echo "   ❌ Super+q         → Close Window"
 echo "   📸 Super+Shift+s   → Screenshot"

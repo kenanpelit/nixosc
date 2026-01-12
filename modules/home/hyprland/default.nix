@@ -18,6 +18,7 @@ let
     hyprSet = "${config.home.profileDirectory}/bin/hypr-set";
     screenshot = "${config.home.profileDirectory}/bin/screenshot";
     bluetoothToggle = "${config.home.profileDirectory}/bin/bluetooth_toggle";
+    oscHereHypr = "${config.home.profileDirectory}/bin/osc-here-hypr";
   };
   
   settings = import ./settings.nix { 
@@ -58,8 +59,7 @@ in
     # ---------------------------------------------------------------------------
     # Extensions & Components 
     # ---------------------------------------------------------------------------
-    #./hyprlock.nix   # Screen locker
-    ./hypridle.nix   # Idle management
+    # Idle/lock are handled by Stasis + DMS (see modules/home/stasis, modules/home/dms).
     ./pyprland.nix   # Python plugins
     ./keyring.nix    # Keyring
   ];

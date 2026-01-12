@@ -15,6 +15,7 @@ in
     layout {
       gaps 12;
       center-focused-column "on-overflow";
+      always-center-single-column;
       background-color "#00000000";
 
       focus-ring {
@@ -51,13 +52,15 @@ in
       }
 
       preset-column-widths {
-        proportion 0.33333;
-        proportion 0.5;
-        proportion 0.66667;
+        proportion 0.30;
+        proportion 0.45;
+        proportion 0.60;
+        proportion 0.75;
         proportion 1.0;
       }
 
-      default-column-width { proportion 0.5; }
+      // Match your preferred default (≈80% width)
+      default-column-width { proportion 0.8; }
     }
   '';
 
@@ -288,7 +291,7 @@ in
     }
 
     ${lib.optionalString cfg.systemd.enable ''
-    // Start session-scoped user services (niri-init, nsticky, nirius, niriswitcher, DMS, …).
+    // Start session-scoped user services (niri-bootstrap, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
     spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "session-start";

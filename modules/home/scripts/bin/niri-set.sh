@@ -78,37 +78,74 @@ case "${cmd}" in
       set -euo pipefail
       
       STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/niri-zen.state"
+      ZEN_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/niri/dms/zen.kdl"
+
+      ensure_zen_file() {
+        mkdir -p "$(dirname "$ZEN_FILE")" 2>/dev/null || true
+        if [[ -L "$ZEN_FILE" ]]; then
+          rm -f "$ZEN_FILE" 2>/dev/null || true
+        fi
+        [[ -f "$ZEN_FILE" ]] || : >"$ZEN_FILE"
+      }
+
+      enable_zen_config() {
+        cat >"$ZEN_FILE" <<'EOF'
+layout {
+  gaps 0;
+
+  border {
+    off;
+  }
+
+  focus-ring {
+    off;
+  }
+
+  tab-indicator {
+    off;
+  }
+
+  insert-hint {
+    off;
+  }
+}
+EOF
+      }
+
+      disable_zen_config() {
+        : >"$ZEN_FILE"
+      }
+
+      reload_config() {
+        # Newer niri versions live-reload included files; keep this as a fallback.
+        niri msg action load-config-file >/dev/null 2>&1 || true
+      }
+
+      notify() {
+        command -v notify-send >/dev/null 2>&1 || return 0
+        notify-send -t 1000 "Zen Mode" "${1:-}" 2>/dev/null || true
+      }
 
       if [[ -f "$STATE_FILE" ]]; then
         # === DISABLE ZEN (Restore) ===
-        
-        # Restore defaults (hardcoded for now as niri doesn't support save/restore state easily)
-        # Assuming defaults: gaps 12, borders on
-        
-        # Note: 'niri msg action' for setting gaps might not exist in all versions yet.
-        # If it doesn't, we rely on config reload.
-        # But let's try to be smart. If actions fail, we fallback to reload.
-        
-        # Attempt to reload config to restore defaults
-        niri msg action load-config-file >/dev/null 2>&1 || true
+
+        ensure_zen_file
+        disable_zen_config
+        reload_config
         
         # Restore DMS Bar
         dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
         dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
         
         rm -f "$STATE_FILE"
-        notify-send -t 1000 "Zen Mode" "Off"
+        notify "Off"
         echo "Zen Mode: Off"
       else
         # === ENABLE ZEN ===
-        
-        # Niri currently doesn't expose 'set-gaps' via IPC in stable.
-        # If your version has it, uncomment:
-        # niri msg action set-gaps 0 >/dev/null 2>&1 || true
-        
-        # Workaround for Gaps:
-        # Since we can't zero gaps via IPC easily without scripting config,
-        # we focus on the Bar and Notifications which is the biggest part of Zen.
+
+        ensure_zen_file
+        enable_zen_config
+        reload_config
         
         # Hide Bar
         dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
@@ -116,7 +153,7 @@ case "${cmd}" in
         dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
         
         touch "$STATE_FILE"
-        notify-send -t 1000 "Zen Mode" "On"
+        notify "On"
         echo "Zen Mode: On"
       fi
     )
@@ -790,27 +827,36 @@ case "${cmd}" in
     )
     ;;
 
-  init)
-    # ----------------------------------------------------------------------------
-    # Embedded: niri-init.sh
-    # ----------------------------------------------------------------------------
-    (
+	  init)
+	    # ----------------------------------------------------------------------------
+	    # Embedded: niri-init.sh
+	    # ----------------------------------------------------------------------------
+	    (
       set -euo pipefail
 
       LOG_TAG="niri-init"
       log() { printf '[%s] %s\n' "$LOG_TAG" "$*"; }
       warn() { printf '[%s] WARN: %s\n' "$LOG_TAG" "$*" >&2; }
+      notify() {
+        command -v notify-send >/dev/null 2>&1 || return 0
+        local body="${1:-}"
+        local timeout="${2:-2500}"
+        notify-send -t "$timeout" "Niri Init" "$body" 2>/dev/null || true
+      }
 
       run_if_present() {
         local cmd="$1"; shift
         if command -v "$cmd" >/dev/null 2>&1; then
           if "$cmd" "$@"; then
             log "$cmd $*"
+            notify "$cmd $*"
           else
             warn "$cmd failed (ignored): $*"
+            notify "WARN: $cmd failed: $*"
           fi
         else
           warn "$cmd not found; skipping"
+          notify "WARN: $cmd not found"
         fi
       }
 
@@ -819,34 +865,56 @@ case "${cmd}" in
         exit 0
       fi
 
-      if ! niri msg version >/dev/null 2>&1; then
-        warn "cannot connect to niri (not in session / NIRI_SOCKET missing); exiting"
-        exit 0
-      fi
+	      if ! niri msg version >/dev/null 2>&1; then
+	        warn "cannot connect to niri (not in session / NIRI_SOCKET missing); exiting"
+	        exit 0
+	      fi
 
-      preferred="${NIRI_INIT_PREFERRED_OUTPUT:-DP-3}"
-      if niri msg outputs 2>/dev/null | grep -q "(${preferred})"; then
-        niri msg action focus-monitor "$preferred" >/dev/null 2>&1 || true
-        log "focused monitor: $preferred"
-      fi
+	      preferred="${NIRI_INIT_PREFERRED_OUTPUT:-DP-3}"
+	      target=""
+	      if command -v jq >/dev/null 2>&1; then
+	        outputs_json="$(niri msg -j outputs 2>/dev/null || true)"
+	        if [[ -n "$outputs_json" ]]; then
+	          if [[ -n "$preferred" ]] && echo "$outputs_json" | jq -e --arg p "$preferred" '.[] | select(.name == $p)' >/dev/null 2>&1; then
+	            target="$preferred"
+	          else
+	            # Prefer an external output (anything that isn't eDP*), fallback to the first output.
+	            target="$(echo "$outputs_json" | jq -r '[.[] | .name] as $all | ($all | map(select(test("^eDP")|not)) | .[0]) // ($all | .[0]) // empty' 2>/dev/null || true)"
+	          fi
+	        fi
+	      else
+	        if niri msg outputs 2>/dev/null | grep -q "(${preferred})"; then
+	          target="$preferred"
+	        fi
+	      fi
 
-      run_if_present osc-soundctl init
+	      if [[ -n "$target" ]]; then
+	        niri msg action focus-monitor "$target" >/dev/null 2>&1 || true
+	        log "focused monitor: $target"
+            notify "focused monitor: $target"
+	      fi
+	
+	      run_if_present osc-soundctl init
 
       if [[ "${NIRI_INIT_SKIP_ARRANGE:-0}" != "1" ]]; then
         # We call the subcommand directly to avoid depending on extra binaries.
         if [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
           focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
           "$0" arrange-windows --focus "ws:${focus_ws}"
+          notify "arrange-windows: ws:${focus_ws}"
         else
           "$0" arrange-windows
+          notify "arrange-windows"
         fi
       elif [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
         # Best-effort fallback: this may refer to workspace index in niri.
         focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
         niri msg action focus-workspace "$focus_ws" >/dev/null 2>&1 || true
+        notify "focus workspace: ${focus_ws}"
       fi
 
       log "niri-init completed."
+      notify "niri-init completed."
     )
     ;;
 
@@ -1551,7 +1619,7 @@ EOF
       if maybe systemctl; then
         echo
         kv "systemd --user bus" "$(systemctl --user is-system-running 2>/dev/null || true)"
-        for unit in niri-session.target dms.service niri-init.service niri-nsticky.service; do
+        for unit in niri-session.target dms.service niri-bootstrap.service; do
           kv "is-active:$unit" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
         done
       fi

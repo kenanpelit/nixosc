@@ -122,7 +122,7 @@ in
       clip-to-geometry true;
     }
 
-    // Auto-Sizing: Browsers (Wider)
+    // Auto-Sizing: Browsers (Optimal Reading Width)
     window-rule {
       match app-id=r#"^(firefox|brave-browser|chrome|chromium)$"#;
       default-column-width { proportion 0.6; }
@@ -144,18 +144,6 @@ in
     window-rule {
       match is-floating=true;
       shadow { on; }
-    }
-
-    // Tiling Windows
-    window-rule {
-      match is-floating=false;
-      shadow {
-        on;
-        color "#00000060";
-        offset x=0 y=4;
-        spread 0;
-        softness 16;
-      }
     }
 
     // Tiling Windows
@@ -235,6 +223,17 @@ in
     window-rule {
       match app-id=r#"^(org\.gnome\.Calculator|kcalc)$"#;
       ${mkFixedFloating { w = 400; h = 600; x = 0; y = 100; relativeTo = "top"; }}
+    }
+
+    // Dropdown Terminal
+    window-rule {
+      match app-id="dropdown-terminal";
+      open-floating true;
+      default-column-width { proportion 0.8; }
+      default-window-height { fixed 600; }
+      default-floating-position x=0 y=20 relative-to="top";
+      border { off; }
+      shadow { on; spread 10; softness 40; color "#00000080"; }
     }
 
     // Tmux
