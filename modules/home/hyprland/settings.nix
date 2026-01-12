@@ -71,7 +71,7 @@ in
     hyprscrolling = {
       column_width = 0.6;
       fullscreen_on_one_column = false;
-      explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
+      explicit_column_widths = "0.30, 0.45, 0.60, 0.75, 1.0";
       focus_fit_method = 0; # center
       follow_focus = true;
       follow_debounce_ms = 0;
