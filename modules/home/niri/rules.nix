@@ -69,21 +69,21 @@ let
   # Workspace assignment rules for daily apps
   # ----------------------------------------------------------------------------
   workspaceRules = [
-    { appId = "^discord$"; workspace = "5"; maximize = true; }
-    { appId = "^WebCord$"; workspace = "5"; maximize = true; }
+    { appId = "^discord$"; workspace = "5"; }
+    { appId = "^WebCord$"; workspace = "5"; }
     { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "8"; }
     { appId = "^audacious$"; workspace = "5"; }
     { appId = "^transmission$"; workspace = "7"; }
     { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "7"; }
-    { appId = "^Kenp$"; workspace = "1"; maximize = true; }
-    { appId = "^Ai$"; workspace = "3"; maximize = true; }
-    { appId = "^CompecTA$"; workspace = "4"; maximize = true; }
-    { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; maximize = true; }
-    { appId = "^ferdium$"; workspace = "9"; maximize = true; }
-    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; maximize = true; }
-    { appId = "^org\.telegram\.desktop$"; workspace = "6"; maximize = true; }
+    { appId = "^Kenp$"; workspace = "1"; }
+    { appId = "^Ai$"; workspace = "3"; }
+    { appId = "^CompecTA$"; workspace = "4"; }
+    { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; }
+    { appId = "^ferdium$"; workspace = "9"; }
+    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; }
+    { appId = "^org\.telegram\.desktop$"; workspace = "6"; }
     { appId = "^vlc$"; workspace = "6"; }
-    { appId = "^remote-viewer$"; workspace = "6"; maximize = true; }
+    { appId = "^remote-viewer$"; workspace = "6"; }
   ];
 
   # Rules for the "arrange windows" helper script.
@@ -120,24 +120,6 @@ in
     window-rule {
       geometry-corner-radius 12;
       clip-to-geometry true;
-    }
-
-    // Auto-Sizing: Browsers (Optimal Reading Width)
-    window-rule {
-      match app-id=r#"^(firefox|brave-browser|chrome|chromium)$"#;
-      default-column-width { proportion 0.6; }
-    }
-
-    // Auto-Sizing: Chat & Social (Narrow)
-    window-rule {
-      match app-id=r#"^(discord|WebCord|org\.telegram\.desktop|Slack|Signal|whatsapp-for-linux)$"#;
-      default-column-width { proportion 0.33333; }
-    }
-
-    // Auto-Sizing: Terminals & Code (Half Split)
-    window-rule {
-      match app-id=r#"^(kitty|Alacritty|code|vscode|org\.wezfurlong\.wezterm)$"#;
-      default-column-width { proportion 0.5; }
     }
 
     // Floating Windows
