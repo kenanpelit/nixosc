@@ -19,10 +19,11 @@ lib.mkIf cfg.enable {
         # =============================================================================
         # TTY Assignments:
         #   TTY1: Display Manager - Session Selection
-        #   TTY2: Hyprland (via hyprland_tty script)
-        #   TTY3: GNOME (via gnome_tty script)
-        #   TTY4: Niri (via niri-set tty)
+        #   TTY2: Niri (via niri-set tty)
+        #   TTY3: Hyprland (via hypr-set tty)
+        #   TTY4: GNOME (via gnome_tty)
         #   TTY5: Ubuntu VM (Sway)
+        #   TTY6: Manual start helper
         # =============================================================================
 
         # Only run in login shell when no desktop is active
@@ -54,20 +55,48 @@ lib.mkIf cfg.enable {
                 echo "╚════════════════════════════════════════════════════════════╝"
                 echo ""
                 echo "Available Desktop Sessions:"
+                echo "  • Niri    - Minimal Wayland compositor"
                 echo "  • Hyprland - Dynamic tiling Wayland compositor"
                 echo "  • GNOME    - Traditional GNOME desktop"
                 echo ""
                 echo "Manual Start Commands:"
+                echo "  exec niri-set tty    - Start Niri with optimizations"
                 echo "  exec hypr-set tty    - Start Hyprland with optimizations"
                 echo "  exec gnome_tty       - Start GNOME with optimizations"
                 echo ""
             
             # ==========================================================================
-            # TTY2: Hyprland Wayland Compositor
+            # TTY2: Niri Wayland Compositor
             # ==========================================================================
             elif [ "''${XDG_VTNR}" = "2" ]; then
                 echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY2: Launching Hyprland via hypr-set tty                 ║"
+                echo "║  TTY2: Launching Niri via niri-set tty                     ║"
+                echo "╚════════════════════════════════════════════════════════════╝"
+
+                export XDG_SESSION_TYPE=wayland
+                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                # NixOS'ta setuid sudo sadece /run/wrappers/bin içindedir.
+                # /run/current-system/sw/bin/sudo setuid değildir ve şu hataya yol açar:
+                #   sudo must be owned by uid 0 and have the setuid bit set
+                export PATH="/run/wrappers/bin:/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
+                export NIRI_TTY_GUARD=1
+
+                if command -v niri-set >/dev/null 2>&1; then
+                    echo "Starting Niri with optimized configuration..."
+                    exec niri-set tty
+                else
+                    echo "ERROR: niri-set script not found in PATH"
+                    echo "Falling back to direct Niri launch (not recommended)"
+                    sleep 3
+                    exec niri 2>&1 | tee /tmp/niri-tty2.log
+                fi
+            
+            # ==========================================================================
+            # TTY3: Hyprland Wayland Compositor
+            # ==========================================================================
+            elif [ "''${XDG_VTNR}" = "3" ]; then
+                echo "╔════════════════════════════════════════════════════════════╗"
+                echo "║  TTY3: Launching Hyprland via hypr-set tty                 ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
                 
                 # Minimum required variables - rest configured in hyprland_tty
@@ -86,22 +115,22 @@ lib.mkIf cfg.enable {
                 fi
             
             # ==========================================================================
-            # TTY3: GNOME Desktop Environment
+            # TTY4: GNOME Desktop Environment
             # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "3" ]; then
+            elif [ "''${XDG_VTNR}" = "4" ]; then
                 echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY3: Launching GNOME via gnome_tty                       ║"
+                echo "║  TTY4: Launching GNOME via gnome_tty                       ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
 
                 # CRITICAL: Only set XDG_RUNTIME_DIR - let gnome_tty handle everything else
                 # Setting XDG_SESSION_TYPE, XDG_SESSION_DESKTOP etc here causes problems
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
                 export GNOME_TTY_GUARD=1
-                if [ -e "''${XDG_RUNTIME_DIR}/gnome-tty3.guard" ]; then
+                if [ -e "''${XDG_RUNTIME_DIR}/gnome-tty4.guard" ]; then
                     echo "GNOME zaten başlatılıyor (guard aktif), tekrar tetiklenmiyor."
                     return
                 fi
-                export GNOME_TTY_GUARD_FILE="''${XDG_RUNTIME_DIR}/gnome-tty3.guard"
+                export GNOME_TTY_GUARD_FILE="''${XDG_RUNTIME_DIR}/gnome-tty4.guard"
 
                 # Check for gnome_tty script
                 if command -v gnome_tty >/dev/null 2>&1; then
@@ -117,33 +146,7 @@ lib.mkIf cfg.enable {
                     export SYSTEMD_OFFLINE=0
 
                     # Start GNOME session directly (no dbus-run-session wrapper)
-                    exec gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty3.log
-                fi
-
-            # ==========================================================================
-            # TTY4: Niri Wayland Compositor
-            # ==========================================================================
-            elif [ "''${XDG_VTNR}" = "4" ]; then
-                echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY4: Launching Niri via niri-set tty                     ║"
-                echo "╚════════════════════════════════════════════════════════════╝"
-
-                export XDG_SESSION_TYPE=wayland
-                export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-                # NixOS'ta setuid sudo sadece /run/wrappers/bin içindedir.
-                # /run/current-system/sw/bin/sudo setuid değildir ve şu hataya yol açar:
-                #   sudo must be owned by uid 0 and have the setuid bit set
-                export PATH="/run/wrappers/bin:/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
-                export NIRI_TTY_GUARD=1
-
-                if command -v niri-set >/dev/null 2>&1; then
-                    echo "Starting Niri with optimized configuration..."
-                    exec niri-set tty
-                else
-                    echo "ERROR: niri-set script not found in PATH"
-                    echo "Falling back to direct Niri launch (not recommended)"
-                    sleep 3
-                    exec niri 2>&1 | tee /tmp/niri-tty4.log
+                    exec gnome-session --session=gnome --no-reexec 2>&1 | tee /tmp/gnome-session-tty4.log
                 fi
             
             # ==========================================================================
@@ -192,12 +195,14 @@ lib.mkIf cfg.enable {
                 echo ""
                 echo "Available TTY Assignments:"
                 echo "  TTY1: Display Manager (gdm)"
-                echo "  TTY2: Hyprland (hypr-set tty)"
-                echo "  TTY3: GNOME (gnome_tty)"
+                echo "  TTY2: Niri (niri-set tty)"
+                echo "  TTY3: Hyprland (hypr-set tty)"
+                echo "  TTY4: GNOME (gnome_tty)"
                 echo "  TTY5: Ubuntu VM (Sway)"
-                echo "  TTY6: Available for manual use"
+                echo "  TTY6: Manual start helper"
                 echo ""
                 echo "Manual Start Commands:"
+                echo "  exec niri-set tty    - Niri with optimizations"
                 echo "  exec hypr-set tty    - Hyprland with optimizations"
                 echo "  exec gnome_tty       - GNOME with optimizations"
                 echo "  exec sway            - Sway compositor"

@@ -152,17 +152,22 @@ lib.mkIf cfg.enable {
   };
 
   # Lock davranışı:
-  # `loginctlLockIntegration=true` iken DMS bazen loginctl üzerinden kilitleyip
-  # kendi (güzel) lock UI'ını devreye sokmayabiliyor ve "başka" bir lock ekranı
-  # görünüyormuş gibi oluyor. Niri/Hyprland altında tutarlı olması için bunu
-  # kapatıyoruz ve DMS'in WlSessionLock UI'ını her zaman kullandırıyoruz.
+  #
+  # DMS 1.2+ sürümlerinde `loginctlLockIntegration=false` iken `SessionService`
+  # yine de loginctl capability'sini "available" olarak görebiliyor; bu da lock
+  # kodunun `pendingLock` durumuna düşüp kilidin hiç devreye girmemesine sebep
+  # olabiliyor. (Sonuç: Alt+L hiç kilitlemez, bazı durumlarda da dışarıdan
+  # lock/greeter davranışları tetiklenmiş gibi görünür.)
+  #
+  # Bu repo DMS'in kendi WlSessionLock UI'ını kullanıyor; loginctl entegrasyonunu
+  # açık tutmak kilidi stabil hale getiriyor.
   home.activation.dmsLockSettings = dag.entryAfter [ "writeBoundary" ] ''
     settings="$HOME/.config/DankMaterialShell/settings.json"
     if [ -f "$settings" ]; then
       current="$(${pkgs.jq}/bin/jq -r '.loginctlLockIntegration // empty' "$settings" 2>/dev/null || true)"
-      if [ "$current" != "false" ]; then
+      if [ "$current" != "true" ]; then
         tmp="$(mktemp)"
-        ${pkgs.jq}/bin/jq '.loginctlLockIntegration = false' "$settings" >"$tmp"
+        ${pkgs.jq}/bin/jq '.loginctlLockIntegration = true' "$settings" >"$tmp"
         mv "$tmp" "$settings"
         ${pkgs.systemd}/bin/systemctl --user try-restart dms.service >/dev/null 2>&1 || true
       fi

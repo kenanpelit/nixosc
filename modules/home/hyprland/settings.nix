@@ -60,11 +60,22 @@ in
     border_size = 2;
     "col.active_border" = "${mkColor colors.teal.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
     "col.inactive_border" = inactiveBorder;
-    layout = "master";
+    layout = "scrolling";
     allow_tearing = false;
     resize_on_border = true;
     extend_border_grab_area = 15;
     hover_icon_on_border = true;
+  };
+  
+  plugin = {
+    hyprscrolling = {
+      column_width = 0.6;
+      fullscreen_on_one_column = false;
+      explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
+      focus_fit_method = 0; # center
+      follow_focus = true;
+      follow_debounce_ms = 0;
+    };
   };
 
   cursor = {
@@ -126,10 +137,11 @@ in
       "quart, 0.25, 1, 0.5, 1"
       "niri_motion, 0.05, 0.9, 0.1, 1.0" # Snappy, almost no overshoot (Matches Niri stiffness=1000)
       "easeOutExpo, 0.16, 1, 0.3, 1"     # Fast initial burst (Matches Niri window open)
+      "easeOutQuad, 0.25, 0.46, 0.45, 0.94" # Niri window close curve
     ];
     animation = [
       "windowsIn, 1, 3, easeOutExpo, popin 95%" # Niri: ease-out-expo 300ms, scale 0.95
-      "windowsOut, 1, 2, easeOutExpo, popin 98%" # Niri: ease-out-quad 200ms, scale 0.98
+      "windowsOut, 1, 2, easeOutQuad, popin 98%" # Niri: ease-out-quad 200ms, scale 0.98
       "windowsMove, 1, 3, niri_motion"           # Snappy movement
       "fade, 1, 2, quart"
       "workspaces, 1, 4, niri_motion, slidevert" # Vertical workspace flow (User preference)
@@ -145,11 +157,12 @@ in
     repeat_rate = 35;
     repeat_delay = 250;
     numlock_by_default = false;
-    sensitivity = 0.0;
+    sensitivity = 1.0;
     accel_profile = "adaptive";
     force_no_accel = true;
     follow_mouse = 1;
     float_switch_override_focus = 2;
+    scroll_factor = 1.0;
     left_handed = false;
     touchpad = {
       natural_scroll = false;

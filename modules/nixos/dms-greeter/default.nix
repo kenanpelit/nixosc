@@ -28,53 +28,19 @@ let
     then config.programs.sway.package
     else pkgs.sway;
 
-  # DMS greeter, Hyprland'ı `Hyprland` binary adıyla çalıştırıyor.
-  # Hyprland ise start-hyprland wrapper'ı olmadan başlatılınca uyarı basıyor.
-  # Greeter oturumunda PATH'in başına bu wrapper'ı koyarak uyarıyı bitiriyoruz.
-  hyprlandGreeterHyprlandWrapper = pkgs.writeShellScriptBin "Hyprland" ''
-    set -euo pipefail
-    wrapper_dir="$(cd "$(dirname "$0")" && pwd -P)"
-    path=":''${PATH:-}:"
-    path="''${path//:''${wrapper_dir}:/:}"
-    path="''${path%:}"
-    export PATH="${hyprPkg}/bin''${path}"
-
-    # If start-hyprland calls `Hyprland` with its internal args (like
-    # `--watchdog-fd`), don't re-wrap it into another start-hyprland process.
-    for arg in "$@"; do
-      if [ "$arg" = "--watchdog-fd" ] && [ -x "${hyprPkg}/bin/Hyprland" ]; then
-        exec "${hyprPkg}/bin/Hyprland" "$@"
-      fi
-    done
-
-    if [ -x "${hyprPkg}/bin/start-hyprland" ]; then
-      exec "${hyprPkg}/bin/start-hyprland" -- "$@"
-    fi
-
-    if [ -x "${hyprPkg}/bin/Hyprland" ]; then
-      exec "${hyprPkg}/bin/Hyprland" "$@"
-    fi
-
-    echo "dms-greeter: Hyprland executable not found in ${hyprPkg}/bin" >&2
-    exit 127
-  '';
-
   compositorPkg =
     if cfg.compositor == "hyprland" then hyprPkg else if cfg.compositor == "niri" then niriPkg else swayPkg;
 
-  greeterPath = lib.makeBinPath (
-    (lib.optionals (cfg.compositor == "hyprland") [ hyprlandGreeterHyprlandWrapper ])
-    ++ [
-      dmsGreeterCfg.quickshell.package
-      compositorPkg
-      # Greeter scans sessions via `find | sort` and parses via `bash + grep`.
-      # Don't rely on host PATH contents; make it explicit.
-      pkgs.bash
-      pkgs.coreutils
-      pkgs.findutils
-      pkgs.gnugrep
-    ]
-  );
+  greeterPath = lib.makeBinPath [
+    dmsGreeterCfg.quickshell.package
+    compositorPkg
+    # Greeter scans sessions via `find | sort` and parses via `bash + grep`.
+    # Don't rely on host PATH contents; make it explicit.
+    pkgs.bash
+    pkgs.coreutils
+    pkgs.findutils
+    pkgs.gnugrep
+  ];
 
   dmsShellPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.dms-shell;
   dmsGreeterAsset = "${inputs.dankMaterialShell}/quickshell/Modules/Greetd/assets/dms-greeter";

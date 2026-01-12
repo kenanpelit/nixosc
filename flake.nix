@@ -93,12 +93,12 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/f1652b295130fd241bd3a6505908d6db562fdcf1"; # 0106 - Updated commit
-#      url = "github:hyprwm/hyprland/9817553c664b0b7f6776671383a6368c74ee8dee"; # 0106 - Updated commit
-      #      url = "github:hyprwm/hyprland/107275238c0dd5e3de8b9c36575a335ebd393c56"; # 0105 - Updated commit
-      #      url = "github:hyprwm/hyprland/7d8f57083e703267e18c78256b0f37108337ff81"; # 0105 - Updated commit
-      #      url = "github:hyprwm/hyprland/0b3b012817ca381e40754cb4408e5c0cd3a2c732"; # 0104 - Updated commit
-      #      url = "github:hyprwm/hyprland/583c4074a5d4229f841d9e470ab427339773b592"; # 0104 - Updated commit
+      url = "github:hyprwm/hyprland/fbf421df889ceff3bac08a9f4b9493def5eecc4d"; # 0111 - Updated commit
+#      url = "github:hyprwm/hyprland/8f8b31e7a66acb4eb3836aa2fe6d751e5889bdaa"; # 0111 - Updated commit
+      #      url = "github:hyprwm/hyprland/81e7498ec27156ee97aabba6fe4993412d98d1ab"; # 0110 - Updated commit
+      #      url = "github:hyprwm/hyprland/fa41c8229d46d655bbd3128c0a3844a8d4615c13"; # 0109 - Updated commit
+      #      url = "github:hyprwm/hyprland/5b1b79c29c5e0ea974b2a9da5d122dd0f3bedca6"; # 0109 - Updated commit
+      #      url = "github:hyprwm/hyprland/a649dbe4c4f77c75869d9a627961b426a4e16838"; # 0109 - Updated commit
     };
 
     hypr-contrib = {
@@ -154,11 +154,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/e6d289d48ccdaefe45a29ffc3581cb516ec227b7"; # 0107 - Updated commit
-#      url = "github:AvengeMedia/DankMaterialShell/8c9c936d0e0bfa739c538f6b4f092837e7789120"; # 0107 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/1b5abca83aeffc0909033091d56bd8880ca0dd8e"; # 0106 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/f762f9ae497749560dcb68f24110acc256661c06"; # 0106 - Updated commit
-      #      url = "github:AvengeMedia/DankMaterialShell/4005a55bf2415ae88784312b0dbfab46b27e7ea1"; # 0105 - Updated commit - Pinned
+      url = "github:AvengeMedia/DankMaterialShell/1280bd047d9d9efb312c3bcfc860bcfb8c754451"; # 0112 - Updated commit
+#      url = "github:AvengeMedia/DankMaterialShell/99a5721fe8d5b30c1578e74d3c440b4095c1dec0"; # 0112 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/5302ebd840847aae390390a395b8b8dfa3d47d34"; # 0112 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/3c38e1747230692d729dd86f352e22d7cfe36588"; # 0111 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/510ea5d2e43b368d04856e9788d5f489482fee13"; # 0111 - Updated commit
+      #      url = "github:AvengeMedia/DankMaterialShell/bb2234d3287bccda2fe45722f3ba7d97ce8a34be"; # 0110 - Updated commit
     };
 
     # ==========================================================================
@@ -195,12 +196,12 @@
     # ==========================================================================
     # Optional GUI tools, app launchers, and helper flakes.
     walker = {
-      url = "github:abenz1267/walker/v2.12.2";
+      url = "github:abenz1267/walker/v2.13.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     elephant = {
-      url = "github:abenz1267/elephant/v2.17.2";
+      url = "github:abenz1267/elephant/v2.18.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -222,8 +223,10 @@
     stasis = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup stasis`)
-      url = "github:saltnpepper97/stasis/8f519faaa032a0170cd5ae516388d895b4d4dd83"; # 0106 - Updated commit
-#      url = "github:saltnpepper97/stasis/b6efb72a13ac91b0f48204b99cbf98e0d033a131"; # 0104 - Updated commit
+      url = "github:saltnpepper97/stasis/201de746ba3a3348d955cf100c0fbbe11f3b106d"; # 0112 - Updated commit
+#      url = "github:saltnpepper97/stasis/6dba64776cb20097e08f6d905e3ac8ec8769a4ab"; # 0111 - Updated commit
+      #      url = "github:saltnpepper97/stasis/8f519faaa032a0170cd5ae516388d895b4d4dd83"; # 0106 - Updated commit
+      #      url = "github:saltnpepper97/stasis/b6efb72a13ac91b0f48204b99cbf98e0d033a131"; # 0104 - Updated commit
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";

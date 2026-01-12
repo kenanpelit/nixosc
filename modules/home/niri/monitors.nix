@@ -24,10 +24,7 @@
     workspace "8" {
       open-on-output "eDP-1";
       layout {
-        gaps 20;
         border {
-          on;
-          width 1;
           active-color "${palette.sky}";
           inactive-color "${palette.surface0}";
         }
@@ -43,7 +40,6 @@
 
       // Layout overrides for the main monitor (more useful width presets).
       layout {
-        default-column-width { proportion 0.5; }
         preset-column-widths {
           proportion 0.25;
           proportion 0.33333;
@@ -63,7 +59,6 @@
 
       // Layout overrides for the laptop panel (bigger default, fewer presets).
       layout {
-        default-column-width { proportion 1.0; }
         preset-column-widths {
           proportion 0.5;
           proportion 0.66667;

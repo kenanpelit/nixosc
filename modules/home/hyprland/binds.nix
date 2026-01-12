@@ -10,38 +10,37 @@
 let
   # --- Binding Generators ---
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
-  mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, movetoworkspacesilent, ${toString n}") nums;
-  mkPullAppsFromWorkspace = nums: map (n: "$mainMod ALT SHIFT, ${toString n}, exec, ${bins.hyprSet} workspace-pull ${toString n}") nums;
+  mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, layoutmsg, movecoltoworkspace ${toString n}") nums;
 
   # ---------------------------------------------------------------------------
   # 1. CORE WINDOW MANAGEMENT
   # ---------------------------------------------------------------------------
   coreBinds = [
-    # Focus (Vim & Arrows)
-    "$mainMod, left, movefocus, l"
-    "$mainMod, right, movefocus, r"
-    "$mainMod, up, movefocus, u"
-    "$mainMod, down, movefocus, d"
-    "$mainMod, h, movefocus, l"
-    "$mainMod, l, movefocus, r"
-    "$mainMod, k, movefocus, u"
-    "$mainMod, j, movefocus, d"
+    # Focus (Vim & Arrows) - Using hyprscrolling layoutmsg
+    "$mainMod, left, layoutmsg, focus l"
+    "$mainMod, right, layoutmsg, focus r"
+    "$mainMod, up, workspace, e-1"
+    "$mainMod, down, workspace, e+1"
+    "$mainMod, h, layoutmsg, focus l"
+    "$mainMod, l, layoutmsg, focus r"
+    "$mainMod, k, workspace, e-1"
+    "$mainMod, j, workspace, e+1"
 
-    # Move Window (Shift + Vim/Arrows)
-    "$mainMod SHIFT, left, movewindow, l"
-    "$mainMod SHIFT, right, movewindow, r"
-    "$mainMod SHIFT, up, movewindow, u"
-    "$mainMod SHIFT, down, movewindow, d"
-    "$mainMod SHIFT, h, movewindow, l"
-    "$mainMod SHIFT, l, movewindow, r"
-    "$mainMod SHIFT, k, movewindow, u"
-    "$mainMod SHIFT, j, movewindow, d"
+    # Move Column (Shift + Vim/Arrows)
+    "$mainMod SHIFT, left, layoutmsg, swapcol l"
+    "$mainMod SHIFT, right, layoutmsg, swapcol r"
+    "$mainMod SHIFT, up, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, down, layoutmsg, movewindowto d"
+    "$mainMod SHIFT, h, layoutmsg, swapcol l"
+    "$mainMod SHIFT, l, layoutmsg, swapcol r"
+    "$mainMod SHIFT, k, layoutmsg, movewindowto u"
+    "$mainMod SHIFT, j, layoutmsg, movewindowto d"
 
     # Actions
     "$mainMod, Q, killactive"
     "$mainMod, F, fullscreen, 0"
     "$mainMod, M, fullscreen, 1"       # Maximize (Fake fullscreen)
-    "$mainMod, C, centerwindow"        # Center
+    "$mainMod, C, layoutmsg, togglefit" # Center/Fit Column (Niri Mod+C match)
   ];
 
   # ---------------------------------------------------------------------------
@@ -50,42 +49,40 @@ let
   layoutBinds = [
     # Sizing (Niri Mod+R match)
     "$mainMod, R, layoutmsg, colresize +conf"
-    "$mainMod SHIFT, R, layoutmsg, colresize -conf"
+    "$mainMod SHIFT, R, layoutmsg, colresize 0.75"
     
-    # Size Presets (Niri Match)
-    "$mainMod, 0, exec, hyprctl dispatch splitratio -0.5" 
-    "$mainMod SHIFT, 0, exec, hyprctl dispatch splitratio -0.3"
-    "$mainMod CTRL, 0, exec, hyprctl dispatch splitratio 0"
+    # Size Presets (Niri Match) - Using relative resizes as hyprscrolling specific preset msg might vary
+    # Assuming colresize all <width> works or fallback to relative.
+    # Niri uses 960px etc. Here we use relative sizing.
+    "$mainMod, 0, layoutmsg, colresize 0.5"
+    "$mainMod SHIFT, 0, layoutmsg, colresize 0.7"
+    "$mainMod CTRL, 0, layoutmsg, colresize 1.0"
 
     # Fine-grained Sizing (Niri Mod+Minus/Equal Match)
-    "$mainMod, minus, resizeactive, -50 0"
-    "$mainMod, equal, resizeactive, 50 0"
-    "$mainMod SHIFT, minus, resizeactive, 0 -50"
+    "$mainMod, minus, layoutmsg, colresize -0.05"
+    "$mainMod, equal, layoutmsg, colresize +0.05"
+    "$mainMod SHIFT, minus, resizeactive, 0 -50" # Height still uses native resize
     "$mainMod SHIFT, equal, resizeactive, 0 50"
 
     # Advanced Modes
     "ALT, G, fullscreen, 1"            # Maximize to Edges
-    "$mainMod, Tab, cyclenext"         # Focus next window (Niri Tab match)
-    "$mainMod SHIFT, Tab, cyclenext, prev" # Focus prev window
-    "$mainMod, W, togglegroup"         # Toggle Tabbed Mode (Niri Mod+W match)
-    "$mainMod, G, exec, ${bins.hyprSet} toggle-float"
-    "$mainMod CTRL, BackSpace, focuscurrentorlast" # Focus Float/Tile approx
+    "$mainMod CTRL, W, togglegroup"    # Toggle Tabbed Mode (Group)
+    "$mainMod, G, exec, ${bins.hyprSet} toggle-float" # Toggle Float
+    "$mainMod CTRL, BackSpace, exec, ${bins.hyprSet} focus-float-tile"
     
     "$mainMod, Z, exec, ${bins.hyprSet} zen"
     "$mainMod, P, exec, ${bins.hyprSet} pin"
 
-    # Consume / Expel (Window Grouping -> Hyprland Grouping)
-    "$mainMod CTRL, left, moveintogroup, l"
-    "$mainMod CTRL, right, moveintogroup, r"
-    "$mainMod CTRL, up, moveintogroup, u"
-    "$mainMod CTRL, down, moveintogroup, d"
-    "$mainMod CTRL, h, moveintogroup, l"
-    "$mainMod CTRL, l, moveintogroup, r"
-    "$mainMod CTRL, k, moveintogroup, u"
-    "$mainMod CTRL, j, moveintogroup, d"
+    # Consume / Expel (Niri parity)
+    "$mainMod CTRL, left, exec, ${bins.hyprSet} consume-or-expel left"
+    "$mainMod CTRL, right, exec, ${bins.hyprSet} consume-or-expel right"
+    "$mainMod CTRL, h, exec, ${bins.hyprSet} consume-or-expel left"
+    "$mainMod CTRL, l, exec, ${bins.hyprSet} consume-or-expel right"
     
     # Opacity
-    "$mainMod, O, exec, ${bins.hyprSet} toggle-opacity"
+    "$mainMod, O, exec, ${bins.hyprSet} opacity toggle"
+    "$mainMod SHIFT, mouse_down, exec, ${bins.hyprSet} opacity -0.1"
+    "$mainMod SHIFT, mouse_up, exec, ${bins.hyprSet} opacity +0.1"
   ];
 
   # ---------------------------------------------------------------------------
@@ -93,20 +90,25 @@ let
   # ---------------------------------------------------------------------------
   dmsBinds = [
     # Launchers
-    "ALT, Space, exec, dms ipc call spotlight toggle"
-    "$mainMod, D, exec, dms ipc call dash toggle ''"
-    "$mainMod, N, exec, dms ipc call notifications toggle"
+    "$mainMod, Space, exec, dms ipc call spotlight toggle"
     
     # DMS Tools
     "$mainMod, V, exec, dms ipc call clipboard toggle"
     "$mainMod SHIFT, V, exec, osc-clipview"
+    "$mainMod, D, exec, dms ipc call dash toggle ''"
+    "$mainMod CTRL, D, exec, dms ipc call control-center toggle"
     "$mainMod SHIFT, D, exec, dms ipc call dash toggle overview"
+    "$mainMod CTRL SHIFT, D, exec, dms ipc call welcome doctor"
     "$mainMod SHIFT, P, exec, dms ipc call processlist focusOrToggle"
+    "$mainMod, N, exec, dms ipc call notifications toggle"
     "$mainMod CTRL, N, exec, dms ipc call notepad open"
     "$mainMod, comma, exec, dms ipc call settings focusOrToggle"
     
     # Window Switching
-    "ALT, Tab, exec, dms ipc call spotlight openQuery '! '"
+    "$mainMod, Tab, focuscurrentorlast"
+    "$mainMod SHIFT, Tab, focuscurrentorlast"
+    "ALT, Tab, workspace, e+1"
+    "ALT SHIFT, Tab, workspace, e-1"
 
     # UI Toggles
     "$mainMod, B, exec, dms ipc call bar toggle index 0"
@@ -115,7 +117,6 @@ let
 
     # Power & Session
     "$mainMod, Delete, exec, dms ipc call powermenu toggle"
-    "CTRL ALT, Delete, exec, dms ipc call powermenu toggle"
     "ALT, L, exec, ${bins.hyprSet} lock"
     "$mainMod SHIFT, Delete, exec, dms ipc call inhibit toggle"
 
@@ -178,11 +179,11 @@ let
     "ALT, N, exec, anotes"
     "$mainMod ALT, Return, exec, semsumo launch --daily -all"
     "$mainMod SHIFT, A, exec, ${bins.hyprSet} arrange-windows" 
+    "$mainMod, Return, exec, osc-ndrop --hypr-hide-special dropdown kitty --class dropdown"
     
     # Direct App Launchers
-    "$mainMod, Space, exec, rofi-launcher"
+    "Alt, Space, exec, rofi-launcher"
     "$mainMod CTRL, Space, exec, walk"
-    "$mainMod CTRL, S, exec, nsticky-toggle"
     "$mainMod CTRL, F, exec, env GTK_THEME=${themeName}-standard+normal nemo"
     "ALT CTRL, F, exec, kitty -e yazi"
     "$mainMod, T, exec, kitty"
@@ -198,9 +199,11 @@ let
     "$mainMod ALT, M, exec, ${bins.hyprSet} smart-focus spotify"
     "$mainMod ALT, N, exec, ${bins.hyprSet} smart-focus anotes"
 
-    # Pull-to-Me (Using mkPullAppsFromWorkspace generator for general, manual here)
+    # Pull-to-Me
     "$mainMod ALT SHIFT, T, exec, ${bins.hyprSet} pull-window kitty"
     "$mainMod ALT SHIFT, B, exec, ${bins.hyprSet} pull-window brave"
+    "$mainMod ALT SHIFT, M, exec, ${bins.hyprSet} pull-window spotify"
+    "$mainMod ALT SHIFT, N, exec, ${bins.hyprSet} pull-window anotes"
     
     # Scratchpad (BackSpace -> Special Workspace)
     "$mainMod, BackSpace, movetoworkspace, special:scratchpad"
@@ -244,10 +247,23 @@ let
   workspaceBinds = [
     # Workspace Navigation (Helpers)
     "$mainMod CTRL, C, movetoworkspace, empty"
-    "$mainMod, Page_Up, workspace, -1"
-    "$mainMod, Page_Down, workspace, +1"
+    "$mainMod, Page_Up, exec, ${bins.hyprSet} window-move workspace prev"
+    "$mainMod, Page_Down, exec, ${bins.hyprSet} window-move workspace next"
     "$mainMod, mouse_down, workspace, e+1"
     "$mainMod, mouse_up, workspace, e-1"
+    "$mainMod, mouse_left, layoutmsg, focus l"
+    "$mainMod, mouse_right, layoutmsg, focus r"
+
+    # Here to Window (Niri Alt+1..9 parity)
+    "ALT, 1, exec, ${bins.oscHereHypr} Kenp"
+    "ALT, 2, exec, ${bins.oscHereHypr} TmuxKenp"
+    "ALT, 3, exec, ${bins.oscHereHypr} Ai"
+    "ALT, 4, exec, ${bins.oscHereHypr} CompecTA"
+    "ALT, 5, exec, ${bins.oscHereHypr} WebCord"
+    "ALT, 6, exec, ${bins.oscHereHypr} org.telegram.desktop"
+    "ALT, 7, exec, ${bins.oscHereHypr} brave-youtube.com__-Default"
+    "ALT, 8, exec, ${bins.oscHereHypr} spotify"
+    "ALT, 9, exec, ${bins.oscHereHypr} ferdium"
 
     # Monitor Focus (Niri Match)
     "$mainMod ALT, H, focusmonitor, l"
@@ -260,15 +276,17 @@ let
     "$mainMod ALT, down, focusmonitor, d"
     
     # Monitor Move
-    "$mainMod ALT SHIFT, h, movewindow, mon:l"
-    "$mainMod ALT SHIFT, l, movewindow, mon:r"
-    "$mainMod CTRL, up, movewindow, mon:u"
-    "$mainMod CTRL, down, movewindow, mon:d"
+    "$mainMod ALT SHIFT, left, exec, ${bins.hyprSet} column-move monitor left"
+    "$mainMod ALT SHIFT, right, exec, ${bins.hyprSet} column-move monitor right"
+    "$mainMod ALT SHIFT, h, exec, ${bins.hyprSet} column-move monitor left"
+    "$mainMod ALT SHIFT, l, exec, ${bins.hyprSet} column-move monitor right"
+    "$mainMod CTRL, up, exec, ${bins.hyprSet} column-move monitor up"
+    "$mainMod CTRL, down, exec, ${bins.hyprSet} column-move monitor down"
 
     # Smart Monitor Actions
     "$mainMod, A, focusmonitor, +1"
     "$mainMod, E, movecurrentworkspacetomonitor, +1"
-    "$mainMod, Escape, movecurrentworkspacetomonitor, +1"
+    "$mainMod, Escape, exec, ${bins.hyprSet} workspace-move-or-focus"
   ];
 
 in
@@ -281,7 +299,6 @@ in
     smartBinds ++
     mpvBinds ++
     workspaceBinds ++
-    mkPullAppsFromWorkspace (lib.range 1 9) ++
     mkWorkspaces (lib.range 1 9) ++
     mkMoveWorkspaces (lib.range 1 9);
 
@@ -291,7 +308,7 @@ in
   ];
   
   extraConfig = ''
-    bind = $mainMod, R, submap, resize
+    bind = $mainMod CTRL, R, submap, resize
     submap = resize
     binde = , right, resizeactive, 10 0
     binde = , left, resizeactive, -10 0
