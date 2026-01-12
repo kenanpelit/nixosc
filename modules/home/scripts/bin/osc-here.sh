@@ -4,23 +4,64 @@
 # ==============================================================================
 # Usage: osc-here.sh <app-id>
 # Example: osc-here.sh Kenp
+#
+# Notifications:
+#   - Default: enabled (best-effort; never aborts the script)
+#   - Disable: OSC_HERE_NOTIFY=0 osc-here <app-id>
+#   - Force:   osc-here --notify <app-id>
+#             osc-here --no-notify <app-id>
 # ==============================================================================
 
 set -euo pipefail
 
-APP_ID="${1:-}"
+NOTIFY_SETTING="${OSC_HERE_NOTIFY:-1}"
+APP_ID=""
+
+usage() {
+  cat <<'EOF'
+Usage:
+  osc-here [--notify|--no-notify] <app-id>
+
+Env:
+  OSC_HERE_NOTIFY=0|1   Toggle notifications (default: 1)
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "${1:-}" in
+    --notify) NOTIFY_SETTING=1; shift ;;
+    --no-notify|--silent) NOTIFY_SETTING=0; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *)
+      APP_ID="${1:-}"
+      shift
+      break
+      ;;
+  esac
+done
 
 if [[ -z "$APP_ID" ]]; then
-    echo "Error: App ID is required."
+    echo "Error: App ID is required." >&2
+    usage >&2
     exit 1
 fi
 
+notify_enabled() {
+  case "${NOTIFY_SETTING}" in
+    1|true|yes|on) return 0 ;;
+    0|false|no|off|"") return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
 send_notify() {
-    local msg="$1"
-    local urgency="${2:-normal}"
-    if command -v notify-send >/dev/null 2>&1; then
-        notify-send -t 2000 -u "$urgency" -i "system-run" "Niri" "$msg"
-    fi
+  notify_enabled || return 0
+
+  local msg="$1"
+  local urgency="${2:-normal}"
+
+  command -v notify-send >/dev/null 2>&1 || return 0
+  notify-send -t 2000 -u "$urgency" -i "system-run" "Niri" "$msg" >/dev/null 2>&1 || true
 }
 
 # --- 1. Try to pull existing window (Nirius) ---
