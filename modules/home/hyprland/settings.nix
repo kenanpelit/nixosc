@@ -30,21 +30,22 @@ let
     ",preferred,auto,1"
   ];
 
-  # Niri-like: don't pin workspace numbers to monitors; keep only workspace rules.
-  workspaceConfig = [
-    # Smart Gaps & Borders - No gaps/borders/shadow/rounding when only one window is present
-    "w[tv1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
-    "f[1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+  workspaceConfig =
+    (map (n: mkWorkspaceEntry { monitor = primaryMonitorDesc; index = n; isDefault = n == 1; }) (lib.range 1 6))
+    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitorDesc; index = n; isDefault = n == 7; }) (lib.range 7 9))
+    ++ [
+      # Smart Gaps & Borders - No gaps/borders/shadow/rounding when only one window is present
+      "w[tv1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+      "f[1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
 
-    # Smart borders - Disabled to show borders always
-    # "w[v1]s[false], bordersize:0, rounding:false"
-    # "f[1]s[false], bordersize:0, rounding:false"
-    "w[v2-99]s[false], bordersize:3, rounding:true"
-
-    # Special workspaces
-    "special:dropdown, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
-    "special:scratchpad, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
-  ];
+      # Smart borders - Disabled to show borders always
+      # "w[v1]s[false], bordersize:0, rounding:false"
+      # "f[1]s[false], bordersize:0, rounding:false"
+      "w[v2-99]s[false], bordersize:3, rounding:true"
+      # Special workspaces
+      "special:dropdown, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+      "special:scratchpad, gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+    ];
 
 in
 {
