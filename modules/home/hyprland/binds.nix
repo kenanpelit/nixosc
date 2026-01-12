@@ -49,7 +49,7 @@ let
   layoutBinds = [
     # Sizing (Niri Mod+R match)
     "$mainMod, R, layoutmsg, colresize +conf"
-    "$mainMod SHIFT, R, layoutmsg, colresize 0.75"
+    "$mainMod SHIFT, R, layoutmsg, colresize 0.8"
     
     # Size Presets (Niri Match) - Using relative resizes as hyprscrolling specific preset msg might vary
     # Assuming colresize all <width> works or fallback to relative.
