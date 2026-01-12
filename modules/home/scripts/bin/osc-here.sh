@@ -6,7 +6,7 @@
 # Example: osc-here.sh Kenp
 #
 # Notifications:
-#   - Default: enabled (best-effort; never aborts the script)
+#   - Default: disabled (best-effort; never aborts the script)
 #   - Disable: OSC_HERE_NOTIFY=0 osc-here <app-id>
 #   - Force:   osc-here --notify <app-id>
 #             osc-here --no-notify <app-id>
@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-NOTIFY_SETTING="${OSC_HERE_NOTIFY:-1}"
+NOTIFY_SETTING="${OSC_HERE_NOTIFY:-0}"
 APP_ID=""
 
 usage() {
@@ -23,7 +23,7 @@ Usage:
   osc-here [--notify|--no-notify] <app-id>
 
 Env:
-  OSC_HERE_NOTIFY=0|1   Toggle notifications (default: 1)
+  OSC_HERE_NOTIFY=0|1   Toggle notifications (default: 0)
 EOF
 }
 
