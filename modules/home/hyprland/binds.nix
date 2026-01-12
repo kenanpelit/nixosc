@@ -8,10 +8,6 @@
 { lib, themeName, bins, ... }:
 
 let
-  # --- Binding Generators ---
-  mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
-  mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, layoutmsg, movecoltoworkspace ${toString n}") nums;
-
   # ---------------------------------------------------------------------------
   # 1. CORE WINDOW MANAGEMENT
   # ---------------------------------------------------------------------------
@@ -19,12 +15,12 @@ let
     # Focus (Vim & Arrows) - Using hyprscrolling layoutmsg
     "$mainMod, left, layoutmsg, focus l"
     "$mainMod, right, layoutmsg, focus r"
-    "$mainMod, up, workspace, e-1"
-    "$mainMod, down, workspace, e+1"
+    "$mainMod, up, layoutmsg, focus u"
+    "$mainMod, down, layoutmsg, focus d"
     "$mainMod, h, layoutmsg, focus l"
     "$mainMod, l, layoutmsg, focus r"
-    "$mainMod, k, workspace, e-1"
-    "$mainMod, j, workspace, e+1"
+    "$mainMod, k, layoutmsg, focus u"
+    "$mainMod, j, layoutmsg, focus d"
 
     # Move Column (Shift + Vim/Arrows)
     "$mainMod SHIFT, left, layoutmsg, swapcol l"
@@ -107,8 +103,8 @@ let
     # Window Switching
     "$mainMod, Tab, focuscurrentorlast"
     "$mainMod SHIFT, Tab, focuscurrentorlast"
-    "ALT, Tab, workspace, e+1"
-    "ALT SHIFT, Tab, workspace, e-1"
+    "ALT, Tab, cyclenext"
+    "ALT SHIFT, Tab, cyclenext, prev"
 
     # UI Toggles
     "$mainMod, B, exec, dms ipc call bar toggle index 0"
@@ -245,12 +241,9 @@ let
   # 7. WORKSPACES & MONITORS
   # ---------------------------------------------------------------------------
   workspaceBinds = [
-    # Workspace Navigation (Helpers)
-    "$mainMod CTRL, C, movetoworkspace, empty"
-    "$mainMod, Page_Up, exec, ${bins.hyprSet} window-move workspace prev"
-    "$mainMod, Page_Down, exec, ${bins.hyprSet} window-move workspace next"
-    "$mainMod, mouse_down, workspace, e+1"
-    "$mainMod, mouse_up, workspace, e-1"
+    # Niri-like Window Focus (Mouse Wheel)
+    "$mainMod, mouse_down, layoutmsg, focus d"
+    "$mainMod, mouse_up, layoutmsg, focus u"
     "$mainMod, mouse_left, layoutmsg, focus l"
     "$mainMod, mouse_right, layoutmsg, focus r"
 
@@ -285,8 +278,6 @@ let
 
     # Smart Monitor Actions
     "$mainMod, A, focusmonitor, +1"
-    "$mainMod, E, movecurrentworkspacetomonitor, +1"
-    "$mainMod, Escape, exec, ${bins.hyprSet} workspace-move-or-focus"
   ];
 
 in
@@ -298,9 +289,7 @@ in
     systemBinds ++
     smartBinds ++
     mpvBinds ++
-    workspaceBinds ++
-    mkWorkspaces (lib.range 1 9) ++
-    mkMoveWorkspaces (lib.range 1 9);
+    workspaceBinds;
 
   bindm = [
     "$mainMod, mouse:272, movewindow"
