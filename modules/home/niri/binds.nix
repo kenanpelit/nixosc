@@ -58,9 +58,9 @@
   layout = ''
       // --- Sizing & Presets ---
       Mod+R        hotkey-overlay-title="Next Preset Width" { switch-preset-column-width; }
-      Mod+Shift+R  hotkey-overlay-title="Width 75%" { set-column-width "75%"; }
-      Mod+Alt+R    hotkey-overlay-title="Next Preset Height" { switch-preset-window-height; }
-      Mod+Ctrl+R   hotkey-overlay-title="Reset Window Height" { reset-window-height; }
+      Mod+Ctrl+R    hotkey-overlay-title="Next Preset Height" { switch-preset-window-height; }
+      Mod+Shift+R  hotkey-overlay-title="Width 80%" { set-column-width "80%"; }
+      Mod+Alt+R   hotkey-overlay-title="Reset Window Height" { reset-window-height; }
       
       Mod+0        hotkey-overlay-title="Size: 960x540 (Half)"   { spawn "sh" "-c" "niri msg action set-column-width 960 && niri msg action set-window-height 540"; }
       Mod+Shift+0  hotkey-overlay-title="Size: 1280x720 (HD)"    { spawn "sh" "-c" "niri msg action set-column-width 1280 && niri msg action set-window-height 720"; }
