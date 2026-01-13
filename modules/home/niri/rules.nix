@@ -269,6 +269,19 @@ in
     // Workspace Assignments
     ${renderWorkspaceRules}
 
+    // Electron apps sometimes restore "maximized" state on launch; force the default column width.
+    window-rule {
+      match app-id=r#"^(spotify|Spotify|com\.spotify\.Client)$"#;
+      open-maximized false;
+      open-maximized-to-edges false;
+    }
+
+    window-rule {
+      match app-id=r#"^ferdium$"#;
+      open-maximized false;
+      open-maximized-to-edges false;
+    }
+
     // Better dialog placement
     window-rule {
       match app-id=r#"^(blueman-manager|nm-connection-editor)$"#;
