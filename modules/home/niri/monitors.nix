@@ -32,10 +32,6 @@
     }
     workspace "9" { open-on-output "eDP-1"; }
 
-    // Utility workspaces
-    workspace "inbox" { open-on-output "DP-3"; }
-    workspace "oscndrop" { open-on-output "DP-3"; }
-
     // Monitor Configuration
     output "DP-3" {
       mode "2560x1440@59.951";
