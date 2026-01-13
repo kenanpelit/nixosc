@@ -210,26 +210,6 @@
   # ---------------------------------------------------------------------------
   nirius = ''
       ${lib.optionalString enableNiriusBinds ''
-        // --- Go to App (Mod+Alt) ---
-        Mod+Alt+T    repeat=false hotkey-overlay-title="Go: Terminal" { spawn "${bins.oscGo}" "TmuxKenp"; }
-        Mod+Alt+B    repeat=false hotkey-overlay-title="Go: Browser" { spawn "${bins.oscGo}" "Kenp"; }
-        Mod+Alt+M    repeat=false hotkey-overlay-title="Go: Music" { spawn "${bins.oscGo}" "spotify"; }
-        Mod+Alt+N    repeat=false hotkey-overlay-title="Go: Notes" { spawn "${bins.oscGo}" "Ai"; }
-        Mod+Alt+C    repeat=false hotkey-overlay-title="Go: Chat" { spawn "${bins.oscGo}" "ferdium"; }
-
-        // --- Pull App Here (Mod+Alt+Shift) ---
-        Mod+Alt+Shift+T repeat=false hotkey-overlay-title="Pull: Terminal" { spawn "${bins.niriSet}" "here" "TmuxKenp"; }
-        Mod+Alt+Shift+B repeat=false hotkey-overlay-title="Pull: Browser" { spawn "${bins.niriSet}" "here" "Kenp"; }
-        Mod+Alt+Shift+M repeat=false hotkey-overlay-title="Pull: Music" { spawn "${bins.niriSet}" "here" "spotify"; }
-        Mod+Alt+Shift+N repeat=false hotkey-overlay-title="Pull: Notes" { spawn "${bins.niriSet}" "here" "Ai"; }
-        Mod+Alt+Shift+C repeat=false hotkey-overlay-title="Pull: Chat" { spawn "${bins.niriSet}" "here" "ferdium"; }
-
-        // --- Projects (Mod+Ctrl+Num) ---
-        Mod+Ctrl+1   repeat=false hotkey-overlay-title="Project: Web" { spawn "${bins.oscProject}" "Web"; }
-        Mod+Ctrl+2   repeat=false hotkey-overlay-title="Project: Dev" { spawn "${bins.oscProject}" "Dev"; }
-        Mod+Ctrl+3   repeat=false hotkey-overlay-title="Project: Chat" { spawn "${bins.oscProject}" "Chat"; }
-        Mod+Ctrl+4   repeat=false hotkey-overlay-title="Project: Media" { spawn "${bins.oscProject}" "Media"; }
-
         // --- Scratchpad (BackSpace) ---
         Mod+BackSpace     repeat=false hotkey-overlay-title="Scratch: Toggle" { spawn "${bins.nirius}" "scratchpad-toggle"; }
         Alt+BackSpace     repeat=false hotkey-overlay-title="Scratch: Cycle" { spawn "${bins.nirius}" "scratchpad-show"; }
@@ -239,7 +219,6 @@
         Mod+Alt+G    repeat=false hotkey-overlay-title="Mark: Toggle Default" { spawn "${bins.nirius}" "toggle-mark"; }
         Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Mark: Set Term" { spawn "${bins.nirius}" "toggle-mark" "term"; }
         Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.nirius}" "focus-marked" "term"; }
-        // ... (Marks can stay as backup)
       ''}
   '';
 
