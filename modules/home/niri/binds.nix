@@ -215,12 +215,22 @@
         Mod+Alt+B    repeat=false hotkey-overlay-title="Smart: Browser" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "brave"; }
         Mod+Alt+M    repeat=false hotkey-overlay-title="Smart: Music" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "spotify"; }
         Mod+Alt+N    repeat=false hotkey-overlay-title="Smart: Notes" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^anote$" "anotes"; }
+        Mod+Alt+C    repeat=false hotkey-overlay-title="Smart: Chat (WebCord)" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^(WebCord|discord)$" "start-webcord"; }
+        Mod+Alt+E    repeat=false hotkey-overlay-title="Smart: Work (CompecTA)" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^CompecTA$" "start-brave-compecta"; }
+        Mod+Alt+P    repeat=false hotkey-overlay-title="Smart: Telegram" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^org\\.telegram\\.desktop$" "Telegram"; }
+        Mod+Alt+S    repeat=false hotkey-overlay-title="Smart: Social (Ferdium)" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^ferdium$" "start-ferdium"; }
+        Mod+Alt+Y    repeat=false hotkey-overlay-title="Smart: YouTube" { spawn "${bins.nirius}" "focus-or-spawn" "--app-id" "^brave-youtube\\.com__-Default$" "start-brave-youtube"; }
 
         // --- Pull-to-Me (Move here & Focus) (Mod+Alt+Shift) ---
         Mod+Alt+Shift+T repeat=false hotkey-overlay-title="Pull Terminal" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^kitty$" "--focus"; }
         Mod+Alt+Shift+B repeat=false hotkey-overlay-title="Pull Browser" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "(brave|brave-browser|firefox|zen|chromium)" "--focus"; }
         Mod+Alt+Shift+M repeat=false hotkey-overlay-title="Pull Music" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(spotify|Spotify|com\\.spotify\\.Client)$" "--focus"; }
         Mod+Alt+Shift+N repeat=false hotkey-overlay-title="Pull Notes" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^anote$" "--focus"; }
+        Mod+Alt+Shift+C repeat=false hotkey-overlay-title="Pull Chat (WebCord)" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^(WebCord|discord)$" "--focus"; }
+        Mod+Alt+Shift+E repeat=false hotkey-overlay-title="Pull Work (CompecTA)" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^CompecTA$" "--focus"; }
+        Mod+Alt+Shift+P repeat=false hotkey-overlay-title="Pull Telegram" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^org\\.telegram\\.desktop$" "--focus"; }
+        Mod+Alt+Shift+S repeat=false hotkey-overlay-title="Pull Social (Ferdium)" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^ferdium$" "--focus"; }
+        Mod+Alt+Shift+Y repeat=false hotkey-overlay-title="Pull YouTube" { spawn "${bins.nirius}" "move-to-current-workspace" "--app-id" "^brave-youtube\\.com__-Default$" "--focus"; }
 
         // --- Scratchpad (BackSpace) ---
         Mod+BackSpace     repeat=false hotkey-overlay-title="Scratch: Toggle" { spawn "${bins.nirius}" "scratchpad-toggle"; }
@@ -264,26 +274,27 @@
   # ---------------------------------------------------------------------------
   workspaces = ''
       // --- Focus Workspace ---
-      Mod+1 hotkey-overlay-title="Workspace 1" { focus-workspace "1"; }
-      Mod+2 hotkey-overlay-title="Workspace 2" { focus-workspace "2"; }
-      Mod+3 hotkey-overlay-title="Workspace 3" { focus-workspace "3"; }
-      Mod+4 hotkey-overlay-title="Workspace 4" { focus-workspace "4"; }
-      Mod+5 hotkey-overlay-title="Workspace 5" { focus-workspace "5"; }
-      Mod+6 hotkey-overlay-title="Workspace 6" { focus-workspace "6"; }
-      Mod+7 hotkey-overlay-title="Workspace 7" { focus-workspace "7"; }
-      Mod+8 hotkey-overlay-title="Workspace 8" { focus-workspace "8"; }
-      Mod+9 hotkey-overlay-title="Workspace 9" { focus-workspace "9"; }
+      Mod+1 hotkey-overlay-title="WS 1: Kenp" { focus-workspace "1"; }
+      Mod+2 hotkey-overlay-title="WS 2: Tmux" { focus-workspace "2"; }
+      Mod+3 hotkey-overlay-title="WS 3: Ai" { focus-workspace "3"; }
+      Mod+4 hotkey-overlay-title="WS 4: CompecTA" { focus-workspace "4"; }
+      Mod+5 hotkey-overlay-title="WS 5: Chat" { focus-workspace "5"; }
+      Mod+6 hotkey-overlay-title="WS 6: Telegram" { focus-workspace "6"; }
+      Mod+7 hotkey-overlay-title="WS 7: YouTube/Tools" { focus-workspace "7"; }
+      Mod+8 hotkey-overlay-title="WS 8: Music" { focus-workspace "8"; }
+      Mod+9 hotkey-overlay-title="WS 9: Social" { focus-workspace "9"; }
+      Mod+Ctrl+I repeat=false hotkey-overlay-title="WS Inbox" { focus-workspace "inbox"; }
 
       // --- Move to Workspace ---
-      Mod+Shift+1 hotkey-overlay-title="Move To WS 1" { move-column-to-workspace "1"; }
-      Mod+Shift+2 hotkey-overlay-title="Move To WS 2" { move-column-to-workspace "2"; }
-      Mod+Shift+3 hotkey-overlay-title="Move To WS 3" { move-column-to-workspace "3"; }
-      Mod+Shift+4 hotkey-overlay-title="Move To WS 4" { move-column-to-workspace "4"; }
-      Mod+Shift+5 hotkey-overlay-title="Move To WS 5" { move-column-to-workspace "5"; }
-      Mod+Shift+6 hotkey-overlay-title="Move To WS 6" { move-column-to-workspace "6"; }
-      Mod+Shift+7 hotkey-overlay-title="Move To WS 7" { move-column-to-workspace "7"; }
-      Mod+Shift+8 hotkey-overlay-title="Move To WS 8" { move-column-to-workspace "8"; }
-      Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
+      Mod+Shift+1 hotkey-overlay-title="Send Col → WS1 (Kenp)" { move-column-to-workspace "1"; }
+      Mod+Shift+2 hotkey-overlay-title="Send Col → WS2 (Tmux)" { move-column-to-workspace "2"; }
+      Mod+Shift+3 hotkey-overlay-title="Send Col → WS3 (Ai)" { move-column-to-workspace "3"; }
+      Mod+Shift+4 hotkey-overlay-title="Send Col → WS4 (CompecTA)" { move-column-to-workspace "4"; }
+      Mod+Shift+5 hotkey-overlay-title="Send Col → WS5 (Chat)" { move-column-to-workspace "5"; }
+      Mod+Shift+6 hotkey-overlay-title="Send Col → WS6 (Telegram)" { move-column-to-workspace "6"; }
+      Mod+Shift+7 hotkey-overlay-title="Send Col → WS7 (YouTube/Tools)" { move-column-to-workspace "7"; }
+      Mod+Shift+8 hotkey-overlay-title="Send Col → WS8 (Music)" { move-column-to-workspace "8"; }
+      Mod+Shift+9 hotkey-overlay-title="Send Col → WS9 (Social)" { move-column-to-workspace "9"; }
 
       // --- Here to Window ---
       Alt+1  repeat=false hotkey-overlay-title="Here: Kenp" { spawn "${bins.oscHere}" "Kenp"; }
@@ -297,7 +308,7 @@
       Alt+9  repeat=false hotkey-overlay-title="Here: Ferdium" { spawn "${bins.oscHere}" "ferdium"; }
 
       // --- Workspace Navigation ---
-      Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
+      Mod+Ctrl+C    repeat=false hotkey-overlay-title="Send Win → Inbox" { move-window-to-workspace "inbox"; }
       Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { move-window-to-workspace-up; }
       Mod+Page_Down hotkey-overlay-title="Move Win WS Down" { move-window-to-workspace-down; }
   '';
