@@ -295,6 +295,7 @@
       Alt+7  repeat=false hotkey-overlay-title="Here: YouTube" { spawn "${bins.oscHere}" "brave-youtube.com__-Default"; }
       Alt+8  repeat=false hotkey-overlay-title="Here: Spotify" { spawn "${bins.oscHere}" "spotify"; }
       Alt+9  repeat=false hotkey-overlay-title="Here: Ferdium" { spawn "${bins.oscHere}" "ferdium"; }
+      Alt+0  repeat=false hotkey-overlay-title="Here: ALL" { spawn "${bins.oscHere}" "all"; }
 
       // --- Workspace Navigation ---
       Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
