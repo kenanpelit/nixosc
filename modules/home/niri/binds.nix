@@ -194,7 +194,6 @@
       Alt+T          repeat=false hotkey-overlay-title="KKENP Start" { spawn "start-kkenp"; }
       Alt+N          repeat=false hotkey-overlay-title="Notes (Anotes)" { spawn "anotes"; }
       Mod+Alt+Return      repeat=false hotkey-overlay-title="SemsuMo Daily" { spawn "semsumo" "launch" "--daily" "-all"; }
-      Mod+Shift+A         repeat=false hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
       
       Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-ndrop" "kitty" "--class" "dropdown-terminal"; }
       Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
@@ -271,6 +270,7 @@
       Alt+8  repeat=false hotkey-overlay-title="Here: Spotify" { spawn "${bins.niriSet}" "here" "spotify"; }
       Alt+9  repeat=false hotkey-overlay-title="Here: Ferdium" { spawn "${bins.niriSet}" "here" "ferdium"; }
       Alt+0  repeat=false hotkey-overlay-title="Here: ALL" { spawn "${bins.niriSet}" "here" "all"; }
+      Mod+Alt+0  repeat=false hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
 
       // --- Workspace Navigation ---
       Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
