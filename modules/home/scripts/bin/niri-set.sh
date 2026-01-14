@@ -7,7 +7,8 @@
 #   - session-start
 #   - init
 #   - lock
-#   - arrange-windows
+#   - go (arrange-windows)
+#   - here
 #   - cast
 #   - workspace-monitor
 #   - doctor
@@ -50,7 +51,8 @@ Commands:
   session-start      Export env to systemd --user (was: niri-session-start)
   init               Bootstrap session (was: niri-init)
   lock               Lock session via DMS/logind (was: niri-lock)
-  arrange-windows     Move windows to target workspaces (was: niri-arrange-windows)
+  go                 Move windows to target workspaces (was: niri-arrange-windows)
+  here               Bring window here (or launch); `all` gathers a set
   cast               Dynamic screencast helpers (window/monitor/clear/pick)
   workspace-monitor  Workspace/monitor helper (was: niri-workspace-monitor)
   doctor             Print session diagnostics
@@ -367,6 +369,9 @@ here)
         # Small delay to let Niri process moves smoothly
         sleep 0.1
       done
+
+      # Explicit workflow: always end focused on Kenp.
+      process_app "Kenp"
 
       send_notify "All specified apps gathered here."
     else
@@ -1015,11 +1020,11 @@ init)
       # We call the subcommand directly to avoid depending on extra binaries.
       if [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
         focus_ws="${NIRI_INIT_FOCUS_WORKSPACE:-2}"
-        "$0" arrange-windows --focus "ws:${focus_ws}"
-        notify "arrange-windows: ws:${focus_ws}"
+        "$0" go --focus "ws:${focus_ws}"
+        notify "go: ws:${focus_ws}"
       else
-        "$0" arrange-windows
-        notify "arrange-windows"
+        "$0" go
+        notify "go"
       fi
     elif [[ "${NIRI_INIT_SKIP_FOCUS_WORKSPACE:-0}" != "1" ]]; then
       # Best-effort fallback: this may refer to workspace index in niri.
@@ -1072,6 +1077,11 @@ lock)
   ;;
 
 arrange-windows)
+  echo "niri-set: 'arrange-windows' is deprecated; use 'go'." >&2
+  exec "$0" go "$@"
+  ;;
+
+go)
   # ----------------------------------------------------------------------------
   # Embedded: niri-arrange-windows.sh
   # ----------------------------------------------------------------------------
@@ -1088,8 +1098,8 @@ arrange-windows)
     usage() {
       cat <<'EOF'
 Kullanım:
-  niri-set arrange-windows [--dry-run] [--focus <window-id|workspace>]
-  niri-set arrange-windows [--verbose]
+  niri-set go [--dry-run] [--focus <window-id|workspace>]
+  niri-set go [--verbose]
 
 Amaç:
   Niri'de açık pencereleri, semsumo (--daily) düzenindeki "ait oldukları"
@@ -1100,13 +1110,14 @@ Notlar:
   - Taşıma işlemi için Niri action'ları kullanılır:
       - focus-window <id>
       - move-window-to-workspace <workspace>
-  - Varsayılan davranış: işlem bitince eski odaklanan pencereye geri döner.
+  - Varsayılan davranış: işlem bitince Kenp'e odaklanır (niri-set here Kenp).
+    `--focus` ile override edilebilir.
 
 Örnek:
-  niri-set arrange-windows
-  niri-set arrange-windows --dry-run
-  niri-set arrange-windows --focus 2        # Window ID 2'ye geri odaklan
-  niri-set arrange-windows --focus ws:2     # Workspace 2'ye geç
+  niri-set go
+  niri-set go --dry-run
+  niri-set go --focus 2        # Window ID 2'ye geri odaklan
+  niri-set go --focus ws:2     # Workspace 2'ye geç
 EOF
     }
 
@@ -1391,6 +1402,11 @@ EOF
       fi
     elif [[ -n "$focused_id" ]]; then
       "${NIRI[@]}" action focus-window "$focused_id" >/dev/null 2>&1 || true
+    fi
+
+    # Default: end focused on Kenp (unless caller explicitly overrides focus).
+    if [[ -z "$FOCUS_OVERRIDE" && "$DRY_RUN" -eq 0 ]]; then
+      "$0" here Kenp >/dev/null 2>&1 || true
     fi
 
     echo "Done."
