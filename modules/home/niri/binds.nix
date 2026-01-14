@@ -117,12 +117,12 @@
       Mod+Shift+V  repeat=false hotkey-overlay-title="Clipboard Preview" { spawn "osc-clipview"; }
       Mod+Shift+D  repeat=false hotkey-overlay-title="Dash Overview" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" "overview"; }
       Mod+Shift+P  repeat=false hotkey-overlay-title="Process List" { spawn "${bins.dms}" "ipc" "call" "processlist" "focusOrToggle"; }
-	      Mod+Ctrl+N   repeat=false hotkey-overlay-title="Notepad" { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
-	      Mod+Comma    repeat=false hotkey-overlay-title="Settings" { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
-	      Mod+U        repeat=false hotkey-overlay-title="Widget: SathiAi" { spawn "${bins.dms}" "ipc" "call" "widget" "toggle" "sathiAi"; }
+	    Mod+Ctrl+N   repeat=false hotkey-overlay-title="Notepad" { spawn "${bins.dms}" "ipc" "call" "notepad" "open"; }
+	    Mod+Comma    repeat=false hotkey-overlay-title="Settings" { spawn "${bins.dms}" "ipc" "call" "settings" "focusOrToggle"; }
+	    Mod+U        repeat=false hotkey-overlay-title="Widget: SathiAi" { spawn "${bins.dms}" "ipc" "call" "widget" "toggle" "sathiAi"; }
 	      
-	      // --- Window Switching ---
-	      Alt+Tab      hotkey-overlay-title="Switch Windows" { spawn "${bins.dms}" "ipc" "call" "spotlight" "openQuery" "!"; }
+	    // --- Window Switching ---
+	    Alt+Tab      hotkey-overlay-title="Switch Windows" { spawn "${bins.dms}" "ipc" "call" "spotlight" "openQuery" "!"; }
 
       // --- UI Toggles ---
       Mod+B        repeat=false hotkey-overlay-title="Toggle Bar" { spawn "${bins.dms}" "ipc" "call" "bar" "toggle" "index" "0"; }
