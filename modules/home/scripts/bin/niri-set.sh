@@ -1110,7 +1110,7 @@ Notlar:
   - Taşıma işlemi için Niri action'ları kullanılır:
       - focus-window <id>
       - move-window-to-workspace <workspace>
-  - Varsayılan davranış: işlem bitince Kenp'e odaklanır (pencereyi taşımadan).
+  - Varsayılan davranış: işlem bitince Kenp'i workspace 1'e alır ve Kenp'e odaklanır.
     `--focus` ile override edilebilir.
 
 Örnek:
@@ -1405,25 +1405,47 @@ EOF
     fi
 
     focus_kenp() {
-      # Prefer nirius: focuses the window and jumps to its workspace (does NOT pull it).
-      if command -v nirius >/dev/null 2>&1; then
-        nirius focus-or-spawn --app-id '^Kenp$' start-brave-kenp >/dev/null 2>&1 || true
-        return 0
+      local home_ws="1"
+      home_ws="$(target_for_app_id "Kenp" "" 2>/dev/null || true)"
+      [[ -n "${home_ws:-}" ]] || home_ws="1"
+
+      local home_out="" home_idx=""
+      if ! read -r home_out home_idx < <(resolve_workspace_ref "$home_ws"); then
+        home_out=""
+        home_idx=""
       fi
 
-      # Fallback: focus by app_id via niri json.
       if command -v jq >/dev/null 2>&1; then
-        kenp_id="$("${NIRI[@]}" -j windows 2>/dev/null | jq -r '.[] | select(.app_id=="Kenp") | .id' | head -n 1 || true)"
-        if [[ -n "${kenp_id:-}" ]]; then
-          "${NIRI[@]}" action focus-window "$kenp_id" >/dev/null 2>&1 || true
-          return 0
+        kenp_id="$("${NIRI[@]}" -j windows 2>/dev/null | jq -r 'first(.[] | select(.app_id=="Kenp") | .id) // empty' || true)"
+      fi
+
+      if [[ -z "${kenp_id:-}" && -n "${home_out:-}" && -n "${home_idx:-}" ]]; then
+        # Try to spawn and wait briefly for window to appear.
+        if command -v start-brave-kenp >/dev/null 2>&1; then
+          start-brave-kenp >/dev/null 2>&1 & disown || true
+          for _ in {1..50}; do
+            kenp_id="$("${NIRI[@]}" -j windows 2>/dev/null | jq -r 'first(.[] | select(.app_id=="Kenp") | .id) // empty' || true)"
+            [[ -n "${kenp_id:-}" ]] && break
+            sleep 0.1
+          done
         fi
       fi
 
-      # Last resort: just spawn it.
-      if command -v start-brave-kenp >/dev/null 2>&1; then
-        start-brave-kenp >/dev/null 2>&1 & disown || true
+      if [[ -z "${kenp_id:-}" ]]; then
+        # Best-effort fallback: just try to focus/spawn without moving.
+        if command -v nirius >/dev/null 2>&1; then
+          nirius focus-or-spawn --app-id '^Kenp$' start-brave-kenp >/dev/null 2>&1 || true
+        fi
+        return 0
       fi
+
+      # Ensure Kenp ends up on its home workspace (default: "1"), then focus it.
+      if [[ -n "${home_out:-}" && -n "${home_idx:-}" ]]; then
+        "${NIRI[@]}" action move-window-to-monitor --id "$kenp_id" "$home_out" >/dev/null 2>&1 || true
+        "${NIRI[@]}" action focus-monitor "$home_out" >/dev/null 2>&1 || true
+        "${NIRI[@]}" action move-window-to-workspace --window-id "$kenp_id" --focus false "$home_idx" >/dev/null 2>&1 || true
+      fi
+      "${NIRI[@]}" action focus-window "$kenp_id" >/dev/null 2>&1 || true
       return 0
     }
 
