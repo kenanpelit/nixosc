@@ -4,13 +4,13 @@
 # ==============================================================================
 # Single entrypoint for Niri helper tasks that used to live in separate scripts:
 #   - tty
-#   - session-start
+#   - env
 #   - init
 #   - lock
 #   - go (arrange-windows)
 #   - here
 #   - cast
-#   - workspace-monitor
+#   - flow
 #   - doctor
 #
 # Usage:
@@ -48,20 +48,20 @@ Usage:
 Commands:
   tty                Start Niri from TTY/DM (was: niri_tty)
   clipse             Start clipse clipboard listener (background)
-  session-start      Export env to systemd --user (was: niri-session-start)
+  env                Export env to systemd --user (was: niri-session-start)
   init               Bootstrap session (was: niri-init)
   lock               Lock session via DMS/logind (was: niri-lock)
   go                 Move windows to target workspaces (was: niri-arrange-windows)
   here               Bring window here (or launch); `all` gathers a set
   cast               Dynamic screencast helpers (window/monitor/clear/pick)
-  workspace-monitor  Workspace/monitor helper (was: niri-workspace-monitor)
+  flow               Workspace/monitor helper (was: niri-workspace-monitor)
   doctor             Print session diagnostics
-  toggle-window-mode Toggle between floating and tiling modes with preset size
+  float              Toggle between floating and tiling modes with preset size
   zen                Toggle Zen Mode (hide gaps, borders, bar)
   pin                Toggle Pin Mode (PIP-style floating window)
 
 Examples:
-  niri-set session-start
+  niri-set env
   niri-set lock
   niri-set zen
   niri-set pin
@@ -570,7 +570,7 @@ tty)
       esac
 
       # Minimal session identity. Detailed env (theme, cursor, toolkit hints) is set
-      # in Niri config and exported to systemd via `niri-session-start`.
+      # in Niri config and exported to systemd via `niri-set env`.
       export XDG_SESSION_TYPE="wayland"
       export XDG_SESSION_DESKTOP="niri"
       export XDG_CURRENT_DESKTOP="niri"
@@ -717,14 +717,14 @@ tty)
   )
   ;;
 
-session-start)
+env)
   # ----------------------------------------------------------------------------
   # Embedded: niri-session-start.sh
   # ----------------------------------------------------------------------------
   (
     set -euo pipefail
 
-    LOG_TAG="niri-session-start"
+    LOG_TAG="niri-env"
     log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
 
     ensure_runtime_dir() {
@@ -1521,7 +1521,7 @@ EOF
   )
   ;;
 
-toggle-window-mode)
+float)
   # ----------------------------------------------------------------------------
   # Embedded: niri-toggle-window-mode
   # ----------------------------------------------------------------------------
@@ -1566,7 +1566,7 @@ toggle-window-mode)
   )
   ;;
 
-workspace-monitor)
+flow)
   # ----------------------------------------------------------------------------
   # Embedded: niri-workspace-monitor.sh
   # ----------------------------------------------------------------------------
@@ -1828,7 +1828,7 @@ workspace-monitor)
           shift
           ;;
         -h | --help)
-          echo "Usage: niri-set workspace-monitor [options]"
+          echo "Usage: niri-set flow [options]"
           echo "  -wl/-wr  Focus prev/up or next/down workspace"
           echo "  -wt      Toggle last workspace"
           echo "  -wn N    Focus workspace N"
