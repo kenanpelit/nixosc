@@ -16,7 +16,7 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve Niri
 - `modules/home/niri/binds.nix`: Kategori bazlı keybind blokları (`binds {}` wrapper’ı burada yok).
 - `modules/home/niri/rules.nix`: Window/layer rules ve privacy (screencast/screenshot) kuralları.
 - `~/.config/niri/dms/hotkeys.md`: `binds.nix` içindeki `hotkey-overlay-title` alanlarından otomatik üretilen cheatsheet.
-- `~/.config/niri/dms/workspace-rules.tsv`: `niri-set arrange-windows` için kurallar.
+- `~/.config/niri/dms/workspace-rules.tsv`: `niri-set go` için kurallar.
 
 ## Seçenekler (özet)
 

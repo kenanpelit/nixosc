@@ -270,7 +270,7 @@
       Alt+8  repeat=false hotkey-overlay-title="Here: Spotify" { spawn "${bins.niriSet}" "here" "spotify"; }
       Alt+9  repeat=false hotkey-overlay-title="Here: Ferdium" { spawn "${bins.niriSet}" "here" "ferdium"; }
       Alt+0  repeat=false hotkey-overlay-title="Here: ALL" { spawn "${bins.niriSet}" "here" "all"; }
-      Mod+Alt+0  repeat=false hotkey-overlay-title="Arrange Windows" { spawn "${bins.niriSet}" "arrange-windows"; }
+      Mod+Alt+0  repeat=false hotkey-overlay-title="Go (Arrange Windows)" { spawn "${bins.niriSet}" "go"; }
 
       // --- Workspace Navigation ---
       Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
