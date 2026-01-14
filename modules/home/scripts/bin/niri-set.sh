@@ -1110,7 +1110,7 @@ Notlar:
   - Taşıma işlemi için Niri action'ları kullanılır:
       - focus-window <id>
       - move-window-to-workspace <workspace>
-  - Varsayılan davranış: işlem bitince Kenp'e odaklanır (niri-set here Kenp).
+  - Varsayılan davranış: işlem bitince Kenp'e odaklanır (pencereyi taşımadan).
     `--focus` ile override edilebilir.
 
 Örnek:
@@ -1404,9 +1404,32 @@ EOF
       "${NIRI[@]}" action focus-window "$focused_id" >/dev/null 2>&1 || true
     fi
 
+    focus_kenp() {
+      # Prefer nirius: focuses the window and jumps to its workspace (does NOT pull it).
+      if command -v nirius >/dev/null 2>&1; then
+        nirius focus-or-spawn --app-id '^Kenp$' start-brave-kenp >/dev/null 2>&1 || true
+        return 0
+      fi
+
+      # Fallback: focus by app_id via niri json.
+      if command -v jq >/dev/null 2>&1; then
+        kenp_id="$("${NIRI[@]}" -j windows 2>/dev/null | jq -r '.[] | select(.app_id=="Kenp") | .id' | head -n 1 || true)"
+        if [[ -n "${kenp_id:-}" ]]; then
+          "${NIRI[@]}" action focus-window "$kenp_id" >/dev/null 2>&1 || true
+          return 0
+        fi
+      fi
+
+      # Last resort: just spawn it.
+      if command -v start-brave-kenp >/dev/null 2>&1; then
+        start-brave-kenp >/dev/null 2>&1 & disown || true
+      fi
+      return 0
+    }
+
     # Default: end focused on Kenp (unless caller explicitly overrides focus).
     if [[ -z "$FOCUS_OVERRIDE" && "$DRY_RUN" -eq 0 ]]; then
-      "$0" here Kenp >/dev/null 2>&1 || true
+      focus_kenp
     fi
 
     echo "Done."
