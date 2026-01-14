@@ -76,7 +76,7 @@
       Alt+G        repeat=false hotkey-overlay-title="Max to Edges" { maximize-window-to-edges; }
       Mod+Alt+O    repeat=false hotkey-overlay-title="Overview (Niri)" { toggle-overview; }
       Mod+Ctrl+W   hotkey-overlay-title="Toggle Tabbed Mode" { toggle-column-tabbed-display; }
-      Mod+G        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriSet}" "toggle-window-mode"; }
+      Mod+G        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriSet}" "float"; }
       Mod+Ctrl+BackSpace hotkey-overlay-title="Focus Float/Tile" { switch-focus-between-floating-and-tiling; }
       Mod+Ctrl+Shift+F hotkey-overlay-title="Expand Column (Fill)" { expand-column-to-available-width; }
       Mod+Ctrl+Shift+C hotkey-overlay-title="Center Visible Columns" { center-visible-columns; }
@@ -186,7 +186,7 @@
       
       // --- System Config ---
       Mod+Ctrl+Alt+R repeat=false hotkey-overlay-title="Reload Config" { spawn "niri" "msg" "action" "load-config-file"; }
-      Mod+Ctrl+Alt+S repeat=false hotkey-overlay-title="Session Refresh" { spawn "${bins.niriSet}" "session-start"; }
+      Mod+Ctrl+Alt+S repeat=false hotkey-overlay-title="Session Refresh" { spawn "${bins.niriSet}" "env"; }
       Mod+Ctrl+Alt+D repeat=false hotkey-overlay-title="Session Doctor" { spawn "${bins.kitty}" "--class" "niri-doctor" "-e" "${pkgs.bash}/bin/bash" "-lc" "${bins.niriSet} doctor; echo; read -n 1 -s -r -p 'Press any key to close'"; }
       Mod+Ctrl+Escape allow-inhibiting=false repeat=false hotkey-overlay-title="Toggle Shortcut Inhibit" { toggle-keyboard-shortcuts-inhibit; }
       
