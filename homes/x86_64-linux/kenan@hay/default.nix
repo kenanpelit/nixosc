@@ -43,7 +43,7 @@
   # Components
   my.user.hyprpanel.enable = false;
   my.user.rofi.enable = true;
-  my.user.walker.enable = true;
+  my.user.walker.enable = false;
   my.user.mako.enable = false;
   my.user.dms.enable = true;
   my.user.stasis.enable = true;
