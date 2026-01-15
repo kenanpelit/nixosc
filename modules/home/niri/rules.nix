@@ -146,6 +146,23 @@ in
       open-floating true;
     }
 
+    // Xwayland Video Bridge (Screen sharing helper)
+    window-rule {
+      match app-id="xwaylandvideobridge";
+      open-floating true;
+      open-focused false;
+      opacity 0.0;
+      default-column-width { fixed 1; }
+      default-window-height { fixed 1; }
+    }
+
+    // Drag and drop / Shadow windows (Boş isimli yardımcı pencereler)
+    window-rule {
+      match app-id=r#"^$"# title=r#"^$"#;
+      open-floating true;
+      open-focused false;
+    }
+
     // Variable Refresh Rate
     window-rule {
       match app-id=r#"^mpv$"#;
