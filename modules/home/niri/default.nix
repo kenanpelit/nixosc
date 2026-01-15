@@ -288,6 +288,18 @@ in
         cfg.extraBinds
         "}"
 
+        "mode \"resize\" {"
+        "  Escape { leave-mode; }"
+        "  Return { leave-mode; }"
+        "  H { set-column-width \"-5%\"; }"
+        "  L { set-column-width \"+5%\"; }"
+        "  K { set-window-height \"-5%\"; }"
+        "  J { set-window-height \"+5%\"; }"
+        "  R { switch-preset-column-width; }"
+        "  Shift+R { reset-window-height; }"
+        "  F { maximize-column; leave-mode; }"
+        "}"
+
         rulesConfig.rules
         cfg.extraRules
         settingsConfig.animations
