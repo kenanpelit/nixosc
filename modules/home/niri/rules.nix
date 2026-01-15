@@ -251,6 +251,12 @@ in
       ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
     }
 
+    // Gnome Audio Player (Decibels)
+    window-rule {
+      match app-id=r#"^org\.gnome\.Decibels$"#;
+      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "0.5"; }}
+    }
+
     // Clipboard Manager
     window-rule {
       match app-id=r#"^clipse$"#;
