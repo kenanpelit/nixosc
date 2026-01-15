@@ -109,6 +109,7 @@ in
       easyeffects           # PipeWire audio effects
       mpc rmpc              # MPD client
       pavucontrol playerctl # Audio control
+      eyed3                 # ID3 tags
       
       # Screenshot/Recording
       grim slurp            # Wayland screenshot
