@@ -32,6 +32,13 @@ in
           name "PipeWire Sound Server"
           mixer_type "software"
         }
+
+        audio_output {
+          type "fifo"
+          name "Visualizer"
+          path "/tmp/mpd.fifo"
+          format "44100:16:2"
+        }
         
         # Playback Settings
         restore_paused "yes"

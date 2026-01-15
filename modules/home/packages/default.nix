@@ -107,7 +107,7 @@ in
       yt-dlp pipe-viewer    # YouTube tools
       spotify spotify-cli-linux # Music streaming
       easyeffects           # PipeWire audio effects
-      mpc rmpc              # MPD client
+      mpc rmpc cava         # MPD client & visualizer
       pavucontrol playerctl # Audio control
       eyed3                 # ID3 tags
       
