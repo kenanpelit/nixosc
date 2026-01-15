@@ -52,8 +52,6 @@
       Mod+C      hotkey-overlay-title="Center Column" { center-column; }
 
       // --- Mouse Interaction ---
-      Mod+MouseLeft  { move-window-interactive; }
-      Mod+MouseRight { resize-window-interactive; }
       Mod+MouseMiddle { close-window; }
   '';
 
@@ -62,7 +60,7 @@
   # ---------------------------------------------------------------------------
   layout = ''
       // --- Sizing & Presets ---
-      Mod+R        hotkey-overlay-title="Enter Resize Mode" { enter-mode "resize"; }
+      Mod+R        hotkey-overlay-title="Next Preset Width" { switch-preset-column-width; }
       Mod+Ctrl+R    hotkey-overlay-title="Next Preset Height" { switch-preset-window-height; }
       Mod+Shift+R  hotkey-overlay-title="Width 80%" { set-column-width "80%"; }
       Mod+Alt+R   hotkey-overlay-title="Reset Window Height" { reset-window-height; }
