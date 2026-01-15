@@ -101,6 +101,7 @@ in
   
       # -- Media & Audio ---------------------------------------------------------
       mpv vlc               # Video players
+      rhythmbox             # Music playing
       imv qview             # Image viewers
       ffmpeg imagemagick    # Media processing
       yt-dlp pipe-viewer    # YouTube tools
