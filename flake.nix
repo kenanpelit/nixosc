@@ -194,15 +194,15 @@
     # Apps / Extras
     # ==========================================================================
     # Optional GUI tools, app launchers, and helper flakes.
-    walker = {
-      url = "github:abenz1267/walker/v2.13.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    #walker = {
+    #  url = "github:abenz1267/walker/v2.13.0";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
 
-    elephant = {
-      url = "github:abenz1267/elephant/v2.18.2";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    #elephant = {
+    #  url = "github:abenz1267/elephant/v2.18.2";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
 
     browser-previews = {
       url = "github:nix-community/browser-previews";
