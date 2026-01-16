@@ -67,7 +67,7 @@ in
       // Updated for softer spring feel (stiffness reduced).
 
       workspace-switch {
-        spring damping-ratio=1.0 stiffness=600 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=500 epsilon=0.0001;
       }
 
       window-open {
@@ -127,13 +127,13 @@ in
       // Snappy but smooth movement (Hyprland style responsiveness)
       // Stiffness reduced slightly for better fluidity
       horizontal-view-movement {
-        spring damping-ratio=1.0 stiffness=700 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=600 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=1.0 stiffness=700 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=600 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=1.0 stiffness=700 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=600 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
