@@ -21,6 +21,7 @@ in
     services.mpd = {
       enable = true;
       musicDirectory = "${config.home.homeDirectory}/Music";
+      playlistDirectory = "${config.home.homeDirectory}/Music/playlists";
       
       # ---------------------------------------------------------------------------
       # Audio and Performance Settings
