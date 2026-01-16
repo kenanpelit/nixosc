@@ -198,13 +198,6 @@ in
 
     // Common dialogs / utilities / system tools
     window-rule {
-      match title=r#"^Open File$"#;
-      match title=r#"^File Upload$"#;
-      match title=r#"^Save As$"#;
-      match title=r#"^Confirm to replace files$"#;
-      match title=r#"^File Operation Progress$"#;
-      match title=r#"^Extract archive$"#;
-      match title=r#"^Compress\.\.\.$"#;
       match app-id=r#"^pavucontrol$"#;
       match app-id=r#"^nm-connection-editor$"#;
       match app-id=r#"^blueman-manager$"#;
@@ -215,6 +208,15 @@ in
       match app-id=r#"^org\.gnome\.Settings$"#;
       match app-id=r#"^gnome-disks$"#;
       open-floating true;
+      open-focused true;
+    }
+
+    // File pickers and basic operations
+    window-rule {
+      match title=r#"^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress|Extract archive|Compress\.\.\.)$"#;
+      open-floating true;
+      default-column-width { proportion 0.60; }
+      default-window-height { proportion 0.75; }
       open-focused true;
     }
 
@@ -306,14 +308,6 @@ in
       open-floating true;
       default-column-width { fixed 520; }
       default-window-height { fixed 240; }
-      open-focused true;
-    }
-
-    window-rule {
-      match title=r#"^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress)$"#;
-      open-floating true;
-      default-column-width { proportion 0.60; }
-      default-window-height { proportion 0.75; }
       open-focused true;
     }
 

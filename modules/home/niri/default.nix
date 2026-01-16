@@ -313,8 +313,7 @@ in
               niri msg action spawn -- kitty --class "clip-preview" bash -c "wl-paste | less"
             fi
           '')
-        ]
-        ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
+        ];
 
       # Helper file for niri-arrange-windows script (still needs to be a file)
       xdg.configFile."niri/dms/workspace-rules.tsv".text = rulesConfig.arrangeRulesTsv;
