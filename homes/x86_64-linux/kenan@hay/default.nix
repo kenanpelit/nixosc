@@ -76,6 +76,7 @@
   my.user.mpv.enable = true;
   my.user.vlc.enable = true;
   my.user.mpd.enable = true;
+  my.user.rmpc.enable = true;
   my.user.audacious.enable = true;
   my.user.cava.enable = true;
   my.user.radio.enable = true;
