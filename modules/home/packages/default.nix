@@ -10,7 +10,7 @@ let
   cfg = config.my.user.packages;
   # Custom Python Environment
   customPython = pkgs.python3.withPackages (ps: with ps; [
-    ipython libtmux pip pipx
+    ipython libtmux pip pipx pdftotext
   ]);
 in
 {
@@ -121,7 +121,7 @@ in
       libreoffice           # Office suite
       obsidian              # Note taking
       zathura evince        # PDF viewers
-      pdftk                 # PDF toolkit (merge/split/rotate/fill forms)
+      pdftk poppler-utils   # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
       
       # Communication
