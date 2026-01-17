@@ -621,9 +621,9 @@ EOF
       command -v hyprctl >/dev/null 2>&1 || exit 0
 
       # Best-effort Niri `maximize-window-to-edges` feel:
-      # - internal fullscreen => covers monitor edges (ignores struts/gaps)
-      # - client maximized    => apps keep normal UI (not "real fullscreen")
-      hyprctl dispatch fullscreenstate 2 1 toggle >/dev/null 2>&1 || true
+      # - internal maximized => keeps borders (not fullscreen) but still fills the workspace
+      # - client maximized   => apps keep normal UI (not "real fullscreen")
+      hyprctl dispatch fullscreenstate 1 1 toggle >/dev/null 2>&1 || true
     )
     ;;
 
