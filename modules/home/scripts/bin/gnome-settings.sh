@@ -258,17 +258,17 @@ dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-7 "['<Super><Shi
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Super><Shift>8']"
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Super><Shift>9']"
 
-# Navigate workspaces with arrows - DISABLED
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "['<Super>k']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-right "['<Super>j']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "@as []"
+# Workspace navigation (VERTICAL like Niri: use k/j)
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-right "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "['<Super>k']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "['<Super>j']"
 
-# Move window between workspaces
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "['<Super>Page_Up']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "['<Super>Page_Down']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "@as []"
+# Move window between workspaces (VERTICAL like Niri: PageUp/PageDown)
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "['<Super>Page_Up']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "['<Super>Page_Down']"
 
 # =============================================================================
 # SHELL KEYBINDINGS
@@ -785,12 +785,12 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/name "'Lock Screen'"
 
 # 13) Prev workspace
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/binding "'<Super><Alt>Left'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/binding "'<Super><Alt>Up'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/command "'$WSPREV'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/name "'Previous Workspace'"
 
 # 14) Next workspace
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/binding "'<Super><Alt>Right'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/binding "'<Super><Alt>Down'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/command "'$WSNEXT'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/name "'Next Workspace'"
 
@@ -1218,10 +1218,12 @@ echo "   🚪 Ctrl+Alt+q       → Logout"
 echo "   ⚙️  Ctrl+Alt+p       → Power Menu"
 echo ""
 echo "🏢 Workspace Yönetimi:"
-echo "   ← Super+Alt+Left   → Previous Workspace"
-echo "   → Super+Alt+Right  → Next Workspace"
-echo "   ⬆️ Super+Shift+↑    → Move Window Up"
-echo "   ⬇️ Super+Shift+↓    → Move Window Down"
+echo "   ↑ Super+Alt+Up     → Previous Workspace"
+echo "   ↓ Super+Alt+Down   → Next Workspace"
+echo "   ⬆️ Super+k          → Workspace Up"
+echo "   ⬇️ Super+j          → Workspace Down"
+echo "   ⬆️ Super+PageUp     → Move Window Up"
+echo "   ⬇️ Super+PageDown   → Move Window Down"
 echo ""
 echo "⚠️  Eğer bazı komutlar çalışmazsa:"
 echo "   • O uygulamaların yüklü olduğundan emin olun"
