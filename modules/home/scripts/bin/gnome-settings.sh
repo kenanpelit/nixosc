@@ -644,9 +644,9 @@ dconf write /org/gnome/desktop/notifications/show-in-lock-screen "false"
 dconf write /org/gnome/desktop/notifications/show-banners "true"
 
 # =============================================================================
-# CUSTOM KEYBINDINGS (0..40) — absolute paths, no PATH lookups
+# CUSTOM KEYBINDINGS (0..54) — absolute paths, no PATH lookups
 # =============================================================================
-echo "⌨️  Custom keybinding'ler (0..40) yazılıyor..."
+echo "⌨️  Custom keybinding'ler (0..54) yazılıyor..."
 
 # --- helpers: resolve absolute paths
 opt() {
@@ -705,10 +705,11 @@ SCREENSHOT="$(opt gnome-screenshot)"
 GKR="$(opt gnome-kr-fix)"
 WALK="$(opt walk)"
 GNOME_COLWIDTH="$(opt gnome-column-width)"
+GNOME_SET="$(opt gnome-set)"
 
-# 0..40 path list
+# 0..54 path list
 CUSTOM_PATHS=""
-for i in {0..43}; do
+for i in {0..54}; do
   p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
   if [ -z "$CUSTOM_PATHS" ]; then
     CUSTOM_PATHS="'$p'"
@@ -887,6 +888,76 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/binding "''"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/command "'true'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/name "'(unused)'"
+
+# 34) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/name "'(unused)'"
+
+# 35) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/name "'(unused)'"
+
+# 36) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/name "'(unused)'"
+
+# 44) Here: Kenp
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom44/binding "'<Alt>1'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom44/command "'$GNOME_SET here Kenp'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom44/name "'Here: Kenp'"
+
+# 45) Here: TmuxKenp
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom45/binding "'<Alt>2'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom45/command "'$GNOME_SET here TmuxKenp'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom45/name "'Here: TmuxKenp'"
+
+# 46) Here: Ai
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom46/binding "'<Alt>3'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom46/command "'$GNOME_SET here Ai'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom46/name "'Here: Ai'"
+
+# 47) Here: CompecTA
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom47/binding "'<Alt>4'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom47/command "'$GNOME_SET here CompecTA'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom47/name "'Here: CompecTA'"
+
+# 48) Here: WebCord
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom48/binding "'<Alt>5'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom48/command "'$GNOME_SET here WebCord'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom48/name "'Here: WebCord'"
+
+# 49) Here: Telegram
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom49/binding "'<Alt>6'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom49/command "'$GNOME_SET here org.telegram.desktop'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom49/name "'Here: Telegram'"
+
+# 50) Here: YouTube
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom50/binding "'<Alt>7'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom50/command "'$GNOME_SET here brave-youtube.com__-Default'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom50/name "'Here: YouTube'"
+
+# 51) Here: Spotify
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom51/binding "'<Alt>8'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom51/command "'$GNOME_SET here spotify'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom51/name "'Here: Spotify'"
+
+# 52) Here: Ferdium
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom52/binding "'<Alt>9'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom52/command "'$GNOME_SET here ferdium'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom52/name "'Here: Ferdium'"
+
+# 53) Here: ALL
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom53/binding "'<Alt>0'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom53/command "'$GNOME_SET here all'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom53/name "'Here: ALL'"
+
+# 54) Arrange Windows (Go)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom54/binding "'<Super><Alt>0'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom54/command "'$GNOME_SET go'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom54/name "'Arrange Windows (Go)'"
 
 # 37) Shutdown
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/binding "'<Ctrl><Alt><Shift>s'"
