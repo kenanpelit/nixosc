@@ -87,6 +87,7 @@ gnome_move_here_pid() {
   pid="$(js_escape "$pid_raw")"
 
   local js
+  local out
   js="$(cat <<EOF
 (function () {
   const wantPid = parseInt("${pid}", 10);
@@ -117,7 +118,12 @@ gnome_move_here_pid() {
 EOF
 )"
 
-  gnome_eval "$js" || true
+  out="$(gnome_eval "$js" || true)"
+  if [[ -z "$out" || "$out" == *"(false,"* ]]; then
+    echo "__GNOME_SET_EVAL_FAILED__"
+    return 0
+  fi
+  printf '%s' "$out"
 }
 
 gnome_move_here() {
@@ -126,11 +132,11 @@ gnome_move_here() {
   target="$(js_escape "$target_raw")"
 
   local js
+  local out
   js="$(cat <<EOF
 (function () {
   const Shell = imports.gi.Shell;
   const GLib = imports.gi.GLib;
-  const ByteArray = imports.byteArray;
 
   const target = "${target}";
   const targetDesktop = target.endsWith(".desktop") ? target : (target + ".desktop");
@@ -143,6 +149,31 @@ gnome_move_here() {
   const activeWs = global.workspace_manager.get_active_workspace();
 
   const cmdCache = {};
+
+  function bytesToString(bytes) {
+    if (!bytes) return "";
+
+    try {
+      if (typeof TextDecoder !== "undefined") {
+        return (new TextDecoder("utf-8")).decode(bytes);
+      }
+    } catch (e) {}
+
+    try {
+      const ByteArray = imports.byteArray;
+      if (ByteArray && typeof ByteArray.toString === "function") {
+        return ByteArray.toString(bytes);
+      }
+    } catch (e) {}
+
+    try {
+      let s = "";
+      for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+      return s;
+    } catch (e) {}
+
+    return "";
+  }
 
   function getPid(w) {
     try { return w.get_pid ? (w.get_pid() || 0) : 0; } catch (e) { return 0; }
@@ -162,7 +193,7 @@ gnome_move_here() {
         cmdCache[key] = "";
         return cmdCache[key];
       }
-      cmdCache[key] = ByteArray.toString(bytes).replace(/\\0/g, " ");
+      cmdCache[key] = bytesToString(bytes).replace(/\\0/g, " ");
       return cmdCache[key];
     } catch (e) {
       cmdCache[key] = "";
@@ -179,6 +210,14 @@ gnome_move_here() {
     const t = target.toLowerCase();
     const home = GLib.get_home_dir().toLowerCase();
     const isolated = home + "/.brave/isolated/" + t;
+
+    if (t.length >= 4) {
+      const tokens = cmd.split(/\\s+/).filter(s => s && s.length);
+      for (const tok of tokens) {
+        if (tok === t) return true;
+        if (tok.endsWith("/" + t)) return true;
+      }
+    }
 
     return (
       cmd.includes("--class=" + t) ||
@@ -233,7 +272,12 @@ gnome_move_here() {
 EOF
 )"
 
-  gnome_eval "$js" || true
+  out="$(gnome_eval "$js" || true)"
+  if [[ -z "$out" || "$out" == *"(false,"* ]]; then
+    echo "__GNOME_SET_EVAL_FAILED__"
+    return 0
+  fi
+  printf '%s' "$out"
 }
 
 keys_for_app() {
@@ -280,6 +324,14 @@ EOF
       cat <<'EOF'
 spotify
 Spotify
+EOF
+      ;;
+    org.telegram.desktop|org.telegram.desktop.desktop|TelegramDesktop|telegram-desktop|Telegram)
+      cat <<'EOF'
+org.telegram.desktop
+org.telegram.desktop.desktop
+telegram-desktop
+Telegram
 EOF
       ;;
     ferdium|Ferdium)
@@ -336,6 +388,9 @@ here_one() {
   if pid_file="$(pid_file_for_app "$app" 2>/dev/null || true)"; then
     if pid="$(read_live_pid "$pid_file" 2>/dev/null || true)"; then
       out="$(gnome_move_here_pid "$pid" || true)"
+      if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
+        die "GNOME Shell Eval failed while matching PID for: $app"
+      fi
       if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
         return 0
       fi
@@ -346,6 +401,9 @@ here_one() {
   while IFS= read -r key; do
     [[ -n "$key" ]] || continue
     out="$(gnome_move_here "$key" || true)"
+    if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
+      die "GNOME Shell Eval failed while matching key '$key' for: $app"
+    fi
     if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
       return 0
     fi
@@ -358,6 +416,9 @@ here_one() {
     if pid_file="$(pid_file_for_app "$app" 2>/dev/null || true)"; then
       if pid="$(read_live_pid "$pid_file" 2>/dev/null || true)"; then
         out="$(gnome_move_here_pid "$pid" || true)"
+        if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
+          die "GNOME Shell Eval failed while matching PID for: $app"
+        fi
         if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
           return 0
         fi
@@ -367,6 +428,9 @@ here_one() {
     while IFS= read -r key; do
       [[ -n "$key" ]] || continue
       out="$(gnome_move_here "$key" || true)"
+      if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
+        die "GNOME Shell Eval failed while matching key '$key' for: $app"
+      fi
       if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
         return 0
       fi
