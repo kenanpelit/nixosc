@@ -18,6 +18,7 @@
 #   window-move        Move focused window (workspace/monitor)
 #   column-move        Move current column (monitor)
 #   consume-or-expel   Niri-like window in/out of column
+#   maximize-column    Toggle maximize current column
 #   focus-float-tile   Toggle focus float/tile
 #   workspace-move-or-focus  Move workspace or focus monitor
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
@@ -77,6 +78,7 @@ Commands:
   window-move        Move focused window (workspace/monitor)
   column-move        Move current column (monitor)
   consume-or-expel   Niri-like window in/out of column
+  maximize-column    Toggle maximize current column
   focus-float-tile   Toggle focus float/tile
   workspace-move-or-focus  Move workspace to next monitor or focus it
   switch             Smart monitor/workspace switcher
@@ -104,6 +106,7 @@ Examples:
   hypr-set workspace-pull 5
   hypr-set arrange-windows
   hypr-set consume-or-expel left
+  hypr-set maximize-column
   hypr-set focus-float-tile
   hypr-set column-move monitor left
   hypr-set workspace-move-or-focus
@@ -575,6 +578,36 @@ EOF
       fi
 
       hyprctl dispatch focusmonitor +1 >/dev/null 2>&1 || true
+    )
+    ;;
+
+  maximize-column)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+
+      cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/hypr"
+      mkdir -p "$cache_dir"
+
+      ws_id="$(
+        hyprctl activeworkspace -j 2>/dev/null \
+          | jq -r '.id // empty' 2>/dev/null \
+          || true
+      )"
+      [[ -n "${ws_id:-}" && "${ws_id}" != "null" ]] || ws_id="unknown"
+
+      state_file="${cache_dir}/maximize-column-${ws_id}.state"
+      state="$(cat "$state_file" 2>/dev/null || true)"
+
+      if [[ "$state" == "on" ]]; then
+        hyprctl dispatch layoutmsg "colresize 0.60" >/dev/null 2>&1 || true
+        printf '%s\n' "off" >"$state_file" 2>/dev/null || true
+      else
+        hyprctl dispatch layoutmsg "colresize 1.0" >/dev/null 2>&1 || true
+        printf '%s\n' "on" >"$state_file" 2>/dev/null || true
+      fi
     )
     ;;
 

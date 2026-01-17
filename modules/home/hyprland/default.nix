@@ -83,6 +83,7 @@ in
 
         # Key Bindings
         bind = binds.bind;
+        bindl = binds.bindl;
         bindm = binds.bindm;
 
         # Window & Layer Rules
