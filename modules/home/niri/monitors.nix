@@ -66,5 +66,13 @@
         }
       }
     }
+
+    // Fallback for unknown/new monitors
+    // Ensures they don't break the layout if plugged in.
+    output-name "default" {
+      mode "max";
+      scale 1.0;
+      position x=3840 y=0; // Place it to the right of likely main monitors
+    }
   '';
 }
