@@ -317,8 +317,7 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
     layer-rule {
       match namespace="^notifications$";
       geometry-corner-radius 12;
-      block-out-from "screencast";
-      block-out-from "screen-capture";
+      block-out-from "screencast" "screen-capture";
     }
   '';
 }
