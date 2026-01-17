@@ -1,0 +1,7 @@
+{
+  "uuid": "gnome-niri-parity@kenan",
+  "name": "GNOME Niri Parity",
+  "description": "DBus helpers for Niri-like GNOME keybindings (column width, here/go) without relying on org.gnome.Shell.Eval.",
+  "version": 1,
+  "shell-version": ["49"]
+}

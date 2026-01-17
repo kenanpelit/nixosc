@@ -235,6 +235,7 @@ in
         	"disable-three-finger-gestures-redux@cygnusx-1-org.github.com"
         	"disable-workspace-animation@ethnarque"
         	"extension-list@tu.berry"
+          "gnome-niri-parity@kenan"
         	"gsconnect@andyholmes.github.io"
         	"headphone-internal-switch@gustavomalta.github.com"
         	"just-perfection-desktop@just-perfection"
@@ -652,5 +653,13 @@ in
       OnlyShowIn=GNOME;
       X-GNOME-Autostart-enabled=true
     '';
+
+    # ==============================================================================
+    # LOCAL EXTENSIONS
+    # ==============================================================================
+    home.file.".local/share/gnome-shell/extensions/gnome-niri-parity@kenan" = {
+      source = ./extensions/gnome-niri-parity@kenan;
+      recursive = true;
+    };
   };
 }
