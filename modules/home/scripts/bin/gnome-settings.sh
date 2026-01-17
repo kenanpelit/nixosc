@@ -843,10 +843,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$GNOME_COLWIDTH set 0.8'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'Column Width 80%'"
 
-# 24) (unused)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "''"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'true'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'(unused)'"
+# 24) Column Width Toggle (0.8 <-> 1.0) (Niri: Mod+M)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Super>m'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$GNOME_COLWIDTH toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'Column Width Toggle'"
 
 # 25) MPV Playback (Niri-style)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>u'"
