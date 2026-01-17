@@ -69,6 +69,18 @@ command -v gdbus >/dev/null 2>&1 || {
   exit 1
 }
 
+ensure_shell_eval_enabled() {
+  # org.gnome.Shell.Eval returns (false, '') unless development-tools is enabled.
+  if command -v gsettings >/dev/null 2>&1; then
+    if [[ "$(gsettings get org.gnome.shell development-tools 2>/dev/null || true)" != "true" ]]; then
+      gsettings set org.gnome.shell development-tools true 2>/dev/null || true
+    fi
+  fi
+  if command -v dconf >/dev/null 2>&1; then
+    dconf write /org/gnome/shell/development-tools true 2>/dev/null || true
+  fi
+}
+
 js="$(cat <<EOF
 (function () {
   const Meta = imports.gi.Meta;
@@ -126,10 +138,18 @@ js="$(cat <<EOF
 EOF
 )"
 
-out="$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "$js" 2>/dev/null || true)"
+out="$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "$js" 2>&1 || true)"
+if [[ -z "$out" || "$out" == *"(false,"* ]]; then
+  ensure_shell_eval_enabled
+  out="$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "$js" 2>&1 || true)"
+fi
 
 if [[ -z "$out" || "$out" == *"(false,"* ]]; then
-  echo "gnome-column-width: GNOME Shell Eval failed: ${out:-<no output>}" >&2
+  devtools_val="unknown"
+  if command -v gsettings >/dev/null 2>&1; then
+    devtools_val="$(gsettings get org.gnome.shell development-tools 2>/dev/null || true)"
+  fi
+  echo "gnome-column-width: GNOME Shell Eval failed: ${out:-<no output>} (development-tools=${devtools_val})" >&2
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -u critical -t 2500 "GNOME Column Width" "GNOME Shell Eval failed"
   fi

@@ -152,7 +152,8 @@ in
       "org/gnome/desktop/wm/keybindings" = {
         close = ["<Super>q"];
         toggle-fullscreen = ["<Super>f"];
-        toggle-maximized = ["<Super>m" "<Alt>g" "<Super>Up"];
+        # Keep <Super>m free for gnome-column-width toggle (Niri-like 0.8 <-> 1.0)
+        toggle-maximized = ["<Alt>g" "<Super>Up"];
         maximize = [];
         activate-window-menu = [];
         minimize = [];
@@ -204,7 +205,7 @@ in
         toggle-application-view = ["<Super>d" "<Super>a"];
         toggle-message-tray = ["<Super>n"];
         toggle-overview = ["<Super><Alt>o"];
-        show-screenshot-ui = ["Print" "<Shift><Super>s"];
+        show-screenshot-ui = ["Print"];
 
         # Disable default Super+[1-9] app shortcuts (use for workspaces instead)
         switch-to-application-1 = [];

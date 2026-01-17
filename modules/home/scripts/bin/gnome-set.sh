@@ -28,6 +28,18 @@ need() {
   command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"
 }
 
+ensure_shell_eval_enabled() {
+  # org.gnome.Shell.Eval returns (false, '') unless development-tools is enabled.
+  if command -v gsettings >/dev/null 2>&1; then
+    if [[ "$(gsettings get org.gnome.shell development-tools 2>/dev/null || true)" != "true" ]]; then
+      gsettings set org.gnome.shell development-tools true 2>/dev/null || true
+    fi
+  fi
+  if command -v dconf >/dev/null 2>&1; then
+    dconf write /org/gnome/shell/development-tools true 2>/dev/null || true
+  fi
+}
+
 js_escape() {
   local s="$1"
   s="${s//\\/\\\\}"
@@ -47,11 +59,21 @@ gnome_shell_running() {
 
 gnome_eval() {
   local js="$1"
-  gdbus call --session \
+  local out
+  out="$(gdbus call --session \
     --dest org.gnome.Shell \
     --object-path /org/gnome/Shell \
     --method org.gnome.Shell.Eval \
-    "$js" 2>/dev/null
+    "$js" 2>/dev/null || true)"
+  if [[ -z "$out" || "$out" == *"(false,"* ]]; then
+    ensure_shell_eval_enabled
+    out="$(gdbus call --session \
+      --dest org.gnome.Shell \
+      --object-path /org/gnome/Shell \
+      --method org.gnome.Shell.Eval \
+      "$js" 2>/dev/null || true)"
+  fi
+  printf '%s' "$out"
 }
 
 pid_file_for_app() {
