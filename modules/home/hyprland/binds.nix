@@ -85,7 +85,7 @@ let
     "$mainMod SHIFT, equal, resizeactive, 0 50"
 
     # Advanced Modes
-    "ALT, G, fullscreen, 1"            # Maximize to Edges
+    "ALT, G, exec, ${bins.hyprSet} maximize-window-to-edges"
     "$mainMod CTRL, W, togglegroup"    # Toggle Tabbed Mode (Group)
     "$mainMod, G, exec, ${bins.hyprSet} toggle-float" # Toggle Float
     "$mainMod CTRL, BackSpace, exec, ${bins.hyprSet} focus-float-tile"

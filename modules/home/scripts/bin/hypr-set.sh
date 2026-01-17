@@ -19,6 +19,7 @@
 #   column-move        Move current column (monitor)
 #   consume-or-expel   Niri-like window in/out of column
 #   maximize-column    Toggle maximize current column
+#   maximize-window-to-edges  Maximize window to screen edges (Niri-like)
 #   focus-float-tile   Toggle focus float/tile
 #   workspace-move-or-focus  Move workspace or focus monitor
 #   switch             Smart monitor/workspace switcher (was: hypr-switch)
@@ -79,6 +80,7 @@ Commands:
   column-move        Move current column (monitor)
   consume-or-expel   Niri-like window in/out of column
   maximize-column    Toggle maximize current column
+  maximize-window-to-edges  Maximize window to screen edges (Niri-like)
   focus-float-tile   Toggle focus float/tile
   workspace-move-or-focus  Move workspace to next monitor or focus it
   switch             Smart monitor/workspace switcher
@@ -107,6 +109,7 @@ Examples:
   hypr-set arrange-windows
   hypr-set consume-or-expel left
   hypr-set maximize-column
+  hypr-set maximize-window-to-edges
   hypr-set focus-float-tile
   hypr-set column-move monitor left
   hypr-set workspace-move-or-focus
@@ -608,6 +611,19 @@ EOF
         hyprctl dispatch layoutmsg "colresize 1.0" >/dev/null 2>&1 || true
         printf '%s\n' "on" >"$state_file" 2>/dev/null || true
       fi
+    )
+    ;;
+
+  maximize-window-to-edges)
+    (
+      set -euo pipefail
+      ensure_hypr_env
+      command -v hyprctl >/dev/null 2>&1 || exit 0
+
+      # Best-effort Niri `maximize-window-to-edges` feel:
+      # - internal fullscreen => covers monitor edges (ignores struts/gaps)
+      # - client maximized    => apps keep normal UI (not "real fullscreen")
+      hyprctl dispatch fullscreenstate 2 1 toggle >/dev/null 2>&1 || true
     )
     ;;
 
