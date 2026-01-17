@@ -56,6 +56,8 @@ MOCHA_RED="#f38ba8"
 MOCHA_PINK="#f5c2e7"
 MOCHA_FLAMINGO="#f2cdcd"
 MOCHA_ROSEWATER="#f5e0dc"
+# Niri accent (used for border/focus parity across desktops)
+NIRI_CYAN="#00BCD4"
 
 echo "📝 Mevcut ayarları temizleniyor..."
 # Sadece custom keybinding'leri temizle, diğerlerini koru
@@ -221,7 +223,8 @@ echo "⌨️  Window Manager keybinding'leri uygulanıyor..."
 # Basic window management
 dconf write /org/gnome/desktop/wm/keybindings/close "['<Super>q']"
 dconf write /org/gnome/desktop/wm/keybindings/toggle-fullscreen "['<Super>f']"
-dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m']"
+dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m', '<Alt>g']"
+dconf write /org/gnome/desktop/wm/keybindings/activate-window-menu "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/minimize "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
 
@@ -273,7 +276,7 @@ echo "🐚 Shell keybinding'leri uygulanıyor..."
 
 dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d']"
 dconf write /org/gnome/shell/keybindings/toggle-message-tray "['<Super>n']"
-dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['<Super>Print']"
+dconf write /org/gnome/shell/keybindings/show-screenshot-ui "@as []"
 dconf write /org/gnome/shell/keybindings/toggle-overview "['<Super><Alt>o']"
 
 # Application switching keybinding'larını kapat (workspace çakışması için)
@@ -403,8 +406,8 @@ dconf write /org/gnome/shell/extensions/spotify-controls/show-volume-control "fa
 dconf write /org/gnome/shell/extensions/spotify-controls/show-album-art "false"
 dconf write /org/gnome/shell/extensions/spotify-controls/compact-mode "true"
 
-# Auto Move Windows
-AUTO_MOVE_LIST="['brave-browser.desktop:1','kitty.desktop:2','discord.desktop:5','webcord.desktop:5','whatsie.desktop:9','ferdium.desktop:9','spotify.desktop:8','brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7']"
+# Auto Move Windows (Niri-like workspace rules)
+AUTO_MOVE_LIST="['brave-kenp.desktop:1','brave-browser.desktop:1','kitty.desktop:2','brave-ai.desktop:3','brave-compecta.desktop:4','discord.desktop:5','webcord.desktop:5','audacious.desktop:5','org.telegram.desktop.desktop:6','vlc.desktop:6','remote-viewer.desktop:6','transmission-gtk.desktop:7','org.keepassxc.KeePassXC.desktop:7','brave-youtube.com__-Default.desktop:7','brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7','spotify.desktop:8','ferdium.desktop:9','com.rtosta.zapzap.desktop:9','whatsie.desktop:9']"
 dconf write /org/gnome/shell/extensions/auto-move-windows/application-list "$AUTO_MOVE_LIST"
 
 # =============================================================================
@@ -419,9 +422,9 @@ dconf write /org/gnome/shell/extensions/dash-to-panel/trans-bg-color "'$MOCHA_BA
 dconf write /org/gnome/shell/extensions/dash-to-panel/trans-use-custom-opacity "true"
 dconf write /org/gnome/shell/extensions/dash-to-panel/trans-panel-opacity "0.95"
 
-# Tiling Shell - Catppuccin accent
-dconf write /org/gnome/shell/extensions/tilingshell/border-color "'$MOCHA_MAUVE'"
-dconf write /org/gnome/shell/extensions/tilingshell/active-window-border-color "'$MOCHA_LAVENDER'"
+# Tiling Shell - Niri-like borders (active cyan, inactive surface1)
+dconf write /org/gnome/shell/extensions/tilingshell/border-color "'$MOCHA_SURFACE1'"
+dconf write /org/gnome/shell/extensions/tilingshell/active-window-border-color "'$NIRI_CYAN'"
 
 # Space Bar - Catppuccin CSS güncelleme
 SPACE_BAR_MOCHA_CSS='
@@ -677,16 +680,21 @@ BRAVE="$(opt brave || opt brave-browser)"
 YAZI="$(opt yazi)"
 NEMO="$(opt nemo)"
 WALKER="$(opt walker)"
+ROFI_LAUNCHER="$(opt rofi-launcher)"
 COPYQ="$(opt copyq)"
 WEBCORD="$(opt webcord)"
 WMCTRL="$(opt wmctrl)"
 LOGINCTL="$(opt loginctl)"
 
+OSC_NDROP="$(opt osc-ndrop)"
 OSC_SOUNDCTL="$(opt osc-soundctl)"
 OSC_SPOTIFY="$(opt osc-spotify)"
 OSC_REBOOT="$(opt osc-safe-reboot)"
 BLUE_TOGGLE="$(opt bluetooth_toggle)"
-MPV_MGR="$(opt gnome-mpv-manager)"
+VLC_TOGGLE="$(opt vlc-toggle)"
+MPC_CONTROL="$(opt mpc-control)"
+NSTICKY_TOGGLE="$(opt nsticky-toggle)"
+MPV_MGR="$(opt mpv-manager)"
 KKENP="$(opt start-kkenp)"
 SEM_SUMO="$(opt semsumo)"
 WSPREV="$(opt ws-prev)"
@@ -718,10 +726,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command "'$BRAVE'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/name "'Browser'"
 
-# 2) Terminal FM (floating yazi)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/binding "'<Super>e'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command "'$KITTY --class floating-terminal -e $YAZI'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/name "'Terminal File Manager (Floating)'"
+# 2) Dropdown terminal (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/binding "'<Super>Return'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command "'$OSC_NDROP $KITTY --class dropdown-terminal'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/name "'Dropdown Terminal'"
 
 # 3) Nemo
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/binding "'<Super><Ctrl>f'"
@@ -729,14 +737,14 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/name "'Open Nemo File Manager'"
 
 # 4) Terminal FM (yazi)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/binding "'<Alt>f'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/command "'$KITTY $YAZI'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/binding "'<Alt><Ctrl>f'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/command "'$KITTY -e $YAZI'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/name "'Terminal File Manager (Yazi)'"
 
-# 5) Walker
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Super>space'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'$WALKER'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/name "'Open Walker'"
+# 5) Rofi Launcher (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Alt>space'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'$ROFI_LAUNCHER'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/name "'Rofi Launcher'"
 
 # 6) Audio output switch
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/binding "'<Alt>a'"
@@ -763,10 +771,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/command "'$OSC_SPOTIFY prev'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/name "'Spotify Previous'"
 
-# 11) MPV start/focus
+# 11) VLC toggle (Niri-style)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/binding "'<Alt>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/command "'$MPV_MGR start'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/name "'MPV Start/Focus'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/command "'$VLC_TOGGLE'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/name "'VLC Toggle'"
 
 # 12) Lock screen
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/binding "'<Alt>l'"
@@ -793,10 +801,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/command "'$KKENP'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/name "'Start KKENP'"
 
-# 17) Notes Manager
+# 17) Notes (Anotes)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/binding "'<Alt>n'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/command "'anotes -M'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/name "'Notes Manager'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/command "'anotes'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/name "'Notes (Anotes)'"
 
 # 18) Clipboard (CopyQ)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/binding "'<Super>v'"
@@ -808,48 +816,75 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/command "'$BLUE_TOGGLE'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/name "'Bluetooth Toggle'"
 
-# 20) Mullvad toggle
+# 20) Mullvad (VPN)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/binding "'<Alt>F12'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/command "'osc-mullvad toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/command "'$MULLVAD toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/name "'Mullvad Toggle'"
 
 # 21) Gnome Start
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/binding "'<Super><Alt>Return'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'$SEM_SUMO launch --daily'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'$SEM_SUMO launch --daily -all'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/name "'Gnome Start'"
 
-# 22) Screenshot UI
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'<Super><Shift>s'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'gnome-screenshot -i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Screenshot Tool'"
+# 22) Screenshot Area (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'Print'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'$SCREENSHOT -a'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Screenshot Area'"
 
-# 23) MPV Move
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Alt><Shift>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$MPV_MGR move'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'MPV Move Window'"
+# 23) Screenshot Screen (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Ctrl>Print'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$SCREENSHOT'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'Screenshot Screen'"
 
-# 24) MPV Resize
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Alt><Ctrl>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$MPV_MGR resize'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'MPV Resize Center'"
+# 24) Screenshot Window (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Alt>Print'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$SCREENSHOT -w'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'Screenshot Window'"
 
-# 25) Play YouTube (clipboard)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>y'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/command "'$MPV_MGR play-yt'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/name "'Play YouTube from Clipboard'"
+# 25) MPV Playback (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>u'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/command "'$MPV_MGR playback'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/name "'MPV Playback'"
 
-# 26) Save YouTube
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/binding "'<Alt><Shift>y'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/command "'$MPV_MGR save-yt'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/name "'Download YouTube Video'"
+# 26) MPV Play YouTube (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/binding "'<Super><Ctrl>y'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/command "'$MPV_MGR play-yt'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/name "'MPV Play YouTube'"
 
-# 27) MPV Toggle
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/binding "'<Alt>p'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'$MPV_MGR playback'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/name "'MPV Toggle Playback'"
+# 27) MPV Stick (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/binding "'<Super><Ctrl>F9'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'$MPV_MGR stick'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/name "'MPV Stick'"
 
-# 28..36) Workspaces 1..9 (history switcher) - REMOVED (Restored standard GNOME behavior)
-# The slots 28..36 are now free or reserved.
+# 28) MPV Move (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/binding "'<Super><Ctrl>F10'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/command "'$MPV_MGR move'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/name "'MPV Move'"
+
+# 29) MPV Save YouTube (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/binding "'<Super><Ctrl>F11'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/command "'$MPV_MGR save-yt'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/name "'MPV Save YouTube'"
+
+# 30) MPV Wallpaper (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/binding "'<Super><Ctrl>F12'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/command "'$MPV_MGR wallpaper'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/name "'MPV Wallpaper'"
+
+# 31) Sticky Toggle (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/binding "'<Super><Ctrl>s'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/command "'$NSTICKY_TOGGLE'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/name "'Sticky Toggle'"
+
+# 32) MPC Toggle (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/binding "'<Alt><Ctrl>e'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/command "'$MPC_CONTROL toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/name "'MPC Toggle'"
+
+# 33) Screenshot Tool UI (extra)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/binding "'<Super><Shift>s'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/command "'$SCREENSHOT -i'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/name "'Screenshot Tool'"
 
 # 37) Shutdown
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/binding "'<Ctrl><Alt><Shift>s'"
@@ -872,7 +907,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/name "'Power Menu (with confirmation)'"
 
 # 41) GKR
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/binding "'<Super><Ctrl>F12'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/binding "'<Super><Ctrl><Alt>F12'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/command "'$GKR'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/name "'GNOME GKR'"
 
@@ -942,8 +977,8 @@ dconf write /org/gnome/shell/extensions/tilingshell/enable-tiling-system "true"
 dconf write /org/gnome/shell/extensions/tilingshell/auto-tile "true"
 dconf write /org/gnome/shell/extensions/tilingshell/snap-assist "true"
 dconf write /org/gnome/shell/extensions/tilingshell/default-layout "'split'"
-dconf write /org/gnome/shell/extensions/tilingshell/inner-gaps "4"
-dconf write /org/gnome/shell/extensions/tilingshell/outer-gaps "4"
+dconf write /org/gnome/shell/extensions/tilingshell/inner-gaps "12"
+dconf write /org/gnome/shell/extensions/tilingshell/outer-gaps "12"
 
 # Window Suggestions
 dconf write /org/gnome/shell/extensions/tilingshell/enable-window-suggestions "true"
@@ -960,7 +995,7 @@ dconf write /org/gnome/shell/extensions/tilingshell/tile-right "['<Super><Shift>
 dconf write /org/gnome/shell/extensions/tilingshell/tile-up "['<Super><Shift>Up', '<Super><Shift>k']"
 dconf write /org/gnome/shell/extensions/tilingshell/tile-down "['<Super><Shift>Down', '<Super><Shift>j']"
 dconf write /org/gnome/shell/extensions/tilingshell/toggle-tiling "@as []"
-dconf write /org/gnome/shell/extensions/tilingshell/toggle-floating "['<Super>g']"
+dconf write /org/gnome/shell/extensions/tilingshell/toggle-floating "['<Super>g', '<Super><Ctrl>BackSpace']"
 
 # Focus keybindings
 dconf write /org/gnome/shell/extensions/tilingshell/focus-left "['<Super>Left', '<Super>h']"
@@ -979,7 +1014,7 @@ dconf write /org/gnome/shell/extensions/tilingshell/prev-layout "['<Super><Shift
 
 # Visual settings
 dconf write /org/gnome/shell/extensions/tilingshell/show-border "true"
-dconf write /org/gnome/shell/extensions/tilingshell/border-width "2"
+dconf write /org/gnome/shell/extensions/tilingshell/border-width "3"
 dconf write /org/gnome/shell/extensions/tilingshell/enable-animations "true"
 dconf write /org/gnome/shell/extensions/tilingshell/animation-duration "150"
 dconf write /org/gnome/shell/extensions/tilingshell/resize-step "50"
