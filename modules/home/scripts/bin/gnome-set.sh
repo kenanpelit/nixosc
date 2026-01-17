@@ -129,6 +129,8 @@ gnome_move_here() {
   js="$(cat <<EOF
 (function () {
   const Shell = imports.gi.Shell;
+  const GLib = imports.gi.GLib;
+  const ByteArray = imports.byteArray;
 
   const target = "${target}";
   const targetDesktop = target.endsWith(".desktop") ? target : (target + ".desktop");
@@ -139,6 +141,54 @@ gnome_move_here() {
   const tracker = Shell.WindowTracker.get_default();
   const wins = global.get_window_actors().map(a => a.meta_window).filter(w => w);
   const activeWs = global.workspace_manager.get_active_workspace();
+
+  const cmdCache = {};
+
+  function getPid(w) {
+    try { return w.get_pid ? (w.get_pid() || 0) : 0; } catch (e) { return 0; }
+  }
+
+  function cmdlineForPid(pid) {
+    if (!pid) return "";
+    const key = pid.toString();
+    if (cmdCache[key] !== undefined) return cmdCache[key];
+
+    try {
+      const path = "/proc/" + key + "/cmdline";
+      const res = GLib.file_get_contents(path);
+      const ok = res[0];
+      const bytes = res[1];
+      if (!ok || !bytes) {
+        cmdCache[key] = "";
+        return cmdCache[key];
+      }
+      cmdCache[key] = ByteArray.toString(bytes).replace(/\\0/g, " ");
+      return cmdCache[key];
+    } catch (e) {
+      cmdCache[key] = "";
+      return cmdCache[key];
+    }
+  }
+
+  function cmdlineMatchesTarget(w) {
+    const pid = getPid(w);
+    if (!pid) return false;
+    const cmd = cmdlineForPid(pid).toLowerCase();
+    if (!cmd) return false;
+
+    const t = target.toLowerCase();
+    const home = GLib.get_home_dir().toLowerCase();
+    const isolated = home + "/.brave/isolated/" + t;
+
+    return (
+      cmd.includes("--class=" + t) ||
+      cmd.includes("--class " + t) ||
+      cmd.includes("--name=" + t) ||
+      cmd.includes("--name " + t) ||
+      cmd.includes("--user-data-dir=" + isolated) ||
+      cmd.includes("--user-data-dir " + isolated)
+    );
+  }
 
   function props(w) {
     let cls = "";
@@ -159,7 +209,8 @@ gnome_move_here() {
       eqi(p.cls, target) ||
       eqi(p.inst, target) ||
       eqi(p.appId, target) ||
-      eqi(p.appId, targetDesktop)
+      eqi(p.appId, targetDesktop) ||
+      cmdlineMatchesTarget(w)
     );
   }
 
