@@ -220,6 +220,13 @@ in
       open-focused true;
     }
 
+    // Kenp Save File Specific Rule
+    window-rule {
+      match app-id=r#"^Kenp$"# title=r#"^Save File$"#;
+      default-column-width { fixed 1280; }
+      default-window-height { fixed 933; }
+    }
+
     // Specific Rule for Calculators
     window-rule {
       match app-id=r#"^(org\.gnome\.Calculator|kcalc)$"#;
