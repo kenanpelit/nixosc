@@ -342,6 +342,8 @@ dconf write /org/gnome/desktop/wm/preferences/raise-on-click "true"
 echo "🐚 Shell ayarları uygulanıyor..."
 
 dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.desktop']"
+# Needed for `org.gnome.Shell.Eval` (used by gnome-column-width / gnome-set).
+dconf write /org/gnome/shell/development-tools "true"
 
 # Extensions - NixOS'ta yüklü olanlar
 EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','vertical-workspaces@G-dH.github.com','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
