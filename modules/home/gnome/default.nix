@@ -89,6 +89,7 @@ let
     { name = "SemsuMo Daily"; command = "semsumo launch --daily -all"; binding = "<Super><Alt>Return"; }
     { name = "Column Width Cycle"; command = "gnome-column-width"; binding = "<Super>r"; }
     { name = "Column Width 80%"; command = "gnome-column-width set 0.8"; binding = "<Super><Shift>r"; }
+    { name = "Column Width Toggle"; command = "gnome-column-width toggle"; binding = "<Super>m"; }
 
     { name = "MPV Playback"; command = "mpv-manager playback"; binding = "<Alt>u"; }
     { name = "MPV Play YouTube"; command = "mpv-manager play-yt"; binding = "<Super><Ctrl>y"; }
