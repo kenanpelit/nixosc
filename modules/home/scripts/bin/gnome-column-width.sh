@@ -69,9 +69,24 @@ command -v gdbus >/dev/null 2>&1 || {
   exit 1
 }
 
+PARITY_UUID="gnome-niri-parity@kenan"
 PARITY_BUS="org.gnome.Shell"
 PARITY_OBJ="/org/kenan/GnomeNiriParity"
 PARITY_IFACE="org.kenan.GnomeNiriParity"
+
+parity_extension_dir() {
+  local data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+  printf '%s' "$data_home/gnome-shell/extensions/$PARITY_UUID"
+}
+
+parity_try_enable_extension() {
+  command -v gnome-extensions >/dev/null 2>&1 || return 1
+  local dir
+  dir="$(parity_extension_dir)"
+  [[ -d "$dir" ]] || return 1
+  gnome-extensions enable "$PARITY_UUID" >/dev/null 2>&1 || true
+  return 0
+}
 
 parity_call() {
   local method="$1"
@@ -98,12 +113,15 @@ ensure_shell_eval_enabled() {
 out=""
 case "$action" in
   cycle)
+    parity_try_enable_extension || true
     out="$(parity_call ColumnWidthCycle)"
     ;;
   set)
+    parity_try_enable_extension || true
     out="$(parity_call ColumnWidthSet "${set_ratio:-0.8}")"
     ;;
   toggle)
+    parity_try_enable_extension || true
     out="$(parity_call ColumnWidthToggle "${toggle_a:-0.8}" "${toggle_b:-1.0}")"
     ;;
 esac

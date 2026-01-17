@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_NAME="${0##*/}"
+PARITY_UUID="gnome-niri-parity@kenan"
 
 usage() {
   cat <<'EOF'
@@ -80,6 +81,21 @@ PARITY_BUS="org.gnome.Shell"
 PARITY_OBJ="/org/kenan/GnomeNiriParity"
 PARITY_IFACE="org.kenan.GnomeNiriParity"
 PARITY_AVAILABLE=""
+PARITY_LAST_ERR=""
+
+parity_extension_dir() {
+  local data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+  printf '%s' "$data_home/gnome-shell/extensions/$PARITY_UUID"
+}
+
+parity_try_enable_extension() {
+  command -v gnome-extensions >/dev/null 2>&1 || return 1
+  local dir
+  dir="$(parity_extension_dir)"
+  [[ -d "$dir" ]] || return 1
+  gnome-extensions enable "$PARITY_UUID" >/dev/null 2>&1 || true
+  return 0
+}
 
 parity_available() {
   if [[ "$PARITY_AVAILABLE" == "1" ]]; then
@@ -89,16 +105,29 @@ parity_available() {
     return 1
   fi
 
-  local out
+  local out=""
   out="$(gdbus call --session \
     --dest "$PARITY_BUS" \
     --object-path "$PARITY_OBJ" \
-    --method "${PARITY_IFACE}.Ping" 2>/dev/null || true)"
-  if [[ -n "$out" && "$out" != Error* && "$out" != *"Error:"* ]]; then
+    --method "${PARITY_IFACE}.Ping" 2>&1 || true)"
+  if [[ -n "$out" && "$out" != Error* && "$out" != *"Error:"* && "$out" == *"pong"* ]]; then
     PARITY_AVAILABLE="1"
     return 0
   fi
 
+  PARITY_LAST_ERR="$out"
+  parity_try_enable_extension || true
+
+  out="$(gdbus call --session \
+    --dest "$PARITY_BUS" \
+    --object-path "$PARITY_OBJ" \
+    --method "${PARITY_IFACE}.Ping" 2>&1 || true)"
+  if [[ -n "$out" && "$out" != Error* && "$out" != *"Error:"* && "$out" == *"pong"* ]]; then
+    PARITY_AVAILABLE="1"
+    return 0
+  fi
+
+  PARITY_LAST_ERR="$out"
   PARITY_AVAILABLE="0"
   return 1
 }
@@ -146,7 +175,8 @@ gnome_move_here_pid() {
     local out
     out="$(parity_call MoveHerePid "$pid_raw")"
     if [[ -z "$out" || "$out" == Error* || "$out" == *"Error:"* ]]; then
-      echo "__GNOME_SET_EVAL_FAILED__"
+      PARITY_LAST_ERR="$out"
+      echo "__GNOME_SET_BACKEND_FAILED__"
       return 0
     fi
     printf '%s' "$out"
@@ -190,7 +220,7 @@ EOF
 
   out="$(gnome_eval "$js" || true)"
   if [[ -z "$out" || "$out" == *"(false,"* ]]; then
-    echo "__GNOME_SET_EVAL_FAILED__"
+    echo "__GNOME_SET_BACKEND_FAILED__"
     return 0
   fi
   printf '%s' "$out"
@@ -202,7 +232,8 @@ gnome_move_here() {
     local out
     out="$(parity_call MoveHere "$target_raw")"
     if [[ -z "$out" || "$out" == Error* || "$out" == *"Error:"* ]]; then
-      echo "__GNOME_SET_EVAL_FAILED__"
+      PARITY_LAST_ERR="$out"
+      echo "__GNOME_SET_BACKEND_FAILED__"
       return 0
     fi
     printf '%s' "$out"
@@ -355,7 +386,7 @@ EOF
 
   out="$(gnome_eval "$js" || true)"
   if [[ -z "$out" || "$out" == *"(false,"* ]]; then
-    echo "__GNOME_SET_EVAL_FAILED__"
+    echo "__GNOME_SET_BACKEND_FAILED__"
     return 0
   fi
   printf '%s' "$out"
@@ -464,15 +495,15 @@ launch_for_app() {
 here_one() {
   local app="$1"
   local out
+  local backend_failed=0
 
   # 1) Prefer PID match (Wayland-safe) to avoid spawning a new window
   if pid_file="$(pid_file_for_app "$app" 2>/dev/null || true)"; then
     if pid="$(read_live_pid "$pid_file" 2>/dev/null || true)"; then
       out="$(gnome_move_here_pid "$pid" || true)"
-      if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
-        die "GNOME Shell Eval failed while matching PID for: $app"
-      fi
-      if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
+      if [[ "$out" == *"__GNOME_SET_BACKEND_FAILED__"* ]]; then
+        backend_failed=1
+      elif [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
         return 0
       fi
     fi
@@ -482,8 +513,9 @@ here_one() {
   while IFS= read -r key; do
     [[ -n "$key" ]] || continue
     out="$(gnome_move_here "$key" || true)"
-    if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
-      die "GNOME Shell Eval failed while matching key '$key' for: $app"
+    if [[ "$out" == *"__GNOME_SET_BACKEND_FAILED__"* ]]; then
+      backend_failed=1
+      continue
     fi
     if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
       return 0
@@ -497,10 +529,9 @@ here_one() {
     if pid_file="$(pid_file_for_app "$app" 2>/dev/null || true)"; then
       if pid="$(read_live_pid "$pid_file" 2>/dev/null || true)"; then
         out="$(gnome_move_here_pid "$pid" || true)"
-        if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
-          die "GNOME Shell Eval failed while matching PID for: $app"
-        fi
-        if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
+        if [[ "$out" == *"__GNOME_SET_BACKEND_FAILED__"* ]]; then
+          backend_failed=1
+        elif [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
           return 0
         fi
       fi
@@ -509,8 +540,9 @@ here_one() {
     while IFS= read -r key; do
       [[ -n "$key" ]] || continue
       out="$(gnome_move_here "$key" || true)"
-      if [[ "$out" == *"__GNOME_SET_EVAL_FAILED__"* ]]; then
-        die "GNOME Shell Eval failed while matching key '$key' for: $app"
+      if [[ "$out" == *"__GNOME_SET_BACKEND_FAILED__"* ]]; then
+        backend_failed=1
+        continue
       fi
       if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
         return 0
@@ -518,6 +550,12 @@ here_one() {
     done < <(keys_for_app "$app")
     sleep 0.1
   done
+
+  if [[ "$backend_failed" == "1" ]]; then
+    hint="Enable extension: gnome-extensions enable ${PARITY_UUID} (then logout/login if needed)"
+    [[ -n "$PARITY_LAST_ERR" ]] && hint="${hint}; last error: ${PARITY_LAST_ERR}"
+    die "GNOME backend not available for '$app'. ${hint}"
+  fi
 
   return 0
 }
