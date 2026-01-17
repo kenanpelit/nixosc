@@ -208,10 +208,12 @@ check_dependencies() {
 	echo "  --title=BASLIK             Pencere başlığını ayarlar"
 	echo "  --proxy[=host:port]        Proxy ile başlatır"
 	echo "  --Proxy                    Proxy profili ile başlatır"
-		echo "  --proxy-type=TYPE          Proxy türü (socks5, http, https)"
-		echo "  --separate                 Her profil için ayrı Brave instance (user-data-dir) kullan"
-		echo "  --no-separate              Tek instance davranışı (varsayılan Chromium)"
-		echo "  --incognito                İnkognito modunda başlatır"
+	echo "  --proxy-type=TYPE          Proxy türü (socks5, http, https)"
+	echo "  --separate                 Her profil için ayrı Brave instance (user-data-dir) kullan"
+	echo "  --no-separate              Tek instance davranışı (varsayılan Chromium)"
+	echo "  --pid-file=PATH            Başlatılan Brave PID bilgisini PATH'e yaz"
+	echo "  --pid-file PATH            Aynısı"
+	echo "  --incognito                İnkognito modunda başlatır"
 	echo "  --kill-profile             Bu profil için çalışan örnekleri kapat"
 	echo "  --kill-all                 Tüm Brave örneklerini kapat"
 	echo "  --create-profile=ISIM      Yeni profil oluştur"
@@ -664,6 +666,7 @@ validate_profile() {
 		local incognito_mode=false
 		# Niri/Hyprland'da workspace rule'ların düzgün çalışması için default: ayrı instance
 		local separate_mode="auto"
+		local pid_file=""
 
 	# Parametreleri güvenli şekilde işle
 		while [[ $# -gt 0 ]]; do
@@ -688,6 +691,15 @@ validate_profile() {
 				;;
 			--separate) separate_mode="true" ;;
 			--no-separate) separate_mode="false" ;;
+			--pid-file=*) pid_file="${1#*=}" ;;
+			--pid-file)
+				shift
+				if [[ -z "${1:-}" ]]; then
+					log "ERROR" "--pid-file parametresi bir değer bekliyor"
+					exit 1
+				fi
+				pid_file="$1"
+				;;
 			--proxy=*)
 				IFS=':' read -r PROXY_HOST PROXY_PORT <<<"${1#*=}"
 				PROXY_ENABLED=true
@@ -821,6 +833,11 @@ validate_profile() {
 	if "${cmd[@]}" >/dev/null 2> >(tail -n 20 >&2) & then
 		local brave_pid=$!
 		log "INFO" "Brave başlatıldı (PID: $brave_pid)"
+
+		if [[ -n "$pid_file" ]]; then
+			mkdir -p "$(dirname "$pid_file")" 2>/dev/null || true
+			printf '%s\n' "$brave_pid" >"$pid_file" 2>/dev/null || true
+		fi
 
 		# Brave'in başlamasını bekle ve daha iyi kontrol et
 		sleep 1

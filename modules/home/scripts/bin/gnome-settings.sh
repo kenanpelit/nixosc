@@ -223,7 +223,8 @@ echo "⌨️  Window Manager keybinding'leri uygulanıyor..."
 # Basic window management
 dconf write /org/gnome/desktop/wm/keybindings/close "['<Super>q']"
 dconf write /org/gnome/desktop/wm/keybindings/toggle-fullscreen "['<Super>f']"
-dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m', '<Alt>g', '<Super>Up']"
+# Keep <Super>m free for gnome-column-width toggle (Niri-like 0.8 <-> 1.0)
+dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Alt>g', '<Super>Up']"
 dconf write /org/gnome/desktop/wm/keybindings/maximize "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/activate-window-menu "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/minimize "@as []"
@@ -277,7 +278,7 @@ echo "🐚 Shell keybinding'leri uygulanıyor..."
 
 dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d', '<Super>a']"
 dconf write /org/gnome/shell/keybindings/toggle-message-tray "['<Super>n']"
-dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['Print', '<Shift><Super>s']"
+dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['Print']"
 dconf write /org/gnome/shell/keybindings/toggle-overview "['<Super><Alt>o']"
 
 # Application switching keybinding'larını kapat (workspace çakışması için)
@@ -344,6 +345,13 @@ echo "🐚 Shell ayarları uygulanıyor..."
 dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.desktop']"
 # Needed for `org.gnome.Shell.Eval` (used by gnome-column-width / gnome-set).
 dconf write /org/gnome/shell/development-tools "true"
+
+# Best-effort: ensure required extensions are installed (vertical workspaces needs V-Shell)
+if command -v gnome-extensions >/dev/null 2>&1 && command -v gnome-extensions-installer >/dev/null 2>&1; then
+  if ! gnome-extensions list 2>/dev/null | grep -q "vertical-workspaces@G-dH.github.com"; then
+    gnome-extensions-installer --install || true
+  fi
+fi
 
 # Extensions - NixOS'ta yüklü olanlar
 EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','vertical-workspaces@G-dH.github.com','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
