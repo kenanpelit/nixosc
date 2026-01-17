@@ -18,7 +18,8 @@ let
     "niri-session.target"
   ];
 in
-lib.mkIf cfg.enable {
+lib.mkIf cfg.enable (lib.mkMerge [
+  {
   programs.dank-material-shell = {
     enable = true;
     # Do not autostart via `config.wayland.systemd.target`; we manage our own
@@ -95,6 +96,7 @@ lib.mkIf cfg.enable {
     };
     Install.WantedBy = dmsTargets;
   };
+
 
   # Ensure DMS plugins are present; install from registry when missing.
   #
@@ -173,4 +175,47 @@ lib.mkIf cfg.enable {
       fi
     fi
   '';
-}
+
+  }
+
+  (lib.mkIf cfg.restartOnResume {
+    # Workaround: On some Wayland compositors, QtWayland clients can crash across
+    # suspend/resume while handling wl_surface/wl_output enter events.
+    # Restart DMS/quickshell on resume to re-establish a clean Wayland connection.
+    systemd.user.services.dms-resume-restart = {
+      Unit = {
+        Description = "DMS: restart after resume";
+        After = dmsTargets ++ [ "dms.service" ];
+        PartOf = dmsTargets;
+        ConditionEnvironment = "WAYLAND_DISPLAY";
+      };
+      Service = {
+        Type = "simple";
+        ExecStart = pkgs.writeShellScript "dms-resume-restart" ''
+          set -euo pipefail
+
+          restart_dms() {
+            # Give the compositor a moment to re-create wl_output objects.
+            sleep 2
+            ${pkgs.systemd}/bin/systemctl --user restart dms.service >/dev/null 2>&1 || true
+          }
+
+          ${pkgs.dbus}/bin/dbus-monitor --system \
+            "type='signal',sender='org.freedesktop.login1',path='/org/freedesktop/login1',interface='org.freedesktop.login1.Manager',member='PrepareForSleep'" \
+            | while IFS= read -r line; do
+                case "$line" in
+                  *"boolean false"*)
+                    restart_dms
+                    ;;
+                  *)
+                    ;;
+                esac
+              done
+        '';
+        Restart = "always";
+        RestartSec = 2;
+      };
+      Install.WantedBy = dmsTargets;
+    };
+  })
+])

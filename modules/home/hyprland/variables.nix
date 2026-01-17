@@ -37,8 +37,11 @@ rec {
   cursorName = "catppuccin-${flavor}-${accent}-cursors";
   cursorSize = 24;
 
-  activeBorder = "${mkColor colors.blue.hex 0.93} ${mkColor colors.mauve.hex 0.93} 45deg";
-  inactiveBorder = mkColor colors.overlay0.hex 0.66;
+  # Match Niri focus ring colors:
+  # - active: cyan -> mauve (45deg)
+  # - inactive: surface1
+  activeBorder = "${mkColor "#00BCD4" 1.0} ${mkColor colors.mauve.hex 1.0} 45deg";
+  inactiveBorder = mkColor colors.surface1.hex 1.0;
   inactiveGroupBorder = "${mkColor colors.surface1.hex 0.66} ${mkColor colors.overlay0.hex 0.66} 45deg";
 
   envVars = [

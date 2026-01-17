@@ -21,6 +21,12 @@
       description = "Preferred DMS screenshot editor (exported as DMS_SCREENSHOT_EDITOR).";
     };
 
+    restartOnResume = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Restart DMS/quickshell after system resume (workaround for some Wayland/QtWayland resume crashes).";
+    };
+
     plugins = lib.mkOption {
       type = with lib.types; listOf str;
       default = [

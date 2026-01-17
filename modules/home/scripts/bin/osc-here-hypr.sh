@@ -3,12 +3,30 @@
 # osc-here-hypr.sh - Bring window here OR launch it if it's not running (Hyprland)
 # ==============================================================================
 # Usage: osc-here-hypr.sh <class/app-id>
+#        osc-here-hypr.sh all [comma,separated,apps]
 # Example: osc-here-hypr.sh Kenp
 # ==============================================================================
 
 set -euo pipefail
 
 APP_ID="${1:-}"
+LIST="${2:-}"
+
+# Notification setting: 0 (off), 1 (on)
+NOTIFY_ENABLED="${OSC_HERE_NOTIFY:-0}"
+
+# Default list for 'all' command
+DEFAULT_APPS=(
+  "Kenp"
+  "TmuxKenp"
+  "Ai"
+  "CompecTA"
+  "WebCord"
+  #"org.telegram.desktop"
+  "brave-youtube.com__-Default"
+  "spotify"
+  "ferdium"
+)
 
 if [[ -z "${APP_ID}" ]]; then
   echo "Error: App ID is required." >&2
@@ -18,10 +36,35 @@ fi
 send_notify() {
   local msg="$1"
   local urgency="${2:-normal}"
+
+  # Only show normal notifications if enabled (parity with niri-set here)
+  if [[ "$urgency" == "normal" && "$NOTIFY_ENABLED" != "1" ]]; then
+    return 0
+  fi
+
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -t 2000 -u "$urgency" -i "system-run" "Hyprland" "$msg" >/dev/null 2>&1 || true
   fi
 }
+
+if [[ "${APP_ID}" == "all" ]]; then
+  if [[ -n "${LIST}" ]]; then
+    IFS=',' read -ra APPS <<<"${LIST}"
+  else
+    APPS=("${DEFAULT_APPS[@]}")
+  fi
+
+  for app in "${APPS[@]}"; do
+    "${0}" "${app}" || true
+    sleep 0.1
+  done
+
+  # Explicit workflow: always end focused on Kenp.
+  "${0}" "Kenp" || true
+
+  send_notify "All specified apps gathered here."
+  exit 0
+fi
 
 ensure_hypr_env() {
   : "${XDG_RUNTIME_DIR:="/run/user/$(id -u)"}"

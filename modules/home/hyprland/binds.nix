@@ -12,6 +12,22 @@ let
   mkWorkspaces = nums: map (n: "$mainMod, ${toString n}, workspace, ${toString n}") nums;
   mkMoveWorkspaces = nums: map (n: "$mainMod SHIFT, ${toString n}, layoutmsg, movecoltoworkspace ${toString n}") nums;
 
+  lockedBinds = [
+    # Hardware (allow-when-locked parity with Niri)
+    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 5"
+    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 5"
+    ", XF86AudioMute, exec, dms ipc call audio mute"
+    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
+    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 ''"
+    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 ''"
+
+    # Media (MPRIS)
+    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
+    ", XF86AudioNext, exec, dms ipc call mpris next"
+    ", XF86AudioPrev, exec, dms ipc call mpris previous"
+    ", XF86AudioStop, exec, dms ipc call mpris stop"
+  ];
+
   # ---------------------------------------------------------------------------
   # 1. CORE WINDOW MANAGEMENT
   # ---------------------------------------------------------------------------
@@ -26,6 +42,10 @@ let
     "$mainMod, k, workspace, e-1"
     "$mainMod, j, workspace, e+1"
 
+    # Focus within Column (Niri Mod+Ctrl+K/J parity)
+    "$mainMod CTRL, K, movefocus, u"
+    "$mainMod CTRL, J, movefocus, d"
+
     # Move Column (Shift + Vim/Arrows)
     "$mainMod SHIFT, left, layoutmsg, swapcol l"
     "$mainMod SHIFT, right, layoutmsg, swapcol r"
@@ -39,7 +59,7 @@ let
     # Actions
     "$mainMod, Q, killactive"
     "$mainMod, F, fullscreen, 0"
-    "$mainMod, M, fullscreen, 1"       # Maximize (Fake fullscreen)
+    "$mainMod, M, exec, ${bins.hyprSet} maximize-column"
     "$mainMod, C, layoutmsg, togglefit" # Center/Fit Column (Niri Mod+C match)
   ];
 
@@ -49,7 +69,7 @@ let
   layoutBinds = [
     # Sizing (Niri Mod+R match)
     "$mainMod, R, layoutmsg, colresize +conf"
-    "$mainMod SHIFT, R, layoutmsg, colresize 0.75"
+    "$mainMod SHIFT, R, layoutmsg, colresize 0.8"
     
     # Size Presets (Niri Match) - Using relative resizes as hyprscrolling specific preset msg might vary
     # Assuming colresize all <width> works or fallback to relative.
@@ -65,13 +85,16 @@ let
     "$mainMod SHIFT, equal, resizeactive, 0 50"
 
     # Advanced Modes
-    "ALT, G, fullscreen, 1"            # Maximize to Edges
+    "ALT, G, exec, ${bins.hyprSet} maximize-window-to-edges"
     "$mainMod CTRL, W, togglegroup"    # Toggle Tabbed Mode (Group)
     "$mainMod, G, exec, ${bins.hyprSet} toggle-float" # Toggle Float
     "$mainMod CTRL, BackSpace, exec, ${bins.hyprSet} focus-float-tile"
     
     "$mainMod, Z, exec, ${bins.hyprSet} zen"
     "$mainMod, P, exec, ${bins.hyprSet} pin"
+
+    # Overview (Niri Mod+Alt+O parity)
+    "$mainMod ALT, O, hyprexpo:expo, toggle"
 
     # Consume / Expel (Niri parity)
     "$mainMod CTRL, left, exec, ${bins.hyprSet} consume-or-expel left"
@@ -107,8 +130,7 @@ let
     # Window Switching
     "$mainMod, Tab, focuscurrentorlast"
     "$mainMod SHIFT, Tab, focuscurrentorlast"
-    "ALT, Tab, workspace, e+1"
-    "ALT SHIFT, Tab, workspace, e-1"
+    "ALT, Tab, exec, dms ipc call spotlight openQuery '!'"
 
     # UI Toggles
     "$mainMod, B, exec, dms ipc call bar toggle index 0"
@@ -137,20 +159,6 @@ let
   # 4. SYSTEM & SCRIPTS
   # ---------------------------------------------------------------------------
   systemBinds = [
-    # Hardware
-    ", XF86AudioRaiseVolume, exec, dms ipc call audio increment 5"
-    ", XF86AudioLowerVolume, exec, dms ipc call audio decrement 5"
-    ", XF86AudioMute, exec, dms ipc call audio mute"
-    ", XF86AudioMicMute, exec, dms ipc call audio micmute"
-    ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 ''"
-    ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 ''"
-
-    # Media (MPRIS)
-    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
-    ", XF86AudioNext, exec, dms ipc call mpris next"
-    ", XF86AudioPrev, exec, dms ipc call mpris previous"
-    ", XF86AudioStop, exec, dms ipc call mpris stop"
-
     # Custom Scripts
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
@@ -173,6 +181,8 @@ let
     
     # Reload Config
     "$mainMod CTRL ALT, R, exec, hyprctl reload"
+    "$mainMod CTRL ALT, S, exec, ${bins.hyprSet} env-sync"
+    "$mainMod CTRL ALT, D, exec, kitty --class hypr-doctor -e bash -lc '${bins.hyprSet} doctor; echo; read -n 1 -s -r -p \"Press any key to close\"'"
     
     # Custom Apps
     "ALT, T, exec, start-kkenp"
@@ -235,10 +245,10 @@ let
   mpvBinds = [
     "ALT, U, exec, mpv-manager playback"
     "$mainMod CTRL, Y, exec, mpv-manager play-yt"
-    "$mainMod CTRL, 3, exec, mpv-manager stick"
-    "$mainMod CTRL, 4, exec, mpv-manager move"
-    "$mainMod CTRL, 5, exec, mpv-manager save-yt"
-    "$mainMod CTRL, 6, exec, mpv-manager wallpaper"
+    "$mainMod CTRL, F9, exec, mpv-manager stick"
+    "$mainMod CTRL, F10, exec, mpv-manager move"
+    "$mainMod CTRL, F11, exec, mpv-manager save-yt"
+    "$mainMod CTRL, F12, exec, mpv-manager wallpaper"
   ];
 
   # ---------------------------------------------------------------------------
@@ -264,6 +274,8 @@ let
     "ALT, 7, exec, ${bins.oscHereHypr} brave-youtube.com__-Default"
     "ALT, 8, exec, ${bins.oscHereHypr} spotify"
     "ALT, 9, exec, ${bins.oscHereHypr} ferdium"
+    "ALT, 0, exec, ${bins.oscHereHypr} all"
+    "$mainMod ALT, 0, exec, ${bins.hyprSet} arrange-windows"
 
     # Monitor Focus (Niri Match)
     "$mainMod ALT, H, focusmonitor, l"
@@ -302,9 +314,12 @@ in
     mkWorkspaces (lib.range 1 9) ++
     mkMoveWorkspaces (lib.range 1 9);
 
+  bindl = lockedBinds;
+
   bindm = [
     "$mainMod, mouse:272, movewindow"
     "$mainMod, mouse:273, resizewindow"
+    "$mainMod, mouse:274, killactive"
   ];
   
   extraConfig = ''

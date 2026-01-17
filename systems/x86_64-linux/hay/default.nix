@@ -108,6 +108,16 @@
   security.polkit.enable = true;
 
   # ============================================================================
+  # Boot Loader (GRUB + EFI) — enable os-prober to detect the backup NixOS on sda
+  # ============================================================================
+  boot.loader.grub.useOSProber = true;
+
+  # os-prober sometimes fails with "mkdir /var/lock/dmraid" — ensure the path exists
+  systemd.tmpfiles.rules = [
+    "d /var/lock/dmraid 0755 root root - -"
+  ];
+
+  # ============================================================================
   # System Services
   # ============================================================================
   services.flatpak.enable = true;

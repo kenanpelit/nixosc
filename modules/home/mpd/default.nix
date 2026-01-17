@@ -21,6 +21,7 @@ in
     services.mpd = {
       enable = true;
       musicDirectory = "${config.home.homeDirectory}/Music";
+      playlistDirectory = "${config.home.homeDirectory}/Music/playlists";
       
       # ---------------------------------------------------------------------------
       # Audio and Performance Settings
@@ -31,6 +32,13 @@ in
           type "pipewire"
           name "PipeWire Sound Server"
           mixer_type "software"
+        }
+
+        audio_output {
+          type "fifo"
+          name "Visualizer"
+          path "/tmp/mpd.fifo"
+          format "44100:16:2"
         }
         
         # Playback Settings

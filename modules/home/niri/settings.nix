@@ -26,10 +26,7 @@ in
       }
 
       border {
-        on;
-        width 1;
-        active-color "${palette.sky}";
-        inactive-color "${palette.surface0}";
+        off;
       }
 
       tab-indicator {
@@ -70,11 +67,11 @@ in
       // Updated for softer spring feel (stiffness reduced).
 
       workspace-switch {
-        spring damping-ratio=0.92 stiffness=1000 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=500 epsilon=0.0001;
       }
 
       window-open {
-        duration-ms 300;
+        duration-ms 400;
         curve "ease-out-expo";
 
         custom-shader r"
@@ -130,13 +127,13 @@ in
       // Snappy but smooth movement (Hyprland style responsiveness)
       // Stiffness reduced slightly for better fluidity
       horizontal-view-movement {
-        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=600 epsilon=0.0001;
       }
       window-movement {
-        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=600 epsilon=0.0001;
       }
       window-resize {
-        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001;
+        spring damping-ratio=0.85 stiffness=600 epsilon=0.0001;
 
         custom-shader r"
           vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
@@ -294,7 +291,7 @@ in
     // Start session-scoped user services (niri-bootstrap, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
-    spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "session-start";
+    spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "env";
     ''}
 
     // Long-running daemons (Clipse, etc.) are started via systemd --user (niri-session.target).
