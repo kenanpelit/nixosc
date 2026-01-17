@@ -602,7 +602,7 @@ EOF
       state="$(cat "$state_file" 2>/dev/null || true)"
 
       if [[ "$state" == "on" ]]; then
-        hyprctl dispatch layoutmsg "colresize 0.60" >/dev/null 2>&1 || true
+        hyprctl dispatch layoutmsg "colresize 0.80" >/dev/null 2>&1 || true
         printf '%s\n' "off" >"$state_file" 2>/dev/null || true
       else
         hyprctl dispatch layoutmsg "colresize 1.0" >/dev/null 2>&1 || true

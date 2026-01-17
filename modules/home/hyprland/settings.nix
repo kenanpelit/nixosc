@@ -69,7 +69,7 @@ in
   
   plugin = {
     hyprscrolling = {
-      column_width = 0.6;
+      column_width = 0.8;
       fullscreen_on_one_column = false;
       explicit_column_widths = "0.30, 0.45, 0.60, 0.75, 1.0";
       focus_fit_method = 0; # center
