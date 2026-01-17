@@ -25,7 +25,8 @@ let
       max-width ${toString w};
       min-height ${toString h};
       max-height ${toString h};
-      ${lib.optionalString (opacity != null) "opacity ${toString opacity};"}
+      ${lib.optionalString (opacity != null) "opacity ${toString opacity};
+"}
       ${lib.optionalString focus "open-focused true;"}
     '';
 
@@ -43,62 +44,65 @@ let
   renderMatchAppIds = appIdRegexes:
     lib.concatStringsSep "\n" (map (r: ''      match app-id=r#"${r}"#;'' ) appIdRegexes);
 
-  privacyScreencastAppIds = [
-    "^org\\.keepassxc\\.KeePassXC$"
-    "^org\\.gnome\\.World\\.Secrets$"
-    "^com\\.bitwarden\\.desktop$"
-    "^io\\.ente\\.auth$"
+  # ----------------------------------------------------------------------------
+  # Privacy Lists
+  # ----------------------------------------------------------------------------
+  # Apps that should never be captured (passwords, auth, secrets)
+  commonPrivacyAppIds = [
+    "^org\.keepassxc\.KeePassXC$"
+    "^org\.gnome\.World\.Secrets$"
+    "^com\.bitwarden\.desktop$"
+    "^io\.ente\.auth$"
     "^clipse$"
     "^gcr-prompter$"
     "^polkit-gnome-authentication-agent-1$"
+  ];
+
+  # Apps that should be hidden from screencasts but aren't strictly secrets (messaging)
+  messagingPrivacyAppIds = [
+    "^(discord|WebCord|ferdium|com\.rtosta\.zapzap|org\.telegram\.desktop|Signal|Slack|whatsapp-for-linux)$"
     "^(nm-connection-editor|blueman-manager)$"
-    "^(discord|WebCord|ferdium|com\\.rtosta\\.zapzap|org\\.telegram\\.desktop|Signal|Slack|whatsapp-for-linux)$"
   ];
 
-  privacyScreenCaptureAppIds = [
-    "^org\\.keepassxc\\.KeePassXC$"
-    "^org\\.gnome\\.World\\.Secrets$"
-    "^com\\.bitwarden\\.desktop$"
-    "^io\\.ente\\.auth$"
-    "^clipse$"
-    "^gcr-prompter$"
-    "^polkit-gnome-authentication-agent-1$"
-  ];
+  privacyScreenCaptureAppIds = commonPrivacyAppIds;
+  privacyScreencastAppIds = commonPrivacyAppIds ++ messagingPrivacyAppIds;
 
   # ----------------------------------------------------------------------------
-  # Workspace assignment rules for daily apps
+  # Workspace Assignments
   # ----------------------------------------------------------------------------
+  # Unified list for both Niri window rules and external scripts
   workspaceRules = [
-    { appId = "^discord$"; workspace = "5"; }
-    { appId = "^WebCord$"; workspace = "5"; }
-    { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "8"; }
-    { appId = "^audacious$"; workspace = "5"; }
-    { appId = "^transmission$"; workspace = "7"; }
-    { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "7"; }
+    # Core
+    { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; maximize = true; }
+    { appId = "^(kitty|org\.wezfurlong\.wezterm)$"; title = "^Tmux$"; workspace = "2"; maximize = true; }
+    
+    # Dev / AI
     { appId = "^Kenp$"; workspace = "1"; }
     { appId = "^Ai$"; workspace = "3"; }
     { appId = "^CompecTA$"; workspace = "4"; }
-    { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; }
-    { appId = "^ferdium$"; workspace = "9"; }
-    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; }
+    
+    # Social / Media
+    { appId = "^discord$"; workspace = "5"; }
+    { appId = "^WebCord$"; workspace = "5"; }
+    { appId = "^audacious$"; workspace = "5"; }
     { appId = "^org\.telegram\.desktop$"; workspace = "6"; }
     { appId = "^vlc$"; workspace = "6"; }
     { appId = "^remote-viewer$"; workspace = "6"; }
+    
+    # Web / Tools
+    { appId = "^transmission$"; workspace = "7"; }
+    { appId = "^org\.keepassxc\.KeePassXC$"; workspace = "7"; }
+    { appId = "^brave-youtube\.com__-Default$"; workspace = "7"; }
+    { appId = "^(spotify|Spotify|com\.spotify\.Client)$"; workspace = "8"; }
+    { appId = "^ferdium$"; workspace = "9"; }
+    { appId = "^com\.rtosta\.zapzap$"; workspace = "9"; }
   ];
 
-  # Rules for the "arrange windows" helper script.
-  arrangeRules =
-    [
-      # Terminal / session anchor
-      { appId = "^(TmuxKenp|Tmux)$"; workspace = "2"; }
-      { appId = "^(kitty|org\\.wezfurlong\\.wezterm)$"; title = "^Tmux$"; workspace = "2"; }
-    ]
-    ++ workspaceRules;
-
+  # Helper to generate Niri window-rule blocks from the list above
   renderWorkspaceRules = lib.concatStringsSep "\n" (
     map (r: ''
       window-rule {
-        match app-id=r#"${r.appId}"#;
+        match app-id=r#"${r.appId}"##{lib.optionalString (r ? title) '' title=r#"${r.title}"''};
         open-on-workspace "${r.workspace}";
         ${lib.optionalString (r.maximize or false) "open-maximized true; open-maximized-to-edges true;"}
       }
@@ -107,28 +111,29 @@ let
 
 in
 {
-  arrangeRulesTsv =
-    lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}\t${r.title or ""}") arrangeRules)
+  # Export for niri-arrange-windows script (TSV format)
+  arrangeRulesTsv = 
+    lib.concatStringsSep "\n" (map (r: "${r.appId}\t${r.workspace}\t${r.title or ""}") workspaceRules)
     + "\n";
 
   rules = ''
     // ========================================================================
-    // Window Rules
+    // Niri Window Rules - Generated via Home Manager
     // ========================================================================
 
-    // Global Styling
+    // ------------------------------------------------------------------------
+    // Global Behavior
+    // ------------------------------------------------------------------------
     window-rule {
       geometry-corner-radius 12;
       clip-to-geometry true;
     }
 
-    // Floating Windows
+    // Shadow Logic: Floating gets full shadow, Tiling gets subtle shadow
     window-rule {
       match is-floating=true;
       shadow { on; }
     }
-
-    // Tiling Windows
     window-rule {
       match is-floating=false;
       shadow {
@@ -140,13 +145,15 @@ in
       }
     }
 
-    // QuickShell
+    // ------------------------------------------------------------------------
+    // Special Windows (Helpers, Overlays, VRR)
+    // ------------------------------------------------------------------------
+    
+    // QuickShell & XWayland Bridge
     window-rule {
       match app-id=r#"^org\.quickshell$"#;
       open-floating true;
     }
-
-    // Xwayland Video Bridge (Screen sharing helper)
     window-rule {
       match app-id="xwaylandvideobridge";
       open-floating true;
@@ -156,81 +163,112 @@ in
       default-window-height { fixed 1; }
     }
 
-    // Drag and drop / Shadow windows (Boş isimli yardımcı pencereler)
+    // Empty helper windows (DnD placeholders etc.)
     window-rule {
-      match app-id=r#"^$"# title=r#"^$"#;
+      match app-id=r#"^$" title=r#"^$"#;
       open-floating true;
       open-focused false;
     }
 
-    // Variable Refresh Rate
+    // Variable Refresh Rate (Video Players)
     window-rule {
-      match app-id=r#"^mpv$"#;
+      match app-id=r#"^mpv$" #;
       variable-refresh-rate true;
     }
 
     ${lib.optionalString cfg.enableGamingVrrRules ''
-    // Variable Refresh Rate - Gaming (optional)
+    // Variable Refresh Rate (Gaming)
     window-rule {
       match app-id=r#"^(gamescope|steam|steamwebhelper)$"#;
       variable-refresh-rate true;
     }
     ''}
 
-    // Picture-in-Picture
+    // ------------------------------------------------------------------------
+    // Picture-in-Picture & Video Players
+    // ------------------------------------------------------------------------
+    
+    // Generic PiP
     window-rule {
       match title=r#"(?i)^picture[- ]in[- ]picture$"#;
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // MPV (non-PiP)
+    // MPV Floating Rules
     window-rule {
-      match app-id=r#"^mpv$"#;
+      match app-id=r#"^mpv$" #;
       exclude title=r#"^Picture-in-Picture( - mpv)?$"#;
       ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
     }
 
-    // MPV (PiP)
-    window-rule {
-      match app-id=r#"^mpv$"# title=r#"^Picture-in-Picture( - mpv)?$"#;
-      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "1.0"; }}
-    }
+    // ------------------------------------------------------------------------
+    // Floating Applications & Dialogs
+    // ------------------------------------------------------------------------
 
-    // Common dialogs / utilities / system tools
-    window-rule {
-      match app-id=r#"^pavucontrol$"#;
-      match app-id=r#"^nm-connection-editor$"#;
-      match app-id=r#"^blueman-manager$"#;
-      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-      match app-id=r#"^hyprland-share-picker$"#;
-      match app-id=r#"^org\.gnome\.Calculator$"#;
-      match app-id=r#"^kcalc$"#;
-      match app-id=r#"^org\.gnome\.Settings$"#;
-      match app-id=r#"^gnome-disks$"#;
-      open-floating true;
-      open-focused true;
-    }
-
-    // File pickers and basic operations
+    // Standard Dialogs (File pickers, confirmations)
     window-rule {
       match title=r#"^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress|Extract archive|Compress\.\.\.)$"#;
+      // Exclude specific apps that might share these titles but should be handled differently if needed
+      exclude app-id=r#"^Kenp$" #;
       open-floating true;
       default-column-width { proportion 0.60; }
       default-window-height { proportion 0.75; }
       open-focused true;
     }
 
-    // Kenp Save File Specific Rule
+    // Specific Sizes: Small Tools
     window-rule {
-      match app-id=r#"^Kenp$"# title=r#"^Save File$"#;
-      default-column-width { fixed 1280; }
-      default-window-height { fixed 933; }
+      match app-id=r#"^org\.gnome\.Calculator$"#;
+      match app-id=r#"^kcalc$"#;
+      ${mkFixedFloating { w = 400; h = 600; x = 0; y = 100; relativeTo = "top"; }}
+    }
+    
+    window-rule {
+      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
+      ${mkFixedFloating { w = 520; h = 240; }}
     }
 
-    // Specific Rule for Calculators
     window-rule {
-      match app-id=r#"^(org\.gnome\.Calculator|kcalc)$"#;
-      ${mkFixedFloating { w = 400; h = 600; x = 0; y = 100; relativeTo = "top"; }}
+      match app-id=r#"^gcr-prompter$"#;
+      ${mkFixedFloating { w = 600; h = 230; x = 0; y = 96; relativeTo = "top"; }}
+    }
+
+    // Specific Sizes: Medium Tools
+    window-rule {
+      match app-id=r#"^org\.gnome\.Decibels$"#;
+      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "0.5"; }}
+    }
+    
+    window-rule {
+      match app-id=r#"^hyprland-share-picker$"#;
+      match app-id=r#"^pavucontrol$" #;  // Fallback if not org.pulseaudio...
+      open-floating true;
+      open-focused true;
+    }
+
+    // Specific Sizes: Large Tools (Settings, Managers)
+    window-rule {
+      match app-id=r#"^(blueman-manager|nm-connection-editor|org\.gnome\.Settings|gnome-disks)$"#;
+      ${mkFixedFloating { w = 900; h = 650; }}
+    }
+
+    // Side Panels (Clipse, Audio Mixer, Auth)
+    window-rule {
+      match app-id=r#"^(clipse|org\.pulseaudio\.pavucontrol|io\.ente\.auth)$"#;
+      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
+    }
+    
+    // Clipboard Preview
+    window-rule {
+      match app-id=r#"^clip-preview$"#;
+      ${mkFixedFloating { w = 900; h = 700; opacity = "0.98"; }}
+      shadow { on; spread 5; softness 30; }
+    }
+
+    // Notes App
+    window-rule {
+      match app-id=r#"^anote$"#;
+      ${mkFixedFloating { w = 1152; h = 864; }}
     }
 
     // Dropdown Terminal
@@ -243,137 +281,62 @@ in
       border { off; }
       shadow { on; spread 10; softness 40; color "#00000080"; }
     }
-
-    // Tmux
-    window-rule {
-      match app-id=r#"^(TmuxKenp|Tmux)$"#;
-      match app-id=r#"^(kitty|org\.wezfurlong\.wezterm)$"# title=r#"^Tmux$"#;
-      open-on-workspace "2";
-      open-maximized true;
-      open-maximized-to-edges true;
-      open-focused true;
-    }
-
-    // Audio Mixer
-    window-rule {
-      match app-id=r#"^org\.pulseaudio\.pavucontrol$"#;
-      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
-    }
-
-    // Gnome Audio Player (Decibels)
-    window-rule {
-      match app-id=r#"^org\.gnome\.Decibels$"#;
-      ${mkFixedFloating { w = 640; h = 360; x = 32; y = 96; opacity = "0.5"; }}
-    }
-
-    // Clipboard Manager
-    window-rule {
-      match app-id=r#"^clipse$"#;
-      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
-    }
     
-    // Clipboard Preview (osc-clipview)
+    // Kenp Save File Rule
     window-rule {
-      match app-id=r#"^clip-preview$"#;
-      ${mkFixedFloating { w = 900; h = 700; opacity = "0.98"; }}
-      shadow { on; spread 5; softness 30; }
+      match app-id=r#"^Kenp$" title=r#"^Save File$"#;
+      default-column-width { fixed 1280; }
+      default-window-height { fixed 933; }
+      open-floating true;
     }
 
-    // Ente Auth (2FA)
-    // Keep it floating like Clipse, but do not force a workspace.
-    window-rule {
-      match app-id=r#"^io\.ente\.auth$"#;
-      ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
-    }
-
-    // Notes
-    window-rule {
-      match app-id=r#"^anote$"#;
-      ${mkFixedFloating { w = 1152; h = 864; }}
-    }
-
-    // Keyring / password prompt
-    window-rule {
-      match app-id=r#"^gcr-prompter$"#;
-      ${mkFixedFloating { w = 600; h = 230; x = 0; y = 96; relativeTo = "top"; }}
-    }
-
-    // Workspace Assignments
+    // ------------------------------------------------------------------------
+    // Workspace Rules (Generated)
+    // ------------------------------------------------------------------------
     ${renderWorkspaceRules}
 
-    // Better dialog placement
-    window-rule {
-      match app-id=r#"^(blueman-manager|nm-connection-editor)$"#;
-      open-floating true;
-      default-column-width { fixed 900; }
-      default-window-height { fixed 650; }
-      open-focused true;
-    }
-
-    window-rule {
-      match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-      open-floating true;
-      default-column-width { fixed 520; }
-      default-window-height { fixed 240; }
-      open-focused true;
-    }
-
-    // Privacy - block from screencast (xdg-desktop-portal / screen sharing)
+    // ------------------------------------------------------------------------
+    // Privacy & Security
+    // ------------------------------------------------------------------------
+    // Block from screencast (Window capture will show black/empty)
     window-rule {
 ${renderMatchAppIds privacyScreencastAppIds}
       block-out-from "screencast";
     }
 
-    // Privacy - block from *all* screen captures (screenshots + screencasts)
-    // Note: interactive built-in screenshot UI still works; only "automatic" capture is blocked.
+    // Block from ALL capture (Screenshots + Screencasts)
     window-rule {
 ${renderMatchAppIds privacyScreenCaptureAppIds}
       block-out-from "screen-capture";
     }
 
-    // Screencast indicator (dynamic cast / window cast target)
+    // Screencast Target Indicator
     window-rule {
       match is-window-cast-target=true;
-
-      focus-ring {
-        active-color "#f38ba8";
-        inactive-color "#7d0d2d";
-      }
-
-      border {
-        inactive-color "#7d0d2d";
-      }
-
-      shadow {
-        color "#7d0d2d70";
-      }
-
-      tab-indicator {
-        active-color "#f38ba8";
-        inactive-color "#7d0d2d";
-      }
+      focus-ring { active-color "#f38ba8"; inactive-color "#7d0d2d"; }
+      border { inactive-color "#7d0d2d"; }
+      shadow { color "#7d0d2d70"; }
+      tab-indicator { active-color "#f38ba8"; inactive-color "#7d0d2d"; }
     }
 
-    // Borderless apps
+    // ------------------------------------------------------------------------
+    // Appearance & Dimming
+    // ------------------------------------------------------------------------
+    
+    // Borderless Apps
     window-rule {
       match app-id=r#"^(org\.gnome\..*|org\.wezfurlong\.wezterm|zen|com\.mitchellh\.ghostty|kitty|firefox|brave-browser)$"#;
-      draw-border-with-background false;
-    }
-
-    window-rule {
       match app-id=r#"^(Kenp|Ai|CompecTA|Whats|Exclude|brave-youtube\.com__-Default|ferdium)$"#;
       draw-border-with-background false;
     }
 
-    // Inactive dimming
+    // Inactive Dimming
     window-rule {
       match is-active=false;
-      // Never dim/transparent a window while it's being shared/cast via portals.
-      // This prevents background content bleeding through in window screencasts.
       exclude is-window-cast-target=true;
       exclude app-id=r#"^(TmuxKenp|Tmux)$"#;
-      exclude app-id=r#"^mpv$"#;
-      exclude app-id=r#"^vlc$"#;
+      exclude app-id=r#"^mpv$" #;
+      exclude app-id=r#"^vlc$" #;
       exclude app-id=r#"^brave-youtube\.com__-Default$"#;
       exclude title=r#"^Picture-in-Picture$"#;
       exclude app-id=r#"^steam_app_\d+$"#;
@@ -381,36 +344,32 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       opacity 0.95;
     }
 
-    // Ensure portal-casted windows stay fully opaque even if other rules
-    // (inactive dimming, manual opacity tweaks, etc.) would make them translucent.
+    // Force Opaque for Casted Windows
     window-rule {
       match is-window-cast-target=true;
       opacity 1.0;
     }
 
-    // Always keep TmuxKenp fully opaque (never apply compositor opacity rules).
+    // Force Opaque for Tmux
     window-rule {
       match app-id=r#"^TmuxKenp$"#;
       opacity 1.0;
     }
 
     // ========================================================================
-    // Layer Rules
+    // Layer Rules (DMS & Notifications)
     // ========================================================================
     
-    // DMS: Wallpaper Blur
     layer-rule {
       match namespace=r#"^dms:blurwallpaper$"#;
       place-within-backdrop true;
     }
 
-    // DMS: UI Elements (Bar, Dock, Panel)
     layer-rule {
       match namespace=r#"^dms:(bar|dock|panel).*$"#;
       geometry-corner-radius 0;
     }
 
-    // DMS: Overlays (Launcher, OSD, Popups) - Add shadows for depth
     layer-rule {
       match namespace=r#"^dms:(launcher|osd|popup).*$"#;
       shadow {
@@ -421,20 +380,10 @@ ${renderMatchAppIds privacyScreenCaptureAppIds}
       }
     }
 
-    // Notifications: Layout
     layer-rule {
       match namespace="^notifications$";
       geometry-corner-radius 12;
-    }
-
-    // Notifications: Privacy
-    layer-rule {
-      match namespace="^notifications$";
       block-out-from "screencast";
-    }
-
-    layer-rule {
-      match namespace="^notifications$";
       block-out-from "screen-capture";
     }
   '';
