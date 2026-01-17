@@ -67,8 +67,8 @@ let
     { name = "MPC Toggle"; command = "mpc-control toggle"; binding = "<Alt><Ctrl>e"; }
     { name = "VLC Toggle"; command = "vlc-toggle"; binding = "<Alt>i"; }
     { name = "Lock Screen"; command = "loginctl lock-session"; binding = "<Alt>l"; }
-    { name = "Previous Workspace"; command = "ws-prev"; binding = "<Super><Alt>Left"; }
-    { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Right"; }
+    { name = "Previous Workspace"; command = "ws-prev"; binding = "<Super><Alt>Up"; }
+    { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Down"; }
     { name = "Here: Kenp"; command = "gnome-set here Kenp"; binding = "<Alt>1"; }
     { name = "Here: TmuxKenp"; command = "gnome-set here TmuxKenp"; binding = "<Alt>2"; }
     { name = "Here: Ai"; command = "gnome-set here Ai"; binding = "<Alt>3"; }
@@ -185,17 +185,17 @@ in
         move-to-workspace-8 = ["<Super><Shift>8"];
         move-to-workspace-9 = ["<Super><Shift>9"];
 
-        # Workspace navigation (Niri-like: use j/k; avoids <Super>Up conflict)
-        switch-to-workspace-left = ["<Super>k"];
-        switch-to-workspace-right = ["<Super>j"];
-        switch-to-workspace-up = [];
-        switch-to-workspace-down = [];
+        # Workspace navigation (VERTICAL like Niri: use j/k; avoids <Super>Up conflict)
+        switch-to-workspace-left = [];
+        switch-to-workspace-right = [];
+        switch-to-workspace-up = ["<Super>k"];
+        switch-to-workspace-down = ["<Super>j"];
 
-        # Move window between workspaces (Niri-like: PageUp/PageDown)
-        move-to-workspace-left = ["<Super>Page_Up"];
-        move-to-workspace-right = ["<Super>Page_Down"];
-        move-to-workspace-up = [];
-        move-to-workspace-down = [];
+        # Move window between workspaces (VERTICAL like Niri: PageUp/PageDown)
+        move-to-workspace-left = [];
+        move-to-workspace-right = [];
+        move-to-workspace-up = ["<Super>Page_Up"];
+        move-to-workspace-down = ["<Super>Page_Down"];
       };
 
       # --- Shell Keybindings (Niri-like) ---
