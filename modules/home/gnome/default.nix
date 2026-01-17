@@ -69,6 +69,17 @@ let
     { name = "Lock Screen"; command = "loginctl lock-session"; binding = "<Alt>l"; }
     { name = "Previous Workspace"; command = "ws-prev"; binding = "<Super><Alt>Left"; }
     { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Right"; }
+    { name = "Here: Kenp"; command = "gnome-set here Kenp"; binding = "<Alt>1"; }
+    { name = "Here: TmuxKenp"; command = "gnome-set here TmuxKenp"; binding = "<Alt>2"; }
+    { name = "Here: Ai"; command = "gnome-set here Ai"; binding = "<Alt>3"; }
+    { name = "Here: CompecTA"; command = "gnome-set here CompecTA"; binding = "<Alt>4"; }
+    { name = "Here: WebCord"; command = "gnome-set here WebCord"; binding = "<Alt>5"; }
+    { name = "Here: Telegram"; command = "gnome-set here org.telegram.desktop"; binding = "<Alt>6"; }
+    { name = "Here: YouTube"; command = "gnome-set here brave-youtube.com__-Default"; binding = "<Alt>7"; }
+    { name = "Here: Spotify"; command = "gnome-set here spotify"; binding = "<Alt>8"; }
+    { name = "Here: Ferdium"; command = "gnome-set here ferdium"; binding = "<Alt>9"; }
+    { name = "Here: ALL"; command = "gnome-set here all"; binding = "<Alt>0"; }
+    { name = "Arrange Windows (Go)"; command = "gnome-set go"; binding = "<Super><Alt>0"; }
     { name = "Open Discord"; command = "webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"; binding = "<Super><Shift>d"; }
     { name = "Start KKENP"; command = "start-kkenp"; binding = "<Alt>t"; }
     { name = "Notes (Anotes)"; command = "anotes"; binding = "<Alt>n"; }
