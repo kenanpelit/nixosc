@@ -129,7 +129,7 @@ EOF
 out="$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "$js" 2>/dev/null || true)"
 
 if [[ -z "$out" || "$out" == *"(false,"* ]]; then
-  echo "gnome-column-width: GNOME Shell Eval failed" >&2
+  echo "gnome-column-width: GNOME Shell Eval failed: ${out:-<no output>}" >&2
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -u critical -t 2500 "GNOME Column Width" "GNOME Shell Eval failed"
   fi

@@ -220,6 +220,8 @@ in
   
       # --- Shell Extensions ---
       "org/gnome/shell" = {
+        # Needed for `org.gnome.Shell.Eval` (used by gnome-column-width / gnome-set).
+        development-tools = true;
         enabled-extensions = [
           "alt-tab-scroll-workaround@lucasresck.github.io"
         	"audio-switch-shortcuts@dbatis.github.com"
