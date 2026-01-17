@@ -93,12 +93,6 @@
       Mod+Ctrl+H       hotkey-overlay-title="Consume/Expel Left" { consume-or-expel-window-left; }
       Mod+Ctrl+L       hotkey-overlay-title="Consume/Expel Right" { consume-or-expel-window-right; }
       
-      // --- Mouse Wheel Interaction ---
-      Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { focus-workspace-down; }
-      Mod+WheelScrollUp    cooldown-ms=150 hotkey-overlay-title="WS Up" { focus-workspace-up; }
-      Mod+WheelScrollRight hotkey-overlay-title="Focus Right" { focus-column-right; }
-      Mod+WheelScrollLeft  hotkey-overlay-title="Focus Left" { focus-column-left; }
-      
       // --- Opacity Control ---
       Mod+O                     hotkey-overlay-title="Toggle Opacity Rule" { toggle-window-rule-opacity; }
       Mod+Shift+WheelScrollDown hotkey-overlay-title="Opacity -10%" { spawn "niri" "msg" "action" "set-window-opacity" "-0.1"; }
@@ -280,6 +274,12 @@
       Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
       Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { move-window-to-workspace-up; }
       Mod+Page_Down hotkey-overlay-title="Move Win WS Down" { move-window-to-workspace-down; }
+
+      // --- Mouse Wheel Interaction ---
+      Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { focus-workspace-down; }
+      Mod+WheelScrollUp    cooldown-ms=150 hotkey-overlay-title="WS Up" { focus-workspace-up; }
+      Mod+WheelScrollRight hotkey-overlay-title="Focus Right" { focus-column-right; }
+      Mod+WheelScrollLeft  hotkey-overlay-title="Focus Left" { focus-column-left; }
   '';
 
   monitors = ''
