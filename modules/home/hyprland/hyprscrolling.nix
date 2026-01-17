@@ -4,7 +4,7 @@
 #
 # - Loads the hyprscrolling plugin
 # - Switches layout to `scrolling`
-# - Adds plugin settings matching the common "onehalf/one" preset workflow
+# - Adds plugin settings matching Niri-like preset widths
 # ==============================================================================
 
 { inputs, config, lib, pkgs, ... }:
@@ -33,16 +33,14 @@ lib.mkIf cfg.enable {
       general.layout = lib.mkForce "scrolling";
 
       plugin.hyprscrolling = {
-        # Niri-like column width (0.5 default)
-        column_width = 0.5;
-        # Niri preset widths: 1/3, 1/2, 2/3, Full
-        explicit_column_widths = "0.33333, 0.5, 0.66667, 1.0";
-        # When there's only one column, make it fill the screen (Niri-like feel on empty workspace).
-        fullscreen_on_one_column = true;
-        # Niri's "center-focused-column on-overflow" doesn't exist upstream here;
-        # `fit` is the closest approximation for focus navigation.
+        # Niri-like defaults:
+        # - presets cycled via `layoutmsg colresize +conf` (Mod+R)
+        # - default width around 80% (Niri default-column-width)
+        column_width = 0.8;
+        explicit_column_widths = "0.30, 0.45, 0.60, 0.75, 1.0";
+        fullscreen_on_one_column = false;
         # 0=center, 1=fit
-        focus_fit_method = 1;
+        focus_fit_method = 0;
         follow_focus = true;
       };
     };
