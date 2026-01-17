@@ -76,7 +76,7 @@ gnome_eval() {
   printf '%s' "$out"
 }
 
-PARITY_BUS="org.kenan.GnomeNiriParity"
+PARITY_BUS="org.gnome.Shell"
 PARITY_OBJ="/org/kenan/GnomeNiriParity"
 PARITY_IFACE="org.kenan.GnomeNiriParity"
 PARITY_AVAILABLE=""
@@ -89,11 +89,12 @@ parity_available() {
     return 1
   fi
 
-  if gdbus call --session \
-    --dest org.freedesktop.DBus \
-    --object-path /org/freedesktop/DBus \
-    --method org.freedesktop.DBus.NameHasOwner \
-    "$PARITY_BUS" 2>/dev/null | grep -q "true"; then
+  local out
+  out="$(gdbus call --session \
+    --dest "$PARITY_BUS" \
+    --object-path "$PARITY_OBJ" \
+    --method "${PARITY_IFACE}.Ping" 2>/dev/null || true)"
+  if [[ -n "$out" && "$out" != Error* && "$out" != *"Error:"* ]]; then
     PARITY_AVAILABLE="1"
     return 0
   fi
