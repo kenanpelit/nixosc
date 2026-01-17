@@ -238,6 +238,11 @@
       workspace = "6 silent";
     }
     {
+      name = "kenp-workspace";
+      "match:class" = "^(Kenp)$";
+      workspace = "1 silent";
+    }
+    {
       name = "kenp-incognito";
       "match:title" = "^Kenp Browser (Inkognito)$";
       workspace = "6 silent";
@@ -280,6 +285,22 @@
       name = "compecta-title";
       "match:title" = "^(compecta)$";
       workspace = "4 silent";
+    }
+    # Communication
+    {
+      name = "telegram-workspace";
+      "match:class" = "^(org.telegram.desktop)$";
+      workspace = "6 silent";
+    }
+    {
+      name = "zapzap-workspace";
+      "match:class" = "^(com.rtosta.zapzap|zapzap)$";
+      workspace = "9 silent";
+    }
+    {
+      name = "remote-viewer-workspace";
+      "match:class" = "^(remote-viewer)$";
+      workspace = "6 silent";
     }
     # Security / Downloads
     {
