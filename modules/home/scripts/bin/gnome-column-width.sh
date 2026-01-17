@@ -69,6 +69,20 @@ command -v gdbus >/dev/null 2>&1 || {
   exit 1
 }
 
+PARITY_BUS="org.kenan.GnomeNiriParity"
+PARITY_OBJ="/org/kenan/GnomeNiriParity"
+PARITY_IFACE="org.kenan.GnomeNiriParity"
+
+parity_call() {
+  local method="$1"
+  shift || true
+  gdbus call --session \
+    --dest "$PARITY_BUS" \
+    --object-path "$PARITY_OBJ" \
+    --method "${PARITY_IFACE}.${method}" \
+    "$@" 2>&1 || true
+}
+
 ensure_shell_eval_enabled() {
   # org.gnome.Shell.Eval returns (false, '') unless development-tools is enabled.
   if command -v gsettings >/dev/null 2>&1; then
@@ -80,6 +94,32 @@ ensure_shell_eval_enabled() {
     dconf write /org/gnome/shell/development-tools true 2>/dev/null || true
   fi
 }
+
+out=""
+case "$action" in
+  cycle)
+    out="$(parity_call ColumnWidthCycle)"
+    ;;
+  set)
+    out="$(parity_call ColumnWidthSet "${set_ratio:-0.8}")"
+    ;;
+  toggle)
+    out="$(parity_call ColumnWidthToggle "${toggle_a:-0.8}" "${toggle_b:-1.0}")"
+    ;;
+esac
+
+if [[ -n "$out" && "$out" != Error* && "$out" != *"Error:"* ]]; then
+  if [[ "$out" == *"ok:"* || "$out" == *"no-window"* ]]; then
+    exit 0
+  fi
+  if [[ "$out" == *"error:"* ]]; then
+    echo "gnome-column-width: $out" >&2
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send -u critical -t 2500 "GNOME Column Width" "Error: ${out}"
+    fi
+    exit 1
+  fi
+fi
 
 js="$(cat <<EOF
 (function () {
@@ -149,7 +189,14 @@ if [[ -z "$out" || "$out" == *"(false,"* ]]; then
   if command -v gsettings >/dev/null 2>&1; then
     devtools_val="$(gsettings get org.gnome.shell development-tools 2>/dev/null || true)"
   fi
-  echo "gnome-column-width: GNOME Shell Eval failed: ${out:-<no output>} (development-tools=${devtools_val})" >&2
+  parity_owner="$(
+    gdbus call --session \
+      --dest org.freedesktop.DBus \
+      --object-path /org/freedesktop/DBus \
+      --method org.freedesktop.DBus.NameHasOwner \
+      "$PARITY_BUS" 2>/dev/null | tr -d '\n' || true
+  )"
+  echo "gnome-column-width: GNOME backend failed: ${out:-<no output>} (development-tools=${devtools_val}, ${PARITY_BUS}=${parity_owner})" >&2
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -u critical -t 2500 "GNOME Column Width" "GNOME Shell Eval failed"
   fi

@@ -76,6 +76,42 @@ gnome_eval() {
   printf '%s' "$out"
 }
 
+PARITY_BUS="org.kenan.GnomeNiriParity"
+PARITY_OBJ="/org/kenan/GnomeNiriParity"
+PARITY_IFACE="org.kenan.GnomeNiriParity"
+PARITY_AVAILABLE=""
+
+parity_available() {
+  if [[ "$PARITY_AVAILABLE" == "1" ]]; then
+    return 0
+  fi
+  if [[ "$PARITY_AVAILABLE" == "0" ]]; then
+    return 1
+  fi
+
+  if gdbus call --session \
+    --dest org.freedesktop.DBus \
+    --object-path /org/freedesktop/DBus \
+    --method org.freedesktop.DBus.NameHasOwner \
+    "$PARITY_BUS" 2>/dev/null | grep -q "true"; then
+    PARITY_AVAILABLE="1"
+    return 0
+  fi
+
+  PARITY_AVAILABLE="0"
+  return 1
+}
+
+parity_call() {
+  local method="$1"
+  shift || true
+  gdbus call --session \
+    --dest "$PARITY_BUS" \
+    --object-path "$PARITY_OBJ" \
+    --method "${PARITY_IFACE}.${method}" \
+    "$@" 2>&1 || true
+}
+
 pid_file_for_app() {
   local app="$1"
 
@@ -105,6 +141,17 @@ read_live_pid() {
 
 gnome_move_here_pid() {
   local pid_raw="$1"
+  if parity_available; then
+    local out
+    out="$(parity_call MoveHerePid "$pid_raw")"
+    if [[ -z "$out" || "$out" == Error* || "$out" == *"Error:"* ]]; then
+      echo "__GNOME_SET_EVAL_FAILED__"
+      return 0
+    fi
+    printf '%s' "$out"
+    return 0
+  fi
+
   local pid
   pid="$(js_escape "$pid_raw")"
 
@@ -150,6 +197,17 @@ EOF
 
 gnome_move_here() {
   local target_raw="$1"
+  if parity_available; then
+    local out
+    out="$(parity_call MoveHere "$target_raw")"
+    if [[ -z "$out" || "$out" == Error* || "$out" == *"Error:"* ]]; then
+      echo "__GNOME_SET_EVAL_FAILED__"
+      return 0
+    fi
+    printf '%s' "$out"
+    return 0
+  fi
+
   local target
   target="$(js_escape "$target_raw")"
 
@@ -505,6 +563,11 @@ case "$cmd" in
     ;;
 
   go)
+    if parity_available; then
+      parity_call Go >/dev/null 2>&1 || true
+      exit 0
+    fi
+
     # Move windows back to their "home" workspaces (Niri rules parity).
     declare -a rules=(
       "Kenp:1"
