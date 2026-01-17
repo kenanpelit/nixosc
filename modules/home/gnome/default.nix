@@ -658,7 +658,7 @@ in
     # LOCAL EXTENSIONS
     # ==============================================================================
     home.file.".local/share/gnome-shell/extensions/gnome-niri-parity@kenan" = {
-      source = ./extensions/gnome-niri-parity@kenan;
+      source = ./extensions + "/gnome-niri-parity@kenan";
       recursive = true;
     };
   };
