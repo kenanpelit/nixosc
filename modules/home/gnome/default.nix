@@ -76,10 +76,8 @@ let
     { name = "Bluetooth Toggle"; command = "bluetooth_toggle"; binding = "F10"; }
     { name = "Mullvad Toggle"; command = "osc-mullvad toggle"; binding = "<Alt>F12"; }
     { name = "SemsuMo Daily"; command = "semsumo launch --daily -all"; binding = "<Super><Alt>Return"; }
-    { name = "Screenshot Area"; command = "gnome-screenshot -a"; binding = "Print"; }
-    { name = "Screenshot Screen"; command = "gnome-screenshot"; binding = "<Ctrl>Print"; }
-    { name = "Screenshot Window"; command = "gnome-screenshot -w"; binding = "<Alt>Print"; }
-    { name = "Screenshot Tool"; command = "gnome-screenshot -i"; binding = "<Super><Shift>s"; }
+    { name = "Column Width Cycle"; command = "gnome-column-width"; binding = "<Super>r"; }
+    { name = "Column Width 80%"; command = "gnome-column-width set 0.8"; binding = "<Super><Shift>r"; }
 
     { name = "MPV Playback"; command = "mpv-manager playback"; binding = "<Alt>u"; }
     { name = "MPV Play YouTube"; command = "mpv-manager play-yt"; binding = "<Super><Ctrl>y"; }
@@ -142,7 +140,8 @@ in
       "org/gnome/desktop/wm/keybindings" = {
         close = ["<Super>q"];
         toggle-fullscreen = ["<Super>f"];
-        toggle-maximized = ["<Super>m" "<Alt>g"];
+        toggle-maximized = ["<Super>m" "<Alt>g" "<Super>Up"];
+        maximize = [];
         activate-window-menu = [];
         minimize = [];
         show-desktop = [];
@@ -175,21 +174,25 @@ in
         move-to-workspace-8 = ["<Super><Shift>8"];
         move-to-workspace-9 = ["<Super><Shift>9"];
 
-        # Niri-like workspace navigation (vertical)
-        switch-to-workspace-up = ["<Super>Up" "<Super>k"];
-        switch-to-workspace-down = ["<Super>Down" "<Super>j"];
+        # Workspace navigation (Niri-like: use j/k; avoids <Super>Up conflict)
+        switch-to-workspace-left = ["<Super>k"];
+        switch-to-workspace-right = ["<Super>j"];
+        switch-to-workspace-up = [];
+        switch-to-workspace-down = [];
 
-        # Niri-like "move window to workspace up/down"
-        move-to-workspace-up = ["<Super>Page_Up"];
-        move-to-workspace-down = ["<Super>Page_Down"];
+        # Move window between workspaces (Niri-like: PageUp/PageDown)
+        move-to-workspace-left = ["<Super>Page_Up"];
+        move-to-workspace-right = ["<Super>Page_Down"];
+        move-to-workspace-up = [];
+        move-to-workspace-down = [];
       };
 
       # --- Shell Keybindings (Niri-like) ---
       "org/gnome/shell/keybindings" = {
-        toggle-application-view = ["<Super>d"];
+        toggle-application-view = ["<Super>d" "<Super>a"];
         toggle-message-tray = ["<Super>n"];
         toggle-overview = ["<Super><Alt>o"];
-        show-screenshot-ui = [];
+        show-screenshot-ui = ["Print" "<Shift><Super>s"];
 
         # Disable default Super+[1-9] app shortcuts (use for workspaces instead)
         switch-to-application-1 = [];
