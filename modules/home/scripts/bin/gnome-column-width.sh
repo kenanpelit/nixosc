@@ -69,7 +69,7 @@ command -v gdbus >/dev/null 2>&1 || {
   exit 1
 }
 
-PARITY_BUS="org.kenan.GnomeNiriParity"
+PARITY_BUS="org.gnome.Shell"
 PARITY_OBJ="/org/kenan/GnomeNiriParity"
 PARITY_IFACE="org.kenan.GnomeNiriParity"
 
@@ -189,14 +189,13 @@ if [[ -z "$out" || "$out" == *"(false,"* ]]; then
   if command -v gsettings >/dev/null 2>&1; then
     devtools_val="$(gsettings get org.gnome.shell development-tools 2>/dev/null || true)"
   fi
-  parity_owner="$(
+  parity_ping="$(
     gdbus call --session \
-      --dest org.freedesktop.DBus \
-      --object-path /org/freedesktop/DBus \
-      --method org.freedesktop.DBus.NameHasOwner \
-      "$PARITY_BUS" 2>/dev/null | tr -d '\n' || true
+      --dest "$PARITY_BUS" \
+      --object-path "$PARITY_OBJ" \
+      --method "${PARITY_IFACE}.Ping" 2>/dev/null | tr -d '\n' || true
   )"
-  echo "gnome-column-width: GNOME backend failed: ${out:-<no output>} (development-tools=${devtools_val}, ${PARITY_BUS}=${parity_owner})" >&2
+  echo "gnome-column-width: GNOME backend failed: ${out:-<no output>} (development-tools=${devtools_val}, parity=${parity_ping:-<no ping>})" >&2
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -u critical -t 2500 "GNOME Column Width" "GNOME Shell Eval failed"
   fi

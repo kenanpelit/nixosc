@@ -6,7 +6,6 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const BUS_NAME = 'org.kenan.GnomeNiriParity';
 const OBJECT_PATH = '/org/kenan/GnomeNiriParity';
 const IFACE_NAME = 'org.kenan.GnomeNiriParity';
 
@@ -80,13 +79,6 @@ function bytesToString(bytes) {
   } catch {}
 
   try {
-    // gjs 1.7x: ByteArray helper
-    const ByteArray = imports.byteArray;
-    if (ByteArray && typeof ByteArray.toString === 'function')
-      return ByteArray.toString(bytes);
-  } catch {}
-
-  try {
     let s = '';
     for (let i = 0; i < bytes.length; i++)
       s += String.fromCharCode(bytes[i]);
@@ -98,26 +90,22 @@ function bytesToString(bytes) {
 
 export default class GnomeNiriParity extends Extension {
   enable() {
-    this._cmdCache = new Map();
-
-    this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(DBUS_IFACE_XML, this);
-    this._dbusImpl.export(Gio.DBus.session, OBJECT_PATH);
-
-    this._busOwnerId = Gio.bus_own_name(
-      Gio.BusType.SESSION,
-      BUS_NAME,
-      Gio.BusNameOwnerFlags.NONE,
-      () => {},
-      () => {},
-      () => {},
-    );
+    try {
+      this._cmdCache = new Map();
+      this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(DBUS_IFACE_XML, this);
+      // Export on GNOME Shell's existing session-bus connection. This makes the
+      // object reachable via the already-owned `org.gnome.Shell` name (no extra
+      // bus-name ownership required).
+      this._dbusImpl.export(Gio.DBus.session, OBJECT_PATH);
+    } catch (e) {
+      // Log to journal so `gnome-extensions info` / `journalctl --user` shows it.
+      // Re-throw so GNOME marks the extension as failed.
+      logError(e, 'gnome-niri-parity@kenan: enable failed');
+      throw e;
+    }
   }
 
   disable() {
-    if (this._busOwnerId) {
-      Gio.bus_unown_name(this._busOwnerId);
-      this._busOwnerId = 0;
-    }
     if (this._dbusImpl) {
       this._dbusImpl.unexport();
       this._dbusImpl = null;
@@ -394,4 +382,3 @@ export default class GnomeNiriParity extends Extension {
     }
   }
 }
-
