@@ -54,6 +54,72 @@ gnome_eval() {
     "$js" 2>/dev/null
 }
 
+pid_file_for_app() {
+  local app="$1"
+
+  case "$app" in
+    Kenp) printf '%s' "/tmp/semsumo/brave-kenp.pid" ;;
+    Ai) printf '%s' "/tmp/semsumo/brave-ai.pid" ;;
+    CompecTA) printf '%s' "/tmp/semsumo/brave-compecta.pid" ;;
+    brave-youtube.com__-Default) printf '%s' "/tmp/semsumo/brave-youtube.pid" ;;
+    TmuxKenp|Tmux) printf '%s' "/tmp/semsumo/kkenp.pid" ;;
+    WebCord) printf '%s' "/tmp/semsumo/webcord.pid" ;;
+    spotify|Spotify) printf '%s' "/tmp/semsumo/spotify.pid" ;;
+    ferdium|Ferdium) printf '%s' "/tmp/semsumo/ferdium.pid" ;;
+    *) return 1 ;;
+  esac
+}
+
+read_live_pid() {
+  local pid_file="$1"
+  local pid=""
+
+  [[ -n "$pid_file" && -f "$pid_file" ]] || return 1
+  pid="$(tr -d '[:space:]' <"$pid_file" 2>/dev/null || true)"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  printf '%s' "$pid"
+}
+
+gnome_move_here_pid() {
+  local pid_raw="$1"
+  local pid
+  pid="$(js_escape "$pid_raw")"
+
+  local js
+  js="$(cat <<EOF
+(function () {
+  const wantPid = parseInt("${pid}", 10);
+  if (!wantPid || isNaN(wantPid)) return "__GNOME_SET_BAD_PID__";
+
+  const wins = global.get_window_actors().map(a => a.meta_window).filter(w => w);
+  const activeWs = global.workspace_manager.get_active_workspace();
+
+  function wpid(w) { try { return w.get_pid ? w.get_pid() : 0; } catch (e) { return 0; } }
+  function samePid(w) { return wpid(w) === wantPid; }
+
+  let win =
+    wins.find(w => samePid(w) && w.get_workspace && w.get_workspace() === activeWs) ||
+    wins.find(w => samePid(w));
+
+  if (!win) return "__GNOME_SET_NOT_FOUND__";
+
+  try {
+    const ws = win.get_workspace ? win.get_workspace() : null;
+    if (ws && ws !== activeWs && win.change_workspace) win.change_workspace(activeWs);
+  } catch (e) {}
+
+  try { if (win.minimized && win.unminimize) win.unminimize(); } catch (e) {}
+  try { if (win.activate) win.activate(global.get_current_time()); } catch (e) {}
+
+  return "__GNOME_SET_OK__";
+})();
+EOF
+)"
+
+  gnome_eval "$js" || true
+}
+
 gnome_move_here() {
   local target_raw="$1"
   local target
@@ -119,6 +185,64 @@ EOF
   gnome_eval "$js" || true
 }
 
+keys_for_app() {
+  local app="$1"
+
+  case "$app" in
+    Kenp)
+      cat <<'EOF'
+Kenp
+brave-kenp
+EOF
+      ;;
+    Ai)
+      cat <<'EOF'
+Ai
+brave-ai
+EOF
+      ;;
+    CompecTA)
+      cat <<'EOF'
+CompecTA
+brave-compecta
+EOF
+      ;;
+    TmuxKenp|Tmux)
+      cat <<'EOF'
+TmuxKenp
+kitty
+EOF
+      ;;
+    WebCord)
+      cat <<'EOF'
+WebCord
+webcord
+EOF
+      ;;
+    brave-youtube.com__-Default)
+      cat <<'EOF'
+brave-youtube.com__-Default
+brave-youtube
+EOF
+      ;;
+    spotify|Spotify)
+      cat <<'EOF'
+spotify
+Spotify
+EOF
+      ;;
+    ferdium|Ferdium)
+      cat <<'EOF'
+ferdium
+Ferdium
+EOF
+      ;;
+    *)
+      printf '%s\n' "$app"
+      ;;
+  esac
+}
+
 launch_for_app() {
   local app="$1"
 
@@ -156,20 +280,46 @@ launch_for_app() {
 here_one() {
   local app="$1"
   local out
-  out="$(gnome_move_here "$app" || true)"
 
-  if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
-    return 0
+  # 1) Prefer PID match (Wayland-safe) to avoid spawning a new window
+  if pid_file="$(pid_file_for_app "$app" 2>/dev/null || true)"; then
+    if pid="$(read_live_pid "$pid_file" 2>/dev/null || true)"; then
+      out="$(gnome_move_here_pid "$pid" || true)"
+      if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
+        return 0
+      fi
+    fi
   fi
+
+  # 2) Try known key aliases (wm_class / appId / etc.)
+  while IFS= read -r key; do
+    [[ -n "$key" ]] || continue
+    out="$(gnome_move_here "$key" || true)"
+    if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
+      return 0
+    fi
+  done < <(keys_for_app "$app")
 
   # Not running: launch then pull it here (best-effort).
   launch_for_app "$app" || return 1
 
   for _ in {1..40}; do
-    out="$(gnome_move_here "$app" || true)"
-    if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
-      return 0
+    if pid_file="$(pid_file_for_app "$app" 2>/dev/null || true)"; then
+      if pid="$(read_live_pid "$pid_file" 2>/dev/null || true)"; then
+        out="$(gnome_move_here_pid "$pid" || true)"
+        if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
+          return 0
+        fi
+      fi
     fi
+
+    while IFS= read -r key; do
+      [[ -n "$key" ]] || continue
+      out="$(gnome_move_here "$key" || true)"
+      if [[ "$out" == *"__GNOME_SET_OK__"* ]]; then
+        return 0
+      fi
+    done < <(keys_for_app "$app")
     sleep 0.1
   done
 
