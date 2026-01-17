@@ -63,6 +63,9 @@ fi
 
 command -v gdbus >/dev/null 2>&1 || {
   echo "gnome-column-width: gdbus not found" >&2
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -u critical -t 2500 "GNOME Column Width" "gdbus not found"
+  fi
   exit 1
 }
 
@@ -127,11 +130,17 @@ out="$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shel
 
 if [[ -z "$out" || "$out" == *"(false,"* ]]; then
   echo "gnome-column-width: GNOME Shell Eval failed" >&2
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -u critical -t 2500 "GNOME Column Width" "GNOME Shell Eval failed"
+  fi
   exit 1
 fi
 
 if [[ "$out" == *"error:"* ]]; then
   echo "gnome-column-width: $out" >&2
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -u critical -t 2500 "GNOME Column Width" "Error: ${out}"
+  fi
   exit 1
 fi
 
