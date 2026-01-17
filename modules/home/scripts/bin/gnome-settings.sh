@@ -223,7 +223,8 @@ echo "⌨️  Window Manager keybinding'leri uygulanıyor..."
 # Basic window management
 dconf write /org/gnome/desktop/wm/keybindings/close "['<Super>q']"
 dconf write /org/gnome/desktop/wm/keybindings/toggle-fullscreen "['<Super>f']"
-dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m', '<Alt>g']"
+dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m', '<Alt>g', '<Super>Up']"
+dconf write /org/gnome/desktop/wm/keybindings/maximize "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/activate-window-menu "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/minimize "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
@@ -258,25 +259,25 @@ dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Super><Shi
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Super><Shift>9']"
 
 # Navigate workspaces with arrows - DISABLED
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-right "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "['<Super>Up', '<Super>k']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "['<Super>Down', '<Super>j']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "['<Super>k']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-right "['<Super>j']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "@as []"
 
 # Move window between workspaces
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "['<Super><Shift>Left']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "['<Super><Shift>Right']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "['<Super>Page_Up']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "['<Super>Page_Down']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "['<Super>Page_Up']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "['<Super>Page_Down']"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "@as []"
 
 # =============================================================================
 # SHELL KEYBINDINGS
 # =============================================================================
 echo "🐚 Shell keybinding'leri uygulanıyor..."
 
-dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d']"
+dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d', '<Super>a']"
 dconf write /org/gnome/shell/keybindings/toggle-message-tray "['<Super>n']"
-dconf write /org/gnome/shell/keybindings/show-screenshot-ui "@as []"
+dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['Print', '<Shift><Super>s']"
 dconf write /org/gnome/shell/keybindings/toggle-overview "['<Super><Alt>o']"
 
 # Application switching keybinding'larını kapat (workspace çakışması için)
@@ -703,6 +704,7 @@ MULLVAD="$(opt osc-mullvad)"
 SCREENSHOT="$(opt gnome-screenshot)"
 GKR="$(opt gnome-kr-fix)"
 WALK="$(opt walk)"
+GNOME_COLWIDTH="$(opt gnome-column-width)"
 
 # 0..40 path list
 CUSTOM_PATHS=""
@@ -826,20 +828,20 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'$SEM_SUMO launch --daily -all'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/name "'Gnome Start'"
 
-# 22) Screenshot Area (Niri-style)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'Print'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'$SCREENSHOT -a'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Screenshot Area'"
+# 22) Column Width Cycle (Niri: Mod+R)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'<Super>r'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'$GNOME_COLWIDTH'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Column Width Cycle'"
 
-# 23) Screenshot Screen (Niri-style)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Ctrl>Print'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$SCREENSHOT'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'Screenshot Screen'"
+# 23) Column Width 80% (Niri: Mod+Shift+R)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Super><Shift>r'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$GNOME_COLWIDTH set 0.8'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'Column Width 80%'"
 
-# 24) Screenshot Window (Niri-style)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Alt>Print'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$SCREENSHOT -w'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'Screenshot Window'"
+# 24) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'(unused)'"
 
 # 25) MPV Playback (Niri-style)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>u'"
@@ -881,10 +883,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/command "'$MPC_CONTROL toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/name "'MPC Toggle'"
 
-# 33) Screenshot Tool UI (extra)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/binding "'<Super><Shift>s'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/command "'$SCREENSHOT -i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/name "'Screenshot Tool'"
+# 33) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/name "'(unused)'"
 
 # 37) Shutdown
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/binding "'<Ctrl><Alt><Shift>s'"
