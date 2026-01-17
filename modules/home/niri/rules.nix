@@ -20,7 +20,7 @@ let
       default-column-width { fixed ${toString w}; }
       default-window-height { fixed ${toString h}; }
       ${lib.optionalString (x != null && y != null)
-        ''default-floating-position x=${toString x} y=${toString y} relative-to=\"${relativeTo}\";''}
+        ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
       min-width ${toString w};
       max-width ${toString w};
       min-height ${toString h};
@@ -36,7 +36,7 @@ let
       default-column-width { proportion ${toString w}; }
       default-window-height { proportion ${toString h}; }
       ${lib.optionalString (x != null && y != null)
-        ''default-floating-position x=${toString x} y=${toString y} relative-to=\"${relativeTo}\";''}
+        ''default-floating-position x=${toString x} y=${toString y} relative-to="${relativeTo}";''}
       ${lib.optionalString focus "open-focused true;"}
     '';
 
