@@ -102,7 +102,7 @@ let
   renderWorkspaceRules = lib.concatStringsSep "\n" (
     map (r: ''
       window-rule {
-        match app-id=r#"${r.appId}"##{lib.optionalString (r ? title) '' title=r#"${r.title}"''};
+        match app-id=r#"${r.appId}"#${lib.optionalString (r ? title) '' title=r#"${r.title}"#''};
         open-on-workspace "${r.workspace}";
         ${lib.optionalString (r.maximize or false) "open-maximized true; open-maximized-to-edges true;"}
       }
