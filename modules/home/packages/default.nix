@@ -10,7 +10,7 @@ let
   cfg = config.my.user.packages;
   # Custom Python Environment
   customPython = pkgs.python3.withPackages (ps: with ps; [
-    ipython libtmux pip pipx
+    ipython libtmux pip pipx pdftotext
   ]);
 in
 {
@@ -101,13 +101,15 @@ in
   
       # -- Media & Audio ---------------------------------------------------------
       mpv vlc               # Video players
+      rhythmbox fooyin      # Music playing
       imv qview             # Image viewers
       ffmpeg imagemagick    # Media processing
       yt-dlp pipe-viewer    # YouTube tools
       spotify spotify-cli-linux # Music streaming
       easyeffects           # PipeWire audio effects
-      mpc                   # MPD client
+      mpc rmpc cava         # MPD client & visualizer
       pavucontrol playerctl # Audio control
+      eyed3                 # ID3 tags
       
       # Screenshot/Recording
       grim slurp            # Wayland screenshot
@@ -119,7 +121,7 @@ in
       libreoffice           # Office suite
       obsidian              # Note taking
       zathura evince        # PDF viewers
-      pdftk                 # PDF toolkit (merge/split/rotate/fill forms)
+      pdftk poppler-utils   # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
       
       # Communication

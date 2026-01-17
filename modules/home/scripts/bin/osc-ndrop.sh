@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# osc-ndrop.sh - Toggle a "drop-down" style window (Niri + Hyprland)
+# osc-ndrop.sh - Toggle a "drop-down" style window (Niri + Hyprland + GNOME)
 # ==============================================================================
 # Features (ndrop/tdrop-like):
 # - If the program is not running: launch it and bring it to the foreground.
@@ -17,7 +17,7 @@
 # - Override with: -c/--class <CLASS>
 #
 # Backend detection:
-# - Auto-detects Niri (niri msg) or Hyprland (hyprctl).
+# - Auto-detects Niri (niri msg), Hyprland (hyprctl), or GNOME (gdbus + org.gnome.Shell).
 #
 # Environment:
 # - OSC_NDROP_NIRI_HIDE_WORKSPACE  (default: oscndrop; workspace used to hide windows on Niri)
@@ -53,7 +53,7 @@ Options:
   -V, --version           Show version
 
 Backend options:
-      --backend <auto|niri|hyprland>
+      --backend <auto|niri|hyprland|gnome>
       --niri-hide-workspace <index|name>   (default: \$OSC_NDROP_NIRI_HIDE_WORKSPACE or "oscndrop")
       --hypr-hide-special <name>           (default: \$OSC_NDROP_HYPR_HIDE_SPECIAL or "oscndrop")
 
@@ -88,6 +88,14 @@ die() {
 regex_escape() {
   local s="$1"
   s="$(printf '%s' "$s" | sed -e 's/[][\\.^$*+?(){}|]/\\&/g')"
+  printf '%s' "$s"
+}
+
+js_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
   printf '%s' "$s"
 }
 
@@ -234,12 +242,12 @@ detect_backend() {
   local requested="$1"
 
   case "$requested" in
-    niri | hyprland)
+    niri | hyprland | gnome)
       echo "$requested"
       return 0
       ;;
     auto) ;;
-    *) die "Invalid backend: $requested (expected: auto|niri|hyprland)" ;;
+    *) die "Invalid backend: $requested (expected: auto|niri|hyprland|gnome)" ;;
   esac
 
   if command -v niri >/dev/null 2>&1 && niri msg -j workspaces >/dev/null 2>&1; then
@@ -252,7 +260,18 @@ detect_backend() {
     return 0
   fi
 
-  die "Could not detect backend (need niri or hyprctl)"
+  if command -v gdbus >/dev/null 2>&1; then
+    if gdbus call --session \
+      --dest org.freedesktop.DBus \
+      --object-path /org/freedesktop/DBus \
+      --method org.freedesktop.DBus.NameHasOwner \
+      org.gnome.Shell 2>/dev/null | grep -q "true"; then
+      echo "gnome"
+      return 0
+    fi
+  fi
+
+  die "Could not detect backend (need niri, hyprctl, or GNOME Shell)"
 }
 
 launch_command() {
@@ -597,10 +616,140 @@ hypr_toggle() {
   $VERBOSE && notify "Hyprland" "Moved here: ${CLASS}" "low"
 }
 
+gnome_eval() {
+  local js="$1"
+  command -v gdbus >/dev/null 2>&1 || return 1
+  gdbus call --session \
+    --dest org.gnome.Shell \
+    --object-path /org/gnome/Shell \
+    --method org.gnome.Shell.Eval \
+    "$js" 2>/dev/null
+}
+
+gnome_toggle() {
+  command -v gdbus >/dev/null 2>&1 || { launch_command; return 0; }
+
+  local target insensitive_js focus_js js out
+  target="$(js_escape "$CLASS")"
+
+  insensitive_js=false
+  $INSENSITIVE && insensitive_js=true
+
+  focus_js=false
+  $FOCUS && focus_js=true
+
+  js="$(cat <<EOF
+(function () {
+  const Shell = imports.gi.Shell;
+
+  const target = "${target}";
+  const insensitive = ${insensitive_js};
+  const focusOnly = ${focus_js};
+
+  function norm(s) { return (s || "").toString(); }
+  function same(a, b) {
+    a = norm(a);
+    b = norm(b);
+    if (insensitive) return a.toLowerCase().includes(b.toLowerCase());
+    return a === b;
+  }
+
+  const tracker = Shell.WindowTracker.get_default();
+  const wins = global.get_window_actors().map(a => a.meta_window).filter(w => w);
+
+  function props(w) {
+    let cls = "";
+    let inst = "";
+    let appId = "";
+    try { cls = w.get_wm_class ? (w.get_wm_class() || "") : ""; } catch (e) {}
+    try { inst = w.get_wm_class_instance ? (w.get_wm_class_instance() || "") : ""; } catch (e) {}
+    try {
+      const app = tracker.get_window_app(w);
+      appId = app ? (app.get_id() || "") : "";
+    } catch (e) {}
+    return { cls, inst, appId };
+  }
+
+  function matches(w) {
+    const p = props(w);
+    return same(p.cls, target) || same(p.inst, target) || same(p.appId, target);
+  }
+
+  const activeWs = global.workspace_manager.get_active_workspace();
+  let win =
+    wins.find(w => matches(w) && w.get_workspace && w.get_workspace() === activeWs) ||
+    wins.find(w => matches(w));
+
+  if (!win) return "__OSC_NDROP_NOT_FOUND__";
+
+  const isMin = !!win.minimized;
+
+  if (focusOnly) {
+    try {
+      const ws = win.get_workspace ? win.get_workspace() : null;
+      if (ws && ws !== activeWs && ws.activate) ws.activate(global.get_current_time());
+    } catch (e) {}
+    try { if (isMin && win.unminimize) win.unminimize(); } catch (e) {}
+    try { if (win.activate) win.activate(global.get_current_time()); } catch (e) {}
+    return "__OSC_NDROP_FOCUSED__";
+  }
+
+  // Default: toggle minimize on current workspace; otherwise move here + focus.
+  try {
+    const ws = win.get_workspace ? win.get_workspace() : null;
+    if (ws && ws !== activeWs && win.change_workspace) win.change_workspace(activeWs);
+  } catch (e) {}
+
+  try {
+    if (isMin) {
+      if (win.unminimize) win.unminimize();
+      if (win.activate) win.activate(global.get_current_time());
+      return "__OSC_NDROP_SHOWN__";
+    }
+    if (win.minimize) win.minimize();
+    return "__OSC_NDROP_HIDDEN__";
+  } catch (e) {
+    return "__OSC_NDROP_ERROR__:" + e;
+  }
+})();
+EOF
+)"
+
+  out="$(gnome_eval "$js" || true)"
+  if [[ -z "$out" || "$out" == *"(false,"* ]]; then
+    $VERBOSE && notify "GNOME" "Eval failed, launching: ${CLASS}" "low"
+    launch_command
+    return 0
+  fi
+
+  if [[ "$out" == *"__OSC_NDROP_NOT_FOUND__"* ]]; then
+    launch_command
+    return 0
+  fi
+
+  if [[ "$out" == *"__OSC_NDROP_ERROR__"* ]]; then
+    $VERBOSE && notify "GNOME" "osc-ndrop error: ${CLASS}" "low"
+    return 1
+  fi
+
+  if $VERBOSE; then
+    if [[ "$out" == *"__OSC_NDROP_HIDDEN__"* ]]; then
+      notify "GNOME" "Hidden: ${CLASS}" "low"
+    elif [[ "$out" == *"__OSC_NDROP_SHOWN__"* ]]; then
+      notify "GNOME" "Shown: ${CLASS}" "low"
+    elif [[ "$out" == *"__OSC_NDROP_FOCUSED__"* ]]; then
+      notify "GNOME" "Focused: ${CLASS}" "low"
+    else
+      notify "GNOME" "Toggled: ${CLASS}" "low"
+    fi
+  fi
+}
+
 backend="$(detect_backend "$BACKEND")"
 
 case "$backend" in
   niri) niri_toggle ;;
   hyprland) hypr_toggle ;;
+  gnome) gnome_toggle ;;
   *) die "Internal error: unknown backend '$backend'" ;;
 esac

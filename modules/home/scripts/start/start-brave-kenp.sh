@@ -74,14 +74,23 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude profile_brave Kenp --separate --restore-last-session &
+                mkdir -p "/tmp/semsumo"
+                PID_FILE="/tmp/semsumo/brave-kenp.pid"
+                rm -f "$PID_FILE" 2>/dev/null || true
+                mullvad-exclude profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
             else
                 echo "WARNING: mullvad-exclude not found"
-                profile_brave Kenp --separate --restore-last-session &
+                mkdir -p "/tmp/semsumo"
+                PID_FILE="/tmp/semsumo/brave-kenp.pid"
+                rm -f "$PID_FILE" 2>/dev/null || true
+                profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
             fi
         else
             echo "VPN not connected"
-            profile_brave Kenp --separate --restore-last-session &
+            mkdir -p "/tmp/semsumo"
+            PID_FILE="/tmp/semsumo/brave-kenp.pid"
+            rm -f "$PID_FILE" 2>/dev/null || true
+            profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
         fi
         ;;
     secure|*)
@@ -90,14 +99,15 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        profile_brave Kenp --separate --restore-last-session &
+        mkdir -p "/tmp/semsumo"
+        PID_FILE="/tmp/semsumo/brave-kenp.pid"
+        rm -f "$PID_FILE" 2>/dev/null || true
+        profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
         ;;
 esac
 
-APP_PID=$!
-mkdir -p "/tmp/semsumo"
-echo "$APP_PID" > "/tmp/semsumo/brave-kenp.pid"
-echo "Application started (PID: $APP_PID)"
+APP_PID="$(tr -d '[:space:]' <"${PID_FILE:-/tmp/semsumo/brave-kenp.pid}" 2>/dev/null || true)"
+echo "Application started (PID: ${APP_PID:-unknown})"
 
 # Window verification (Hyprland only)
 if [[ "$WORKSPACE" != "0" && "$WM_TYPE" == "hyprland" ]] && command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then

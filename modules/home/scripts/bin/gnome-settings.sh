@@ -56,6 +56,8 @@ MOCHA_RED="#f38ba8"
 MOCHA_PINK="#f5c2e7"
 MOCHA_FLAMINGO="#f2cdcd"
 MOCHA_ROSEWATER="#f5e0dc"
+# Niri accent (used for border/focus parity across desktops)
+NIRI_CYAN="#00BCD4"
 
 echo "📝 Mevcut ayarları temizleniyor..."
 # Sadece custom keybinding'leri temizle, diğerlerini koru
@@ -221,7 +223,10 @@ echo "⌨️  Window Manager keybinding'leri uygulanıyor..."
 # Basic window management
 dconf write /org/gnome/desktop/wm/keybindings/close "['<Super>q']"
 dconf write /org/gnome/desktop/wm/keybindings/toggle-fullscreen "['<Super>f']"
-dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Super>m']"
+# Keep <Super>m free for gnome-column-width toggle (Niri-like 0.8 <-> 1.0)
+dconf write /org/gnome/desktop/wm/keybindings/toggle-maximized "['<Alt>g', '<Super>Up']"
+dconf write /org/gnome/desktop/wm/keybindings/maximize "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/activate-window-menu "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/minimize "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/show-desktop "@as []"
 
@@ -254,15 +259,15 @@ dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-7 "['<Super><Shi
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-8 "['<Super><Shift>8']"
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-9 "['<Super><Shift>9']"
 
-# Navigate workspaces with arrows - DISABLED
+# Workspace navigation (VERTICAL like Niri: use k/j)
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-left "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-right "@as []"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "['<Super>Up', '<Super>k']"
-dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "['<Super>Down', '<Super>j']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-up "['<Super>k']"
+dconf write /org/gnome/desktop/wm/keybindings/switch-to-workspace-down "['<Super>j']"
 
-# Move window between workspaces
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "['<Super><Shift>Left']"
-dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "['<Super><Shift>Right']"
+# Move window between workspaces (VERTICAL like Niri: PageUp/PageDown)
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-left "@as []"
+dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-right "@as []"
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-up "['<Super>Page_Up']"
 dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "['<Super>Page_Down']"
 
@@ -271,9 +276,9 @@ dconf write /org/gnome/desktop/wm/keybindings/move-to-workspace-down "['<Super>P
 # =============================================================================
 echo "🐚 Shell keybinding'leri uygulanıyor..."
 
-dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d']"
+dconf write /org/gnome/shell/keybindings/toggle-application-view "['<Super>d', '<Super>a']"
 dconf write /org/gnome/shell/keybindings/toggle-message-tray "['<Super>n']"
-dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['<Super>Print']"
+dconf write /org/gnome/shell/keybindings/show-screenshot-ui "['Print']"
 dconf write /org/gnome/shell/keybindings/toggle-overview "['<Super><Alt>o']"
 
 # Application switching keybinding'larını kapat (workspace çakışması için)
@@ -338,12 +343,26 @@ dconf write /org/gnome/desktop/wm/preferences/raise-on-click "true"
 echo "🐚 Shell ayarları uygulanıyor..."
 
 dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.desktop']"
+# Needed for `org.gnome.Shell.Eval` (used by gnome-column-width / gnome-set).
+dconf write /org/gnome/shell/development-tools "true"
+
+# Best-effort: ensure required extensions are installed (vertical workspaces needs V-Shell)
+if command -v gnome-extensions >/dev/null 2>&1 && command -v gnome-extensions-installer >/dev/null 2>&1; then
+  if ! gnome-extensions list 2>/dev/null | grep -q "vertical-workspaces@G-dH.github.com"; then
+    gnome-extensions-installer --install || true
+  fi
+fi
 
 # Extensions - NixOS'ta yüklü olanlar
-EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
+EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gnome-niri-parity@kenan','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','vertical-workspaces@G-dH.github.com','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
 
 dconf write /org/gnome/shell/enabled-extensions "$EXTENSIONS"
 dconf write /org/gnome/shell/disabled-extensions "@as []"
+
+# Enable local extension immediately if available (no logout needed)
+if command -v gnome-extensions >/dev/null 2>&1; then
+  gnome-extensions enable "gnome-niri-parity@kenan" >/dev/null 2>&1 || true
+fi
 
 # =============================================================================
 # APP SWITCHER SETTINGS
@@ -374,6 +393,10 @@ dconf write /org/gnome/shell/extensions/gsconnect/show-offline "false"
 dconf write /org/gnome/shell/extensions/bluetooth-quick-connect/show-battery-icon-on "true"
 dconf write /org/gnome/shell/extensions/bluetooth-quick-connect/show-battery-value-on "true"
 
+# V-Shell (Vertical Workspaces) — GNOME 49 horizontal → vertical
+# 0 = Left (vertical), 1 = Right (vertical), 4 = Hide (vertical)
+dconf write /org/gnome/shell/extensions/vertical-workspaces/ws-thumbnails-position "1"
+
 # Vitals
 dconf write /org/gnome/shell/extensions/vitals/hot-sensors "['_processor_usage_', '_memory_usage_', '_network-rx_max_', '_network-tx_max_']"
 dconf write /org/gnome/shell/extensions/vitals/position-in-panel "2"
@@ -403,8 +426,8 @@ dconf write /org/gnome/shell/extensions/spotify-controls/show-volume-control "fa
 dconf write /org/gnome/shell/extensions/spotify-controls/show-album-art "false"
 dconf write /org/gnome/shell/extensions/spotify-controls/compact-mode "true"
 
-# Auto Move Windows
-AUTO_MOVE_LIST="['brave-browser.desktop:1','kitty.desktop:2','discord.desktop:5','webcord.desktop:5','whatsie.desktop:9','ferdium.desktop:9','spotify.desktop:8','brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7']"
+# Auto Move Windows (Niri-like workspace rules)
+AUTO_MOVE_LIST="['brave-kenp.desktop:1','brave-browser.desktop:1','kitty.desktop:2','brave-ai.desktop:3','brave-compecta.desktop:4','discord.desktop:5','webcord.desktop:5','audacious.desktop:5','org.telegram.desktop.desktop:6','vlc.desktop:6','remote-viewer.desktop:6','transmission-gtk.desktop:7','org.keepassxc.KeePassXC.desktop:7','brave-youtube.com__-Default.desktop:7','brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7','spotify.desktop:8','ferdium.desktop:9','com.rtosta.zapzap.desktop:9','whatsie.desktop:9']"
 dconf write /org/gnome/shell/extensions/auto-move-windows/application-list "$AUTO_MOVE_LIST"
 
 # =============================================================================
@@ -419,9 +442,9 @@ dconf write /org/gnome/shell/extensions/dash-to-panel/trans-bg-color "'$MOCHA_BA
 dconf write /org/gnome/shell/extensions/dash-to-panel/trans-use-custom-opacity "true"
 dconf write /org/gnome/shell/extensions/dash-to-panel/trans-panel-opacity "0.95"
 
-# Tiling Shell - Catppuccin accent
-dconf write /org/gnome/shell/extensions/tilingshell/border-color "'$MOCHA_MAUVE'"
-dconf write /org/gnome/shell/extensions/tilingshell/active-window-border-color "'$MOCHA_LAVENDER'"
+# Tiling Shell - Niri-like borders (active cyan, inactive surface1)
+dconf write /org/gnome/shell/extensions/tilingshell/border-color "'$MOCHA_SURFACE1'"
+dconf write /org/gnome/shell/extensions/tilingshell/active-window-border-color "'$NIRI_CYAN'"
 
 # Space Bar - Catppuccin CSS güncelleme
 SPACE_BAR_MOCHA_CSS='
@@ -640,9 +663,9 @@ dconf write /org/gnome/desktop/notifications/show-in-lock-screen "false"
 dconf write /org/gnome/desktop/notifications/show-banners "true"
 
 # =============================================================================
-# CUSTOM KEYBINDINGS (0..40) — absolute paths, no PATH lookups
+# CUSTOM KEYBINDINGS (0..54) — absolute paths, no PATH lookups
 # =============================================================================
-echo "⌨️  Custom keybinding'ler (0..40) yazılıyor..."
+echo "⌨️  Custom keybinding'ler (0..54) yazılıyor..."
 
 # --- helpers: resolve absolute paths
 opt() {
@@ -677,16 +700,21 @@ BRAVE="$(opt brave || opt brave-browser)"
 YAZI="$(opt yazi)"
 NEMO="$(opt nemo)"
 WALKER="$(opt walker)"
+ROFI_LAUNCHER="$(opt rofi-launcher)"
 COPYQ="$(opt copyq)"
 WEBCORD="$(opt webcord)"
 WMCTRL="$(opt wmctrl)"
 LOGINCTL="$(opt loginctl)"
 
+OSC_NDROP="$(opt osc-ndrop)"
 OSC_SOUNDCTL="$(opt osc-soundctl)"
 OSC_SPOTIFY="$(opt osc-spotify)"
 OSC_REBOOT="$(opt osc-safe-reboot)"
 BLUE_TOGGLE="$(opt bluetooth_toggle)"
-MPV_MGR="$(opt gnome-mpv-manager)"
+VLC_TOGGLE="$(opt vlc-toggle)"
+MPC_CONTROL="$(opt mpc-control)"
+NSTICKY_TOGGLE="$(opt nsticky-toggle)"
+MPV_MGR="$(opt mpv-manager)"
 KKENP="$(opt start-kkenp)"
 SEM_SUMO="$(opt semsumo)"
 WSPREV="$(opt ws-prev)"
@@ -695,10 +723,12 @@ MULLVAD="$(opt osc-mullvad)"
 SCREENSHOT="$(opt gnome-screenshot)"
 GKR="$(opt gnome-kr-fix)"
 WALK="$(opt walk)"
+GNOME_COLWIDTH="$(opt gnome-column-width)"
+GNOME_SET="$(opt gnome-set)"
 
-# 0..40 path list
+# 0..54 path list
 CUSTOM_PATHS=""
-for i in {0..43}; do
+for i in {0..54}; do
   p="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/"
   if [ -z "$CUSTOM_PATHS" ]; then
     CUSTOM_PATHS="'$p'"
@@ -718,10 +748,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command "'$BRAVE'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/name "'Browser'"
 
-# 2) Terminal FM (floating yazi)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/binding "'<Super>e'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command "'$KITTY --class floating-terminal -e $YAZI'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/name "'Terminal File Manager (Floating)'"
+# 2) Dropdown terminal (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/binding "'<Super>Return'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command "'$OSC_NDROP $KITTY --class dropdown-terminal'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/name "'Dropdown Terminal'"
 
 # 3) Nemo
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/binding "'<Super><Ctrl>f'"
@@ -729,14 +759,14 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/name "'Open Nemo File Manager'"
 
 # 4) Terminal FM (yazi)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/binding "'<Alt>f'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/command "'$KITTY $YAZI'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/binding "'<Alt><Ctrl>f'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/command "'$KITTY -e $YAZI'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/name "'Terminal File Manager (Yazi)'"
 
-# 5) Walker
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Super>space'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'$WALKER'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/name "'Open Walker'"
+# 5) Rofi Launcher (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/binding "'<Alt>space'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/command "'$ROFI_LAUNCHER'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/name "'Rofi Launcher'"
 
 # 6) Audio output switch
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/binding "'<Alt>a'"
@@ -763,10 +793,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/command "'$OSC_SPOTIFY prev'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom10/name "'Spotify Previous'"
 
-# 11) MPV start/focus
+# 11) VLC toggle (Niri-style)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/binding "'<Alt>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/command "'$MPV_MGR start'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/name "'MPV Start/Focus'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/command "'$VLC_TOGGLE'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom11/name "'VLC Toggle'"
 
 # 12) Lock screen
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/binding "'<Alt>l'"
@@ -774,12 +804,12 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom12/name "'Lock Screen'"
 
 # 13) Prev workspace
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/binding "'<Super><Alt>Left'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/binding "'<Super><Alt>Up'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/command "'$WSPREV'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom13/name "'Previous Workspace'"
 
 # 14) Next workspace
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/binding "'<Super><Alt>Right'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/binding "'<Super><Alt>Down'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/command "'$WSNEXT'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom14/name "'Next Workspace'"
 
@@ -793,10 +823,10 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/command "'$KKENP'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom16/name "'Start KKENP'"
 
-# 17) Notes Manager
+# 17) Notes (Anotes)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/binding "'<Alt>n'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/command "'anotes -M'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/name "'Notes Manager'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/command "'anotes'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom17/name "'Notes (Anotes)'"
 
 # 18) Clipboard (CopyQ)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom18/binding "'<Super>v'"
@@ -808,48 +838,145 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/command "'$BLUE_TOGGLE'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom19/name "'Bluetooth Toggle'"
 
-# 20) Mullvad toggle
+# 20) Mullvad (VPN)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/binding "'<Alt>F12'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/command "'osc-mullvad toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/command "'$MULLVAD toggle'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom20/name "'Mullvad Toggle'"
 
 # 21) Gnome Start
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/binding "'<Super><Alt>Return'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'$SEM_SUMO launch --daily'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/command "'$SEM_SUMO launch --daily -all'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom21/name "'Gnome Start'"
 
-# 22) Screenshot UI
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'<Super><Shift>s'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'gnome-screenshot -i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Screenshot Tool'"
+# 22) Column Width Cycle (Niri: Mod+R)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/binding "'<Super>r'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/command "'$GNOME_COLWIDTH'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom22/name "'Column Width Cycle'"
 
-# 23) MPV Move
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Alt><Shift>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$MPV_MGR move'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'MPV Move Window'"
+# 23) Column Width 80% (Niri: Mod+Shift+R)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/binding "'<Super><Shift>r'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/command "'$GNOME_COLWIDTH set 0.8'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom23/name "'Column Width 80%'"
 
-# 24) MPV Resize
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Alt><Ctrl>i'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$MPV_MGR resize'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'MPV Resize Center'"
+# 24) Column Width Toggle (0.8 <-> 1.0) (Niri: Mod+M)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/binding "'<Super>m'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/command "'$GNOME_COLWIDTH toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom24/name "'Column Width Toggle'"
 
-# 25) Play YouTube (clipboard)
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>y'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/command "'$MPV_MGR play-yt'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/name "'Play YouTube from Clipboard'"
+# 25) MPV Playback (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/binding "'<Alt>u'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/command "'$MPV_MGR playback'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom25/name "'MPV Playback'"
 
-# 26) Save YouTube
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/binding "'<Alt><Shift>y'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/command "'$MPV_MGR save-yt'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/name "'Download YouTube Video'"
+# 26) MPV Play YouTube (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/binding "'<Super><Ctrl>y'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/command "'$MPV_MGR play-yt'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom26/name "'MPV Play YouTube'"
 
-# 27) MPV Toggle
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/binding "'<Alt>p'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'$MPV_MGR playback'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/name "'MPV Toggle Playback'"
+# 27) MPV Stick (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/binding "'<Super><Ctrl>F9'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/command "'$MPV_MGR stick'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom27/name "'MPV Stick'"
 
-# 28..36) Workspaces 1..9 (history switcher) - REMOVED (Restored standard GNOME behavior)
-# The slots 28..36 are now free or reserved.
+# 28) MPV Move (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/binding "'<Super><Ctrl>F10'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/command "'$MPV_MGR move'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom28/name "'MPV Move'"
+
+# 29) MPV Save YouTube (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/binding "'<Super><Ctrl>F11'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/command "'$MPV_MGR save-yt'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom29/name "'MPV Save YouTube'"
+
+# 30) MPV Wallpaper (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/binding "'<Super><Ctrl>F12'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/command "'$MPV_MGR wallpaper'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom30/name "'MPV Wallpaper'"
+
+# 31) Sticky Toggle (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/binding "'<Super><Ctrl>s'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/command "'$NSTICKY_TOGGLE'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/name "'Sticky Toggle'"
+
+# 32) MPC Toggle (Niri-style)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/binding "'<Alt><Ctrl>e'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/command "'$MPC_CONTROL toggle'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom32/name "'MPC Toggle'"
+
+# 33) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom33/name "'(unused)'"
+
+# 34) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom34/name "'(unused)'"
+
+# 35) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom35/name "'(unused)'"
+
+# 36) (unused)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/binding "''"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/command "'true'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom36/name "'(unused)'"
+
+# 44) Here: Kenp
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom44/binding "'<Alt>1'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom44/command "'$GNOME_SET here Kenp'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom44/name "'Here: Kenp'"
+
+# 45) Here: TmuxKenp
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom45/binding "'<Alt>2'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom45/command "'$GNOME_SET here TmuxKenp'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom45/name "'Here: TmuxKenp'"
+
+# 46) Here: Ai
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom46/binding "'<Alt>3'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom46/command "'$GNOME_SET here Ai'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom46/name "'Here: Ai'"
+
+# 47) Here: CompecTA
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom47/binding "'<Alt>4'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom47/command "'$GNOME_SET here CompecTA'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom47/name "'Here: CompecTA'"
+
+# 48) Here: WebCord
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom48/binding "'<Alt>5'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom48/command "'$GNOME_SET here WebCord'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom48/name "'Here: WebCord'"
+
+# 49) Here: Telegram
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom49/binding "'<Alt>6'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom49/command "'$GNOME_SET here org.telegram.desktop'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom49/name "'Here: Telegram'"
+
+# 50) Here: YouTube
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom50/binding "'<Alt>7'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom50/command "'$GNOME_SET here brave-youtube.com__-Default'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom50/name "'Here: YouTube'"
+
+# 51) Here: Spotify
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom51/binding "'<Alt>8'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom51/command "'$GNOME_SET here spotify'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom51/name "'Here: Spotify'"
+
+# 52) Here: Ferdium
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom52/binding "'<Alt>9'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom52/command "'$GNOME_SET here ferdium'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom52/name "'Here: Ferdium'"
+
+# 53) Here: ALL
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom53/binding "'<Alt>0'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom53/command "'$GNOME_SET here all'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom53/name "'Here: ALL'"
+
+# 54) Arrange Windows (Go)
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom54/binding "'<Super><Alt>0'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom54/command "'$GNOME_SET go'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom54/name "'Arrange Windows (Go)'"
 
 # 37) Shutdown
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom37/binding "'<Ctrl><Alt><Shift>s'"
@@ -872,7 +999,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom40/name "'Power Menu (with confirmation)'"
 
 # 41) GKR
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/binding "'<Super><Ctrl>F12'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/binding "'<Super><Ctrl><Alt>F12'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/command "'$GKR'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom41/name "'GNOME GKR'"
 
@@ -942,8 +1069,8 @@ dconf write /org/gnome/shell/extensions/tilingshell/enable-tiling-system "true"
 dconf write /org/gnome/shell/extensions/tilingshell/auto-tile "true"
 dconf write /org/gnome/shell/extensions/tilingshell/snap-assist "true"
 dconf write /org/gnome/shell/extensions/tilingshell/default-layout "'split'"
-dconf write /org/gnome/shell/extensions/tilingshell/inner-gaps "4"
-dconf write /org/gnome/shell/extensions/tilingshell/outer-gaps "4"
+dconf write /org/gnome/shell/extensions/tilingshell/inner-gaps "12"
+dconf write /org/gnome/shell/extensions/tilingshell/outer-gaps "12"
 
 # Window Suggestions
 dconf write /org/gnome/shell/extensions/tilingshell/enable-window-suggestions "true"
@@ -960,7 +1087,7 @@ dconf write /org/gnome/shell/extensions/tilingshell/tile-right "['<Super><Shift>
 dconf write /org/gnome/shell/extensions/tilingshell/tile-up "['<Super><Shift>Up', '<Super><Shift>k']"
 dconf write /org/gnome/shell/extensions/tilingshell/tile-down "['<Super><Shift>Down', '<Super><Shift>j']"
 dconf write /org/gnome/shell/extensions/tilingshell/toggle-tiling "@as []"
-dconf write /org/gnome/shell/extensions/tilingshell/toggle-floating "['<Super>g']"
+dconf write /org/gnome/shell/extensions/tilingshell/toggle-floating "['<Super>g', '<Super><Ctrl>BackSpace']"
 
 # Focus keybindings
 dconf write /org/gnome/shell/extensions/tilingshell/focus-left "['<Super>Left', '<Super>h']"
@@ -979,7 +1106,7 @@ dconf write /org/gnome/shell/extensions/tilingshell/prev-layout "['<Super><Shift
 
 # Visual settings
 dconf write /org/gnome/shell/extensions/tilingshell/show-border "true"
-dconf write /org/gnome/shell/extensions/tilingshell/border-width "2"
+dconf write /org/gnome/shell/extensions/tilingshell/border-width "3"
 dconf write /org/gnome/shell/extensions/tilingshell/enable-animations "true"
 dconf write /org/gnome/shell/extensions/tilingshell/animation-duration "150"
 dconf write /org/gnome/shell/extensions/tilingshell/resize-step "50"
@@ -1110,10 +1237,12 @@ echo "   🚪 Ctrl+Alt+q       → Logout"
 echo "   ⚙️  Ctrl+Alt+p       → Power Menu"
 echo ""
 echo "🏢 Workspace Yönetimi:"
-echo "   ← Super+Alt+Left   → Previous Workspace"
-echo "   → Super+Alt+Right  → Next Workspace"
-echo "   ⬆️ Super+Shift+↑    → Move Window Up"
-echo "   ⬇️ Super+Shift+↓    → Move Window Down"
+echo "   ↑ Super+Alt+Up     → Previous Workspace"
+echo "   ↓ Super+Alt+Down   → Next Workspace"
+echo "   ⬆️ Super+k          → Workspace Up"
+echo "   ⬇️ Super+j          → Workspace Down"
+echo "   ⬆️ Super+PageUp     → Move Window Up"
+echo "   ⬇️ Super+PageDown   → Move Window Down"
 echo ""
 echo "⚠️  Eğer bazı komutlar çalışmazsa:"
 echo "   • O uygulamaların yüklü olduğundan emin olun"

@@ -53,41 +53,56 @@ let
   customKeybindings = [
     { name = "Terminal"; command = "kitty"; binding = "<Super>t"; }
     { name = "Browser"; command = "brave"; binding = "<Super>b"; }
-    { name = "Terminal File Manager (Floating)"; command = "kitty --class floating-terminal -e yazi"; binding = "<Super>e"; }
+    { name = "Dropdown Terminal"; command = "osc-ndrop kitty --class dropdown-terminal"; binding = "<Super>Return"; }
     { name = "Open Nemo File Manager"; command = "nemo"; binding = "<Super><Ctrl>f"; }
-    { name = "Terminal File Manager (Yazi)"; command = "kitty yazi"; binding = "<Alt>f"; }
-    { name = "Open Walker"; command = "walker"; binding = "<Super>space"; }
+    { name = "Terminal File Manager (Yazi)"; command = "kitty -e yazi"; binding = "<Alt><Ctrl>f"; }
+    { name = "Rofi Launcher"; command = "rofi-launcher"; binding = "<Alt>space"; }
+    { name = "Walk Launcher"; command = "walk"; binding = "<Super><Ctrl>space"; }
+    { name = "Sticky Toggle"; command = "nsticky-toggle"; binding = "<Super><Ctrl>s"; }
     { name = "Switch Audio Output"; command = "osc-soundctl switch"; binding = "<Alt>a"; }
     { name = "Switch Microphone"; command = "osc-soundctl switch-mic"; binding = "<Alt><Ctrl>a"; }
     { name = "Spotify Toggle"; command = "osc-spotify"; binding = "<Alt>e"; }
     { name = "Spotify Next"; command = "osc-spotify next"; binding = "<Alt><Ctrl>n"; }
     { name = "Spotify Previous"; command = "osc-spotify prev"; binding = "<Alt><Ctrl>b"; }
-    { name = "MPV Start/Focus"; command = "gnome-mpv-manager start"; binding = "<Alt>i"; }
+    { name = "MPC Toggle"; command = "mpc-control toggle"; binding = "<Alt><Ctrl>e"; }
+    { name = "VLC Toggle"; command = "vlc-toggle"; binding = "<Alt>i"; }
     { name = "Lock Screen"; command = "loginctl lock-session"; binding = "<Alt>l"; }
-    { name = "Previous Workspace"; command = "ws-prev"; binding = "<Super><Alt>Left"; }
-    { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Right"; }
+    { name = "Previous Workspace"; command = "ws-prev"; binding = "<Super><Alt>Up"; }
+    { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Down"; }
+    { name = "Here: Kenp"; command = "gnome-set here Kenp"; binding = "<Alt>1"; }
+    { name = "Here: TmuxKenp"; command = "gnome-set here TmuxKenp"; binding = "<Alt>2"; }
+    { name = "Here: Ai"; command = "gnome-set here Ai"; binding = "<Alt>3"; }
+    { name = "Here: CompecTA"; command = "gnome-set here CompecTA"; binding = "<Alt>4"; }
+    { name = "Here: WebCord"; command = "gnome-set here WebCord"; binding = "<Alt>5"; }
+    { name = "Here: Telegram"; command = "gnome-set here org.telegram.desktop"; binding = "<Alt>6"; }
+    { name = "Here: YouTube"; command = "gnome-set here brave-youtube.com__-Default"; binding = "<Alt>7"; }
+    { name = "Here: Spotify"; command = "gnome-set here spotify"; binding = "<Alt>8"; }
+    { name = "Here: Ferdium"; command = "gnome-set here ferdium"; binding = "<Alt>9"; }
+    { name = "Here: ALL"; command = "gnome-set here all"; binding = "<Alt>0"; }
+    { name = "Arrange Windows (Go)"; command = "gnome-set go"; binding = "<Super><Alt>0"; }
     { name = "Open Discord"; command = "webcord --enable-features=UseOzonePlatform --ozone-platform=wayland"; binding = "<Super><Shift>d"; }
     { name = "Start KKENP"; command = "start-kkenp"; binding = "<Alt>t"; }
-    { name = "Notes Manager"; command = "anotes -M"; binding = "<Alt>n"; }
+    { name = "Notes (Anotes)"; command = "anotes"; binding = "<Alt>n"; }
     { name = "Clipboard Manager"; command = "copyq toggle"; binding = "<Super>v"; }
     { name = "Bluetooth Toggle"; command = "bluetooth_toggle"; binding = "F10"; }
     { name = "Mullvad Toggle"; command = "osc-mullvad toggle"; binding = "<Alt>F12"; }
-    { name = "Gnome Start"; command = "semsumo launch --daily"; binding = "<Super><Alt>Return"; }
-    { name = "Screenshot Full Save"; command = "screenshot sf"; binding = "Print"; }
-    { name = "Screenshot Region Save"; command = "screenshot rf"; binding = "<Shift>Print"; }
+    { name = "SemsuMo Daily"; command = "semsumo launch --daily -all"; binding = "<Super><Alt>Return"; }
+    { name = "Column Width Cycle"; command = "${config.home.profileDirectory}/bin/gnome-column-width"; binding = "<Super>r"; }
+    { name = "Column Width 80%"; command = "${config.home.profileDirectory}/bin/gnome-column-width set 0.8"; binding = "<Super><Shift>r"; }
+    { name = "Column Width Toggle"; command = "${config.home.profileDirectory}/bin/gnome-column-width toggle"; binding = "<Super>m"; }
 
-    { name = "MPV Move Window"; command = "gnome-mpv-manager move"; binding = "<Alt><Shift>i"; }
-    { name = "MPV Resize Center"; command = "gnome-mpv-manager resize"; binding = "<Alt><Ctrl>i"; }
-    { name = "Play YouTube from Clipboard"; command = "gnome-mpv-manager play-yt"; binding = "<Alt>y"; }
-    { name = "Download YouTube Video"; command = "gnome-mpv-manager save-yt"; binding = "<Alt><Shift>y"; }
-    { name = "MPV Toggle Playback"; command = "gnome-mpv-manager playback"; binding = "<Alt>p"; }
+    { name = "MPV Playback"; command = "mpv-manager playback"; binding = "<Alt>u"; }
+    { name = "MPV Play YouTube"; command = "mpv-manager play-yt"; binding = "<Super><Ctrl>y"; }
+    { name = "MPV Stick"; command = "mpv-manager stick"; binding = "<Super><Ctrl>F9"; }
+    { name = "MPV Move"; command = "mpv-manager move"; binding = "<Super><Ctrl>F10"; }
+    { name = "MPV Save YouTube"; command = "mpv-manager save-yt"; binding = "<Super><Ctrl>F11"; }
+    { name = "MPV Wallpaper"; command = "mpv-manager wallpaper"; binding = "<Super><Ctrl>F12"; }
     
     { name = "Shutdown Computer"; command = "gnome-session-quit --power-off --no-prompt"; binding = "<Ctrl><Alt><Shift>s"; }
     { name = "Restart Computer"; command = "gnome-session-quit --reboot --no-prompt"; binding = "<Ctrl><Alt>r"; }
     { name = "Logout"; command = "gnome-session-quit --logout --no-prompt"; binding = "<Ctrl><Alt>q"; }
     { name = "Power Menu"; command = "gnome-session-quit --power-off"; binding = "<Ctrl><Alt>p"; }
-    { name = "GNOME GKR"; command = "gnome-kr-fix"; binding = "<Super><Ctrl>F12"; }
-    { name = "WalkerS"; command = "walk"; binding = "<Super><Ctrl>space"; }
+    { name = "GNOME GKR"; command = "gnome-kr-fix"; binding = "<Super><Ctrl><Alt>F12"; }
     { name = "OSC Reboot"; command = "osc-safe-reboot"; binding = "<Super>BackSpace"; }
   ];
 
@@ -137,7 +152,10 @@ in
       "org/gnome/desktop/wm/keybindings" = {
         close = ["<Super>q"];
         toggle-fullscreen = ["<Super>f"];
-        toggle-maximized = ["<Super>m"];
+        # Keep <Super>m free for gnome-column-width toggle (Niri-like 0.8 <-> 1.0)
+        toggle-maximized = ["<Alt>g" "<Super>Up"];
+        maximize = [];
+        activate-window-menu = [];
         minimize = [];
         show-desktop = [];
 
@@ -169,21 +187,25 @@ in
         move-to-workspace-8 = ["<Super><Shift>8"];
         move-to-workspace-9 = ["<Super><Shift>9"];
 
-        # Niri-like workspace navigation (vertical)
-        switch-to-workspace-up = ["<Super>Up" "<Super>k"];
-        switch-to-workspace-down = ["<Super>Down" "<Super>j"];
+        # Workspace navigation (VERTICAL like Niri: use j/k; avoids <Super>Up conflict)
+        switch-to-workspace-left = [];
+        switch-to-workspace-right = [];
+        switch-to-workspace-up = ["<Super>k"];
+        switch-to-workspace-down = ["<Super>j"];
 
-        # Niri-like "move window to workspace up/down"
+        # Move window between workspaces (VERTICAL like Niri: PageUp/PageDown)
+        move-to-workspace-left = [];
+        move-to-workspace-right = [];
         move-to-workspace-up = ["<Super>Page_Up"];
         move-to-workspace-down = ["<Super>Page_Down"];
       };
 
       # --- Shell Keybindings (Niri-like) ---
       "org/gnome/shell/keybindings" = {
-        toggle-application-view = ["<Super>d"];
+        toggle-application-view = ["<Super>d" "<Super>a"];
         toggle-message-tray = ["<Super>n"];
         toggle-overview = ["<Super><Alt>o"];
-        show-screenshot-ui = ["<Super>Print"];
+        show-screenshot-ui = ["Print"];
 
         # Disable default Super+[1-9] app shortcuts (use for workspaces instead)
         switch-to-application-1 = [];
@@ -199,6 +221,8 @@ in
   
       # --- Shell Extensions ---
       "org/gnome/shell" = {
+        # Needed for `org.gnome.Shell.Eval` (used by gnome-column-width / gnome-set).
+        development-tools = true;
         enabled-extensions = [
           "alt-tab-scroll-workaround@lucasresck.github.io"
         	"audio-switch-shortcuts@dbatis.github.com"
@@ -211,6 +235,7 @@ in
         	"disable-three-finger-gestures-redux@cygnusx-1-org.github.com"
         	"disable-workspace-animation@ethnarque"
         	"extension-list@tu.berry"
+          "gnome-niri-parity@kenan"
         	"gsconnect@andyholmes.github.io"
         	"headphone-internal-switch@gustavomalta.github.com"
         	"just-perfection-desktop@just-perfection"
@@ -224,6 +249,7 @@ in
         	"tilingshell@ferrarodomenico.com"
         	"tophat@fflewddur.github.io"
         	"trayIconsReloaded@selfmade.pl"
+          "vertical-workspaces@G-dH.github.com"
         	"veil@dagimg-dot"
         	"vpn-indicator@fthx"
         	"weatheroclock@CleoMenezesJr.github.io"
@@ -266,16 +292,16 @@ in
   
       # --- Tiling Shell ---
       "org/gnome/shell/extensions/tilingshell" = {
-        border-color = colors.mauve;
-        active-window-border-color = colors.lavender;
+        border-color = colors.surface1;
+        active-window-border-color = "#00BCD4";
         enable-tiling-system = true;
         auto-tile = true;
         snap-assist = true;
         default-layout = "split";
-        inner-gaps = 4;
-        outer-gaps = 4;
+        inner-gaps = 12;
+        outer-gaps = 12;
         show-border = true;
-        border-width = 2;
+        border-width = 3;
         enable-animations = true;
         
         # Keybindings
@@ -284,7 +310,7 @@ in
         tile-up = ["<Super><Shift>Up" "<Super><Shift>k"];
         tile-down = ["<Super><Shift>Down" "<Super><Shift>j"];
         toggle-tiling = [];
-        toggle-floating = ["<Super>g"];
+        toggle-floating = ["<Super>g" "<Super><Ctrl>BackSpace"];
         
         # Focus
         focus-left = ["<Super>Left" "<Super>h"];
@@ -295,6 +321,12 @@ in
         # Layout switching (avoid conflict with window switcher)
         next-layout = ["<Super><Ctrl>Tab"];
         prev-layout = ["<Super><Shift><Ctrl>Tab"];
+      };
+
+      # --- V-Shell (Vertical Workspaces) ---
+      # 0 = Left (vertical), 1 = Right (vertical), 4 = Hide (vertical)
+      "org/gnome/shell/extensions/vertical-workspaces" = {
+        ws-thumbnails-position = 1;
       };
   
       # --- Space Bar ---
@@ -476,14 +508,25 @@ in
       # --- Auto Move Windows ---
       "org/gnome/shell/extensions/auto-move-windows" = {
         application-list = [
+          "brave-kenp.desktop:1"
           "brave-browser.desktop:1"
           "kitty.desktop:2"
+          "brave-ai.desktop:3"
+          "brave-compecta.desktop:4"
           "discord.desktop:5"
           "webcord.desktop:5"
-          "whatsie.desktop:9"
-          "ferdium.desktop:9"
-          "spotify.desktop:8"
+          "audacious.desktop:5"
+          "org.telegram.desktop.desktop:6"
+          "vlc.desktop:6"
+          "remote-viewer.desktop:6"
+          "transmission-gtk.desktop:7"
+          "org.keepassxc.KeePassXC.desktop:7"
+          "brave-youtube.com__-Default.desktop:7"
           "brave-agimnkijcaahngcdmfeangaknmldooml-Default.desktop:7"
+          "spotify.desktop:8"
+          "ferdium.desktop:9"
+          "com.rtosta.zapzap.desktop:9"
+          "whatsie.desktop:9"
         ];
       };
   
@@ -569,6 +612,34 @@ in
     } // customBindingsDconf; # Merge generated custom keybindings
   
     # ==============================================================================
+    # DESKTOP ENTRIES (for Auto Move Windows rules)
+    # ==============================================================================
+    # GNOME's auto-move-windows extension uses .desktop IDs. These profile-specific
+    # entries let GNOME reliably map Brave windows to "Ai"/"CompecTA" via
+    # StartupWMClass, matching the Niri workspace rules.
+    xdg.desktopEntries.brave-ai = {
+      name = "Brave (Ai)";
+      genericName = "Web Browser";
+      categories = [ "Network" "WebBrowser" ];
+      terminal = false;
+      exec = "profile_brave Ai --separate --restore-last-session %U";
+      settings = {
+        StartupWMClass = "Ai";
+      };
+    };
+
+    xdg.desktopEntries.brave-compecta = {
+      name = "Brave (CompecTA)";
+      genericName = "Web Browser";
+      categories = [ "Network" "WebBrowser" ];
+      terminal = false;
+      exec = "profile_brave CompecTA --separate --restore-last-session %U";
+      settings = {
+        StartupWMClass = "CompecTA";
+      };
+    };
+
+    # ==============================================================================
     # GNOME AUTOSTART ENTRIES
     # ==============================================================================
     # Run gnome-monitor-set only for GNOME sessions using the XDG autostart
@@ -582,5 +653,13 @@ in
       OnlyShowIn=GNOME;
       X-GNOME-Autostart-enabled=true
     '';
+
+    # ==============================================================================
+    # LOCAL EXTENSIONS
+    # ==============================================================================
+    home.file.".local/share/gnome-shell/extensions/gnome-niri-parity@kenan" = {
+      source = ./extensions + "/gnome-niri-parity@kenan";
+      recursive = true;
+    };
   };
 }

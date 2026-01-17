@@ -38,7 +38,7 @@ HYPR_SET="$(
 
 if [[ -n "${NIRI_SOCKET:-}" ]] || [[ "${XDG_CURRENT_DESKTOP:-}" == "niri" ]] || [[ "${XDG_SESSION_DESKTOP:-}" == "niri" ]]; then
   if [[ -n "${NIRI_SET:-}" ]]; then
-    exec "${NIRI_SET}" workspace-monitor "$@"
+    exec "${NIRI_SET}" flow "$@"
   else
     echo "niri-set not found in PATH" >&2
     exit 1

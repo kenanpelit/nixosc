@@ -66,7 +66,6 @@ let
     niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
     mpvManager = "${config.home.profileDirectory}/bin/mpv-manager";
-    oscHere = "${config.home.profileDirectory}/bin/osc-here";
   };
 
   # ---------------------------------------------------------------------------
@@ -314,8 +313,7 @@ in
               niri msg action spawn -- kitty --class "clip-preview" bash -c "wl-paste | less"
             fi
           '')
-        ]
-        ++ lib.optional (builtins.hasAttr "xwayland-satellite" pkgs) pkgs."xwayland-satellite";
+        ];
 
       # Helper file for niri-arrange-windows script (still needs to be a file)
       xdg.configFile."niri/dms/workspace-rules.tsv".text = rulesConfig.arrangeRulesTsv;

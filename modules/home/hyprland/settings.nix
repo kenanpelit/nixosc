@@ -34,9 +34,10 @@ let
     (map (n: mkWorkspaceEntry { monitor = primaryMonitorDesc; index = n; isDefault = n == 1; }) (lib.range 1 6))
     ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitorDesc; index = n; isDefault = n == 7; }) (lib.range 7 9))
     ++ [
-      # Smart Gaps & Borders - No gaps/borders/shadow/rounding when only one window is present
-      "w[tv1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
-      "f[1], gapsout:0, gapsin:0, bordersize:0, rounding:0, shadow:0"
+      # Smart gaps (single / maximized):
+      # Keep borders so 0.8-width single windows still have a visible focus outline.
+      "w[tv1], gapsout:0, gapsin:0, rounding:0, shadow:0"
+      "f[1], gapsout:0, gapsin:0, rounding:0, shadow:0"
 
       # Smart borders - Disabled to show borders always
       # "w[v1]s[false], bordersize:0, rounding:false"
@@ -58,7 +59,7 @@ in
     gaps_in = 5;
     gaps_out = 10;
     border_size = 2;
-    "col.active_border" = "${mkColor colors.teal.hex 1.0} ${mkColor colors.sky.hex 1.0} 45deg";
+    "col.active_border" = activeBorder;
     "col.inactive_border" = inactiveBorder;
     layout = "scrolling";
     allow_tearing = false;
@@ -69,9 +70,9 @@ in
   
   plugin = {
     hyprscrolling = {
-      column_width = 0.6;
+      column_width = 0.8;
       fullscreen_on_one_column = false;
-      explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
+      explicit_column_widths = "0.30, 0.45, 0.60, 0.75, 1.0";
       focus_fit_method = 0; # center
       follow_focus = true;
       follow_debounce_ms = 0;

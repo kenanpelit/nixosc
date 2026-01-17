@@ -1,0 +1,166 @@
+#![enable(implicit_some)]
+#![enable(unwrap_newtypes)]
+#![enable(unwrap_variant_newtypes)]
+(
+    // -- KENP THEME (Tokyo Night Edition) --
+    // Layout: Ashen
+    // Colors: Tokyo Night
+    // Created for Kenan
+
+    default_album_art_path: None,
+    show_song_table_header: true,
+    draw_borders: true,
+    format_tag_separator: " | ",
+    
+    // Layout Widths
+    browser_column_widths: [20, 38, 42],
+    
+    // -- Global Colors (Tokyo Night) --
+    background_color: "#1a1b26",        // Tokyo Night Background
+    text_color: "#c0caf5",              // Foreground
+    header_background_color: "#16161e", // Darker Black for Header
+    modal_background_color: "#1f2335",  // Slightly lighter background
+    
+    // -- Preview / Search --
+    preview_label_style: (fg: "#bb9af7"), // Magenta
+    preview_metadata_group_style: (fg: "#7dcfff", modifiers: "Bold"), // Cyan
+
+    // -- Tab Bar --
+    tab_bar: (
+        enabled: true,
+        // Active Tab: Dark text on Blue background
+        active_style: (fg: "#15161e", bg: "#7aa2f7", modifiers: "Bold"), 
+        inactive_style: (fg: "#565f89"), // Comment Grey
+    ),
+
+    // -- Selection & Highlights --
+    // Highlighted Text: Orange
+    highlighted_item_style: (fg: "#ff9e64", modifiers: "Bold"), 
+    // Current Cursor: Dark on Blue
+    current_item_style: (fg: "#15161e", bg: "#7aa2f7", modifiers: "Bold"), 
+    
+    // -- Borders --
+    borders_style: (fg: "#7aa2f7"), // Blue Borders
+    highlight_border_style: (fg: "#bb9af7"), // Magenta Highlight Borders
+
+    // -- Symbols --
+    symbols: (song: "󰎇", dir: "󰉋", playlist: "󰎵", marker: " ", ellipsis: "..."),
+
+    // -- Progress Bar --
+    progress_bar: (
+        symbols: ["[", "-", ">", " ", "]"],
+        track_style: (fg: "#414868"),       // Terminal Black/Grey
+        elapsed_style: (fg: "#7aa2f7"),     // Blue
+        thumb_style: (fg: "#bb9af7", bg: "#1a1b26"), // Magenta Thumb
+    ),
+
+    // -- Scrollbar --
+    scrollbar: (
+        symbols: ["│", "█", "▲", "▼"],
+        track_style: (fg: "#414868"),
+        ends_style: (),
+        thumb_style: (fg: "#7aa2f7"), // Blue
+    ),
+
+    // -- Song Table --
+    song_table_format: [
+        (
+            prop: (kind: Property(Artist),
+                default: (kind: Text("Unknown"))
+            ),
+            width: "20%",
+        ),
+        (
+            prop: (kind: Property(Title),
+                default: (kind: Text("Unknown"))
+            ),
+            width: "35%",
+        ),
+        (
+            prop: (kind: Property(Album), style: (fg: "#787c99"), // Subtext/Grey
+                default: (kind: Text("Unknown Album"), style: (fg: "#787c99"))
+            ),
+            width: "30%",
+        ),
+        (
+            prop: (kind: Property(Duration),
+                default: (kind: Text("-"))
+            ),
+            width: "15%",
+            alignment: Right,
+        ),
+    ],
+
+    // -- Header Area --
+    header: (
+        rows: [
+            (
+                left: [
+                    // Brackets Magenta, Status Blue
+                    (kind: Text("["), style: (fg: "#bb9af7", modifiers: "Bold")),
+                    (kind: Property(Status(State)), style: (fg: "#7aa2f7", modifiers: "Bold")),
+                    (kind: Text("]"), style: (fg: "#bb9af7", modifiers: "Bold"))
+                ],
+                center: [
+                    (kind: Property(Song(Title)), style: (modifiers: "Bold"),
+                        default: (kind: Text("No Song"), style: (modifiers: "Bold"))
+                    )
+                ],
+                right: [
+                    (kind: Property(Widget(Volume)), style: (fg: "#7dcfff")) // Cyan Volume
+                ]
+            ),
+            (
+                left: [
+                    (kind: Property(Status(Elapsed))),
+                    (kind: Text(" / ")),
+                    (kind: Property(Status(Duration))),
+                    (kind: Text(" (")),
+                    (kind: Property(Status(Bitrate))),
+                    (kind: Text(" kbps)"))
+                ],
+                center: [
+                    (kind: Property(Song(Artist)), style: (fg: "#ff9e64", modifiers: "Bold"), // Orange Artist
+                        default: (kind: Text("Unknown"), style: (fg: "#ff9e64", modifiers: "Bold"))
+                    ),
+                    (kind: Text(" - ")),
+                    (kind: Property(Song(Album)),
+                        default: (kind: Text("Unknown Album"))
+                    )
+                ],
+                right: [
+                    (
+                        kind: Property(Widget(States(
+                            active_style: (fg: "#9ece6a", modifiers: "Bold"), // Green when active
+                            separator_style: (fg: "#565f89"))) // Grey separator
+                        ),
+                        style: (fg: "#565f89") // Inactive Grey
+                    ),
+                ]
+            ),
+        ],
+    ),
+
+    // -- Browser --
+    browser_song_format: [
+        (
+            kind: Group([
+                (kind: Property(Track)),
+                (kind: Text(" ")),
+            ])
+        ),
+        (
+            kind: Group([
+                (kind: Property(Artist)),
+                (kind: Text(" - ")),
+                (kind: Property(Title)),
+            ]),
+            default: (kind: Property(Filename))
+        ),
+    ],
+
+    // -- Cava Visualizer --
+    cava: (
+        bar_color: Single("#7aa2f7"), // Blue
+    )
+)
