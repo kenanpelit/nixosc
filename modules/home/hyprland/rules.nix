@@ -27,6 +27,15 @@
       no_focus = true;
     }
     {
+      name = "xwaylandvideobridge-hidden";
+      "match:class" = "^(xwaylandvideobridge)$";
+      float = true;
+      no_focus = true;
+      opacity = "0.0 override 0.0 override";
+      size = "1 1";
+      move = "0 0";
+    }
+    {
       name = "context-menu-noshadow";
       "match:class" = "^()$";
       "match:title" = "^()$";
@@ -57,23 +66,17 @@
   # --- Media & Graphics Rules ---
   mediaRules = [
     {
-      name = "mpv-pip";
+      name = "mpv-float";
       "match:class" = "^(mpv)$";
       float = true;
-      size = "(monitor_w*0.19) (monitor_h*0.19)";
-      move = "(monitor_w*0.01) (monitor_h*0.77)";
+      size = "640 360";
+      move = "(monitor_w-640-32) 96";
       opacity = "1.0 override 1.0 override";
-      pin = true;
-      idle_inhibit = "focus";
     }
     {
       name = "vlc-workspace";
       "match:class" = "^(vlc)$";
-      float = true;
-      size = "800 1250";
-      move = "1700 90";
-      workspace = 6;
-      pin = true;
+      workspace = "6 silent";
     }
     {
       name = "imv-float";
@@ -88,21 +91,17 @@
       opacity = "1.0 override 1.0 override";
     }
     {
-      name = "audacious-float";
-      "match:class" = "^(audacious)$";
-      float = true;
-    }
-    {
       name = "audacious-workspace";
-      "match:class" = "^(Audacious)$";
-      workspace = 5;
+      "match:class" = "^(audacious|Audacious)$";
+      workspace = "5 silent";
     }
     {
       name = "pip-window";
-      "match:title" = "^(Picture-in-Picture)$";
+      "match:title" = "(?i)^picture[- ]in[- ]picture$";
       float = true;
-      pin = true;
       opacity = "1.0 override 1.0 override";
+      size = "640 360";
+      move = "(monitor_w-640-32) 96";
     }
   ];
 
@@ -206,10 +205,10 @@
     }
     {
       name = "dropdown-terminal";
-      "match:class" = "^(dropdown)$";
+      "match:class" = "^(dropdown|dropdown-terminal)$";
       float = true;
-      size = "(monitor_w*0.99) (monitor_h*0.50)";
-      move = "(monitor_w*0.005) (monitor_h*0.03)";
+      size = "(monitor_w*0.80) 600";
+      move = "(monitor_w*0.10) 20";
       workspace = "special:dropdown";
     }
     {
@@ -264,6 +263,12 @@
       workspace = "2 silent";
     }
     {
+      name = "tmux-terminals";
+      "match:class" = "^(kitty|org.wezfurlong.wezterm)$";
+      "match:title" = "^(Tmux)$";
+      workspace = "2 silent";
+    }
+    {
       name = "tmux-kenp";
       "match:class" = "^(TmuxKenp)$";
       workspace = "2 silent";
@@ -308,7 +313,7 @@
     }
     {
       name = "transmission";
-      "match:class" = "^(com.transmissionbt.transmission.*)$";
+      "match:class" = "^(transmission|com.transmissionbt.transmission.*)$";
       workspace = "7 silent";
     }
     {
@@ -319,7 +324,7 @@
     # Entertainment / VM
     {
       name = "spotify-app";
-      "match:class" = "^(Spotify|spotify)$";
+      "match:class" = "^(Spotify|spotify|com.spotify.Client)$";
       workspace = "8 silent";
     }
     {
@@ -338,20 +343,55 @@
   uiRules = [
     # Auth & Secrets
     {
-      name = "ente-auth-float";
-      "match:class" = "^(io.ente.auth)$";
+      name = "polkit-agent";
+      "match:class" = "^(polkit-gnome-authentication-agent-1)$";
       float = true;
-      size = "400 900";
+      size = "520 240";
       center = true;
     }
     {
       name = "gcr-prompter";
       "match:class" = "^(gcr-prompter)$";
       float = true;
+      size = "600 230";
+      move = "(monitor_w*0.5-300) 96";
+    }
+
+    # Utilities / Side panels (Niri-like)
+    {
+      name = "sidepanel-utils";
+      "match:class" = "^(clipse|org.pulseaudio.pavucontrol|pavucontrol|io.ente.auth)$";
+      float = true;
+      size = "(monitor_w*0.25) (monitor_h*0.80)";
+      move = "(monitor_w*0.75-32) 144";
+    }
+
+    # Apps
+    {
+      name = "calculator";
+      "match:class" = "^(org.gnome.Calculator|kcalc)$";
+      float = true;
+      size = "400 600";
+      move = "(monitor_w*0.5-200) 100";
+    }
+    {
+      name = "decibels";
+      "match:class" = "^(org.gnome.Decibels)$";
+      float = true;
+      size = "640 360";
+      move = "(monitor_w-640-32) 96";
+      opacity = "0.5 0.5";
+    }
+    {
+      name = "hyprland-share-picker";
+      "match:class" = "^(hyprland-share-picker)$";
+      float = true;
       center = true;
-      pin = true;
-      animation = "fade";
-      opacity = "0.95 0.95";
+    }
+    {
+      name = "quickshell-float";
+      "match:class" = "^(org.quickshell)$";
+      float = true;
     }
     # Audio / Network Controls
     {
@@ -362,17 +402,10 @@
       move = "40 55%";
     }
     {
-      name = "pavucontrol-float";
-      "match:class" = "^(org.pulseaudio.pavucontrol)$";
-      float = true;
-      size = "(monitor_w*0.60) (monitor_h*0.90)";
-      animation = "popin";
-    }
-    {
       name = "nm-connection-editor";
-      "match:class" = "^(nm-connection-editor)$";
+      "match:class" = "^(blueman-manager|nm-connection-editor|org.gnome.Settings|gnome-disks)$";
       float = true;
-      size = "1200 800";
+      size = "900 650";
       center = true;
     }
     {
@@ -400,25 +433,19 @@
   # --- Generic Dialogs & Layout Rules ---
   dialogRules = [
     {
-      name = "open-file-dialog";
-      "match:title" = "^(Open File)$";
+      name = "file-dialogs";
+      "match:title" = "^(Open File|File Upload|Save As|Confirm to replace files|File Operation Progress|Extract archive|Compress\\.\\.\\.)$";
       float = true;
+      size = "(monitor_w*0.60) (monitor_h*0.75)";
+      center = true;
     }
     {
-      name = "file-upload-dialog";
-      "match:title" = "^(File Upload)$";
+      name = "kenp-save-file";
+      "match:class" = "^(Kenp)$";
+      "match:title" = "^(Save File)$";
       float = true;
-      size = "850 500";
-    }
-    {
-      name = "replace-files-dialog";
-      "match:title" = "^(Confirm to replace files)$";
-      float = true;
-    }
-    {
-      name = "file-operation-dialog";
-      "match:title" = "^(File Operation Progress)$";
-      float = true;
+      size = "1280 933";
+      center = true;
     }
     {
       name = "branch-dialog";
@@ -490,8 +517,6 @@
       float = true;
       center = true;
       size = "1152 864";
-      animation = "slide";
-      opacity = "0.95 0.95";
     }
     {
       name = "clipb-float";
@@ -510,12 +535,12 @@
       animation = "popin";
     }
     {
-      name = "clipse-float";
-      "match:class" = "^(clipse)$";
+      name = "clip-preview-float";
+      "match:class" = "^(clip-preview)$";
       float = true;
-      size = "(monitor_w*0.25) (monitor_h*0.80)";
-      move = "(monitor_w*0.74) (monitor_h*0.10)";
-      animation = "popin";
+      size = "900 700";
+      center = true;
+      opacity = "0.98 0.98";
     }
     # Opacity Overrides
     {
