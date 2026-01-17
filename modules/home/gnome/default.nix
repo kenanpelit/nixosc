@@ -244,6 +244,7 @@ in
         	"tilingshell@ferrarodomenico.com"
         	"tophat@fflewddur.github.io"
         	"trayIconsReloaded@selfmade.pl"
+          "vertical-workspaces@G-dH.github.com"
         	"veil@dagimg-dot"
         	"vpn-indicator@fthx"
         	"weatheroclock@CleoMenezesJr.github.io"
@@ -315,6 +316,12 @@ in
         # Layout switching (avoid conflict with window switcher)
         next-layout = ["<Super><Ctrl>Tab"];
         prev-layout = ["<Super><Shift><Ctrl>Tab"];
+      };
+
+      # --- V-Shell (Vertical Workspaces) ---
+      # 0 = Left (vertical), 1 = Right (vertical), 4 = Hide (vertical)
+      "org/gnome/shell/extensions/vertical-workspaces" = {
+        ws-thumbnails-position = 1;
       };
   
       # --- Space Bar ---

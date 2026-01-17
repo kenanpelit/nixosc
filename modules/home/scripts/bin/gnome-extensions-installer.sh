@@ -52,6 +52,7 @@ declare -a EXTENSIONS=(
   "tilingshell@ferrarodomenico.com"
   "tophat@fflewddur.github.io"
   "trayIconsReloaded@selfmade.pl"
+  "vertical-workspaces@G-dH.github.com"
   "veil@dagimg-dot"
   "vpn-indicator@fthx"
   "weatheroclock@CleoMenezesJr.github.io"

@@ -344,7 +344,7 @@ echo "🐚 Shell ayarları uygulanıyor..."
 dconf write /org/gnome/shell/favorite-apps "['brave-browser.desktop', 'kitty.desktop']"
 
 # Extensions - NixOS'ta yüklü olanlar
-EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
+EXTENSIONS="['audio-switch-shortcuts@dbatis.github.com','auto-move-windows@gnome-shell-extensions.gcampax.github.com','azwallpaper@azwallpaper.gitlab.com','bluetooth-quick-connect@bjarosze.gmail.com','clipboard-indicator@tudmotu.com','copyous@boerdereinar.dev','dash-to-panel@jderose9.github.com','disable-workspace-animation@ethnarque','extension-list@tu.berry','gsconnect@andyholmes.github.io','headphone-internal-switch@gustavomalta.github.com','just-perfection-desktop@just-perfection','launcher@hedgie.tech','mediacontrols@cliffniff.github.com','no-overview@fthx','notification-configurator@exposedcat','notification-icons@jiggak.io','no-titlebar-when-maximized@alec.ninja','space-bar@luchrioh','tilingshell@ferrarodomenico.com','tophat@fflewddur.github.io','trayIconsReloaded@selfmade.pl','vertical-workspaces@G-dH.github.com','veil@dagimg-dot','vpn-indicator@fthx','weatheroclock@CleoMenezesJr.github.io','zetadev@bootpaper']"
 
 dconf write /org/gnome/shell/enabled-extensions "$EXTENSIONS"
 dconf write /org/gnome/shell/disabled-extensions "@as []"
@@ -377,6 +377,10 @@ dconf write /org/gnome/shell/extensions/gsconnect/show-offline "false"
 # Bluetooth Quick Connect
 dconf write /org/gnome/shell/extensions/bluetooth-quick-connect/show-battery-icon-on "true"
 dconf write /org/gnome/shell/extensions/bluetooth-quick-connect/show-battery-value-on "true"
+
+# V-Shell (Vertical Workspaces) — GNOME 49 horizontal → vertical
+# 0 = Left (vertical), 1 = Right (vertical), 4 = Hide (vertical)
+dconf write /org/gnome/shell/extensions/vertical-workspaces/ws-thumbnails-position "1"
 
 # Vitals
 dconf write /org/gnome/shell/extensions/vitals/hot-sensors "['_processor_usage_', '_memory_usage_', '_network-rx_max_', '_network-tx_max_']"
