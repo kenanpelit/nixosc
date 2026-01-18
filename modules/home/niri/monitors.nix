@@ -41,11 +41,10 @@
       // Layout overrides for the main monitor (more useful width presets).
       layout {
         preset-column-widths {
-          proportion 0.25;
-          proportion 0.33333;
-          proportion 0.5;
-          proportion 0.66667;
-          proportion 0.75;
+          proportion 0.30;
+          proportion 0.50;
+          proportion 0.70;
+          proportion 0.80;
           proportion 1.0;
         }
       }
@@ -60,8 +59,10 @@
       // Layout overrides for the laptop panel (bigger default, fewer presets).
       layout {
         preset-column-widths {
-          proportion 0.5;
-          proportion 0.66667;
+          proportion 0.30;
+          proportion 0.50;
+          proportion 0.70;
+          proportion 0.80;
           proportion 1.0;
         }
       }
