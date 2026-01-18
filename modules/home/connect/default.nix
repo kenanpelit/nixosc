@@ -10,6 +10,11 @@ let
   cfg = config.my.user.connect;
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
+  connectTargets = [
+    # Run KDE Connect only inside compositor sessions (avoid GNOME GSConnect port conflicts).
+    "hyprland-session.target"
+    "niri-session.target"
+  ];
 in
 {
   options.my.user.connect = {
@@ -22,11 +27,15 @@ in
     # -------------------------------------------------------
     # KDE Connect core daemon
     # -------------------------------------------------------
+    home.packages = [
+      pkgs.kdePackages.kdeconnect-kde
+    ];
+
     systemd.user.services.kdeconnectd = {
       Unit = {
         Description = "KDE Connect Daemon";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
+        After = connectTargets;
+        PartOf = connectTargets;
       };
       Service = {
         Type = "simple";
@@ -35,7 +44,7 @@ in
         RestartSec = 3;
       };
       Install = {
-        WantedBy = [ "graphical-session.target" ];
+        WantedBy = connectTargets;
       };
     };
 
@@ -45,8 +54,8 @@ in
     systemd.user.services.kdeconnect-indicator = {
       Unit = {
         Description = "KDE Connect Indicator";
-        After = [ "graphical-session.target" "kdeconnectd.service" ];
-        PartOf = [ "graphical-session.target" ];
+        After = connectTargets ++ [ "kdeconnectd.service" ];
+        PartOf = connectTargets;
         Requires = [ "kdeconnectd.service" ];
       };
       Service = {
@@ -56,7 +65,7 @@ in
         RestartSec = 3;
       };
       Install = {
-        WantedBy = [ "graphical-session.target" ];
+        WantedBy = connectTargets;
       };
     };
 
