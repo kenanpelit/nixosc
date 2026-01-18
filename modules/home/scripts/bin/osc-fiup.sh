@@ -19,7 +19,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank|stasis}"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank|stasis} [stable] [tag]"
   echo
   echo "  all             : Apply dank + niri + hyprland + stasis + walker (in that order)"
   echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
@@ -27,6 +27,12 @@ print_usage() {
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
   echo "  stasis          : Update Stasis input to latest commit on main"
+  echo
+  echo "Stable mode:"
+  echo "  hypr stable     : Pin Hyprland to latest GitHub release tag (e.g. v0.53.1)"
+  echo "  niri stable     : Pin Niri to latest GitHub release tag (e.g. v25.11)"
+  echo "  stasis stable   : Pin Stasis to latest GitHub release tag (e.g. v0.9.0)"
+  echo "  <target> stable <tag> : Pin explicitly (skip network), e.g. hypr stable v0.53.1"
 }
 
 # ---------------------------------------------------------------------------
@@ -152,7 +158,8 @@ get_current_commit() {
 update_commit_flake() {
   local input_name="$1"
   local repo="$2"
-  local new_commit="$3"
+  local new_ref="$3"
+  local ref_label="${4:-commit}"
   local today
   today=$(date +%m%d)
 
@@ -164,10 +171,11 @@ import re
 
 flake_path = '$FLAKE_PATH'
 max_history = $MAX_HISTORY
-new_commit = '$new_commit'
+new_ref = '$new_ref'
 today = '$today'
 input_name = '$input_name'
 repo = '$repo'
+ref_label = '$ref_label'
 
 with open(flake_path, 'r') as f:
     content = f.read()
@@ -176,6 +184,8 @@ lines = content.split('\n')
 new_lines = []
 in_input = False
 url_lines = []
+active_key = None
+indent = None
 found_input = False
 
 for i, line in enumerate(lines):
@@ -189,28 +199,55 @@ for i, line in enumerate(lines):
     if in_input:
         # Collect URL lines (both active and commented)
         if f'github:{repo}' in line:
-            url_lines.append(line.strip())
+            stripped = line.strip()
+            url_lines.append(stripped)
+
+            # Capture indentation + attribute key from the first active line.
+            if active_key is None and not stripped.startswith('#'):
+                m = re.match(rf'\s*([A-Za-z0-9_.-]+)\s*=\s*"github:{re.escape(repo)}/[^"]+"\s*;.*$', line)
+                if m:
+                    active_key = m.group(1)
+                    indent = re.match(r'^(\s*)', line).group(1)
             continue
         
         # End of input block
         if line.strip() == '};':
+            if active_key is None:
+                # Fallback: derive key from the first commented URL line.
+                for u in url_lines:
+                    candidate = re.sub(r'^\s*#\s*', '', u)
+                    m = re.match(rf'([A-Za-z0-9_.-]+)\s*=\s*"github:{re.escape(repo)}/[^"]+"\s*;.*$', candidate)
+                    if m:
+                        active_key = m.group(1)
+                        break
+
+            if active_key is None:
+                print(f"ERROR: Could not determine attribute key to update for repo '{repo}' in input '{input_name}'")
+                exit(1)
+
+            if indent is None:
+                indent = "      "
+
             # Insert new URL
-            new_lines.append(f'      url = "github:{repo}/{new_commit}"; # {today} - Updated commit')
+            new_lines.append(f'{indent}{active_key} = "github:{repo}/{new_ref}"; # {today} - Updated {ref_label}')
             
             # Add old URLs as comments (up to max_history)
             count = 0
             for url_line in url_lines:
                 if count >= max_history:
                     break
-                if url_line.startswith('#'):
-                    new_lines.append('      ' + url_line)
+                u = url_line.lstrip()
+                if u.startswith('#'):
+                    new_lines.append(indent + u)
                 else:
-                    new_lines.append('#      ' + url_line)
+                    new_lines.append(indent + '# ' + u)
                 count += 1
             
             new_lines.append(line)
             in_input = False
             url_lines = []
+            active_key = None
+            indent = None
             continue
     
     new_lines.append(line)
@@ -246,7 +283,7 @@ update_commit_input() {
     return 0
   fi
 
-  update_commit_flake "$input_name" "$repo_lower" "$latest_commit"
+  update_commit_flake "$input_name" "$repo_lower" "$latest_commit" "commit"
 
   if command grep -q "github:$repo_lower/$latest_commit" "$FLAKE_PATH"; then
     log_success "flake.nix updated successfully for $display_name!"
@@ -268,11 +305,41 @@ update_commit_input() {
 }
 
 update_hyprland() {
-  update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
+  local mode="${1:-}"
+  local explicit_tag="${2:-}"
+
+  case "$mode" in
+  stable | release)
+    update_release_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "Hyprland" "$explicit_tag"
+    ;;
+  "" | commit)
+    update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
+    ;;
+  *)
+    log_error "Unknown mode for hyprland: $mode"
+    print_usage
+    exit 1
+    ;;
+  esac
 }
 
 update_niri() {
-  update_commit_input "niri" "YaLTeR/niri" "YaLTeR/niri" "main" "Niri"
+  local mode="${1:-}"
+  local explicit_tag="${2:-}"
+
+  case "$mode" in
+  stable | release)
+    update_release_input "niri" "YaLTeR/niri" "YaLTeR/niri" "Niri" "$explicit_tag"
+    ;;
+  "" | commit)
+    update_commit_input "niri" "YaLTeR/niri" "YaLTeR/niri" "main" "Niri"
+    ;;
+  *)
+    log_error "Unknown mode for niri: $mode"
+    print_usage
+    exit 1
+    ;;
+  esac
 }
 
 update_dank() {
@@ -280,7 +347,22 @@ update_dank() {
 }
 
 update_stasis() {
-  update_commit_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "main" "Stasis"
+  local mode="${1:-}"
+  local explicit_tag="${2:-}"
+
+  case "$mode" in
+  stable | release)
+    update_release_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "Stasis" "$explicit_tag"
+    ;;
+  "" | commit)
+    update_commit_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "main" "Stasis"
+    ;;
+  *)
+    log_error "Unknown mode for stasis: $mode"
+    print_usage
+    exit 1
+    ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
@@ -295,18 +377,79 @@ get_latest_release_tag() {
       -H "Accept: application/vnd.github+json" \
       "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null || true
   )"
-  if [[ -z "$response" ]]; then
-    log_error "Failed to reach GitHub API for $repo (no network / rate limit?)"
-    exit 1
-  fi
-
   local tag
   tag=$(echo "$response" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-  if [[ -z "$tag" ]]; then
-    log_error "Could not extract latest release tag for $repo"
+  if [[ -n "$tag" ]]; then
+    echo "$tag"
+    return 0
+  fi
+
+  log_warning "GitHub API release lookup failed for $repo; falling back to git ls-remote tags..."
+
+  local tags latest
+  tags="$(
+    GIT_TERMINAL_PROMPT=0 git ls-remote --tags "https://github.com/$repo.git" 2>/dev/null |
+      awk '{print $2}' |
+      sed 's#^refs/tags/##' |
+      sed 's#\\^{}##' |
+      sort -u || true
+  )"
+
+  latest="$(
+    printf '%s\n' "$tags" |
+      command grep -E '^(v)?[0-9]+(\\.[0-9]+)*$' |
+      sort -V |
+      tail -n 1 || true
+  )"
+
+  if [[ -z "$latest" ]]; then
+    log_error "Could not resolve a stable tag for $repo (no network / no matching tags?)"
     exit 1
   fi
-  echo "$tag"
+  echo "$latest"
+}
+
+update_release_input() {
+  local input_name="$1"
+  local repo_api="$2"
+  local repo_flake="$3"
+  local display_name="$4"
+  local explicit_tag="${5:-}"
+
+  log_info "$display_name release updater starting..."
+
+  local current_ref
+  current_ref=$(get_current_commit "$repo_flake")
+  log_info "Current $display_name ref: $current_ref"
+
+  local tag
+  tag="${explicit_tag:-$(get_latest_release_tag "$repo_api")}"
+  log_info "Latest $display_name release: $tag"
+
+  if [[ "$current_ref" == "$tag" ]]; then
+    log_success "$display_name is already at release $tag."
+    return 0
+  fi
+
+  update_commit_flake "$input_name" "$repo_flake" "$tag" "release"
+
+  if command grep -q "github:$repo_flake/$tag" "$FLAKE_PATH"; then
+    log_success "flake.nix updated successfully for $display_name!"
+    log_info "Old ref: $current_ref"
+    log_info "New ref: $tag"
+
+    git_commit_changes "$input_name: pin to release $tag"
+
+    echo
+    log_info "To rebuild:"
+    echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#\$(hostname)${NC}"
+    echo
+    log_info "To push:"
+    echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
+  else
+    log_error "$display_name update failed: new URL not found in flake.nix!"
+    exit 1
+  fi
 }
 
 get_current_repo_version() {
@@ -433,21 +576,23 @@ main() {
   fi
 
   local target="$1"
+  local mode="${2:-}"
+  local tag="${3:-}"
   check_git_repo
 
   case "$target" in
   all)
     update_dank
-    update_niri
-    update_hyprland
-    update_stasis
+    update_niri "$mode"
+    update_hyprland "$mode"
+    update_stasis "$mode"
     update_walker_and_elephant
     ;;
   hypr | hyprland)
-    update_hyprland
+    update_hyprland "$mode" "$tag"
     ;;
   niri)
-    update_niri
+    update_niri "$mode" "$tag"
     ;;
   walker)
     update_walker_and_elephant
@@ -456,7 +601,7 @@ main() {
     update_dank
     ;;
   stasis)
-    update_stasis
+    update_stasis "$mode" "$tag"
     ;;
   *)
     log_error "Unknown target: $target"
