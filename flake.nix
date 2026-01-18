@@ -93,12 +93,12 @@
     hyprland = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/eb0480ba0d0870ab5d8a876f01c6ab033a4b35f4"; # 0118 - Updated commit
-#      url = "github:hyprwm/hyprland/c99eb23869da2b80e3613a886aa1b99851367a3c"; # 0117 - Updated commit
+      url = "github:hyprwm/hyprland/v0.53.1"; # 0118 - Updated release
+      # url = "github:hyprwm/hyprland/eb0480ba0d0870ab5d8a876f01c6ab033a4b35f4"; # 0118 - Updated commit
+      #      url = "github:hyprwm/hyprland/c99eb23869da2b80e3613a886aa1b99851367a3c"; # 0117 - Updated commit
       #      url = "github:hyprwm/hyprland/92a3b9199939c8b7b61281d1d59dbaa9cc2b2d6c"; # 0117 - Updated commit
       #      url = "github:hyprwm/hyprland/36aa465a216002169879a60416d2f10c28741162"; # 0117 - Updated commit
       #      url = "github:hyprwm/hyprland/0b13d398fe597c9b30beb8207828586718b8a9b0"; # 0116 - Updated commit
-      #      url = "github:hyprwm/hyprland/ac9df44788492fd1d12da8ec0fbbf691386c45a4"; # 0115 - Updated commit
     };
 
     hypr-contrib = {
