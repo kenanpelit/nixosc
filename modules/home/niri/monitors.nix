@@ -42,9 +42,12 @@
       layout {
         preset-column-widths {
           proportion 0.30;
+          proportion 0.40;
           proportion 0.50;
+          proportion 0.60;
           proportion 0.70;
           proportion 0.80;
+          proportion 0.90;
           proportion 1.0;
         }
       }
@@ -60,9 +63,12 @@
       layout {
         preset-column-widths {
           proportion 0.30;
+          proportion 0.40;
           proportion 0.50;
+          proportion 0.60;
           proportion 0.70;
           proportion 0.80;
+          proportion 0.90;
           proportion 1.0;
         }
       }
