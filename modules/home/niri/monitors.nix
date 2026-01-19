@@ -47,6 +47,7 @@
           proportion 0.60;
           proportion 0.70;
           proportion 0.80;
+          proportion 0.85;
           proportion 0.90;
           proportion 1.0;
         }
@@ -68,6 +69,7 @@
           proportion 0.60;
           proportion 0.70;
           proportion 0.80;
+          proportion 0.85;
           proportion 0.90;
           proportion 1.0;
         }
