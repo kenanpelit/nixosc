@@ -37,18 +37,6 @@
       mode "2560x1440@59.951";
       position x=0 y=0;
       scale 1.0;
-
-      // Layout overrides for the main monitor (more useful width presets).
-      layout {
-        preset-column-widths {
-          proportion 0.30;
-          proportion 0.50;
-          proportion 0.70;
-          proportion 0.80;
-          proportion 0.90;
-          proportion 1.0;
-        }
-      }
     }
 
     output "eDP-1" {
@@ -56,18 +44,6 @@
       position x=320 y=1440;
       scale 1.0;
       variable-refresh-rate on-demand=true;
-
-      // Layout overrides for the laptop panel (bigger default, fewer presets).
-      layout {
-        preset-column-widths {
-          proportion 0.30;
-          proportion 0.50;
-          proportion 0.70;
-          proportion 0.80;
-          proportion 0.90;
-          proportion 1.0;
-        }
-      }
     }
   '';
 }
