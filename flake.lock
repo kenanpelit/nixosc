@@ -1625,17 +1625,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1768372151,
-        "narHash": "sha256-V+j22f78umNX0ZRlc4T+WLasJnmHW1C51SGnq93aXj8=",
+        "lastModified": 1768848800,
+        "narHash": "sha256-ced4DlHE9byPG0qgWj2wccBtqqMB+8A8cXB218wtpuk=",
         "owner": "saltnpepper97",
         "repo": "stasis",
-        "rev": "dde31c01e2d4aca672f95dd13a735c9430b0d016",
+        "rev": "ff4a1ff23ca1dcf6a0aad6fa6c506d65cc131631",
         "type": "github"
       },
       "original": {
         "owner": "saltnpepper97",
         "repo": "stasis",
-        "rev": "dde31c01e2d4aca672f95dd13a735c9430b0d016",
+        "rev": "ff4a1ff23ca1dcf6a0aad6fa6c506d65cc131631",
         "type": "github"
       }
     },
