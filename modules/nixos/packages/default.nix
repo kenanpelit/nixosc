@@ -41,6 +41,7 @@ in
     # -- System Management -----------------------------------------------------
     home-manager                 # User environment manager
     fwupd                        # Firmware update daemon
+    os-prober                    # Utility to detect other OS
     perl                         # Scripting language
     perlPackages.FilePath        # Perl file path module
     dconf                        # GNOME configuration backend
