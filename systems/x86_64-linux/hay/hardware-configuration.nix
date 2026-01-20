@@ -30,10 +30,10 @@
       fsType = "ext4";
     };
 
-  fileSystems."/backup" =
-    { device = "/dev/disk/by-uuid/205f64ad-80cf-456b-81e1-cfa53d81689c";
-      fsType = "ext4";
-    };
+#  fileSystems."/backup" =
+#    { device = "/dev/disk/by-uuid/205f64ad-80cf-456b-81e1-cfa53d81689c";
+#      fsType = "ext4";
+#    };
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/CE59-4A9A";
