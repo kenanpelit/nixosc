@@ -10,6 +10,8 @@
 { inputs, lib, config, pkgs, ... }:
 let
   cfg = config.my.desktop.hyprland;
+  hmLib = lib.hm or config.lib;
+  dag = hmLib.dag or config.lib.dag;
   
   # Import modular configurations
   vars = import ./variables.nix { inherit config lib; };
@@ -70,8 +72,12 @@ in
         # Environment Variables
         env = vars.envVars;
 
-        # Source external configs (DMS Cursor)
-        source = [ "./dms/cursor.conf" ];
+        # Source external configs managed by DMS (runtime-generated).
+        # These must be normal writable files (not Nix-store symlinks).
+        source = [
+          "./dms/outputs.conf"
+          "./dms/cursor.conf"
+        ];
 
         # Core Settings
         inherit (settings) 
@@ -103,8 +109,31 @@ in
 
       extraConfig = binds.extraConfig;
     };
-    
-    # Placeholder for DMS cursor config
-    xdg.configFile."hypr/dms/cursor.conf".text = "";
+
+    # DMS writes Hyprland snippets at runtime (cursor.conf, outputs.conf, …).
+    # Ensure they exist as regular writable files so DMS can `cat >` them.
+    home.activation.hyprlandDmsRuntimeFiles = dag.entryAfter [ "writeBoundary" ] ''
+      set -eu
+
+      DMS_DIR=${lib.escapeShellArg "${config.xdg.configHome}/hypr/dms"}
+      mkdir -p "$DMS_DIR"
+
+      ensure_writable_file() {
+        local f="$1"
+
+        if [ -L "$f" ]; then
+          rm -f "$f"
+        elif [ -e "$f" ] && [ ! -f "$f" ]; then
+          rm -rf "$f"
+        fi
+
+        if [ ! -f "$f" ]; then
+          : >"$f"
+        fi
+      }
+
+      ensure_writable_file "$DMS_DIR/cursor.conf"
+      ensure_writable_file "$DMS_DIR/outputs.conf"
+    '';
   };
 }
