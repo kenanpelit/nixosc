@@ -17,7 +17,7 @@ in
       enable  = true;
       device  = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
       efiSupport = isPhysicalMachine;
-      useOSProber = lib.mkDefault false;
+      useOSProber = lib.mkDefault true;
       configurationLimit = 10;
       gfxmodeEfi  = "1920x1200";
       gfxmodeBios = if isVirtualMachine then "1920x1080" else "1920x1200";
