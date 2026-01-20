@@ -99,6 +99,14 @@
     firewall = {
       allowPing           = false;
       logReversePathDrops = true;
+
+      # KDE Connect (GSConnect-compatible) device pairing / sync
+      allowedTCPPortRanges = [
+        { from = 1714; to = 1764; }
+      ];
+      allowedUDPPortRanges = [
+        { from = 1714; to = 1764; }
+      ];
     };
   };
 

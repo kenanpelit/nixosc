@@ -136,17 +136,21 @@ in
     bezier = [
       "linear, 0.0, 0.0, 1.0, 1.0"
       "quart, 0.25, 1, 0.5, 1"
-      "niri_motion, 0.05, 0.9, 0.1, 1.0" # Snappy, almost no overshoot (Matches Niri stiffness=1000)
+      # Niri springs, approximated as bezier:
+      # - workspace-switch: damping=0.85 stiffness=500
+      # - window movement/resize: damping=0.85 stiffness=600
+      "niri_workspace, 0.10, 0.82, 0.20, 1.00"
+      "niri_motion, 0.08, 0.85, 0.15, 1.00"
       "easeOutExpo, 0.16, 1, 0.3, 1"     # Fast initial burst (Matches Niri window open)
       "easeOutQuad, 0.25, 0.46, 0.45, 0.94" # Niri window close curve
     ];
     animation = [
-      "windowsIn, 1, 3, easeOutExpo, popin 95%" # Niri: ease-out-expo 300ms, scale 0.95
+      "windowsIn, 1, 4, easeOutExpo, popin 95%" # Niri: ease-out-expo 400ms, scale 0.95
       "windowsOut, 1, 2, easeOutQuad, popin 98%" # Niri: ease-out-quad 200ms, scale 0.98
-      "windowsMove, 1, 3, niri_motion"           # Snappy movement
+      "windowsMove, 1, 3, niri_motion"           # Niri-like springy movement
       "fade, 1, 2, quart"
-      "workspaces, 1, 4, niri_motion, slidevert" # Vertical workspace flow (User preference)
-      "specialWorkspace, 1, 4, niri_motion, slidevert"
+      "workspaces, 1, 4, niri_workspace, slidevert" # Vertical workspace flow (User preference)
+      "specialWorkspace, 1, 4, niri_workspace, slidevert"
       "border, 1, 3, linear"
     ];
   };

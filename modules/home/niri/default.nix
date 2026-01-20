@@ -267,6 +267,9 @@ in
       xdg.configFile."niri/config.kdl".text = lib.concatStringsSep "\n" [
         settingsConfig.main
         monitorsConfig.config
+        # Allow DankMaterialShell (DMS) to manage output blocks at runtime.
+        # (Must exist at startup; we create a writable placeholder in activation.)
+        "include \"dms/outputs.kdl\""
         settingsConfig.layout
 
         # Writable runtime overrides (used by niri-set, e.g. Zen Mode).
@@ -322,12 +325,34 @@ in
       xdg.configFile."niri/dms/hotkeys.md".text = hotkeysMarkdown;
       xdg.configFile."niri/dms/hotkeys.tsv".text = hotkeysTsv;
 
-      # Deprecated placeholder (kept to avoid stale references)
-      xdg.configFile."niri/dms/alttab.kdl".text = "";
-      
-      # Placeholder for DMS cursor config (needed for build-time validation)
-      # DMS will overwrite this at runtime.
-      xdg.configFile."niri/dms/cursor.kdl".text = "";
+      # DMS generates some Niri snippets (cursor.kdl, outputs.kdl, alttab.kdl, …)
+      # at runtime. Home-Manager's `xdg.configFile` would create Nix-store symlinks
+      # which are read-only and break that workflow, so we ensure real files here.
+      home.activation.niriDmsRuntimeFiles = dag.entryAfter [ "writeBoundary" ] ''
+        set -eu
+
+        DMS_DIR=${lib.escapeShellArg "${config.xdg.configHome}/niri/dms"}
+        mkdir -p "$DMS_DIR"
+
+        ensure_writable_file() {
+          local f="$1"
+
+          # Remove Nix store symlinks (or other non-regular nodes).
+          if [ -L "$f" ]; then
+            rm -f "$f"
+          elif [ -e "$f" ] && [ ! -f "$f" ]; then
+            rm -rf "$f"
+          fi
+
+          if [ ! -f "$f" ]; then
+            : >"$f"
+          fi
+        }
+
+        ensure_writable_file "$DMS_DIR/cursor.kdl"
+        ensure_writable_file "$DMS_DIR/outputs.kdl"
+        ensure_writable_file "$DMS_DIR/alttab.kdl"
+      '';
 
       # Keep Zen override file writable (niri watches include files and live-reloads).
       home.activation.niriZenConfig = dag.entryAfter [ "writeBoundary" ] ''

@@ -55,6 +55,19 @@ in
         '';
         executable = true;
       };
+
+      # CachyOS Virtual Machine Configuration
+      # Launches CachyOS VM in fullscreen mode for general use
+      "sway/qemu_vmcachy" = {
+        text = ''
+          # Launch CachyOS VM using the svmcachy command
+          exec svmcachy
+          
+          # Force QEMU windows to fullscreen for optimal viewing
+          for_window [app_id="qemu"] fullscreen enable
+        '';
+        executable = true;
+      };
       
     }; # End of xdg.configFile
   };

@@ -54,7 +54,7 @@ error() {
 is_video() {
 	local file=$1
 	local ext="${file##*.}"
-	local video_extensions=("mkv" "mp4" "avi" "mov" "wmv")
+	local video_extensions=("mkv" "mp4" "m4v" "avi" "mov" "wmv")
 
 	for valid_ext in "${video_extensions[@]}"; do
 		if [[ "${ext,,}" == "${valid_ext}" ]]; then
