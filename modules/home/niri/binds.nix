@@ -104,8 +104,8 @@
   # ---------------------------------------------------------------------------
   dms = ''
       // --- Launchers ---
-      Mod+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
-      Mod+Ctrl+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "launcher" "toggle"; }
+      Mod+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "launcher" "toggle"; }
+      Mod+Ctrl+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
       Mod+D        repeat=false hotkey-overlay-title="Dash / Apps" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
       Mod+Ctrl+D   repeat=false hotkey-overlay-title="Control Center" { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle" ""; }
       Mod+N        repeat=false hotkey-overlay-title="Notifications" { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
