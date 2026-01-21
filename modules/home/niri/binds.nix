@@ -196,7 +196,7 @@
       
       Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-ndrop" "kitty" "--class" "dropdown-terminal"; }
       Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
-      Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
+      //Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
       Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "nsticky-toggle"; }
       Mod+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Nemo)" { spawn "nemo"; }
       Alt+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Yazi)" { spawn "${bins.kitty}" "-e" "yazi"; }
