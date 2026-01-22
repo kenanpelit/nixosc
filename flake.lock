@@ -163,17 +163,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1769014088,
-        "narHash": "sha256-cNurGyotcf8okHK0H4OCSkUZD/0CFaTiRmPQQGunmuU=",
+        "lastModified": 1769053673,
+        "narHash": "sha256-l1FoLfkmAwDdzAFGrL2GUazTAXlh9lEAAdnhUAVe9PQ=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "3ff00768ac5a3bb1a10960c95eec5a375c76625a",
+        "rev": "6bf1438ef1580a18933e57ae645b9c2fd11b660e",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "3ff00768ac5a3bb1a10960c95eec5a375c76625a",
+        "rev": "6bf1438ef1580a18933e57ae645b9c2fd11b660e",
         "type": "github"
       }
     },
@@ -1625,17 +1625,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1768975420,
-        "narHash": "sha256-tKF2Vac+ku2/kD7G/rgcTx8VL75U+yuDtimCPH1SWPI=",
+        "lastModified": 1769061658,
+        "narHash": "sha256-pxrlmg3oioju1wT4a157FaghWTRYZEmOAmZ6jWhGDtY=",
         "owner": "saltnpepper97",
         "repo": "stasis",
-        "rev": "ccd508d85345987c7dc37546ea887d4d87a598c3",
+        "rev": "76b435e4ee8bac144ab9e4925e289f5e8dc56601",
         "type": "github"
       },
       "original": {
         "owner": "saltnpepper97",
         "repo": "stasis",
-        "rev": "ccd508d85345987c7dc37546ea887d4d87a598c3",
+        "rev": "76b435e4ee8bac144ab9e4925e289f5e8dc56601",
         "type": "github"
       }
     },
