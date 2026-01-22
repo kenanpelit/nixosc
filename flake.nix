@@ -223,12 +223,12 @@
     stasis = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup stasis`)
-      url = "github:saltnpepper97/stasis/ccd508d85345987c7dc37546ea887d4d87a598c3"; # 0121 - Updated commit
+      url = "github:saltnpepper97/stasis/76b435e4ee8bac144ab9e4925e289f5e8dc56601"; # 0122 - Updated commit
+      # url = "github:saltnpepper97/stasis/ccd508d85345987c7dc37546ea887d4d87a598c3"; # 0121 - Updated commit
       # url = "github:saltnpepper97/stasis/ff4a1ff23ca1dcf6a0aad6fa6c506d65cc131631"; # 0120 - Updated commit
       # url = "github:saltnpepper97/stasis/dde31c01e2d4aca672f95dd13a735c9430b0d016"; # 0118 - Updated commit
       #      url = "github:saltnpepper97/stasis/v0.9.0"; # 0118 - Updated release
       # url = "github:saltnpepper97/stasis/dde31c01e2d4aca672f95dd13a735c9430b0d016"; # 0114 - Updated commit
-      #      url = "github:saltnpepper97/stasis/ee98c8f55f137b24c6262dbecf4c0fa178075c60"; # 0113 - Updated commit
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";
