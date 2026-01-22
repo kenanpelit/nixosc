@@ -30,6 +30,12 @@ let
   # Verified on your machine:
   #   /boot/EFI/cachyos/
   cachyEfiPath = "/EFI/cachyos/grubx64.efi";
+
+  # Additional ESP (e.g. sda1) UUID and target EFI paths
+  sdaEspUuid = "9730-D976";
+  nixosEfiPathNvme = "/EFI/NixOS/grubx64.efi";
+  nixosEfiPathSda  = "/EFI/NixOS-boot/grubx64.efi";
+  systemdBootPathSda = "/EFI/systemd/systemd-bootx64.efi";
 in
 {
   # ----------------------------------------------------------------------------
@@ -61,15 +67,12 @@ in
       theme = inputs.distro-grub-themes.packages.${system}.nixos-grub-theme;
 
       # ------------------------------------------------------------------------
-      # Deterministic dual-boot entry (recommended)
+      # Deterministic dual-boot entries (recommended)
       #
       # Why:
       # - Avoids os-prober pitfalls on BTRFS subvolume installs (missing rootflags)
       # - Avoids kernel/initramfs path mismatches ("/boot/..." not found)
-      # - Delegates all boot details to CachyOS' own EFI bootloader
-      #
-      # This entry appears in the NixOS GRUB menu as:
-      #   "CachyOS (EFI chainload)"
+      # - Delegates all boot details to the other OS' own EFI bootloader
       # ------------------------------------------------------------------------
       extraEntries = lib.mkIf isPhysicalMachine ''
         menuentry "CachyOS (EFI chainload)" {
@@ -77,6 +80,27 @@ in
           insmod fat
           search --no-floppy --fs-uuid --set=root ${espUuid}
           chainloader ${cachyEfiPath}
+        }
+
+        menuentry "NixOS (EFI chainload)" {
+          insmod part_gpt
+          insmod fat
+          search --no-floppy --fs-uuid --set=root ${espUuid}
+          chainloader ${nixosEfiPathNvme}
+        }
+
+        menuentry "NixOS (sda1 · EFI chainload)" {
+          insmod part_gpt
+          insmod fat
+          search --no-floppy --fs-uuid --set=root ${sdaEspUuid}
+          chainloader ${nixosEfiPathSda}
+        }
+
+        menuentry "NixOS (sda1 · systemd-boot)" {
+          insmod part_gpt
+          insmod fat
+          search --no-floppy --fs-uuid --set=root ${sdaEspUuid}
+          chainloader ${systemdBootPathSda}
         }
       '';
     };
