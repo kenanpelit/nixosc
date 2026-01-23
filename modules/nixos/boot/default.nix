@@ -13,6 +13,11 @@
 # - os-prober can be unreliable with BTRFS subvol installs (rootflags/subvol=@ issues).
 # - EFI chainloading avoids kernel/initrd path issues entirely by delegating boot
 #   details to the other OS' own bootloader in the ESP.
+#
+# Important:
+# - Do NOT chainload NixOS -> NixOS GRUB from within NixOS GRUB.
+#   That is self-chainloading and can cause confusing loops or add no value.
+#   NixOS entries are already managed by GRUB itself.
 # ==============================================================================
 
 { lib, inputs, system, config, pkgs, ... }:
@@ -21,21 +26,29 @@ let
   isPhysicalMachine = config.my.host.isPhysicalHost;
   isVirtualMachine  = config.my.host.isVirtualHost;
 
-  # ESP (EFI System Partition) UUID as seen from NixOS (mounted at /boot).
-  # Your system:
+  # ---------------------------------------------------------------------------
+  # ESPs and EFI targets
+  # ---------------------------------------------------------------------------
+
+  # Primary ESP (EFI System Partition) UUID as seen from NixOS (mounted at /boot).
+  # Verified:
   #   /dev/nvme1n1p1  vfat  UUID="CE59-4A9A"  mounted at /boot
   espUuid = "CE59-4A9A";
 
-  # Where CachyOS installed its EFI binary inside the ESP.
+  # Where CachyOS installed its EFI binary inside the primary ESP.
   # Verified on your machine:
-  #   /boot/EFI/cachyos/
+  #   /boot/EFI/cachyos/grubx64.efi
   cachyEfiPath = "/EFI/cachyos/grubx64.efi";
 
-  # Additional ESP (e.g. sda1) UUID and target EFI paths
+  # Secondary ESP (sda1) UUID (vfat).
+  # Verified:
+  #   /dev/sda1  vfat  UUID="9730-D976"
   sdaEspUuid = "9730-D976";
-  nixosEfiPathNvme = "/EFI/NixOS/grubx64.efi";
-  nixosEfiPathSda  = "/EFI/NixOS-boot/grubx64.efi";
-  systemdBootPathSda = "/EFI/systemd/systemd-bootx64.efi";
+
+  # NixOS-related EFI binaries that live on the secondary ESP.
+  # These are chainload targets, so the paths must exist on sda1.
+  nixosEfiPathSda     = "/EFI/NixOS-boot/grubx64.efi";
+  systemdBootPathSda  = "/EFI/systemd/systemd-bootx64.efi";
 in
 {
   # ----------------------------------------------------------------------------
@@ -54,7 +67,7 @@ in
       efiSupport = isPhysicalMachine;
 
       # Allow GRUB to run os-prober and add other OS installs automatically.
-      # (Still keep the deterministic chainload entry below.)
+      # (Still keep deterministic chainload entries below.)
       useOSProber = lib.mkDefault true;
 
       configurationLimit = 10;
@@ -73,6 +86,16 @@ in
       # - Avoids os-prober pitfalls on BTRFS subvolume installs (missing rootflags)
       # - Avoids kernel/initramfs path mismatches ("/boot/..." not found)
       # - Delegates all boot details to the other OS' own EFI bootloader
+      #
+      # What we include:
+      # - CachyOS chainload via the primary ESP (nvme1n1p1, /boot)
+      # - NixOS boot targets living on the secondary ESP (sda1):
+      #     - GRUB EFI
+      #     - systemd-boot EFI
+      #
+      # What we explicitly do NOT include:
+      # - "NixOS (EFI chainload)" -> /EFI/NixOS/grubx64.efi on the same ESP.
+      #   That is self-chainloading from within NixOS GRUB and can loop / is redundant.
       # ------------------------------------------------------------------------
       extraEntries = lib.mkIf isPhysicalMachine ''
         menuentry "CachyOS (EFI chainload)" {
@@ -80,13 +103,6 @@ in
           insmod fat
           search --no-floppy --fs-uuid --set=root ${espUuid}
           chainloader ${cachyEfiPath}
-        }
-
-        menuentry "NixOS (EFI chainload)" {
-          insmod part_gpt
-          insmod fat
-          search --no-floppy --fs-uuid --set=root ${espUuid}
-          chainloader ${nixosEfiPathNvme}
         }
 
         menuentry "NixOS (sda1 · EFI chainload)" {
@@ -123,4 +139,3 @@ in
     pkgs.os-prober
   ];
 }
-
