@@ -118,7 +118,7 @@
   # ============================================================================
   # Boot Loader (GRUB + EFI) — enable os-prober to detect the backup NixOS on sda
   # ============================================================================
-  boot.loader.grub.useOSProber = true;
+  boot.loader.grub.useOSProber = false;
 
   # os-prober sometimes fails with "mkdir /var/lock/dmraid" — ensure the path exists
   systemd.tmpfiles.rules = [
