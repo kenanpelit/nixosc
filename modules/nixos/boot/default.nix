@@ -89,20 +89,20 @@ in
       # ------------------------------------------------------------------------
       extraEntries = lib.mkIf isPhysicalMachine (
         ''
-          menuentry "CachyOS-Rog (sda1 · GRUB chainload)" {
-            insmod part_gpt
-            insmod fat
-            search --no-floppy --fs-uuid --set=root ${cachySdaEspUuid}
-            chainloader ${cachySdaEfiPath}
-          }
-        ''
-        +
-        (lib.optionalString (nvme1EspUuid != null) ''
-          menuentry "CachyOS-Lenovo (nvme1 ESP · GRUB chainload)" {
+          menuentry "CachyOS (NVMe1 ESP - GRUB chainload)" {
             insmod part_gpt
             insmod fat
             search --no-floppy --fs-uuid --set=root ${nvme1EspUuid}
             chainloader ${cachyNvmeEfiPath}
+          }
+        ''
+        +
+        (lib.optionalString (nvme1EspUuid != null) ''
+          menuentry "CachyOS Rog (sda1 - GRUB chainload)" {
+            insmod part_gpt
+            insmod fat
+            search --no-floppy --fs-uuid --set=root ${cachySdaEspUuid}
+            chainloader ${cachySdaEfiPath}
           }
         '')
       );
