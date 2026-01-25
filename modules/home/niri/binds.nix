@@ -177,7 +177,7 @@
       Mod+Ctrl+V     repeat=false hotkey-overlay-title="Clipse (Floating)" { spawn "${bins.kitty}" "--class" "clipse" "-e" "${bins.clipse}"; }
       F10            repeat=false hotkey-overlay-title="Bluetooth Toggle" { spawn "bluetooth_toggle"; }
       Alt+F12        repeat=false hotkey-overlay-title="VPN Toggle" { spawn "osc-mullvad" "toggle"; }
-      Mod+Alt+F12    repeat=false hotkey-overlay-title="VPN Slot Recycle" { spawn "osc-mullvad" "slot" "recycle"; }
+      Mod+Alt+F12    repeat=false hotkey-overlay-title="VPN Slot Recycle" { spawn "osc-mullvad-slot"; }
       
       // --- Screenshots ---
       Print       repeat=false hotkey-overlay-title="Screenshot Area" { spawn "${bins.dms}" "ipc" "call" "niri" "screenshot"; }
