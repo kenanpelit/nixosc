@@ -60,6 +60,7 @@ SLOT_STATE_FILE="${OSC_MULLVAD_SLOT_STATE_FILE:-$SLOT_STATE_DIR/slot.state}"
 SLOT_PASS_ENTRY="${OSC_MULLVAD_PASS_ENTRY:-mullvad/account}"
 SLOT_REVOKE_OTHERS="${OSC_MULLVAD_REVOKE_OTHERS:-true}"
 SLOT_DRY_RUN="false"
+SLOT_ACCOUNT_NUMBER=""
 
 # Create directories if they don't exist
 mkdir -p "$LOG_DIR"
@@ -912,11 +913,13 @@ slot_state_set() {
 	fi
 }
 
-slot_is_logged_in() { mullvad account get >/dev/null 2>&1; }
+slot_is_logged_in() {
+	mullvad account get 2>/dev/null | grep -qE '^[[:space:]]*Device name:'
+}
 
 slot_current_device_name() {
 	# Parses: "Device name:        Live Coral"
-	mullvad account get 2>/dev/null | awk -F': *' '/^Device name:/ {print $2; exit}'
+	mullvad account get 2>/dev/null | awk -F': *' '/^[[:space:]]*Device name:/ {print $2; exit}'
 }
 
 slot_list_devices() {
@@ -943,13 +946,28 @@ slot_resolve_account_number() {
 	return 1
 }
 
+slot_get_account_number() {
+	if [[ -n "${SLOT_ACCOUNT_NUMBER:-}" ]]; then
+		printf '%s' "$SLOT_ACCOUNT_NUMBER"
+		return 0
+	fi
+
+	local acc=""
+	if ! acc="$(slot_resolve_account_number)"; then
+		return 1
+	fi
+
+	SLOT_ACCOUNT_NUMBER="$acc"
+	printf '%s' "$acc"
+}
+
 slot_login_if_needed() {
 	if slot_is_logged_in; then
 		return 0
 	fi
 
 	local acc=""
-	if ! acc="$(slot_resolve_account_number)"; then
+	if ! acc="$(slot_get_account_number)"; then
 		slot_die "Not logged in. Export MULLVAD_ACCOUNT_NUMBER or store it in pass ($SLOT_PASS_ENTRY)."
 		return 1
 	fi
@@ -965,16 +983,30 @@ slot_login_if_needed() {
 
 slot_revoke_device() {
 	local dev="$1"
+	local acc="${2:-}"
 	[[ -n "$dev" ]] || return 0
 
 	local cur
-	cur="$(slot_current_device_name || true)"
-	if [[ -n "$cur" && "$dev" == "$cur" ]]; then
-		slot_warn "Refusing to revoke current device: '$dev'"
-		return 0
+	if slot_is_logged_in; then
+		cur="$(slot_current_device_name || true)"
+		if [[ -n "$cur" && "$dev" == "$cur" ]]; then
+			slot_warn "Refusing to revoke current device: '$dev'"
+			return 0
+		fi
 	fi
 
-	if slot_do_cmd mullvad account revoke-device "$dev" >/dev/null 2>&1; then
+	if [[ -z "$acc" ]] && ! slot_is_logged_in; then
+		slot_warn "Cannot revoke without login; set MULLVAD_ACCOUNT_NUMBER or pass entry ($SLOT_PASS_ENTRY)."
+		return 1
+	fi
+
+	local revoke_cmd=(mullvad account revoke-device)
+	if [[ -n "$acc" ]]; then
+		revoke_cmd+=(--account "$acc")
+	fi
+	revoke_cmd+=("$dev")
+
+	if slot_do_cmd "${revoke_cmd[@]}" >/dev/null 2>&1; then
 		slot_ok "Revoked device: $dev"
 		slot_notify normal "Mullvad slot" "Revoked: $dev"
 	else
@@ -983,6 +1015,7 @@ slot_revoke_device() {
 }
 
 slot_revoke_other_known_devices() {
+	local acc="${1:-}"
 	local mine key dev
 	mine="$(slot_my_state_key)"
 
@@ -994,7 +1027,7 @@ slot_revoke_other_known_devices() {
 		[[ -n "$key" && -n "$dev" ]] || continue
 		[[ "$key" == "$mine" ]] && continue
 
-		slot_revoke_device "$dev"
+		slot_revoke_device "$dev" "$acc"
 	done < <(slot_state_list_pairs)
 }
 
@@ -1035,9 +1068,17 @@ slot_record_my_device() {
 }
 
 slot_cmd_recycle_locked() {
+	local acc=""
+	if ! slot_is_logged_in; then
+		if ! acc="$(slot_get_account_number)"; then
+			slot_die "Not logged in. Export MULLVAD_ACCOUNT_NUMBER or store it in pass ($SLOT_PASS_ENTRY)."
+			return 1
+		fi
+	fi
+
 	if [[ "$SLOT_REVOKE_OTHERS" == "true" ]]; then
 		slot_log "Revoking other OS devices from state (STATE_FILE=$SLOT_STATE_FILE)"
-		slot_revoke_other_known_devices
+		slot_revoke_other_known_devices "$acc"
 	else
 		slot_warn "OSC_MULLVAD_REVOKE_OTHERS=false: skipping automatic revoke of other OS devices"
 	fi
