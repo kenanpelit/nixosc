@@ -163,17 +163,17 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1769374381,
-        "narHash": "sha256-mjR3cMdzyr/VUY6dN0Rfst0WyRMDiUTDpDeKbOFtZWM=",
+        "lastModified": 1769493135,
+        "narHash": "sha256-9h3lV7MpAHvugCCUyOEmwThpJp7aSA4qE9UTQR/8KOc=",
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "ad458dfece389f132bd8f00df4889d260a4ee9a7",
+        "rev": "9553cb06d34a255486733e17c11f6874dd9d99a3",
         "type": "github"
       },
       "original": {
         "owner": "AvengeMedia",
         "repo": "DankMaterialShell",
-        "rev": "ad458dfece389f132bd8f00df4889d260a4ee9a7",
+        "rev": "9553cb06d34a255486733e17c11f6874dd9d99a3",
         "type": "github"
       }
     },
@@ -790,17 +790,17 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1769284856,
-        "narHash": "sha256-slXgC5fwTk9E+kkm6+Oy16laDFo+whNXZKsmf4eigN8=",
+        "lastModified": 1769466056,
+        "narHash": "sha256-SVex1Vvlnp09d8IIMWaZYjt5K6pAYWZOopFIkhIfUdY=",
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "c65c7614bc573c3f0150e31a31187057f48813df",
+        "rev": "50454c6d17b8406555252eb4f047324d0b0ff5c8",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
         "repo": "hyprland",
-        "rev": "c65c7614bc573c3f0150e31a31187057f48813df",
+        "rev": "50454c6d17b8406555252eb4f047324d0b0ff5c8",
         "type": "github"
       }
     },
@@ -1639,17 +1639,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1769176936,
-        "narHash": "sha256-Lf1+jGcVgPNlS5Rk+ax8/gs7Skzhe6WJ3pldcLEOeec=",
+        "lastModified": 1769459529,
+        "narHash": "sha256-R9P3Lah1uUYcwMv3uqTamPfWHeDPcEnLzOiHA0OPhC8=",
         "owner": "saltnpepper97",
         "repo": "stasis",
-        "rev": "61f7f1094744510c94e76892b49795dee8f9b1c0",
+        "rev": "c150e9c8cabb438ad267ababbd20f6d21ae281bc",
         "type": "github"
       },
       "original": {
         "owner": "saltnpepper97",
         "repo": "stasis",
-        "rev": "61f7f1094744510c94e76892b49795dee8f9b1c0",
+        "rev": "c150e9c8cabb438ad267ababbd20f6d21ae281bc",
         "type": "github"
       }
     },
