@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# svmcachy.sh - CachyOS VM başlatıcısı
-# CachyOS imajını belirlenmiş kaynaklarla çalıştırmak için kısayol.
+# svmcachy.sh — SVM profile: CachyOS (QEMU/KVM)
 
 #===============================================================================
 #
-#   Version: 1.3.0
-#   Date: 2025-11-02
-#   Author: Kenan Pelit (Enhanced for Wayland/TTY)
-#   Description: Universal VM Manager
-#                Manages QEMU/KVM based virtual machines (Ubuntu/NixOS/etc.)
+#   SVM (Simple VM) — CachyOS profile
 #
-#   Enhancements in 1.3.0:
-#   - Better Wayland/Sway integration
-#   - D-Bus timeout handling
-#   - Accessibility bridge control
-#   - Font configuration initialization
-#   - TTY-specific optimizations
+#   Purpose:
+#     Create and run a CachyOS VM with sane defaults (Wayland/TTY friendly).
+#
+#   Commands:
+#     install    Boot from ISO (first install)
+#     start      Normal start (use --no-iso after install)
+#     stop       Shutdown the VM (graceful, then force)
+#     status     Show whether PID is alive
+#     connect    SSH into the guest (user networking port-forward)
+#     console    QEMU monitor console (unix socket)
+#     reset      Remove disk/vars files (DANGEROUS)
+#
+#   Highlights:
+#     - Safe argv-based QEMU invocation (no eval)
+#     - Works without KVM (falls back to TCG)
+#     - Boot order control (--boot-order auto|disk|cdrom)
+#     - Optional ISO attach/download (--no-iso)
+#     - PID file is always written (status/stop works in foreground too)
+#
+#   Version: 1.4.0
+#   Date: 2026-01-27
+#   Author: Kenan Pelit
 #
 #===============================================================================
 
