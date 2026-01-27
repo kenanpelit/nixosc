@@ -1,28 +1,35 @@
 #!/usr/bin/env bash
-# svmnixos.sh - NixOS VM başlatıcısı
-# NixOS imajını uygun CPU/RAM/display ayarlarıyla çalıştırır.
+# svmnixos.sh — SVM profile: NixOS (QEMU/KVM)
 
 #===============================================================================
 #
-#   Version: 1.2.0
-#   Date: 2025-05-26
-#   Author: Kenan Pelit (Improved)
-#   Description: NixOS VM Manager
-#                Manages QEMU/KVM based NixOS virtual machines
+#   SVM (Simple VM) — NixOS profile
 #
-#   Features:
-#   - Easy VM creation and management
-#   - Automated ISO downloads with integrity checks
-#   - Multiple display backends (GTK, SPICE, Headless, VNC)
-#   - Configurable resources (CPU, Memory, Disk)
-#   - SSH port forwarding with connection testing
-#   - Both BIOS and UEFI boot support
-#   - 9P filesystem sharing
-#   - VM status monitoring and management
-#   - Enhanced input device handling
-#   - Improved error handling and logging
+#   Purpose:
+#     Create and run a NixOS VM with sane defaults.
 #
-#   License: MIT
+#   Commands:
+#     install    Boot from ISO (first install)
+#     start      Normal start (use --no-iso after install)
+#     stop       Shutdown the VM (graceful, then force)
+#     status     Show whether PID is alive
+#     connect    SSH into the guest (user networking port-forward)
+#     console    QEMU monitor console (unix socket)
+#     reset      Remove disk/vars files (DANGEROUS)
+#
+#   Highlights:
+#     - Safe argv-based QEMU invocation (no eval)
+#     - Works without KVM (falls back to TCG)
+#     - Boot order control (--boot-order auto|disk|cdrom)
+#     - Optional ISO attach/download (--no-iso)
+#     - PID file is always written (status/stop works in foreground too)
+#
+#   Env overrides (NixOS profile):
+#     VMNIXOS_BASE_DIR, VMNIXOS_MEMORY, VMNIXOS_CPUS, VMNIXOS_SSH_PORT, VMNIXOS_BOOT_MODE
+#
+#   Version: 1.3.0
+#   Date: 2026-01-27
+#   Author: Kenan Pelit
 #
 #===============================================================================
 
