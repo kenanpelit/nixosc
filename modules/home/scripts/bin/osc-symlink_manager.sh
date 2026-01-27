@@ -34,7 +34,7 @@ readonly NC='\033[0m'
 SOURCE_ROOT="/repo/archive"
 TARGET_ROOT="$HOME"
 
-# Directories to link
+# Directories to link (relative to SOURCE_ROOT -> TARGET_ROOT)
 DIRS=(
   "Documents"
   "Downloads"
@@ -43,7 +43,12 @@ DIRS=(
   "Videos"
   "Work"
   "Tmp"
-  "mullvad"
+)
+
+# Explicit links: "source|target"
+EXTRA_LINKS=(
+  "/repo/archive/mullvad|$HOME/.mullvad"
+  "/repo/tor|$HOME/.tor"
 )
 
 # Options
@@ -90,29 +95,41 @@ check_setup() {
   [[ -w "$TARGET_ROOT" ]] || error "Hedef dizine yazma izni yok: $TARGET_ROOT"
 }
 
+iter_links() {
+  local dir
+  for dir in "${DIRS[@]}"; do
+    printf '%s|%s|%s\n' "$dir" "$SOURCE_ROOT/$dir" "$TARGET_ROOT/$dir"
+  done
+
+  local entry source target name
+  for entry in "${EXTRA_LINKS[@]}"; do
+    source="${entry%%|*}"
+    target="${entry#*|}"
+    name="$(basename "$target")"
+    printf '%s|%s|%s\n' "$name" "$source" "$target"
+  done
+}
+
 # Show current status
 show_status() {
   echo -e "\n${BLUE}=== Symlink Durumu ===${NC}"
 
   local linked=0 missing=0
 
-  for dir in "${DIRS[@]}"; do
-    local target="$TARGET_ROOT/$dir"
-    local source="$SOURCE_ROOT/$dir"
-
+  while IFS='|' read -r name source target; do
     if [[ -L "$target" ]]; then
       local link_target="$(readlink "$target" || echo "ERROR")"
       if [[ "$link_target" == "$source" ]]; then
-        echo -e "${GREEN}✓${NC} $dir"
+        echo -e "${GREEN}✓${NC} $name"
         ((linked++)) || true
       else
-        echo -e "${YELLOW}⚠${NC} $dir -> $link_target (farklı hedef)"
+        echo -e "${YELLOW}⚠${NC} $name -> $link_target (farklı hedef)"
       fi
     elif [[ -e "$target" ]]; then
-      echo -e "${RED}✗${NC} $dir (dosya var, link değil)"
+      echo -e "${RED}✗${NC} $name (dosya var, link değil)"
       ((missing++)) || true
     else
-      echo -e "${RED}✗${NC} $dir (link yok)"
+      echo -e "${RED}✗${NC} $name (link yok)"
       ((missing++)) || true
     fi
 
@@ -120,21 +137,22 @@ show_status() {
     if [[ ! -d "$source" ]]; then
       echo -e "  ${YELLOW}⚠ Kaynak yok: $source${NC}"
     fi
-  done
+  done < <(iter_links)
 
-  echo -e "\n${BLUE}Toplam: ${#DIRS[@]} | Bağlı: $linked | Eksik: $missing${NC}"
+  local total=$(( ${#DIRS[@]} + ${#EXTRA_LINKS[@]} ))
+  echo -e "\n${BLUE}Toplam: ${total} | Bağlı: $linked | Eksik: $missing${NC}"
 }
 
 # Backup existing directory
 backup_dir() {
-  local dir="$1"
-  local target="$TARGET_ROOT/$dir"
+  local name="$1"
+  local target="$2"
 
   if [[ -d "$target" && ! -L "$target" ]]; then
     local backup="${target}_backup_$(date +%Y%m%d_%H%M%S)"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-      log "[TEST] Yedek: $dir -> $(basename "$backup")" "$YELLOW"
+      log "[TEST] Yedek: $name -> $(basename "$backup")" "$YELLOW"
     else
       mv "$target" "$backup"
       log "Yedeklendi: $(basename "$backup")" "$YELLOW"
@@ -144,9 +162,9 @@ backup_dir() {
 
 # Create single symlink
 create_link() {
-  local dir="$1"
-  local source="$SOURCE_ROOT/$dir"
-  local target="$TARGET_ROOT/$dir"
+  local name="$1"
+  local source="$2"
+  local target="$3"
 
   # Create source if missing
   if [[ ! -d "$source" ]]; then
@@ -163,7 +181,7 @@ create_link() {
       if [[ $REPLY =~ ^[Ee]$ ]]; then
         mkdir -p "$source"
       else
-        log "Atlandı: $dir" "$YELLOW"
+        log "Atlandı: $name" "$YELLOW"
         return
       fi
     fi
@@ -172,7 +190,7 @@ create_link() {
   # Check existing link
   if [[ -L "$target" ]]; then
     if [[ "$(readlink "$target")" == "$source" ]]; then
-      log "Zaten var: $dir" "$GREEN"
+      log "Zaten var: $name" "$GREEN"
       return
     else
       [[ "$FORCE" == "true" ]] && rm "$target" || return
@@ -181,10 +199,10 @@ create_link() {
 
   # Create link
   if [[ "$DRY_RUN" == "true" ]]; then
-    log "[TEST] Link: $dir" "$YELLOW"
+    log "[TEST] Link: $name" "$YELLOW"
   else
     ln -s "$source" "$target"
-    log "Oluşturuldu: $dir" "$GREEN"
+    log "Oluşturuldu: $name" "$GREEN"
   fi
 }
 
@@ -194,10 +212,10 @@ create_links() {
 
   log "\n=== Link Oluşturma ===" "$BLUE"
 
-  for dir in "${DIRS[@]}"; do
-    backup_dir "$dir"
-    create_link "$dir"
-  done
+  while IFS='|' read -r name source target; do
+    backup_dir "$name" "$target"
+    create_link "$name" "$source" "$target"
+  done < <(iter_links)
 
   log "\nTamamlandı!" "$GREEN"
 }
@@ -208,20 +226,18 @@ remove_links() {
 
   log "\n=== Link Kaldırma ===" "$BLUE"
 
-  for dir in "${DIRS[@]}"; do
-    local target="$TARGET_ROOT/$dir"
-
+  while IFS='|' read -r name source target; do
     if [[ -L "$target" ]]; then
       if [[ "$DRY_RUN" == "true" ]]; then
-        log "[TEST] Kaldır: $dir" "$YELLOW"
+        log "[TEST] Kaldır: $name" "$YELLOW"
       else
         rm "$target"
-        log "Kaldırıldı: $dir" "$GREEN"
+        log "Kaldırıldı: $name" "$GREEN"
       fi
     else
-      log "Link değil: $dir" "$YELLOW"
+      log "Link değil: $name" "$YELLOW"
     fi
-  done
+  done < <(iter_links)
 
   log "\nTamamlandı!" "$GREEN"
 }
