@@ -30,11 +30,11 @@
       fsType = "ext4";
     };
 
-  fileSystems."/cachy" =
-    { device = "/dev/disk/by-uuid/6784b6e4-7e6e-4662-9554-7bb313b427ee";
-      fsType = "btrfs";
-      options = [ "noatime" ];
-    };
+  #fileSystems."/cachy" =
+  #  { device = "/dev/disk/by-uuid/6784b6e4-7e6e-4662-9554-7bb313b427ee";
+  #    fsType = "btrfs";
+  #    options = [ "noatime" ];
+  #  };
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/CE59-4A9A";
