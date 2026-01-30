@@ -145,7 +145,7 @@ in
    # =============================================================================
    home.sessionVariables = {
      TERMINAL = "kitty";
-     BROWSER = "brave";
+     BROWSER = lib.mkDefault "brave-kenp-default";
      WINEDLLOVERRIDES = "winemenubuilder.exe=d"; # Prevent Wine file associations
    };
   };

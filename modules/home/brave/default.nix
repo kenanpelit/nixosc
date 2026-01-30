@@ -130,7 +130,7 @@ in
 
     defaultDesktopFile = lib.mkOption {
       type = lib.types.str;
-      default = "brave-browser.desktop";
+      default = "brave-kenp.desktop";
       description = ''
         Desktop entry used for XDG default browser associations (http/https/html).
 
@@ -223,7 +223,7 @@ in
       genericName = "Web Browser";
       categories = [ "Network" "WebBrowser" ];
       terminal = false;
-      exec = "profile_brave ${config.my.browser.brave.defaultProfileName} --separate %U";
+      exec = "brave-kenp-default %U";
       mimeType = [
         "x-scheme-handler/http"
         "x-scheme-handler/https"
@@ -268,7 +268,7 @@ Compiled feature flags:
   --disable-features=${disabledFeatures}'' else ""}
 
 Environment hints:
-  BROWSER = brave-launcher        (if setAsDefault = true)
+  BROWSER = brave-kenp-default    (if setAsDefault = true)
   LIBVA_DRIVER_NAME = ''${vaApiDriver or "auto"}
 
 To see Brave's own flags, run:
@@ -343,7 +343,7 @@ EOF
       (lib.optionalAttrs config.my.browser.brave.setAsDefault {
         # Prefer mime/desktop routing instead of hard-calling Brave. This avoids
         # extra instances when some apps respect $BROWSER.
-        BROWSER = lib.mkDefault "xdg-open";
+        BROWSER = lib.mkDefault "brave-kenp-default";
 
         # Helps Chromium-family pick the correct desktop entry for relaunch and
         # external link handling (especially from app-mode windows).
