@@ -16,12 +16,14 @@ in {
 
     hiDpiOptimized = mkOption {
       type = types.bool;
-      default = true;
+      default = false; # Default to FALSE for 2K (Standard DPI needs subpixel)
       description = ''
-        If true, fontconfig is tuned for HiDPI/modern LCD panels:
+        If true, fontconfig is tuned for HiDPI/Retina (4K+) panels:
           - grayscale antialiasing (no subpixel)
+        If false (default for 2K/FHD), we use standard subpixel rendering:
+          - rgb subpixel (sharper on standard screens)
           - slight hinting
-          - antialias enabled
+          - lcddefault filter
       '';
     };
   };
@@ -86,6 +88,7 @@ in {
             "Noto Serif"
             "Noto Serif CJK SC"
             "DejaVu Serif"
+            "Noto Color Emoji"
           ];
 
           sansSerif = [
@@ -95,23 +98,26 @@ in {
             "Noto Sans CJK SC"
             "Liberation Sans"
             "DejaVu Sans"
+            "Noto Color Emoji"
           ];
         };
 
-        subpixel = mkIf cfg.fonts.hiDpiOptimized {
-          rgba      = "none";
-          lcdfilter = "none";
+        # 2K/Standard Monitor Optimization (Gold Standard)
+        subpixel = {
+          rgba = if cfg.fonts.hiDpiOptimized then "none" else "rgb";
+          lcdfilter = if cfg.fonts.hiDpiOptimized then "none" else "lcddefault";
         };
 
         hinting = {
           enable   = true;
           autohint = false;
-          style    = if cfg.fonts.hiDpiOptimized then "slight" else "medium";
+          style    = "slight"; # Slight is best for modern fonts on both 2K and 4K
         };
 
         antialias = true;
         useEmbeddedBitmaps = false;
-        # Force emoji fallback into Inter/Fira
+        
+        # Force emoji fallback into Inter/Fira/Maple
         localConf = ''
           <?xml version="1.0"?>
           <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
@@ -125,6 +131,7 @@ in {
               </pattern>
             </rejectfont>
 
+            <!-- Generic Emoji Alias -->
             <alias>
               <family>emoji</family>
               <prefer>
@@ -132,6 +139,8 @@ in {
                 <family>Twitter Color Emoji</family>
               </prefer>
             </alias>
+
+            <!-- Specific Font Fallbacks -->
             <alias>
               <family>Inter</family>
               <prefer><family>Noto Color Emoji</family></prefer>
@@ -140,12 +149,17 @@ in {
               <family>Fira Code</family>
               <prefer><family>Noto Color Emoji</family></prefer>
             </alias>
+            <alias>
+              <family>Maple Mono NF</family>
+              <prefer><family>Noto Color Emoji</family></prefer>
+            </alias>
           </fontconfig>
         '';
       };
     };
 
     environment.variables = {
+      # Version 40 is standard for Arch/CachyOS (sharper)
       FREETYPE_PROPERTIES = "truetype:interpreter-version=40";
     };
   };

@@ -177,7 +177,7 @@ lib.mkIf cfg.enable {
       EDITOR   = "nvim";
       VISUAL   = "nvim";
       TERMINAL = "kitty";
-      BROWSER  = "brave";
+      BROWSER  = "brave-kenp-default";
       PAGER    = "less";
 
       # -----------------------------------------------------------------------

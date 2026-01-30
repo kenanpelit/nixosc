@@ -253,6 +253,7 @@ in
       QT_WAYLAND_DISABLE_WINDOWDECORATION "1";
       MOZ_ENABLE_WAYLAND "1";
       NIXOS_OZONE_WL "1";
+      BROWSER "brave-kenp-default";
 
       // Use a stable SSH agent socket provided by gnome-keyring on Wayland.
       // This helps prevent late-session passphrase prompts and gcr-prompter popups.

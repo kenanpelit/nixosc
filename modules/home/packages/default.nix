@@ -49,6 +49,7 @@ in
       git lazygit gh tig    # Version control stack
       gnumake gcc           # Basic build tools
       jq yq                 # JSON/YAML processors
+      glaze                 # JSON and interface library for modern C++
       
       # Language Tools
       go_1_25 customPython

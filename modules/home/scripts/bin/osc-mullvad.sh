@@ -46,15 +46,26 @@ SCRIPT_NAME=$(basename "$0")
 TIMEOUT=30 # Seconds to wait for connection before timeout
 CONNECTION_RETRIES=3
 
-# Configuration directories and files
-LOG_DIR="$HOME/.logs/mullvad"
-CONFIG_DIR="$HOME/.config/mullvad"
-FAVORITES_FILE="$CONFIG_DIR/favorites.txt"
-HISTORY_FILE="$LOG_DIR/connection_history.log"
+# Storage directories and files (everything under ~/.mullvad by default)
+MULLVAD_DIR="${OSC_MULLVAD_DIR:-$HOME/.mullvad}"
+LOG_DIR="${OSC_MULLVAD_LOG_DIR:-$MULLVAD_DIR/logs}"
+CONFIG_DIR="${OSC_MULLVAD_CONFIG_DIR:-$MULLVAD_DIR}"
+FAVORITES_FILE="${OSC_MULLVAD_FAVORITES_FILE:-$CONFIG_DIR/favorites.txt}"
+HISTORY_FILE="${OSC_MULLVAD_HISTORY_FILE:-$LOG_DIR/connection_history.log}"
+
+# Slot/device state (for cross-machine 5-device limit handling)
+# Default is inside $MULLVAD_DIR (~/.mullvad by default).
+SLOT_STATE_DIR="${OSC_MULLVAD_STATE_DIR:-$MULLVAD_DIR}"
+SLOT_STATE_FILE="${OSC_MULLVAD_SLOT_STATE_FILE:-$SLOT_STATE_DIR/slot.state}"
+SLOT_PASS_ENTRY="${OSC_MULLVAD_PASS_ENTRY:-mullvad/account}"
+SLOT_REVOKE_OTHERS="${OSC_MULLVAD_REVOKE_OTHERS:-true}"
+SLOT_DRY_RUN="false"
+SLOT_ACCOUNT_NUMBER=""
 
 # Create directories if they don't exist
 mkdir -p "$LOG_DIR"
 mkdir -p "$CONFIG_DIR"
+chmod 0700 "$CONFIG_DIR" 2>/dev/null || true
 touch "$FAVORITES_FILE"
 
 # Europe countries
@@ -770,6 +781,408 @@ migrate_favorites_format() {
 }
 
 # ----------------------------------------------------------------------------
+# Device Slot (multi-machine) helpers
+# ----------------------------------------------------------------------------
+
+slot_log() { echo -e "${CYAN}==>${NC} $*"; }
+slot_ok() { echo -e "${GREEN}OK:${NC} $*"; }
+slot_warn() { echo -e "${YELLOW}WARN:${NC} $*" >&2; }
+slot_die() {
+	echo -e "${RED}ERROR:${NC} $*" >&2
+	return 1
+}
+
+slot_do_cmd() {
+	if [[ "$SLOT_DRY_RUN" == "true" ]]; then
+		echo -e "${PURPLE}[dry-run]${NC} $*"
+		return 0
+	fi
+	"$@"
+}
+
+slot_notify() {
+	# slot_notify <level> <title> <body>
+	local level="${1:-normal}"
+	local title="${2:-mullvad-slot}"
+	local body="${3:-}"
+	local icon="security-medium"
+
+	case "$level" in
+	critical) icon="security-low" ;;
+	normal) icon="security-medium" ;;
+	esac
+
+	notify "$title" "$body" "$icon"
+}
+
+slot_os_id() {
+	# Prefer lsb_release; fallback to /etc/os-release; fallback to uname.
+	if command -v lsb_release >/dev/null 2>&1; then
+		lsb_release -i 2>/dev/null | awk -F':\t*' '/Distributor ID:/ {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}'
+		return 0
+	fi
+
+	if [[ -r /etc/os-release ]]; then
+		# shellcheck disable=SC1091
+		. /etc/os-release
+		if [[ -n "${NAME:-}" ]]; then
+			printf '%s\n' "$NAME"
+			return 0
+		fi
+		if [[ -n "${ID:-}" ]]; then
+			printf '%s\n' "$ID"
+			return 0
+		fi
+	fi
+
+	uname -s
+}
+
+slot_sanitize_key() {
+	# Keep alnum + underscore only.
+	echo "$1" | tr -cd '[:alnum:]_' | sed 's/^$/UNKNOWN/'
+}
+
+slot_my_state_key() {
+	echo "DEV_$(slot_sanitize_key "$(slot_os_id)")"
+}
+
+slot_ensure_state_file() {
+	if [[ "$SLOT_DRY_RUN" == "true" ]]; then
+		return 0
+	fi
+
+	mkdir -p "$SLOT_STATE_DIR"
+	chmod 0700 "$SLOT_STATE_DIR" 2>/dev/null || true
+
+	touch "$SLOT_STATE_FILE"
+	chmod 0600 "$SLOT_STATE_FILE" 2>/dev/null || true
+}
+
+slot_with_lock() {
+	# slot_with_lock <command...>
+	if [[ "$SLOT_DRY_RUN" == "true" ]]; then
+		"$@"
+		return $?
+	fi
+
+	if command -v flock >/dev/null 2>&1; then
+		slot_ensure_state_file || return 1
+		local lock_fd
+		exec {lock_fd}>>"$SLOT_STATE_FILE"
+		flock -x "$lock_fd"
+		"$@"
+		local rc=$?
+		exec {lock_fd}>&-
+		return $rc
+	else
+		"$@"
+	fi
+}
+
+slot_state_list_pairs() {
+	[[ -f "$SLOT_STATE_FILE" ]] || return 0
+	awk -F'=' '/^DEV_/{print $1 "=" substr($0, index($0,$2))}' "$SLOT_STATE_FILE"
+}
+
+slot_state_get() {
+	local key="$1"
+	[[ -f "$SLOT_STATE_FILE" ]] || return 1
+	awk -F'=' -v k="$key" '$1==k {sub($1"=",""); print; found=1; exit} END{exit (found?0:1)}' "$SLOT_STATE_FILE"
+}
+
+slot_state_set() {
+	local key="$1"
+	local val="$2"
+
+	if [[ "$SLOT_DRY_RUN" == "true" ]]; then
+		slot_log "Would set state: $key=$val"
+		return 0
+	fi
+
+	slot_ensure_state_file || return 1
+
+	if grep -qE "^${key}=" "$SLOT_STATE_FILE" 2>/dev/null; then
+		awk -v k="$key" -v v="$val" '
+      BEGIN{FS=OFS="="}
+      $1==k {$0=k "=" v}
+      {print}
+    ' "$SLOT_STATE_FILE" >"${SLOT_STATE_FILE}.tmp" && mv "${SLOT_STATE_FILE}.tmp" "$SLOT_STATE_FILE"
+	else
+		printf '%s=%s\n' "$key" "$val" >>"$SLOT_STATE_FILE"
+	fi
+}
+
+slot_is_logged_in() {
+	mullvad account get 2>/dev/null | grep -qE '^[[:space:]]*Device name:'
+}
+
+slot_current_device_name() {
+	# Parses: "Device name:        Live Coral"
+	mullvad account get 2>/dev/null | awk -F': *' '/^[[:space:]]*Device name:/ {print $2; exit}'
+}
+
+slot_list_devices() {
+	mullvad account list-devices 2>/dev/null | awk '
+    /^[[:space:]]*Devices on the account:[[:space:]]*$/ { next }
+    /^[[:space:]]*$/ { next }
+    { print }
+  '
+}
+
+slot_resolve_account_number() {
+	if [[ -n "${MULLVAD_ACCOUNT_NUMBER:-}" ]]; then
+		printf '%s' "$MULLVAD_ACCOUNT_NUMBER"
+		return 0
+	fi
+
+	if command -v pass >/dev/null 2>&1; then
+		if pass show "$SLOT_PASS_ENTRY" >/dev/null 2>&1; then
+			pass show "$SLOT_PASS_ENTRY" | head -n1 | tr -d '[:space:]'
+			return 0
+		fi
+	fi
+
+	return 1
+}
+
+slot_get_account_number() {
+	if [[ -n "${SLOT_ACCOUNT_NUMBER:-}" ]]; then
+		printf '%s' "$SLOT_ACCOUNT_NUMBER"
+		return 0
+	fi
+
+	local acc=""
+	if ! acc="$(slot_resolve_account_number)"; then
+		return 1
+	fi
+
+	SLOT_ACCOUNT_NUMBER="$acc"
+	printf '%s' "$acc"
+}
+
+slot_login_if_needed() {
+	if slot_is_logged_in; then
+		return 0
+	fi
+
+	local acc=""
+	if ! acc="$(slot_get_account_number)"; then
+		slot_die "Not logged in. Export MULLVAD_ACCOUNT_NUMBER or store it in pass ($SLOT_PASS_ENTRY)."
+		return 1
+	fi
+
+	slot_log "Logging in to Mullvad account (secret not shown)"
+	if slot_do_cmd mullvad account login "$acc" >/dev/null; then
+		slot_ok "Logged in"
+	else
+		slot_die "mullvad account login failed"
+		return 1
+	fi
+}
+
+slot_revoke_device() {
+	local dev="$1"
+	local acc="${2:-}"
+	[[ -n "$dev" ]] || return 0
+
+	local cur
+	if slot_is_logged_in; then
+		cur="$(slot_current_device_name || true)"
+		if [[ -n "$cur" && "$dev" == "$cur" ]]; then
+			slot_warn "Refusing to revoke current device: '$dev'"
+			return 0
+		fi
+	fi
+
+	if [[ -z "$acc" ]] && ! slot_is_logged_in; then
+		slot_warn "Cannot revoke without login; set MULLVAD_ACCOUNT_NUMBER or pass entry ($SLOT_PASS_ENTRY)."
+		return 1
+	fi
+
+	local revoke_cmd=(mullvad account revoke-device)
+	if [[ -n "$acc" ]]; then
+		revoke_cmd+=(--account "$acc")
+	fi
+	revoke_cmd+=("$dev")
+
+	if slot_do_cmd "${revoke_cmd[@]}" >/dev/null 2>&1; then
+		slot_ok "Revoked device: $dev"
+		slot_notify normal "Mullvad slot" "Revoked: $dev"
+	else
+		slot_warn "Failed to revoke device: '$dev' (maybe already gone?)"
+	fi
+}
+
+slot_revoke_other_known_devices() {
+	local acc="${1:-}"
+	local mine key dev
+	mine="$(slot_my_state_key)"
+
+	while IFS= read -r line; do
+		[[ -n "$line" ]] || continue
+		key="${line%%=*}"
+		dev="${line#*=}"
+
+		[[ -n "$key" && -n "$dev" ]] || continue
+		[[ "$key" == "$mine" ]] && continue
+
+		slot_revoke_device "$dev" "$acc"
+	done < <(slot_state_list_pairs)
+}
+
+slot_connect() {
+	# Prefer WireGuard for slot recycle flows (fast + stable)
+	slot_do_cmd mullvad relay set tunnel-protocol wireguard >/dev/null 2>&1 || true
+
+	slot_log "Connecting Mullvad…"
+	if slot_do_cmd mullvad connect >/dev/null 2>&1; then
+		slot_ok "Connected"
+		slot_notify normal "Mullvad" "Connected"
+	else
+		slot_notify critical "Mullvad" "Connect failed"
+		return 1
+	fi
+}
+
+slot_disconnect() {
+	slot_log "Disconnecting Mullvad…"
+	slot_do_cmd mullvad disconnect >/dev/null 2>&1 || true
+	slot_ok "Disconnected"
+	slot_notify normal "Mullvad" "Disconnected"
+}
+
+slot_record_my_device() {
+	local dev key
+	dev="$(slot_current_device_name || true)"
+	[[ -n "$dev" ]] || {
+		slot_die "Could not determine current device name (mullvad account get)."
+		return 1
+	}
+
+	key="$(slot_my_state_key)"
+	slot_state_set "$key" "$dev" || return 1
+
+	slot_ok "Recorded: $(slot_os_id) -> $dev"
+	slot_notify normal "Mullvad slot" "Recorded: $(slot_os_id) -> $dev"
+}
+
+slot_cmd_recycle_locked() {
+	local acc=""
+	if ! slot_is_logged_in; then
+		if ! acc="$(slot_get_account_number)"; then
+			slot_die "Not logged in. Export MULLVAD_ACCOUNT_NUMBER or store it in pass ($SLOT_PASS_ENTRY)."
+			return 1
+		fi
+	fi
+
+	if [[ "$SLOT_REVOKE_OTHERS" == "true" ]]; then
+		slot_log "Revoking other OS devices from state (STATE_FILE=$SLOT_STATE_FILE)"
+		slot_revoke_other_known_devices "$acc"
+	else
+		slot_warn "OSC_MULLVAD_REVOKE_OTHERS=false: skipping automatic revoke of other OS devices"
+	fi
+
+	slot_login_if_needed || return 1
+	slot_connect || return 1
+	slot_record_my_device || return 1
+
+	slot_log "OS ID: $(slot_os_id)"
+	slot_log "Device: $(slot_current_device_name || true)"
+}
+
+slot_cmd_recycle() {
+	command -v mullvad >/dev/null 2>&1 || return 1
+	slot_ensure_state_file || true
+
+	# Critical: free slot BEFORE login if the account is at 5/5.
+	slot_with_lock slot_cmd_recycle_locked
+}
+
+slot_cmd_whoami() {
+	slot_login_if_needed || return 1
+	slot_current_device_name
+}
+
+slot_cmd_list() {
+	slot_login_if_needed || return 1
+	slot_list_devices
+}
+
+slot_cmd_status() {
+	slot_login_if_needed || return 1
+
+	echo "== mullvad status =="
+	mullvad status || true
+	echo
+	echo "== os id =="
+	slot_os_id
+	echo
+	echo "== current device =="
+	slot_current_device_name || true
+	echo
+	echo "== slot state =="
+	echo "SLOT_STATE_FILE=$SLOT_STATE_FILE"
+	if [[ -f "$SLOT_STATE_FILE" ]]; then
+		slot_state_list_pairs || true
+	else
+		echo "<missing>"
+	fi
+}
+
+slot_usage() {
+	cat <<EOF
+Usage:
+  $SCRIPT_NAME slot [--dry-run] <command>
+
+Commands:
+  recycle        Revoke other OS device(s) from slot state -> login -> connect -> record self
+  whoami         Print current Mullvad device name
+  list           List devices on the account
+  status         Show mullvad status + OS ID + slot state entries
+  disconnect     Disconnect VPN
+
+Defaults:
+  Slot state:    $SLOT_STATE_FILE
+
+Env:
+  OSC_MULLVAD_DIR=$MULLVAD_DIR
+  OSC_MULLVAD_STATE_DIR=$SLOT_STATE_DIR
+  OSC_MULLVAD_SLOT_STATE_FILE=$SLOT_STATE_FILE
+  MULLVAD_ACCOUNT_NUMBER=1234123412341234
+  OSC_MULLVAD_PASS_ENTRY=mullvad/account
+  OSC_MULLVAD_REVOKE_OTHERS=true|false
+
+Examples:
+  $SCRIPT_NAME slot recycle
+  $SCRIPT_NAME slot --dry-run recycle
+EOF
+}
+
+slot_main() {
+	if [[ "${1:-}" == "--dry-run" ]]; then
+		SLOT_DRY_RUN="true"
+		shift
+	fi
+
+	local cmd="${1:-help}"
+	shift || true
+
+	case "$cmd" in
+	recycle) slot_cmd_recycle ;;
+	whoami) slot_cmd_whoami ;;
+	list) slot_cmd_list ;;
+	status) slot_cmd_status ;;
+	disconnect) slot_disconnect ;;
+	-h | --help | help | "") slot_usage ;;
+	*)
+		slot_die "Unknown slot command: $cmd (use: $SCRIPT_NAME slot --help)"
+		return 1
+		;;
+	esac
+}
+
+# ----------------------------------------------------------------------------
 # Obfuscation (udp2tcp / shadowsocks / off / auto) — interactive & CLI
 # ----------------------------------------------------------------------------
 
@@ -1246,6 +1659,13 @@ show_help() {
 	echo -e "    ${GREEN}favorite list${NC}      List all favorite relays"
 	echo -e "    ${GREEN}favorite connect${NC}   Connect to a favorite relay (interactive)"
 	echo -e ""
+	echo -e "${YELLOW}Device Slot (multi-machine):${NC}"
+	echo -e "    ${GREEN}slot recycle${NC}       Revoke other machine device(s) -> login -> connect -> record self"
+	echo -e "    ${GREEN}slot status${NC}        Show slot state + current device"
+	echo -e "    ${GREEN}slot whoami${NC}        Print current Mullvad device name"
+	echo -e "    ${GREEN}slot list${NC}          List devices on the account"
+	echo -e "    ${GREEN}slot disconnect${NC}    Disconnect VPN"
+	echo -e ""
 	echo -e "${YELLOW}Automatic Switching:${NC}"
 	echo -e "    ${GREEN}timer${NC} <minutes>    Switch relays automatically every X minutes"
 	echo -e "    ${GREEN}timer stop${NC}         Stop the automatic switching timer"
@@ -1328,6 +1748,11 @@ main() {
 		else
 			echo -e "${RED}Error: No relays found${NC}"
 		fi
+		;;
+
+	# Device slot (multi-machine)
+	"slot")
+		slot_main "${@:2}"
 		;;
 
 	# Favorites management
