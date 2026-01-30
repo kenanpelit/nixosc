@@ -37,6 +37,15 @@ let
   braveConfigDir = ".config/BraveSoftware/Brave-Browser";
   profilePath    = "${braveConfigDir}/${config.my.browser.brave.profile}";
 
+  # Some apps (and sandboxed launchers/portals) don't reliably inherit $PATH from
+  # your interactive shell. Use an absolute exec path for the "default browser"
+  # wrapper so external link clicks (e.g. from Ferdium/Electron apps) always hit
+  # the intended profile.
+  #
+  # NOTE: `~/.nix-profile` is a stable per-user entrypoint on NixOS (symlinked to
+  # `/etc/profiles/per-user/<user>`), so it's safe to hardcode via homeDirectory.
+  braveKenpDefaultExec = "${config.home.homeDirectory}/.nix-profile/bin/brave-kenp-default %U";
+
   # ============================================================================
   # Feature flags (computed in Nix, used by launcher)
   # ============================================================================
@@ -223,7 +232,7 @@ in
       genericName = "Web Browser";
       categories = [ "Network" "WebBrowser" ];
       terminal = false;
-      exec = "brave-kenp-default %U";
+      exec = braveKenpDefaultExec;
       mimeType = [
         "x-scheme-handler/http"
         "x-scheme-handler/https"
@@ -235,6 +244,27 @@ in
       settings = {
         StartupWMClass = config.my.browser.brave.defaultProfileName;
       };
+    };
+
+    # Also expose the desktop entry under XDG_DATA_HOME (~/.local/share) so
+    # Flatpak/portal clients and apps with incomplete XDG_DATA_DIRS handling can
+    # still resolve `brave-kenp.desktop`.
+    #
+    # Guard this so we don't accidentally override other desktop files if the
+    # user changes `defaultDesktopFile` to something like `brave-browser.desktop`.
+    xdg.dataFile = lib.mkIf (config.my.browser.brave.defaultDesktopFile == "brave-kenp.desktop") {
+      "applications/brave-kenp.desktop".text = ''
+        [Desktop Entry]
+        Categories=Network;WebBrowser
+        Exec=${braveKenpDefaultExec}
+        GenericName=Web Browser
+        MimeType=x-scheme-handler/http;x-scheme-handler/https;text/html;application/xhtml+xml;x-scheme-handler/about;x-scheme-handler/unknown
+        Name=Brave (${config.my.browser.brave.defaultProfileName})
+        StartupWMClass=${config.my.browser.brave.defaultProfileName}
+        Terminal=false
+        Type=Application
+        Version=1.5
+      '';
     };
 
     # -------------------------------------------------------------------------
