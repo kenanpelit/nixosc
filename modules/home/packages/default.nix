@@ -120,6 +120,7 @@ in
 
       # Phone / Android mirroring
       scrcpy                # Android screen mirroring/control over ADB
+      android-tools         # adb/fastboot for Android devices
   
       # -- Desktop & Productivity ------------------------------------------------
       libreoffice           # Office suite
