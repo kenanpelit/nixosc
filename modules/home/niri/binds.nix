@@ -104,7 +104,8 @@
   # ---------------------------------------------------------------------------
   dms = ''
       // --- Launchers ---
-      Mod+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
+      Mod+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "launcher" "toggle"; }
+      Mod+Ctrl+Space    repeat=false hotkey-overlay-title="Spotlight" { spawn "${bins.dms}" "ipc" "call" "spotlight" "toggle"; }
       Mod+D        repeat=false hotkey-overlay-title="Dash / Apps" { spawn "${bins.dms}" "ipc" "call" "dash" "toggle" ""; }
       Mod+Ctrl+D   repeat=false hotkey-overlay-title="Control Center" { spawn "${bins.dms}" "ipc" "call" "control-center" "toggle" ""; }
       Mod+N        repeat=false hotkey-overlay-title="Notifications" { spawn "${bins.dms}" "ipc" "call" "notifications" "toggle"; }
@@ -176,6 +177,7 @@
       Mod+Ctrl+V     repeat=false hotkey-overlay-title="Clipse (Floating)" { spawn "${bins.kitty}" "--class" "clipse" "-e" "${bins.clipse}"; }
       F10            repeat=false hotkey-overlay-title="Bluetooth Toggle" { spawn "bluetooth_toggle"; }
       Alt+F12        repeat=false hotkey-overlay-title="VPN Toggle" { spawn "osc-mullvad" "toggle"; }
+      Mod+Alt+F12    repeat=false hotkey-overlay-title="VPN Slot Recycle" { spawn "osc-mullvad-slot"; }
       
       // --- Screenshots ---
       Print       repeat=false hotkey-overlay-title="Screenshot Area" { spawn "${bins.dms}" "ipc" "call" "niri" "screenshot"; }
@@ -195,7 +197,7 @@
       
       Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-ndrop" "kitty" "--class" "dropdown-terminal"; }
       Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
-      Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
+      //Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
       Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "nsticky-toggle"; }
       Mod+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Nemo)" { spawn "nemo"; }
       Alt+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Yazi)" { spawn "${bins.kitty}" "-e" "yazi"; }

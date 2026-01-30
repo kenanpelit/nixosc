@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# svmubuntu.sh - Ubuntu VM başlatıcısı
-# Ubuntu imajını belirlenmiş kaynaklarla çalıştırmak için kısayol.
+# svmubuntu.sh — SVM profile: Ubuntu (QEMU/KVM)
 
 #===============================================================================
 #
-#   Version: 1.3.0
-#   Date: 2025-11-02
-#   Author: Kenan Pelit (Enhanced for Wayland/TTY)
-#   Description: Universal VM Manager
-#                Manages QEMU/KVM based virtual machines (Ubuntu/NixOS/etc.)
+#   SVM (Simple VM) — Ubuntu profile
 #
-#   Enhancements in 1.3.0:
-#   - Better Wayland/Sway integration
-#   - D-Bus timeout handling
-#   - Accessibility bridge control
-#   - Font configuration initialization
-#   - TTY-specific optimizations
+#   Purpose:
+#     Create and run an Ubuntu VM with sane defaults (Wayland/TTY friendly).
+#
+#   Commands:
+#     install    Boot from ISO (first install)
+#     start      Normal start (use --no-iso after install)
+#     stop       Shutdown the VM (graceful, then force)
+#     status     Show whether PID is alive
+#     connect    SSH into the guest (user networking port-forward)
+#     console    QEMU monitor console (unix socket)
+#     reset      Remove disk/vars files (DANGEROUS)
+#
+#   Highlights:
+#     - Safe argv-based QEMU invocation (no eval)
+#     - Works without KVM (falls back to TCG)
+#     - Boot order control (--boot-order auto|disk|cdrom)
+#     - Optional ISO attach/download (--no-iso)
+#     - PID file is always written (status/stop works in foreground too)
+#
+#   Version: 1.4.0
+#   Date: 2026-01-27
+#   Author: Kenan Pelit
 #
 #===============================================================================
 
@@ -85,16 +96,23 @@ declare -A CONFIG=(
 	[iso_checksum]=""
 	[display_mode]="gtk"
 	[boot_mode]="bios"
+	[boot_order]="auto" # auto|disk|cdrom
 	[shared_dir]="/run/user/$(id -u)"
+	[attach_iso]="true"
 	[daemonize]="false"
+	[iso_file_explicit]="false"
 )
 
 # Derived paths
 CONFIG[iso_file]="${CONFIG[base_dir]}/$(basename "${CONFIG[iso_url]}")"
 CONFIG[vars_file]="${CONFIG[base_dir]}/OVMF_VARS.fd"
 CONFIG[disk_file]="${CONFIG[base_dir]}/disk.qcow2"
+CONFIG[monitor_sock]="${CONFIG[base_dir]}/monitor.sock"
 CONFIG[pid_file]="${CONFIG[base_dir]}/${CONFIG[vm_name]}.pid"
 CONFIG[log_file]="${CONFIG[base_dir]}/${CONFIG[vm_name]}.log"
+
+DRY_RUN=0
+HAVE_KVM="false"
 
 show_help() {
 	cat <<EOF
@@ -103,6 +121,7 @@ Universal VM Manager - Easily create and manage virtual machines
 Usage: $(basename "$0") [COMMAND] [OPTIONS]
 
 Commands:
+    install            Start the VM in installer mode (boot from ISO)
     start              Start the VM (default)
     stop               Stop the VM
     status             Show VM status
@@ -117,6 +136,7 @@ Basic Options:
     -p, --port PORT        Set SSH port (default: ${CONFIG[ssh_port]})
     -s, --size SIZE        Set disk size (default: ${CONFIG[disk_size]})
     --boot MODE            Set boot mode (bios or uefi) (default: ${CONFIG[boot_mode]})
+    --boot-order ORDER     Boot order (auto|disk|cdrom) (default: ${CONFIG[boot_order]})
     
 Display Options:
     -d, --daemon           Run in background
@@ -133,6 +153,7 @@ Path Options:
     
 Other Options:
     -h, --help             Show this help message
+    --no-iso              Do not attach ISO (skip download/verify)
     --dry-run             Show QEMU command without executing
     -v, --verbose         Enable verbose output
 
@@ -146,6 +167,9 @@ Environment Variables:
 Examples:
     # Start VM with default settings
     $(basename "$0") start
+
+    # First install (boot from ISO)
+    $(basename "$0") install
     
     # Start VM in UEFI mode with more resources
     $(basename "$0") start --boot uefi --memory 16G --cpus 4
@@ -167,9 +191,7 @@ Note: Use Ctrl+Alt+G to release mouse/keyboard grab in GUI mode
 EOF
 }
 
-setup_environment() {
-	mkdir -p "${CONFIG[base_dir]}"
-
+apply_env_overrides() {
 	# Environment variable overrides
 	[[ -n "${VM_BASE_DIR:-}" ]] && CONFIG[base_dir]="$VM_BASE_DIR"
 	[[ -n "${VM_MEMORY:-}" ]] && CONFIG[memory]="$VM_MEMORY"
@@ -177,12 +199,26 @@ setup_environment() {
 	[[ -n "${VM_SSH_PORT:-}" ]] && CONFIG[ssh_port]="$VM_SSH_PORT"
 	[[ -n "${VM_BOOT_MODE:-}" ]] && CONFIG[boot_mode]="$VM_BOOT_MODE"
 
+	return 0
+}
+
+refresh_derived_paths() {
+	local default_iso="${CONFIG[base_dir]}/$(basename "${CONFIG[iso_url]}")"
+	if [[ "${CONFIG[iso_file_explicit]}" != "true" ]]; then
+		CONFIG[iso_file]="$default_iso"
+	fi
+
 	# Update derived paths
-	CONFIG[iso_file]="${CONFIG[base_dir]}/$(basename "${CONFIG[iso_url]}")"
 	CONFIG[vars_file]="${CONFIG[base_dir]}/OVMF_VARS.fd"
 	CONFIG[disk_file]="${CONFIG[base_dir]}/disk.qcow2"
+	CONFIG[monitor_sock]="${CONFIG[base_dir]}/monitor.sock"
 	CONFIG[pid_file]="${CONFIG[base_dir]}/${CONFIG[vm_name]}.pid"
 	CONFIG[log_file]="${CONFIG[base_dir]}/${CONFIG[vm_name]}.log"
+}
+
+prepare_environment() {
+	refresh_derived_paths
+	mkdir -p "${CONFIG[base_dir]}"
 }
 
 check_dependencies() {
@@ -206,8 +242,11 @@ check_dependencies() {
 
 	# Check KVM support
 	if [[ ! -r /dev/kvm ]]; then
+		HAVE_KVM="false"
 		log_warn "KVM not available, VM will run without hardware acceleration"
 		log_warn "Add your user to kvm group: sudo usermod -a -G kvm \$USER"
+	else
+		HAVE_KVM="true"
 	fi
 }
 
@@ -254,107 +293,133 @@ setup_vm_files() {
 		log_success "UEFI vars file created"
 	fi
 
-	# Download ISO
-	if [[ ! -f "${CONFIG[iso_file]}" ]]; then
-		log_info "Downloading ISO from ${CONFIG[iso_url]}..."
-		if ! wget --progress=bar:force:noscroll "${CONFIG[iso_url]}" -O "${CONFIG[iso_file]}"; then
-			log_error "Failed to download ISO"
-			rm -f "${CONFIG[iso_file]}"
-			exit 1
+	if [[ "${CONFIG[attach_iso]}" == "true" ]]; then
+		# Download ISO
+		if [[ ! -f "${CONFIG[iso_file]}" ]]; then
+			log_info "Downloading ISO from ${CONFIG[iso_url]}..."
+			if ! wget --progress=bar:force:noscroll "${CONFIG[iso_url]}" -O "${CONFIG[iso_file]}"; then
+				log_error "Failed to download ISO"
+				rm -f "${CONFIG[iso_file]}"
+				exit 1
+			fi
+			log_success "ISO downloaded"
 		fi
-		log_success "ISO downloaded"
-	fi
 
-	verify_iso "${CONFIG[iso_file]}"
+		verify_iso "${CONFIG[iso_file]}"
+	fi
 }
 
 build_qemu_command() {
-	local cmd="qemu-system-x86_64"
+	local -n out="$1"
+	out=(qemu-system-x86_64)
+
+	local accel="tcg"
+	if [[ "$HAVE_KVM" == "true" ]]; then
+		out+=(-enable-kvm)
+		accel="kvm"
+	fi
 
 	# Basic configuration
-	cmd+=" -enable-kvm"
-	cmd+=" -m ${CONFIG[memory]}"
-	cmd+=" -smp ${CONFIG[cpus]}"
-	cmd+=" -name \"${CONFIG[vm_name]}\""
+	out+=(-m "${CONFIG[memory]}")
+	out+=(-smp "${CONFIG[cpus]}")
+	out+=(-name "${CONFIG[vm_name]}")
 
 	# Machine configuration
 	if [[ "${CONFIG[boot_mode]}" == "uefi" ]]; then
-		cmd+=" -machine type=q35,accel=kvm"
+		out+=(-machine "type=q35,accel=${accel}")
 	else
-		cmd+=" -machine type=pc,accel=kvm"
+		out+=(-machine "type=pc,accel=${accel}")
 	fi
+
+	# Boot order (auto|disk|cdrom)
+	case "${CONFIG[boot_order]}" in
+	disk) out+=(-boot order=c) ;;
+	cdrom) out+=(-boot order=dc) ;;
+	auto) : ;;
+	*) log_error "Invalid boot order: ${CONFIG[boot_order]} (expected: auto|disk|cdrom)" && exit 1 ;;
+	esac
 
 	# UEFI boot
 	if [[ "${CONFIG[boot_mode]}" == "uefi" ]]; then
-		cmd+=" -drive file=\"${CONFIG[ovmf_code]}\",if=pflash,format=raw,readonly=on"
-		cmd+=" -drive file=\"${CONFIG[vars_file]}\",if=pflash,format=raw"
+		out+=(-drive "file=${CONFIG[ovmf_code]},if=pflash,format=raw,readonly=on")
+		out+=(-drive "file=${CONFIG[vars_file]},if=pflash,format=raw")
 	fi
 
 	# Storage
-	cmd+=" -drive file=\"${CONFIG[disk_file]}\",if=virtio,cache=writeback"
-	cmd+=" -cdrom \"${CONFIG[iso_file]}\""
+	out+=(-drive "file=${CONFIG[disk_file]},if=virtio,cache=writeback")
+	if [[ "${CONFIG[attach_iso]}" == "true" ]]; then
+		out+=(-cdrom "${CONFIG[iso_file]}")
+	fi
 
 	# Network with SSH
-	cmd+=" -netdev user,id=net0,hostfwd=tcp::${CONFIG[ssh_port]}-:22"
-	cmd+=" -device virtio-net-pci,netdev=net0"
+	out+=(-netdev "user,id=net0,hostfwd=tcp::${CONFIG[ssh_port]}-:22")
+	out+=(-device "virtio-net-pci,netdev=net0")
 
 	# Display
 	case "${CONFIG[display_mode]}" in
 	gtk)
-		cmd+=" -device virtio-vga-gl"
-		cmd+=" -display gtk,gl=on"
+		out+=(-device virtio-vga-gl)
+		out+=(-display "gtk,gl=on")
 		;;
 	spice)
-		cmd+=" -device qxl-vga,vgamem_mb=64"
-		cmd+=" -spice port=5930,addr=127.0.0.1,disable-ticketing=on"
-		cmd+=" -device virtio-serial-pci"
-		cmd+=" -chardev spicevmc,id=vdagent,name=vdagent"
-		cmd+=" -device virtserialport,chardev=vdagent,name=com.redhat.spice.0"
+		out+=(-device "qxl-vga,vgamem_mb=64")
+		out+=(-spice "port=5930,addr=127.0.0.1,disable-ticketing=on")
+		out+=(-device virtio-serial-pci)
+		out+=(-chardev "spicevmc,id=vdagent,name=vdagent")
+		out+=(-device "virtserialport,chardev=vdagent,name=com.redhat.spice.0")
 		;;
 	vnc)
-		cmd+=" -device virtio-vga"
-		cmd+=" -vnc :$((${CONFIG[vnc_port]} - 5900))"
+		out+=(-device virtio-vga)
+		out+=(-vnc ":$((CONFIG[vnc_port] - 5900))")
 		;;
 	none)
-		cmd+=" -nographic"
+		out+=(-nographic)
+		;;
+	*)
+		log_error "Invalid display mode: ${CONFIG[display_mode]} (expected: gtk|spice|vnc|none)"
+		exit 1
 		;;
 	esac
 
 	# Input devices
 	if [[ "${CONFIG[display_mode]}" != "none" ]]; then
-		cmd+=" -device qemu-xhci,id=xhci"
-		cmd+=" -device usb-tablet"
-		cmd+=" -device usb-kbd"
+		out+=(-device qemu-xhci,id=xhci)
+		out+=(-device usb-tablet)
+		out+=(-device usb-kbd)
 	fi
 
 	# Additional features
-	cmd+=" -cpu host"
-	cmd+=" -device virtio-balloon-pci"
-	cmd+=" -device virtio-rng-pci"
+	if [[ "$HAVE_KVM" == "true" ]]; then
+		out+=(-cpu host)
+	else
+		out+=(-cpu max)
+	fi
+	out+=(-device virtio-balloon-pci)
+	out+=(-device virtio-rng-pci)
 
-	# Shared directory
+	# Shared directory (9p)
 	if [[ -d "${CONFIG[shared_dir]}" ]]; then
-		cmd+=" -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare"
-		cmd+=" -fsdev local,security_model=passthrough,id=fsdev0,path=\"${CONFIG[shared_dir]}\""
+		out+=(-fsdev "local,security_model=passthrough,id=fsdev0,path=${CONFIG[shared_dir]}")
+		out+=(-device "virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare")
 	fi
 
 	# Audio
 	if [[ "${CONFIG[display_mode]}" != "none" ]]; then
-		cmd+=" -audiodev pa,id=snd0"
-		cmd+=" -device intel-hda"
-		cmd+=" -device hda-duplex,audiodev=snd0"
+		out+=(-audiodev pa,id=snd0)
+		out+=(-device intel-hda)
+		out+=(-device hda-duplex,audiodev=snd0)
 	fi
+
+	# Always write PID file (useful even in foreground mode)
+	out+=(-pidfile "${CONFIG[pid_file]}")
 
 	# Daemon mode
 	if [[ "${CONFIG[daemonize]}" == "true" ]]; then
-		cmd+=" -daemonize"
-		cmd+=" -pidfile \"${CONFIG[pid_file]}\""
+		out+=(-daemonize)
 	fi
 
 	# Monitor
-	cmd+=" -monitor unix:${CONFIG[base_dir]}/monitor.sock,server,nowait"
-
-	echo "$cmd"
+	out+=(-monitor "unix:${CONFIG[monitor_sock]},server,nowait")
 }
 
 vm_status() {
@@ -380,7 +445,9 @@ vm_stop() {
 		log_info "Stopping VM (PID: $pid)..."
 
 		# Graceful shutdown
-		echo "system_powerdown" | socat - "unix:${CONFIG[base_dir]}/monitor.sock" 2>/dev/null || true
+		if [[ -S "${CONFIG[monitor_sock]}" ]]; then
+			echo "system_powerdown" | socat - "unix:${CONFIG[monitor_sock]}" 2>/dev/null || true
+		fi
 		sleep 5
 
 		# Force if needed
@@ -392,6 +459,7 @@ vm_stop() {
 		fi
 
 		rm -f "${CONFIG[pid_file]}"
+		rm -f "${CONFIG[monitor_sock]}" 2>/dev/null || true
 		log_success "VM stopped"
 	else
 		log_info "VM is not running"
@@ -421,7 +489,7 @@ vm_console() {
 	fi
 
 	log_info "Connecting to QEMU monitor console..."
-	socat - "unix:${CONFIG[base_dir]}/monitor.sock"
+	socat - "unix:${CONFIG[monitor_sock]}"
 }
 
 vm_reset() {
@@ -434,6 +502,15 @@ vm_reset() {
 		log_success "VM reset completed"
 	else
 		log_info "Reset cancelled"
+	fi
+}
+
+require_arg() {
+	local opt="$1"
+	local val="${2:-}"
+	if [[ -z "$val" || "$val" == "-"* ]]; then
+		log_error "Missing value for $opt"
+		exit 1
 	fi
 }
 
@@ -457,31 +534,42 @@ parse_arguments() {
 	while [[ $# -gt 0 ]]; do
 		case $1 in
 		-n | --name)
+			require_arg "$1" "${2:-}"
 			CONFIG[vm_name]="$2"
 			shift 2
 			;;
 		-m | --memory)
+			require_arg "$1" "${2:-}"
 			CONFIG[memory]="$2"
 			shift 2
 			;;
 		-c | --cpus)
+			require_arg "$1" "${2:-}"
 			CONFIG[cpus]="$2"
 			shift 2
 			;;
 		-p | --port)
+			require_arg "$1" "${2:-}"
 			CONFIG[ssh_port]="$2"
 			shift 2
 			;;
 		-s | --size)
+			require_arg "$1" "${2:-}"
 			CONFIG[disk_size]="$2"
 			shift 2
 			;;
 		--boot)
+			require_arg "$1" "${2:-}"
 			[[ "$2" != "bios" && "$2" != "uefi" ]] && {
 				log_error "Boot mode must be 'bios' or 'uefi'"
 				exit 1
 			}
 			CONFIG[boot_mode]="$2"
+			shift 2
+			;;
+		--boot-order)
+			require_arg "$1" "${2:-}"
+			CONFIG[boot_order]="$2"
 			shift 2
 			;;
 		-d | --daemon)
@@ -506,24 +594,34 @@ parse_arguments() {
 			shift
 			;;
 		--base-dir)
+			require_arg "$1" "${2:-}"
 			CONFIG[base_dir]="$2"
 			shift 2
 			;;
 		--iso-file)
+			require_arg "$1" "${2:-}"
 			CONFIG[iso_file]="$2"
+			CONFIG[iso_file_explicit]="true"
 			shift 2
 			;;
 		--iso-url)
+			require_arg "$1" "${2:-}"
 			CONFIG[iso_url]="$2"
 			shift 2
 			;;
 		--checksum)
+			require_arg "$1" "${2:-}"
 			CONFIG[iso_checksum]="$2"
 			shift 2
 			;;
 		--shared-dir)
+			require_arg "$1" "${2:-}"
 			CONFIG[shared_dir]="$2"
 			shift 2
+			;;
+		--no-iso)
+			CONFIG[attach_iso]="false"
+			shift
 			;;
 		--dry-run)
 			DRY_RUN=1
@@ -543,10 +641,16 @@ parse_arguments() {
 	echo "$command"
 }
 
+print_cmd() {
+	local -a cmd=("$@")
+	printf '%q ' "${cmd[@]}"
+	echo
+}
+
 main() {
 	local command
 
-	# Handle help before environment setup
+	# Handle help before any parsing/command substitution.
 	for arg in "$@"; do
 		if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
 			show_help
@@ -554,10 +658,33 @@ main() {
 		fi
 	done
 
-	setup_environment
+	apply_env_overrides
 	command=$(parse_arguments "$@")
+	prepare_environment
 
 	case "$command" in
+	install)
+		# Installer defaults (can be overridden via flags if explicitly set)
+		[[ "${CONFIG[attach_iso]}" == "false" ]] && CONFIG[attach_iso]="true"
+		[[ "${CONFIG[boot_order]}" == "auto" ]] && CONFIG[boot_order]="cdrom"
+		check_dependencies
+		if vm_status >/dev/null 2>&1; then
+			log_warn "VM is already running"
+			exit 1
+		fi
+		setup_vm_files
+
+		local -a qemu_cmd
+		build_qemu_command qemu_cmd
+
+		if ((DRY_RUN)); then
+			log_info "QEMU command:"
+			print_cmd "${qemu_cmd[@]}"
+		else
+			log_info "Starting VM (install mode)..."
+			"${qemu_cmd[@]}"
+		fi
+		;;
 	start)
 		check_dependencies
 		if vm_status >/dev/null 2>&1; then
@@ -566,18 +693,18 @@ main() {
 		fi
 		setup_vm_files
 
-		local qemu_cmd
-		qemu_cmd=$(build_qemu_command)
+		local -a qemu_cmd
+		build_qemu_command qemu_cmd
 
-		if [[ -n "${DRY_RUN:-}" ]]; then
+		if ((DRY_RUN)); then
 			log_info "QEMU command:"
-			echo "$qemu_cmd"
+			print_cmd "${qemu_cmd[@]}"
 		else
 			log_info "Starting VM..."
 			if [[ "${CONFIG[daemonize]}" == "true" ]]; then
-				eval "$qemu_cmd" && log_success "VM started in background"
+				"${qemu_cmd[@]}" && log_success "VM started in background (PID file: ${CONFIG[pid_file]})"
 			else
-				eval "$qemu_cmd"
+				"${qemu_cmd[@]}"
 			fi
 		fi
 		;;

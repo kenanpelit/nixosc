@@ -6,13 +6,24 @@
 # Goals:
 # - Keep boot configuration declarative and centralized (not per-host ad-hoc edits)
 # - Support both physical (UEFI) and virtual machines (BIOS / disk device)
-# - Enable os-prober (optional) for auto-discovery of other OS installs
-# - Provide a deterministic, zero-surprise dual-boot path via EFI chainloading
+# - Prefer deterministic, zero-surprise dual-boot via EFI chainloading
 #
 # Notes:
-# - os-prober can be unreliable with BTRFS subvol installs (rootflags/subvol=@ issues).
-# - EFI chainloading avoids kernel/initrd path issues entirely by delegating boot
-#   details to the other OS' own bootloader in the ESP.
+# - os-prober is often a trap. We keep it disabled and rely on explicit entries.
+# - EFI chainloading avoids kernel/initrd path mismatches by delegating boot
+#   details to the other OS' own bootloader in its ESP.
+#
+# Important:
+# - Do NOT chainload NixOS -> NixOS GRUB from within NixOS GRUB.
+#   NixOS entries are already managed by GRUB itself.
+#
+# Reality check (your machine, current state):
+# - This NixOS is running from nvme0n1 (see lsblk: /boot = nvme0n1p1, / = nvme0n1p2)
+# - CachyOS has a dedicated ESP on /dev/sda1 with:
+#     UUID="6880-73B3"
+#     /EFI/cachyos/grubx64.efi
+# - There is also an ESP on nvme1n1p1 used by CachyOS in some setups; keep it
+#   as an optional chainload target only if you really need it.
 # ==============================================================================
 
 { lib, inputs, system, config, pkgs, ... }:
@@ -21,15 +32,31 @@ let
   isPhysicalMachine = config.my.host.isPhysicalHost;
   isVirtualMachine  = config.my.host.isVirtualHost;
 
-  # ESP (EFI System Partition) UUID as seen from NixOS (mounted at /boot).
-  # Your system:
-  #   /dev/nvme1n1p1  vfat  UUID="CE59-4A9A"  mounted at /boot
-  espUuid = "CE59-4A9A";
+  # ---------------------------------------------------------------------------
+  # ESPs and EFI targets
+  # ---------------------------------------------------------------------------
 
-  # Where CachyOS installed its EFI binary inside the ESP.
-  # Verified on your machine:
-  #   /boot/EFI/cachyos/
-  cachyEfiPath = "/EFI/cachyos/grubx64.efi";
+  # NixOS primary ESP mounted at /boot (from your current lsblk).
+  # Note: we don't hardcode its UUID here because NixOS already knows /boot and
+  # GRUB entries for NixOS generations are handled automatically.
+
+  # CachyOS on SATA disk (sda) — dedicated ESP (recommended target).
+  # Verified:
+  #   /dev/sda1  vfat  UUID="6880-73B3"
+  #   /EFI/cachyos/grubx64.efi
+  cachySdaEspUuid = "6880-73B3";
+  cachySdaEfiPath = "/EFI/cachyos/grubx64.efi";
+  cachySdaFallbackPath = "/EFI/boot/bootx64.efi";
+
+  # Optional: CachyOS living on nvme1 ESP (only enable if you explicitly want it).
+  # Fill this UUID from NixOS with:
+  #   sudo blkid /dev/nvme1n1p1
+  #
+  # Example:
+  #   nvme1EspUuid = "CE59-4A9A";
+  nvme1EspUuid = "CE59-4A9A";
+  #nvme1EspUuid = null; # set to a string UUID if/when needed
+  cachyNvmeEfiPath = "/EFI/cachyos/grubx64.efi";
 in
 {
   # ----------------------------------------------------------------------------
@@ -40,16 +67,13 @@ in
       enable = true;
 
       # VM vs Physical disk target:
-      # - VMs often want an actual device (e.g. /dev/vda) for BIOS installs.
-      # - Physical UEFI systems should use "nodev" and install to the ESP.
       device = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
 
       # UEFI only on physical machines.
       efiSupport = isPhysicalMachine;
 
-      # Allow GRUB to run os-prober and add other OS installs automatically.
-      # (Still keep the deterministic chainload entry below.)
-      useOSProber = lib.mkDefault true;
+      # Deterministic only: keep os-prober off.
+      useOSProber = false;
 
       configurationLimit = 10;
 
@@ -61,24 +85,27 @@ in
       theme = inputs.distro-grub-themes.packages.${system}.nixos-grub-theme;
 
       # ------------------------------------------------------------------------
-      # Deterministic dual-boot entry (recommended)
-      #
-      # Why:
-      # - Avoids os-prober pitfalls on BTRFS subvolume installs (missing rootflags)
-      # - Avoids kernel/initramfs path mismatches ("/boot/..." not found)
-      # - Delegates all boot details to CachyOS' own EFI bootloader
-      #
-      # This entry appears in the NixOS GRUB menu as:
-      #   "CachyOS (EFI chainload)"
+      # Deterministic chainload entries
       # ------------------------------------------------------------------------
-      extraEntries = lib.mkIf isPhysicalMachine ''
-        menuentry "CachyOS (EFI chainload)" {
-          insmod part_gpt
-          insmod fat
-          search --no-floppy --fs-uuid --set=root ${espUuid}
-          chainloader ${cachyEfiPath}
-        }
-      '';
+      extraEntries = lib.mkIf isPhysicalMachine (
+        ''
+          menuentry "CachyOS (NVMe1 ESP - GRUB chainload)" {
+            insmod part_gpt
+            insmod fat
+            search --no-floppy --fs-uuid --set=root ${nvme1EspUuid}
+            chainloader ${cachyNvmeEfiPath}
+          }
+        ''
+        +
+        (lib.optionalString (nvme1EspUuid != null) ''
+          menuentry "CachyOS Rog (sda1 - GRUB chainload)" {
+            insmod part_gpt
+            insmod fat
+            search --no-floppy --fs-uuid --set=root ${cachySdaEspUuid}
+            chainloader ${cachySdaEfiPath}
+          }
+        '')
+      );
     };
 
     # EFI settings for physical machines
@@ -90,13 +117,6 @@ in
 
   # ----------------------------------------------------------------------------
   # Packages
-  #
-  # os-prober is not always installed by default on NixOS.
-  # If you rely on GRUB auto-discovery of other OS installs, keep this.
-  # If you only use EFI chainloading, this is optional.
   # ----------------------------------------------------------------------------
-  environment.systemPackages = lib.mkIf isPhysicalMachine [
-    pkgs.os-prober
-  ];
+  environment.systemPackages = lib.mkIf isPhysicalMachine [ ];
 }
-

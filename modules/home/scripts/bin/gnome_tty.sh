@@ -481,7 +481,7 @@ setup_environment() {
   export VISUAL=nvim
   export TERMINAL=gnome-terminal
   export TERM=xterm-256color
-  export BROWSER=brave
+  export BROWSER=brave-kenp-default
   debug_log "Varsayılan uygulamalar ayarlandı"
 
   # -------------------------------------------------------------------------
