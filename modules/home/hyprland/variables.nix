@@ -81,7 +81,7 @@ rec {
     "VISUAL,nvim"
     "TERMINAL,kitty"
     "TERM,xterm-256color"
-    "BROWSER,brave"
+    "BROWSER,brave-kenp-default"
     "CATPPUCCIN_FLAVOR,${flavor}"
   ];
 }
