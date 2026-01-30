@@ -66,6 +66,16 @@ in
     grub = {
       enable = true;
 
+      # Prefer booting into CachyOS by default on the physical machine.
+      # This selects the exact `menuentry` title from `extraEntries` below.
+      #
+      # NOTE: On virtual machines the chainload entry does not exist, so keep
+      # the default at the first NixOS entry (0).
+      default =
+        if isPhysicalMachine
+        then "CachyOS (NVMe1 ESP - GRUB chainload)"
+        else 0;
+
       # VM vs Physical disk target:
       device = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
 
