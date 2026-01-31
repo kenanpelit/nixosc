@@ -32,7 +32,7 @@
 
 set -euo pipefail
 
-VERSION="18.1"
+VERSION="18.2"
 SCRIPT_NAME=$(basename "$0")
 LOG_BASE_DIR="${HOME}/.logs"
 THERMAL_LOG_DIR="${LOG_BASE_DIR}/thermal"
@@ -114,12 +114,14 @@ cmd_status() {
 	json_out=false
 	brief_out=false
 	sample_power=false
+	show_conflicts=false
 
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 		--json) json_out=true ;;
 		--brief) brief_out=true ;;
 		--sample-power) sample_power=true ;;
+		--show-conflicts) show_conflicts=true ;;
 		-h | --help)
 			cat <<EOF
 ${BOLD}Status Command${RST} - Show comprehensive system status
@@ -130,6 +132,7 @@ ${BOLD}Options:${RST}
   --json           Machine-readable JSON output (requires jq)
   --brief          Brief human-readable output
   --sample-power   Measure actual power consumption (~2s sample)
+  --show-conflicts Always show conflict checks (even when none)
   -h, --help       Show this help
 
 ${BOLD}Features:${RST}
@@ -631,20 +634,25 @@ EOF
 	fi
 
 	echo ""
-	echo "POTENTIAL CONFLICTS:"
 	CONFLICTS=(auto-cpufreq tlp thermald tuned)
-	found_any=0
+	CONFLICT_LINES=()
 	for svc in "${CONFLICTS[@]}"; do
 		if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
-			found_any=1
 			if systemctl is-active --quiet "${svc}.service" 2>/dev/null; then
-				echo "  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)"
+				CONFLICT_LINES+=("  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)")
 			else
-				echo "  ${DIM}${svc}${RST}: inactive"
+				CONFLICT_LINES+=("  ${DIM}${svc}${RST}: inactive")
 			fi
 		fi
 	done
-	[[ "$found_any" = "0" ]] && echo "  ${DIM}(none detected)${RST}"
+	if $show_conflicts || ((${#CONFLICT_LINES[@]} > 0)); then
+		echo "POTENTIAL CONFLICTS:"
+		if ((${#CONFLICT_LINES[@]} == 0)); then
+			echo "  ${DIM}(none detected)${RST}"
+		else
+			printf "%s\n" "${CONFLICT_LINES[@]}"
+		fi
+	fi
 
 	echo ""
 	echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
