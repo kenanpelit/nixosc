@@ -57,7 +57,6 @@ in
     iptables                     # Firewall administration
     nftables                     # Modern packet filtering framework
     conntrack-tools              # Connection tracking userspace tools
-    hblock                       # Ad-blocking via hosts file
 
     # -- Network ---------------------------------------------------------------
     networkmanagerapplet         # NetworkManager tray icon (TODO: Move to home)

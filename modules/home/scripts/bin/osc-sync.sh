@@ -73,7 +73,6 @@ DOT_PATHS=(
   ".config/Ferdium"
   ".config/github"
   ".config/google-chrome"
-  ".config/hblock"
   ".config/nix"
   ".config/sops"
   ".config/subliminal"
