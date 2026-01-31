@@ -22,6 +22,9 @@
     isVirtualHost  = false;
   };
 
+  # Use power-profiles-daemon (powerprofilesctl) instead of the custom v17 stack.
+  my.power.stack = "ppd";
+
   # Set User (Defaults to "kenan" but good to be explicit)
   my.user.name = "kenan";
 

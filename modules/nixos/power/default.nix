@@ -8,12 +8,17 @@
 { pkgs, lib, config, ... }:
 
 let
+  inherit (lib) mkOption types;
+  cfg = config.my.power;
+
   hostname          = config.my.host.name;
   isPhysicalMachine = config.my.host.isPhysicalHost;
   isVirtualMachine  = config.my.host.isVirtualHost;
 
-  enablePowerTuning     = isPhysicalMachine;
-  enableRaplThermoGuard = isPhysicalMachine;
+  usePowerProfilesDaemon = cfg.stack == "ppd";
+
+  enablePowerTuning     = isPhysicalMachine && !usePowerProfilesDaemon;
+  enableRaplThermoGuard = enablePowerTuning;
 
   cpuDetectionScript = pkgs.writeTextFile {
     name = "detect-cpu";
@@ -89,14 +94,25 @@ let
   };
 in
 {
-  # Avoid conflicts with our custom power stack. power-profiles-daemon can
-  # override platform_profile / EPP / governor settings after boot.
-  services.power-profiles-daemon.enable = lib.mkForce false;
+  options.my.power = {
+    stack = mkOption {
+      type = types.enum [ "osc" "ppd" ];
+      default = "osc";
+      description = "Power profile manager: 'osc' (custom v17 stack) or 'ppd' (power-profiles-daemon / powerprofilesctl).";
+    };
+  };
 
-  # ============================================================================ 
-  # CUSTOM POWER MANAGEMENT SERVICES
-  # ============================================================================ 
-  systemd.services = {
+  config = {
+    # Avoid conflicts with our custom power stack. power-profiles-daemon can
+    # override platform_profile / EPP / governor settings after boot.
+    # Switch `my.power.stack = \"ppd\";` to use `powerprofilesctl`.
+    services.power-profiles-daemon.enable =
+      if usePowerProfilesDaemon then true else lib.mkForce false;
+
+    # ============================================================================ 
+    # CUSTOM POWER MANAGEMENT SERVICES
+    # ============================================================================ 
+    systemd.services = {
     # -------------------------------------------------------------------------- 
     # 1) ACPI PLATFORM PROFILE (AC / BATTERY)
     # -------------------------------------------------------------------------- 
@@ -868,12 +884,12 @@ in
         '';
       };
     };
-  };
+    };
 
-  # ============================================================================ 
-  # UDEV RULES – AC POWER CHANGE TRIGGERS
-  # ============================================================================ 
-  services.udev.extraRules = lib.mkIf (enablePowerTuning && isPhysicalMachine) ''
+    # ============================================================================ 
+    # UDEV RULES – AC POWER CHANGE TRIGGERS
+    # ============================================================================ 
+    services.udev.extraRules = lib.mkIf (enablePowerTuning && isPhysicalMachine) ''
     # On AC plug/unplug events, trigger power-source-change
     ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="AC*", ENV{POWER_SUPPLY_ONLINE}=="1", \
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
@@ -883,17 +899,22 @@ in
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
     ACTION=="change", SUBSYSTEM=="power_supply", KERNEL=="ADP*", ENV{POWER_SUPPLY_ONLINE}=="0", \
       TAG+="systemd", ENV{SYSTEMD_WANTS}+="power-source-change.service"
-  '';
+    '';
 
-  # ============================================================================ 
-  # DIAGNOSTIC TOOLS (CLI ONLY – osc-system remains the primary status CLI)
-  # ============================================================================ 
-  environment.systemPackages = with pkgs; [
-    lm_sensors
-    htop
-    powertop
-    intel-gpu-tools
-    (pkgs.linuxPackages_latest.turbostat)
-    stress-ng
-  ];
+    # ============================================================================ 
+    # DIAGNOSTIC TOOLS (CLI ONLY – osc-system remains the primary status CLI)
+    # ============================================================================ 
+    environment.systemPackages = with pkgs;
+      [
+      lm_sensors
+      htop
+      powertop
+      intel-gpu-tools
+      (pkgs.linuxPackages_latest.turbostat)
+      stress-ng
+      ]
+      ++ lib.optionals usePowerProfilesDaemon [
+        power-profiles-daemon
+      ];
+  };
 }

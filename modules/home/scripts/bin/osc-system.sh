@@ -591,6 +591,11 @@ EOF
 	((${#BAT_LINES[@]} == 0)) && echo "  ${DIM}No battery detected${RST}" || printf "%s\n" "${BAT_LINES[@]}"
 
 	echo ""
+	V17_FRAGMENT="$(systemctl show -p FragmentPath --value platform-profile.service 2>/dev/null || echo "")"
+	HAS_V17_STACK=false
+	[[ -n "$V17_FRAGMENT" && -e "$V17_FRAGMENT" ]] && HAS_V17_STACK=true
+
+	if [[ "$HAS_V17_STACK" == "true" ]]; then
 		echo "SERVICE STATUS (v${VERSION} / v17 stack):"
 		# Must match v17 system module exactly:
 		SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds power-policy-guard)
@@ -599,33 +604,57 @@ EOF
 			RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
 			SUBSTATE="$(systemctl show -p SubState --value "$svc.service" 2>/dev/null || echo "")"
 
-		if [[ "$STATE" == "active" ]]; then
-			printf "  %-30s ${GRN}✓ ACTIVE${RST}" "$svc"
-			[[ "$SUBSTATE" == "running" ]] && echo " ${DIM}(running)${RST}" || echo " ${DIM}(exited)${RST}"
-		elif [[ "$STATE" == "inactive" && "$RESULT" == "success" ]]; then
-			printf "  %-30s ${GRN}✓ OK${RST} ${DIM}(completed)${RST}\n" "$svc"
-		elif [[ -z "$STATE" ]]; then
-			printf "  %-30s ${DIM}– not found (masked/disabled)${RST}\n" "$svc"
-		else
-			printf "  %-30s ${RED}✗ %s${RST} ${DIM}(%s)${RST}\n" "$svc" "$STATE" "$RESULT"
+			if [[ "$STATE" == "active" ]]; then
+				printf "  %-30s ${GRN}✓ ACTIVE${RST}" "$svc"
+				[[ "$SUBSTATE" == "running" ]] && echo " ${DIM}(running)${RST}" || echo " ${DIM}(exited)${RST}"
+			elif [[ "$STATE" == "inactive" && "$RESULT" == "success" ]]; then
+				printf "  %-30s ${GRN}✓ OK${RST} ${DIM}(completed)${RST}\n" "$svc"
+			elif [[ -z "$STATE" ]]; then
+				printf "  %-30s ${DIM}– not found (masked/disabled)${RST}\n" "$svc"
+			else
+				printf "  %-30s ${RED}✗ %s${RST} ${DIM}(%s)${RST}\n" "$svc" "$STATE" "$RESULT"
 			fi
 		done
+	else
+		echo "POWER PROFILES (power-profiles-daemon):"
+		if systemctl list-unit-files "power-profiles-daemon.service" >/dev/null 2>&1; then
+			PPD_STATE="$(systemctl show -p ActiveState --value power-profiles-daemon.service 2>/dev/null || echo "")"
+			if [[ "$PPD_STATE" == "active" ]]; then
+				echo "  power-profiles-daemon: ${GRN}✓ ACTIVE${RST}"
+			elif [[ -n "$PPD_STATE" ]]; then
+				echo "  power-profiles-daemon: ${YLW}${PPD_STATE}${RST}"
+			else
+				echo "  power-profiles-daemon: ${DIM}unknown${RST}"
+			fi
 
-		echo ""
-		echo "POTENTIAL CONFLICTS:"
-		CONFLICTS=(power-profiles-daemon auto-cpufreq tlp thermald tuned)
-		found_any=0
-		for svc in "${CONFLICTS[@]}"; do
-			if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
-				found_any=1
-				if systemctl is-active --quiet "${svc}.service" 2>/dev/null; then
-					echo "  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)"
-				else
-					echo "  ${DIM}${svc}${RST}: inactive"
-				fi
+			if have powerprofilesctl; then
+				CUR_PROFILE="$(powerprofilesctl get 2>/dev/null || echo "")"
+				[[ -n "$CUR_PROFILE" ]] && echo "  current profile: ${BOLD}${CUR_PROFILE}${RST}"
 			fi
-		done
-		[[ "$found_any" = "0" ]] && echo "  ${DIM}(none detected)${RST}"
+		else
+			echo "  ${DIM}power-profiles-daemon not installed${RST}"
+		fi
+	fi
+
+	echo ""
+	echo "POTENTIAL CONFLICTS:"
+	if [[ "$HAS_V17_STACK" == "true" ]]; then
+		CONFLICTS=(power-profiles-daemon auto-cpufreq tlp thermald tuned)
+	else
+		CONFLICTS=(auto-cpufreq tlp thermald tuned)
+	fi
+	found_any=0
+	for svc in "${CONFLICTS[@]}"; do
+		if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
+			found_any=1
+			if systemctl is-active --quiet "${svc}.service" 2>/dev/null; then
+				echo "  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)"
+			else
+				echo "  ${DIM}${svc}${RST}: inactive"
+			fi
+		fi
+	done
+	[[ "$found_any" = "0" ]] && echo "  ${DIM}(none detected)${RST}"
 
 		echo ""
 		echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
@@ -1287,13 +1316,14 @@ EOF
 cmd_profile_refresh() {
 	if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
 		cat <<EOF
-${BOLD}Profile Refresh${RST} - Restart v17 power management services
+${BOLD}Profile Refresh${RST} - Restart power management services
 
 ${BOLD}Usage:${RST} sudo ${SCRIPT_NAME} profile-refresh
 
-Restart all custom power management services (v17 stack).
-Useful for testing configuration changes or recovering
-from a failed state without a full reboot.
+If the v17 stack is present, restart all custom power services.
+Otherwise, restart power-profiles-daemon (PPD) when installed.
+Useful for testing configuration changes or recovering from a failed state
+without a full reboot.
 
 ${BOLD}Services restarted:${RST}
   • platform-profile
@@ -1310,34 +1340,53 @@ EOF
 		return 0
 	fi
 
-	echo "=== RESTARTING POWER PROFILE SERVICES (v17) ==="
+	V17_FRAGMENT="$(systemctl show -p FragmentPath --value platform-profile.service 2>/dev/null || echo "")"
+	HAS_V17_STACK=false
+	[[ -n "$V17_FRAGMENT" && -e "$V17_FRAGMENT" ]] && HAS_V17_STACK=true
+
+	echo "=== RESTARTING POWER PROFILE SERVICES ==="
 	echo ""
 	if [[ $EUID -ne 0 ]]; then
 		echo "${RED}⚠ This command requires root privileges. Please run with sudo.${RST}"
 		exit 1
 	fi
 
-	SERVICES=(
-		"platform-profile.service"
-		"cpu-epp.service"
-		"cpu-min-freq-guard.service"
-		"rapl-power-limits.service"
-		"rapl-thermo-guard.service"
-		"disable-rapl-mmio.service"
-		"battery-thresholds.service"
-	)
+	if [[ "$HAS_V17_STACK" == "true" ]]; then
+		SERVICES=(
+			"platform-profile.service"
+			"cpu-epp.service"
+			"cpu-min-freq-guard.service"
+			"rapl-power-limits.service"
+			"rapl-thermo-guard.service"
+			"disable-rapl-mmio.service"
+			"battery-thresholds.service"
+		)
 
-	for SVC in "${SERVICES[@]}"; do
-		printf "Restarting %-30s ... " "$SVC"
-		if systemctl restart "$SVC" 2>/dev/null; then
+		for SVC in "${SERVICES[@]}"; do
+			printf "Restarting %-30s ... " "$SVC"
+			if systemctl restart "$SVC" 2>/dev/null; then
+				echo "${GRN}[ OK ]${RST}"
+			else
+				echo "${RED}[ FAILED ]${RST}"
+			fi
+		done
+
+		echo ""
+		echo "${GRN}✓ All v17 power-related services have been refreshed.${RST}"
+	else
+		printf "Restarting %-30s ... " "power-profiles-daemon.service"
+		if systemctl list-unit-files "power-profiles-daemon.service" >/dev/null 2>&1 && systemctl restart "power-profiles-daemon.service" 2>/dev/null; then
 			echo "${GRN}[ OK ]${RST}"
 		else
 			echo "${RED}[ FAILED ]${RST}"
 		fi
-	done
 
-	echo ""
-	echo "${GRN}✓ All v17 power-related services have been refreshed.${RST}"
+		if have powerprofilesctl; then
+			CUR_PROFILE="$(powerprofilesctl get 2>/dev/null || echo "")"
+			[[ -n "$CUR_PROFILE" ]] && echo "Current profile: ${BOLD}${CUR_PROFILE}${RST}"
+		fi
+	fi
+
 	echo "-------------------------------------------------"
 	cmd_status --brief
 }
