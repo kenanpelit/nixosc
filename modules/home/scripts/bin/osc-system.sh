@@ -32,7 +32,7 @@
 
 set -euo pipefail
 
-VERSION="18.0"
+VERSION="18.1"
 SCRIPT_NAME=$(basename "$0")
 LOG_BASE_DIR="${HOME}/.logs"
 THERMAL_LOG_DIR="${LOG_BASE_DIR}/thermal"
@@ -298,13 +298,59 @@ EOF
 	# Power Profiles (power-profiles-daemon / powerprofilesctl)
 	PPD_ACTIVE=false
 	PPD_PROFILE=""
+	PPD_LIST_OK=false
+	PPD_LIST_ERROR=""
+	PPD_PROFILE_FROM_LIST=""
+	PPD_PROFILES=()
+	declare -A PPD_CPU_DRIVER_MAP=() PPD_PLATFORM_DRIVER_MAP=() PPD_DEGRADED_MAP=() || true
 	if systemctl list-unit-files "power-profiles-daemon.service" >/dev/null 2>&1; then
 		if systemctl is-active --quiet power-profiles-daemon.service 2>/dev/null; then
 			PPD_ACTIVE=true
 		fi
 		if have powerprofilesctl; then
 			PPD_PROFILE="$(powerprofilesctl get 2>/dev/null || echo "")"
+
+			PPD_LIST_RAW="$(powerprofilesctl list 2>&1 || true)"
+			if [[ -n "$PPD_LIST_RAW" ]]; then
+				if [[ "$PPD_LIST_RAW" == *"Failed to communicate"* ]]; then
+					PPD_LIST_ERROR="$(echo "$PPD_LIST_RAW" | head -n 1)"
+				else
+					PPD_LIST_OK=true
+					cur=""
+					while IFS= read -r line; do
+						if [[ "$line" =~ ^[[:space:]]*(\*)?[[:space:]]*([A-Za-z0-9_-]+):[[:space:]]*$ ]]; then
+							cur="${BASH_REMATCH[2]}"
+							PPD_PROFILES+=("$cur")
+							[[ -n "${BASH_REMATCH[1]}" ]] && PPD_PROFILE_FROM_LIST="$cur"
+							continue
+						fi
+
+						if [[ -n "$cur" && "$line" =~ ^[[:space:]]*CpuDriver:[[:space:]]*(.*)$ ]]; then
+							val="$(echo "${BASH_REMATCH[1]}" | xargs)"
+							[[ -n "$val" ]] && PPD_CPU_DRIVER_MAP["$cur"]="$val"
+							continue
+						fi
+
+						if [[ -n "$cur" && "$line" =~ ^[[:space:]]*PlatformDriver:[[:space:]]*(.*)$ ]]; then
+							val="$(echo "${BASH_REMATCH[1]}" | xargs)"
+							[[ -n "$val" ]] && PPD_PLATFORM_DRIVER_MAP["$cur"]="$val"
+							continue
+						fi
+
+						if [[ -n "$cur" && "$line" =~ ^[[:space:]]*Degraded:[[:space:]]*(.*)$ ]]; then
+							val="$(echo "${BASH_REMATCH[1]}" | xargs)"
+							[[ -n "$val" ]] && PPD_DEGRADED_MAP["$cur"]="$val"
+							continue
+						fi
+					done <<<"$PPD_LIST_RAW"
+				fi
+			fi
 		fi
+	fi
+
+	# If `powerprofilesctl get` failed, fall back to the starred profile from `list`.
+	if [[ -z "$PPD_PROFILE" && -n "$PPD_PROFILE_FROM_LIST" ]]; then
+		PPD_PROFILE="$PPD_PROFILE_FROM_LIST"
 	fi
 
 	# Battery Status
@@ -488,10 +534,8 @@ EOF
 			f="$(cat "$p" 2>/dev/null || echo 0)"
 			printf "  CPU %2d: %4d MHz\n" "$i" "$((f / 1000))"
 		done
-		echo "  ${DIM}Average: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
-		if [[ "$CPUINFO_FREQ_AVG_MHZ" != "0" && "$CPUINFO_FREQ_AVG_MHZ" != "$FREQ_AVG_MHZ" ]]; then
-			echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
-		fi
+		echo "  ${DIM}Average (sysfs): ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
+		[[ "$CPUINFO_FREQ_AVG_MHZ" != "0" ]] && echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
 		if [[ "$CPU_TYPE" == "intel" && "$PSTATE" == "active" ]]; then
 			echo "  ${DIM}💡 Note: Intel HWP'de sysfs frekansları yanıltıcı olabilir; doğrulama için turbostat kullan${RST}"
 		else
@@ -559,11 +603,28 @@ EOF
 		fi
 
 		[[ -n "$PPD_PROFILE" ]] && echo "  current profile: ${BOLD}${PPD_PROFILE}${RST}"
-		if have powerprofilesctl; then
-			avail="$(
-				powerprofilesctl list 2>/dev/null | awk '/\\*/ {print $2}' | xargs echo 2>/dev/null || true
-			)"
-			[[ -n "$avail" ]] && echo "  available: ${DIM}${avail}${RST}"
+		if [[ -n "$PPD_LIST_ERROR" ]]; then
+			echo "  ${YLW}powerprofilesctl:${RST} ${DIM}${PPD_LIST_ERROR}${RST}"
+		elif [[ "$PPD_LIST_OK" == "true" && ${#PPD_PROFILES[@]} -gt 0 ]]; then
+			echo -n "  profiles: "
+			for p in "${PPD_PROFILES[@]}"; do
+				if [[ -n "$PPD_PROFILE" && "$p" == "$PPD_PROFILE" ]]; then
+					echo -n "${BOLD}${p}${RST} "
+				else
+					echo -n "${DIM}${p}${RST} "
+				fi
+			done
+			echo ""
+
+			PPD_CPU_DRIVER="${PPD_CPU_DRIVER_MAP[$PPD_PROFILE]:-}"
+			PPD_PLATFORM_DRIVER="${PPD_PLATFORM_DRIVER_MAP[$PPD_PROFILE]:-}"
+			PPD_DEGRADED="${PPD_DEGRADED_MAP[$PPD_PROFILE]:-}"
+
+			PPD_DETAILS=()
+			[[ -n "$PPD_CPU_DRIVER" ]] && PPD_DETAILS+=("CpuDriver=$PPD_CPU_DRIVER")
+			[[ -n "$PPD_PLATFORM_DRIVER" ]] && PPD_DETAILS+=("PlatformDriver=$PPD_PLATFORM_DRIVER")
+			[[ -n "$PPD_DEGRADED" ]] && PPD_DETAILS+=("Degraded=$PPD_DEGRADED")
+			((${#PPD_DETAILS[@]} > 0)) && echo "  backend: ${DIM}${PPD_DETAILS[*]}${RST}"
 		fi
 	else
 		echo "  ${DIM}power-profiles-daemon not installed${RST}"
