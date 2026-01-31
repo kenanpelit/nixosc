@@ -91,6 +91,7 @@ in
     linuxPackages.turbostat      # Intel Turbo Boost monitoring
     linuxPackages.cpupower       # CPU power management tool
     auto-cpufreq                 # Automatic CPU speed & power optimizer
+    stress-ng                    # Stress testing (used by osc-system turbostat-stress)
     ddcutil                      # Monitor control via DDC/CI
     intel-gpu-tools              # Intel GPU tools
     smartmontools                # Disk health monitoring (S.M.A.R.T.)
