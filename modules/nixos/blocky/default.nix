@@ -45,6 +45,19 @@ in
       description = "Enable Blocky (local DNS proxy + ad/malware blocking).";
     };
 
+    noGoogle = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Enable aggressive "no-google" blocklists (Google/YouTube/DoubleClick/etc).
+
+          This can break Google services and apps. Keep it off unless you
+          explicitly want to block Google domains.
+        '';
+      };
+    };
+
     autostart = mkOption {
       type = types.bool;
       default = !hasMullvad;
@@ -96,8 +109,29 @@ in
               # Extra coverage for ad/tracker domains (plain domain list).
               "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt"
             ];
+
+            # Optional: aggressive Google/YouTube blocking.
+            nogoogle = [
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/pihole-google.txt"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/youtubeparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/shortlinksparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/proxiesparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/productsparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/mailparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/generalparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/fontsparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/firebaseparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/doubleclickparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/domainsparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/dnsparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/androidparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/analyticsparsed"
+              "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/fiberparsed"
+            ];
           };
-          clientGroupsBlock.default = [ "ads" ];
+          clientGroupsBlock.default =
+            [ "ads" ]
+            ++ lib.optionals cfg.noGoogle.enable [ "nogoogle" ];
 
           loading = {
             refreshPeriod = "24h";
