@@ -1016,7 +1016,6 @@ EOF
 			return 1
 			;;
 		esac
-		shift
 	done
 
 	if ! have turbostat || ! have stress-ng; then
@@ -1069,10 +1068,18 @@ cmd_turbostat_analyze() {
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 		--interval)
+			if [[ $# -lt 2 ]]; then
+				echo "${RED}Missing value for --interval${RST}"
+				return 2
+			fi
 			INTERVAL="$2"
 			shift 2
 			;;
 		--iters)
+			if [[ $# -lt 2 ]]; then
+				echo "${RED}Missing value for --iters${RST}"
+				return 2
+			fi
 			ITERS="$2"
 			shift 2
 			;;
@@ -1103,7 +1110,6 @@ EOF
 			return 1
 			;;
 		esac
-		shift
 	done
 
 	if ! have turbostat; then
