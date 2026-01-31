@@ -43,24 +43,33 @@ in
     services.blocky = {
       enable = true;
       settings = {
-        port = 53;
-        httpPort = cfg.httpPort;
-        logLevel = "info";
+        # New-style configuration (Blocky >= 0.27). Avoid deprecated keys.
+        ports = {
+          dns = 53;
+          http = cfg.httpPort;
+        };
 
-        upstream.default = cfg.upstream;
+        log.level = "info";
+
+        upstreams.groups.default = cfg.upstream;
 
         # Keep Blocky resilient at boot: if a list fetch fails, don't block start.
         blocking = {
           # Host-format lists work well with Blocky and are widely available.
-          blackLists = {
+          denylists = {
             ads = [
               "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+              # Extra coverage for ad/tracker domains (plain domain list).
+              "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt"
             ];
           };
           clientGroupsBlock.default = [ "ads" ];
 
-          refreshPeriod = "24h";
-          failStartOnListError = false;
+          loading = {
+            refreshPeriod = "24h";
+            # Old behaviour: "don't fail start if list fetch fails".
+            strategy = "fast";
+          };
         };
       };
     };
@@ -68,4 +77,3 @@ in
     environment.systemPackages = [ pkgs.blocky ];
   };
 }
-
