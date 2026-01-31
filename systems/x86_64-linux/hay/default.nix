@@ -23,10 +23,7 @@
   };
 
   # Power profiles via power-profiles-daemon (powerprofilesctl).
-  my.power.stack = "ppd";
-
-  # DNS adblock (Blocky) - optional aggressive Google/YouTube blocking.
-  my.dns.blocky.noGoogle.enable = true;
+  # (moved to modules/nixos/hosts/hay.nix)
 
   # Set User (Defaults to "kenan" but good to be explicit)
   my.user.name = "kenan";
