@@ -18,18 +18,22 @@ let
   resolvconf = "${pkgs.openresolv}/sbin/resolvconf";
   resolvconfAdd = pkgs.writeShellScript "blocky-resolvconf-add" ''
     #!${pkgs.bash}/bin/bash
-    set -euo pipefail
-    ${resolvconf} -m 0 -x -a blocky <<'EOF'
+    set -uo pipefail
+    # Best-effort: don't fail Blocky start if resolvconf can't be updated.
+    if ! ${resolvconf} -m 0 -x -a blocky <<'EOF'; then
     nameserver 127.0.0.1
     nameserver ::1
     EOF
-    ${resolvconf} -u
+      exit 0
+    fi
+    ${resolvconf} -u || true
   '';
   resolvconfDel = pkgs.writeShellScript "blocky-resolvconf-del" ''
     #!${pkgs.bash}/bin/bash
-    set -euo pipefail
+    set -uo pipefail
+    # Best-effort: don't fail Blocky stop if resolvconf can't be updated.
     ${resolvconf} -f -d blocky || true
-    ${resolvconf} -u
+    ${resolvconf} -u || true
   '';
 in
 {
@@ -110,8 +114,9 @@ in
     systemd.services.blocky = lib.mkMerge [
       {
         serviceConfig = {
-          ExecStartPost = [ "${resolvconfAdd}" ];
-          ExecStopPost = [ "${resolvconfDel}" ];
+          # Blocky itself may run as an unprivileged user; resolvconf needs root.
+          ExecStartPost = [ "+${resolvconfAdd}" ];
+          ExecStopPost = [ "+${resolvconfDel}" ];
         };
       }
       (lib.mkIf (!cfg.autostart) {
