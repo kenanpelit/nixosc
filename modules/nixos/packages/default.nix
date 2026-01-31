@@ -5,12 +5,13 @@
 # Add/remove system packages in this module for consistency.
 # ==============================================================================
 
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   # Nixpkgs currently ships the RustDesk GUI client as `rustdesk-flutter`.
   # Some channels/overlays also provide `rustdesk`. Prefer it when available.
   rustdeskClient = if pkgs ? rustdesk then pkgs.rustdesk else pkgs.rustdesk-flutter;
+  kernelPkgs = config.boot.kernelPackages;
 in
 {
   environment.systemPackages = with pkgs; [
@@ -88,9 +89,8 @@ in
     powertop                     # Power consumption monitor/tuner
     poweralertd                  # Power alert daemon
     lm_sensors                   # Hardware sensors (temp, fan)
-    linuxPackages.turbostat      # Intel Turbo Boost monitoring
-    linuxPackages.cpupower       # CPU power management tool
-    auto-cpufreq                 # Automatic CPU speed & power optimizer
+    kernelPkgs.turbostat         # Intel Turbo Boost monitoring (match running kernel)
+    kernelPkgs.cpupower          # CPU power management tool (match running kernel)
     stress-ng                    # Stress testing (used by osc-system turbostat-stress)
     ddcutil                      # Monitor control via DDC/CI
     intel-gpu-tools              # Intel GPU tools

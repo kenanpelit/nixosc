@@ -5,45 +5,60 @@
 # Adjust connectivity policy in this module instead of per-host tweaks.
 # ==============================================================================
 
-{ lib, pkgs, ... }:
+{ lib, pkgs, config, ... }:
 
+let
+  enableAssh = config.my.networking.assh.enable or false;
+in
 {
-  networking = {
-    networkmanager.enable = true;
-    useDHCP = lib.mkDefault true;
-    wireless.enable = false;
+  options.my.networking = {
+    assh.enable = lib.mkEnableOption "ASSH integration (optional SSH ProxyCommand wrapper)";
   };
 
-  programs.ssh = {
-    startAgent        = false;
-    enableAskPassword = false;
+  config = lib.mkMerge [
+    {
+      networking = {
+        networkmanager.enable = true;
+        useDHCP = lib.mkDefault true;
+        wireless.enable = false;
+      };
 
-    extraConfig = ''
-      Host *
-        # Connection keep-alive
-        ServerAliveInterval 60
-        ServerAliveCountMax 3
-        TCPKeepAlive yes
+      programs.ssh = {
+        startAgent        = false;
+        enableAskPassword = false;
 
-        # Fail fast
-        ConnectTimeout 30
+        extraConfig = ''
+          Host *
+            # Connection keep-alive
+            ServerAliveInterval 60
+            ServerAliveCountMax 3
+            TCPKeepAlive yes
 
-        # ASSH proxy
-        ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
-    '';
-  };
+            # Fail fast
+            ConnectTimeout 30
+        '';
+      };
 
-  environment = {
-    systemPackages = with pkgs; [ assh ];
+      environment.shellAliases = {
+        sshtest = "ssh -o ConnectTimeout=5 -o BatchMode=yes";
+      };
+    }
 
-    shellAliases = {
-      assh       = "${pkgs.assh}/bin/assh";
-      sshconfig  = "${pkgs.assh}/bin/assh config build > ~/.ssh/config";
-      sshtest    = "ssh -o ConnectTimeout=5 -o BatchMode=yes";
-    };
+    (lib.mkIf enableAssh {
+      environment.systemPackages = with pkgs; [ assh ];
 
-    variables = {
-      ASSH_CONFIG = "$HOME/.ssh/assh.yml";
-    };
-  };
+      environment.shellAliases = {
+        assh      = "${pkgs.assh}/bin/assh";
+        sshconfig = "${pkgs.assh}/bin/assh config build > ~/.ssh/config";
+      };
+
+      environment.variables.ASSH_CONFIG = "$HOME/.ssh/assh.yml";
+
+      programs.ssh.extraConfig = ''
+        # ASSH proxy (only when a config exists, to avoid breaking plain SSH)
+        Match exec "test -f ~/.ssh/assh.yml && command -v assh >/dev/null 2>&1"
+          ProxyCommand ${pkgs.assh}/bin/assh connect --port=%p %h
+      '';
+    })
+  ];
 }

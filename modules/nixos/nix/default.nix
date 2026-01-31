@@ -27,6 +27,8 @@
 let 
   username = config.my.user.name or "kenan";
   flakePath = toString inputs.self;
+  hostRole = config.my.host.role or "unknown";
+  keepBuildArtifacts = builtins.elem hostRole [ "dev" "debug" ];
 in {
   nix = {
     settings = {
@@ -36,8 +38,10 @@ in {
       cores    = 0;
 
       auto-optimise-store = true;
-      keep-outputs        = true;
-      keep-derivations    = true;
+      # Keep build artifacts only on dev/debug roles; otherwise the store grows
+      # aggressively over time.
+      keep-outputs        = lib.mkDefault keepBuildArtifacts;
+      keep-derivations    = lib.mkDefault keepBuildArtifacts;
       sandbox             = true;
 
       builders-use-substitutes = true;
