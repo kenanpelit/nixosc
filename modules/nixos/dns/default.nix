@@ -8,11 +8,11 @@
 { lib, config, ... }:
 
 let
-  blockyEnabled = config.services.blocky.enable or false;
+  blockyConfigured = config.my.dns.blocky.enable or false;
 in
 {
   config = lib.mkMerge [
-    (lib.mkIf (!blockyEnabled) {
+    (lib.mkIf (!blockyConfigured) {
       services.resolved = {
         enable = true;
         dnssec = "allow-downgrade";
@@ -25,10 +25,12 @@ in
       };
     })
 
-    (lib.mkIf blockyEnabled {
-      # Avoid resolver stacking and port conflicts; let Blocky own DNS.
+    (lib.mkIf blockyConfigured {
+      # Avoid resolver stacking and port conflicts; let Blocky (or other local DNS)
+      # own :53 when configured.
       services.resolved.enable = lib.mkForce false;
-      networking.resolvconf.useLocalResolver = true;
+      # Let DNS be controlled dynamically (e.g. by Blocky service hooks / VPN).
+      networking.resolvconf.enable = lib.mkDefault true;
     })
   ];
 }

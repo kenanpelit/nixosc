@@ -13,6 +13,24 @@ let
 
   cfg = config.my.dns.blocky;
   isPhysicalHost = config.my.host.isPhysicalHost or false;
+  hasMullvad = config.services.mullvad-vpn.enable or false;
+
+  resolvconf = "${pkgs.openresolv}/sbin/resolvconf";
+  resolvconfAdd = pkgs.writeShellScript "blocky-resolvconf-add" ''
+    #!${pkgs.bash}/bin/bash
+    set -euo pipefail
+    ${resolvconf} -m 0 -x -a blocky <<'EOF'
+    nameserver 127.0.0.1
+    nameserver ::1
+    EOF
+    ${resolvconf} -u
+  '';
+  resolvconfDel = pkgs.writeShellScript "blocky-resolvconf-del" ''
+    #!${pkgs.bash}/bin/bash
+    set -euo pipefail
+    ${resolvconf} -f -d blocky || true
+    ${resolvconf} -u
+  '';
 in
 {
   options.my.dns.blocky = {
@@ -21,6 +39,18 @@ in
       default = isPhysicalHost;
       defaultText = "config.my.host.isPhysicalHost";
       description = "Enable Blocky (local DNS proxy + ad/malware blocking).";
+    };
+
+    autostart = mkOption {
+      type = types.bool;
+      default = !hasMullvad;
+      defaultText = "!config.services.mullvad-vpn.enable";
+      description = ''
+        Start Blocky automatically at boot.
+
+        If Mullvad VPN is enabled, default is off to avoid DNS-leak-prevention conflicts.
+        You can still start/stop Blocky manually (e.g. via `systemctl start/stop blocky`).
+      '';
     };
 
     httpPort = mkOption {
@@ -73,6 +103,21 @@ in
         };
       };
     };
+
+    # Keep the unit available even when not autostarting; `osc-mullvad toggle --with-blocky`
+    # can start/stop it at runtime. Also, switch /etc/resolv.conf to 127.0.0.1 only while
+    # Blocky is running (ExecStartPost/ExecStopPost).
+    systemd.services.blocky = lib.mkMerge [
+      {
+        serviceConfig = {
+          ExecStartPost = [ "${resolvconfAdd}" ];
+          ExecStopPost = [ "${resolvconfDel}" ];
+        };
+      }
+      (lib.mkIf (!cfg.autostart) {
+        wantedBy = lib.mkForce [ ];
+      })
+    ];
 
     environment.systemPackages = [ pkgs.blocky ];
   };
