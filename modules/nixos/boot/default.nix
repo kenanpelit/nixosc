@@ -73,7 +73,7 @@ in
       #
       # NOTE: On virtual machines the chainload entry does not exist, so keep
       # the default at the first NixOS entry (0).
-      default = if isPhysicalMachine then 1 else 0;
+      default = if isPhysicalMachine then 0 else 1;
 
       # VM vs Physical disk target:
       device = lib.mkForce (if isVirtualMachine then "/dev/vda" else "nodev");
