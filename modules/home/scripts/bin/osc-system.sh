@@ -1035,7 +1035,12 @@ EOF
 	echo ""
 
 	LOGFILE=$(mktemp)
-	turbostat --interval 10 --num_iterations 3 2>&1 | tee "$LOGFILE" &
+	# Keep turbostat output small and parseable:
+	# - Summary: single system-wide line per interval
+	# - quiet:   skip decoding system configuration header spam
+	# - show:    only the columns we care about for profile comparisons
+	TURBO_SHOW_COLS="Busy%,Bzy_MHz,PkgWatt,PkgTmp"
+	turbostat --quiet --Summary --show "$TURBO_SHOW_COLS" --interval 10 --num_iterations 3 2>&1 | tee "$LOGFILE" &
 	TURBO_PID=$!
 
 	sleep 2
@@ -1046,13 +1051,37 @@ EOF
 	if [[ $ANALYZE -eq 1 ]]; then
 		echo ""
 		echo "=== ANALYSIS ==="
-		awk '/^[^C]/ && NF>5 && $2 ~ /^[0-9]+$/ {
-      if (max_freq < $5) max_freq = $5;
-      if (max_watts < $11) max_watts = $11;
-    } END {
-      printf "Peak Bzy_MHz: %.0f MHz\n", max_freq;
-      printf "Peak PkgWatt: %.2f W\n", max_watts;
-    }' "$LOGFILE"
+		awk '
+      $0 ~ /(^|[[:space:]])Bzy_MHz([[:space:]]|$)/ {
+        for (i = 1; i <= NF; i++) col[$i] = i;
+        have_header = 1;
+        next;
+      }
+      have_header && $1 ~ /^[0-9.]+$/ {
+        bzy = $(col["Bzy_MHz"]);
+        watt = $(col["PkgWatt"]);
+        tmp = $(col["PkgTmp"]);
+
+        if (bzy > max_bzy) max_bzy = bzy;
+        if (watt > max_watt) max_watt = watt;
+        if (tmp > max_tmp) max_tmp = tmp;
+
+        sum_bzy += bzy;
+        sum_watt += watt;
+        sum_tmp += tmp;
+        n++;
+      }
+      END {
+        if (!have_header || n == 0) {
+          print "No turbostat samples parsed (unexpected output format).";
+          exit 1;
+        }
+        printf "Avg Bzy_MHz:  %.0f MHz\n", sum_bzy / n;
+        printf "Peak Bzy_MHz: %.0f MHz\n", max_bzy;
+        printf "Avg PkgWatt:  %.2f W\n", sum_watt / n;
+        printf "Peak PkgWatt: %.2f W\n", max_watt;
+        printf "Peak PkgTmp:  %.0f °C\n", max_tmp;
+      }' "$LOGFILE"
 	fi
 
 	rm -f "$LOGFILE"
