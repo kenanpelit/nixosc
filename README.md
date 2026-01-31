@@ -93,6 +93,7 @@ Custom power management for laptops (Intel HWP / `intel_pstate=active`) that sta
 - **Controls:** ACPI Platform Profile, CPU governor, Intel EPP, RAPL power limits, and Thermal Guard.
 - **CLI Tool:** `osc-system status` & `profile-refresh`.
 - **Drift Guard:** `power-policy-guard` prevents firmware from overriding settings.
+- **Alternative (PPD):** Set `my.power.stack = "ppd";` to use `power-profiles-daemon` / `powerprofilesctl` (disables the custom v17 stack to avoid conflicts).
 
 ## ⌨️ Keybindings
 
