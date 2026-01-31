@@ -311,8 +311,13 @@ blocky_unit_exists() {
 	systemctl list-unit-files blocky.service >/dev/null 2>&1
 }
 
+blocky_is_active() {
+	systemctl is-active --quiet blocky.service 2>/dev/null
+}
+
 blocky_stop() {
 	blocky_unit_exists || return 0
+	blocky_is_active || return 0
 	log "Blocky durduruluyor (VPN açıkken çakışmayı önlemek için)..."
 	sudo_run "systemctl stop blocky.service" || return 1
 
@@ -324,6 +329,7 @@ blocky_stop() {
 
 blocky_start() {
 	blocky_unit_exists || return 0
+	blocky_is_active && return 0
 	log "Blocky başlatılıyor (VPN kapalıyken DNS ad-block)..."
 	sudo_run "systemctl start blocky.service" || return 1
 }
@@ -342,7 +348,14 @@ toggle_basic_vpn_with_blocky() {
 
 	if [[ $status -eq 1 ]]; then
 		# VPN currently OFF -> turning ON: disable Blocky first, then connect.
-		blocky_stop || true
+		if ! blocky_stop; then
+			# If Blocky is still active, connecting Mullvad tends to break DNS/internet.
+			if blocky_is_active; then
+				log "Hata: Blocky durdurulamadı. VPN bağlantısı başlatılmıyor."
+				notify "⚠️ MULLVAD VPN" "Blocky couldn't be stopped; not connecting" "security-low"
+				return 1
+			fi
+		fi
 		connect_basic_vpn
 		return 0
 	fi
