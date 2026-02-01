@@ -117,6 +117,11 @@ notify() {
 	local message="$2"
 	local icon="$3"
 
+	# Useful when running under pkexec wrapper; avoid duplicate notifications.
+	if [[ "${OSC_MULLVAD_NO_NOTIFY:-0}" == "1" ]]; then
+		return 0
+	fi
+
 	notify-send -t 5000 "$title" "$message" -i "$icon"
 }
 
@@ -278,6 +283,12 @@ sudo_run() {
 	# - In terminals: normal sudo prompt works.
 	# - In GUI hotkeys: uses askpass if available.
 	local cmd="$1"
+
+	# Already root (e.g. via pkexec wrapper) → no sudo needed.
+	if [[ "$(id -u)" -eq 0 ]]; then
+		bash -c "$cmd"
+		return $?
+	fi
 
 	have_cmd sudo || {
 		log "Hata: sudo bulunamadı (Blocky yönetimi atlanıyor)."
