@@ -195,12 +195,12 @@
     # ==========================================================================
     # Optional GUI tools, app launchers, and helper flakes.
     #walker = {
-    #  url = "github:abenz1267/walker/v2.13.0";
+    #  url = "github:abenz1267/walker/v2.14.1";
     #  inputs.nixpkgs.follows = "nixpkgs";
     #};
 
     #elephant = {
-    #  url = "github:abenz1267/elephant/v2.18.2";
+    #  url = "github:abenz1267/elephant/v2.19.1";
     #  inputs.nixpkgs.follows = "nixpkgs";
     #};
 
