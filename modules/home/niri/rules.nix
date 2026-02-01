@@ -187,7 +187,7 @@ in
     
     window-rule {
       match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
-      ${mkFixedFloating { w = 520; h = 240; }}
+      ${mkFixedFloating { w = 686; h = 266; x = 937; y = 137; relativeTo = "top-left"; }}
     }
 
     window-rule {
