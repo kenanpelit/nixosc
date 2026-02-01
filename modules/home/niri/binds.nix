@@ -176,6 +176,7 @@
       Mod+Shift+C    repeat=false hotkey-overlay-title="Color Picker" { spawn "hyprpicker" "-a"; }
       Mod+Ctrl+V     repeat=false hotkey-overlay-title="Clipse (Floating)" { spawn "${bins.kitty}" "--class" "clipse" "-e" "${bins.clipse}"; }
       F10            repeat=false hotkey-overlay-title="Bluetooth Toggle" { spawn "bluetooth_toggle"; }
+      Ctrl+Alt+P     repeat=false hotkey-overlay-title="Power Profile Toggle" { spawn "powerprofilesctl-toggle"; }
       Alt+F12        repeat=false hotkey-overlay-title="VPN Toggle" { spawn "osc-mullvad-toggle"; }
       Mod+Alt+F12    repeat=false hotkey-overlay-title="VPN Slot Recycle" { spawn "osc-mullvad-slot"; }
       
