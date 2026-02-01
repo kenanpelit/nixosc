@@ -49,7 +49,7 @@ DIRS=(
 EXTRA_LINKS=(
   "/repo/archive/.mullvad|$HOME/.mullvad"
   "/repo/archive/.anote|$HOME/.anote"
-  "/repo/archive/.backups|$HOME/.bakcups"
+  "/repo/archive/.backups|$HOME/.backups"
   "/repo/archive/.kenp|$HOME/.kenp"
   "/repo/archive/.keep|$HOME/.keep"
   "/repo/tor|$HOME/.tor"
