@@ -98,7 +98,14 @@ in
 
         log.level = "info";
 
-        upstreams.groups.default = cfg.upstream;
+        upstreams = {
+          # Don't block service start if upstreams aren't reachable yet (e.g. boot/race).
+          init.strategy = "fast";
+          # Pick the fastest upstreams per query.
+          strategy = "parallel_best";
+          timeout = "2s";
+          groups.default = cfg.upstream;
+        };
 
         # Keep Blocky resilient at boot: if a list fetch fails, don't block start.
         blocking = {

@@ -31,6 +31,11 @@ in
       services.resolved.enable = lib.mkForce false;
       # Let DNS be controlled dynamically (e.g. by Blocky service hooks / VPN).
       networking.resolvconf.enable = lib.mkDefault true;
+      # Ignore DHCP-provided router DNS from NetworkManager; keep resolver selection
+      # controlled via `networking.nameservers` + VPN keys.
+      networking.resolvconf.extraConfig = lib.mkAfter ''
+        deny_keys='NetworkManager'
+      '';
 
       # Provide a safe, consistent fallback resolver set when Blocky is stopped
       # (e.g. Mullvad ON) and prevent LAN/router DNS from sneaking into resolv.conf.
