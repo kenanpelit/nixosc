@@ -47,7 +47,11 @@ DIRS=(
 
 # Explicit links: "source|target"
 EXTRA_LINKS=(
-  "/repo/archive/mullvad|$HOME/.mullvad"
+  "/repo/archive/.mullvad|$HOME/.mullvad"
+  "/repo/archive/.anote|$HOME/.anote"
+  "/repo/archive/.backups|$HOME/.bakcups"
+  "/repo/archive/.kenp|$HOME/.kenp"
+  "/repo/archive/.keep|$HOME/.keep"
   "/repo/tor|$HOME/.tor"
 )
 
@@ -139,7 +143,7 @@ show_status() {
     fi
   done < <(iter_links)
 
-  local total=$(( ${#DIRS[@]} + ${#EXTRA_LINKS[@]} ))
+  local total=$((${#DIRS[@]} + ${#EXTRA_LINKS[@]}))
   echo -e "\n${BLUE}Toplam: ${total} | Bağlı: $linked | Eksik: $missing${NC}"
 }
 
