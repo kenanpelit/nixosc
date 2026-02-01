@@ -55,7 +55,7 @@ Commands:
   here               Bring window here (or launch); `all` gathers a set
   cast               Dynamic screencast helpers (window/monitor/clear/pick)
   flow               Workspace/monitor helper (was: niri-workspace-monitor)
-  doctor             Print session diagnostics
+  doctor             Print session diagnostics (try: --tree, --logs)
   float              Toggle between floating and tiling modes with preset size
   zen                Toggle Zen Mode (hide gaps, borders, bar)
   pin                Toggle Pin Mode (PIP-style floating window)
@@ -1862,6 +1862,96 @@ doctor)
     maybe() { command -v "$1" >/dev/null 2>&1; }
     kv() { printf '%-28s %s\n' "$1" "${2:-}"; }
 
+    show_tree=false
+    show_logs=false
+    while [[ $# -gt 0 ]]; do
+      case "${1:-}" in
+      --tree)
+        show_tree=true
+        shift
+        ;;
+      --logs)
+        show_logs=true
+        shift
+        ;;
+      -h | --help)
+        echo "Usage: niri-set doctor [--tree] [--logs]"
+        exit 0
+        ;;
+      *)
+        echo "niri-set doctor: unknown arg: ${1}" >&2
+        exit 2
+        ;;
+      esac
+    done
+
+    timeout_bin=""
+    if maybe timeout; then
+      timeout_bin="timeout"
+    fi
+
+    systemctl_user_quick() {
+      maybe systemctl || return 0
+      if [[ -n "$timeout_bin" ]]; then
+        $timeout_bin 2s systemctl --user "$@" 2>/dev/null || true
+      else
+        systemctl --user "$@" 2>/dev/null || true
+      fi
+    }
+
+    systemctl_user_slow() {
+      maybe systemctl || return 0
+      if [[ -n "$timeout_bin" ]]; then
+        $timeout_bin 8s systemctl --user "$@" 2>/dev/null || true
+      else
+        systemctl --user "$@" 2>/dev/null || true
+      fi
+    }
+
+    journalctl_user() {
+      maybe journalctl || return 0
+      if [[ -n "$timeout_bin" ]]; then
+        $timeout_bin 8s journalctl --user "$@" 2>/dev/null || true
+      else
+        journalctl --user "$@" 2>/dev/null || true
+      fi
+    }
+
+    sysenv_get() {
+      local dump="${1:-}"
+      local var="${2:-}"
+      local line
+      while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        [[ "$line" == "${var}="* ]] || continue
+        printf '%s' "${line#*=}"
+        return 0
+      done <<<"$dump"
+      return 0
+    }
+
+    print_unit_status() {
+      local unit="${1:-}"
+      [[ -n "$unit" ]] || return 0
+      local state
+      state="$(systemctl_user_quick is-active "$unit")"
+      state="${state:-unknown}"
+      printf '%-10s %s\n' "$state" "$unit"
+    }
+
+    declare -A printed_units=()
+    print_units_status() {
+      local unit
+      for unit in "$@"; do
+        [[ -n "$unit" ]] || continue
+        if [[ -n "${printed_units[$unit]:-}" ]]; then
+          continue
+        fi
+        printed_units["$unit"]=1
+        print_unit_status "$unit"
+      done
+    }
+
     echo "niri-set doctor"
     echo
     kv "XDG_SESSION_TYPE" "${XDG_SESSION_TYPE:-}"
@@ -1891,11 +1981,71 @@ doctor)
     fi
 
     if maybe systemctl; then
+      bus_state="$(systemctl_user_quick is-system-running)"
+      bus_state="${bus_state:-unavailable}"
       echo
-      kv "systemd --user bus" "$(systemctl --user is-system-running 2>/dev/null || true)"
-      for unit in niri-session.target dms.service niri-bootstrap.service; do
-        kv "is-active:$unit" "$(systemctl --user is-active "$unit" 2>/dev/null || true)"
-      done
+      kv "systemd --user bus" "$bus_state"
+
+      if [[ "$bus_state" != "unavailable" ]]; then
+        sysenv_dump="$(systemctl_user_quick show-environment)"
+        if [[ -n "${sysenv_dump:-}" ]]; then
+          echo
+          echo "systemd --user env (selected)"
+          kv "userenv:WAYLAND_DISPLAY" "$(sysenv_get "$sysenv_dump" "WAYLAND_DISPLAY")"
+          kv "userenv:NIRI_SOCKET" "$(sysenv_get "$sysenv_dump" "NIRI_SOCKET")"
+          kv "userenv:XDG_CURRENT_DESKTOP" "$(sysenv_get "$sysenv_dump" "XDG_CURRENT_DESKTOP")"
+          kv "userenv:XDG_SESSION_TYPE" "$(sysenv_get "$sysenv_dump" "XDG_SESSION_TYPE")"
+          kv "userenv:XDG_SESSION_DESKTOP" "$(sysenv_get "$sysenv_dump" "XDG_SESSION_DESKTOP")"
+          kv "userenv:DESKTOP_SESSION" "$(sysenv_get "$sysenv_dump" "DESKTOP_SESSION")"
+          kv "userenv:DISPLAY" "$(sysenv_get "$sysenv_dump" "DISPLAY")"
+        fi
+
+        echo
+        echo "Units (key)"
+        print_units_status \
+          niri-session.target \
+          graphical-session.target \
+          xdg-desktop-autostart.target \
+          niri-ready.service \
+          niri-bootstrap.service \
+          niri-polkit-agent.service \
+          dms.service \
+          dms-plugin-sync.service \
+          dms-resume-restart.service \
+          kdeconnectd.service \
+          kdeconnect-indicator.service \
+          fusuma.service \
+          cliphist-watch-text.service \
+          cliphist-watch-image.service \
+          stasis.service \
+          xdg-desktop-portal.service \
+          xdg-desktop-portal-gnome.service \
+          xdg-desktop-portal-gtk.service
+
+        wants_raw="$(systemctl_user_quick show -p Wants --value niri-session.target)"
+        requires_raw="$(systemctl_user_quick show -p Requires --value niri-session.target)"
+        if [[ -n "${wants_raw}${requires_raw}" ]]; then
+          echo
+          echo "Units (niri-session.target wants/requires)"
+          # shellcheck disable=SC2206
+          wants_units=(${wants_raw:-})
+          # shellcheck disable=SC2206
+          requires_units=(${requires_raw:-})
+          print_units_status "${wants_units[@]}" "${requires_units[@]}"
+        fi
+
+        if [[ "$show_tree" == "true" ]]; then
+          echo
+          echo "Dependency tree (niri-session.target)"
+          systemctl_user_slow list-dependencies --plain --no-pager niri-session.target
+        fi
+
+        if [[ "$show_logs" == "true" ]]; then
+          echo
+          echo "Logs (this boot): niri-bootstrap.service"
+          journalctl_user -u niri-bootstrap.service -b --no-pager -n 120
+        fi
+      fi
     fi
 
     if maybe pgrep; then
