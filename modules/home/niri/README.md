@@ -31,10 +31,10 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve Niri
 - `dms-resume-restart`: suspend/resume sonrası DMS restart (Wayland/Qt crash workaround) (`modules/home/dms/settings.nix`).
 - `kdeconnectd` + `kdeconnect-indicator`: KDE Connect daemon + tray (`modules/home/connect/default.nix`).
 - `fusuma`: touchpad gesture servisi (`modules/home/fusuma/default.nix`).
+- `cliphist-watch-{text,image}`: `wl-paste --watch ... | cliphist store` watcher’ları (`modules/home/cliphist/default.nix`).
 
 ## Niri’de başlayan diğerleri (graphical-session.target vb.)
 
-- `cliphist-watch-{text,image}`: `wl-paste --watch ... | cliphist store` watcher’ları (`modules/home/cliphist/default.nix`).
 - `stasis`: Wayland idle manager (`modules/home/stasis/default.nix`).
 - `niri-set init` içindeki `osc-soundctl init`: default ses/mikrofon seviyeleri + son cihaz tercihi (`modules/home/scripts/bin/osc-soundctl.sh`).
 

@@ -7,8 +7,8 @@
 # ==============================================================================
 
 { config, lib, pkgs, ... }:
-let
-  cfg = config.my.user.cliphist;
+	let
+	  cfg = config.my.user.cliphist;
 
   flagLine = key: value: "${key} ${toString value}";
 
@@ -28,13 +28,14 @@ let
   ++ lib.optional highlightMatch "-highlight-match"
   ++ extraFlags;
 
-  hasWaylandTarget = lib.hasAttrByPath [ "wayland" "systemd" "target" ] config;
-  sessionTarget =
-    if hasWaylandTarget then config.wayland.systemd.target else "graphical-session.target";
+	  cliphistTargets = [
+	    "hyprland-session.target"
+	    "niri-session.target"
+	  ];
 
-  mkCliphistWatcher = { name, wlPasteArgs }:
-    pkgs.writeShellScript "cliphist-watch-${name}.sh" ''
-      set -euo pipefail
+	  mkCliphistWatcher = { name, wlPasteArgs }:
+	    pkgs.writeShellScript "cliphist-watch-${name}.sh" ''
+	      set -euo pipefail
 
       if [ "''${XDG_SESSION_TYPE:-}" != "wayland" ]; then
         exit 0
@@ -116,43 +117,42 @@ in
 
     xdg.configFile."cliphist/config".text = lib.concatStringsSep "\n" configLines + "\n";
 
-    systemd.user.services = lib.mkIf cfg.autostart {
-      cliphist-watch-text = {
-        Unit = {
-          Description = "cliphist watcher (text)";
-          After = [ sessionTarget ];
-          PartOf = [ sessionTarget ];
-        };
-        Service = {
-          Type = "simple";
-          ExecStart = mkCliphistWatcher {
+	    systemd.user.services = lib.mkIf cfg.autostart {
+	      cliphist-watch-text = {
+	        Unit = {
+	          Description = "cliphist watcher (text)";
+	          After = cliphistTargets;
+	          PartOf = cliphistTargets;
+	        };
+	        Service = {
+	          Type = "simple";
+	          ExecStart = mkCliphistWatcher {
             name = "text";
             wlPasteArgs = "--type text";
           };
-          Restart = "on-failure";
-          RestartSec = 1;
-        };
-        Install.WantedBy = [ sessionTarget ];
-      };
+	          Restart = "on-failure";
+	          RestartSec = 1;
+	        };
+	        Install.WantedBy = cliphistTargets;
+	      };
 
-      cliphist-watch-image = {
-        Unit = {
-          Description = "cliphist watcher (image)";
-          After = [ sessionTarget ];
-          PartOf = [ sessionTarget ];
-        };
-        Service = {
-          Type = "simple";
-          ExecStart = mkCliphistWatcher {
+	      cliphist-watch-image = {
+	        Unit = {
+	          Description = "cliphist watcher (image)";
+	          After = cliphistTargets;
+	          PartOf = cliphistTargets;
+	        };
+	        Service = {
+	          Type = "simple";
+	          ExecStart = mkCliphistWatcher {
             name = "image";
             wlPasteArgs = "--type image";
           };
-          Restart = "on-failure";
-          RestartSec = 1;
-        };
-        Install.WantedBy = [ sessionTarget ];
-      };
-    };
-  };
-}
-
+	          Restart = "on-failure";
+	          RestartSec = 1;
+	        };
+	        Install.WantedBy = cliphistTargets;
+	      };
+	    };
+	  };
+	}
