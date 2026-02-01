@@ -189,7 +189,7 @@ in
       match app-id=r#"^polkit-gnome-authentication-agent-1$"#;
       // Note: some Polkit dialogs may not honor compositor sizing hints; keep
       // position deterministic and *try* to enforce a sane size.
-      ${mkFixedFloating { w = 714; h = 236; x = 923; y = 641; relativeTo = "top-left"; }}
+      ${mkFixedFloating { w = 686; h = 266; x = 0; y = 137; relativeTo = "top"; }}
     }
 
     window-rule {
