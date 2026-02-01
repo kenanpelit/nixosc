@@ -1952,6 +1952,22 @@ doctor)
       done
     }
 
+    print_units_status_section() {
+      declare -A section_units=()
+      local unit
+      for unit in "$@"; do
+        [[ -n "$unit" ]] || continue
+        if [[ -n "${section_units[$unit]:-}" ]]; then
+          continue
+        fi
+        section_units["$unit"]=1
+        print_unit_status "$unit"
+      done
+      if [[ "${#section_units[@]}" -eq 0 ]]; then
+        echo "(none)"
+      fi
+    }
+
     echo "niri-set doctor"
     echo
     kv "XDG_SESSION_TYPE" "${XDG_SESSION_TYPE:-}"
@@ -2031,7 +2047,7 @@ doctor)
           wants_units=(${wants_raw:-})
           # shellcheck disable=SC2206
           requires_units=(${requires_raw:-})
-          print_units_status "${wants_units[@]}" "${requires_units[@]}"
+          print_units_status_section "${wants_units[@]}" "${requires_units[@]}"
         fi
 
         if [[ "$show_tree" == "true" ]]; then
