@@ -65,18 +65,18 @@ fi
 
 # Logging System
 log::init() {
-  local log_file="${1:-"$LOG_FILE"}"
-  mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+  local log_path="${1:-"$LOG_FILE"}"
+  mkdir -p "$(dirname "$log_path")" 2>/dev/null || true
 
-  # If log path is not writable (e.g., restricted environments), fall back to a
-  # workspace-local log file.
-  if ! (: >>"$log_file") 2>/dev/null; then
-    log_file="${WORK_DIR}/.nixosb/nixos-install.log"
-    mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+  # Prefer writing logs under $HOME (LOG_FILE). If it's not writable, keep going
+  # without file logging rather than dirtying the repo/workdir.
+  if ! (: >>"$log_path") 2>/dev/null; then
+    log WARN "Cannot write log file: $log_path (continuing without file logging)"
+    return 0
   fi
 
-  exec 3>>"$log_file" 2>/dev/null || true
-  find "$(dirname "$log_file")" -name "nixos-install*.log" -mtime +7 -delete 2>/dev/null || true
+  exec 3>>"$log_path" 2>/dev/null || true
+  find "$(dirname "$log_path")" -name "nixos-install*.log" -mtime +7 -delete 2>/dev/null || true
 }
 
 log() {
