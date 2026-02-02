@@ -110,6 +110,14 @@ in
       boot.kernelPackages = mkDefault kernelPackagesFor;
     }
 
+    # Firmware + microcode are "hardware enablement", not a tweak.
+    # Keep as safe defaults for physical machines, while allowing host overrides.
+    (mkIf isPhysicalMachine {
+      hardware.enableRedistributableFirmware = mkDefault true;
+      hardware.enableAllFirmware             = mkDefault true;
+      hardware.cpu.intel.updateMicrocode     = mkDefault true;
+    })
+
     {
       assertions = [
         {
