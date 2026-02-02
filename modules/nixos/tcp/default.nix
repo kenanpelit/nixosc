@@ -15,6 +15,10 @@ in
   boot.kernelModules = [ "tcp_bbr" "sch_fq" ];
 
   boot.kernel.sysctl = {
+    # VM / kernel basics
+    "vm.swappiness"       = 60;
+    "kernel.nmi_watchdog" = 0;
+
     # Throughput + latency baseline.
     "net.core.default_qdisc" = mkDefault "fq";
     "net.ipv4.tcp_congestion_control" = mkDefault "bbr";
