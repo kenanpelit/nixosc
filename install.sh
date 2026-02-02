@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# NixOS Installation Script v4.0.1 (Snowfall Edition)
+# NixOS Installation Script v4.0.2 (Snowfall Edition)
 # Modular, Flake-aware, Git-integrated, and Beautiful
 # Location: flake root (./install.sh)
 # ==============================================================================
 
-# Strict mode for safety (optional, but good practice)
-# set -euo pipefail
+set -Eeuo pipefail
+IFS=$'\n\t'
 
 # ==============================================================================
 # PART 1: CORE LIBRARY & VISUALS
@@ -16,7 +16,7 @@
 readonly START_TIME=$(date +%s)
 
 # Metadata
-readonly VERSION="4.0.1"
+readonly VERSION="4.0.2"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly WORK_DIR="${SCRIPT_DIR}"
 
@@ -100,8 +100,19 @@ log() {
   fi
 }
 
+on_error() {
+  local exit_code=$?
+  local line_no="${1:-unknown}"
+  log ERROR "Unexpected error (line ${line_no}, exit ${exit_code}): ${BASH_COMMAND}"
+  exit "$exit_code"
+}
+
+trap 'on_error $LINENO' ERR
+
 header() {
-  clear
+  if [[ -t 1 ]] && command -v clear >/dev/null 2>&1; then
+    clear 2>/dev/null || true
+  fi
   echo -e "${C_BLUE}"
   cat <<'EOF'
    _   _ _      ____   ____ 
@@ -114,15 +125,28 @@ EOF
   echo -e "${C_DIM}  Snowfall Edition v${VERSION} | ${WORK_DIR}${C_RESET}\n"
 }
 
+term::cols() {
+  local cols="${COLUMNS:-}"
+  if [[ -z "$cols" ]] && command -v tput >/dev/null 2>&1; then
+    cols="$(tput cols 2>/dev/null || true)"
+  fi
+  if [[ -z "$cols" ]] || ! [[ "$cols" =~ ^[0-9]+$ ]]; then
+    cols="80"
+  fi
+  echo "$cols"
+}
+
 hr() {
-  printf "${C_DIM}%*s${C_RESET}\n" "$(tput cols)" '' | tr ' ' '─'
+  local cols
+  cols="$(term::cols)"
+  printf "${C_DIM}%*s${C_RESET}\n" "$cols" '' | tr ' ' '─'
 }
 
 confirm() {
   local msg="${1:-Are you sure?}"
   [[ "${CONFIG[AUTO_MODE]:-false}" == "true" ]] && return 0
   printf "${C_YELLOW}?${C_RESET} %s ${C_DIM}[y/N]${C_RESET} " "$msg"
-  read -r -n 1 response
+  read -r -n 1 response || return 1
   echo
   [[ "${response,,}" == "y" ]]
 }
@@ -130,11 +154,44 @@ confirm() {
 has_command() { command -v "$1" &>/dev/null; }
 
 check_deps() {
-  for cmd in git nix jq; do
+  local missing=()
+  local cmds=(
+    git
+    nix
+    jq
+    sudo
+    nixos-rebuild
+    nixos-generate-config
+    rsync
+  )
+
+  local cmd
+  for cmd in "${cmds[@]}"; do
     if ! has_command "$cmd"; then
-      log WARN "Missing dependency: $cmd"
+      missing+=("$cmd")
     fi
   done
+
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    log WARN "Missing commands: ${missing[*]}"
+  fi
+}
+
+sudo::ensure() {
+  if ! has_command sudo; then
+    log ERROR "sudo not found in PATH."
+    return 1
+  fi
+
+  if [[ "${CONFIG[AUTO_MODE]:-false}" == "true" ]]; then
+    sudo -n true 2>/dev/null || {
+      log ERROR "Auto mode requires passwordless sudo (sudo -n). Run without -a/--auto or cache sudo first (sudo -v)."
+      return 1
+    }
+    return 0
+  fi
+
+  sudo -v
 }
 
 # Host helpers
@@ -191,14 +248,17 @@ config::load() {
   if [[ -f "$file" ]] && has_command jq; then
     while IFS='=' read -r key value; do
       CONFIG[$key]="$value"
-    done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' "$file")
+    done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' "$file" 2>/dev/null || true)
   fi
 }
 
 config::save() {
-  mkdir -p "$CONFIG_DIR"
+  if ! mkdir -p "$CONFIG_DIR" 2>/dev/null; then
+    log WARN "Cannot create config directory: $CONFIG_DIR (skipping save)"
+    return 0
+  fi
   local file="${CONFIG_DIR}/config.json"
-  cat >"$file" <<EOF
+  if ! cat >"$file" <<EOF
 {
   "USERNAME": "${CONFIG[USERNAME]}",
   "HOSTNAME": "${CONFIG[HOSTNAME]}",
@@ -206,6 +266,10 @@ config::save() {
   "FLAKE_DIR": "${CONFIG[FLAKE_DIR]}"
 }
 EOF
+  then
+    log WARN "Cannot write config file: $file (skipping save)"
+    return 0
+  fi
 }
 
 config::get() { echo "${CONFIG[$1]:-}"; }
@@ -246,9 +310,21 @@ wallpapers::sync() {
     return 0
   fi
 
+  if ! has_command rsync; then
+    log WARN "rsync not found; skipping wallpaper sync."
+    return 0
+  fi
+
   log INFO "Syncing wallpapers to ${dest} (existing files kept)..."
-  mkdir -p "$dest"
-  rsync -a --ignore-existing --exclude '.gitkeep' "$src"/ "$dest"/
+  if ! mkdir -p "$dest" 2>/dev/null; then
+    log WARN "Cannot create wallpaper directory: $dest (skipping)"
+    return 0
+  fi
+
+  if ! rsync -a --ignore-existing --exclude '.gitkeep' "$src"/ "$dest"/; then
+    log WARN "Wallpaper sync failed (skipping)."
+    return 0
+  fi
 }
 
 # ==============================================================================
@@ -257,15 +333,20 @@ wallpapers::sync() {
 
 git::ensure_clean() {
   local dir="$1"
-  cd "$dir" || return 1
+  if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    log DEBUG "Not a git work tree: $dir"
+    return 0
+  fi
 
-  if [[ -n "$(git status --porcelain)" ]]; then
-    log WARN "Git directory is dirty. Unstaged files are ignored by Flakes."
-    if confirm "Stage all changes (git add .)?"; then
-      git add .
+  local dirty
+  dirty="$(git -C "$dir" status --porcelain 2>/dev/null || true)"
+  if [[ -n "$dirty" ]]; then
+    log WARN "Git tree is dirty (Nix may warn; builds may be less reproducible)."
+    if confirm "Stage all changes (git add -A)?"; then
+      git -C "$dir" add -A
       log SUCCESS "Changes staged."
     else
-      log WARN "Proceeding with unstaged changes (Risky!)"
+      log WARN "Proceeding with dirty tree."
     fi
   fi
 }
@@ -286,61 +367,78 @@ flake::update() {
   log SUCCESS "Flake updated."
 }
 
-flake::build() {
-  local hostname="${1:-$(config::get HOSTNAME)}"
-  local profile="${2:-$(config::get PROFILE)}"
+flake::rebuild() {
+  local verb="${1:-switch}"
+  local hostname="${2:-$(config::get HOSTNAME)}"
+  local profile="${3:-$(config::get PROFILE)}"
+
+  case "$verb" in
+    switch | build) ;;
+    *)
+      log ERROR "Unknown nixos-rebuild action: $verb (expected: switch|build)"
+      return 2
+      ;;
+  esac
 
   host::validate "$hostname" || return 1
   cd "${CONFIG[FLAKE_DIR]}" || return 1
   git::ensure_clean "${CONFIG[FLAKE_DIR]}"
+  sudo::ensure || return 1
 
-  # In auto mode we must not block on a sudo password prompt.
-  if [[ "${CONFIG[AUTO_MODE]:-false}" == "true" ]]; then
-    if ! sudo -n true 2>/dev/null; then
-      log ERROR "Auto mode requires passwordless sudo (sudo -n). Run without -a/--auto or cache sudo first (sudo -v)."
-      return 1
-    fi
+  local cmd=(
+    sudo nixos-rebuild "$verb"
+    --flake ".#${hostname}"
+    --option accept-flake-config true
+    --option warn-dirty false
+  )
+
+  if [[ -n "$profile" ]]; then
+    cmd+=(--profile-name "$profile")
   fi
 
-  # Construct Command (keep nixos-rebuild default output/UX).
-  local cmd="sudo nixos-rebuild switch --flake .#${hostname}"
-  [[ -n "$profile" ]] && cmd+=" --profile-name ${profile}"
+  local cmd_display
+  cmd_display="$(printf '%q ' "${cmd[@]}")"
+  cmd_display="${cmd_display% }"
 
-  cmd+=" --option accept-flake-config true"
-  cmd+=" --option warn-dirty false"
-
-  log STEP "Building System Configuration"
+  if [[ "$verb" == "switch" ]]; then
+    log STEP "Applying System Configuration"
+  else
+    log STEP "Building System Configuration"
+  fi
   log INFO "Host:    ${C_BOLD}${C_WHITE}$hostname${C_RESET}"
   [[ -n "$profile" ]] && log INFO "Profile: ${C_CYAN}$profile${C_RESET}"
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
-  log INFO "Command: ${C_DIM}${cmd}${C_RESET}"
+  log INFO "Command: ${C_DIM}${cmd_display}${C_RESET}"
 
-  echo -e "${C_DIM}Running build command...${C_RESET}"
+  echo -e "${C_DIM}Running nixos-rebuild ${verb}...${C_RESET}"
+
   # Force a TTY so nixos-rebuild prints steady progress even when it would
   # otherwise buffer or hide output.
   if [[ -t 1 ]] && command -v script >/dev/null 2>&1; then
-    script -qefc "$cmd" /dev/null
-    local rc=$?
-    if [[ $rc -eq 0 ]]; then
+    if script -qefc "$cmd_display" /dev/null; then
       echo ""
-      log SUCCESS "Build completed successfully!"
+      log SUCCESS "nixos-rebuild ${verb} completed successfully!"
       return 0
     fi
+    local rc=$?
     echo ""
-    log ERROR "Build failed! (exit code: $rc)"
-    return 1
+    log ERROR "nixos-rebuild ${verb} failed (exit code: $rc)"
+    return "$rc"
   fi
 
-  if eval "$cmd"; then
+  if "${cmd[@]}"; then
     echo ""
-    log SUCCESS "Build completed successfully!"
+    log SUCCESS "nixos-rebuild ${verb} completed successfully!"
     return 0
-  else
-    echo ""
-    log ERROR "Build failed!"
-    return 1
   fi
+  local rc=$?
+  echo ""
+  log ERROR "nixos-rebuild ${verb} failed (exit code: $rc)"
+  return "$rc"
 }
+
+flake::switch() { flake::rebuild switch "$@"; }
+flake::build() { flake::rebuild build "$@"; }
 
 # ==============================================================================
 # PART 4: INSTALLATION COMMANDS
@@ -391,10 +489,35 @@ cmd_install() {
   wallpapers::sync
 
   # Build System
-  if flake::build "$hostname"; then
+  if flake::switch "$hostname"; then
     show_summary
   else
     log ERROR "Installation aborted due to errors."
+    exit 1
+  fi
+}
+
+cmd_build() {
+  local hostname="${1:-$(config::get HOSTNAME)}"
+  [[ -z "$hostname" ]] && {
+    log ERROR "Hostname not specified."
+    return 1
+  }
+
+  config::set HOSTNAME "$hostname"
+  config::save
+
+  header
+
+  # Optional Update
+  if [[ "${CONFIG[UPDATE_FLAKE]}" == "true" ]]; then
+    flake::update
+  fi
+
+  if flake::build "$hostname"; then
+    log SUCCESS "Build completed successfully!"
+  else
+    log ERROR "Build aborted due to errors."
     exit 1
   fi
 }
@@ -416,6 +539,8 @@ cmd_pre-install() {
     return 1
   fi
 
+  sudo::ensure || return 1
+
   # This command is meant to run on an already installed (minimal) NixOS system
   # to bootstrap prerequisites (flakes, base packages, etc.). It operates on the
   # current root filesystem, not on /mnt.
@@ -435,13 +560,11 @@ cmd_pre-install() {
   fi
 
   log INFO "Installing configuration..."
-  sudo cp "$template_path" "${nixos_dir}/configuration.nix"
-  sudo chown root:root "${nixos_dir}/configuration.nix"
-  sudo chmod 644 "${nixos_dir}/configuration.nix"
+  sudo install -m 0644 "$template_path" "${nixos_dir}/configuration.nix"
 
   if [[ ! -f "${nixos_dir}/hardware-configuration.nix" ]]; then
     log INFO "Generating hardware config..."
-    sudo nixos-generate-config --root /
+    sudo nixos-generate-config --root "$target_root"
   fi
 
   if confirm "Apply bootstrap now? (runs nixos-rebuild switch)"; then
@@ -477,7 +600,7 @@ cmd_merge() {
   fi
 
   if [[ -z "$target_branch" ]]; then
-    git fetch -p >/dev/null 2>&1
+    git fetch -p >/dev/null 2>&1 || true
     mapfile -t branches < <(git branch -a --format='%(refname:short)' | grep -v 'origin/HEAD' | sed 's/^origin\///' | sort -u)
 
     echo -e "\n${C_CYAN}Available Branches:${C_RESET}"
@@ -488,7 +611,7 @@ cmd_merge() {
     done
     echo ""
 
-    read -r -p "Select TARGET branch (name or number): " tgt_sel
+    read -r -p "Select TARGET branch (name or number): " tgt_sel || return 1
     if [[ "$tgt_sel" =~ ^[0-9]+$ ]] && ((tgt_sel < ${#branches[@]})); then
       target_branch="${branches[$tgt_sel]}"
     else
@@ -585,20 +708,20 @@ show_help() {
   echo "Usage: $(basename "$0") [COMMAND] [OPTIONS]"
   echo ""
   echo -e "${C_BOLD}Commands:${C_RESET}"
-  echo "  install          Build & Switch configuration"
-  echo "  auto             Non-interactive install with next free YYMMDD profile"
-  echo "  update           Update flake inputs"
-  echo "  build            Build only"
-  echo "  merge            Merge branches (interactively)"
-  echo "  hosts            List available hosts"
-  echo "  --pre-install    Bootstrap system"
+  echo "  install [HOST]    Build & switch configuration"
+  echo "  build [HOST]      Build only (no switch)"
+  echo "  auto [HOST]       Non-interactive switch with next free YYMMDD profile"
+  echo "  update [INPUT]    Update flake inputs (all or one input)"
+  echo "  merge             Merge branches (interactively)"
+  echo "  hosts             List available hosts"
+  echo "  bootstrap [HOST]  Install /etc/nixos bootstrap config (alias: --pre-install)"
   echo ""
   echo -e "${C_BOLD}Options:${C_RESET}"
   echo "  -H, --host NAME  Hostname (hay, vhay)"
-  echo "  -p, --profile X  Profile name"
-  echo "  -u, --update     Update inputs before install"
+  echo "  -p, --profile X  Profile name (--profile-name)"
+  echo "  -u, --update     Update inputs before install/build"
   echo "  -a, --auto       Non-interactive mode (auto-yes prompts)"
-  echo "  -m, --merge      Run merge after install"
+  echo "  -m, --merge      Alias for 'merge'"
 }
 
 parse_args() {
@@ -609,7 +732,7 @@ parse_args() {
     set -- "install" "$@"
   elif [[ $# -gt 0 ]] && [[ "${1:-}" != -* ]]; then
     case "${1:-}" in
-    auto | install | hosts | update | build | merge | pre-install | --pre-install) ;;
+    auto | install | hosts | update | build | merge | bootstrap | pre-install) ;;
     *) set -- "install" "$@" ;;
     esac
   fi
@@ -644,9 +767,11 @@ parse_args() {
       exit 0
       ;;
     build)
-      shift
-      flake::build "$@"
-      exit 0
+      action="build"
+      if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
+        config::set HOSTNAME "$2"
+        shift
+      fi
       ;;
     merge)
       shift
@@ -666,8 +791,8 @@ parse_args() {
       cmd_merge "$auto_yes" "$src" "$tgt"
       exit 0
       ;;
-    pre-install | --pre-install)
-      action="pre-install"
+    bootstrap | pre-install | --pre-install)
+      action="bootstrap"
       if [[ -n "${2:-}" && ! "$2" =~ ^- ]]; then
         config::set HOSTNAME "$2"
         shift
@@ -729,7 +854,7 @@ parse_args() {
     shift
   done
 
-  if [[ "$action" == "pre-install" ]]; then
+  if [[ "$action" == "bootstrap" ]]; then
     cmd_pre-install
     return
   fi
@@ -747,6 +872,12 @@ parse_args() {
 
   if [[ "$action" == "install" ]]; then
     cmd_install
+    return
+  fi
+
+  if [[ "$action" == "build" ]]; then
+    cmd_build
+    return
   fi
 }
 
@@ -757,14 +888,14 @@ show_menu() {
   echo ""
   echo "1) Install / Switch Config"
   echo "2) Update Flake Inputs"
-  echo "3) Pre-Install Bootstrap"
+  echo "3) Bootstrap System (pre-install)"
   echo "4) Merge Branches"
   echo "5) Edit Config (Neovim)"
   echo "6) List Hosts"
   echo "q) Exit"
   echo ""
   printf "${C_YELLOW}Select:${C_RESET} "
-  read -r choice
+  read -r choice || exit 0
 
   case "$choice" in
   1)
@@ -773,15 +904,21 @@ show_menu() {
     ;;
   2) flake::update ;;
   3)
-    read -r -p "Hostname (hay/vhay): " h
+    read -r -p "Hostname (hay/vhay): " h || return 0
     config::set HOSTNAME "$h"
     cmd_pre-install
     ;;
   4) cmd_merge "false" ;;
-  5) cd "$WORK_DIR" && nvim . ;;
+  5)
+    if has_command nvim; then
+      (cd "$WORK_DIR" && nvim .) || true
+    else
+      log ERROR "nvim not found."
+    fi
+    ;;
   6)
     host::list
-    read -r -p "Press Enter to continue..." _
+    read -r -p "Press Enter to continue..." _ || true
     ;;
   q) exit 0 ;;
   *) show_menu ;;
