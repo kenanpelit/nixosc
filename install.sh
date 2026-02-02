@@ -422,7 +422,7 @@ cmd_pre-install() {
   local target_root="/"
   local nixos_dir="/etc/nixos"
 
-  local template_path="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/systems/${SYSTEM_ARCH}/${hostname}/templates/initial-configuration.nix"
+  local template_path="${CONFIG[FLAKE_DIR]:-$WORK_DIR}/systems/${SYSTEM_ARCH}/${hostname}/templates/bootstrap.nix"
   if [[ ! -f "$template_path" ]]; then
     log ERROR "Template not found: $template_path"
     return 1
