@@ -23,6 +23,13 @@ in
     };
 
     spiceUSBRedirection.enable = true;
+
+    # Podman (OCI / Docker-compat) — merged from modules/nixos/containers
+    podman = {
+      enable = true;
+      dockerCompat = true;
+      defaultNetwork.settings.dns_enabled = true;
+    };
   };
 
   systemd = lib.mkIf isPhysicalHost {
