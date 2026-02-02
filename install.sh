@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# NixOS Installation Script v4.0.2 (Snowfall Edition)
+# NixOS Installation Script v4.0.3 (Snowfall Edition)
 # Modular, Flake-aware, Git-integrated, and Beautiful
 # Location: flake root (./install.sh)
 # ==============================================================================
@@ -16,7 +16,7 @@ IFS=$'\n\t'
 readonly START_TIME=$(date +%s)
 
 # Metadata
-readonly VERSION="4.0.2"
+readonly VERSION="4.0.3"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly WORK_DIR="${SCRIPT_DIR}"
 
@@ -95,7 +95,8 @@ log() {
   esac
 
   if [[ -e /proc/self/fd/3 ]]; then
-    local clean_msg="$(echo "$msg" | sed 's/\x1b\[[0-9;]*m//g')"
+    local clean_msg
+    clean_msg="$(printf '%b' "$msg" | sed 's/\x1b\[[0-9;]*m//g')"
     echo "[$timestamp] [$level] $clean_msg" >&3
   fi
 }
@@ -113,16 +114,37 @@ header() {
   if [[ -t 1 ]] && command -v clear >/dev/null 2>&1; then
     clear 2>/dev/null || true
   fi
-  echo -e "${C_BLUE}"
-  cat <<'EOF'
+
+  hr
+  echo -e "${C_BLUE}${C_BOLD}"
+  if [[ "$(term::cols)" -ge 60 ]]; then
+    cat <<'EOF'
    _   _ _      ____   ____ 
   | \ | (_)_  _/ __ \ / ___|
   |  \| | \ \/ / | | |\___ \
   | |\  | |>  <| |_| |___) |
   |_| \_|_/_/\_\\____/|____/ 
 EOF
+  else
+    echo "NixOS Install"
+  fi
   echo -e "${C_RESET}"
-  echo -e "${C_DIM}  Snowfall Edition v${VERSION} | ${WORK_DIR}${C_RESET}\n"
+
+  local meta=()
+  meta+=("Snowfall Edition v${VERSION}")
+  meta+=("${WORK_DIR}")
+
+  if has_command git && git -C "${WORK_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    local branch
+    branch="$(git -C "${WORK_DIR}" branch --show-current 2>/dev/null || true)"
+    [[ -n "$branch" ]] && meta+=("branch:${branch}")
+  fi
+
+  local meta_line
+  meta_line="$(IFS=' | '; printf '%s' "${meta[*]}")"
+  printf "${C_DIM}  %s${C_RESET}\n" "$meta_line"
+  hr
+  echo ""
 }
 
 term::cols() {
@@ -410,7 +432,7 @@ flake::rebuild() {
   log INFO "Dir:     ${CONFIG[FLAKE_DIR]}"
   log INFO "Command: ${C_DIM}${cmd_display}${C_RESET}"
 
-  echo -e "${C_DIM}Running nixos-rebuild ${verb}...${C_RESET}"
+  log INFO "Running nixos-rebuild ${verb}..."
 
   # Force a TTY so nixos-rebuild prints steady progress even when it would
   # otherwise buffer or hide output.
@@ -453,17 +475,14 @@ show_summary() {
 
   echo ""
   hr
-  echo -e "${C_BOLD}${C_GREEN}${S_SUCCESS}  SYSTEM SUCCESSFULLY UPDATED${C_RESET}"
+  log SUCCESS "System successfully updated"
   hr
   echo ""
-  echo -e "   ${C_DIM}Hostname   ${C_RESET}${C_BOLD}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
-  echo -e "   ${C_DIM}User       ${C_RESET}${C_CYAN}${CONFIG[USERNAME]}${C_RESET}"
-  if [[ -n "${CONFIG[PROFILE]}" ]]; then
-    echo -e "   ${C_DIM}Profile    ${C_RESET}${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
-  fi
-  echo ""
-  echo -e "   ${C_DIM}Time       ${C_RESET}$(date '+%H:%M:%S')"
-  echo -e "   ${C_DIM}Duration   ${C_RESET}${minutes} min ${seconds} sec"
+  log INFO "Host:     ${C_BOLD}${C_WHITE}${CONFIG[HOSTNAME]:-Unknown}${C_RESET}"
+  log INFO "User:     ${C_CYAN}${CONFIG[USERNAME]}${C_RESET}"
+  [[ -n "${CONFIG[PROFILE]}" ]] && log INFO "Profile:  ${C_PURPLE}${CONFIG[PROFILE]}${C_RESET}"
+  log INFO "Time:     $(date '+%H:%M:%S')"
+  log INFO "Duration: ${minutes} min ${seconds} sec"
   echo ""
   hr
 }
