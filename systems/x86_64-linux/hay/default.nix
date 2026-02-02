@@ -22,6 +22,9 @@
     isVirtualHost  = false;
   };
 
+  # Power profiles via power-profiles-daemon (powerprofilesctl).
+  # (moved to modules/nixos/hosts/hay.nix)
+
   # Set User (Defaults to "kenan" but good to be explicit)
   my.user.name = "kenan";
 

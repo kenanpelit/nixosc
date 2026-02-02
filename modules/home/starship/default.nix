@@ -38,7 +38,10 @@ let
 
       # Conservative timeouts: avoid "timed out" blanks on slow/remote FS
       commandTimeout = if fastMode then 150 else 300; # ms
-      scanTimeout    = if fastMode then 20 else 60;   # ms
+      # `scan_timeout` controls how long Starship is allowed to scan the current
+      # directory for detect_* heuristics. Too low -> log spam like:
+      #   "Scanning current directory timed out"
+      scanTimeout    = if fastMode then 120 else 300;  # ms
 
       # Feature toggles
       enableGitState       = !fastMode; # rebase/merge state is expensive

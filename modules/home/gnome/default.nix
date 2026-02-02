@@ -85,7 +85,7 @@ let
     { name = "Notes (Anotes)"; command = "anotes"; binding = "<Alt>n"; }
     { name = "Clipboard Manager"; command = "copyq toggle"; binding = "<Super>v"; }
     { name = "Bluetooth Toggle"; command = "bluetooth_toggle"; binding = "F10"; }
-    { name = "Mullvad Toggle"; command = "osc-mullvad toggle"; binding = "<Alt>F12"; }
+    { name = "Mullvad Toggle"; command = "osc-mullvad-toggle"; binding = "<Alt>F12"; }
     { name = "SemsuMo Daily"; command = "semsumo launch --daily -all"; binding = "<Super><Alt>Return"; }
     { name = "Column Width Cycle"; command = "${config.home.profileDirectory}/bin/gnome-column-width"; binding = "<Super>r"; }
     { name = "Column Width 80%"; command = "${config.home.profileDirectory}/bin/gnome-column-width set 0.8"; binding = "<Super><Shift>r"; }

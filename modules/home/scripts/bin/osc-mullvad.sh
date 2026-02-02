@@ -117,6 +117,11 @@ notify() {
 	local message="$2"
 	local icon="$3"
 
+	# Useful when running under pkexec wrapper; avoid duplicate notifications.
+	if [[ "${OSC_MULLVAD_NO_NOTIFY:-0}" == "1" ]]; then
+		return 0
+	fi
+
 	notify-send -t 5000 "$title" "$message" -i "$icon"
 }
 
@@ -265,6 +270,109 @@ toggle_basic_vpn() {
 		log "Hata: VPN durumu belirlenemedi."
 		notify "❌ MULLVAD VPN" "Status unknown" "security-low"
 	fi
+}
+
+# ----------------------------------------------------------------------------
+# Optional DNS helper: Blocky <-> Mullvad coexistence
+# ----------------------------------------------------------------------------
+
+have_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+sudo_run() {
+	# Runs a command as root.
+	# - In terminals: normal sudo prompt works.
+	# - In GUI hotkeys: uses askpass if available.
+	local cmd="$1"
+
+	# Already root (e.g. via pkexec wrapper) → no sudo needed.
+	if [[ "$(id -u)" -eq 0 ]]; then
+		bash -c "$cmd"
+		return $?
+	fi
+
+	have_cmd sudo || {
+		log "Hata: sudo bulunamadı (Blocky yönetimi atlanıyor)."
+		return 1
+	}
+
+	# If we already have NOPASSWD or cached creds, prefer that.
+	if sudo -n true 2>/dev/null; then
+		sudo bash -c "$cmd"
+		return $?
+	fi
+
+	# GUI/hotkey context: no TTY; try askpass if present.
+	if [[ ! -t 0 || ! -t 1 ]]; then
+		if have_cmd askpass; then
+			export SUDO_ASKPASS="${SUDO_ASKPASS:-askpass}"
+			sudo -A bash -c "$cmd"
+			return $?
+		fi
+
+		log "Hata: root yetkisi gerekiyor ama TTY yok ve askpass bulunamadı. (Blocky yönetimi atlanıyor)"
+		notify "⚠️ MULLVAD VPN" "Blocky toggle needs sudo; no TTY/askpass" "security-low"
+		return 1
+	fi
+
+	# Terminal context: interactive sudo is fine.
+	sudo bash -c "$cmd"
+}
+
+blocky_unit_exists() {
+	systemctl list-unit-files blocky.service >/dev/null 2>&1
+}
+
+blocky_is_active() {
+	systemctl is-active --quiet blocky.service 2>/dev/null
+}
+
+blocky_stop() {
+	blocky_unit_exists || return 0
+	blocky_is_active || return 0
+	log "Blocky durduruluyor (VPN açıkken çakışmayı önlemek için)..."
+	sudo_run "systemctl stop blocky.service" || return 1
+
+	# Extra safety: if resolvconf still has a stale "blocky" key, remove it.
+	if have_cmd resolvconf; then
+		sudo_run "resolvconf -f -d blocky || true; resolvconf -u" || true
+	fi
+}
+
+blocky_start() {
+	blocky_unit_exists || return 0
+	blocky_is_active && return 0
+	log "Blocky başlatılıyor (VPN kapalıyken DNS ad-block)..."
+	sudo_run "systemctl start blocky.service" || return 1
+}
+
+toggle_basic_vpn_with_blocky() {
+	check_vpn_status
+	local status=$?
+
+	if [[ $status -eq 0 ]]; then
+		# VPN currently ON -> turning OFF: disconnect first, then enable Blocky.
+		if disconnect_basic_vpn; then
+			blocky_start || true
+		fi
+		return 0
+	fi
+
+	if [[ $status -eq 1 ]]; then
+		# VPN currently OFF -> turning ON: disable Blocky first, then connect.
+		if ! blocky_stop; then
+			# If Blocky is still active, connecting Mullvad tends to break DNS/internet.
+			if blocky_is_active; then
+				log "Hata: Blocky durdurulamadı. VPN bağlantısı başlatılmıyor."
+				notify "⚠️ MULLVAD VPN" "Blocky couldn't be stopped; not connecting" "security-low"
+				return 1
+			fi
+		fi
+		connect_basic_vpn
+		return 0
+	fi
+
+	# Transitional/unknown states: keep previous behaviour.
+	toggle_basic_vpn
 }
 
 # ----------------------------------------------------------------------------
@@ -1635,6 +1743,7 @@ show_help() {
 	echo -e "    ${GREEN}connect${NC}           Connect to Mullvad VPN using default settings"
 	echo -e "    ${GREEN}disconnect${NC}        Disconnect from Mullvad VPN"
 	echo -e "    ${GREEN}toggle${NC}            Toggle VPN connection on/off"
+	echo -e "    ${GREEN}toggle --with-blocky${NC}  Toggle VPN and stop/start Blocky accordingly"
 	echo -e "    ${GREEN}status${NC}            Show current connection status and details"
 	echo -e "    ${GREEN}test${NC}              Test current connection for leaks/issues"
 	echo -e "    ${GREEN}help${NC}              Show this help message"
@@ -1674,6 +1783,7 @@ show_help() {
 	echo -e "    ${GREEN}$SCRIPT_NAME connect${NC}           # Connect to VPN with default settings"
 	echo -e "    ${GREEN}$SCRIPT_NAME disconnect${NC}        # Disconnect from VPN"
 	echo -e "    ${GREEN}$SCRIPT_NAME toggle${NC}            # Toggle VPN connection on/off"
+	echo -e "    ${GREEN}$SCRIPT_NAME toggle --with-blocky${NC}  # Toggle VPN + Blocky auto"
 	echo -e "    ${GREEN}$SCRIPT_NAME protocol${NC}          # Switch between OpenVPN/WireGuard"
 	echo -e "    ${GREEN}$SCRIPT_NAME random${NC}            # Switch to any random relay"
 	echo -e "    ${GREEN}$SCRIPT_NAME fr${NC}                # Switch to French relay"
@@ -1726,7 +1836,14 @@ main() {
 		fi
 		;;
 	"toggle")
-		toggle_basic_vpn
+		case "${2:-}" in
+		--with-blocky | --blocky | --dns=auto | --dns-auto)
+			toggle_basic_vpn_with_blocky
+			;;
+		*)
+			toggle_basic_vpn
+			;;
+		esac
 		;;
 	"status")
 		show_status

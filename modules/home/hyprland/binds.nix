@@ -172,7 +172,8 @@ let
     "$mainMod SHIFT, C, exec, hyprpicker -a"
     "$mainMod CTRL, V, exec, kitty --class clipse -e clipse"
     ", F10, exec, ${bins.bluetoothToggle}"
-    "ALT, F12, exec, osc-mullvad toggle"
+    "CTRL ALT, P, exec, powerprofilesctl-toggle"
+    "ALT, F12, exec, osc-mullvad-toggle"
     "$mainMod ALT, F12, exec, osc-mullvad-slot"
     
     # Screenshots

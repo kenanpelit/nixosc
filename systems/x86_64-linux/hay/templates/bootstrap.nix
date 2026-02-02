@@ -1,4 +1,4 @@
-# hosts/hay/templates/initial-configuration.nix
+# hosts/hay/templates/bootstrap.nix
 # ==============================================================================
 # PRE-INSTALL CONFIGURATION (BOOTSTRAP)
 # ==============================================================================

@@ -5,17 +5,48 @@
 # Adjust resolver choices centrally instead of per-interface tweaks.
 # ==============================================================================
 
-{ ... }:
+{ lib, config, ... }:
 
+let
+  blockyConfigured = config.my.dns.blocky.enable or false;
+in
 {
-  services.resolved = {
-    enable = true;
-    dnssec = "allow-downgrade";
-    domains = [ "~." ];
-    fallbackDns = [ "1.1.1.1" "9.9.9.9" ];
-    extraConfig = ''
-      DNSOverTLS=yes
-      DNSStubListener=yes
-    '';
-  };
+  config = lib.mkMerge [
+    (lib.mkIf (!blockyConfigured) {
+      services.resolved = {
+        enable = true;
+        dnssec = "allow-downgrade";
+        domains = [ "~." ];
+        fallbackDns = [ "1.1.1.1" "9.9.9.9" ];
+        extraConfig = ''
+          DNSOverTLS=yes
+          DNSStubListener=yes
+        '';
+      };
+    })
+
+    (lib.mkIf blockyConfigured {
+      # Avoid resolver stacking and port conflicts; let Blocky (or other local DNS)
+      # own :53 when configured.
+      services.resolved.enable = lib.mkForce false;
+      # Let DNS be controlled dynamically (e.g. by Blocky service hooks / VPN).
+      networking.resolvconf.enable = lib.mkDefault true;
+      # Ignore DHCP-provided router DNS from NetworkManager; keep resolver selection
+      # controlled via `networking.nameservers` + VPN keys.
+      networking.resolvconf.extraConfig = lib.mkAfter ''
+        deny_keys='NetworkManager'
+      '';
+
+      # Provide a safe, consistent fallback resolver set when Blocky is stopped
+      # (e.g. Mullvad ON) and prevent LAN/router DNS from sneaking into resolv.conf.
+      networking.nameservers = lib.mkDefault [ "1.1.1.1" "9.9.9.9" ];
+
+      # When using resolvconf + local DNS stacks, let DNS be driven by resolvconf
+      # sources we control (static + VPN), not by per-connection DHCP DNS.
+      environment.etc."NetworkManager/conf.d/90-osc-dns.conf".text = lib.mkDefault ''
+        [main]
+        dns=none
+      '';
+    })
+  ];
 }

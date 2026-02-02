@@ -153,12 +153,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/67d3aa9da31322f1647afd5a40b217aca2f3d581"; # 0130 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/ac509933d7a930653e33f821ff63aec521420181"; # 0129 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/9553cb06d34a255486733e17c11f6874dd9d99a3"; # 0127 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/ad458dfece389f132bd8f00df4889d260a4ee9a7"; # 0126 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/f7df3b2a685444ab8b44d38a286ddafe38bc2bff"; # 0125 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/b4ba2dac37fdd0eeef885defd7a74a8142043c46"; # 0123 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/eaa6a664c89f776f406d74d29eb8f7d1b4411e3d"; # 0202 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/546cbfb3caeb65baa41d70b0318e3be6dc822e0c"; # 0202 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/3d80a9dd0f473f4dcb6b48c10978128a4c76bcf8"; # 0201 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/4602442feb7b9de19b92a762b440b895edb8a39a"; # 0131 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/a90717b20c6fde1a3af51bce3eba8654d5deefa8"; # 0131 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/67d3aa9da31322f1647afd5a40b217aca2f3d581"; # 0130 - Updated commit
     };
 
     # ==========================================================================
@@ -195,12 +195,12 @@
     # ==========================================================================
     # Optional GUI tools, app launchers, and helper flakes.
     #walker = {
-    #  url = "github:abenz1267/walker/v2.13.0";
+    #  url = "github:abenz1267/walker/v2.14.1";
     #  inputs.nixpkgs.follows = "nixpkgs";
     #};
 
     #elephant = {
-    #  url = "github:abenz1267/elephant/v2.18.2";
+    #  url = "github:abenz1267/elephant/v2.19.1";
     #  inputs.nixpkgs.follows = "nixpkgs";
     #};
 

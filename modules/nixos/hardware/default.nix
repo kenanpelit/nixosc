@@ -34,8 +34,6 @@ in
       ];
     };
 
-    enableRedistributableFirmware = true;
-    enableAllFirmware             = true;
-    cpu.intel.updateMicrocode     = true;
+    # Firmware/microcode defaults are handled in modules/nixos/kernel.
   };
 }

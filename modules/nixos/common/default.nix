@@ -8,10 +8,6 @@
 { pkgs, lib, config, ... }:
 
 {
-  # -- Time & Locale -----------------------------------------------------------
-  time.timeZone = lib.mkDefault "Europe/Istanbul";
-  i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
-
   # -- SSH / Security ----------------------------------------------------------
   services.openssh = {
     enable = true;

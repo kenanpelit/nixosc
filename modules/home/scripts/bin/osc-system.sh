@@ -2,7 +2,7 @@
 # ==============================================================================
 # OSC-SYSTEM: Unified Power Management & Monitoring Utility
 # ==============================================================================
-# Version: 17.1 - v17 Power Stack Integration
+# Version: 18.0 - power-profiles-daemon (PPD) Integration
 # Author: OSC Power Management Suite
 # License: MIT
 #
@@ -32,7 +32,7 @@
 
 set -euo pipefail
 
-VERSION="17.1"
+VERSION="18.2"
 SCRIPT_NAME=$(basename "$0")
 LOG_BASE_DIR="${HOME}/.logs"
 THERMAL_LOG_DIR="${LOG_BASE_DIR}/thermal"
@@ -63,7 +63,6 @@ ensure_log_dir() {
 	local dir="$1"
 	[[ ! -d "$dir" ]] && mkdir -p "$dir" && echo -e "${GRN}Created log directory: ${dir}${RST}"
 }
-run_state_get() { read_file "/run/osc-power/$1" 2>/dev/null || return 1; }
 
 # ==============================================================================
 # Main Help
@@ -102,7 +101,7 @@ ${BOLD}Features:${RST}
   ✓ CPU frequency analysis (turbostat)
   ✓ RAPL power limit awareness
   ✓ Battery health & thresholds
-  ✓ Service status tracking (v17 stack)
+  ✓ Service status tracking (PPD)
   ✓ JSON output for automation
 
 EOF
@@ -115,12 +114,14 @@ cmd_status() {
 	json_out=false
 	brief_out=false
 	sample_power=false
+	show_conflicts=false
 
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 		--json) json_out=true ;;
 		--brief) brief_out=true ;;
 		--sample-power) sample_power=true ;;
+		--show-conflicts) show_conflicts=true ;;
 		-h | --help)
 			cat <<EOF
 ${BOLD}Status Command${RST} - Show comprehensive system status
@@ -131,6 +132,7 @@ ${BOLD}Options:${RST}
   --json           Machine-readable JSON output (requires jq)
   --brief          Brief human-readable output
   --sample-power   Measure actual power consumption (~2s sample)
+  --show-conflicts Always show conflict checks (even when none)
   -h, --help       Show this help
 
 ${BOLD}Features:${RST}
@@ -144,8 +146,8 @@ ${BOLD}Features:${RST}
   ✅ Temperature (sensors)
   ✅ RAPL Power Limits (PL1/PL2/PL4)
   ✅ Battery Status & Charge Thresholds
-  ✅ Service Health Status (v17 stack)
-  ✅ MMIO Status (intel_rapl_mmio)
+  ✅ Power-Profiles-Daemon status (PPD)
+  ✅ MMIO Interface presence (RAPL MMIO)
 
 ${BOLD}Examples:${RST}
   ${SCRIPT_NAME} status
@@ -275,7 +277,7 @@ EOF
 	[[ -z "$TEMP_C" ]] && TEMP_C="0"
 
 	# RAPL Power Limits
-	PL1_W=0 PL2_W=0 PL4_W=0 BASE_PL2_W=0
+	PL1_W=0 PL2_W=0 PL4_W=0
 	PL1_MAX_W=0 PL2_MAX_W=0
 	if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
 		PL1_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0) / 1000000))
@@ -283,57 +285,75 @@ EOF
 		PL4_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_2_power_limit_uw 2>/dev/null || echo 0) / 1000000))
 		PL1_MAX_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_0_max_power_uw 2>/dev/null || echo 0) / 1000000))
 		PL2_MAX_W=$(($(read_file /sys/class/powercap/intel-rapl:0/constraint_1_max_power_uw 2>/dev/null || echo 0) / 1000000))
-		[[ -r /var/run/rapl-base-pl2 ]] && BASE_PL2_W=$(cat /var/run/rapl-base-pl2)
 	fi
 
-	# MMIO Status
-	MMIO_STATUS="disabled"
-	MMIO_LOADED=false
-	if lsmod 2>/dev/null | grep -q "^intel_rapl_mmio"; then
-		MMIO_STATUS="active"
-		MMIO_LOADED=true
+	# MMIO Status (best-effort: sysfs interface; driver may be built-in)
+	MMIO_STATUS="absent"
+	MMIO_PRESENT=false
+	if [[ -d /sys/class/powercap/intel-rapl-mmio:0 ]]; then
+		MMIO_STATUS="present"
+		MMIO_PRESENT=true
 	fi
 
-	# Platform Profile
+	# Platform Profile (live sysfs)
 	PLATFORM_PROFILE_SYSFS="$(read_file /sys/firmware/acpi/platform_profile 2>/dev/null || echo "unknown")"
-	PLATFORM_PROFILE_DESIRED="unknown"
-	if run_state_get "desired/platform_profile" >/dev/null 2>&1; then
-		PLATFORM_PROFILE_DESIRED="$(run_state_get "desired/platform_profile" 2>/dev/null || echo "unknown")"
-	elif have journalctl; then
-		last_pp="$(journalctl -b -t power-mgmt-platform-profile -o cat -n 200 2>/dev/null \
-			| grep -E 'Platform profile (set to:|already:)' \
-			| tail -n 1 \
-			|| true)"
-		if [[ "$last_pp" =~ Platform[[:space:]]profile[[:space:]](set[[:space:]]to|already:)[[:space:]]([A-Za-z0-9_-]+) ]]; then
-			PLATFORM_PROFILE_DESIRED="${BASH_REMATCH[2]}"
+
+	# Power Profiles (power-profiles-daemon / powerprofilesctl)
+	PPD_ACTIVE=false
+	PPD_PROFILE=""
+	PPD_LIST_OK=false
+	PPD_LIST_ERROR=""
+	PPD_PROFILE_FROM_LIST=""
+	PPD_PROFILES=()
+	declare -A PPD_CPU_DRIVER_MAP=() PPD_PLATFORM_DRIVER_MAP=() PPD_DEGRADED_MAP=() || true
+	if systemctl list-unit-files "power-profiles-daemon.service" >/dev/null 2>&1; then
+		if systemctl is-active --quiet power-profiles-daemon.service 2>/dev/null; then
+			PPD_ACTIVE=true
+		fi
+		if have powerprofilesctl; then
+			PPD_PROFILE="$(powerprofilesctl get 2>/dev/null || echo "")"
+
+			PPD_LIST_RAW="$(powerprofilesctl list 2>&1 || true)"
+			if [[ -n "$PPD_LIST_RAW" ]]; then
+				if [[ "$PPD_LIST_RAW" == *"Failed to communicate"* ]]; then
+					PPD_LIST_ERROR="$(echo "$PPD_LIST_RAW" | head -n 1)"
+				else
+					PPD_LIST_OK=true
+					cur=""
+					while IFS= read -r line; do
+						if [[ "$line" =~ ^[[:space:]]*(\*)?[[:space:]]*([A-Za-z0-9_-]+):[[:space:]]*$ ]]; then
+							cur="${BASH_REMATCH[2]}"
+							PPD_PROFILES+=("$cur")
+							[[ -n "${BASH_REMATCH[1]}" ]] && PPD_PROFILE_FROM_LIST="$cur"
+							continue
+						fi
+
+						if [[ -n "$cur" && "$line" =~ ^[[:space:]]*CpuDriver:[[:space:]]*(.*)$ ]]; then
+							val="$(echo "${BASH_REMATCH[1]}" | xargs)"
+							[[ -n "$val" ]] && PPD_CPU_DRIVER_MAP["$cur"]="$val"
+							continue
+						fi
+
+						if [[ -n "$cur" && "$line" =~ ^[[:space:]]*PlatformDriver:[[:space:]]*(.*)$ ]]; then
+							val="$(echo "${BASH_REMATCH[1]}" | xargs)"
+							[[ -n "$val" ]] && PPD_PLATFORM_DRIVER_MAP["$cur"]="$val"
+							continue
+						fi
+
+						if [[ -n "$cur" && "$line" =~ ^[[:space:]]*Degraded:[[:space:]]*(.*)$ ]]; then
+							val="$(echo "${BASH_REMATCH[1]}" | xargs)"
+							[[ -n "$val" ]] && PPD_DEGRADED_MAP["$cur"]="$val"
+							continue
+						fi
+					done <<<"$PPD_LIST_RAW"
+				fi
+			fi
 		fi
 	fi
 
-	# Desired targets (best-effort, from power-mgmt logs)
-	GOVERNOR_DESIRED="unknown"
-	EPP_DESIRED="unknown"
-	if run_state_get "desired/governor" >/dev/null 2>&1; then
-		GOVERNOR_DESIRED="$(run_state_get "desired/governor" 2>/dev/null || echo "unknown")"
-	elif have journalctl; then
-		last_gov="$(journalctl -b -t power-mgmt-cpu-governor -o cat -n 400 2>/dev/null \
-			| grep -E 'Governor set to ' \
-			| tail -n 1 \
-			|| true)"
-		if [[ "$last_gov" =~ Governor[[:space:]]set[[:space:]]to[[:space:]]([A-Za-z0-9_-]+) ]]; then
-			GOVERNOR_DESIRED="${BASH_REMATCH[1]}"
-		fi
-	fi
-
-	if run_state_get "desired/epp" >/dev/null 2>&1; then
-		EPP_DESIRED="$(run_state_get "desired/epp" 2>/dev/null || echo "unknown")"
-	elif have journalctl; then
-		last_epp="$(journalctl -b -t power-mgmt-cpu-epp -o cat -n 400 2>/dev/null \
-			| grep -E 'Setting EPP to:' \
-			| tail -n 1 \
-			|| true)"
-		if [[ "$last_epp" =~ Setting[[:space:]]EPP[[:space:]]to:[[:space:]]([A-Za-z0-9_-]+) ]]; then
-			EPP_DESIRED="${BASH_REMATCH[1]}"
-		fi
+	# If `powerprofilesctl get` failed, fall back to the starred profile from `list`.
+	if [[ -z "$PPD_PROFILE" && -n "$PPD_PROFILE_FROM_LIST" ]]; then
+		PPD_PROFILE="$PPD_PROFILE_FROM_LIST"
 	fi
 
 	# Battery Status
@@ -397,17 +417,16 @@ EOF
 			--arg load1 "$LOAD1" \
 			--arg governor "$GOVERNOR_ANY" \
 			--arg governor_cpu0 "$GOVERNOR_CPU0" \
-			--arg governor_desired "$GOVERNOR_DESIRED" \
 			--arg pstate "$PSTATE" \
 			--arg epp_any "$EPP_ANY" \
-			--arg epp_desired "$EPP_DESIRED" \
 			--arg platform_profile "$PLATFORM_PROFILE_SYSFS" \
-			--arg platform_profile_desired "$PLATFORM_PROFILE_DESIRED" \
+			--arg ppd_profile "$PPD_PROFILE" \
 			--arg mmio_status "$MMIO_STATUS" \
 			--arg ts "$TS" \
 			--argjson turbo "$TURBO_ENABLED" \
 			--argjson hwp_boost "$HWP_BOOST_BOOL" \
-			--argjson mmio_loaded "$MMIO_LOADED" \
+			--argjson ppd_active "$PPD_ACTIVE" \
+			--argjson mmio_present "$MMIO_PRESENT" \
 			--argjson min_perf "${MIN_PERF//[^0-9]/}" \
 			--argjson max_perf "${MAX_PERF//[^0-9]/}" \
 			--argjson freq_avg "$FREQ_AVG_MHZ" \
@@ -416,7 +435,6 @@ EOF
 			--argjson pl1 "$PL1_W" \
 			--argjson pl2 "$PL2_W" \
 			--argjson pl4 "$PL4_W" \
-			--argjson base_pl2 "$BASE_PL2_W" \
 			--argjson pkg_w_now "${PKG_W_NOW:-0}" \
 			--argjson bat "$([[ "${BAT_JSON}" == "[]" ]] && echo "[]" || echo "${BAT_JSON}")" \
 			--argjson governor_map "$([[ $GOV_COUNT -gt 0 ]] && echo "${GOV_JSON}" || echo "{}")" \
@@ -428,27 +446,24 @@ EOF
         load_1m: ($load1|tonumber),
         governor: $governor,
         governor_cpu0: $governor_cpu0,
-        governor_desired: $governor_desired,
         governor_map: $governor_map,
         pstate_mode: $pstate,
         epp_any: $epp_any,
-        epp_desired: $epp_desired,
         epp_map: $epp_map,
+        ppd: { active: $ppd_active, profile: $ppd_profile },
         hwp_dynamic_boost: $hwp_boost,
         turbo_enabled: $turbo,
         mmio_status: $mmio_status,
-        mmio_driver_loaded: $mmio_loaded,
+        mmio_interface_present: $mmio_present,
         performance: { min_pct: $min_perf, max_pct: $max_perf },
         platform_profile: $platform_profile,
-        platform_profile_desired: $platform_profile_desired,
         freq_avg_mhz: $freq_avg,
         freq_avg_mhz_cpuinfo: $freq_avg_cpuinfo,
         temp_celsius: $temp,
         power_limits: {
           pl1_watts: $pl1,
           pl2_watts: $pl2,
-          pl4_watts: $pl4,
-          base_pl2_watts: $base_pl2
+          pl4_watts: $pl4
         },
         pkg_watts_now: $pkg_w_now,
         batteries: $bat,
@@ -474,7 +489,6 @@ EOF
 		echo "  HWP Dynamic Boost: $([[ "$HWP_BOOST_BOOL" = true ]] && echo "${GRN}✓ Active${RST}" || echo "${RED}✗ Disabled${RST}")"
 		if [[ "$GOVERNOR_ANY" != "unknown" ]]; then
 			echo "  Governor: ${GOVERNOR_ANY}"
-			[[ "$GOVERNOR_DESIRED" != "unknown" ]] && echo "  Governor (desired): ${GOVERNOR_DESIRED}"
 			if ((GOV_COUNT > 0)); then
 				echo "  Governor policies:"
 				for k in "${!GOV_MAP[@]}"; do
@@ -492,7 +506,6 @@ EOF
 
 		if [[ "$PLATFORM_PROFILE_SYSFS" != "unknown" ]]; then
 			echo "Platform Profile: ${BOLD}${PLATFORM_PROFILE_SYSFS}${RST}"
-			[[ "$PLATFORM_PROFILE_DESIRED" != "unknown" ]] && echo "Platform Profile (desired): ${BOLD}${PLATFORM_PROFILE_DESIRED}${RST}"
 			if [[ -r /sys/firmware/acpi/platform_profile_choices ]]; then
 				choices="$(cat /sys/firmware/acpi/platform_profile_choices 2>/dev/null || true)"
 				[[ -n "$choices" ]] && echo "  ${DIM}Choices: ${choices}${RST}"
@@ -505,7 +518,6 @@ EOF
 		for k in "${!EPP_MAP[@]}"; do
 			echo "  ${CYN}→${RST} ${BOLD}${k}${RST} (${EPP_MAP[$k]} policies)"
 		done
-		[[ "$EPP_DESIRED" != "unknown" ]] && echo "  ${DIM}(desired: ${EPP_DESIRED})${RST}"
 	else
 		echo "EPP: ${DIM}(interface not found)${RST}"
 	fi
@@ -525,10 +537,8 @@ EOF
 			f="$(cat "$p" 2>/dev/null || echo 0)"
 			printf "  CPU %2d: %4d MHz\n" "$i" "$((f / 1000))"
 		done
-		echo "  ${DIM}Average: ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
-		if [[ "$CPUINFO_FREQ_AVG_MHZ" != "0" && "$CPUINFO_FREQ_AVG_MHZ" != "$FREQ_AVG_MHZ" ]]; then
-			echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
-		fi
+		echo "  ${DIM}Average (sysfs): ${BOLD}${FREQ_AVG_MHZ} MHz${RST}"
+		[[ "$CPUINFO_FREQ_AVG_MHZ" != "0" ]] && echo "  ${DIM}Average (cpuinfo): ${BOLD}${CPUINFO_FREQ_AVG_MHZ} MHz${RST}"
 		if [[ "$CPU_TYPE" == "intel" && "$PSTATE" == "active" ]]; then
 			echo "  ${DIM}💡 Note: Intel HWP'de sysfs frekansları yanıltıcı olabilir; doğrulama için turbostat kullan${RST}"
 		else
@@ -555,21 +565,16 @@ EOF
 	echo "TEMPERATURE: ${TEMP_COLOR}${BOLD}${TEMP_C}°C${RST}"
 
 	echo ""
-		echo "RAPL POWER LIMITS (MSR):"
+	echo "RAPL POWER LIMITS:"
 	if [[ -d /sys/class/powercap/intel-rapl:0 ]]; then
 		printf "  PL1 (sustained): ${BOLD}%2d W${RST}\n" "$PL1_W"
 		[[ $PL1_MAX_W -gt 0 ]] && printf "  ${DIM}PL1 max (platform): %2d W${RST}\n" "$PL1_MAX_W"
 		printf "  PL2 (burst):     ${BOLD}%2d W${RST}\n" "$PL2_W"
 		[[ $PL2_MAX_W -gt 0 ]] && printf "  ${DIM}PL2 max (platform): %2d W${RST}\n" "$PL2_MAX_W"
 		[[ $PL4_W -gt 0 ]] && printf "  PL4 (peak):      ${BOLD}%2d W${RST}\n" "$PL4_W"
-		[[ $BASE_PL2_W -gt 0 ]] && echo "  ${DIM}Base PL2 (thermal guard ref): ${BASE_PL2_W} W${RST}"
 
 		echo ""
-		echo "  MMIO Driver: $([[ "$MMIO_LOADED" = true ]] && echo "${RED}✗ ACTIVE (WARNING!)${RST}" || echo "${GRN}✓ DISABLED${RST}")"
-		if [[ "$MMIO_LOADED" = true ]]; then
-			echo "  ${RED}⚠ MMIO driver loaded! MSR/MMIO conflict possible${RST}"
-			echo "  ${YLW}→ Fix: sudo systemctl restart disable-rapl-mmio.service${RST}"
-		fi
+		echo "  MMIO Interface: $([[ "$MMIO_PRESENT" = true ]] && echo "${YLW}present${RST}" || echo "${DIM}absent${RST}")"
 
 		if $sample_power && [[ -n "${PKG_W_NOW}" ]]; then
 			echo ""
@@ -591,46 +596,68 @@ EOF
 	((${#BAT_LINES[@]} == 0)) && echo "  ${DIM}No battery detected${RST}" || printf "%s\n" "${BAT_LINES[@]}"
 
 	echo ""
-		echo "SERVICE STATUS (v${VERSION} / v17 stack):"
-		# Must match v17 system module exactly:
-		SERVICES=(platform-profile cpu-governor cpu-epp cpu-min-freq-guard rapl-power-limits rapl-thermo-guard disable-rapl-mmio battery-thresholds power-policy-guard)
-		for svc in "${SERVICES[@]}"; do
-			STATE="$(systemctl show -p ActiveState --value "$svc.service" 2>/dev/null || echo "")"
-			RESULT="$(systemctl show -p Result --value "$svc.service" 2>/dev/null || echo "")"
-			SUBSTATE="$(systemctl show -p SubState --value "$svc.service" 2>/dev/null || echo "")"
-
-		if [[ "$STATE" == "active" ]]; then
-			printf "  %-30s ${GRN}✓ ACTIVE${RST}" "$svc"
-			[[ "$SUBSTATE" == "running" ]] && echo " ${DIM}(running)${RST}" || echo " ${DIM}(exited)${RST}"
-		elif [[ "$STATE" == "inactive" && "$RESULT" == "success" ]]; then
-			printf "  %-30s ${GRN}✓ OK${RST} ${DIM}(completed)${RST}\n" "$svc"
-		elif [[ -z "$STATE" ]]; then
-			printf "  %-30s ${DIM}– not found (masked/disabled)${RST}\n" "$svc"
+	echo "POWER PROFILES (power-profiles-daemon):"
+	if systemctl list-unit-files "power-profiles-daemon.service" >/dev/null 2>&1; then
+		if [[ "$PPD_ACTIVE" == "true" ]]; then
+			echo "  power-profiles-daemon: ${GRN}✓ ACTIVE${RST}"
 		else
-			printf "  %-30s ${RED}✗ %s${RST} ${DIM}(%s)${RST}\n" "$svc" "$STATE" "$RESULT"
-			fi
-		done
+			PPD_STATE="$(systemctl show -p ActiveState --value power-profiles-daemon.service 2>/dev/null || echo "unknown")"
+			echo "  power-profiles-daemon: ${YLW}${PPD_STATE}${RST}"
+		fi
 
-		echo ""
-		echo "POTENTIAL CONFLICTS:"
-		CONFLICTS=(power-profiles-daemon auto-cpufreq tlp thermald tuned)
-		found_any=0
-		for svc in "${CONFLICTS[@]}"; do
-			if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
-				found_any=1
-				if systemctl is-active --quiet "${svc}.service" 2>/dev/null; then
-					echo "  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)"
+		[[ -n "$PPD_PROFILE" ]] && echo "  current profile: ${BOLD}${PPD_PROFILE}${RST}"
+		if [[ -n "$PPD_LIST_ERROR" ]]; then
+			echo "  ${YLW}powerprofilesctl:${RST} ${DIM}${PPD_LIST_ERROR}${RST}"
+		elif [[ "$PPD_LIST_OK" == "true" && ${#PPD_PROFILES[@]} -gt 0 ]]; then
+			echo -n "  profiles: "
+			for p in "${PPD_PROFILES[@]}"; do
+				if [[ -n "$PPD_PROFILE" && "$p" == "$PPD_PROFILE" ]]; then
+					echo -n "${BOLD}${p}${RST} "
 				else
-					echo "  ${DIM}${svc}${RST}: inactive"
+					echo -n "${DIM}${p}${RST} "
 				fi
-			fi
-		done
-		[[ "$found_any" = "0" ]] && echo "  ${DIM}(none detected)${RST}"
+			done
+			echo ""
 
-		echo ""
-		echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
-		echo "${BOLD}💡 Tips:${RST}"
-		echo "  • Real CPU frequencies: ${CYN}${SCRIPT_NAME} turbostat-quick${RST}"
+			PPD_CPU_DRIVER="${PPD_CPU_DRIVER_MAP[$PPD_PROFILE]:-}"
+			PPD_PLATFORM_DRIVER="${PPD_PLATFORM_DRIVER_MAP[$PPD_PROFILE]:-}"
+			PPD_DEGRADED="${PPD_DEGRADED_MAP[$PPD_PROFILE]:-}"
+
+			PPD_DETAILS=()
+			[[ -n "$PPD_CPU_DRIVER" ]] && PPD_DETAILS+=("CpuDriver=$PPD_CPU_DRIVER")
+			[[ -n "$PPD_PLATFORM_DRIVER" ]] && PPD_DETAILS+=("PlatformDriver=$PPD_PLATFORM_DRIVER")
+			[[ -n "$PPD_DEGRADED" ]] && PPD_DETAILS+=("Degraded=$PPD_DEGRADED")
+			((${#PPD_DETAILS[@]} > 0)) && echo "  backend: ${DIM}${PPD_DETAILS[*]}${RST}"
+		fi
+	else
+		echo "  ${DIM}power-profiles-daemon not installed${RST}"
+	fi
+
+	echo ""
+	CONFLICTS=(auto-cpufreq tlp thermald tuned)
+	CONFLICT_LINES=()
+	for svc in "${CONFLICTS[@]}"; do
+		if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
+			if systemctl is-active --quiet "${svc}.service" 2>/dev/null; then
+				CONFLICT_LINES+=("  ${YLW}⚠ ${svc}${RST}: ${YLW}ACTIVE${RST} (power ayarlarını override edebilir)")
+			else
+				CONFLICT_LINES+=("  ${DIM}${svc}${RST}: inactive")
+			fi
+		fi
+	done
+	if $show_conflicts || ((${#CONFLICT_LINES[@]} > 0)); then
+		echo "POTENTIAL CONFLICTS:"
+		if ((${#CONFLICT_LINES[@]} == 0)); then
+			echo "  ${DIM}(none detected)${RST}"
+		else
+			printf "%s\n" "${CONFLICT_LINES[@]}"
+		fi
+	fi
+
+	echo ""
+	echo "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
+	echo "${BOLD}💡 Tips:${RST}"
+	echo "  • Real CPU frequencies: ${CYN}${SCRIPT_NAME} turbostat-quick${RST}"
 	echo "  • Power consumption:    ${CYN}${SCRIPT_NAME} power-check${RST} / ${CYN}${SCRIPT_NAME} power-monitor${RST}"
 	echo "  • Thermal monitoring:   ${CYN}${SCRIPT_NAME} thermal -d 300 -p${RST}"
 	echo "  • JSON output:          ${CYN}${SCRIPT_NAME} status --json${RST}"
@@ -987,7 +1014,6 @@ EOF
 			return 1
 			;;
 		esac
-		shift
 	done
 
 	if ! have turbostat || ! have stress-ng; then
@@ -1007,7 +1033,12 @@ EOF
 	echo ""
 
 	LOGFILE=$(mktemp)
-	turbostat --interval 10 --num_iterations 3 2>&1 | tee "$LOGFILE" &
+	# Keep turbostat output small and parseable:
+	# - Summary: single system-wide line per interval
+	# - quiet:   skip decoding system configuration header spam
+	# - show:    only the columns we care about for profile comparisons
+	TURBO_SHOW_COLS="Busy%,Bzy_MHz,PkgWatt,PkgTmp"
+	turbostat --quiet --Summary --show "$TURBO_SHOW_COLS" --interval 10 --num_iterations 3 2>&1 | tee "$LOGFILE" &
 	TURBO_PID=$!
 
 	sleep 2
@@ -1018,13 +1049,37 @@ EOF
 	if [[ $ANALYZE -eq 1 ]]; then
 		echo ""
 		echo "=== ANALYSIS ==="
-		awk '/^[^C]/ && NF>5 && $2 ~ /^[0-9]+$/ {
-      if (max_freq < $5) max_freq = $5;
-      if (max_watts < $11) max_watts = $11;
-    } END {
-      printf "Peak Bzy_MHz: %.0f MHz\n", max_freq;
-      printf "Peak PkgWatt: %.2f W\n", max_watts;
-    }' "$LOGFILE"
+		awk '
+      $0 ~ /(^|[[:space:]])Bzy_MHz([[:space:]]|$)/ {
+        for (i = 1; i <= NF; i++) col[$i] = i;
+        have_header = 1;
+        next;
+      }
+      have_header && $1 ~ /^[0-9.]+$/ {
+        bzy = $(col["Bzy_MHz"]);
+        watt = $(col["PkgWatt"]);
+        tmp = $(col["PkgTmp"]);
+
+        if (bzy > max_bzy) max_bzy = bzy;
+        if (watt > max_watt) max_watt = watt;
+        if (tmp > max_tmp) max_tmp = tmp;
+
+        sum_bzy += bzy;
+        sum_watt += watt;
+        sum_tmp += tmp;
+        n++;
+      }
+      END {
+        if (!have_header || n == 0) {
+          print "No turbostat samples parsed (unexpected output format).";
+          exit 1;
+        }
+        printf "Avg Bzy_MHz:  %.0f MHz\n", sum_bzy / n;
+        printf "Peak Bzy_MHz: %.0f MHz\n", max_bzy;
+        printf "Avg PkgWatt:  %.2f W\n", sum_watt / n;
+        printf "Peak PkgWatt: %.2f W\n", max_watt;
+        printf "Peak PkgTmp:  %.0f °C\n", max_tmp;
+      }' "$LOGFILE"
 	fi
 
 	rm -f "$LOGFILE"
@@ -1040,10 +1095,18 @@ cmd_turbostat_analyze() {
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 		--interval)
+			if [[ $# -lt 2 ]]; then
+				echo "${RED}Missing value for --interval${RST}"
+				return 2
+			fi
 			INTERVAL="$2"
 			shift 2
 			;;
 		--iters)
+			if [[ $# -lt 2 ]]; then
+				echo "${RED}Missing value for --iters${RST}"
+				return 2
+			fi
 			ITERS="$2"
 			shift 2
 			;;
@@ -1074,7 +1137,6 @@ EOF
 			return 1
 			;;
 		esac
-		shift
 	done
 
 	if ! have turbostat; then
@@ -1287,21 +1349,15 @@ EOF
 cmd_profile_refresh() {
 	if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
 		cat <<EOF
-${BOLD}Profile Refresh${RST} - Restart v17 power management services
+${BOLD}Profile Refresh${RST} - Restart power management services
 
 ${BOLD}Usage:${RST} sudo ${SCRIPT_NAME} profile-refresh
 
-Restart all custom power management services (v17 stack).
-Useful for testing configuration changes or recovering
-from a failed state without a full reboot.
+Restarts PPD and related power services without a full reboot.
+Useful for testing configuration changes or recovering from a failed state.
 
 ${BOLD}Services restarted:${RST}
-  • platform-profile
-  • cpu-epp
-  • cpu-min-freq-guard
-  • rapl-power-limits
-  • rapl-thermo-guard
-  • disable-rapl-mmio
+  • power-profiles-daemon
   • battery-thresholds
 
 ${BOLD}Note:${RST} Requires root privileges
@@ -1310,7 +1366,7 @@ EOF
 		return 0
 	fi
 
-	echo "=== RESTARTING POWER PROFILE SERVICES (v17) ==="
+	echo "=== RESTARTING POWER PROFILE SERVICES ==="
 	echo ""
 	if [[ $EUID -ne 0 ]]; then
 		echo "${RED}⚠ This command requires root privileges. Please run with sudo.${RST}"
@@ -1318,16 +1374,16 @@ EOF
 	fi
 
 	SERVICES=(
-		"platform-profile.service"
-		"cpu-epp.service"
-		"cpu-min-freq-guard.service"
-		"rapl-power-limits.service"
-		"rapl-thermo-guard.service"
-		"disable-rapl-mmio.service"
+		"power-profiles-daemon.service"
 		"battery-thresholds.service"
 	)
 
 	for SVC in "${SERVICES[@]}"; do
+		if ! systemctl list-unit-files "$SVC" >/dev/null 2>&1; then
+			printf "Restarting %-30s ... ${DIM}[ not installed ]${RST}\n" "$SVC"
+			continue
+		fi
+
 		printf "Restarting %-30s ... " "$SVC"
 		if systemctl restart "$SVC" 2>/dev/null; then
 			echo "${GRN}[ OK ]${RST}"
@@ -1336,8 +1392,11 @@ EOF
 		fi
 	done
 
-	echo ""
-	echo "${GRN}✓ All v17 power-related services have been refreshed.${RST}"
+	if have powerprofilesctl; then
+		CUR_PROFILE="$(powerprofilesctl get 2>/dev/null || echo "")"
+		[[ -n "$CUR_PROFILE" ]] && echo "Current profile: ${BOLD}${CUR_PROFILE}${RST}"
+	fi
+
 	echo "-------------------------------------------------"
 	cmd_status --brief
 }

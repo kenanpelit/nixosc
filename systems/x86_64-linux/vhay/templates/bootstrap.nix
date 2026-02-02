@@ -1,4 +1,4 @@
-# hosts/vhay/templates/initial-configuration.nix
+# hosts/vhay/templates/bootstrap.nix
 # ==============================================================================
 # PRE-INSTALL CONFIGURATION (BOOTSTRAP) - VM
 # ==============================================================================

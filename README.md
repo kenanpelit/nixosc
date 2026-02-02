@@ -83,16 +83,16 @@ On-the-fly transparency control for the active window.
 | **Niri Compositor**      | Uses `niri-flake` (unstable) with custom "Premium Feel" animations.                               |
 | **Hyprland**             | Pinned flake input; configs split into `binds.nix`, `rules.nix`, with Smart Borders enabled.       |
 | **Shell/UI**             | **DankMaterialShell** (Quickshell-based). Provides top bar, dock, and Matugen OSDs.                |
-| **Power Stack**          | Custom v17 stack for Intel HWP/RAPL management (`modules/nixos/power`).                            |
+| **Power Stack**          | `power-profiles-daemon` (PPD) + battery charge thresholds (`modules/nixos/power`).                |
 | **Authentication**       | Polkit-GNOME + GNOME Keyring fully integrated via PAM.                                             |
 
-## 🔋 Power Management Stack
+## 🔋 Power Management
 
-Custom power management for laptops (Intel HWP / `intel_pstate=active`) that stays consistent across boot/suspend/AC changes.
+Profile switching uses `power-profiles-daemon` (PPD), so you can switch between `power-saver`, `balanced`, and `performance` instantly.
 - **Module:** `modules/nixos/power/default.nix`
-- **Controls:** ACPI Platform Profile, CPU governor, Intel EPP, RAPL power limits, and Thermal Guard.
-- **CLI Tool:** `osc-system status` & `profile-refresh`.
-- **Drift Guard:** `power-policy-guard` prevents firmware from overriding settings.
+- **PPD:** `my.power.stack = "ppd";` (default) or `my.power.stack = "none";`
+- **CLI:** `powerprofilesctl get|set|list`, `osc-system status`, `rofi-performance`
+- **Battery thresholds:** `my.power.battery.chargeThresholds.enable = true;` (default), `start`/`stop` configurable (defaults 75–80)
 
 ## ⌨️ Keybindings
 

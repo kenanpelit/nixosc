@@ -26,12 +26,6 @@
     };
   };
 
-  services.xserver.xkb = {
-    layout  = "tr";
-    variant = "f";
-    options = "ctrl:nocaps";
-  };
-
   console = {
     keyMap   = "trf";
     font     = "ter-v20b";
