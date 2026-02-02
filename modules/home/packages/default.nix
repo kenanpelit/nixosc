@@ -110,6 +110,7 @@ in
       easyeffects           # PipeWire audio effects
       mpc rmpc cava         # MPD client & visualizer
       pavucontrol playerctl # Audio control
+      wiremix               # PipeWire TUI mixer
       eyed3                 # ID3 tags
       
       # Screenshot/Recording
