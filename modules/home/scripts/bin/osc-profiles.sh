@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# osc-profiles.sh - Profil seçici/uygulayıcı
-# Çevresel profilleri (network/proxy/theme vb.) seçip uygular, durumu bildirir.
+# osc-profiles.sh - NixOS system profile manager
+# /nix/var/nix/profiles/system-profiles altındaki profilleri listeler/karşılaştırır/siler ve yedekler.
 
 # ==============================================================================
 # osc-profiles - NixOS System Profile Manager
 # Author: Kenan Pelit
-# Version: 1.2.3
+# Version: 1.3.0
 # Description:
 #   Lightweight, robust manager for NixOS system profiles:
 #   - list, inspect and compare profiles
@@ -16,6 +16,9 @@
 
 set -o pipefail
 
+# Script metadata
+VERSION="1.3.0"
+
 # Core paths
 SYSTEM_PROFILES="/nix/var/nix/profiles/system-profiles"
 SYSTEM_PROFILE="/nix/var/nix/profiles/system"
@@ -25,29 +28,57 @@ CONFIG_DIR="${HOME}/.config/nixos-profiles"
 CONFIG_FILE="${CONFIG_DIR}/settings.conf"
 LOG_FILE="${CONFIG_DIR}/profile-manager.log"
 
-# Defaults (can be overridden by config)
+# Defaults (can be overridden by config / CLI)
 SORT_BY="date"      # one of: date, size, name
 SHOW_DETAILS=true   # show extra nix-store details
 AUTO_BACKUP=false   # automatically backup on delete/bulk delete
 CONFIRM_DELETE=true # ask before destructive actions
 MAX_BACKUPS=10      # maximum number of backup archives to keep
 
-# Colors (simple ANSI; terminals handle these fine)
-CYAN="\033[0;36m"
-ORANGE="\033[0;33m"
-BLUE="\033[0;34m"
-GREEN="\033[0;32m"
-RED="\033[0;31m"
-GRAY="\033[0;90m"
-WHITE="\033[0;97m"
-YELLOW="\033[0;33m"
-PURPLE="\033[0;35m"
-NC="\033[0m"
-BOLD="\033[1m"
+# UI flags
+NO_CLEAR=false
+
+# Styling (colors + symbols)
+ui::apply_style() {
+  local use_color=true
+  if [[ ! -t 1 ]] || [[ -n "${NO_COLOR:-}" ]]; then
+    use_color=false
+  fi
+
+  if [[ "${use_color}" == true ]]; then
+    CYAN="\033[0;36m"
+    ORANGE="\033[0;33m"
+    BLUE="\033[0;34m"
+    GREEN="\033[0;32m"
+    RED="\033[0;31m"
+    GRAY="\033[0;90m"
+    YELLOW="\033[0;33m"
+    PURPLE="\033[0;35m"
+    NC="\033[0m"
+    BOLD="\033[1m"
+
+    S_SUCCESS="✓"
+    S_ERROR="✗"
+    S_WARN="⚠"
+    S_INFO="ℹ"
+
+    HR_CHAR="─"
+  else
+    CYAN="" ORANGE="" BLUE="" GREEN="" RED="" GRAY="" YELLOW="" PURPLE="" NC="" BOLD=""
+
+    S_SUCCESS="[OK]"
+    S_ERROR="[ERR]"
+    S_WARN="[WARN]"
+    S_INFO="[INFO]"
+
+    HR_CHAR="-"
+  fi
+}
+
+ui::apply_style
 
 # Box drawing
 TOP_CORNER="╭"
-BOT_CORNER="╰"
 VERTICAL="│"
 TEE="├"
 LAST_TEE="└"
@@ -58,22 +89,96 @@ BAR="═"
 # Helpers: logging, config, formatting
 # ------------------------------------------------------------------------------
 
+log::init() {
+  mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
+
+  # Open a logfile if possible; otherwise keep going without file logging.
+  if ! : 2>/dev/null >>"${LOG_FILE}"; then
+    local fallback_dir="${HOME}/.cache/osc-profiles"
+    local fallback_file="${fallback_dir}/profile-manager.log"
+    mkdir -p "${fallback_dir}" 2>/dev/null || true
+    if : 2>/dev/null >>"${fallback_file}"; then
+      LOG_FILE="${fallback_file}"
+    else
+      return 0
+    fi
+  fi
+
+  exec 3>>"${LOG_FILE}" 2>/dev/null || true
+}
+
+strip_ansi() {
+  sed 's/\x1b\[[0-9;]*m//g'
+}
+
+term::cols() {
+  local cols="${COLUMNS:-}"
+  if [[ -z "${cols}" ]] && command -v tput >/dev/null 2>&1; then
+    cols="$(tput cols 2>/dev/null || true)"
+  fi
+  if [[ -z "${cols}" ]] || ! [[ "${cols}" =~ ^[0-9]+$ ]]; then
+    cols="80"
+  fi
+  printf '%s\n' "${cols}"
+}
+
+hr() {
+  local cols line
+  cols="$(term::cols)"
+  printf -v line '%*s' "${cols}" ''
+  line="${line// /${HR_CHAR:-'-'}}"
+  printf '%b%s%b\n' "${GRAY}" "${line}" "${NC}"
+}
+
+ui::clear() {
+  [[ "${NO_CLEAR}" == true ]] && return 0
+  [[ -t 1 ]] || return 0
+  command -v clear >/dev/null 2>&1 && clear || true
+}
+
+bool::parse() {
+  case "${1,,}" in
+    1|true|yes|y|on) printf 'true\n' ;;
+    0|false|no|n|off) printf 'false\n' ;;
+    *) return 1 ;;
+  esac
+}
+
+sort::validate() {
+  case "${1:-}" in
+    date|size|name) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 log_message() {
   local level="$1"
   shift
   local message="$*"
   local timestamp
+  local icon="${S_INFO}"
+  local color="${BLUE}"
 
   timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
-  mkdir -p "${CONFIG_DIR}"
-  echo "[$timestamp] [$level] $message" >>"${LOG_FILE}"
 
   case "${level}" in
-    ERROR)   printf '%b\n' "${RED}${BOLD}❌ ${message}${NC}" ;;
-    WARNING) printf '%b\n' "${YELLOW}${BOLD}⚠️  ${message}${NC}" ;;
-    SUCCESS) printf '%b\n' "${GREEN}${BOLD}✅ ${message}${NC}" ;;
-    INFO|*)  printf '%b\n' "${BLUE}${BOLD}ℹ️  ${message}${NC}" ;;
+    ERROR) icon="${S_ERROR}"; color="${RED}" ;;
+    WARNING) icon="${S_WARN}"; color="${YELLOW}" ;;
+    SUCCESS) icon="${S_SUCCESS}"; color="${GREEN}" ;;
+    INFO|*) icon="${S_INFO}"; color="${BLUE}" ;;
   esac
+
+  if [[ -e /proc/self/fd/3 ]]; then
+    printf '[%s] [%s] %s\n' "${timestamp}" "${level}" "$(printf '%b' "${message}" | strip_ansi)" >&3
+  fi
+
+  if [[ "${level}" == "ERROR" ]]; then
+    printf '  %b  %b\n' "${color}${BOLD}${icon}${NC}" "${message}" >&2 || true
+    return 0
+  fi
+
+  # Avoid noisy "Broken pipe" messages when output is piped (e.g. to head).
+  printf '  %b  %b\n' "${color}${BOLD}${icon}${NC}" "${message}" 2>/dev/null || true
 }
 
 SUDO_BIN=""
@@ -145,7 +250,7 @@ AUTO_BACKUP=${AUTO_BACKUP}
 CONFIRM_DELETE=${CONFIRM_DELETE}
 MAX_BACKUPS=${MAX_BACKUPS}
 EOF
-  log_message "INFO" "Configuration saved to ${CONFIG_FILE}"
+  log_message "INFO" "Ayarlar kaydedildi: ${CONFIG_FILE}"
 }
 
 format_date() {
@@ -178,6 +283,30 @@ human_size() {
 profile_target() {
   local link="$1"
   readlink -f "${link}" 2>/dev/null || printf ''
+}
+
+active_profile_name() {
+  local active_target
+  active_target="$(profile_target "${SYSTEM_PROFILE}")"
+  [[ -n "${active_target}" ]] || return 0
+  [[ -d "${SYSTEM_PROFILES}" ]] || return 0
+
+  local p t
+  while IFS= read -r p; do
+    t="$(profile_target "${p}")"
+    [[ -n "${t}" ]] || continue
+    if [[ "${t}" == "${active_target}" ]]; then
+      basename "${p}"
+      return 0
+    fi
+  done < <(find "${SYSTEM_PROFILES}" -maxdepth 1 -type l -print 2>/dev/null | sort)
+}
+
+sorted_profile_paths_by_date() {
+  [[ -d "${SYSTEM_PROFILES}" ]] || return 0
+  find "${SYSTEM_PROFILES}" -maxdepth 1 -type l -printf '%T@ %p\n' 2>/dev/null \
+    | sort -nr \
+    | awk '{ $1=""; sub(/^ /,""); print }'
 }
 
 sorted_profile_paths() {
@@ -260,16 +389,16 @@ get_profile_details() {
 
 print_header() {
   printf '\n'
-  printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} NixOS Sistem Profilleri ${BAR}${NC}"
-  printf '%b\n' "${VERTICAL} Sıralama: ${ORANGE}${SORT_BY}${NC}"
-  printf '%b\n' "${VERTICAL} Detaylar: ${ORANGE}$([[ "${SHOW_DETAILS}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
-  printf '%b\n' "${VERTICAL} Otomatik yedek: ${ORANGE}$([[ "${AUTO_BACKUP}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
-  printf '%b\n' "${VERTICAL} Silme onayı: ${ORANGE}$([[ "${CONFIRM_DELETE}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
+  hr
+  printf '%b\n' "${CYAN}${BOLD}osc-profiles${NC} ${GRAY}v${VERSION}${NC}"
+  printf '%b\n' "${GRAY}${SYSTEM_PROFILES}${NC}"
+  printf '%b\n' "  Sıralama: ${ORANGE}${SORT_BY}${NC} | Detay: ${ORANGE}$([[ "${SHOW_DETAILS}" == true ]] && echo 'açık' || echo 'kapalı')${NC} | Otomatik yedek: ${ORANGE}$([[ "${AUTO_BACKUP}" == true ]] && echo 'açık' || echo 'kapalı')${NC} | Silme onayı: ${ORANGE}$([[ "${CONFIRM_DELETE}" == true ]] && echo 'açık' || echo 'kapalı')${NC}"
+  hr
   printf '\n'
 }
 
 print_active_system() {
-  local target size hash uptime kernel
+  local target size store name uptime kernel
 
   target="$(profile_target "${SYSTEM_PROFILE}")"
   if [[ -z "${target}" ]]; then
@@ -278,13 +407,15 @@ print_active_system() {
   fi
 
   size="$(du -sh "${target}" 2>/dev/null | awk '{print $1}')"
-  hash="$(basename "${target}")"
+  store="$(basename "${target}")"
+  name="$(active_profile_name)"
   uptime="$(uptime | sed 's/.*up \([^,]*\),.*/\1/' 2>/dev/null || echo 'bilinmiyor')"
   kernel="$(uname -r)"
 
-  printf '%b\n' "${GREEN}${BOLD}⚡ Aktif Sistem Profili${NC}"
-  printf '%b\n' "${TEE}${HORIZONTAL} Hash    ${ORANGE}${hash}${NC}"
-  printf '%b\n' "${TEE}${HORIZONTAL} Link    ${ORANGE}${target}${NC}"
+  printf '%b\n' "${GREEN}${BOLD}${S_INFO} Aktif Sistem Profili${NC}"
+  [[ -n "${name}" ]] && printf '%b\n' "${TEE}${HORIZONTAL} Profil  ${ORANGE}${name}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Store   ${ORANGE}${store}${NC}"
+  printf '%b\n' "${TEE}${HORIZONTAL} Yol     ${ORANGE}${target}${NC}"
   printf '%b\n' "${TEE}${HORIZONTAL} Boyut   ${BLUE}${size}${NC}"
   printf '%b\n' "${TEE}${HORIZONTAL} Çalışma ${PURPLE}${uptime}${NC}"
   printf '%b\n' "${LAST_TEE}${HORIZONTAL} Çekirdek ${PURPLE}${kernel}${NC}"
@@ -305,7 +436,10 @@ list_profiles() {
   mapfile -t _profiles < <(sorted_profile_paths)
   local total="${#_profiles[@]}"
 
-  printf '%b\n' "${GREEN}${BOLD}📦 Mevcut profiller (${total})${NC}"
+  local active_target
+  active_target="$(profile_target "${SYSTEM_PROFILE}")"
+
+  printf '%b\n' "${GREEN}${BOLD}Mevcut profiller (${total})${NC}"
 
   if (( total == 0 )); then
     printf '%b\n\n' "   ${GRAY}Profil bulunamadı${NC}"
@@ -314,21 +448,26 @@ list_profiles() {
 
   local idx=1
   for profile in "${_profiles[@]}"; do
-    local name target hash size mtime label
+    local name target store size mtime label active_mark
     name="$(basename "${profile}")"
     target="$(profile_target "${profile}")"
-    hash="$(basename "${target}")"
+    store="$(basename "${target}")"
     size="$(du -sh "${target}" 2>/dev/null | awk '{print $1}')"
     mtime="$(stat -Lc %Y "${profile}" 2>/dev/null || printf '0')"
 
+    active_mark=""
+    if [[ -n "${active_target}" && "${target}" == "${active_target}" ]]; then
+      active_mark=" ${GREEN}${BOLD}(aktif)${NC}"
+    fi
+
     if [[ "${show_numbers}" == true ]]; then
-      label="${ORANGE}[${idx}]${NC} ${CYAN}${BOLD}${name}${NC}"
+      label="${ORANGE}[${idx}]${NC} ${CYAN}${BOLD}${name}${NC}${active_mark}"
     else
-      label="${CYAN}${BOLD}${name}${NC}"
+      label="${CYAN}${BOLD}${name}${NC}${active_mark}"
     fi
 
     printf '%b\n' "${TEE}${HORIZONTAL} ${label}"
-    printf '%b\n' "${VERTICAL}  ${HORIZONTAL} Hash   ${ORANGE}${hash}${NC}"
+    printf '%b\n' "${VERTICAL}  ${HORIZONTAL} Store  ${ORANGE}${store}${NC}"
     printf '%b\n' "${VERTICAL}  ${HORIZONTAL} Boyut  ${BLUE}${size}${NC}"
     printf '%b\n' "${LAST_TEE}${HORIZONTAL} Tarih  ${GRAY}$(format_date "${mtime}")${NC}"
 
@@ -342,7 +481,7 @@ list_profiles() {
   done
 
   printf '\n'
-  return "${total}"
+  return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -414,7 +553,7 @@ delete_profile_by_index() {
   fi
 
   if [[ "${CONFIRM_DELETE}" == true ]]; then
-    printf '%b' "${YELLOW}${BOLD}⚠️  '${name}' profili silinecek. Emin misiniz? (e/H) ${NC}"
+    printf '%b' "${YELLOW}${BOLD}${S_WARN} '${name}' profili silinecek. Emin misiniz? (e/H) ${NC}"
     read -r reply
     [[ "${reply}" =~ ^[Ee]$ ]] || { log_message "INFO" "Silme iptal edildi."; return 0; }
   fi
@@ -440,7 +579,7 @@ bulk_delete_old_profiles() {
   local active_target
   active_target="$(profile_target "${SYSTEM_PROFILE}")"
 
-  printf '%b' "${YELLOW}${BOLD}⚠️  Aktif profil dışındaki TÜM profiller silinecek. Emin misiniz? (e/H) ${NC}"
+  printf '%b' "${YELLOW}${BOLD}${S_WARN} Aktif profil dışındaki TÜM profiller silinecek. Emin misiniz? (e/H) ${NC}"
   read -r reply
   [[ "${reply}" =~ ^[Ee]$ ]] || { log_message "INFO" "Toplu silme iptal edildi."; return 0; }
 
@@ -462,6 +601,65 @@ bulk_delete_old_profiles() {
       return 1
     fi
   done
+}
+
+prune_old_profiles() {
+  # Keep N newest *non-active* profiles (active is always kept).
+  local keep="${1:-5}"
+
+  if ! [[ "${keep}" =~ ^[0-9]+$ ]]; then
+    log_message "ERROR" "Geçersiz değer: --prune ${keep} (sayı olmalı)"
+    return 1
+  fi
+
+  mapfile -t _profiles < <(sorted_profile_paths_by_date)
+  local total="${#_profiles[@]}"
+  (( total > 1 )) || { log_message "INFO" "Prune edilecek eski profil yok."; return 0; }
+
+  local active_target
+  active_target="$(profile_target "${SYSTEM_PROFILE}")"
+
+  local kept=0
+  local to_delete=()
+
+  local p t
+  for p in "${_profiles[@]}"; do
+    t="$(profile_target "${p}")"
+    [[ -n "${t}" ]] || continue
+    if [[ -n "${active_target}" && "${t}" == "${active_target}" ]]; then
+      continue
+    fi
+    if (( kept < keep )); then
+      kept=$((kept + 1))
+      continue
+    fi
+    to_delete+=("${p}")
+  done
+
+  local del_count="${#to_delete[@]}"
+  (( del_count > 0 )) || { log_message "INFO" "Prune edilecek eski profil yok."; return 0; }
+
+  if [[ "${CONFIRM_DELETE}" == true ]]; then
+    printf '%b\n' "${YELLOW}${BOLD}${S_WARN} ${del_count} profil silinecek (aktif profil korunur).${NC}"
+    printf '%b' "${YELLOW}${BOLD}Devam edilsin mi? (e/H) ${NC}"
+    read -r reply
+    [[ "${reply}" =~ ^[Ee]$ ]] || { log_message "INFO" "Prune iptal edildi."; return 0; }
+  fi
+
+  ensure_sudo || return 1
+
+  for p in "${to_delete[@]}"; do
+    [[ "${AUTO_BACKUP}" == true ]] && backup_profile "${p}" || true
+    local err=""
+    if err="$("${SUDO_BIN}" -n rm -f -- "${p}" 2>&1)"; then
+      log_message "SUCCESS" "Profil silindi: $(basename "${p}")"
+    else
+      log_message "ERROR" "Profil silinemedi: $(basename "${p}")${err:+ ($err)}"
+      return 1
+    fi
+  done
+
+  log_message "SUCCESS" "Prune tamamlandı."
 }
 
 compare_profiles() {
@@ -491,7 +689,7 @@ compare_profiles() {
     return 1
   fi
 
-  printf '%b\n' "${CYAN}${BOLD}🔍 Profil Karşılaştırması${NC}"
+  printf '%b\n' "${CYAN}${BOLD}Profil Karşılaştırması${NC}"
   printf '%b\n' "${TEE}${HORIZONTAL} Profil 1: ${CYAN}${n1}${NC}"
   printf '%b\n' "${LAST_TEE}${HORIZONTAL} Profil 2: ${CYAN}${n2}${NC}"
   printf '\n'
@@ -511,7 +709,7 @@ compare_profiles() {
   count1="$(printf '%s\n' "${only1}" | sed '/^$/d' | wc -l | tr -d ' ')"
   count2="$(printf '%s\n' "${only2}" | sed '/^$/d' | wc -l | tr -d ' ')"
 
-  printf '%b\n' "${ORANGE}${BOLD}📦 Paket Farklılıkları:${NC}"
+  printf '%b\n' "${ORANGE}${BOLD}Paket Farklılıkları:${NC}"
 
   printf '%b\n' "${GREEN}Yalnızca '${n1}' profilinde olan paketler (${count1}):${NC}"
   if (( count1 == 0 )); then
@@ -537,7 +735,7 @@ compare_profiles() {
   fi
 
   printf '\n'
-  printf '%b\n' "${ORANGE}${BOLD}📊 Özet:${NC}"
+  printf '%b\n' "${ORANGE}${BOLD}Özet:${NC}"
   printf '%b\n' "${TEE}${HORIZONTAL} '${n1}' özgü paket sayısı: ${GREEN}${count1}${NC}"
   printf '%b\n' "${TEE}${HORIZONTAL} '${n2}' özgü paket sayısı: ${RED}${count2}${NC}"
   printf '%b\n' "${LAST_TEE}${HORIZONTAL} Toplam farklılık: ${PURPLE}$((count1 + count2))${NC}"
@@ -596,7 +794,7 @@ print_stats() {
   printf '\n'
 
   # Backup stats
-  printf '%b\n' "${YELLOW}${BOLD}💾 Yedek Bilgileri:${NC}"
+  printf '%b\n' "${YELLOW}${BOLD}Yedek Bilgileri:${NC}"
   if [[ -d "${BACKUP_DIR}" ]]; then
     mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name '*.tar.gz' 2>/dev/null)
     local count="${#backups[@]}"
@@ -633,9 +831,60 @@ print_stats() {
   printf '\n'
 }
 
+doctor() {
+  ui::clear
+  print_header
+
+  log_message "INFO" "Sürüm: ${VERSION}"
+
+  if [[ -d "${SYSTEM_PROFILES}" ]]; then
+    log_message "SUCCESS" "system-profiles dizini: ${SYSTEM_PROFILES}"
+  else
+    log_message "ERROR" "system-profiles dizini yok: ${SYSTEM_PROFILES}"
+  fi
+
+  local active_target active_name
+  active_target="$(profile_target "${SYSTEM_PROFILE}")"
+  active_name="$(active_profile_name)"
+
+  if [[ -n "${active_target}" ]]; then
+    log_message "INFO" "Aktif profil: ${active_name:-<profile-name yok>} -> ${active_target}"
+  else
+    log_message "WARNING" "Aktif sistem profili çözümlenemedi: ${SYSTEM_PROFILE}"
+  fi
+
+  mapfile -t _profiles < <(sorted_profile_paths_by_date)
+  log_message "INFO" "Bulunan profil sayısı: ${#_profiles[@]}"
+
+  log_message "INFO" "Yedek dizini: ${BACKUP_DIR}"
+  log_message "INFO" "Config: ${CONFIG_FILE}"
+  log_message "INFO" "Log: ${LOG_FILE}"
+
+  local sudo_path
+  sudo_path="$(resolve_sudo 2>/dev/null || true)"
+  if [[ -n "${sudo_path}" ]]; then
+    if [[ -u "${sudo_path}" ]]; then
+      log_message "SUCCESS" "sudo: ${sudo_path} (setuid)"
+    else
+      log_message "WARNING" "sudo: ${sudo_path} (setuid değil; NixOS'ta /run/wrappers/bin/sudo beklenir)"
+    fi
+  else
+    log_message "WARNING" "sudo bulunamadı"
+  fi
+
+  local cmd
+  for cmd in nix nix-store jq numfmt tar du stat readlink; do
+    if command -v "${cmd}" >/dev/null 2>&1; then
+      log_message "SUCCESS" "bin:${cmd} -> $(command -v "${cmd}")"
+    else
+      log_message "WARNING" "bin:${cmd} (missing)"
+    fi
+  done
+}
+
 show_settings_menu() {
   while true; do
-    clear
+    ui::clear
     printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} Ayarlar Menüsü ${BAR}${NC}"
     printf '\n'
     printf '%b\n' "${TEE}${HORIZONTAL} 1 - Sıralama: ${ORANGE}${SORT_BY}${NC}"
@@ -708,7 +957,16 @@ Usage:
   osc-profiles -l|--list  # list profiles (non-interactive)
   osc-profiles -s|--stats # show statistics
   osc-profiles -b|--backup # backup active system profile
+  osc-profiles --doctor   # environment/self-check
+  osc-profiles --prune N  # keep N newest non-active profiles
   osc-profiles -h|--help  # show this help
+
+Options (apply to most commands):
+  --no-color              Disable ANSI colors
+  --no-clear              Do not clear the screen
+  --sort date|size|name   Override sort order
+  --details on|off        Toggle extra nix-store/nix details
+  -y, --yes               Skip delete confirmations
 
 Inside interactive menu:
   d  - delete profile by index
@@ -717,6 +975,7 @@ Inside interactive menu:
   s  - change sort order
   t  - toggle details
   a  - delete all non-active profiles
+  p  - prune old profiles (keep N)
   g  - show log tail
   o  - settings menu
   q  - quit
@@ -725,11 +984,10 @@ EOF
 
 show_main_menu() {
   while true; do
-    clear
+    ui::clear
     print_header
     print_active_system
     list_profiles true
-    local total=$?
 
     printf '%b\n' "${BOLD}Ana Menü:${NC}"
     printf '%b\n' "${TEE}${HORIZONTAL} d - Profil sil"
@@ -739,6 +997,7 @@ show_main_menu() {
     printf '%b\n' "${TEE}${HORIZONTAL} s - Sıralama değiştir"
     printf '%b\n' "${TEE}${HORIZONTAL} t - Detayları aç/kapat"
     printf '%b\n' "${TEE}${HORIZONTAL} a - Tüm eski profilleri sil"
+    printf '%b\n' "${TEE}${HORIZONTAL} p - Eski profilleri prune et (keep N)"
     printf '%b\n' "${TEE}${HORIZONTAL} o - Ayarlar"
     printf '%b\n' "${LAST_TEE}${HORIZONTAL} q - Çıkış"
     printf '\n%b' "${BOLD}Komut: ${NC}"
@@ -764,7 +1023,7 @@ show_main_menu() {
         backup_profile "${SYSTEM_PROFILE}"
         ;;
       g|G)
-        clear
+        ui::clear
         printf '%b\n' "${CYAN}${BOLD}${TOP_CORNER}${BAR} Sistem Günlüğü ${BAR}${NC}"
         printf '\n'
         if [[ -f "${LOG_FILE}" ]]; then
@@ -795,6 +1054,12 @@ show_main_menu() {
       a|A)
         bulk_delete_old_profiles
         ;;
+      p|P)
+        printf '\n%b' "${BOLD}Kaç adet (aktif dışı) profil kalsın? [varsayılan: 5] ${NC}"
+        read -r keep
+        keep="${keep:-5}"
+        prune_old_profiles "${keep}"
+        ;;
       o|O)
         show_settings_menu
         ;;
@@ -814,32 +1079,170 @@ show_main_menu() {
 # Main
 # ------------------------------------------------------------------------------
 
-main() {
-  load_config
+ACTION="menu"
+PRUNE_KEEP=""
 
-  case "${1:-}" in
-    -h|--help)
+pre_parse_ui_flags() {
+  local arg
+  for arg in "$@"; do
+    case "${arg}" in
+      --no-color) NO_COLOR=1 ;;
+      --no-clear) NO_CLEAR=true ;;
+    esac
+  done
+  ui::apply_style
+}
+
+parse_args() {
+  ACTION="menu"
+  PRUNE_KEEP=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h|--help|help)
+        ACTION="help"
+        ;;
+      -m|--menu|menu)
+        ACTION="menu"
+        ;;
+      -l|--list|list)
+        ACTION="list"
+        ;;
+      -s|--stats|stats)
+        ACTION="stats"
+        ;;
+      -b|--backup|backup)
+        ACTION="backup"
+        ;;
+      --doctor|doctor)
+        ACTION="doctor"
+        ;;
+      --prune|prune)
+        ACTION="prune"
+        if [[ -n "${2:-}" ]] && [[ ! "${2}" =~ ^- ]]; then
+          PRUNE_KEEP="${2}"
+          shift
+        fi
+        ;;
+      --sort)
+        if [[ -z "${2:-}" ]]; then
+          log_message "ERROR" "--sort bir değer ister (date|size|name)"
+          return 1
+        fi
+        SORT_BY="${2}"
+        shift
+        ;;
+      --details)
+        if [[ -z "${2:-}" ]]; then
+          log_message "ERROR" "--details bir değer ister (on|off)"
+          return 1
+        fi
+        if ! SHOW_DETAILS="$(bool::parse "${2}")"; then
+          log_message "ERROR" "Geçersiz --details değeri: ${2} (on|off)"
+          return 1
+        fi
+        shift
+        ;;
+      --auto-backup)
+        if [[ -z "${2:-}" ]]; then
+          log_message "ERROR" "--auto-backup bir değer ister (on|off)"
+          return 1
+        fi
+        if ! AUTO_BACKUP="$(bool::parse "${2}")"; then
+          log_message "ERROR" "Geçersiz --auto-backup değeri: ${2} (on|off)"
+          return 1
+        fi
+        shift
+        ;;
+      --confirm-delete)
+        if [[ -z "${2:-}" ]]; then
+          log_message "ERROR" "--confirm-delete bir değer ister (on|off)"
+          return 1
+        fi
+        if ! CONFIRM_DELETE="$(bool::parse "${2}")"; then
+          log_message "ERROR" "Geçersiz --confirm-delete değeri: ${2} (on|off)"
+          return 1
+        fi
+        shift
+        ;;
+      --max-backups)
+        if [[ -z "${2:-}" ]]; then
+          log_message "ERROR" "--max-backups bir değer ister (1-50)"
+          return 1
+        fi
+        MAX_BACKUPS="${2}"
+        shift
+        ;;
+      --no-color)
+        NO_COLOR=1
+        ;;
+      --no-clear)
+        NO_CLEAR=true
+        ;;
+      -y|--yes)
+        CONFIRM_DELETE=false
+        ;;
+      *)
+        log_message "ERROR" "Geçersiz parametre: $1"
+        return 1
+        ;;
+    esac
+    shift
+  done
+
+  if ! sort::validate "${SORT_BY}"; then
+    log_message "ERROR" "Geçersiz SORT_BY: ${SORT_BY} (date|size|name)"
+    return 1
+  fi
+
+  if ! [[ "${MAX_BACKUPS}" =~ ^[0-9]+$ ]] || (( MAX_BACKUPS < 1 || MAX_BACKUPS > 50 )); then
+    log_message "WARNING" "MAX_BACKUPS geçersiz: ${MAX_BACKUPS}; varsayılan 10 uygulanacak."
+    MAX_BACKUPS=10
+  fi
+
+  if [[ "${ACTION}" == "prune" ]]; then
+    PRUNE_KEEP="${PRUNE_KEEP:-5}"
+  fi
+
+  ui::apply_style
+  return 0
+}
+
+main() {
+  pre_parse_ui_flags "$@"
+  log::init
+  load_config
+  parse_args "$@" || { show_help; exit 1; }
+
+  case "${ACTION}" in
+    help)
       show_help
       ;;
-    -m|--menu|"")
+    menu)
       show_main_menu
       ;;
-    -l|--list)
-      clear
+    list)
+      ui::clear
       print_header
       print_active_system
       list_profiles false
       ;;
-    -s|--stats)
-      clear
+    stats)
+      ui::clear
       print_header
       print_stats
       ;;
-    -b|--backup)
+    backup)
       backup_profile "${SYSTEM_PROFILE}"
       ;;
+    doctor)
+      doctor
+      ;;
+    prune)
+      prune_old_profiles "${PRUNE_KEEP}"
+      ;;
     *)
-      log_message "ERROR" "Geçersiz parametre: $1"
+      log_message "ERROR" "Bilinmeyen action: ${ACTION}"
       show_help
       exit 1
       ;;
