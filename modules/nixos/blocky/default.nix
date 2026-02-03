@@ -79,10 +79,10 @@ in
     upstream = mkOption {
       type = types.listOf types.str;
       default = [
-        "1.1.1.1"
-        "9.9.9.9"
+        "https://dns.quad9.net/dns-query"     # Quad9 (Filtered, DNSSEC, Privacy-focused)
+        "https://dns.cloudflare.com/dns-query" # Cloudflare (Fast, widely available)
       ];
-      description = "Upstream DNS servers (IP or DoH/DoT endpoints supported by Blocky).";
+      description = "Upstream DNS servers (IP, DoH, or DoT endpoints supported by Blocky).";
     };
   };
 
@@ -99,21 +99,30 @@ in
         log.level = "info";
 
         upstreams = {
-          # Don't block service start if upstreams aren't reachable yet (e.g. boot/race).
+          # Do not fail service start if network is not ready during boot.
           init.strategy = "fast";
-          # Pick the fastest upstreams per query.
+          # Use parallel queries and select the fastest response for minimum latency.
           strategy = "parallel_best";
           timeout = "2s";
           groups.default = cfg.upstream;
         };
 
-        # Keep Blocky resilient at boot: if a list fetch fails, don't block start.
+        # Caching & Prefetching: Significantly improves perceived browsing speed.
+        caching = {
+          minTime = "5m";
+          maxTime = "30m";
+          prefetching = true;    # Refresh frequently used entries in the background.
+          prefetchExpires = "2h";
+          prefetchThreshold = 5; # Prefetch if a domain is requested more than 5 times.
+        };
+
+        # Content Blocking: Ad-blocking and malware prevention.
         blocking = {
-          # Host-format lists work well with Blocky and are widely available.
+          # Host-format and domain lists for comprehensive coverage.
           denylists = {
             ads = [
               "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
-              # Extra coverage for ad/tracker domains (plain domain list).
+              "https://big.oisd.nl/" # OISD Big: High-quality list with very low false-positive rate.
               "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt"
             ];
 
@@ -136,13 +145,21 @@ in
               "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/fiberparsed"
             ];
           };
+
+          # Allowlist to prevent breakage of commonly used services (YouTube History, etc).
+          allowlists = {
+            ads = [
+              "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
+            ];
+          };
+
           clientGroupsBlock.default =
             [ "ads" ]
             ++ lib.optionals cfg.noGoogle.enable [ "nogoogle" ];
 
           loading = {
             refreshPeriod = "24h";
-            # Old behaviour: "don't fail start if list fetch fails".
+            # Skip waiting for list downloads to avoid blocking boot sequence.
             strategy = "fast";
           };
         };
