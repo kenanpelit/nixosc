@@ -81,6 +81,7 @@ in
       default = [
         "https://dns.quad9.net/dns-query"     # Quad9 (Filtered, DNSSEC, Privacy-focused)
         "https://dns.cloudflare.com/dns-query" # Cloudflare (Fast, widely available)
+        "1.1.1.1"                             # Fallback / Bootstrap IP to resolve DoH domains
       ];
       description = "Upstream DNS servers (IP, DoH, or DoT endpoints supported by Blocky).";
     };
