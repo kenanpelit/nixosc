@@ -12,8 +12,6 @@ let
   flatpakEnabled = config.services.flatpak.enable or false;
   hyprPortalPkg =
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
-  cosmicPortalPkg = pkgs."xdg-desktop-portal-cosmic" or null;
-  cosmicPortalEnabled = (cfg.enableCosmic or false) && cosmicPortalPkg != null;
 in
 {
   config = lib.mkIf (cfg.enable || flatpakEnabled) {
@@ -27,9 +25,8 @@ in
       enable = true;
       extraPortals =
         (lib.optional cfg.enableHyprland hyprPortalPkg)
-        ++ (lib.optional cosmicPortalEnabled cosmicPortalPkg)
         ++ (lib.optional cfg.enableNiri pkgs.xdg-desktop-portal-wlr)
-        ++ [ 
+        ++ [  
           pkgs.xdg-desktop-portal-gtk 
           pkgs.xdg-desktop-portal-gnome
         ];
@@ -67,10 +64,6 @@ in
           # GNOME session.
           GNOME.default = [ "gnome" "gtk" ];
         }
-        (lib.mkIf cosmicPortalEnabled {
-          COSMIC.default = [ "cosmic" "gtk" ];
-          cosmic.default = [ "cosmic" "gtk" ];
-        })
       ];
     };
   };

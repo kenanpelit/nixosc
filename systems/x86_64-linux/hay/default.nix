@@ -46,7 +46,6 @@
     enableHyprland = true;
     enableGnome    = true;
     enableNiri     = true;
-    enableCosmic   = true;
     enableAudio    = true;
 
     fonts.enable         = true;
