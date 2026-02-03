@@ -157,12 +157,6 @@
       XF86MonBrightnessUp   allow-when-locked=true hotkey-overlay-title="Bright +" { spawn "${bins.dms}" "ipc" "call" "brightness" "increment" "5" ""; }
       XF86MonBrightnessDown allow-when-locked=true hotkey-overlay-title="Bright -" { spawn "${bins.dms}" "ipc" "call" "brightness" "decrement" "5" ""; }
 
-      // --- Media Control (MPRIS) ---
-      XF86AudioPlay allow-when-locked=true hotkey-overlay-title="Play/Pause" { spawn "${bins.dms}" "ipc" "call" "mpris" "playPause"; }
-      XF86AudioNext allow-when-locked=true hotkey-overlay-title="Next" { spawn "${bins.dms}" "ipc" "call" "mpris" "next"; }
-      XF86AudioPrev allow-when-locked=true hotkey-overlay-title="Prev" { spawn "${bins.dms}" "ipc" "call" "mpris" "previous"; }
-      XF86AudioStop allow-when-locked=true hotkey-overlay-title="Stop" { spawn "${bins.dms}" "ipc" "call" "mpris" "stop"; }
-
       // --- Custom Scripts (Audio/Media) ---
       Alt+A          repeat=false hotkey-overlay-title="Switch Audio Output" { spawn "osc-soundctl" "switch"; }
       Alt+Ctrl+A     repeat=false hotkey-overlay-title="Switch Mic Input" { spawn "osc-soundctl" "switch-mic"; }
