@@ -27,6 +27,7 @@ in
       };
       services.displayManager.defaultSession =
         if cfg.defaultSession != null then cfg.defaultSession
+        else if cfg.enableNiri then "niri-optimized"
         else if cfg.enableHyprland then "hyprland-optimized"
         else if cfg.enableGnome then "gnome"
         else null;
