@@ -34,7 +34,6 @@
   };
 
   config = {
-    services.upower.enable = true;
     services.spice-vdagentd.enable = lib.mkIf config.my.host.isVirtualHost true;
 
     programs.zsh.enable = true;
