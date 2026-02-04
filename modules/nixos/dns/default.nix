@@ -17,6 +17,15 @@ let
   hasMullvad = config.services.mullvad-vpn.enable or false;
   blockyConfigured = cfgBlocky.enable;
 
+  # Some developer tooling (notably Go module downloads) relies on domains that
+  # are commonly caught by aggressive "no-google" lists.
+  # Keep a tiny built-in allowlist to prevent accidental self-DoS.
+  allowlistDev = pkgs.writeText "blocky-allowlist-dev.txt" ''
+    storage.googleapis.com
+    proxy.golang.org
+    sum.golang.org
+  '';
+
   resolvconf = "${pkgs.openresolv}/sbin/resolvconf";
   # Scripts to hook Blocky into openresolv
   resolvconfAdd = pkgs.writeShellScript "blocky-resolvconf-add" ''
@@ -167,7 +176,11 @@ in
             allowlists = {
               ads = [
                 "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
+                allowlistDev
               ];
+              # When `noGoogle` is enabled, unblock a minimal set of domains
+              # required by common developer workflows (Go proxy/sum DB).
+              nogoogle = [ allowlistDev ];
             };
 
             clientGroupsBlock.default =
