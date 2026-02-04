@@ -156,7 +156,7 @@ let
     # Custom Scripts
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
-    "ALT, M, exec, osc-wiremix"
+    "ALT CTRL, M, exec, osc-wiremix"
     "ALT, E, exec, osc-spotify"
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"

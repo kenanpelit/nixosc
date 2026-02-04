@@ -160,7 +160,7 @@
       // --- Custom Scripts (Audio/Media) ---
       Alt+A          repeat=false hotkey-overlay-title="Switch Audio Output" { spawn "osc-soundctl" "switch"; }
       Alt+Ctrl+A     repeat=false hotkey-overlay-title="Switch Mic Input" { spawn "osc-soundctl" "switch-mic"; }
-      Alt+M          repeat=false hotkey-overlay-title="Wiremix (Audio Mixer)" { spawn "osc-wiremix"; }
+      Alt+Ctrl+M     repeat=false hotkey-overlay-title="Wiremix (Audio Mixer)" { spawn "osc-wiremix"; }
       Alt+E          repeat=false hotkey-overlay-title="Spotify Toggle" { spawn "osc-spotify"; }
       Alt+Ctrl+N     repeat=false hotkey-overlay-title="Spotify Next" { spawn "osc-spotify" "next"; }
       Alt+Ctrl+B     repeat=false hotkey-overlay-title="Spotify Prev" { spawn "osc-spotify" "prev"; }
