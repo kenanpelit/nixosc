@@ -19,6 +19,12 @@ let
   usePpd = cfg.stack == "ppd";
 
   thresholds = cfg.battery.chargeThresholds;
+
+  # UPower can "Hibernate" on critical battery, but hibernation requires a
+  # configured resume device. Without it, the action may fail or reboot.
+  resumeDevice =
+    if config.boot ? resumeDevice then config.boot.resumeDevice else null;
+  canHibernate = resumeDevice != null;
 in
 {
   options.my.power = {
@@ -64,7 +70,7 @@ in
         percentageLow = 15;
         percentageCritical = 5;
         percentageAction = 3;
-        criticalPowerAction = "Hibernate";
+        criticalPowerAction = lib.mkDefault (if canHibernate then "Hibernate" else "PowerOff");
       };
 
       # PPD for interactive profile switching (`powerprofilesctl set ...`).
@@ -86,8 +92,8 @@ in
     (mkIf (isPhysicalMachine && thresholds.enable) {
       services.udev.extraRules = ''
         SUBSYSTEM=="power_supply", KERNEL=="BAT*", \
-          ATTR{charge_control_start_threshold}="${toString thresholds.start}", \
-          ATTR{charge_control_end_threshold}="${toString thresholds.stop}"
+          ATTR{charge_control_start_threshold}="${builtins.toString thresholds.start}", \
+          ATTR{charge_control_end_threshold}="${builtins.toString thresholds.stop}"
       '';
     })
   ];

@@ -36,7 +36,10 @@
   # ============================================================================
   # Kernel & Hardware Tuning
   # ============================================================================
-  my.kernel.tweaks.gpu.useXeDriver = true;
+  my.kernel.tweaks.gpu = {
+    useXeDriver = true;
+    xeForceProbeId = "7d55";
+  };
 
   # ============================================================================
   # Display Stack (Delegated to core/display)

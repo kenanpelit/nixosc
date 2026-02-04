@@ -51,6 +51,10 @@ in
     tweaks = {
       # CPU workarounds (host opt-in)
       cpu = {
+        disableWatchdog = mkEnableOption "Add nowatchdog (opt-in; disables watchdog timers to reduce interrupts).";
+
+        splitLockDetectOff = mkEnableOption "Set split_lock_detect=off (opt-in; can reduce stutter but hides split-lock bugs).";
+
         intelPstateActive = mkEnableOption "Set intel_pstate=active (opt-in; mostly default on Intel laptops).";
 
         maxCstate = mkOption {
@@ -65,6 +69,13 @@ in
       # GPU tuning
       gpu = {
         useXeDriver = mkEnableOption "Force usage of Intel Xe driver (Experimental/Performance for Meteor Lake).";
+
+        xeForceProbeId = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          example = "7d55";
+          description = "PCI device ID (hex, without 0x) to use for xe.force_probe and i915.force_probe=!ID (required when useXeDriver is enabled).";
+        };
       };
 
       suspend.s2idleByDefault = mkEnableOption "Set mem_sleep_default=s2idle (opt-in; suspend behaviour is platform-specific).";
@@ -76,17 +87,6 @@ in
   config = mkMerge [
     {
       boot.kernelPackages = mkDefault kernelPackagesFor;
-
-      # -----------------------------------------------------------------------
-      # ZRAM Swap (Memory Performance)
-      # -----------------------------------------------------------------------
-      # Compressing RAM is faster than swapping to disk.
-      # Essential for responsiveness on modern desktops.
-      zramSwap = {
-        enable = true;
-        algorithm = "zstd";
-        memoryPercent = 50;
-      };
     }
 
     # Firmware + microcode are "hardware enablement", not a tweak.
@@ -101,6 +101,10 @@ in
         {
           assertion = !(cfg.thinkpad.experimental && !cfg.thinkpad.enable);
           message = "my.kernel.thinkpad.experimental requires my.kernel.thinkpad.enable = true.";
+        }
+        {
+          assertion = !(cfg.tweaks.gpu.useXeDriver && cfg.tweaks.gpu.xeForceProbeId == null);
+          message = "my.kernel.tweaks.gpu.useXeDriver requires my.kernel.tweaks.gpu.xeForceProbeId (e.g., \"7d55\").";
         }
       ];
 
@@ -141,13 +145,16 @@ in
       # -----------------------------------------------------------------------
       boot.kernelParams =
         optionals isPhysicalMachine (
-          [
+          []
+          ++ optionals cfg.tweaks.cpu.disableWatchdog [
             "nowatchdog"             # Disable watchdog to save interrupts/power
+          ]
+          ++ optionals cfg.tweaks.cpu.splitLockDetectOff [
             "split_lock_detect=off"  # Avoid micro-stutters in some games/apps
           ]
           ++ optionals cfg.tweaks.gpu.useXeDriver [
-            "i915.force_probe=!7d55" # Block i915 for this ID
-            "xe.force_probe=7d55"    # Force Xe driver for Meteor Lake-P [Intel Arc Graphics]
+            "i915.force_probe=!${cfg.tweaks.gpu.xeForceProbeId}" # Block i915 for this ID
+            "xe.force_probe=${cfg.tweaks.gpu.xeForceProbeId}"    # Force Xe driver for this ID
           ]
           ++ optionals cfg.tweaks.cpu.intelPstateActive [
             "intel_pstate=active"
