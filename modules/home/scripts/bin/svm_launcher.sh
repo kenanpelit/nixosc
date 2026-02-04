@@ -46,6 +46,12 @@ if [ -f "$SWAY_CONFIG_DIR/qemu_vmnixos" ]; then
 	vm_found=true
 fi
 
+if [ -f "$SWAY_CONFIG_DIR/qemu_vmcachy" ]; then
+	vm_configs["4"]="CachyOS"
+	vm_configs["4_file"]="qemu_vmcachy"
+	vm_found=true
+fi
+
 # Hiç VM config bulunamadıysa
 if [ "$vm_found" = false ]; then
 	echo "ERROR: No VM configurations found in $SWAY_CONFIG_DIR"
@@ -54,6 +60,7 @@ if [ "$vm_found" = false ]; then
 	echo "  • qemu_vmubuntu"
 	echo "  • qemu_vmarch"
 	echo "  • qemu_vmnixos"
+	echo "  • qemu_vmcachy"
 	echo ""
 	sleep 5
 	exit 1
@@ -66,6 +73,7 @@ echo ""
 [ -n "${vm_configs[1]}" ] && echo "  [1] ${vm_configs[1]}"
 [ -n "${vm_configs[2]}" ] && echo "  [2] ${vm_configs[2]}"
 [ -n "${vm_configs[3]}" ] && echo "  [3] ${vm_configs[3]}"
+[ -n "${vm_configs[4]}" ] && echo "  [4] ${vm_configs[4]}"
 
 echo ""
 echo "  [q] Quit"
@@ -106,6 +114,18 @@ case "$selection" in
 		echo "Launching ${vm_configs[3]} VM in Sway..."
 		sleep 1
 		exec sway -c "$SWAY_CONFIG_DIR/${vm_configs[3_file]}"
+	else
+		echo "ERROR: Invalid selection"
+		sleep 2
+		exit 1
+	fi
+	;;
+4)
+	if [ -n "${vm_configs[4]}" ]; then
+		echo ""
+		echo "Launching ${vm_configs[4]} VM in Sway..."
+		sleep 1
+		exec sway -c "$SWAY_CONFIG_DIR/${vm_configs[4_file]}"
 	else
 		echo "ERROR: Invalid selection"
 		sleep 2
