@@ -23,7 +23,7 @@
 
       /* Display Settings */
       show-icons: true;
-      icon-theme: "a-candy-beauty-icon-theme";
+      icon-theme: "kora";
       terminal: "kitty";
       location: 0;
       hide-scrollbar: true;

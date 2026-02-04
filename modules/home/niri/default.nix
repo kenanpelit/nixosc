@@ -33,7 +33,7 @@ let
   iconTheme =
     if config ? gtk && config.gtk ? iconTheme && config.gtk.iconTheme ? name
     then config.gtk.iconTheme.name
-    else "a-candy-beauty-icon-theme";
+    else "kora";
 
   palette = {
     #cyan = "#74c7ec";

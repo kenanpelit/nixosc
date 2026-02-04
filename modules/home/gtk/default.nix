@@ -9,6 +9,8 @@ let
   cfg = config.my.user.gtk;
   hmLib = lib.hm or config.lib;
   gvariant = hmLib.gvariant or config.lib.gvariant;
+  iconThemeName = "kora";
+  iconThemePkg = pkgs.kora-icon-theme;
   # Font ayarları
   fonts = {
     main = {
@@ -35,6 +37,7 @@ in
       "org/gnome/desktop/interface" = {
         color-scheme = "prefer-dark";
         enable-animations = mkBoolean true;
+        icon-theme = iconThemeName;
         gtk-enable-primary-paste = mkBoolean true;
         overlay-scrolling = mkBoolean true;
         text-scaling-factor = mkDouble 1.0;
@@ -76,11 +79,11 @@ in
       };
       
       # ---------------------------------------------------------------------------
-      # Icon Theme Settings - BeautyLine
+      # Icon Theme Settings - Kora
       # ---------------------------------------------------------------------------
       iconTheme = {
-        name = lib.mkForce "a-candy-beauty-icon-theme";
-        # BeautyLine paketi zaten modules/home/candy/default.nix'de tanımlı
+        name = lib.mkForce iconThemeName;
+        package = lib.mkForce iconThemePkg;
       };
 
       # ---------------------------------------------------------------------------
@@ -89,7 +92,7 @@ in
       gtk2 = {
         configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
         extraConfig = lib.mkForce ''
-          gtk-icon-theme-name = "a-candy-beauty-icon-theme"
+          gtk-icon-theme-name = "${iconThemeName}"
           gtk-theme-name = "catppuccin-mocha-mauve-standard+normal"
           gtk-font-name = "${fonts.main.family} ${toString fonts.sizes.sm}"
           gtk-application-prefer-dark-theme = 1
@@ -111,7 +114,7 @@ in
       # ---------------------------------------------------------------------------
       gtk3.extraConfig = {
         gtk-theme-name = lib.mkForce "catppuccin-mocha-mauve-standard+normal";
-        gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
+        gtk-icon-theme-name = lib.mkForce iconThemeName;
         gtk-font-name = lib.mkForce "${fonts.main.family} ${toString fonts.sizes.sm}";
         gtk-application-prefer-dark-theme = lib.mkForce 1;
         gtk-button-images = 1;
@@ -130,7 +133,7 @@ in
       # ---------------------------------------------------------------------------
       gtk4.extraConfig = {
         gtk-theme-name = lib.mkForce "catppuccin-mocha-mauve-standard+normal";
-        gtk-icon-theme-name = lib.mkForce "a-candy-beauty-icon-theme";
+        gtk-icon-theme-name = lib.mkForce iconThemeName;
         gtk-font-name = lib.mkForce "${fonts.main.family} ${toString fonts.sizes.sm}";
         gtk-application-prefer-dark-theme = lib.mkForce 1;
         gtk-enable-event-sounds = 0;
