@@ -20,12 +20,6 @@ let
     ", XF86AudioMicMute, exec, dms ipc call audio micmute"
     ", XF86MonBrightnessUp, exec, dms ipc call brightness increment 5 ''"
     ", XF86MonBrightnessDown, exec, dms ipc call brightness decrement 5 ''"
-
-    # Media (MPRIS)
-    ", XF86AudioPlay, exec, dms ipc call mpris playPause"
-    ", XF86AudioNext, exec, dms ipc call mpris next"
-    ", XF86AudioPrev, exec, dms ipc call mpris previous"
-    ", XF86AudioStop, exec, dms ipc call mpris stop"
   ];
 
   # ---------------------------------------------------------------------------
@@ -162,6 +156,7 @@ let
     # Custom Scripts
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
+    "ALT CTRL, M, exec, osc-wiremix"
     "ALT, E, exec, osc-spotify"
     "ALT CTRL, N, exec, osc-spotify next"
     "ALT CTRL, B, exec, osc-spotify prev"

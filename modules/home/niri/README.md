@@ -11,7 +11,7 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve Niri
 
 ## Açılış akışı (repo)
 
-1) DM/GDM oturumu seçilince `modules/nixos/display/default.nix` içindeki Niri entry’si `niri-set tty` çalıştırır.
+1) DM/GDM oturumu seçilince `modules/nixos/sessions/default.nix` içindeki Niri entry’si `niri-set tty` çalıştırır.
 2) Niri konfigi açılışta `spawn-at-startup ... niri-set env` ile oturum env export akışını tetikler (`modules/home/niri/settings.nix`, `my.desktop.niri.systemd.enable` açıkken).
 3) `niri-set env` ( `modules/home/scripts/bin/niri-set.sh` ):
    - `XDG_RUNTIME_DIR`, `WAYLAND_DISPLAY`, `NIRI_SOCKET` tespiti yapar.

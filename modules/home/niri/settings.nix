@@ -338,8 +338,8 @@ in
         accel-speed 0.0
         middle-emulation
         scroll-method "on-button-down"
-        scroll-button 273
-        scroll-button-lock
+        // ThinkPad TrackPoint: scroll with the middle button (BTN_MIDDLE=274).
+        scroll-button 274
       }
     }
 

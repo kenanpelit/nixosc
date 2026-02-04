@@ -360,7 +360,7 @@
     # Utilities / Side panels (Niri-like)
     {
       name = "sidepanel-utils";
-      "match:class" = "^(clipse|org.pulseaudio.pavucontrol|pavucontrol|io.ente.auth)$";
+      "match:class" = "^(clipse|wiremix|org.pulseaudio.pavucontrol|pavucontrol|io.ente.auth)$";
       float = true;
       size = "(monitor_w*0.25) (monitor_h*0.80)";
       move = "(monitor_w*0.75-32) 144";

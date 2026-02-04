@@ -93,9 +93,11 @@ in
     stress-ng                    # Stress testing (used by osc-system turbostat-stress)
     ddcutil                      # Monitor control via DDC/CI
     intel-gpu-tools              # Intel GPU tools
+    mesa-demos                   # GPU diagnostics (eglinfo, glxinfo, glxgears)
     smartmontools                # Disk health monitoring (S.M.A.R.T.)
     nvme-cli                     # NVMe storage management
     dmidecode                    # DMI table decoder
+    pciutils                     # PCI tools (lspci)
     usbutils                     # USB tools (lsusb)
     android-tools                # Android debugging bridge (adb/fastboot)
 

@@ -34,6 +34,14 @@
   networking.hostName = "hay";
 
   # ============================================================================
+  # Kernel & Hardware Tuning
+  # ============================================================================
+  my.kernel.tweaks.gpu = {
+    useXeDriver = true;
+    xeForceProbeId = "7d55";
+  };
+
+  # ============================================================================
   # Display Stack (Delegated to core/display)
   # ============================================================================
   my.display = {
@@ -41,7 +49,6 @@
     enableHyprland = true;
     enableGnome    = true;
     enableNiri     = true;
-    enableCosmic   = true;
     enableAudio    = true;
 
     fonts.enable         = true;
@@ -142,15 +149,6 @@
     networkmanager wireguard-tools
     gnupg openssl
   ];
-
-  # ============================================================================
-  # ZRAM Swap
-  # ============================================================================
-  zramSwap = {
-    enable        = true;
-    algorithm     = "zstd";
-    memoryPercent = 30;
-  };
 
   # ============================================================================
   # Programs (system-level)

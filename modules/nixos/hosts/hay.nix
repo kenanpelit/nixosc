@@ -13,6 +13,7 @@ in
     my.kernel.thinkpad.enable = lib.mkDefault true;
 
     # DNS adblock (Blocky) - optional aggressive Google/YouTube blocking.
-    my.dns.blocky.noGoogle.enable = lib.mkDefault true;
+    # NOTE: This can break developer tooling (e.g. Go module proxy via storage.googleapis.com).
+    my.dns.blocky.noGoogle.enable = lib.mkDefault false;
   };
 }

@@ -19,6 +19,12 @@ let
   usePpd = cfg.stack == "ppd";
 
   thresholds = cfg.battery.chargeThresholds;
+
+  # UPower can "Hibernate" on critical battery, but hibernation requires a
+  # configured resume device. Without it, the action may fail or reboot.
+  resumeDevice =
+    if config.boot ? resumeDevice then config.boot.resumeDevice else null;
+  canHibernate = resumeDevice != null;
 in
 {
   options.my.power = {
@@ -58,6 +64,15 @@ in
         }
       ];
 
+      # Centralize UPower configuration
+      services.upower = {
+        enable = true;
+        percentageLow = 15;
+        percentageCritical = 5;
+        percentageAction = 3;
+        criticalPowerAction = lib.mkDefault (if canHibernate then "Hibernate" else "PowerOff");
+      };
+
       # PPD for interactive profile switching (`powerprofilesctl set ...`).
       services.power-profiles-daemon.enable =
         if isPhysicalMachine && usePpd then true else lib.mkForce false;
@@ -71,54 +86,15 @@ in
       security.polkit.enable = lib.mkDefault true;
     }
 
+    # Use Udev rules instead of a systemd service/bash script.
+    # Why: Udev is event-based. It reapplies settings instantly on boot,
+    # resume from suspend, or device redetection, ensuring thresholds never get reset.
     (mkIf (isPhysicalMachine && thresholds.enable) {
-      systemd.services.battery-thresholds = {
-        description = "Set battery charge thresholds";
-        wantedBy = [ "multi-user.target" ];
-        after = [ "systemd-udev-settle.service" ];
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = pkgs.writeShellScript "battery-thresholds" ''
-            set -euo pipefail
-
-            START="${toString thresholds.start}"
-            STOP="${toString thresholds.stop}"
-
-            write_sysfs() {
-              local path="$1"
-              local value="$2"
-              for ((i=0;i<40;i++)); do
-                if echo "$value" >"$path" 2>/dev/null; then
-                  return 0
-                fi
-                sleep 0.05
-              done
-              return 1
-            }
-
-            found=0
-            for bat in /sys/class/power_supply/BAT*; do
-              [[ -d "$bat" ]] || continue
-              found=1
-
-              if [[ -w "$bat/charge_control_start_threshold" ]]; then
-                if ! write_sysfs "$bat/charge_control_start_threshold" "$START"; then
-                  echo "WARN: failed to set start threshold for $bat" >&2
-                fi
-              fi
-
-              if [[ -w "$bat/charge_control_end_threshold" ]]; then
-                if ! write_sysfs "$bat/charge_control_end_threshold" "$STOP"; then
-                  echo "WARN: failed to set stop threshold for $bat" >&2
-                fi
-              fi
-            done
-
-            # No battery detected (desktop/VM) → no-op.
-            [[ "$found" -eq 1 ]] || exit 0
-          '';
-        };
-      };
+      services.udev.extraRules = ''
+        SUBSYSTEM=="power_supply", KERNEL=="BAT*", \
+          ATTR{charge_control_start_threshold}="${builtins.toString thresholds.start}", \
+          ATTR{charge_control_end_threshold}="${builtins.toString thresholds.stop}"
+      '';
     })
   ];
 }

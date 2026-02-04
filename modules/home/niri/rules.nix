@@ -215,7 +215,7 @@ in
     }
 
     window-rule {
-      match app-id=r#"^(clipse|org\.pulseaudio\.pavucontrol|io\.ente\.auth)$"#;
+      match app-id=r#"^(clipse|wiremix|org\.pulseaudio\.pavucontrol|io\.ente\.auth)$"#;
       ${mkProportionalFloating { w = 0.25; h = 0.80; x = 32; y = 144; }}
     }
     

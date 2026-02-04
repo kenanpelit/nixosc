@@ -5,8 +5,8 @@
 #
 # Philosophy:
 # - Keep this module "safe by default" (no risky kernelParams globally).
-# - Prefer host opt-ins for workaround/tuning params (i915, C-states, etc.).
-# - Avoid forcing device-specific modules on machines where they don't apply.
+# - Prefer host opt-ins for workaround/tuning params.
+# - Optimized for modern hardware (Meteor Lake, Zen Kernel, etc.).
 # ==============================================================================
 
 { pkgs, lib, config, ... }:
@@ -21,17 +21,18 @@ let
     if cfg.useLatestKernel != null then (if cfg.useLatestKernel then "latest" else "stable") else cfg.kernelFlavor;
 
   kernelPackagesFor =
-    if effectiveKernelFlavor == "latest" then pkgs.linuxPackages_latest
-    else if effectiveKernelFlavor == "lts" then (pkgs.linuxPackages_lts or pkgs.linuxPackages)
+    if effectiveKernelFlavor == "zen" then pkgs.linuxPackages_zen
+    else if effectiveKernelFlavor == "xanmod" then pkgs.linuxPackages_xanmod
+    else if effectiveKernelFlavor == "latest" then pkgs.linuxPackages_latest
     else pkgs.linuxPackages;
 
 in
 {
   options.my.kernel = {
     kernelFlavor = mkOption {
-      type = types.enum [ "latest" "stable" "lts" ];
-      default = "latest";
-      description = "Kernel package set: latest (pkgs.linuxPackages_latest), stable (pkgs.linuxPackages), or lts (pkgs.linuxPackages_lts).";
+      type = types.enum [ "zen" "xanmod" "latest" "stable" ];
+      default = "zen";
+      description = "Kernel package set: zen (recommended for desktop/gaming), xanmod, latest, or stable.";
     };
 
     useLatestKernel = mkOption {
@@ -40,9 +41,6 @@ in
       description = "Deprecated: use my.kernel.kernelFlavor. When set, true -> latest; false -> stable.";
     };
 
-    # Force-loading is usually unnecessary because udev/module autoload works.
-    # Keep this as an opt-in knob for machines that occasionally fail to bring
-    # up Wi-Fi early in boot.
     forceIwlwifi = mkEnableOption "Force-load iwlwifi at boot (rarely needed).";
 
     thinkpad = {
@@ -53,6 +51,10 @@ in
     tweaks = {
       # CPU workarounds (host opt-in)
       cpu = {
+        disableWatchdog = mkEnableOption "Add nowatchdog (opt-in; disables watchdog timers to reduce interrupts).";
+
+        splitLockDetectOff = mkEnableOption "Set split_lock_detect=off (opt-in; can reduce stutter but hides split-lock bugs).";
+
         intelPstateActive = mkEnableOption "Set intel_pstate=active (opt-in; mostly default on Intel laptops).";
 
         maxCstate = mkOption {
@@ -64,38 +66,15 @@ in
         ignorePpc = mkEnableOption "Set processor.ignore_ppc=1 (opt-in; can be aggressive).";
       };
 
-      # Intel i915 tuning (host opt-in)
-      i915 = {
-        enable = mkEnableOption "Enable Intel i915 tuning kernel parameters (opt-in; can cause flicker/quirks).";
+      # GPU tuning
+      gpu = {
+        useXeDriver = mkEnableOption "Force usage of Intel Xe driver (Experimental/Performance for Meteor Lake).";
 
-        enableGuc = mkOption {
-          type = types.ints.between 0 3;
-          default = 3;
-          description = "i915.enable_guc value (0..3).";
-        };
-
-        enableFbc = mkOption {
-          type = types.ints.between 0 1;
-          default = 1;
-          description = "i915.enable_fbc value (0|1).";
-        };
-
-        enableDc = mkOption {
-          type = types.ints.between 0 2;
-          default = 2;
-          description = "i915.enable_dc value (0..2).";
-        };
-
-        enablePsr = mkOption {
-          type = types.ints.between 0 1;
-          default = 0;
-          description = "i915.enable_psr value (0|1).";
-        };
-
-        fastboot = mkOption {
-          type = types.ints.between 0 1;
-          default = 1;
-          description = "i915.fastboot value (0|1).";
+        xeForceProbeId = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          example = "7d55";
+          description = "PCI device ID (hex, without 0x) to use for xe.force_probe and i915.force_probe=!ID (required when useXeDriver is enabled).";
         };
       };
 
@@ -123,6 +102,10 @@ in
           assertion = !(cfg.thinkpad.experimental && !cfg.thinkpad.enable);
           message = "my.kernel.thinkpad.experimental requires my.kernel.thinkpad.enable = true.";
         }
+        {
+          assertion = !(cfg.tweaks.gpu.useXeDriver && cfg.tweaks.gpu.xeForceProbeId == null);
+          message = "my.kernel.tweaks.gpu.useXeDriver requires my.kernel.tweaks.gpu.xeForceProbeId (e.g., \"7d55\").";
+        }
       ];
 
       warnings = optionals (cfg.useLatestKernel != null) [
@@ -135,18 +118,6 @@ in
       # Always-loaded modules:
       #   - msr:      RAPL / MSR access (for power/energy monitoring)
       #   - coretemp: CPU temperature sensors
-      #
-      # Physical-only modules:
-      #   - i2c-dev:      Userspace I²C interface (/dev/i2c-*)
-      #   - i2c-i801:     Intel SMBus/I²C controller driver
-      #   - thinkpad_acpi: ThinkPad ACPI interface (opt-in)
-      #   - iwlwifi:      Intel Wi-Fi (opt-in force-load)
-      #
-      # Note:
-      #   - i915 is intentionally NOT force-loaded here; KMS autoloads it.
-      #
-      # i2c-dev + i2c-i801 are useful for:
-      #   - `ddcutil` DDC/CI control (external monitor brightness/controls)
       # -----------------------------------------------------------------------
       boot.kernelModules =
         [
@@ -170,11 +141,22 @@ in
       '';
 
       # -----------------------------------------------------------------------
-      # Kernel parameters (opt-in only)
+      # Kernel parameters
       # -----------------------------------------------------------------------
       boot.kernelParams =
         optionals isPhysicalMachine (
-          optionals cfg.tweaks.cpu.intelPstateActive [
+          []
+          ++ optionals cfg.tweaks.cpu.disableWatchdog [
+            "nowatchdog"             # Disable watchdog to save interrupts/power
+          ]
+          ++ optionals cfg.tweaks.cpu.splitLockDetectOff [
+            "split_lock_detect=off"  # Avoid micro-stutters in some games/apps
+          ]
+          ++ optionals cfg.tweaks.gpu.useXeDriver [
+            "i915.force_probe=!${cfg.tweaks.gpu.xeForceProbeId}" # Block i915 for this ID
+            "xe.force_probe=${cfg.tweaks.gpu.xeForceProbeId}"    # Force Xe driver for this ID
+          ]
+          ++ optionals cfg.tweaks.cpu.intelPstateActive [
             "intel_pstate=active"
           ]
           ++ optionals (cfg.tweaks.cpu.maxCstate != null) [
@@ -182,13 +164,6 @@ in
           ]
           ++ optionals cfg.tweaks.cpu.ignorePpc [
             "processor.ignore_ppc=1"
-          ]
-          ++ optionals cfg.tweaks.i915.enable [
-            "i915.enable_guc=${builtins.toString cfg.tweaks.i915.enableGuc}"
-            "i915.enable_fbc=${builtins.toString cfg.tweaks.i915.enableFbc}"
-            "i915.enable_dc=${builtins.toString cfg.tweaks.i915.enableDc}"
-            "i915.enable_psr=${builtins.toString cfg.tweaks.i915.enablePsr}"
-            "i915.fastboot=${builtins.toString cfg.tweaks.i915.fastboot}"
           ]
           ++ optionals cfg.tweaks.suspend.s2idleByDefault [
             "mem_sleep_default=s2idle"

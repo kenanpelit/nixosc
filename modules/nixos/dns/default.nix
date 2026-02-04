@@ -1,28 +1,36 @@
 # modules/nixos/dns/default.nix
 # ==============================================================================
-# NixOS DNS policy: resolvers, local proxies, and fallback options.
-# Configure name services once here to stay consistent across hosts.
-# Adjust resolver choices centrally instead of per-interface tweaks.
-#
-# Includes optional Blocky integration (merged from modules/nixos/blocky).
+# NixOS DNS Configuration
+# ------------------------------------------------------------------------------
+# Consolidates system-wide DNS policy (resolved) and local DNS proxy (Blocky).
+# If Blocky is enabled, it takes over local resolution and disables resolved.
 # ==============================================================================
 
 { lib, config, pkgs, ... }:
 
 let
-  inherit (lib) mkIf mkMerge mkOption mkEnableOption mkDefault mkForce mkAfter optionals types;
+  inherit (lib) mkIf mkOption types;
 
+  # -- Blocky Configuration Variables --
+  cfgBlocky = config.my.dns.blocky;
   isPhysicalHost = config.my.host.isPhysicalHost or false;
   hasMullvad = config.services.mullvad-vpn.enable or false;
+  blockyConfigured = cfgBlocky.enable;
 
-  cfg = config.my.dns.blocky;
-  blockyConfigured = cfg.enable;
+  # Some developer tooling (notably Go module downloads) relies on domains that
+  # are commonly caught by aggressive "no-google" lists.
+  # Keep a tiny built-in allowlist to prevent accidental self-DoS.
+  allowlistDev = pkgs.writeText "blocky-allowlist-dev.txt" ''
+    storage.googleapis.com
+    proxy.golang.org
+    sum.golang.org
+  '';
 
   resolvconf = "${pkgs.openresolv}/sbin/resolvconf";
+  # Scripts to hook Blocky into openresolv
   resolvconfAdd = pkgs.writeShellScript "blocky-resolvconf-add" ''
     #!${pkgs.bash}/bin/bash
     set -uo pipefail
-    # Best-effort: don't fail Blocky start if resolvconf can't be updated.
     if ! ${resolvconf} -m 0 -x -a blocky <<'EOF'; then
     nameserver 127.0.0.1
     nameserver ::1
@@ -34,7 +42,6 @@ let
   resolvconfDel = pkgs.writeShellScript "blocky-resolvconf-del" ''
     #!${pkgs.bash}/bin/bash
     set -uo pipefail
-    # Best-effort: don't fail Blocky stop if resolvconf can't be updated.
     ${resolvconf} -f -d blocky || true
     ${resolvconf} -u || true
   '';
@@ -48,27 +55,18 @@ in
       description = "Enable Blocky (local DNS proxy + ad/malware blocking).";
     };
 
-    noGoogle.enable = mkOption {
-      type = types.bool;
-      default = false;
-      description = ''
-        Enable aggressive "no-google" blocklists (Google/YouTube/DoubleClick/etc).
-
-        This can break Google services and apps. Keep it off unless you
-        explicitly want to block Google domains.
-      '';
+    noGoogle = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable aggressive 'no-google' blocklists (breaks Google services).";
+      };
     };
 
     autostart = mkOption {
       type = types.bool;
       default = !hasMullvad;
-      defaultText = "!config.services.mullvad-vpn.enable";
-      description = ''
-        Start Blocky automatically at boot.
-
-        If Mullvad VPN is enabled, default is off to avoid DNS-leak-prevention conflicts.
-        You can still start/stop Blocky manually (e.g. via `systemctl start/stop blocky`).
-      '';
+      description = "Start Blocky automatically at boot (disabled if VPN is present).";
     };
 
     httpPort = mkOption {
@@ -80,18 +78,17 @@ in
     upstream = mkOption {
       type = types.listOf types.str;
       default = [
-        "1.1.1.1"
-        "9.9.9.9"
+        "https://dns.quad9.net/dns-query"     # Quad9 (Filtered, DNSSEC, Privacy-focused)
+        "https://dns.cloudflare.com/dns-query" # Cloudflare (Fast, widely available)
+        "1.1.1.1"                             # Fallback / Bootstrap IP to resolve DoH domains
       ];
-      description = "Upstream DNS servers (IP or DoH/DoT endpoints supported by Blocky).";
+      description = "Upstream DNS servers (IP, DoH, or DoT endpoints supported by Blocky).";
     };
   };
 
-  config = mkMerge [
-    # -------------------------------------------------------------------------
-    # systemd-resolved (default path when Blocky is disabled)
-    # -------------------------------------------------------------------------
-    (mkIf (!blockyConfigured) {
+  config = lib.mkMerge [
+    # -- 1. Standard DNS Policy (No Blocky) ------------------------------------
+    (lib.mkIf (!blockyConfigured) {
       services.resolved = {
         enable = true;
         dnssec = "allow-downgrade";
@@ -104,64 +101,59 @@ in
       };
     })
 
-    # -------------------------------------------------------------------------
-    # Blocky + resolvconf path (when enabled)
-    # -------------------------------------------------------------------------
-    (mkIf blockyConfigured {
-      # Avoid resolver stacking and port conflicts; let Blocky own :53.
-      services.resolved.enable = mkForce false;
-
-      # Let DNS be controlled dynamically (e.g. Blocky service hooks / VPN).
-      networking.resolvconf.enable = mkDefault true;
-
-      # Ignore DHCP-provided router DNS from NetworkManager; keep resolver selection
-      # controlled via `networking.nameservers` + VPN keys.
-      networking.resolvconf.extraConfig = mkAfter ''
+    # -- 2. Blocky Enabled Policy ----------------------------------------------
+    (lib.mkIf blockyConfigured {
+      # Disable systemd-resolved to free up port 53 for Blocky
+      services.resolved.enable = lib.mkForce false;
+      
+      # Enable openresolv for managing /etc/resolv.conf
+      networking.resolvconf.enable = lib.mkDefault true;
+      networking.resolvconf.extraConfig = lib.mkAfter ''
         deny_keys='NetworkManager'
       '';
 
-      # Provide a safe, consistent fallback resolver set when Blocky is stopped
-      # and prevent LAN/router DNS from sneaking into resolv.conf.
-      networking.nameservers = mkDefault [ "1.1.1.1" "9.9.9.9" ];
+      # Fallback resolvers for when Blocky is stopped
+      networking.nameservers = lib.mkDefault [ "1.1.1.1" "9.9.9.9" ];
 
-      # When using resolvconf + local DNS stacks, let DNS be driven by resolvconf
-      # sources we control (static + VPN), not by per-connection DHCP DNS.
-      environment.etc."NetworkManager/conf.d/90-osc-dns.conf".text = mkDefault ''
+      # Prevent NetworkManager from interfering with resolv.conf
+      environment.etc."NetworkManager/conf.d/90-osc-dns.conf".text = lib.mkDefault ''
         [main]
         dns=none
       '';
 
+      # -- Blocky Service Configuration --
       services.blocky = {
         enable = true;
         settings = {
-          # New-style configuration (Blocky >= 0.27). Avoid deprecated keys.
           ports = {
             dns = 53;
-            http = cfg.httpPort;
+            http = cfgBlocky.httpPort;
           };
 
           log.level = "info";
 
           upstreams = {
-            # Don't block service start if upstreams aren't reachable yet (e.g. boot/race).
             init.strategy = "fast";
-            # Pick the fastest upstreams per query.
             strategy = "parallel_best";
             timeout = "2s";
-            groups.default = cfg.upstream;
+            groups.default = cfgBlocky.upstream;
           };
 
-          # Keep Blocky resilient at boot: if a list fetch fails, don't block start.
+          caching = {
+            minTime = "5m";
+            maxTime = "30m";
+            prefetching = true;
+            prefetchExpires = "2h";
+            prefetchThreshold = 5;
+          };
+
           blocking = {
-            # Host-format lists work well with Blocky and are widely available.
             denylists = {
               ads = [
                 "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
-                # Extra coverage for ad/tracker domains (plain domain list).
+                "https://big.oisd.nl/"
                 "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt"
               ];
-
-              # Optional: aggressive Google/YouTube blocking.
               nogoogle = [
                 "https://raw.githubusercontent.com/nickspaargaren/no-google/master/pihole-google.txt"
                 "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/youtubeparsed"
@@ -180,32 +172,39 @@ in
                 "https://raw.githubusercontent.com/nickspaargaren/no-google/master/categories/fiberparsed"
               ];
             };
+
+            allowlists = {
+              ads = [
+                "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
+                allowlistDev
+              ];
+              # When `noGoogle` is enabled, unblock a minimal set of domains
+              # required by common developer workflows (Go proxy/sum DB).
+              nogoogle = [ allowlistDev ];
+            };
+
             clientGroupsBlock.default =
               [ "ads" ]
-              ++ optionals cfg.noGoogle.enable [ "nogoogle" ];
+              ++ lib.optionals cfgBlocky.noGoogle.enable [ "nogoogle" ];
 
             loading = {
               refreshPeriod = "24h";
-              # Old behaviour: "don't fail start if list fetch fails".
               strategy = "fast";
             };
           };
         };
       };
 
-      # Keep the unit available even when not autostarting; helper scripts can
-      # start/stop it at runtime. Switch resolv.conf to 127.0.0.1 only while
-      # Blocky is running (ExecStartPost/ExecStopPost).
-      systemd.services.blocky = mkMerge [
+      # Systemd hooks for resolvconf integration
+      systemd.services.blocky = lib.mkMerge [
         {
           serviceConfig = {
-            # Blocky itself may run as an unprivileged user; resolvconf needs root.
             ExecStartPost = [ "+${resolvconfAdd}" ];
             ExecStopPost = [ "+${resolvconfDel}" ];
           };
         }
-        (mkIf (!cfg.autostart) {
-          wantedBy = mkForce [ ];
+        (lib.mkIf (!cfgBlocky.autostart) {
+          wantedBy = lib.mkForce [ ];
         })
       ];
 
