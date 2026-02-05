@@ -606,26 +606,6 @@
         "type": "github"
       }
     },
-    "hypr-contrib": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1766066098,
-        "narHash": "sha256-d3HmUbmfTDIt9mXEHszqyo2byqQMoyJtUJCZ9U1IqHQ=",
-        "owner": "hyprwm",
-        "repo": "contrib",
-        "rev": "41dbcac8183bb1b3a4ade0d8276b2f2df6ae4690",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hyprwm",
-        "repo": "contrib",
-        "type": "github"
-      }
-    },
     "niri": {
       "inputs": {
         "niri-stable": "niri-stable",
@@ -1043,7 +1023,6 @@
         "distro-grub-themes": "distro-grub-themes",
         "dsearch": "dsearch",
         "home-manager": "home-manager",
-        "hypr-contrib": "hypr-contrib",
         "niri": "niri",
         "nix-flatpak": "nix-flatpak",
         "nix-search-tv": "nix-search-tv",
