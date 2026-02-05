@@ -33,7 +33,7 @@ let
   iconTheme =
     if config ? gtk && config.gtk ? iconTheme && config.gtk.iconTheme ? name
     then config.gtk.iconTheme.name
-    else "a-candy-beauty-icon-theme";
+    else "kora";
 
   palette = {
     #cyan = "#74c7ec";
@@ -65,7 +65,6 @@ let
     nirius  = "${pkgs.nirius}/bin/nirius";
     niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
-    mpvManager = "${config.home.profileDirectory}/bin/mpv-manager";
   };
 
   # ---------------------------------------------------------------------------

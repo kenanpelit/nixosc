@@ -7,6 +7,10 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.my.user.qt;
+  iconThemeName =
+    if config ? gtk && config.gtk ? iconTheme && config.gtk.iconTheme ? name
+    then config.gtk.iconTheme.name
+    else "kora";
   # Font ayarları - GTK ile uyumlu
   fonts = {
     main = {
@@ -138,7 +142,7 @@ in
         force = true;
         text = lib.generators.toINI {} {
         Appearance = {
-          icon_theme = "a-candy-beauty-icon-theme";
+          icon_theme = iconThemeName;
           style = "kvantum";
           custom_palette = true;  # Custom palette aktif
           standard_dialogs = "gtk3";
@@ -181,7 +185,7 @@ in
         force = true;
         text = lib.generators.toINI {} {
         Appearance = {
-          icon_theme = "a-candy-beauty-icon-theme";
+          icon_theme = iconThemeName;
           style = "kvantum";
           custom_palette = true;
           standard_dialogs = "gtk3";

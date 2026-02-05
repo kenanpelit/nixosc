@@ -142,7 +142,7 @@
   my.user.catppuccin.enable = true;
   my.user.gtk.enable = true;
   my.user.qt.enable = true;
-  my.user.candy.enable = true;
+  my.user.candy.enable = false;
 
   # ============================================================================
   # On-demand services

@@ -153,12 +153,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/fe156679866fd5633a2c2a70c765410c22ee356a"; # 0204 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/e27e90415714c52ed90a94eaf8b6db57f4423a71"; # 0205 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/fe156679866fd5633a2c2a70c765410c22ee356a"; # 0204 - Updated commit
       # url = "github:AvengeMedia/DankMaterialShell/6e3b3ce8886f35b9ecfa1c8ac0b781cc7f9b74e8"; # 0204 - Updated commit
       # url = "github:AvengeMedia/DankMaterialShell/c024c1b8e478697c0bb56c2d068dc6725a3c2f92"; # 0204 - Updated commit
       # url = "github:AvengeMedia/DankMaterialShell/a97409dfd70caa3a29f95950c7b76fce018bf727"; # 0203 - Updated commit
       # url = "github:AvengeMedia/DankMaterialShell/eaa6a664c89f776f406d74d29eb8f7d1b4411e3d"; # 0202 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/546cbfb3caeb65baa41d70b0318e3be6dc822e0c"; # 0202 - Updated commit
     };
 
     # ==========================================================================

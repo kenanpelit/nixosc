@@ -11,12 +11,18 @@ gnome-set - GNOME helpers (Niri-like)
 Usage:
   gnome-set here <APP_ID|all>
   gnome-set go
+  gnome-set column-width [cycle|set|toggle] [args...]
+  gnome-set monitor-primary
+  gnome-set keyring-fix
 
 Examples:
   gnome-set here Kenp
   gnome-set here TmuxKenp
   gnome-set here all
   gnome-set go
+  gnome-set column-width toggle
+  gnome-set monitor-primary
+  gnome-set keyring-fix
 EOF
 }
 
@@ -690,6 +696,304 @@ EOF
     # End on Kenp (workspace 1) like niri-set go.
     gnome_eval "global.workspace_manager.get_workspace_by_index(0).activate(global.get_current_time());" >/dev/null 2>&1 || true
     gnome_move_here "Kenp" >/dev/null 2>&1 || true
+    ;;
+
+  column-width)
+    # ----------------------------------------------------------------------------
+    # Canonical: gnome-column-width (kept as a subcommand for consolidation)
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      action="${1:-cycle}"
+      arg1="${2:-}"
+      arg2="${3:-}"
+
+      case "$action" in
+        -h|--help|help)
+          usage
+          exit 0
+          ;;
+        cycle|set|toggle)
+          ;;
+        *)
+          echo "gnome-set: column-width: unknown action: $action" >&2
+          usage >&2
+          exit 2
+          ;;
+      esac
+
+      is_ratio() {
+        local r="$1"
+        awk -v r="$r" 'BEGIN { exit !(r > 0 && r <= 1.0) }' >/dev/null 2>&1
+      }
+
+      js_action="$action"
+      js_ratio="null"
+      js_toggle_a="0.8"
+      js_toggle_b="1.0"
+
+      if [[ "$action" == "set" ]]; then
+        set_ratio="${arg1:-0.8}"
+        if ! is_ratio "$set_ratio"; then
+          echo "gnome-set: column-width: invalid ratio: $set_ratio (expected 0 < r <= 1.0)" >&2
+          exit 2
+        fi
+        js_ratio="$set_ratio"
+      fi
+
+      if [[ "$action" == "toggle" ]]; then
+        toggle_a="${arg1:-0.8}"
+        toggle_b="${arg2:-1.0}"
+        if ! is_ratio "$toggle_a" || ! is_ratio "$toggle_b"; then
+          echo "gnome-set: column-width: invalid toggle ratios: $toggle_a $toggle_b (expected 0 < r <= 1.0)" >&2
+          exit 2
+        fi
+        js_toggle_a="$toggle_a"
+        js_toggle_b="$toggle_b"
+      fi
+
+      # Prefer parity extension if available.
+      parity_try_enable_extension || true
+      out=""
+      case "$action" in
+        cycle) out="$(parity_call ColumnWidthCycle)" ;;
+        set) out="$(parity_call ColumnWidthSet "${set_ratio:-0.8}")" ;;
+        toggle) out="$(parity_call ColumnWidthToggle "${toggle_a:-0.8}" "${toggle_b:-1.0}")" ;;
+      esac
+
+      if [[ -n "$out" && "$out" != Error* && "$out" != *"Error:"* ]]; then
+        if [[ "$out" == *"ok:"* || "$out" == *"no-window"* ]]; then
+          exit 0
+        fi
+        if [[ "$out" == *"error:"* ]]; then
+          echo "gnome-set: column-width: $out" >&2
+          command -v notify-send >/dev/null 2>&1 && notify-send -u critical -t 2500 "GNOME Column Width" "Error: ${out}" || true
+          exit 1
+        fi
+      fi
+
+      # Fallback: GNOME Shell Eval (Wayland-safe).
+      js="$(cat <<EOF
+(function () {
+  const Meta = imports.gi.Meta;
+  const Main = imports.ui.main;
+
+  const action = "${js_action}";
+  const setRatio = ${js_ratio};
+  const toggleA = ${js_toggle_a};
+  const toggleB = ${js_toggle_b};
+  const presets = [0.30, 0.45, 0.60, 0.75, 1.0];
+  const preferred = 0.8;
+
+  const win = global.display.get_focus_window();
+  if (!win) return "no-window";
+
+  const monitor = win.get_monitor();
+  const wa = Main.layoutManager.getWorkAreaForMonitor(monitor);
+  const rect = win.get_frame_rect();
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  let ratio = preferred;
+  if (action === "set" && typeof setRatio === "number" && setRatio > 0 && setRatio <= 1.0) {
+    ratio = setRatio;
+  } else if (action === "toggle" && typeof toggleA === "number" && typeof toggleB === "number") {
+    const current = rect.width / wa.width;
+    const eps = 0.05;
+    ratio = (Math.abs(current - toggleA) <= eps) ? toggleB : toggleA;
+  } else {
+    const current = rect.width / wa.width;
+    let closest = 0;
+    let best = 1e9;
+    for (let i = 0; i < presets.length; i++) {
+      const d = Math.abs(current - presets[i]);
+      if (d < best) { best = d; closest = i; }
+    }
+    ratio = presets[(closest + 1) % presets.length];
+  }
+
+  const newW = Math.round(wa.width * ratio);
+  const newH = rect.height;
+  const newX = wa.x + Math.round((wa.width - newW) / 2);
+  const newY = clamp(rect.y, wa.y, wa.y + Math.max(0, wa.height - newH));
+
+  try { win.unmaximize(Meta.MaximizeFlags.BOTH); } catch (e) {}
+
+  try {
+    win.move_resize_frame(true, newX, newY, newW, newH);
+    if (win.activate) win.activate(global.get_current_time());
+    return "ok:" + ratio.toString();
+  } catch (e) {
+    return "error:" + e.toString();
+  }
+})();
+EOF
+)"
+
+      out="$(gnome_eval "$js" || true)"
+      if [[ -z "$out" || "$out" == *"(false,"* ]]; then
+        devtools_val="unknown"
+        command -v gsettings >/dev/null 2>&1 && devtools_val="$(gsettings get org.gnome.shell development-tools 2>/dev/null || true)"
+        parity_ping="$(
+          gdbus call --session \
+            --dest "$PARITY_BUS" \
+            --object-path "$PARITY_OBJ" \
+            --method "${PARITY_IFACE}.Ping" 2>/dev/null | tr -d '\n' || true
+        )"
+        echo "gnome-set: column-width: GNOME backend failed: ${out:-<no output>} (development-tools=${devtools_val}, parity=${parity_ping:-<no ping>})" >&2
+        command -v notify-send >/dev/null 2>&1 && notify-send -u critical -t 2500 "GNOME Column Width" "GNOME Shell Eval failed" || true
+        exit 1
+      fi
+
+      if [[ "$out" == *"error:"* ]]; then
+        echo "gnome-set: column-width: $out" >&2
+        command -v notify-send >/dev/null 2>&1 && notify-send -u critical -t 2500 "GNOME Column Width" "Error: ${out}" || true
+        exit 1
+      fi
+    )
+    ;;
+
+  monitor-primary)
+    # ----------------------------------------------------------------------------
+    # Canonical: gnome-monitor-set (set external monitor as primary)
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      command -v gnome-monitor-config >/dev/null 2>&1 || {
+        echo "gnome-set: monitor-primary: gnome-monitor-config not found" >&2
+        exit 1
+      }
+
+      monitor_list="$(gnome-monitor-config list)"
+
+      external_monitor="$(
+        echo "$monitor_list" | grep "^Monitor \\[" | grep -v "eDP\\|LVDS" | head -n1 | sed 's/Monitor \\[ \\(.*\\) \\] ON/\\1/'
+      )"
+      internal_monitor="$(
+        echo "$monitor_list" | grep "^Monitor \\[" | grep -E "eDP|LVDS" | head -n1 | sed 's/Monitor \\[ \\(.*\\) \\] ON/\\1/'
+      )"
+
+      if [[ -z "$external_monitor" ]]; then
+        echo "❌ Harici monitör bulunamadı!" >&2
+        exit 1
+      fi
+
+      logical_section="$(echo "$monitor_list" | sed -n '/^Logical monitor/,$p')"
+      ext_line="$(echo "$logical_section" | grep -B1 "^\\s*${external_monitor}$" | head -n1)"
+      int_line="$(echo "$logical_section" | grep -B1 "^\\s*${internal_monitor}$" | head -n1)"
+
+      ext_coords="$(echo "$ext_line" | grep -oP '\\[\\s*\\K[0-9x+]+' || true)"
+      ext_scale="$(echo "$ext_line" | grep -oP 'scale\\s*=\\s*\\K[0-9.]+' || true)"
+      ext_x="$(echo "$ext_coords" | cut -d'+' -f2)"
+      ext_y="$(echo "$ext_coords" | cut -d'+' -f3)"
+
+      int_coords="$(echo "$int_line" | grep -oP '\\[\\s*\\K[0-9x+]+' || true)"
+      int_scale="$(echo "$int_line" | grep -oP 'scale\\s*=\\s*\\K[0-9.]+' || true)"
+      int_x="$(echo "$int_coords" | cut -d'+' -f2)"
+      int_y="$(echo "$int_coords" | cut -d'+' -f3)"
+
+      ext_mode="$(echo "$monitor_list" | sed -n "/^Monitor \\[ ${external_monitor} \\]/,/^Monitor \\[/p" | grep "CURRENT" | head -n1 | sed -n "s/.*\\[id: '\\([^']*\\)'\\].*/\\1/p")"
+      int_mode="$(echo "$monitor_list" | sed -n "/^Monitor \\[ ${internal_monitor} \\]/,/^Monitor \\[/p" | grep "CURRENT" | head -n1 | sed -n "s/.*\\[id: '\\([^']*\\)'\\].*/\\1/p")"
+
+      if [[ -z "$ext_mode" || -z "$int_mode" ]]; then
+        echo "❌ Mode ID'ler alınamadı!" >&2
+        exit 1
+      fi
+
+      gnome-monitor-config set \
+        -LM "$external_monitor" -m "$ext_mode" -s "${ext_scale:-1.0}" -t normal -x "${ext_x:-0}" -y "${ext_y:-0}" -p \
+        -LM "$internal_monitor" -m "$int_mode" -s "${int_scale:-1.0}" -t normal -x "${int_x:-0}" -y "${int_y:-0}"
+
+      command -v notify-send >/dev/null 2>&1 && notify-send -u normal "🖥️ Monitör Değiştirildi" "$external_monitor artık birincil ekran." -t 3000 2>/dev/null || true
+    )
+    ;;
+
+  keyring-fix)
+    # ----------------------------------------------------------------------------
+    # Canonical: gnome-kr-fix (GNOME keyring lag fixer)
+    # ----------------------------------------------------------------------------
+    (
+      set -euo pipefail
+
+      log() { printf '[%(%F %T)T] %s\n' -1 "$*"; }
+      die_keyring() {
+        log "ERROR: $*"
+        "$NOTIFY_SEND" -u critical -a "Keyring Fix" "❌ Keyring Fix Hatası" "$*" 2>/dev/null || true
+        exit 1
+      }
+
+      NOTIFY_SEND="$(command -v notify-send || echo /run/current-system/sw/bin/notify-send)"
+
+      GKD_BIN="$(command -v gnome-keyring-daemon || true)"
+      [[ -n "$GKD_BIN" ]] || GKD_BIN="/run/current-system/sw/bin/gnome-keyring-daemon"
+      [[ -x "$GKD_BIN" ]] || die_keyring "gnome-keyring-daemon bulunamadı"
+
+      SYSTEMD_RUN="$(command -v systemd-run || true)"
+      [[ -n "$SYSTEMD_RUN" ]] || SYSTEMD_RUN="/run/current-system/sw/bin/systemd-run"
+      [[ -x "$SYSTEMD_RUN" ]] || die_keyring "systemd-run yok"
+
+      SYSTEMCTL="$(command -v systemctl || true)"
+      [[ -n "$SYSTEMCTL" ]] || SYSTEMCTL="/run/current-system/sw/bin/systemctl"
+      [[ -x "$SYSTEMCTL" ]] || die_keyring "systemctl yok"
+
+      BUSCTL_BIN="$(command -v busctl || true)"
+      [[ -n "$BUSCTL_BIN" ]] || BUSCTL_BIN="/run/current-system/sw/bin/busctl"
+      [[ -x "$BUSCTL_BIN" ]] || die_keyring "busctl yok"
+
+      GREP_BIN="$(command -v grep || true)"
+      [[ -n "$GREP_BIN" ]] || GREP_BIN="/run/current-system/sw/bin/grep"
+      [[ -x "$GREP_BIN" ]] || die_keyring "grep yok"
+
+      : "${XDG_RUNTIME_DIR:="/run/user/$(id -u)"}"
+      if [[ -S "${XDG_RUNTIME_DIR}/bus" ]]; then
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+      else
+        die_keyring "User bus yok: ${XDG_RUNTIME_DIR}/bus"
+      fi
+
+      for _ in {1..50}; do
+        "$BUSCTL_BIN" --user list >/dev/null 2>&1 && break
+        sleep 0.1
+      done
+
+      log "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS}"
+      log "Keyring binary            : ${GKD_BIN}"
+
+      "$NOTIFY_SEND" -u low -a "Keyring Fix" "🔧 Keyring Fix" "GNOME Keyring yeniden başlatılıyor..." 2>/dev/null || true
+
+      UNIT="gnome-keyring-fix-$(date +%s 2>/dev/null || echo $)"
+      log "systemd-run --user başlatılıyor (unit: ${UNIT})"
+
+      "$SYSTEMD_RUN" --user --unit="$UNIT" --collect --quiet \
+        "$GKD_BIN" --replace --foreground --components=secrets,ssh,pkcs11 ||
+        die_keyring "systemd-run keyring başlatamadı"
+
+      own_ok() {
+        "$BUSCTL_BIN" --user list 2>/dev/null |
+          "$GREP_BIN" -E '^org\\.freedesktop\\.secrets[[:space:]]' |
+          "$GREP_BIN" -v '(activatable)' |
+          "$GREP_BIN" -qE '^[^[:space:]]+[[:space:]]+[0-9]+[[:space:]]'
+      }
+
+      log "org.freedesktop.secrets ownership bekleniyor…"
+      for _ in {1..100}; do
+        if own_ok; then
+          log "✅ org.freedesktop.secrets *owned* — lag fix tamam."
+          "$NOTIFY_SEND" -u normal -a "Keyring Fix" "✅ Keyring Fix Başarılı" "GNOME Keyring aktif, lag düzeltildi!" 2>/dev/null || true
+          "$SYSTEMCTL" --user try-restart org.gnome.SettingsDaemon.MediaKeys.service 2>/dev/null || true
+          "$SYSTEMCTL" --user try-restart org.gnome.SettingsDaemon.media-keys.service 2>/dev/null || true
+          exit 0
+        fi
+        sleep 0.1
+      done
+
+      log "❌ sahiplenemedi. Teşhis:"
+      "$BUSCTL_BIN" --user list | "$GREP_BIN" -E 'org\\.freedesktop\\.secrets|org\\.gnome\\.keyring' || true
+      "$NOTIFY_SEND" -u critical -a "Keyring Fix" "❌ Keyring Fix Başarısız" "DBus servisini alamadı. Detay için log'a bak." 2>/dev/null || true
+      die_keyring "Keyring DBus adını alamadı; yine de bazı durumlarda pratikte çalışıyor olabilir."
+    )
     ;;
 
   *)

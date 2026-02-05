@@ -105,7 +105,7 @@ dconf write /org/gnome/desktop/interface/enable-animations "true"
 echo "🎨 GTK tema ayarları (Catppuccin Mocha)..."
 
 dconf write /org/gnome/desktop/interface/gtk-theme "'catppuccin-mocha-mauve-standard+normal'"
-dconf write /org/gnome/desktop/interface/icon-theme "'a-candy-beauty-icon-theme'"
+dconf write /org/gnome/desktop/interface/icon-theme "'kora'"
 dconf write /org/gnome/desktop/interface/cursor-theme "'catppuccin-mocha-dark-cursors'"
 dconf write /org/gnome/desktop/interface/cursor-size "24"
 
@@ -708,23 +708,24 @@ LOGINCTL="$(opt loginctl)"
 
 OSC_NDROP="$(opt osc-ndrop)"
 OSC_SOUNDCTL="$(opt osc-soundctl)"
-OSC_SPOTIFY="$(opt osc-spotify)"
+OSC_MEDIA="$(opt osc-media)"
+OSC_SPOTIFY="$OSC_MEDIA spotify"
 OSC_REBOOT="$(opt osc-safe-reboot)"
 BLUE_TOGGLE="$(opt bluetooth_toggle)"
-VLC_TOGGLE="$(opt vlc-toggle)"
-MPC_CONTROL="$(opt mpc-control)"
+VLC_TOGGLE="$OSC_MEDIA vlc"
+MPC_CONTROL="$OSC_MEDIA mpc"
 NSTICKY_TOGGLE="$(opt nsticky-toggle)"
-MPV_MGR="$(opt mpv-manager)"
+MPV_MGR="$OSC_MEDIA mpv"
 KKENP="$(opt start-kkenp)"
 SEM_SUMO="$(opt semsumo)"
 WSPREV="$(opt ws-prev)"
 WSNEXT="$(opt ws-next)"
 MULLVAD="$(opt osc-mullvad)"
 SCREENSHOT="$(opt gnome-screenshot)"
-GKR="$(opt gnome-kr-fix)"
 WALK="$(opt walk)"
-GNOME_COLWIDTH="$(opt gnome-column-width)"
 GNOME_SET="$(opt gnome-set)"
+GKR="$GNOME_SET keyring-fix"
+GNOME_COLWIDTH="$GNOME_SET column-width"
 
 # 0..54 path list
 CUSTOM_PATHS=""
@@ -1160,8 +1161,8 @@ else
 fi
 
 # Icon tema kontrolü
-if gsettings get org.gnome.desktop.interface icon-theme | grep -q "a-candy-beauty-icon-theme"; then
-  echo "✅ İkon teması: Candy Beauty aktif"
+if gsettings get org.gnome.desktop.interface icon-theme | grep -q "kora"; then
+  echo "✅ İkon teması: Kora aktif"
 else
   echo "⚠️  İkon teması: Varsayılan kullanılıyor"
 fi
@@ -1191,7 +1192,7 @@ echo "📊 Script çalışma süresi: $SECONDS saniye"
 echo ""
 echo "🎨 Catppuccin Mocha Tema Özellikleri:"
 echo "   • GTK Teması: catppuccin-mocha-mauve-standard+normal"
-echo "   • İkon Teması: a-candy-beauty-icon-theme"
+echo "   • İkon Teması: kora"
 echo "   • Cursor Teması: catppuccin-mocha-dark-cursors"
 echo "   • Terminal Renkleri: Catppuccin Mocha paleti"
 echo "   • Extension Temaları: Mocha renkleri ile uyumlu"

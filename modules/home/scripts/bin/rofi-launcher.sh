@@ -38,6 +38,10 @@ readonly CUSTOM_BIN_DIRS=(
 # Hyprland config file
 readonly HYPR_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.conf"
 
+# Power profile menu (power-profiles-daemon / powerprofilesctl)
+readonly PPD_PERF_SCRIPT="osc-perf-mode"
+readonly PPD_ASKPASS_SCRIPT="askpass"
+
 #╭──────────────────────────────────────────────────────────────────────────────╮
 #│                      POWER MENU CONFIGURATION                                │
 #╰──────────────────────────────────────────────────────────────────────────────╯
@@ -884,6 +888,125 @@ mode_custom() {
 		$(get_theme_param)
 }
 
+mode_perf() {
+	# Rofi menu for power-profiles-daemon (PPD / powerprofilesctl)
+
+	if ! has_command powerprofilesctl; then
+		rofi -e "powerprofilesctl not found.\n\nEnable power-profiles-daemon / install power-profiles-daemon." \
+			$(get_theme_param)
+		return 1
+	fi
+
+	ppd_remove_colors() { sed -E 's/\x1B\[[0-9;]*[mK]//g'; }
+
+	ppd_get_display_status() {
+		if has_command "$PPD_PERF_SCRIPT"; then
+			"$PPD_PERF_SCRIPT" status 2>/dev/null | ppd_remove_colors | head -20
+		else
+			powerprofilesctl get 2>/dev/null || true
+		fi
+	}
+
+	ppd_show_notification() {
+		local message="$1"
+		local status
+		status="$(ppd_get_display_status)"
+		rofi -e "$message\n\n=== Current Status ===\n$status" \
+			-theme-str 'window { width: 65%; height: 50%; }' \
+			-theme-str 'listview { lines: 15; }' \
+			$(get_theme_param)
+	}
+
+	ppd_run_sudo() {
+		local cmd="$1"
+		local message="$2"
+
+		if ! has_command sudo; then
+			ppd_show_notification "❌ sudo not found"
+			return 1
+		fi
+
+		if ! has_command "$PPD_ASKPASS_SCRIPT"; then
+			ppd_show_notification "❌ askpass not found (needed for GUI sudo)\n\nExpected: $PPD_ASKPASS_SCRIPT"
+			return 1
+		fi
+
+		export SUDO_ASKPASS="$PPD_ASKPASS_SCRIPT"
+		if sudo -A bash -c "$cmd"; then
+			ppd_show_notification "✅ $message"
+			return 0
+		fi
+
+		ppd_show_notification "❌ Failed: $message"
+		return 1
+	}
+
+	ppd_set_profile() {
+		local profile="$1"
+		if powerprofilesctl set "$profile" 2>/dev/null; then
+			ppd_show_notification "Profile set: $profile"
+			return 0
+		fi
+
+		# Fallback: some setups may require root/polkit tweaks.
+		ppd_run_sudo "powerprofilesctl set \"$profile\"" "Profile set: $profile"
+	}
+
+	ppd_show_main_menu() {
+		echo -e "📊 Status\n⚡ Performance\n⚖️ Balanced\n🔋 Power Saver\n🔄 Restart PPD\n❓ Help\n❌ Exit"
+	}
+
+	ppd_show_status_detail() {
+		local status
+		status="$(ppd_get_display_status)"
+		echo "$status" | rofi -dmenu -p "Power Status" -l 20 \
+			-theme-str 'window { width: 75%; height: 60%; }' \
+			-theme-str 'entry { enabled: false; }' \
+			$(get_theme_param)
+	}
+
+	ppd_show_help() {
+		local help_text
+		if has_command "$PPD_PERF_SCRIPT"; then
+			help_text="$("$PPD_PERF_SCRIPT" --help 2>/dev/null | ppd_remove_colors)"
+		else
+			help_text="Uses powerprofilesctl to switch between power-saver / balanced / performance."
+		fi
+
+		echo "$help_text" | rofi -dmenu -p "Help" -l 15 \
+			-theme-str 'window { width: 70%; height: 50%; }' \
+			-theme-str 'entry { enabled: false; }' \
+			$(get_theme_param)
+	}
+
+	local choice=""
+	while true; do
+		choice="$(ppd_show_main_menu | rofi -dmenu -p "Power Profiles:" \
+			-theme-str '
+        window { width: 35%; location: north; anchor: north; y-offset: 50; }
+        listview { lines: 7; fixed-height: true; }
+        element { padding: 8px; }
+      ' \
+			$(get_theme_param))"
+
+		[[ -n "${choice:-}" ]] || return 0
+
+		case "$choice" in
+		"📊 Status") ppd_show_status_detail ;;
+		"⚡ Performance") ppd_set_profile performance ;;
+		"⚖️ Balanced") ppd_set_profile balanced ;;
+		"🔋 Power Saver") ppd_set_profile power-saver ;;
+		"🔄 Restart PPD")
+			ppd_run_sudo "systemctl restart power-profiles-daemon.service" "power-profiles-daemon restarted"
+			;;
+		"❓ Help") ppd_show_help ;;
+		"❌ Exit") return 0 ;;
+		esac
+
+		sleep 0.3
+	done
+}
+
 mode_power() {
 	# Check if being called as rofi mode (from rofi itself)
 	if [[ -n "${ROFI_RETV:-}" || -n "${ROFI_INSIDE:-}" ]]; then
@@ -1029,6 +1152,7 @@ MODES:
     ssh, -s, --ssh              SSH connections
     custom, -c, --custom        Custom commands (start-*)
     keys, -k, --keys            Hyprland keybindings
+    perf, --perf                Power profile menu (PPD / powerprofilesctl)
     power, -p, --power          Power menu (full featured)
     help, -h, --help            Show this help
 
@@ -1185,6 +1309,10 @@ while [[ $# -gt 0 ]]; do
 		;;
 	keys | -k | --keys)
 		MODE="keys"
+		shift
+		;;
+	perf | performance | --perf | --performance)
+		MODE="perf"
 		shift
 		;;
 	power | -p | --power)

@@ -91,7 +91,7 @@ On-the-fly transparency control for the active window.
 Profile switching uses `power-profiles-daemon` (PPD), so you can switch between `power-saver`, `balanced`, and `performance` instantly.
 - **Module:** `modules/nixos/power/default.nix`
 - **PPD:** `my.power.stack = "ppd";` (default) or `my.power.stack = "none";`
-- **CLI:** `powerprofilesctl get|set|list`, `osc-system status`, `rofi-performance`
+- **CLI:** `powerprofilesctl get|set|list`, `osc-system status`, `rofi-launcher perf`
 - **Battery thresholds:** `my.power.battery.chargeThresholds.enable = true;` (default), `start`/`stop` configurable (defaults 75–80)
 
 ## ⌨️ Keybindings
@@ -118,7 +118,7 @@ Shared muscle memory across Niri and Hyprland.
 ├── modules/              # Modular configs
 │   ├── nixos/            # System-level (Power, Services, Greeters)
 │   └── home/             # User-level (Niri, Hyprland, DMS, Apps)
-│       └── scripts/      # Helper scripts (niri-set, hypr-set, mpv-manager)
+│       └── scripts/      # Helper scripts (niri-set, hypr-set, osc-media)
 ├── homes/                # Home-Manager profiles
 └── secrets/              # SOPS-encrypted secrets
 ```

@@ -157,11 +157,11 @@ let
     "ALT, A, exec, osc-soundctl switch"
     "ALT CTRL, A, exec, osc-soundctl switch-mic"
     "ALT CTRL, M, exec, osc-wiremix"
-    "ALT, E, exec, osc-spotify"
-    "ALT CTRL, N, exec, osc-spotify next"
-    "ALT CTRL, B, exec, osc-spotify prev"
-    "ALT CTRL, E, exec, mpc-control toggle"
-    "ALT, I, exec, ${bins.hyprSet} vlc-toggle"
+    "ALT, E, exec, osc-media spotify"
+    "ALT CTRL, N, exec, osc-media spotify next"
+    "ALT CTRL, B, exec, osc-media spotify prev"
+    "ALT CTRL, E, exec, osc-media mpc toggle"
+    "ALT, I, exec, osc-media vlc"
 
     # Tools
     "$mainMod SHIFT, C, exec, hyprpicker -a"
@@ -240,12 +240,12 @@ let
   # 6. MPV MANAGER
   # ---------------------------------------------------------------------------
   mpvBinds = [
-    "ALT, U, exec, mpv-manager playback"
-    "$mainMod CTRL, Y, exec, mpv-manager play-yt"
-    "$mainMod CTRL, F9, exec, mpv-manager stick"
-    "$mainMod CTRL, F10, exec, mpv-manager move"
-    "$mainMod CTRL, F11, exec, mpv-manager save-yt"
-    "$mainMod CTRL, F12, exec, mpv-manager wallpaper"
+    "ALT, U, exec, osc-media mpv playback"
+    "$mainMod CTRL, Y, exec, osc-media mpv play-yt"
+    "$mainMod CTRL, F9, exec, osc-media mpv stick"
+    "$mainMod CTRL, F10, exec, osc-media mpv move"
+    "$mainMod CTRL, F11, exec, osc-media mpv save-yt"
+    "$mainMod CTRL, F12, exec, osc-media mpv wallpaper"
   ];
 
   # ---------------------------------------------------------------------------

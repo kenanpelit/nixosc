@@ -10,6 +10,10 @@ let
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
   dmsEditor = cfg.screenshotEditor;
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
+  iconThemeName =
+    if config ? gtk && config.gtk ? iconTheme && config.gtk.iconTheme ? name
+    then config.gtk.iconTheme.name
+    else "kora";
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
   dmsTargets = [
@@ -34,28 +38,28 @@ lib.mkIf cfg.enable (lib.mkMerge [
   home.file.".config/DankMaterialShell/.keep".text = "";
   home.file.".cache/DankMaterialShell/.keep".text = "";
 
-  # Ensure Qt icon theme matches Candy (Kvantum/qt6ct fallback)
+  # Ensure Qt icon theme matches our global icon theme (Kvantum/qt6ct fallback)
   xdg.configFile."qt6ct/qt6ct.conf".text = ''
     [Appearance]
-    icon_theme=a-candy-beauty-icon-theme
+    icon_theme=${iconThemeName}
   '';
   # Kvantum config hint for icon theme (platform = kvantum)
   xdg.configFile."Kvantum/kvantum.kvconfig".text = ''
     [General]
-    iconTheme=a-candy-beauty-icon-theme
+    iconTheme=${iconThemeName}
   '';
   # Export icon theme globally for Qt (systemd --user env)
   xdg.configFile."environment.d/99-dms-icons.conf".text = ''
-    QT_ICON_THEME=a-candy-beauty-icon-theme
-    XDG_ICON_THEME=a-candy-beauty-icon-theme
+    QT_ICON_THEME=${iconThemeName}
+    XDG_ICON_THEME=${iconThemeName}
     QT_QPA_PLATFORMTHEME=gtk3
   '';
 
   # Default screenshot editor for DMS (can be overridden by user env)
   home.sessionVariables = {
     DMS_SCREENSHOT_EDITOR = dmsEditor;
-    QT_ICON_THEME = "a-candy-beauty-icon-theme";
-    XDG_ICON_THEME = "a-candy-beauty-icon-theme";
+    QT_ICON_THEME = iconThemeName;
+    XDG_ICON_THEME = iconThemeName;
   };
 
   systemd.user.services.dms = {
@@ -77,8 +81,8 @@ lib.mkIf cfg.enable (lib.mkMerge [
         "XDG_RUNTIME_DIR=/run/user/%U"
         "XDG_SESSION_TYPE=wayland"
         "PATH=/run/wrappers/bin:/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin"
-        "QT_ICON_THEME=a-candy-beauty-icon-theme"
-        "XDG_ICON_THEME=a-candy-beauty-icon-theme"
+        "QT_ICON_THEME=${iconThemeName}"
+        "XDG_ICON_THEME=${iconThemeName}"
         "QT_QPA_PLATFORMTHEME=gtk3"
       ];
       PassEnvironment = [
