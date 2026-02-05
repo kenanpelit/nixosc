@@ -5,17 +5,15 @@
 # Keep session metadata consistent by editing this file.
 # ==============================================================================
 
-{ pkgs, lib, inputs, config, ... }:
+{ pkgs, lib, config, ... }:
 
 let
   username = config.my.user.name or "kenan";
   cfg = config.my.display;
 
-  hyprlandPkg =
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  hyprlandPkg = pkgs.unstable.hyprland;
 
-  hyprPortalPkg =
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  hyprPortalPkg = pkgs.unstable.xdg-desktop-portal-hyprland;
 
   niriPkg = pkgs.niri-unstable;
 
@@ -25,7 +23,7 @@ let
     text = ''
       [Desktop Entry]
       Name=Hyprland (Optimized)
-      Comment=Hyprland with pinned flake build and user-session integration
+      Comment=Hyprland (nixpkgs-unstable) with user-session integration
 
       Type=Application
       DesktopNames=Hyprland

@@ -7,7 +7,7 @@
 # - binds.nix, rules.nix, settings.nix, variables.nix
 # ==============================================================================
 
-{ inputs, lib, config, pkgs, ... }:
+{ lib, config, pkgs, ... }:
 let
   cfg = config.my.desktop.hyprland;
   hmLib = lib.hm or config.lib;
@@ -47,9 +47,6 @@ in
     # ---------------------------------------------------------------------------
     # Core Modules
     # ---------------------------------------------------------------------------
-    # Base Hyprland home-manager module
-    inputs.hyprland.homeManagerModules.default
-    
     # ---------------------------------------------------------------------------
     # Basic Configuration
     # ---------------------------------------------------------------------------

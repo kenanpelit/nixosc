@@ -16,7 +16,7 @@ let
 
   # Greeter must use the same Hyprland build as `start-hyprland`, otherwise
   # Hyprland may exit immediately on unknown internal args like `--watchdog-fd`.
-  hyprPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  hyprPkg = pkgs.unstable.hyprland;
 
   niriPkg =
     if config.programs ? niri && config.programs.niri ? package

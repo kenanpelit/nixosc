@@ -54,6 +54,7 @@
     # - snowfall-lib: repo layout + mkFlake glue
     # - home-manager: user-level configuration
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     snowfall-lib = {
       url = "github:snowfallorg/lib";
@@ -89,17 +90,6 @@
     # This repo uses multiple Wayland compositors; we keep them pinned for
     # reproducibility and to prevent session/greeter breakage between updates.
 
-    # Hyprland: Dynamic tiling Wayland compositor
-    hyprland = {
-      inputs.nixpkgs.follows = "nixpkgs";
-      # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/50454c6d17b8406555252eb4f047324d0b0ff5c8"; # 0127 - Updated commit
-      # url = "github:hyprwm/hyprland/c65c7614bc573c3f0150e31a31187057f48813df"; # 0125 - Updated commit
-      # url = "github:hyprwm/hyprland/64db62d7e2685d62cbab51a1a7cb7f2cf38a1b32"; # 0123 - Updated commit
-      # url = "github:hyprwm/hyprland/22fc8136a21676472b232f9462318e16b1d16745"; # 0121 - Updated commit
-      # url = "github:hyprwm/hyprland/c44292c72339b3d7820ca7444d45bab7e34ec74e"; # 0120 - Updated commit
-    };
-
     hypr-contrib = {
       url = "github:hyprwm/contrib";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -108,14 +98,6 @@
     pyprland = {
       url = "github:hyprland-community/pyprland";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Hyprland plugins (upstream)
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
-      inputs.nixpkgs.follows = "hyprland/nixpkgs";
-      inputs.systems.follows = "hyprland/systems";
     };
 
     # Niri: Scrollable-tiling Wayland compositor
@@ -268,6 +250,15 @@
         overlays = with inputs; [
           nur.overlays.default
           niri.overlays.niri
+          # Expose a second package set pinned to `nixos-unstable`, so we can
+          # selectively track newer packages (e.g. Hyprland) without moving the
+          # whole system off the stable channel.
+          (final: prev: {
+            unstable = import inputs."nixpkgs-unstable" {
+              system = prev.stdenv.hostPlatform.system;
+              config = prev.config;
+            };
+          })
           (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
           (import ./overlays/xdg-desktop-portal-gnome-niri.nix)
         ];

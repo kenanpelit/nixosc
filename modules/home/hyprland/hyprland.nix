@@ -3,7 +3,7 @@
 # Hyprland main module: enables compositor, sets env vars, integrates plugins,
 # and imports detailed configs (binds/layout/services).
 # ==============================================================================
-{ inputs, pkgs, config, lib, ... }:
+{ pkgs, config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
   clipPersistPkg =
@@ -95,6 +95,8 @@ lib.mkIf cfg.enable {
   # =============================================================================
   wayland.windowManager.hyprland = {
     enable = true;
+    # Keep Hyprland and plugins in sync by pinning them to `pkgs.unstable`.
+    package = pkgs.unstable.hyprland;
     xwayland = {
       enable = true;
       #hidpi = true;

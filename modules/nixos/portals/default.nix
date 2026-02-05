@@ -5,13 +5,12 @@
 # Tweak portal providers here instead of per-session overrides.
 # ==============================================================================
 
-{ pkgs, lib, inputs, config, ... }:
+{ pkgs, lib, config, ... }:
 
 let
   cfg = config.my.display;
   flatpakEnabled = config.services.flatpak.enable or false;
-  hyprPortalPkg =
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  hyprPortalPkg = pkgs.unstable.xdg-desktop-portal-hyprland;
 in
 {
   config = lib.mkIf (cfg.enable || flatpakEnabled) {

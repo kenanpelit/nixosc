@@ -10,6 +10,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 FLAKE_PATH="$HOME/.nixosc/flake.nix"
+LOCK_PATH="$HOME/.nixosc/flake.lock"
 NIXOS_PATH="$HOME/.nixosc"
 MAX_HISTORY=5
 
@@ -22,17 +23,16 @@ print_usage() {
   echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank|stasis} [stable] [tag]"
   echo
   echo "  all             : Apply dank + niri + hyprland + stasis + walker (in that order)"
-  echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
+  echo "  hypr / hyprland : Update nixpkgs-unstable lock (Hyprland + plugins)"
   echo "  niri            : Update Niri input to latest commit on main"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
   echo "  stasis          : Update Stasis input to latest commit on main"
   echo
   echo "Stable mode:"
-  echo "  hypr stable     : Pin Hyprland to latest GitHub release tag (e.g. v0.53.1)"
   echo "  niri stable     : Pin Niri to latest GitHub release tag (e.g. v25.11)"
   echo "  stasis stable   : Pin Stasis to latest GitHub release tag (e.g. v0.9.0)"
-  echo "  <target> stable <tag> : Pin explicitly (skip network), e.g. hypr stable v0.53.1"
+  echo "  <target> stable <tag> : Pin explicitly (skip network)"
 }
 
 # ---------------------------------------------------------------------------
@@ -54,13 +54,21 @@ git_commit_changes() {
   local commit_msg="$1"
   cd "$NIXOS_PATH"
 
-  if git diff --quiet "$FLAKE_PATH"; then
-    log_info "No changes in flake.nix, skipping git commit"
+  local changed_files=()
+  if ! git diff --quiet "$FLAKE_PATH"; then
+    changed_files+=("$FLAKE_PATH")
+  fi
+  if [[ -f "$LOCK_PATH" ]] && ! git diff --quiet "$LOCK_PATH"; then
+    changed_files+=("$LOCK_PATH")
+  fi
+
+  if [[ ${#changed_files[@]} -eq 0 ]]; then
+    log_info "No changes in flake.{nix,lock}, skipping git commit"
     return
   fi
 
   log_info "Creating git commit..."
-  git add "$FLAKE_PATH"
+  git add "${changed_files[@]}"
 
   if git commit -m "$commit_msg"; then
     log_success "Git commit created: $commit_msg"
@@ -304,16 +312,48 @@ update_commit_input() {
   fi
 }
 
+update_lock_input() {
+  local input_name="$1"
+  local display_name="$2"
+
+  log_info "$display_name lock updater starting..."
+
+  if ! command -v nix >/dev/null 2>&1; then
+    log_error "nix not found in PATH; cannot update flake.lock."
+    exit 1
+  fi
+
+  cd "$NIXOS_PATH"
+
+  log_info "Running: nix flake lock --update-input $input_name"
+  nix flake lock --update-input "$input_name"
+
+  log_success "flake.lock updated for $display_name ($input_name)"
+  git_commit_changes "$input_name: update lock $(date +%m%d)"
+
+  echo
+  log_info "To rebuild:"
+  echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#\\$(hostname)${NC}"
+  echo
+  log_info "To push:"
+  echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
+}
+
 update_hyprland() {
   local mode="${1:-}"
   local explicit_tag="${2:-}"
 
+  if [[ -n "$explicit_tag" ]]; then
+    log_warning "Hyprland is tracked via nixpkgs-unstable; explicit tags are not supported (ignored)."
+  fi
+
   case "$mode" in
-  stable | release)
-    update_release_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "Hyprland" "$explicit_tag"
-    ;;
   "" | commit)
-    update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
+    update_lock_input "nixpkgs-unstable" "Hyprland (via nixpkgs-unstable)"
+    ;;
+  stable | release)
+    log_warning "Hyprland stable pinning was removed; updating nixpkgs-unstable lock instead."
+    update_lock_input "nixpkgs-unstable" "Hyprland (via nixpkgs-unstable)"
     ;;
   *)
     log_error "Unknown mode for hyprland: $mode"

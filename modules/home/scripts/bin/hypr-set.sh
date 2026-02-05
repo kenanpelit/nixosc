@@ -1443,11 +1443,15 @@ check_system() {
 		info "Intel Arc optimizasyonları aktif"
 	fi
 
-	# Hyprland binary kontrolü (yeni launcher)
+	# Hyprland binary kontrolü:
+	# - Prefer `start-hyprland` (wrapper) if present
+	# - Fall back to plain `Hyprland` for nixpkgs builds
 	if command -v start-hyprland &>/dev/null; then
 		HYPRLAND_BINARY="start-hyprland"
+	elif command -v Hyprland &>/dev/null; then
+		HYPRLAND_BINARY="Hyprland"
 	else
-		error "start-hyprland bulunamadı! PATH: $PATH"
+		error "Hyprland bulunamadı! PATH: $PATH"
 	fi
 
 	local hypr_version=$("$HYPRLAND_BINARY" --version 2>&1 | head -n1 || echo "Unknown")
