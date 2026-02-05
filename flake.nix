@@ -95,11 +95,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    pyprland = {
-      url = "github:hyprland-community/pyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # Niri: Scrollable-tiling Wayland compositor
     # Using sodiboo's flake for better integration (HM module + overlay wiring).
     # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
