@@ -25,12 +25,11 @@
 set -euo pipefail
 
 # ============================================================================
-# Environment Setup for Wayland/TTY (safe no-ops on non-Wayland)
+# Environment Setup for Wayland (fast; called only when starting a GUI VM)
 # ============================================================================
 setup_wayland_environment() {
   export NO_AT_BRIDGE=1
-  export GTK_A11Y=none
-  export DBUS_SESSION_BUS_TIMEOUT=30000
+  export GVFS_DISABLE_FUSE=1
 
   if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
     export QT_QPA_PLATFORM=wayland
@@ -38,15 +37,7 @@ setup_wayland_environment() {
     export SDL_VIDEODRIVER=wayland
     export CLUTTER_BACKEND=wayland
   fi
-
-  if command -v fc-cache >/dev/null 2>&1; then
-    fc-cache -f >/dev/null 2>&1 || true
-  fi
-
-  export GVFS_DISABLE_FUSE=1
-  export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
 }
-setup_wayland_environment
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -668,6 +659,7 @@ svm_run() {
         log_info "QEMU command:"
         print_cmd "${qemu_cmd[@]}"
       else
+        [[ "${CONFIG[display_mode]}" != "none" ]] && setup_wayland_environment
         log_info "Starting VM (install mode)..."
         "${qemu_cmd[@]}"
       fi
@@ -687,6 +679,7 @@ svm_run() {
         log_info "QEMU command:"
         print_cmd "${qemu_cmd[@]}"
       else
+        [[ "${CONFIG[display_mode]}" != "none" ]] && setup_wayland_environment
         log_info "Starting VM..."
         "${qemu_cmd[@]}"
       fi
@@ -739,4 +732,3 @@ main() {
 
 trap 'log_info "Interrupted"; exit 130' INT TERM
 main "$@"
-
