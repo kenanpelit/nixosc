@@ -188,16 +188,22 @@ set_profile_defaults() {
 pick_profile_interactive() {
   if ! [[ -t 0 ]]; then
     log_error "Interactive profile picker requires a TTY"
-    exit 2
+    return 2
   fi
 
-  echo "Select VM profile:"
-  echo "  1) arch"
-  echo "  2) nixos"
-  echo "  3) ubuntu"
-  echo "  4) cachy"
-  echo "  q) quit"
-  echo -n "Choice: "
+  # NOTE: This function is used via command substitution:
+  #   PROFILE="$(pick_profile_interactive)"
+  # So we must print the UI to stderr, and only echo the selected profile on
+  # stdout, otherwise the menu gets swallowed and it looks like it's “hanging”.
+  {
+    echo "Select VM profile:"
+    echo "  1) arch"
+    echo "  2) nixos"
+    echo "  3) ubuntu"
+    echo "  4) cachy"
+    echo "  q) quit"
+    echo -n "Choice: "
+  } >&2
 
   local choice=""
   read -r choice
@@ -206,10 +212,10 @@ pick_profile_interactive() {
     2|nixos) echo "nixos" ;;
     3|ubuntu) echo "ubuntu" ;;
     4|cachy|cachyos) echo "cachy" ;;
-    q|Q) exit 0 ;;
+    q|Q|"") return 1 ;;
     *)
       log_error "Invalid choice: $choice"
-      exit 2
+      return 2
       ;;
   esac
 }
@@ -625,7 +631,8 @@ parse_arguments() {
     esac
   done
 
-  echo "$command"
+  SVM_COMMAND="$command"
+  return 0
 }
 
 print_cmd() {
@@ -638,7 +645,9 @@ svm_run() {
   local command
 
   apply_env_overrides
-  command="$(parse_arguments "$@")"
+  SVM_COMMAND="start"
+  parse_arguments "$@"
+  command="$SVM_COMMAND"
   prepare_environment
 
   case "$command" in
@@ -708,10 +717,20 @@ main() {
   esac
 
   if [[ -z "$first" ]]; then
-    PROFILE="$(pick_profile_interactive)"
+    if ! PROFILE="$(pick_profile_interactive)"; then
+      case "$?" in
+        1) exit 0 ;; # user cancelled
+        *) exit "$?" ;;
+      esac
+    fi
   elif [[ "$first" == "menu" ]]; then
     shift
-    PROFILE="$(pick_profile_interactive)"
+    if ! PROFILE="$(pick_profile_interactive)"; then
+      case "$?" in
+        1) exit 0 ;; # user cancelled
+        *) exit "$?" ;;
+      esac
+    fi
   else
     case "$first" in
       arch|nixos|ubuntu|cachy|cachyos)
