@@ -641,6 +641,93 @@ favorites_upsert() {
 	mv "$tmp_file" "$FAVORITES_FILE"
 }
 
+is_number() {
+	[[ "${1:-}" =~ ^[0-9]+$ ]]
+}
+
+country_group_codes() {
+	local group="${1:-}"
+	case "$group" in
+	europe) printf '%s\n' "${EUROPE_COUNTRIES[@]}" ;;
+	americas) printf '%s\n' "${AMERICAS_COUNTRIES[@]}" ;;
+	asia | apac | "asia/pacific" | "asia-pacific") printf '%s\n' "${ASIA_COUNTRIES[@]}" ;;
+	africa | "africa/me" | "africa-me") printf '%s\n' "${AFRICA_ME_COUNTRIES[@]}" ;;
+	other) printf '%s\n' "${MISC_COUNTRIES[@]}" ;;
+	all) printf '%s\n' "${ALL_COUNTRIES[@]}" ;;
+	*) return 1 ;;
+	esac
+}
+
+fastest_fav_sweep() {
+	local per_country="${OSC_MULLVAD_FASTEST_SWEEP_COUNT:-1}"
+	local restore_at_end="${OSC_MULLVAD_FASTEST_SWEEP_RESTORE:-1}"
+
+	local args=("$@")
+	if (( ${#args[@]} == 0 )); then
+		echo -e "${RED}Error:${NC} missing group or country codes"
+		echo "Usage: ${SCRIPT_NAME} fastest-fav-sweep <all|europe|americas|asia|africa|other|cc...> [per-country]"
+		return 1
+	fi
+
+	# Optional last numeric arg = per-country favorite count.
+	local last_index=$((${#args[@]} - 1))
+	local last="${args[$last_index]}"
+	if is_number "$last"; then
+		per_country="$last"
+		unset "args[$last_index]"
+	fi
+
+	local countries=()
+	if (( ${#args[@]} == 1 )); then
+		local group="${args[0]}"
+		if mapfile -t countries < <(country_group_codes "$group" 2>/dev/null); then
+			:
+		else
+			countries=("$group")
+		fi
+	else
+		countries=("${args[@]}")
+	fi
+
+	if (( ${#countries[@]} == 0 )); then
+		echo -e "${RED}Error:${NC} no countries selected"
+		return 1
+	fi
+
+	local was_connected="false"
+	local start_relay=""
+	if mullvad_is_connected; then
+		was_connected="true"
+		start_relay="$(get_current_relay)"
+	fi
+
+	local saved_no_notify="${OSC_MULLVAD_NO_NOTIFY:-0}"
+	OSC_MULLVAD_NO_NOTIFY=1
+
+	log "Sweep: adding up to ${per_country} favorite(s) per country (${#countries[@]} country/countries)"
+
+	local cc
+	for cc in "${countries[@]}"; do
+		if [[ ! " ${ALL_COUNTRIES[*]} " =~ " ${cc} " ]]; then
+			log "Sweep: skipping unknown country code: ${cc}"
+			continue
+		fi
+
+		log "Sweep: ${cc}..."
+		OSC_MULLVAD_FASTEST_FAV_COUNT="$per_country" find_fastest_relay "$cc" "true" || {
+			log "Sweep: ${cc} failed"
+			continue
+		}
+	done
+
+	OSC_MULLVAD_NO_NOTIFY="$saved_no_notify"
+
+	if [[ "$restore_at_end" == "1" && "$was_connected" == "true" && -n "$start_relay" ]]; then
+		log "Sweep: restoring starting relay: ${start_relay}"
+		connect_to_relay "$start_relay" "${OSC_MULLVAD_FASTEST_CONNECT_TIMEOUT:-10}" "${OSC_MULLVAD_FASTEST_CONNECT_RETRIES:-2}" "1" >/dev/null 2>&1 || true
+	fi
+}
+
 # Get random relay
 get_random_relay() {
 	local country=$1
@@ -1721,6 +1808,7 @@ find_fastest_relay() {
 	local require_internet="${OSC_MULLVAD_FASTEST_REQUIRE_INTERNET:-1}"
 	local connect_timeout_s="${OSC_MULLVAD_FASTEST_CONNECT_TIMEOUT:-10}"
 	local connect_retries="${OSC_MULLVAD_FASTEST_CONNECT_RETRIES:-2}"
+	local fav_count="${OSC_MULLVAD_FASTEST_FAV_COUNT:-1}"
 
 	log "Finding fastest relay..."
 	notify "🔍 MULLVAD VPN" "Finding fastest relay..." "security-medium"
@@ -1794,10 +1882,11 @@ find_fastest_relay() {
 	local best_relay=""
 	local best_avg=""
 	local tried=0
+	local fav_added=0
 
 	OSC_MULLVAD_NO_NOTIFY=1
 
-		for row in "${sorted[@]}"; do
+	for row in "${sorted[@]}"; do
 			local ping_avg="${row%%$'\t'*}"
 			local candidate="${row#*$'\t'}"
 			((tried++))
@@ -1817,16 +1906,41 @@ find_fastest_relay() {
 				continue
 			fi
 
-			if [[ "$require_internet" == "1" ]]; then
-				if ! mullvad_internet_ok; then
-					log "Candidate relay has no verified internet connectivity: ${candidate}"
-					continue
-				fi
+		if [[ "$require_internet" == "1" ]]; then
+			if ! mullvad_internet_ok; then
+				log "Candidate relay has no verified internet connectivity: ${candidate}"
+				continue
+			fi
+		fi
+
+		# First passing candidate becomes the best (fastest) relay.
+		if [[ -z "$best_relay" ]]; then
+			best_relay="$candidate"
+			best_avg="$ping_avg"
+		fi
+
+		if [[ "$add_to_favorites" == "true" ]]; then
+			local existed="false"
+			if grep -q "^${candidate}|" "$FAVORITES_FILE"; then
+				existed="true"
 			fi
 
-		best_relay="$candidate"
-		best_avg="$ping_avg"
-		break
+			favorites_upsert "$candidate" "$ping_avg"
+			((fav_added++))
+
+			if [[ "$existed" == "true" ]]; then
+				log "Relay ping time updated in favorites (${ping_avg} ms): ${candidate}"
+			else
+				log "Added ${candidate} to favorites (ping: ${ping_avg} ms)"
+			fi
+
+			if ((fav_added >= fav_count)); then
+				break
+			fi
+		else
+			# Not favoriting: stop at the first verified candidate.
+			break
+		fi
 	done
 
 	OSC_MULLVAD_NO_NOTIFY="$saved_no_notify"
@@ -1845,21 +1959,8 @@ find_fastest_relay() {
 	fi
 
 	echo -e "\n${GREEN}Best relay: $best_relay with average ping ${best_avg} ms${NC}"
-
 	if [[ "$add_to_favorites" == "true" ]]; then
-		local existed="false"
-		if grep -q "^${best_relay}|" "$FAVORITES_FILE"; then
-			existed="true"
-		fi
-
-		favorites_upsert "$best_relay" "$best_avg"
-		if [[ "$existed" == "true" ]]; then
-			log "Relay ping time updated in favorites (${best_avg} ms): ${best_relay}"
-			notify "ℹ️ MULLVAD VPN" "Relay ping updated (${best_avg} ms)" "security-medium"
-		else
-			log "Added $best_relay to favorites (ping: ${best_avg} ms)"
-			notify "⭐ MULLVAD VPN" "Added fastest relay (${best_avg} ms)" "security-high"
-		fi
+		notify "⭐ MULLVAD VPN" "Favorites updated (${fav_added}/${fav_count}), fastest: ${best_relay} (${best_avg} ms)" "security-high"
 	fi
 }
 
@@ -1889,6 +1990,8 @@ show_help() {
 	echo -e "${YELLOW}Advanced Selection:${NC}"
 	echo -e "    ${GREEN}fastest${NC} [country]            Find and connect to the fastest relay (optionally in a specific country)"
 	echo -e "    ${GREEN}fastest-fav${NC} [country]       Find fastest relay, connect and add to favorites"
+	echo -e "    ${GREEN}fastest-fav-many${NC} [country] [count]  Add multiple working relays to favorites"
+	echo -e "    ${GREEN}fastest-fav-sweep${NC} <group|cc...> [count]  Sweep countries and seed favorites"
 	echo -e "    ${GREEN}owned${NC} [country]              Connect to a Mullvad-owned relay (not rented)"
 	echo -e "    ${GREEN}rented${NC} [country]             Connect to a rented relay infrastructure"
 	echo -e ""
@@ -2018,6 +2121,26 @@ main() {
 		;;
 	"fastest-fav")
 		find_fastest_relay "$2" "true"
+		;;
+	"fastest-fav-many")
+		# Usage:
+		#   fastest-fav-many [country] [count]
+		#   fastest-fav-many [count]   (global)
+		local country_arg="${2:-}"
+		local count_arg="${3:-}"
+		local count="3"
+
+		if is_number "$country_arg" && [[ -z "$count_arg" ]]; then
+			count="$country_arg"
+			country_arg=""
+		elif is_number "$count_arg"; then
+			count="$count_arg"
+		fi
+
+		OSC_MULLVAD_FASTEST_FAV_COUNT="$count" find_fastest_relay "$country_arg" "true"
+		;;
+	"fastest-fav-sweep")
+		fastest_fav_sweep "${@:2}"
 		;;
 	"owned")
 		relay=$(get_random_relay "$2" "" "owned")
