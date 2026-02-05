@@ -161,11 +161,11 @@
       Alt+A          repeat=false hotkey-overlay-title="Switch Audio Output" { spawn "osc-soundctl" "switch"; }
       Alt+Ctrl+A     repeat=false hotkey-overlay-title="Switch Mic Input" { spawn "osc-soundctl" "switch-mic"; }
       Alt+Ctrl+M     repeat=false hotkey-overlay-title="Wiremix (Audio Mixer)" { spawn "osc-wiremix"; }
-      Alt+E          repeat=false hotkey-overlay-title="Spotify Toggle" { spawn "osc-spotify"; }
-      Alt+Ctrl+N     repeat=false hotkey-overlay-title="Spotify Next" { spawn "osc-spotify" "next"; }
-      Alt+Ctrl+B     repeat=false hotkey-overlay-title="Spotify Prev" { spawn "osc-spotify" "prev"; }
-      Alt+Ctrl+E     repeat=false hotkey-overlay-title="MPC Toggle" { spawn "mpc-control" "toggle"; }
-      Alt+I          repeat=false hotkey-overlay-title="VLC Toggle" { spawn "vlc-toggle"; }
+      Alt+E          repeat=false hotkey-overlay-title="Spotify Toggle" { spawn "osc-media" "spotify"; }
+      Alt+Ctrl+N     repeat=false hotkey-overlay-title="Spotify Next" { spawn "osc-media" "spotify" "next"; }
+      Alt+Ctrl+B     repeat=false hotkey-overlay-title="Spotify Prev" { spawn "osc-media" "spotify" "prev"; }
+      Alt+Ctrl+E     repeat=false hotkey-overlay-title="MPC Toggle" { spawn "osc-media" "mpc" "toggle"; }
+      Alt+I          repeat=false hotkey-overlay-title="VLC Toggle" { spawn "osc-media" "vlc"; }
 
       // --- System Tools ---
       Mod+Shift+C    repeat=false hotkey-overlay-title="Color Picker" { spawn "hyprpicker" "-a"; }
@@ -221,12 +221,12 @@
   # 6. MPV MANAGER
   # ---------------------------------------------------------------------------
   mpv = ''
-      Alt+U       repeat=false hotkey-overlay-title="MPV Playback" { spawn "${bins.mpvManager}" "playback"; }
-      Mod+Ctrl+Y  repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "${bins.mpvManager}" "play-yt"; }
-      Mod+Ctrl+F9  repeat=false hotkey-overlay-title="MPV Stick" { spawn "${bins.mpvManager}" "stick"; }
-      Mod+Ctrl+F10 repeat=false hotkey-overlay-title="MPV Move" { spawn "${bins.mpvManager}" "move"; }
-      Mod+Ctrl+F11 repeat=false hotkey-overlay-title="MPV Save YT" { spawn "${bins.mpvManager}" "save-yt"; }
-      Mod+Ctrl+F12 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "${bins.mpvManager}" "wallpaper"; }
+      Alt+U       repeat=false hotkey-overlay-title="MPV Playback" { spawn "osc-media" "mpv" "playback"; }
+      Mod+Ctrl+Y  repeat=false hotkey-overlay-title="MPV Play YouTube" { spawn "osc-media" "mpv" "play-yt"; }
+      Mod+Ctrl+F9  repeat=false hotkey-overlay-title="MPV Stick" { spawn "osc-media" "mpv" "stick"; }
+      Mod+Ctrl+F10 repeat=false hotkey-overlay-title="MPV Move" { spawn "osc-media" "mpv" "move"; }
+      Mod+Ctrl+F11 repeat=false hotkey-overlay-title="MPV Save YT" { spawn "osc-media" "mpv" "save-yt"; }
+      Mod+Ctrl+F12 repeat=false hotkey-overlay-title="MPV Wallpaper" { spawn "osc-media" "mpv" "wallpaper"; }
   '';
 
   # ---------------------------------------------------------------------------

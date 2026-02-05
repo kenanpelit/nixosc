@@ -21,8 +21,8 @@ in
       # Launches NixOS VM in fullscreen mode for development work
       "sway/qemu_vmnixos" = {
         text = ''
-          # Launch NixOS VM using the svmnixos command
-          exec svmnixos
+          # Launch NixOS VM using the svm command
+          exec svm nixos
           
           # Force QEMU windows to fullscreen for better VM experience
           for_window [app_id="qemu"] fullscreen enable
@@ -34,8 +34,8 @@ in
       # Launches Arch VM in fullscreen mode for testing purposes
       "sway/qemu_vmarch" = {
         text = ''
-          # Launch Arch Linux VM using the svmarch command
-          exec svmarch
+          # Launch Arch Linux VM using the svm command
+          exec svm arch
           
           # Force QEMU windows to fullscreen for immersive experience
           for_window [app_id="qemu"] fullscreen enable
@@ -47,8 +47,8 @@ in
       # Launches Ubuntu VM in fullscreen mode for general use
       "sway/qemu_vmubuntu" = {
         text = ''
-          # Launch Ubuntu VM using the svmubuntu command
-          exec svmubuntu
+          # Launch Ubuntu VM using the svm command
+          exec svm ubuntu
           
           # Force QEMU windows to fullscreen for optimal viewing
           for_window [app_id="qemu"] fullscreen enable
@@ -60,8 +60,8 @@ in
       # Launches CachyOS VM in fullscreen mode for general use
       "sway/qemu_vmcachy" = {
         text = ''
-          # Launch CachyOS VM using the svmcachy command
-          exec svmcachy
+          # Launch CachyOS VM using the svm command
+          exec svm cachy
           
           # Force QEMU windows to fullscreen for optimal viewing
           for_window [app_id="qemu"] fullscreen enable

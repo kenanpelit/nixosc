@@ -167,11 +167,11 @@ lib.mkIf cfg.enable {
                 export DESKTOP_SESSION=sway
                 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
                 
-                # Add user bin to PATH for svmubuntu command
+                # Add user bin to PATH for svm command
                 export PATH="/etc/profiles/per-user/$(whoami)/bin:$PATH"
                 
                 echo "Environment: Sway compositor for Ubuntu VM"
-                echo "VM Command: svmubuntu"
+                echo "VM Command: svm ubuntu"
                 
                 # Check Sway config
                 if [ -f ~/.config/sway/qemu_vmubuntu ]; then

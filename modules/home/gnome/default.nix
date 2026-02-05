@@ -61,11 +61,11 @@ let
     { name = "Sticky Toggle"; command = "nsticky-toggle"; binding = "<Super><Ctrl>s"; }
     { name = "Switch Audio Output"; command = "osc-soundctl switch"; binding = "<Alt>a"; }
     { name = "Switch Microphone"; command = "osc-soundctl switch-mic"; binding = "<Alt><Ctrl>a"; }
-    { name = "Spotify Toggle"; command = "osc-spotify"; binding = "<Alt>e"; }
-    { name = "Spotify Next"; command = "osc-spotify next"; binding = "<Alt><Ctrl>n"; }
-    { name = "Spotify Previous"; command = "osc-spotify prev"; binding = "<Alt><Ctrl>b"; }
-    { name = "MPC Toggle"; command = "mpc-control toggle"; binding = "<Alt><Ctrl>e"; }
-    { name = "VLC Toggle"; command = "vlc-toggle"; binding = "<Alt>i"; }
+    { name = "Spotify Toggle"; command = "osc-media spotify"; binding = "<Alt>e"; }
+    { name = "Spotify Next"; command = "osc-media spotify next"; binding = "<Alt><Ctrl>n"; }
+    { name = "Spotify Previous"; command = "osc-media spotify prev"; binding = "<Alt><Ctrl>b"; }
+    { name = "MPC Toggle"; command = "osc-media mpc toggle"; binding = "<Alt><Ctrl>e"; }
+    { name = "VLC Toggle"; command = "osc-media vlc"; binding = "<Alt>i"; }
     { name = "Lock Screen"; command = "loginctl lock-session"; binding = "<Alt>l"; }
     { name = "Previous Workspace"; command = "ws-prev"; binding = "<Super><Alt>Up"; }
     { name = "Next Workspace"; command = "ws-next"; binding = "<Super><Alt>Down"; }
@@ -87,22 +87,22 @@ let
     { name = "Bluetooth Toggle"; command = "bluetooth_toggle"; binding = "F10"; }
     { name = "Mullvad Toggle"; command = "osc-mullvad-toggle"; binding = "<Alt>F12"; }
     { name = "SemsuMo Daily"; command = "semsumo launch --daily -all"; binding = "<Super><Alt>Return"; }
-    { name = "Column Width Cycle"; command = "${config.home.profileDirectory}/bin/gnome-column-width"; binding = "<Super>r"; }
-    { name = "Column Width 80%"; command = "${config.home.profileDirectory}/bin/gnome-column-width set 0.8"; binding = "<Super><Shift>r"; }
-    { name = "Column Width Toggle"; command = "${config.home.profileDirectory}/bin/gnome-column-width toggle"; binding = "<Super>m"; }
+    { name = "Column Width Cycle"; command = "gnome-set column-width cycle"; binding = "<Super>r"; }
+    { name = "Column Width 80%"; command = "gnome-set column-width set 0.8"; binding = "<Super><Shift>r"; }
+    { name = "Column Width Toggle"; command = "gnome-set column-width toggle"; binding = "<Super>m"; }
 
-    { name = "MPV Playback"; command = "mpv-manager playback"; binding = "<Alt>u"; }
-    { name = "MPV Play YouTube"; command = "mpv-manager play-yt"; binding = "<Super><Ctrl>y"; }
-    { name = "MPV Stick"; command = "mpv-manager stick"; binding = "<Super><Ctrl>F9"; }
-    { name = "MPV Move"; command = "mpv-manager move"; binding = "<Super><Ctrl>F10"; }
-    { name = "MPV Save YouTube"; command = "mpv-manager save-yt"; binding = "<Super><Ctrl>F11"; }
-    { name = "MPV Wallpaper"; command = "mpv-manager wallpaper"; binding = "<Super><Ctrl>F12"; }
+    { name = "MPV Playback"; command = "osc-media mpv playback"; binding = "<Alt>u"; }
+    { name = "MPV Play YouTube"; command = "osc-media mpv play-yt"; binding = "<Super><Ctrl>y"; }
+    { name = "MPV Stick"; command = "osc-media mpv stick"; binding = "<Super><Ctrl>F9"; }
+    { name = "MPV Move"; command = "osc-media mpv move"; binding = "<Super><Ctrl>F10"; }
+    { name = "MPV Save YouTube"; command = "osc-media mpv save-yt"; binding = "<Super><Ctrl>F11"; }
+    { name = "MPV Wallpaper"; command = "osc-media mpv wallpaper"; binding = "<Super><Ctrl>F12"; }
     
     { name = "Shutdown Computer"; command = "gnome-session-quit --power-off --no-prompt"; binding = "<Ctrl><Alt><Shift>s"; }
     { name = "Restart Computer"; command = "gnome-session-quit --reboot --no-prompt"; binding = "<Ctrl><Alt>r"; }
     { name = "Logout"; command = "gnome-session-quit --logout --no-prompt"; binding = "<Ctrl><Alt>q"; }
     { name = "Power Menu"; command = "gnome-session-quit --power-off"; binding = "<Ctrl><Alt>p"; }
-    { name = "GNOME GKR"; command = "gnome-kr-fix"; binding = "<Super><Ctrl><Alt>F12"; }
+    { name = "GNOME GKR"; command = "gnome-set keyring-fix"; binding = "<Super><Ctrl><Alt>F12"; }
     { name = "OSC Reboot"; command = "osc-safe-reboot"; binding = "<Super>BackSpace"; }
   ];
 
@@ -649,7 +649,7 @@ in
       Type=Application
       Name=GNOME Monitor Set
       Comment=Set external monitor as primary on GNOME login
-      Exec=gnome-monitor-set
+      Exec=gnome-set monitor-primary
       OnlyShowIn=GNOME;
       X-GNOME-Autostart-enabled=true
     '';

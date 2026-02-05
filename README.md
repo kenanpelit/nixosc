@@ -118,7 +118,7 @@ Shared muscle memory across Niri and Hyprland.
 ├── modules/              # Modular configs
 │   ├── nixos/            # System-level (Power, Services, Greeters)
 │   └── home/             # User-level (Niri, Hyprland, DMS, Apps)
-│       └── scripts/      # Helper scripts (niri-set, hypr-set, mpv-manager)
+│       └── scripts/      # Helper scripts (niri-set, hypr-set, osc-media)
 ├── homes/                # Home-Manager profiles
 └── secrets/              # SOPS-encrypted secrets
 ```
