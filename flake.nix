@@ -90,11 +90,6 @@
     # This repo uses multiple Wayland compositors; we keep them pinned for
     # reproducibility and to prevent session/greeter breakage between updates.
 
-    hypr-contrib = {
-      url = "github:hyprwm/contrib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # Niri: Scrollable-tiling Wayland compositor
     # Using sodiboo's flake for better integration (HM module + overlay wiring).
     # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).

@@ -119,7 +119,9 @@ in
       grim slurp            # Wayland screenshot
       wf-recorder           # Screen recorder
       swappy satty          # Screenshot editing
-      inputs.hypr-contrib.packages.${pkgs.stdenv.hostPlatform.system}.grimblast
+      # grimblast is available in nixpkgs; prefer it from unstable to keep the
+      # Hyprland ecosystem in sync, but fall back to stable if needed.
+      (if builtins.hasAttr "grimblast" unstable then unstable.grimblast else grimblast)
 
       # Phone / Android mirroring
       scrcpy                # Android screen mirroring/control over ADB
