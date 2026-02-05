@@ -951,6 +951,8 @@ manage_favorites() {
 		echo -e "${CYAN}Favorite relays:${NC}"
 		local i=1
 		while IFS="|" read -r relay ping_time; do
+			relay="$(echo "${relay:-}" | xargs)"
+			[[ -n "$relay" ]] || continue
 			local country=$(echo "$relay" | cut -d'-' -f1)
 			local city=$(echo "$relay" | cut -d'-' -f2)
 			local protocol=$(echo "$relay" | cut -d'-' -f3)
@@ -972,9 +974,20 @@ manage_favorites() {
 			return 1
 		fi
 
+		local was_connected="false"
+		local previous_relay=""
+		if mullvad_is_connected; then
+			was_connected="true"
+			previous_relay="$(get_current_relay)"
+		fi
+
 		echo -e "${CYAN}Select relay to connect to:${NC}"
+		local relays=()
+		local pings=()
 		local i=1
 		while IFS="|" read -r relay ping_time; do
+			relay="$(echo "${relay:-}" | xargs)"
+			[[ -n "$relay" ]] || continue
 			local country=$(echo "$relay" | cut -d'-' -f1)
 			local city=$(echo "$relay" | cut -d'-' -f2)
 			local protocol=$(echo "$relay" | cut -d'-' -f3)
@@ -985,10 +998,19 @@ manage_favorites() {
 			fi
 
 			echo -e "${YELLOW}$i)${NC} $relay (${GREEN}$(get_country_name $country)${NC}, ${GREEN}$(get_city_name $city)${NC}, ${BLUE}${protocol^^}${NC})${ping_display}"
+			relays+=("$relay")
+			pings+=("${ping_time:-N/A}")
 			i=$((i + 1))
 		done <"$FAVORITES_FILE"
 
-		echo -e "${CYAN}Enter number (1-$((i - 1))) or 'q' to cancel:${NC} "
+		local total="${#relays[@]}"
+		if ((total == 0)); then
+			log "Favorites list is empty"
+			notify "ℹ️ MULLVAD VPN" "Favorites list is empty" "security-medium"
+			return 1
+		fi
+
+		echo -e "${CYAN}Enter number (1-${total}) or 'q' to cancel:${NC} "
 		read -r choice
 
 		if [[ "$choice" == "q" ]]; then
@@ -996,13 +1018,64 @@ manage_favorites() {
 			return 0
 		fi
 
-		if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -lt "$i" ]; then
-			local selected_relay=$(sed -n "${choice}p" "$FAVORITES_FILE" | cut -d"|" -f1)
-			connect_to_relay "$selected_relay"
-		else
+		if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$total" ]; then
 			log "Invalid selection"
 			notify "❌ MULLVAD VPN" "Invalid selection" "security-low"
+			return 1
 		fi
+
+		local start_index=$((choice - 1))
+		local timeout_s="${OSC_MULLVAD_FAVORITE_CONNECT_TIMEOUT:-10}"
+		local retries="${OSC_MULLVAD_FAVORITE_CONNECT_RETRIES:-1}"
+		local require_internet="${OSC_MULLVAD_FAVORITE_CONNECT_REQUIRE_INTERNET:-1}"
+		local restore_at_end="${OSC_MULLVAD_FAVORITE_CONNECT_RESTORE:-1}"
+
+		local saved_no_notify="${OSC_MULLVAD_NO_NOTIFY:-0}"
+		OSC_MULLVAD_NO_NOTIFY=1
+
+		local offset
+		for ((offset = 0; offset < total; offset++)); do
+			local idx=$(((start_index + offset) % total))
+			local candidate="${relays[$idx]}"
+			local ping_avg="${pings[$idx]}"
+
+			log "Favorite connect: trying ${candidate} (ping: ${ping_avg} ms)"
+
+			if ! connect_to_relay "$candidate" "$timeout_s" "$retries" "0"; then
+				continue
+			fi
+
+			# Sanity: ensure we actually ended up on the candidate relay.
+			local current_relay
+			current_relay="$(get_current_relay)"
+			if [[ -z "$current_relay" || "$current_relay" != "$candidate" ]]; then
+				log "Favorite connect: relay mismatch (expected ${candidate}, got ${current_relay:-unknown}); trying next"
+				continue
+			fi
+
+			if [[ "$require_internet" == "1" ]]; then
+				if ! mullvad_internet_ok; then
+					log "Favorite connect: no internet on ${candidate}; trying next"
+					continue
+				fi
+			fi
+
+			OSC_MULLVAD_NO_NOTIFY="$saved_no_notify"
+			log "Favorite connect: connected to ${candidate}"
+			notify "🔒 MULLVAD VPN" "Connected (favorite): ${candidate}" "security-high"
+			return 0
+		done
+
+		OSC_MULLVAD_NO_NOTIFY="$saved_no_notify"
+		log "Favorite connect: no favorites worked"
+		notify "❌ MULLVAD VPN" "No favorite relay worked" "security-low"
+
+		if [[ "$restore_at_end" == "1" && "$was_connected" == "true" && -n "$previous_relay" ]]; then
+			log "Favorite connect: restoring previous relay: ${previous_relay}"
+			connect_to_relay "$previous_relay" "$timeout_s" "$retries" "1" >/dev/null 2>&1 || true
+		fi
+
+		return 1
 		;;
 
 	*)
