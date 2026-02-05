@@ -578,6 +578,55 @@ ping_avg_ms() {
 	fi
 }
 
+mullvad_is_connected() {
+	mullvad status 2>/dev/null | grep -q "Connected"
+}
+
+wait_for_connected_relay() {
+	local expected_relay="${1:-}"
+	local timeout_s="${2:-$TIMEOUT}"
+	local counter=0
+
+	while ((counter < timeout_s)); do
+		if mullvad_is_connected; then
+			if [[ -z "$expected_relay" ]]; then
+				return 0
+			fi
+			local current_relay
+			current_relay="$(get_current_relay)"
+			if [[ -n "$current_relay" && "$current_relay" == "$expected_relay" ]]; then
+				return 0
+			fi
+		fi
+		sleep 1
+		((counter++))
+	done
+
+	return 1
+}
+
+mullvad_internet_ok() {
+	# Connectivity check: requires actual internet and DNS (unless URL is an IP).
+	# Defaults to Mullvad's own check endpoint.
+	local url="${OSC_MULLVAD_CONNECTIVITY_URL:-https://am.i.mullvad.net/connected}"
+	local expect="${OSC_MULLVAD_CONNECTIVITY_EXPECT:-You are connected}"
+	local connect_timeout="${OSC_MULLVAD_CONNECTIVITY_CONNECT_TIMEOUT:-2}"
+	local max_time="${OSC_MULLVAD_CONNECTIVITY_MAX_TIME:-4}"
+	local tries="${OSC_MULLVAD_CONNECTIVITY_TRIES:-1}"
+
+	command -v curl >/dev/null 2>&1 || return 0
+
+	local i
+	for ((i = 1; i <= tries; i++)); do
+		if curl -fsS --connect-timeout "$connect_timeout" --max-time "$max_time" "$url" 2>/dev/null | grep -qi "$expect"; then
+			return 0
+		fi
+		sleep 1
+	done
+
+	return 1
+}
+
 favorites_upsert() {
 	local relay="$1"
 	local ping_avg="${2:-N/A}"
@@ -665,7 +714,9 @@ toggle_protocol() {
 # Connect to a specific relay
 connect_to_relay() {
 	local relay=$1
-	local max_retries=$CONNECTION_RETRIES
+	local connect_timeout_s="${2:-$TIMEOUT}"
+	local max_retries="${3:-$CONNECTION_RETRIES}"
+	local allow_fallback="${4:-1}"
 	local retry_count=0
 
 	if [[ -z "$relay" ]]; then
@@ -681,13 +732,22 @@ connect_to_relay() {
 	log "Connecting to relay: $relay (${protocol^^} in $(get_city_name $city), $(get_country_name $country))"
 	notify "🔄 MULLVAD VPN" "Connecting to $(get_city_name $city), $(get_country_name $country)" "security-medium"
 
-	while [ $retry_count -lt $max_retries ]; do
+	while [ $retry_count -lt "$max_retries" ]; do
 		mullvad relay set location $country $city $relay >/dev/null 2>&1
 
 		if [ $? -eq 0 ]; then
-			log "Successfully connected to: $relay"
-			notify "🔒 MULLVAD VPN" "Connected to $(get_city_name $city), $(get_country_name $country)" "security-high"
-			return 0
+			# Ensure a connection exists (no-op if already connected).
+			mullvad connect >/dev/null 2>&1 || true
+
+			if wait_for_connected_relay "$relay" "$connect_timeout_s"; then
+				log "Successfully connected to: $relay"
+				notify "🔒 MULLVAD VPN" "Connected to $(get_city_name $city), $(get_country_name $country)" "security-high"
+				return 0
+			fi
+
+			retry_count=$((retry_count + 1))
+			log "Connected state not confirmed yet (attempt $retry_count/$max_retries, timeout ${connect_timeout_s}s). Retrying..."
+			sleep 1
 		else
 			retry_count=$((retry_count + 1))
 			log "Connection attempt $retry_count failed. Retrying..."
@@ -696,6 +756,11 @@ connect_to_relay() {
 	done
 
 	log "Failed to connect after $max_retries attempts."
+
+	if [[ "$allow_fallback" != "1" ]]; then
+		notify "❌ MULLVAD VPN" "Failed to connect" "security-low"
+		return 1
+	fi
 
 	# Try a different relay in the same city
 	log "Trying a different relay..."
@@ -1653,9 +1718,22 @@ find_fastest_relay() {
 	local timeout=2           # Timeout in seconds for ping
 	local iterations=3        # Number of pings per relay
 	local max_relays=10       # Maximum number of relays to test
+	local require_internet="${OSC_MULLVAD_FASTEST_REQUIRE_INTERNET:-1}"
+	local connect_timeout_s="${OSC_MULLVAD_FASTEST_CONNECT_TIMEOUT:-10}"
+	local connect_retries="${OSC_MULLVAD_FASTEST_CONNECT_RETRIES:-2}"
 
 	log "Finding fastest relay..."
 	notify "🔍 MULLVAD VPN" "Finding fastest relay..." "security-medium"
+
+	local saved_no_notify="${OSC_MULLVAD_NO_NOTIFY:-0}"
+	local OSC_MULLVAD_NO_NOTIFY="$saved_no_notify"
+
+	local was_connected="false"
+	local previous_relay=""
+	if mullvad_is_connected; then
+		was_connected="true"
+		previous_relay="$(get_current_relay)"
+	fi
 
 	# Get relays to test
 	local relays=()
@@ -1673,63 +1751,115 @@ find_fastest_relay() {
 		return 1
 	fi
 
-	local best_relay=""
-	local best_avg=9999
+	local scored=()
 
 	for relay in "${relays[@]}"; do
-		local ip=$(mullvad relay list | grep -E "^[[:space:]]*$relay" | awk '{print $2}' | tr -d '(),')
+		local ip
+		ip="$(get_relay_ipv4 "$relay")"
 
-		# Skip if we can't extract an IP
-		if [[ -z "$ip" || "$ip" == *":"* ]]; then # Skip IPv6 addresses
+		# Skip if we can't extract an IPv4
+		if [[ -z "$ip" ]]; then
 			continue
 		fi
 
-		local country=$(echo $relay | cut -d'-' -f1)
-		local city=$(echo $relay | cut -d'-' -f2)
+		local relay_country
+		relay_country=$(echo "$relay" | cut -d'-' -f1)
+		local city
+		city=$(echo "$relay" | cut -d'-' -f2)
 
-		echo -en "${CYAN}Testing $relay (${YELLOW}$(get_city_name $city), $(get_country_name $country)${CYAN})...${NC} "
+		echo -en "${CYAN}Testing $relay (${YELLOW}$(get_city_name $city), $(get_country_name $relay_country)${CYAN})...${NC} "
 
 		# Run ping and get average
-		local ping_result=$(ping -c $iterations -W $timeout $ip 2>/dev/null | grep 'avg' | awk -F '/' '{print $5}')
+		local ping_result
+		ping_result="$(ping_avg_ms "$ip" "$iterations" "$timeout")"
 
-		if [[ -n "$ping_result" ]]; then
+		if [[ -n "$ping_result" && "$ping_result" != "N/A" ]]; then
 			echo -e "${GREEN}${ping_result} ms${NC}"
-
-			# Check if this is better than our current best
-			if (($(echo "$ping_result < $best_avg" | bc -l))); then
-				best_avg=$ping_result
-				best_relay=$relay
-			fi
+			scored+=("${ping_result}\t${relay}")
 		else
 			echo -e "${RED}timeout${NC}"
 		fi
 	done
 
-	if [[ -n "$best_relay" ]]; then
-		echo -e "\n${GREEN}Best relay: $best_relay with average ping ${best_avg} ms${NC}"
-
-		# Bağlantıyı kur
-		connect_to_relay "$best_relay"
-
-		if [[ "$add_to_favorites" == "true" ]]; then
-			local existed="false"
-			if grep -q "^${best_relay}|" "$FAVORITES_FILE"; then
-				existed="true"
-			fi
-
-			favorites_upsert "$best_relay" "$best_avg"
-			if [[ "$existed" == "true" ]]; then
-				log "Relay ping time updated in favorites (${best_avg} ms): ${best_relay}"
-				notify "ℹ️ MULLVAD VPN" "Relay ping updated (${best_avg} ms)" "security-medium"
-			else
-				log "Added $best_relay to favorites (ping: ${best_avg} ms)"
-				notify "⭐ MULLVAD VPN" "Added fastest relay (${best_avg} ms)" "security-high"
-			fi
-		fi
-	else
+	if [ ${#scored[@]} -eq 0 ]; then
 		echo -e "${RED}Could not find a responsive relay${NC}"
 		notify "❌ MULLVAD VPN" "No responsive relay found" "security-low"
 		return 1
+	fi
+
+	local sorted=()
+	IFS=$'\n' read -r -d '' -a sorted < <(printf '%b\n' "${scored[@]}" | sort -n && printf '\0')
+	unset IFS
+
+	local best_relay=""
+	local best_avg=""
+	local tried=0
+
+	OSC_MULLVAD_NO_NOTIFY=1
+
+		for row in "${sorted[@]}"; do
+			local ping_avg="${row%%$'\t'*}"
+			local candidate="${row#*$'\t'}"
+			((tried++))
+
+			echo -e "\n${CYAN}Trying candidate #$tried: ${candidate} (${ping_avg} ms)${NC}"
+
+			if ! connect_to_relay "$candidate" "$connect_timeout_s" "$connect_retries" "0"; then
+				log "Failed to connect to candidate relay: ${candidate}"
+				continue
+			fi
+
+			# Sanity: ensure we actually ended up on the candidate relay.
+			local current_relay
+			current_relay="$(get_current_relay)"
+			if [[ -z "$current_relay" || "$current_relay" != "$candidate" ]]; then
+				log "Connected relay mismatch (expected ${candidate}, got ${current_relay:-unknown}); trying next"
+				continue
+			fi
+
+			if [[ "$require_internet" == "1" ]]; then
+				if ! mullvad_internet_ok; then
+					log "Candidate relay has no verified internet connectivity: ${candidate}"
+					continue
+				fi
+			fi
+
+		best_relay="$candidate"
+		best_avg="$ping_avg"
+		break
+	done
+
+	OSC_MULLVAD_NO_NOTIFY="$saved_no_notify"
+
+	if [[ -z "$best_relay" ]]; then
+		log "No candidate relay passed connectivity checks"
+		notify "❌ MULLVAD VPN" "No relay passed connectivity checks" "security-low"
+
+		# Best-effort: restore previous working relay if we were connected.
+		if [[ "$was_connected" == "true" && -n "$previous_relay" ]]; then
+			log "Restoring previous relay: ${previous_relay}"
+			connect_to_relay "$previous_relay" >/dev/null 2>&1 || true
+		fi
+
+		return 1
+	fi
+
+	echo -e "\n${GREEN}Best relay: $best_relay with average ping ${best_avg} ms${NC}"
+
+	if [[ "$add_to_favorites" == "true" ]]; then
+		local existed="false"
+		if grep -q "^${best_relay}|" "$FAVORITES_FILE"; then
+			existed="true"
+		fi
+
+		favorites_upsert "$best_relay" "$best_avg"
+		if [[ "$existed" == "true" ]]; then
+			log "Relay ping time updated in favorites (${best_avg} ms): ${best_relay}"
+			notify "ℹ️ MULLVAD VPN" "Relay ping updated (${best_avg} ms)" "security-medium"
+		else
+			log "Added $best_relay to favorites (ping: ${best_avg} ms)"
+			notify "⭐ MULLVAD VPN" "Added fastest relay (${best_avg} ms)" "security-high"
+		fi
 	fi
 }
 
