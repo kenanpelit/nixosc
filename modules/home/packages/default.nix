@@ -85,6 +85,7 @@ in
       curl wget aria2       # Downloaders
       transmission_4        # Transmission suite (includes transmission-remote CLI)
       pirate-get            # Pirate Bay magnet search/download helper
+      syncthing             # Continuous file synchronization
       dig                   # DNS tools
       nmap mtr iputils fping # Network diagnostics
       iftop iptraf-ng       # Traffic monitoring
@@ -114,6 +115,7 @@ in
       eyed3                 # ID3 tags
       
       # Screenshot/Recording
+      normcap               # OCR powered screen-capture tool
       grim slurp            # Wayland screenshot
       wf-recorder           # Screen recorder
       swappy satty          # Screenshot editing
