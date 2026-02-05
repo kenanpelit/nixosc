@@ -191,17 +191,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    stasis = {
-      inputs.nixpkgs.follows = "nixpkgs";
-      # Pinned commit (updated via `osc-fiup stasis`)
-      url = "github:saltnpepper97/stasis/10a014d0d1ff9db2c12c7520822261136e6af957"; # 0129 - Updated commit
-      # url = "github:saltnpepper97/stasis/c150e9c8cabb438ad267ababbd20f6d21ae281bc"; # 0127 - Updated commit
-      # url = "github:saltnpepper97/stasis/61f7f1094744510c94e76892b49795dee8f9b1c0"; # 0123 - Updated commit
-      # url = "github:saltnpepper97/stasis/3cd776340e3018edc31ffe3e1894069f4e89e38a"; # 0123 - Updated commit
-      # url = "github:saltnpepper97/stasis/76b435e4ee8bac144ab9e4925e289f5e8dc56601"; # 0122 - Updated commit
-      # url = "github:saltnpepper97/stasis/ccd508d85345987c7dc37546ea887d4d87a598c3"; # 0121 - Updated commit
-    };
-
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 

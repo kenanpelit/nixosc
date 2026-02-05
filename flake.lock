@@ -371,23 +371,6 @@
         "type": "github"
       }
     },
-    "flake-parts_4": {
-      "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_2"
-      },
-      "locked": {
-        "lastModified": 1768135262,
-        "narHash": "sha256-PVvu7OqHBGWN16zSi6tEmPwwHQ4rLPU9Plvs8/1TUBY=",
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "rev": "80daad04eddbbf5a4d883996a73f3f542fa437ac",
-        "type": "github"
-      },
-      "original": {
-        "id": "flake-parts",
-        "type": "indirect"
-      }
-    },
     "flake-parts_5": {
       "inputs": {
         "nixpkgs-lib": [
@@ -811,21 +794,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-lib_2": {
-      "locked": {
-        "lastModified": 1765674936,
-        "narHash": "sha256-k00uTP4JNfmejrCLJOwdObYC9jHRrr/5M/a/8L2EIdo=",
-        "owner": "nix-community",
-        "repo": "nixpkgs.lib",
-        "rev": "2075416fcb47225d9b68ac469a5c4801a9c4dd85",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "nixpkgs.lib",
-        "type": "github"
-      }
-    },
     "nixpkgs-stable": {
       "locked": {
         "lastModified": 1766473571,
@@ -1035,7 +1003,6 @@
         "snowfall-lib": "snowfall-lib",
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
-        "stasis": "stasis",
         "statix": "statix",
         "yazi-plugins": "yazi-plugins"
       }
@@ -1117,28 +1084,6 @@
       "original": {
         "owner": "gerg-l",
         "repo": "spicetify-nix",
-        "type": "github"
-      }
-    },
-    "stasis": {
-      "inputs": {
-        "flake-parts": "flake-parts_4",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1769564959,
-        "narHash": "sha256-O1VODu+TwLAQjb3t3WVp+EtmPBsLU7WOQaRigASGr7E=",
-        "owner": "saltnpepper97",
-        "repo": "stasis",
-        "rev": "10a014d0d1ff9db2c12c7520822261136e6af957",
-        "type": "github"
-      },
-      "original": {
-        "owner": "saltnpepper97",
-        "repo": "stasis",
-        "rev": "10a014d0d1ff9db2c12c7520822261136e6af957",
         "type": "github"
       }
     },

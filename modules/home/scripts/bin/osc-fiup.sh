@@ -22,16 +22,15 @@ log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_usage() {
   echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank|stasis} [stable] [tag]"
   echo
-  echo "  all             : Apply dank + niri + hyprland + stasis + walker (in that order)"
+  echo "  all             : Apply dank + niri + nixpkgs-unstable + walker (in that order)"
   echo "  hypr / hyprland : Update nixpkgs-unstable lock (Hyprland + plugins)"
   echo "  niri            : Update Niri input to latest commit on main"
   echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
-  echo "  stasis          : Update Stasis input to latest commit on main"
+  echo "  stasis          : Update nixpkgs-unstable lock (Stasis via nixpkgs-unstable)"
   echo
   echo "Stable mode:"
   echo "  niri stable     : Pin Niri to latest GitHub release tag (e.g. v25.11)"
-  echo "  stasis stable   : Pin Stasis to latest GitHub release tag (e.g. v0.9.0)"
   echo "  <target> stable <tag> : Pin explicitly (skip network)"
 }
 
@@ -390,12 +389,13 @@ update_stasis() {
   local mode="${1:-}"
   local explicit_tag="${2:-}"
 
+  if [[ -n "$explicit_tag" ]]; then
+    log_warning "Stasis is tracked via nixpkgs-unstable; explicit tags are not supported (ignored)."
+  fi
+
   case "$mode" in
-  stable | release)
-    update_release_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "Stasis" "$explicit_tag"
-    ;;
-  "" | commit)
-    update_commit_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "main" "Stasis"
+  "" | commit | stable | release)
+    update_lock_input "nixpkgs-unstable" "Stasis (via nixpkgs-unstable)"
     ;;
   *)
     log_error "Unknown mode for stasis: $mode"
@@ -625,7 +625,6 @@ main() {
     update_dank
     update_niri "$mode"
     update_hyprland "$mode"
-    update_stasis "$mode"
     update_walker_and_elephant
     ;;
   hypr | hyprland)

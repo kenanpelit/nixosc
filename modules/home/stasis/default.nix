@@ -11,7 +11,7 @@
 # fallbacks.
 # ==============================================================================
 
-{ inputs, config, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.my.user.stasis;
 
@@ -20,23 +20,9 @@ let
     then lib.hm.dag
     else config.lib.dag;
 
-  system = pkgs.stdenv.hostPlatform.system;
-
-  stasisFromInput =
-    if inputs ? stasis
-    then
-      let
-        stasisPackages = inputs.stasis.packages or { };
-      in
-      lib.attrByPath
-        [ system "stasis" ]
-        (lib.attrByPath [ system "default" ] null stasisPackages)
-        stasisPackages
-    else null;
-
   defaultPackage =
-    if stasisFromInput != null
-    then stasisFromInput
+    if pkgs ? unstable && pkgs.unstable ? stasis
+    then pkgs.unstable.stasis
     else if pkgs ? stasis then pkgs.stasis else null;
 
   configDir = "${config.xdg.configHome}/stasis";
@@ -340,9 +326,9 @@ in
       description = ''
         Stasis package to run.
 
-        Defaults to `inputs.stasis.packages.${system}.stasis` when `inputs.stasis`
-        is present, otherwise falls back to `pkgs.stasis` (if your pinned nixpkgs
-        provides it). If neither exists, set this explicitly.
+        Defaults to `pkgs.unstable.stasis` when available (recommended), otherwise
+        falls back to `pkgs.stasis` (if your pinned nixpkgs provides it). If
+        neither exists, set this explicitly.
       '';
     };
 
@@ -451,8 +437,8 @@ in
             my.user.stasis.enable = true but no Stasis package is available.
 
             Either:
-            - Use a nixpkgs that provides `pkgs.stasis`, or
-            - Set `my.user.stasis.package` explicitly (e.g. from a Stasis flake input).
+            - Use a nixpkgs that provides `pkgs.stasis` (or `pkgs.unstable.stasis`), or
+            - Set `my.user.stasis.package` explicitly.
           '';
         }
         {
