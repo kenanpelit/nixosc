@@ -925,14 +925,6 @@ env)
       fi
     }
 
-    restart_dms_if_running() {
-      if ! command -v systemctl >/dev/null 2>&1; then
-        return 0
-      fi
-
-      systemctl --user try-restart dms.service >/dev/null 2>&1 || true
-    }
-
     ensure_runtime_dir
     detect_wayland_display
     detect_niri_socket
@@ -942,7 +934,6 @@ env)
     set_env_in_systemd
     start_niri_portals
     restart_portals
-    restart_dms_if_running
     start_target
   )
   ;;

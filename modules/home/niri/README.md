@@ -6,7 +6,7 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
 
 - Niri config’i `xdg.configFile."niri/config.kdl"` ile üretilir.
 - Runtime include dosyaları (`dms/*.kdl`) writable gerçek dosya olarak korunur.
-- `niri-session.target` altında session servisleri (bootstrap, polkit, DMS) yönetilir.
+- `niri-session.target` altında session servisleri (bootstrap, polkit, DMS, daemons) yönetilir.
 - `niri-set doctor` include dosyaları için strict kontrol (declared/missing/symlink/writable) verir.
 
 ## Açılış akışı
@@ -17,9 +17,13 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
    - Portal backend’lerini start/restart eder.
    - `niri-session.target` tetikler.
 3) `niri-bootstrap.service`:
-   - 3 saniye gecikme sonrası `niri-set init` çağırır.
+   - Kısa gecikme (`bootstrapDelaySeconds`, varsayılan `1`) sonrası `niri-set init` çağırır.
    - `niri-set init` monitor profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
-   - Opsiyonel BT auto-connect ve nsticky/nirius/niriswitcher daemon’larını başlatır.
+4) Uzun yaşayan servisler ayrı unit’lerde yönetilir:
+   - `niri-nsticky.service`
+   - `niriusd.service` (opsiyonel)
+   - `niriswitcher.service` (opsiyonel)
+   - `niri-bt-autoconnect.service` (opsiyonel, one-shot)
 
 ## Monitor profili (dock/undock)
 

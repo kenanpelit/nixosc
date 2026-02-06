@@ -65,7 +65,18 @@ lib.mkIf cfg.enable (lib.mkMerge [
   systemd.user.services.dms = {
     Unit = {
       Description = "DankMaterialShell";
-      After = dmsTargets ++ [ "niri-ready.service" ];
+      Wants = [
+        "niri-ready.service"
+        "xdg-desktop-portal.service"
+        "xdg-desktop-portal-gnome.service"
+        "xdg-desktop-portal-gtk.service"
+      ];
+      After = dmsTargets ++ [
+        "niri-ready.service"
+        "xdg-desktop-portal.service"
+        "xdg-desktop-portal-gnome.service"
+        "xdg-desktop-portal-gtk.service"
+      ];
       PartOf = dmsTargets;
       ConditionEnvironment = "WAYLAND_DISPLAY";
     };
