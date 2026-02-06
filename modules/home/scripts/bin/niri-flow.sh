@@ -201,8 +201,8 @@ current_workspace_index() {
       --argjson wss "${workspaces_json:-[]}" \
       -r '
         def ws_by_id: reduce $wss[] as $ws ({}; .[($ws.id|tostring)] = $ws);
-        (first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id) // empty) as $wid
-        | if ($wid|tostring) != "" then
+        (first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id) // null) as $wid
+        | if $wid != null then
             ((ws_by_id[($wid|tostring)] // {}).idx // empty)
           else
             (first($wss[]? | select(.is_focused == true) | .idx)
@@ -216,6 +216,10 @@ current_workspace_index() {
 
 focused_window_id() {
   niri_windows_json | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty'
+}
+
+has_match_filter() {
+  [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_INDEX$MATCH_WORKSPACE_NAME" ]]
 }
 
 parse_match_opts() {
@@ -639,13 +643,21 @@ select_target_window_id() {
   local focused_id
   local -a ids
 
+  focused_id="$(focused_window_id)"
+
+  # For plain scratchpad-toggle (no filters), act on the currently focused
+  # window to match user expectation.
+  if ! has_match_filter && [[ -n "$focused_id" ]]; then
+    printf '%s\n' "$focused_id"
+    return 0
+  fi
+
   mapfile -t ids < <(matched_window_ids "$windows_json" "$workspaces_json")
   if [[ "${#ids[@]}" -gt 0 ]]; then
     printf '%s\n' "${ids[0]}"
     return 0
   fi
 
-  focused_id="$(focused_window_id)"
   if [[ -n "$focused_id" ]]; then
     printf '%s\n' "$focused_id"
     return 0
