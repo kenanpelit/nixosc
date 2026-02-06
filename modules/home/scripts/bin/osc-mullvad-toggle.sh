@@ -2,6 +2,10 @@
 set -euo pipefail
 
 SCRIPT_NAME="$(basename "$0")"
+SELF_PATH="$(command -v "$0" 2>/dev/null || true)"
+if [[ -z "${SELF_PATH}" ]]; then
+  SELF_PATH="$0"
+fi
 LOG_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/osc-mullvad-toggle.log"
 LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/osc-mullvad-toggle.$(id -u).lock"
 
@@ -140,15 +144,9 @@ run_via_pkexec() {
   command -v pkexec >/dev/null 2>&1 || die "pkexec not found"
 
   local pkexec_cmd=(
-    pkexec env
-    "DISPLAY=${DISPLAY-}"
-    "WAYLAND_DISPLAY=${WAYLAND_DISPLAY-}"
-    "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR-}"
-    "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS-}"
-    "PATH=/run/current-system/sw/bin:${PATH-}"
-    "OSC_MULLVAD_BIN=${OSC_MULLVAD_BIN}"
-    "OSC_MULLVAD_DIR=${OSC_MULLVAD_DIR:-$HOME/.mullvad}"
-    "$0" --as-root
+    pkexec "$SELF_PATH" --as-root
+    --osc-mullvad-bin "$OSC_MULLVAD_BIN"
+    --osc-mullvad-dir "${OSC_MULLVAD_DIR:-$HOME/.mullvad}"
   )
   [[ "${with_blocky}" == "0" ]] && pkexec_cmd+=(--no-blocky)
   [[ "${notify_enabled}" == "0" ]] && pkexec_cmd+=(--no-notify)
@@ -161,6 +159,8 @@ with_blocky="1"
 dry_run="0"
 notify_enabled="1"
 run_as_root="0"
+osc_mullvad_bin_arg=""
+osc_mullvad_dir_arg=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -168,6 +168,16 @@ while [[ $# -gt 0 ]]; do
     --dry-run) dry_run="1" ;;
     --no-notify) notify_enabled="0" ;;
     --as-root) run_as_root="1" ;;
+    --osc-mullvad-bin)
+      shift
+      [[ $# -gt 0 ]] || die "missing value for --osc-mullvad-bin"
+      osc_mullvad_bin_arg="$1"
+      ;;
+    --osc-mullvad-dir)
+      shift
+      [[ $# -gt 0 ]] || die "missing value for --osc-mullvad-dir"
+      osc_mullvad_dir_arg="$1"
+      ;;
     -h|--help)
       usage
       exit 0
@@ -183,6 +193,13 @@ done
 trim_log
 log "triggered: uid=$(id -u) tty=$(tty 2>/dev/null || echo none)"
 log "env: DISPLAY=${DISPLAY-} WAYLAND_DISPLAY=${WAYLAND_DISPLAY-} XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR-}"
+
+if [[ -n "${osc_mullvad_bin_arg}" ]]; then
+  OSC_MULLVAD_BIN="${osc_mullvad_bin_arg}"
+fi
+if [[ -n "${osc_mullvad_dir_arg}" ]]; then
+  export OSC_MULLVAD_DIR="${osc_mullvad_dir_arg}"
+fi
 
 resolve_osc_mullvad
 
