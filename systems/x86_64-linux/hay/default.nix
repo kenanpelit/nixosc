@@ -24,6 +24,7 @@
 
   # Power profiles via power-profiles-daemon (powerprofilesctl).
   # (moved to modules/nixos/hosts/hay.nix)
+  my.power.autoProfile.enable = true;
 
   # Set User (Defaults to "kenan" but good to be explicit)
   my.user.name = "kenan";

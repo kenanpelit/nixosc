@@ -19,12 +19,73 @@ let
   usePpd = cfg.stack == "ppd";
 
   thresholds = cfg.battery.chargeThresholds;
+  autoCfg = cfg.autoProfile;
 
   # UPower can "Hibernate" on critical battery, but hibernation requires a
   # configured resume device. Without it, the action may fail or reboot.
   resumeDevice =
     if config.boot ? resumeDevice then config.boot.resumeDevice else null;
   canHibernate = resumeDevice != null;
+
+  autoProfileScript = pkgs.writeShellScript "ppd-auto-profile.sh" ''
+    set -euo pipefail
+
+    ppd="${pkgs.power-profiles-daemon}/bin/powerprofilesctl"
+    awk_bin="${pkgs.gawk}/bin/awk"
+    nproc_bin="${pkgs.coreutils}/bin/nproc"
+
+    # Keep balanced when not on AC (optional battery protection mode).
+    if [ "${if autoCfg.onlyOnAC then "1" else "0"}" = "1" ]; then
+      ac_online=0
+      while IFS= read -r p; do
+        if [ -r "$p" ] && [ "$(${pkgs.coreutils}/bin/cat "$p" 2>/dev/null || echo 0)" = "1" ]; then
+          ac_online=1
+          break
+        fi
+      done < <(${pkgs.findutils}/bin/find /sys/class/power_supply -maxdepth 2 -name online 2>/dev/null)
+
+      if [ "$ac_online" -eq 0 ]; then
+        current="$($ppd get 2>/dev/null || true)"
+        if [ "$current" = "performance" ]; then
+          $ppd set balanced || true
+        fi
+        exit 0
+      fi
+    fi
+
+    cpus="$($nproc_bin --all 2>/dev/null || echo 1)"
+    load1="$($awk_bin '{print $1}' /proc/loadavg)"
+    load_pct="$($awk_bin -v l="$load1" -v c="$cpus" 'BEGIN { if (c < 1) c = 1; printf "%.2f", (l / c) * 100 }')"
+
+    current="$($ppd get 2>/dev/null || true)"
+    if [ -z "$current" ]; then
+      exit 0
+    fi
+
+    if [ "$current" != "balanced" ] && [ "$current" != "performance" ]; then
+      exit 0
+    fi
+
+    high="${toString autoCfg.highLoadPercent}"
+    low="${toString autoCfg.lowLoadPercent}"
+
+    if $awk_bin -v load="$load_pct" -v high="$high" 'BEGIN { exit !(load >= high) }'; then
+      if [ "$current" != "performance" ]; then
+        $ppd set performance || true
+      fi
+      exit 0
+    fi
+
+    if $awk_bin -v load="$load_pct" -v low="$low" 'BEGIN { exit !(load <= low) }'; then
+      if [ "$current" = "performance" ]; then
+        $ppd set balanced || true
+      fi
+      exit 0
+    fi
+
+    # Between thresholds: keep current profile (hysteresis).
+    exit 0
+  '';
 in
 {
   options.my.power = {
@@ -53,6 +114,39 @@ in
         description = "Charge stop threshold percentage (e.g., 80).";
       };
     };
+
+    autoProfile = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Automatically switch between balanced and performance based on system load.";
+      };
+
+      interval = mkOption {
+        type = types.str;
+        default = "30s";
+        example = "20s";
+        description = "Systemd timer interval for automatic profile checks.";
+      };
+
+      highLoadPercent = mkOption {
+        type = types.ints.between 1 100;
+        default = 70;
+        description = "Switch to performance when normalized load reaches this percentage.";
+      };
+
+      lowLoadPercent = mkOption {
+        type = types.ints.between 1 100;
+        default = 35;
+        description = "Switch back to balanced when normalized load drops to this percentage.";
+      };
+
+      onlyOnAC = mkOption {
+        type = types.bool;
+        default = true;
+        description = "If true, never keep performance mode while on battery.";
+      };
+    };
   };
 
   config = lib.mkMerge [
@@ -61,6 +155,10 @@ in
         {
           assertion = thresholds.start < thresholds.stop;
           message = "my.power.battery.chargeThresholds.start must be < stop.";
+        }
+        {
+          assertion = autoCfg.lowLoadPercent < autoCfg.highLoadPercent;
+          message = "my.power.autoProfile.lowLoadPercent must be < highLoadPercent.";
         }
       ];
 
@@ -85,6 +183,30 @@ in
       # Most systems that want PPD also want polkit; keep it as a default.
       security.polkit.enable = lib.mkDefault true;
     }
+
+    (mkIf (isPhysicalMachine && usePpd && autoCfg.enable) {
+      systemd.services.ppd-auto-profile = {
+        description = "Auto-switch power profile based on system load";
+        after = [ "power-profiles-daemon.service" ];
+        wants = [ "power-profiles-daemon.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = autoProfileScript;
+        };
+      };
+
+      systemd.timers.ppd-auto-profile = {
+        description = "Periodic load check for automatic power profile switching";
+        wantedBy = [ "timers.target" ];
+        partOf = [ "ppd-auto-profile.service" ];
+        timerConfig = {
+          OnBootSec = "1m";
+          OnUnitActiveSec = autoCfg.interval;
+          AccuracySec = "5s";
+          Unit = "ppd-auto-profile.service";
+        };
+      };
+    })
 
     # Use Udev rules instead of a systemd service/bash script.
     # Why: Udev is event-based. It reapplies settings instantly on boot,
