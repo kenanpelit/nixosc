@@ -89,7 +89,7 @@ notify_user() {
   elif [[ "$blocky_active" == "1" ]]; then
     title="Blocky"
     body="DNS filtering active"
-    icon="dialog-error"
+    icon="network-error"
   else
     title="Network"
     body="Mullvad disconnected, Blocky off"
@@ -145,8 +145,6 @@ run_via_pkexec() {
 
   local pkexec_cmd=(
     pkexec "$SELF_PATH" --as-root
-    --osc-mullvad-bin "$OSC_MULLVAD_BIN"
-    --osc-mullvad-dir "${OSC_MULLVAD_DIR:-$HOME/.mullvad}"
   )
   [[ "${with_blocky}" == "0" ]] && pkexec_cmd+=(--no-blocky)
   [[ "${notify_enabled}" == "0" ]] && pkexec_cmd+=(--no-notify)
@@ -159,8 +157,6 @@ with_blocky="1"
 dry_run="0"
 notify_enabled="1"
 run_as_root="0"
-osc_mullvad_bin_arg=""
-osc_mullvad_dir_arg=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -168,16 +164,6 @@ while [[ $# -gt 0 ]]; do
     --dry-run) dry_run="1" ;;
     --no-notify) notify_enabled="0" ;;
     --as-root) run_as_root="1" ;;
-    --osc-mullvad-bin)
-      shift
-      [[ $# -gt 0 ]] || die "missing value for --osc-mullvad-bin"
-      osc_mullvad_bin_arg="$1"
-      ;;
-    --osc-mullvad-dir)
-      shift
-      [[ $# -gt 0 ]] || die "missing value for --osc-mullvad-dir"
-      osc_mullvad_dir_arg="$1"
-      ;;
     -h|--help)
       usage
       exit 0
@@ -194,11 +180,26 @@ trim_log
 log "triggered: uid=$(id -u) tty=$(tty 2>/dev/null || echo none)"
 log "env: DISPLAY=${DISPLAY-} WAYLAND_DISPLAY=${WAYLAND_DISPLAY-} XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR-}"
 
-if [[ -n "${osc_mullvad_bin_arg}" ]]; then
-  OSC_MULLVAD_BIN="${osc_mullvad_bin_arg}"
-fi
-if [[ -n "${osc_mullvad_dir_arg}" ]]; then
-  export OSC_MULLVAD_DIR="${osc_mullvad_dir_arg}"
+if [[ "${run_as_root}" == "1" ]]; then
+  caller_uid="${PKEXEC_UID:-}"
+  if [[ -n "${caller_uid}" ]]; then
+    caller_user="$(id -nu "${caller_uid}" 2>/dev/null || true)"
+    if [[ -n "${caller_user}" ]]; then
+      caller_home="$(getent passwd "${caller_user}" 2>/dev/null | cut -d: -f6)"
+      [[ -n "${caller_home}" ]] || caller_home="/home/${caller_user}"
+
+      if [[ -z "${OSC_MULLVAD_BIN:-}" ]]; then
+        candidate_bin="/etc/profiles/per-user/${caller_user}/bin/osc-mullvad"
+        if [[ -x "${candidate_bin}" ]]; then
+          OSC_MULLVAD_BIN="${candidate_bin}"
+        fi
+      fi
+
+      if [[ -z "${OSC_MULLVAD_DIR:-}" ]]; then
+        export OSC_MULLVAD_DIR="${caller_home}/.mullvad"
+      fi
+    fi
+  fi
 fi
 
 resolve_osc_mullvad
