@@ -44,7 +44,7 @@ let
         [ -r "$t" ] || continue
         if [ "$(${pkgs.coreutils}/bin/cat "$t" 2>/dev/null || true)" = "Mains" ]; then
           mains_found=1
-          p="${t%/type}/online"
+          p="''${t%/type}/online"
           if [ -r "$p" ] && [ "$(${pkgs.coreutils}/bin/cat "$p" 2>/dev/null || echo 0)" = "1" ]; then
             ac_online=1
             break
