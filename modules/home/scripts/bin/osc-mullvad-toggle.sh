@@ -51,27 +51,37 @@ notify_user() {
   [[ "${notify_enabled}" == "1" ]] || return 0
   command -v notify-send >/dev/null 2>&1 || return 0
 
-  local vpn_state="Unknown"
-  local vpn_icon="network-vpn"
-  local blocky_state="unknown"
+  local vpn_connected="0"
+  local blocky_active="0"
+  local title=""
+  local body=""
+  local icon=""
 
   if command -v mullvad >/dev/null 2>&1; then
     if mullvad status 2>/dev/null | grep -q "Connected"; then
-      vpn_state="Connected"
-      vpn_icon="network-vpn"
-    else
-      vpn_state="Disconnected"
-      vpn_icon="network-vpn-disconnected"
+      vpn_connected="1"
     fi
   fi
 
   if systemctl is-active --quiet blocky.service 2>/dev/null; then
-    blocky_state="on"
-  else
-    blocky_state="off"
+    blocky_active="1"
   fi
 
-  notify-send -t 3500 -i "$vpn_icon" "Mullvad: ${vpn_state}" "Blocky: ${blocky_state}" || true
+  if [[ "$vpn_connected" == "1" ]]; then
+    title="Mullvad"
+    body="VPN connected"
+    icon="network-vpn"
+  elif [[ "$blocky_active" == "1" ]]; then
+    title="Blocky"
+    body="DNS filtering active"
+    icon="security-high"
+  else
+    title="Network"
+    body="Mullvad disconnected, Blocky off"
+    icon="network-vpn-disconnected"
+  fi
+
+  notify-send -t 3500 -i "$icon" "$title" "$body" || true
 }
 
 run_toggle() {
@@ -149,7 +159,8 @@ fi
 
 if [[ "$(id -u)" -eq 0 ]]; then
   run_toggle
-  notify_user
+  # Parent process sends user-facing notification after pkexec returns.
+  [[ "${run_as_root}" != "1" ]] && notify_user
   exit 0
 fi
 
