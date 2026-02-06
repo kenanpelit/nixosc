@@ -14,6 +14,8 @@
 let
   inherit (lib) mkIf mkOption types;
   cfg = config.my.power;
+  mainUser = config.my.user.name or "";
+  mainUserEscaped = lib.escapeShellArg mainUser;
 
   isPhysicalMachine = config.my.host.isPhysicalHost or false;
   usePpd = cfg.stack == "ppd";
@@ -33,6 +35,45 @@ let
     ppd="${pkgs.power-profiles-daemon}/bin/powerprofilesctl"
     awk_bin="${pkgs.gawk}/bin/awk"
     nproc_bin="${pkgs.coreutils}/bin/nproc"
+    id_bin="${pkgs.coreutils}/bin/id"
+    runuser_bin="${pkgs.util-linux}/bin/runuser"
+    notify_bin="${pkgs.libnotify}/bin/notify-send"
+    main_user=${mainUserEscaped}
+
+    notify_change() {
+      profile="$1"
+      reason="$2"
+
+      [ "${if autoCfg.notify then "1" else "0"}" = "1" ] || return 0
+      [ -n "$main_user" ] || return 0
+      [ -x "$notify_bin" ] || return 0
+
+      uid="$($id_bin -u "$main_user" 2>/dev/null || true)"
+      [ -n "$uid" ] || return 0
+
+      runtime="/run/user/$uid"
+      [ -S "$runtime/bus" ] || return 0
+
+      case "$profile" in
+        performance)
+          icon="speedometer"
+          title="Power Profile: Performance"
+          ;;
+        balanced)
+          icon="battery-good"
+          title="Power Profile: Balanced"
+          ;;
+        *)
+          icon="battery-good"
+          title="Power Profile: $profile"
+          ;;
+      esac
+
+      $runuser_bin -u "$main_user" -- env \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" \
+        XDG_RUNTIME_DIR="$runtime" \
+        "$notify_bin" -t 3000 -i "$icon" "$title" "$reason" >/dev/null 2>&1 || true
+    }
 
     # Keep balanced when not on AC (optional battery protection mode).
     if [ "${if autoCfg.onlyOnAC then "1" else "0"}" = "1" ]; then
@@ -67,6 +108,7 @@ let
         current="$($ppd get 2>/dev/null || true)"
         if [ "$current" = "performance" ]; then
           $ppd set balanced || true
+          notify_change balanced "Battery mode: switched from performance to balanced"
         fi
         exit 0
       fi
@@ -91,6 +133,7 @@ let
     if $awk_bin -v lp="$load_pct" -v high="$high" 'BEGIN { exit !(lp >= high) }'; then
       if [ "$current" != "performance" ]; then
         $ppd set performance || true
+        notify_change performance "High load: $load_pct% (threshold: $high%)"
       fi
       exit 0
     fi
@@ -98,6 +141,7 @@ let
     if $awk_bin -v lp="$load_pct" -v low="$low" 'BEGIN { exit !(lp <= low) }'; then
       if [ "$current" = "performance" ]; then
         $ppd set balanced || true
+        notify_change balanced "Load normalized: $load_pct% (threshold: $low%)"
       fi
       exit 0
     fi
@@ -164,6 +208,12 @@ in
         type = types.bool;
         default = true;
         description = "If true, never keep performance mode while on battery.";
+      };
+
+      notify = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Show desktop notifications when the auto profile changes.";
       };
     };
   };
