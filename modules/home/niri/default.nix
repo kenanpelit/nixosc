@@ -220,8 +220,8 @@ in
 
     bootstrapNotifications = lib.mkOption {
       type = lib.types.bool;
-      default = false;
-      description = "Show notify-send popups for niri-bootstrap start/finish.";
+      default = true;
+      description = "Show compact notify-send popups for bootstrap success/failure.";
     };
 
     initArrangeWindows = lib.mkOption {
@@ -507,33 +507,44 @@ EOF
             "NIRI_BOOT_DELAY=${toString cfg.bootstrapDelaySeconds}"
           ];
           ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.writeShellScript "niri-bootstrap" ''
-            set -euo pipefail
+            set -eEuo pipefail
 
             warn() { printf "[niri-bootstrap] WARN: %s\n" "$*" >&2; }
+            ${lib.optionalString cfg.bootstrapNotifications ''
+              boot_notify() {
+                local urgency="''${1:-normal}"
+                local body="''${2:-Init tamamlandı}"
+                if command -v notify-send >/dev/null 2>&1; then
+                  notify-send -a "Niri" -u "$urgency" -t 2200 "Niri Bootstrap" "$body" >/dev/null 2>&1 || true
+                fi
+              }
+
+              on_err() {
+                boot_notify critical "Init başarısız (journalctl --user -u niri-bootstrap.service -b)"
+              }
+              trap on_err ERR
+            ''}
 
             delay_s="''${NIRI_BOOT_DELAY:-1}"
             [[ "$delay_s" =~ ^[0-9]+$ ]] || delay_s=1
             sleep "$delay_s"
 
-            ${lib.optionalString cfg.bootstrapNotifications ''
-              if command -v notify-send >/dev/null 2>&1; then
-                notify-send -t 2500 "Niri" "Bootstrap başladı" >/dev/null 2>&1 || true
-              fi
-            ''}
-
             if command -v niri-set >/dev/null 2>&1; then
               ${lib.optionalString (!cfg.initArrangeWindows) "export NIRI_INIT_SKIP_ARRANGE=1"}
               ${lib.optionalString (cfg.initFocusWorkspace == null) "export NIRI_INIT_SKIP_FOCUS_WORKSPACE=1"}
               ${lib.optionalString (cfg.initFocusWorkspace != null) "export NIRI_INIT_FOCUS_WORKSPACE=${toString cfg.initFocusWorkspace}"}
-              niri-set init || warn "niri-set init failed"
+              if ! niri-set init; then
+                warn "niri-set init failed"
+                exit 1
+              fi
             else
               warn "niri-set not found"
+              exit 1
             fi
 
             ${lib.optionalString cfg.bootstrapNotifications ''
-              if command -v notify-send >/dev/null 2>&1; then
-                notify-send -t 2500 "Niri" "Bootstrap bitti" >/dev/null 2>&1 || true
-              fi
+              trap - ERR
+              boot_notify normal "Init tamamlandı"
             ''}
           ''}'";
           StandardOutput = "journal";
