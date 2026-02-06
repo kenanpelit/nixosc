@@ -61,7 +61,7 @@ let
     dms = "${config.home.profileDirectory}/bin/dms";
     niriSet = "${config.home.profileDirectory}/bin/niri-set";
     clipse = "clipse";
-    niriFlow = "${config.home.profileDirectory}/bin/osc-niri-flow";
+    niriFlow = "${config.home.profileDirectory}/bin/niri-flow";
     niriSwitcher = "${if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
   };
@@ -238,7 +238,7 @@ in
     enableWorkflow = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable daemon-free Niri workflow keybinds and helpers (osc-niri-flow).";
+      description = "Enable daemon-free Niri workflow keybinds and helpers (niri-flow).";
     };
 
     enableNiriswitcher = lib.mkOption {

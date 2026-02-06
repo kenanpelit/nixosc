@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# osc-niri-flow.sh - daemon-free Niri workflow helper
+# niri-flow.sh - daemon-free Niri workflow helper
 # Provides the subset needed by local scripts/keybinds using only `niri msg`.
 
 set -euo pipefail
 
 VERSION="1.1.0"
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
-STATE_DIR="${STATE_HOME}/osc-niri-flow"
+STATE_DIR="${STATE_HOME}/niri-flow"
 MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
 FOLLOW_FILE="$STATE_DIR/follow.json"
@@ -24,7 +24,7 @@ MATCH_NO_MOVE=0
 REMAINING_ARGS=()
 
 die() {
-  printf 'osc-niri-flow: %s\n' "$*" >&2
+  printf 'niri-flow: %s\n' "$*" >&2
   exit 1
 }
 
@@ -32,7 +32,7 @@ usage() {
   cat <<'EOF'
 Utility commands for the niri wayland compositor
 
-Usage: osc-niri-flow <COMMAND>
+Usage: niri-flow <COMMAND>
 
 Commands:
   focus
@@ -747,7 +747,7 @@ main() {
       exit 0
       ;;
     -V|--version)
-      printf 'osc-niri-flow %s\n' "$VERSION"
+      printf 'niri-flow %s\n' "$VERSION"
       exit 0
       ;;
   esac

@@ -27,7 +27,7 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
 
 ## Niri workflow notu
 
-- `osc-niri-flow` komutu bu repoda daemon-free bash helper olarak sağlanır (`modules/home/scripts/bin/osc-niri-flow.sh`).
+- `niri-flow` komutu bu repoda daemon-free bash helper olarak sağlanır (`modules/home/scripts/bin/niri-flow.sh`).
 - Bu sayede `niri-set here`, `osc-ndrop`, scratchpad/mark kısayolları ek daemon olmadan çalışır.
 
 ## Monitor profili (dock/undock)
