@@ -128,6 +128,95 @@ EOF
       notify-send -t 1000 "Zen Mode" "${1:-}" 2>/dev/null || true
     }
 
+    dms_ipc_call() {
+      command -v dms >/dev/null 2>&1 || return 1
+      dms ipc call "$@" 2>/dev/null | tr -d '\r'
+    }
+
+    get_bar_state() {
+      local out norm
+      out="$(dms_ipc_call bar status index 0 | tail -n 1 || true)"
+      norm="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]' | xargs || true)"
+      case "$norm" in
+      visible | shown | show | on | true | 1) echo "visible" ;;
+      hidden | hide | off | false | 0) echo "hidden" ;;
+      *) echo "unknown" ;;
+      esac
+    }
+
+    get_dnd_state() {
+      local out norm
+      out="$(dms_ipc_call notifications getDoNotDisturb | tail -n 1 || true)"
+      norm="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]' | xargs || true)"
+      case "$norm" in
+      true | on | yes | 1) echo "true" ;;
+      false | off | no | 0) echo "false" ;;
+      *) echo "unknown" ;;
+      esac
+    }
+
+    set_bar_state() {
+      local desired="${1:-}" current
+      current="$(get_bar_state)"
+      [[ "$current" == "$desired" ]] && return 0
+
+      case "$desired" in
+      visible)
+        dms_ipc_call bar reveal index 0 >/dev/null 2>&1 || true
+        ;;
+      hidden)
+        dms_ipc_call bar hide index 0 >/dev/null 2>&1 || true
+        ;;
+      *)
+        ;;
+      esac
+    }
+
+    set_dnd_state() {
+      local desired="${1:-}" current
+      current="$(get_dnd_state)"
+      [[ "$current" == "$desired" ]] && return 0
+
+      case "$desired" in
+      true | false)
+        # DMS notifications IPC exposes toggle + getter (no explicit set).
+        if [[ "$current" != "unknown" ]]; then
+          dms_ipc_call notifications toggleDoNotDisturb >/dev/null 2>&1 || true
+        fi
+        ;;
+      *)
+        ;;
+      esac
+    }
+
+    write_state_file() {
+      local bar_state="${1:-unknown}" dnd_state="${2:-unknown}" tmp
+      tmp="$(mktemp "${STATE_FILE}.XXXXXX")"
+      {
+        printf 'version=2\n'
+        printf 'bar=%s\n' "$bar_state"
+        printf 'dnd=%s\n' "$dnd_state"
+      } >"$tmp"
+      mv "$tmp" "$STATE_FILE"
+    }
+
+    load_state_file() {
+      STATE_VERSION=""
+      STATE_BAR=""
+      STATE_DND=""
+      [[ -f "$STATE_FILE" ]] || return 0
+
+      while IFS='=' read -r key value; do
+        case "$key" in
+        version) STATE_VERSION="$value" ;;
+        bar) STATE_BAR="$value" ;;
+        dnd) STATE_DND="$value" ;;
+        *)
+          ;;
+        esac
+      done <"$STATE_FILE"
+    }
+
     if [[ -f "$STATE_FILE" ]]; then
       # === DISABLE ZEN (Restore) ===
 
@@ -135,9 +224,16 @@ EOF
       disable_zen_config
       reload_config
 
-      # Restore DMS Bar
-      dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-      dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+      load_state_file
+
+      if [[ "$STATE_VERSION" == "2" ]]; then
+        [[ "$STATE_BAR" == "visible" || "$STATE_BAR" == "hidden" ]] && set_bar_state "$STATE_BAR"
+        [[ "$STATE_DND" == "true" || "$STATE_DND" == "false" ]] && set_dnd_state "$STATE_DND"
+      else
+        # Legacy fallback for older empty marker files.
+        dms_ipc_call bar toggle index 0 >/dev/null 2>&1 || true
+        dms_ipc_call notifications toggle-dnd >/dev/null 2>&1 || dms_ipc_call notifications toggleDoNotDisturb >/dev/null 2>&1 || true
+      fi
 
       rm -f "$STATE_FILE"
       notify "Off"
@@ -149,12 +245,14 @@ EOF
       enable_zen_config
       reload_config
 
-      # Hide Bar
-      dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-      # Silence Notifications
-      dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+      bar_before="$(get_bar_state)"
+      dnd_before="$(get_dnd_state)"
+      write_state_file "$bar_before" "$dnd_before"
 
-      touch "$STATE_FILE"
+      # Hide bar + enable DND only if needed.
+      set_bar_state "hidden"
+      set_dnd_state "true"
+
       notify "On"
       echo "Zen Mode: On"
     fi
