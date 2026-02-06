@@ -157,18 +157,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    cachix-pkgs = {
-      url = "github:cachix/cachix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    spicetify-nix = {
-      url = "github:gerg-l/spicetify-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nix-flatpak.url = "github:gmodena/nix-flatpak";
-    nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 
     yazi-plugins = {
       url = "github:yazi-rs/plugins";
