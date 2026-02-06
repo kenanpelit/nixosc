@@ -306,6 +306,8 @@ here)
       local APP_ID="$1"
       local current_ws_id=""
       local window_id=""
+      local windows_json=""
+      local workspaces_json=""
 
       # --- 1. Try to pull existing window (osc-niri-flow) ---
       if command -v osc-niri-flow >/dev/null 2>&1; then
@@ -317,14 +319,22 @@ here)
 
       # --- 2. Check if it's already here but not focused ---
       if command -v niri >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+        windows_json="$(niri msg -j windows 2>/dev/null || true)"
+        workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
         current_ws_id="$(
-          niri msg -j workspaces 2>/dev/null \
-            | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .id) // empty' \
-              2>/dev/null || true
+          jq -n \
+            --argjson wins "${windows_json:-[]}" \
+            --argjson wss "${workspaces_json:-[]}" \
+            -r '
+              first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id)
+              // first($wss[]? | select(.is_focused == true) | .id)
+              // first($wss[]? | select(.is_active == true) | .id)
+              // empty
+            ' 2>/dev/null || true
         )"
         if [[ -n "$current_ws_id" ]]; then
           window_id="$(
-            niri msg -j windows 2>/dev/null \
+            echo "$windows_json" \
               | jq -r --arg app "$APP_ID" --arg ws "$current_ws_id" \
                 'first(.[] | select(.app_id == $app and ((.workspace_id|tostring) == $ws)) | .id) // empty' \
                   2>/dev/null || true
@@ -1733,16 +1743,27 @@ flow)
 
     get_current_workspace() {
       ensure_niri_socket >/dev/null 2>&1 || true
-      local output
-      output=$(niri msg workspaces 2>/dev/null || true)
+      local windows_json workspaces_json
+      windows_json="$(niri msg -j windows 2>/dev/null || true)"
+      workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
 
-      if [[ -z "$output" ]] || [[ "${output:0:1}" != "[" ]]; then
+      if [[ -z "$workspaces_json" ]] || [[ "${workspaces_json:0:1}" != "[" ]]; then
         echo "1"
         return
       fi
 
       local id
-      id=$(echo "$output" | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .id) // empty' 2>/dev/null)
+      id="$(
+        jq -n \
+          --argjson wins "${windows_json:-[]}" \
+          --argjson wss "${workspaces_json:-[]}" \
+          -r '
+            first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id)
+            // first($wss[]? | select(.is_focused == true) | .id)
+            // first($wss[]? | select(.is_active == true) | .id)
+            // empty
+          ' 2>/dev/null || true
+      )"
       if [[ -n "$id" ]] && [[ "$id" != "null" ]]; then
         echo "$id"
       else

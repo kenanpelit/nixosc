@@ -90,7 +90,24 @@ niri_workspaces_json() {
 }
 
 current_workspace_id() {
-  niri_workspaces_json | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .id) // empty'
+  local windows_json workspaces_json ws_id
+
+  windows_json="$(niri_windows_json 2>/dev/null || true)"
+  ws_id="$(echo "$windows_json" | jq -r 'first(.[] | select(.is_focused == true and .workspace_id != null) | .workspace_id) // empty' 2>/dev/null || true)"
+  if [[ -n "$ws_id" ]]; then
+    printf '%s\n' "$ws_id"
+    return 0
+  fi
+
+  workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
+  ws_id="$(echo "$workspaces_json" | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty' 2>/dev/null || true)"
+  if [[ -n "$ws_id" ]]; then
+    printf '%s\n' "$ws_id"
+    return 0
+  fi
+
+  ws_id="$(echo "$workspaces_json" | jq -r 'first(.[] | select(.is_active == true) | .id) // empty' 2>/dev/null || true)"
+  printf '%s\n' "$ws_id"
 }
 
 focused_window_id() {
@@ -432,7 +449,11 @@ set_scratch_hidden() {
 }
 
 focused_output_name() {
-  niri_workspaces_json | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .output // empty) // empty'
+  niri_workspaces_json | jq -r '
+    first(.[] | select(.is_focused == true) | .output // empty)
+    // first(.[] | select(.is_active == true) | .output // empty)
+    // empty
+  '
 }
 
 scratch_workspace_id() {
