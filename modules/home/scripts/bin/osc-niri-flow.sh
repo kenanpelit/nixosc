@@ -90,7 +90,7 @@ niri_workspaces_json() {
 }
 
 current_workspace_id() {
-  niri_workspaces_json | jq -r 'first(.[] | select(.is_active == true) | .id) // empty'
+  niri_workspaces_json | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .id) // empty'
 }
 
 focused_window_id() {
@@ -432,7 +432,7 @@ set_scratch_hidden() {
 }
 
 focused_output_name() {
-  niri_workspaces_json | jq -r 'first(.[] | select(.is_active == true) | .output // empty) // empty'
+  niri_workspaces_json | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .output // empty) // empty'
 }
 
 scratch_workspace_id() {

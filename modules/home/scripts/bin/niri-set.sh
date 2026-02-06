@@ -304,6 +304,8 @@ here)
     # Helper function to process a single app
     process_app() {
       local APP_ID="$1"
+      local current_ws_id=""
+      local window_id=""
 
       # --- 1. Try to pull existing window (osc-niri-flow) ---
       if command -v osc-niri-flow >/dev/null 2>&1; then
@@ -315,9 +317,21 @@ here)
 
       # --- 2. Check if it's already here but not focused ---
       if command -v niri >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-        window_id=$(niri msg -j windows | jq -r --arg app "$APP_ID" '.[] | select(.app_id == $app) | .id' | head -n1)
+        current_ws_id="$(
+          niri msg -j workspaces 2>/dev/null \
+            | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .id) // empty' \
+              2>/dev/null || true
+        )"
+        if [[ -n "$current_ws_id" ]]; then
+          window_id="$(
+            niri msg -j windows 2>/dev/null \
+              | jq -r --arg app "$APP_ID" --arg ws "$current_ws_id" \
+                'first(.[] | select(.app_id == $app and ((.workspace_id|tostring) == $ws)) | .id) // empty' \
+                  2>/dev/null || true
+          )"
+        fi
         if [[ -n "$window_id" ]]; then
-          niri msg action focus-window --id "$window_id"
+          niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
           send_notify "<b>$APP_ID</b> focused."
           return 0
         fi
@@ -1728,7 +1742,7 @@ flow)
       fi
 
       local id
-      id=$(echo "$output" | jq -r '.[] | select(.is_active) | .id' 2>/dev/null)
+      id=$(echo "$output" | jq -r 'first(.[] | select((.is_active // false) or (.is_focused // false)) | .id) // empty' 2>/dev/null)
       if [[ -n "$id" ]] && [[ "$id" != "null" ]]; then
         echo "$id"
       else
