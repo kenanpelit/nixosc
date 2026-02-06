@@ -571,7 +571,7 @@ osc_media_spotify() (
 	PLAYER="spotify"
 	TIMEOUT=10                                                    # Spotify'ın başlaması için maksimum bekleme süresi (saniye)
 	ICON_PATH="/usr/share/icons/hicolor/256x256/apps/spotify.png" # Spotify icon path (varsa)
-	COMMAND="$1"                                                  # Komut satırı parametresi
+	COMMAND="${1:-}"                                              # Komut satırı parametresi
 	VOL_INCREMENT=10                                              # Ses artışı yüzdesi
 
 	# Hyprland için pencere kontrolü
@@ -1076,7 +1076,7 @@ osc_media_spotify() (
 		;;
 	"volume")
 		shift
-		set_volume "$1"
+		set_volume "${1:-}"
 		;;
 	"status")
 		show_status
@@ -2217,4 +2217,3 @@ main() {
 }
 
 main "$@"
-
