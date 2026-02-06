@@ -22,8 +22,11 @@ let
   ];
 
   staticMonitorConfig = [
-    "${primaryMonitorDesc},2560x1440@59,0x0,1"
-    "${secondaryMonitorDesc},1920x1200@60,320x1440,1"
+    # Niri layout parity:
+    # - external monitor on top
+    # - laptop panel below (centered)
+    "${primaryMonitorDesc},2560x1440@59.951,0x0,1"
+    "${secondaryMonitorDesc},1920x1200@60.003,320x1440,1"
     ",preferred,auto,1"
   ];
 

@@ -103,20 +103,20 @@ in
 
     useStaticMonitors = lib.mkOption {
       type = lib.types.bool;
-      default = false;
-      description = "Use hardcoded monitor/workspace mapping instead of dynamic fallback profile.";
+      default = true;
+      description = "Use fixed monitor/workspace mapping (DP-3 top, eDP-1 bottom) instead of dynamic fallback.";
     };
 
     staticPrimaryMonitorDesc = lib.mkOption {
       type = lib.types.str;
-      default = "desc:Dell Inc. DELL UP2716D KRXTR88N909L";
-      description = "Primary monitor descriptor used when `useStaticMonitors=true`.";
+      default = "DP-3";
+      description = "Primary monitor identifier used when `useStaticMonitors=true`.";
     };
 
     staticSecondaryMonitorDesc = lib.mkOption {
       type = lib.types.str;
-      default = "desc:Chimei Innolux Corporation 0x143F";
-      description = "Secondary monitor descriptor used when `useStaticMonitors=true`.";
+      default = "eDP-1";
+      description = "Secondary monitor identifier used when `useStaticMonitors=true`.";
     };
 
     enableVerboseWlrLogs = lib.mkOption {
