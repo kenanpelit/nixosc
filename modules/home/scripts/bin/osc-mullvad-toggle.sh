@@ -135,7 +135,10 @@ log "env: DISPLAY=${DISPLAY-} WAYLAND_DISPLAY=${WAYLAND_DISPLAY-} XDG_RUNTIME_DI
 resolve_osc_mullvad
 
 # Prevent accidental double-trigger from keybindings.
-if command -v flock >/dev/null 2>&1; then
+# Skip locking in the root helper path to avoid self-deadlock when pkexec
+# re-enters this script with --as-root while the parent process still holds
+# the lock.
+if [[ "${run_as_root}" != "1" ]] && command -v flock >/dev/null 2>&1; then
   exec 9>"$LOCK_FILE"
   flock -n 9 || die "another toggle is already running"
 fi
