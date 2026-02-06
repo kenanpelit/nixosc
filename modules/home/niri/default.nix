@@ -61,9 +61,9 @@ let
     dms = "${config.home.profileDirectory}/bin/dms";
     niriSet = "${config.home.profileDirectory}/bin/niri-set";
     clipse = "clipse";
-    niriusd = "${pkgs.nirius}/bin/niriusd";
-    nirius  = "${pkgs.nirius}/bin/nirius";
-    niriuswitcher = "${pkgs.niriswitcher}/bin/niriswitcher";
+    niriusd = "${if pkgs ? unstable && pkgs.unstable ? nirius then pkgs.unstable.nirius else pkgs.nirius}/bin/niriusd";
+    nirius = "${if pkgs ? unstable && pkgs.unstable ? nirius then pkgs.unstable.nirius else pkgs.nirius}/bin/nirius";
+    niriuswitcher = "${if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
   };
 
@@ -242,6 +242,12 @@ in
       description = "Install nirius daemon and CLI helpers";
     };
 
+    niriusDaemonMinVersion = lib.mkOption {
+      type = lib.types.str;
+      default = "0.7.0";
+      description = "Minimum nirius version required to start niriusd daemon.";
+    };
+
     enableNiriswitcher = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -326,8 +332,8 @@ in
       ];
 
       home.packages =
-        lib.optional cfg.enableNirius pkgs.nirius
-        ++ lib.optional cfg.enableNiriswitcher pkgs.niriswitcher
+        lib.optional cfg.enableNirius (if pkgs ? unstable && pkgs.unstable ? nirius then pkgs.unstable.nirius else pkgs.nirius)
+        ++ lib.optional cfg.enableNiriswitcher (if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher)
         ++ [
           inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
           (pkgs.writeShellScriptBin "osc-clipview" ''
@@ -584,6 +590,26 @@ EOF
         };
         Service = {
           Type = "simple";
+          ExecCondition = "${pkgs.writeShellScript "niriusd-preflight" ''
+            set -euo pipefail
+
+            min_ver="${cfg.niriusDaemonMinVersion}"
+            raw="$(${bins.nirius} --version 2>/dev/null || true)"
+            ver="''${raw##* }"
+            ver="''${ver#v}"
+
+            if [ -z "$ver" ]; then
+              echo "niriusd: nirius version could not be detected, skipping daemon" >&2
+              exit 1
+            fi
+
+            if [ "$(${pkgs.coreutils}/bin/printf '%s\n%s\n' "$min_ver" "$ver" | ${pkgs.coreutils}/bin/sort -V | ${pkgs.coreutils}/bin/tail -n1)" != "$ver" ]; then
+              echo "niriusd: nirius $ver < $min_ver, skipping daemon to avoid IPC schema mismatch" >&2
+              exit 1
+            fi
+
+            exit 0
+          ''}";
           ExecStart = "${bins.niriusd}";
           Restart = "on-failure";
           RestartSec = 2;

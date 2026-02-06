@@ -10,6 +10,7 @@ let
   dmsPkg = inputs.dankMaterialShell.packages.${pkgs.stdenv.hostPlatform.system}.default;
   dmsEditor = cfg.screenshotEditor;
   pluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.plugins);
+  blockedPluginList = lib.concatStringsSep " " (map lib.escapeShellArg cfg.blockedPlugins);
   iconThemeName =
     if config ? gtk && config.gtk ? iconTheme && config.gtk.iconTheme ? name
     then config.gtk.iconTheme.name
@@ -68,20 +69,32 @@ lib.mkIf cfg.enable (lib.mkMerge [
       Wants = [
         "niri-ready.service"
         "xdg-desktop-portal.service"
-        "xdg-desktop-portal-gnome.service"
-        "xdg-desktop-portal-gtk.service"
       ];
       After = dmsTargets ++ [
         "niri-ready.service"
         "xdg-desktop-portal.service"
-        "xdg-desktop-portal-gnome.service"
-        "xdg-desktop-portal-gtk.service"
       ];
       PartOf = dmsTargets;
       ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
       Type = "simple";
+      ExecStartPre = pkgs.writeShellScript "dms-plugin-quarantine" ''
+        set -euo pipefail
+
+        pluginsDir="$HOME/.config/DankMaterialShell/plugins"
+        quarantineDir="$HOME/.config/DankMaterialShell/plugins.disabled"
+        mkdir -p "$pluginsDir" "$quarantineDir"
+
+        for plugin in ${blockedPluginList}; do
+          src="$pluginsDir/$plugin"
+          if [ -e "$src" ]; then
+            dst="$quarantineDir/$plugin.$(${pkgs.coreutils}/bin/date +%Y%m%d%H%M%S)"
+            mv "$src" "$dst"
+            echo "[dms] quarantined incompatible plugin: $plugin -> $dst"
+          fi
+        done
+      '';
       ExecStart = "${dmsPkg}/bin/dms run --session";
       Restart = "always";
       RestartSec = 3;

@@ -57,5 +57,17 @@
         are installed by a non-blocking user service (not during HM activation).
       '';
     };
+
+    blockedPlugins = lib.mkOption {
+      type = with lib.types; listOf str;
+      default = [
+        "wallpaperBing"
+        "wallpaperShufflerPlugin"
+      ];
+      description = ''
+        Known incompatible plugins to quarantine before DMS starts.
+        Use an empty list to disable this behavior.
+      '';
+    };
   };
 }
