@@ -7,14 +7,10 @@
 # - Adds plugin settings matching Niri-like preset widths
 # ==============================================================================
 
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
-
-  hyprscrollingPkg =
-    if lib.hasAttrByPath [ "hyprlandPlugins" "hyprscrolling" ] pkgs.unstable
-    then pkgs.unstable.hyprlandPlugins.hyprscrolling
-    else null;
+  hyprscrollingPkg = cfg.hyprscrollingPackage;
 in
 lib.mkIf cfg.enable {
   assertions = [

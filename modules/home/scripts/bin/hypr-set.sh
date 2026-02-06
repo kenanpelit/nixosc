@@ -120,6 +120,42 @@ EOF
 cmd="${1:-}"
 shift || true
 
+dispatch_external_subcommand() {
+  local subcommand="$1"
+  shift || true
+
+  local helper=""
+  case "$subcommand" in
+    workspace-monitor) helper="hypr-workspace-monitor" ;;
+    switch) helper="hypr-switch" ;;
+    *) return 1 ;;
+  esac
+
+  local script_dir candidate
+  script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+
+  if command -v "$helper" >/dev/null 2>&1; then
+    exec "$helper" "$@"
+  fi
+
+  for candidate in \
+    "$script_dir/$helper.sh" \
+    "$script_dir/$helper" \
+    "$HOME/.nix-profile/bin/$helper" \
+    "/etc/profiles/per-user/${USER}/bin/$helper"
+  do
+    if [[ -x "$candidate" ]]; then
+      exec "$candidate" "$@"
+    fi
+  done
+
+  return 1
+}
+
+if dispatch_external_subcommand "${cmd}" "$@"; then
+  exit 0
+fi
+
 case "${cmd}" in
   smart-focus)
     (

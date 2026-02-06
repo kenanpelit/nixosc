@@ -12,6 +12,25 @@ let
   cfg = config.my.desktop.hyprland;
   hmLib = lib.hm or config.lib;
   dag = hmLib.dag or config.lib.dag;
+
+  defaultHyprlandPackage =
+    if pkgs ? unstable && pkgs.unstable ? hyprland
+    then pkgs.unstable.hyprland
+    else pkgs.hyprland;
+
+  defaultHyprscrollingPackage =
+    if pkgs ? unstable && lib.hasAttrByPath [ "hyprlandPlugins" "hyprscrolling" ] pkgs.unstable
+    then pkgs.unstable.hyprlandPlugins.hyprscrolling
+    else if lib.hasAttrByPath [ "hyprlandPlugins" "hyprscrolling" ] pkgs
+    then pkgs.hyprlandPlugins.hyprscrolling
+    else null;
+
+  defaultHyprexpoPackage =
+    if pkgs ? unstable && lib.hasAttrByPath [ "hyprlandPlugins" "hyprexpo" ] pkgs.unstable
+    then pkgs.unstable.hyprlandPlugins.hyprexpo
+    else if lib.hasAttrByPath [ "hyprlandPlugins" "hyprexpo" ] pkgs
+    then pkgs.hyprlandPlugins.hyprexpo
+    else null;
   
   # Import modular configurations
   vars = import ./variables.nix { inherit config lib; };
@@ -23,8 +42,9 @@ let
     oscHereHypr = "${config.home.profileDirectory}/bin/osc-here-hypr";
   };
   
-  settings = import ./settings.nix { 
+  settings = import ./settings.nix {
     inherit lib bins;
+    inherit cfg;
     inherit (vars) mkColor colors activeBorder inactiveBorder inactiveGroupBorder cursorName cursorSize;
   };
   
@@ -40,6 +60,94 @@ in
 {
   options.my.desktop.hyprland = {
     enable = lib.mkEnableOption "Hyprland window manager";
+
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = defaultHyprlandPackage;
+      defaultText = lib.literalExpression "pkgs.unstable.hyprland or pkgs.hyprland";
+      description = "Hyprland package used by Home Manager.";
+    };
+
+    hyprscrollingPackage = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = defaultHyprscrollingPackage;
+      defaultText = lib.literalExpression "pkgs.unstable.hyprlandPlugins.hyprscrolling or pkgs.hyprlandPlugins.hyprscrolling";
+      description = "Package for Hyprscrolling plugin.";
+    };
+
+    hyprexpoPackage = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = defaultHyprexpoPackage;
+      defaultText = lib.literalExpression "pkgs.unstable.hyprlandPlugins.hyprexpo or pkgs.hyprlandPlugins.hyprexpo";
+      description = "Package for Hyprexpo plugin.";
+    };
+
+    bootstrapDelaySeconds = lib.mkOption {
+      type = lib.types.ints.between 0 30;
+      default = 1;
+      description = "Delay before `hypr-set init` runs in the Hyprland bootstrap service.";
+    };
+
+    inputNoAccel = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Disable pointer acceleration (`force_no_accel=1`, `accel_profile=flat`).";
+    };
+
+    renderDirectScanout = lib.mkOption {
+      type = lib.types.bool;
+      default = config.my.host.isPhysicalHost or false;
+      defaultText = "config.my.host.isPhysicalHost";
+      description = "Enable `render.direct_scanout` (can break overlays/screencast on some systems).";
+    };
+
+    useStaticMonitors = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Use hardcoded monitor/workspace mapping instead of dynamic fallback profile.";
+    };
+
+    staticPrimaryMonitorDesc = lib.mkOption {
+      type = lib.types.str;
+      default = "desc:Dell Inc. DELL UP2716D KRXTR88N909L";
+      description = "Primary monitor descriptor used when `useStaticMonitors=true`.";
+    };
+
+    staticSecondaryMonitorDesc = lib.mkOption {
+      type = lib.types.str;
+      default = "desc:Chimei Innolux Corporation 0x143F";
+      description = "Secondary monitor descriptor used when `useStaticMonitors=true`.";
+    };
+
+    enableVerboseWlrLogs = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable verbose wlroots logs (`HYPRLAND_LOG_WLR=1`).";
+    };
+
+    disableRealtimeScheduling = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Set `HYPRLAND_NO_RT=1` for compatibility-first behavior.";
+    };
+
+    disableSdNotify = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Set `HYPRLAND_NO_SD_NOTIFY=1`.";
+    };
+
+    suppressWatchdogWarning = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Set `HYPRLAND_NO_WATCHDOG_WARNING=1`.";
+    };
+
+    enablePyprlandExtendedPlugins = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable extended pyprland plugin set (expose/magnify/layout_center).";
+    };
   };
 
   # Submodules are internally gated; import unconditionally

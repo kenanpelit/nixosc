@@ -6,14 +6,10 @@
 # - Adds workspace overview/expo settings
 # ==============================================================================
 
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
-
-  hyprexpoPkg =
-    if lib.hasAttrByPath [ "hyprlandPlugins" "hyprexpo" ] pkgs.unstable
-    then pkgs.unstable.hyprlandPlugins.hyprexpo
-    else null;
+  hyprexpoPkg = cfg.hyprexpoPackage;
     
   inherit (config.catppuccin) sources;
   flavor = config.catppuccin.flavor;
