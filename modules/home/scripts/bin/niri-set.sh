@@ -997,6 +997,7 @@ init)
 
       local config_home dms_dir profile_file
       local internal_output external_output
+      local detect_json
       local ext_w ext_h int_w int_x int_y
 
       config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -1009,8 +1010,15 @@ init)
         rm -f "$profile_file"
       fi
 
-      internal_output="$(echo "$outputs_json" | jq -r '[.[] | .name | select(test("^eDP"))][0] // empty' 2>/dev/null || true)"
-      external_output="$(echo "$outputs_json" | jq -r '[.[] | .name | select(test("^eDP")|not)][0] // empty' 2>/dev/null || true)"
+      # Prefer outputs that currently expose a valid mode. This avoids picking
+      # stale/disconnected names (e.g. old DP-* connector ids after re-dock).
+      detect_json="$(echo "$outputs_json" | jq -c '[.[] | select(((.current_mode.width // .mode.width // 0) > 0) and ((.current_mode.height // .mode.height // 0) > 0))]' 2>/dev/null || true)"
+      if [[ -z "${detect_json:-}" ]] || [[ "${detect_json:-[]}" == "[]" ]]; then
+        detect_json="$outputs_json"
+      fi
+
+      internal_output="$(echo "$detect_json" | jq -r '[.[] | .name | select(test("^eDP"))][0] // empty' 2>/dev/null || true)"
+      external_output="$(echo "$detect_json" | jq -r '[.[] | .name | select(test("^eDP")|not)][0] // empty' 2>/dev/null || true)"
 
       if [[ -z "$internal_output" ]]; then
         internal_output="$(echo "$outputs_json" | jq -r '.[0].name // empty' 2>/dev/null || true)"
@@ -1022,9 +1030,9 @@ init)
       ext_h=0
       int_w=0
       if [[ -n "$external_output" ]] && [[ "$external_output" != "$internal_output" ]]; then
-        ext_w="$(echo "$outputs_json" | jq -r --arg o "$external_output" '.[] | select(.name == $o) | (.current_mode.width // .mode.width // 0)' 2>/dev/null | head -n 1 || true)"
-        ext_h="$(echo "$outputs_json" | jq -r --arg o "$external_output" '.[] | select(.name == $o) | (.current_mode.height // .mode.height // 0)' 2>/dev/null | head -n 1 || true)"
-        int_w="$(echo "$outputs_json" | jq -r --arg o "$internal_output" '.[] | select(.name == $o) | (.current_mode.width // .mode.width // 0)' 2>/dev/null | head -n 1 || true)"
+        ext_w="$(echo "$detect_json" | jq -r --arg o "$external_output" '.[] | select(.name == $o) | (.current_mode.width // .mode.width // 0)' 2>/dev/null | head -n 1 || true)"
+        ext_h="$(echo "$detect_json" | jq -r --arg o "$external_output" '.[] | select(.name == $o) | (.current_mode.height // .mode.height // 0)' 2>/dev/null | head -n 1 || true)"
+        int_w="$(echo "$detect_json" | jq -r --arg o "$internal_output" '.[] | select(.name == $o) | (.current_mode.width // .mode.width // 0)' 2>/dev/null | head -n 1 || true)"
       fi
 
       [[ "$ext_w" =~ ^[0-9]+$ ]] || ext_w=0
