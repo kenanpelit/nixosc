@@ -89,7 +89,7 @@ notify_user() {
   elif [[ "$blocky_active" == "1" ]]; then
     title="Blocky"
     body="DNS filtering active"
-    icon="security-high"
+    icon="dialog-error"
   else
     title="Network"
     body="Mullvad disconnected, Blocky off"
