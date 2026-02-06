@@ -133,6 +133,15 @@ let
     export XDG_CACHE_HOME=${lib.escapeShellArg "${greeterHome}/.cache"}
     export XDG_STATE_HOME=${lib.escapeShellArg "${greeterHome}/.local/state"}
     export PATH=${lib.escapeShellArg "${greeterPath}:/run/current-system/sw/bin"}:''${PATH:+":$PATH"}
+
+    if [ "${if cfg.quietConsole then "1" else "0"}" = "1" ]; then
+      # Keep TTY clean during boot and write greeter/compositor output to file.
+      log_target="/var/log/dms-greeter/session.log"
+      if ! : >> "$log_target" 2>/dev/null; then
+        log_target="/tmp/dms-greeter-session.log"
+      fi
+      exec >> "$log_target" 2>&1
+    fi
     
     # DMS greeter discovers sessions from:
     # - /usr/share/{wayland-sessions,xsessions}
@@ -144,11 +153,6 @@ let
     # but greetd does not source /etc/profile so XDG_DATA_DIRS is usually empty.
     # Without this, the session list in the greeter becomes empty.
     export XDG_DATA_DIRS=/run/current-system/sw/share:/usr/local/share:/usr/share
-
-    echo "Environment prepared. Launching dms-greeter..."
-    echo "HOME=$HOME"
-    echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
-    echo "Compositor: ${cfg.compositor}"
 
     # Bypass the upstream 'dms-greeter' script because it forcibly appends
     # an 'exec' command that causes a crash loop (qs ...; hyprctl dispatch exit).
@@ -197,6 +201,12 @@ in {
       default = "f";
       description = "Keyboard layout variant passed to greetd (XKB_DEFAULT_VARIANT). Leave empty to skip.";
     };
+
+    quietConsole = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Suppress greeter/compositor stdout on TTY and write it to /var/log/dms-greeter/session.log.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -229,6 +239,7 @@ in {
     systemd.tmpfiles.rules = [
       "d /var/log/dms-greeter 0755 greeter greeter -"
       "f /var/log/dms-greeter/dms-greeter.log 0664 greeter greeter -"
+      "f /var/log/dms-greeter/session.log 0664 greeter greeter -"
       "d /var/lib/dms-greeter 0755 greeter greeter -"
       "d /var/lib/dms-greeter/.config 0755 greeter greeter -"
       "d /var/lib/dms-greeter/.cache 0755 greeter greeter -"
