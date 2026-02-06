@@ -46,7 +46,6 @@ in
     perl                         # Scripting language
     perlPackages.FilePath        # Perl file path module
     dconf                        # GNOME configuration backend
-    dconf-editor                 # GUI editor for dconf (TODO: Move to home)
 
     # -- Security & Secrets ----------------------------------------------------
     sops                         # Secrets management (Mozilla)
@@ -59,7 +58,6 @@ in
     conntrack-tools              # Connection tracking userspace tools
 
     # -- Network ---------------------------------------------------------------
-    networkmanagerapplet         # NetworkManager tray icon (TODO: Move to home)
     iwd                          # Modern wireless daemon
     iw                           # Wireless configuration tool
     bind                         # DNS tools (dig, nslookup)

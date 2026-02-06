@@ -5,14 +5,22 @@
 # Tweak jail policies here rather than per-machine copies.
 # ==============================================================================
 
-{ ... }:
-{
-  services.fail2ban.enable = true;
+{ lib, config, ... }:
 
-  environment.shellAliases = {
-    f2b-status      = "sudo fail2ban-client status";
-    f2b-status-ssh  = "sudo fail2ban-client status sshd";
-    f2b-banned      = "sudo fail2ban-client get sshd banned";
-    f2b-unban       = "sudo fail2ban-client set sshd unbanip";
+let
+  cfg = config.my.security.fail2ban;
+in
+{
+  options.my.security.fail2ban.enable = lib.mkEnableOption "fail2ban";
+
+  config = lib.mkIf cfg.enable {
+    services.fail2ban.enable = true;
+
+    environment.shellAliases = {
+      f2b-status      = "sudo fail2ban-client status";
+      f2b-status-ssh  = "sudo fail2ban-client status sshd";
+      f2b-banned      = "sudo fail2ban-client get sshd banned";
+      f2b-unban       = "sudo fail2ban-client set sshd unbanip";
+    };
   };
 }

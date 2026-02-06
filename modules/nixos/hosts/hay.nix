@@ -15,5 +15,8 @@ in
     # DNS adblock (Blocky) - optional aggressive Google/YouTube blocking.
     # NOTE: This can break developer tooling (e.g. Go module proxy via storage.googleapis.com).
     my.dns.blocky.noGoogle.enable = lib.mkDefault false;
+
+    # Keep SSH brute-force protection always enabled on this host.
+    my.security.fail2ban.enable = lib.mkDefault true;
   };
 }

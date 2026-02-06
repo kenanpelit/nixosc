@@ -36,6 +36,6 @@ in
 
   # Ensure libvirtd starts automatically on physical hosts
   systemd = lib.mkIf isPhysicalHost {
-    services.libvirtd.wantedBy = lib.mkForce [ "multi-user.target" ];
+    services.libvirtd.wantedBy = lib.mkDefault [ "multi-user.target" ];
   };
 }

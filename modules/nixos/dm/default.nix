@@ -14,7 +14,7 @@ in
 {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      services.xserver.enable = true;
+      services.xserver.enable = cfg.enableGnome;
 
       services.displayManager.gdm = lib.mkIf (!dmsGreeterEnabled) {
         enable = true;

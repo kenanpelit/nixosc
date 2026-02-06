@@ -16,12 +16,17 @@ let
 
   # Greeter must use the same Hyprland build as `start-hyprland`, otherwise
   # Hyprland may exit immediately on unknown internal args like `--watchdog-fd`.
-  hyprPkg = pkgs.unstable.hyprland;
+  hyprPkg =
+    if config.programs ? hyprland && config.programs.hyprland ? package
+    then config.programs.hyprland.package
+    else if pkgs ? hyprland
+    then pkgs.hyprland
+    else pkgs.unstable.hyprland;
 
   niriPkg =
     if config.programs ? niri && config.programs.niri ? package
     then config.programs.niri.package
-    else pkgs.niri-unstable;
+    else if pkgs ? niri then pkgs.niri else pkgs.niri-unstable;
 
   swayPkg =
     if config.programs ? sway && config.programs.sway ? package

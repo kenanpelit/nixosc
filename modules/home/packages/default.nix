@@ -133,6 +133,8 @@ in
       zathura evince        # PDF viewers
       pdftk poppler-utils   # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
+      dconf-editor          # GUI editor for dconf
+      networkmanagerapplet  # NetworkManager tray applet
       
       # Communication
       discord webcord-vencord

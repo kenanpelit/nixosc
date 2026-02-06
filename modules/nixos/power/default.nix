@@ -92,6 +92,7 @@ in
     (mkIf (isPhysicalMachine && thresholds.enable) {
       services.udev.extraRules = ''
         SUBSYSTEM=="power_supply", KERNEL=="BAT*", \
+          TEST=="charge_control_start_threshold", TEST=="charge_control_end_threshold", \
           ATTR{charge_control_start_threshold}="${builtins.toString thresholds.start}", \
           ATTR{charge_control_end_threshold}="${builtins.toString thresholds.stop}"
       '';
