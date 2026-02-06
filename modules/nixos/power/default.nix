@@ -37,12 +37,31 @@ let
     # Keep balanced when not on AC (optional battery protection mode).
     if [ "${if autoCfg.onlyOnAC then "1" else "0"}" = "1" ]; then
       ac_online=0
-      while IFS= read -r p; do
-        if [ -r "$p" ] && [ "$(${pkgs.coreutils}/bin/cat "$p" 2>/dev/null || echo 0)" = "1" ]; then
-          ac_online=1
-          break
+      mains_found=0
+
+      # Prefer explicit Mains supplies.
+      for t in /sys/class/power_supply/*/type; do
+        [ -r "$t" ] || continue
+        if [ "$(${pkgs.coreutils}/bin/cat "$t" 2>/dev/null || true)" = "Mains" ]; then
+          mains_found=1
+          p="${t%/type}/online"
+          if [ -r "$p" ] && [ "$(${pkgs.coreutils}/bin/cat "$p" 2>/dev/null || echo 0)" = "1" ]; then
+            ac_online=1
+            break
+          fi
         fi
-      done < <(${pkgs.findutils}/bin/find /sys/class/power_supply -maxdepth 2 -name online 2>/dev/null)
+      done
+
+      # Fallback: if no Mains device is exposed, use any online==1 source.
+      if [ "$mains_found" -eq 0 ]; then
+        for p in /sys/class/power_supply/*/online; do
+          [ -r "$p" ] || continue
+          if [ "$(${pkgs.coreutils}/bin/cat "$p" 2>/dev/null || echo 0)" = "1" ]; then
+            ac_online=1
+            break
+          fi
+        done
+      fi
 
       if [ "$ac_online" -eq 0 ]; then
         current="$($ppd get 2>/dev/null || true)"
