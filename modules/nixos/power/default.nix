@@ -16,6 +16,14 @@ let
   cfg = config.my.power;
   mainUser = config.my.user.name or "";
   mainUserEscaped = lib.escapeShellArg mainUser;
+  mainUserHome =
+    if mainUser != "" && lib.hasAttrByPath [ "users" "users" mainUser "home" ] config
+    then lib.getAttrFromPath [ "users" "users" mainUser "home" ] config
+    else "/home/${mainUser}";
+  autoProfileLockFile =
+    if mainUser == "" then "/run/ppd-auto-profile.lock"
+    else "${mainUserHome}/.local/state/ppd-auto-profile/lock";
+  autoProfileLockFileEscaped = lib.escapeShellArg autoProfileLockFile;
 
   isPhysicalMachine = config.my.host.isPhysicalHost or false;
   usePpd = cfg.stack == "ppd";
@@ -39,6 +47,10 @@ let
     runuser_bin="${pkgs.util-linux}/bin/runuser"
     notify_bin="${pkgs.libnotify}/bin/notify-send"
     main_user=${mainUserEscaped}
+    lock_file=${autoProfileLockFileEscaped}
+
+    # Manual lock: if present, auto-switch logic is disabled.
+    [ -f "$lock_file" ] && exit 0
 
     notify_change() {
       profile="$1"
