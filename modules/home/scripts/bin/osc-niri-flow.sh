@@ -4,16 +4,20 @@
 
 set -euo pipefail
 
-VERSION="1.0.0"
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nirius"
+VERSION="1.1.0"
+STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+STATE_DIR="${STATE_HOME}/osc-niri-flow"
+LEGACY_STATE_DIR="${STATE_HOME}/nirius"
 MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
-SCRATCH_WORKSPACE="${NIRIUS_SCRATCH_WORKSPACE:-99}"
+FOLLOW_FILE="$STATE_DIR/follow.json"
+SCRATCH_WORKSPACE_FALLBACK="${NIRIUS_SCRATCH_WORKSPACE:-99}"
 
 MATCH_APP_ID=""
 MATCH_TITLE=""
 MATCH_PID=""
 MATCH_WORKSPACE_ID=""
+MATCH_WORKSPACE_INDEX=""
 MATCH_WORKSPACE_NAME=""
 MATCH_INCLUDE_CURRENT=0
 MATCH_FOCUS=0
@@ -73,8 +77,14 @@ require_bins() {
 
 init_state() {
   mkdir -p "$STATE_DIR"
+  if [[ "$STATE_DIR" != "$LEGACY_STATE_DIR" && -d "$LEGACY_STATE_DIR" ]]; then
+    [[ -f "$MARKS_FILE" ]] || [[ ! -f "$LEGACY_STATE_DIR/marks.json" ]] || cp "$LEGACY_STATE_DIR/marks.json" "$MARKS_FILE"
+    [[ -f "$SCRATCH_FILE" ]] || [[ ! -f "$LEGACY_STATE_DIR/scratchpad.json" ]] || cp "$LEGACY_STATE_DIR/scratchpad.json" "$SCRATCH_FILE"
+    [[ -f "$FOLLOW_FILE" ]] || [[ ! -f "$LEGACY_STATE_DIR/follow.json" ]] || cp "$LEGACY_STATE_DIR/follow.json" "$FOLLOW_FILE"
+  fi
   [[ -f "$MARKS_FILE" ]] || printf '{"marks":{}}\n' >"$MARKS_FILE"
   [[ -f "$SCRATCH_FILE" ]] || printf '{"entries":{},"cursor":0}\n' >"$SCRATCH_FILE"
+  [[ -f "$FOLLOW_FILE" ]] || printf '{"windows":[],"last_workspace_id":""}\n' >"$FOLLOW_FILE"
 }
 
 niri_windows_json() {
@@ -93,25 +103,12 @@ focused_window_id() {
   niri_windows_json | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty'
 }
 
-workspace_id_from_name() {
-  local workspace_name="$1"
-  niri_workspaces_json | jq -r --arg name "$workspace_name" 'first(.[] | select((.name // "") == $name) | .id) // empty'
-}
-
-resolve_workspace_filter() {
-  if [[ -n "$MATCH_WORKSPACE_NAME" && -z "$MATCH_WORKSPACE_ID" ]]; then
-    MATCH_WORKSPACE_ID="$(workspace_id_from_name "$MATCH_WORKSPACE_NAME")"
-    if [[ -z "$MATCH_WORKSPACE_ID" ]]; then
-      MATCH_WORKSPACE_ID="-999999999"
-    fi
-  fi
-}
-
 parse_match_opts() {
   MATCH_APP_ID=""
   MATCH_TITLE=""
   MATCH_PID=""
   MATCH_WORKSPACE_ID=""
+  MATCH_WORKSPACE_INDEX=""
   MATCH_WORKSPACE_NAME=""
   MATCH_INCLUDE_CURRENT=0
   MATCH_FOCUS=0
@@ -135,9 +132,14 @@ parse_match_opts() {
         MATCH_PID="$2"
         shift 2
         ;;
-      --workspace-id|--workspace-index)
-        [[ $# -ge 2 ]] || die "$1 requires a value"
+      --workspace-id)
+        [[ $# -ge 2 ]] || die "--workspace-id requires a value"
         MATCH_WORKSPACE_ID="$2"
+        shift 2
+        ;;
+      --workspace-index)
+        [[ $# -ge 2 ]] || die "--workspace-index requires a value"
+        MATCH_WORKSPACE_INDEX="$2"
         shift 2
         ;;
       --workspace-name)
@@ -171,33 +173,42 @@ parse_match_opts() {
   done
 
   REMAINING_ARGS=("$@")
-  resolve_workspace_filter
 }
 
 matched_window_ids() {
   local windows_json="$1"
+  local workspaces_json="$2"
 
   echo "$windows_json" | jq -r \
     --arg app "$MATCH_APP_ID" \
     --arg title "$MATCH_TITLE" \
     --arg pid "$MATCH_PID" \
     --arg workspace "$MATCH_WORKSPACE_ID" \
+    --arg workspace_idx "$MATCH_WORKSPACE_INDEX" \
+    --arg workspace_name "$MATCH_WORKSPACE_NAME" \
+    --argjson workspaces "$workspaces_json" \
     '
+      def ws_by_id: reduce $workspaces[] as $ws ({}; .[($ws.id | tostring)] = $ws);
       .[]
-      | select(($app == "") or (((.app_id // "") | tostring) | test($app)))
-      | select(($title == "") or (((.title // "") | tostring) | test($title)))
-      | select(($pid == "") or (((.pid // -1) | tostring) == $pid))
-      | select(($workspace == "") or (((.workspace_id // -1) | tostring) == $workspace))
-      | (.id | tostring)
+      | . as $w
+      | (ws_by_id[(($w.workspace_id // -1) | tostring)] // null) as $ws
+      | select(($app == "") or ((($w.app_id // "") | tostring) | test($app)))
+      | select(($title == "") or ((($w.title // "") | tostring) | test($title)))
+      | select(($pid == "") or ((($w.pid // -1) | tostring) == $pid))
+      | select(($workspace == "") or ((($w.workspace_id // -1) | tostring) == $workspace))
+      | select(($workspace_idx == "") or (($ws != null) and (($ws.idx | tostring) == $workspace_idx)))
+      | select(($workspace_name == "") or (($ws != null) and (((($ws.name // "") | tostring) | test($workspace_name)))))
+      | ($w.id | tostring)
     '
 }
 
 focus_with_current_match() {
-  local windows_json focused_id target_id index
+  local windows_json workspaces_json focused_id target_id index
   local -a ids
 
   windows_json="$(niri_windows_json)"
-  mapfile -t ids < <(matched_window_ids "$windows_json")
+  workspaces_json="$(niri_workspaces_json)"
+  mapfile -t ids < <(matched_window_ids "$windows_json" "$workspaces_json")
   [[ "${#ids[@]}" -gt 0 ]] || return 1
 
   if [[ "${#ids[@]}" -eq 1 ]]; then
@@ -242,14 +253,15 @@ cmd_focus_or_spawn() {
 }
 
 move_one_to_current_workspace() {
-  local windows_json current_workspace target_id window_workspace
+  local windows_json workspaces_json current_workspace target_id window_workspace
   local -a ids
 
   windows_json="$(niri_windows_json)"
+  workspaces_json="$(niri_workspaces_json)"
   current_workspace="$(current_workspace_id)"
   [[ -n "$current_workspace" ]] || return 1
 
-  mapfile -t ids < <(matched_window_ids "$windows_json")
+  mapfile -t ids < <(matched_window_ids "$windows_json" "$workspaces_json")
   [[ "${#ids[@]}" -gt 0 ]] || return 1
 
   target_id=""
@@ -384,6 +396,32 @@ scratch_tmp_update() {
   mv "$tmp_file" "$SCRATCH_FILE"
 }
 
+scratch_entry_exists() {
+  local window_id="$1"
+  jq -e --arg id "$window_id" '.entries[$id] != null' "$SCRATCH_FILE" >/dev/null 2>&1
+}
+
+remove_scratch_entry() {
+  local window_id="$1"
+  scratch_tmp_update --arg id "$window_id" '
+    .entries = (.entries // {}) |
+    del(.entries[$id])
+  '
+}
+
+refresh_scratch_entries() {
+  local windows_json="$1"
+  local live_ids_json
+  live_ids_json="$(echo "$windows_json" | jq '[.[].id | tostring]')"
+  scratch_tmp_update --argjson live "$live_ids_json" '
+    .entries = (.entries // {}) |
+    .entries = (
+      .entries
+      | with_entries(select(($live | index(.key)) != null))
+    )
+  '
+}
+
 scratch_hidden_state() {
   local window_id="$1"
   jq -r --arg id "$window_id" '.entries[$id].hidden // "none"' "$SCRATCH_FILE"
@@ -399,11 +437,65 @@ set_scratch_hidden() {
   '
 }
 
+focused_output_name() {
+  niri_workspaces_json | jq -r 'first(.[] | select(.is_active == true) | .output // empty) // empty'
+}
+
+scratch_workspace_id() {
+  local output ws_id
+  output="$(focused_output_name)"
+  if [[ -n "$output" ]]; then
+    ws_id="$(niri_workspaces_json | jq -r --arg out "$output" '([.[] | select((.output // "") == $out)] | max_by(.idx) | .id // empty)')"
+    if [[ -n "$ws_id" ]]; then
+      printf '%s\n' "$ws_id"
+      return 0
+    fi
+  fi
+  printf '%s\n' "$SCRATCH_WORKSPACE_FALLBACK"
+}
+
+window_is_floating() {
+  local window_id="$1"
+  local windows_json="$2"
+  echo "$windows_json" | jq -e --arg id "$window_id" 'first(.[] | select((.id | tostring) == $id) | .is_floating) == true' >/dev/null 2>&1
+}
+
+ensure_window_floating() {
+  local window_id="$1"
+  local windows_json="$2"
+  if ! window_is_floating "$window_id" "$windows_json"; then
+    niri msg action toggle-window-floating --id "$window_id" >/dev/null 2>&1 || true
+  fi
+}
+
+scratchpad_move_all() {
+  local windows_json="$1"
+  local target_ws
+  local -a scratch_ids
+
+  target_ws="$(scratch_workspace_id)"
+  [[ -n "$target_ws" ]] || return 1
+
+  mapfile -t scratch_ids < <(jq -r '.entries // {} | keys[]?' "$SCRATCH_FILE")
+  [[ "${#scratch_ids[@]}" -gt 0 ]] || return 0
+
+  for window_id in "${scratch_ids[@]}"; do
+    ensure_window_floating "$window_id" "$windows_json"
+    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$target_ws" >/dev/null 2>&1 || true
+    set_scratch_hidden "$window_id" true "$target_ws"
+  done
+}
+
 hide_window_to_scratch() {
   local window_id="$1"
   local origin_workspace="$2"
+  local scratch_workspace
+  local windows_json
   if [[ "$MATCH_NO_MOVE" -eq 0 ]]; then
-    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$SCRATCH_WORKSPACE" >/dev/null 2>&1 || true
+    windows_json="$(niri_windows_json)"
+    ensure_window_floating "$window_id" "$windows_json"
+    scratch_workspace="$(scratch_workspace_id)"
+    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$scratch_workspace" >/dev/null 2>&1 || true
   fi
   set_scratch_hidden "$window_id" true "$origin_workspace"
 }
@@ -420,10 +512,11 @@ show_window_from_scratch() {
 
 select_target_window_id() {
   local windows_json="$1"
+  local workspaces_json="$2"
   local focused_id
   local -a ids
 
-  mapfile -t ids < <(matched_window_ids "$windows_json")
+  mapfile -t ids < <(matched_window_ids "$windows_json" "$workspaces_json")
   if [[ "${#ids[@]}" -gt 0 ]]; then
     printf '%s\n' "${ids[0]}"
     return 0
@@ -439,15 +532,16 @@ select_target_window_id() {
 }
 
 cmd_scratchpad_toggle() {
-  local windows_json target_id hidden_state origin_workspace
+  local windows_json workspaces_json target_id origin_workspace
   parse_match_opts "$@"
   windows_json="$(niri_windows_json)"
-  target_id="$(select_target_window_id "$windows_json" || true)"
+  workspaces_json="$(niri_workspaces_json)"
+  refresh_scratch_entries "$windows_json"
+  target_id="$(select_target_window_id "$windows_json" "$workspaces_json" || true)"
   [[ -n "$target_id" ]] || return 1
 
-  hidden_state="$(scratch_hidden_state "$target_id")"
-  if [[ "$hidden_state" == "true" ]]; then
-    show_window_from_scratch "$target_id"
+  if scratch_entry_exists "$target_id"; then
+    remove_scratch_entry "$target_id"
     return 0
   fi
 
@@ -459,31 +553,31 @@ cmd_scratchpad_toggle() {
   fi
 
   hide_window_to_scratch "$target_id" "$origin_workspace"
+  if [[ "$MATCH_NO_MOVE" -eq 0 ]]; then
+    scratchpad_move_all "$windows_json"
+  fi
 }
 
 cmd_scratchpad_show() {
-  local focused_id focused_state windows_json current_workspace cursor selected_id tmp_file
+  local focused_id windows_json workspaces_json cursor selected_id tmp_file
   local -a hidden_ids matched_ids selected_ids
 
   parse_match_opts "$@"
   windows_json="$(niri_windows_json)"
-  current_workspace="$(current_workspace_id)"
-  [[ -n "$current_workspace" ]] || return 1
+  workspaces_json="$(niri_workspaces_json)"
+  refresh_scratch_entries "$windows_json"
 
   focused_id="$(focused_window_id)"
-  if [[ -n "$focused_id" ]]; then
-    focused_state="$(scratch_hidden_state "$focused_id")"
-    if [[ "$focused_state" == "false" ]]; then
-      hide_window_to_scratch "$focused_id" "$current_workspace"
-      return 0
-    fi
+  if [[ -n "$focused_id" ]] && scratch_entry_exists "$focused_id"; then
+    scratchpad_move_all "$windows_json"
+    return 0
   fi
 
   mapfile -t hidden_ids < <(jq -r '.entries // {} | to_entries[]? | select(.value.hidden == true) | .key' "$SCRATCH_FILE")
   [[ "${#hidden_ids[@]}" -gt 0 ]] || return 1
 
-  if [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_NAME" ]]; then
-    mapfile -t matched_ids < <(matched_window_ids "$windows_json")
+  if [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_INDEX$MATCH_WORKSPACE_NAME" ]]; then
+    mapfile -t matched_ids < <(matched_window_ids "$windows_json" "$workspaces_json")
     selected_ids=()
     for candidate_id in "${hidden_ids[@]}"; do
       for match_id in "${matched_ids[@]}"; do
@@ -509,19 +603,25 @@ cmd_scratchpad_show() {
 }
 
 cmd_scratchpad_show_all() {
-  local windows_json current_workspace focused_once
+  local windows_json workspaces_json focused_id focused_once
   local -a hidden_ids matched_ids selected_ids
 
   parse_match_opts "$@"
   windows_json="$(niri_windows_json)"
-  current_workspace="$(current_workspace_id)"
-  [[ -n "$current_workspace" ]] || return 1
+  workspaces_json="$(niri_workspaces_json)"
+  refresh_scratch_entries "$windows_json"
+
+  focused_id="$(focused_window_id)"
+  if [[ -n "$focused_id" ]] && scratch_entry_exists "$focused_id"; then
+    scratchpad_move_all "$windows_json"
+    return 0
+  fi
 
   mapfile -t hidden_ids < <(jq -r '.entries // {} | to_entries[]? | select(.value.hidden == true) | .key' "$SCRATCH_FILE")
   [[ "${#hidden_ids[@]}" -gt 0 ]] || return 1
 
-  if [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_NAME" ]]; then
-    mapfile -t matched_ids < <(matched_window_ids "$windows_json")
+  if [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_INDEX$MATCH_WORKSPACE_NAME" ]]; then
+    mapfile -t matched_ids < <(matched_window_ids "$windows_json" "$workspaces_json")
     selected_ids=()
     for candidate_id in "${hidden_ids[@]}"; do
       for match_id in "${matched_ids[@]}"; do
@@ -538,6 +638,9 @@ cmd_scratchpad_show_all() {
   [[ "${#selected_ids[@]}" -gt 0 ]] || return 1
 
   focused_once=0
+  local current_workspace
+  current_workspace="$(current_workspace_id)"
+  [[ -n "$current_workspace" ]] || return 1
   for window_id in "${selected_ids[@]}"; do
     niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace" >/dev/null 2>&1 || true
     set_scratch_hidden "$window_id" false "$current_workspace"
@@ -548,8 +651,44 @@ cmd_scratchpad_show_all() {
   done
 }
 
+sync_follow_mode() {
+  local current_workspace last_workspace
+  local -a follow_ids
+
+  current_workspace="$(current_workspace_id)"
+  [[ -n "$current_workspace" ]] || return 0
+
+  last_workspace="$(jq -r '.last_workspace_id // ""' "$FOLLOW_FILE")"
+  if [[ "$last_workspace" == "$current_workspace" ]]; then
+    return 0
+  fi
+
+  mapfile -t follow_ids < <(jq -r '.windows // [] | .[]' "$FOLLOW_FILE")
+  for window_id in "${follow_ids[@]}"; do
+    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace" >/dev/null 2>&1 || true
+  done
+
+  local tmp_file
+  tmp_file="$(mktemp)"
+  jq --arg ws "$current_workspace" '.last_workspace_id = $ws' "$FOLLOW_FILE" >"$tmp_file"
+  mv "$tmp_file" "$FOLLOW_FILE"
+}
+
 cmd_toggle_follow_mode() {
-  die "toggle-follow-mode is not implemented in osc-niri-flow"
+  local focused_id tmp_file
+  focused_id="$(focused_window_id)"
+  [[ -n "$focused_id" ]] || return 1
+
+  tmp_file="$(mktemp)"
+  jq --arg id "$focused_id" '
+    .windows = (.windows // []) |
+    if (.windows | index($id)) != null then
+      .windows = (.windows | map(select(. != $id)))
+    else
+      .windows = (.windows + [$id] | unique)
+    end
+  ' "$FOLLOW_FILE" >"$tmp_file"
+  mv "$tmp_file" "$FOLLOW_FILE"
 }
 
 main() {
@@ -567,6 +706,7 @@ main() {
 
   require_bins
   init_state
+  sync_follow_mode
   shift
 
   case "$command" in

@@ -9,7 +9,7 @@
 # 2. Layout & View (Sizing, Modes, Column Ops)
 # 3. DMS Integration (Launchers, UI, Power)
 # 4. System & Scripts (Audio, Media, VPN, Tools)
-# 5. Nirius Workflow (Smart Apps, Scratchpad)
+# 5. Niri Workflow (Smart Apps, Scratchpad)
 # 6. MPV Manager (Multimedia)
 # 7. Workspaces & Monitors
 # ==============================================================================
@@ -201,7 +201,7 @@
   '';
 
   # ---------------------------------------------------------------------------
-  # 5. NIRIUS WORKFLOW (Smart Focus & Routing)
+  # 5. NIRI WORKFLOW (Smart Focus & Routing)
   # ---------------------------------------------------------------------------
   nirius = ''
       ${lib.optionalString enableNiriusBinds ''

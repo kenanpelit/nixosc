@@ -61,7 +61,6 @@ let
     dms = "${config.home.profileDirectory}/bin/dms";
     niriSet = "${config.home.profileDirectory}/bin/niri-set";
     clipse = "clipse";
-    niriusd = "${if pkgs ? unstable && pkgs.unstable ? nirius then pkgs.unstable.nirius else pkgs.nirius}/bin/niriusd";
     nirius = "${config.home.profileDirectory}/bin/osc-niri-flow";
     niriuswitcher = "${if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
@@ -239,13 +238,7 @@ in
     enableNirius = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable nirius CLI-based workflow keybinds and helpers";
-    };
-
-    enableNiriusDaemon = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Start upstream niriusd daemon (off by default; local osc-niri-flow helper is daemon-free).";
+      description = "Enable daemon-free Niri workflow keybinds and helpers (osc-niri-flow).";
     };
 
     enableNiriswitcher = lib.mkOption {
@@ -570,26 +563,6 @@ EOF
         Service = {
           Type = "simple";
           ExecStart = "${bins.nsticky}";
-          Restart = "on-failure";
-          RestartSec = 2;
-          StandardOutput = "journal";
-          StandardError = "journal";
-        };
-        Install = {
-          WantedBy = [ "niri-session.target" ];
-        };
-      };
-
-      systemd.user.services.niriusd = lib.mkIf (cfg.enableNirius && cfg.enableNiriusDaemon) {
-        Unit = {
-          Description = "Niri: niriusd daemon";
-          After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
-          PartOf = [ "niri-session.target" ];
-          ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
-        };
-        Service = {
-          Type = "simple";
-          ExecStart = "${bins.niriusd}";
           Restart = "on-failure";
           RestartSec = 2;
           StandardOutput = "journal";
