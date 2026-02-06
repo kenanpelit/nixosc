@@ -88,14 +88,14 @@ let
     high="${toString autoCfg.highLoadPercent}"
     low="${toString autoCfg.lowLoadPercent}"
 
-    if $awk_bin -v load="$load_pct" -v high="$high" 'BEGIN { exit !(load >= high) }'; then
+    if $awk_bin -v lp="$load_pct" -v high="$high" 'BEGIN { exit !(lp >= high) }'; then
       if [ "$current" != "performance" ]; then
         $ppd set performance || true
       fi
       exit 0
     fi
 
-    if $awk_bin -v load="$load_pct" -v low="$low" 'BEGIN { exit !(load <= low) }'; then
+    if $awk_bin -v lp="$load_pct" -v low="$low" 'BEGIN { exit !(lp <= low) }'; then
       if [ "$current" = "performance" ]; then
         $ppd set balanced || true
       fi
