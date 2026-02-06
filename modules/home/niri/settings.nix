@@ -301,8 +301,8 @@ in
     // Input Configuration
     input {
       workspace-auto-back-and-forth;
-      focus-follows-mouse;
-      warp-mouse-to-focus mode="center-xy";
+      // Keep focus behavior deterministic without cursor warping.
+      focus-follows-mouse max-scroll-amount="0%";
 
       keyboard {
         xkb {
