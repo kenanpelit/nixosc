@@ -22,9 +22,15 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
    - `bootstrapNotifications` açıkken sadece sonuç bildirimi verir (başarı/hata), başlangıç popup’ı göstermez.
 4) Uzun yaşayan servisler ayrı unit’lerde yönetilir:
    - `niri-nsticky.service`
-   - `niriusd.service` (opsiyonel)
+   - `niriusd.service` (opsiyonel, `my.desktop.niri.enableNiriusDaemon = true` ise)
    - `niriswitcher.service` (opsiyonel)
    - `niri-bt-autoconnect.service` (opsiyonel, one-shot)
+
+## Niri workflow notu
+
+- `osc-niri-flow` komutu bu repoda daemon-free bash helper olarak sağlanır (`modules/home/scripts/bin/osc-niri-flow.sh`).
+- Bu sayede `niri-set here`, `osc-ndrop`, scratchpad/mark kısayolları `niriusd` olmadan çalışır.
+- İstersen upstream daemon yine açılabilir: `my.desktop.niri.enableNiriusDaemon = true`.
 
 ## Monitor profili (dock/undock)
 
