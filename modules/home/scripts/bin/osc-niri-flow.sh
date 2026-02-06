@@ -110,6 +110,31 @@ current_workspace_id() {
   printf '%s\n' "$ws_id"
 }
 
+current_workspace_index() {
+  local windows_json workspaces_json ws_idx
+
+  windows_json="$(niri_windows_json 2>/dev/null || true)"
+  workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
+
+  ws_idx="$(
+    jq -n \
+      --argjson wins "${windows_json:-[]}" \
+      --argjson wss "${workspaces_json:-[]}" \
+      -r '
+        def ws_by_id: reduce $wss[] as $ws ({}; .[($ws.id|tostring)] = $ws);
+        (first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id) // empty) as $wid
+        | if ($wid|tostring) != "" then
+            ((ws_by_id[($wid|tostring)] // {}).idx // empty)
+          else
+            (first($wss[]? | select(.is_focused == true) | .idx)
+             // first($wss[]? | select(.is_active == true) | .idx)
+             // empty)
+          end
+      ' 2>/dev/null || true
+  )"
+  printf '%s\n' "$ws_idx"
+}
+
 focused_window_id() {
   niri_windows_json | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty'
 }
@@ -264,13 +289,15 @@ cmd_focus_or_spawn() {
 }
 
 move_one_to_current_workspace() {
-  local windows_json workspaces_json current_workspace target_id window_workspace
+  local windows_json workspaces_json current_workspace current_workspace_idx target_id window_workspace
   local -a ids
 
   windows_json="$(niri_windows_json)"
   workspaces_json="$(niri_workspaces_json)"
   current_workspace="$(current_workspace_id)"
+  current_workspace_idx="$(current_workspace_index)"
   [[ -n "$current_workspace" ]] || return 1
+  [[ -n "$current_workspace_idx" ]] || return 1
 
   mapfile -t ids < <(matched_window_ids "$windows_json" "$workspaces_json")
   [[ "${#ids[@]}" -gt 0 ]] || return 1
@@ -286,7 +313,7 @@ move_one_to_current_workspace() {
   done
   [[ -n "$target_id" ]] || return 1
 
-  niri msg action move-window-to-workspace --window-id "$target_id" --focus false "$current_workspace" >/dev/null
+  niri msg action move-window-to-workspace --window-id "$target_id" --focus false "$current_workspace_idx" >/dev/null
   if [[ "$MATCH_FOCUS" -eq 1 ]]; then
     niri msg action focus-window --id "$target_id" >/dev/null 2>&1 || true
   fi
@@ -456,11 +483,11 @@ focused_output_name() {
   '
 }
 
-scratch_workspace_id() {
+scratch_workspace_index() {
   local output ws_id
   output="$(focused_output_name)"
   if [[ -n "$output" ]]; then
-    ws_id="$(niri_workspaces_json | jq -r --arg out "$output" '([.[] | select((.output // "") == $out)] | max_by(.idx) | .id // empty)')"
+    ws_id="$(niri_workspaces_json | jq -r --arg out "$output" '([.[] | select((.output // "") == $out)] | max_by(.idx) | .idx // empty)')"
     if [[ -n "$ws_id" ]]; then
       printf '%s\n' "$ws_id"
       return 0
@@ -488,7 +515,7 @@ scratchpad_move_all() {
   local target_ws
   local -a scratch_ids
 
-  target_ws="$(scratch_workspace_id)"
+  target_ws="$(scratch_workspace_index)"
   [[ -n "$target_ws" ]] || return 1
 
   mapfile -t scratch_ids < <(jq -r '.entries // {} | keys[]?' "$SCRATCH_FILE")
@@ -509,7 +536,7 @@ hide_window_to_scratch() {
   if [[ "$MATCH_NO_MOVE" -eq 0 ]]; then
     windows_json="$(niri_windows_json)"
     ensure_window_floating "$window_id" "$windows_json"
-    scratch_workspace="$(scratch_workspace_id)"
+    scratch_workspace="$(scratch_workspace_index)"
     niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$scratch_workspace" >/dev/null 2>&1 || true
   fi
   set_scratch_hidden "$window_id" true "$origin_workspace"
@@ -517,10 +544,12 @@ hide_window_to_scratch() {
 
 show_window_from_scratch() {
   local window_id="$1"
-  local current_workspace
+  local current_workspace current_workspace_idx
   current_workspace="$(current_workspace_id)"
+  current_workspace_idx="$(current_workspace_index)"
   [[ -n "$current_workspace" ]] || return 1
-  niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace" >/dev/null 2>&1 || true
+  [[ -n "$current_workspace_idx" ]] || return 1
+  niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace_idx" >/dev/null 2>&1 || true
   niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
   set_scratch_hidden "$window_id" false "$current_workspace"
 }
@@ -653,11 +682,13 @@ cmd_scratchpad_show_all() {
   [[ "${#selected_ids[@]}" -gt 0 ]] || return 1
 
   focused_once=0
-  local current_workspace
+  local current_workspace current_workspace_idx
   current_workspace="$(current_workspace_id)"
+  current_workspace_idx="$(current_workspace_index)"
   [[ -n "$current_workspace" ]] || return 1
+  [[ -n "$current_workspace_idx" ]] || return 1
   for window_id in "${selected_ids[@]}"; do
-    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace" >/dev/null 2>&1 || true
+    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace_idx" >/dev/null 2>&1 || true
     set_scratch_hidden "$window_id" false "$current_workspace"
     if [[ "$focused_once" -eq 0 ]]; then
       niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
@@ -667,11 +698,13 @@ cmd_scratchpad_show_all() {
 }
 
 sync_follow_mode() {
-  local current_workspace last_workspace
+  local current_workspace current_workspace_idx last_workspace
   local -a follow_ids
 
   current_workspace="$(current_workspace_id)"
+  current_workspace_idx="$(current_workspace_index)"
   [[ -n "$current_workspace" ]] || return 0
+  [[ -n "$current_workspace_idx" ]] || return 0
 
   last_workspace="$(jq -r '.last_workspace_id // ""' "$FOLLOW_FILE")"
   if [[ "$last_workspace" == "$current_workspace" ]]; then
@@ -680,7 +713,7 @@ sync_follow_mode() {
 
   mapfile -t follow_ids < <(jq -r '.windows // [] | .[]' "$FOLLOW_FILE")
   for window_id in "${follow_ids[@]}"; do
-    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace" >/dev/null 2>&1 || true
+    niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace_idx" >/dev/null 2>&1 || true
   done
 
   local tmp_file
