@@ -79,6 +79,85 @@ init_state() {
   [[ -f "$MARKS_FILE" ]] || printf '{"marks":{}}\n' >"$MARKS_FILE"
   [[ -f "$SCRATCH_FILE" ]] || printf '{"entries":{},"cursor":0}\n' >"$SCRATCH_FILE"
   [[ -f "$FOLLOW_FILE" ]] || printf '{"windows":[],"last_workspace_id":""}\n' >"$FOLLOW_FILE"
+
+  # Keep state files backward-compatible even if an older version wrote
+  # different JSON shapes.
+  normalize_state_file "$MARKS_FILE" '{"marks":{}}' '
+    if type != "object" then {marks:{}} else . end
+    | .marks = (
+        if (.marks | type) == "object" then .marks
+        elif (.marks | type) == "array" then
+          (.marks | map(tostring) | reduce .[] as $id ({}; .[$id] = true))
+        else {}
+        end
+      )
+    | .marks = (.marks | with_entries(.value = ((.value // []) | if type == "array" then map(tostring) else [] end)))
+  '
+
+  normalize_state_file "$SCRATCH_FILE" '{"entries":{},"cursor":0}' '
+    def normalize_entries:
+      if type == "object" then .
+      elif type == "array" then
+        (
+          map(
+            if (type == "object" and has("key") and has("value")) then
+              { key: (.key | tostring), value: .value }
+            elif (type == "array" and length == 2) then
+              { key: (.[0] | tostring), value: .[1] }
+            else
+              empty
+            end
+          )
+          | from_entries
+        )
+      else
+        {}
+      end;
+
+    if type != "object" then {entries:{}, cursor:0} else . end
+    | .entries = ((.entries // {}) | normalize_entries)
+    | .entries = (
+        .entries
+        | with_entries(
+            .value = (
+              if (.value | type) == "object" then
+                {
+                  origin_ws: ((.value.origin_ws // "") | tostring),
+                  hidden: ((.value.hidden // false) | if type == "boolean" then . else false end)
+                }
+              else
+                { origin_ws: "", hidden: false }
+              end
+            )
+          )
+      )
+    | .cursor = ((.cursor // 0) | tonumber? // 0)
+  '
+
+  normalize_state_file "$FOLLOW_FILE" '{"windows":[],"last_workspace_id":""}' '
+    if type != "object" then {windows:[], last_workspace_id:""} else . end
+    | .windows = ((.windows // []) | if type == "array" then map(tostring) else [] end | unique)
+    | .last_workspace_id = ((.last_workspace_id // "") | tostring)
+  '
+}
+
+normalize_state_file() {
+  local file="$1"
+  local fallback_json="$2"
+  local jq_program="$3"
+  local tmp_file
+
+  if ! jq -e . "$file" >/dev/null 2>&1; then
+    printf '%s\n' "$fallback_json" >"$file"
+  fi
+
+  tmp_file="$(mktemp)"
+  if jq "$jq_program" "$file" >"$tmp_file" 2>/dev/null; then
+    mv "$tmp_file" "$file"
+  else
+    rm -f "$tmp_file"
+    printf '%s\n' "$fallback_json" >"$file"
+  fi
 }
 
 niri_windows_json() {
@@ -455,7 +534,7 @@ refresh_scratch_entries() {
     .entries = (.entries // {}) |
     .entries = (
       .entries
-      | with_entries(select(($live | index(.key)) != null))
+      | with_entries(select(. as $entry | ($live | index($entry.key)) != null))
     )
   '
 }
