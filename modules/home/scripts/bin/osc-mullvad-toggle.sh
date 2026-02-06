@@ -3,12 +3,17 @@ set -euo pipefail
 
 SCRIPT_NAME="$(basename "$0")"
 LOG_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/osc-mullvad-toggle.log"
-LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/osc-mullvad-toggle.lock"
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/osc-mullvad-toggle.$(id -u).lock"
 
 mkdir -p "$(dirname "$LOG_FILE")"
+if ! touch "$LOG_FILE" 2>/dev/null; then
+  LOG_FILE="${XDG_RUNTIME_DIR:-/tmp}/osc-mullvad-toggle.$(id -u).log"
+  mkdir -p "$(dirname "$LOG_FILE")"
+  touch "$LOG_FILE" 2>/dev/null || true
+fi
 
 log() {
-  printf "%s %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG_FILE"
+  { printf "%s %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG_FILE"; } 2>/dev/null || true
 }
 
 die() {
@@ -24,14 +29,20 @@ Usage:
 
 Options:
   --no-blocky     Do not toggle Blocky together with Mullvad
-  --dry-run       Pass through to osc-mullvad (no state-changing action)
+  --dry-run       Preview actions only (no state-changing action)
   --no-notify     Suppress desktop notifications
 EOF
 }
 
 trim_log() {
-  if [[ -f "$LOG_FILE" ]] && [[ "$(wc -l <"$LOG_FILE")" -gt 200 ]]; then
-    tail -n 200 "$LOG_FILE" >"${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "$LOG_FILE"
+  if [[ -f "$LOG_FILE" ]] && [[ -w "$LOG_FILE" ]] && [[ "$(wc -l <"$LOG_FILE" 2>/dev/null || echo 0)" -gt 200 ]]; then
+    local tmp_log
+    tmp_log="$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/osc-mullvad-toggle.log.XXXXXX" 2>/dev/null || true)"
+    if [[ -n "${tmp_log:-}" ]]; then
+      tail -n 200 "$LOG_FILE" >"$tmp_log" 2>/dev/null || true
+      cat "$tmp_log" >"$LOG_FILE" 2>/dev/null || true
+      rm -f "$tmp_log" 2>/dev/null || true
+    fi
   fi
 }
 
@@ -85,12 +96,44 @@ notify_user() {
 }
 
 run_toggle() {
+  if [[ "${dry_run}" == "1" ]]; then
+    preview_toggle
+    return 0
+  fi
+
   local cmd=("${OSC_MULLVAD_BIN}" toggle)
   [[ "${with_blocky}" == "1" ]] && cmd+=(--with-blocky)
-  [[ "${dry_run}" == "1" ]] && cmd+=(--dry-run)
 
   log "run: ${cmd[*]}"
   "${cmd[@]}"
+}
+
+preview_toggle() {
+  local vpn_connected="0"
+  local blocky_active="0"
+
+  if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
+    vpn_connected="1"
+  fi
+  if systemctl is-active --quiet blocky.service 2>/dev/null; then
+    blocky_active="1"
+  fi
+
+  echo "[dry-run] current: mullvad=$([[ "$vpn_connected" == "1" ]] && echo connected || echo disconnected), blocky=$([[ "$blocky_active" == "1" ]] && echo on || echo off)"
+  if [[ "${with_blocky}" == "1" ]]; then
+    if [[ "$vpn_connected" == "1" ]]; then
+      echo "[dry-run] next: disconnect Mullvad, start Blocky"
+    else
+      echo "[dry-run] next: stop Blocky, connect Mullvad"
+    fi
+  else
+    if [[ "$vpn_connected" == "1" ]]; then
+      echo "[dry-run] next: disconnect Mullvad"
+    else
+      echo "[dry-run] next: connect Mullvad"
+    fi
+  fi
+  log "dry-run preview emitted"
 }
 
 run_via_pkexec() {
@@ -108,7 +151,6 @@ run_via_pkexec() {
     "$0" --as-root
   )
   [[ "${with_blocky}" == "0" ]] && pkexec_cmd+=(--no-blocky)
-  [[ "${dry_run}" == "1" ]] && pkexec_cmd+=(--dry-run)
   [[ "${notify_enabled}" == "0" ]] && pkexec_cmd+=(--no-notify)
 
   log "pkexec: exec root helper"
@@ -149,12 +191,20 @@ resolve_osc_mullvad
 # re-enters this script with --as-root while the parent process still holds
 # the lock.
 if [[ "${run_as_root}" != "1" ]] && command -v flock >/dev/null 2>&1; then
-  exec 9>"$LOCK_FILE"
-  flock -n 9 || die "another toggle is already running"
+  if ! { exec 9>"$LOCK_FILE"; } 2>/dev/null; then
+    log "warn: lock file unavailable, continuing without lock: $LOCK_FILE"
+  else
+    flock -n 9 || die "another toggle is already running"
+  fi
 fi
 
 if [[ "${run_as_root}" == "1" ]] && [[ "$(id -u)" -ne 0 ]]; then
   die "--as-root can only be used by root"
+fi
+
+if [[ "${dry_run}" == "1" ]]; then
+  run_toggle
+  exit 0
 fi
 
 if [[ "$(id -u)" -eq 0 ]]; then
