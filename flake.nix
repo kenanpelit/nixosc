@@ -133,30 +133,6 @@
       # url = "github:AvengeMedia/DankMaterialShell/eaa6a664c89f776f406d74d29eb8f7d1b4411e3d"; # 0202 - Updated commit
     };
 
-    # ==========================================================================
-    # Dev Tools / Lint / Format
-    # ==========================================================================
-    # These are used in `outputs-builder` for checks and devShell tooling.
-    poetry2nix = {
-      url = "github:nix-community/poetry2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    statix = {
-      url = "github:nerdypepper/statix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    deadnix = {
-      url = "github:astro/deadnix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    alejandra = {
-      url = "github:kamadorueda/alejandra";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     dsearch = {
       url = "github:AvengeMedia/danksearch";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -260,9 +236,19 @@
           channels:
           let
             system = channels.nixpkgs.stdenv.hostPlatform.system;
-            alejandra = inputs.alejandra.packages.${system}.default;
-            statix = inputs.statix.packages.${system}.default;
-            deadnix = inputs.deadnix.packages.${system}.default;
+            unstablePkgs = inputs."nixpkgs-unstable".legacyPackages.${system};
+            alejandra =
+              if unstablePkgs ? alejandra
+              then unstablePkgs.alejandra
+              else channels.nixpkgs.alejandra;
+            statix =
+              if unstablePkgs ? statix
+              then unstablePkgs.statix
+              else channels.nixpkgs.statix;
+            deadnix =
+              if unstablePkgs ? deadnix
+              then unstablePkgs.deadnix
+              else channels.nixpkgs.deadnix;
             treefmt = channels.nixpkgs.treefmt;
           in
           {

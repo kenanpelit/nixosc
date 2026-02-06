@@ -56,7 +56,7 @@ in
       lua-language-server stylua
       nixd nil nixfmt-rfc-style
       shellcheck shfmt
-      treefmt inputs.alejandra.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+      treefmt (if pkgs ? unstable && pkgs.unstable ? alejandra then pkgs.unstable.alejandra else pkgs.alejandra)
       inputs.dgop.packages.${pkgs.stdenv.hostPlatform.system}.default
       
       # Debugging & Analysis
