@@ -7,11 +7,10 @@ set -euo pipefail
 VERSION="1.1.0"
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 STATE_DIR="${STATE_HOME}/osc-niri-flow"
-LEGACY_STATE_DIR="${STATE_HOME}/nirius"
 MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
 FOLLOW_FILE="$STATE_DIR/follow.json"
-SCRATCH_WORKSPACE_FALLBACK="${NIRIUS_SCRATCH_WORKSPACE:-99}"
+SCRATCH_WORKSPACE_FALLBACK="${OSC_NIRI_FLOW_SCRATCH_WORKSPACE:-99}"
 
 MATCH_APP_ID=""
 MATCH_TITLE=""
@@ -77,11 +76,6 @@ require_bins() {
 
 init_state() {
   mkdir -p "$STATE_DIR"
-  if [[ "$STATE_DIR" != "$LEGACY_STATE_DIR" && -d "$LEGACY_STATE_DIR" ]]; then
-    [[ -f "$MARKS_FILE" ]] || [[ ! -f "$LEGACY_STATE_DIR/marks.json" ]] || cp "$LEGACY_STATE_DIR/marks.json" "$MARKS_FILE"
-    [[ -f "$SCRATCH_FILE" ]] || [[ ! -f "$LEGACY_STATE_DIR/scratchpad.json" ]] || cp "$LEGACY_STATE_DIR/scratchpad.json" "$SCRATCH_FILE"
-    [[ -f "$FOLLOW_FILE" ]] || [[ ! -f "$LEGACY_STATE_DIR/follow.json" ]] || cp "$LEGACY_STATE_DIR/follow.json" "$FOLLOW_FILE"
-  fi
   [[ -f "$MARKS_FILE" ]] || printf '{"marks":{}}\n' >"$MARKS_FILE"
   [[ -f "$SCRATCH_FILE" ]] || printf '{"entries":{},"cursor":0}\n' >"$SCRATCH_FILE"
   [[ -f "$FOLLOW_FILE" ]] || printf '{"windows":[],"last_workspace_id":""}\n' >"$FOLLOW_FILE"

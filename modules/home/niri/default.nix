@@ -54,15 +54,15 @@ let
   # ---------------------------------------------------------------------------
   # Binary Paths & Features
   # ---------------------------------------------------------------------------
-  enableNiriusBinds = cfg.enableNirius;
+  enableWorkflowBinds = cfg.enableWorkflow;
 
   bins = {
     kitty = "${pkgs.kitty}/bin/kitty";
     dms = "${config.home.profileDirectory}/bin/dms";
     niriSet = "${config.home.profileDirectory}/bin/niri-set";
     clipse = "clipse";
-    nirius = "${config.home.profileDirectory}/bin/osc-niri-flow";
-    niriuswitcher = "${if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher}/bin/niriswitcher";
+    niriFlow = "${config.home.profileDirectory}/bin/osc-niri-flow";
+    niriSwitcher = "${if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher}/bin/niriswitcher";
     nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
   };
 
@@ -70,7 +70,7 @@ let
   # Imports
   # ---------------------------------------------------------------------------
   bindsConfig = import ./binds.nix {
-    inherit lib pkgs bins enableNiriusBinds;
+    inherit lib pkgs bins enableWorkflowBinds;
   };
 
   rulesConfig = import ./rules.nix {
@@ -108,7 +108,7 @@ let
 
   bindConfigText = lib.concatStringsSep "\n" [
     bindsConfig.core
-    bindsConfig.nirius
+    bindsConfig.workflow
     bindsConfig.dms
     bindsConfig.apps
     bindsConfig.mpv
@@ -235,7 +235,7 @@ in
       description = "Optional workspace index to focus during startup init (null disables forced focus).";
     };
 
-    enableNirius = lib.mkOption {
+    enableWorkflow = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Enable daemon-free Niri workflow keybinds and helpers (osc-niri-flow).";
@@ -306,7 +306,7 @@ in
         "binds {"
         bindsConfig.core
         bindsConfig.layout
-        bindsConfig.nirius
+        bindsConfig.workflow
         bindsConfig.dms
         bindsConfig.apps
         bindsConfig.mpv
@@ -582,7 +582,7 @@ EOF
         };
         Service = {
           Type = "simple";
-          ExecStart = "${bins.niriuswitcher}";
+          ExecStart = "${bins.niriSwitcher}";
           Restart = "on-failure";
           RestartSec = 2;
           StandardOutput = "journal";
