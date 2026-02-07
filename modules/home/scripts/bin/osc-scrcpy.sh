@@ -169,12 +169,18 @@ launch_scrcpy() {
     --window-title "Android Screen Mirror"
     --mouse=uhid
     --keyboard=uhid
-    --no-mouse-hover
     --disable-screensaver
   )
 
   info "Starting scrcpy..."
   SCRCPY_OPTS= SCRCPY_ARGS= scrcpy "${scrcpy_cmd[@]}" >"$LOG_FILE" 2>&1 &
+  local scrcpy_pid=$!
+  sleep 0.8
+  if ! kill -0 "$scrcpy_pid" 2>/dev/null; then
+    warn "scrcpy exited immediately. Last log lines:"
+    tail -n 40 "$LOG_FILE" >&2 || true
+    return 1
+  fi
 }
 
 try_saved_connection() {
