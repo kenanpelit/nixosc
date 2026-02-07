@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# niri-set - Niri session helper multiplexer
-# ==============================================================================
-# Single entrypoint for Niri helper tasks that used to live in separate scripts:
-#   - tty
-#   - env
-#   - init
-#   - lock
-#   - go (arrange-windows)
-#   - here
-#   - cast
-#   - flow
-#   - doctor
+# -----------------------------------------------------------------------------
+# niri-set
+# -----------------------------------------------------------------------------
+# Purpose:
+# - Main Niri session helper multiplexer used by keybinds, startup, and ops.
+# - Consolidates session/bootstrap/window-routing helpers behind one command.
 #
-# Usage:
-#   niri-set <subcommand> [args...]
+# Interface:
+# - `niri-set <subcommand> [args...]`
+# - Major groups: session (`tty`, `env`, `init`, `lock`), routing (`go`, `here`,
+#   `flow`, `cast`), diagnostics (`doctor`), and layout toggles (`float`, `zen`,
+#   `pin`).
 #
-# This file is intentionally self-contained because `modules/home/scripts/bin.nix`
-# packages each `*.sh` file as a standalone binary.
-# ==============================================================================
+# Design notes:
+# - Intentionally self-contained because each `*.sh` is packaged as an
+#   independent binary by `modules/home/scripts/bin.nix`.
+# - Prefers graceful fallback behavior for optional desktop integrations (DMS,
+#   notifications, portals, etc.).
+#
+# See:
+# - `niri-set help`
+# -----------------------------------------------------------------------------
 
 set -euo pipefail
 

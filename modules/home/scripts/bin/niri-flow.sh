@@ -1,29 +1,32 @@
 #!/usr/bin/env bash
-#
+# -----------------------------------------------------------------------------
 # niri-flow
-# ----------
-# Daemon-free workflow helper for Niri, built on top of `niri msg`.
+# -----------------------------------------------------------------------------
+# Purpose:
+# - Daemon-free workflow layer for Niri, implemented directly on `niri msg`.
+# - Keeps daily keybind workflows fast and dependency-light.
 #
-# What it provides:
-# - focus / focus-or-spawn helpers
-# - move window to current workspace helpers
-# - marks (toggle, focus, list)
-# - scratchpad primitives (toggle, show, show-all)
-# - follow-mode toggling
+# Interface:
+# - Subcommands for focus/focus-or-spawn and workspace routing.
+# - Mark and scratchpad primitives (`toggle`, `show`, `show-all`).
+# - Follow-mode toggling for tracked windows.
 #
-# Why this script exists:
-# - keeps keybind workflows working without external daemon dependencies
-# - stores only small local state under XDG state directory
+# State (XDG):
+# - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-flow/marks.json
+# - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-flow/scratchpad.json
+# - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-flow/follow.json
 #
-# State files:
-# - marks.json
-# - scratchpad.json
-# - follow.json
+# Tunables:
+# - OSC_NIRI_FLOW_SCRATCH_WORKSPACE (default: 99)
 #
-# Quick usage:
-#   niri-flow --help
-#   niri-flow scratchpad-toggle
-#   niri-flow move-to-current-workspace --app-id '^kitty$' --focus
+# Dependencies:
+# - niri
+# - jq
+#
+# Notes:
+# - This script is stateful but daemon-free.
+# - Run `niri-flow --help` for the full command surface.
+# -----------------------------------------------------------------------------
 
 set -euo pipefail
 

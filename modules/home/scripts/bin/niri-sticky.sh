@@ -1,4 +1,34 @@
 #!/usr/bin/env bash
+# -----------------------------------------------------------------------------
+# niri-sticky
+# -----------------------------------------------------------------------------
+# Purpose:
+# - Native sticky/stage workflow helper for Niri (no external `nsticky`).
+# - Maintains sticky windows across workspace switches via daemon mode.
+# - Implements stage cycle semantics: normal -> sticky -> staged -> sticky.
+#
+# Interface:
+# - `niri-sticky sticky ...` : sticky list/state operations
+# - `niri-sticky stage ...`  : stage list/state operations
+# - `niri-sticky <action>`   : top-level sticky aliases (list/toggle/add/...)
+# - `niri-sticky`            : daemon mode (workspace watcher)
+#
+# State (XDG):
+# - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-sticky/state.json
+# - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-sticky/state.lock
+#
+# Tunables:
+# - NIRI_STICKY_POLL_INTERVAL   daemon poll interval (default: 0.35s)
+# - NIRI_STICKY_STAGE_WORKSPACE stage workspace name (default: stage)
+# - NIRI_STICKY_NOTIFY          1/0 enable notifications (default: 1)
+# - NIRI_STICKY_NOTIFY_TIMEOUT  notify timeout ms (default: 1400)
+#
+# Dependencies:
+# - niri
+# - jq
+# - flock
+# -----------------------------------------------------------------------------
+
 set -euo pipefail
 
 VERSION="1.1.0"
