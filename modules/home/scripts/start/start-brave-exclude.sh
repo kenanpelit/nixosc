@@ -9,6 +9,9 @@ readonly WORKSPACE=6
 readonly VPN_MODE="bypass"
 readonly FULLSCREEN=false
 readonly WAIT_TIME=1
+readonly COMMAND="profile_brave"
+readonly ARGS_STR="Exclude --separate --restore-last-session"
+readonly STATE_DIR="/run/user/1000/semsumo"
 
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
@@ -22,6 +25,11 @@ else
 fi
 
 echo "Initializing brave-exclude on $WM_TYPE..."
+
+APP_ARGS=()
+if [[ -n "$ARGS_STR" ]]; then
+    read -r -a APP_ARGS <<<"$ARGS_STR"
+fi
 
 # External monitor setup (GNOME only)
 if [[ "$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
@@ -65,7 +73,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: profile_brave Exclude --separate --restore-last-session"
+echo "COMMAND: $COMMAND ${APP_ARGS[*]}"
 echo "VPN MODE: $VPN_MODE"
 
 # Start application with VPN mode
@@ -74,14 +82,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude profile_brave Exclude --separate --restore-last-session &
+                mullvad-exclude "$COMMAND" "${APP_ARGS[@]}" &
             else
                 echo "WARNING: mullvad-exclude not found"
-                profile_brave Exclude --separate --restore-last-session &
+                "$COMMAND" "${APP_ARGS[@]}" &
             fi
         else
             echo "VPN not connected"
-            profile_brave Exclude --separate --restore-last-session &
+            "$COMMAND" "${APP_ARGS[@]}" &
         fi
         ;;
     secure|*)
@@ -90,13 +98,14 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        profile_brave Exclude --separate --restore-last-session &
+        "$COMMAND" "${APP_ARGS[@]}" &
         ;;
 esac
 
 APP_PID=$!
-mkdir -p "/tmp/semsumo"
-echo "$APP_PID" > "/tmp/semsumo/brave-exclude.pid"
+mkdir -p "$STATE_DIR"
+echo "$APP_PID" > "$STATE_DIR/brave-exclude.pid"
+echo "$COMMAND" > "$STATE_DIR/brave-exclude.cmd"
 echo "Application started (PID: $APP_PID)"
 
 # Window verification (Hyprland only)

@@ -9,6 +9,9 @@ readonly WORKSPACE=1
 readonly VPN_MODE="secure"
 readonly FULLSCREEN=false
 readonly WAIT_TIME=2
+readonly COMMAND="profile_brave"
+readonly ARGS_STR="Kenp --separate --restore-last-session"
+readonly STATE_DIR="/run/user/1000/semsumo"
 
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
@@ -22,6 +25,11 @@ else
 fi
 
 echo "Initializing brave-kenp on $WM_TYPE..."
+
+APP_ARGS=()
+if [[ -n "$ARGS_STR" ]]; then
+    read -r -a APP_ARGS <<<"$ARGS_STR"
+fi
 
 # External monitor setup (GNOME only)
 if [[ "$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
@@ -65,7 +73,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: profile_brave Kenp --separate --restore-last-session"
+echo "COMMAND: $COMMAND ${APP_ARGS[*]}"
 echo "VPN MODE: $VPN_MODE"
 
 # Start application with VPN mode
@@ -74,23 +82,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mkdir -p "/tmp/semsumo"
-                PID_FILE="/tmp/semsumo/brave-kenp.pid"
-                rm -f "$PID_FILE" 2>/dev/null || true
-                mullvad-exclude profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
+                mullvad-exclude "$COMMAND" "${APP_ARGS[@]}" &
             else
                 echo "WARNING: mullvad-exclude not found"
-                mkdir -p "/tmp/semsumo"
-                PID_FILE="/tmp/semsumo/brave-kenp.pid"
-                rm -f "$PID_FILE" 2>/dev/null || true
-                profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
+                "$COMMAND" "${APP_ARGS[@]}" &
             fi
         else
             echo "VPN not connected"
-            mkdir -p "/tmp/semsumo"
-            PID_FILE="/tmp/semsumo/brave-kenp.pid"
-            rm -f "$PID_FILE" 2>/dev/null || true
-            profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
+            "$COMMAND" "${APP_ARGS[@]}" &
         fi
         ;;
     secure|*)
@@ -99,15 +98,15 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        mkdir -p "/tmp/semsumo"
-        PID_FILE="/tmp/semsumo/brave-kenp.pid"
-        rm -f "$PID_FILE" 2>/dev/null || true
-        profile_brave Kenp --separate --restore-last-session --pid-file="$PID_FILE"
+        "$COMMAND" "${APP_ARGS[@]}" &
         ;;
 esac
 
-APP_PID="$(tr -d '[:space:]' <"${PID_FILE:-/tmp/semsumo/brave-kenp.pid}" 2>/dev/null || true)"
-echo "Application started (PID: ${APP_PID:-unknown})"
+APP_PID=$!
+mkdir -p "$STATE_DIR"
+echo "$APP_PID" > "$STATE_DIR/brave-kenp.pid"
+echo "$COMMAND" > "$STATE_DIR/brave-kenp.cmd"
+echo "Application started (PID: $APP_PID)"
 
 # Window verification (Hyprland only)
 if [[ "$WORKSPACE" != "0" && "$WM_TYPE" == "hyprland" ]] && command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
