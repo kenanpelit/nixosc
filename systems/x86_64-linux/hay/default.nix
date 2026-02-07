@@ -24,6 +24,8 @@
 
   # Power profiles via power-profiles-daemon (powerprofilesctl).
   # (moved to modules/nixos/hosts/hay.nix)
+  my.power.autoProfile.enable = true;
+  my.power.autoProfile.interval = "20s";
 
   # Set User (Defaults to "kenan" but good to be explicit)
   my.user.name = "kenan";
@@ -94,6 +96,8 @@
   # ============================================================================
   # Networking
   # ============================================================================
+  my.firewall.allowKDEConnectPorts = true;
+
   networking = {
     networkmanager = {
       enable = true;
@@ -109,14 +113,6 @@
     firewall = {
       allowPing           = false;
       logReversePathDrops = true;
-
-      # KDE Connect (GSConnect-compatible) device pairing / sync
-      allowedTCPPortRanges = [
-        { from = 1714; to = 1764; }
-      ];
-      allowedUDPPortRanges = [
-        { from = 1714; to = 1764; }
-      ];
     };
   };
 

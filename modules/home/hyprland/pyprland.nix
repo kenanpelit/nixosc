@@ -6,6 +6,37 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.my.desktop.hyprland;
+  basePlugins = [
+    "scratchpads"
+    "lost_windows"
+    "shift_monitors"
+    "toggle_dpms"
+    "workspaces_follow_focus"
+  ];
+  extendedPlugins = [
+    "expose"
+    "magnify"
+    "layout_center"
+  ];
+  enabledPlugins = basePlugins ++ lib.optionals cfg.enablePyprlandExtendedPlugins extendedPlugins;
+  pluginListToml = lib.concatStringsSep ",\n      " (map (name: "\"${name}\"") enabledPlugins);
+  extendedPluginSections = lib.optionalString cfg.enablePyprlandExtendedPlugins ''
+    # ---------------------------------------------------------------------------
+    # Extended Plugin Configurations
+    # ---------------------------------------------------------------------------
+    [expose]
+    include_special = false
+    include_floating = true
+    show_titles = true
+
+    [magnify]
+    factor = 1.5
+    duration = 200
+
+    [layout_center]
+    margin = 60
+    reserve_workspaces = 1
+  '';
 in
 lib.mkIf cfg.enable {
   # =============================================================================
@@ -17,14 +48,7 @@ lib.mkIf cfg.enable {
     # ---------------------------------------------------------------------------
     [pyprland]
     plugins = [
-      "scratchpads",
-      "lost_windows",
-      "shift_monitors",
-      "toggle_dpms",
-      "expose",
-      "workspaces_follow_focus",
-      "magnify",              # New: Window magnification
-      "layout_center",        # New: Center layout
+      ${pluginListToml}
     ]
     
     # ---------------------------------------------------------------------------
@@ -50,13 +74,8 @@ lib.mkIf cfg.enable {
     focus_follows_mouse = true # Follow mouse focus
     
     # ---------------------------------------------------------------------------
-    # Feature Configurations - Enhanced
+    # Core Feature Configurations
     # ---------------------------------------------------------------------------
-    [expose]
-    include_special = false
-    include_floating = true    # Include floating windows
-    show_titles = true         # Show window titles
-    
     [lost_windows]
     include_special = false
     auto_recover = true        # Auto recover lost windows
@@ -65,19 +84,7 @@ lib.mkIf cfg.enable {
     dpms_timeout = 600
     multi_monitor = true       # Multi-monitor DPMS support
     
-    # ---------------------------------------------------------------------------
-    # New: Magnify Plugin
-    # ---------------------------------------------------------------------------
-    [magnify]
-    factor = 1.5              # Magnification factor
-    duration = 200            # Animation duration (ms)
-    
-    # ---------------------------------------------------------------------------
-    # New: Layout Center Plugin  
-    # ---------------------------------------------------------------------------
-    [layout_center]
-    margin = 60               # Margin
-    reserve_workspaces = 1    # Reserved workspaces count
+    ${extendedPluginSections}
     
     # ---------------------------------------------------------------------------
     # Volume Control Scratchpad - Enhanced

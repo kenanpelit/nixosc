@@ -6,15 +6,10 @@
 # - Adds workspace overview/expo settings
 # ==============================================================================
 
-{ inputs, config, lib, pkgs, ... }:
+{ config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
-  system = pkgs.stdenv.hostPlatform.system;
-
-  hyprexpoPkg =
-    if inputs ? hyprland-plugins
-    then inputs.hyprland-plugins.packages.${system}.hyprexpo
-    else null;
+  hyprexpoPkg = cfg.hyprexpoPackage;
     
   inherit (config.catppuccin) sources;
   flavor = config.catppuccin.flavor;
@@ -24,7 +19,7 @@ lib.mkIf cfg.enable {
   assertions = [
     {
       assertion = hyprexpoPkg != null;
-      message = "hyprexpo is enabled but `inputs.hyprland-plugins` is missing.";
+      message = "hyprexpo is enabled but `pkgs.unstable.hyprlandPlugins.hyprexpo` is missing.";
     }
   ];
 

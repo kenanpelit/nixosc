@@ -56,7 +56,7 @@ in
       lua-language-server stylua
       nixd nil nixfmt-rfc-style
       shellcheck shfmt
-      treefmt inputs.alejandra.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+      treefmt (if pkgs ? unstable && pkgs.unstable ? alejandra then pkgs.unstable.alejandra else pkgs.alejandra)
       inputs.dgop.packages.${pkgs.stdenv.hostPlatform.system}.default
       
       # Debugging & Analysis
@@ -85,6 +85,7 @@ in
       curl wget aria2       # Downloaders
       transmission_4        # Transmission suite (includes transmission-remote CLI)
       pirate-get            # Pirate Bay magnet search/download helper
+      syncthing             # Continuous file synchronization
       dig                   # DNS tools
       nmap mtr iputils fping # Network diagnostics
       iftop iptraf-ng       # Traffic monitoring
@@ -114,10 +115,13 @@ in
       eyed3                 # ID3 tags
       
       # Screenshot/Recording
+      normcap               # OCR powered screen-capture tool
       grim slurp            # Wayland screenshot
       wf-recorder           # Screen recorder
       swappy satty          # Screenshot editing
-      inputs.hypr-contrib.packages.${pkgs.stdenv.hostPlatform.system}.grimblast
+      # grimblast is available in nixpkgs; prefer it from unstable to keep the
+      # Hyprland ecosystem in sync, but fall back to stable if needed.
+      (if builtins.hasAttr "grimblast" unstable then unstable.grimblast else grimblast)
 
       # Phone / Android mirroring
       scrcpy                # Android screen mirroring/control over ADB
@@ -129,6 +133,8 @@ in
       zathura evince        # PDF viewers
       pdftk poppler-utils   # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
+      dconf-editor          # GUI editor for dconf
+      networkmanagerapplet  # NetworkManager tray applet
       
       # Communication
       discord webcord-vencord

@@ -31,6 +31,7 @@ readonly VERSION="8.0.0"
 readonly SCRIPTS_DIR="$HOME/.nixosc/modules/home/scripts/start"
 readonly LOG_DIR="$HOME/.logs/semsumo"
 readonly LOG_FILE="$LOG_DIR/semsumo.log"
+readonly STATE_DIR="${XDG_RUNTIME_DIR:-/tmp}/semsumo"
 readonly DEFAULT_FINAL_WORKSPACE="2"
 readonly DEFAULT_WAIT_TIME=1
 readonly DEFAULT_APP_TIMEOUT=4
@@ -71,6 +72,8 @@ LAUNCH_DAILY=false
 LAUNCH_DAILY_ALL=false
 APP_TIMEOUT=$DEFAULT_APP_TIMEOUT
 CHECK_INTERVAL=$DEFAULT_CHECK_INTERVAL
+NOTIFY_ENABLED=true
+LOG_BACKEND_READY=""
 
 # Window Manager Detection
 WM_TYPE=""
@@ -162,6 +165,103 @@ detect_window_manager() {
 # Helper Functions
 #-------------------------------------------------------------------------------
 
+init_log_backend() {
+  if [[ -n "$LOG_BACKEND_READY" ]]; then
+    [[ "$LOG_BACKEND_READY" == "true" ]]
+    return
+  fi
+
+  if mkdir -p "$LOG_DIR" 2>/dev/null && touch "$LOG_FILE" 2>/dev/null; then
+    LOG_BACKEND_READY="true"
+  else
+    LOG_BACKEND_READY="false"
+  fi
+}
+
+replace_literal_token() {
+  local file="$1"
+  local token="$2"
+  local value="$3"
+  local content
+
+  content=$(<"$file") || return 1
+  content="${content//"$token"/$value}"
+  printf '%s' "$content" >"$file"
+}
+
+is_non_negative_int() {
+  [[ "$1" =~ ^[0-9]+$ ]]
+}
+
+is_positive_int() {
+  [[ "$1" =~ ^[1-9][0-9]*$ ]]
+}
+
+parse_args_to_array() {
+  local raw_args="$1"
+  local -n out_ref="$2"
+  out_ref=()
+
+  if [[ -n "$raw_args" ]]; then
+    read -r -a out_ref <<<"$raw_args"
+  fi
+}
+
+run_command_with_vpn() {
+  local vpn_mode="$1"
+  local command_name="$2"
+  shift 2
+  local -a command_args=("$@")
+
+  case "$vpn_mode" in
+  bypass)
+    if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
+      if command -v mullvad-exclude >/dev/null 2>&1; then
+        log "INFO" "LAUNCH" "Starting with VPN bypass"
+        mullvad-exclude "$command_name" "${command_args[@]}" &
+      else
+        log "WARN" "LAUNCH" "mullvad-exclude not found"
+        "$command_name" "${command_args[@]}" &
+      fi
+    else
+      "$command_name" "${command_args[@]}" &
+    fi
+    ;;
+  secure | *)
+    if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
+      log "INFO" "LAUNCH" "Starting with VPN protection"
+    else
+      log "WARN" "LAUNCH" "VPN not connected!"
+    fi
+    "$command_name" "${command_args[@]}" &
+    ;;
+  esac
+}
+
+record_pid_state() {
+  local profile="$1"
+  local pid="$2"
+  local command_name="$3"
+
+  mkdir -p "$STATE_DIR"
+  printf '%s\n' "$pid" >"$STATE_DIR/$profile.pid"
+  printf '%s\n' "$command_name" >"$STATE_DIR/$profile.cmd"
+}
+
+pid_matches_expected_command() {
+  local pid="$1"
+  local expected_command="$2"
+  local cmdline
+
+  [[ -n "$expected_command" ]] || return 1
+  [[ -r "/proc/$pid/cmdline" ]] || return 1
+
+  cmdline=$(tr '\0' ' ' </proc/"$pid"/cmdline 2>/dev/null || true)
+  [[ -n "$cmdline" ]] || return 1
+
+  [[ "$cmdline" == *"$expected_command"* ]]
+}
+
 log() {
   local level="$1"
   local module="${2:-MAIN}"
@@ -180,10 +280,14 @@ log() {
 
   echo -e "${color}${BOLD}[$level]${NC} ${PURPLE}[$module]${NC} $message"
 
-  mkdir -p "$LOG_DIR" 2>/dev/null || true
-  echo "[$timestamp] [$level] [$module] $message" >>"$LOG_FILE" 2>/dev/null || true
+  init_log_backend || true
+  if [[ "$LOG_BACKEND_READY" == "true" ]]; then
+    if ! printf '[%s] [%s] [%s] %s\n' "$timestamp" "$level" "$module" "$message" >>"$LOG_FILE" 2>/dev/null; then
+      LOG_BACKEND_READY="false"
+    fi
+  fi
 
-  if [[ "$notify" == "true" && -x "$(command -v notify-send)" ]]; then
+  if [[ "$notify" == "true" && "$NOTIFY_ENABLED" == "true" && -n "${DBUS_SESSION_BUS_ADDRESS:-}" && -x "$(command -v notify-send)" ]]; then
     notify-send -a "$SCRIPT_NAME" "$module: $message" >/dev/null 2>&1 || true
   fi
 
@@ -284,130 +388,95 @@ focus_tmuxkenp_best_effort() {
 is_app_running() {
   local profile="$1"
   local search_pattern="${2:-}"
+  local clients_json=""
 
-  # For browser profiles, check if windows exist on Hyprland
+  # For managed profiles, prefer window checks on Hyprland.
   if [[ "$WM_TYPE" == "hyprland" ]] && command -v hyprctl &>/dev/null && command -v jq &>/dev/null; then
+    clients_json=$(hyprctl clients -j 2>/dev/null || true)
+
+    if [[ -n "$clients_json" ]]; then
     case "$profile" in
-    # Terminal profiles
     kkenp | mkenp)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "TmuxKenp")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "TmuxKenp")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     wkenp)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "TmuxKenp" or .class == "wezterm")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "TmuxKenp" or (.class // "") == "wezterm")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     kitty-single)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "kitty")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "kitty")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     wezterm)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "wezterm" or .class == "org.wezfurlong.wezterm")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "wezterm" or (.class // "") == "org.wezfurlong.wezterm")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     wezterm-rmpc)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "rmpc")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "rmpc")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
-    # Brave browser profiles
     brave-kenp)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Kenp" or .initialTitle == "Kenp Browser")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "Kenp" or (.initialTitle // "") == "Kenp Browser")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-ai)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Ai" or .initialTitle == "Ai Browser")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "Ai" or (.initialTitle // "") == "Ai Browser")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-compecta)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "CompecTA" or .initialTitle == "CompecTA Browser")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "CompecTA" or (.initialTitle // "") == "CompecTA Browser")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-whats)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Whats" or .initialTitle == "Whats Browser")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "Whats" or (.initialTitle // "") == "Whats Browser")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-exclude)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class == "Exclude" or .initialTitle == "Exclude Browser")' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") == "Exclude" or (.initialTitle // "") == "Exclude Browser")' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-youtube)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-youtube"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("brave-youtube"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-tiktok)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-tiktok"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("brave-tiktok"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-spotify)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-spotify"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("brave-spotify"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-discord)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-discord"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("brave-discord"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     brave-whatsapp)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("brave-whatsapp"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("brave-whatsapp"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
-    # Firefox profiles
     firefox-kenp)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("kenp"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("kenp"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     firefox-compecta)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("compecta"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("compecta"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     firefox-proxy)
-      if hyprctl clients -j 2>/dev/null | jq -e '.[] | select(.class | test("proxy"; "i"))' >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e '.[] | select((.class // "") | test("proxy"; "i"))' <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
-    # Chrome browser profiles
     chrome-*)
       local profile_class="${profile#chrome-}"
-      if hyprctl clients -j 2>/dev/null | jq -e ".[] | select(.class | test(\"chrome|google-chrome\"; \"i\")) | select(.title | test(\"$profile_class\"; \"i\"))" >/dev/null 2>&1; then
-        return 0
-      fi
+      jq -e --arg profile_class "$profile_class" \
+        '.[] | select((.class // "") | test("chrome|google-chrome"; "i")) | select((.title // "") | test($profile_class; "i"))' \
+        <<<"$clients_json" >/dev/null 2>&1 && return 0
       return 1
       ;;
     esac
+    fi
   fi
 
   # Fallback to process check
@@ -598,6 +667,9 @@ readonly WORKSPACE=WORKSPACE_VALUE
 readonly VPN_MODE="VPN_VALUE"
 readonly FULLSCREEN=FULLSCREEN_VALUE
 readonly WAIT_TIME=WAIT_VALUE
+readonly COMMAND="COMMAND_VALUE"
+readonly ARGS_STR="ARGS_VALUE"
+readonly STATE_DIR="STATE_DIR_VALUE"
 
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
@@ -611,6 +683,11 @@ else
 fi
 
 echo "Initializing PROFILE_NAME on $WM_TYPE..."
+
+APP_ARGS=()
+if [[ -n "$ARGS_STR" ]]; then
+    read -r -a APP_ARGS <<<"$ARGS_STR"
+fi
 
 # External monitor setup (GNOME only)
 if [[ "$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
@@ -654,7 +731,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: COMMAND_VALUE ARGS_VALUE"
+echo "COMMAND: $COMMAND ${APP_ARGS[*]}"
 echo "VPN MODE: $VPN_MODE"
 
 # Start application with VPN mode
@@ -663,14 +740,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude COMMAND_VALUE ARGS_VALUE &
+                mullvad-exclude "$COMMAND" "${APP_ARGS[@]}" &
             else
                 echo "WARNING: mullvad-exclude not found"
-                COMMAND_VALUE ARGS_VALUE &
+                "$COMMAND" "${APP_ARGS[@]}" &
             fi
         else
             echo "VPN not connected"
-            COMMAND_VALUE ARGS_VALUE &
+            "$COMMAND" "${APP_ARGS[@]}" &
         fi
         ;;
     secure|*)
@@ -679,13 +756,14 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        COMMAND_VALUE ARGS_VALUE &
+        "$COMMAND" "${APP_ARGS[@]}" &
         ;;
 esac
 
 APP_PID=$!
-mkdir -p "/tmp/semsumo"
-echo "$APP_PID" > "/tmp/semsumo/PROFILE_NAME.pid"
+mkdir -p "$STATE_DIR"
+echo "$APP_PID" > "$STATE_DIR/PROFILE_NAME.pid"
+echo "$COMMAND" > "$STATE_DIR/PROFILE_NAME.cmd"
 echo "Application started (PID: $APP_PID)"
 
 # Window verification (Hyprland only)
@@ -736,17 +814,18 @@ echo "PROFILE_NAME initialization complete"
 exit 0
 SCRIPT_HEREDOC_START
 
-  # Replace placeholders
-  sed -i "s/PROFILE_NAME/$profile/g" "$script_path"
-  sed -i "s/APP_TIMEOUT_VALUE/$APP_TIMEOUT/g" "$script_path"
-  sed -i "s/CHECK_INTERVAL_VALUE/$CHECK_INTERVAL/g" "$script_path"
-  sed -i "s/WORKSPACE_VALUE/$workspace/g" "$script_path"
-  sed -i "s/VPN_VALUE/$vpn/g" "$script_path"
-  sed -i "s/FULLSCREEN_VALUE/$fullscreen/g" "$script_path"
-  sed -i "s/WAIT_VALUE/$wait/g" "$script_path"
-  sed -i "s|COMMAND_VALUE|$cmd|g" "$script_path"
-  sed -i "s|ARGS_VALUE|$args|g" "$script_path"
-  sed -i "s/CLASS_PATTERN_VALUE/$class_pattern/g" "$script_path"
+  # Replace placeholders safely (literal token replacement).
+  replace_literal_token "$script_path" "PROFILE_NAME" "$profile"
+  replace_literal_token "$script_path" "APP_TIMEOUT_VALUE" "$APP_TIMEOUT"
+  replace_literal_token "$script_path" "CHECK_INTERVAL_VALUE" "$CHECK_INTERVAL"
+  replace_literal_token "$script_path" "WORKSPACE_VALUE" "$workspace"
+  replace_literal_token "$script_path" "VPN_VALUE" "$vpn"
+  replace_literal_token "$script_path" "FULLSCREEN_VALUE" "$fullscreen"
+  replace_literal_token "$script_path" "WAIT_VALUE" "$wait"
+  replace_literal_token "$script_path" "COMMAND_VALUE" "$cmd"
+  replace_literal_token "$script_path" "ARGS_VALUE" "$args"
+  replace_literal_token "$script_path" "CLASS_PATTERN_VALUE" "$class_pattern"
+  replace_literal_token "$script_path" "STATE_DIR_VALUE" "$STATE_DIR"
 
   chmod +x "$script_path"
   log "SUCCESS" "GENERATE" "Generated: start-${profile}.sh"
@@ -885,6 +964,7 @@ launch_application() {
   local vpn=$(parse_config "$config" 4)
   local wait=$(parse_config "$config" 5)
   local fullscreen=$(parse_config "$config" 6)
+  local -a cmd_args=()
 
   [[ -z "$workspace" ]] && workspace="0"
   [[ -z "$vpn" ]] && vpn="secure"
@@ -899,39 +979,17 @@ launch_application() {
   setup_external_monitor
   switch_workspace "$workspace"
   log "INFO" "LAUNCH" "Starting $profile ($type, $WM_TYPE, workspace: $workspace)"
+  parse_args_to_array "$args" cmd_args
 
   if [[ "$DRY_RUN" == "true" ]]; then
     log "DEBUG" "LAUNCH" "Dry run: would start $profile"
     return 0
   fi
 
-  case "$vpn" in
-  bypass)
-    if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
-      if command -v mullvad-exclude >/dev/null 2>&1; then
-        log "INFO" "LAUNCH" "Starting with VPN bypass"
-        mullvad-exclude $cmd $args &
-      else
-        log "WARN" "LAUNCH" "mullvad-exclude not found"
-        $cmd $args &
-      fi
-    else
-      $cmd $args &
-    fi
-    ;;
-  secure | *)
-    if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
-      log "INFO" "LAUNCH" "Starting with VPN protection"
-    else
-      log "WARN" "LAUNCH" "VPN not connected!"
-    fi
-    $cmd $args &
-    ;;
-  esac
+  run_command_with_vpn "$vpn" "$cmd" "${cmd_args[@]}"
 
   local app_pid=$!
-  mkdir -p "/tmp/semsumo"
-  echo "$app_pid" >"/tmp/semsumo/$profile.pid"
+  record_pid_state "$profile" "$app_pid" "$cmd"
 
   if [[ "$workspace" != "0" ]]; then
     local class_pattern=$(get_class_pattern "$profile" "$args")
@@ -954,6 +1012,7 @@ launch_application_background() {
   local args=$(parse_config "$config" 2)
   local workspace=$(parse_config "$config" 3)
   local vpn=$(parse_config "$config" 4)
+  local -a cmd_args=()
 
   [[ -z "$workspace" ]] && workspace="0"
   [[ -z "$vpn" ]] && vpn="secure"
@@ -964,32 +1023,17 @@ launch_application_background() {
   fi
 
   log "INFO" "LAUNCH" "Starting $profile ($type, $WM_TYPE, workspace: $workspace, mode: concurrent)"
+  parse_args_to_array "$args" cmd_args
 
   if [[ "$DRY_RUN" == "true" ]]; then
     log "DEBUG" "LAUNCH" "Dry run: would start $profile"
     return 0
   fi
 
-  case "$vpn" in
-  bypass)
-    if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
-      if command -v mullvad-exclude >/dev/null 2>&1; then
-        mullvad-exclude $cmd $args &
-      else
-        $cmd $args &
-      fi
-    else
-      $cmd $args &
-    fi
-    ;;
-  secure | *)
-    $cmd $args &
-    ;;
-  esac
+  run_command_with_vpn "$vpn" "$cmd" "${cmd_args[@]}"
 
   local app_pid=$!
-  mkdir -p "/tmp/semsumo"
-  echo "$app_pid" >"/tmp/semsumo/$profile.pid"
+  record_pid_state "$profile" "$app_pid" "$cmd"
 
   log "SUCCESS" "LAUNCH" "$profile started (PID: $app_pid)"
 }
@@ -1040,7 +1084,7 @@ launch_daily_profiles() {
   )
 
   if [[ "$LAUNCH_DAILY_ALL" == "true" ]]; then
-    log "INFO" "LAUNCH" "Launching daily profiles concurrently (-all)"
+    log "INFO" "LAUNCH" "Launching daily profiles concurrently (--concurrent)"
     setup_external_monitor
 
     for profile in "${daily_order[@]}"; do
@@ -1282,17 +1326,25 @@ kill_all() {
   log "INFO" "KILL" "Stopping all managed applications..."
   local killed_count=0
 
-  if [[ -d "/tmp/semsumo" ]]; then
-    for pid_file in /tmp/semsumo/*.pid; do
+  if [[ -d "$STATE_DIR" ]]; then
+    for pid_file in "$STATE_DIR"/*.pid; do
       if [[ -f "$pid_file" ]]; then
         local pid=$(cat "$pid_file")
         local profile=$(basename "$pid_file" .pid)
+        local cmd_file="$STATE_DIR/$profile.cmd"
+        local expected_command=""
+        [[ -f "$cmd_file" ]] && expected_command=$(cat "$cmd_file")
 
         if kill -0 "$pid" 2>/dev/null; then
-          log "INFO" "KILL" "Stopping $profile (PID: $pid)"
-          kill "$pid" 2>/dev/null && ((killed_count++))
+          if [[ -z "$expected_command" ]] || pid_matches_expected_command "$pid" "$expected_command"; then
+            log "INFO" "KILL" "Stopping $profile (PID: $pid)"
+            kill "$pid" 2>/dev/null && ((killed_count++))
+          else
+            log "WARN" "KILL" "Skipping $profile (PID reused or command mismatch)"
+          fi
         fi
         rm -f "$pid_file"
+        rm -f "$cmd_file"
       fi
     done
   fi
@@ -1330,13 +1382,15 @@ show_help() {
   echo
   echo -e "${BOLD}Launch Options:${NC}"
   echo "    --daily               Launch only daily/essential profiles"
-  echo "    -all                  With --daily: launch daily profiles concurrently"
+  echo "    --concurrent          With --daily: launch daily profiles concurrently"
+  echo "    -all                  Legacy alias for --concurrent"
   echo "    --workspace NUM       Final workspace (default: $DEFAULT_FINAL_WORKSPACE)"
   echo "    --timeout NUM         App verification timeout (default: $DEFAULT_APP_TIMEOUT)"
   echo
   echo -e "${BOLD}Global Options:${NC}"
   echo "    --dry-run             Test mode (don't actually run anything)"
   echo "    --debug               Enable debug output"
+  echo "    --no-notify           Disable desktop notifications"
   echo
   echo -e "${BOLD}Features:${NC}"
   echo "    - Auto-detects window manager (Hyprland/GNOME/generic)"
@@ -1425,26 +1479,46 @@ parse_args() {
 	      LAUNCH_DAILY=true
 	      shift
 	      ;;
-	    -all)
+	    --concurrent|-all)
 	      LAUNCH_DAILY_ALL=true
 	      shift
 	      ;;
 	    --workspace)
+	      if [[ -z "${2:-}" ]]; then
+	        log "ERROR" "ARGS" "--workspace requires a numeric value"
+	        exit 1
+	      fi
+	      if ! is_non_negative_int "$2"; then
+	        log "ERROR" "ARGS" "Invalid workspace value: $2 (expected 0 or positive integer)"
+	        exit 1
+	      fi
 	      FINAL_WORKSPACE="$2"
 	      shift 2
 	      ;;
-    --timeout)
-      APP_TIMEOUT="$2"
-      shift 2
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    --debug)
-      DEBUG_MODE=true
-      shift
-      ;;
+	    --timeout)
+	      if [[ -z "${2:-}" ]]; then
+	        log "ERROR" "ARGS" "--timeout requires a numeric value"
+	        exit 1
+	      fi
+	      if ! is_positive_int "$2"; then
+	        log "ERROR" "ARGS" "Invalid timeout value: $2 (expected positive integer)"
+	        exit 1
+	      fi
+	      APP_TIMEOUT="$2"
+	      shift 2
+	      ;;
+	    --dry-run)
+	      DRY_RUN=true
+	      shift
+	      ;;
+	    --debug)
+	      DEBUG_MODE=true
+	      shift
+	      ;;
+	    --no-notify)
+	      NOTIFY_ENABLED=false
+	      shift
+	      ;;
     "") break ;;
     *)
       SINGLE_PROFILE="$1"
@@ -1463,8 +1537,8 @@ main() {
 
   detect_window_manager
   parse_args "$@"
+  check_dependencies
 
-  mkdir -p "$LOG_DIR"
   log "INFO" "START" "Semsumo v$VERSION started ($WM_TYPE, $BROWSER_TYPE)" "true"
 
   if [[ "$MODE_GENERATE" == "true" ]]; then
@@ -1541,5 +1615,4 @@ check_dependencies() {
 
 trap 'log "ERROR" "TRAP" "Script interrupted"; exit 1' ERR INT TERM
 
-check_dependencies
 main "$@"

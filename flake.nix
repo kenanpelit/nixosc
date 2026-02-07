@@ -54,6 +54,7 @@
     # - snowfall-lib: repo layout + mkFlake glue
     # - home-manager: user-level configuration
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     snowfall-lib = {
       url = "github:snowfallorg/lib";
@@ -89,47 +90,12 @@
     # This repo uses multiple Wayland compositors; we keep them pinned for
     # reproducibility and to prevent session/greeter breakage between updates.
 
-    # Hyprland: Dynamic tiling Wayland compositor
-    hyprland = {
-      inputs.nixpkgs.follows = "nixpkgs";
-      # Pinned commit (updated via `osc-fiup hypr`)
-      url = "github:hyprwm/hyprland/50454c6d17b8406555252eb4f047324d0b0ff5c8"; # 0127 - Updated commit
-      # url = "github:hyprwm/hyprland/c65c7614bc573c3f0150e31a31187057f48813df"; # 0125 - Updated commit
-      # url = "github:hyprwm/hyprland/64db62d7e2685d62cbab51a1a7cb7f2cf38a1b32"; # 0123 - Updated commit
-      # url = "github:hyprwm/hyprland/22fc8136a21676472b232f9462318e16b1d16745"; # 0121 - Updated commit
-      # url = "github:hyprwm/hyprland/c44292c72339b3d7820ca7444d45bab7e34ec74e"; # 0120 - Updated commit
-    };
-
-    hypr-contrib = {
-      url = "github:hyprwm/contrib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    pyprland = {
-      url = "github:hyprland-community/pyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Hyprland plugins (upstream)
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
-      inputs.nixpkgs.follows = "hyprland/nixpkgs";
-      inputs.systems.follows = "hyprland/systems";
-    };
-
     # Niri: Scrollable-tiling Wayland compositor
     # Using sodiboo's flake for better integration (HM module + overlay wiring).
     # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
     niri = {
       url = "github:sodiboo/niri-flake";
       inputs.niri-unstable.url = "github:YaLTeR/niri/main";
-    };
-
-    # Nsticky: Helper for creating "sticky" windows (scratchpads) in Niri
-    nsticky = {
-      url = "github:kenanpelit/nsticky";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # ==========================================================================
@@ -153,36 +119,12 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/e27e90415714c52ed90a94eaf8b6db57f4423a71"; # 0205 - Updated commit
+      url = "github:AvengeMedia/DankMaterialShell/c4a41f994a9a1b5cb8825982131db2bcbc563d3c"; # 0207 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/e618a8390c0eccec1661a0bbd4d2b81cb77cbe86"; # 0206 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/c5a21f8da0eaf26e7d9c84553e5aee79b7b1c2e4"; # 0206 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/ac84cadd77d3b1daf4a1da1a54294c991d7a5b32"; # 0206 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/e27e90415714c52ed90a94eaf8b6db57f4423a71"; # 0205 - Updated commit
       # url = "github:AvengeMedia/DankMaterialShell/fe156679866fd5633a2c2a70c765410c22ee356a"; # 0204 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/6e3b3ce8886f35b9ecfa1c8ac0b781cc7f9b74e8"; # 0204 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/c024c1b8e478697c0bb56c2d068dc6725a3c2f92"; # 0204 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/a97409dfd70caa3a29f95950c7b76fce018bf727"; # 0203 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/eaa6a664c89f776f406d74d29eb8f7d1b4411e3d"; # 0202 - Updated commit
-    };
-
-    # ==========================================================================
-    # Dev Tools / Lint / Format
-    # ==========================================================================
-    # These are used in `outputs-builder` for checks and devShell tooling.
-    poetry2nix = {
-      url = "github:nix-community/poetry2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    statix = {
-      url = "github:nerdypepper/statix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    deadnix = {
-      url = "github:astro/deadnix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    alejandra = {
-      url = "github:kamadorueda/alejandra";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     dsearch = {
@@ -209,29 +151,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    cachix-pkgs = {
-      url = "github:cachix/cachix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    spicetify-nix = {
-      url = "github:gerg-l/spicetify-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    stasis = {
-      inputs.nixpkgs.follows = "nixpkgs";
-      # Pinned commit (updated via `osc-fiup stasis`)
-      url = "github:saltnpepper97/stasis/10a014d0d1ff9db2c12c7520822261136e6af957"; # 0129 - Updated commit
-      # url = "github:saltnpepper97/stasis/c150e9c8cabb438ad267ababbd20f6d21ae281bc"; # 0127 - Updated commit
-      # url = "github:saltnpepper97/stasis/61f7f1094744510c94e76892b49795dee8f9b1c0"; # 0123 - Updated commit
-      # url = "github:saltnpepper97/stasis/3cd776340e3018edc31ffe3e1894069f4e89e38a"; # 0123 - Updated commit
-      # url = "github:saltnpepper97/stasis/76b435e4ee8bac144ab9e4925e289f5e8dc56601"; # 0122 - Updated commit
-      # url = "github:saltnpepper97/stasis/ccd508d85345987c7dc37546ea887d4d87a598c3"; # 0121 - Updated commit
-    };
-
     nix-flatpak.url = "github:gmodena/nix-flatpak";
-    nix-search-tv.url = "github:3timeslazy/nix-search-tv";
 
     yazi-plugins = {
       url = "github:yazi-rs/plugins";
@@ -268,6 +188,15 @@
         overlays = with inputs; [
           nur.overlays.default
           niri.overlays.niri
+          # Expose a second package set pinned to `nixos-unstable`, so we can
+          # selectively track newer packages (e.g. Hyprland) without moving the
+          # whole system off the stable channel.
+          (final: prev: {
+            unstable = import inputs."nixpkgs-unstable" {
+              system = prev.stdenv.hostPlatform.system;
+              config = prev.config;
+            };
+          })
           (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
           (import ./overlays/xdg-desktop-portal-gnome-niri.nix)
         ];
@@ -290,9 +219,19 @@
           channels:
           let
             system = channels.nixpkgs.stdenv.hostPlatform.system;
-            alejandra = inputs.alejandra.packages.${system}.default;
-            statix = inputs.statix.packages.${system}.default;
-            deadnix = inputs.deadnix.packages.${system}.default;
+            unstablePkgs = inputs."nixpkgs-unstable".legacyPackages.${system};
+            alejandra =
+              if unstablePkgs ? alejandra
+              then unstablePkgs.alejandra
+              else channels.nixpkgs.alejandra;
+            statix =
+              if unstablePkgs ? statix
+              then unstablePkgs.statix
+              else channels.nixpkgs.statix;
+            deadnix =
+              if unstablePkgs ? deadnix
+              then unstablePkgs.deadnix
+              else channels.nixpkgs.deadnix;
             treefmt = channels.nixpkgs.treefmt;
           in
           {

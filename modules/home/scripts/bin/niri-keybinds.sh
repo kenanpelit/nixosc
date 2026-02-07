@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
-# -------------------------------------------------------------------------------------------------
-# Parse niri keybinds into 'dmenu' / launcher friendly format
+# -----------------------------------------------------------------------------
+# niri-keybinds
+# -----------------------------------------------------------------------------
+# Purpose:
+# - Parse Niri `binds { ... }` blocks into launcher-friendly plain text lines.
+# - Produce keybind/title/command entries consumable by rofi/fuzzel/dmenu.
 #
-# This script mimics the provided Python version:
-# - Finds the `binds { ... }` section in a KDL file
-# - Skips comments/blank lines
-# - Extracts: keybind + optional hotkey overlay title + command
-# - Optional cleanup: remove spawn/spawn-sh prefix, remove quotes
+# Input/Output model:
+# - Input: KDL config (default: ~/.config/niri/config.kdl)
+# - Output: one formatted line per bind to stdout
+# - Optional cleanup: remove spawn prefixes and/or command quotes
 #
-# Example:
-#   ./niri-keybinds.sh | rofi -dmenu -i -p "Niri Keybinds" -theme-str 'window { width: 70%; } listview { columns: 1; }'
+# Typical usage:
+# - niri-keybinds | rofi -dmenu -i -p "Niri Keybinds"
+# - niri-keybinds | fuzzel -d
 #
 # Dependencies:
-#   - awk
-#   - notify-send (optional, used for errors)
-# -------------------------------------------------------------------------------------------------
+# - awk
+# - notify-send (optional; used for parse/file errors)
+#
+# Notes:
+# - Parser is intentionally pragmatic (line-oriented) for speed and portability.
+# - Run `niri-keybinds --help` for formatting and filtering options.
+# -----------------------------------------------------------------------------
 
 set -euo pipefail
 

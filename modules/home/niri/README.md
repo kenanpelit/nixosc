@@ -1,80 +1,70 @@
 # Niri (Home-Manager) – DMS odaklı kurulum
 
-Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve Niri oturumunu `systemd --user` ile “gözlemlenebilir / restart edilebilir” hale getirir (DMS ile uyumlu).
+Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve oturumu `systemd --user` ile yönetir. Amaç: DMS + Niri birleşiminde gözlemlenebilir, restart edilebilir ve runtime override destekli bir yapı.
 
 ## Öne çıkanlar
 
-- Niri config tek bir `programs.niri.config` string’i olarak üretilir (build-time validation için).
-- `niri-session.target` ile oturum servisleri yönetilir.
-- Portal/ScreenCast/Screenshot için `my.user.xdg-portal.enable = true` (mkDefault) yapılır.
-- Kısayollar `hotkey-overlay-title` üzerinden dokümante edilir ve cheatsheet dosyası otomatik üretilir.
+- Niri config’i `xdg.configFile."niri/config.kdl"` ile üretilir.
+- Runtime include dosyaları (`dms/*.kdl`) writable gerçek dosya olarak korunur.
+- `niri-session.target` altında session servisleri (bootstrap, polkit, DMS, daemons) yönetilir.
+- `niri-set doctor` include dosyaları için strict kontrol (declared/missing/symlink/writable) verir.
 
-## Açılış akışı (repo)
+## Açılış akışı
 
-1) DM/GDM oturumu seçilince `modules/nixos/sessions/default.nix` içindeki Niri entry’si `niri-set tty` çalıştırır.
-2) Niri konfigi açılışta `spawn-at-startup ... niri-set env` ile oturum env export akışını tetikler (`modules/home/niri/settings.nix`, `my.desktop.niri.systemd.enable` açıkken).
-3) `niri-set env` ( `modules/home/scripts/bin/niri-set.sh` ):
-   - `XDG_RUNTIME_DIR`, `WAYLAND_DISPLAY`, `NIRI_SOCKET` tespiti yapar.
-   - Kritik değişkenleri `systemd --user` env + D-Bus activation env içine import eder.
-   - Portal backend’lerini best-effort başlatır, sonra `xdg-desktop-portal.service`’i restart eder.
-   - `clipse -listen` ile clipboard listener’ı (dup’ları engelleyerek) başlatır.
-   - Son olarak `systemctl --user start niri-session.target` ile Niri oturum servislerini kaldırır.
-4) `niri-session.target` `modules/home/niri/default.nix` içinde tanımlıdır ve `xdg-desktop-autostart.target` ile birlikte oturum servislerini `systemd --user` üzerinden yönetir (izlenebilir/restart edilebilir).
+1) DM/TTY oturumu `niri-set tty` ile Niri başlatır.
+2) Niri açılışında `spawn-at-startup ... niri-set env` çalışır:
+   - Wayland/Niri env değişkenlerini systemd ve D-Bus activation ortamına taşır.
+   - Portal backend’lerini start/restart eder.
+   - `niri-session.target` tetikler.
+3) `niri-bootstrap.service`:
+   - Kısa gecikme (`bootstrapDelaySeconds`, varsayılan `1`) sonrası `niri-set init` çağırır.
+   - `niri-set init` monitor profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
+   - `bootstrapNotifications` açıkken sadece sonuç bildirimi verir (başarı/hata), başlangıç popup’ı göstermez.
+4) Uzun yaşayan servisler ayrı unit’lerde yönetilir:
+   - `niri-sticky.service`
+   - `niriswitcher.service` (opsiyonel)
+   - `niri-bt-autoconnect.service` (opsiyonel, one-shot)
 
-## Niri oturum servisleri (niri-session.target)
+## Niri workflow notu
 
-- `niri-polkit-agent`: polkit auth pencereleri için `polkit-gnome` agent (`modules/home/niri/default.nix`).
-- `niri-ready`: `niri msg version` çalışana kadar bekleyen “IPC hazır” kapısı (`modules/home/niri/default.nix`).
-- `niri-bootstrap`: gecikmeli bootstrap → `niri-set init` (+ opsiyonel BT auto-connect) → nsticky/niriusd/niriswitcher daemon’ları (`modules/home/niri/default.nix`).
-- `dms.service`: `dms run --session` ile DankMaterialShell (`modules/home/dms/settings.nix`).
-- `dms-plugin-sync`: eksik DMS plugin’lerini best-effort indirir (github.com yoksa skip) (`modules/home/dms/settings.nix`).
-- `dms-resume-restart`: suspend/resume sonrası DMS restart (Wayland/Qt crash workaround) (`modules/home/dms/settings.nix`).
-- `kdeconnectd` + `kdeconnect-indicator`: KDE Connect daemon + tray (`modules/home/connect/default.nix`).
-- `fusuma`: touchpad gesture servisi (`modules/home/fusuma/default.nix`).
-- `cliphist-watch-{text,image}`: `wl-paste --watch ... | cliphist store` watcher’ları (`modules/home/cliphist/default.nix`).
+- `niri-flow` komutu bu repoda daemon-free bash helper olarak sağlanır (`modules/home/scripts/bin/niri-flow.sh`).
+- Bu sayede `niri-set here`, `osc-ndrop`, scratchpad/mark kısayolları ek daemon olmadan çalışır.
 
-## Niri’de başlayan diğerleri (graphical-session.target vb.)
+## Monitor profili (dock/undock)
 
-- `stasis`: Wayland idle manager (`modules/home/stasis/default.nix`).
-- `niri-set init` içindeki `osc-soundctl init`: default ses/mikrofon seviyeleri + son cihaz tercihi (`modules/home/scripts/bin/osc-soundctl.sh`).
+- Fallback profil `modules/home/niri/monitors.nix` içinde laptop-safe (`eDP-1`) tutulur.
+- Runtime’da `niri-set init` bağlı output’lara göre `monitor-auto.kdl` üretir:
+  - Harici ekran varsa: workspace `1-6` hariciye, `7-9` dahiliye.
+  - Harici yoksa: tüm workspace’ler dahili ekrana.
+- Bu dosya config’e include edilir ve writable tutulur.
 
-## Dosyalar
+## Runtime include dosyaları
 
-- `modules/home/niri/default.nix`: Paket seçimi + config birleştirme + systemd user servisleri.
-- `modules/home/niri/settings.nix`: Environment, layout, input, animasyonlar.
-- `modules/home/niri/binds.nix`: Kategori bazlı keybind blokları (`binds {}` wrapper’ı burada yok).
-- `modules/home/niri/rules.nix`: Window/layer rules ve privacy (screencast/screenshot) kuralları.
-- `~/.config/niri/dms/hotkeys.md`: `binds.nix` içindeki `hotkey-overlay-title` alanlarından otomatik üretilen cheatsheet.
-- `~/.config/niri/dms/workspace-rules.tsv`: `niri-set go` için kurallar.
+- `~/.config/niri/dms/outputs.kdl`
+- `~/.config/niri/dms/monitor-auto.kdl`
+- `~/.config/niri/dms/zen.kdl`
+- `~/.config/niri/dms/cursor.kdl`
 
-## Seçenekler (özet)
+`home.activation` bu dosyaları symlink yerine normal writable dosya olarak zorlar.
 
-- `my.desktop.niri.package`: Kullanılacak niri paketi.
-- `my.desktop.niri.extraConfig`: Üretilen config’in sonuna eklenecek ekstra KDL.
-- `my.desktop.niri.extraBinds`: Üretilen `binds {}` bloğunun içine eklenecek ekstra bind satırları.
-- `my.desktop.niri.extraRules`: Üretilen window rules sonuna eklenecek ekstra KDL.
-- `my.desktop.niri.systemd.enable`: `niri-session.target` ve oturum servislerini aç/kapat.
+## Dosya haritası
+
+- `modules/home/niri/default.nix`: config birleştirme, session servisleri, runtime dosya garantisi.
+- `modules/home/niri/settings.nix`: environment, input, layout, animasyon.
+- `modules/home/niri/binds.nix`: kategori bazlı keybind blokları.
+- `modules/home/niri/rules.nix`: window/layer/privacy kuralları.
+- `modules/home/niri/monitors.nix`: fallback monitor/workspace profili.
+- `modules/home/dms/settings.nix`: DMS service + plugin sync + resume restart.
 
 ## Debug / sorun giderme
 
-- Genel hızlı durum: `niri-set doctor` (`--tree`, `--logs` opsiyonları var)
-- Oturum hedefi: `systemctl --user status niri-session.target`
-- “Şu an hangileri active?”: `systemctl --user list-dependencies --plain niri-session.target`
-- Niri hazır kapısı: `systemctl --user status niri-ready.service`
-- Bootstrap: `systemctl --user status niri-bootstrap.service`
-- Log takip:
-  - `journalctl --user -u niri-ready.service -f`
-  - `journalctl --user -u niri-bootstrap.service -f`
-  - `journalctl --user -u dms.service -f`
-  - `journalctl --user -u xdg-desktop-portal.service -f`
+- Hızlı tanı: `niri-set doctor`
+- Ek tanı: `niri-set doctor --tree --logs`
+- Session target: `systemctl --user status niri-session.target`
+- Bootstrap log: `journalctl --user -u niri-bootstrap.service -f`
+- DMS log: `journalctl --user -u dms.service -f`
 
-## Portal / ekran paylaşımı notları
+## Kısayol cheatsheet
 
-- `XDG_CURRENT_DESKTOP` değeri `niri` olmalı.
-- Gerekirse portalları yeniden başlat:  
-  `systemctl --user restart xdg-desktop-portal.service xdg-desktop-portal-gnome.service xdg-desktop-portal-gtk.service`
-
-## Cheatsheet
-
-- DMS içinden keybind UI: `Mod+F1`
-- Dosya çıktısı: `~/.config/niri/dms/hotkeys.md`
+- DMS keybind UI: `Mod+F1`
+- Otomatik çıktı: `~/.config/niri/dms/hotkeys.md`

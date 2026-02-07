@@ -31,6 +31,16 @@ in
       pkgs.kdePackages.kdeconnect-kde
     ];
 
+    # Disable upstream XDG autostart entry so kdeconnectd has a single owner unit.
+    xdg.configFile."autostart/org.kde.kdeconnect.daemon.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=KDE Connect
+      Hidden=true
+      NoDisplay=true
+      X-GNOME-Autostart-enabled=false
+    '';
+
     systemd.user.services.kdeconnectd = {
       Unit = {
         Description = "KDE Connect Daemon";
@@ -38,7 +48,8 @@ in
         PartOf = connectTargets;
       };
       Service = {
-        Type = "simple";
+        Type = "exec";
+        ExitType = "cgroup";
         ExecStart = "${pkgs.kdePackages.kdeconnect-kde}/bin/kdeconnectd";
         Restart = "on-failure";
         RestartSec = 3;

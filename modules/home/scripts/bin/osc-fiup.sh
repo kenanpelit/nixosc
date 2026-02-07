@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hyprland / Niri / Walker / Elephant / DankMaterialShell / Stasis Updater Script with Git Auto-Commit
+# Niri / DankMaterialShell / nixpkgs-unstable (+ optional Walker/Elephant) updater with Git auto-commit
 set -euo pipefail
 
 # Colors
@@ -10,6 +10,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 FLAKE_PATH="$HOME/.nixosc/flake.nix"
+LOCK_PATH="$HOME/.nixosc/flake.lock"
 NIXOS_PATH="$HOME/.nixosc"
 MAX_HISTORY=5
 
@@ -19,20 +20,20 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
 print_usage() {
-  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|hypr|hyprland|niri|walker|dank|stasis} [stable] [tag]"
+  echo -e "${YELLOW}Usage:${NC} $(basename "$0") {all|dank|niri|unstable|walker} [stable] [tag]"
   echo
-  echo "  all             : Apply dank + niri + hyprland + stasis + walker (in that order)"
-  echo "  hypr / hyprland : Update Hyprland input to latest commit on main"
+  echo "  all             : Apply dank + niri + nixpkgs-unstable + walker (walker only if enabled in flake)"
+  echo "  unstable        : Update nixpkgs-unstable lock"
   echo "  niri            : Update Niri input to latest commit on main"
-  echo "  walker          : Update Walker and Elephant to their latest GitHub releases"
   echo "  dank            : Update DankMaterialShell to latest commit on main"
-  echo "  stasis          : Update Stasis input to latest commit on main"
+  echo "  walker          : Update Walker and Elephant release refs (requires active inputs in flake.nix)"
   echo
   echo "Stable mode:"
-  echo "  hypr stable     : Pin Hyprland to latest GitHub release tag (e.g. v0.53.1)"
   echo "  niri stable     : Pin Niri to latest GitHub release tag (e.g. v25.11)"
-  echo "  stasis stable   : Pin Stasis to latest GitHub release tag (e.g. v0.9.0)"
-  echo "  <target> stable <tag> : Pin explicitly (skip network), e.g. hypr stable v0.53.1"
+  echo "  <target> stable <tag> : Pin explicitly (skip network)"
+  echo
+  echo "Compatibility aliases:"
+  echo "  hypr | hyprland | stasis  -> unstable"
 }
 
 # ---------------------------------------------------------------------------
@@ -50,17 +51,44 @@ check_git_repo() {
   fi
 }
 
+has_active_input_block() {
+  local input_name="$1"
+  awk -v name="$input_name" '
+    /^[[:space:]]*#/ {next}
+    $0 ~ "^[[:space:]]*" name "[[:space:]]*=[[:space:]]*\\{" {found=1; exit}
+    END { exit(found ? 0 : 1) }
+  ' "$FLAKE_PATH"
+}
+
+has_active_repo_url() {
+  local repo="$1"
+  command grep "url = \"github:$repo" "$FLAKE_PATH" 2>/dev/null |
+    command grep -v '^[[:space:]]*#' >/dev/null 2>&1
+}
+
+walker_enabled_in_flake() {
+  has_active_repo_url "abenz1267/walker" && has_active_repo_url "abenz1267/elephant"
+}
+
 git_commit_changes() {
   local commit_msg="$1"
   cd "$NIXOS_PATH"
 
-  if git diff --quiet "$FLAKE_PATH"; then
-    log_info "No changes in flake.nix, skipping git commit"
+  local changed_files=()
+  if ! git diff --quiet "$FLAKE_PATH"; then
+    changed_files+=("$FLAKE_PATH")
+  fi
+  if [[ -f "$LOCK_PATH" ]] && ! git diff --quiet "$LOCK_PATH"; then
+    changed_files+=("$LOCK_PATH")
+  fi
+
+  if [[ ${#changed_files[@]} -eq 0 ]]; then
+    log_info "No changes in flake.{nix,lock}, skipping git commit"
     return
   fi
 
   log_info "Creating git commit..."
-  git add "$FLAKE_PATH"
+  git add "${changed_files[@]}"
 
   if git commit -m "$commit_msg"; then
     log_success "Git commit created: $commit_msg"
@@ -304,16 +332,48 @@ update_commit_input() {
   fi
 }
 
+update_lock_input() {
+  local input_name="$1"
+  local display_name="$2"
+
+  log_info "$display_name lock updater starting..."
+
+  if ! command -v nix >/dev/null 2>&1; then
+    log_error "nix not found in PATH; cannot update flake.lock."
+    exit 1
+  fi
+
+  cd "$NIXOS_PATH"
+
+  log_info "Running: nix flake lock --update-input $input_name"
+  nix flake lock --update-input "$input_name"
+
+  log_success "flake.lock updated for $display_name ($input_name)"
+  git_commit_changes "$input_name: update lock $(date +%m%d)"
+
+  echo
+  log_info "To rebuild:"
+  echo -e "${YELLOW}cd ~/.nixosc && sudo nixos-rebuild switch --flake .#\\$(hostname)${NC}"
+  echo
+  log_info "To push:"
+  echo -e "${YELLOW}cd ~/.nixosc && git push${NC}"
+}
+
 update_hyprland() {
   local mode="${1:-}"
   local explicit_tag="${2:-}"
 
+  if [[ -n "$explicit_tag" ]]; then
+    log_warning "Hyprland is tracked via nixpkgs-unstable; explicit tags are not supported (ignored)."
+  fi
+
   case "$mode" in
-  stable | release)
-    update_release_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "Hyprland" "$explicit_tag"
-    ;;
   "" | commit)
-    update_commit_input "hyprland" "hyprwm/Hyprland" "hyprwm/hyprland" "main" "Hyprland"
+    update_lock_input "nixpkgs-unstable" "Hyprland (via nixpkgs-unstable)"
+    ;;
+  stable | release)
+    log_warning "Hyprland stable pinning was removed; updating nixpkgs-unstable lock instead."
+    update_lock_input "nixpkgs-unstable" "Hyprland (via nixpkgs-unstable)"
     ;;
   *)
     log_error "Unknown mode for hyprland: $mode"
@@ -326,6 +386,11 @@ update_hyprland() {
 update_niri() {
   local mode="${1:-}"
   local explicit_tag="${2:-}"
+
+  if ! has_active_input_block "niri"; then
+    log_error "Niri input is not active in flake.nix (input 'niri' block not found)."
+    exit 1
+  fi
 
   case "$mode" in
   stable | release)
@@ -343,22 +408,27 @@ update_niri() {
 }
 
 update_dank() {
+  if ! has_active_input_block "dankMaterialShell"; then
+    log_error "dankMaterialShell input is not active in flake.nix."
+    exit 1
+  fi
   update_commit_input "dankMaterialShell" "AvengeMedia/DankMaterialShell" "AvengeMedia/DankMaterialShell" "master" "DankMaterialShell"
 }
 
-update_stasis() {
+update_unstable() {
   local mode="${1:-}"
   local explicit_tag="${2:-}"
 
+  if [[ -n "$explicit_tag" ]]; then
+    log_warning "nixpkgs-unstable lock updates do not support explicit tags (ignored)."
+  fi
+
   case "$mode" in
-  stable | release)
-    update_release_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "Stasis" "$explicit_tag"
-    ;;
-  "" | commit)
-    update_commit_input "stasis" "saltnpepper97/stasis" "saltnpepper97/stasis" "main" "Stasis"
-    ;;
+  "" | commit | stable | release)
+    update_lock_input "nixpkgs-unstable" "nixpkgs-unstable"
+  ;;
   *)
-    log_error "Unknown mode for stasis: $mode"
+    log_error "Unknown mode for unstable: $mode"
     print_usage
     exit 1
     ;;
@@ -498,6 +568,12 @@ PY
 }
 
 update_walker_and_elephant() {
+  if ! walker_enabled_in_flake; then
+    log_error "Walker/Elephant inputs are not active in flake.nix."
+    log_info "Enable both inputs first, or use: osc-fiup dank|niri|unstable"
+    exit 1
+  fi
+
   log_info "Walker / Elephant release updater starting..."
 
   backup_flake
@@ -584,12 +660,15 @@ main() {
   all)
     update_dank
     update_niri "$mode"
-    update_hyprland "$mode"
-    update_stasis "$mode"
-    update_walker_and_elephant
+    update_unstable "$mode"
+    if walker_enabled_in_flake; then
+      update_walker_and_elephant
+    else
+      log_warning "Walker/Elephant not enabled in flake.nix; skipping walker step."
+    fi
     ;;
-  hypr | hyprland)
-    update_hyprland "$mode" "$tag"
+  unstable)
+    update_unstable "$mode" "$tag"
     ;;
   niri)
     update_niri "$mode" "$tag"
@@ -600,8 +679,9 @@ main() {
   dank | dankmaterialshell)
     update_dank
     ;;
-  stasis)
-    update_stasis "$mode" "$tag"
+  hypr | hyprland | stasis)
+    log_warning "'$target' is deprecated. Using 'unstable' target."
+    update_unstable "$mode" "$tag"
     ;;
   *)
     log_error "Unknown target: $target"

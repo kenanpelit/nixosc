@@ -13,7 +13,11 @@
     // Hardware Configuration (Monitors & Workspaces)
     // ========================================================================
 
-    // Named Workspaces (1-9)
+    // Preferred fallback profile:
+    // - external monitor on top
+    // - laptop panel below
+    // Runtime profile written by `niri-set init` (dms/monitor-auto.kdl) can
+    // still override this when output names/layout change (dock/undock).
     workspace "1" { open-on-output "DP-3"; }
     workspace "2" { open-on-output "DP-3"; }
     workspace "3" { open-on-output "DP-3"; }
@@ -32,7 +36,6 @@
     }
     workspace "9" { open-on-output "eDP-1"; }
 
-    // Monitor Configuration
     output "DP-3" {
       mode "2560x1440@59.951";
       position x=0 y=0;

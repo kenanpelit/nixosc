@@ -19,7 +19,6 @@ Commands:
   vlc                 VLC play/pause toggle
   mpv <subcmd>         MPV helper (IPC + compositor-aware window management)
   radio [args...]      Internet radio player (interactive by default)
-  vradio               Shortcut: radio -t 1
   lofi                 Toggle Lo-Fi stream via mpv --no-video
 
 Examples:
@@ -29,7 +28,6 @@ Examples:
   osc-media vlc
   osc-media mpv playback
   osc-media radio                   # interactive menu
-  osc-media vradio
   osc-media lofi
 EOF
 }
@@ -221,7 +219,7 @@ EOF
 				"$runtime"/niri.*.sock \
 				"$runtime"/niri.wayland-*.sock \
 				"$runtime"/niri*.sock; do
-				if [[ -S "$candidate" && "$candidate" != *nirius* ]]; then
+				if [[ -S "$candidate" && "$candidate" != *niri-flow* ]]; then
 					export NIRI_SOCKET="$candidate"
 					break
 				fi
@@ -571,7 +569,7 @@ osc_media_spotify() (
 	PLAYER="spotify"
 	TIMEOUT=10                                                    # Spotify'ın başlaması için maksimum bekleme süresi (saniye)
 	ICON_PATH="/usr/share/icons/hicolor/256x256/apps/spotify.png" # Spotify icon path (varsa)
-	COMMAND="$1"                                                  # Komut satırı parametresi
+	COMMAND="${1:-}"                                              # Komut satırı parametresi
 	VOL_INCREMENT=10                                              # Ses artışı yüzdesi
 
 	# Hyprland için pencere kontrolü
@@ -1076,7 +1074,7 @@ osc_media_spotify() (
 		;;
 	"volume")
 		shift
-		set_volume "$1"
+		set_volume "${1:-}"
 		;;
 	"status")
 		show_status
@@ -1164,12 +1162,12 @@ osc_media_mpc() (
 		local title="$1"
 		local message="$2"
 		local icon="$3"
-		local timeout="$4"
-		local urgency="$5"
+		local timeout="${4:-$NOTIFY_TIMEOUT_NORMAL}"
+		local urgency="${5:-normal}"
 
-		notify-send -t "${timeout:-$NOTIFY_TIMEOUT_NORMAL}" \
+		notify-send -t "$timeout" \
 			-h string:x-canonical-private-synchronous:mpd \
-			-u "${urgency:-normal}" \
+			-u "$urgency" \
 			"$title" \
 			"$message" \
 			-i "$icon"
@@ -2204,9 +2202,6 @@ main() {
 	radio)
 		osc_media_radio "$@"
 		;;
-	vradio)
-		osc_media_radio -t 1
-		;;
 	lofi)
 		osc_media_lofi "$@"
 		;;
@@ -2217,4 +2212,3 @@ main() {
 }
 
 main "$@"
-

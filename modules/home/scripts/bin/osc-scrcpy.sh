@@ -18,7 +18,11 @@ die() {
 
 need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
 
-pause() { read -r -p "Press Enter to continue..." </dev/tty; }
+pause() {
+  if [[ -t 0 && -t 1 ]]; then
+    read -r -p "Press Enter to continue..." </dev/tty
+  fi
+}
 
 reset_adb() {
   info "Restarting ADB server..."
@@ -133,7 +137,10 @@ setup_wifi_tcpip_5555() {
 }
 
 launch_scrcpy() {
-  local -a scrcpy_cmd=()
+  local -a base_scrcpy_cmd=()
+  local -a render_candidates=()
+  local -A seen_renderers=()
+  local renderer
   local screen_size width height max_size
 
   screen_size="$(adb_cmd shell wm size 2>/dev/null | awk -F: '{print $2}' | tr -d ' ' || true)"
@@ -158,23 +165,72 @@ launch_scrcpy() {
 
   # Reasonable defaults for WiFi
   if [[ -n "${width:-}" && "$width" -gt 1080 ]]; then
-    scrcpy_cmd+=(--max-fps 60 --video-bit-rate 16M)
+    base_scrcpy_cmd+=(--max-fps 60 --video-bit-rate 16M)
   else
-    scrcpy_cmd+=(--max-fps 60 --video-bit-rate 8M)
+    base_scrcpy_cmd+=(--max-fps 60 --video-bit-rate 8M)
   fi
-  [[ -n "${max_size:-}" ]] && scrcpy_cmd+=(--max-size "$max_size")
+  [[ -n "${max_size:-}" ]] && base_scrcpy_cmd+=(--max-size "$max_size")
 
-  # Wayland-safe input: UHID
-  scrcpy_cmd+=(
+  # Wayland-safe input: UHID + explicit codec for compatibility.
+  base_scrcpy_cmd+=(
     --window-title "Android Screen Mirror"
     --mouse=uhid
     --keyboard=uhid
-    --no-mouse-hover
+    --video-codec=h264
     --disable-screensaver
   )
 
-  info "Starting scrcpy..."
-  SCRCPY_OPTS= SCRCPY_ARGS= scrcpy "${scrcpy_cmd[@]}" >"$LOG_FILE" 2>&1 &
+  # Audio capture can stall/black-screen on some Android stacks (esp. over WiFi).
+  # Keep it opt-in via SCRCPY_AUDIO=1.
+  if [[ "${SCRCPY_AUDIO:-0}" != "1" ]]; then
+    base_scrcpy_cmd+=(--no-audio)
+  fi
+
+  # Renderer strategy:
+  # 1) If SCRCPY_RENDER_DRIVER is set, use only that.
+  # 2) Otherwise, prefer opengl (works best on this setup), then fallback.
+  if [[ -n "${SCRCPY_RENDER_DRIVER:-}" ]]; then
+    render_candidates=("${SCRCPY_RENDER_DRIVER}")
+  else
+    render_candidates=(opengl opengles2 software "__default__")
+  fi
+
+  for renderer in "${render_candidates[@]}"; do
+    [[ -n "${renderer:-}" ]] || continue
+    [[ -n "${seen_renderers[$renderer]:-}" ]] && continue
+    seen_renderers["$renderer"]=1
+
+    local -a scrcpy_cmd=("${base_scrcpy_cmd[@]}")
+    if [[ "$renderer" == "__default__" ]]; then
+      info "Starting scrcpy (renderer: auto)..."
+    else
+      scrcpy_cmd+=(--render-driver="$renderer")
+      info "Starting scrcpy (renderer: $renderer)..."
+    fi
+    : >"$LOG_FILE"
+    SCRCPY_OPTS= SCRCPY_ARGS= scrcpy "${scrcpy_cmd[@]}" >"$LOG_FILE" 2>&1 &
+    local scrcpy_pid=$!
+
+    sleep 1.2
+    if ! kill -0 "$scrcpy_pid" 2>/dev/null; then
+      if [[ "$renderer" == "__default__" ]]; then
+        warn "scrcpy exited immediately with renderer=auto."
+      else
+        warn "scrcpy exited immediately with renderer=$renderer."
+      fi
+      tail -n 40 "$LOG_FILE" >&2 || true
+      continue
+    fi
+
+    # If process survives startup, keep it running.
+    # Some systems print "Texture:" later; killing early causes restart loops.
+    info "scrcpy started successfully (renderer: $renderer, pid: $scrcpy_pid)."
+    return 0
+  done
+
+  warn "scrcpy could not initialize video output. Last log lines:"
+  tail -n 80 "$LOG_FILE" >&2 || true
+  return 1
 }
 
 try_saved_connection() {

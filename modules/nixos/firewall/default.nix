@@ -13,6 +13,7 @@ let
   transmissionWebPort  = 9091;
   transmissionPeerPort = 51413;
   customServicePort    = 1401;
+  kdeConnectPortRange  = { from = 1714; to = 1764; };
 in
 {
   options.my.firewall = {
@@ -27,6 +28,12 @@ in
       default = false;
       description = "Open TCP port 1401 for custom service usage.";
     };
+
+    allowKDEConnectPorts = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Open KDE Connect TCP/UDP port range 1714-1764.";
+    };
   };
 
   config = {
@@ -40,6 +47,10 @@ in
         ++ (optional cfg.allowCustomServicePort customServicePort);
       allowedUDPPorts =
         optional cfg.allowTransmissionPorts transmissionPeerPort;
+      allowedTCPPortRanges =
+        optional cfg.allowKDEConnectPorts kdeConnectPortRange;
+      allowedUDPPortRanges =
+        optional cfg.allowKDEConnectPorts kdeConnectPortRange;
     };
 
     # Use native nftables routing instead of iptables

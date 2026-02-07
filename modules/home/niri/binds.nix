@@ -9,11 +9,11 @@
 # 2. Layout & View (Sizing, Modes, Column Ops)
 # 3. DMS Integration (Launchers, UI, Power)
 # 4. System & Scripts (Audio, Media, VPN, Tools)
-# 5. Nirius Workflow (Smart Apps, Scratchpad)
+# 5. Niri Workflow (Smart Apps, Scratchpad)
 # 6. MPV Manager (Multimedia)
 # 7. Workspaces & Monitors
 # ==============================================================================
-{ lib, pkgs, bins, enableNiriusBinds, ... }:
+{ lib, pkgs, bins, enableWorkflowBinds, ... }:
 {
   # ---------------------------------------------------------------------------
   # 1. CORE WINDOW MANAGEMENT
@@ -171,7 +171,7 @@
       Mod+Shift+C    repeat=false hotkey-overlay-title="Color Picker" { spawn "hyprpicker" "-a"; }
       Mod+Ctrl+V     repeat=false hotkey-overlay-title="Clipse (Floating)" { spawn "${bins.kitty}" "--class" "clipse" "-e" "${bins.clipse}"; }
       F10            repeat=false hotkey-overlay-title="Bluetooth Toggle" { spawn "bluetooth_toggle"; }
-      Ctrl+Alt+P     repeat=false hotkey-overlay-title="Power Profile Toggle" { spawn "powerprofilesctl-toggle"; }
+      Ctrl+Alt+P     repeat=false hotkey-overlay-title="Power Profile Toggle" { spawn "power-profile"; }
       Alt+F12        repeat=false hotkey-overlay-title="VPN Toggle" { spawn "osc-mullvad-toggle"; }
       Mod+Alt+F12    repeat=false hotkey-overlay-title="VPN Slot Recycle" { spawn "osc-mullvad-slot"; }
       
@@ -194,26 +194,26 @@
       Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-ndrop" "kitty" "--class" "dropdown-terminal"; }
       Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       //Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
-      Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "nsticky-toggle"; }
+      Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "${bins.niriSticky}" "stage" "toggle-active"; }
       Mod+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Nemo)" { spawn "nemo"; }
       Alt+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Yazi)" { spawn "${bins.kitty}" "-e" "yazi"; }
       Mod+T          repeat=false hotkey-overlay-title="Terminal" { spawn "${bins.kitty}"; }
   '';
 
   # ---------------------------------------------------------------------------
-  # 5. NIRIUS WORKFLOW (Smart Focus & Routing)
+  # 5. NIRI WORKFLOW (Smart Focus & Routing)
   # ---------------------------------------------------------------------------
-  nirius = ''
-      ${lib.optionalString enableNiriusBinds ''
+  workflow = ''
+      ${lib.optionalString enableWorkflowBinds ''
         // --- Scratchpad (BackSpace) ---
-        Mod+BackSpace     repeat=false hotkey-overlay-title="Scratch: Toggle" { spawn "${bins.nirius}" "scratchpad-toggle"; }
-        Alt+BackSpace     repeat=false hotkey-overlay-title="Scratch: Cycle" { spawn "${bins.nirius}" "scratchpad-show"; }
-        Mod+Alt+BackSpace repeat=false hotkey-overlay-title="Scratch: Show All" { spawn "${bins.nirius}" "scratchpad-show-all"; }
+        Mod+BackSpace     repeat=false hotkey-overlay-title="Scratch: Toggle" { spawn "${bins.niriFlow}" "scratchpad-toggle"; }
+        Alt+BackSpace     repeat=false hotkey-overlay-title="Scratch: Cycle" { spawn "${bins.niriFlow}" "scratchpad-show"; }
+        Mod+Alt+BackSpace repeat=false hotkey-overlay-title="Scratch: Show All" { spawn "${bins.niriFlow}" "scratchpad-show-all"; }
 
         // --- Marks (Role-Based) ---
-        Mod+Alt+G    repeat=false hotkey-overlay-title="Mark: Toggle Default" { spawn "${bins.nirius}" "toggle-mark"; }
-        Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Mark: Set Term" { spawn "${bins.nirius}" "toggle-mark" "term"; }
-        Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.nirius}" "focus-marked" "term"; }
+        Mod+Alt+G    repeat=false hotkey-overlay-title="Mark: Toggle Default" { spawn "${bins.niriFlow}" "toggle-mark"; }
+        Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Mark: Set Term" { spawn "${bins.niriFlow}" "toggle-mark" "term"; }
+        Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.niriFlow}" "focus-marked" "term"; }
       ''}
   '';
 

@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# niri-set - Niri session helper multiplexer
-# ==============================================================================
-# Single entrypoint for Niri helper tasks that used to live in separate scripts:
-#   - tty
-#   - env
-#   - init
-#   - lock
-#   - go (arrange-windows)
-#   - here
-#   - cast
-#   - flow
-#   - doctor
+# -----------------------------------------------------------------------------
+# niri-set
+# -----------------------------------------------------------------------------
+# Purpose:
+# - Main Niri session helper multiplexer used by keybinds, startup, and ops.
+# - Consolidates session/bootstrap/window-routing helpers behind one command.
 #
-# Usage:
-#   niri-set <subcommand> [args...]
+# Interface:
+# - `niri-set <subcommand> [args...]`
+# - Major groups: session (`tty`, `env`, `init`, `lock`), routing (`go`, `here`,
+#   `flow`, `cast`), diagnostics (`doctor`), and layout toggles (`float`, `zen`,
+#   `pin`).
 #
-# This file is intentionally self-contained because `modules/home/scripts/bin.nix`
-# packages each `*.sh` file as a standalone binary.
-# ==============================================================================
+# Design notes:
+# - Intentionally self-contained because each `*.sh` is packaged as an
+#   independent binary by `modules/home/scripts/bin.nix`.
+# - Prefers graceful fallback behavior for optional desktop integrations (DMS,
+#   notifications, portals, etc.).
+#
+# See:
+# - `niri-set help`
+# -----------------------------------------------------------------------------
 
 set -euo pipefail
 
@@ -128,6 +130,95 @@ EOF
       notify-send -t 1000 "Zen Mode" "${1:-}" 2>/dev/null || true
     }
 
+    dms_ipc_call() {
+      command -v dms >/dev/null 2>&1 || return 1
+      dms ipc call "$@" 2>/dev/null | tr -d '\r'
+    }
+
+    get_bar_state() {
+      local out norm
+      out="$(dms_ipc_call bar status index 0 | tail -n 1 || true)"
+      norm="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]' | xargs || true)"
+      case "$norm" in
+      visible | shown | show | on | true | 1) echo "visible" ;;
+      hidden | hide | off | false | 0) echo "hidden" ;;
+      *) echo "unknown" ;;
+      esac
+    }
+
+    get_dnd_state() {
+      local out norm
+      out="$(dms_ipc_call notifications getDoNotDisturb | tail -n 1 || true)"
+      norm="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]' | xargs || true)"
+      case "$norm" in
+      true | on | yes | 1) echo "true" ;;
+      false | off | no | 0) echo "false" ;;
+      *) echo "unknown" ;;
+      esac
+    }
+
+    set_bar_state() {
+      local desired="${1:-}" current
+      current="$(get_bar_state)"
+      [[ "$current" == "$desired" ]] && return 0
+
+      case "$desired" in
+      visible)
+        dms_ipc_call bar reveal index 0 >/dev/null 2>&1 || true
+        ;;
+      hidden)
+        dms_ipc_call bar hide index 0 >/dev/null 2>&1 || true
+        ;;
+      *)
+        ;;
+      esac
+    }
+
+    set_dnd_state() {
+      local desired="${1:-}" current
+      current="$(get_dnd_state)"
+      [[ "$current" == "$desired" ]] && return 0
+
+      case "$desired" in
+      true | false)
+        # DMS notifications IPC exposes toggle + getter (no explicit set).
+        if [[ "$current" != "unknown" ]]; then
+          dms_ipc_call notifications toggleDoNotDisturb >/dev/null 2>&1 || true
+        fi
+        ;;
+      *)
+        ;;
+      esac
+    }
+
+    write_state_file() {
+      local bar_state="${1:-unknown}" dnd_state="${2:-unknown}" tmp
+      tmp="$(mktemp "${STATE_FILE}.XXXXXX")"
+      {
+        printf 'version=2\n'
+        printf 'bar=%s\n' "$bar_state"
+        printf 'dnd=%s\n' "$dnd_state"
+      } >"$tmp"
+      mv "$tmp" "$STATE_FILE"
+    }
+
+    load_state_file() {
+      STATE_VERSION=""
+      STATE_BAR=""
+      STATE_DND=""
+      [[ -f "$STATE_FILE" ]] || return 0
+
+      while IFS='=' read -r key value; do
+        case "$key" in
+        version) STATE_VERSION="$value" ;;
+        bar) STATE_BAR="$value" ;;
+        dnd) STATE_DND="$value" ;;
+        *)
+          ;;
+        esac
+      done <"$STATE_FILE"
+    }
+
     if [[ -f "$STATE_FILE" ]]; then
       # === DISABLE ZEN (Restore) ===
 
@@ -135,9 +226,16 @@ EOF
       disable_zen_config
       reload_config
 
-      # Restore DMS Bar
-      dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-      dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+      load_state_file
+
+      if [[ "$STATE_VERSION" == "2" ]]; then
+        [[ "$STATE_BAR" == "visible" || "$STATE_BAR" == "hidden" ]] && set_bar_state "$STATE_BAR"
+        [[ "$STATE_DND" == "true" || "$STATE_DND" == "false" ]] && set_dnd_state "$STATE_DND"
+      else
+        # Legacy fallback for older empty marker files.
+        dms_ipc_call bar toggle index 0 >/dev/null 2>&1 || true
+        dms_ipc_call notifications toggle-dnd >/dev/null 2>&1 || dms_ipc_call notifications toggleDoNotDisturb >/dev/null 2>&1 || true
+      fi
 
       rm -f "$STATE_FILE"
       notify "Off"
@@ -149,12 +247,14 @@ EOF
       enable_zen_config
       reload_config
 
-      # Hide Bar
-      dms ipc call bar toggle index 0 >/dev/null 2>&1 || true
-      # Silence Notifications
-      dms ipc call notifications toggle-dnd >/dev/null 2>&1 || true
+      bar_before="$(get_bar_state)"
+      dnd_before="$(get_dnd_state)"
+      write_state_file "$bar_before" "$dnd_before"
 
-      touch "$STATE_FILE"
+      # Hide bar + enable DND only if needed.
+      set_bar_state "hidden"
+      set_dnd_state "true"
+
       notify "On"
       echo "Zen Mode: On"
     fi
@@ -304,10 +404,14 @@ here)
     # Helper function to process a single app
     process_app() {
       local APP_ID="$1"
+      local current_ws_id=""
+      local window_id=""
+      local windows_json=""
+      local workspaces_json=""
 
-      # --- 1. Try to pull existing window (Nirius) ---
-      if command -v nirius >/dev/null 2>&1; then
-        if nirius move-to-current-workspace --app-id "^${APP_ID}$" --focus >/dev/null 2>&1; then
+      # --- 1. Try to pull existing window (niri-flow) ---
+      if command -v niri-flow >/dev/null 2>&1; then
+        if niri-flow move-to-current-workspace --app-id "^${APP_ID}$" --focus >/dev/null 2>&1; then
           send_notify "<b>$APP_ID</b> moved to current workspace."
           return 0
         fi
@@ -315,9 +419,29 @@ here)
 
       # --- 2. Check if it's already here but not focused ---
       if command -v niri >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-        window_id=$(niri msg -j windows | jq -r --arg app "$APP_ID" '.[] | select(.app_id == $app) | .id' | head -n1)
+        windows_json="$(niri msg -j windows 2>/dev/null || true)"
+        workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
+        current_ws_id="$(
+          jq -n \
+            --argjson wins "${windows_json:-[]}" \
+            --argjson wss "${workspaces_json:-[]}" \
+            -r '
+              first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id)
+              // first($wss[]? | select(.is_focused == true) | .id)
+              // first($wss[]? | select(.is_active == true) | .id)
+              // empty
+            ' 2>/dev/null || true
+        )"
+        if [[ -n "$current_ws_id" ]]; then
+          window_id="$(
+            echo "$windows_json" \
+              | jq -r --arg app "$APP_ID" --arg ws "$current_ws_id" \
+                'first(.[] | select(.app_id == $app and ((.workspace_id|tostring) == $ws)) | .id) // empty' \
+                  2>/dev/null || true
+          )"
+        fi
         if [[ -n "$window_id" ]]; then
-          niri msg action focus-window --id "$window_id"
+          niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
           send_notify "<b>$APP_ID</b> focused."
           return 0
         fi
@@ -925,14 +1049,6 @@ env)
       fi
     }
 
-    restart_dms_if_running() {
-      if ! command -v systemctl >/dev/null 2>&1; then
-        return 0
-      fi
-
-      systemctl --user try-restart dms.service >/dev/null 2>&1 || true
-    }
-
     ensure_runtime_dir
     detect_wayland_display
     detect_niri_socket
@@ -942,7 +1058,6 @@ env)
     set_env_in_systemd
     start_niri_portals
     restart_portals
-    restart_dms_if_running
     start_target
   )
   ;;
@@ -991,8 +1106,89 @@ init)
       exit 0
     fi
 
+    write_monitor_auto_profile() {
+      [[ -n "${outputs_json:-}" ]] || return 0
+      command -v jq >/dev/null 2>&1 || return 0
+
+      local config_home dms_dir profile_file
+      local internal_output external_output
+      local detect_json
+      local ext_w ext_h int_w int_x int_y
+
+      config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+      dms_dir="${config_home}/niri/dms"
+      profile_file="${dms_dir}/monitor-auto.kdl"
+
+      mkdir -p "$dms_dir"
+
+      if [[ -L "$profile_file" ]]; then
+        rm -f "$profile_file"
+      fi
+
+      # Prefer outputs that currently expose a valid mode. This avoids picking
+      # stale/disconnected names (e.g. old DP-* connector ids after re-dock).
+      detect_json="$(echo "$outputs_json" | jq -c '[.[] | select(((.current_mode.width // .mode.width // 0) > 0) and ((.current_mode.height // .mode.height // 0) > 0))]' 2>/dev/null || true)"
+      if [[ -z "${detect_json:-}" ]] || [[ "${detect_json:-[]}" == "[]" ]]; then
+        detect_json="$outputs_json"
+      fi
+
+      internal_output="$(echo "$detect_json" | jq -r '[.[] | .name | select(test("^eDP"))][0] // empty' 2>/dev/null || true)"
+      external_output="$(echo "$detect_json" | jq -r '[.[] | .name | select(test("^eDP")|not)][0] // empty' 2>/dev/null || true)"
+
+      if [[ -z "$internal_output" ]]; then
+        internal_output="$(echo "$outputs_json" | jq -r '.[0].name // empty' 2>/dev/null || true)"
+      fi
+
+      [[ -n "$internal_output" ]] || return 0
+
+      ext_w=0
+      ext_h=0
+      int_w=0
+      if [[ -n "$external_output" ]] && [[ "$external_output" != "$internal_output" ]]; then
+        ext_w="$(echo "$detect_json" | jq -r --arg o "$external_output" '.[] | select(.name == $o) | (.current_mode.width // .mode.width // 0)' 2>/dev/null | head -n 1 || true)"
+        ext_h="$(echo "$detect_json" | jq -r --arg o "$external_output" '.[] | select(.name == $o) | (.current_mode.height // .mode.height // 0)' 2>/dev/null | head -n 1 || true)"
+        int_w="$(echo "$detect_json" | jq -r --arg o "$internal_output" '.[] | select(.name == $o) | (.current_mode.width // .mode.width // 0)' 2>/dev/null | head -n 1 || true)"
+      fi
+
+      [[ "$ext_w" =~ ^[0-9]+$ ]] || ext_w=0
+      [[ "$ext_h" =~ ^[0-9]+$ ]] || ext_h=0
+      [[ "$int_w" =~ ^[0-9]+$ ]] || int_w=0
+
+      int_x=0
+      int_y=0
+      if [[ "$ext_w" -gt 0 ]] && [[ "$ext_h" -gt 0 ]]; then
+        if [[ "$int_w" -gt 0 ]] && [[ "$ext_w" -gt "$int_w" ]]; then
+          int_x=$(((ext_w - int_w) / 2))
+        fi
+        int_y="$ext_h"
+      fi
+
+      {
+        echo "// Auto-generated by niri-set init."
+        if [[ -n "$external_output" ]] && [[ "$external_output" != "$internal_output" ]]; then
+          for ws in 1 2 3 4 5 6; do
+            echo "workspace \"$ws\" { open-on-output \"$external_output\"; }"
+          done
+          for ws in 7 8 9; do
+            echo "workspace \"$ws\" { open-on-output \"$internal_output\"; }"
+          done
+          echo "output \"$external_output\" { position x=0 y=0; scale 1.0; }"
+          echo "output \"$internal_output\" { position x=${int_x} y=${int_y}; scale 1.0; variable-refresh-rate on-demand=true; }"
+        else
+          for ws in 1 2 3 4 5 6 7 8 9; do
+            echo "workspace \"$ws\" { open-on-output \"$internal_output\"; }"
+          done
+          echo "output \"$internal_output\" { position x=0 y=0; scale 1.0; variable-refresh-rate on-demand=true; }"
+        fi
+      } >"$profile_file"
+
+      niri msg action load-config-file >/dev/null 2>&1 || true
+      log "monitor profile updated (internal=${internal_output}, external=${external_output:-none})"
+    }
+
     preferred="${NIRI_INIT_PREFERRED_OUTPUT:-DP-3}"
     target=""
+    outputs_json=""
     if command -v jq >/dev/null 2>&1; then
       outputs_json="$(niri msg -j outputs 2>/dev/null || true)"
       if [[ -n "$outputs_json" ]]; then
@@ -1008,6 +1204,8 @@ init)
         target="$preferred"
       fi
     fi
+
+    write_monitor_auto_profile
 
     if [[ -n "$target" ]]; then
       niri msg action focus-monitor "$target" >/dev/null 2>&1 || true
@@ -1434,8 +1632,8 @@ EOF
 
       if [[ -z "${kenp_id:-}" ]]; then
         # Best-effort fallback: just try to focus/spawn without moving.
-        if command -v nirius >/dev/null 2>&1; then
-          nirius focus-or-spawn --app-id '^Kenp$' start-brave-kenp >/dev/null 2>&1 || true
+        if command -v niri-flow >/dev/null 2>&1; then
+          niri-flow focus-or-spawn --app-id '^Kenp$' start-brave-kenp >/dev/null 2>&1 || true
         fi
         return 0
       fi
@@ -1645,16 +1843,27 @@ flow)
 
     get_current_workspace() {
       ensure_niri_socket >/dev/null 2>&1 || true
-      local output
-      output=$(niri msg workspaces 2>/dev/null || true)
+      local windows_json workspaces_json
+      windows_json="$(niri msg -j windows 2>/dev/null || true)"
+      workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
 
-      if [[ -z "$output" ]] || [[ "${output:0:1}" != "[" ]]; then
+      if [[ -z "$workspaces_json" ]] || [[ "${workspaces_json:0:1}" != "[" ]]; then
         echo "1"
         return
       fi
 
       local id
-      id=$(echo "$output" | jq -r '.[] | select(.is_active) | .id' 2>/dev/null)
+      id="$(
+        jq -n \
+          --argjson wins "${windows_json:-[]}" \
+          --argjson wss "${workspaces_json:-[]}" \
+          -r '
+            first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id)
+            // first($wss[]? | select(.is_focused == true) | .id)
+            // first($wss[]? | select(.is_active == true) | .id)
+            // empty
+          ' 2>/dev/null || true
+      )"
       if [[ -n "$id" ]] && [[ "$id" != "null" ]]; then
         echo "$id"
       else
@@ -1968,6 +2177,56 @@ doctor)
       fi
     }
 
+    config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+    niri_config_file="${config_home}/niri/config.kdl"
+    niri_dms_dir="${config_home}/niri/dms"
+
+    include_is_declared() {
+      local include_path="${1:-}"
+      [[ -n "$include_path" ]] || return 1
+      [[ -f "$niri_config_file" ]] || return 1
+      grep -Fq "include \"${include_path}\"" "$niri_config_file"
+    }
+
+    check_runtime_include_file() {
+      local label="${1:-}"
+      local include_path="${2:-}"
+      local abs_path="${3:-}"
+      local target
+
+      if ! include_is_declared "$include_path"; then
+        kv "$label" "not-declared"
+        return 0
+      fi
+
+      if [[ ! -e "$abs_path" ]]; then
+        kv "$label" "missing"
+        return 0
+      fi
+
+      if [[ -L "$abs_path" ]]; then
+        target="$(readlink -f "$abs_path" 2>/dev/null || true)"
+        if [[ "$target" == /nix/store/* ]]; then
+          kv "$label" "symlink->/nix/store (readonly)"
+        else
+          kv "$label" "symlink->${target:-unknown}"
+        fi
+        return 0
+      fi
+
+      if [[ ! -f "$abs_path" ]]; then
+        kv "$label" "not-regular"
+        return 0
+      fi
+
+      if [[ ! -w "$abs_path" ]]; then
+        kv "$label" "not-writable"
+        return 0
+      fi
+
+      kv "$label" "ok"
+    }
+
     echo "niri-set doctor"
     echo
     kv "XDG_SESSION_TYPE" "${XDG_SESSION_TYPE:-}"
@@ -2071,6 +2330,14 @@ doctor)
       fi
       kv "is-running:clipse" "${clipse_proc:-inactive}"
     fi
+
+    echo
+    echo "Runtime includes (strict)"
+    kv "config.kdl" "$([[ -f "$niri_config_file" ]] && echo "$niri_config_file" || echo "missing")"
+    check_runtime_include_file "include:dms/outputs.kdl" "dms/outputs.kdl" "${niri_dms_dir}/outputs.kdl"
+    check_runtime_include_file "include:dms/monitor-auto.kdl" "dms/monitor-auto.kdl" "${niri_dms_dir}/monitor-auto.kdl"
+    check_runtime_include_file "include:dms/zen.kdl" "dms/zen.kdl" "${niri_dms_dir}/zen.kdl"
+    check_runtime_include_file "include:dms/cursor.kdl" "dms/cursor.kdl" "${niri_dms_dir}/cursor.kdl"
   )
   ;;
 

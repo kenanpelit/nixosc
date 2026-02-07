@@ -7,21 +7,16 @@
 # - Adds plugin settings matching Niri-like preset widths
 # ==============================================================================
 
-{ inputs, config, lib, pkgs, ... }:
+{ config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
-  system = pkgs.stdenv.hostPlatform.system;
-
-  hyprscrollingPkg =
-    if inputs ? hyprland-plugins
-    then inputs.hyprland-plugins.packages.${system}.hyprscrolling
-    else null;
+  hyprscrollingPkg = cfg.hyprscrollingPackage;
 in
 lib.mkIf cfg.enable {
   assertions = [
     {
       assertion = hyprscrollingPkg != null;
-      message = "hyprscrolling is enabled but `inputs.hyprland-plugins` is missing (expected a flake input pointing to hyprwm/hyprland-plugins).";
+      message = "hyprscrolling is enabled but `pkgs.unstable.hyprlandPlugins.hyprscrolling` is missing.";
     }
   ];
 

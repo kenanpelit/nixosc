@@ -714,7 +714,7 @@ OSC_REBOOT="$(opt osc-safe-reboot)"
 BLUE_TOGGLE="$(opt bluetooth_toggle)"
 VLC_TOGGLE="$OSC_MEDIA vlc"
 MPC_CONTROL="$OSC_MEDIA mpc"
-NSTICKY_TOGGLE="$(opt nsticky-toggle)"
+NIRI_STICKY="$(opt niri-sticky)"
 MPV_MGR="$OSC_MEDIA mpv"
 KKENP="$(opt start-kkenp)"
 SEM_SUMO="$(opt semsumo)"
@@ -896,7 +896,7 @@ dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/cus
 
 # 31) Sticky Toggle (Niri-style)
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/binding "'<Super><Ctrl>s'"
-dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/command "'$NSTICKY_TOGGLE'"
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/command "'$NIRI_STICKY stage toggle-active'"
 dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom31/name "'Sticky Toggle'"
 
 # 32) MPC Toggle (Niri-style)

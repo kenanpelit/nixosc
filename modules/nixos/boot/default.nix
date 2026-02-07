@@ -66,13 +66,9 @@ in
     grub = {
       enable = true;
 
-      # Prefer booting into CachyOS by default on the physical machine.
-      #
-      # In the generated GRUB menu, this chainload entry appears as top-level
-      # index 1 (right after "NixOS"), so `default = 1` selects it.
-      #
-      # NOTE: On virtual machines the chainload entry does not exist, so keep
-      # the default at the first NixOS entry (0).
+      # Keep default boot selection aligned with current menu order:
+      # - physical hosts: first NixOS entry (index 0)
+      # - virtual hosts: index 1 (repo-specific menu ordering)
       default = if isPhysicalMachine then 0 else 1;
 
       # VM vs Physical disk target:

@@ -9,6 +9,7 @@
 { config, lib, ... }:
 
 let
+  cfg = config.my.desktop.hyprland;
   inherit (config.catppuccin) sources;
   flavor = config.catppuccin.flavor;
   accent = config.catppuccin.accent;
@@ -53,10 +54,6 @@ rec {
     "SDL_VIDEODRIVER,wayland"
     "CLUTTER_BACKEND,wayland"
     "OZONE_PLATFORM,wayland"
-    "HYPRLAND_LOG_WLR,1"
-    "HYPRLAND_NO_RT,1"
-    "HYPRLAND_NO_SD_NOTIFY,1"
-    "HYPRLAND_NO_WATCHDOG_WARNING,1"
     "GTK_THEME,catppuccin-${flavor}-${accent}-standard+normal"
     "GTK_USE_PORTAL,1"
     "GTK_APPLICATION_PREFER_DARK_THEME,${if (flavor == "latte") then "0" else "1"}"
@@ -83,5 +80,9 @@ rec {
     "TERM,xterm-256color"
     "BROWSER,brave-kenp-default"
     "CATPPUCCIN_FLAVOR,${flavor}"
-  ];
+  ]
+  ++ lib.optionals cfg.enableVerboseWlrLogs [ "HYPRLAND_LOG_WLR,1" ]
+  ++ lib.optionals cfg.disableRealtimeScheduling [ "HYPRLAND_NO_RT,1" ]
+  ++ lib.optionals cfg.disableSdNotify [ "HYPRLAND_NO_SD_NOTIFY,1" ]
+  ++ lib.optionals cfg.suppressWatchdogWarning [ "HYPRLAND_NO_WATCHDOG_WARNING,1" ];
 }

@@ -9,6 +9,9 @@ readonly WORKSPACE=2
 readonly VPN_MODE="secure"
 readonly FULLSCREEN=false
 readonly WAIT_TIME=1
+readonly COMMAND="wezterm"
+readonly ARGS_STR="start --class wezterm"
+readonly STATE_DIR="/run/user/1000/semsumo"
 
 # Detect window manager
 if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
@@ -22,6 +25,11 @@ else
 fi
 
 echo "Initializing wezterm on $WM_TYPE..."
+
+APP_ARGS=()
+if [[ -n "$ARGS_STR" ]]; then
+    read -r -a APP_ARGS <<<"$ARGS_STR"
+fi
 
 # External monitor setup (GNOME only)
 if [[ "$WM_TYPE" == "gnome" ]] && command -v xrandr >/dev/null 2>&1; then
@@ -65,7 +73,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
 fi
 
 echo "Starting application..."
-echo "COMMAND: wezterm start --class wezterm"
+echo "COMMAND: $COMMAND ${APP_ARGS[*]}"
 echo "VPN MODE: $VPN_MODE"
 
 # Start application with VPN mode
@@ -74,14 +82,14 @@ case "$VPN_MODE" in
         if command -v mullvad >/dev/null 2>&1 && mullvad status 2>/dev/null | grep -q "Connected"; then
             if command -v mullvad-exclude >/dev/null 2>&1; then
                 echo "Starting with VPN bypass"
-                mullvad-exclude wezterm start --class wezterm &
+                mullvad-exclude "$COMMAND" "${APP_ARGS[@]}" &
             else
                 echo "WARNING: mullvad-exclude not found"
-                wezterm start --class wezterm &
+                "$COMMAND" "${APP_ARGS[@]}" &
             fi
         else
             echo "VPN not connected"
-            wezterm start --class wezterm &
+            "$COMMAND" "${APP_ARGS[@]}" &
         fi
         ;;
     secure|*)
@@ -90,13 +98,14 @@ case "$VPN_MODE" in
         else
             echo "WARNING: VPN not connected!"
         fi
-        wezterm start --class wezterm &
+        "$COMMAND" "${APP_ARGS[@]}" &
         ;;
 esac
 
 APP_PID=$!
-mkdir -p "/tmp/semsumo"
-echo "$APP_PID" > "/tmp/semsumo/wezterm.pid"
+mkdir -p "$STATE_DIR"
+echo "$APP_PID" > "$STATE_DIR/wezterm.pid"
+echo "$COMMAND" > "$STATE_DIR/wezterm.cmd"
 echo "Application started (PID: $APP_PID)"
 
 # Window verification (Hyprland only)

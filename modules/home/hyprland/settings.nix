@@ -6,33 +6,48 @@
 # compositor aesthetics (decoration, animations, master/dwindle layouts).
 # Imported by default.nix
 # ==============================================================================
-{ lib, bins, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, cursorSize, ... }:
+{ lib, bins, cfg, mkColor, colors, activeBorder, inactiveBorder, inactiveGroupBorder, cursorName, cursorSize, ... }:
 
 let
-  primaryMonitor = "DELL UP2716D KRXTR88N909L";
-  secondaryMonitor = "Chimei Innolux Corporation 0x143F";
-  primaryMonitorDesc = "desc:Dell Inc. ${primaryMonitor}";
-  secondaryMonitorDesc = "desc:${secondaryMonitor}";
+  primaryMonitorDesc = cfg.staticPrimaryMonitorDesc;
+  secondaryMonitorDesc = cfg.staticSecondaryMonitorDesc;
   
-  mkWorkspaceEntry = { monitor, index, isDefault ? false }:
-    "${toString index}, monitor:${monitor}${lib.optionalString isDefault ", default:true"}";
+  mkWorkspaceEntry = { index, monitor ? null, isDefault ? false }:
+    "${toString index}${lib.optionalString (monitor != null) ", monitor:${monitor}"}${lib.optionalString isDefault ", default:true"}";
 
   startupServices = [
     "${bins.hyprSet} env-sync"
-    "systemctl --user start hyprland-session.target"
     "hyprctl setcursor ${cursorName} ${toString cursorSize}"
     "${bins.hyprSet} clipse"
   ];
 
-  monitorConfig = [
-    "${primaryMonitorDesc},2560x1440@59,0x0,1"
-    "${secondaryMonitorDesc},1920x1200@60,320x1440,1"
+  staticMonitorConfig = [
+    # Niri layout parity:
+    # - external monitor on top
+    # - laptop panel below (centered)
+    "${primaryMonitorDesc},2560x1440@59.951,0x0,1"
+    "${secondaryMonitorDesc},1920x1200@60.003,320x1440,1"
     ",preferred,auto,1"
   ];
 
-  workspaceConfig =
+  dynamicMonitorConfig = [
+    ",preferred,auto,1"
+  ];
+
+  monitorConfig =
+    if cfg.useStaticMonitors
+    then staticMonitorConfig
+    else dynamicMonitorConfig;
+
+  staticWorkspaceConfig =
     (map (n: mkWorkspaceEntry { monitor = primaryMonitorDesc; index = n; isDefault = n == 1; }) (lib.range 1 6))
-    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitorDesc; index = n; isDefault = n == 7; }) (lib.range 7 9))
+    ++ (map (n: mkWorkspaceEntry { monitor = secondaryMonitorDesc; index = n; isDefault = n == 7; }) (lib.range 7 9));
+
+  dynamicWorkspaceConfig =
+    map (n: mkWorkspaceEntry { index = n; isDefault = n == 1; }) (lib.range 1 9);
+
+  workspaceConfig =
+    (if cfg.useStaticMonitors then staticWorkspaceConfig else dynamicWorkspaceConfig)
     ++ [
       # Smart gaps (single / maximized):
       # Keep borders so 0.8-width single windows still have a visible focus outline.
@@ -163,8 +178,8 @@ in
     repeat_delay = 250;
     numlock_by_default = false;
     sensitivity = 1.0;
-    accel_profile = "adaptive";
-    force_no_accel = true;
+    accel_profile = if cfg.inputNoAccel then "flat" else "adaptive";
+    force_no_accel = cfg.inputNoAccel;
     follow_mouse = 1;
     float_switch_override_focus = 2;
     scroll_factor = 1.0;
@@ -244,7 +259,7 @@ in
   render = {
     explicit_sync = 1;
     explicit_sync_kms = 1;
-    direct_scanout = true;
+    direct_scanout = cfg.renderDirectScanout;
   };
 
   binds = {

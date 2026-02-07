@@ -5,19 +5,33 @@
 # Keep session metadata consistent by editing this file.
 # ==============================================================================
 
-{ pkgs, lib, inputs, config, ... }:
+{ pkgs, lib, config, ... }:
 
 let
   username = config.my.user.name or "kenan";
   cfg = config.my.display;
 
   hyprlandPkg =
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    if config.programs ? hyprland && config.programs.hyprland ? package then
+      config.programs.hyprland.package
+    else if pkgs ? hyprland then
+      pkgs.hyprland
+    else
+      pkgs.unstable.hyprland;
 
   hyprPortalPkg =
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+    if pkgs ? xdg-desktop-portal-hyprland then
+      pkgs.xdg-desktop-portal-hyprland
+    else
+      pkgs.unstable.xdg-desktop-portal-hyprland;
 
-  niriPkg = pkgs.niri-unstable;
+  niriPkg =
+    if config.programs ? niri && config.programs.niri ? package then
+      config.programs.niri.package
+    else if pkgs ? niri then
+      pkgs.niri
+    else
+      pkgs.niri-unstable;
 
   hyprlandOptimizedSession = pkgs.writeTextFile {
     name = "hyprland-optimized-session";
@@ -25,7 +39,7 @@ let
     text = ''
       [Desktop Entry]
       Name=Hyprland (Optimized)
-      Comment=Hyprland with pinned flake build and user-session integration
+      Comment=Hyprland (nixpkgs-unstable) with user-session integration
 
       Type=Application
       DesktopNames=Hyprland
@@ -78,7 +92,8 @@ let
 
 in
 {
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    (lib.mkIf cfg.enableGnome {
     # GNOME Shell (mutter) started via `org.gnome.Shell@wayland.service` expects
     # the current logind session to be a *graphical* session (Type=wayland/x11).
     # TTY logins default to Type=tty, which makes GNOME fail with:
@@ -89,26 +104,29 @@ in
     #
     # NOTE: This uses the (experimental) `security.pam.services.<name>.rules`
     # interface, but it is the least invasive way to pass pam_systemd arguments.
-    security.pam.services.login.rules.session.systemd.settings.type = lib.mkDefault "wayland";
+      security.pam.services.login.rules.session.systemd.settings.type = lib.mkDefault "wayland";
+    })
 
     # Session definitions for DM
-    services.displayManager.sessionPackages = lib.mkMerge [
-      (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
-      (lib.optional cfg.enableGnome gnomeSessionWrapper)
-      (lib.optional cfg.enableNiri niriSession)
-    ];
+    {
+      services.displayManager.sessionPackages = lib.mkMerge [
+        (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
+        (lib.optional cfg.enableGnome gnomeSessionWrapper)
+        (lib.optional cfg.enableNiri niriSession)
+      ];
 
-    # Packages needed for sessions/portals
-    environment.systemPackages = lib.mkMerge [
-      (lib.optional cfg.enableHyprland hyprlandPkg)
-      (lib.optional cfg.enableHyprland hyprPortalPkg)
-      (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
-      
-      (lib.optional cfg.enableGnome gnomeSessionWrapper)
-      (lib.optional cfg.enableGnome pkgs."gnome-session")
-      
-      (lib.optional cfg.enableNiri niriPkg)
-      (lib.optional cfg.enableNiri niriSession)
-    ];
-  };
+      # Packages needed for sessions/portals
+      environment.systemPackages = lib.mkMerge [
+        (lib.optional cfg.enableHyprland hyprlandPkg)
+        (lib.optional cfg.enableHyprland hyprPortalPkg)
+        (lib.optional cfg.enableHyprland hyprlandOptimizedSession)
+        
+        (lib.optional cfg.enableGnome gnomeSessionWrapper)
+        (lib.optional cfg.enableGnome pkgs."gnome-session")
+        
+        (lib.optional cfg.enableNiri niriPkg)
+        (lib.optional cfg.enableNiri niriSession)
+      ];
+    }
+  ]);
 }

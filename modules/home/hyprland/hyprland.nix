@@ -3,7 +3,7 @@
 # Hyprland main module: enables compositor, sets env vars, integrates plugins,
 # and imports detailed configs (binds/layout/services).
 # ==============================================================================
-{ inputs, pkgs, config, lib, ... }:
+{ pkgs, config, lib, ... }:
 let
   cfg = config.my.desktop.hyprland;
   clipPersistPkg =
@@ -21,6 +21,21 @@ lib.mkIf cfg.enable {
   systemd.user.targets.hyprland-session.Unit.Wants = [
     "xdg-desktop-autostart.target"
   ];
+
+  systemd.user.services.hypr-ready = {
+    Unit = {
+      Description = "Hyprland ready (IPC/socket)";
+      After = [ "hyprland-session.target" ];
+      PartOf = [ "hyprland-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'for ((i=0;i<200;i++)); do if command -v hyprctl >/dev/null 2>&1 && hyprctl version >/dev/null 2>&1; then exit 0; fi; sleep 0.05; done; echo \"hypr-ready: timed out waiting for hyprctl\" >&2; exit 1'";
+    };
+    Install = {
+      WantedBy = [ "hyprland-session.target" ];
+    };
+  };
 
   # Keep session daemons observable/restartable (instead of exec-once).
   systemd.user.services.hypr-nm-applet = {
@@ -78,12 +93,13 @@ lib.mkIf cfg.enable {
   systemd.user.services.hypr-init = {
     Unit = {
       Description = "Hyprland session bootstrap (monitors + audio)";
-      After = [ "graphical-session.target" "hyprland-session.target" ];
+      After = [ "graphical-session.target" "hyprland-session.target" "hypr-ready.service" ];
       PartOf = [ "hyprland-session.target" ];
+      Wants = [ "hypr-ready.service" ];
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'sleep 5 && hypr-set init'";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'if [ ${toString cfg.bootstrapDelaySeconds} -gt 0 ]; then sleep ${toString cfg.bootstrapDelaySeconds}; fi; hypr-set init'";
     };
     Install = {
       WantedBy = [ "hyprland-session.target" ];
@@ -95,6 +111,7 @@ lib.mkIf cfg.enable {
   # =============================================================================
   wayland.windowManager.hyprland = {
     enable = true;
+    package = cfg.package;
     xwayland = {
       enable = true;
       #hidpi = true;
