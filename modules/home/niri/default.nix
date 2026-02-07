@@ -62,8 +62,8 @@ let
     niriSet = "${config.home.profileDirectory}/bin/niri-set";
     clipse = "clipse";
     niriFlow = "${config.home.profileDirectory}/bin/niri-flow";
+    niriSticky = "${config.home.profileDirectory}/bin/niri-sticky";
     niriSwitcher = "${if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher}/bin/niriswitcher";
-    nsticky = "${inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky}/bin/nsticky";
   };
 
   # ---------------------------------------------------------------------------
@@ -347,7 +347,6 @@ in
       home.packages =
         lib.optional cfg.enableNiriswitcher (if pkgs ? unstable && pkgs.unstable ? niriswitcher then pkgs.unstable.niriswitcher else pkgs.niriswitcher)
         ++ [
-          inputs.nsticky.packages.${pkgs.stdenv.hostPlatform.system}.nsticky
           (pkgs.writeShellScriptBin "osc-clipview" ''
             set -euo pipefail
             mime=$(wl-paste --list-types | head -n 1)
@@ -574,16 +573,16 @@ EOF
         };
       };
 
-      systemd.user.services.niri-nsticky = {
+      systemd.user.services.niri-sticky = {
         Unit = {
-          Description = "Niri: nsticky daemon";
+          Description = "Niri: sticky daemon";
           After = [ "graphical-session.target" "niri-session.target" "niri-ready.service" ];
           PartOf = [ "niri-session.target" ];
           ConditionEnvironment = [ "WAYLAND_DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP=niri" ];
         };
         Service = {
           Type = "simple";
-          ExecStart = "${bins.nsticky}";
+          ExecStart = "${bins.niriSticky}";
           Restart = "on-failure";
           RestartSec = 2;
           StandardOutput = "journal";

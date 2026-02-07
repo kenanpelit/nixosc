@@ -21,7 +21,7 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
    - `niri-set init` monitor profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
    - `bootstrapNotifications` açıkken sadece sonuç bildirimi verir (başarı/hata), başlangıç popup’ı göstermez.
 4) Uzun yaşayan servisler ayrı unit’lerde yönetilir:
-   - `niri-nsticky.service`
+   - `niri-sticky.service`
    - `niriswitcher.service` (opsiyonel)
    - `niri-bt-autoconnect.service` (opsiyonel, one-shot)
 
