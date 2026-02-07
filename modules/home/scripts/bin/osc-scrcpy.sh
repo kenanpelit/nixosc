@@ -180,48 +180,52 @@ launch_scrcpy() {
     --disable-screensaver
   )
 
-  # Renderer fallback chain: many "black window" issues are renderer-related.
-  render_candidates=("${SCRCPY_RENDER_DRIVER:-opengl}" opengles2 software)
+  # Audio capture can stall/black-screen on some Android stacks (esp. over WiFi).
+  # Keep it opt-in via SCRCPY_AUDIO=1.
+  if [[ "${SCRCPY_AUDIO:-0}" != "1" ]]; then
+    base_scrcpy_cmd+=(--no-audio)
+  fi
+
+  # Renderer strategy:
+  # 1) If SCRCPY_RENDER_DRIVER is set, use only that.
+  # 2) Otherwise, prefer opengl (works best on this setup), then fallback.
+  if [[ -n "${SCRCPY_RENDER_DRIVER:-}" ]]; then
+    render_candidates=("${SCRCPY_RENDER_DRIVER}")
+  else
+    render_candidates=(opengl opengles2 software "__default__")
+  fi
 
   for renderer in "${render_candidates[@]}"; do
     [[ -n "${renderer:-}" ]] || continue
     [[ -n "${seen_renderers[$renderer]:-}" ]] && continue
     seen_renderers["$renderer"]=1
 
-    local -a scrcpy_cmd=("${base_scrcpy_cmd[@]}" --render-driver="$renderer")
-    info "Starting scrcpy (renderer: $renderer)..."
+    local -a scrcpy_cmd=("${base_scrcpy_cmd[@]}")
+    if [[ "$renderer" == "__default__" ]]; then
+      info "Starting scrcpy (renderer: auto)..."
+    else
+      scrcpy_cmd+=(--render-driver="$renderer")
+      info "Starting scrcpy (renderer: $renderer)..."
+    fi
     : >"$LOG_FILE"
     SCRCPY_OPTS= SCRCPY_ARGS= scrcpy "${scrcpy_cmd[@]}" >"$LOG_FILE" 2>&1 &
     local scrcpy_pid=$!
 
-    sleep 1
+    sleep 1.2
     if ! kill -0 "$scrcpy_pid" 2>/dev/null; then
-      warn "scrcpy exited immediately with renderer=$renderer."
+      if [[ "$renderer" == "__default__" ]]; then
+        warn "scrcpy exited immediately with renderer=auto."
+      else
+        warn "scrcpy exited immediately with renderer=$renderer."
+      fi
       tail -n 40 "$LOG_FILE" >&2 || true
       continue
     fi
 
-    local ready=0
-    local i
-    for i in {1..20}; do
-      if grep -q "Texture:" "$LOG_FILE"; then
-        ready=1
-        break
-      fi
-      if ! kill -0 "$scrcpy_pid" 2>/dev/null; then
-        break
-      fi
-      sleep 0.2
-    done
-
-    if [[ "$ready" -eq 1 ]]; then
-      info "scrcpy stream initialized successfully."
-      return 0
-    fi
-
-    warn "No video texture initialized with renderer=$renderer, retrying fallback..."
-    kill "$scrcpy_pid" 2>/dev/null || true
-    wait "$scrcpy_pid" 2>/dev/null || true
+    # If process survives startup, keep it running.
+    # Some systems print "Texture:" later; killing early causes restart loops.
+    info "scrcpy started successfully (renderer: $renderer, pid: $scrcpy_pid)."
+    return 0
   done
 
   warn "scrcpy could not initialize video output. Last log lines:"
