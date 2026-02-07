@@ -142,6 +142,18 @@ in
     }
 
     window-rule {
+      match app-id=r#"^scrcpy$"#;
+      // Keep scrcpy at a phone-like 9x20 ratio to avoid side gaps.
+      ${mkFixedFloating { w = 432; h = 960; x = 32; y = 144; relativeTo = "top-right"; }}
+    }
+
+    window-rule {
+      match title=r#"^Android Screen Mirror$"#;
+      // Fallback match by title for cases where app-id is not exposed as expected.
+      ${mkFixedFloating { w = 432; h = 960; x = 32; y = 144; relativeTo = "top-right"; }}
+    }
+
+    window-rule {
       match app-id=r#"^$"# title=r#"^$"#;
       open-floating true;
       open-focused false;
