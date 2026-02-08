@@ -106,7 +106,7 @@
   my.user.pass.enable = true;
   
   # Search
-  my.user.search.enable = true;
+  my.user.search.enable = false;
   
   # Other
   my.user.flatpak.enable = true;

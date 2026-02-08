@@ -29,7 +29,7 @@ in
     # -------------------------------------------------------
     home.packages = [
       pkgs.kdePackages.kdeconnect-kde
-      pkgs.valent
+      # pkgs.valent
     ];
 
     # Disable upstream XDG autostart entry so kdeconnectd has a single owner unit.
