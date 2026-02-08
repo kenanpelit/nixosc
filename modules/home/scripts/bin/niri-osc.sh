@@ -1934,6 +1934,8 @@ flow)
     PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${USER}/bin:${PATH}"
 
     readonly SCRIPT_NAME="NiriFlow"
+    readonly WS_MIN=1
+    readonly WS_MAX=9
 
     cache_root="${XDG_CACHE_HOME:-$HOME/.cache}"
     cache_dir_candidate="$cache_root/niri/toggle"
@@ -1954,6 +1956,46 @@ flow)
     }
 
     log() { echo "[$SCRIPT_NAME] $1" >&2; }
+
+    is_int() {
+      [[ "${1:-}" =~ ^[0-9]+$ ]]
+    }
+
+    normalize_workspace_index() {
+      local index="${1:-$WS_MIN}"
+      if ! is_int "$index"; then
+        printf '%s\n' "$WS_MIN"
+        return 0
+      fi
+
+      if ((index < WS_MIN)); then
+        index="$WS_MIN"
+      elif ((index > WS_MAX)); then
+        index="$WS_MAX"
+      fi
+
+      printf '%s\n' "$index"
+    }
+
+    next_workspace_index() {
+      local current
+      current="$(normalize_workspace_index "${1:-$WS_MIN}")"
+      if ((current >= WS_MAX)); then
+        printf '%s\n' "$WS_MIN"
+      else
+        printf '%s\n' "$((current + 1))"
+      fi
+    }
+
+    prev_workspace_index() {
+      local current
+      current="$(normalize_workspace_index "${1:-$WS_MIN}")"
+      if ((current <= WS_MIN)); then
+        printf '%s\n' "$WS_MAX"
+      else
+        printf '%s\n' "$((current - 1))"
+      fi
+    }
 
     detect_wayland_display() {
       if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
@@ -2016,24 +2058,32 @@ flow)
           --argjson wins "${windows_json:-[]}" \
           --argjson wss "${workspaces_json:-[]}" \
           -r '
-            first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id)
-            // first($wss[]? | select(.is_focused == true) | .id)
-            // first($wss[]? | select(.is_active == true) | .id)
-            // empty
+            def ws_by_id:
+              reduce $wss[] as $ws ({}; .[($ws.id | tostring)] = $ws);
+
+            (first($wins[]? | select(.is_focused == true and .workspace_id != null) | (.workspace_id | tostring)) // "") as $wid
+            | if ($wid != "" and (ws_by_id[$wid] != null)) then
+                (ws_by_id[$wid].idx // empty)
+              else
+                (first($wss[]? | select(.is_focused == true) | .idx)
+                 // first($wss[]? | select(.is_active == true) | .idx)
+                 // empty)
+              end
           ' 2>/dev/null || true
       )"
-      if [[ -n "$id" ]] && [[ "$id" != "null" ]]; then
-        echo "$id"
-      else
-        echo "1"
+      if [[ -n "$id" ]] && [[ "$id" != "null" ]] && is_int "$id"; then
+        normalize_workspace_index "$id"
+        return 0
       fi
+
+      printf '%s\n' "$WS_MIN"
     }
 
     get_previous_workspace() {
       if [ -f "$PREVIOUS_WS_FILE" ]; then
-        cat "$PREVIOUS_WS_FILE"
+        normalize_workspace_index "$(cat "$PREVIOUS_WS_FILE" 2>/dev/null || echo "$WS_MIN")"
       else
-        echo "1"
+        echo "$WS_MIN"
       fi
     }
 
@@ -2044,7 +2094,10 @@ flow)
     }
 
     switch_to_workspace() {
-      local index=$1
+      local index="${1:-$WS_MIN}"
+      if is_int "$index"; then
+        index="$(normalize_workspace_index "$index")"
+      fi
       save_current_as_previous
       niri_action focus-workspace "$index"
     }
@@ -2064,17 +2117,46 @@ flow)
 
     navigate_relative() {
       local direction=$1
-      save_current_as_previous
+      local current target
+      current="$(get_current_workspace)"
 
       case $direction in
-      "next" | "down" | "right") niri_action focus-workspace-down ;;
-      "prev" | "up" | "left") niri_action focus-workspace-up ;;
+      "next" | "down" | "right")
+        target="$(next_workspace_index "$current")"
+        switch_to_workspace "$target"
+        ;;
+      "prev" | "up" | "left")
+        target="$(prev_workspace_index "$current")"
+        switch_to_workspace "$target"
+        ;;
       esac
     }
 
     move_window_to_workspace() {
-      local index=$1
+      local index="${1:-$WS_MIN}"
+      if is_int "$index"; then
+        index="$(normalize_workspace_index "$index")"
+      fi
       niri_action move-column-to-workspace "$index"
+    }
+
+    move_window_relative_workspace() {
+      local direction="$1"
+      local current target
+      current="$(get_current_workspace)"
+      case "$direction" in
+      next | down | right)
+        target="$(next_workspace_index "$current")"
+        ;;
+      prev | up | left)
+        target="$(prev_workspace_index "$current")"
+        ;;
+      *)
+        return 1
+        ;;
+      esac
+
+      move_window_to_workspace "$target"
     }
 
     focus_monitor() {
@@ -2151,6 +2233,14 @@ flow)
           move_window_to_workspace "$2"
           shift 2
           ;;
+        -mwn)
+          move_window_relative_workspace "next"
+          shift
+          ;;
+        -mwp)
+          move_window_relative_workspace "prev"
+          shift
+          ;;
         -ml)
           focus_monitor "left"
           shift
@@ -2197,10 +2287,12 @@ flow)
           ;;
         -h | --help)
           echo "Usage: niri-osc set flow [options]"
-          echo "  -wl/-wr  Focus prev/up or next/down workspace"
+          echo "  -wl/-wr  Focus prev/next workspace (bounded 1..9, wraps)"
           echo "  -wt      Toggle last workspace"
-          echo "  -wn N    Focus workspace N"
-          echo "  -mw N    Move window to workspace N"
+          echo "  -wn N    Focus workspace N (clamped to 1..9)"
+          echo "  -mw N    Move window to workspace N (clamped to 1..9)"
+          echo "  -mwp     Move window to previous workspace (1..9, wraps)"
+          echo "  -mwn     Move window to next workspace (1..9, wraps)"
           echo "  -ml/mr   Focus monitor left/right"
           echo "  -mn/-mp  Focus next/previous monitor"
           echo "  -mt      Toggle monitor focus (left/right)"
@@ -2550,7 +2642,9 @@ STATE_DIR="${STATE_HOME}/niri-flow"
 MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
 FOLLOW_FILE="$STATE_DIR/follow.json"
-SCRATCH_WORKSPACE_FALLBACK="${OSC_NIRI_FLOW_SCRATCH_WORKSPACE:-99}"
+# Keep fallback bounded to the static workspace set to avoid accidental
+# high-index workspace creation if output detection fails.
+SCRATCH_WORKSPACE_FALLBACK="${OSC_NIRI_FLOW_SCRATCH_WORKSPACE:-9}"
 
 MATCH_APP_ID=""
 MATCH_TITLE=""

@@ -22,13 +22,13 @@
       // --- Window Focus (Vim & Arrows) ---
       Mod+Left   hotkey-overlay-title="Focus Left"  { focus-column-left; }
       Mod+Right  hotkey-overlay-title="Focus Right" { focus-column-right; }
-      Mod+Up     hotkey-overlay-title="Focus Up"    { focus-workspace-up; }
-      Mod+Down   hotkey-overlay-title="Focus Down"  { focus-workspace-down; }
+      Mod+Up     hotkey-overlay-title="Focus Up"    { spawn "${bins.niriOsc}" "set" "flow" "-wl"; }
+      Mod+Down   hotkey-overlay-title="Focus Down"  { spawn "${bins.niriOsc}" "set" "flow" "-wr"; }
       
       Mod+H      hotkey-overlay-title="Focus Left"  { focus-column-left; }
       Mod+L      hotkey-overlay-title="Focus Right" { focus-column-right; }
-      Mod+K      hotkey-overlay-title="Focus Up"    { focus-workspace-up; }
-      Mod+J      hotkey-overlay-title="Focus Down"  { focus-workspace-down; }
+      Mod+K      hotkey-overlay-title="Focus Up"    { spawn "${bins.niriOsc}" "set" "flow" "-wl"; }
+      Mod+J      hotkey-overlay-title="Focus Down"  { spawn "${bins.niriOsc}" "set" "flow" "-wr"; }
 
       // --- Window Focus (Within Column) ---
       Mod+Ctrl+K hotkey-overlay-title="Focus Window Up" { focus-window-up; }
@@ -269,13 +269,13 @@
       Mod+Alt+0  repeat=false hotkey-overlay-title="Go (Arrange Windows)" { spawn "${bins.niriOsc}" "set" "go"; }
 
       // --- Workspace Navigation ---
-      Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
-      Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { move-window-to-workspace-up; }
-      Mod+Page_Down hotkey-overlay-title="Move Win WS Down" { move-window-to-workspace-down; }
+      Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move To WS 9" { spawn "${bins.niriOsc}" "set" "flow" "-mw" "9"; }
+      Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { spawn "${bins.niriOsc}" "set" "flow" "-mwp"; }
+      Mod+Page_Down hotkey-overlay-title="Move Win WS Down" { spawn "${bins.niriOsc}" "set" "flow" "-mwn"; }
 
       // --- Mouse Wheel Interaction ---
-      Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { focus-workspace-down; }
-      Mod+WheelScrollUp    cooldown-ms=150 hotkey-overlay-title="WS Up" { focus-workspace-up; }
+      Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { spawn "${bins.niriOsc}" "set" "flow" "-wr"; }
+      Mod+WheelScrollUp    cooldown-ms=150 hotkey-overlay-title="WS Up" { spawn "${bins.niriOsc}" "set" "flow" "-wl"; }
       Mod+WheelScrollRight hotkey-overlay-title="Focus Right" { focus-column-right; }
       Mod+WheelScrollLeft  hotkey-overlay-title="Focus Left" { focus-column-left; }
   '';
