@@ -5,7 +5,7 @@
 # correct backend (`hypr-workspace-monitor`, `niri-osc`).
 #
 # Niri dispatch modes:
-# - legacy short flags (`-mn`, `-mp`, `-wl`, ...) -> `niri-osc set flow`
+# - legacy short flags (`-mn`, `-mp`, `-wl`, ...) -> `niri-osc flow legacy`
 # - modern subcommands (`scratchpad-toggle`, ...) -> `niri-osc flow`
 
 set -euo pipefail
@@ -25,7 +25,7 @@ resolve_bin() {
 
 is_niri_flow_subcommand() {
   case "${1:-}" in
-    focus|focus-or-spawn|move-to-current-workspace|move-to-current-workspace-or-spawn|toggle-follow-mode|toggle-mark|focus-marked|list-marked|scratchpad-toggle|scratchpad-show|scratchpad-show-all|help|-h|--help|-V|--version)
+    legacy|focus|focus-or-spawn|move-to-current-workspace|move-to-current-workspace-or-spawn|toggle-follow-mode|toggle-mark|focus-marked|list-marked|scratchpad-toggle|scratchpad-show|scratchpad-show-all|help|-h|--help|-V|--version)
       return 0
       ;;
     *)
@@ -60,12 +60,12 @@ if [[ -n "${NIRI_SOCKET:-}" ]] || [[ "${XDG_CURRENT_DESKTOP:-}" == "niri" ]] || 
         exec "${NIRI_OSC}" flow "$@"
       fi
       if [[ "${first_arg}" == -* ]]; then
-        exec "${NIRI_OSC}" set flow "$@"
+        exec "${NIRI_OSC}" flow legacy "$@"
       fi
       if is_niri_flow_subcommand "${first_arg}"; then
         exec "${NIRI_OSC}" flow "$@"
       fi
-      exec "${NIRI_OSC}" set flow "$@"
+      exec "${NIRI_OSC}" flow legacy "$@"
     fi
 
     exec "${NIRI_OSC}" flow --help

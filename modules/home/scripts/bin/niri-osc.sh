@@ -72,11 +72,26 @@ niri_osc_cache_dir() {
 }
 
 niri_osc_source_stamp() {
+  # Fast-path stamp (mtime + size) is enough for cache invalidation.
+  # Hash fallback is only used when stat format is unavailable.
+  if command -v stat >/dev/null 2>&1; then
+    local stamp=""
+    stamp="$(stat -c '%Y:%s' "$NIRI_OSC_SELF" 2>/dev/null || true)"
+    if [[ -z "$stamp" ]]; then
+      stamp="$(stat -f '%m:%z' "$NIRI_OSC_SELF" 2>/dev/null || true)"
+    fi
+    if [[ -n "$stamp" ]]; then
+      printf '%s\n' "$stamp"
+      return 0
+    fi
+  fi
+
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$NIRI_OSC_SELF" | awk '{print $1}'
-  else
-    cksum "$NIRI_OSC_SELF" 2>/dev/null | awk '{print $1 ":" $2}'
+    return 0
   fi
+
+  cksum "$NIRI_OSC_SELF" 2>/dev/null | awk '{print $1 ":" $2}'
 }
 
 niri_osc_cache_is_fresh() {
@@ -109,16 +124,39 @@ niri_osc_run_scope() {
   local scope="$1"
   shift || true
 
-  local cache_dir cache_file stamp
+  local cache_dir cache_file stamp lock_file
   cache_dir="$(niri_osc_cache_dir)"
   stamp="$(niri_osc_source_stamp || true)"
   cache_file="${cache_dir}/${scope}.sh"
+  lock_file="${cache_dir}/.cache.lock"
 
+  local cache_probe="" cache_ready=0
   if mkdir -p "$cache_dir" 2>/dev/null; then
-    if ! niri_osc_cache_is_fresh "$cache_file" "$stamp"; then
-      niri_osc_write_scope_cache "$scope" "$cache_file" "$stamp"
+    cache_probe="${cache_dir}/.write-probe.$$"
+    if (: >"$cache_probe") 2>/dev/null; then
+      rm -f "$cache_probe"
+      cache_ready=1
     fi
-    exec bash "$cache_file" "$@"
+  fi
+
+  if [[ "$cache_ready" -eq 1 ]]; then
+    if command -v flock >/dev/null 2>&1 && { : >"$lock_file"; } 2>/dev/null; then
+      if ! (
+        flock -x 9
+        if ! niri_osc_cache_is_fresh "$cache_file" "$stamp"; then
+          niri_osc_write_scope_cache "$scope" "$cache_file" "$stamp"
+        fi
+      ) 9>"$lock_file"; then
+        if ! niri_osc_cache_is_fresh "$cache_file" "$stamp"; then
+          niri_osc_write_scope_cache "$scope" "$cache_file" "$stamp"
+        fi
+      fi
+    else
+      if ! niri_osc_cache_is_fresh "$cache_file" "$stamp"; then
+        niri_osc_write_scope_cache "$scope" "$cache_file" "$stamp"
+      fi
+    fi
+    NIRI_OSC_BIN="$NIRI_OSC_SELF" exec bash "$cache_file" "$@"
   fi
 
   local tmp_file
@@ -126,7 +164,7 @@ niri_osc_run_scope() {
   niri_osc_payload_for_scope "$scope" >"$tmp_file"
   chmod 700 "$tmp_file"
   local rc=0
-  if ! bash "$tmp_file" "$@"; then
+  if ! NIRI_OSC_BIN="$NIRI_OSC_SELF" bash "$tmp_file" "$@"; then
     rc=$?
   fi
   rm -f "$tmp_file"
@@ -217,7 +255,7 @@ Commands:
   go                 Move windows to target workspaces (was: niri-arrange-windows)
   here               Bring window here (or launch); `all` gathers a set
   cast               Dynamic screencast helpers (window/monitor/clear/pick)
-  flow               Workspace/monitor helper (was: niri-workspace-monitor)
+  flow               Legacy workspace/monitor compatibility shim
   doctor             Print session diagnostics (try: --tree, --logs)
   float              Toggle between floating and tiling modes with preset size
   zen                Toggle Zen Mode (hide gaps, borders, bar)
@@ -1481,8 +1519,10 @@ init)
     fi
 
     write_monitor_auto_profile
-    normalize_workspace_range
-    compact_out_of_range_empty_workspaces
+    if [[ "${NIRI_INIT_ENFORCE_WORKSPACE_BOUNDS:-0}" == "1" ]]; then
+      normalize_workspace_range
+      compact_out_of_range_empty_workspaces
+    fi
 
     if [[ -n "$target" ]]; then
       niri msg action focus-monitor "$target" >/dev/null 2>&1 || true
@@ -1637,6 +1677,7 @@ EOF
     fi
 
     NIRI=(niri msg)
+    WORKSPACES_JSON=""
 
     rules_file="${XDG_CONFIG_HOME:-$HOME/.config}/niri/dms/workspace-rules.tsv"
     declare -a RULE_PATTERNS=()
@@ -1647,48 +1688,21 @@ EOF
       local want_name="${1:-}"
       [[ -n "$want_name" ]] || return 1
 
-      local current_output=""
-      local line idx name
-
-      while IFS= read -r line; do
-        if [[ "$line" =~ ^Output[[:space:]]+\"([^\"]+)\": ]]; then
-          current_output="${BASH_REMATCH[1]}"
-          continue
-        fi
-
-        if [[ "$line" =~ ^[[:space:]]*\*?[[:space:]]*([0-9]+)[[:space:]]+\"([^\"]*)\" ]]; then
-          idx="${BASH_REMATCH[1]}"
-          name="${BASH_REMATCH[2]}"
-          if [[ -n "$current_output" && "$name" == "$want_name" ]]; then
-            printf '%s\t%s\n' "$current_output" "$idx"
-            return 0
-          fi
-        fi
-      done < <("${NIRI[@]}" workspaces 2>/dev/null)
-
-      return 1
+      [[ -n "$WORKSPACES_JSON" ]] || WORKSPACES_JSON="$("${NIRI[@]}" -j workspaces 2>/dev/null || echo '[]')"
+      jq -n --argjson wss "${WORKSPACES_JSON:-[]}" --arg want "$want_name" -r '
+        first(
+          $wss[]?
+          | select(((.name // "") == $want) or ((.idx | tostring) == $want))
+          | [(.output // ""), ((.idx // empty) | tostring)]
+          | @tsv
+        ) // empty
+      ' 2>/dev/null
     }
 
     get_window_json_by_id() {
       local id="${1:-}"
       [[ -n "$id" ]] || return 1
       "${NIRI[@]}" -j windows 2>/dev/null | jq -c ".[] | select(.id == ${id})" 2>/dev/null
-    }
-
-    get_window_workspace_id_text() {
-      local want_id="${1:-}"
-      [[ -n "$want_id" ]] || return 1
-
-      "${NIRI[@]}" windows 2>/dev/null | awk -v id="$want_id" '
-          $1=="Window" && $2=="ID" {
-            sub(":", "", $3)
-            in_block = ($3 == id)
-          }
-          in_block && $1=="Workspace" && $2=="ID:" {
-            print $3
-            exit
-          }
-        '
     }
 
     get_window_loc() {
@@ -1780,16 +1794,14 @@ EOF
     echo "Scanning windows..."
     notify "Pencereler düzenleniyor…" 1200
     windows_json="$("${NIRI[@]}" -j windows)"
+    WORKSPACES_JSON="$("${NIRI[@]}" -j workspaces 2>/dev/null || echo '[]')"
 
     moved=0
     planned=0
     failed=0
 
-    while read -r win; do
-      id="$(jq -r '.id' <<<"$win")"
-      app_id="$(jq -r '.app_id // ""' <<<"$win")"
-      title="$(jq -r '.title // ""' <<<"$win")"
-      current_ws_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$win")"
+    while IFS=$'\t' read -r id app_id title current_ws_name; do
+      [[ -n "$id" ]] || continue
 
       # Never move temporary screen-share picker windows.
       if [[ "$app_id" =~ share-picker$ ]]; then
@@ -1854,16 +1866,19 @@ EOF
             failed=$((failed + 1))
           fi
         fi
-      else
-        after_ws_id="$(get_window_workspace_id_text "$id" || true)"
-        if [[ -n "$after_ws_id" && "$after_ws_id" == "$target_idx" ]]; then
-          [[ "$VERBOSE" -eq 1 ]] && echo "    ok (text ws_id=$after_ws_id)"
-        elif [[ -n "$after_ws_id" ]]; then
-          echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: text ws_id=$after_ws_id" >&2
-          failed=$((failed + 1))
-        fi
       fi
-    done < <(jq -c '.[]' <<<"$windows_json")
+    done < <(
+      jq -r '
+        .[]?
+        | [
+            (.id // empty | tostring),
+            (.app_id // ""),
+            (.title // ""),
+            (.workspace.name // .workspace_name // "")
+          ]
+        | @tsv
+      ' <<<"$windows_json" 2>/dev/null || true
+    )
 
     if [[ -n "$FOCUS_OVERRIDE" ]]; then
       if [[ "$FOCUS_OVERRIDE" =~ ^ws:(.+)$ ]]; then
@@ -2056,6 +2071,26 @@ float)
   ;;
 
 flow)
+  # ----------------------------------------------------------------------------
+  # Compatibility shim: route legacy `set flow` callers to unified `flow` scope.
+  # ----------------------------------------------------------------------------
+  (
+    set -euo pipefail
+
+    osc_bin="${NIRI_OSC_BIN:-}"
+    if [[ -z "$osc_bin" ]]; then
+      osc_bin="$(command -v niri-osc 2>/dev/null || true)"
+    fi
+    [[ -n "$osc_bin" ]] || {
+      echo "niri-osc set flow: cannot resolve niri-osc binary" >&2
+      exit 1
+    }
+
+    exec "$osc_bin" flow legacy "$@"
+  )
+  ;;
+
+flow-legacy)
   # ----------------------------------------------------------------------------
   # Embedded: niri-workspace-monitor.sh
   # ----------------------------------------------------------------------------
@@ -2777,6 +2812,7 @@ MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
 FOLLOW_FILE="$STATE_DIR/follow.json"
 LOCK_FILE="$STATE_DIR/state.lock"
+TMP_PREFIX="${STATE_DIR}/.tmp"
 # Keep scratch hidden windows on a stable workspace reference by default.
 # Set OSC_NIRI_FLOW_SCRATCH_WORKSPACE=auto to keep the legacy behavior
 # (using the current monitor's last workspace index).
@@ -2799,24 +2835,41 @@ die() {
   exit 1
 }
 
+flow_tmpfile() {
+  mkdir -p "$STATE_DIR"
+  mktemp "${TMP_PREFIX}.XXXXXX"
+}
+
 # Atomic update with flock
 update_json_locked() {
   local file="$1"
   local jq_program="$2"
   shift 2
-  
+
   touch "$LOCK_FILE"
   (
     flock -x 9
-    [[ -f "$file" ]] || echo "{}" > "$file"
+    [[ -f "$file" ]] || echo "{}" >"$file"
     local tmp
-    tmp="$(mktemp)"
-    if jq "$jq_program" "$file" "$@" > "$tmp"; then
+    tmp="$(flow_tmpfile)"
+    if jq "$jq_program" "$file" "$@" >"$tmp"; then
       mv "$tmp" "$file"
     else
       rm -f "$tmp"
       return 1
     fi
+  ) 9>"$LOCK_FILE"
+}
+
+read_json_locked() {
+  local file="$1"
+  shift
+
+  touch "$LOCK_FILE"
+  (
+    flock -s 9
+    [[ -f "$file" ]] || echo "{}" >"$file"
+    jq "$@" "$file"
   ) 9>"$LOCK_FILE"
 }
 
@@ -2827,6 +2880,7 @@ Utility commands for the niri wayland compositor
 Usage: niri-osc flow <COMMAND>
 
 Commands:
+  legacy
   focus
   focus-or-spawn
   move-to-current-workspace
@@ -2889,25 +2943,6 @@ init_state() {
   ) 9>"$LOCK_FILE"
 }
 
-normalize_state_file() {
-  local file="$1"
-  local fallback_json="$2"
-  local jq_program="$3"
-  local tmp_file
-
-  if ! jq -e . "$file" >/dev/null 2>&1; then
-    printf '%s\n' "$fallback_json" >"$file"
-  fi
-
-  tmp_file="$(mktemp)"
-  if jq "$jq_program" "$file" >"$tmp_file" 2>/dev/null; then
-    mv "$tmp_file" "$file"
-  else
-    rm -f "$tmp_file"
-    printf '%s\n' "$fallback_json" >"$file"
-  fi
-}
-
 niri_windows_json() {
   niri msg -j windows
 }
@@ -2917,16 +2952,18 @@ niri_workspaces_json() {
 }
 
 current_workspace_id() {
-  local windows_json workspaces_json ws_id
+  local windows_json="${1:-}"
+  local workspaces_json="${2:-}"
+  local ws_id
 
-  windows_json="$(niri_windows_json 2>/dev/null || true)"
+  [[ -n "$windows_json" ]] || windows_json="$(niri_windows_json 2>/dev/null || true)"
   ws_id="$(echo "$windows_json" | jq -r 'first(.[] | select(.is_focused == true and .workspace_id != null) | .workspace_id) // empty' 2>/dev/null || true)"
   if [[ -n "$ws_id" ]]; then
     printf '%s\n' "$ws_id"
     return 0
   fi
 
-  workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
+  [[ -n "$workspaces_json" ]] || workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
   ws_id="$(echo "$workspaces_json" | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty' 2>/dev/null || true)"
   if [[ -n "$ws_id" ]]; then
     printf '%s\n' "$ws_id"
@@ -2938,10 +2975,12 @@ current_workspace_id() {
 }
 
 current_workspace_index() {
-  local windows_json workspaces_json ws_idx
+  local windows_json="${1:-}"
+  local workspaces_json="${2:-}"
+  local ws_idx
 
-  windows_json="$(niri_windows_json 2>/dev/null || true)"
-  workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
+  [[ -n "$windows_json" ]] || windows_json="$(niri_windows_json 2>/dev/null || true)"
+  [[ -n "$workspaces_json" ]] || workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
 
   ws_idx="$(
     jq -n \
@@ -2963,7 +3002,9 @@ current_workspace_index() {
 }
 
 focused_window_id() {
-  niri_windows_json | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty'
+  local windows_json="${1:-}"
+  [[ -n "$windows_json" ]] || windows_json="$(niri_windows_json)"
+  echo "$windows_json" | jq -r 'first(.[] | select(.is_focused == true) | .id) // empty'
 }
 
 has_match_filter() {
@@ -3081,7 +3122,7 @@ focus_with_current_match() {
   if [[ "${#ids[@]}" -eq 1 ]]; then
     target_id="${ids[0]}"
   else
-    focused_id="$(focused_window_id)"
+    focused_id="$(focused_window_id "$windows_json")"
     target_id="${ids[0]}"
     for index in "${!ids[@]}"; do
       if [[ "${ids[$index]}" == "$focused_id" ]]; then
@@ -3125,8 +3166,8 @@ move_one_to_current_workspace() {
 
   windows_json="$(niri_windows_json)"
   workspaces_json="$(niri_workspaces_json)"
-  current_workspace="$(current_workspace_id)"
-  current_workspace_idx="$(current_workspace_index)"
+  current_workspace="$(current_workspace_id "$windows_json" "$workspaces_json")"
+  current_workspace_idx="$(current_workspace_index "$windows_json" "$workspaces_json")"
   [[ -n "$current_workspace" ]] || return 1
   [[ -n "$current_workspace_idx" ]] || return 1
 
@@ -3169,18 +3210,11 @@ cmd_move_to_current_workspace_or_spawn() {
   return 0
 }
 
-update_marks_file() {
-  local jq_program="$1"
-  local tmp_file
-  tmp_file="$(mktemp)"
-  jq "$jq_program" "$MARKS_FILE" >"$tmp_file"
-  mv "$tmp_file" "$MARKS_FILE"
-}
-
 cmd_toggle_mark() {
-  local mark focused_id
+  local mark focused_id windows_json
   mark="${1:-__default__}"
-  focused_id="$(focused_window_id)"
+  windows_json="$(niri_windows_json)"
+  focused_id="$(focused_window_id "$windows_json")"
   [[ -n "$focused_id" ]] || return 1
 
   update_json_locked "$MARKS_FILE" '
@@ -3197,7 +3231,7 @@ cleanup_mark() {
   local mark="$1"
   local windows_json live_ids_json
   windows_json="$(niri_windows_json)"
-  live_ids_json="$(echo "$windows_json" | jq '[.[].id | tostring]')"
+  live_ids_json="$(echo "$windows_json" | jq '[.[]? .id | tostring]')"
   
   update_json_locked "$MARKS_FILE" '
     .marks = (.marks // {}) |
@@ -3209,7 +3243,7 @@ cmd_focus_marked() {
   local mark target_id
   mark="${1:-__default__}"
   cleanup_mark "$mark"
-  target_id="$(jq -r --arg mark "$mark" '(.marks[$mark] // [])[0] // empty' "$MARKS_FILE")"
+  target_id="$(read_json_locked "$MARKS_FILE" -r --arg mark "$mark" '(.marks[$mark] // [])[0] // empty' 2>/dev/null || true)"
   [[ -n "$target_id" ]] || return 1
 
   niri msg action focus-window --id "$target_id" >/dev/null 2>&1 || true
@@ -3245,21 +3279,21 @@ cmd_list_marked() {
   done
 
   if [[ "$all_marks" -eq 1 ]]; then
-    jq -r '.marks // {} | to_entries[]? | .key as $k | (.value[]? | "\($k)\t\(.)")' "$MARKS_FILE"
+    read_json_locked "$MARKS_FILE" -r '.marks // {} | to_entries[]? | .key as $k | (.value[]? | "\($k)\t\(.)")'
   else
     cleanup_mark "$mark"
-    jq -r --arg mark "$mark" '.marks[$mark] // [] | .[]' "$MARKS_FILE"
+    read_json_locked "$MARKS_FILE" -r --arg mark "$mark" '.marks[$mark] // [] | .[]'
   fi
 }
 
 scratch_tmp_update() {
   local jq_args=("$@")
-  
+
   touch "$LOCK_FILE"
   (
     flock -x 9
     local tmp_file
-    tmp_file="$(mktemp)"
+    tmp_file="$(flow_tmpfile)"
     if jq "${jq_args[@]}" "$SCRATCH_FILE" >"$tmp_file"; then
       mv "$tmp_file" "$SCRATCH_FILE"
     else
@@ -3270,7 +3304,7 @@ scratch_tmp_update() {
 
 scratch_entry_exists() {
   local window_id="$1"
-  jq -e --arg id "$window_id" '.entries[$id] != null' "$SCRATCH_FILE" >/dev/null 2>&1
+  read_json_locked "$SCRATCH_FILE" -e --arg id "$window_id" '.entries[$id] != null' >/dev/null 2>&1
 }
 
 remove_scratch_entry() {
@@ -3292,11 +3326,6 @@ refresh_scratch_entries() {
       | with_entries(select(. as $entry | ($live | index($entry.key)) != null))
     )
   '
-}
-
-scratch_hidden_state() {
-  local window_id="$1"
-  jq -r --arg id "$window_id" '.entries[$id].hidden // "none"' "$SCRATCH_FILE"
 }
 
 set_scratch_hidden() {
@@ -3359,7 +3388,7 @@ scratchpad_move_all() {
   target_ws="$(scratch_workspace_ref)"
   [[ -n "$target_ws" ]] || return 1
 
-  mapfile -t scratch_ids < <(jq -r '.entries // {} | keys[]?' "$SCRATCH_FILE")
+  mapfile -t scratch_ids < <(read_json_locked "$SCRATCH_FILE" -r '.entries // {} | keys[]?' 2>/dev/null || true)
   [[ "${#scratch_ids[@]}" -gt 0 ]] || return 0
 
   for window_id in "${scratch_ids[@]}"; do
@@ -3385,9 +3414,11 @@ hide_window_to_scratch() {
 
 show_window_from_scratch() {
   local window_id="$1"
+  local windows_json="${2:-}"
+  local workspaces_json="${3:-}"
   local current_workspace current_workspace_idx
-  current_workspace="$(current_workspace_id)"
-  current_workspace_idx="$(current_workspace_index)"
+  current_workspace="$(current_workspace_id "$windows_json" "$workspaces_json")"
+  current_workspace_idx="$(current_workspace_index "$windows_json" "$workspaces_json")"
   [[ -n "$current_workspace" ]] || return 1
   [[ -n "$current_workspace_idx" ]] || return 1
   niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace_idx" >/dev/null 2>&1 || true
@@ -3452,7 +3483,7 @@ cmd_scratchpad_toggle() {
 }
 
 cmd_scratchpad_show() {
-  local focused_id windows_json workspaces_json cursor selected_id tmp_file
+  local focused_id windows_json workspaces_json cursor selected_id
   local -a hidden_ids matched_ids selected_ids
 
   parse_match_opts "$@"
@@ -3460,13 +3491,13 @@ cmd_scratchpad_show() {
   workspaces_json="$(niri_workspaces_json)"
   refresh_scratch_entries "$windows_json"
 
-  focused_id="$(focused_window_id)"
+  focused_id="$(focused_window_id "$windows_json")"
   if [[ -n "$focused_id" ]] && scratch_entry_exists "$focused_id"; then
     scratchpad_move_all "$windows_json"
     return 0
   fi
 
-  mapfile -t hidden_ids < <(jq -r '.entries // {} | to_entries[]? | select(.value.hidden == true) | .key' "$SCRATCH_FILE")
+  mapfile -t hidden_ids < <(read_json_locked "$SCRATCH_FILE" -r '.entries // {} | to_entries[]? | select(.value.hidden == true) | .key' 2>/dev/null || true)
   [[ "${#hidden_ids[@]}" -gt 0 ]] || return 1
 
   if [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_INDEX$MATCH_WORKSPACE_NAME" ]]; then
@@ -3486,13 +3517,10 @@ cmd_scratchpad_show() {
 
   [[ "${#selected_ids[@]}" -gt 0 ]] || return 1
 
-  cursor="$(jq -r '.cursor // 0' "$SCRATCH_FILE")"
+  cursor="$(read_json_locked "$SCRATCH_FILE" -r '.cursor // 0' 2>/dev/null || echo 0)"
   selected_id="${selected_ids[$((cursor % ${#selected_ids[@]}))]}"
-  show_window_from_scratch "$selected_id"
-
-  tmp_file="$(mktemp)"
-  jq --argjson cursor "$((cursor + 1))" '.cursor = $cursor' "$SCRATCH_FILE" >"$tmp_file"
-  mv "$tmp_file" "$SCRATCH_FILE"
+  show_window_from_scratch "$selected_id" "$windows_json" "$workspaces_json"
+  update_json_locked "$SCRATCH_FILE" '.cursor = ((.cursor // 0) + 1)'
 }
 
 cmd_scratchpad_show_all() {
@@ -3504,13 +3532,13 @@ cmd_scratchpad_show_all() {
   workspaces_json="$(niri_workspaces_json)"
   refresh_scratch_entries "$windows_json"
 
-  focused_id="$(focused_window_id)"
+  focused_id="$(focused_window_id "$windows_json")"
   if [[ -n "$focused_id" ]] && scratch_entry_exists "$focused_id"; then
     scratchpad_move_all "$windows_json"
     return 0
   fi
 
-  mapfile -t hidden_ids < <(jq -r '.entries // {} | to_entries[]? | select(.value.hidden == true) | .key' "$SCRATCH_FILE")
+  mapfile -t hidden_ids < <(read_json_locked "$SCRATCH_FILE" -r '.entries // {} | to_entries[]? | select(.value.hidden == true) | .key' 2>/dev/null || true)
   [[ "${#hidden_ids[@]}" -gt 0 ]] || return 1
 
   if [[ -n "$MATCH_APP_ID$MATCH_TITLE$MATCH_PID$MATCH_WORKSPACE_ID$MATCH_WORKSPACE_INDEX$MATCH_WORKSPACE_NAME" ]]; then
@@ -3532,8 +3560,8 @@ cmd_scratchpad_show_all() {
 
   focused_once=0
   local current_workspace current_workspace_idx
-  current_workspace="$(current_workspace_id)"
-  current_workspace_idx="$(current_workspace_index)"
+  current_workspace="$(current_workspace_id "$windows_json" "$workspaces_json")"
+  current_workspace_idx="$(current_workspace_index "$windows_json" "$workspaces_json")"
   [[ -n "$current_workspace" ]] || return 1
   [[ -n "$current_workspace_idx" ]] || return 1
   for window_id in "${selected_ids[@]}"; do
@@ -3547,20 +3575,22 @@ cmd_scratchpad_show_all() {
 }
 
 sync_follow_mode() {
-  local current_workspace current_workspace_idx last_workspace
+  local windows_json workspaces_json current_workspace current_workspace_idx last_workspace
   local -a follow_ids
 
-  current_workspace="$(current_workspace_id)"
-  current_workspace_idx="$(current_workspace_index)"
+  windows_json="$(niri_windows_json 2>/dev/null || true)"
+  workspaces_json="$(niri_workspaces_json 2>/dev/null || true)"
+  current_workspace="$(current_workspace_id "$windows_json" "$workspaces_json")"
+  current_workspace_idx="$(current_workspace_index "$windows_json" "$workspaces_json")"
   [[ -n "$current_workspace" ]] || return 0
   [[ -n "$current_workspace_idx" ]] || return 0
 
-  last_workspace="$(jq -r '.last_workspace_id // ""' "$FOLLOW_FILE")"
+  last_workspace="$(read_json_locked "$FOLLOW_FILE" -r '.last_workspace_id // ""' 2>/dev/null || true)"
   if [[ "$last_workspace" == "$current_workspace" ]]; then
     return 0
   fi
 
-  mapfile -t follow_ids < <(jq -r '.windows // [] | .[]' "$FOLLOW_FILE")
+  mapfile -t follow_ids < <(read_json_locked "$FOLLOW_FILE" -r '.windows // [] | .[]' 2>/dev/null || true)
   for window_id in "${follow_ids[@]}"; do
     niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace_idx" >/dev/null 2>&1 || true
   done
@@ -3569,8 +3599,9 @@ sync_follow_mode() {
 }
 
 cmd_toggle_follow_mode() {
-  local focused_id
-  focused_id="$(focused_window_id)"
+  local focused_id windows_json
+  windows_json="$(niri_windows_json 2>/dev/null || true)"
+  focused_id="$(focused_window_id "$windows_json")"
   [[ -n "$focused_id" ]] || return 1
 
   update_json_locked "$FOLLOW_FILE" '
@@ -3581,6 +3612,16 @@ cmd_toggle_follow_mode() {
       .windows = (.windows + [$id] | unique)
     end
   ' --arg id "$focused_id"
+}
+
+cmd_legacy() {
+  local osc_bin="${NIRI_OSC_BIN:-}"
+  if [[ -z "$osc_bin" ]]; then
+    osc_bin="$(command -v niri-osc 2>/dev/null || true)"
+  fi
+  [[ -n "$osc_bin" ]] || die "cannot resolve niri-osc binary for legacy flow compatibility"
+
+  exec "$osc_bin" set flow-legacy "$@"
 }
 
 
@@ -3597,12 +3638,20 @@ main() {
       ;;
   esac
 
+  if [[ "$command" == "legacy" ]]; then
+    shift || true
+    cmd_legacy "$@"
+  fi
+
   require_bins
   init_state
-  sync_follow_mode
+  if [[ "$command" != "legacy" ]]; then
+    sync_follow_mode
+  fi
   shift
 
   case "$command" in
+    legacy) cmd_legacy "$@" ;;
     focus) cmd_focus "$@" ;;
     focus-or-spawn) cmd_focus_or_spawn "$@" ;;
     move-to-current-workspace) cmd_move_to_current_workspace "$@" ;;
@@ -3666,6 +3715,7 @@ STATE_DIR="${STATE_HOME}/niri-sticky"
 STATE_FILE="${STATE_DIR}/state.json"
 LOCK_FILE="${STATE_DIR}/state.lock"
 POLL_INTERVAL="${NIRI_STICKY_POLL_INTERVAL:-0.35}"
+IDLE_POLL_INTERVAL="${NIRI_STICKY_IDLE_POLL_INTERVAL:-1.20}"
 STAGE_WORKSPACE="${NIRI_STICKY_STAGE_WORKSPACE:-stage}"
 NOTIFY_ENABLED="${NIRI_STICKY_NOTIFY:-1}"
 NOTIFY_TIMEOUT="${NIRI_STICKY_NOTIFY_TIMEOUT:-1400}"
@@ -3683,6 +3733,11 @@ need_bins() {
   command -v niri >/dev/null 2>&1 || err "niri not found in PATH"
   command -v jq >/dev/null 2>&1 || err "jq not found in PATH"
   command -v flock >/dev/null 2>&1 || err "flock not found in PATH"
+}
+
+sticky_tmpfile() {
+  mkdir -p "$STATE_DIR"
+  mktemp "${STATE_DIR}/.tmp.XXXXXX"
 }
 
 notify() {
@@ -3751,7 +3806,7 @@ state_update_locked() {
   shift
 
   local tmp
-  tmp="$(mktemp)"
+  tmp="$(sticky_tmpfile)"
   if jq "$@" "$jq_program" "$STATE_FILE" >"$tmp"; then
     mv "$tmp" "$STATE_FILE"
   else
@@ -3767,7 +3822,7 @@ init_state_locked() {
   fi
 
   local tmp
-  tmp="$(mktemp)"
+  tmp="$(sticky_tmpfile)"
   if jq '
       if type != "object" then {} else . end
       | .sticky = ((.sticky // []) | if type == "array" then map(tostring) else [] end | unique)
@@ -4141,13 +4196,19 @@ daemon_tick_locked() {
   local windows_json ws_id ws_idx last_ws
 
   windows_json="$(niri_windows_json || true)"
-  [[ -n "$windows_json" ]] || return 0
+  if [[ -z "$windows_json" ]]; then
+    printf 'idle\n'
+    return 0
+  fi
 
   prune_state_locked_with_windows "$windows_json"
 
   ws_id="$(active_workspace_id || true)"
   ws_idx="$(active_workspace_index || true)"
-  [[ -n "$ws_id" && -n "$ws_idx" ]] || return 0
+  if [[ -z "$ws_id" || -z "$ws_idx" ]]; then
+    printf 'idle\n'
+    return 0
+  fi
 
   last_ws="$(state_get_last_workspace_locked)"
   if [[ "$ws_id" != "$last_ws" ]]; then
@@ -4157,14 +4218,24 @@ daemon_tick_locked() {
       move_window_to_workspace "$window_id" "$ws_idx" || true
     done
     state_set_last_workspace_locked "$ws_id"
+    printf 'changed\n'
+    return 0
   fi
+
+  printf 'idle\n'
 }
 
 run_daemon() {
-  info "starting daemon (poll=${POLL_INTERVAL}s, stage=${STAGE_WORKSPACE})"
+  info "starting daemon (poll=${POLL_INTERVAL}s, idle=${IDLE_POLL_INTERVAL}s, stage=${STAGE_WORKSPACE})"
   while true; do
-    with_lock daemon_tick_locked || true
-    sleep "$POLL_INTERVAL"
+    local tick_status sleep_for
+    tick_status="$(with_lock daemon_tick_locked 2>/dev/null || echo idle)"
+    if [[ "$tick_status" == "changed" ]]; then
+      sleep_for="$POLL_INTERVAL"
+    else
+      sleep_for="$IDLE_POLL_INTERVAL"
+    fi
+    sleep "$sleep_for"
   done
 }
 
@@ -4524,52 +4595,90 @@ awk \
   function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
   function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
   function trim(s)  { return rtrim(ltrim(s)) }
+  function update_depth(s, tmp) {
+    tmp = s
+    open_braces = gsub(/\{/, "", tmp)
+    tmp = s
+    close_braces = gsub(/\}/, "", tmp)
+    binds_depth += open_braces - close_braces
+  }
 
   BEGIN {
     in_binds = 0
     found_binds = 0
+    binds_depth = 0
     out_count = 0
+    pending = 0
+    pending_config = ""
+    pending_cmd = ""
   }
 
   {
     raw = $0
+    line = raw
 
-    # Detect binds section start (line may contain extra spaces before "{")
+    # Detect binds section start.
     if (!in_binds) {
-      if (raw ~ /^[ \t]*binds([ \t]*\{)?[ \t]*$/ || raw ~ /^[ \t]*binds[ \t]*\{[ \t]*$/) {
+      if (line ~ /^[ \t]*binds([ \t]*\{)?[ \t]*$/ || line ~ /^[ \t]*binds[ \t]*\{[ \t]*$/) {
         in_binds = 1
         found_binds = 1
+        update_depth(line)
         next
       }
     } else {
-      line = trim(raw)
-
-      # End of binds section
-      if (line == "}") {
-        in_binds = 0
+      trimmed = trim(line)
+      if (trimmed == "" || trimmed ~ /^\/\//) {
+        update_depth(line)
+        if (binds_depth <= 0) in_binds = 0
         next
       }
 
-      # Skip comments and short/junk lines
-      if (line ~ /^\/\//) next
-      if (length(line) < 3) next
+      if (pending == 1) {
+        pending_cmd = pending_cmd " " trimmed
+        if (index(pending_cmd, ";") > 0) {
+          config = pending_config
+          cmdpart = pending_cmd
+          pending = 0
+          pending_cmd = ""
+          pending_config = ""
+        } else {
+          update_depth(line)
+          if (binds_depth <= 0) in_binds = 0
+          next
+        }
+      } else {
+        split_pos = index(line, "{")
+        if (split_pos <= 1) {
+          update_depth(line)
+          if (binds_depth <= 0) in_binds = 0
+          next
+        }
+        config = substr(line, 1, split_pos - 1)
+        cmdpart = substr(line, split_pos + 1)
 
-      # Split on "{"
-      # If more than 1 "{", skip (unexpected)
-      n = split(line, parts, "{")
-      if (n != 2) next
-
-      config = parts[1]
-      cmdpart = parts[2]
+        # Multi-line bind entry support: collect until first ";".
+        if (index(cmdpart, ";") == 0) {
+          pending = 1
+          pending_config = config
+          pending_cmd = cmdpart
+          update_depth(line)
+          if (binds_depth <= 0) in_binds = 0
+          next
+        }
+      }
 
       # Extract keybind: first token in config
-      # Similar to python: config.split(" ", 1)[0]
-      keybind = config
+      keybind = trim(config)
       sub(/[ \t].*$/, "", keybind)
 
       # Extract first command up to ";"
-      m = split(cmdpart, cmds, ";")
-      command = trim(cmds[1])
+      sem_pos = index(cmdpart, ";")
+      if (sem_pos <= 1) {
+        update_depth(line)
+        if (binds_depth <= 0) in_binds = 0
+        next
+      }
+      command = trim(substr(cmdpart, 1, sem_pos - 1))
 
       # Remove spawn/spawn-sh prefix if requested
       if (remove_spawn == 1) {
@@ -4609,6 +4718,9 @@ awk \
       } else {
         out[++out_count] = keybind_padded sep_k command
       }
+
+      update_depth(line)
+      if (binds_depth <= 0) in_binds = 0
     }
   }
 
@@ -4859,6 +4971,12 @@ niri_toggle() {
   fi
 
   local windows workspaces current_ws_id current_ws_ref
+  local osc_bin=""
+  if [[ -n "${NIRI_OSC_BIN:-}" ]]; then
+    osc_bin="$NIRI_OSC_BIN"
+  else
+    osc_bin="$(command -v niri-osc 2>/dev/null || true)"
+  fi
   windows="$(niri msg -j windows 2>/dev/null || echo '[]')"
   workspaces="$(niri msg -j workspaces 2>/dev/null || echo '[]')"
 
@@ -4900,8 +5018,8 @@ niri_toggle() {
     fi
 
     niri msg action focus-window --id "$window_id_here" >/dev/null 2>&1 || true
-    if command -v niri-osc >/dev/null 2>&1; then
-      niri-osc flow scratchpad-toggle --app-id "$app_id_re" --workspace-id "$current_ws_id" >/dev/null 2>&1 || true
+    if [[ -n "$osc_bin" ]]; then
+      "$osc_bin" flow scratchpad-toggle --app-id "$app_id_re" --workspace-id "$current_ws_id" >/dev/null 2>&1 || true
     else
       niri msg action move-window-to-workspace --window-id "$window_id_here" --focus false "$NIRI_HIDE_WORKSPACE" >/dev/null 2>&1 || true
     fi
@@ -4932,13 +5050,13 @@ niri_toggle() {
     return 0
   fi
 
-  if command -v niri-osc >/dev/null 2>&1; then
-    if niri-osc flow scratchpad-show --app-id "$app_id_re" >/dev/null 2>&1; then
+  if [[ -n "$osc_bin" ]]; then
+    if "$osc_bin" flow scratchpad-show --app-id "$app_id_re" >/dev/null 2>&1; then
       $VERBOSE && notify "Niri" "Shown: ${CLASS}" "low"
       return 0
     fi
 
-    if niri-osc flow move-to-current-workspace --app-id "$app_id_re" --focus >/dev/null 2>&1; then
+    if "$osc_bin" flow move-to-current-workspace --app-id "$app_id_re" --focus >/dev/null 2>&1; then
       $VERBOSE && notify "Niri" "Moved here: ${CLASS}" "low"
       return 0
     fi
@@ -4978,15 +5096,6 @@ niri_osc_payload_for_scope() {
 }
 
 main() {
-  # Global cleanup for temporary files on exit
-  _niri_osc_cleanup() {
-    local rc=$?
-    # Only cleanup if we have temp files (if any were created by mktemp)
-    # Most sub-scopes handle their own, but this is a safety net.
-    return $rc
-  }
-  trap _niri_osc_cleanup EXIT
-
   local raw_scope="${1:-help}"
   local scope
   scope="$(niri_osc_scope_alias "$raw_scope")"

@@ -330,7 +330,7 @@ switch_workspace() {
   niri)
     if command -v niri-osc >/dev/null 2>&1; then
       log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri via niri-osc)"
-      niri-osc set flow -wn "$workspace"
+      niri-osc flow legacy -wn "$workspace"
       sleep 1
     elif command -v niri >/dev/null 2>&1; then
       log "INFO" "WORKSPACE" "Switching to workspace $workspace (Niri)"
@@ -719,7 +719,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
     niri)
         if command -v niri-osc >/dev/null 2>&1; then
             echo "Switching to workspace $WORKSPACE..."
-            niri-osc set flow -wn "$WORKSPACE"
+            niri-osc flow legacy -wn "$WORKSPACE"
             sleep 1
         elif command -v niri >/dev/null 2>&1; then
             echo "Switching to workspace $WORKSPACE..."
