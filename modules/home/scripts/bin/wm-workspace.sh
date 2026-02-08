@@ -2,7 +2,11 @@
 # wm-workspace.sh
 # Workspace router across compositors (Hyprland, Niri).
 # Used by Fusuma (and other callers) to route workspace/monitor actions to the
-# correct backend (`hypr-workspace-monitor`, `niri-osc flow`).
+# correct backend (`hypr-workspace-monitor`, `niri-osc`).
+#
+# Niri dispatch modes:
+# - legacy short flags (`-mn`, `-mp`, `-wl`, ...) -> `niri-osc set flow`
+# - modern subcommands (`scratchpad-toggle`, ...) -> `niri-osc flow`
 
 set -euo pipefail
 
@@ -17,6 +21,17 @@ resolve_bin() {
   done
 
   command -v "${name}" 2>/dev/null || true
+}
+
+is_niri_flow_subcommand() {
+  case "${1:-}" in
+    focus|focus-or-spawn|move-to-current-workspace|move-to-current-workspace-or-spawn|toggle-follow-mode|toggle-mark|focus-marked|list-marked|scratchpad-toggle|scratchpad-show|scratchpad-show-all|help|-h|--help|-V|--version)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 # systemd --user services often run with a minimal PATH; prefer common Nix profile locations.
@@ -38,7 +53,22 @@ HYPR_WORKSPACE_MONITOR="$(
 
 if [[ -n "${NIRI_SOCKET:-}" ]] || [[ "${XDG_CURRENT_DESKTOP:-}" == "niri" ]] || [[ "${XDG_SESSION_DESKTOP:-}" == "niri" ]]; then
   if [[ -n "${NIRI_OSC:-}" ]]; then
-    exec "${NIRI_OSC}" flow "$@"
+    if [[ $# -gt 0 ]]; then
+      first_arg="$1"
+      if [[ "${first_arg}" == "flow" ]]; then
+        shift
+        exec "${NIRI_OSC}" flow "$@"
+      fi
+      if [[ "${first_arg}" == -* ]]; then
+        exec "${NIRI_OSC}" set flow "$@"
+      fi
+      if is_niri_flow_subcommand "${first_arg}"; then
+        exec "${NIRI_OSC}" flow "$@"
+      fi
+      exec "${NIRI_OSC}" set flow "$@"
+    fi
+
+    exec "${NIRI_OSC}" flow --help
   else
     echo "niri-osc not found in PATH" >&2
     exit 1
