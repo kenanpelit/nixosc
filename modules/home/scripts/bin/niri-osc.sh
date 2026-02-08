@@ -1343,6 +1343,69 @@ init)
       log "monitor profile updated (internal=${internal_output}, external=${external_output:-none})"
     }
 
+    normalize_workspace_range() {
+      command -v jq >/dev/null 2>&1 || return 0
+
+      local windows_json workspaces_json
+      windows_json="$(niri msg -j windows 2>/dev/null || true)"
+      workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
+      [[ -n "$windows_json" && -n "$workspaces_json" ]] || return 0
+
+      local moved=0
+      while IFS=$'\t' read -r window_id ws_output ws_idx ws_name; do
+        [[ -n "$window_id" ]] || continue
+
+        # Keep dedicated stage workspace behavior for sticky workflow.
+        if [[ "$ws_name" == "stage" ]]; then
+          continue
+        fi
+
+        local target_idx=1
+        if [[ "$ws_output" =~ ^eDP ]]; then
+          target_idx=7
+        fi
+
+        if niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$target_idx" >/dev/null 2>&1; then
+          moved=$((moved + 1))
+        fi
+      done < <(
+        jq -n \
+          --argjson wins "${windows_json:-[]}" \
+          --argjson wss "${workspaces_json:-[]}" \
+          -r '
+            def ws_by_id:
+              reduce $wss[] as $ws ({}; .[($ws.id | tostring)] = $ws);
+
+            $wins[]?
+            | (.workspace_id | tostring) as $wid
+            | (ws_by_id[$wid] // {}) as $ws
+            | ($ws.idx // -1) as $idx
+            | ($ws.output // "") as $out
+            | ($ws.name // "") as $name
+            | select(($idx | tonumber? // -1) < 1 or ($idx | tonumber? // -1) > 9)
+            | "\(.id)\t\($out)\t\($idx)\t\($name)"
+          ' 2>/dev/null || true
+      )
+
+      local focused_idx
+      focused_idx="$(
+        jq -r '
+          first(.[] | select(.is_focused == true) | .idx)
+          // first(.[] | select(.is_active == true) | .idx)
+          // empty
+        ' <<<"${workspaces_json:-[]}" 2>/dev/null || true
+      )"
+
+      if [[ "$focused_idx" =~ ^[0-9]+$ ]] && { ((focused_idx < 1)) || ((focused_idx > 9)); }; then
+        niri msg action focus-workspace "1" >/dev/null 2>&1 || true
+      fi
+
+      if ((moved > 0)); then
+        log "workspace bounds normalized: moved ${moved} window(s) back to 1..9"
+        notify "workspace bounds normalized: ${moved} window(s) -> 1..9"
+      fi
+    }
+
     preferred="${NIRI_INIT_PREFERRED_OUTPUT:-DP-3}"
     target=""
     outputs_json=""
@@ -1363,6 +1426,7 @@ init)
     fi
 
     write_monitor_auto_profile
+    normalize_workspace_range
 
     if [[ -n "$target" ]]; then
       niri msg action focus-monitor "$target" >/dev/null 2>&1 || true
