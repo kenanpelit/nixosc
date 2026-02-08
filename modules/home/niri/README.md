@@ -18,7 +18,7 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
    - `niri-session.target` tetikler.
 3) `niri-bootstrap.service`:
    - Kısa gecikme (`bootstrapDelaySeconds`, varsayılan `1`) sonrası `niri-osc set init` çağırır.
-   - `niri-osc set init` monitor profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
+   - `niri-osc set init` output profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
    - `bootstrapNotifications` açıkken sadece sonuç bildirimi verir (başarı/hata), başlangıç popup’ı göstermez.
 4) Uzun yaşayan servisler ayrı unit’lerde yönetilir:
    - `niri-sticky.service`
@@ -33,9 +33,9 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
 ## Monitor profili (dock/undock)
 
 - Fallback profil `modules/home/niri/monitors.nix` içinde laptop-safe (`eDP-1`) tutulur.
-- Runtime’da `niri-osc set init` bağlı output’lara göre `monitor-auto.kdl` üretir:
-  - Harici ekran varsa: workspace `1-6` hariciye, `7-9` dahiliye.
-  - Harici yoksa: tüm workspace’ler dahili ekrana.
+- Runtime’da `niri-osc set init`, bağlı output’lara göre `monitor-auto.kdl` içinde
+  yalnızca `output` bloklarını günceller (workspace mapping üretmez).
+- Workspace mapping tek kaynak olarak `modules/home/niri/monitors.nix` içinde tutulur.
 - Bu dosya config’e include edilir ve writable tutulur.
 
 ## Runtime include dosyaları
