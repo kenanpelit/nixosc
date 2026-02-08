@@ -94,7 +94,8 @@
     # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
     niri = {
       url = "github:sodiboo/niri-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # Track niri against unstable nixpkgs, independent from the system base channel.
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
       inputs.nixpkgs-stable.follows = "nixpkgs";
       inputs.niri-unstable.url = "github:YaLTeR/niri/main";
     };
