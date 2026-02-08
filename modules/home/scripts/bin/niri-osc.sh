@@ -47,23 +47,23 @@ EOF
 
 niri_osc_is_scope() {
   case "$1" in
-    set|flow|sticky|keybinds|drop)
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
+  set | flow | sticky | keybinds | drop)
+    return 0
+    ;;
+  *)
+    return 1
+    ;;
   esac
 }
 
 niri_osc_scope_alias() {
   case "$1" in
-    keys)
-      printf 'keybinds\n'
-      ;;
-    *)
-      printf '%s\n' "$1"
-      ;;
+  keys)
+    printf 'keybinds\n'
+    ;;
+  *)
+    printf '%s\n' "$1"
+    ;;
   esac
 }
 
@@ -72,7 +72,11 @@ niri_osc_cache_dir() {
 }
 
 niri_osc_source_stamp() {
-  cksum "$NIRI_OSC_SELF" 2>/dev/null | awk '{print $1 ":" $2}'
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$NIRI_OSC_SELF" | awk '{print $1}'
+  else
+    cksum "$NIRI_OSC_SELF" 2>/dev/null | awk '{print $1 ":" $2}'
+  fi
 }
 
 niri_osc_cache_is_fresh() {
@@ -289,13 +293,14 @@ EOF
 
     dms_ipc_call() {
       command -v dms >/dev/null 2>&1 || return 1
-      dms ipc call "$@" 2>/dev/null | tr -d '\r'
+      # Silent fallback if dms-server is not reachable
+      dms ipc call "$@" 2>/dev/null | tr -d '\r' || return 1
     }
 
     get_bar_state() {
       local out norm
-      out="$(dms_ipc_call bar status index 0 | tail -n 1 || true)"
-      norm="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]' | xargs || true)"
+      out="$(dms_ipc_call bar status index 0 2>/dev/null | tail -n 1 || echo "unknown")"
+      norm="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]' | xargs || echo "unknown")"
       case "$norm" in
       visible | shown | show | on | true | 1) echo "visible" ;;
       hidden | hide | off | false | 0) echo "hidden" ;;
@@ -646,10 +651,10 @@ here)
       fi
 
       for app in "${APPS[@]}"; do
-        process_app "$app"
-        # Small delay to let Niri process moves smoothly
-        sleep 0.1
+        [[ "$app" == "Kenp" ]] && continue
+        process_app "$app" &
       done
+      wait
 
       # Explicit workflow: always end focused on Kenp.
       process_app "Kenp"
@@ -1298,6 +1303,12 @@ init)
 
       [[ -n "$internal_output" ]] || return 0
 
+      # Check for VRR capability on internal display (Meteor Lake optimization)
+      internal_vrr="false"
+      if [[ -n "$internal_output" ]]; then
+        internal_vrr="$(echo "$detect_json" | jq -r --arg n "$internal_output" '.[] | select(.name == $n) | if .modes then (.modes[] | select(.is_current) | .vrr_capable) else false end // false' 2>/dev/null || echo "false")"
+      fi
+
       ext_w=0
       ext_h=0
       int_w=0
@@ -1325,9 +1336,17 @@ init)
         echo "// Output-only runtime profile. Workspace mapping is static in monitors.nix."
         if [[ -n "$external_output" ]] && [[ "$external_output" != "$internal_output" ]]; then
           echo "output \"$external_output\" { position x=0 y=0; scale 1.0; }"
-          echo "output \"$internal_output\" { position x=${int_x} y=${int_y}; scale 1.0; variable-refresh-rate on-demand=true; }"
+          if [[ "$internal_vrr" == "true" ]]; then
+            echo "output \"$internal_output\" { position x=${int_x} y=${int_y}; scale 1.0; variable-refresh-rate on-demand=true; }"
+          else
+            echo "output \"$internal_output\" { position x=${int_x} y=${int_y}; scale 1.0; }"
+          fi
         else
-          echo "output \"$internal_output\" { position x=0 y=0; scale 1.0; variable-refresh-rate on-demand=true; }"
+          if [[ "$internal_vrr" == "true" ]]; then
+            echo "output \"$internal_output\" { position x=0 y=0; scale 1.0; variable-refresh-rate on-demand=true; }"
+          else
+            echo "output \"$internal_output\" { position x=0 y=0; scale 1.0; }"
+          fi
         fi
       } >"$profile_file"
 
@@ -1987,16 +2006,28 @@ float)
     set -euo pipefail
 
     ensure_niri_socket() {
-      if [[ -n "${NIRI_SOCKET:-}" ]] && [[ -S "${NIRI_SOCKET}" ]]; then return 0; fi
+      if [[ -n "${NIRI_SOCKET:-}" ]] && [[ -S "${NIRI_SOCKET}" ]]; then
+        if niri msg version >/dev/null 2>&1; then return 0; fi
+      fi
       [[ -n "${XDG_RUNTIME_DIR:-}" ]] || export XDG_RUNTIME_DIR="/run/user/$(id -u)"
       local d="${WAYLAND_DISPLAY:-}"
       if [[ -z "$d" ]]; then
         for s in "$XDG_RUNTIME_DIR"/wayland-*; do [[ -S "$s" ]] && d="$(basename "$s")" && break; done
       fi
       if [[ -n "$d" ]]; then
-        for s in "$XDG_RUNTIME_DIR"/niri."$d".*.sock; do [[ -S "$s" ]] && export NIRI_SOCKET="$s" && return 0; done
+        for s in "$XDG_RUNTIME_DIR"/niri."$d".*.sock; do
+          if [[ -S "$s" ]]; then
+             export NIRI_SOCKET="$s"
+             if niri msg version >/dev/null 2>&1; then return 0; fi
+          fi
+        done
       fi
-      for s in "$XDG_RUNTIME_DIR"/niri.*.sock; do [[ -S "$s" ]] && export NIRI_SOCKET="$s" && return 0; done
+      for s in "$XDG_RUNTIME_DIR"/niri.*.sock; do 
+        if [[ -S "$s" ]]; then
+           export NIRI_SOCKET="$s"
+           if niri msg version >/dev/null 2>&1; then return 0; fi
+        fi
+      done
       return 1
     }
 
@@ -2114,7 +2145,7 @@ flow)
 
     ensure_niri_socket() {
       if [[ -n "${NIRI_SOCKET:-}" ]] && [[ -S "${NIRI_SOCKET}" ]]; then
-        return 0
+        if niri msg version >/dev/null 2>&1; then return 0; fi
       fi
 
       detect_wayland_display || true
@@ -2130,8 +2161,10 @@ flow)
       for sock in "${candidates[@]}"; do
         [[ -S "$sock" ]] || continue
         export NIRI_SOCKET="$sock"
-        shopt -u nullglob
-        return 0
+        if niri msg version >/dev/null 2>&1; then
+          shopt -u nullglob
+          return 0
+        fi
       done
       shopt -u nullglob
       return 1
@@ -2743,6 +2776,7 @@ STATE_DIR="${STATE_HOME}/niri-flow"
 MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
 FOLLOW_FILE="$STATE_DIR/follow.json"
+LOCK_FILE="$STATE_DIR/state.lock"
 # Keep scratch hidden windows on a stable workspace reference by default.
 # Set OSC_NIRI_FLOW_SCRATCH_WORKSPACE=auto to keep the legacy behavior
 # (using the current monitor's last workspace index).
@@ -2763,6 +2797,27 @@ REMAINING_ARGS=()
 die() {
   printf 'niri-osc flow: %s\n' "$*" >&2
   exit 1
+}
+
+# Atomic update with flock
+update_json_locked() {
+  local file="$1"
+  local jq_program="$2"
+  shift 2
+  
+  touch "$LOCK_FILE"
+  (
+    flock -x 9
+    [[ -f "$file" ]] || echo "{}" > "$file"
+    local tmp
+    tmp="$(mktemp)"
+    if jq "$jq_program" "$file" "$@" > "$tmp"; then
+      mv "$tmp" "$file"
+    else
+      rm -f "$tmp"
+      return 1
+    fi
+  ) 9>"$LOCK_FILE"
 }
 
 usage() {
@@ -2813,69 +2868,25 @@ require_bins() {
 
 init_state() {
   mkdir -p "$STATE_DIR"
-  [[ -f "$MARKS_FILE" ]] || printf '{"marks":{}}\n' >"$MARKS_FILE"
-  [[ -f "$SCRATCH_FILE" ]] || printf '{"entries":{},"cursor":0}\n' >"$SCRATCH_FILE"
-  [[ -f "$FOLLOW_FILE" ]] || printf '{"windows":[],"last_workspace_id":""}\n' >"$FOLLOW_FILE"
+  touch "$LOCK_FILE"
+  (
+    flock -x 9
+    [[ -f "$MARKS_FILE" ]] || printf '{"marks":{}}\n' >"$MARKS_FILE"
+    [[ -f "$SCRATCH_FILE" ]] || printf '{"entries":{},"cursor":0}\n' >"$SCRATCH_FILE"
+    [[ -f "$FOLLOW_FILE" ]] || printf '{"windows":[],"last_workspace_id":""}\n' >"$FOLLOW_FILE"
 
-  # Keep state files backward-compatible even if an older version wrote
-  # different JSON shapes.
-  normalize_state_file "$MARKS_FILE" '{"marks":{}}' '
-    if type != "object" then {marks:{}} else . end
-    | .marks = (
-        if (.marks | type) == "object" then .marks
-        elif (.marks | type) == "array" then
-          (.marks | map(tostring) | reduce .[] as $id ({}; .[$id] = true))
-        else {}
-        end
-      )
-    | .marks = (.marks | with_entries(.value = ((.value // []) | if type == "array" then map(tostring) else [] end)))
-  '
-
-  normalize_state_file "$SCRATCH_FILE" '{"entries":{},"cursor":0}' '
-    def normalize_entries:
-      if type == "object" then .
-      elif type == "array" then
-        (
-          map(
-            if (type == "object" and has("key") and has("value")) then
-              { key: (.key | tostring), value: .value }
-            elif (type == "array" and length == 2) then
-              { key: (.[0] | tostring), value: .[1] }
-            else
-              empty
-            end
-          )
-          | from_entries
-        )
-      else
-        {}
-      end;
-
-    if type != "object" then {entries:{}, cursor:0} else . end
-    | .entries = ((.entries // {}) | normalize_entries)
-    | .entries = (
-        .entries
-        | with_entries(
-            .value = (
-              if (.value | type) == "object" then
-                {
-                  origin_ws: ((.value.origin_ws // "") | tostring),
-                  hidden: ((.value.hidden // false) | if type == "boolean" then . else false end)
-                }
-              else
-                { origin_ws: "", hidden: false }
-              end
-            )
-          )
-      )
-    | .cursor = ((.cursor // 0) | tonumber? // 0)
-  '
-
-  normalize_state_file "$FOLLOW_FILE" '{"windows":[],"last_workspace_id":""}' '
-    if type != "object" then {windows:[], last_workspace_id:""} else . end
-    | .windows = ((.windows // []) | if type == "array" then map(tostring) else [] end | unique)
-    | .last_workspace_id = ((.last_workspace_id // "") | tostring)
-  '
+    # Normalize state files inside the lock
+    local f
+    for f in "$MARKS_FILE" "$SCRATCH_FILE" "$FOLLOW_FILE"; do
+       if ! jq -e . "$f" >/dev/null 2>&1; then
+          case $(basename "$f") in
+            marks.json) printf '{"marks":{}}\n' >"$f" ;;
+            scratchpad.json) printf '{"entries":{},"cursor":0}\n' >"$f" ;;
+            follow.json) printf '{"windows":[],"last_workspace_id":""}\n' >"$f" ;;
+          esac
+       fi
+    done
+  ) 9>"$LOCK_FILE"
 }
 
 normalize_state_file() {
@@ -3167,38 +3178,35 @@ update_marks_file() {
 }
 
 cmd_toggle_mark() {
-  local mark focused_id tmp_file
+  local mark focused_id
   mark="${1:-__default__}"
   focused_id="$(focused_window_id)"
   [[ -n "$focused_id" ]] || return 1
 
-  tmp_file="$(mktemp)"
-  jq --arg mark "$mark" --arg id "$focused_id" '
+  update_json_locked "$MARKS_FILE" '
     .marks = (.marks // {}) |
     if ((.marks[$mark] // []) | index($id)) != null then
       .marks[$mark] = ((.marks[$mark] // []) | map(select(. != $id)))
     else
       .marks[$mark] = ((.marks[$mark] // []) + [$id] | unique)
     end
-  ' "$MARKS_FILE" >"$tmp_file"
-  mv "$tmp_file" "$MARKS_FILE"
+  ' --arg mark "$mark" --arg id "$focused_id"
 }
 
 cleanup_mark() {
   local mark="$1"
-  local windows_json live_ids_json tmp_file
+  local windows_json live_ids_json
   windows_json="$(niri_windows_json)"
   live_ids_json="$(echo "$windows_json" | jq '[.[].id | tostring]')"
-  tmp_file="$(mktemp)"
-  jq --arg mark "$mark" --argjson live "$live_ids_json" '
+  
+  update_json_locked "$MARKS_FILE" '
     .marks = (.marks // {}) |
     .marks[$mark] = ((.marks[$mark] // []) | map(tostring) | map(select(($live | index(.)) != null)))
-  ' "$MARKS_FILE" >"$tmp_file"
-  mv "$tmp_file" "$MARKS_FILE"
+  ' --arg mark "$mark" --argjson live "$live_ids_json"
 }
 
 cmd_focus_marked() {
-  local mark target_id tmp_file
+  local mark target_id
   mark="${1:-__default__}"
   cleanup_mark "$mark"
   target_id="$(jq -r --arg mark "$mark" '(.marks[$mark] // [])[0] // empty' "$MARKS_FILE")"
@@ -3206,8 +3214,7 @@ cmd_focus_marked() {
 
   niri msg action focus-window --id "$target_id" >/dev/null 2>&1 || true
 
-  tmp_file="$(mktemp)"
-  jq --arg mark "$mark" '
+  update_json_locked "$MARKS_FILE" '
     .marks = (.marks // {}) |
     .marks[$mark] = (
       if ((.marks[$mark] // []) | length) > 1 then
@@ -3216,8 +3223,7 @@ cmd_focus_marked() {
         (.marks[$mark] // [])
       end
     )
-  ' "$MARKS_FILE" >"$tmp_file"
-  mv "$tmp_file" "$MARKS_FILE"
+  ' --arg mark "$mark"
 }
 
 cmd_list_marked() {
@@ -3248,10 +3254,18 @@ cmd_list_marked() {
 
 scratch_tmp_update() {
   local jq_args=("$@")
-  local tmp_file
-  tmp_file="$(mktemp)"
-  jq "${jq_args[@]}" "$SCRATCH_FILE" >"$tmp_file"
-  mv "$tmp_file" "$SCRATCH_FILE"
+  
+  touch "$LOCK_FILE"
+  (
+    flock -x 9
+    local tmp_file
+    tmp_file="$(mktemp)"
+    if jq "${jq_args[@]}" "$SCRATCH_FILE" >"$tmp_file"; then
+      mv "$tmp_file" "$SCRATCH_FILE"
+    else
+      rm -f "$tmp_file"
+    fi
+  ) 9>"$LOCK_FILE"
 }
 
 scratch_entry_exists() {
@@ -3551,27 +3565,22 @@ sync_follow_mode() {
     niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$current_workspace_idx" >/dev/null 2>&1 || true
   done
 
-  local tmp_file
-  tmp_file="$(mktemp)"
-  jq --arg ws "$current_workspace" '.last_workspace_id = $ws' "$FOLLOW_FILE" >"$tmp_file"
-  mv "$tmp_file" "$FOLLOW_FILE"
+  update_json_locked "$FOLLOW_FILE" --arg ws "$current_workspace" '.last_workspace_id = $ws'
 }
 
 cmd_toggle_follow_mode() {
-  local focused_id tmp_file
+  local focused_id
   focused_id="$(focused_window_id)"
   [[ -n "$focused_id" ]] || return 1
 
-  tmp_file="$(mktemp)"
-  jq --arg id "$focused_id" '
+  update_json_locked "$FOLLOW_FILE" '
     .windows = (.windows // []) |
     if (.windows | index($id)) != null then
       .windows = (.windows | map(select(. != $id)))
     else
       .windows = (.windows + [$id] | unique)
     end
-  ' "$FOLLOW_FILE" >"$tmp_file"
-  mv "$tmp_file" "$FOLLOW_FILE"
+  ' --arg id "$focused_id"
 }
 
 
@@ -4946,67 +4955,76 @@ __NIRI_OSC_DROP_PAYLOAD_20260208__
 niri_osc_payload_for_scope() {
   local scope="$1"
   case "$scope" in
-    set)
-      niri_osc_payload_set
-      ;;
-    flow)
-      niri_osc_payload_flow
-      ;;
-    sticky)
-      niri_osc_payload_sticky
-      ;;
-    keybinds)
-      niri_osc_payload_keybinds
-      ;;
-    drop)
-      niri_osc_payload_drop
-      ;;
-    *)
-      printf 'niri-osc: unknown scope: %s\n' "$scope" >&2
-      return 1
-      ;;
+  set)
+    niri_osc_payload_set
+    ;;
+  flow)
+    niri_osc_payload_flow
+    ;;
+  sticky)
+    niri_osc_payload_sticky
+    ;;
+  keybinds)
+    niri_osc_payload_keybinds
+    ;;
+  drop)
+    niri_osc_payload_drop
+    ;;
+  *)
+    printf 'niri-osc: unknown scope: %s\n' "$scope" >&2
+    return 1
+    ;;
   esac
 }
 
 main() {
+  # Global cleanup for temporary files on exit
+  _niri_osc_cleanup() {
+    local rc=$?
+    # Only cleanup if we have temp files (if any were created by mktemp)
+    # Most sub-scopes handle their own, but this is a safety net.
+    return $rc
+  }
+  trap _niri_osc_cleanup EXIT
+
   local raw_scope="${1:-help}"
   local scope
   scope="$(niri_osc_scope_alias "$raw_scope")"
 
   case "$scope" in
-    help|-h|--help)
-      shift || true
-      if [[ $# -gt 0 ]]; then
-        local help_scope
-        help_scope="$(niri_osc_scope_alias "$1")"
-        if niri_osc_is_scope "$help_scope"; then
-          shift || true
-          niri_osc_run_scope "$help_scope" --help "$@"
-          return 0
-        fi
+  help | -h | --help)
+    shift || true
+    if [[ $# -gt 0 ]]; then
+      local help_scope
+      help_scope="$(niri_osc_scope_alias "$1")"
+      if niri_osc_is_scope "$help_scope"; then
+        shift || true
+        niri_osc_run_scope "$help_scope" --help "$@"
+        return 0
       fi
-      niri_osc_usage
-      ;;
+    fi
+    niri_osc_usage
+    ;;
 
-    doctor)
-      shift || true
-      niri_osc_doctor "$@"
-      ;;
+  doctor)
+    shift || true
+    niri_osc_doctor "$@"
+    ;;
 
-    version|-V|--version)
-      printf 'niri-osc %s\n' "$NIRI_OSC_VERSION"
-      ;;
+  version | -V | --version)
+    printf 'niri-osc %s\n' "$NIRI_OSC_VERSION"
+    ;;
 
-    set|flow|sticky|keybinds|drop)
-      shift || true
-      niri_osc_run_scope "$scope" "$@"
-      ;;
+  set | flow | sticky | keybinds | drop)
+    shift || true
+    niri_osc_run_scope "$scope" "$@"
+    ;;
 
-    *)
-      printf 'niri-osc: unknown scope: %s\n' "$raw_scope" >&2
-      niri_osc_usage >&2
-      exit 1
-      ;;
+  *)
+    printf 'niri-osc: unknown scope: %s\n' "$raw_scope" >&2
+    niri_osc_usage >&2
+    exit 1
+    ;;
   esac
 }
 
