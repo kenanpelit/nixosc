@@ -11,15 +11,15 @@ let
   hasScripts = config.my.user.scripts.enable or false;
   enableNiri = config.my.desktop.niri.enable or false;
   enableHyprland = config.my.desktop.hyprland.enable or false;
-  niriOnly = enableNiri && !enableHyprland;
-  gestureThreshold = if niriOnly then {
+  preferNiriTuning = enableNiri;
+  gestureThreshold = if preferNiriTuning then {
     swipe = 0.8;
     pinch = 0.3;
   } else {
     swipe = 0.7;
     pinch = 0.3;
   };
-  gestureInterval = if niriOnly then {
+  gestureInterval = if preferNiriTuning then {
     swipe = 0.7;
     pinch = 1.0;
   } else {
@@ -41,69 +41,75 @@ let
     }
 
     detect_compositor() {
-      if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-        echo "hyprland"
-        return 0
-      fi
-      if [[ -n "''${NIRI_SOCKET:-}" ]]; then
+      # Optional override for debugging.
+      case "''${FUSUMA_COMPOSITOR:-}" in
+        niri|hyprland)
+          echo "''${FUSUMA_COMPOSITOR}"
+          return 0
+          ;;
+      esac
+
+      # Prefer explicit Niri markers first. In long-lived systemd --user
+      # sessions, HYPRLAND_INSTANCE_SIGNATURE may remain set from a previous
+      # login and cause false Hyprland detection.
+      if [[ -n "''${NIRI_SOCKET:-}" && -S "''${NIRI_SOCKET}" ]]; then
         echo "niri"
         return 0
       fi
 
       case "''${XDG_CURRENT_DESKTOP:-}''${XDG_SESSION_DESKTOP:-}" in
-        *Hyprland*|*hyprland*)
-          echo "hyprland"
-          return 0
-          ;;
         *niri*|*Niri*)
           echo "niri"
           return 0
           ;;
+        *Hyprland*|*hyprland*)
+          echo "hyprland"
+          return 0
+          ;;
       esac
+
+      if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        local runtime_dir hypr_socket
+        runtime_dir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+        hypr_socket="$runtime_dir/hypr/''${HYPRLAND_INSTANCE_SIGNATURE}/.socket.sock"
+        if [[ -S "$hypr_socket" ]]; then
+          echo "hyprland"
+          return 0
+        fi
+      fi
 
       return 1
     }
   '';
-  swipeSettings = if niriOnly then {
-    # In Niri-only setups keep Fusuma focused on monitor navigation to avoid
-    # clashing with Niri's built-in 3/4-finger workspace gestures.
-    "4" = {
-      right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn";
-      left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp";
-    };
-  } else {
+  swipeSettings = {
+    # Runtime-router based mapping: the same gesture config is generated once,
+    # and helper scripts choose compositor-specific behavior at execution time.
     "3" = {
       right = {
-        command = "${hyprscrollingFocus}/bin/fusuma-hyprscrolling-focus right";
+        command = "${swipeRouter}/bin/fusuma-swipe 3 right";
         threshold = 0.6;
       };
       left = {
-        command = "${hyprscrollingFocus}/bin/fusuma-hyprscrolling-focus left";
+        command = "${swipeRouter}/bin/fusuma-swipe 3 left";
         threshold = 0.6;
       };
       up = {
-        command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wu";
+        command = "${swipeRouter}/bin/fusuma-swipe 3 up";
         threshold = 0.6;
       };
       down = {
-        command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wd";
+        command = "${swipeRouter}/bin/fusuma-swipe 3 down";
         threshold = 0.6;
       };
     };
     "4" = {
-      up.command = "${overview}/bin/fusuma-overview";
-      down.command = "${overview}/bin/fusuma-overview";
-      right.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn";
-      left.command = "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp";
+      up.command = "${swipeRouter}/bin/fusuma-swipe 4 up";
+      down.command = "${swipeRouter}/bin/fusuma-swipe 4 down";
+      right.command = "${swipeRouter}/bin/fusuma-swipe 4 right";
+      left.command = "${swipeRouter}/bin/fusuma-swipe 4 left";
     };
   };
-  pinchSettings = if niriOnly then {
-    # Niri fullscreen action is toggle-style; keep only pinch-in to avoid
-    # in/out ambiguity.
-    "3" = {
-      "in" = { command = "${fullscreen}/bin/fusuma-fullscreen in"; };
-    };
-  } else {
+  pinchSettings = {
     "3" = {
       "in" = { command = "${fullscreen}/bin/fusuma-fullscreen in"; };
       out = { command = "${fullscreen}/bin/fusuma-fullscreen out"; };
@@ -168,46 +174,67 @@ let
     exit 127
   '';
 
-  hyprscrollingFocus = pkgs.writeShellScriptBin "fusuma-hyprscrolling-focus" ''
+  swipeRouter = pkgs.writeShellScriptBin "fusuma-swipe" ''
     #!/usr/bin/env bash
     set -euo pipefail
 
     ${detectCompositorSnippet}
 
-    direction="''${1:-}"
-    case "$direction" in
-      left|l) dir="l" ;;
-      right|r) dir="r" ;;
+    fingers="''${1:-}"
+    direction="''${2:-}"
+
+    case "$fingers:$direction" in
+      3:left|3:right|3:up|3:down|4:left|4:right|4:up|4:down) ;;
       *)
-        echo "usage: fusuma-hyprscrolling-focus {left|right}" >&2
+        echo "usage: fusuma-swipe <3|4> <left|right|up|down>" >&2
         exit 2
         ;;
     esac
 
     compositor="$(detect_compositor || true)"
+    case "$fingers" in
+      4)
+        case "$direction" in
+          left) exec "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mp" ;;
+          right) exec "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -mn" ;;
+          up|down) exec "${overview}/bin/fusuma-overview" ;;
+        esac
+        ;;
+      3)
+        if [[ "$compositor" == "niri" ]]; then
+          # Niri already has native workspace/overview swipe gestures.
+          exit 0
+        fi
+        if [[ "$compositor" != "hyprland" ]]; then
+          log_error "fusuma-swipe: compositor not detected"
+          exit 127
+        fi
 
-    # Niri has built-in horizontal swipe navigation; avoid double-triggering.
-    if [[ "$compositor" == "niri" ]]; then
-      exit 0
-    fi
+        case "$direction" in
+          up) exec "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wu" ;;
+          down) exec "${workspaceMonitor}/bin/fusuma-workspace-monitor --fusuma -wd" ;;
+          left|right)
+            if ! command -v hyprctl >/dev/null 2>&1; then
+              log_error "fusuma-swipe: hyprctl not found in PATH"
+              exit 127
+            fi
+            if [[ "$direction" == "left" ]]; then
+              dir="l"
+            else
+              dir="r"
+            fi
 
-    if [[ "$compositor" != "hyprland" ]]; then
-      log_error "fusuma-hyprscrolling-focus: compositor not detected"
-      exit 127
-    fi
+            # Prefer hyprscrolling focus (also scrolls layout), fall back to
+            # standard directional focus.
+            if hyprctl dispatch layoutmsg "focus $dir" >/dev/null 2>&1; then
+              exit 0
+            fi
 
-    if ! command -v hyprctl >/dev/null 2>&1; then
-      log_error "fusuma-hyprscrolling-focus: hyprctl not found in PATH"
-      exit 127
-    fi
-
-    # Prefer hyprscrolling focus (also scrolls layout), but gracefully fall back
-    # to standard directional focus if the current layout doesn't support it.
-    if hyprctl dispatch layoutmsg "focus $dir" >/dev/null 2>&1; then
-      exit 0
-    fi
-
-    exec hyprctl dispatch movefocus "$dir"
+            exec hyprctl dispatch movefocus "$dir"
+            ;;
+        esac
+        ;;
+    esac
   '';
 
   fullscreen = pkgs.writeShellScriptBin "fusuma-fullscreen" ''
@@ -282,11 +309,15 @@ in
         assertion = hasScripts;
         message = "my.user.fusuma.enable requires my.user.scripts.enable (wm-workspace must be available).";
       }
+      {
+        assertion = enableNiri || enableHyprland;
+        message = "my.user.fusuma.enable requires at least one compositor: my.desktop.niri.enable or my.desktop.hyprland.enable.";
+      }
     ];
 
     home.packages = [
       workspaceMonitor
-      hyprscrollingFocus
+      swipeRouter
       fullscreen
       overview
     ];

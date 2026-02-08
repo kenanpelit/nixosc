@@ -3484,7 +3484,7 @@ notify() {
     -a "niri-osc sticky" \
     -u "$urgency" \
     -t "$NOTIFY_TIMEOUT" \
-    -h string:x-canonical-private-synchronous:niri-osc sticky \
+    -h "string:x-canonical-private-synchronous:niri-osc-sticky" \
     "$title" "$body" >/dev/null 2>&1 || true
 }
 
@@ -3980,8 +3980,8 @@ cmd_sticky() {
 
       out="$(with_lock sticky_toggle_active_locked "$window_id")"
       case "$out" in
-        Added*) notify low "Sticky" "Enabled" ;;
-        Removed*) notify low "Sticky" "Disabled" ;;
+        Added*) notify low "Sticky" "Active window added" ;;
+        Removed*) notify low "Sticky" "Active window removed" ;;
       esac
       printf '%s\n' "$out"
       ;;
@@ -3993,8 +3993,8 @@ cmd_sticky() {
 
       out="$(with_lock sticky_toggle_target_locked "$window_id")"
       case "$out" in
-        Added*) notify low "Sticky" "Enabled" ;;
-        Removed*) notify low "Sticky" "Disabled" ;;
+        Added*) notify low "Sticky" "Window added" ;;
+        Removed*) notify low "Sticky" "Window removed" ;;
       esac
       printf '%s\n' "$out"
       ;;
@@ -4006,8 +4006,8 @@ cmd_sticky() {
 
       out="$(with_lock sticky_toggle_target_locked "$window_id")"
       case "$out" in
-        Added*) notify low "Sticky" "Enabled" ;;
-        Removed*) notify low "Sticky" "Disabled" ;;
+        Added*) notify low "Sticky" "Window added" ;;
+        Removed*) notify low "Sticky" "Window removed" ;;
       esac
       printf '%s\n' "$out"
       ;;
@@ -4042,9 +4042,9 @@ cmd_stage() {
 
       out="$(with_lock stage_toggle_active_locked "$window_id")"
       case "$out" in
-        Added*) notify low "Sticky" "Enabled" ;;
-        Staged*) notify low "Stage" "Moved to stage" ;;
-        Unstaged*) notify low "Stage" "Restored" ;;
+        Added*) notify low "Sticky" "Active window added" ;;
+        Staged*) notify low "Stage" "Active window moved to stage" ;;
+        Unstaged*) notify low "Stage" "Active window restored to sticky" ;;
       esac
       printf '%s\n' "$out"
       ;;
