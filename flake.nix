@@ -38,7 +38,6 @@
 #    $ osc-fiup {dank|hypr|stasis|walker}           # targeted bump helpers
 #
 # ==============================================================================
-
 {
   description = "Kenan's NixOS Configuration - Modern, Modular, Snowfall-based";
 
@@ -95,6 +94,8 @@
     # Upstream niri itself is pulled via `inputs.niri-unstable` (pinned in flake.lock).
     niri = {
       url = "github:sodiboo/niri-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs-stable.follows = "nixpkgs";
       inputs.niri-unstable.url = "github:YaLTeR/niri/main";
     };
 
@@ -103,8 +104,15 @@
     # ==========================================================================
     # - catppuccin: Global theming modules + palettes
     # - distro-grub-themes: GRUB bootloader themes
-    catppuccin.url = "github:catppuccin/nix";
-    distro-grub-themes.url = "github:AdisonCavani/distro-grub-themes";
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    distro-grub-themes = {
+      url = "github:AdisonCavani/distro-grub-themes";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # ==========================================================================
     # Desktop: Shell (DankMaterialShell / DMS)
@@ -118,13 +126,8 @@
 
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
-      # Pinned commit (updated via `osc-fiup dank`)
-      url = "github:AvengeMedia/DankMaterialShell/5b8b7b04be165f7979bac9a42157ff054f1dcca8"; # 0208 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/b4a885359197dbb91abc363d2e5a0da99b5b5d10"; # 0208 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/c4a41f994a9a1b5cb8825982131db2bcbc563d3c"; # 0207 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/e618a8390c0eccec1661a0bbd4d2b81cb77cbe86"; # 0206 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/c5a21f8da0eaf26e7d9c84553e5aee79b7b1c2e4"; # 0206 - Updated commit
-      # url = "github:AvengeMedia/DankMaterialShell/ac84cadd77d3b1daf4a1da1a54294c991d7a5b32"; # 0206 - Updated commit
+      # Pinned commit (bumped intentionally via `osc-fiup dank` + flake.lock).
+      url = "github:AvengeMedia/DankMaterialShell/5b8b7b04be165f7979bac9a42157ff054f1dcca8";
     };
 
     dsearch = {
@@ -159,122 +162,162 @@
     };
   };
 
-  outputs = inputs @ { self, nixpkgs, snowfall-lib, ... }:
-    let
-      lib = nixpkgs.lib;
-    in
-    # snowfall-lib produces an internal `snowfall` attribute; hide it to keep
-    # `nix flake show` focused on real outputs.
+  outputs = inputs @ {
+    self,
+    nixpkgs,
+    snowfall-lib,
+    ...
+  }: let
+    lib = nixpkgs.lib;
+  in
+    # snowfall-lib produces an internal `snowfall` output; hide it so
+    # `nix flake show` stays focused on consumable outputs.
     lib.removeAttrs (snowfall-lib.mkFlake {
-        inherit inputs;
+      inherit inputs;
+      # Keep evaluation/build source clean:
+      # - include only files needed by flake/module evaluation
+      # - drop CI metadata from the source closure
+      src = lib.cleanSourceWith {
         src = ./.;
+        filter = path: type: let
+          rel = lib.removePrefix "${toString ./.}/" (toString path);
+        in
+          lib.cleanSourceFilter path type
+          && !(rel == ".github" || lib.hasPrefix ".github/" rel);
+      };
 
-        snowfall = {
-          # Custom namespace for internal modules (e.g. `my.*` options).
-          namespace = "my";
-        };
+      snowfall = {
+        # Custom namespace for internal modules (e.g. `my.*` options).
+        namespace = "my";
+      };
 
-        # Global nixpkgs config (applies to all systems/homes in this flake).
-        channels-config = {
-          allowUnfree = true;
-          permittedInsecurePackages = [
+      # Global nixpkgs policy shared by systems/homes.
+      channels-config = {
+        allowUnfree = true;
+      };
+
+      # Overlays applied to all systems.
+      overlays = with inputs; [
+        nur.overlays.default
+        niri.overlays.niri
+        # Expose a second package set pinned to `nixos-unstable`, so we can
+        # selectively track newer packages (e.g. Hyprland) without moving the
+        # whole system off the stable channel.
+        (final: prev: {
+          unstable = import inputs."nixpkgs-unstable" {
+            system = prev.stdenv.hostPlatform.system;
+            config = prev.config;
+          };
+        })
+        (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
+        (import ./overlays/xdg-desktop-portal-gnome-niri.nix)
+      ];
+
+      # Modules automatically added to all NixOS systems.
+      # Keep insecure-package allowlist here (system scope), not globally
+      # in `channels-config`, so HM-only consumers stay stricter by default.
+      systems.modules.nixos = with inputs; [
+        home-manager.nixosModules.home-manager
+        # DMS upstream renamed `nixosModules.dankMaterialShell` -> `nixosModules.dank-material-shell`.
+        # Using `default` keeps us compatible and avoids the deprecation warning.
+        dankMaterialShell.nixosModules.default
+        nix-flatpak.nixosModules.nix-flatpak
+        ({lib, ...}: {
+          nixpkgs.config.permittedInsecurePackages = lib.mkDefault [
             "electron-36.9.5"
             "ventoy-1.1.07"
             "libsoup-2.74.3"
           ];
-        };
+        })
+      ];
 
-        # Overlays applied to all systems.
-        overlays = with inputs; [
-          nur.overlays.default
-          niri.overlays.niri
-          # Expose a second package set pinned to `nixos-unstable`, so we can
-          # selectively track newer packages (e.g. Hyprland) without moving the
-          # whole system off the stable channel.
-          (final: prev: {
-            unstable = import inputs."nixpkgs-unstable" {
-              system = prev.stdenv.hostPlatform.system;
-              config = prev.config;
-            };
-          })
-          (import ./overlays/xdg-desktop-portal-wlr-niri.nix)
-          (import ./overlays/xdg-desktop-portal-gnome-niri.nix)
-        ];
+      # Special arguments available to all modules.
+      systems.specialArgs = {
+        username = "kenan";
+      };
 
-        # Modules automatically added to all NixOS systems.
-        systems.modules.nixos = with inputs; [
-          home-manager.nixosModules.home-manager
-          # DMS upstream renamed `nixosModules.dankMaterialShell` -> `nixosModules.dank-material-shell`.
-          # Using `default` keeps us compatible and avoids the deprecation warning.
-          dankMaterialShell.nixosModules.default
-          nix-flatpak.nixosModules.nix-flatpak
-        ];
+      outputs-builder = channels: let
+        system = channels.nixpkgs.stdenv.hostPlatform.system;
+        unstablePkgs = inputs."nixpkgs-unstable".legacyPackages.${system};
+        # Prefer unstable tool versions when available, but keep stable
+        # fallback so branch updates never block local tooling.
+        toolFromChannels = name:
+          if builtins.hasAttr name unstablePkgs
+          then unstablePkgs.${name}
+          else channels.nixpkgs.${name};
+        alejandra = toolFromChannels "alejandra";
+        statix = toolFromChannels "statix";
+        deadnix = toolFromChannels "deadnix";
+        treefmt = toolFromChannels "treefmt";
+        # Optional checks: only emit attrs for hosts/homes that exist.
+        mkNixosChecks = hosts:
+          if self ? nixosConfigurations
+          then
+            lib.listToAttrs (
+              map
+              (host: {
+                name = "nixos-${host}";
+                value = self.nixosConfigurations.${host}.config.system.build.toplevel;
+              })
+              (builtins.filter (host: builtins.hasAttr host self.nixosConfigurations) hosts)
+            )
+          else {};
+        mkHomeChecks = homes:
+          if self ? homeConfigurations
+          then
+            lib.listToAttrs (
+              map
+              (home: {
+                name = "home-${builtins.replaceStrings ["@"] ["-"] home}";
+                value = self.homeConfigurations.${home}.activationPackage;
+              })
+              (builtins.filter (home: builtins.hasAttr home self.homeConfigurations) homes)
+            )
+          else {};
+      in {
+        # Default formatter for the repo.
+        formatter = alejandra;
 
-        # Special arguments available to all modules.
-        systems.specialArgs = {
-          username = "kenan";
-        };
-
-        outputs-builder =
-          channels:
-          let
-            system = channels.nixpkgs.stdenv.hostPlatform.system;
-            unstablePkgs = inputs."nixpkgs-unstable".legacyPackages.${system};
-            alejandra =
-              if unstablePkgs ? alejandra
-              then unstablePkgs.alejandra
-              else channels.nixpkgs.alejandra;
-            statix =
-              if unstablePkgs ? statix
-              then unstablePkgs.statix
-              else channels.nixpkgs.statix;
-            deadnix =
-              if unstablePkgs ? deadnix
-              then unstablePkgs.deadnix
-              else channels.nixpkgs.deadnix;
-            treefmt = channels.nixpkgs.treefmt;
-          in
+        # CI-friendly checks (run locally via `nix flake check`).
+        checks =
           {
-            # Default formatter for the repo.
-            formatter = alejandra;
-
-            # CI-friendly checks (run locally via `nix flake check`).
-            checks = {
-              statix = channels.nixpkgs.runCommand "statix-check" {
-                nativeBuildInputs = [ statix ];
+            statix =
+              channels.nixpkgs.runCommand "statix-check" {
+                nativeBuildInputs = [statix];
               } ''
                 statix check ${./.}
                 touch $out
               '';
 
-              deadnix = channels.nixpkgs.runCommand "deadnix-check" {
-                nativeBuildInputs = [ deadnix ];
+            deadnix =
+              channels.nixpkgs.runCommand "deadnix-check" {
+                nativeBuildInputs = [deadnix];
               } ''
                 deadnix --fail ${./.}
                 touch $out
               '';
 
-              treefmt = channels.nixpkgs.runCommand "treefmt-check" {
-                nativeBuildInputs = [ treefmt ];
+            treefmt =
+              channels.nixpkgs.runCommand "treefmt-check" {
+                nativeBuildInputs = [treefmt];
               } ''
                 treefmt --fail-on-change --clear-cache --check ${./.}
                 touch $out
               '';
+          }
+          # Keep critical targets in CI, but only when they exist.
+          // mkNixosChecks ["hay" "vhay"]
+          // mkHomeChecks ["kenan@hay"];
 
-              # Keep these here so CI fails early if a host or home breaks.
-              nixos-hay = self.nixosConfigurations.hay.config.system.build.toplevel;
-              nixos-vhay = self.nixosConfigurations.vhay.config.system.build.toplevel;
-              home-kenan-hay = self.homeConfigurations."kenan@hay".activationPackage;
-            };
-
-            # Developer shell: quick access to repo tooling.
-            devShells.default = channels.nixpkgs.mkShell {
-              packages = [
-                alejandra
-                statix
-                deadnix
-              ];
-            };
-          };
-      }) [ "snowfall" ];
+        # Developer shell: same core toolchain used by checks.
+        devShells.default = channels.nixpkgs.mkShell {
+          packages = [
+            alejandra
+            statix
+            deadnix
+            treefmt
+          ];
+        };
+      };
+    }) ["snowfall"];
 }
