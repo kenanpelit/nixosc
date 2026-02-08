@@ -1406,6 +1406,50 @@ init)
       fi
     }
 
+    compact_out_of_range_empty_workspaces() {
+      command -v jq >/dev/null 2>&1 || return 0
+
+      local windows_json workspaces_json
+      windows_json="$(niri msg -j windows 2>/dev/null || true)"
+      workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
+      [[ -n "$windows_json" && -n "$workspaces_json" ]] || return 0
+
+      local collapsed=0
+      while IFS=$'\t' read -r ws_output ws_idx ws_name win_count; do
+        [[ -n "$ws_output" ]] || continue
+        [[ "$ws_idx" =~ ^[0-9]+$ ]] || continue
+        [[ "$win_count" =~ ^[0-9]+$ ]] || win_count=0
+
+        ((ws_idx > 9)) || continue
+        [[ -z "$ws_name" ]] || continue
+        ((win_count == 0)) || continue
+
+        niri msg action focus-monitor "$ws_output" >/dev/null 2>&1 || continue
+        niri msg action focus-workspace "$ws_idx" >/dev/null 2>&1 || continue
+        niri msg action focus-workspace "1" >/dev/null 2>&1 || true
+        collapsed=$((collapsed + 1))
+      done < <(
+        jq -n \
+          --argjson wins "${windows_json:-[]}" \
+          --argjson wss "${workspaces_json:-[]}" \
+          -r '
+            def win_count($wid):
+              [$wins[]? | select((.workspace_id | tostring) == ($wid | tostring))] | length;
+
+            $wss[]?
+            | (.idx | tonumber? // -1) as $idx
+            | select($idx > 9)
+            | [(.output // ""), ($idx | tostring), (.name // ""), (win_count(.id) | tostring)]
+            | @tsv
+          ' 2>/dev/null | sort -k1,1 -k2,2nr
+      )
+
+      if ((collapsed > 0)); then
+        log "workspace bounds compacted: removed ${collapsed} empty out-of-range workspace slot(s)"
+        notify "workspace bounds compacted: ${collapsed} empty slot(s)"
+      fi
+    }
+
     preferred="${NIRI_INIT_PREFERRED_OUTPUT:-DP-3}"
     target=""
     outputs_json=""
@@ -1427,6 +1471,7 @@ init)
 
     write_monitor_auto_profile
     normalize_workspace_range
+    compact_out_of_range_empty_workspaces
 
     if [[ -n "$target" ]]; then
       niri msg action focus-monitor "$target" >/dev/null 2>&1 || true
@@ -2687,7 +2732,7 @@ niri_osc_payload_flow() {
 # - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-flow/follow.json
 #
 # Tunables:
-# - OSC_NIRI_FLOW_SCRATCH_WORKSPACE (default: 99)
+# - OSC_NIRI_FLOW_SCRATCH_WORKSPACE (default: oscndrop, "auto" for legacy dynamic behavior)
 #
 # Dependencies:
 # - niri
@@ -2706,9 +2751,11 @@ STATE_DIR="${STATE_HOME}/niri-flow"
 MARKS_FILE="$STATE_DIR/marks.json"
 SCRATCH_FILE="$STATE_DIR/scratchpad.json"
 FOLLOW_FILE="$STATE_DIR/follow.json"
-# Keep fallback bounded to the static workspace set to avoid accidental
-# high-index workspace creation if output detection fails.
-SCRATCH_WORKSPACE_FALLBACK="${OSC_NIRI_FLOW_SCRATCH_WORKSPACE:-9}"
+# Keep scratch hidden windows on a stable workspace reference by default.
+# Set OSC_NIRI_FLOW_SCRATCH_WORKSPACE=auto to keep the legacy behavior
+# (using the current monitor's last workspace index).
+SCRATCH_WORKSPACE_REF="${OSC_NIRI_FLOW_SCRATCH_WORKSPACE:-oscndrop}"
+SCRATCH_WORKSPACE_FALLBACK="9"
 
 MATCH_APP_ID=""
 MATCH_TITLE=""
@@ -3264,7 +3311,13 @@ focused_output_name() {
   '
 }
 
-scratch_workspace_index() {
+scratch_workspace_ref() {
+  local configured="${SCRATCH_WORKSPACE_REF:-oscndrop}"
+  if [[ "$configured" != "auto" ]]; then
+    printf '%s\n' "$configured"
+    return 0
+  fi
+
   local output ws_id
   output="$(focused_output_name)"
   if [[ -n "$output" ]]; then
@@ -3274,6 +3327,7 @@ scratch_workspace_index() {
       return 0
     fi
   fi
+
   printf '%s\n' "$SCRATCH_WORKSPACE_FALLBACK"
 }
 
@@ -3296,7 +3350,7 @@ scratchpad_move_all() {
   local target_ws
   local -a scratch_ids
 
-  target_ws="$(scratch_workspace_index)"
+  target_ws="$(scratch_workspace_ref)"
   [[ -n "$target_ws" ]] || return 1
 
   mapfile -t scratch_ids < <(jq -r '.entries // {} | keys[]?' "$SCRATCH_FILE")
@@ -3317,7 +3371,7 @@ hide_window_to_scratch() {
   if [[ "$MATCH_NO_MOVE" -eq 0 ]]; then
     windows_json="$(niri_windows_json)"
     ensure_window_floating "$window_id" "$windows_json"
-    scratch_workspace="$(scratch_workspace_index)"
+    scratch_workspace="$(scratch_workspace_ref)"
     niri msg action move-window-to-workspace --window-id "$window_id" --focus false "$scratch_workspace" >/dev/null 2>&1 || true
   fi
   set_scratch_hidden "$window_id" true "$origin_workspace"

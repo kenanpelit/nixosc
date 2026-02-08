@@ -57,7 +57,7 @@ if [[ "$WORKSPACE" != "0" ]]; then
     niri)
         if command -v niri >/dev/null 2>&1; then
             echo "Switching to workspace $WORKSPACE..."
-            niri msg action focus-workspace "$WORKSPACE"
+            niri-osc set flow -wn "$WORKSPACE"
             sleep 1
         fi
         ;;
