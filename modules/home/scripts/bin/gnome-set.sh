@@ -693,7 +693,7 @@ EOF
       sleep 0.05
     done
 
-    # End on Kenp (workspace 1) like niri-set go.
+    # End on Kenp (workspace 1) like niri-osc set go.
     gnome_eval "global.workspace_manager.get_workspace_by_index(0).activate(global.get_current_time());" >/dev/null 2>&1 || true
     gnome_move_here "Kenp" >/dev/null 2>&1 || true
     ;;

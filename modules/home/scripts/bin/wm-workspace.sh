@@ -2,7 +2,7 @@
 # wm-workspace.sh
 # Workspace router across compositors (Hyprland, Niri).
 # Used by Fusuma (and other callers) to route workspace/monitor actions to the
-# correct backend (`hypr-workspace-monitor`, `niri-set flow`).
+# correct backend (`hypr-workspace-monitor`, `niri-osc flow`).
 
 set -euo pipefail
 
@@ -20,12 +20,12 @@ resolve_bin() {
 }
 
 # systemd --user services often run with a minimal PATH; prefer common Nix profile locations.
-NIRI_SET="$(
-  resolve_bin niri-set \
-    "${WM_WORKSPACE_NIRI_SET:-}" \
-    "/etc/profiles/per-user/${USER}/bin/niri-set" \
-    "${HOME}/.nix-profile/bin/niri-set" \
-    "${HOME}/.local/state/nix/profiles/profile/bin/niri-set"
+NIRI_OSC="$(
+  resolve_bin niri-osc \
+    "${WM_WORKSPACE_NIRI_OSC:-}" \
+    "/etc/profiles/per-user/${USER}/bin/niri-osc" \
+    "${HOME}/.nix-profile/bin/niri-osc" \
+    "${HOME}/.local/state/nix/profiles/profile/bin/niri-osc"
 )"
 
 HYPR_WORKSPACE_MONITOR="$(
@@ -37,10 +37,10 @@ HYPR_WORKSPACE_MONITOR="$(
 )"
 
 if [[ -n "${NIRI_SOCKET:-}" ]] || [[ "${XDG_CURRENT_DESKTOP:-}" == "niri" ]] || [[ "${XDG_SESSION_DESKTOP:-}" == "niri" ]]; then
-  if [[ -n "${NIRI_SET:-}" ]]; then
-    exec "${NIRI_SET}" flow "$@"
+  if [[ -n "${NIRI_OSC:-}" ]]; then
+    exec "${NIRI_OSC}" flow "$@"
   else
-    echo "niri-set not found in PATH" >&2
+    echo "niri-osc not found in PATH" >&2
     exit 1
   fi
 else

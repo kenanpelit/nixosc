@@ -293,7 +293,7 @@ in
     // Start session-scoped user services (niri-bootstrap, DMS, …).
     // Also exports WAYLAND_DISPLAY and friends into systemd --user so units that
     // need a Wayland client env do not start with an empty session.
-    spawn-at-startup "${config.home.profileDirectory}/bin/niri-set" "env";
+    spawn-at-startup "${config.home.profileDirectory}/bin/niri-osc" "set" "env";
     ''}
 
     // Long-running daemons (Clipse, etc.) are started via systemd --user (niri-session.target).
@@ -352,7 +352,7 @@ in
 
     // Switch Events
     switch-events {
-      lid-close { spawn "${config.home.profileDirectory}/bin/niri-set" "lock" "--logind"; }
+      lid-close { spawn "${config.home.profileDirectory}/bin/niri-osc" "set" "lock" "--logind"; }
     }
   '';
 }

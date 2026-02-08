@@ -19,7 +19,7 @@ lib.mkIf cfg.enable {
         # =============================================================================
         # TTY Assignments:
         #   TTY1: Display Manager - Session Selection
-        #   TTY2: Niri (via niri-set tty)
+        #   TTY2: Niri (via niri-osc set tty)
         #   TTY3: Hyprland (via hypr-set tty)
         #   TTY4: GNOME (via gnome_tty)
         #   TTY5: Ubuntu VM (Sway)
@@ -60,7 +60,7 @@ lib.mkIf cfg.enable {
                 echo "  • GNOME    - Traditional GNOME desktop"
                 echo ""
                 echo "Manual Start Commands:"
-                echo "  exec niri-set tty    - Start Niri with optimizations"
+                echo "  exec niri-osc set tty - Start Niri with optimizations"
                 echo "  exec hypr-set tty    - Start Hyprland with optimizations"
                 echo "  exec gnome_tty       - Start GNOME with optimizations"
                 echo ""
@@ -70,7 +70,7 @@ lib.mkIf cfg.enable {
             # ==========================================================================
             elif [ "''${XDG_VTNR}" = "2" ]; then
                 echo "╔════════════════════════════════════════════════════════════╗"
-                echo "║  TTY2: Launching Niri via niri-set tty                     ║"
+                echo "║  TTY2: Launching Niri via niri-osc set tty                 ║"
                 echo "╚════════════════════════════════════════════════════════════╝"
 
                 export XDG_SESSION_TYPE=wayland
@@ -81,11 +81,11 @@ lib.mkIf cfg.enable {
                 export PATH="/run/wrappers/bin:/etc/profiles/per-user/$(whoami)/bin:/run/current-system/sw/bin:$PATH"
                 export NIRI_TTY_GUARD=1
 
-                if command -v niri-set >/dev/null 2>&1; then
+                if command -v niri-osc >/dev/null 2>&1; then
                     echo "Starting Niri with optimized configuration..."
-                    exec niri-set tty
+                    exec niri-osc set tty
                 else
-                    echo "ERROR: niri-set script not found in PATH"
+                    echo "ERROR: niri-osc script not found in PATH"
                     echo "Falling back to direct Niri launch (not recommended)"
                     sleep 3
                     exec niri 2>&1 | tee /tmp/niri-tty2.log
@@ -195,14 +195,14 @@ lib.mkIf cfg.enable {
                 echo ""
                 echo "Available TTY Assignments:"
                 echo "  TTY1: Display Manager (gdm)"
-                echo "  TTY2: Niri (niri-set tty)"
+                echo "  TTY2: Niri (niri-osc set tty)"
                 echo "  TTY3: Hyprland (hypr-set tty)"
                 echo "  TTY4: GNOME (gnome_tty)"
                 echo "  TTY5: Ubuntu VM (Sway)"
                 echo "  TTY6: Manual start helper"
                 echo ""
                 echo "Manual Start Commands:"
-                echo "  exec niri-set tty    - Niri with optimizations"
+                echo "  exec niri-osc set tty - Niri with optimizations"
                 echo "  exec hypr-set tty    - Hyprland with optimizations"
                 echo "  exec gnome_tty       - GNOME with optimizations"
                 echo "  exec sway            - Sway compositor"

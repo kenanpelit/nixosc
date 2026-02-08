@@ -58,7 +58,7 @@ let
     { name = "Terminal File Manager (Yazi)"; command = "kitty -e yazi"; binding = "<Alt><Ctrl>f"; }
     { name = "Rofi Launcher"; command = "rofi-launcher"; binding = "<Alt>space"; }
     { name = "Walk Launcher"; command = "walk"; binding = "<Super><Ctrl>space"; }
-    { name = "Sticky Toggle"; command = "niri-sticky stage toggle-active"; binding = "<Super><Ctrl>s"; }
+    { name = "Sticky Toggle"; command = "niri-osc sticky stage toggle-active"; binding = "<Super><Ctrl>s"; }
     { name = "Switch Audio Output"; command = "osc-soundctl switch"; binding = "<Alt>a"; }
     { name = "Switch Microphone"; command = "osc-soundctl switch-mic"; binding = "<Alt><Ctrl>a"; }
     { name = "Spotify Toggle"; command = "osc-media spotify"; binding = "<Alt>e"; }

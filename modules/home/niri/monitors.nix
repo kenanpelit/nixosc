@@ -16,7 +16,7 @@
     // Preferred fallback profile:
     // - external monitor on top
     // - laptop panel below
-    // Runtime profile written by `niri-set init` (dms/monitor-auto.kdl) can
+    // Runtime profile written by `niri-osc set init` (dms/monitor-auto.kdl) can
     // still override this when output names/layout change (dock/undock).
     workspace "1" { open-on-output "DP-3"; }
     workspace "2" { open-on-output "DP-3"; }
