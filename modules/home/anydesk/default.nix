@@ -12,9 +12,17 @@ let
   # Custom Script Configuration
   # =============================================================================
   run-anydesk = pkgs.writeShellScriptBin "run-anydesk" ''
-    # Theme overrides for a consistent UI.
-    export GTK_THEME="Catppuccin-Mocha-Blue-Standard"
-    export QT_STYLE_OVERRIDE="kvantum"
+    # Do not hard-force theme/style here: it can degrade AnyDesk font rendering.
+    # Optional overrides can be provided by env when needed.
+    if [ -n "''${RUN_ANYDESK_GTK_THEME:-}" ]; then
+      export GTK_THEME="$RUN_ANYDESK_GTK_THEME"
+    fi
+
+    if [ -n "''${RUN_ANYDESK_QT_STYLE_OVERRIDE:-}" ]; then
+      export QT_STYLE_OVERRIDE="$RUN_ANYDESK_QT_STYLE_OVERRIDE"
+    else
+      unset QT_STYLE_OVERRIDE || true
+    fi
 
     # AnyDesk is X11-only. In Niri sessions it needs Xwayland (xwayland-satellite).
     if [ -z "''${DISPLAY:-}" ]; then
