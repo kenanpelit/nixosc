@@ -24,11 +24,10 @@ let
       unset QT_STYLE_OVERRIDE || true
     fi
 
-    # AnyDesk is X11-only. In Niri sessions it needs Xwayland (xwayland-satellite).
+    # AnyDesk is X11-only and needs a valid DISPLAY (Xorg or Xwayland).
     if [ -z "''${DISPLAY:-}" ]; then
-      echo "run-anydesk: DISPLAY is empty (Xwayland is not available in this session)." >&2
-      echo "run-anydesk: ensure xwayland-satellite is installed and niri can spawn it." >&2
-      echo "run-anydesk: check -> journalctl --user -b | rg -i 'xwayland-satellite|niri::utils::xwayland'" >&2
+      echo "run-anydesk: DISPLAY is empty (no X11 display available in this session)." >&2
+      echo "run-anydesk: ensure your session provides X11/Xwayland before launching AnyDesk." >&2
       exit 1
     fi
 
