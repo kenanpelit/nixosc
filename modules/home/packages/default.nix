@@ -157,6 +157,7 @@ in
       #mako                  # Notifications
       brightnessctl         # Brightness control
       wl-gammactl           # Gamma control
+      xwayland-satellite    # X11 bridge for Niri (needed by AnyDesk and other X11-only apps)
       sunsetr               # Gamma/temperature scheduler
       gnome-monitor-config  # Display layout manager
       hyprpicker            # Color picker

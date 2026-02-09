@@ -12,10 +12,20 @@ let
   # Custom Script Configuration
   # =============================================================================
   run-anydesk = pkgs.writeShellScriptBin "run-anydesk" ''
-    # GTK teması ve diğer tema ayarları ile birlikte çalıştır
+    # Theme overrides for a consistent UI.
     export GTK_THEME="Catppuccin-Mocha-Blue-Standard"
     export QT_STYLE_OVERRIDE="kvantum"
-    export GDK_BACKEND=x11
+
+    # AnyDesk is X11-only. In Niri sessions it needs Xwayland (xwayland-satellite).
+    if [ -z "''${DISPLAY:-}" ]; then
+      echo "run-anydesk: DISPLAY is empty (Xwayland is not available in this session)." >&2
+      echo "run-anydesk: ensure xwayland-satellite is installed and niri can spawn it." >&2
+      echo "run-anydesk: check -> journalctl --user -b | rg -i 'xwayland-satellite|niri::utils::xwayland'" >&2
+      exit 1
+    fi
+
+    # Force Qt/XCB path explicitly for AnyDesk.
+    export QT_QPA_PLATFORM="xcb"
     anydesk "$@"
   '';
 in
