@@ -128,7 +128,8 @@
     dankMaterialShell = {
       inputs.nixpkgs.follows = "nixpkgs";
       # Pinned commit (bumped intentionally via `osc-fiup dank` + flake.lock).
-      url = "github:AvengeMedia/DankMaterialShell/5b8b7b04be165f7979bac9a42157ff054f1dcca8";
+      url = "github:AvengeMedia/DankMaterialShell/fce120fa311282ddd41866cfca47a3723fa26c54"; # 0209 - Updated commit
+      # url = "github:AvengeMedia/DankMaterialShell/5b8b7b04be165f7979bac9a42157ff054f1dcca8";
     };
 
     dsearch = {
@@ -193,8 +194,15 @@
       };
 
       # Global nixpkgs policy shared by systems/homes.
+      # Keep insecure allowlist here so every pkgs instance (NixOS, HM, checks,
+      # overlays importing nixpkgs with inherited config) sees the same policy.
       channels-config = {
         allowUnfree = true;
+        permittedInsecurePackages = [
+          "electron-36.9.5"
+          "ventoy-1.1.07"
+          "libsoup-2.74.3"
+        ];
       };
 
       # Overlays applied to all systems.
@@ -215,21 +223,12 @@
       ];
 
       # Modules automatically added to all NixOS systems.
-      # Keep insecure-package allowlist here (system scope), not globally
-      # in `channels-config`, so HM-only consumers stay stricter by default.
       systems.modules.nixos = with inputs; [
         home-manager.nixosModules.home-manager
         # DMS upstream renamed `nixosModules.dankMaterialShell` -> `nixosModules.dank-material-shell`.
         # Using `default` keeps us compatible and avoids the deprecation warning.
         dankMaterialShell.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
-        ({lib, ...}: {
-          nixpkgs.config.permittedInsecurePackages = lib.mkDefault [
-            "electron-36.9.5"
-            "ventoy-1.1.07"
-            "libsoup-2.74.3"
-          ];
-        })
       ];
 
       # Special arguments available to all modules.
