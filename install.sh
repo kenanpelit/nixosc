@@ -441,11 +441,12 @@ flake::rebuild() {
       echo ""
       log SUCCESS "nixos-rebuild ${verb} completed successfully!"
       return 0
+    else
+      local rc=$?
+      echo ""
+      log ERROR "nixos-rebuild ${verb} failed (exit code: $rc)"
+      return "$rc"
     fi
-    local rc=$?
-    echo ""
-    log ERROR "nixos-rebuild ${verb} failed (exit code: $rc)"
-    return "$rc"
   fi
 
   if "${cmd[@]}"; then
