@@ -604,6 +604,7 @@ here)
     # Helper function to process a single app
     process_app() {
       local APP_ID="$1"
+      local allow_launch="${2:-1}"
       local current_ws_id=""
       local window_id=""
       local windows_json=""
@@ -648,6 +649,10 @@ here)
       fi
 
       # --- 3. Launching logic (Window not found) ---
+      if [[ "$allow_launch" != "1" ]]; then
+        return 0
+      fi
+
       send_notify "Launching <b>$APP_ID</b>..."
 
       case "$APP_ID" in
@@ -690,12 +695,12 @@ here)
 
       for app in "${APPS[@]}"; do
         [[ "$app" == "Kenp" ]] && continue
-        process_app "$app" &
+        process_app "$app" 0 &
       done
       wait
 
       # Explicit workflow: always end focused on Kenp.
-      process_app "Kenp"
+      process_app "Kenp" 0
 
       send_notify "All specified apps gathered here."
     else
