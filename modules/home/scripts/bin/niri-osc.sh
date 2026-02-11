@@ -601,27 +601,88 @@ here)
       fi
     }
 
+    move_existing_window_here() {
+      local app_id="$1"
+      local focus_after="${2:-0}"
+      local windows_json=""
+      local workspaces_json=""
+      local current_ws_id=""
+      local current_ws_idx=""
+      local target_id=""
+
+      command -v niri >/dev/null 2>&1 || return 1
+      command -v jq >/dev/null 2>&1 || return 1
+
+      windows_json="$(niri msg -j windows 2>/dev/null || true)"
+      workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
+
+      current_ws_id="$(
+        jq -n \
+          --argjson wins "${windows_json:-[]}" \
+          --argjson wss "${workspaces_json:-[]}" \
+          -r '
+            first($wins[]? | select(.is_focused == true and .workspace_id != null) | .workspace_id)
+            // first($wss[]? | select(.is_focused == true) | .id)
+            // first($wss[]? | select(.is_active == true) | .id)
+            // empty
+          ' 2>/dev/null || true
+      )"
+      [[ -n "$current_ws_id" ]] || return 1
+
+      current_ws_idx="$(
+        echo "$workspaces_json" \
+          | jq -r --arg ws "$current_ws_id" \
+            'first(.[] | select((.id | tostring) == $ws) | .idx) // empty' \
+              2>/dev/null || true
+      )"
+      [[ -n "$current_ws_idx" ]] || return 1
+
+      target_id="$(
+        echo "$windows_json" \
+          | jq -r --arg app "$app_id" --arg ws "$current_ws_id" \
+            'first(.[] | select((.app_id // "") == $app and ((.workspace_id | tostring) != $ws)) | .id) // empty' \
+              2>/dev/null || true
+      )"
+      [[ -n "$target_id" ]] || return 1
+
+      niri msg action move-window-to-workspace --window-id "$target_id" --focus false "$current_ws_idx" >/dev/null 2>&1 || return 1
+      if [[ "$focus_after" == "1" ]]; then
+        niri msg action focus-window --id "$target_id" >/dev/null 2>&1 || true
+      fi
+      return 0
+    }
+
     # Helper function to process a single app
     process_app() {
       local APP_ID="$1"
       local allow_launch="${2:-1}"
+      local focus_after="${3:-1}"
+      local any_window_id=""
       local current_ws_id=""
       local window_id=""
       local windows_json=""
       local workspaces_json=""
 
-      # --- 1. Try to pull existing window (niri-osc flow) ---
-      if command -v niri-osc >/dev/null 2>&1; then
-        if niri-osc flow move-to-current-workspace --app-id "^${APP_ID}$" --focus >/dev/null 2>&1; then
-          send_notify "<b>$APP_ID</b> moved to current workspace."
-          return 0
-        fi
-      fi
-
-      # --- 2. Check if it's already here but not focused ---
       if command -v niri >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
         windows_json="$(niri msg -j windows 2>/dev/null || true)"
         workspaces_json="$(niri msg -j workspaces 2>/dev/null || true)"
+
+        any_window_id="$(
+          echo "$windows_json" \
+            | jq -r --arg app "$APP_ID" \
+              'first(.[] | select((.app_id // "") == $app) | .id) // empty' \
+                2>/dev/null || true
+        )"
+      fi
+
+      # --- 1. If a window exists, NEVER launch. Move/focus only. ---
+      if [[ -n "$any_window_id" ]]; then
+        if move_existing_window_here "$APP_ID" "$focus_after"; then
+          send_notify "<b>$APP_ID</b> moved to current workspace."
+          return 0
+        fi
+
+        # If move failed, try focusing an existing one instead of launching a duplicate.
         current_ws_id="$(
           jq -n \
             --argjson wins "${windows_json:-[]}" \
@@ -641,14 +702,25 @@ here)
                   2>/dev/null || true
           )"
         fi
+
         if [[ -n "$window_id" ]]; then
-          niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
-          send_notify "<b>$APP_ID</b> focused."
+          if [[ "$focus_after" == "1" ]]; then
+            niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
+            send_notify "<b>$APP_ID</b> focused."
+          fi
           return 0
         fi
+
+        if [[ "$focus_after" == "1" ]]; then
+          niri msg action focus-window --id "$any_window_id" >/dev/null 2>&1 || true
+          send_notify "<b>$APP_ID</b> exists; focused existing window."
+        else
+          send_notify "<b>$APP_ID</b> exists; skipped launch."
+        fi
+        return 0
       fi
 
-      # --- 3. Launching logic (Window not found) ---
+      # --- 2. Launching logic (only when no matching window exists) ---
       if [[ "$allow_launch" != "1" ]]; then
         return 0
       fi
@@ -695,17 +767,16 @@ here)
 
       for app in "${APPS[@]}"; do
         [[ "$app" == "Kenp" ]] && continue
-        process_app "$app" 0 &
+        process_app "$app" 0 0
       done
-      wait
 
       # Explicit workflow: always end focused on Kenp.
-      process_app "Kenp" 0
+      process_app "Kenp" 0 1
 
       send_notify "All specified apps gathered here."
     else
       # Process single app
-      process_app "$APP_ID"
+      process_app "$APP_ID" 1 1
     fi
   )
   ;;
