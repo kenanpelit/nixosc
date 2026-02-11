@@ -74,11 +74,21 @@ niri_osc_cache_dir() {
 niri_osc_source_stamp() {
   # Fast-path stamp (mtime + size) is enough for cache invalidation.
   # Hash fallback is only used when stat format is unavailable.
+  local source_path="$NIRI_OSC_SELF"
+  if command -v readlink >/dev/null 2>&1; then
+    # Follow profile symlinks so cache invalidation tracks the real script content.
+    local resolved
+    resolved="$(readlink -f "$source_path" 2>/dev/null || true)"
+    if [[ -n "$resolved" ]]; then
+      source_path="$resolved"
+    fi
+  fi
+
   if command -v stat >/dev/null 2>&1; then
     local stamp=""
-    stamp="$(stat -c '%Y:%s' "$NIRI_OSC_SELF" 2>/dev/null || true)"
+    stamp="$(stat -c '%Y:%s' "$source_path" 2>/dev/null || true)"
     if [[ -z "$stamp" ]]; then
-      stamp="$(stat -f '%m:%z' "$NIRI_OSC_SELF" 2>/dev/null || true)"
+      stamp="$(stat -f '%m:%z' "$source_path" 2>/dev/null || true)"
     fi
     if [[ -n "$stamp" ]]; then
       printf '%s\n' "$stamp"
@@ -87,11 +97,11 @@ niri_osc_source_stamp() {
   fi
 
   if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$NIRI_OSC_SELF" | awk '{print $1}'
+    sha256sum "$source_path" | awk '{print $1}'
     return 0
   fi
 
-  cksum "$NIRI_OSC_SELF" 2>/dev/null | awk '{print $1 ":" $2}'
+  cksum "$source_path" 2>/dev/null | awk '{print $1 ":" $2}'
 }
 
 niri_osc_cache_is_fresh() {
@@ -1761,17 +1771,25 @@ EOF
     declare -a RULE_TITLE_PATTERNS=()
 
     resolve_workspace_ref() {
-      local want_name="${1:-}"
-      [[ -n "$want_name" ]] || return 1
+      local want_ref="${1:-}"
+      [[ -n "$want_ref" ]] || return 1
 
       [[ -n "$WORKSPACES_JSON" ]] || WORKSPACES_JSON="$("${NIRI[@]}" -j workspaces 2>/dev/null || echo '[]')"
-      jq -n --argjson wss "${WORKSPACES_JSON:-[]}" --arg want "$want_name" -r '
-        first(
-          $wss[]?
-          | select(((.name // "") == $want) or ((.idx | tostring) == $want))
-          | [(.output // ""), ((.idx // empty) | tostring)]
-          | @tsv
-        ) // empty
+      jq -n --argjson wss "${WORKSPACES_JSON:-[]}" --arg want "$want_ref" -r '
+        def row($ws):
+          [
+            ($ws.output // ""),
+            (($ws.idx // empty) | tostring),
+            (($ws.id // empty) | tostring),
+            (($ws.name // ""))
+          ] | @tsv;
+
+        (
+          # In multi-output layouts idx can repeat; prefer exact name first.
+          first($wss[]? | select((.name // "") == $want))
+          // first($wss[]? | select((.idx | tostring) == $want))
+        ) as $ws
+        | if $ws == null then empty else row($ws) end
       ' 2>/dev/null
     }
 
@@ -1790,6 +1808,21 @@ EOF
       ws_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$win_json")"
       ws_out="$(jq -r '.output // .output_name // .workspace.output // .workspace_output // empty' <<<"$win_json")"
       ws_idx="$(jq -r '.workspace.index // .workspace_idx // empty' <<<"$win_json")"
+
+      # Newer niri window JSON usually has workspace_id only; enrich from workspaces.
+      if [[ -n "$ws_id" ]] && { [[ -z "$ws_name" ]] || [[ -z "$ws_out" ]] || [[ -z "$ws_idx" ]]; }; then
+        [[ -n "$WORKSPACES_JSON" ]] || WORKSPACES_JSON="$("${NIRI[@]}" -j workspaces 2>/dev/null || echo '[]')"
+        read -r ws_name ws_out ws_idx < <(
+          jq -n --argjson wss "${WORKSPACES_JSON:-[]}" --arg wid "$ws_id" -r '
+            first(
+              $wss[]?
+              | select((.id | tostring) == $wid)
+              | [(.name // ""), (.output // ""), ((.idx // empty) | tostring)]
+              | @tsv
+            ) // empty
+          ' 2>/dev/null || true
+        )
+      fi
 
       printf 'name=%s id=%s out=%s idx=%s\n' "${ws_name:-?}" "${ws_id:-?}" "${ws_out:-?}" "${ws_idx:-?}"
     }
@@ -1876,7 +1909,7 @@ EOF
     planned=0
     failed=0
 
-    while IFS=$'\t' read -r id app_id title current_ws_name; do
+    while IFS=$'\t' read -r id app_id title current_ws_name current_ws_id; do
       [[ -n "$id" ]] || continue
 
       # Never move temporary screen-share picker windows.
@@ -1896,17 +1929,23 @@ EOF
 
       target_out=""
       target_idx=""
-      if ! read -r target_out target_idx < <(resolve_workspace_ref "$target_ws"); then
+      target_ws_id=""
+      target_ws_name=""
+      if ! read -r target_out target_idx target_ws_id target_ws_name < <(resolve_workspace_ref "$target_ws"); then
         echo " !! cannot resolve workspace name '$target_ws' to output/index (niri msg workspaces)" >&2
         continue
       fi
 
-      if [[ -n "$current_ws_name" && "$current_ws_name" == "$target_ws" ]]; then
-        [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (by name)"
+      if [[ -n "$current_ws_id" && -n "$target_ws_id" && "$current_ws_id" == "$target_ws_id" ]]; then
+        [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (id:$target_ws_id)"
+        continue
+      fi
+      if [[ -n "$current_ws_name" && -n "$target_ws_name" && "$current_ws_name" == "$target_ws_name" ]]; then
+        [[ "$VERBOSE" -eq 1 ]] && echo " == $id: '$app_id' already on ws:$target_ws (name:$target_ws_name)"
         continue
       fi
 
-      echo " -> $id: '$app_id' -> ws:$target_ws (output:$target_out idx:$target_idx)"
+      echo " -> $id: '$app_id' -> ws:$target_ws (resolved: name:${target_ws_name:-?} id:${target_ws_id:-?} output:$target_out idx:$target_idx)"
       planned=$((planned + 1))
       if [[ "$DRY_RUN" -eq 1 ]]; then
         continue
@@ -1917,8 +1956,6 @@ EOF
         failed=$((failed + 1))
         continue
       fi
-
-      "${NIRI[@]}" action focus-monitor "$target_out" >/dev/null 2>&1 || true
 
       if ! "${NIRI[@]}" action move-window-to-workspace --window-id "$id" --focus false "$target_idx" >/dev/null 2>&1; then
         echo " !! move-window-to-workspace failed for id=$id -> ws:$target_ws (out:$target_out idx:$target_idx)" >&2
@@ -1932,13 +1969,13 @@ EOF
         after_name="$(jq -r '.workspace.name // .workspace_name // empty' <<<"$after")"
         after_id="$(jq -r '.workspace_id // .workspace.id // empty' <<<"$after")"
 
-        if [[ -n "$after_name" && "$after_name" == "$target_ws" ]]; then
+        if [[ -n "$target_ws_id" && -n "$after_id" && "$after_id" == "$target_ws_id" ]]; then
           [[ "$VERBOSE" -eq 1 ]] && echo "    ok: $(get_window_loc "$after")"
         else
-          if [[ -n "$after_id" && "$after_id" == "$target_idx" ]]; then
-            [[ "$VERBOSE" -eq 1 ]] && echo "    ok (by idx, output unknown): $(get_window_loc "$after")"
+          if [[ -n "$after_name" && -n "$target_ws_name" && "$after_name" == "$target_ws_name" ]]; then
+            [[ "$VERBOSE" -eq 1 ]] && echo "    ok (by name): $(get_window_loc "$after")"
           else
-            echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after")" >&2
+            echo " !! move did not land on ws:$target_ws for id=$id ($app_id), now: $(get_window_loc "$after"), expected-id:${target_ws_id:-?}" >&2
             failed=$((failed + 1))
           fi
         fi
@@ -1950,7 +1987,8 @@ EOF
             (.id // empty | tostring),
             (.app_id // ""),
             (.title // ""),
-            (.workspace.name // .workspace_name // "")
+            (.workspace.name // .workspace_name // ""),
+            ((.workspace_id // .workspace.id // empty) | tostring)
           ]
         | @tsv
       ' <<<"$windows_json" 2>/dev/null || true
@@ -1959,7 +1997,7 @@ EOF
     if [[ -n "$FOCUS_OVERRIDE" ]]; then
       if [[ "$FOCUS_OVERRIDE" =~ ^ws:(.+)$ ]]; then
         focus_ws_name="${BASH_REMATCH[1]}"
-        if read -r focus_out focus_idx < <(resolve_workspace_ref "$focus_ws_name"); then
+        if read -r focus_out focus_idx _focus_ws_id _focus_ws_name < <(resolve_workspace_ref "$focus_ws_name"); then
           "${NIRI[@]}" action focus-monitor "$focus_out" >/dev/null 2>&1 || true
           "${NIRI[@]}" action focus-workspace "$focus_idx" >/dev/null 2>&1 || true
         else
@@ -1977,8 +2015,8 @@ EOF
       home_ws="$(target_for_app_id "Kenp" "" 2>/dev/null || true)"
       [[ -n "${home_ws:-}" ]] || home_ws="1"
 
-      local home_out="" home_idx=""
-      if ! read -r home_out home_idx < <(resolve_workspace_ref "$home_ws"); then
+      local home_out="" home_idx="" _home_id="" _home_name=""
+      if ! read -r home_out home_idx _home_id _home_name < <(resolve_workspace_ref "$home_ws"); then
         home_out=""
         home_idx=""
       fi
