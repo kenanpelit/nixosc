@@ -10,6 +10,16 @@
 let
   inherit (lib) mkOption mkIf types;
   cfg = config.my;
+  hmBackupCommand = pkgs.writeShellScript "home-manager-backup-command" ''
+    set -euo pipefail
+
+    target="$1"
+    ext="''${HOME_MANAGER_BACKUP_EXT:-bak}"
+    stamp="$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+    backup="''${target}.''${ext}.''${stamp}.''${RANDOM}"
+
+    exec ${pkgs.coreutils}/bin/mv "$target" "$backup"
+  '';
 in
 {
   # ============================================================================
@@ -88,7 +98,10 @@ in
     home-manager = mkIf cfg.home.enable {
       useGlobalPkgs   = true;
       useUserPackages = true;
+      # Avoid activation failures when *.bak already exists; always create a
+      # unique backup filename for clobbered unmanaged files.
       backupFileExtension = "bak";
+      backupCommand = hmBackupCommand;
 
       # Pass arguments to Home Manager modules
       extraSpecialArgs = {

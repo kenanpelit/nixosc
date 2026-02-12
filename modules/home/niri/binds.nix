@@ -22,13 +22,13 @@
       // --- Window Focus (Vim & Arrows) ---
       Mod+Left   hotkey-overlay-title="Focus Left"  { focus-column-left; }
       Mod+Right  hotkey-overlay-title="Focus Right" { focus-column-right; }
-      Mod+Up     hotkey-overlay-title="Focus Up"    { focus-workspace-up; }
-      Mod+Down   hotkey-overlay-title="Focus Down"  { focus-workspace-down; }
+      Mod+Up     hotkey-overlay-title="Focus Up"    { spawn "${bins.niriOsc}" "set" "flow" "-wl"; }
+      Mod+Down   hotkey-overlay-title="Focus Down"  { spawn "${bins.niriOsc}" "set" "flow" "-wr"; }
       
       Mod+H      hotkey-overlay-title="Focus Left"  { focus-column-left; }
       Mod+L      hotkey-overlay-title="Focus Right" { focus-column-right; }
-      Mod+K      hotkey-overlay-title="Focus Up"    { focus-workspace-up; }
-      Mod+J      hotkey-overlay-title="Focus Down"  { focus-workspace-down; }
+      Mod+K      hotkey-overlay-title="Focus Up"    { spawn "${bins.niriOsc}" "set" "flow" "-wl"; }
+      Mod+J      hotkey-overlay-title="Focus Down"  { spawn "${bins.niriOsc}" "set" "flow" "-wr"; }
 
       // --- Window Focus (Within Column) ---
       Mod+Ctrl+K hotkey-overlay-title="Focus Window Up" { focus-window-up; }
@@ -79,13 +79,13 @@
       Alt+G        repeat=false hotkey-overlay-title="Max to Edges" { maximize-window-to-edges; }
       Mod+Alt+O    repeat=false hotkey-overlay-title="Overview (Niri)" { toggle-overview; }
       Mod+Ctrl+W   hotkey-overlay-title="Toggle Tabbed Mode" { toggle-column-tabbed-display; }
-      Mod+G        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriSet}" "float"; }
+      Mod+G        hotkey-overlay-title="Toggle Float/Tile" { spawn "${bins.niriOsc}" "set" "float"; }
       Mod+Ctrl+BackSpace hotkey-overlay-title="Focus Float/Tile" { switch-focus-between-floating-and-tiling; }
       Mod+Ctrl+Shift+F hotkey-overlay-title="Expand Column (Fill)" { expand-column-to-available-width; }
       Mod+Ctrl+Shift+C hotkey-overlay-title="Center Visible Columns" { center-visible-columns; }
       
-      Mod+Z        repeat=false hotkey-overlay-title="Zen Mode" { spawn "${bins.niriSet}" "zen"; }
-      Mod+P        repeat=false hotkey-overlay-title="Pin Window (PiP)" { spawn "${bins.niriSet}" "pin"; }
+      Mod+Z        repeat=false hotkey-overlay-title="Zen Mode" { spawn "${bins.niriOsc}" "set" "zen"; }
+      Mod+P        repeat=false hotkey-overlay-title="Pin Window (PiP)" { spawn "${bins.niriOsc}" "set" "pin"; }
 
       // --- Consume / Expel (Window Grouping) ---
       Mod+Ctrl+Left    hotkey-overlay-title="Consume/Expel Left" { consume-or-expel-window-left; }
@@ -129,7 +129,7 @@
 
       // --- Power & Session ---
       Mod+Delete       repeat=false hotkey-overlay-title="Power Menu" { spawn "${bins.dms}" "ipc" "call" "powermenu" "toggle"; }
-      Alt+L            repeat=false hotkey-overlay-title="Lock Screen" { spawn "${bins.niriSet}" "lock"; }
+      Alt+L            repeat=false hotkey-overlay-title="Lock Screen" { spawn "${bins.niriOsc}" "set" "lock"; }
       Mod+Shift+Delete repeat=false hotkey-overlay-title="Inhibit Idle" { spawn "${bins.dms}" "ipc" "call" "inhibit" "toggle"; }
       
       // --- Appearance ---
@@ -182,8 +182,8 @@
       
       // --- System Config ---
       Mod+Ctrl+Alt+R repeat=false hotkey-overlay-title="Reload Config" { spawn "niri" "msg" "action" "load-config-file"; }
-      Mod+Ctrl+Alt+S repeat=false hotkey-overlay-title="Session Refresh" { spawn "${bins.niriSet}" "env"; }
-      Mod+Ctrl+Alt+D repeat=false hotkey-overlay-title="Session Doctor" { spawn "${bins.kitty}" "--class" "niri-doctor" "-e" "${pkgs.bash}/bin/bash" "-lc" "${bins.niriSet} doctor; echo; read -n 1 -s -r -p 'Press any key to close'"; }
+      Mod+Ctrl+Alt+S repeat=false hotkey-overlay-title="Session Refresh" { spawn "${bins.niriOsc}" "set" "env"; }
+      Mod+Ctrl+Alt+D repeat=false hotkey-overlay-title="Session Doctor" { spawn "${bins.kitty}" "--class" "niri-doctor" "-e" "${pkgs.bash}/bin/bash" "-lc" "${bins.niriOsc} set doctor; echo; read -n 1 -s -r -p 'Press any key to close'"; }
       Mod+Ctrl+Escape allow-inhibiting=false repeat=false hotkey-overlay-title="Toggle Shortcut Inhibit" { toggle-keyboard-shortcuts-inhibit; }
       
       // --- Custom Apps ---
@@ -191,10 +191,10 @@
       Alt+N          repeat=false hotkey-overlay-title="Notes (Anotes)" { spawn "anotes"; }
       Mod+Alt+Return      repeat=false hotkey-overlay-title="SemsuMo Daily" { spawn "semsumo" "launch" "--daily" "-all"; }
       
-      Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "osc-ndrop" "kitty" "--class" "dropdown-terminal"; }
+      Mod+Return     repeat=false hotkey-overlay-title="Dropdown Terminal" { spawn "${bins.niriOsc}" "drop" "kitty" "--class" "dropdown-terminal"; }
       Alt+Space      repeat=false hotkey-overlay-title="Rofi Launcher" { spawn "rofi-launcher"; }
       //Mod+Ctrl+Space repeat=false hotkey-overlay-title="Walk Launcher" { spawn "walk"; }
-      Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "${bins.niriSticky}" "stage" "toggle-active"; }
+      Mod+Ctrl+S     repeat=false hotkey-overlay-title="Sticky Toggle" { spawn "${bins.niriOsc}" "sticky" "stage" "toggle-active"; }
       Mod+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Nemo)" { spawn "nemo"; }
       Alt+Ctrl+F     repeat=false hotkey-overlay-title="File Manager (Yazi)" { spawn "${bins.kitty}" "-e" "yazi"; }
       Mod+T          repeat=false hotkey-overlay-title="Terminal" { spawn "${bins.kitty}"; }
@@ -206,14 +206,14 @@
   workflow = ''
       ${lib.optionalString enableWorkflowBinds ''
         // --- Scratchpad (BackSpace) ---
-        Mod+BackSpace     repeat=false hotkey-overlay-title="Scratch: Toggle" { spawn "${bins.niriFlow}" "scratchpad-toggle"; }
-        Alt+BackSpace     repeat=false hotkey-overlay-title="Scratch: Cycle" { spawn "${bins.niriFlow}" "scratchpad-show"; }
-        Mod+Alt+BackSpace repeat=false hotkey-overlay-title="Scratch: Show All" { spawn "${bins.niriFlow}" "scratchpad-show-all"; }
+        Mod+BackSpace     repeat=false hotkey-overlay-title="Scratch: Toggle" { spawn "${bins.niriOsc}" "flow" "scratchpad-toggle"; }
+        Alt+BackSpace     repeat=false hotkey-overlay-title="Scratch: Cycle" { spawn "${bins.niriOsc}" "flow" "scratchpad-show"; }
+        Mod+Alt+BackSpace repeat=false hotkey-overlay-title="Scratch: Show All" { spawn "${bins.niriOsc}" "flow" "scratchpad-show-all"; }
 
         // --- Marks (Role-Based) ---
-        Mod+Alt+G    repeat=false hotkey-overlay-title="Mark: Toggle Default" { spawn "${bins.niriFlow}" "toggle-mark"; }
-        Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Mark: Set Term" { spawn "${bins.niriFlow}" "toggle-mark" "term"; }
-        Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.niriFlow}" "focus-marked" "term"; }
+        Mod+Alt+G    repeat=false hotkey-overlay-title="Mark: Toggle Default" { spawn "${bins.niriOsc}" "flow" "toggle-mark"; }
+        Mod+Alt+Shift+1 repeat=false hotkey-overlay-title="Mark: Set Term" { spawn "${bins.niriOsc}" "flow" "toggle-mark" "term"; }
+        Mod+Alt+1    repeat=false hotkey-overlay-title="Mark: Go Term" { spawn "${bins.niriOsc}" "flow" "focus-marked" "term"; }
       ''}
   '';
 
@@ -256,26 +256,26 @@
       Mod+Shift+9 hotkey-overlay-title="Move To WS 9" { move-column-to-workspace "9"; }
 
       // --- Here to Window ---
-      Alt+1  repeat=false hotkey-overlay-title="Here: Kenp" { spawn "${bins.niriSet}" "here" "Kenp"; }
-      Alt+2  repeat=false hotkey-overlay-title="Here: TmuxKenp" { spawn "${bins.niriSet}" "here" "TmuxKenp"; }
-      Alt+3  repeat=false hotkey-overlay-title="Here: Ai" { spawn "${bins.niriSet}" "here" "Ai"; }
-      Alt+4  repeat=false hotkey-overlay-title="Here: CompecTA" { spawn "${bins.niriSet}" "here" "CompecTA"; }
-      Alt+5  repeat=false hotkey-overlay-title="Here: WebCord" { spawn "${bins.niriSet}" "here" "WebCord"; }
-      Alt+6  repeat=false hotkey-overlay-title="Here: Telegram" { spawn "${bins.niriSet}" "here" "org.telegram.desktop"; }
-      Alt+7  repeat=false hotkey-overlay-title="Here: YouTube" { spawn "${bins.niriSet}" "here" "brave-youtube.com__-Default"; }
-      Alt+8  repeat=false hotkey-overlay-title="Here: Spotify" { spawn "${bins.niriSet}" "here" "spotify"; }
-      Alt+9  repeat=false hotkey-overlay-title="Here: Ferdium" { spawn "${bins.niriSet}" "here" "ferdium"; }
-      Alt+0  repeat=false hotkey-overlay-title="Here: ALL" { spawn "${bins.niriSet}" "here" "all"; }
-      Mod+Alt+0  repeat=false hotkey-overlay-title="Go (Arrange Windows)" { spawn "${bins.niriSet}" "go"; }
+      Alt+1  repeat=false hotkey-overlay-title="Here: Kenp" { spawn "${bins.niriOsc}" "set" "here" "Kenp"; }
+      Alt+2  repeat=false hotkey-overlay-title="Here: TmuxKenp" { spawn "${bins.niriOsc}" "set" "here" "TmuxKenp"; }
+      Alt+3  repeat=false hotkey-overlay-title="Here: Ai" { spawn "${bins.niriOsc}" "set" "here" "Ai"; }
+      Alt+4  repeat=false hotkey-overlay-title="Here: CompecTA" { spawn "${bins.niriOsc}" "set" "here" "CompecTA"; }
+      Alt+5  repeat=false hotkey-overlay-title="Here: WebCord" { spawn "${bins.niriOsc}" "set" "here" "WebCord"; }
+      Alt+6  repeat=false hotkey-overlay-title="Here: Telegram" { spawn "${bins.niriOsc}" "set" "here" "org.telegram.desktop"; }
+      Alt+7  repeat=false hotkey-overlay-title="Here: YouTube" { spawn "${bins.niriOsc}" "set" "here" "brave-youtube.com__-Default"; }
+      Alt+8  repeat=false hotkey-overlay-title="Here: Spotify" { spawn "${bins.niriOsc}" "set" "here" "spotify"; }
+      Alt+9  repeat=false hotkey-overlay-title="Here: Ferdium" { spawn "${bins.niriOsc}" "set" "here" "ferdium"; }
+      Alt+0  repeat=false hotkey-overlay-title="Here: ALL" { spawn "${bins.niriOsc}" "set" "here" "all"; }
+      Mod+Alt+0  repeat=false hotkey-overlay-title="Go (Arrange Windows)" { spawn "${bins.niriOsc}" "set" "go"; }
 
       // --- Workspace Navigation ---
-      Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move to Empty WS" { move-window-to-workspace 255; }
-      Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { move-window-to-workspace-up; }
-      Mod+Page_Down hotkey-overlay-title="Move Win WS Down" { move-window-to-workspace-down; }
+      Mod+Ctrl+C    repeat=false hotkey-overlay-title="Move To WS 9" { spawn "${bins.niriOsc}" "set" "flow" "-mw" "9"; }
+      Mod+Page_Up   hotkey-overlay-title="Move Win WS Up" { spawn "${bins.niriOsc}" "set" "flow" "-mwp"; }
+      Mod+Page_Down hotkey-overlay-title="Move Win WS Down" { spawn "${bins.niriOsc}" "set" "flow" "-mwn"; }
 
       // --- Mouse Wheel Interaction ---
-      Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { focus-workspace-down; }
-      Mod+WheelScrollUp    cooldown-ms=150 hotkey-overlay-title="WS Up" { focus-workspace-up; }
+      Mod+WheelScrollDown  cooldown-ms=150 hotkey-overlay-title="WS Down" { spawn "${bins.niriOsc}" "set" "flow" "-wr"; }
+      Mod+WheelScrollUp    cooldown-ms=150 hotkey-overlay-title="WS Up" { spawn "${bins.niriOsc}" "set" "flow" "-wl"; }
       Mod+WheelScrollRight hotkey-overlay-title="Focus Right" { focus-column-right; }
       Mod+WheelScrollLeft  hotkey-overlay-title="Focus Left" { focus-column-left; }
   '';

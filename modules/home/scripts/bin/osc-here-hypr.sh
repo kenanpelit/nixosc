@@ -37,7 +37,7 @@ send_notify() {
   local msg="$1"
   local urgency="${2:-normal}"
 
-  # Only show normal notifications if enabled (parity with niri-set here)
+  # Only show normal notifications if enabled (parity with niri-osc set here)
   if [[ "$urgency" == "normal" && "$NOTIFY_ENABLED" != "1" ]]; then
     return 0
   fi

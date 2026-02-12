@@ -25,10 +25,11 @@ in
     # -------------------------------------------------------
     # Packages
     # -------------------------------------------------------
-    # KDE Connect core daemon
+    # KDE Connect core daemon + Valent (GNOME-native KDE Connect implementation)
     # -------------------------------------------------------
     home.packages = [
       pkgs.kdePackages.kdeconnect-kde
+      # pkgs.valent
     ];
 
     # Disable upstream XDG autostart entry so kdeconnectd has a single owner unit.

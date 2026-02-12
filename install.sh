@@ -437,15 +437,28 @@ flake::rebuild() {
   # Force a TTY so nixos-rebuild prints steady progress even when it would
   # otherwise buffer or hide output.
   if [[ -t 1 ]] && command -v script >/dev/null 2>&1; then
-    if script -qefc "$cmd_display" /dev/null; then
+    local rc_file script_rc rc tty_cmd
+    rc_file="$(mktemp -t nixos-rebuild-rc.XXXXXX)"
+    printf -v tty_cmd '%s; __rc=$?; printf "%%s" "$__rc" > %q; exit "$__rc"' "$cmd_display" "$rc_file"
+
+    script_rc=0
+    script -qfc "$tty_cmd" /dev/null || script_rc=$?
+
+    rc="$script_rc"
+    if [[ -r "$rc_file" ]]; then
+      rc="$(cat "$rc_file" 2>/dev/null || echo "$script_rc")"
+    fi
+    rm -f "$rc_file"
+
+    if [[ "$rc" =~ ^[0-9]+$ ]] && (( rc == 0 )); then
       echo ""
       log SUCCESS "nixos-rebuild ${verb} completed successfully!"
       return 0
     fi
-    local rc=$?
+
     echo ""
-    log ERROR "nixos-rebuild ${verb} failed (exit code: $rc)"
-    return "$rc"
+    log ERROR "nixos-rebuild ${verb} failed (exit code: ${rc:-$script_rc})"
+    return "${rc:-$script_rc}"
   fi
 
   if "${cmd[@]}"; then

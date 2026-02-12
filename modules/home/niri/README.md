@@ -7,18 +7,18 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
 - Niri config’i `xdg.configFile."niri/config.kdl"` ile üretilir.
 - Runtime include dosyaları (`dms/*.kdl`) writable gerçek dosya olarak korunur.
 - `niri-session.target` altında session servisleri (bootstrap, polkit, DMS, daemons) yönetilir.
-- `niri-set doctor` include dosyaları için strict kontrol (declared/missing/symlink/writable) verir.
+- `niri-osc set doctor` include dosyaları için strict kontrol (declared/missing/symlink/writable) verir.
 
 ## Açılış akışı
 
-1) DM/TTY oturumu `niri-set tty` ile Niri başlatır.
-2) Niri açılışında `spawn-at-startup ... niri-set env` çalışır:
+1) DM/TTY oturumu `niri-osc set tty` ile Niri başlatır.
+2) Niri açılışında `spawn-at-startup ... niri-osc set env` çalışır:
    - Wayland/Niri env değişkenlerini systemd ve D-Bus activation ortamına taşır.
    - Portal backend’lerini start/restart eder.
    - `niri-session.target` tetikler.
 3) `niri-bootstrap.service`:
-   - Kısa gecikme (`bootstrapDelaySeconds`, varsayılan `1`) sonrası `niri-set init` çağırır.
-   - `niri-set init` monitor profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
+   - Kısa gecikme (`bootstrapDelaySeconds`, varsayılan `1`) sonrası `niri-osc set init` çağırır.
+   - `niri-osc set init` output profilini üretir (`~/.config/niri/dms/monitor-auto.kdl`) ve config reload eder.
    - `bootstrapNotifications` açıkken sadece sonuç bildirimi verir (başarı/hata), başlangıç popup’ı göstermez.
 4) Uzun yaşayan servisler ayrı unit’lerde yönetilir:
    - `niri-sticky.service`
@@ -27,15 +27,15 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
 
 ## Niri workflow notu
 
-- `niri-flow` komutu bu repoda daemon-free bash helper olarak sağlanır (`modules/home/scripts/bin/niri-flow.sh`).
-- Bu sayede `niri-set here`, `osc-ndrop`, scratchpad/mark kısayolları ek daemon olmadan çalışır.
+- `niri-osc flow` komutu bu repoda daemon-free bash helper olarak sağlanır (`modules/home/scripts/bin/niri-osc.sh`).
+- Bu sayede `niri-osc set here`, `niri-osc drop`, scratchpad/mark kısayolları ek daemon olmadan çalışır.
 
 ## Monitor profili (dock/undock)
 
 - Fallback profil `modules/home/niri/monitors.nix` içinde laptop-safe (`eDP-1`) tutulur.
-- Runtime’da `niri-set init` bağlı output’lara göre `monitor-auto.kdl` üretir:
-  - Harici ekran varsa: workspace `1-6` hariciye, `7-9` dahiliye.
-  - Harici yoksa: tüm workspace’ler dahili ekrana.
+- Runtime’da `niri-osc set init`, bağlı output’lara göre `monitor-auto.kdl` içinde
+  yalnızca `output` bloklarını günceller (workspace mapping üretmez).
+- Workspace mapping tek kaynak olarak `modules/home/niri/monitors.nix` içinde tutulur.
 - Bu dosya config’e include edilir ve writable tutulur.
 
 ## Runtime include dosyaları
@@ -58,8 +58,8 @@ Bu klasördeki modül, `my.desktop.niri` altında Niri konfigini üretir ve otur
 
 ## Debug / sorun giderme
 
-- Hızlı tanı: `niri-set doctor`
-- Ek tanı: `niri-set doctor --tree --logs`
+- Hızlı tanı: `niri-osc set doctor`
+- Ek tanı: `niri-osc set doctor --tree --logs`
 - Session target: `systemctl --user status niri-session.target`
 - Bootstrap log: `journalctl --user -u niri-bootstrap.service -f`
 - DMS log: `journalctl --user -u dms.service -f`
