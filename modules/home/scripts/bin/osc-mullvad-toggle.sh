@@ -209,10 +209,12 @@ resolve_osc_mullvad
 # re-enters this script with --as-root while the parent process still holds
 # the lock.
 if [[ "${run_as_root}" != "1" ]] && command -v flock >/dev/null 2>&1; then
+  lock_wait_sec="${OSC_MULLVAD_TOGGLE_LOCK_WAIT_SEC:-3}"
+  [[ "$lock_wait_sec" =~ ^[0-9]+$ ]] || lock_wait_sec=3
   if ! { exec 9>"$LOCK_FILE"; } 2>/dev/null; then
     log "warn: lock file unavailable, continuing without lock: $LOCK_FILE"
   else
-    flock -n 9 || die "another toggle is already running"
+    flock -w "$lock_wait_sec" 9 || die "another toggle is already running"
   fi
 fi
 

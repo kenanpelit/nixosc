@@ -345,6 +345,33 @@ blocky_start() {
 	sudo_run "systemctl start blocky.service" || return 1
 }
 
+mullvad_account_ready() {
+	mullvad account get >/dev/null 2>&1
+}
+
+mullvad_is_blocked_state() {
+	local status_text=""
+	status_text="$(mullvad status 2>/dev/null || true)"
+	[[ -n "$status_text" ]] || return 1
+
+	if echo "$status_text" | grep -qi "Blocked:"; then
+		return 0
+	fi
+
+	if echo "$status_text" | grep -qi "device has been revoked"; then
+		return 0
+	fi
+
+	return 1
+}
+
+mullvad_soft_disable_for_fallback() {
+	log "Mullvad fallback: disconnect + disable risky states (auto-connect/lockdown)."
+	mullvad disconnect >/dev/null 2>&1 || true
+	mullvad auto-connect set off >/dev/null 2>&1 || true
+	mullvad lockdown-mode set off >/dev/null 2>&1 || true
+}
+
 vpn_connected_and_healthy() {
 	local require_internet="${1:-1}"
 
@@ -384,7 +411,10 @@ ensure_blocky_for_vpn_state() {
 
 	log "Ensure: Mullvad sağlıklı değil; Blocky açılıyor."
 	if [[ "$force_disconnect" == "1" ]]; then
-		mullvad disconnect >/dev/null 2>&1 || true
+		mullvad_soft_disable_for_fallback
+	elif ! mullvad_account_ready || mullvad_is_blocked_state; then
+		# Even when caller asks "no-disconnect", broken/revoked states should not keep routing blocked.
+		mullvad_soft_disable_for_fallback
 	fi
 	blocky_start || true
 	return 0
@@ -393,6 +423,19 @@ ensure_blocky_for_vpn_state() {
 connect_basic_vpn_with_blocky_guard() {
 	local require_internet="${OSC_MULLVAD_TOGGLE_REQUIRE_INTERNET:-1}"
 	local force_disconnect="${OSC_MULLVAD_TOGGLE_FORCE_DISCONNECT_ON_FAIL:-1}"
+
+	if ! mullvad_account_ready; then
+		log "Mullvad account yok/oturum kapalı: VPN connect atlanıyor, Blocky fallback uygulanıyor."
+		notify "⚠️ MULLVAD VPN" "No account/session; using Blocky fallback" "security-low"
+		mullvad_soft_disable_for_fallback
+		blocky_start || true
+		return 1
+	fi
+
+	if mullvad_is_blocked_state; then
+		log "Mullvad blocked/revoked state tespit edildi; önce güvenli fallback temizliği uygulanıyor."
+		mullvad_soft_disable_for_fallback
+	fi
 
 	# VPN OFF -> ON path: stop Blocky before connect.
 	if ! blocky_stop; then
@@ -414,7 +457,7 @@ connect_basic_vpn_with_blocky_guard() {
 		log "VPN bağlı görünüyor ama internet doğrulanamadı; Blocky fallback uygulanıyor."
 		notify "⚠️ MULLVAD VPN" "Connected state unhealthy; falling back to Blocky" "security-low"
 		if [[ "$force_disconnect" == "1" ]]; then
-			mullvad disconnect >/dev/null 2>&1 || true
+			mullvad_soft_disable_for_fallback
 		fi
 		blocky_start || true
 		return 1

@@ -46,6 +46,12 @@ in {
           has_blocky=1
         fi
 
+        mullvad_soft_disable() {
+          ${mullvadPkg}/bin/mullvad disconnect >/dev/null 2>&1 || true
+          ${mullvadPkg}/bin/mullvad auto-connect set off >/dev/null 2>&1 || true
+          ${mullvadPkg}/bin/mullvad lockdown-mode set off >/dev/null 2>&1 || true
+        }
+
         blocky_start() {
           [[ "$has_blocky" -eq 1 ]] || return 0
           ${pkgs.systemd}/bin/systemctl start blocky.service >/dev/null 2>&1 || true
@@ -60,6 +66,14 @@ in {
           ${mullvadPkg}/bin/mullvad status 2>/dev/null | grep -q "Connected"
         }
 
+        mullvad_blocked_state() {
+          local status_text
+          status_text="$(${mullvadPkg}/bin/mullvad status 2>/dev/null || true)"
+          echo "$status_text" | grep -qi "Blocked:" && return 0
+          echo "$status_text" | grep -qi "device has been revoked" && return 0
+          return 1
+        }
+
         vpn_healthy() {
           vpn_connected || return 1
           [[ "$require_internet" == "1" ]] || return 0
@@ -68,8 +82,14 @@ in {
 
         if ! ${mullvadPkg}/bin/mullvad account get >/dev/null 2>&1; then
           echo "Mullvad account not logged in; enabling Blocky fallback."
+          mullvad_soft_disable
           blocky_start
           exit 0
+        fi
+
+        if mullvad_blocked_state; then
+          echo "Mullvad blocked/revoked state detected; resetting daemon state before connect."
+          mullvad_soft_disable
         fi
 
         ${mullvadPkg}/bin/mullvad connect || true
@@ -85,7 +105,7 @@ in {
         done
 
         echo "Mullvad not healthy after grace window; falling back to Blocky."
-        ${mullvadPkg}/bin/mullvad disconnect >/dev/null 2>&1 || true
+        mullvad_soft_disable
         blocky_start
       '');
     };
