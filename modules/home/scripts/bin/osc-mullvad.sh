@@ -433,8 +433,11 @@ connect_basic_vpn_with_blocky_guard() {
 	fi
 
 	if mullvad_is_blocked_state; then
-		log "Mullvad blocked/revoked state tespit edildi; önce güvenli fallback temizliği uygulanıyor."
+		log "Mullvad blocked/revoked state tespit edildi; VPN connect atlanıyor, Blocky fallback uygulanıyor."
+		notify "⚠️ MULLVAD VPN" "Device blocked/revoked; using Blocky fallback" "security-low"
 		mullvad_soft_disable_for_fallback
+		blocky_start || true
+		return 1
 	fi
 
 	# VPN OFF -> ON path: stop Blocky before connect.
@@ -448,6 +451,7 @@ connect_basic_vpn_with_blocky_guard() {
 
 	if ! connect_basic_vpn; then
 		log "VPN bağlantısı başarısız; Blocky geri açılıyor."
+		mullvad_soft_disable_for_fallback
 		blocky_start || true
 		return 1
 	fi

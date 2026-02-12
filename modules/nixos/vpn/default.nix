@@ -21,7 +21,6 @@ in {
     description = "Mullvad autoconnect on boot";
     wants = [ "network-online.target" "mullvad-daemon.service" ];
     after  = [ "network-online.target" "NetworkManager.service" "mullvad-daemon.service" ];
-    unitConfig.ConditionPathExists = "/var/lib/mullvad-vpn/account-history.json";
     serviceConfig = {
       Type = "oneshot";
       Restart = "no";
@@ -88,8 +87,10 @@ in {
         fi
 
         if mullvad_blocked_state; then
-          echo "Mullvad blocked/revoked state detected; resetting daemon state before connect."
+          echo "Mullvad blocked/revoked state detected; using Blocky fallback."
           mullvad_soft_disable
+          blocky_start
+          exit 0
         fi
 
         ${mullvadPkg}/bin/mullvad connect || true

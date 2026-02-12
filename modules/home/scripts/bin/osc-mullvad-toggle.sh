@@ -198,6 +198,12 @@ if [[ "${run_as_root}" == "1" ]]; then
       if [[ -z "${OSC_MULLVAD_DIR:-}" ]]; then
         export OSC_MULLVAD_DIR="${caller_home}/.mullvad"
       fi
+
+      # Preserve user profile tools (jq/bc/etc.) in pkexec root context.
+      user_profile_bin="/etc/profiles/per-user/${caller_user}/bin"
+      if [[ -d "${user_profile_bin}" ]]; then
+        export PATH="${user_profile_bin}:/run/current-system/sw/bin:${PATH}"
+      fi
     fi
   fi
 fi
