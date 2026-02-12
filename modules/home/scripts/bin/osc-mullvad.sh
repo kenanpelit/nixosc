@@ -122,7 +122,14 @@ notify() {
 		return 0
 	fi
 
-	notify-send -t 5000 "$title" "$message" -i "$icon"
+	# Without a session bus/display (common under pkexec root helper),
+	# notify-send may print: "Cannot autolaunch D-Bus without X11 $DISPLAY".
+	# Skip desktop notifications in that context.
+	if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
+		return 0
+	fi
+
+	notify-send -t 5000 "$title" "$message" -i "$icon" >/dev/null 2>&1 || true
 }
 
 # Loglama fonksiyonu

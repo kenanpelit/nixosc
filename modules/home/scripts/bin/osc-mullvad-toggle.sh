@@ -108,8 +108,9 @@ run_toggle() {
   local cmd=("${OSC_MULLVAD_BIN}" toggle)
   [[ "${with_blocky}" == "1" ]] && cmd+=(--with-blocky)
 
-  log "run: ${cmd[*]}"
-  "${cmd[@]}"
+  # Parent wrapper is responsible for user-facing notifications.
+  log "run: OSC_MULLVAD_NO_NOTIFY=1 ${cmd[*]}"
+  OSC_MULLVAD_NO_NOTIFY=1 "${cmd[@]}"
 }
 
 preview_toggle() {
