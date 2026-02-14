@@ -3810,10 +3810,10 @@ niri_osc_payload_sticky() {
 # - ${XDG_STATE_HOME:-$HOME/.local/state}/niri-sticky/state.lock
 #
 # Tunables:
-# - NIRI_STICKY_POLL_INTERVAL   daemon poll interval (default: 0.35s)
 # - NIRI_STICKY_STAGE_WORKSPACE stage workspace name (default: stage)
 # - NIRI_STICKY_NOTIFY          1/0 enable notifications (default: 1)
 # - NIRI_STICKY_NOTIFY_TIMEOUT  notify timeout ms (default: 1400)
+# - NIRI_STICKY_STREAM_RETRY_DELAY reconnect delay seconds (default: 0.60)
 #
 # Dependencies:
 # - niri
@@ -3828,11 +3828,10 @@ STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 STATE_DIR="${STATE_HOME}/niri-sticky"
 STATE_FILE="${STATE_DIR}/state.json"
 LOCK_FILE="${STATE_DIR}/state.lock"
-POLL_INTERVAL="${NIRI_STICKY_POLL_INTERVAL:-0.35}"
-IDLE_POLL_INTERVAL="${NIRI_STICKY_IDLE_POLL_INTERVAL:-1.20}"
 STAGE_WORKSPACE="${NIRI_STICKY_STAGE_WORKSPACE:-stage}"
 NOTIFY_ENABLED="${NIRI_STICKY_NOTIFY:-1}"
 NOTIFY_TIMEOUT="${NIRI_STICKY_NOTIFY_TIMEOUT:-1400}"
+STREAM_RETRY_DELAY="${NIRI_STICKY_STREAM_RETRY_DELAY:-0.60}"
 
 err() {
   printf 'Error: %s\n' "$*" >&2
@@ -4306,7 +4305,7 @@ stage_remove_all_locked() {
   printf 'Unstaged %d windows\n' "$count"
 }
 
-daemon_tick_locked() {
+daemon_sync_locked() {
   local windows_json ws_id ws_idx last_ws
 
   windows_json="$(niri_windows_json || true)"
@@ -4339,17 +4338,48 @@ daemon_tick_locked() {
   printf 'idle\n'
 }
 
+daemon_event_requires_sync() {
+  local line="${1:-}"
+  [[ -n "$line" ]] || return 1
+  case "$line" in
+    *\"WorkspacesChanged\"*|*\"WorkspaceActivated\"*|*\"WindowsChanged\"*|*\"WindowOpenedOrChanged\"*|*\"WindowClosed\"*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+daemon_consume_event_stream() {
+  local line
+  while IFS= read -r line; do
+    daemon_event_requires_sync "$line" || continue
+    with_lock daemon_sync_locked >/dev/null 2>&1 || true
+  done < <(niri msg --json event-stream 2>/dev/null || true)
+}
+
 run_daemon() {
-  info "starting daemon (poll=${POLL_INTERVAL}s, idle=${IDLE_POLL_INTERVAL}s, stage=${STAGE_WORKSPACE})"
+  local retry_delay="${STREAM_RETRY_DELAY}"
+
+  case "$retry_delay" in
+    ''|*[!0-9.]*|*.*.*)
+      retry_delay="0.60"
+      ;;
+  esac
+
+  info "starting daemon (event-stream mode, stage=${STAGE_WORKSPACE})"
+  with_lock daemon_sync_locked >/dev/null 2>&1 || true
+
   while true; do
-    local tick_status sleep_for
-    tick_status="$(with_lock daemon_tick_locked 2>/dev/null || echo idle)"
-    if [[ "$tick_status" == "changed" ]]; then
-      sleep_for="$POLL_INTERVAL"
-    else
-      sleep_for="$IDLE_POLL_INTERVAL"
+    if ! niri msg version >/dev/null 2>&1; then
+      sleep "$retry_delay"
+      continue
     fi
-    sleep "$sleep_for"
+
+    daemon_consume_event_stream || true
+    sleep "$retry_delay"
+    with_lock daemon_sync_locked >/dev/null 2>&1 || true
   done
 }
 
