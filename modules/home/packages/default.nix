@@ -130,6 +130,7 @@ in
       # -- Desktop & Productivity ------------------------------------------------
       libreoffice           # Office suite
       obsidian              # Note taking
+      open-webui            # Local/self-hosted LLM web UI
       zathura evince        # PDF viewers
       pdftk poppler-utils   # PDF toolkit (merge/split/rotate/fill forms)
       qalculate-gtk         # Calculator
